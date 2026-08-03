@@ -50,9 +50,6 @@ public class ConstantMaskReuse
         Consume(PTrueDifferentElementSizes(a));
         Consume(PTrueMultipleConversionTrueMask(mask1, mask2));
         Consume(PTrueSeparatedByCall(a, b));
-        Consume(PTrueSeparateBlocks(a, Environment.TickCount != 0));
-        Consume(PTrueUniquePredecessor(a, Environment.TickCount != 0));
-        Consume(PTrueJoin(a, Environment.TickCount != 0));
 
         if (Sve2.IsSupported)
         {
@@ -78,44 +75,6 @@ public class ConstantMaskReuse
         Vector<int> result2 = Sve.Negate(Identity(b));
         Consume(result2);
         return result1;
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Vector<int> PTrueSeparateBlocks(Vector<int> value, bool condition)
-    {
-        //ARM64: ptrue {{p[0-9]+}}.s
-        //ARM64: ptrue {{p[0-9]+}}.s
-        //ARM64-NOT: ptrue {{p[0-9]+}}.s
-        if (condition)
-        {
-            return Sve.Abs(value);
-        }
-
-        return Sve.Negate(value);
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Vector<int> PTrueUniquePredecessor(Vector<int> value, bool condition)
-    {
-        //ARM64: ptrue {{p[0-9]+}}.s
-        //ARM64-NOT: ptrue {{p[0-9]+}}.s
-        Vector<int> result = Sve.Abs(value);
-        if (condition)
-        {
-            return result;
-        }
-
-        return Sve.Negate(result);
-    }
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static Vector<int> PTrueJoin(Vector<int> value, bool condition)
-    {
-        //ARM64: ptrue {{p[0-9]+}}.s
-        //ARM64: ptrue {{p[0-9]+}}.s
-        //ARM64-NOT: ptrue {{p[0-9]+}}.s
-        Vector<int> result = condition ? Sve.Abs(value) : Sve.Negate(value);
-        return Sve.Add(result, value);
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]

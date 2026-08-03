@@ -997,14 +997,11 @@ private:
     void processBlockEndAllocation(BasicBlock* current);
 
     // Record variable locations at start/end of block
-    void processBlockStartLocations(BasicBlock* current, bool preserveMaskConstants);
+    void processBlockStartLocations(BasicBlock* current);
 
-    FORCEINLINE void handleDeadCandidates(SingleTypeRegSet deadCandidates,
-                                          int              regBase,
-                                          VarToRegMap      inVarToRegMap,
-                                          bool             preserveMaskConstants);
+    FORCEINLINE void handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBase, VarToRegMap inVarToRegMap);
     void             processBlockEndLocations(BasicBlock* current);
-    void             resetAllRegistersState(bool preserveMaskConstants);
+    void             resetAllRegistersState();
 
 #ifdef TARGET_ARM
     bool       isSecondHalfReg(RegRecord* regRec, Interval* interval);

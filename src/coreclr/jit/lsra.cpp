@@ -3952,15 +3952,6 @@ void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
     assert(currentBlock != nullptr);
     markBlockVisited(currentBlock);
 
-    BasicBlock* nextBlock             = getNextBlock();
-    bool        preserveMaskConstants = false;
-#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
-    preserveMaskConstants = m_compiler->opts.OptimizationEnabled() && (nextBlock != nullptr) &&
-                            (nextBlock->GetUniquePred(m_compiler) == currentBlock) &&
-                            !blockInfo[nextBlock->bbNum].hasEHBoundaryIn &&
-                            !blockInfo[currentBlock->bbNum].hasEHBoundaryOut;
-#endif
-
     if (localVarsEnregistered)
     {
         processBlockEndLocations(currentBlock);
@@ -3969,14 +3960,15 @@ void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
         // When the last block in the method has successors, there will be a final "RefTypeBB" to
         // ensure that we get the varToRegMap set appropriately, but in that case we don't need
         // to worry about "nextBlock".
+        BasicBlock* nextBlock = getNextBlock();
         if (nextBlock != nullptr)
         {
-            processBlockStartLocations(nextBlock, preserveMaskConstants);
+            processBlockStartLocations(nextBlock);
         }
     }
     else
     {
-        resetAllRegistersState(preserveMaskConstants);
+        resetAllRegistersState();
     }
 }
 
@@ -4225,13 +4217,10 @@ void LinearScan::unassignIntervalBlockStart(RegRecord* regRecord, VarToRegMap in
 }
 
 //------------------------------------------------------------------------
-// resetAllRegistersState: Resets the next interval ref and spill cost, and optionally
-//                         preserves mask constants.
+// resetAllRegistersState: Resets the next interval ref, spill cost and clears
+//                         the constant registers.
 //
-// Arguments:
-//    preserveMaskConstants - whether mask constants survive from the preceding block
-//
-void LinearScan::resetAllRegistersState(bool preserveMaskConstants)
+void LinearScan::resetAllRegistersState()
 {
     assert(!enregisterLocalVars);
     // Just clear any constant registers and return.
@@ -4241,29 +4230,21 @@ void LinearScan::resetAllRegistersState(bool preserveMaskConstants)
     int regIndex = REG_FIRST;
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; NEXT_REGISTER(reg, regIndex))
     {
-        RegRecord* physRegRecord    = getRegisterRecord(reg);
-        Interval*  assignedInterval = physRegRecord->assignedInterval;
+        RegRecord* physRegRecord = getRegisterRecord(reg);
 #ifdef DEBUG
+        Interval* assignedInterval = physRegRecord->assignedInterval;
         assert(assignedInterval == nullptr || assignedInterval->isConstant);
 #endif
-        if (preserveMaskConstants && (assignedInterval != nullptr) && varTypeIsMask(assignedInterval->registerType))
-        {
-            setConstantReg(reg, assignedInterval->registerType);
-        }
-        else
-        {
-            physRegRecord->assignedInterval = nullptr;
-        }
+        physRegRecord->assignedInterval = nullptr;
     }
 }
 
 //------------------------------------------------------------------------
-// processBlockStartLocations: Update var locations on entry to 'currentBlock' and update
-//                             the constant register state.
+// processBlockStartLocations: Update var locations on entry to 'currentBlock' and clear constant
+//                             registers.
 //
 // Arguments:
-//    currentBlock          - the BasicBlock we are about to allocate registers for
-//    preserveMaskConstants - whether mask constants survive from the preceding block
+//    currentBlock   - the BasicBlock we are about to allocate registers for
 //
 // Return Value:
 //    None
@@ -4275,7 +4256,7 @@ void LinearScan::resetAllRegistersState(bool preserveMaskConstants)
 //    modify the inVarToRegMap in cases where a lclVar was spilled after the block had been
 //    completed.
 //
-void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool preserveMaskConstants)
+void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
 {
     // We should only call this method if we have register candidates.
 
@@ -4582,9 +4563,9 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool prese
 
     // Only focus on actual registers present
     deadCandidates &= actualRegistersMask;
-    handleDeadCandidates(deadCandidates.getLow(), REG_LOW_BASE, inVarToRegMap, preserveMaskConstants);
+    handleDeadCandidates(deadCandidates.getLow(), REG_LOW_BASE, inVarToRegMap);
 #ifdef HAS_MORE_THAN_64_REGISTERS
-    handleDeadCandidates(deadCandidates.getHigh(), REG_HIGH_BASE, inVarToRegMap, preserveMaskConstants);
+    handleDeadCandidates(deadCandidates.getHigh(), REG_HIGH_BASE, inVarToRegMap);
 #endif // HAS_MORE_THAN_64_REGISTERS
 #endif // TARGET_ARM
 }
@@ -4596,15 +4577,11 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool prese
 //    deadCandidates - mask of registers.
 //    regBase - base register number.
 //    inVarToRegMap - variable to register map.
-//    preserveMaskConstants - whether mask constants survive from the preceding block.
 //
 // Return Value:
 //    None
 //
-void LinearScan::handleDeadCandidates(SingleTypeRegSet deadCandidates,
-                                      int              regBase,
-                                      VarToRegMap      inVarToRegMap,
-                                      bool             preserveMaskConstants)
+void LinearScan::handleDeadCandidates(SingleTypeRegSet deadCandidates, int regBase, VarToRegMap inVarToRegMap)
 {
     while (deadCandidates != RBM_NONE)
     {
@@ -4617,14 +4594,6 @@ void LinearScan::handleDeadCandidates(SingleTypeRegSet deadCandidates,
         if (assignedInterval != nullptr)
         {
             assert(assignedInterval->isLocalVar || assignedInterval->isConstant || assignedInterval->IsUpperVector());
-
-            if (preserveMaskConstants && assignedInterval->isConstant && varTypeIsMask(assignedInterval->registerType))
-            {
-                // Keep the mask constant associated with this available register so a
-                // matching definition in the successor can reuse it.
-                setConstantReg(reg, assignedInterval->registerType);
-                continue;
-            }
 
             if (!assignedInterval->isConstant && assignedInterval->assignedReg == physRegRecord)
             {
@@ -7958,7 +7927,7 @@ void LinearScan::resolveRegisters()
             curBBStartLocation = currentRefPosition->nodeLocation;
             if (block != m_compiler->fgFirstBB)
             {
-                processBlockStartLocations(block, false);
+                processBlockStartLocations(block);
             }
 
             // Handle the DummyDefs, updating the incoming var location.
