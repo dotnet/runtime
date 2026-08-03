@@ -29,8 +29,8 @@ enum StackTraceElementFlags
     STEF_IP_ADJUSTED = 0x0002,
 
     // Set if the element references a method that needs a keep alive object
-    STEF_KEEPALIVE = 0x0004,
-    STEF_CONTINUATION = 0x0008,
+    STEF_KEEPALIVE = 0x0004, // [cDAC] [Exception]: Contract depends on this value.
+    STEF_CONTINUATION = 0x0008, // [cDAC] [Exception]: Contract depends on this value.
 };
 
 // This struct is used by SOS in the diagnostic repo.
