@@ -14,6 +14,7 @@ public class JittedMethodsCountingTest
     private const int MAX_JITTED_METHODS_ACCEPTED = 70;
 
     [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
     [Fact]
     public static int TestEntryPoint()
     {

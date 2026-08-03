@@ -266,6 +266,10 @@
     <PlatformManifestFileEntry Include="ILLink.Substitutions.WasmIntrinsics.xml" IsNative="true" />
     <PlatformManifestFileEntry Include="ILLink.Substitutions.NoWasmIntrinsics.xml" IsNative="true" />
     <!-- CoreCLR WASM-specific files -->
+    <!-- Headers included by the CoreCLR native relink generated sources -->
+    <PlatformManifestFileEntry Include="callhelpers.hpp" IsNative="true" />
+    <PlatformManifestFileEntry Include="entrypoints.h" IsNative="true" />
+    <PlatformManifestFileEntry Include="utils.h" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclrminipal.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libcoreclrpal.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libgcinfo_unix_wasm.a" IsNative="true" />

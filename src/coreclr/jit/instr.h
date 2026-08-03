@@ -225,7 +225,10 @@ enum insFlags : uint64_t
     KInstruction = 1ULL << 41,
     KInstructionWithLBit = 1ULL << 42,
 
-    // UNUSED = 1ULL << 43,
+    // APX: extended EVEX encoding for instruction IDs that only exist in the APX EVEX space
+    // (including *_apx variants such as crc32_apx/movbe_apx). Do not use this for existing instruction IDs
+    // that merely gain an APX encoding through NDD/NF; use INS_Flags_Has_NDD and/or INS_Flags_Has_NF instead.
+    Encoding_EVEX_APX_ONLY = 1ULL << 43,
 
     // APX: REX2 prefix:
     Encoding_REX2  = 1ULL << 44,
@@ -235,6 +238,12 @@ enum insFlags : uint64_t
 
     // APX: EVEX.NF:
     INS_Flags_Has_NF  = 1ULL << 46,
+
+    // Mask of all APX-EVEX related flags. An instruction matches this mask if it either only exists in the
+    // APX EVEX space (Encoding_EVEX_APX_ONLY, e.g. crc32_apx/movbe_apx) or gains an APX encoding through the
+    // NDD (INS_Flags_Has_NDD) or NF (INS_Flags_Has_NF) features. Use it to quickly test whether an instruction
+    // has any APX-EVEX capability.
+    INS_FLAGS_APX_EVEX_Mask = (Encoding_EVEX_APX_ONLY | INS_Flags_Has_NDD | INS_Flags_Has_NF),
 
     // base kmask size used for a 128-bit vector
     // used to determine if we can use embedded masking

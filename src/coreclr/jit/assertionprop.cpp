@@ -3399,12 +3399,17 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
             {
                 return nullptr;
             }
-            assert(genTypeSize(tree->TypeGet()) == curAssertion.GetOp2().GetSimdSize());
+            unsigned simdSize = genTypeSize(tree->TypeGet());
+#if defined(TARGET_ARM64)
+            if (tree->TypeIs(TYP_SIMD))
+            {
+                simdSize = sizeof(simdscalable_t);
+            }
+#endif // TARGET_ARM64
+            assert(simdSize == curAssertion.GetOp2().GetSimdSize());
 
             // We can't bash a LCL_VAR into a GenTreeVecCon (different node size), so allocate a fresh node.
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, curAssertion.GetOp2().GetSimdConstant(), genTypeSize(tree->TypeGet()));
-            newTree = vecCon;
+            newTree = gtNewVconNode(tree->TypeGet(), curAssertion.GetOp2().GetSimdConstant());
             break;
         }
 #endif // FEATURE_HW_INTRINSICS
@@ -5486,8 +5491,8 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
             (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            CallArg* castToCallArg = call->gtArgs.GetArgByIndex(0);
-            CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
+            CallArg* castToCallArg = call->gtArgs.GetUserArgByIndex(0);
+            CallArg* objCallArg    = call->gtArgs.GetUserArgByIndex(1);
             GenTree* castToArg     = castToCallArg->GetNode();
             GenTree* objArg        = objCallArg->GetNode();
             ValueNum objVN         = optConservativeNormalVN(objArg);

@@ -2,12 +2,11 @@
   <PropertyGroup>
     <!-- Needed for Environment.Exit -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Test checks the behavior of Main -->
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="foreground-shutdown.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>
