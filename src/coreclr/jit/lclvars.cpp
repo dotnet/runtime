@@ -5859,7 +5859,8 @@ int Compiler::lvaAllocAsyncContexts(int stkOffs)
 {
     if (lvaResumedIndicator != BAD_VAR_NUM)
     {
-        stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaResumedIndicator, lvaLclStackHomeSize(lvaResumedIndicator), stkOffs);
+        stkOffs =
+            lvaAllocLocalAndSetVirtualOffset(lvaResumedIndicator, lvaLclStackHomeSize(lvaResumedIndicator), stkOffs);
     }
     else
     {
