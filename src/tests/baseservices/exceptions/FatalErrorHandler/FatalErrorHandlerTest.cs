@@ -86,6 +86,28 @@ unsafe class FatalErrorHandlerTest
         TriggerNativeAccessViolation();
     }
 
+    private sealed class CorruptedObject
+    {
+        public int Value;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunChildCorruptedObject()
+    {
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckNativeInfo());
+
+        CorruptedObject corruptedObject = new();
+        fixed (int* value = &corruptedObject.Value)
+        {
+            // Corrupt the MethodTable pointer immediately before the first field so
+            // the GC faults while processing the object.
+            *(value - 1) = 0x12345678;
+        }
+
+        GC.Collect();
+        GC.KeepAlive(corruptedObject);
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void RunChildNativeAbort()
     {
@@ -298,8 +320,12 @@ unsafe class FatalErrorHandlerTest
 
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
         // For the unmanaged fatal path the runtime forwards the live platform-native fault
-        // structures.
+        // structures. NativeAOT invokes the handler entirely from native code, so its
+        // managed crash-log callback is intentionally unavailable on this path.
         bool addressPopulated = stderr.Contains("addr=true");
+        bool logAvailabilityCorrect = TestLibrary.Utilities.IsNativeAot
+            ? stderr.Contains("logfunc=false")
+            : stderr.Contains("logfunc=true");
         bool exited = exitCode != 0;
 
         bool platformInfoPopulated;
@@ -320,17 +346,43 @@ unsafe class FatalErrorHandlerTest
             platformInfoName = "siginfo_t/ucontext_t";
         }
 
-        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, {platformInfoName} ok: {platformInfoPopulated}, exited: {exited}");
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, log availability ok: {logAvailabilityCorrect}, {platformInfoName} ok: {platformInfoPopulated}, exited: {exited}");
         if (!handlerInvoked)
             Console.WriteLine("  FAIL: Handler was not invoked");
         if (!addressPopulated)
             Console.WriteLine("  FAIL: crash address (IP) was not populated for a native-code exception");
+        if (!logAvailabilityCorrect)
+            Console.WriteLine("  FAIL: crash-log availability did not match the native fatal path");
         if (!platformInfoPopulated)
             Console.WriteLine($"  FAIL: {platformInfoName} was not surfaced for a native-code exception");
         if (!exited)
             Console.WriteLine("  FAIL: Expected non-zero exit code");
 
-        return handlerInvoked && addressPopulated && platformInfoPopulated && exited;
+        return handlerInvoked && addressPopulated && logAvailabilityCorrect && platformInfoPopulated && exited;
+    }
+
+    static bool TestCorruptedObject()
+    {
+        Console.WriteLine("=== TestCorruptedObject ===");
+
+        if (!TestLibrary.Utilities.IsNativeAot)
+        {
+            Console.WriteLine("  SKIP: only applicable to NativeAOT");
+            return true;
+        }
+
+        var (exitCode, stderr) = LaunchChild("corrupted-object");
+
+        bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
+        bool exited = exitCode != 0;
+
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, exited: {exited}");
+        if (!handlerInvoked)
+            Console.WriteLine("  FAIL: Handler was not invoked for a fault caused by a corrupted object");
+        if (!exited)
+            Console.WriteLine("  FAIL: Expected non-zero exit code");
+
+        return handlerInvoked && exited;
     }
 
     static bool TestNestedHardwareFault()
@@ -440,6 +492,7 @@ unsafe class FatalErrorHandlerTest
                 case "log-handler":  RunChildLogHandler();  return 1;
                 case "native-exception":        RunChildNativeException();         return 1;
                 case "native-code-exception":   RunChildNativeCodeException();      return 1;
+                case "corrupted-object":        RunChildCorruptedObject();          return 1;
                 case "native-abort":            RunChildNativeAbort();              return 1;
                 case "nested-native-exception": RunChildNestedNativeException();   return 1;
                 case "set-null":     return RunChildSetNull();
@@ -455,6 +508,7 @@ unsafe class FatalErrorHandlerTest
         allPassed &= TestLogHandler();
         allPassed &= TestNativeException("native-exception");
         allPassed &= TestNativeCodeException();
+        allPassed &= TestCorruptedObject();
         allPassed &= TestNativeAbort();
         allPassed &= TestNestedHardwareFault();
         allPassed &= TestSetNull();

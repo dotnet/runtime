@@ -542,26 +542,19 @@ bool HardwareExceptionHandler(int code, siginfo_t *siginfo, void *context, void*
     return false;
 }
 
-// Defined in EHHelpers.cpp. Non-NULL only when a user fatal error handler is registered
-// via ExceptionHandling.SetFatalErrorHandler.
-extern void* g_pfnFatalErrorHandlerForNativeException;
-
-// Signature of the class-library callback registered through
-// RhpRegisterFatalErrorHandlerForNativeException. It forwards the live signal structures to
-// the user's fatal error handler.
-typedef void (*FatalErrorHandlerForNativeExceptionFn)(int32_t errorCode, void* faultAddress, void* pSigInfo, void* pUContext);
+// Defined in EHHelpers.cpp. Invokes the user callback directly from native code and
+// forwards the live signal structures through the native property getter.
+extern void RhpInvokeFatalErrorHandlerForNativeException(
+    int32_t errorCode,
+    void* faultAddress,
+    void* platformData0,
+    void* platformData1);
 
 // For a genuinely-unmanaged fatal fault (one that HardwareExceptionHandler did not translate
 // to a managed exception), forward the live siginfo_t/ucontext_t to a user-installed fatal
 // error handler, if one is registered.
 static void InvokeFatalErrorHandlerForNativeException(siginfo_t *siginfo, void *context)
 {
-    void* pCallback = VolatileLoad(&g_pfnFatalErrorHandlerForNativeException);
-    if (pCallback == NULL)
-    {
-        return;
-    }
-
     // The fault address surfaced to the handler is the faulting instruction pointer,
     // matching the managed fatal path. The accessed memory address (for a memory fault)
     // remains available to the handler through the forwarded siginfo_t (si_addr).
@@ -569,7 +562,8 @@ static void InvokeFatalErrorHandlerForNativeException(siginfo_t *siginfo, void *
     NativeContextToPalContext(context, &palContext);
     void* faultAddress = (void*)palContext.IP;
     uint32_t faultCode = GetExceptionCodeForSignal(siginfo, context);
-    ((FatalErrorHandlerForNativeExceptionFn)pCallback)((int32_t)faultCode, faultAddress, siginfo, context);
+    RhpInvokeFatalErrorHandlerForNativeException(
+        static_cast<int32_t>(faultCode), faultAddress, siginfo, context);
 }
 
 // Handler for the SIGSEGV signal

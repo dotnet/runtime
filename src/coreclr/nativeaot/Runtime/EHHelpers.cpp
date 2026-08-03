@@ -31,6 +31,7 @@
 #include "NativeContext.h"
 #include <minipal/debugger.h>
 #include "corexcep.h"
+#include <public/fatal_error_handling.h>
 
 struct MethodRegionInfo
 {
@@ -40,15 +41,137 @@ struct MethodRegionInfo
     size_t coldSize;
 };
 
-// Class-library callback that routes a genuinely-unmanaged fatal exception (a fault whose
-// instruction pointer is not managed code, so it is never translated to a managed exception)
-// to a user-installed fatal error handler. NULL unless a handler has been registered, which
-// keeps the runtime's default fatal handling unchanged when the feature is unused.
-void* g_pfnFatalErrorHandlerForNativeException = NULL;
+using FatalErrorHandlerFunc = int (DOTNET_CALLCONV *)(int hresult, FatalErrorPropertyGetter getProperty);
 
-FCIMPL1(void, RhpRegisterFatalErrorHandlerForNativeException, void* pCallback)
+struct NativeFatalErrorContext
 {
-    PalInterlockedExchangePointer(&g_pfnFatalErrorHandlerForNativeException, pCallback);
+    void* Address;
+    void* PlatformData0;
+    void* PlatformData1;
+};
+
+static void* g_fatalErrorHandler = NULL;
+static volatile int64_t g_fatalErrorHandlerThreadId;
+static NativeFatalErrorContext g_nativeFatalErrorContext;
+
+static uint64_t TryAcquireFatalErrorHandler()
+{
+    uint64_t currentThreadId = PalGetCurrentOSThreadId();
+    return static_cast<uint64_t>(PalInterlockedCompareExchange64(
+        &g_fatalErrorHandlerThreadId, static_cast<int64_t>(currentThreadId), 0));
+}
+
+static void WaitForFatalErrorHandlerIfGcSafe(uint64_t previousThreadId)
+{
+    if (previousThreadId == PalGetCurrentOSThreadId())
+    {
+        return;
+    }
+
+#if defined(TARGET_UNIX) && !defined(TARGET_WASM)
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailableAsyncSafe();
+#else
+    Thread* pThread = ThreadStore::GetCurrentThreadIfAvailable();
+#endif
+    if (pThread == nullptr || !pThread->IsCurrentThreadInCooperativeMode())
+    {
+        PalSleep(INFINITE);
+    }
+}
+
+static int32_t DOTNET_CALLCONV GetNativeFatalErrorProperty(int32_t prop, const void** value)
+{
+    if (value == nullptr)
+    {
+        return 0;
+    }
+
+    switch (static_cast<FatalErrorProperty>(prop))
+    {
+    case FEP_Address:
+        if (g_nativeFatalErrorContext.Address == nullptr)
+        {
+            return 0;
+        }
+        *value = g_nativeFatalErrorContext.Address;
+        return 1;
+
+#ifdef TARGET_WINDOWS
+    case FEP_WindowsExceptionRecord:
+        if (g_nativeFatalErrorContext.PlatformData0 == nullptr)
+        {
+            return 0;
+        }
+        *value = g_nativeFatalErrorContext.PlatformData0;
+        return 1;
+
+    case FEP_WindowsContextRecord:
+        if (g_nativeFatalErrorContext.PlatformData1 == nullptr)
+        {
+            return 0;
+        }
+        *value = g_nativeFatalErrorContext.PlatformData1;
+        return 1;
+#else
+    case FEP_PosixSigInfo:
+        if (g_nativeFatalErrorContext.PlatformData0 == nullptr)
+        {
+            return 0;
+        }
+        *value = g_nativeFatalErrorContext.PlatformData0;
+        return 1;
+
+    case FEP_UContext:
+        if (g_nativeFatalErrorContext.PlatformData1 == nullptr)
+        {
+            return 0;
+        }
+        *value = g_nativeFatalErrorContext.PlatformData1;
+        return 1;
+#endif
+
+    default:
+        return 0;
+    }
+}
+
+void RhpInvokeFatalErrorHandlerForNativeException(
+    int32_t errorCode,
+    void* faultAddress,
+    void* platformData0,
+    void* platformData1)
+{
+    void* pHandler = VolatileLoad(&g_fatalErrorHandler);
+    if (pHandler == nullptr)
+    {
+        return;
+    }
+
+    uint64_t previousThreadId = TryAcquireFatalErrorHandler();
+    if (previousThreadId != 0)
+    {
+        // A cooperative thread cannot block here because the managed fatal owner may
+        // need a GC while composing its crash report. Let default fatal handling proceed.
+        WaitForFatalErrorHandlerIfGcSafe(previousThreadId);
+        return;
+    }
+
+    g_nativeFatalErrorContext = { faultAddress, platformData0, platformData1 };
+
+    FatalErrorHandlerFunc pfnHandler = reinterpret_cast<FatalErrorHandlerFunc>(pHandler);
+    int result = pfnHandler(errorCode, GetNativeFatalErrorProperty);
+    ASSERT(result == RunDefaultHandler);
+}
+
+FCIMPL1(void, RhpRegisterFatalErrorHandler, void* pHandler)
+{
+    PalInterlockedExchangePointer(&g_fatalErrorHandler, pHandler);
+}
+FCIMPLEND
+
+FCIMPL0(uint64_t, RhpTryAcquireFatalErrorHandler)
+{
+    return TryAcquireFatalErrorHandler();
 }
 FCIMPLEND
 
@@ -460,13 +583,9 @@ EXTERN_C void RhpContinueOnFatalErrors()
     g_ContinueOnFatalErrors = true;
 }
 
-// Signature of the class-library bridge registered through
-// RhpRegisterFatalErrorHandlerForNativeException.
-typedef void (*FatalErrorHandlerForNativeExceptionFn)(int32_t errorCode, void* faultAddress, void* pExceptionRecord, void* pContextRecord);
-
 // Returns true for the genuinely-fatal hardware fault codes that mirror the Unix signal
 // choke point (SIGSEGV/SIGFPE/SIGILL). Stack overflow is deliberately excluded: the guard
-// region leaves too little stack to transition back into managed code safely.
+// region leaves too little stack to invoke a user callback safely.
 static bool IsFatalHardwareExceptionForFatalErrorHandler(uintptr_t faultCode)
 {
     switch (faultCode)
@@ -497,12 +616,6 @@ static bool IsFatalHardwareExceptionForFatalErrorHandler(uintptr_t faultCode)
 // fatal error handler, if one is registered.
 static void InvokeFatalErrorHandlerForNativeException(PEXCEPTION_POINTERS pExPtrs)
 {
-    void* pCallback = VolatileLoad(&g_pfnFatalErrorHandlerForNativeException);
-    if (pCallback == NULL)
-    {
-        return;
-    }
-
     uintptr_t faultCode = pExPtrs->ExceptionRecord->ExceptionCode;
     if (!IsFatalHardwareExceptionForFatalErrorHandler(faultCode))
     {
@@ -513,8 +626,8 @@ static void InvokeFatalErrorHandlerForNativeException(PEXCEPTION_POINTERS pExPtr
     // matching the managed fatal path. The accessed memory address (for a memory fault)
     // remains available to the handler through the forwarded PEXCEPTION_RECORD.
     void* faultAddress = (void*)((NATIVE_CONTEXT*)pExPtrs->ContextRecord)->GetIp();
-    ((FatalErrorHandlerForNativeExceptionFn)pCallback)(
-        (int32_t)faultCode, faultAddress, pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
+    RhpInvokeFatalErrorHandlerForNativeException(
+        static_cast<int32_t>(faultCode), faultAddress, pExPtrs->ExceptionRecord, pExPtrs->ContextRecord);
 }
 
 LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)

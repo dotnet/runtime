@@ -47,13 +47,6 @@ namespace System
         // captured immediately before the handler is invoked.
         private static unsafe void* s_fatalErrorAddress;
 
-        // Live platform-native fault structures for a genuinely-unmanaged fatal
-        // exception, non-null only for the duration of the native fatal path
-        // (InvokeFatalErrorHandlerForNativeException). Data0/Data1 are the Windows
-        // EXCEPTION_RECORD/CONTEXT or the Unix siginfo_t/ucontext_t.
-        private static unsafe void* s_fatalErrorPlatformData0;
-        private static unsafe void* s_fatalErrorPlatformData1;
-
         // The composed crash-log text for the current fatal error. It is built once on the
         // crashing thread in FailFast and replayed on demand by GetFatalErrorLog (for the
         // handler callback) or WriteCrashLogToStdErr (for the default RunDefaultHandler path).
@@ -154,74 +147,11 @@ namespace System
                     *value = s_fatalErrorAddress;
                     return 1;
 
-                case FatalErrorProperty.WindowsExceptionRecord when OperatingSystem.IsWindows():
-                case FatalErrorProperty.PosixSigInfo when !OperatingSystem.IsWindows():
-                    if (s_fatalErrorPlatformData0 == null)
-                        return 0;
-                    *value = s_fatalErrorPlatformData0;
-                    return 1;
-
-                case FatalErrorProperty.WindowsContextRecord when OperatingSystem.IsWindows():
-                case FatalErrorProperty.UContext when !OperatingSystem.IsWindows():
-                    if (s_fatalErrorPlatformData1 == null)
-                        return 0;
-                    *value = s_fatalErrorPlatformData1;
-                    return 1;
-
                 default:
-                    // The remaining platform-native records not applicable to the
-                    // current platform (and Mach thread state) are surfaced by other
-                    // fatal paths and are not available here.
+                    // Platform-native records are surfaced by the native fatal path
+                    // and are not available for managed failures.
                     return 0;
             }
-        }
-
-        /// <summary>
-        /// Bridge invoked by the native fatal choke points for a genuinely-unmanaged fatal
-        /// exception (one whose faulting instruction pointer is not managed code, so it is
-        /// never translated to a managed exception). Forwards the live, untransformed
-        /// platform-native fault structures to the user's fatal error handler.
-        /// </summary>
-        [UnmanagedCallersOnly]
-        internal static unsafe void InvokeFatalErrorHandlerForNativeException(
-            int errorCode, void* faultAddress, void* pPlatformData0, void* pPlatformData1)
-        {
-            IntPtr fatalHandler = Volatile.Read(ref ExceptionHandling.s_fatalErrorHandler);
-            if (fatalHandler == IntPtr.Zero)
-                return;
-
-            // Serialize concurrent fatal errors so the handler is invoked on only the first
-            // crashing thread. This shares the crashing-thread gate with FailFast, so the handler
-            // runs at most once whether the fatal error arrives through the managed FailFast path
-            // or a native fault, and is never entered by more than one thread at a time.
-            ulong currentThreadId = Thread.CurrentOSThreadId;
-            ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
-            if (previousThreadId != 0)
-            {
-                if (previousThreadId == currentThreadId)
-                {
-                    // Reentrancy: this thread already owns fatal handling.
-                    // Do not invoke the handler again and let default handling proceed.
-                    return;
-                }
-
-                // The first thread owns fatal handling and is terminating the process. Block any
-                // other thread that faults so it does not race with it.
-                Thread.Sleep(int.MaxValue);
-            }
-
-            s_fatalErrorAddress = faultAddress;
-            s_fatalErrorPlatformData0 = pPlatformData0;
-            s_fatalErrorPlatformData1 = pPlatformData1;
-
-            // Invoke the user-installed fatal error handler.
-            // See src/native/public/fatal_error_handling.h for the handler contract.
-            int handlerResult = ((delegate* unmanaged<int, delegate* unmanaged<int, void**, int>, int>)fatalHandler)(errorCode, &GetFatalErrorProperty);
-            Debug.Assert(handlerResult == RunDefaultHandler);
-
-            s_fatalErrorAddress = null;
-            s_fatalErrorPlatformData0 = null;
-            s_fatalErrorPlatformData1 = null;
         }
 
         //------------------------------------------------------------------------------------------------------------
@@ -389,7 +319,6 @@ namespace System
             }
         }
 
-        private static ulong s_crashingThreadId;
         private static IntPtr s_triageBufferAddress;
         private static int s_triageBufferSize;
         private static volatile int s_crashInfoPresent;
@@ -437,7 +366,10 @@ namespace System
             int errorCode = 0;
 
             ulong currentThreadId = Thread.CurrentOSThreadId;
-            ulong previousThreadId = Interlocked.CompareExchange(ref s_crashingThreadId, currentThreadId, 0);
+            // The native gate records the current thread as the fatal-error owner when
+            // previously unset and returns the previous owner: zero for successful
+            // acquisition, this thread ID for reentrancy, or another thread ID for concurrency.
+            ulong previousThreadId = RuntimeImports.RhpTryAcquireFatalErrorHandler();
             if (previousThreadId == 0)
             {
                 bool minimalFailFast = exception == PreallocatedOutOfMemoryException.Instance;
@@ -543,12 +475,13 @@ namespace System
             {
                 if (previousThreadId == currentThreadId)
                 {
-                    // Fatal error while processing another FailFast (recursive call)
+                    // Fatal error while processing another FailFast (recursive call).
                     errorCode = HResults.COR_E_EXECUTIONENGINE;
                 }
                 else
                 {
-                    // The first thread generates the crash info and any other threads are blocked
+                    // The first thread generates the crash info and any other managed
+                    // threads block in a GC-safe wait while the process terminates.
                     Thread.Sleep(int.MaxValue);
                 }
             }

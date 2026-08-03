@@ -14,12 +14,9 @@ namespace System.Runtime.ExceptionServices
             if (Interlocked.CompareExchange(ref s_fatalErrorHandler, handler, IntPtr.Zero) != IntPtr.Zero)
                 return false;
 
-            // Route genuinely-unmanaged fatal exceptions (faults in native code that are
-            // never translated to a managed exception) to the handler as well. The native
-            // choke points only divert when this callback is registered, so the default
-            // fatal handling is unchanged until a handler is installed.
-            RuntimeImports.RhpRegisterFatalErrorHandlerForNativeException(
-                &RuntimeExceptionHelpers.InvokeFatalErrorHandlerForNativeException);
+            // Register the user callback with the native runtime so genuinely-unmanaged
+            // fatal exceptions can invoke it without transitioning into managed code.
+            RuntimeImports.RhpRegisterFatalErrorHandler((void*)handler);
 
             return true;
         }

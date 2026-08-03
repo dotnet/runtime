@@ -85,6 +85,10 @@ static int DOTNET_CALLCONV HandlerCheckNativeInfo(int /*hresult*/, FatalErrorPro
 {
     WriteStdErr("FATAL_HANDLER_INVOKED\n");
 
+    const void* pLogFunc = NULL;
+    bool logFuncPopulated = getProperty(FEP_FatalErrorLogFunc, &pLogFunc) != 0 && pLogFunc != NULL;
+    WriteStdErr(logFuncPopulated ? "FATAL_LOGFUNC:logfunc=true\n" : "FATAL_LOGFUNC:logfunc=false\n");
+
     const void* pAddress = NULL;
     bool addressPopulated = getProperty(FEP_Address, &pAddress) != 0 && pAddress != NULL;
     WriteStdErr(addressPopulated ? "FATAL_ADDRESS:addr=true\n" : "FATAL_ADDRESS:addr=false\n");
