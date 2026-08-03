@@ -76,6 +76,7 @@ void InitJITAllocationHelpers()
         }
     }
 
+// Debugger depends on new helper names starting with CORINFO_HELP_NEW
 #define SET_NEW_HELPER_AUXILIARY_SYMBOL(code) SetJitHelperAuxiliarySymbol(code, #code);
     SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWFAST)
     SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWFAST_MAYBEFROZEN)
