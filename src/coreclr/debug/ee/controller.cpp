@@ -7973,7 +7973,10 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
 #if defined(TARGET_ARM64) && defined(__APPLE__)
     LOG((LF_CORDB, LL_INFO10000, "DebuggerStepper::TriggerMethodEnter: Consistency_check_MSGF not needed because we skip setting breakpoints in certain patches on arm64-macOS\n"));
 #else
-    if ((m_StepInStartMethod != pDesc) &&
+    // Interpreter step-in intentionally relies on MethodEnter instead of stub managers.
+    EECodeInfo codeInfo((PCODE)dji->m_addrOfCode);
+    if (!codeInfo.IsInterpretedCode() &&
+        (m_StepInStartMethod != pDesc) &&
         (!m_StepInStartMethod->IsLCGMethod()))
     {
         // Since normal step-in should stop us at the prolog, and TME is after the prolog,
