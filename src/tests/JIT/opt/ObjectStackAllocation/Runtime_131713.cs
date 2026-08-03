@@ -8,16 +8,20 @@ using System.Threading;
 using System.Xml;
 using System.Xml.Serialization;
 using Xunit;
+using TestLibrary;
 
 public class Runtime_131713
 {
+    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static void Test()
     {
-        for (int i = 0; i < 50; i++)
+        // The bug needs the serializer's methods to reach tier-1 with PGO data, so give
+        // the background compilations time to land in between calls.
+        for (int i = 0; i < 100; i++)
         {
             Serialize();
-            Thread.Sleep(100);
+            Thread.Sleep(15);
         }
     }
 
