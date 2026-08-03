@@ -35,11 +35,18 @@ internal static partial class Interop
             // the array with zeroes.
             int offset = targetSize - compactSize;
             byte[] buf = new byte[targetSize];
+            int written;
             fixed (byte* to = buf)
             {
                 byte* start = to + offset;
-                BigNumToBinary(bignum, start);
+                written = BigNumToBinary(bignum, start);
             }
+
+            // A negative result means the native side cleared a pending JNI exception, so the
+            // output must be treated as invalid. Fail loudly rather than returning a buffer that
+            // may be zero-filled or only partially written.
+            if (written < 0)
+                throw new CryptographicException();
 
             return buf;
         }

@@ -5,6 +5,7 @@
 // To regenerate run the gen script in src/coreclr/tools/Common/JitInterface/ThunkGenerator
 // and follow the instructions in docs/project/updating-jitinterface.md
 DEF_CLR_API(isIntrinsic)
+DEF_CLR_API(canValueClassInstancePointerEscape)
 DEF_CLR_API(notifyMethodInfoUsage)
 DEF_CLR_API(getMethodAttribs)
 DEF_CLR_API(setMethodAttribs)
@@ -134,6 +135,7 @@ DEF_CLR_API(getSwiftLowering)
 DEF_CLR_API(getFpStructLowering)
 DEF_CLR_API(getWasmLowering)
 DEF_CLR_API(getAddressAlignment)
+DEF_CLR_API(getWasmWellKnownGlobals)
 DEF_CLR_API(getThreadTLSIndex)
 DEF_CLR_API(getAddrOfCaptureThreadGlobal)
 DEF_CLR_API(getHelperFtn)

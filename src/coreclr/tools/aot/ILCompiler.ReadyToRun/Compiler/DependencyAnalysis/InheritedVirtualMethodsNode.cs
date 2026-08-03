@@ -28,6 +28,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             Debug.Assert(type.IsDefType && !type.IsInterface);
             Debug.Assert(!type.IsGenericDefinition);
+            Debug.Assert(type == type.ConvertToCanonForm(CanonicalFormKind.Specific));
             _type = type;
             _interestingForDynamicDependencyAnalysis = TypeHasGVMSlots(type);
         }

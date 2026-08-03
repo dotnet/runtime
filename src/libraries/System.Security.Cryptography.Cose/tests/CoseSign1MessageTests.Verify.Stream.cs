@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Threading.Tasks;
+using Test.Cryptography;
 using Xunit;
 using static System.Security.Cryptography.Cose.Tests.CoseTestHelpers;
 
@@ -58,6 +59,47 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseSign1Message msg = CoseMessage.DecodeSign1(encodedMsg);
             using Stream unseekableStream = GetTestStream(s_sampleContent, StreamKind.Unreadable);
             await Assert.ThrowsAsync<ArgumentException>("detachedContent", () => msg.VerifyDetachedAsync(DefaultKey, unseekableStream));
+        }
+
+        [Fact]
+        public async Task VerifyWithCoseKeyThrowsForMismatchedAlgorithmHeader()
+        {
+            CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash);
+            signer.ProtectedHeaders.Add(new CoseHeaderLabel(42), 42);
+            string encodedMessage = CoseSign1Message.SignDetached(s_sampleContent, signer).ByteArrayToHex();
+            encodedMessage = ReplaceFirst(encodedMessage, "47A20126182A182A", "44A1013822");
+
+            CoseSign1Message message = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(encodedMessage));
+            CoseKey key = new CoseKey(DefaultKey, DefaultHash);
+            using Stream syncStream = GetTestStream(s_sampleContent);
+            using Stream asyncStream = GetTestStream(s_sampleContent);
+
+            CryptographicException syncException = Assert.Throws<CryptographicException>(
+                () => message.VerifyDetached(key, syncStream));
+            CryptographicException asyncException = await Assert.ThrowsAsync<CryptographicException>(
+                () => message.VerifyDetachedAsync(key, asyncStream));
+
+            Assert.Contains(nameof(CoseAlgorithm.ES384), syncException.Message);
+            Assert.Contains(nameof(CoseAlgorithm.ES256), syncException.Message);
+            Assert.Contains(nameof(CoseAlgorithm.ES384), asyncException.Message);
+            Assert.Contains(nameof(CoseAlgorithm.ES256), asyncException.Message);
+        }
+
+        [Fact]
+        public async Task VerifyWithCoseKeyThrowsForMissingAlgorithmHeader()
+        {
+            CoseSigner signer = GetCoseSigner(DefaultKey, DefaultHash);
+            signer.ProtectedHeaders.Add(new CoseHeaderLabel(42), 42);
+            string encodedMessage = CoseSign1Message.SignDetached(s_sampleContent, signer).ByteArrayToHex();
+            encodedMessage = ReplaceFirst(encodedMessage, "47A20126182A182A", "45A1182A182A");
+
+            CoseSign1Message message = CoseMessage.DecodeSign1(ByteUtils.HexToByteArray(encodedMessage));
+            CoseKey key = new CoseKey(DefaultKey, DefaultHash);
+            using Stream syncStream = GetTestStream(s_sampleContent);
+            using Stream asyncStream = GetTestStream(s_sampleContent);
+
+            Assert.Throws<CryptographicException>(() => message.VerifyDetached(key, syncStream));
+            await Assert.ThrowsAsync<CryptographicException>(() => message.VerifyDetachedAsync(key, asyncStream));
         }
     }
 

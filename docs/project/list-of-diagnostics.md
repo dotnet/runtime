@@ -191,8 +191,8 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1060`__ | Specified marshaller type is invalid |
 |  __`SYSLIB1061`__ | Marshaller type has incompatible method signatures |
 |  __`SYSLIB1062`__ | Project must be updated with '\<AllowUnsafeBlocks\>true\</AllowUnsafeBlocks\>' |
-|  __`SYSLIB1063`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
-|  __`SYSLIB1064`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
+|  __`SYSLIB1063`__ | Unnecessary marshalling info |
+|  __`SYSLIB1064`__ | Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe' |
 |  __`SYSLIB1065`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
 |  __`SYSLIB1066`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
 |  __`SYSLIB1067`__ | _`SYSLIB1063`-`SYSLIB1069` reserved for Microsoft.Interop.LibraryImportGenerator._ |
@@ -330,3 +330,5 @@ Diagnostic id values for experimental APIs must not be recycled, as that could s
 |  __`SYSLIB5004`__ |     .NET 9 |     TBD | `X86Base.DivRem` is experimental since performance is not as optimized as `T.DivRem` |
 |  __`SYSLIB5005`__ |     .NET 9 | .NET 10 | `System.Formats.Nrbf` is experimental |
 |  __`SYSLIB5006`__ |    .NET 10 |     TBD | Types for Post-Quantum Cryptography (PQC) are experimental. |
+|  __`SYSLIB5007`__ |    .NET 11 |     TBD | Low-level TLS engine types (`TlsContext`, `TlsSession`) in `System.Net.Security` are experimental. |
+|  __`SYSLIB5008`__ |    .NET 11 |     TBD | `SocketsHttpHandler` connection eviction control and `HttpRequestMessage.ConnectionId` APIs are experimental. |

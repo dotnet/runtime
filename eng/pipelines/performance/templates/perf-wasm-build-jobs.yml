@@ -11,10 +11,16 @@ jobs:
       buildArgs: -s mono+libs+host+packs -c $(_BuildConfig) /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       nameSuffix: wasm
       isOfficialBuild: false
+      # The wasm-tools workload manifest now includes the CoreCLR browser-wasm runtime pack, so the
+      # workload install below needs that pack staged into the local feed. It's produced by the
+      # wasm_coreclr build job, so depend on it and download its published runtime pack.
+      dependsOn:
+      - build_browser_wasm_linux_Release_wasm_coreclr
       postBuildSteps:
         - template: /eng/pipelines/performance/templates/perf-wasm-prepare-artifacts-steps.yml
           parameters:
             configForBuild: Release
+            downloadCoreClrRuntimePack: true
 
 # Build CoreCLR runtime for browser-wasm (used by --wasm-coreclr benchmarks)
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -35,3 +41,4 @@ jobs:
             artifactName: BrowserWasmCoreCLR
             sdkDirName: dotnet-none
             includeRefPack: false
+            publishCoreClrRuntimePack: true

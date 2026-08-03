@@ -180,6 +180,21 @@ public class PrecodeStubsTests
         }
     }
 
+    public static IEnumerable<object[]> PrecodeTestDescriptorDataUnsupportedInterpreter()
+    {
+        foreach (object[] data in PrecodeTestDescriptorData())
+        {
+            yield return [data[0], "c1"];
+            yield return [data[0], "c2"];
+        }
+    }
+
+    public static IEnumerable<object[]> PrecodeTestDescriptorDataVersion3()
+    {
+        foreach (object[] data in PrecodeTestDescriptorData())
+            yield return [data[0], "c3"];
+    }
+
     internal struct AllocationRange
     {
         public ulong PrecodeDescriptorStart;
@@ -441,6 +456,18 @@ public class PrecodeStubsTests
         }
 
         public TargetCodePointer AddInterpreterPrecodeEntry(string name, TargetPointer methodDesc, uint stubCodePageSize)
+            => AddInterpreterPrecodeEntry(
+                name,
+                methodDesc,
+                stubCodePageSize,
+                out _);
+
+        public TargetCodePointer AddInterpreterPrecodeEntry(
+            string name,
+            TargetPointer methodDesc,
+            uint stubCodePageSize,
+            out TargetCodePointer byteCodeAddress,
+            bool nullByteCodeAddress = false)
         {
             var interpPrecodeTypeInfo = Types[DataType.InterpreterPrecodeData];
             var interpByteCodeStartTypeInfo = Types[DataType.InterpByteCodeStart];
@@ -469,8 +496,12 @@ public class PrecodeStubsTests
 
             Span<byte> stubData = Builder.BorrowAddressRange(stubDataFragment.Address, (int)interpPrecodeTypeInfo.Size);
             Builder.TargetTestHelpers.Write(stubData.Slice(interpPrecodeTypeInfo.Fields[nameof(Data.InterpreterPrecodeData.Type)].Offset, sizeof(byte)), V3InterpreterPrecodeType);
-            Builder.TargetTestHelpers.WritePointer(stubData.Slice(interpPrecodeTypeInfo.Fields[nameof(Data.InterpreterPrecodeData.ByteCodeAddr)].Offset, Builder.TargetTestHelpers.PointerSize), byteCodeStartFragment.Address);
+            TargetPointer storedByteCodeAddress = nullByteCodeAddress
+                ? TargetPointer.Null
+                : byteCodeStartFragment.Address;
+            Builder.TargetTestHelpers.WritePointer(stubData.Slice(interpPrecodeTypeInfo.Fields[nameof(Data.InterpreterPrecodeData.ByteCodeAddr)].Offset, Builder.TargetTestHelpers.PointerSize), storedByteCodeAddress);
 
+            byteCodeAddress = byteCodeStartFragment.Address;
             return stubCodeFragment.Address;
         }
     }
@@ -545,5 +576,110 @@ public class PrecodeStubsTests
 
         var actualMethodDesc = precodeContract.GetMethodDescFromStubAddress(interpStub);
         Assert.Equal(expectedMethodDesc, actualMethodDesc);
+    }
+
+    [Theory]
+    [MemberData(nameof(PrecodeTestDescriptorDataUnsupportedInterpreter))]
+    public void GetInterpreterCode_UnsupportedVersion_ReturnsOriginalAddress(
+        PrecodeTestDescriptor test,
+        string contractVersion)
+    {
+        var builder = new PrecodeBuilder(test.Arch, contractVersion);
+        builder.AddPlatformMetadata(test);
+        Target target = CreateTarget(builder);
+        TargetCodePointer entryPoint = new(0x1234_5678);
+
+        TargetCodePointer actual =
+            target.Contracts.PrecodeStubs
+                .GetInterpreterCodeFromInterpreterPrecodeIfPresent(entryPoint);
+
+        Assert.Equal(entryPoint, actual);
+    }
+
+    [Theory]
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
+    public void GetInterpreterCode_Version3_ReturnsByteCodeAddress(
+        PrecodeTestDescriptor test,
+        string contractVersion)
+    {
+        var builder = new PrecodeBuilder(test.Arch, contractVersion);
+        builder.AddPlatformMetadata(test);
+        TargetCodePointer interpreterPrecode = builder.AddInterpreterPrecodeEntry(
+            "Interp 1",
+            methodDesc: new TargetPointer(0xdead_bee0u),
+            test.StubCodePageSize,
+            out TargetCodePointer expectedByteCodeAddress);
+        Target target = CreateTarget(builder);
+
+        TargetCodePointer actual =
+            target.Contracts.PrecodeStubs
+                .GetInterpreterCodeFromInterpreterPrecodeIfPresent(
+                    interpreterPrecode);
+
+        Assert.Equal(expectedByteCodeAddress, actual);
+    }
+
+    [Theory]
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
+    public void GetInterpreterCode_Version3NonInterpreter_ReturnsOriginalAddress(
+        PrecodeTestDescriptor test,
+        string contractVersion)
+    {
+        var builder = new PrecodeBuilder(test.Arch, contractVersion);
+        builder.AddPlatformMetadata(test);
+        TargetCodePointer stub = builder.AddStubPrecodeEntry(
+            "Stub 1",
+            test,
+            methodDesc: new TargetPointer(0xeeee_eee0u));
+        Target target = CreateTarget(builder);
+
+        TargetCodePointer actual =
+            target.Contracts.PrecodeStubs
+                .GetInterpreterCodeFromInterpreterPrecodeIfPresent(stub);
+
+        Assert.Equal(stub, actual);
+    }
+
+    [Theory]
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
+    public void GetInterpreterCode_Version3NullByteCodeAddress_ReturnsOriginalAddress(
+        PrecodeTestDescriptor test,
+        string contractVersion)
+    {
+        var builder = new PrecodeBuilder(test.Arch, contractVersion);
+        builder.AddPlatformMetadata(test);
+        TargetCodePointer interpreterPrecode = builder.AddInterpreterPrecodeEntry(
+            "Interp 1",
+            methodDesc: new TargetPointer(0xdead_bee0u),
+            test.StubCodePageSize,
+            out _,
+            nullByteCodeAddress: true);
+        Target target = CreateTarget(builder);
+
+        TargetCodePointer actual =
+            target.Contracts.PrecodeStubs
+                .GetInterpreterCodeFromInterpreterPrecodeIfPresent(
+                    interpreterPrecode);
+
+        Assert.Equal(interpreterPrecode, actual);
+    }
+
+    [Theory]
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
+    public void GetInterpreterCode_Version3UnreadableAddress_ReturnsOriginalAddress(
+        PrecodeTestDescriptor test,
+        string contractVersion)
+    {
+        var builder = new PrecodeBuilder(test.Arch, contractVersion);
+        builder.AddPlatformMetadata(test);
+        Target target = CreateTarget(builder);
+        TargetCodePointer unreadableAddress = new(test.StubCodePageSize * 8);
+
+        TargetCodePointer actual =
+            target.Contracts.PrecodeStubs
+                .GetInterpreterCodeFromInterpreterPrecodeIfPresent(
+                    unreadableAddress);
+
+        Assert.Equal(unreadableAddress, actual);
     }
 }

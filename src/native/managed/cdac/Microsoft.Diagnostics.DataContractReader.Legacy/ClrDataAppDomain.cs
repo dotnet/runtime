@@ -12,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 {
-    private const uint DefaultAppDomainId = 1;
+    internal const uint DefaultAppDomainId = 1;
 
     private readonly Target _target;
     private readonly TargetPointer _appDomain;
@@ -28,7 +28,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
     }
 
     int IXCLRDataAppDomain.GetProcess(DacComNullableByRef<IXCLRDataProcess> process)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetProcess(process) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataAppDomain.GetName(uint bufLen, uint* nameLen, char* name)
     {
@@ -182,8 +182,8 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
     }
 
     int IXCLRDataAppDomain.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetManagedObject(value) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 
     int IXCLRDataAppDomain.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer) : HResults.E_NOTIMPL;
+        => HResults.E_NOTIMPL;
 }
