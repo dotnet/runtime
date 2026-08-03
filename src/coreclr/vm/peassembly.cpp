@@ -848,7 +848,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBin
 
     // Set up the metadata pointers in the PEAssembly. (This is the only identity
     // we have.)
-    ComHolderPreemp<IMetaDataEmit> pEmit;
+    ReleaseHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
     return new PEAssembly(NULL, pEmit, FALSE, pFallbackBinder);
 }

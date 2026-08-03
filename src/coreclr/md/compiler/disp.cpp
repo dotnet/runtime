@@ -437,91 +437,6 @@ ErrExit:
 } // Disp::DefineScope
 #endif // FEATURE_METADATA_EMIT_PORTABLE_PDB
 
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-
-//*****************************************************************************
-// IMetaDataDispenserCustom
-//*****************************************************************************
-
-HRESULT Disp::OpenScopeOnCustomDataSource(  // S_OK or error
-    IMDCustomDataSource  *pCustomSource, // [in] The scope to open.
-    DWORD                dwOpenFlags,    // [in] Open mode flags.
-    REFIID               riid,           // [in] The interface desired.
-    IUnknown             **ppIUnk)       // [out] Return interface on success.
-{
-    HRESULT     hr;
-    LOG((LF_METADATA, LL_INFO10, "Disp::OpenScopeOnCustomDataSource(0x%08x, 0x%08x, 0x%08x, 0x%08x)\n", pCustomSource, dwOpenFlags, riid, ppIUnk));
-
-    IMDCommon *pMDCommon = NULL;
-
-    _ASSERTE(!IsOfReserved(dwOpenFlags));
-    if (ppIUnk == NULL)
-        IfFailGo(E_INVALIDARG);
-    *ppIUnk = NULL;
-    IfFailGo(OpenRawScopeOnCustomDataSource(pCustomSource, dwOpenFlags, IID_IMDCommon, (IUnknown**)&pMDCommon));
-    IfFailGo(DeliverScope(pMDCommon, riid, dwOpenFlags, ppIUnk));
-ErrExit:
-    if (pMDCommon)
-        pMDCommon->Release();
-
-    return hr;
-}
-
-
-//*****************************************************************************
-// Open a raw view of existing scope.
-//*****************************************************************************
-HRESULT Disp::OpenRawScopeOnCustomDataSource(        // Return code.
-    IMDCustomDataSource*  pDataSource,  // [in] scope data.
-    DWORD       dwOpenFlags,            // [in] Open mode flags.
-    REFIID      riid,                   // [in] The interface desired.
-    IUnknown    **ppIUnk)               // [out] Return interface on success.
-{
-    HRESULT     hr;
-
-    RegMeta     *pMeta = 0;
-
-    _ASSERTE(!IsOfReserved(dwOpenFlags));
-
-    // Create a new coclass for this guy.
-    pMeta = new (nothrow)RegMeta();
-    IfNullGo(pMeta);
-    IfFailGo(pMeta->SetOption(&m_OptionValue));
-
-
-    _ASSERTE(pMeta != NULL);
-    // Always initialize the RegMeta's stgdb.
-    // TODO
-    IfFailGo(pMeta->OpenExistingMD(pDataSource, dwOpenFlags));
-
-    LOG((LOGMD, "{%08x} Opened new scope on custom data source, pDataSource: %08x\n", pMeta, pDataSource));
-
-    // Return the requested interface.
-    IfFailGo(pMeta->QueryInterface(riid, (void **)ppIUnk));
-
-    // Add the new RegMeta to the cache.
-    IfFailGo(pMeta->AddToCache());
-
-#if defined(_DEBUG)
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_MD_RegMetaDump))
-    {
-        int DumpMD_impl(RegMeta *pMD);
-        DumpMD_impl(pMeta);
-    }
-#endif // _DEBUG
-
-ErrExit:
-    if (FAILED(hr))
-    {
-        if (pMeta) delete pMeta;
-        *ppIUnk = 0;
-    }
-
-    return hr;
-} // Disp::OpenRawScopeOnCustomDataSource
-
-#endif
-
 //*****************************************************************************
 // IUnknown
 //*****************************************************************************
@@ -554,10 +469,6 @@ HRESULT Disp::QueryInterface(REFIID riid, void **ppUnk)
         *ppUnk = (IMetaDataDispenserEx2 *) this;
     else if (riid == IID_IILAsmPortablePdbWriter)
         *ppUnk = (IILAsmPortablePdbWriter *) this;
-#endif
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    else if (riid == IID_IMetaDataDispenserCustom)
-        *ppUnk = static_cast<IMetaDataDispenserCustom*>(this);
 #endif
     else
         return E_NOINTERFACE;

@@ -4,6 +4,7 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <MonoAotIncompatible>true</MonoAotIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
     <!-- Expected COR_E_EXECUTIONENGINE -->
     <CLRTestExitCode>134</CLRTestExitCode>
     <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true'">-2146233082</CLRTestExitCode>

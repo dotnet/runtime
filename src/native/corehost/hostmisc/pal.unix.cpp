@@ -49,16 +49,6 @@
 #error "Don't know how to obtain max path on this platform"
 #endif
 
-pal::string_t pal::get_timestamp()
-{
-    std::time_t t = std::time(nullptr);
-    const std::size_t elems = 100;
-    char_t buf[elems];
-    std::strftime(buf, elems, _X("%c %Z"), std::gmtime(&t));
-
-    return pal::string_t(buf);
-}
-
 bool pal::touch_file(const pal::string_t& path)
 {
     int fd = open(path.c_str(), (O_CREAT | O_EXCL), (S_IRUSR | S_IRGRP | S_IROTH));
@@ -954,11 +944,6 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 bool pal::file_exists(const pal::string_t& path)
 {
     return ::pal_file_exists(path.c_str());
-}
-
-bool pal::is_directory(const pal::string_t& path)
-{
-    return ::pal_directory_exists(path.c_str());
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

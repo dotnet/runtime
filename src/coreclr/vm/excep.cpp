@@ -3487,14 +3487,14 @@ bool GenerateDump(
 void CrashDumpAndTerminateProcess(UINT exitCode)
 {
 #ifdef FEATURE_INPROC_CRASHREPORT
-    if (exitCode == COR_E_STACKOVERFLOW)
+    if (exitCode == static_cast<UINT>(COR_E_STACKOVERFLOW))
     {
         InProcCrashReportSetCrashKind(InProcCrashReportCrashKind::StackOverflow);
     }
 #endif
 
 #ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled(exitCode == COR_E_STACKOVERFLOW);
+    CreateCrashDumpIfEnabled(exitCode == static_cast<UINT>(COR_E_STACKOVERFLOW));
 #endif
     TerminateProcess(GetCurrentProcess(), exitCode);
 }

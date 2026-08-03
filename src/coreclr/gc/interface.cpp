@@ -2023,7 +2023,7 @@ uint64_t GCHeap::GetTotalAllocatedBytes()
 {
 #ifdef MULTIPLE_HEAPS
     uint64_t total_alloc_bytes = 0;
-    for (int i = 0; i < gc_heap::n_heaps; i++)
+    for (int i = 0; i < gc_heap::n_max_heaps; i++)
     {
         gc_heap* hp = gc_heap::g_heaps[i];
         total_alloc_bytes += hp->total_alloc_bytes_soh;

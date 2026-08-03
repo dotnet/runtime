@@ -103,6 +103,12 @@ public class R2RTestSuites
             // Has a try/finally, so the JIT materializes the table base via a well-known-global global.get.
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal)));
+            // Has a catch clause, so the JIT emits a try_table catch_ref that references the
+            // imported restore-context exception tag.
+            Assert.True(methods.Exists(method =>
+                method.SignatureString.Contains("CatchException", StringComparison.Ordinal)));
+
+            Assert.True(WasmR2RAssert.WasmIndexSpacesHaveExpectedEntries(webcilReader, out string indexDiagnostic), indexDiagnostic);
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
             // relocations that the R2R object writer must self-resolve back to the fixed global
@@ -114,9 +120,9 @@ public class R2RTestSuites
             // managed methods as a parameter in R2R, so it is not referenced via 'global.get' here.
             const int ImageBaseGlobal = 1;
             const int TableBaseGlobal = 2;
-            Assert.True(R2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, ImageBaseGlobal),
+            Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, ImageBaseGlobal),
                 "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
-            Assert.True(R2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
+            Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
         }
     }
@@ -652,6 +658,7 @@ public class R2RTestSuites
                 new(nameof(RuntimeAsyncStripILBodiesPreservesTaskReturningIL), [new CrossgenAssembly(stripILBodies)])
                 {
                     Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
+                    AdditionalArgs = ["--targetarch:x64"],
                     Validate = Validate,
                 },
             ]));
@@ -675,6 +682,7 @@ public class R2RTestSuites
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "PlainStrippableMethod", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "ComputeTag", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "Root", out diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "UsesRuntimeCheckedInstructionSet", out diag), diag);
 
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncTaskMethod", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "AsyncValueTaskMethod", out diag), diag);
@@ -683,6 +691,50 @@ public class R2RTestSuites
 
             Assert.True(R2RAssert.HasAsyncVariant(reader, "SyncTaskWithCompiledAsyncVariant", out diag), diag);
             Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "SyncTaskWithCompiledAsyncVariant", out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void AppleMobileStripILBodiesUsesFixedInstructionSet()
+    {
+        var stripILBodies = new CompiledAssembly
+        {
+            AssemblyName = nameof(AppleMobileStripILBodiesUsesFixedInstructionSet),
+            SourceResourceNames =
+            [
+                "RuntimeAsync/StripILBodies.cs",
+                "RuntimeAsync/RuntimeAsyncMethodGenerationAttribute.cs",
+            ],
+            Features = { RuntimeAsyncFeature },
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(AppleMobileStripILBodiesUsesFixedInstructionSet),
+            [
+                new(nameof(AppleMobileStripILBodiesUsesFixedInstructionSet), [new CrossgenAssembly(stripILBodies)])
+                {
+                    Options = [Crossgen2Option.Composite, Crossgen2Option.Optimize, Crossgen2Option.StripILBodies],
+                    AdditionalArgs = ["--targetos:ios", "--targetarch:arm64"],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            string componentFile = Path.Combine(
+                Path.GetDirectoryName(reader.Filename)!,
+                nameof(AppleMobileStripILBodiesUsesFixedInstructionSet) + ".dll");
+
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "PlainStrippableMethod", out string diag), diag);
+            Assert.True(R2RAssert.MethodILIsStripped(componentFile, "StripILBodies", "UsesRuntimeCheckedInstructionSet", out diag), diag);
+            Assert.False(
+                R2RAssert.HasFixupKindOnMethod(
+                    reader,
+                    ReadyToRunFixupKind.Check_InstructionSetSupport,
+                    ".UsesRuntimeCheckedInstructionSet(",
+                    out diag),
+                diag);
+            Assert.True(R2RAssert.EagerInstructionSetSupportHasNoUnsupportedEntries(reader, out diag), diag);
         }
     }
 
