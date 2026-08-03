@@ -440,6 +440,7 @@ namespace System.Text.Json
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
         public bool IncludeFields { get { throw null; } set { } }
+        public bool InferClosedTypePolymorphism { get { throw null; } set { } }
         public bool IsReadOnly { get { throw null; } }
         public int MaxDepth { get { throw null; } set { } }
         public string NewLine { get { throw null; } set { } }
@@ -1202,6 +1203,7 @@ namespace System.Text.Json.Serialization
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
         public bool IncludeFields { get { throw null; } set { } }
+        public bool InferClosedTypePolymorphism { get { throw null; } set { } }
         public int MaxDepth { get { throw null; } set { } }
         public string? NewLine { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } set { } }

@@ -157,6 +157,8 @@ namespace System
         static abstract int CountDigits(TValue significand);
         static abstract int NumberBitsSignificand { get; }
         static abstract TValue NaNMask { get; }
+        static abstract TValue SNaNMask { get; }
+        static abstract TValue NaNPayloadMask { get; }
         static abstract TValue SignMask { get; }
         static abstract TValue G0G1Mask { get; }
         static abstract TValue G0ToGwPlus1ExponentMask { get; } //G0 to G(w+1)
@@ -814,7 +816,7 @@ namespace System
                 {
                     ThrowFormatException(value);
                 }
-                ThrowOverflowException(SR.Overflow_Decimal);
+                ThrowDecimalOverflowException();
             }
 
             return result;
@@ -992,7 +994,7 @@ namespace System
             where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
             where TValue : unmanaged, IBinaryInteger<TValue>
         {
-            NumberBuffer number = new NumberBuffer(NumberBufferKind.Decimal, stackalloc byte[TDecimal.BufferLength]);
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.DecimalIeee754, stackalloc byte[TDecimal.BufferLength]);
             result = default;
 
             if (!TryStringToNumber(value, styles, ref number, info, out elementsConsumed))
@@ -1735,9 +1737,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowOverflowException(string message)
+        internal static void ThrowDecimalOverflowException()
         {
-            throw new OverflowException(message);
+            throw new OverflowException(SR.Overflow_Decimal);
         }
 
         internal static TFloat NumberToFloat<TFloat>(ref NumberBuffer number)

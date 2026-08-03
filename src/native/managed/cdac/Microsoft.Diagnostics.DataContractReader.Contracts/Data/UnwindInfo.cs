@@ -6,7 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.UnwindInfo))]
 internal sealed partial class UnwindInfo : IData<UnwindInfo>
 {
+    [DataDescriptorDependency(nameof(FunctionLength), "uint32")]
     public uint? FunctionLength { get; private set; }
+
     public uint? Header { get; private set; }
 
     partial void OnInit(Target target, TargetPointer address)

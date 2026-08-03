@@ -81,7 +81,7 @@ namespace System.IO.Compression
             {
                 using (FileStream fs = new FileStream(extractPath, fileStreamOptions))
                 {
-                    using (Stream es = source.Open())
+                    using (Stream es = source.Open(FileAccess.Read))
                         es.CopyTo(fs);
                 }
 

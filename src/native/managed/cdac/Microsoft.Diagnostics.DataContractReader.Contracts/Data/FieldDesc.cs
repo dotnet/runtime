@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.FieldDesc))]
 internal sealed partial class FieldDesc : IData<FieldDesc>
 {
-    [Field] public uint DWord1 { get; }
-    [Field] public uint DWord2 { get; }
-    [Field] public TargetPointer MTOfEnclosingClass { get; }
+    [Field] public partial uint DWord1 { get; }
+    [Field] public partial uint DWord2 { get; }
+    [Field] public partial TargetPointer MTOfEnclosingClass { get; }
 }

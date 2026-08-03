@@ -26,7 +26,7 @@ internal readonly struct RuntimeMutableTypeSystem_1 : IRuntimeMutableTypeSystem
         return offset == _target.ReadGlobal<uint>(Constants.Globals.FieldOffsetNewEnc);
     }
 
-    IEnumerable<TargetPointer> IRuntimeMutableTypeSystem.EnumerateAddedFieldDescs(TypeHandle typeHandle, bool staticFields)
+    IEnumerable<TargetPointer> IRuntimeMutableTypeSystem.EnumerateAddedFieldDescs(ITypeHandle typeHandle, bool staticFields)
     {
         // Only MethodTable type handles can have EnC-added fields. TypeDescs (TypeVar, FnPtr, etc.) cannot.
         if (!typeHandle.IsMethodTable())
@@ -95,7 +95,11 @@ internal readonly struct RuntimeMutableTypeSystem_1 : IRuntimeMutableTypeSystem
             return TargetPointer.Null;
 
         Data.EnCAddedStaticField staticField = _target.ProcessedData.GetOrAdd<Data.EnCAddedStaticField>(encFieldDesc.StaticFieldData);
-        return staticField.FieldData;
+        TargetPointer fieldDataAddress = staticField.FieldData;
+        CorElementType fieldType = _target.Contracts.RuntimeTypeSystem.GetFieldDescType(encFieldDescPointer);
+        return fieldType is CorElementType.ValueType or CorElementType.Class
+            ? _target.ReadPointer(fieldDataAddress)
+            : fieldDataAddress;
     }
 
     TargetPointer IRuntimeMutableTypeSystem.GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPointer encFieldDescPointer)

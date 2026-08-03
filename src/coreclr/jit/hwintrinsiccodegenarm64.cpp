@@ -298,7 +298,7 @@ static void genEmitCreateWhileMask(emitter*            emit,
 void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNumber targetReg)
 {
     const HWIntrinsic intrinCndSel(cndSelNode);
-    assert(intrinCndSel.id == NI_Sve_ConditionalSelect);
+    assert(HWIntrinsicInfo::IsSveConditionalSelect(intrinCndSel.id));
 
     GenTree* maskOp    = intrinCndSel.op1;
     GenTree* embMaskOp = intrinCndSel.op2;
@@ -421,7 +421,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
             // targetReg != falseReg: Move falseReg into targetReg.
             if (falseOp->isContained())
             {
-                assert(falseOp->IsVectorZero());
+                assert(falseOp->IsZeroForSelect());
                 if (maskOp->IsTrueMask(intrinCndSel.baseType))
                 {
                     // If maskOp is all-true, no need to move falseReg to targetReg
@@ -459,7 +459,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
             {
                 embOpt = INS_OPTS_SCALABLE_B;
                 // This instruction is zeroing predicated, just use unpredicated mov.
-                assert(falseOp->IsVectorZero());
+                assert(falseOp->IsZeroForSelect());
                 GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, embMaskOp2Reg,
                                                  embOpt, sopt);
                 return;
@@ -570,7 +570,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
         else if (isOptionalEmbMask)
         {
             if (maskOp->IsTrueMask(intrinEmbMask.baseType) ||
-                (!falseOp->IsVectorZero() && (targetReg != falseReg) && (falseReg != embMaskOp1Reg)))
+                (!falseOp->IsZeroForSelect() && (targetReg != falseReg) && (falseReg != embMaskOp1Reg)))
             {
                 // If the embedded instruction supports optional mask operation, and when movprfx is not needed,
                 // use the "unpredicated" version of the instruction.
@@ -691,7 +691,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
 
     // Determine the move option, based on the register usage.
     insSveMovOpts mopt = INS_SVE_MOV_OPTS_UNPRED;
-    if (falseOp->IsVectorZero())
+    if (falseOp->IsZeroForSelect())
     {
         // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
         // destination using /Z.
@@ -1106,7 +1106,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
         }
-        else if (intrin.id == NI_Sve_ConditionalSelect && intrin.op2->IsEmbMaskOp())
+        else if (HWIntrinsicInfo::IsSveConditionalSelect(intrin.id) && intrin.op2->IsEmbMaskOp())
         {
             // Handle case where op2 is operation that needs embedded mask
             genEmbeddedMaskedHWIntrinsic(node, targetReg);
@@ -1154,7 +1154,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // This handles optimizations for instructions that have
                     // an implicit 'zero' vector of what would be the second operand.
                     if (HWIntrinsicInfo::SupportsContainment(intrin.id) && intrin.op2->isContained() &&
-                        intrin.op2->IsVectorZero())
+                        intrin.op2->IsZeroForSelect())
                     {
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     }
@@ -1670,7 +1670,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Vector_CreateScalarUnsafe:
-                if (intrin.op1->isContainedFltOrDblImmed())
+            {
+                var_types simdType = Compiler::getSIMDTypeForSize(node->GetSimdSize());
+
+                if (simdType == TYP_SIMD)
+                {
+                    emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+
+                    if (varTypeIsFloating(intrin.baseType))
+                    {
+                        regNumber tmpReg  = internalRegisters.Extract(node, RBM_ALLINT);
+                        insOpts   fmovOpt = (emitSize == EA_8BYTE) ? INS_OPTS_D_TO_8BYTE : INS_OPTS_S_TO_4BYTE;
+                        GetEmitter()->emitIns_Mov(INS_fmov, emitSize, tmpReg, op1Reg, /* canSkip */ false, fmovOpt);
+                        op1Reg = tmpReg;
+                    }
+
+                    GetEmitter()->emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                }
+                else if (intrin.op1->isContainedFltOrDblImmed())
                 {
                     // fmov reg, #imm8
                     const double dataValue = intrin.op1->AsDblCon()->DconValue();
@@ -1700,6 +1717,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                 }
                 break;
+            }
 
             case NI_AdvSimd_AddWideningLower:
             case NI_AdvSimd_AddWideningUpper:
@@ -2098,8 +2116,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_ConvertMaskToVector:
                 // PMOV would be ideal here, but it is in SVE2.1.
-                // Instead, use a predicated move: MOV <Zd>.<T>, <Pg>/Z, #1
-                GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, 1, opt);
+                // Instead, use a predicated move: MOV <Zd>.<T>, <Pg>/Z, #-1
+                GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, -1, opt);
                 break;
 
             case NI_Sve_ConvertVectorToMask:
@@ -2777,7 +2795,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_CreateBreakAfterPropagateMask:
             case NI_Sve_CreateBreakBeforePropagateMask:
-            case NI_Sve_ConditionalSelect_Predicates:
             {
                 GetEmitter()->emitInsSve_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, INS_OPTS_SCALABLE_B);
                 break;
@@ -3112,6 +3129,29 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 opt = INS_OPTS_SCALABLE_D;
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Vector_Create:
+            {
+                emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+
+                if (varTypeIsFloating(intrin.baseType))
+                {
+                    regNumber tmpReg  = internalRegisters.Extract(node, RBM_ALLINT);
+                    insOpts   fmovOpt = (emitSize == EA_8BYTE) ? INS_OPTS_D_TO_8BYTE : INS_OPTS_S_TO_4BYTE;
+                    GetEmitter()->emitIns_Mov(INS_fmov, emitSize, tmpReg, op1Reg, /* canSkip */ false, fmovOpt);
+                    op1Reg = tmpReg;
+                }
+
+                GetEmitter()->emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                break;
+            }
+
+            case NI_Vector_CreateSequence:
+            {
+                emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
             }
 

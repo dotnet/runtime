@@ -558,13 +558,12 @@ Debugger *CreateDebugger(void)
 extern "C"{
 HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface)
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         NOTHROW; // use HRESULTS instead
         GC_NOTRIGGER;
-        POSTCONDITION(FAILED(RETVAL) || (rcInterface == NULL) || (*rcInterface != NULL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     HRESULT hr = S_OK;
 
@@ -585,7 +584,8 @@ HRESULT __cdecl CorDBGetInterface(DebugInterface** rcInterface)
         *rcInterface = g_pDebugger;
     }
 
-    RETURN hr;
+    _ASSERTE(FAILED(hr) || (rcInterface == NULL) || (*rcInterface != NULL));
+    return hr;
 }
 }
 
@@ -829,7 +829,6 @@ Debugger::Debugger()
     m_sendExceptionsOutsideOfJMC(TRUE),
     m_forceNonInterceptable(FALSE),
     m_pLazyData(NULL),
-    m_defines(_defines),
     m_isSuspendedForGarbageCollection(FALSE),
     m_isBlockedOnGarbageCollectionEvent(FALSE),
     m_willBlockOnGarbageCollectionEvent(FALSE),
@@ -840,7 +839,6 @@ Debugger::Debugger()
     {
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 
@@ -857,14 +855,6 @@ Debugger::Debugger()
     m_pForceCatchHandlerFoundEventsTable = new ForceCatchHandlerFoundTable();
     m_pCustomNotificationTable = new CustomNotificationTable();
 
-    //------------------------------------------------------------------------------
-    // Metadata data structure version numbers
-    //
-    // 1 - initial state of the layouts ( .NET Framework 4.5.2 )
-    //
-    // as data structure layouts change, add a new version number
-    // and comment the changes
-    m_mdDataStructureVersion = 1;
     m_fOutOfProcessSetContextEnabled =
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
         Thread::AreShadowStacksEnabled() || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_OutOfProcessSetContext) != 0;
@@ -1058,13 +1048,12 @@ HRESULT Debugger::CheckInitMethodInfoTable()
 // Checks if the m_pModules table has been allocated, and if not does so.
 HRESULT Debugger::CheckInitModuleTable()
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        POSTCONDITION(m_pModules != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (m_pModules == NULL)
     {
@@ -1072,7 +1061,7 @@ HRESULT Debugger::CheckInitModuleTable()
 
         if (pModules == NULL)
         {
-            RETURN (E_OUTOFMEMORY);
+            return E_OUTOFMEMORY;
         }
 
         if (InterlockedCompareExchangeT(&m_pModules, pModules, NULL) != NULL)
@@ -1081,19 +1070,19 @@ HRESULT Debugger::CheckInitModuleTable()
         }
     }
 
-    RETURN (S_OK);
+    _ASSERTE(m_pModules != NULL);
+    return S_OK;
 }
 
 // Checks if the m_pModules table has been allocated, and if not does so.
 HRESULT Debugger::CheckInitPendingFuncEvalTable()
 {
-    CONTRACT(HRESULT)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
-        POSTCONDITION(GetPendingEvals() != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifndef DACCESS_COMPILE
 
@@ -1103,7 +1092,7 @@ HRESULT Debugger::CheckInitPendingFuncEvalTable()
 
         if (pPendingEvals == NULL)
         {
-            RETURN(E_OUTOFMEMORY);
+            return E_OUTOFMEMORY;
         }
 
         // Since we're setting, we need an LValue and not just an accessor.
@@ -1114,7 +1103,8 @@ HRESULT Debugger::CheckInitPendingFuncEvalTable()
     }
 #endif
 
-    RETURN (S_OK);
+    _ASSERTE(GetPendingEvals() != NULL);
+    return S_OK;
 }
 
 
@@ -2796,7 +2786,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
 
     // Dunno what went wrong
     if (pDJI == NULL)
-        return (E_FAIL);
+        return E_FAIL;
 
     // If they gave us space to copy into...
     if (map != NULL)
@@ -2818,7 +2808,7 @@ HRESULT Debugger::GetILToNativeMapping(PCODE pNativeCodeStartAddress, ULONG32 cM
         *pcMap = pDJI->GetSequenceMapCount();
     }
 
-    return (S_OK);
+    return S_OK;
 #else
     return E_NOTIMPL;
 #endif
@@ -3027,7 +3017,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
         (void)pModule; //prevent "unused variable" error from GCC
         _ASSERTE(pModule != NULL);
 
-        ComHolderPreemp<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
+        ReleaseHolder<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
 
         // If we got a reader, use it.
         if (pReader != NULL)
@@ -3131,7 +3121,6 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
     }
 
     LOG((LF_CORDB, LL_INFO100000, "D::NGB: cILOffsets=%d\n", *cILOffsets));
-    return;
 }
 #endif
 
@@ -3236,7 +3225,7 @@ void Debugger::getBoundaries(MethodDesc * md,
  *
  ******************************************************************************/
 void Debugger::getVars(MethodDesc * md, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                       bool *extendOthers)
+                       bool *extendOthers, unsigned ilCodeSize)
 {
 #ifndef DACCESS_COMPILE
     CONTRACTL
@@ -3273,25 +3262,17 @@ void Debugger::getVars(MethodDesc * md, ULONG32 *cVars, ICorDebugInfo::ILVarInfo
 
         if (fVarArg)
         {
-            COR_ILMETHOD *ilMethod = g_pEEInterface->MethodDescGetILHeader(md);
+            // It is, so we need to tell the JIT to give us the
+            // varags handle.
+            ICorDebugInfo::ILVarInfo *p = new ICorDebugInfo::ILVarInfo[1];
+            _ASSERTE(p != NULL); // throws on oom error
 
-            if (ilMethod)
-            {
-                // It is, so we need to tell the JIT to give us the
-                // varags handle.
-                ICorDebugInfo::ILVarInfo *p = new ICorDebugInfo::ILVarInfo[1];
-                _ASSERTE(p != NULL); // throws on oom error
+            p->startOffset = 0;
+            p->endOffset = ilCodeSize;
+            p->varNumber = (DWORD) ICorDebugInfo::VARARGS_HND_ILNUM;
 
-                COR_ILMETHOD_DECODER header(ilMethod);
-                unsigned int ilCodeSize = header.GetCodeSize();
-
-                p->startOffset = 0;
-                p->endOffset = ilCodeSize;
-                p->varNumber = (DWORD) ICorDebugInfo::VARARGS_HND_ILNUM;
-
-                *cVars = 1;
-                *vars = p;
-            }
+            *cVars = 1;
+            *vars = p;
         }
     }
 
@@ -3380,7 +3361,7 @@ HRESULT Debugger::SetIP( bool fCanSetIPOnly, Thread *thread,Module *module,
     {
         CodeVersionManager::LockHolder codeVersioningLockHolder;
         ILCodeVersion ilCodeVersion = pCodeVersionManager->GetActiveILCodeVersion(module, mdMeth);
-        if (!ilCodeVersion.IsDefaultVersion())
+        if (!ilCodeVersion.IsDefaultVersion() && ilCodeVersion.GetSource() == CodeVersionSource::kReJIT)
         {
             return CORDBG_E_SET_IP_IMPOSSIBLE;
         }
@@ -3907,7 +3888,7 @@ GetSetFrameHelper::Init(MethodDesc *pMD)
     // Initialize decoderOldIL before checking the method argument signature.
     EX_TRY
     {
-        pILHeader = pMD->GetILHeader();
+        pILHeader = pMD->GetActiveILHeader();
     }
     EX_CATCH_HRESULT(hr);
     if (FAILED(hr))
@@ -4204,7 +4185,7 @@ SIZE_T GetSetFrameHelper::GetValueClassSize(MetaSig* pSig)
     // - but we don't care if it's shared (since it will be the same size either way)
     _ASSERTE(!vcType.IsNull() && vcType.IsValueType());
 
-    return (vcType.GetMethodTable()->GetNumInstanceFieldBytes());
+    return vcType.GetMethodTable()->GetNumInstanceFieldBytes();
 }
 
 //
@@ -5643,7 +5624,7 @@ bool Debugger::ThreadsAtUnsafePlaces(void)
     }
 
 
-    return (m_threadsAtUnsafePlaces != 0);
+    return m_threadsAtUnsafePlaces != 0;
 }
 
 void Debugger::SuspendForGarbageCollectionStarted()
@@ -7431,7 +7412,7 @@ HRESULT Debugger::SendException(Thread *pThread,
 
     if (CORDBUnrecoverableError(this))
     {
-        return (E_FAIL);
+        return E_FAIL;
     }
 
     // Mark if we're at an unsafe place.
@@ -8007,8 +7988,6 @@ void Debugger::SendCatchHandlerFound(
 
         ProcessAnyPendingEvals(pThread);
     } // end of GCX_COOP_EEINTERFACE();
-
-    return;
 }
 
 /*
@@ -8103,8 +8082,6 @@ void Debugger::ManagedExceptionUnwindBegin(Thread *pThread)
     //
         unsafePlaceHolder.Clear();
     }
-
-    return;
 }
 
 /*
@@ -8282,7 +8259,7 @@ BOOL Debugger::ShouldAutoAttach()
     // wants done when an unhandled exception occurs.
     DebuggerLaunchSetting dls = GetDbgJITDebugLaunchSetting();
 
-    return (dls == DLS_ATTACH_DEBUGGER);
+    return dls == DLS_ATTACH_DEBUGGER;
 
     // @TODO cache the debugger launch setting.
 
@@ -8291,7 +8268,7 @@ BOOL Debugger::ShouldAutoAttach()
 BOOL Debugger::FallbackJITAttachPrompt()
 {
     _ASSERTE(!CORDebuggerAttached());
-    return (ATTACH_YES == this->ShouldAttachDebuggerProxy(false));
+    return ATTACH_YES == this->ShouldAttachDebuggerProxy(false);
 }
 
 void Debugger::MarkDebuggerAttachedInternal()
@@ -8856,6 +8833,14 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
     if (CORDBUnrecoverableError(this))
         return;
 
+    if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
+    {
+        LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach already sent, skipping : ID=%#x\n",
+             GetThreadIdHelper(pRuntimeThread)));
+        return;
+    }
+    pRuntimeThread->SetThreadStateNC(Thread::TSNC_DebuggerThreadStartSent);
+
     LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach : ID=%#x AD:%#x\n",
          GetThreadIdHelper(pRuntimeThread), AppDomain::GetCurrentDomain()));
 
@@ -8902,6 +8887,9 @@ void Debugger::SendCreateThreadAtInterpreterEntry(Thread *pRuntimeThread)
         return;
 
     if (!CORDebuggerAttached())
+        return;
+
+    if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
         return;
 
     {
@@ -11429,7 +11417,6 @@ void Debugger::PollWaitingForHelper()
     }
 
     LOG((LF_CORDB, LL_INFO10000, "PollWaitingForHelper() succeed\n"));
-    return;
 }
 
 
@@ -11493,7 +11480,6 @@ void Debugger::TypeHandleToBasicTypeInfo(AppDomain *pAppDomain, TypeHandle th, D
         res->vmAssembly = VMPTR_Assembly::NullPtr();
                 break;
     }
-    return;
 }
 
 void Debugger::TypeHandleToExpandedTypeInfo(AreValueTypesBoxed boxed,
@@ -11589,7 +11575,6 @@ treatAllValuesAsBoxed:
         break;
     }
     LOG((LF_CORDB, LL_INFO10000, "D::THTETI: converted left-side type handle to expanded right-side type info, res->ClassTypeData.typeHandle = 0x%08x.\n", res->ClassTypeData.typeHandle.GetRawPtr()));
-    return;
 }
 
 
@@ -11962,7 +11947,7 @@ HRESULT Debugger::DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef)
 
     {
         CodeVersionManager::LockHolder codeVersioningLockHolder;
-        if (FAILED(hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, &ilCodeVersion, TRUE)))
+        if (FAILED(hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, &ilCodeVersion, TRUE, CodeVersionSource::kReJIT)))
         {
             LOG((LF_TIEREDCOMPILATION, LL_INFO100, "Debugger::DeoptimizeMethodHelper AddILCodeVersion returned hr 0x%x\n", hr));
             return hr;
@@ -12471,15 +12456,6 @@ HRESULT Debugger::ApplyChangesAndSendResult(DebuggerModule * pDebuggerModule,
     }
     else
     {
-        // Violation with the following call stack:
-        //                CONTRACT in MethodTableBuilder::InitMethodDesc
-        //                CONTRACT in EEClass::AddMethod
-        //                CONTRACT in EditAndContinueModule::AddMethod
-        //                CONTRACT in EditAndContinueModule::ApplyEditAndContinue
-        //                CONTRACT in EEDbgInterfaceImpl::EnCApplyChanges
-        //   VIOLATED-->  CONTRACT in Debugger::ApplyChangesAndSendResult
-        CONTRACT_VIOLATION(GCViolation);
-
         // Tell the VM to apply the edit
         hr = g_pEEInterface->EnCApplyChanges(
             (EditAndContinueModule*)pModule, cbMetadata, pMetadata, cbIL, pIL);
@@ -13876,7 +13852,7 @@ Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
     hr = CheckInitMethodInfoTable();
 
     if (FAILED(hr)) {
-        return (hr);
+        return hr;
     }
 
     DebuggerMethodInfo *dmiPrev = m_pMethodInfos->GetMethodInfo(dmi->m_module, dmi->m_token);
@@ -14268,7 +14244,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         if (FAILED(hr))
         {
             DeleteInteropSafeExecutable(pDE);  // Note this runs the destructor for DebuggerEval, which releases its internal buffers
-            return (hr);
+            return hr;
         }
 
         // Queue the eval. Exception-time evals run from Debugger::ProcessAnyPendingEvals when
@@ -14915,7 +14891,7 @@ HRESULT Debugger::UpdateSpecialThreadList(DWORD cThreadArrayLength,
     _ASSERTE(pIPC);
 
     if (!pIPC)
-        return (E_FAIL);
+        return E_FAIL;
 
     // Save the thread list information, and mark the dirty bit so
     // the right side knows.
@@ -14923,7 +14899,7 @@ HRESULT Debugger::UpdateSpecialThreadList(DWORD cThreadArrayLength,
     pIPC->m_specialThreadListLength = cThreadArrayLength;
     pIPC->m_specialThreadListDirty = true;
 
-    return (S_OK);
+    return S_OK;
 }
 
 //

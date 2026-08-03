@@ -1252,7 +1252,8 @@ OBJECTREF AllocateObject(MethodTable *pMT
         if (pMT == g_pBaseCOMObject)
             COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
 
-        oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(AllocateComObject_ForManaged(pMT));
+        OBJECTREF obj = AllocateComObject_ForManaged(pMT);
+        oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(obj);
     }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #else  // FEATURE_COMINTEROP

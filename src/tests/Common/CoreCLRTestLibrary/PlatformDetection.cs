@@ -71,6 +71,7 @@ namespace TestLibrary
         public static bool IsExceptionInteropSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime && !Utilities.IsCoreClrInterpreter;
 
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        public static bool IsCoreCLR => !IsMonoRuntime && Utilities.IsNotNativeAot;
 
         static string _variant = Environment.GetEnvironmentVariable("DOTNET_RUNTIME_VARIANT");
 

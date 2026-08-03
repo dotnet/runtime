@@ -147,6 +147,30 @@ namespace System.Text.Json.SourceGeneration
                 category: JsonConstants.SystemTextJsonSourceGenerationName,
                 defaultSeverity: DiagnosticSeverity.Warning,
                 isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor DerivedTypeIsNotSupported { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1240",
+                title: new LocalizableResourceString(nameof(SR.DerivedTypeIsNotSupportedTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.DerivedTypeIsNotSupportedMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor InferredDerivedTypeIsNotAccessible { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1241",
+                title: new LocalizableResourceString(nameof(SR.InferredDerivedTypeIsNotAccessibleTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.InferredDerivedTypeIsNotAccessibleMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
+
+            public static DiagnosticDescriptor DerivedTypeDiscriminatorCollision { get; } = DiagnosticDescriptorHelper.Create(
+                id: "SYSLIB1242",
+                title: new LocalizableResourceString(nameof(SR.DerivedTypeDiscriminatorCollisionTitle), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                messageFormat: new LocalizableResourceString(nameof(SR.DerivedTypeDiscriminatorCollisionMessageFormat), SR.ResourceManager, typeof(FxResources.System.Text.Json.SourceGeneration.SR)),
+                category: JsonConstants.SystemTextJsonSourceGenerationName,
+                defaultSeverity: DiagnosticSeverity.Warning,
+                isEnabledByDefault: true);
         }
     }
 }

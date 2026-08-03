@@ -82,12 +82,7 @@ public record struct ModuleLookupTables(
     TargetPointer MethodDefToILCodeVersioningState,
     uint TableDataOffset);
 
-public readonly struct LoaderHeapBlockData
-{
-    public TargetPointer Address { get; init; }
-    public TargetNUInt Size { get; init; }
-    public TargetPointer NextBlock { get; init; }
-}
+public readonly record struct LoaderHeapBlock(TargetPointer Address, TargetNUInt Size);
 
 public interface ILoader : IContract
 {
@@ -121,6 +116,7 @@ public interface ILoader : IContract
     TargetPointer GetAssemblyLoadContext(ModuleHandle handle) => throw new NotImplementedException();
     ModuleLookupTables GetLookupTables(ModuleHandle handle) => throw new NotImplementedException();
     TargetPointer GetModuleLookupMapElement(TargetPointer table, uint token, out TargetNUInt flags) => throw new NotImplementedException();
+    TargetPointer LookupMemberRefAsMethod(ModuleHandle handle, uint token) => throw new NotImplementedException();
     IEnumerable<(TargetPointer, uint)> EnumerateModuleLookupMap(TargetPointer table) => throw new NotImplementedException();
     bool IsCollectible(ModuleHandle handle) => throw new NotImplementedException();
     bool IsDynamic(ModuleHandle handle) => throw new NotImplementedException();
@@ -136,10 +132,7 @@ public interface ILoader : IContract
     TargetPointer GetObjectHandle(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
     TargetPointer GetDynamicIL(ModuleHandle handle, uint token) => throw new NotImplementedException();
 
-    // Returns the first block of the loader heap linked list, or TargetPointer.Null if the heap has no blocks.
-    TargetPointer GetFirstLoaderHeapBlock(TargetPointer loaderHeap) => throw new NotImplementedException();
-    // Returns the data for the given loader heap block (address, size, and next block pointer).
-    LoaderHeapBlockData GetLoaderHeapBlockData(TargetPointer block) => throw new NotImplementedException();
+    IEnumerable<LoaderHeapBlock> EnumerateLoaderHeapBlocks(TargetPointer loaderHeap) => throw new NotImplementedException();
     IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer> GetLoaderAllocatorHeaps(TargetPointer loaderAllocatorPointer) => throw new NotImplementedException();
 
     DebuggerAssemblyControlFlags GetDebuggerInfoBits(ModuleHandle handle) => throw new NotImplementedException();
