@@ -54,9 +54,9 @@ namespace ILCompiler.ObjectWriter
     }
 
     /// <summary>
-    /// Wasm object file format writer.
+    /// WebCIL object file format writer.
     /// </summary>
-    internal sealed class WasmObjectWriter : ObjectWriter
+    internal sealed class WebCilObjectWriter : WasmObjectWriter
     {
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
 
@@ -64,7 +64,7 @@ namespace ILCompiler.ObjectWriter
         // 1 for the payload size, and the second for the payload itself.
         const int NumDataSegments = 2;
 
-        public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
+        public WebCilObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
         {
         }
@@ -379,8 +379,6 @@ namespace ILCompiler.ObjectWriter
 
             return 0;
         }
-
-        public const int WebcilSectionAlignment = 16;
 
         /// <summary>
         /// Assigns VirtualAddresses and related header fields to each webcil section based on the
@@ -997,10 +995,6 @@ namespace ILCompiler.ObjectWriter
         }
 #nullable disable
 
-        public const int StackPointerGlobalIndex = WasmGlobalImports.StackPointerGlobalIndex;
-        public const int ImageBaseGlobalIndex = WasmGlobalImports.ImageBaseGlobalIndex;
-        public const int TableBaseGlobalIndex = WasmGlobalImports.TableBaseGlobalIndex;
-        public const int AsyncContinuationGlobalIndex = WasmGlobalImports.AsyncContinuationGlobalIndex;
         public const int RtlRestoreContextTagIndex = 0;
         private static readonly Utf8String RtlRestoreContextTagName = new("rtlRestoreContextTag");
 
