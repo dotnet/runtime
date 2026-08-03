@@ -977,16 +977,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     else if (HWIntrinsicInfo::IsScalable(intrin.id))
     {
         emitSize = EA_SCALABLE;
-
-        if ((intrin.id == NI_SveAes_PolynomialMultiplyWideningEven) ||
-            (intrin.id == NI_SveAes_PolynomialMultiplyWideningOdd))
-        {
-            opt = INS_OPTS_SCALABLE_Q;
-        }
-        else
-        {
-            opt = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
-        }
+        opt      = emitter::optGetSveInsOpt(emitTypeSize(intrin.baseType));
     }
     else if (intrin.category == HW_Category_Special)
     {
@@ -3105,6 +3096,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 {
                     ins = varTypeIsUnsigned(intrin.baseType) ? INS_sve_usublt : INS_sve_ssublt;
                 }
+                GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_SveAes_PolynomialMultiplyWideningEven:
+            case NI_SveAes_PolynomialMultiplyWideningOdd:
+            {
+                opt = INS_OPTS_SCALABLE_Q;
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
             }
