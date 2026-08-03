@@ -172,7 +172,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `InlinedCallFrame` | `CalleeSavedFP` | `pointer` | FP saved in Frame |
 | `InlinedCallFrame` | `CallerReturnAddress` | `CodePointer` | Return address saved in Frame |
 | `InlinedCallFrame` | `CallSiteSP` | `pointer` | SP saved in Frame |
-| `InlinedCallFrame` | `Datum` | `pointer` | MethodDesc ptr or on 64 bit host: CALLI target address (if lowest bit is set) or on windows x86 host: argument stack size (if value is <64k) |
+| `InlinedCallFrame` | `Datum` | `pointer` | Non-x86: MethodDesc ptr (after masking any InlinedCallFrameMarker bits); x86: argument stack size when the masked value is <64k, otherwise a MethodDesc ptr |
 | `InlinedCallFrame` | `SPAfterProlog` | `pointer` | Stack pointer after the managed method prolog, used to unwind frames with stack allocation |
 | `InterpMethodContextFrame` | `Ip` | `pointer` | The actual instruction pointer within the method (null if frame is inactive/reusable) |
 | `InterpMethodContextFrame` | `NextPtr` | `pointer` | Pointer to the next InterpMethodContextFrame toward the top of the stack |
@@ -218,6 +218,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | Global | Type | Meaning |
 | --- | --- | --- |
 | `<FrameType>Identifier` *(name pattern)* | `pointer` | Per-frame-type sentinel address used to identify and classify runtime frames |
+| `Architecture` | `string` | Target architecture |
 | `ObjectToMethodTableUnmask` | `uint8` | Bits to clear when converting an object header value to a method table address |
 
 ### Contracts used
@@ -241,7 +242,7 @@ Constants used:
 | Source | Name | Value | Purpose |
 | --- | --- | --- | --- |
 | `ExceptionFlags` (`exstatecommon.h`) | `Ex_UnwindHasStarted` | `0x00000004` | Bit flag in `ExceptionInfo.ExceptionFlags` indicating exception unwinding (2nd pass) has started. Used by `IsInStackRegionUnwoundBySpecifiedException` to skip ExInfo trackers still in the 1st pass. |
-| `InlinedCallFrameMarker` (`exceptionhandling.h`) | `ExceptionHandlingHelper` | `2 (64-bit), 1(32-bit)` | Used to determine whether an active call on an InlinedCallFrame is an EH helper. |
+| `InlinedCallFrameMarker` (`exceptionhandling.h`) | `ExceptionHandlingHelper` | `1` | Used to determine whether an active call on an InlinedCallFrame is an EH helper. |
 | N/A | `REDIRECTSTUB_ESTABLISHER_OFFSET_RBP` | 0 | AMD64 offset for redirect stubs. |
 | N/A | `REDIRECTSTUB_SP_OFFSET_CONTEXT` | 0 | ARM, ARM64, Loongarch & RISCV64 offset for redirect stubs. |
 | N/A | `REDIRECTSTUB_EBP_OFFSET_CONTEXT` | -4 | X86 offset for redirect stubs. |
@@ -625,7 +626,7 @@ IEnumerable<StackFrameData> GetFrames(TargetPointer threadPointer)
 A Frame qualifies when all of the following hold:
 1. The Frame's identifier identifies it as an `InlinedCallFrame`.
 2. `InlinedCallFrame::FrameHasActiveCall` is true (the frame's `CallerReturnAddress` is non-null and, on x86, `CallSiteSP` is non-null).
-3. The low bits of the `Datum` field match `InlinedCallFrameMarker::ExceptionHandlingHelper` (`2` on 64-bit, `1` on 32-bit). The marker shares the low bits used by `InlinedCallFrameMarker::Mask`.
+3. The low bits of the `Datum` field match `InlinedCallFrameMarker::ExceptionHandlingHelper` (`1`). The marker shares the low bits used by `InlinedCallFrameMarker::Mask`.
 
 ```csharp
 bool IsExceptionHandlingHelperInlinedCallFrame(TargetPointer frameAddress)
