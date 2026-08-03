@@ -10507,8 +10507,14 @@ GenTree* Compiler::gtNewLoadValueNode(var_types type, ClassLayout* layout, GenTr
     {
         unsigned   lclNum = addr->AsLclFld()->GetLclNum();
         LclVarDsc* varDsc = lvaGetDesc(lclNum);
-        if ((varDsc->TypeGet() == type) &&
-            ((type != TYP_STRUCT) || (layout != nullptr && layout->CanAssignFrom(varDsc->GetLayout()))))
+#if defined(TARGET_SUNOS) && !defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnonnull"
+#endif
+        if ((varDsc->TypeGet() == type) && ((type != TYP_STRUCT) || layout->CanAssignFrom(varDsc->GetLayout())))
+#if defined(TARGET_SUNOS) && !defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
         {
             return gtNewLclvNode(lclNum, type);
         }
