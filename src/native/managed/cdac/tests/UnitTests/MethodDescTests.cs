@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Data;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.RuntimeTypeSystemHelpers;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
@@ -99,6 +100,99 @@ public class MethodDescTests
             .AddMockContract(mockPrecodeStubs)
             .Build();
         return target.Contracts.RuntimeTypeSystem;
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public unsafe void ClrDataMethodInstance_GetDefinition(MockTarget.Architecture arch)
+    {
+        const uint Token = 0x06000001;
+        MethodDescHandle methodDesc = new(new TargetPointer(0x1000));
+        TargetPointer methodTable = new(0x2000);
+        ITypeHandle typeHandle = new TargetTypeHandle(methodTable);
+        TargetPointer module = new(0x3000);
+
+        Mock<IRuntimeTypeSystem> rts = new();
+        rts.Setup(r => r.GetMethodToken(methodDesc)).Returns(Token);
+        rts.Setup(r => r.GetMethodTable(methodDesc)).Returns(methodTable);
+        rts.Setup(r => r.GetTypeHandle(methodTable)).Returns(typeHandle);
+        rts.Setup(r => r.GetModule(typeHandle)).Returns(module);
+
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(rts)
+            .Build();
+        IXCLRDataMethodInstance methodInstance = new ClrDataMethodInstance(target, methodDesc, TargetPointer.Null, legacyImpl: null);
+        DacComNullableByRef<IXCLRDataMethodDefinition> definitionOut = new(isNullRef: false);
+
+        Assert.Equal(HResults.S_OK, methodInstance.GetDefinition(definitionOut));
+        IXCLRDataMethodDefinition definition = Assert.IsType<ClrDataMethodDefinition>(definitionOut.Interface);
+
+        uint actualToken = 0;
+        DacComNullableByRef<IXCLRDataModule> moduleOut = new(isNullRef: false);
+        Assert.Equal(HResults.S_OK, definition.GetTokenAndScope(&actualToken, moduleOut));
+        Assert.Equal(Token, actualToken);
+        Assert.Equal(module, Assert.IsType<ClrDataModule>(moduleOut.Interface).Address);
+
+        DacComNullableByRef<IXCLRDataMethodDefinition> nullDefinitionOut = new(isNullRef: true);
+        Assert.Equal(HResults.E_POINTER, methodInstance.GetDefinition(nullDefinitionOut));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public unsafe void ClrDataMethodInstance_GetAddressRangesByILOffset(MockTarget.Architecture arch)
+    {
+        const uint ILOffset = 7;
+        const uint EpilogOffset = unchecked((uint)-3);
+        MethodDescHandle methodDesc = new(new TargetPointer(0x1000));
+        TargetCodePointer code = new(0x2000);
+        OffsetMapping[] map =
+        [
+            new() { NativeOffset = 4, ILOffset = ILOffset },
+            new() { NativeOffset = 8, ILOffset = ILOffset },
+            new() { NativeOffset = 16, ILOffset = 8 },
+            new() { NativeOffset = 20, ILOffset = EpilogOffset },
+        ];
+
+        Mock<IRuntimeTypeSystem> rts = new();
+        rts.Setup(r => r.GetNativeCode(methodDesc)).Returns(code);
+        Mock<IPrecodeStubs> precodeStubs = new();
+        precodeStubs.Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(code)).Returns(code);
+        Mock<IDebugInfo> debugInfo = new();
+        debugInfo.Setup(d => d.HasDebugInfo(code)).Returns(true);
+        uint codeOffset = 0;
+        debugInfo.Setup(d => d.GetMethodNativeMap(code, false, out codeOffset)).Returns(map);
+
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(rts)
+            .AddMockContract(precodeStubs)
+            .AddMockContract(debugInfo)
+            .AddMockContract(new Mock<IPlatformMetadata>())
+            .Build();
+        IXCLRDataMethodInstance methodInstance = new ClrDataMethodInstance(target, methodDesc, TargetPointer.Null, legacyImpl: null);
+
+        uint rangesNeeded = 0;
+        Assert.Equal(HResults.S_OK, methodInstance.GetAddressRangesByILOffset(ILOffset, 0, &rangesNeeded, null));
+        Assert.Equal(2u, rangesNeeded);
+
+        ClrDataAddressRange[] ranges = new ClrDataAddressRange[1];
+        fixed (ClrDataAddressRange* rangesPtr = ranges)
+        {
+            Assert.Equal(HResults.S_OK, methodInstance.GetAddressRangesByILOffset(ILOffset, 1, &rangesNeeded, rangesPtr));
+        }
+        Assert.Equal(2u, rangesNeeded);
+        Assert.Equal(new TargetPointer(code.ToAddress(target) + 4).ToClrDataAddress(target), ranges[0].startAddress);
+        Assert.Equal(new TargetPointer(code.ToAddress(target) + 8).ToClrDataAddress(target), ranges[0].endAddress);
+
+        ClrDataAddressRange epilogRange;
+        Assert.Equal(HResults.S_OK, methodInstance.GetAddressRangesByILOffset(EpilogOffset, 1, null, &epilogRange));
+        Assert.Equal(new TargetPointer(code.ToAddress(target) + 20).ToClrDataAddress(target), epilogRange.startAddress);
+        Assert.Equal(new ClrDataAddress(0), epilogRange.endAddress);
+
+        Assert.Equal(HResults.COR_E_INVALIDCAST, methodInstance.GetAddressRangesByILOffset(9, 0, &rangesNeeded, null));
+        Assert.Equal(0u, rangesNeeded);
+
+        debugInfo.Setup(d => d.HasDebugInfo(code)).Returns(false);
+        Assert.Equal(HResults.E_FAIL, methodInstance.GetAddressRangesByILOffset(ILOffset, 0, &rangesNeeded, null));
     }
 
     [Theory]
