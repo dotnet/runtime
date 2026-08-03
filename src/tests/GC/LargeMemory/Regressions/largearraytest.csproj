@@ -2,6 +2,7 @@
   <PropertyGroup>
     <!-- Needed for CLRTestTargetUnsupported -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <HasMergedInTests>true</HasMergedInTests>
     <!--
         Test unsupported outside of windows
         On platform other than Windows, this test could get killed by the OOM killer
@@ -15,4 +16,6 @@
   <ItemGroup>
     <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>
