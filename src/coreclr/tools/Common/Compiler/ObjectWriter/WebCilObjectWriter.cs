@@ -17,7 +17,6 @@ using Internal.Text;
 using Internal.TypeSystem;
 using Microsoft.NET.WebAssembly.Webcil;
 using CodeDataLayout = CodeDataLayoutMode.CodeDataLayout;
-using ObjectData = ILCompiler.DependencyAnalysis.ObjectNode.ObjectData;
 
 namespace ILCompiler.ObjectWriter
 {
@@ -78,17 +77,6 @@ namespace ILCompiler.ObjectWriter
         {
         }
 
-        private void EmitWasmHeader(Stream outputFileStream)
-        {
-            outputFileStream.Write("\0asm"u8);
-            outputFileStream.Write([0x1, 0x0, 0x0, 0x0]);
-        }
-
-        /// <summary>
-        /// The number of methods in the Function section.
-        /// </summary>
-        private int MethodCount => _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Function);
-
         private Dictionary<SortableDependencyNode.ObjectNodeOrder, Utf8String> _wellKnownSymbols = new();
         private protected override void RecordWellKnownSymbol(Utf8String currentSymbolName, SortableDependencyNode.ObjectNodeOrder classCode)
         {
@@ -102,8 +90,12 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void RecordMethodSignature(WasmTypeNode signature)
+        private protected override WasmSection CreateDataSection(
+            ObjectNodeSection section,
+            int sectionIndex,
+            Stream sectionStream)
         {
+<<<<<<< HEAD
             var mangledNameBuilder = new Utf8StringBuilder();
             signature.AppendMangledName(_nodeFactory.NameMangler, mangledNameBuilder);
             Utf8String mangledName = mangledNameBuilder.ToUtf8String();
@@ -276,6 +268,17 @@ namespace ILCompiler.ObjectWriter
                 return WasmSectionType.Data;
             }
             return _sectionToType[section];
+=======
+#if READYTORUN
+            return new WebcilSection(
+                new Utf8String(section.Name),
+                default(WebcilSectionHeader),
+                sectionStream,
+                sectionIndex);
+#else
+            return base.CreateDataSection(section, sectionIndex, sectionStream);
+#endif
+>>>>>>> 9bc33a024e8 (Move shared WASM logic to base writer)
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -368,6 +371,7 @@ namespace ILCompiler.ObjectWriter
                 ]
         );
 
+<<<<<<< HEAD
         // This effectively recreates the logic of RecordMethodBody/RecordMethodDeclaration, but for manually inserted stubs that are not
         // represented by nodes in the dependency graph.
         // TODO-Wasm: for maintability, we should try and push some of this into the dependency graph when we do more stub generation.
@@ -391,6 +395,8 @@ namespace ILCompiler.ObjectWriter
             RegisterFunctionSymbol(name);
             RegisterStubIndexAndSignature(body.Signature);
         }
+=======
+>>>>>>> 9bc33a024e8 (Move shared WASM logic to base writer)
         private long ResolveSymbolRVA(WebcilSection[] sections, SymbolDefinition definition)
         {
             for (int i = 0; i < sections.Length; i++)
@@ -500,6 +506,7 @@ namespace ILCompiler.ObjectWriter
             return section;
         }
 
+<<<<<<< HEAD
         private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
             WasmSectionType sectionType = GetWasmSectionType(section);
@@ -532,6 +539,8 @@ namespace ILCompiler.ObjectWriter
             _sections.Add(section.Name, sectionIndex, wasmSection);
         }
 
+=======
+>>>>>>> 9bc33a024e8 (Move shared WASM logic to base writer)
         private void WriteDataCountSection()
         {
             SectionDataEmitter section = GetOrCreateSection(WasmObjectNodeSection.DataCountSection, out SectionWriter writer);
@@ -550,6 +559,7 @@ namespace ILCompiler.ObjectWriter
             WriteDataCountSection();
         }
 
+<<<<<<< HEAD
         private Dictionary<string, WasmGlobal> _definedGlobals = new();
 
         // TODO-Wasm: In the future, we may want to consider representing Wasm globals in the dependency graph so that they
@@ -576,40 +586,13 @@ namespace ILCompiler.ObjectWriter
 
 
         private void WriteGlobalSection()
+=======
+        private protected override void WriteGlobalSection()
+>>>>>>> 9bc33a024e8 (Move shared WASM logic to base writer)
         {
             // webcilVersion: i32 const = 0
             WriteGlobal("webcilVersion", WasmValueType.I32, WasmMutabilityType.Const,
                 new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, WebcilConstants.WC_VERSION_MAJOR)]));
-        }
-
-        // Sections excluding Webcil Data segment
-        readonly string[] SectionOrder =
-        [
-            ObjectNodeSection.WasmTypeSection.Name,
-            WasmObjectNodeSection.ImportSection.Name,
-            WasmObjectNodeSection.FunctionSection.Name,
-            WasmObjectNodeSection.GlobalSection.Name,
-            WasmObjectNodeSection.ExportSection.Name,
-            WasmObjectNodeSection.ElementSection.Name,
-            WasmObjectNodeSection.DataCountSection.Name,
-            ObjectNodeSection.WasmCodeSection.Name,
-        ];
-
-        private int[] _sectionEmitOrder = null;
-        private int[] SectionEmitOrder
-        {
-            get
-            {
-                if (_sectionEmitOrder == null)
-                {
-                    _sectionEmitOrder = SectionOrder
-                        .Where(name => _sections.Contains(name))
-                        .Select(name => _sections.GetSectionIndex(name))
-                        .ToArray();
-                }
-
-                return _sectionEmitOrder;
-            }
         }
 
         private static readonly ObjectNodeSection WebcilRelocSection = new ObjectNodeSection("reloc", SectionType.ReadOnly);
@@ -793,25 +776,6 @@ namespace ILCompiler.ObjectWriter
                 }
             }
         }
-
-        private readonly WasmSymbolManager _wasmSymbolManager = new();
-
-        /// <summary>
-        /// Maps an Import kind to the WasmIndexSpace that it can be referenced within.
-        /// Imports will always be the first logical entries in their respective index spaces.
-        /// </summary>
-        private static WasmIndexSpace GetIndexSpace(WasmExternalKind kind) => kind switch
-        {
-            WasmExternalKind.Function => WasmIndexSpace.Function,
-            WasmExternalKind.Table => WasmIndexSpace.Table,
-            WasmExternalKind.Memory => WasmIndexSpace.Memory,
-            WasmExternalKind.Global => WasmIndexSpace.Global,
-            WasmExternalKind.Tag => WasmIndexSpace.Tag,
-            _ => throw new ArgumentOutOfRangeException(nameof(kind)),
-        };
-
-        private void RegisterFunctionSymbol(Utf8String name) =>
-            _wasmSymbolManager.AddDefinition(name, WasmIndexSpace.Function);
 
         /// <summary>
         /// Processes the deferred file-level relocations after webcil section VirtualAddresses
@@ -1042,6 +1006,7 @@ namespace ILCompiler.ObjectWriter
             ];
         }
 
+<<<<<<< HEAD
         private int RegisterSignature(WasmFuncType signature)
         {
             Utf8String signatureKey = signature.GetMangledName(_nodeFactory.NameMangler);
@@ -1061,6 +1026,9 @@ namespace ILCompiler.ObjectWriter
         }
 
         private void WriteImports()
+=======
+        private protected override void WriteImports()
+>>>>>>> 9bc33a024e8 (Move shared WASM logic to base writer)
         {
             foreach (WasmImport import in CreateDefaultGlobalImports())
             {
@@ -1077,7 +1045,7 @@ namespace ILCompiler.ObjectWriter
             WriteImport(memoryImport);
         }
 
-        private void WriteExports()
+        private protected override void WriteExports()
         {
             WriteTableExport("table", 0);
 
@@ -1094,13 +1062,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        /// <summary>
-        /// This dictionary contains the map of symbol names to their location in the object file.
-        /// The SymbolDefinitions returned do not encode the logical index used in the Wasm module, and should not be used for
-        /// resolving relocations for INDEX relocation kinds.
-        /// </summary>
-        private Dictionary<Utf8String, SymbolDefinition> _definedSymbols;
-        private void WriteElements()
+        private protected override void WriteElements()
         {
             // Generate the function pointer table element that contains function pointers for all of our functions.
             // Function indices are assigned sequentially (0..MethodCount-1) so that
@@ -1110,30 +1072,6 @@ namespace ILCompiler.ObjectWriter
                 .ToArray();
 
             WriteElementSegment(functionIndices);
-        }
-
-        // Populate the sections whose entries are derived from the completed symbol table.
-        private protected override void EmitSymbolTable(IDictionary<Utf8String, SymbolDefinition> definedSymbols, SortedSet<Utf8String> undefinedSymbols)
-        {
-            WriteImports();
-            WriteGlobalSection();
-            WriteExports();
-            WriteElements();
-
-            // Register defined symbols for future use during relocation resolution
-            _definedSymbols = new Dictionary<Utf8String, SymbolDefinition>(definedSymbols);
-        }
-
-        private void FinalizeSectionEntryCounts()
-        {
-            _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmTypeSection.Name)
-                .SetEntryCount(_wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Type));
-            _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmCodeSection.Name)
-                .SetEntryCount(MethodCount);
-
-            Debug.Assert(_sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
-            Debug.Assert(_sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
-            Debug.Assert(_sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
         }
     }
 }
