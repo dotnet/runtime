@@ -786,12 +786,13 @@ namespace System.Text.Json.SourceGeneration
 
                         if (patternTypeFQN == typeMetadata.TypeRef.FullyQualifiedName)
                         {
-                            // Recursive case: the case type is the union type itself. A type
-                            // pattern for it is trivially satisfied by the union value, so the
-                            // designator binds the union rather than its payload. Returning it
-                            // would make the converter recurse on the same value forever, so
-                            // read the payload off the union's Value property instead.
-                            writer.WriteLine($"{patternTypeFQN} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)value.Value),");
+                            // Recursive case: the case type is the union type itself. A type pattern `T`
+                            // applied to a union is equivalent to `T or { Value: T }`, so a bare type
+                            // pattern here is also satisfied by the union instance itself. That both binds
+                            // the union rather than its payload -- making the converter recurse on the same
+                            // value forever -- and renders any later arm unreachable. Match the payload
+                            // explicitly so that only the unwrapped value is bound.
+                            writer.WriteLine($"{{ Value: {patternTypeFQN} caseValue{deconArmIndex} }} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
                         }
                         else
                         {
