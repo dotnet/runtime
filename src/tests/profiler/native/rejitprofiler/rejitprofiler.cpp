@@ -383,7 +383,7 @@ HRESULT STDMETHODCALLTYPE ReJITProfiler::GetReJITParameters(ModuleID moduleId, m
 {
     SHUTDOWNGUARD();
 
-    String functionName = methodId == _runtimeAsyncTargetMethodDef
+    String functionName = moduleId == _runtimeAsyncTargetModuleId && methodId == _runtimeAsyncTargetMethodDef
         ? RuntimeAsyncTargetMethodName
         : GetFunctionIDName(GetFunctionIDFromToken(moduleId, methodId, false));
     INFO(L"Starting to build IL for method " << functionName);

@@ -1662,23 +1662,33 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
         }
         *pMethodDescs = CDynArray<MethodDesc*>();
 
-        MethodDesc* pLoadedMethodDesc = pActiveVersions[i].GetModule()->LookupMethodDef(pActiveVersions[i].GetMethodDef());
+        ILCodeVersion activeVersion = pActiveVersions[i];
+        MethodDesc* pLoadedMethodDesc = activeVersion.GetModule()->LookupMethodDef(activeVersion.GetMethodDef());
+        bool redirectAsyncThunk = activeVersion.GetSource() == CodeVersionSource::kEnC;
 
         // A Task- or ValueTask-returning method may also have an async variant with native code
-        // compiled from the same IL. Include the async variant in addition to the primary method.
-        if (pLoadedMethodDesc != NULL && pLoadedMethodDesc->ReturnsTaskOrValueTask())
+        // compiled from the same IL. ReJIT activation and revert must publish both variants.
+        if (!redirectAsyncThunk && pLoadedMethodDesc != NULL && pLoadedMethodDesc->ReturnsTaskOrValueTask())
         {
             MethodDesc* pAsyncVariant =
                 pLoadedMethodDesc->GetMethodTable()->GetParallelMethodDesc(pLoadedMethodDesc, AsyncVariantLookup::Async);
             if (pAsyncVariant != NULL &&
-                FAILED(hr = CodeVersionManager::EnumerateClosedMethodDescs(pAsyncVariant, pMethodDescs, &errorRecords)))
+                FAILED(hr = CodeVersionManager::EnumerateClosedMethodDescs(
+                    pAsyncVariant,
+                    false,
+                    pMethodDescs,
+                    &errorRecords)))
             {
                 _ASSERTE(hr == E_OUTOFMEMORY);
                 return hr;
             }
         }
 
-        if (FAILED(hr = CodeVersionManager::EnumerateClosedMethodDescs(pLoadedMethodDesc, pMethodDescs, &errorRecords)))
+        if (FAILED(hr = CodeVersionManager::EnumerateClosedMethodDescs(
+                pLoadedMethodDesc,
+                redirectAsyncThunk,
+                pMethodDescs,
+                &errorRecords)))
         {
             _ASSERTE(hr == E_OUTOFMEMORY);
             return hr;
@@ -2065,6 +2075,7 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
 // static
 HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
     MethodDesc* pMD,
+    bool redirectAsyncThunk,
     CDynArray<MethodDesc*> * pClosedMethodDescs,
     CDynArray<CodePublishError> * pUnsupportedMethodErrors)
 {
@@ -2086,7 +2097,7 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
         return S_OK;
     }
 
-    if (pMD->IsAsyncThunkMethod())
+    if (redirectAsyncThunk && pMD->IsAsyncThunkMethod())
     {
         pMD = pMD->GetAsyncVariantNoCreate();
     }
@@ -2181,14 +2192,6 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
     while (it.Next(pAssembly.This()))
     {
         MethodDesc * pLoadedMD = it.Current();
-        if (pLoadedMD->IsAsyncThunkMethod())
-        {
-            pLoadedMD = pLoadedMD->GetAsyncVariantNoCreate();
-        }
-        if (pLoadedMD == NULL)
-        {
-            continue;
-        }
 
         if (!pLoadedMD->IsVersionable())
         {

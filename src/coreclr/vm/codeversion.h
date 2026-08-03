@@ -656,7 +656,11 @@ public:
 private:
 
 #ifndef DACCESS_COMPILE
-    static HRESULT EnumerateClosedMethodDescs(MethodDesc* pMD, CDynArray<MethodDesc*> * pClosedMethodDescs, CDynArray<CodePublishError> * pUnsupportedMethodErrors);
+    static HRESULT EnumerateClosedMethodDescs(
+        MethodDesc* pMD,
+        bool redirectAsyncThunk,
+        CDynArray<MethodDesc*> * pClosedMethodDescs,
+        CDynArray<CodePublishError> * pUnsupportedMethodErrors);
     static HRESULT EnumerateDomainClosedMethodDescs(
         AppDomain * pAppDomainToSearch,
         MethodDesc* pMethodDesc,
