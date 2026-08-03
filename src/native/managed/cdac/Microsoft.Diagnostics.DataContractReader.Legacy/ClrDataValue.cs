@@ -329,6 +329,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         int hr = HResults.S_OK;
         try
         {
+            *numFields = 0;
             ValidateFieldFlags(flags);
             *numFields = (_flags & (uint)ClrDataValueFlag.IS_REFERENCE) != 0
                 ? 0
