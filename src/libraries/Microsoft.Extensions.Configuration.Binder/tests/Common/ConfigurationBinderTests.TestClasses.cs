@@ -202,6 +202,8 @@ namespace Microsoft.Extensions
 
         public record RecordWithDefaultedNullableIntValue(int? Value = 42);
 
+        public record RecordWithDefaultedIntValue(int Value = 42);
+
         public record RecordWithDefaultedComplexValue(NestedOptions Value = null);
 
         public record RecordWithDefaultedArrayValue(string[] Value = null);

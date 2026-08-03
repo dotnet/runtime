@@ -1151,6 +1151,40 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ExceptionWhenConstructorParameterCannotBeNullAndConfigurationValueIsEmpty(bool hasDefaultValue)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "" }""");
+
+            var exception = Assert.Throws<InvalidOperationException>(() =>
+            {
+                if (hasDefaultValue)
+                {
+                    config.Get<RecordWithDefaultedIntValue>();
+                }
+                else
+                {
+                    config.Get<RecordWithIntValue>();
+                }
+            });
+
+            Assert.Equal(
+                SR.Format(SR.Error_FailedBinding, string.Empty, nameof(RecordWithIntValue.Value), typeof(int)),
+                exception.Message);
+        }
+
+        [Theory]
+        [InlineData("""{ "Value": null }""")]
+        [InlineData("""{ "Unrelated": "value" }""")]
+        public void ConstructorParameterUsesItsDefaultValueWhenValueTypeHasNoConfigurationValue(string json)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            Assert.Equal(42, config.Get<RecordWithDefaultedIntValue>().Value);
+        }
+
+        [Theory]
         [InlineData(ConstructorParameterKind.StringType, false)]
         [InlineData(ConstructorParameterKind.ObjectType, false)]
         [InlineData(ConstructorParameterKind.NullableValueType, false)]

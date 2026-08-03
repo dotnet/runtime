@@ -87,57 +87,39 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
 
             int age = (int)(42);
-            if (TryGetConfigurationValue(configuration, key: "Age", out string? value2))
+            if (TryGetConfigurationValue(configuration, key: "Age", out string? value2) && value2 is not null)
             {
-                if (!string.IsNullOrEmpty(value2))
-                {
-                    age = ParseInt(value2, configuration.GetSection("Age").Path);
-                }
+                age = ParseInt(value2, configuration.GetSection("Age").Path);
             }
 
             float f = 42F;
-            if (TryGetConfigurationValue(configuration, key: "F", out string? value3))
+            if (TryGetConfigurationValue(configuration, key: "F", out string? value3) && value3 is not null)
             {
-                if (!string.IsNullOrEmpty(value3))
-                {
-                    f = ParseFloat(value3, configuration.GetSection("F").Path);
-                }
+                f = ParseFloat(value3, configuration.GetSection("F").Path);
             }
 
             double d = 3.1415899999999999D;
-            if (TryGetConfigurationValue(configuration, key: "D", out string? value4))
+            if (TryGetConfigurationValue(configuration, key: "D", out string? value4) && value4 is not null)
             {
-                if (!string.IsNullOrEmpty(value4))
-                {
-                    d = ParseDouble(value4, configuration.GetSection("D").Path);
-                }
+                d = ParseDouble(value4, configuration.GetSection("D").Path);
             }
 
             decimal m = 3.1415926535897932384626433M;
-            if (TryGetConfigurationValue(configuration, key: "M", out string? value5))
+            if (TryGetConfigurationValue(configuration, key: "M", out string? value5) && value5 is not null)
             {
-                if (!string.IsNullOrEmpty(value5))
-                {
-                    m = ParseDecimal(value5, configuration.GetSection("M").Path);
-                }
+                m = ParseDecimal(value5, configuration.GetSection("M").Path);
             }
 
             global::System.StringComparison sc = (global::System.StringComparison)(4);
-            if (TryGetConfigurationValue(configuration, key: "SC", out string? value6))
+            if (TryGetConfigurationValue(configuration, key: "SC", out string? value6) && value6 is not null)
             {
-                if (!string.IsNullOrEmpty(value6))
-                {
-                    sc = ParseEnum<global::System.StringComparison>(value6, configuration.GetSection("SC").Path);
-                }
+                sc = ParseEnum<global::System.StringComparison>(value6, configuration.GetSection("SC").Path);
             }
 
             char c = 'q';
-            if (TryGetConfigurationValue(configuration, key: "C", out string? value7))
+            if (TryGetConfigurationValue(configuration, key: "C", out string? value7) && value7 is not null)
             {
-                if (!string.IsNullOrEmpty(value7))
-                {
-                    c = ParseChar(value7, configuration.GetSection("C").Path);
-                }
+                c = ParseChar(value7, configuration.GetSection("C").Path);
             }
 
             int? nage = (int?)(42);

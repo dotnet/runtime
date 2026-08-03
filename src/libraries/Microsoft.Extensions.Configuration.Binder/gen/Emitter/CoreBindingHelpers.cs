@@ -390,19 +390,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         case ParsableFromStringSpec { StringParsableTypeKind: StringParsableTypeKind.AssignFromSectionValue }:
                             {
-                                if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
+                                // string and object take the section value as-is, whether it is absent or explicitly null.
+                                if (member is ParameterSpec { ErrorOnFailedBinding: true })
                                 {
-                                    if (member.TypeRef.CanBeNull)
-                                    {
-                                        // A type that can hold null takes the section value as-is, whether it is
-                                        // absent or explicitly null.
-                                        _writer.WriteLine($"{parsedMemberDeclarationLhs} = {Identifier.configuration}[{SymbolDisplay.FormatLiteral(configKeyName, quote: true)}];");
-                                        _writer.WriteLine();
-                                        return;
-                                    }
-
-                                    string condition = $"if ({Identifier.configuration}[{SymbolDisplay.FormatLiteral(configKeyName, quote: true)}] is not {parsedMemberDeclarationLhs})";
-                                    EmitThrowBlock(condition);
+                                    _writer.WriteLine($"{parsedMemberDeclarationLhs} = {Identifier.configuration}[{SymbolDisplay.FormatLiteral(configKeyName, quote: true)}];");
                                     _writer.WriteLine();
                                     return;
                                 }
@@ -432,21 +423,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     if (canBindToMember)
                     {
                         // A type that can hold null is left at its null default rather than treated as an error.
-                        if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding && !member.TypeRef.CanBeNull)
+                        if (member is ParameterSpec { ErrorOnFailedBinding: true } && !member.TypeRef.CanBeNull)
                         {
-                            EmitThrowBlock(condition: "else");
+                            _writer.WriteLine($$"""
+                                else
+                                {
+                                    throw new {{Identifier.InvalidOperationException}}("{{string.Format(ExceptionMessages.ParameterHasNoMatchingConfig, type.FullName, member.Name)}}");
+                                }
+                                """);
                         }
 
                         _writer.WriteLine();
                     }
-
-                    void EmitThrowBlock(string condition) =>
-                        _writer.WriteLine($$"""
-                            {{condition}}
-                            {
-                                throw new {{Identifier.InvalidOperationException}}("{{string.Format(ExceptionMessages.ParameterHasNoMatchingConfig, type.FullName, member.Name)}}");
-                            }
-                            """);
                 }
             }
 
@@ -1010,14 +998,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 EmitBlankLineIfRequired();
                                 string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
 
-                                // A parameter that cannot hold null needs a usable value, so an absent, null or empty
-                                // value all fall through to the caller's else-branch, which throws.
-                                bool requireValue = bindingToLocal && !member.TypeRef.CanBeNull && member is ParameterSpec { ErrorOnFailedBinding: true };
+                                // A non-nullable value type parameter cannot take null: without a declared default
+                                // that falls through to the caller's else-branch, which throws; with one it keeps the
+                                // default. An empty value still reaches the parse, which reports the conversion
+                                // failure as the reflection binder does.
+                                bool requireValue = bindingToLocal && !member.TypeRef.CanBeNull && member is ParameterSpec;
 
-                                // A parameter only avoids that throw by declaring a default, which then has to survive a null value.
+                                // A parameter's declared default has to survive a null value.
                                 bool hasDeclaredDefault = bindingToLocal && member is ParameterSpec { ErrorOnFailedBinding: false };
 
-                                string valueCondition = requireValue ? $" && !string.IsNullOrEmpty({valueIdentifier})" : string.Empty;
+                                string valueCondition = requireValue ? $" && {valueIdentifier} is not null" : string.Empty;
                                 EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true)}, out string? {valueIdentifier}){valueCondition})");
 
                                 // Decide to emit the null check block for nullable types (e.g. int?).
