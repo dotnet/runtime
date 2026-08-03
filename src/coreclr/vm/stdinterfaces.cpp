@@ -424,6 +424,17 @@ Unknown_ReleaseSpecial_IErrorInfo_Internal(IUnknown* pUnk)
 
 
 // ---------------------------------------------------------------------------
+// Find the first COM visible IClassX starting at the root ComMethodTable and
+// walking up the hierarchy.
+static ComMethodTable* FindFirstComVisibleClassComMT(ComCallWrapperTemplate* pTemplate)
+{
+    ComMethodTable* pComMT = pTemplate->GetClassComMT();
+    while (pComMT && !pComMT->IsComVisible())
+        pComMT = pComMT->GetParentClassComMT();
+    return pComMT;
+}
+
+// ---------------------------------------------------------------------------
 //  Interface IProvideClassInfo
 // ---------------------------------------------------------------------------
 HRESULT __stdcall
@@ -456,8 +467,7 @@ ClassInfo_GetClassInfo(IUnknown* pUnk, ITypeInfo** ppTI)
 
             // Find the first COM visible IClassX starting at ComMethodTable passed in and
             // walking up the hierarchy.
-            ComMethodTable *pComMT = NULL;
-            for (pComMT = pTemplate->GetClassComMT(); pComMT && !pComMT->IsComVisible(); pComMT = pComMT->GetParentClassComMT());
+            ComMethodTable *pComMT = FindFirstComVisibleClassComMT(pTemplate);
 
             // If the CLR part of the object is not visible then delegate the call to the
             // base COM object if it implements IProvideClassInfo.
@@ -685,9 +695,7 @@ HRESULT GetITypeInfoForEEClass(MethodTable *pClass, ITypeInfo **ppTI, bool bClas
                         pTemplate = ComCallWrapperTemplate::GetTemplate(pClass);
                         // Find the first COM visible IClassX starting at ComMethodTable passed in and
                         // walking up the hierarchy.
-                        pComMT = pTemplate->GetClassComMT();
-                        while (pComMT && !pComMT->IsComVisible())
-                            pComMT = pComMT->GetParentClassComMT();
+                        pComMT = FindFirstComVisibleClassComMT(pTemplate);
                     }
                     EX_CATCH
                     {
