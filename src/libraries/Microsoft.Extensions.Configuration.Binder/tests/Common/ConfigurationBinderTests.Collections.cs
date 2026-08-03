@@ -2446,6 +2446,93 @@ namespace Microsoft.Extensions
             Assert.Equal(0, dictionary.Count);
         }
 
+        // Verifies that binding a custom ICollection<T> invokes Add exactly once per configuration
+        // child, in configuration-child order, with the correct per-item value. This guards the
+        // reflection binder's reuse of a single argument array across Add invocations.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        public void CustomCollectionBindingPreservesAddOrderAndValues()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"Items:0", "10"},
+                {"Items:1", "20"},
+                {"Items:2", "30"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OrderRecordingCollectionOptions();
+            config.Bind(options);
+
+            Assert.Equal(new[] { 10, 20, 30 }, options.Items.AddOrder);
+            Assert.Equal(3, options.Items.Count);
+        }
+
+        // Verifies that binding a custom IDictionary<TKey, TValue> sets the indexer exactly once per
+        // configuration child, in configuration-child order, overwrites an existing key, and passes
+        // the correct per-key value. This guards the reflection binder's reuse of a single indexer
+        // argument array across SetValue invocations.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        public void CustomDictionaryBindingPreservesSetOrderValuesAndOverwrite()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"Items:a", "1"},
+                {"Items:b", "2"},
+                {"Items:c", "3"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var options = new OrderRecordingDictionaryOptions();
+            options.Items["a"] = 99; // pre-existing value that binding must overwrite
+            options.Items.SetOrder.Clear(); // ignore the pre-seed; record only binding-driven sets
+
+            config.Bind(options);
+
+            Assert.Equal(
+                new[]
+                {
+                    new KeyValuePair<string, int>("a", 1),
+                    new KeyValuePair<string, int>("b", 2),
+                    new KeyValuePair<string, int>("c", 3),
+                },
+                options.Items.SetOrder);
+            Assert.Equal(1, options.Items["a"]);
+            Assert.Equal(2, options.Items["b"]);
+            Assert.Equal(3, options.Items["c"]);
+        }
+
+        // Verifies exception timing/wrapping is unchanged: a failed item conversion is swallowed by
+        // default (item skipped) but rethrown wrapped in InvalidOperationException when
+        // ErrorOnUnknownConfiguration is enabled.
+        [ConditionalFact(typeof(TestHelpers), nameof(TestHelpers.NotSourceGenMode))]
+        public void CustomCollectionBindingRespectsErrorOnUnknownConfiguration()
+        {
+            var input = new Dictionary<string, string>
+            {
+                {"Items:0", "10"},
+                {"Items:1", "notAnInt"},
+                {"Items:2", "30"},
+            };
+
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
+
+            var defaultOptions = new OrderRecordingCollectionOptions();
+            config.Bind(defaultOptions);
+            Assert.Equal(new[] { 10, 30 }, defaultOptions.Items.AddOrder);
+
+            var strictOptions = new OrderRecordingCollectionOptions();
+            Assert.Throws<InvalidOperationException>(
+                () => config.Bind(strictOptions, o => o.ErrorOnUnknownConfiguration = true));
+        }
+
         // Test behavior for root level arrays.
 
         // Tests for TypeConverter usage.
