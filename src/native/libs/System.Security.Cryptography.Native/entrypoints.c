@@ -416,6 +416,7 @@ static const Entry s_cryptoNative[] =
     DllImportEntry(CryptoNative_SslSetBio)
     DllImportEntry(CryptoNative_SslDoHandshake)
     DllImportEntry(CryptoNative_SslSetFd)
+    DllImportEntry(CryptoNative_SslSetAcceptMovingWriteBuffer)
     DllImportEntry(CryptoNative_SslSetRetryVerify)
     DllImportEntry(CryptoNative_SslSetClientCertCallback)
     DllImportEntry(CryptoNative_SslSetPostHandshakeAuth)
