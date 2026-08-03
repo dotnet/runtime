@@ -6,7 +6,7 @@ using ILCompiler.DependencyAnalysis;
 namespace ILCompiler.ObjectWriter
 {
     /// <summary>
-    /// Base class for WebAssembly object file format writers.
+    /// Base class for WebAssembly object writers.
     /// </summary>
     internal abstract partial class WasmObjectWriter : ObjectWriter
     {
