@@ -230,6 +230,7 @@ instructionset     ,ARM64 ,Sve2                  ,           ,59 ,Sve2          
 instructionset     ,ARM64 ,Sha3                  ,           ,86 ,Sha3                  ,sha3
 instructionset     ,ARM64 ,Sm4                   ,           ,87 ,Sm4                   ,sm4
 instructionset     ,ARM64 ,SveAes                ,           ,88 ,SveAes                ,sve_aes
+instructionset     ,ARM64 ,SvePmull128           ,           ,94 ,SvePmull128           ,sve_pmull128
 instructionset     ,ARM64 ,SveSha3               ,           ,89 ,SveSha3               ,sve_sha3
 instructionset     ,ARM64 ,SveSm4                ,           ,90 ,SveSm4                ,sve_sm4
 instructionset     ,ARM64 ,                      ,Cssc       ,93 ,Cssc                  ,cssc
@@ -247,6 +248,7 @@ instructionset64bit,ARM64 ,Sve2
 instructionset64bit,ARM64 ,Sha3
 instructionset64bit,ARM64 ,Sm4
 instructionset64bit,ARM64 ,SveAes
+instructionset64bit,ARM64 ,SvePmull128
 instructionset64bit,ARM64 ,SveSha3
 instructionset64bit,ARM64 ,SveSm4
 
@@ -271,6 +273,7 @@ implication        ,ARM64 ,Sha3       ,ArmBase
 implication        ,ARM64 ,Sm4        ,ArmBase
 implication        ,ARM64 ,SveAes     ,Sve
 implication        ,ARM64 ,SveAes     ,Aes
+implication        ,ARM64 ,SvePmull128,Sve
 implication        ,ARM64 ,SveSha3    ,Sve
 implication        ,ARM64 ,SveSha3    ,Sha3
 implication        ,ARM64 ,SveSm4     ,Sve

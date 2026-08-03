@@ -109,6 +109,7 @@ class GenerateHWIntrinsicTests_Arm
         ProcessInputs(SveTests.SveInputs);
         ProcessInputs(Sve2Tests.Sve2Inputs);
         ProcessInputs(SveTests.SveAesInputs);
+        ProcessInputs(SveTests.SvePmull128Inputs);
         ProcessInputs(SveTests.SveSha3Inputs);
         ProcessInputs(SveTests.SveSm4Inputs);
 

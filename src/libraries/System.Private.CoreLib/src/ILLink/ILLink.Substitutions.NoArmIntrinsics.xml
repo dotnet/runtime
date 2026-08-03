@@ -87,6 +87,12 @@
     <type fullname="System.Runtime.Intrinsics.Arm.SveAes/Arm64">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.SvePmull128">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
+    <type fullname="System.Runtime.Intrinsics.Arm.SvePmull128/Arm64">
+      <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
+    </type>
     <type fullname="System.Runtime.Intrinsics.Arm.SveSm4">
       <method signature="System.Boolean get_IsSupported()" body="stub" value="false" />
     </type>

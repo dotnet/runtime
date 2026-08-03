@@ -3100,8 +3100,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_SveAes_PolynomialMultiplyWideningEven:
-            case NI_SveAes_PolynomialMultiplyWideningOdd:
+            case NI_SvePmull128_PolynomialMultiplyWideningEven:
+            case NI_SvePmull128_PolynomialMultiplyWideningOdd:
             {
                 opt = INS_OPTS_SCALABLE_Q;
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
