@@ -51,11 +51,10 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         int hr = HResults.S_OK;
         int hrLocal = HResults.S_OK;
         IXCLRDataMethodDefinition? legacyMethodDefinition = null;
-        bool canFallback = LegacyFallbackHelper.CanFallback();
 
         try
         {
-            if (canFallback && _legacyImpl is not null)
+            if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
             {
                 DacComNullableByRef<IXCLRDataMethodDefinition> legacyMethodDefinitionOut = new(isNullRef: methodDefinition.IsNullRef);
                 hrLocal = _legacyImpl.GetDefinition(legacyMethodDefinitionOut);
@@ -74,7 +73,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (canFallback && _legacyImpl is not null)
+        if (_legacyImpl is not null)
         {
             Debug.ValidateHResult(hr, hrLocal);
         }
@@ -330,7 +329,6 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         [In, Out, MarshalUsing(CountElementName = nameof(rangesLen))] ClrDataAddressRange[]? addressRanges)
     {
         int hr = HResults.S_OK;
-        bool canFallback = LegacyFallbackHelper.CanFallback();
 
         try
         {
@@ -385,7 +383,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         }
 
 #if DEBUG
-        if (canFallback && _legacyImpl is not null)
+        if (_legacyImpl is not null)
         {
             bool validateRangesNeeded = rangesNeeded is not null;
             uint rangesNeededLocal = 0;
