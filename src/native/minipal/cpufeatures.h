@@ -51,6 +51,7 @@
 #define ARM64IntrinsicConstants_SveSha3 (1 << 14)
 #define ARM64IntrinsicConstants_SveSm4 (1 << 15)
 #define ARM64IntrinsicConstants_Cssc (1 << 16)
+#define ARM64IntrinsicConstants_SvePmull128 (1 << 17)
 
 #include <assert.h>
 
