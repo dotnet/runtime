@@ -274,46 +274,29 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
     }
     CONTRACTL_END;
 
+    // If the caller explicitly named the load context to bind against
+    // (AssemblyLoadContext.LoadFromAssemblyName), it wins over the parent's context.
+    if (GetExplicitBinder() != NULL)
+        return GetExplicitBinder();
+
     AssemblyBinder *pParentAssemblyBinder = NULL;
     Assembly *pParentAssembly = GetParentAssembly();
 
-    if(pParentAssembly != NULL)
+    if (pParentAssembly != NULL)
     {
-        // Get the PEAssembly associated with the parent's assembly
+        // Get the PEAssembly associated with the parent's assembly. For a dynamic parent this is the
+        // binder of the assembly that created it, which was captured at Assembly::CreateDynamic time.
         PEAssembly *pParentPEAssembly = pParentAssembly->GetPEAssembly();
         pParentAssemblyBinder = pParentPEAssembly->GetAssemblyBinder();
     }
 
-    if (GetPreferFallbackBinder())
-    {
-        // If we have been asked to use the fallback load context binder (currently only supported for AssemblyLoadContext.LoadFromAssemblyName),
-        // then pretend we do not have any binder yet available.
-        _ASSERTE(GetFallbackBinderForRequestingAssembly() != NULL);
-        pParentAssemblyBinder = NULL;
-    }
-
     if (pParentAssemblyBinder == NULL)
     {
-        // If the parent assembly binder is not available, then we maybe dealing with one of the following
-        // assembly scenarios:
+        // We can be here when there is no parent assembly, i.e. the entrypoint assembly, or when loading
+        // assemblies via the host (e.g. ICLRRuntimeHost2::ExecuteAssembly).
         //
-        // 1) Entrypoint assembly
-        // 2) AssemblyLoadContext.LoadFromAssemblyName
-        //
-        // For (2), we will need to bind against the DefaultContext binder (aka TPA Binder). This happens
-        // below if we do not find the parent assembly binder.
-        //
-        // For (3), fetch the fallback load context binder reference.
-
-        pParentAssemblyBinder = GetFallbackBinderForRequestingAssembly();
-    }
-
-    if (!pParentAssemblyBinder)
-    {
-        // We can be here when loading assemblies via the host (e.g. ICLRRuntimeHost2::ExecuteAssembly) (see comment above for details).
-        //
-        // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be
-        // used as the parent assembly binder.
+        // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding
+        // context should be used as the parent assembly binder.
         pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetDefaultBinder());
     }
 

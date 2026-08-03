@@ -54,11 +54,10 @@ class AssemblySpec  : public BaseAssemblySpec
     AppDomain       *m_pAppDomain;
     Assembly  *m_pParentAssembly;
 
-    // Contains the reference to the fallback load context associated with RefEmitted assembly requesting the load of another assembly (static or dynamic)
-    AssemblyBinder *m_pFallbackBinder;
-
-    // Flag to indicate if we should prefer the fallback load context binder for binding or not.
-    bool m_fPreferFallbackBinder;
+    // The binder to bind against, when the caller has explicitly named the load context to use
+    // (AssemblyLoadContext.LoadFromAssemblyName). When set, it takes precedence over the binder
+    // of the parent assembly.
+    AssemblyBinder *m_pExplicitBinder;
 
     HRESULT InitializeSpecInternal(mdToken kAssemblyRefOrDef,
                                    IMDInternalImport *pImport,
@@ -78,10 +77,7 @@ class AssemblySpec  : public BaseAssemblySpec
     {
         LIMITED_METHOD_CONTRACT;
         m_pParentAssembly = NULL;
-
-        m_pFallbackBinder = NULL;
-        m_fPreferFallbackBinder = false;
-
+        m_pExplicitBinder = NULL;
     }
 #endif //!DACCESS_COMPILE
 
@@ -89,10 +85,7 @@ class AssemblySpec  : public BaseAssemblySpec
     {
         LIMITED_METHOD_CONTRACT
         m_pParentAssembly = NULL;
-
-        m_pFallbackBinder = NULL;
-        m_fPreferFallbackBinder = false;
-
+        m_pExplicitBinder = NULL;
     }
 
 
@@ -139,32 +132,18 @@ class AssemblySpec  : public BaseAssemblySpec
         m_pParentAssembly = pAssembly;
     }
 
-    void SetFallbackBinderForRequestingAssembly(AssemblyBinder *pFallbackBinder)
-    {
-       LIMITED_METHOD_CONTRACT;
-
-        m_pFallbackBinder = pFallbackBinder;
-    }
-
-    AssemblyBinder* GetFallbackBinderForRequestingAssembly()
+    void SetExplicitBinder(AssemblyBinder *pBinder)
     {
         LIMITED_METHOD_CONTRACT;
 
-        return m_pFallbackBinder;
+        m_pExplicitBinder = pBinder;
     }
 
-    void SetPreferFallbackBinder()
+    AssemblyBinder* GetExplicitBinder()
     {
         LIMITED_METHOD_CONTRACT;
 
-        m_fPreferFallbackBinder = true;
-    }
-
-    bool GetPreferFallbackBinder()
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_fPreferFallbackBinder;
+        return m_pExplicitBinder;
     }
 
     // Note that this method does not clone the fields!
@@ -181,10 +160,7 @@ class AssemblySpec  : public BaseAssemblySpec
         BaseAssemblySpec::CopyFrom(pSource);
 
         SetParentAssembly(pSource->GetParentAssembly());
-
-        // Copy the details of the fallback load context binder
-        SetFallbackBinderForRequestingAssembly(pSource->GetFallbackBinderForRequestingAssembly());
-        m_fPreferFallbackBinder = pSource->GetPreferFallbackBinder();
+        SetExplicitBinder(pSource->GetExplicitBinder());
     }
 
     HRESULT CheckFriendAssemblyName();
