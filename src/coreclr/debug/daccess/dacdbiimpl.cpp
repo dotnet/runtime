@@ -7718,11 +7718,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateAsyncLocals(VMPTR_Method
             {
                 return hr;
             }
-            nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(requestedNativeCodeVersion.GetNativeCode()));
+            nativeCodeStartAddr = PCODEToPINSTR(requestedNativeCodeVersion.GetNativeCode());
         }
         else
         {
-            nativeCodeStartAddr = PCODEToPINSTR(GetInterpreterCodeFromEntryPointIfPresent(pMethodDesc->GetNativeCode()));
+            nativeCodeStartAddr = PCODEToPINSTR(pMethodDesc->GetNativeCode());
         }
 
         DebugInfoRequest request;

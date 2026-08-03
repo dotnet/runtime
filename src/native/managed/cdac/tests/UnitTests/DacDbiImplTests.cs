@@ -414,13 +414,6 @@ public unsafe class DacDbiImplTests
         ((List<ulong>)handle.Target!).Add(value);
     }
 
-    [UnmanagedCallersOnly]
-    private static unsafe void CollectAsyncLocalCallback(AsyncLocalData* value, nint pUserData)
-    {
-        GCHandle handle = GCHandle.FromIntPtr(pUserData);
-        ((List<AsyncLocalData>)handle.Target!).Add(*value);
-    }
-
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
     public void EnumerateAssembliesInAppDomain_ZeroAppDomain(MockTarget.Architecture arch)
@@ -1161,73 +1154,6 @@ public unsafe class DacDbiImplTests
         Assert.Equal(7ul, result.encVersion);
         Assert.Equal(AsClrDataAddress(arch, module.Value), vmModule);
         Assert.Equal(MethodToken, functionToken);
-    }
-
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void EnumerateAsyncLocals_InterpreterCode_UsesBytecodeAddress(MockTarget.Architecture arch)
-    {
-        const ulong MethodAddress = 0x3000;
-        TargetCodePointer interpreterPrecode = new(0x5000);
-        TargetCodePointer bytecodeAddress = new(0x6000);
-        MethodDescHandle methodDesc = new(new TargetPointer(MethodAddress));
-        NativeCodeVersionHandle nativeCodeVersion = NativeCodeVersionHandle.CreateSynthetic(new TargetPointer(MethodAddress));
-
-        var rts = new Mock<IRuntimeTypeSystem>();
-        rts.Setup(r => r.GetMethodDescHandle(new TargetPointer(MethodAddress))).Returns(methodDesc);
-
-        var codeVersions = new Mock<ICodeVersions>();
-        codeVersions.Setup(c => c.GetNativeCodeVersionForIP(bytecodeAddress)).Returns(nativeCodeVersion);
-        codeVersions.Setup(c => c.GetNativeCode(nativeCodeVersion)).Returns(interpreterPrecode);
-
-        var precodeStubs = new Mock<IPrecodeStubs>();
-        precodeStubs
-            .Setup(p => p.GetInterpreterCodeFromInterpreterPrecodeIfPresent(interpreterPrecode))
-            .Returns(bytecodeAddress);
-
-        var debugInfo = new Mock<IDebugInfo>();
-        debugInfo
-            .Setup(d => d.GetAsyncSuspensionPoints(bytecodeAddress))
-            .Returns(
-            [
-                new AsyncSuspensionInfo
-                {
-                    Locals =
-                    [
-                        new AsyncLocalInfo { Offset = 0x20, ILVarNumber = 1 },
-                    ],
-                },
-            ]);
-
-        var target = new TestPlaceholderTarget.Builder(arch)
-            .AddMockContract(rts)
-            .AddMockContract(codeVersions)
-            .AddMockContract(precodeStubs)
-            .AddMockContract(debugInfo)
-            .Build();
-        DacDbiImpl dacDbi = new(target, legacyObj: null);
-
-        List<AsyncLocalData> locals = new();
-        GCHandle gcHandle = GCHandle.Alloc(locals);
-        int hr;
-        try
-        {
-            hr = dacDbi.EnumerateAsyncLocals(
-                MethodAddress,
-                bytecodeAddress.Value,
-                state: 0,
-                &CollectAsyncLocalCallback,
-                GCHandle.ToIntPtr(gcHandle));
-        }
-        finally
-        {
-            gcHandle.Free();
-        }
-
-        Assert.Equal(System.HResults.S_OK, hr);
-        AsyncLocalData local = Assert.Single(locals);
-        Assert.Equal(0x20u, local.Offset);
-        Assert.Equal(1u, local.IlVarNum);
     }
 
     [Theory]
