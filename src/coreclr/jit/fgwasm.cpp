@@ -3681,6 +3681,13 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         for (BasicBlock* const block : func->Blocks(this))
         {
             const PerBlockData& data = blockData[block->bbNum];
+
+            // A required block reached by the dataflow leaves its required value on the frame.
+            // Unreachable blocks are never visited, so their availableOut keeps its default.
+            //
+            assert(!data.isRequired || (data.availableOut == data.requiredVip) ||
+                   (data.availableOut == PerBlockData::VIP_UNSET));
+
             if (data.isRequired && (data.availableIn != data.requiredVip))
             {
                 updateVirtualIPOnFrame(func, block, data.requiredVip);
