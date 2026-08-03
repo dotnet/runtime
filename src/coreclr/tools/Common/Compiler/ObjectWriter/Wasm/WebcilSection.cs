@@ -23,7 +23,7 @@ namespace ILCompiler.ObjectWriter
             Header = header;
             _stream = stream;
             Index = index;
-            _paddingHelper = new PaddingHelper(WasmObjectWriter.WebcilSectionAlignment);
+            _paddingHelper = new PaddingHelper(WebCilObjectWriter.WebcilSectionAlignment);
         }
 
         public override int EncodeSize()

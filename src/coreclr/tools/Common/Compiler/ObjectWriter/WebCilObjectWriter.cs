@@ -58,6 +58,8 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal sealed class WebCilObjectWriter : WasmObjectWriter
     {
+        public const int WebcilSectionAlignment = 16;
+
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
 
         // We use 2 Wasm data segments for webcil,
