@@ -548,6 +548,10 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes_Arm64);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes_Arm64))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SvePmull128))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SvePmull128_Arm64);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SvePmull128_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SvePmull128);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3_Arm64);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3_Arm64))
@@ -556,10 +560,6 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4_Arm64);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4_Arm64))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
-                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SvePmull128))
-                            resultflags.AddInstructionSet(InstructionSet.ARM64_SvePmull128_Arm64);
-                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SvePmull128_Arm64))
-                            resultflags.AddInstructionSet(InstructionSet.ARM64_SvePmull128);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_AdvSimd))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_ArmBase);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes))
@@ -594,6 +594,8 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_Aes);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SvePmull128))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3))
@@ -602,8 +604,6 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
-                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SvePmull128))
-                            resultflags.AddInstructionSet(InstructionSet.ARM64_Sve);
                         break;
 
                     case TargetArchitecture.RiscV64:
@@ -865,12 +865,12 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.ARM64_Sm4);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveAes_Arm64))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SvePmull128_Arm64))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SvePmull128);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSha3_Arm64))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_SveSm4_Arm64))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
-                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_SvePmull128_Arm64))
-                            resultflags.AddInstructionSet(InstructionSet.ARM64_SvePmull128);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_AdvSimd);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_ArmBase))
@@ -906,6 +906,8 @@ namespace Internal.JitInterface
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_Aes))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveAes);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
+                            resultflags.AddInstructionSet(InstructionSet.ARM64_SvePmull128);
+                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sha3))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveSha3);
@@ -913,8 +915,6 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
                         if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sm4))
                             resultflags.AddInstructionSet(InstructionSet.ARM64_SveSm4);
-                        if (resultflags.HasInstructionSet(InstructionSet.ARM64_Sve))
-                            resultflags.AddInstructionSet(InstructionSet.ARM64_SvePmull128);
                         break;
 
                     case TargetArchitecture.RiscV64:
@@ -1378,12 +1378,12 @@ namespace Internal.JitInterface
                         AddInstructionSet(InstructionSet.ARM64_Sm4_Arm64);
                     if (HasInstructionSet(InstructionSet.ARM64_SveAes))
                         AddInstructionSet(InstructionSet.ARM64_SveAes_Arm64);
+                    if (HasInstructionSet(InstructionSet.ARM64_SvePmull128))
+                        AddInstructionSet(InstructionSet.ARM64_SvePmull128_Arm64);
                     if (HasInstructionSet(InstructionSet.ARM64_SveSha3))
                         AddInstructionSet(InstructionSet.ARM64_SveSha3_Arm64);
                     if (HasInstructionSet(InstructionSet.ARM64_SveSm4))
                         AddInstructionSet(InstructionSet.ARM64_SveSm4_Arm64);
-                    if (HasInstructionSet(InstructionSet.ARM64_SvePmull128))
-                        AddInstructionSet(InstructionSet.ARM64_SvePmull128_Arm64);
                     break;
 
                 case TargetArchitecture.RiscV64:
@@ -1451,9 +1451,9 @@ namespace Internal.JitInterface
                     AddInstructionSet(InstructionSet.ARM64_Sha3_Arm64);
                     AddInstructionSet(InstructionSet.ARM64_Sm4_Arm64);
                     AddInstructionSet(InstructionSet.ARM64_SveAes_Arm64);
+                    AddInstructionSet(InstructionSet.ARM64_SvePmull128_Arm64);
                     AddInstructionSet(InstructionSet.ARM64_SveSha3_Arm64);
                     AddInstructionSet(InstructionSet.ARM64_SveSm4_Arm64);
-                    AddInstructionSet(InstructionSet.ARM64_SvePmull128_Arm64);
                     break;
 
                 case TargetArchitecture.RiscV64:
