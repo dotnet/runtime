@@ -428,6 +428,8 @@ Unknown_ReleaseSpecial_IErrorInfo_Internal(IUnknown* pUnk)
 // walking up the hierarchy.
 static ComMethodTable* FindFirstComVisibleClassComMT(ComCallWrapperTemplate* pTemplate)
 {
+    WRAPPER_NO_CONTRACT;
+
     ComMethodTable* pComMT = pTemplate->GetClassComMT();
     while (pComMT && !pComMT->IsComVisible())
         pComMT = pComMT->GetParentClassComMT();
