@@ -252,6 +252,7 @@
     <Compile Include="$(CommonPath)System\Experimentals.cs">
       <Link>Common\System\Experimentals.cs</Link>
     </Compile>
+    <Compile Include="src\System\Extensions\DateTimeExtensions.cs" />
     <Compile Include="src\System\RuntimeType.BoxCache.cs" />
     <Compile Include="src\System\RuntimeType.CreateUninitializedCache.CoreCLR.cs" />
     <Compile Include="src\System\RuntimeType.GenericCache.cs" />
@@ -324,5 +325,8 @@
   <!-- Setup eventing file generation -->
   <ItemGroup Condition="'$(FeaturePerfTracing)' == 'true'">
     <AdditionalFiles Include="$(CoreClrProjectRoot)vm/ClrEtwAll.man" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="system.private.corelib\src\system\extensions\" />
   </ItemGroup>
 </Project>
