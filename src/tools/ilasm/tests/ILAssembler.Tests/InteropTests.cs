@@ -125,6 +125,64 @@ namespace ILAssembler.Tests
             Assert.Equal([0x1E, 0x84, 0x00], reader.GetBlobBytes(field.GetMarshallingDescriptor()));
         }
 
+        [Fact]
+        public void SafeArrayMarshalWithoutVariantType_EmitsDescriptor()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .field public marshal(safearray) object[] Values
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+
+            Assert.Equal([(byte)UnmanagedType.SafeArray, 0, 0], reader.GetBlobBytes(field.GetMarshallingDescriptor()));
+        }
+
+        [Fact]
+        public void VariantBoolMarshal_EmitsDescriptor()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .field public marshal(variant bool) bool Value
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+
+            Assert.Equal([(byte)UnmanagedType.VariantBool], reader.GetBlobBytes(field.GetMarshallingDescriptor()));
+        }
+
+        [Theory]
+        [InlineData("[]", "2A50")]
+        [InlineData("[100]", "2A50006400")]
+        [InlineData("[100 + 1]", "2A50016401")]
+        [InlineData("[+ 1]", "2A5001")]
+        public void LPArrayMarshalSizeSyntax_EmitsNativeCompatibleDescriptor(string sizeSyntax, string expectedHex)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .field public marshal({{sizeSyntax}}) int32[] Values
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+
+            Assert.Equal(Convert.FromHexString(expectedHex), reader.GetBlobBytes(field.GetMarshallingDescriptor()));
+        }
+
         [Theory]
         [InlineData("int8", UnmanagedType.U1)]
         [InlineData("int16", UnmanagedType.U2)]

@@ -613,11 +613,18 @@ namespace ILAssembler
             }
 
             string decl = context.GetChild(0).GetText();
-            if (decl == ".publicKey")
+            if (decl is ".publickey" or ".publicKey")
             {
                 BlobBuilder blob = new();
                 blob.WriteBytes(VisitBytes(context.bytes()).Value);
-                _currentAssemblyOrRef!.PublicKeyOrToken = blob;
+                // COMPAT: Native ilasm gives a public key token precedence regardless of declaration order.
+                if (_currentAssemblyOrRef is not EntityRegistry.AssemblyReferenceEntity assemblyReference
+                    || assemblyReference.PublicKeyOrToken is null
+                    || assemblyReference.Flags.HasFlag(AssemblyFlags.PublicKey))
+                {
+                    _currentAssemblyOrRef!.PublicKeyOrToken = blob;
+                    _currentAssemblyOrRef.Flags |= AssemblyFlags.PublicKey;
+                }
             }
             else if (decl == ".ver")
             {
@@ -791,6 +798,7 @@ namespace ILAssembler
                 var blob = new BlobBuilder();
                 blob.WriteBytes(VisitBytes(context.bytes()).Value);
                 _currentAssemblyOrRef!.PublicKeyOrToken = blob;
+                _currentAssemblyOrRef.Flags &= ~AssemblyFlags.PublicKey;
             }
             return GrammarResult.SentinelValue.Result;
         }
@@ -4669,20 +4677,20 @@ namespace ILAssembler
             {
                 if (arrayPointerInfo[i] is CILParser.PointerArrayTypeSizeContext size)
                 {
+                    suffix.WriteCompressedInteger(0);
                     suffix.WriteCompressedInteger(VisitInt32(size.int32()).Value);
+                    suffix.WriteCompressedInteger(0);
                 }
                 else if (arrayPointerInfo[i] is CILParser.PointerArrayTypeSizeParamIndexContext sizeParamIndex)
                 {
                     var ints = sizeParamIndex.int32();
                     suffix.WriteCompressedInteger(VisitInt32(ints[1]).Value);
-                    suffix.WriteCompressedInteger(VisitInt32(ints[2]).Value);
+                    suffix.WriteCompressedInteger(VisitInt32(ints[0]).Value);
                     suffix.WriteCompressedInteger(1); // Write that the paramIndex parameter was specified
                 }
                 else if (arrayPointerInfo[i] is CILParser.PointerArrayTypeParamIndexContext paramIndex)
                 {
-                    suffix.WriteCompressedInteger(0);
                     suffix.WriteCompressedInteger(VisitInt32(paramIndex.int32()).Value);
-                    suffix.WriteCompressedInteger(0); // Write that the paramIndex parameter was not specified
                 }
             }
 
@@ -4706,7 +4714,11 @@ namespace ILAssembler
 
             if (context.marshalType is null)
             {
-                if (context.unsignedMarshalType is not null)
+                if (context.marshalBool is not null)
+                {
+                    blob.WriteByte((byte)UnmanagedType.VariantBool);
+                }
+                else if (context.unsignedMarshalType is not null)
                 {
                     blob.WriteByte(context.unsignedMarshalType.Type switch
                     {
@@ -4782,15 +4794,7 @@ namespace ILAssembler
                     blob.WriteByte(NATIVE_TYPE_VOID);
                     break;
                 case CILParser.BOOL:
-                    // Distinguish 'variant bool' (VariantBool) from plain 'bool' (Bool)
-                    if (context.marshalBool is not null)
-                    {
-                        blob.WriteByte((byte)UnmanagedType.VariantBool);
-                    }
-                    else
-                    {
-                        blob.WriteByte((byte)UnmanagedType.Bool);
-                    }
+                    blob.WriteByte((byte)UnmanagedType.Bool);
                     break;
                 case CILParser.INT8:
                     blob.WriteByte((byte)UnmanagedType.I1);
@@ -5971,7 +5975,12 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitVariantType(CILParser.VariantTypeContext context) => VisitVariantType(context);
         public GrammarResult.Literal<VarEnum> VisitVariantType(CILParser.VariantTypeContext context)
         {
-            VarEnum variant = VisitVariantTypeElement(context.variantTypeElement()).Value;
+            if (context.variantTypeElement() is not CILParser.VariantTypeElementContext element)
+            {
+                return new(VarEnum.VT_EMPTY);
+            }
+
+            VarEnum variant = VisitVariantTypeElement(element).Value;
             // The 0th child is the variant element type.
             for (int i = 1; i < context.ChildCount; i++)
             {

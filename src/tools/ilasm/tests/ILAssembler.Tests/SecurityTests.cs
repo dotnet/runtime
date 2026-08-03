@@ -54,5 +54,23 @@ namespace ILAssembler.Tests
             // Verify assembly compiled successfully with the permission set
             Assert.True(reader.GetTableRowCount(TableIndex.DeclSecurity) >= 1);
         }
+
+        [Fact]
+        public void PermissionSet_ByteArrayWithoutEquals_IsAccepted()
+        {
+            string source = """
+                .assembly test
+                {
+                    .permissionset reqrefuse bytearray (2E)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var declaration = reader.GetDeclarativeSecurityAttribute(MetadataTokens.DeclarativeSecurityAttributeHandle(1));
+
+            Assert.Equal(System.Reflection.DeclarativeSecurityAction.RequestRefuse, declaration.Action);
+            Assert.Equal([0x2E], reader.GetBlobBytes(declaration.PermissionSet));
+        }
     }
 }
