@@ -201,9 +201,8 @@ namespace System.Net.Security.Tests
                 new X509Certificate2Collection { intermediateWithKey },
                 offline: true);
             // Capture the internal intermediate cert object before it is released
-            X509Certificate2 ownedIntermediate = ownedContext.IntermediateCertificates.Count > 0
-                ? ownedContext.IntermediateCertificates[0]
-                : null;
+            Assert.NotEmpty(ownedContext.IntermediateCertificates);
+            X509Certificate2 ownedIntermediate = ownedContext.IntermediateCertificates[0];
             options.CertificateContext = ownedContext;
             options.OwnsCertificateContext = true;
 
