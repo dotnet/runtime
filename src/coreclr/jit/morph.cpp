@@ -3506,7 +3506,13 @@ GenTree* Compiler::fgMorphExpandLocal(GenTreeLclVarCommon* lclNode)
         if (varDsc->lvNormalizeOnStore())
         {
             GenTree* value = lclNode->Data();
+#ifdef TARGET_64BIT
             noway_assert(genActualTypeIsInt(value));
+#else
+            // On 32-bit targets, a TYP_BYREF can flow into a normalizing store into a small int local.
+            // i.e., in IL we could have ldloca V_N; stloc <small_type_lcl> with no explicit conversion.
+            noway_assert(genActualTypeIsInt(value) || value->TypeIs(TYP_BYREF));
+#endif
 
             lclNode->gtType = TYP_INT;
 
@@ -6407,8 +6413,8 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
         // This is call to CORINFO_HELP_VIRTUAL_FUNC_PTR with ignored result.
         // Transform it into a null check.
 
-        assert(call->gtArgs.CountArgs() >= 1);
-        GenTree* objPtr = call->gtArgs.GetArgByIndex(0)->GetNode();
+        assert(call->gtArgs.CountUserArgs() >= 1);
+        GenTree* objPtr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
 
         GenTree* nullCheck = gtNewNullCheck(objPtr);
 
@@ -6514,7 +6520,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // pointing to a frozen segment
     if (gtIsTypeHandleToRuntimeTypeHelper(call))
     {
-        GenTree*             argNode = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        GenTree*             argNode = call->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
         CORINFO_CLASS_HANDLE hClass  = gtGetHelperArgClassHandle(argNode);
         if (hClass != NO_CLASS_HANDLE)
         {

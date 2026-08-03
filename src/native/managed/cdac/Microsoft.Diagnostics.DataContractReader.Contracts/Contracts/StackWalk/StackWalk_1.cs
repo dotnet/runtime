@@ -37,7 +37,8 @@ internal partial class StackWalk_1 : IStackWalk
         bool IsResumableFrame = false,
         bool IsActiveFrame = false,
         bool IsInterrupted = false,
-        bool HasFaulted = false) : IStackDataFrameHandle
+        bool HasFaulted = false,
+        bool IsExceptionFrame = false) : IStackDataFrameHandle
     { }
 
     private class StackWalkData(IPlatformAgnosticContext context, StackWalkState state, FrameIterator frameIter, ThreadData threadData)
@@ -117,7 +118,10 @@ internal partial class StackWalk_1 : IStackWalk
         {
             bool isResumable = IsCurrentFrameResumable();
             bool isActiveFrame = IsFirst && State == StackWalkState.Frameless;
-            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame, IsInterrupted, HasFaulted);
+            bool isExceptionFrame = State is StackWalkState.Frame or StackWalkState.SkippedFrame
+                && FrameIter.IsValid()
+                && FrameIter.GetCurrentFrameType() is FrameType.FaultingExceptionFrame or FrameType.SoftwareExceptionFrame;
+            return new(Context.Clone(), State, FrameIter.CurrentFrameAddress, ThreadData, isResumable, isActiveFrame, IsInterrupted, HasFaulted, isExceptionFrame);
         }
     }
 

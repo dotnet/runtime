@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppMinimum)</TargetFramework>
-    <RollForward>LatestMajor</RollForward>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
