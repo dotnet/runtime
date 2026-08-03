@@ -1010,6 +1010,15 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Sve_CreateFalseMaskUInt64:
         {
             // Import as a constant vector 0
+
+            if (retType == TYP_SIMD)
+            {
+                // Call directly to ensure the correct simdBaseType, to as that
+                // should allow for easier optimisations.
+                retNode = gtNewSimdVconNode(retType, simdBaseType, SimdScalableRepeated, 0);
+                break;
+            }
+
             retNode = gtNewZeroConNode(retType);
             break;
         }
@@ -1029,23 +1038,37 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             assert(retType == TYP_MASK);
             op1 = impPopStack().val;
 
-            // Where possible, import a constant mask to allow for optimisations.
+            // Where possible, import a constant vector to allow for optimisations.
             if (op1->IsIntegralConst())
             {
-                int64_t    pattern = op1->AsIntConCommon()->IntegralValue();
-                simdmask_t simdVal;
+                int64_t pattern = op1->AsIntConCommon()->IntegralValue();
 
-                if (EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &simdVal, (SveMaskPattern)pattern))
+                if (retType == TYP_SIMD)
                 {
-                    GenTreeMskCon* mskCon = gtNewMskConNode(retType);
-                    mskCon->gtSimdMaskVal = simdVal;
-                    retNode               = mskCon;
-                    break;
+                    if ((pattern == SVE_PATTERN_ALL) || (pattern == SVE_PATTERN_POW2))
+                    {
+                        retNode = gtNewSimdVconNode(retType, simdBaseType, SimdScalableRepeated,
+                                                    SimdAllBitsSetForElementType(simdBaseType));
+                        break;
+                    }
+                }
+                else
+                {
+                    simdmask_t simdVal;
+
+                    if (EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &simdVal, (SveMaskPattern)pattern))
+                    {
+                        GenTreeMskCon* mskCon = gtNewMskConNode(retType);
+                        mskCon->gtSimdMaskVal = simdVal;
+                        retNode               = mskCon;
+                        break;
+                    }
                 }
             }
 
-            // Was not able to generate a pattern, instead import a truemaskall
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseType, simdSize);
+            // Was not able to generate a pattern, instead import the intrinsic node.
+            retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, intrinsic, simdBaseType, simdSize);
+
             break;
         }
 
@@ -1634,7 +1657,9 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 }
 
 //------------------------------------------------------------------------
-// gtNewSimdAllTrueMaskNode: Create a mask with all bits set to true
+// gtNewSimdTrueMaskNode: Create a mask with all bits set to true for
+// the base type.
+// Eg: A u64int mask would be 10001000...
 //
 // Arguments:
 //    simdBaseType -- the base type of the nodes being masked
@@ -1642,13 +1667,18 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 // Return Value:
 //    The mask
 //
-GenTree* Compiler::gtNewSimdAllTrueMaskNode(var_types simdBaseType)
+GenTree* Compiler::gtNewSimdTrueMaskNode(var_types simdBaseType)
 {
     // Import as a constant mask
 
-    GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
+#if defined(DEBUG)
+    if (JitConfig.JitUseScalableVectorT())
+    {
+        return gtNewMskConNode(TYP_MASK, simdBaseType, 1);
+    }
+#endif // DEBUG
 
-    // TODO-SVE: For agnostic VL, vector type may not be simd16_t
+    GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
 
     bool found = EvaluateSimdPatternToMask<simd16_t>(simdBaseType, &mskCon->gtSimdMaskVal, SveMaskPatternAll);
     assert(found);
@@ -1665,6 +1695,14 @@ GenTree* Compiler::gtNewSimdAllTrueMaskNode(var_types simdBaseType)
 GenTree* Compiler::gtNewSimdFalseMaskByteNode()
 {
     // Import as a constant mask 0
+
+#if defined(DEBUG)
+    if (JitConfig.JitUseScalableVectorT())
+    {
+        return gtNewMskConNode(TYP_MASK, TYP_BYTE, 0);
+    }
+#endif // DEBUG
+
     GenTreeMskCon* mskCon = gtNewMskConNode(TYP_MASK);
     mskCon->gtSimdMaskVal = simdmask_t::Zero();
     return mskCon;

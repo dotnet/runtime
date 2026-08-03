@@ -260,7 +260,8 @@ FrameCallbackAdapter(
 
     Module* pModule = pMD->GetModule();
 
-    uint32_t nativeOffset = (pCF->HasFaulted() || !pCF->IsFrameless()) ? 0 : pCF->GetRelOffset();
+    bool canResolveOffsets = pCF->IsFrameless();
+    uint32_t nativeOffset = canResolveOffsets ? pCF->GetRelOffset() : 0;
     uint32_t ilOffset = 0;
     PCODE ip = (PCODE)0;
     TADDR stackPointer = (TADDR)0;
@@ -276,7 +277,7 @@ FrameCallbackAdapter(
         return SWA_CONTINUE;
     }
 
-    if (g_pDebugInterface != nullptr && pMD != nullptr)
+    if (g_pDebugInterface != nullptr && canResolveOffsets)
     {
         DWORD resolvedILOffset = 0;
         BOOL haveILOffset = FALSE;
@@ -711,6 +712,16 @@ CrashReportInitialize()
 void
 CrashReportConfigure()
 {
+#if !defined(TARGET_ANDROID) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+    // Preserve createdump's existing ownership of EnableCrashReport* when it is enabled.
+    CLRConfigNoCache enabledMiniDumpCfg = CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
+    DWORD miniDumpEnabled = 0;
+    if (enabledMiniDumpCfg.IsSet() && enabledMiniDumpCfg.TryAsInteger(10, miniDumpEnabled) && miniDumpEnabled != 0)
+    {
+        return;
+    }
+#endif // !defined(TARGET_ANDROID) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+
     // Read crash report configuration here rather than in PROCAbortInitialize
     // because on Android the DOTNET_* environment variables are set via JNI
     // after PAL_Initialize has already run.

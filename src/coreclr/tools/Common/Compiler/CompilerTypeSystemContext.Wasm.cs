@@ -5,8 +5,6 @@ using System.Collections.Generic;
 
 using Internal.TypeSystem;
 
-using Debug = System.Diagnostics.Debug;
-
 namespace ILCompiler
 {
     public partial class CompilerTypeSystemContext
@@ -14,25 +12,26 @@ namespace ILCompiler
         private readonly object _structCacheLock = new object();
         private readonly Dictionary<int, TypeDesc> _structsBySize = new Dictionary<int, TypeDesc>();
         private volatile TypeDesc _cachedEmptyStruct;
-        private volatile TypeDesc _cachedV128Type;
+        private volatile TypeDesc _wasmV128Type;
 
         /// <summary>
-        /// Gets the first SIMD v128 type encountered during lowering, or null if none has been seen.
-        /// Used by RaiseSignature to produce a roundtrippable type for the 'V' encoding.
+        /// Gets the type RaiseSignature produces for the 'V' encoding. All v128 types share the same
+        /// wasm ABI (16 bytes, 16-byte aligned), so any one of them round-trips 'V' identically;
+        /// resolving a fixed one keeps raising independent of the order lowering encountered them in.
         /// </summary>
-        public TypeDesc CachedV128Type => _cachedV128Type;
-
-        /// <summary>
-        /// Caches a SIMD v128 type discovered during lowering. Only the first one is retained.
-        /// </summary>
-        public void CacheV128Type(TypeDesc type)
+        public TypeDesc WasmV128Type
         {
-            // All v128 types share the same wasm ABI (16-byte aligned), so any one round-trips the
-            // 'V' encoding identically; a smaller alignment would change raised signatures silently.
-            Debug.Assert(type is DefType defType && defType.InstanceFieldAlignment.AsInt == 16,
-                $"v128 type {type} must be 16-byte aligned to be interchangeable in raised signatures");
+            get
+            {
+                TypeDesc type = _wasmV128Type;
+                if (type is null)
+                {
+                    var vector128 = (MetadataType)SystemModule.GetType("System.Runtime.Intrinsics"u8, "Vector128`1"u8);
+                    _wasmV128Type = type = vector128.MakeInstantiatedType(GetWellKnownType(WellKnownType.Byte));
+                }
 
-            _cachedV128Type ??= type;
+                return type;
+            }
         }
 
         /// <summary>

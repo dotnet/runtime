@@ -848,7 +848,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBin
 
     // Set up the metadata pointers in the PEAssembly. (This is the only identity
     // we have.)
-    ComHolderPreemp<IMetaDataEmit> pEmit;
+    ReleaseHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
     return new PEAssembly(NULL, pEmit, FALSE, pFallbackBinder);
 }
@@ -929,40 +929,6 @@ void PEAssembly::PathToUrl(SString &string)
     {
         string.Replace(i, W('/'));
     }
-}
-
-void PEAssembly::UrlToPath(SString &string)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    SString::Iterator i = string.Begin();
-
-    SString sss2(SString::Literal, W("file://"));
-#if !defined(TARGET_UNIX)
-    SString sss3(SString::Literal, W("file:///"));
-    if (string.MatchCaseInsensitive(i, sss3))
-        string.Delete(i, 8);
-    else
-#endif
-    if (string.MatchCaseInsensitive(i, sss2))
-        string.Delete(i, 7);
-
-#if !defined(TARGET_UNIX)
-    while (string.Find(i, W('/')))
-    {
-        string.Replace(i, W('\\'));
-    }
-#endif
-}
-
-BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)
-{
-    return path.FindBack(i, DIRECTORY_SEPARATOR_CHAR_A);
 }
 
 // ------------------------------------------------------------

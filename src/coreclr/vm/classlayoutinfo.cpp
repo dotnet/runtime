@@ -397,6 +397,16 @@ namespace
         return FALSE;
     }
 
+    BOOL TypeHasDecimalFloatingPointField(CorElementType corElemType, TypeHandle pNestedType)
+    {
+        if (corElemType == ELEMENT_TYPE_VALUETYPE)
+        {
+            _ASSERTE(!pNestedType.IsNull());
+            return pNestedType.GetMethodTable()->IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
+        }
+        return FALSE;
+    }
+
     ParseNativeTypeFlags NlTypeToNativeTypeFlags(CorNativeLinkType nlType)
     {
         ParseNativeTypeFlags nativeTypeFlags = ParseNativeTypeFlags::None;
@@ -487,6 +497,11 @@ auto EEClassLayoutInfo::GetNestedFieldFlags(Module* pModule, FieldDesc *pFields,
         if (TypeHasInt128Field(corElemType, typeHandleMaybe))
         {
             flags |= NestedFieldFlags::Int128;
+        }
+
+        if (TypeHasDecimalFloatingPointField(corElemType, typeHandleMaybe))
+        {
+            flags |= NestedFieldFlags::DecimalFloatingPoint;
         }
     }
 
@@ -1069,6 +1084,7 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
         else
         if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__INT128)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__UINT128)) ||
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__DECIMAL128)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
             pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)) ||

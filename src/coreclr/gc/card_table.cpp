@@ -605,7 +605,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
             if (saved_g_lowest_address < g_gc_lowest_address)
             {
-                if (ps > (size_t)g_gc_lowest_address)
+                if (ps >= (size_t)g_gc_lowest_address)
                     saved_g_lowest_address = (uint8_t*)(size_t)OS_PAGE_SIZE;
                 else
                 {

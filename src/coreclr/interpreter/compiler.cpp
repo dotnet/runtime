@@ -7188,8 +7188,8 @@ static OpcodePeepElement peepStLdLoc_S[] = {
 
 static OpcodePeepElement peepStLdLoc[] = {
     { 0, CEE_STLOC },
-    { 5, CEE_LDLOC },
-    { 10, CEE_ILLEGAL } // End marker
+    { 4, CEE_LDLOC },
+    { 8, CEE_ILLEGAL } // End marker
 };
 
 static OpcodePeepElement peepBoxUnboxOpcodes[] = {
@@ -8116,7 +8116,7 @@ bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* patte
         case CEE_STLOC_2: localVar = 2; break;
         case CEE_STLOC_3: localVar = 3; break;
         case CEE_STLOC_S: localVar = ip[1]; break;
-        case CEE_STLOC: localVar = getU2LittleEndian(ip + 1); break;
+        case CEE_STLOC: localVar = getU2LittleEndian(ip + 2); break;
         default:
             assert(!"Unexpected opcode in store/load peep");
             return false;
@@ -8131,7 +8131,7 @@ bool InterpCompiler::IsStoreLoadPeep(const uint8_t* ip, OpcodePeepElement* patte
         case CEE_LDLOC_2: secondLocalVar = 2; break;
         case CEE_LDLOC_3: secondLocalVar = 3; break;
         case CEE_LDLOC_S: secondLocalVar = ip[pattern[1].offsetIntoPeep + 1]; break;
-        case CEE_LDLOC: secondLocalVar = getU2LittleEndian(ip + pattern[1].offsetIntoPeep + 1); break;
+        case CEE_LDLOC: secondLocalVar = getU2LittleEndian(ip + pattern[1].offsetIntoPeep + 2); break;
         default:
             assert(!"Unexpected opcode in store/load peep");
             return false;
@@ -11014,7 +11014,7 @@ retry_emit:
                         m_ip += 3;
                         break;
                     case CEE_STLOC:
-                        EmitStoreVar(numArgs + getU2LittleEndian(m_ip + 1));\
+                        EmitStoreVar(numArgs + getU2LittleEndian(m_ip + 1));
                         m_ip += 3;
                         break;
                     case CEE_CEQ:

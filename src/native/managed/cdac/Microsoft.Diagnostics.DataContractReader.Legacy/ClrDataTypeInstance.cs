@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices.Marshalling;
+using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -10,11 +12,13 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
 {
     private readonly Target _target;
+    private readonly ITypeHandle _typeHandle;
     private readonly IXCLRDataTypeInstance? _legacyImpl;
 
-    public ClrDataTypeInstance(Target target, IXCLRDataTypeInstance? legacyImpl)
+    public ClrDataTypeInstance(Target target, ITypeHandle typeHandle, IXCLRDataTypeInstance? legacyImpl)
     {
         _target = target;
+        _typeHandle = typeHandle;
         _legacyImpl = legacyImpl;
     }
 
@@ -58,13 +62,124 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetTypeArgumentByIndex(index, typeArg) : HResults.E_NOTIMPL;
 
     int IXCLRDataTypeInstance.GetName(uint flags, uint bufLen, uint* nameLen, char* nameBuf)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetName(flags, bufLen, nameLen, nameBuf) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (flags != 0)
+                throw new ArgumentException("GetName requires flags=0.", nameof(flags));
+
+            string name = _typeHandle.GetName(_target);
+            OutputBufferHelpers.CopyStringToBuffer(nameBuf, bufLen, nameLen, name, out bool truncated);
+            if (truncated)
+            {
+                hr = CorDbgHResults.ERROR_INSUFFICIENT_BUFFER;
+            }
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
+        {
+            uint nameLenLocal = 0;
+            char[] nameBufLocal = new char[bufLen > 0 ? bufLen : 1];
+            int hrLocal;
+            fixed (char* pNameBufLocal = nameBufLocal)
+            {
+                hrLocal = _legacyImpl.GetName(flags, bufLen, &nameLenLocal, nameBuf is null ? null : pNameBufLocal);
+            }
+
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr >= 0)
+            {
+                string nameLenMessage = nameLen is null
+                    ? $"cDAC: <null>, DAC: {nameLenLocal}"
+                    : $"cDAC: {*nameLen}, DAC: {nameLenLocal}";
+                Debug.Assert(nameLen is null || nameLenLocal == *nameLen, nameLenMessage);
+
+                if (nameBuf is not null && nameLenLocal > 0)
+                {
+                    string dacName = new string(nameBufLocal, 0, (int)nameLenLocal - 1);
+                    string cdacName = new string(nameBuf, 0, (int)nameLenLocal - 1);
+                    Debug.Assert(dacName == cdacName, $"cDAC: {cdacName}, DAC: {dacName}");
+                }
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataTypeInstance.GetModule(DacComNullableByRef<IXCLRDataModule> mod)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetModule(mod) : HResults.E_NOTIMPL;
 
     int IXCLRDataTypeInstance.GetDefinition(DacComNullableByRef<IXCLRDataTypeDefinition> typeDefinition)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetDefinition(typeDefinition) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        IXCLRDataTypeDefinition? legacyDefinition = null;
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null && !typeDefinition.IsNullRef)
+        {
+            DacComNullableByRef<IXCLRDataTypeDefinition> legacyDefinitionOut = new(isNullRef: false);
+            hrLocal = _legacyImpl.GetDefinition(legacyDefinitionOut);
+            legacyDefinition = legacyDefinitionOut.Interface;
+        }
+
+        try
+        {
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            ITypeHandle? definitionType = null;
+            TargetPointer module = default;
+            uint token = 0;
+
+            if (rts.IsArray(_typeHandle, out _) || rts.IsFunctionPointer(_typeHandle, out _, out _))
+            {
+                definitionType = _typeHandle;
+                module = rts.GetModule(definitionType);
+                token = rts.GetTypeDefToken(definitionType);
+            }
+            else if (rts.IsTypeDesc(_typeHandle) && rts.HasTypeParam(_typeHandle))
+            {
+                definitionType = rts.GetTypeParam(_typeHandle);
+                module = rts.GetModule(definitionType);
+                token = rts.GetTypeDefToken(definitionType);
+            }
+            else
+            {
+                module = rts.GetModule(_typeHandle);
+                token = rts.GetTypeDefToken(_typeHandle);
+                ILoader loader = _target.Contracts.Loader;
+                Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
+                ModuleLookupTables tables = loader.GetLookupTables(moduleHandle);
+                TargetPointer definitionTypeAddress = loader.GetModuleLookupMapElement(tables.TypeDefToMethodTable, token, out _);
+                definitionType = definitionTypeAddress == TargetPointer.Null ? null : rts.GetTypeHandle(definitionTypeAddress);
+            }
+
+            typeDefinition.Interface = new ClrDataTypeDefinition(
+                _target,
+                module,
+                token,
+                definitionType,
+                legacyDefinition);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null && !typeDefinition.IsNullRef)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataTypeInstance.GetFlags(uint* flags)
         => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetFlags(flags) : HResults.E_NOTIMPL;

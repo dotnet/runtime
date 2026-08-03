@@ -557,6 +557,94 @@ namespace System.IO.Compression
             }
         }
 
+        [Fact]
+        public void Reset_OnFreshInstance_IsNoOp()
+        {
+            if (!SupportsReset)
+                return;
+
+            byte[] input = CreateTestData();
+
+            using EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindowLog);
+            encoder.Reset();
+            encoder.Reset();
+
+            byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
+            OperationStatus compressStatus = encoder.Compress(input, compressed, out int consumed, out int compressedLength, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, compressStatus);
+            Assert.Equal(input.Length, consumed);
+
+            using DecoderAdapter decoder = CreateDecoder();
+            decoder.Reset();
+            decoder.Reset();
+
+            byte[] output = new byte[input.Length];
+            OperationStatus decompressStatus = decoder.Decompress(compressed.AsSpan(0, compressedLength), output, out _, out int written);
+            Assert.Equal(OperationStatus.Done, decompressStatus);
+            Assert.Equal(input.Length, written);
+            Assert.Equal(input, output);
+        }
+
+        [Fact]
+        public void Reset_AfterUnfinishedCompression_ProducesIndependentStream()
+        {
+            if (!SupportsReset)
+                return;
+
+            byte[] input = CreateTestData();
+
+            using EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindowLog);
+
+            // Start compressing without finalizing, leaving the encoder mid-operation.
+            byte[] scratch = new byte[GetMaxCompressedLength(input.Length)];
+            encoder.Compress(input, scratch, out _, out _, isFinalBlock: false);
+
+            // Reset must discard the in-progress state so the next operation is independent.
+            encoder.Reset();
+
+            byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
+            OperationStatus status = encoder.Compress(input, compressed, out int consumed, out int compressedLength, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(input.Length, consumed);
+
+            // The produced stream must be a valid, complete stream that round-trips.
+            byte[] output = new byte[input.Length];
+            using DecoderAdapter decoder = CreateDecoder();
+            OperationStatus decompressStatus = decoder.Decompress(compressed.AsSpan(0, compressedLength), output, out _, out int written);
+            Assert.Equal(OperationStatus.Done, decompressStatus);
+            Assert.Equal(input.Length, written);
+            Assert.Equal(input, output);
+        }
+
+        [Fact]
+        public void Reset_AfterPartialDecompression_ProducesIndependentResult()
+        {
+            if (!SupportsReset)
+                return;
+
+            byte[] input = CreateTestData();
+            byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
+            Assert.True(TryCompress(input, compressed, out int compressedLength));
+            compressed = compressed.AsSpan(0, compressedLength).ToArray();
+
+            using DecoderAdapter decoder = CreateDecoder();
+
+            // Decompress into a buffer too small to hold the full result, leaving the decoder mid-stream.
+            byte[] tooSmall = new byte[input.Length / 2];
+            OperationStatus partialStatus = decoder.Decompress(compressed, tooSmall, out _, out _);
+            Assert.Equal(OperationStatus.DestinationTooSmall, partialStatus);
+
+            // Reset must discard the partial state so the same stream can be decoded from scratch.
+            decoder.Reset();
+
+            byte[] output = new byte[input.Length];
+            OperationStatus status = decoder.Decompress(compressed, output, out int consumed, out int written);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(compressed.Length, consumed);
+            Assert.Equal(input.Length, written);
+            Assert.Equal(input, output);
+        }
+
         [Theory]
         [MemberData(nameof(GetRoundTripTestData))]
         public void RoundTrip_SuccessfullyCompressesAndDecompresses(int quality, bool useDictionary, bool staticEncode, bool staticDecode)

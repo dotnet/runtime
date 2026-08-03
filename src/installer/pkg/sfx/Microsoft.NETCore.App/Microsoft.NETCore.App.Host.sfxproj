@@ -28,6 +28,7 @@
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/$(LibPrefix)nethost$(StaticLibSuffix)" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/nethost.h" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/hostfxr.h" />
+    <NativeRuntimeAsset Include="$(DotNetHostBinDir)/host_error_codes.h" />
     <NativeRuntimeAsset Include="$(DotNetHostBinDir)/coreclr_delegates.h" />
   </ItemGroup>
   <ItemGroup Condition="'$(RuntimeFlavor)' != 'Mono'">
