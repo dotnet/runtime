@@ -309,7 +309,12 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         if (_legacyImpl is not null)
         {
             uint revisionLocal = 0;
-            int hrLocal = _legacyImpl.Request(reqCode, inBufferSize, inBuffer, outBufferSize, outBuffer is null ? null : (byte*)&revisionLocal);
+            int hrLocal = _legacyImpl.Request(
+                reqCode,
+                inBufferSize,
+                inBuffer,
+                outBufferSize,
+                outBuffer is null ? null : (byte*)&revisionLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
                 Debug.Assert(*(uint*)outBuffer == revisionLocal);
@@ -512,7 +517,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         return hr;
     }
 
-    int IXCLRDataValue.GetArrayProperties(uint* rank, uint* totalElements, uint numDim, uint* dims, uint numBases, int* bases)
+    int IXCLRDataValue.GetArrayProperties(uint* rank, uint* totalElements, uint numDim, [Out, MarshalUsing(CountElementName = nameof(numDim))] uint[] dims, uint numBases, [Out, MarshalUsing(CountElementName = nameof(numBases))] int[] bases)
     {
         int hr = HResults.S_OK;
         try
@@ -546,19 +551,14 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
             uint totalElementsLocal = 0;
             uint[] dimsLocal = new uint[numDim];
             int[] basesLocal = new int[numBases];
-            int hrLocal;
-            fixed (uint* dimsLocalPtr = dimsLocal)
-            fixed (int* basesLocalPtr = basesLocal)
-            {
-                hrLocal = _legacyImpl.GetArrayProperties(rank is null ? null : &rankLocal, totalElements is null ? null : &totalElementsLocal, numDim, dims is null ? null : dimsLocalPtr, numBases, bases is null ? null : basesLocalPtr);
-            }
+            int hrLocal = _legacyImpl.GetArrayProperties(rank is null ? null : &rankLocal, totalElements is null ? null : &totalElementsLocal, numDim, dimsLocal, numBases, basesLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
             {
                 Debug.Assert(rank is null || *rank == rankLocal);
                 Debug.Assert(totalElements is null || *totalElements == totalElementsLocal);
-                Debug.Assert(dims is null || new ReadOnlySpan<uint>(dims, (int)numDim).SequenceEqual(dimsLocal));
-                Debug.Assert(bases is null || new ReadOnlySpan<int>(bases, (int)numBases).SequenceEqual(basesLocal));
+                Debug.Assert(dims.AsSpan().SequenceEqual(dimsLocal));
+                Debug.Assert(bases.AsSpan().SequenceEqual(basesLocal));
             }
         }
 #endif
@@ -566,7 +566,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         return hr;
     }
 
-    int IXCLRDataValue.GetArrayElement(uint numInd, int* indices, DacComNullableByRef<IXCLRDataValue> value)
+    int IXCLRDataValue.GetArrayElement(uint numInd, [In, MarshalUsing(CountElementName = nameof(numInd))] int[] indices, DacComNullableByRef<IXCLRDataValue> value)
     {
         int hr = HResults.S_OK;
         IXCLRDataValue? legacyValue = null;
@@ -707,14 +707,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         return hr;
     }
 
-    private int EnumField(
-        ulong* handle,
-        DacComNullableByRef<IXCLRDataValue> field,
-        uint nameBufLen,
-        uint* nameLen,
-        char* nameBuf,
-        uint* token,
-        bool byName)
+    private int EnumField(ulong* handle, DacComNullableByRef<IXCLRDataValue> field, uint nameBufLen, uint* nameLen, char* nameBuf, uint* token, bool byName)
     {
         int hr = HResults.S_OK;
         FieldEnumeration? enumeration = null;

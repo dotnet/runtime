@@ -1152,9 +1152,9 @@ public unsafe partial interface IXCLRDataValue
     int GetString(uint bufLen, uint* strLen, char* str);
 
     [PreserveSig]
-    int GetArrayProperties(uint* rank, uint* totalElements, uint numDim, uint* dims, uint numBases, int* bases);
+    int GetArrayProperties(uint* rank, uint* totalElements, uint numDim, [Out, MarshalUsing(CountElementName = nameof(numDim))] uint[] dims, uint numBases, [Out, MarshalUsing(CountElementName = nameof(numBases))] int[] bases);
     [PreserveSig]
-    int GetArrayElement(uint numInd, int* indices, DacComNullableByRef<IXCLRDataValue> value);
+    int GetArrayElement(uint numInd, [In, MarshalUsing(CountElementName = nameof(numInd))] int[] indices, DacComNullableByRef<IXCLRDataValue> value);
 
     [PreserveSig]
     int EnumField2(

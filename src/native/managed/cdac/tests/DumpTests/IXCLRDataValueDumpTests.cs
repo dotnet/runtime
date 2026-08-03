@@ -626,7 +626,8 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
             AssertBytes(field.Interface!, BitConverter.GetBytes(1234), "SimpleClass.ThreadValue");
 
             uint flags = AssertGetFlags(field.Interface!, "SimpleClass.ThreadValue");
-            Assert.Equal((uint)ClrDataValueFlag.FROM_TASK_LOCAL, flags & (uint)ClrDataValueFlag.ALL_LOCATIONS);
+            // Thread-static FieldDescs are also static, and the legacy DAC reports FROM_STATIC.
+            Assert.Equal((uint)ClrDataValueFlag.FROM_STATIC, flags & (uint)ClrDataValueFlag.ALL_LOCATIONS);
             AssertHResult(HResults.S_FALSE, classValue.EnumField(&handle, field, 32, &nameLength, name, &token));
         }
         finally
@@ -645,17 +646,16 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
         IXCLRDataValue singleDimension = GetAssociatedValue(GetArgumentValues("SingleDimArrayVars")["arrayArg"]);
         uint rank;
         uint count;
-        uint dimension;
-        int lowerBound;
-        AssertHResult(HResults.S_OK, singleDimension.GetArrayProperties(&rank, &count, 1, &dimension, 1, &lowerBound));
+        uint[] dimensions = new uint[1];
+        int[] lowerBounds = new int[1];
+        AssertHResult(HResults.S_OK, singleDimension.GetArrayProperties(&rank, &count, 1, dimensions, 1, lowerBounds));
         Assert.Equal(1u, rank);
         Assert.Equal(3u, count);
-        Assert.Equal(3u, dimension);
-        Assert.Equal(0, lowerBound);
+        Assert.Equal(3u, dimensions[0]);
+        Assert.Equal(0, lowerBounds[0]);
 
-        int index = 1;
         DacComNullableByRef<IXCLRDataValue> element = new(isNullRef: false);
-        AssertHResult(HResults.S_OK, singleDimension.GetArrayElement(1, &index, element));
+        AssertHResult(HResults.S_OK, singleDimension.GetArrayElement(1, [1], element));
         AssertBytes(element.Interface!, BitConverter.GetBytes(20), "arrayArg[1]");
 
         DacComNullableByRef<IXCLRDataTypeInstance> elementType = new(isNullRef: false);
@@ -663,16 +663,15 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
         Assert.NotNull(elementType.Interface);
 
         IXCLRDataValue multiDimension = GetAssociatedValue(GetArgumentValues("MultiDimArrayVars")["multiDimArg"]);
-        uint* dimensions = stackalloc uint[2];
-        int* lowerBounds = stackalloc int[2];
+        dimensions = new uint[2];
+        lowerBounds = new int[2];
         AssertHResult(HResults.S_OK, multiDimension.GetArrayProperties(&rank, &count, 2, dimensions, 2, lowerBounds));
         Assert.Equal(2u, rank);
         Assert.Equal(6u, count);
-        Assert.Equal([2u, 3u], new ReadOnlySpan<uint>(dimensions, 2).ToArray());
-        Assert.Equal([0, 0], new ReadOnlySpan<int>(lowerBounds, 2).ToArray());
+        Assert.Equal([2u, 3u], dimensions);
+        Assert.Equal([0, 0], lowerBounds);
 
-        int* indices = stackalloc int[2] { 1, 2 };
-        AssertHResult(HResults.S_OK, multiDimension.GetArrayElement(2, indices, element));
+        AssertHResult(HResults.S_OK, multiDimension.GetArrayElement(2, [1, 2], element));
         AssertBytes(element.Interface!, BitConverter.GetBytes(6), "multiDimArg[1,2]");
     }
 
