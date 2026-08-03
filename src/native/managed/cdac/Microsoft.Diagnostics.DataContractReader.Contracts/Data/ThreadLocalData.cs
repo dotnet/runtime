@@ -6,9 +6,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ThreadLocalData))]
 internal sealed partial class ThreadLocalData : IData<ThreadLocalData>
 {
-    [Field] public TargetPointer CollectibleTlsArrayData { get; }
-    [Field] public TargetPointer NonCollectibleTlsArrayData { get; }
-    [Field] public int CollectibleTlsDataCount { get; }
-    [Field] public int NonCollectibleTlsDataCount { get; }
-    [Field] public TargetPointer InFlightData { get; }
+    [Field] public partial TargetPointer CollectibleTlsArrayData { get; }
+    [Field] public partial TargetPointer NonCollectibleTlsArrayData { get; }
+    [Field] public partial int CollectibleTlsDataCount { get; }
+    [Field] public partial int NonCollectibleTlsDataCount { get; }
+    [Field] public partial TargetPointer InFlightData { get; }
 }

@@ -134,6 +134,7 @@ namespace System
 
         [UnmanagedCallersOnly]
         [StackTraceHidden]
+        [DebuggerHidden]
         internal static unsafe void CallEntryPoint(IntPtr entryPoint, string[]* pArgument, int* pReturnValue, bool captureException, Exception* pException)
         {
             try

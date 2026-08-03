@@ -14,6 +14,32 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class StackWalkTests
 {
+    [Fact]
+    public void GenericContextStorage_PreservesRegisterRepresentation()
+    {
+        Assert.Equal(string.Empty, default(GenericContextStorage).RegisterName);
+
+        GenericContextStorage named = new(GenericContextStorageKind.RegisterRelative, "ebp", -4);
+        Assert.Equal("ebp", named.RegisterName);
+        Assert.Equal(0u, named.RegisterNumber);
+
+        GenericContextStorage numbered = new(GenericContextStorageKind.Register, 5u, 0);
+        Assert.Equal(string.Empty, numbered.RegisterName);
+        Assert.Equal(5u, numbered.RegisterNumber);
+    }
+
+    [Theory]
+    [InlineData(0u, false)]
+    [InlineData(0x08000000u, true)]
+    [InlineData(0x08000001u, true)]
+    public void HasFaultedContext_UsesExceptionActiveFlag(uint contextFlags, bool expected)
+    {
+        var context = new Mock<IPlatformAgnosticContext>();
+        context.SetupGet(c => c.RawContextFlags).Returns(contextFlags);
+
+        Assert.Equal(expected, StackWalk_1.HasFaultedContext(context.Object));
+    }
+
     private static TestPlaceholderTarget CreateTarget(
         MockTarget.Architecture arch,
         Action<MockThreadBuilder> configure,

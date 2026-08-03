@@ -2660,16 +2660,42 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             // be read from an undersized contained memory operand. Any other consumer (a store,
             // return, or call argument) materializes a value of the node's own type and size via the
             // ABI, so removing the node there would corrupt the copy size; keep the node for those.
+            //
+            // The one exception is an AVX2 gather index: the VSIB encoding (xmm vs ymm) is selected
+            // from the index operand's own width rather than the gather's size, so a width-changing
+            // reinterpret feeding it is load-bearing and must be kept.
 
             LIR::Use use;
             if (BlockRange().TryGetUse(node, &use) && use.User()->OperIsHWIntrinsic())
             {
-                GenTree* op1  = node->Op(1);
-                GenTree* next = node->gtNext;
+                GenTreeHWIntrinsic* user        = use.User()->AsHWIntrinsic();
+                GenTree*            gatherIndex = nullptr;
 
-                use.ReplaceWith(op1);
-                BlockRange().Remove(node);
-                return next;
+                switch (user->GetHWIntrinsicId())
+                {
+                    case NI_AVX2_GatherVector128:
+                    case NI_AVX2_GatherVector256:
+                        gatherIndex = user->Op(2);
+                        break;
+
+                    case NI_AVX2_GatherMaskVector128:
+                    case NI_AVX2_GatherMaskVector256:
+                        gatherIndex = user->Op(3);
+                        break;
+
+                    default:
+                        break;
+                }
+
+                if (gatherIndex != node)
+                {
+                    GenTree* op1  = node->Op(1);
+                    GenTree* next = node->gtNext;
+
+                    use.ReplaceWith(op1);
+                    BlockRange().Remove(node);
+                    return next;
+                }
             }
             break;
         }

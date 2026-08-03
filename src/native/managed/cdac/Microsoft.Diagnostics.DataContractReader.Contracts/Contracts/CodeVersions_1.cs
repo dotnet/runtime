@@ -11,6 +11,9 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly partial struct CodeVersions_1 : ICodeVersions
 {
+    // Initial value for EnC versions (matches native CorDB_DEFAULT_ENC_FUNCTION_VERSION).
+    private const ulong CorDBDefaultEnCVersion = 1;
+
     private readonly Target _target;
 
     public CodeVersions_1(Target target)
@@ -153,14 +156,6 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             return false;
         if (rts.IsCollectibleMethod(md))
             return false;
-        TargetPointer mtAddr = rts.GetMethodTable(md);
-        ITypeHandle mt = rts.GetTypeHandle(mtAddr);
-        TargetPointer modAddr = rts.GetModule(mt);
-        ILoader loader = _target.Contracts.Loader;
-        ModuleHandle mod = loader.GetModuleHandleFromModulePtr(modAddr);
-        ModuleFlags modFlags = loader.GetFlags(mod);
-        if (modFlags.HasFlag(ModuleFlags.EditAndContinue))
-            return false;
         return true;
     }
 
@@ -229,8 +224,7 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
             NativeCodeVersionNode codeVersionNode = AsNode(codeVersionHandle);
             if (codeVersionNode.GCCoverageInfo is TargetPointer gcCoverageInfoAddr && gcCoverageInfoAddr != TargetPointer.Null)
             {
-                Target.TypeInfo gcCoverageInfoType = _target.GetTypeInfo(DataType.GCCoverageInfo);
-                return gcCoverageInfoAddr + (ulong)gcCoverageInfoType.Fields["SavedCode"].Offset;
+                return gcCoverageInfoAddr + (ulong)Data.GCCoverageInfo.GetSavedCodeOffset(_target);
             }
             return TargetPointer.Null;
         }
@@ -414,6 +408,22 @@ internal readonly partial struct CodeVersions_1 : ICodeVersions
     bool ICodeVersions.HasDefaultIL(ILCodeVersionHandle iLCodeVersionHandle)
     {
         return iLCodeVersionHandle.IsExplicit ? AsNode(iLCodeVersionHandle).ILAddress == TargetPointer.Null : true;
+    }
+
+    CodeVersionSource ICodeVersions.GetSource(ILCodeVersionHandle ilCodeVersionHandle)
+    {
+        // The synthetic (default) version has no backing node and has no explicit source.
+        if (!ilCodeVersionHandle.IsExplicit)
+            return CodeVersionSource.Unknown;
+        return (CodeVersionSource)AsNode(ilCodeVersionHandle).Source;
+    }
+
+    TargetNUInt ICodeVersions.GetEnCVersion(ILCodeVersionHandle ilCodeVersionHandle)
+    {
+        // The synthetic (default) version represents the original, unedited IL.
+        if (!ilCodeVersionHandle.IsExplicit)
+            return new TargetNUInt(CorDBDefaultEnCVersion);
+        return AsNode(ilCodeVersionHandle).EnCVersion;
     }
 
     bool ICodeVersions.TryGetInstrumentedILMap(ILCodeVersionHandle ilCodeVersionHandle, out uint mapEntryCount, out TargetPointer mapEntries)

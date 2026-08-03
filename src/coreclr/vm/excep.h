@@ -239,13 +239,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
 
 #ifdef FEATURE_COMINTEROP
 
-enum tagGetErrorInfo
-{
-    kGetErrorInfo
-};
-
-VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, tagGetErrorInfo);
-
 //==========================================================================
 // Throw a runtime exception based on an HResult, check for error info
 //==========================================================================

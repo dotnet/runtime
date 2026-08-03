@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.Signature))]
 internal sealed partial class Signature : IData<Signature>
 {
-    [Field] public TargetPointer SignaturePointer { get; }
-    [Field] public uint SignatureLength { get; }
+    [Field] public partial TargetPointer SignaturePointer { get; }
+    [Field] public partial uint SignatureLength { get; }
 }

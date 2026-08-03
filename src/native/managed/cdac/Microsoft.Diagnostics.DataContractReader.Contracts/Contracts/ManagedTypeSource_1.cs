@@ -218,10 +218,7 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
         ulong objectSize = 0;
         if (!isValueType)
         {
-            Target.TypeInfo objType = _target.GetTypeInfo(DataType.Object);
-            objectSize = objType.Size
-                ?? throw new InvalidOperationException(
-                    "The 'Object' data descriptor must have a known Size to compute managed reference-type field offsets.");
+            objectSize = Data.Object.GetSize(_target);
         }
 
         Dictionary<string, Target.FieldInfo> instanceFields = new();

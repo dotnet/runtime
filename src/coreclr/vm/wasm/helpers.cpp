@@ -13,7 +13,6 @@
 
 #define WASM_STRINGIFY_HELPER(value) #value
 #define WASM_STRINGIFY(value) WASM_STRINGIFY_HELPER(value)
-#define INLINED_PINVOKE_FROM_R2R 1
 
 void ExecuteInterpretedMethodWithArgs_PortableEntryPoint(PCODE portableEntrypoint, TransitionBlock* block, size_t argsSize, int8_t* retBuff);
 
@@ -564,6 +563,26 @@ __attribute__((naked)) void ThrowRtlRestoreContextTag()
         "unreachable\n" ::);
 }
 
+// Runtime-owned WebAssembly global carrying the runtime-async continuation return
+// value. Exported so every R2R webcil imports this same global (see libCorerun.js).
+// Single-threaded today; like __stack_pointer it becomes per-thread once wasm threads land.
+asm(".globl __async_continuation\n"
+    ".globaltype __async_continuation, i32\n"
+    "__async_continuation:\n");
+
+extern "C" __attribute__((naked)) uint32_t RuntimeAsync_LoadAsyncContinuation()
+{
+    asm("global.get __async_continuation\n"
+        "return\n" ::);
+}
+
+extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uint32_t value)
+{
+    asm("local.get 0\n"
+        "global.set __async_continuation\n"
+        "return\n" ::);
+}
+
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
 {
     UNREFERENCED_PARAMETER(ContextRecord);
@@ -966,6 +985,13 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
     _ASSERTE(cookie != NULL);
 
     (cookie)(ftn, pArgs, pRet);
+
+    // Async callees write their continuation to the shared global; hand it back to the caller.
+    //
+    if (pContinuationRet != nullptr)
+    {
+        *pContinuationRet = (Object*)(uintptr_t)RuntimeAsync_LoadAsyncContinuation();
+    }
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet)
@@ -989,6 +1015,7 @@ namespace
         ToI64,
         ToF32,
         ToF64,
+        ToV128,
         ToStruct,   // S<N> — multi-field struct passed by pointer, structSize holds the size
         ToEmpty,    // e — empty struct, takes no wasm argument
     };
@@ -1032,6 +1059,23 @@ namespace
         }
 
         MethodTable* pMT = th.AsMethodTable();
+
+        bool isSupportedVectorBaseType =
+            pMT->IsIntrinsicType() &&
+            (pMT->GetNumGenericArgs() == 1) &&
+            CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType());
+        if (isSupportedVectorBaseType)
+        {
+            PTR_MethodTable pVector128MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR128T);
+            PTR_MethodTable pVectorTMT = CoreLibBinder::GetClassIfExist(CLASS__VECTORT);
+
+            if ((pVector128MT != nullptr && pMT->HasSameTypeDefAs(pVector128MT)) ||
+                ((size == 16) && (pVectorTMT != nullptr) && pMT->HasSameTypeDefAs(pVectorTMT)))
+            {
+                return { ConvertType::ToV128, 0 };
+            }
+        }
+
         uint32_t numInstanceFields = pMT->GetNumInstanceFields();
 
         // WASM-TODO: Empty structs should return ToEmpty once .NET
@@ -1107,6 +1151,7 @@ namespace
             case ConvertType::ToI64:       c = 'l'; break;
             case ConvertType::ToF32:       c = 'f'; break;
             case ConvertType::ToF64:       c = 'd'; break;
+            case ConvertType::ToV128:      c = 'V'; break;
             case ConvertType::ToEmpty:     c = 'e'; break;
             case ConvertType::ToStruct:
             {
@@ -1179,6 +1224,13 @@ namespace
         {
             if (pos < maxSize)
                 keyBuffer[pos] = 'i';
+            pos++;
+        }
+
+        if (sig.HasAsyncContinuation())
+        {
+            if (pos < maxSize)
+                keyBuffer[pos] = 'a';
             pos++;
         }
 
@@ -1455,6 +1507,55 @@ InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContex
 {
     STANDARD_VM_CONTRACT;
 
+    // String constructors use a special calling convention: they are compiled (both the R2R body and
+    // the caller-side thunks in crossgen2, see WasmLowering.GetStringCtorActualSignature) as static
+    // factory methods that allocate and return the string, i.e. "String Ctor(args)" rather than the
+    // declared "void .ctor(this, args)". The interpreter->R2R thunk selected here must therefore match
+    // that factory shape. This mirrors the R2R->interpreter direction in
+    // GetPortableEntryPointToInterpreterThunk (which uses the 'I'-prefixed keys).
+    if (pContextMD != NULL && pContextMD->IsCtor() && pContextMD->GetMethodTable()->IsString())
+    {
+        const char *thunkKey = nullptr;
+
+        if (metaSig.NumFixedArgs() == 1)
+        {
+            MetaSig ctorSig = metaSig;
+            if (ctorSig.NextArg() == ELEMENT_TYPE_VALUETYPE)
+            {
+                thunkKey = "MiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
+            }
+        }
+
+        if (thunkKey == nullptr)
+        {
+            switch (metaSig.NumFixedArgs())
+            {
+                case 1:
+                    thunkKey = "Miip";
+                    break;
+                case 2:
+                    thunkKey = "Miiip";
+                    break;
+                case 3:
+                    thunkKey = "Miiiip";
+                    break;
+                case 4:
+                    thunkKey = "Miiiiip";
+                    break;
+                default:
+                    PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk for string constructor");
+                    return nullptr;
+            }
+        }
+
+        InterpreterCalliCookie stringCtorThunk = LookupThunk(thunkKey);
+        if (stringCtorThunk == NULL)
+        {
+            PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
+        }
+        return stringCtorThunk;
+    }
+
     InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)
     {
@@ -1595,7 +1696,10 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
         cookie = pMD->GetCalliCookie();
     }
 
-    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pContinuationRet);
+    // Only pass the continuation arg to async callees.
+    //
+    Object** pCalleeContinuationRet = pMD->IsAsyncMethod() ? pContinuationRet : nullptr;
+    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pCalleeContinuationRet);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)

@@ -37,15 +37,26 @@ IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool pref
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `PatchpointInfo` | `LocalCount` | Number of locals in the method associated with the patchpoint. |
+<!-- BEGIN GENERATED: usage contract=DebugInfo version=c1 -->
+### Data descriptors used
 
-Contracts used:
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `PatchpointInfo` | *(type size)* | `uint32` | Size in bytes of the fixed patchpoint header before its variable local-offset data |
+| `PatchpointInfo` | `LocalCount` | `uint32` | Number of locals in the method associated with the patchpoint. |
+
+### Global variables used
+
+_None._
+
+### Contracts used
+
 | Contract Name |
 | --- |
 | `ExecutionManager` |
+| `PlatformMetadata` |
+<!-- END GENERATED: usage contract=DebugInfo version=c1 -->
+
 
 Constants:
 | Constant Name | Meaning | Value |
@@ -245,16 +256,26 @@ Version 2 introduces two distinct changes:
 
 The nibble-encoded variable-length integer mechanism is unchanged; only the header and bounds entry source-type packing differ.
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| _(none)_ | | |
+<!-- BEGIN GENERATED: usage contract=DebugInfo version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
 
-Contracts used:
-| Contract Name |
-| --- |
-| `ExecutionManager` |
-| `CodeVersions` |
+| Change | Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- | --- |
+| Removed | `PatchpointInfo` | *(type size)* | `uint32` | Size in bytes of the fixed patchpoint header before its variable local-offset data |
+| Removed | `PatchpointInfo` | `LocalCount` | `uint32` | Number of locals in the method associated with the patchpoint. |
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+| Change | Contract Name |
+| --- | --- |
+| Added | `CodeVersions` |
+| Added | `RuntimeInfo` |
+<!-- END GENERATED: usage contract=DebugInfo version=c2 diff-from=c1 -->
+
 
 Constants:
 | Constant Name | Meaning | Value |

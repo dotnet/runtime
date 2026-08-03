@@ -2762,7 +2762,7 @@ void CodeGen::genX86BaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             GenTree*    op1 = node->Op(1);
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
 
-            if (!varTypeIsSIMD(op1->TypeGet()))
+            if (node->OperIsMemoryLoad())
             {
                 // Until we improve the handling of addressing modes in the emitter, we'll create a
                 // temporary GT_IND to generate code with.
@@ -2965,7 +2965,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
         {
             instruction ins = HWIntrinsicInfo::lookupIns(intrinsicId, baseType, m_compiler);
 
-            if (!varTypeIsSIMD(op1->gtType))
+            if (node->OperIsMemoryLoad())
             {
                 // Until we improve the handling of addressing modes in the emitter, we'll create a
                 // temporary GT_IND to generate code with.

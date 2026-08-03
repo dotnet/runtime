@@ -32,6 +32,7 @@ public static class Constants
         public const string ObjectToMethodTableUnmask = nameof(ObjectToMethodTableUnmask);
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
         public const string RecommendedReaderVersion = nameof(RecommendedReaderVersion);
+        public const string CorDBDefaultEnCFunctionVersion = nameof(CorDBDefaultEnCFunctionVersion);
 
         public const string ContinuationMethodTable = nameof(ContinuationMethodTable);
         public const string CanonMethodTable = nameof(CanonMethodTable);
@@ -89,6 +90,7 @@ public static class Constants
         public const string ExecutionManagerCodeRangeMapAddress = nameof(ExecutionManagerCodeRangeMapAddress);
         public const string EEJitManagerAddress = nameof(EEJitManagerAddress);
         public const string StubCodeBlockLast = nameof(StubCodeBlockLast);
+        public const string ThePreStub = nameof(ThePreStub);
 
         public const string StaticsPointerMask = nameof(StaticsPointerMask);
         public const string PtrArrayOffsetToDataArray = nameof(PtrArrayOffsetToDataArray);
