@@ -3087,7 +3087,7 @@ namespace System
         public static int MaxGeneration { get { throw null; } }
         public static void AddMemoryPressure(long bytesAllocated) { }
         public static T[] AllocateArray<T>(int length, bool pinned = false) { throw null; }
-        public static T[] AllocateUninitializedArray<T>(int length, bool pinned = false) { throw null; }
+        public unsafe static T[] AllocateUninitializedArray<T>(int length, bool pinned = false) { throw null; }
         public static void CancelFullGCNotification() { }
         public static void Collect() { }
         public static void Collect(int generation) { }
@@ -5199,7 +5199,7 @@ namespace System
         public System.IntPtr Value { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.RuntimeFieldHandle handle) { throw null; }
-        public static System.RuntimeFieldHandle FromIntPtr(System.IntPtr value) { throw null; }
+        public unsafe static System.RuntimeFieldHandle FromIntPtr(System.IntPtr value) { throw null; }
         public override int GetHashCode() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId="SYSLIB0051", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
@@ -5215,7 +5215,7 @@ namespace System
         public System.IntPtr Value { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.RuntimeMethodHandle handle) { throw null; }
-        public static System.RuntimeMethodHandle FromIntPtr(System.IntPtr value) { throw null; }
+        public unsafe static System.RuntimeMethodHandle FromIntPtr(System.IntPtr value) { throw null; }
         public System.IntPtr GetFunctionPointer() { throw null; }
         public override int GetHashCode() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -5232,7 +5232,7 @@ namespace System
         public System.IntPtr Value { get { throw null; } }
         public override bool Equals(object? obj) { throw null; }
         public bool Equals(System.RuntimeTypeHandle handle) { throw null; }
-        public static System.RuntimeTypeHandle FromIntPtr(System.IntPtr value) { throw null; }
+        public unsafe static System.RuntimeTypeHandle FromIntPtr(System.IntPtr value) { throw null; }
         public override int GetHashCode() { throw null; }
         public System.ModuleHandle GetModuleHandle() { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
@@ -15136,7 +15136,7 @@ namespace System.Runtime.CompilerServices
         public static int OffsetToStringData { get { throw null; } }
         public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size) { throw null; }
         public static System.IntPtr AllocateTypeAssociatedMemory(System.Type type, int size, int alignment) { throw null; }
-        public static object? Box(ref byte target, System.RuntimeTypeHandle type) { throw null; }
+        public unsafe static object? Box(ref byte target, System.RuntimeTypeHandle type) { throw null; }
         public static System.ReadOnlySpan<T> CreateSpan<T>(System.RuntimeFieldHandle fldHandle) { throw null; }
         public static void EnsureSufficientExecutionStack() { }
         public static new bool Equals(object? o1, object? o2) { throw null; }
