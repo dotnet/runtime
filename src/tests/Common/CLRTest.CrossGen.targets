@@ -402,7 +402,7 @@ if defined RunCrossGen2 (
         if defined CrossGen2TestCheckPdb (
             set __CheckPdbCommand=!__DotNet!
             set __CheckPdbCommand=!__CheckPdbCommand! "!CORE_ROOT!\PdbChecker\PdbChecker.dll"
-            set __CheckPdbCommand=!__CheckPdbCommand! !__PdbFile! @(CheckPdbSymbol->'%22%(Identity)%22', ' ')
+            set __CheckPdbCommand=!__CheckPdbCommand! !__PdbFile! --image !__OutputFile! @(CheckPdbSymbol->'%22%(Identity)%22', ' ')
             echo "!__CheckPdbCommand!"
             call !__CheckPdbCommand!
             if not !ERRORLEVEL!==0 (

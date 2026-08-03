@@ -5491,8 +5491,8 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
             (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            CallArg* castToCallArg = call->gtArgs.GetArgByIndex(0);
-            CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
+            CallArg* castToCallArg = call->gtArgs.GetUserArgByIndex(0);
+            CallArg* objCallArg    = call->gtArgs.GetUserArgByIndex(1);
             GenTree* castToArg     = castToCallArg->GetNode();
             GenTree* objArg        = objCallArg->GetNode();
             ValueNum objVN         = optConservativeNormalVN(objArg);

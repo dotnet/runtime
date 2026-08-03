@@ -26,7 +26,8 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     private const uint DefaultAppDomainId = 1;
 
     private readonly Target _target;
-    private readonly IDacDbiInterface? _legacy;
+    private IDacDbiInterface? _legacy;
+    private ComObject? _dataTargetComObject;
     private ulong CorDBDefaultEnCFunctionVersion => _target.ReadGlobalPointer(Constants.Globals.CorDBDefaultEnCFunctionVersion).Value;
 
     // IStringHolder is a native C++ abstract class (not COM) with a single virtual method:
@@ -60,16 +61,38 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return mainProfInterface != TargetPointer.Null || notificationCount > 0;
     }
 
-    public DacDbiImpl(Target target, object? legacyObj)
+    public DacDbiImpl(
+        Target target,
+        object? legacyObj,
+        ComObject? dataTargetComObject = null)
     {
         _target = target;
         _legacy = legacyObj as IDacDbiInterface;
+        _dataTargetComObject = dataTargetComObject;
     }
 
     public int FlushCache()
     {
         _target.Flush(FlushScope.All);
         return _legacy is not null ? _legacy.FlushCache() : HResults.S_OK;
+    }
+
+    public int Destroy()
+    {
+        try
+        {
+            ComObject? legacyComObject = (object?)_legacy as ComObject;
+            _dataTargetComObject?.FinalRelease();
+            _dataTargetComObject = null;
+            legacyComObject?.FinalRelease();
+            _legacy = null;
+
+            return HResults.S_OK;
+        }
+        catch (System.Exception ex)
+        {
+            return ex.HResult < 0 ? ex.HResult : HResults.E_FAIL;
+        }
     }
 
     public int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts)
@@ -317,10 +340,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 path = loader.GetFileName(handle);
             }
 
-            if (string.IsNullOrEmpty(path))
-            {
-                path = loader.GetFileName(handle);
-            }
             if (string.IsNullOrEmpty(path))
             {
                 // pStrFilename needs to be set for ICorDebugModule::GetName to succeed.
@@ -3087,7 +3106,10 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw new ArgumentNullException(nameof(fpCallback));
 
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-            ITypeHandle thExactHandle = rts.GetTypeHandle(vmThExact);
+            ITypeHandle? thExactHandle = vmThExact == 0 ? null : rts.GetTypeHandle(vmThExact);
+            if (vmThApprox == 0)
+                throw Marshal.GetExceptionForHR(CorDbgHResults.CORDBG_E_CLASS_NOT_LOADED)!;
+
             ITypeHandle thApproxHandle = rts.GetTypeHandle(vmThApprox);
             cdacObjectSize = rts.GetNumInstanceFieldBytes(thApproxHandle);
 
@@ -3119,7 +3141,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     // then EnC-added instance fields, then EnC-added static fields.
     private void CollectFieldsForDbi(
         IRuntimeTypeSystem rts,
-        ITypeHandle thExact,
+        ITypeHandle? thExact,
         ITypeHandle thApprox,
         delegate* unmanaged<FieldData*, void*, void> fpCallback,
         nint pUserData,
@@ -3127,7 +3149,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
     {
         TargetPointer gcStaticsBase = TargetPointer.Null;
         TargetPointer nonGCStaticsBase = TargetPointer.Null;
-        if (!rts.IsCollectible(thExact))
+        if (thExact is not null && !rts.IsCollectible(thExact))
         {
             gcStaticsBase = rts.GetGCStaticsBasePointer(thExact);
             nonGCStaticsBase = rts.GetNonGCStaticsBasePointer(thExact);
