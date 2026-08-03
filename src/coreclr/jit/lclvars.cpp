@@ -5864,6 +5864,8 @@ int Compiler::lvaAllocAsyncContexts(int stkOffs)
     }
     else
     {
+        // For x86 EnC the VM expects that we always allocate stack space
+        // for these locals when contexts were saved.
         assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
     }
 
@@ -5874,8 +5876,6 @@ int Compiler::lvaAllocAsyncContexts(int stkOffs)
     }
     else
     {
-        // For x86 EnC the VM expects that we always allocate stack space
-        // for this local when contexts were saved.
         assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
     }
 

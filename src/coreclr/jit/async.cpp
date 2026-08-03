@@ -66,23 +66,23 @@ PhaseStatus Compiler::SaveAsyncContexts()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Create locals for Thread, ExecutionContext and SynchronizationContext
+    // Create locals for indicator, Thread, ExecutionContext and SynchronizationContext
+    lvaResumedIndicator               = lvaGrabTemp(false DEBUGARG("Async Resumed"));
     lvaAsyncThreadObjectVar           = lvaGrabTemp(false DEBUGARG("Async Thread"));
     lvaAsyncExecutionContextVar       = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
     lvaAsyncSynchronizationContextVar = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
-    lvaResumedIndicator               = lvaGrabTemp(false DEBUGARG("Async Resumed"));
 
+    lvaGetDesc(lvaResumedIndicator)->lvType               = TYP_I_IMPL;
     lvaGetDesc(lvaAsyncThreadObjectVar)->lvType           = TYP_REF;
     lvaGetDesc(lvaAsyncExecutionContextVar)->lvType       = TYP_REF;
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
-    lvaGetDesc(lvaResumedIndicator)->lvType               = TYP_I_IMPL;
 
     if (opts.IsOSR())
     {
+        lvaGetDesc(lvaResumedIndicator)->lvIsOSRLocal               = true;
         lvaGetDesc(lvaAsyncThreadObjectVar)->lvIsOSRLocal           = true;
         lvaGetDesc(lvaAsyncExecutionContextVar)->lvIsOSRLocal       = true;
         lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvIsOSRLocal = true;
-        lvaGetDesc(lvaResumedIndicator)->lvIsOSRLocal               = true;
     }
 
     // Create try-fault structure. This is actually a try-finally, but we
