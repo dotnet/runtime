@@ -138,13 +138,7 @@ namespace
             // Composite r2r PE image is not a part of anyone's identity.
             // We only need it to obtain the native image, which will be cached at AppDomain level.
             PEImageHolder pImage(PEImage::OpenImage(fullPath, MDInternalImport_NoCache, probeExtensionResult));
-#ifdef PEIMAGE_FLAT_LAYOUT_ONLY
-            // Flat-layout-only targets cannot satisfy LAYOUT_LOADED; requesting it reaches the
-            // flat-layout fallback with bIsFlatLayoutSuitable unset.
-            PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_FLAT);
-#else
             PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
-#endif // PEIMAGE_FLAT_LAYOUT_ONLY
             // We will let pImage instance be freed after exiting this scope, but we will keep the layout,
             // thus the layout needs an AddRef, or it will be gone together with pImage.
             loaded->AddRef();

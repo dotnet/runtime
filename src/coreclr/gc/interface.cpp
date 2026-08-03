@@ -2223,15 +2223,12 @@ void GCHeap::GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
     {
         last_gc_info = &gc_heap::last_full_blocking_gc_info;
     }
+#ifdef BACKGROUND_GC
     else if ((gc_kind)kind == gc_kind_background)
     {
-#ifdef BACKGROUND_GC
         last_gc_info = gc_heap::get_completed_bgc_info();
-#else
-        static last_recorded_gc_info no_background_gc_info = {};
-        last_gc_info = &no_background_gc_info;
-#endif //BACKGROUND_GC
     }
+#endif //BACKGROUND_GC
     else
     {
         assert ((gc_kind)kind == gc_kind_any);

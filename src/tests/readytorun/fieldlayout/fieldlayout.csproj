@@ -4,11 +4,9 @@
     <!-- Needed for IlasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <AlwaysUseCrossGen2 Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(TargetOS)' != 'browser'">true</AlwaysUseCrossGen2>
+    <CrossGenTest Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</CrossGenTest>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
-    <!-- TODO: Re-enable when Crossgen2 and browser CoreCLR agree on Int128 aggregate alignment.
-         Tracked by https://github.com/dotnet/runtime/pull/131421. -->
-    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
   </ItemGroup>
