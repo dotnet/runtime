@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -18,6 +19,23 @@ namespace ILCompiler.ObjectWriter
         public WasmSection this[int sectionIndex] => _sections[sectionIndex];
 
         public WasmSection this[string sectionName] => _sections[_sectionNameToIndex[sectionName]];
+
+        public TSection GetSection<TSection>(int sectionIndex)
+            where TSection : WasmSection
+        {
+            WasmSection section = _sections[sectionIndex];
+            if (section is TSection typedSection)
+            {
+                return typedSection;
+            }
+
+            throw new InvalidOperationException(
+                $"Section at index {sectionIndex} is {section.GetType().Name}, not {typeof(TSection).Name}.");
+        }
+
+        public TSection GetSection<TSection>(string sectionName)
+            where TSection : WasmSection =>
+            GetSection<TSection>(_sectionNameToIndex[sectionName]);
 
         public void Add(string sectionName, int sectionIndex, WasmSection section)
         {
