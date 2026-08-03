@@ -221,9 +221,12 @@ private:
                 for (GenTree** use : m_origCall->UseEdges())
                 {
                     GenTree* node = *use;
-                    if (((node->gtFlags & GTF_ALL_EFFECT) != 0) || m_compiler->gtHasLocalsWithAddrOp(node))
+                    if (!node->IsInvariant())
                     {
-                        SpillUseToTemp(block, use);
+                        if (((node->gtFlags & GTF_ALL_EFFECT) != 0) || m_compiler->gtHasLocalsWithAddrOp(node))
+                        {
+                            SpillUseToTemp(block, use);
+                        }
                     }
 
                     if (use == lastSideEffectUse)
