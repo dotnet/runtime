@@ -18,9 +18,6 @@
 
 #include <fcntl.h>
 #include <errno.h>
-#if HAVE_POLL
-#include <poll.h>
-#endif
 #include <stdlib.h>
 #include <new>
 #include <unistd.h>
