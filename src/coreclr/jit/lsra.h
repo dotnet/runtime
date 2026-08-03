@@ -1171,6 +1171,9 @@ private:
     regNumber assignCopyRegMinimal(RefPosition* refPosition);
 
     bool isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPosition);
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+    bool areMatchingSveMaskConstants(GenTree* tree1, GenTree* tree2);
+#endif
     bool isSpillCandidate(Interval* current, RefPosition* refPosition, RegRecord* physRegRecord);
     void checkAndAssignInterval(RegRecord* regRec, Interval* interval);
     void assignPhysReg(RegRecord* regRec, Interval* interval);

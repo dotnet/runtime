@@ -1457,6 +1457,139 @@ int LinearScan::BuildNode(GenTree* tree)
 
 #include "hwintrinsic.h"
 
+#if defined(FEATURE_MASKED_HW_INTRINSICS)
+constexpr int PFalseConstantPattern = -1;
+
+struct SveMaskConstant
+{
+    insOpts opt;
+    int     pattern;
+};
+
+//------------------------------------------------------------------------
+// NormalizeSveMaskPattern: Canonicalize equivalent SVE mask patterns.
+//
+// Arguments:
+//    pattern - The SVE mask pattern.
+//
+// Return Value:
+//    The canonical pattern.
+//
+static int NormalizeSveMaskPattern(int pattern)
+{
+    if (pattern == SveMaskPatternLargestPowerOf2)
+    {
+        return SveMaskPatternAll;
+    }
+
+    return pattern;
+}
+
+//------------------------------------------------------------------------
+// TryGetSvePTrueOpt: Get the instruction option for an SVE ptrue base type.
+//
+// Arguments:
+//    baseType - The SVE element type.
+//    opt      - [out] The corresponding instruction option.
+//
+// Return Value:
+//    True if baseType is supported; otherwise false.
+//
+static bool TryGetSvePTrueOpt(var_types baseType, insOpts* opt)
+{
+    switch (baseType)
+    {
+        case TYP_BYTE:
+        case TYP_UBYTE:
+            *opt = INS_OPTS_SCALABLE_B;
+            return true;
+        case TYP_SHORT:
+        case TYP_USHORT:
+            *opt = INS_OPTS_SCALABLE_H;
+            return true;
+        case TYP_INT:
+        case TYP_UINT:
+        case TYP_FLOAT:
+            *opt = INS_OPTS_SCALABLE_S;
+            return true;
+        case TYP_LONG:
+        case TYP_ULONG:
+        case TYP_DOUBLE:
+            *opt = INS_OPTS_SCALABLE_D;
+            return true;
+        default:
+            return false;
+    }
+}
+
+//------------------------------------------------------------------------
+// TryGetSveMaskConstant: Get the instruction option and pattern represented by an SVE mask node.
+//
+// Arguments:
+//    node  - The mask node.
+//    value - [out] The mask constant description.
+//
+// Return Value:
+//    True if node represents an SVE mask constant; otherwise false.
+//
+static bool TryGetSveMaskConstant(GenTree* node, SveMaskConstant* value)
+{
+    if (!node->OperIs(GT_CNS_MSK))
+    {
+        return false;
+    }
+
+#ifdef DEBUG
+    // Scalable mask constants do not use the legacy fixed-size mask representation.
+    if (JitConfig.JitUseScalableVectorT())
+    {
+        return false;
+    }
+#endif
+
+    GenTreeMskCon* mask = node->AsMskCon();
+    if (mask->IsZero())
+    {
+        value->opt     = INS_OPTS_SCALABLE_B;
+        value->pattern = PFalseConstantPattern;
+        return true;
+    }
+
+    const var_types types[] = {TYP_BYTE, TYP_SHORT, TYP_INT, TYP_LONG};
+    for (var_types type : types)
+    {
+        SveMaskPattern pattern = EvaluateSimdMaskToPattern<simd16_t>(type, mask->gtSimdMaskVal);
+        if (pattern != SveMaskPatternNone)
+        {
+            bool found     = TryGetSvePTrueOpt(type, &value->opt);
+            value->pattern = NormalizeSveMaskPattern(static_cast<int>(pattern));
+            assert(found);
+            return true;
+        }
+    }
+    return false;
+}
+
+//------------------------------------------------------------------------
+// areMatchingSveMaskConstants: Check whether two nodes materialize the same SVE mask constant.
+//
+// Arguments:
+//    tree1 - The first node.
+//    tree2 - The second node.
+//
+// Return Value:
+//    True if both nodes represent the same SVE mask constant; otherwise false.
+//
+bool LinearScan::areMatchingSveMaskConstants(GenTree* tree1, GenTree* tree2)
+{
+    SveMaskConstant value1;
+    SveMaskConstant value2;
+    return TryGetSveMaskConstant(tree1, &value1) && TryGetSveMaskConstant(tree2, &value2) &&
+           (value1.opt == value2.opt) && (value1.pattern == value2.pattern);
+}
+
+#endif // FEATURE_MASKED_HW_INTRINSICS
+
 //------------------------------------------------------------------------
 // BuildHWIntrinsic: Set the NodeInfo for a GT_HWINTRINSIC tree.
 //

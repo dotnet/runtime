@@ -2717,6 +2717,13 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
     GenTree* otherTreeNode = physRegRecord->assignedInterval->firstRefPosition->treeNode;
     noway_assert(otherTreeNode != nullptr);
 
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+    if (areMatchingSveMaskConstants(refPosition->treeNode, otherTreeNode))
+    {
+        return true;
+    }
+#endif
+
     if (refPosition->treeNode->OperGet() != otherTreeNode->OperGet())
     {
         return false;
@@ -3947,9 +3954,9 @@ void LinearScan::processBlockEndAllocation(BasicBlock* currentBlock)
 
     BasicBlock* nextBlock             = getNextBlock();
     bool        preserveMaskConstants = false;
-#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS) && defined(DEBUG)
-    preserveMaskConstants = JitConfig.JitUseScalableVectorT() && m_compiler->opts.OptimizationEnabled() &&
-                            (nextBlock != nullptr) && (nextBlock->GetUniquePred(m_compiler) == currentBlock) &&
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+    preserveMaskConstants = m_compiler->opts.OptimizationEnabled() && (nextBlock != nullptr) &&
+                            (nextBlock->GetUniquePred(m_compiler) == currentBlock) &&
                             !blockInfo[nextBlock->bbNum].hasEHBoundaryIn &&
                             !blockInfo[currentBlock->bbNum].hasEHBoundaryOut;
 #endif
@@ -13777,9 +13784,8 @@ SingleTypeRegSet LinearScan::RegisterSelection::select(Interval*                
             matchingConstants = linearScan->getMatchingConstants(candidates, currentInterval, refPosition);
         }
 
-#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS) && defined(DEBUG)
-        if (JitConfig.JitUseScalableVectorT() && linearScan->m_compiler->opts.OptimizationEnabled() &&
-            varTypeIsMask(regType))
+#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
+        if (linearScan->m_compiler->opts.OptimizationEnabled() && varTypeIsMask(regType))
         {
             // Avoid overwriting an available mask constant when another free register exists. A later
             // definition can then reuse the constant; matching constants remain preferred candidates.
