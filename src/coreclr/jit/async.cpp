@@ -72,7 +72,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     lvaAsyncExecutionContextVar       = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
     lvaAsyncSynchronizationContextVar = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
 
-    lvaGetDesc(lvaResumedIndicator)->lvType               = TYP_I_IMPL;
+    lvaGetDesc(lvaResumedIndicator)->lvType               = TYP_UBYTE;
     lvaGetDesc(lvaAsyncThreadObjectVar)->lvType           = TYP_REF;
     lvaGetDesc(lvaAsyncExecutionContextVar)->lvType       = TYP_REF;
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
@@ -196,7 +196,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
         if ((inALoop && !isReturn) || !impInlineRoot()->info.compInitMem)
         {
-            GenTree*   storeIndicator     = gtNewStoreLclVarNode(lvaResumedIndicator, gtNewIconNode(0, TYP_I_IMPL));
+            GenTree*   storeIndicator     = gtNewStoreLclVarNode(lvaResumedIndicator, gtNewIconNode(0));
             Statement* storeIndicatorStmt = fgNewStmtFromTree(storeIndicator);
             fgInsertStmtAtBeg(fgFirstBB, storeIndicatorStmt);
 
