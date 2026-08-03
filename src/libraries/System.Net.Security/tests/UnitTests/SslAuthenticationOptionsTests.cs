@@ -168,23 +168,23 @@ namespace System.Net.Security.Tests
         [Fact]
         public void UpdateOptions_ServerCertificateContextProvided_DoesNotDisposeCallerContext()
         {
-            // Build a certificate chain: root → intermediate → leaf
-            // Use 1024-bit RSA keys for speed; this is a state-management test, not a security test.
+            // Build a certificate chain: root → intermediate → leaf.
+            // Use ECDSA P-256 keys: fast and accepted on FIPS-mode platforms.
             DateTimeOffset now = DateTimeOffset.UtcNow;
 
-            using RSA rootKey = RSA.Create(1024);
-            var rootReq = new CertificateRequest("CN=TestRoot", rootKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            using ECDsa rootKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+            var rootReq = new CertificateRequest("CN=TestRoot", rootKey, HashAlgorithmName.SHA256);
             rootReq.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
             using X509Certificate2 rootCert = rootReq.CreateSelfSigned(now.AddDays(-1), now.AddDays(365));
 
-            using RSA intermediateKey = RSA.Create(1024);
-            var intermediateReq = new CertificateRequest("CN=TestIntermediate", intermediateKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            using ECDsa intermediateKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+            var intermediateReq = new CertificateRequest("CN=TestIntermediate", intermediateKey, HashAlgorithmName.SHA256);
             intermediateReq.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
             using X509Certificate2 intermediatePub = intermediateReq.Create(rootCert, now.AddDays(-1), now.AddDays(365), new byte[] { 1 });
             using X509Certificate2 intermediateWithKey = intermediatePub.CopyWithPrivateKey(intermediateKey);
 
-            using RSA leafKey = RSA.Create(1024);
-            var leafReq = new CertificateRequest("CN=TestLeaf", leafKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            using ECDsa leafKey = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+            var leafReq = new CertificateRequest("CN=TestLeaf", leafKey, HashAlgorithmName.SHA256);
             using X509Certificate2 leafPub = leafReq.Create(intermediateWithKey, now.AddDays(-1), now.AddDays(365), new byte[] { 2 });
             using X509Certificate2 leafWithKey = leafPub.CopyWithPrivateKey(leafKey);
 
@@ -219,7 +219,7 @@ namespace System.Net.Security.Tests
 
             // Verify that the caller's intermediate certificates were not disposed
             Assert.True(callerContext.IntermediateCertificates.Count > 0, "Expected at least one intermediate in the caller's context.");
-            _ = callerContext.IntermediateCertificates[0].Subject; // Must not throw ObjectDisposedException
+            _ = callerContext.IntermediateCertificates[0].Subject; // Must not throw CryptographicException
         }
     }
 }
