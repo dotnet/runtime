@@ -421,6 +421,12 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
         return new TargetSpan(dynamicMetadata.Data, dynamicMetadata.Size);
     }
 
+    public bool HasReadWriteMetadata(TargetPointer peAssembly)
+    {
+        Data.PEAssembly data = target.ProcessedData.GetOrAdd<Data.PEAssembly>(peAssembly);
+        return data.MDImportIsRW != 0;
+    }
+
     private TargetEcmaMetadata GetTargetEcmaMetadata(ModuleHandle handle)
     {
         TargetPointer peAssemblyPtr = target.Contracts.Loader.GetPEAssembly(handle);

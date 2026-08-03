@@ -5,6 +5,7 @@ This contract provides methods to get a view of the ECMA-335 metadata for a give
 ## APIs of contract
 
 ```csharp
+bool HasReadWriteMetadata(TargetPointer peAssembly);
 TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle);
 TargetSpan GetReadWriteSavedMetadataAddress(ModuleHandle handle);
 System.Reflection.Metadata.MetadataReader? GetMetadata(ModuleHandle handle);
@@ -47,6 +48,7 @@ Types from other contracts:
 | `Module` | `MetadataGeneration` | `uint32` | Counter incremented each time a module's metadata changes |
 | `Module` | `PEAssembly` | `pointer` | Pointer to the module's PE assembly |
 | `PEAssembly` | `MDImport` | `pointer` | An `MDInternalRW` when module has writable metadata |
+| `PEAssembly` | `MDImportIsRW` | `int32` | Whether the metadata import supports updates |
 | `StgPool` | `DataSize` | `uint32` | Live byte count of the head segment |
 | `StgPool` | `NextSegment` | `pointer` | Pointer to the next pool segment |
 | `StgPool` | `SegData` | `pointer` | Pointer to the head segment's data |
@@ -70,6 +72,11 @@ _None._
 using System.IO;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
+
+bool HasReadWriteMetadata(TargetPointer peAssembly)
+{
+    return Target.Read<int>(peAssembly + /* PEAssembly::MDImportIsRW offset */) != 0;
+}
 
 TargetSpan GetReadOnlyMetadataAddress(ModuleHandle handle)
 {

@@ -407,7 +407,7 @@ public unsafe partial interface IXCLRDataStackWalk
     int GetStackSizeSkipped(ulong* stackSizeSkipped);
 
     [PreserveSig]
-    int GetFrameType(/*CLRDataSimpleFrameType*/ uint* simpleType, /*CLRDataDetailedFrameType*/ uint* detailedType);
+    int GetFrameType(CLRDataSimpleFrameType* simpleType, CLRDataDetailedFrameType* detailedType);
 
     [PreserveSig]
     int GetFrame(DacComNullableByRef<IXCLRDataFrame> frame);
@@ -982,6 +982,31 @@ public unsafe partial interface IXCLRDataMethodDefinition
 public enum CLRDataGeneralRequest : uint
 {
     CLRDATA_REQUEST_REVISION = 0xe0000000,
+}
+
+public enum CLRDataStackWalkRequest : uint
+{
+    CLRDATA_STACK_WALK_REQUEST_SET_FIRST_FRAME = 0xe1000000,
+}
+
+[Flags]
+public enum CLRDataStackSetContextFlag : uint
+{
+    CLRDATA_STACK_SET_UNWIND_CONTEXT = 0x00000000,
+    CLRDATA_STACK_SET_CURRENT_CONTEXT = 0x00000001,
+}
+
+public enum CLRDataSimpleFrameType : uint
+{
+    CLRDATA_SIMPFRAME_UNRECOGNIZED = 0x1,
+    CLRDATA_SIMPFRAME_MANAGED_METHOD = 0x2,
+    CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE = 0x8,
+}
+
+public enum CLRDataDetailedFrameType : uint
+{
+    CLRDATA_DETFRAME_UNRECOGNIZED = 0,
+    CLRDATA_DETFRAME_EXCEPTION_FILTER = 3,
 }
 
 [Flags]
