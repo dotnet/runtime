@@ -1,15 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// The JIT expands multi-dimensional array accesses (NI_Array_Get/Set/Address) into IR. It used to
-// bail out of that expansion when the element size did not fit in a byte, and for stores of
-// struct-typed elements. This test exercises both of those cases.
+// The JIT expands multi-dimensional array accesses (NI_Array_Get/Set/Address) into IR. This test
+// exercises that expansion for element sizes that do not fit in a byte and for stores of
+// struct-typed elements.
 
 using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-public class Runtime_131371
+public class MDArrayIntrinsicExpansion
 {
     [InlineArray(300)]
     public struct Payload
