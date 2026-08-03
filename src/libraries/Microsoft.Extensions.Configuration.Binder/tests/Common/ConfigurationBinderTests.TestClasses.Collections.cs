@@ -470,6 +470,24 @@ namespace Microsoft.Extensions
             public ReadOnlyDictionaryStructExplicit ReadOnlyDictionaryStructExplicit { get; set; } = new();
         }
 
+        public class OptionsWithNonInstantiableElements
+        {
+            public List<AbstractElement> List { get; set; }
+
+            public AbstractElement[] Array { get; set; }
+
+            public HashSet<AbstractElement> Set { get; set; }
+
+            public Dictionary<string, AbstractElement> Dictionary { get; set; }
+
+            public string Name { get; set; }
+        }
+
+        public abstract class AbstractElement
+        {
+            public int Value { get; set; }
+        }
+
         public struct ReadOnlyCollectionStructExplicit : IReadOnlyCollection<string>
         {
             public ReadOnlyCollectionStructExplicit()

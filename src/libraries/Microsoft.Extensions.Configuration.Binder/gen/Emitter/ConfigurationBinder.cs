@@ -161,6 +161,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 {{nameof(MethodsToGen_CoreBindingHelper.BindCore)}}({{configExpression}}, ref {{Identifier.typedObj}}, defaultValueIfNotFound: false, {{binderOptionsArg}});
                                 """);
                         }
+                        else
+                        {
+                            // There is nothing to bind, but the intercepted call must still honor the argument
+                            // validation and the unsupported-option checks that the reflection-based binder performs.
+                            EmitCheckForNullArgument(Identifier.configuration, _emitThrowIfNullMethod);
+
+                            if (configureOptions)
+                            {
+                                _writer.WriteLine($"{Identifier.GetBinderOptions}({Identifier.configureOptions});");
+                            }
+                        }
 
                         EmitEndBlock();
                     }

@@ -228,11 +228,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 foreach (ComplexTypeSpec type in targetTypes)
                 {
                     ComplexTypeSpec effectiveType = (ComplexTypeSpec)_typeIndex.GetEffectiveTypeSpec(type);
-                    Debug.Assert(_typeIndex.HasBindableMembers(effectiveType));
                     string conditionKindExpr = GetConditionKindExpr(ref isFirstType);
 
                     EmitStartBlock($"{conditionKindExpr} ({Identifier.type} == typeof({type.TypeRef.FullyQualifiedName}))");
                     _writer.WriteLine($"var {Identifier.temp} = ({effectiveType.TypeRef.FullyQualifiedName}){Identifier.instance};");
+
+                    // A type with nothing to bind (e.g. one without members, or a collection whose elements
+                    // cannot be constructed) has no BindCore method; binding it is a no-op beyond validating
+                    // that the instance is of the expected type.
                     EmitBindingLogic(type, Identifier.temp, Identifier.configuration, InitializationKind.None, ValueDefaulting.None);
                     _writer.WriteLine($"return;");
                     EmitEndBlock();

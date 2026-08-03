@@ -713,6 +713,128 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("List<AbstractElement>")]
+        [InlineData("AbstractElement[]")]
+        [InlineData("HashSet<AbstractElement>")]
+        [InlineData("IReadOnlyList<AbstractElement>")]
+        [InlineData("List<List<AbstractElement>>")]
+        [InlineData("Dictionary<string, List<AbstractElement>>")]
+        public async Task CollectionOfNonInstantiableElementsDoesNotEmitEmptyBindCore(string collectionType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using Microsoft.Extensions.DependencyInjection;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        ExampleOptions options = new();
+                        config.Bind(options);
+                        _ = config.Get<{{collectionType}}>();
+
+                        ServiceCollection services = new();
+                        services.Configure<{{collectionType}}>(config);
+                        services.Configure<ExampleOptions>(config);
+                    }
+                }
+
+                public class ExampleOptions
+                {
+                    public {{collectionType}} Elements { get; set; }
+
+                    public int Value { get; set; }
+                }
+
+                public abstract class AbstractElement
+                {
+                    public int Value { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
+                source,
+                assemblyReferences: GetAssemblyRefsWithAdditional(
+                    typeof(ConfigurationBuilder),
+                    typeof(OptionsConfigurationServiceCollectionExtensions),
+                    typeof(ServiceCollection),
+                    typeof(IOptions<>),
+                    typeof(List<>)));
+            result.ValidateDiagnostics(ExpectedDiagnostics.FromGeneratorOnly);
+            Assert.NotNull(result.GeneratedSource);
+
+            string generated = result.GeneratedSource.Value.SourceText.ToString();
+            SyntaxNode root = await CSharpSyntaxTree.ParseText(result.GeneratedSource.Value.SourceText).GetRootAsync();
+
+            // Elements of the collection can never be created, so there is nothing to bind: the generator
+            // must not emit a BindCore method whose only content is an enumeration of the config children.
+            Assert.DoesNotContain(
+                root.DescendantNodes().OfType<ForEachStatementSyntax>(),
+                loop => loop.Statement is BlockSyntax { Statements.Count: 0 });
+
+            // The element type is only reachable through the collection, so it needs no binding logic either.
+            Assert.DoesNotContain(
+                root.DescendantNodes().OfType<MethodDeclarationSyntax>(),
+                method => method.Identifier.ValueText == "BindCore" &&
+                    method.ParameterList.Parameters.Any(parameter => parameter.Type!.ToString() == "AbstractElement"));
+
+            // The member is still recognized as bindable; it is assigned an empty collection.
+            Assert.Contains("instance.Elements", generated);
+
+            // Interception is preserved, and intercepted calls keep validating their arguments.
+            Assert.Equal(4, Regex.Matches(generated, @"\[InterceptsLocation\(").Count);
+            Assert.Contains("ArgumentNullException.ThrowIfNull(configuration);", generated);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("TypeWithNoMembers")]
+        [InlineData("System.Collections.Generic.List<AbstractElement>")]
+        public async Task ConfigureOfTypeWithNothingToBindGeneratesNoOpBinding(string type)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using Microsoft.Extensions.DependencyInjection;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        ServiceCollection services = new();
+                        services.Configure<{{type}}>(config);
+                    }
+                }
+
+                public class TypeWithNoMembers
+                {
+                }
+
+                public abstract class AbstractElement
+                {
+                    public int Value { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(
+                source,
+                assemblyReferences: GetAssemblyRefsWithAdditional(
+                    typeof(ConfigurationBuilder),
+                    typeof(OptionsConfigurationServiceCollectionExtensions),
+                    typeof(ServiceCollection),
+                    typeof(IOptions<>)));
+            Assert.NotNull(result.GeneratedSource);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
         [Fact]
         public async Task BindingToCollectionOnlyTest()
         {

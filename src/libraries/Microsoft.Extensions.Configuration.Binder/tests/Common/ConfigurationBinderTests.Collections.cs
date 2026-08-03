@@ -2446,6 +2446,48 @@ namespace Microsoft.Extensions
             Assert.Equal(0, dictionary.Count);
         }
 
+        [Fact]
+        public void TestCollectionsOfNonInstantiableElements()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"List:0:Value", "1"},
+                {"Array:0:Value", "2"},
+                {"Set:0:Value", "3"},
+                {"Dictionary:key:Value", "4"},
+                {"Name", "test"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = new OptionsWithNonInstantiableElements();
+            config.Bind(options);
+
+            // The elements are abstract, so none of them can be created; the collections are still
+            // instantiated, just left empty.
+            Assert.Empty(options.List);
+            Assert.Empty(options.Array);
+            Assert.Empty(options.Set);
+            Assert.Empty(options.Dictionary);
+
+            // Binding of the remaining members is unaffected.
+            Assert.Equal("test", options.Name);
+        }
+
+        [Fact]
+        public void TestNullHandling_BindCollectionOfNonInstantiableElements()
+        {
+            IConfiguration? configuration = null;
+            List<AbstractElement>? elements = new();
+
+            // There is nothing to bind, but argument validation still applies.
+            Assert.Throws<ArgumentNullException>(() => configuration.Bind(elements));
+            Assert.Throws<ArgumentNullException>(() => configuration.Bind(elements, _ => { }));
+            Assert.Throws<ArgumentNullException>(() => configuration.Bind("", elements));
+        }
+
         // Test behavior for root level arrays.
 
         // Tests for TypeConverter usage.
