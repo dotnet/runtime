@@ -1162,7 +1162,7 @@ namespace System.IO.Compression
 
             if (!TryReadBlockInitialize(stream, blockContents, bytesRead, out ZipEndOfCentralDirectoryBlock? eocdBlock, out bool readComment))
             {
-                // // We shouldn't get here becasue we found the eocd block using the signature finder
+                // We shouldn't get here because we found the EOCD block using the signature finder
                 throw new InvalidDataException(SR.EOCDNotFound);
             }
             else if (readComment)
