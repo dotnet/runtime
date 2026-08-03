@@ -3247,19 +3247,23 @@ GenTree** GenTree::EffectiveUse(GenTree** use)
 }
 
 //------------------------------------------------------------------------------
-// gtHasLocalsWithAddrOp:
-//   Check if this tree contains locals with lvHasLdAddrOp or
-//   IsAddressExposed() flags set. Does a full tree walk.
+// gtHasLocalValueWithAddrOp:
+//   Check if this tree contains uses of the value of locals with lvHasLdAddrOp
+//   or IsAddressExposed() flags set. Does a full tree walk.
 //
 // Paramters:
 //   tree - the tree
 //
 // Return Value:
-//    True if any sub tree is such a local.
+//    True if any sub tree is such a local use.
 //
-bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
+// Remarks:
+//   Only GT_LCL_VAR and GT_LCL_FLD nodes are considered; addresses of locals
+//   (GT_LCL_ADDR) and stores to locals are not.
+//
+bool Compiler::gtHasLocalValueWithAddrOp(GenTree* tree)
 {
-    struct LocalsWithAddrOpVisitor : GenTreeVisitor<LocalsWithAddrOpVisitor>
+    struct LocalValueWithAddrOpVisitor : GenTreeVisitor<LocalValueWithAddrOpVisitor>
     {
         enum
         {
@@ -3267,13 +3271,18 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
             DoLclVarsOnly = true,
         };
 
-        LocalsWithAddrOpVisitor(Compiler* comp)
+        LocalValueWithAddrOpVisitor(Compiler* comp)
             : GenTreeVisitor(comp)
         {
         }
 
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
+            if (!(*use)->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+            {
+                return WALK_CONTINUE;
+            }
+
             LclVarDsc* varDsc = m_compiler->lvaGetDesc((*use)->AsLclVarCommon());
             if (varDsc->lvHasLdAddrOp || varDsc->IsAddressExposed())
             {
@@ -3284,7 +3293,7 @@ bool Compiler::gtHasLocalsWithAddrOp(GenTree* tree)
         }
     };
 
-    LocalsWithAddrOpVisitor visitor(this);
+    LocalValueWithAddrOpVisitor visitor(this);
     return visitor.WalkTree(&tree, nullptr) == WALK_ABORT;
 }
 

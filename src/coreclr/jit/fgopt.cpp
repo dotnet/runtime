@@ -5817,8 +5817,8 @@ bool Compiler::fgCanMoveFirstStatementIntoPred(bool early, Statement* firstStmt,
 
     if (early)
     {
-        tree1Flags |= gtHasLocalsWithAddrOp(tree1) ? GTF_GLOB_REF : GTF_EMPTY;
-        tree2Flags |= gtHasLocalsWithAddrOp(tree2) ? GTF_GLOB_REF : GTF_EMPTY;
+        tree1Flags |= gtHasLocalValueWithAddrOp(tree1) ? GTF_GLOB_REF : GTF_EMPTY;
+        tree2Flags |= gtHasLocalValueWithAddrOp(tree2) ? GTF_GLOB_REF : GTF_EMPTY;
     }
 
     // We do not support embedded statements in the terminator node.

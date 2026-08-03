@@ -3949,7 +3949,7 @@ public:
 
     static bool gtHasRef(GenTree* tree, unsigned lclNum);
 
-    bool gtHasLocalsWithAddrOp(GenTree* tree);
+    bool gtHasLocalValueWithAddrOp(GenTree* tree);
     bool gtHasAddressExposedLocals(GenTree* tree);
 
     unsigned gtSetCallArgsOrder(CallArgs* args, bool lateArgs, int* callCostEx, int* callCostSz);

@@ -420,7 +420,7 @@ void Compiler::impAppendStmt(Statement* stmt, unsigned chkLevel, bool checkConsu
 
                 // We don't mark indirections off of "aliased" locals with GLOB_REF, but they must still be
                 // considered as such in the interference checking.
-                if (((flags & GTF_GLOB_REF) == 0) && !impIsAddressInLocal(value) && gtHasLocalsWithAddrOp(value))
+                if (((flags & GTF_GLOB_REF) == 0) && gtHasLocalValueWithAddrOp(value))
                 {
                     flags |= GTF_GLOB_REF;
                 }
@@ -1843,10 +1843,8 @@ void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(con
     GenTree*     tree       = stackState.esStack[i].val;
 
     if ((tree->gtFlags & spillFlags) != 0 ||
-        (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
-         !impIsAddressInLocal(tree) && // No need to spill the LCL_ADDR nodes.
-         gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
-                                       // lvAddrTaken flag.
+        // Spill if we still see uses of locals that have lvHasLdAddrOp or are address exposed.
+        (spillGlobEffects && gtHasLocalValueWithAddrOp(tree)))
     {
         impSpillStackEntry(i, BAD_VAR_NUM DEBUGARG(false) DEBUGARG(reason));
     }
@@ -13970,7 +13968,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     // which is safe in this case.
     //
     // Instead mark the arg as having a caller local ref.
-    if (!argInfo->argIsInvariant && gtHasLocalsWithAddrOp(curArgVal))
+    if (gtHasLocalValueWithAddrOp(curArgVal))
     {
         argInfo->argHasCallerLocalRef = true;
     }
