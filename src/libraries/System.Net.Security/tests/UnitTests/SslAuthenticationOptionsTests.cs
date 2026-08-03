@@ -169,20 +169,21 @@ namespace System.Net.Security.Tests
         public void UpdateOptions_ServerCertificateContextProvided_DoesNotDisposeCallerContext()
         {
             // Build a certificate chain: root → intermediate → leaf
+            // Use 1024-bit RSA keys for speed; this is a state-management test, not a security test.
             DateTimeOffset now = DateTimeOffset.UtcNow;
 
-            using RSA rootKey = RSA.Create(2048);
+            using RSA rootKey = RSA.Create(1024);
             var rootReq = new CertificateRequest("CN=TestRoot", rootKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
             rootReq.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
             using X509Certificate2 rootCert = rootReq.CreateSelfSigned(now.AddDays(-1), now.AddDays(365));
 
-            using RSA intermediateKey = RSA.Create(2048);
+            using RSA intermediateKey = RSA.Create(1024);
             var intermediateReq = new CertificateRequest("CN=TestIntermediate", intermediateKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
             intermediateReq.CertificateExtensions.Add(new X509BasicConstraintsExtension(true, false, 0, true));
             using X509Certificate2 intermediatePub = intermediateReq.Create(rootCert, now.AddDays(-1), now.AddDays(365), new byte[] { 1 });
             using X509Certificate2 intermediateWithKey = intermediatePub.CopyWithPrivateKey(intermediateKey);
 
-            using RSA leafKey = RSA.Create(2048);
+            using RSA leafKey = RSA.Create(1024);
             var leafReq = new CertificateRequest("CN=TestLeaf", leafKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
             using X509Certificate2 leafPub = leafReq.Create(intermediateWithKey, now.AddDays(-1), now.AddDays(365), new byte[] { 2 });
             using X509Certificate2 leafWithKey = leafPub.CopyWithPrivateKey(leafKey);
