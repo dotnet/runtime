@@ -29,6 +29,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
             static (Type type, object instance) GetInput(int unused) => (typeof(string), null);
 
+            static (Type type, object instance) GetInput(Type type, int unused) => (type, null);
+
             [ExpectedWarning("IL2077")]
             static void DeconstructVariableFlowCapture(bool b = true)
             {
@@ -222,6 +224,19 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                     Box(((type, other) = (unannotated, new object())));
             }
 
+            static void DeconstructFlowCapturedTargetReceiverEvaluatedBeforeSource(
+                bool condition,
+                [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type annotated,
+                Type unannotated)
+            {
+                Type type = annotated;
+                object other;
+
+                // Control flow in the source causes Roslyn to capture the target location.
+                (GetPropertyHolderForType(type).AnnotatedProperty, other) =
+                    GetInput(type = unannotated, condition ? 0 : 1);
+            }
+
             // The property target's receiver (GetPropertyHolder()) is a side-effecting expression that
             // must be evaluated exactly once, and (to match left-to-right evaluation order) before the
             // source values are read - not only after, as part of performing the write.
@@ -355,6 +370,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 DeconstructPropertyTargetSideEffect(typeof(string), typeof(string));
                 DeconstructTargetReceiverEvaluatedBeforeSource(typeof(string), typeof(string));
                 DeconstructTargetReceiverWithNestedDeconstructionSource(typeof(string), typeof(string));
+                DeconstructFlowCapturedTargetReceiverEvaluatedBeforeSource(true, typeof(string), typeof(string));
                 DeconstructIndexerTargetSideEffect(typeof(string), typeof(string));
                 DeconstructParameterTarget(typeof(string), null);
                 DeconstructDiscardTarget();
