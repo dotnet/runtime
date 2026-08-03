@@ -620,6 +620,7 @@
     "SystemVEightByteRegistersInfo.EightByteSize0": "Byte size of the first eightbyte",
     "SystemVEightByteRegistersInfo.EightByteSize1": "Byte size of the second eightbyte",
     "SystemVEightByteRegistersInfo.NumEightBytes": "Number of eightbyte slots used to pass the value type in registers (0 if not passed in registers)",
+    "TableRW.Size": "Size in bytes of each TableRW entry in the CMiniMdRW tables array",
     "TableSegment.NextSegment": "Pointer to the next segment",
     "TableSegment.RgAllocation": "Circular block-list links per block",
     "TableSegment.RgTail": "Tail block index per handle type",
