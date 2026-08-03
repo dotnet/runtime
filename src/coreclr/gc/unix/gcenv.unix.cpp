@@ -377,9 +377,6 @@ bool GCToOSInterface::Initialize()
 
     assert(g_totalPhysicalMemSize != 0);
 
-    printf("GCToOsInterface::Initialize: cpuCount=%u, configuredCpuCount=%u, processAffinitySet.Count()=%zu\n",
-        g_totalCpuCount, g_configuredCpuCount, g_processAffinitySet.Count());
-
     return true;
 }
 
