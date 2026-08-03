@@ -338,30 +338,6 @@
     <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
   </Suppression>
   <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.PolynomialMultiplyWideningEven(System.Numerics.Vector{System.Byte},System.Numerics.Vector{System.Byte})</Target>
-    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
-    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.PolynomialMultiplyWideningEven(System.Numerics.Vector{System.UInt32},System.Numerics.Vector{System.UInt32})</Target>
-    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
-    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.PolynomialMultiplyWideningOdd(System.Numerics.Vector{System.Byte},System.Numerics.Vector{System.Byte})</Target>
-    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
-    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
-  </Suppression>
-  <Suppression>
-    <DiagnosticId>CP0002</DiagnosticId>
-    <Target>M:System.Runtime.Intrinsics.Arm.Sve2.PolynomialMultiplyWideningOdd(System.Numerics.Vector{System.UInt32},System.Numerics.Vector{System.UInt32})</Target>
-    <Left>net10.0/System.Runtime.Intrinsics.dll</Left>
-    <Right>net11.0/System.Runtime.Intrinsics.dll</Right>
-  </Suppression>
-  <Suppression>
     <DiagnosticId>CP0012</DiagnosticId>
     <Target>M:System.Delegate.CombineImpl(System.Delegate)</Target>
     <Left>net10.0/mscorlib.dll</Left>
