@@ -9,7 +9,6 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Runtime.Versioning;
 
 namespace System
 {
