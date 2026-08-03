@@ -3750,13 +3750,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint16_t svpmullb[_u16](svuint8_t op1, svuint8_t op2)
         ///   PMULLB Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<ushort> PolynomialMultiplyWideningLower(Vector<byte> left, Vector<byte> right) => PolynomialMultiplyWideningLower(left, right);
+        public static Vector<ushort> PolynomialMultiplyWideningEven(Vector<byte> left, Vector<byte> right) => PolynomialMultiplyWideningEven(left, right);
 
         /// <summary>
         /// svuint64_t svpmullb[_u64](svuint32_t op1, svuint32_t op2)
         ///   PMULLB Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<ulong> PolynomialMultiplyWideningLower(Vector<uint> left, Vector<uint> right) => PolynomialMultiplyWideningLower(left, right);
+        public static Vector<ulong> PolynomialMultiplyWideningEven(Vector<uint> left, Vector<uint> right) => PolynomialMultiplyWideningEven(left, right);
 
 
         // Polynomial multiply long (top)
@@ -3765,13 +3765,13 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint16_t svpmullt[_u16](svuint8_t op1, svuint8_t op2)
         ///   PMULLT Zresult.H, Zop1.B, Zop2.B
         /// </summary>
-        public static Vector<ushort> PolynomialMultiplyWideningUpper(Vector<byte> left, Vector<byte> right) => PolynomialMultiplyWideningUpper(left, right);
+        public static Vector<ushort> PolynomialMultiplyWideningOdd(Vector<byte> left, Vector<byte> right) => PolynomialMultiplyWideningOdd(left, right);
 
         /// <summary>
         /// svuint64_t svpmullt[_u64](svuint32_t op1, svuint32_t op2)
         ///   PMULLT Zresult.D, Zop1.S, Zop2.S
         /// </summary>
-        public static Vector<ulong> PolynomialMultiplyWideningUpper(Vector<uint> left, Vector<uint> right) => PolynomialMultiplyWideningUpper(left, right);
+        public static Vector<ulong> PolynomialMultiplyWideningOdd(Vector<uint> left, Vector<uint> right) => PolynomialMultiplyWideningOdd(left, right);
 
 
         // Saturating doubling multiply-add long (bottom)

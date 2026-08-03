@@ -6987,10 +6987,10 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<ushort> NoMatch(System.Numerics.Vector<ushort> mask, System.Numerics.Vector<ushort> left, System.Numerics.Vector<ushort> right) { throw null; }
         public static System.Numerics.Vector<byte> PolynomialMultiply(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
         public static System.Numerics.Vector<sbyte> PolynomialMultiply(System.Numerics.Vector<sbyte> left, System.Numerics.Vector<sbyte> right) { throw null; }
-        public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningLower(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
-        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningLower(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
-        public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningUpper(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
-        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningUpper(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningEven(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningEven(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
+        public static System.Numerics.Vector<ushort> PolynomialMultiplyWideningOdd(System.Numerics.Vector<byte> left, System.Numerics.Vector<byte> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningOdd(System.Numerics.Vector<uint> left, System.Numerics.Vector<uint> right) { throw null; }
         public static System.Numerics.Vector<uint> ReciprocalEstimate(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<uint> ReciprocalSqrtEstimate(System.Numerics.Vector<uint> value) { throw null; }
         public static System.Numerics.Vector<sbyte> SaturatingExtractNarrowingLower(System.Numerics.Vector<short> value) { throw null; }
@@ -7333,8 +7333,8 @@ namespace System.Runtime.Intrinsics.Arm
         public static System.Numerics.Vector<byte> Encrypt(System.Numerics.Vector<byte> value, System.Numerics.Vector<byte> roundKey) { throw null; }
         public static System.Numerics.Vector<byte> InverseMixColumns(System.Numerics.Vector<byte> value) { throw null; }
         public static System.Numerics.Vector<byte> MixColumns(System.Numerics.Vector<byte> value) { throw null; }
-        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningLower(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
-        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningUpper(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningEven(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
+        public static System.Numerics.Vector<ulong> PolynomialMultiplyWideningOdd(System.Numerics.Vector<ulong> left, System.Numerics.Vector<ulong> right) { throw null; }
         public new abstract partial class Arm64 : System.Runtime.Intrinsics.Arm.ArmBase.Arm64
         {
             internal Arm64() { }

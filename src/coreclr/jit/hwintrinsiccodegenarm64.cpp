@@ -978,8 +978,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
     {
         emitSize = EA_SCALABLE;
 
-        if ((intrin.id == NI_SveAes_PolynomialMultiplyWideningLower) ||
-            (intrin.id == NI_SveAes_PolynomialMultiplyWideningUpper))
+        if ((intrin.id == NI_SveAes_PolynomialMultiplyWideningEven) ||
+            (intrin.id == NI_SveAes_PolynomialMultiplyWideningOdd))
         {
             opt = INS_OPTS_SCALABLE_Q;
         }

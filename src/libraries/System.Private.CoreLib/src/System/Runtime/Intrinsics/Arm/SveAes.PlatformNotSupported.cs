@@ -58,12 +58,12 @@ namespace System.Runtime.Intrinsics.Arm
         /// svuint64_t svpmullb[_u64](svuint64_t op1, svuint64_t op2)
         ///   PMULLB Zresult.Q, Zop1.D, Zop2.D
         /// </summary>
-        public static Vector<ulong> PolynomialMultiplyWideningLower(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> PolynomialMultiplyWideningEven(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// svuint64_t svpmullt[_u64](svuint64_t op1, svuint64_t op2)
         ///   PMULLT Zresult.Q, Zop1.D, Zop2.D
         /// </summary>
-        public static Vector<ulong> PolynomialMultiplyWideningUpper(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
+        public static Vector<ulong> PolynomialMultiplyWideningOdd(Vector<ulong> left, Vector<ulong> right) { throw new PlatformNotSupportedException(); }
     }
 }
