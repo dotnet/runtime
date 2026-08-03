@@ -196,10 +196,15 @@ namespace System.Net.Security.Tests
 
             // Simulate first UpdateOptions call: bare ServerCertificate creates and owns a context
             var options = new SslAuthenticationOptions();
-            options.CertificateContext = SslStreamCertificateContext.Create(
+            SslStreamCertificateContext ownedContext = SslStreamCertificateContext.Create(
                 leafWithKey,
                 new X509Certificate2Collection { intermediateWithKey },
                 offline: true);
+            // Capture the internal intermediate cert object before it is released
+            X509Certificate2 ownedIntermediate = ownedContext.IntermediateCertificates.Count > 0
+                ? ownedContext.IntermediateCertificates[0]
+                : null;
+            options.CertificateContext = ownedContext;
             options.OwnsCertificateContext = true;
 
             // Simulate second UpdateOptions call: caller provides a ServerCertificateContext.
@@ -212,6 +217,13 @@ namespace System.Net.Security.Tests
 
             Assert.False(options.OwnsCertificateContext);
             Assert.Same(callerContext, options.CertificateContext);
+
+            // UpdateOptions should have released the previously-owned context's resources.
+            // Export() requires the native handle; a CryptographicException means the cert was disposed.
+            if (ownedIntermediate is not null)
+            {
+                Assert.ThrowsAny<CryptographicException>(() => ownedIntermediate.Export(X509ContentType.Cert));
+            }
 
             // Dispose should NOT release the caller's context
             options.Dispose();
