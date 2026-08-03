@@ -207,7 +207,6 @@ namespace System.Net.Security.Tests
             // to incorrectly call ReleaseResources() on the caller-owned context.
             options.UpdateOptions(new SslServerAuthenticationOptions
             {
-                ServerCertificate = leafWithKey,
                 ServerCertificateContext = callerContext,
             });
 
