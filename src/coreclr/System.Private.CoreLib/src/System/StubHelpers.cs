@@ -1434,7 +1434,7 @@ namespace System.StubHelpers
             SpanHelpers.Memmove(ref Unsafe.As<T, byte>(ref managed), ref *unmanaged, (nuint)sizeof(T));
         }
 
-        // This is the managed fallback body for an intrinsic. The parameters are used by
+        // This is the managed fallback body for an intrinsic. The unused parameters are used by
         // the intrinsic expansion.
 #pragma warning disable IDE0060 // Remove unused parameter
         [Intrinsic]
