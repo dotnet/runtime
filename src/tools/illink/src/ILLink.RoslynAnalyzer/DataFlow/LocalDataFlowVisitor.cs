@@ -739,23 +739,25 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             {
                 sourceValue = GetDeconstructionSourceValue(source, sourceValue, sourceValueIsKnown, state);
                 bool isExtensionMethod = deconstructMethod.IsExtensionMethod;
+                bool hasReceiverArgument = isExtensionMethod || deconstructMethod.HasExtensionParameterOnType();
                 int outputParameterOffset = isExtensionMethod ? 1 : 0;
-                if (deconstructMethod.Parameters.Length != targetTuple.Elements.Length + outputParameterOffset)
+                int metadataParameterCount = deconstructMethod.GetMetadataParametersCount();
+                if (metadataParameterCount != targetTuple.Elements.Length + (hasReceiverArgument ? 1 : 0))
                 {
                     UnexpectedOperationHandler.Handle(operation);
                     return DeconstructionValue.Invalid;
                 }
 
-                var arguments = ImmutableArray.CreateBuilder<TValue>(deconstructMethod.Parameters.Length);
+                var arguments = ImmutableArray.CreateBuilder<TValue>(metadataParameterCount);
 
                 TValue instanceValue = sourceValue;
-                if (isExtensionMethod)
+                if (hasReceiverArgument)
                 {
                     instanceValue = TopValue;
                     arguments.Add(sourceValue);
                 }
 
-                while (arguments.Count < deconstructMethod.Parameters.Length)
+                while (arguments.Count < metadataParameterCount)
                     arguments.Add(TopValue);
 
                 // Key this synthesized Deconstruct() call on 'target', not 'source': 'source' may

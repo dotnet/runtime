@@ -24,6 +24,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestExtensionMethodRequires();
             TestExtensionMethodWithParams();
             TestExtensionMethodWithParamsMismatch();
+            TestExtensionDeconstructMismatch();
             TestExtensionStaticMethodRequires();
             TestExtensionMethodAnnotation();
             TestExtensionStaticMethodAnnotation();
@@ -64,6 +65,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static void TestExtensionMethodWithParamsMismatch()
         {
             GetWithMethods().ExtensionMembersMethodWithParamsMismatch(GetWithFields());
+        }
+
+        [ExpectedWarning("IL2072", nameof(GetWithMethods), nameof(ExtensionMembers.Deconstruct))]
+        static void TestExtensionDeconstructMismatch()
+        {
+            var (first, second) = GetWithMethods();
         }
 
         [ExpectedWarning("IL2026", nameof(ExtensionMembers.ExtensionMembersStaticMethodRequires))]
@@ -184,6 +191,12 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             {
                 type.RequiresPublicMethods();
                 typeParam.RequiresPublicFields();
+            }
+
+            public void Deconstruct(out object first, out object second)
+            {
+                first = null;
+                second = null;
             }
 
             [RequiresUnreferencedCode(nameof(ExtensionMembersStaticMethodRequires))]
