@@ -67,23 +67,22 @@ PhaseStatus Compiler::SaveAsyncContexts()
     }
 
     // Create locals for Thread, ExecutionContext and SynchronizationContext
-    lvaAsyncThreadObjectVar                     = lvaGrabTemp(false DEBUGARG("Async Thread"));
-    lvaGetDesc(lvaAsyncThreadObjectVar)->lvType = TYP_REF;
+    lvaAsyncThreadObjectVar           = lvaGrabTemp(false DEBUGARG("Async Thread"));
+    lvaAsyncExecutionContextVar       = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
+    lvaAsyncSynchronizationContextVar = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
+    lvaResumedIndicator               = lvaGrabTemp(false DEBUGARG("Async Resumed"));
 
-    lvaAsyncExecutionContextVar                     = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
-    lvaGetDesc(lvaAsyncExecutionContextVar)->lvType = TYP_REF;
-
-    lvaAsyncSynchronizationContextVar                     = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
+    lvaGetDesc(lvaAsyncThreadObjectVar)->lvType           = TYP_REF;
+    lvaGetDesc(lvaAsyncExecutionContextVar)->lvType       = TYP_REF;
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
-
-    lvaResumedIndicator                     = lvaGrabTemp(false DEBUGARG("Async Resumed"));
-    lvaGetDesc(lvaResumedIndicator)->lvType = TYP_UBYTE;
+    lvaGetDesc(lvaResumedIndicator)->lvType               = TYP_I_IMPL;
 
     if (opts.IsOSR())
     {
         lvaGetDesc(lvaAsyncThreadObjectVar)->lvIsOSRLocal           = true;
         lvaGetDesc(lvaAsyncExecutionContextVar)->lvIsOSRLocal       = true;
         lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvIsOSRLocal = true;
+        lvaGetDesc(lvaResumedIndicator)->lvIsOSRLocal               = true;
     }
 
     // Create try-fault structure. This is actually a try-finally, but we
@@ -168,17 +167,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     // Insert CaptureContexts call before the try (keep it before so the
     // try/finally can be removed if there is no exception side effects).
     // For OSR, we did this in the tier0 method.
-    if (opts.IsOSR())
-    {
-        // In the OSR method we compute the initial value of the resumption indicator based on the continuation arg.
-        GenTree*   continuation       = gtNewLclVarNode(lvaAsyncContinuationArg, TYP_REF);
-        GenTree*   null               = gtNewNull();
-        GenTree*   contNeNull         = gtNewOperNode(GT_NE, TYP_INT, continuation, null);
-        GenTree*   storeIndicator     = gtNewStoreLclVarNode(lvaResumedIndicator, contNeNull);
-        Statement* storeIndicatorStmt = fgNewStmtFromTree(storeIndicator);
-        fgInsertStmtAtBeg(fgFirstBB, storeIndicatorStmt);
-    }
-    else
+    if (!opts.IsOSR())
     {
         GenTreeCall* captureCall = gtNewUserCallNode(asyncInfo->captureContextsMethHnd, TYP_VOID);
         captureCall->gtArgs.PushFront(this,
@@ -207,7 +196,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
         if ((inALoop && !isReturn) || !impInlineRoot()->info.compInitMem)
         {
-            GenTree*   storeIndicator     = gtNewStoreLclVarNode(lvaResumedIndicator, gtNewIconNode(0));
+            GenTree*   storeIndicator     = gtNewStoreLclVarNode(lvaResumedIndicator, gtNewIconNode(0, TYP_I_IMPL));
             Statement* storeIndicatorStmt = fgNewStmtFromTree(storeIndicator);
             fgInsertStmtAtBeg(fgFirstBB, storeIndicatorStmt);
 
@@ -221,15 +210,12 @@ PhaseStatus Compiler::SaveAsyncContexts()
     }
 
     // Insert RestoreContexts call in fault (exceptional case)
-    // First argument: resumed = (continuation != null)
-    GenTree* resumed = gtNewLclvNode(lvaResumedIndicator, TYP_INT);
-
     GenTreeCall* restoreCall = gtNewUserCallNode(asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncThreadObjectVar, TYP_REF)));
-    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaResumedIndicator, TYP_INT)));
 
     Statement* restoreStmt = fgNewStmtFromTree(restoreCall);
     fgInsertStmtAtEnd(faultBB, restoreStmt);
@@ -385,16 +371,13 @@ BasicBlock* Compiler::CreateReturnBB(unsigned* mergedReturnLcl)
     JITDUMP("Created new BBJ_RETURN block " FMT_BB "\n", newReturnBB->bbNum);
 
     // Insert "restore" call
-    CORINFO_ASYNC_INFO* asyncInfo = eeGetAsyncInfo();
-
-    GenTree* resumed = gtNewLclvNode(lvaResumedIndicator, TYP_INT);
-
-    GenTreeCall* restoreCall = gtNewUserCallNode(asyncInfo->restoreContextsMethHnd, TYP_VOID);
+    CORINFO_ASYNC_INFO* asyncInfo   = eeGetAsyncInfo();
+    GenTreeCall*        restoreCall = gtNewUserCallNode(asyncInfo->restoreContextsMethHnd, TYP_VOID);
     restoreCall->gtArgs.PushFront(this,
                                   NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncSynchronizationContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncExecutionContextVar, TYP_REF)));
     restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaAsyncThreadObjectVar, TYP_REF)));
-    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(resumed));
+    restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(gtNewLclVarNode(lvaResumedIndicator, TYP_INT)));
 
     // This restore is an inline candidate (unlike the fault one)
     CORINFO_CALL_INFO callInfo = {};
