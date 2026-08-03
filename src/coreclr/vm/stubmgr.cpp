@@ -1687,6 +1687,105 @@ static PCODE GetLateBoundCOMTarget(Object *pThis, CLRToCOMCallInfo *pCLRToCOMCal
 }
 #endif // FEATURE_COMINTEROP
 
+// Reads the incoming value of the index-th integer argument register from a context captured at
+// a managed method's entry point. The registers are indexed the way a TransitionBlock lays them
+// out, which is the same order the ArgIterator reports.
+static bool TryGetArgumentRegister(T_CONTEXT *pContext, unsigned index, TADDR *pValue)
+{
+    LIMITED_METHOD_CONTRACT;
+
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM) || defined(TARGET_ARM64)
+    if (index >= NUM_ARGUMENT_REGISTERS)
+        return false;
+
+    ArgumentRegisters regs;
+#if defined(TARGET_X86)
+    regs.ECX = (INT32)pContext->Ecx;
+    regs.EDX = (INT32)pContext->Edx;
+#elif defined(TARGET_AMD64)
+#ifdef UNIX_AMD64_ABI
+    regs.RDI = (INT_PTR)pContext->Rdi;
+    regs.RSI = (INT_PTR)pContext->Rsi;
+    regs.RDX = (INT_PTR)pContext->Rdx;
+    regs.RCX = (INT_PTR)pContext->Rcx;
+    regs.R8  = (INT_PTR)pContext->R8;
+    regs.R9  = (INT_PTR)pContext->R9;
+#else
+    regs.RCX = (INT_PTR)pContext->Rcx;
+    regs.RDX = (INT_PTR)pContext->Rdx;
+    regs.R8  = (INT_PTR)pContext->R8;
+    regs.R9  = (INT_PTR)pContext->R9;
+#endif // UNIX_AMD64_ABI
+#elif defined(TARGET_ARM)
+    regs.r[0] = (INT32)pContext->R0;
+    regs.r[1] = (INT32)pContext->R1;
+    regs.r[2] = (INT32)pContext->R2;
+    regs.r[3] = (INT32)pContext->R3;
+#elif defined(TARGET_ARM64)
+    for (unsigned i = 0; i < NUM_ARGUMENT_REGISTERS; i++)
+        regs.x[i] = (INT64)pContext->X[i];
+#endif
+
+    static_assert(sizeof(ArgumentRegisters) == NUM_ARGUMENT_REGISTERS * sizeof(TADDR),
+        "Argument registers are expected to be a flat array of pointer sized values");
+
+    *pValue = ((TADDR*)&regs)[index];
+    return true;
+#else
+    // Not implemented for this architecture.
+    return false;
+#endif
+}
+
+// Recovers the unmanaged target of an unmanaged CALLI stub from a context captured at the stub's
+// entry point. The target is passed as the last argument of the stub - see
+// code:BuildCalliILStubSignature.
+static bool TryGetCalliStubTarget(MethodDesc *pStubMD, T_CONTEXT *pContext, PCODE *pTarget)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+        PRECONDITION(pStubMD->AsDynamicMethodDesc()->IsPInvokeCalliStub());
+    }
+    CONTRACTL_END;
+
+    MetaSig msig(pStubMD);
+    ArgIterator argit(&msig);
+
+    int targetOffset = TransitionBlock::InvalidOffset;
+    int argOffset;
+    while ((argOffset = argit.GetNextOffset()) != TransitionBlock::InvalidOffset)
+    {
+        targetOffset = argOffset;
+    }
+
+    if (targetOffset == TransitionBlock::InvalidOffset)
+        return false;
+
+    if (TransitionBlock::IsArgumentRegisterOffset(targetOffset))
+    {
+        TADDR value;
+        if (!TryGetArgumentRegister(pContext, TransitionBlock::GetArgumentIndexFromOffset(targetOffset), &value))
+            return false;
+
+        *pTarget = (PCODE)value;
+        return true;
+    }
+
+    // The incoming stack arguments start right past the return address when the call instruction
+    // pushes it on the stack, and at the stack pointer itself when it is passed in a link register.
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
+    TADDR stackArgs = GetSP(pContext) + sizeof(TADDR);
+#else
+    TADDR stackArgs = GetSP(pContext);
+#endif
+
+    *pTarget = *(PCODE*)(stackArgs + (targetOffset - TransitionBlock::GetOffsetOfArgs()));
+    return true;
+}
+
 BOOL ILStubManager::TraceManager(Thread *thread,
                                  TraceDestination *trace,
                                  T_CONTEXT *pContext,
@@ -1740,13 +1839,14 @@ BOOL ILStubManager::TraceManager(Thread *thread,
     }
     else if (pStubMD->IsPInvokeCalliStub())
     {
-        // This is unmanaged CALLI stub, the argument is the target
-        target = (PCODE)arg;
-
-        // The value is mangled on 64-bit
-#ifdef TARGET_AMD64
-        target = target >> 1; // call target is encoded as (addr << 1) | 1
-#endif // TARGET_AMD64
+        // This is an unmanaged CALLI stub. The native target is passed as its last argument
+        // rather than in a hidden argument, so it has to be read out of the incoming argument
+        // location that the calling convention assigned to it.
+        if (!TryGetCalliStubTarget(pStubMD, pContext, &target))
+        {
+            LOG((LF_CORDB, LL_INFO1000, "ILSM::TraceManager: Unmanaged CALLI stub - could not locate the target\n"));
+            return FALSE;
+        }
 
         LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case %p\n", target));
         trace->InitForUnmanaged(target);
@@ -1894,7 +1994,7 @@ BOOL PInvokeStubManager::DoTraceStub(PCODE stubStartAddress,
 #endif // !DACCESS_COMPILE
 }
 
-// This is used to recognize VarargPInvokeStub, and GenericPInvokeCalliHelper.
+// This is used to recognize VarargPInvokeStub.
 
 #ifndef DACCESS_COMPILE
 
@@ -1941,12 +2041,6 @@ BOOL InteropDispatchStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     {
         return true;
     }
-
-    if (stubStartAddress == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
-    {
-        return true;
-    }
-
 #endif // !DACCESS_COMPILE
     return false;
 }
@@ -2005,18 +2099,6 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
         PCODE target = (PCODE)pNMD->GetPInvokeTarget();
 
         LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Vararg P/Invoke case %p\n", target));
-        trace->InitForUnmanaged(target);
-#endif //defined(TARGET_ARM64) && defined(__APPLE__)
-    }
-    else if (stubIP == GetEEFuncEntryPoint(GenericPInvokeCalliHelper))
-    {
-#if defined(TARGET_ARM64) && defined(__APPLE__)
-        //On ARM64 Mac, we cannot put a breakpoint inside of GenericPInvokeCalliHelper
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Skipping on arm64-macOS\n"));
-        return FALSE;
-#else
-        PCODE target = (PCODE)arg;
-        LOG((LF_CORDB, LL_INFO10000, "IDSM::TraceManager: Unmanaged CALLI case %p\n", target));
         trace->InitForUnmanaged(target);
 #endif //defined(TARGET_ARM64) && defined(__APPLE__)
     }

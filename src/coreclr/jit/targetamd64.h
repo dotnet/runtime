@@ -384,14 +384,6 @@
                                          // See ImportThunk.Kind.DelayLoadHelperWithExistingIndirectionCell in crossgen2.
 #define RBM_R2R_INDIRECT_PARAM RBM_RAX
 
-// GenericPInvokeCalliHelper VASigCookie Parameter
-#define REG_PINVOKE_COOKIE_PARAM          REG_R11
-#define RBM_PINVOKE_COOKIE_PARAM          RBM_R11
-
-// GenericPInvokeCalliHelper unmanaged target Parameter
-#define REG_PINVOKE_TARGET_PARAM          REG_R10
-#define RBM_PINVOKE_TARGET_PARAM          RBM_R10
-
 // IL stub's secret MethodDesc parameter (JitFlags::JIT_FLAG_PUBLISH_SECRET_PARAM)
 #define REG_SECRET_STUB_PARAM    REG_R10
 #define RBM_SECRET_STUB_PARAM    RBM_R10

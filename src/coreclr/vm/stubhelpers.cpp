@@ -510,14 +510,6 @@ FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
 
     DELEGATEREF orefThis = (DELEGATEREF)ObjectToOBJECTREF(pThisUNSAFE);
 
-#if defined(HOST_64BIT)
-    UINT_PTR target = (UINT_PTR)orefThis->GetMethodPtrAux();
-
-    // See code:GenericPInvokeCalliHelper
-    // The lowest bit is used to distinguish between MD and target on 64-bit.
-    target = (target << 1) | 1;
-#endif // HOST_64BIT
-
     pEntryPoint = orefThis->GetMethodPtrAux();
 
     return (PVOID)pEntryPoint;
@@ -530,6 +522,18 @@ extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT 
 
     BEGIN_QCALL;
     ::ThrowInteropParamException(resID, paramIdx);
+    END_QCALL;
+}
+
+// Throws an interop failure that was detected while the stub was being generated. Stubs that are
+// created while their caller is being jitted report their failures this way so that a call site
+// that is never executed does not fail the compilation of the method containing it.
+extern "C" void QCALLTYPE StubHelpers_ThrowInteropException(INT exceptionKind, INT resID)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    COMPlusThrow(static_cast<RuntimeExceptionKind>(exceptionKind), static_cast<UINT>(resID));
     END_QCALL;
 }
 

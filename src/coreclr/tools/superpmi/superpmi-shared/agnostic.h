@@ -728,14 +728,6 @@ struct GetVarArgsHandleValue
     DWORDLONG methHnd;
 };
 
-struct GetCookieForPInvokeCalliSigValue
-{
-    DWORD     cbSig;
-    DWORD     pSig_Index;
-    DWORDLONG scope;
-    DWORD     token;
-};
-
 struct GetCookieForInterpreterCalliSigValue
 {
     DWORD     cbSig;

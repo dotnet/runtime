@@ -9,7 +9,6 @@
 
 
     IMPORT VarargPInvokeStubWorker
-    IMPORT GenericPInvokeCalliStubWorker
     IMPORT JIT_PInvokeEndRarePath
 
     IMPORT g_TrapReturningThreads
@@ -21,7 +20,7 @@
 ;
 ; Params :-
 ; $FuncPrefix : prefix of the function name for the stub
-;                     Eg. VarargPinvoke, GenericPInvokeCalli
+;                     Eg. VarargPinvoke
 ; $VASigCookieReg : register which contains the VASigCookie
 ; $SaveFPArgs : "Yes" or "No" . For varidic functions FP Args are not present in FP regs
 ;                        So need not save FP Args registers for vararg Pinvoke
@@ -33,11 +32,7 @@
         GBLS __PInvokeGenStubFuncName
         GBLS __PInvokeStubWorkerName
 
-        IF "$FuncPrefix" == "GenericPInvokeCalli"
-__PInvokeStubFuncName SETS "$FuncPrefix":CC:"Helper"
-        ELSE
 __PInvokeStubFuncName SETS "$FuncPrefix":CC:"Stub"
-        ENDIF
 __PInvokeGenStubFuncName SETS "$FuncPrefix":CC:"GenILStub"
 __PInvokeStubWorkerName SETS "$FuncPrefix":CC:"StubWorker"
 
@@ -48,16 +43,6 @@ __PInvokeStubWorkerName SETS "$FuncPrefix":CC:"StubWorker"
 
         ; if null goto stub generation
         cbz                 x9, %0
-
-        IF "$FuncPrefix" == "GenericPInvokeCalli"
-            ;
-            ; We need to distinguish between a MethodDesc* and an unmanaged target.
-            ; The way we do this is to shift the managed target to the left by one bit and then set the
-            ; least significant bit to 1.  This works because MethodDesc* are always 8-byte aligned.
-            ;
-            lsl             $HiddenArg, $HiddenArg, #1
-            orr             $HiddenArg, $HiddenArg, #1
-        ENDIF
 
         EPILOG_BRANCH_REG   x9
 
@@ -184,17 +169,6 @@ RarePath
 ; x12 = MethodDesc *
 ;
         PINVOKE_STUB VarargPInvoke, x0, x12, {false}
-
-
-; ------------------------------------------------------------------
-; GenericPInvokeCalliHelper & GenericPInvokeCalliGenILStub
-; Helper for generic pinvoke calli instruction
-;
-; in:
-; x15 = VASigCookie*
-; x12 = Unmanaged target
-;
-        PINVOKE_STUB GenericPInvokeCalli, x15, x12, {true}
 
 
 ; Must be at very end of file

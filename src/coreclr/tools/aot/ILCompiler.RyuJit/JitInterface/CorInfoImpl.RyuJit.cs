@@ -2021,7 +2021,6 @@ namespace Internal.JitInterface
                 return false;
 
             pResolvedToken.hMethod = ObjectToHandle(stub);
-            pResolvedToken.hClass = ObjectToHandle(stub.OwningType);
             return true;
         }
 
