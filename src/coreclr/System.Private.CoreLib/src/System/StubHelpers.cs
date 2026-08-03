@@ -1434,9 +1434,8 @@ namespace System.StubHelpers
             SpanHelpers.Memmove(ref Unsafe.As<T, byte>(ref managed), ref *unmanaged, (nuint)sizeof(T));
         }
 
-        // This is the managed fallback body for a JIT intrinsic, so it must keep the shape of the other
-        // marshaler methods even though it uses none of its parameters. The parameters must not be
-        // dereferenced here: callers can pass null refs (Unsafe.NullRef), which would throw.
+        // This is the managed fallback body for an intrinsic. The parameters are used by
+        // the intrinsic expansion.
 #pragma warning disable IDE0060 // Remove unused parameter
         [Intrinsic]
         private static void FreeCore(ref T managed, byte* unmanaged, ref CleanupWorkListElement? cleanupWorkList)
