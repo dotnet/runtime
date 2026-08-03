@@ -269,16 +269,16 @@ private:
     uint64_t m_calleeSaveRegisters;
     PCODE    m_tier0Version;
     uint32_t m_numberOfLocals;
-    int32_t      m_totalFrameSize;
-    int32_t      m_genericContextArgOffset;
-    int32_t      m_keptAliveThisOffset;
-    int32_t      m_securityCookieOffset;
-    int32_t      m_monitorAcquiredOffset;
-    int32_t      m_resumedIndicatorOffset;
-    int32_t      m_asyncThreadObjectOffset;
-    int32_t      m_asyncExecutionContextOffset;
-    int32_t      m_asyncSynchronizationContextOffset;
-    int32_t      m_offsetAndExposureData[];
+    int32_t  m_totalFrameSize;
+    int32_t  m_genericContextArgOffset;
+    int32_t  m_keptAliveThisOffset;
+    int32_t  m_securityCookieOffset;
+    int32_t  m_monitorAcquiredOffset;
+    int32_t  m_resumedIndicatorOffset;
+    int32_t  m_asyncThreadObjectOffset;
+    int32_t  m_asyncExecutionContextOffset;
+    int32_t  m_asyncSynchronizationContextOffset;
+    int32_t  m_offsetAndExposureData[];
 };
 
 typedef DPTR(struct PatchpointInfo) PTR_PatchpointInfo;

@@ -72,7 +72,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
     lvaAsyncExecutionContextVar       = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
     lvaAsyncSynchronizationContextVar = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
 
-    lvaGetDesc(lvaResumedIndicator)->lvType               = TYP_UBYTE;
+    lvaGetDesc(lvaResumedIndicator)->lvType               = TYP_I_IMPL;
     lvaGetDesc(lvaAsyncThreadObjectVar)->lvType           = TYP_REF;
     lvaGetDesc(lvaAsyncExecutionContextVar)->lvType       = TYP_REF;
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
@@ -196,7 +196,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
         if ((inALoop && !isReturn) || !impInlineRoot()->info.compInitMem)
         {
-            GenTree*   storeIndicator     = gtNewStoreLclVarNode(lvaResumedIndicator, gtNewIconNode(0));
+            GenTree*   storeIndicator     = gtNewStoreLclVarNode(lvaResumedIndicator, gtNewIconNode(0, TYP_I_IMPL));
             Statement* storeIndicatorStmt = fgNewStmtFromTree(storeIndicator);
             fgInsertStmtAtBeg(fgFirstBB, storeIndicatorStmt);
 
@@ -3055,14 +3055,14 @@ void AsyncTransformation::StoreResumedDef(GenTreeLclVarCommon* resumedDef, Basic
 
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(resumedDef);
     GenTree*   store;
-    if ((resumedDef->GetLclOffs() == 0) && varDsc->TypeIs(TYP_UBYTE))
+    if ((resumedDef->GetLclOffs() == 0) && varDsc->TypeIs(TYP_I_IMPL))
     {
-        store = m_compiler->gtNewStoreLclVarNode(resumedDef->GetLclNum(), m_compiler->gtNewIconNode(1));
+        store = m_compiler->gtNewStoreLclVarNode(resumedDef->GetLclNum(), m_compiler->gtNewIconNode(1, TYP_I_IMPL));
     }
     else
     {
-        store = m_compiler->gtNewStoreLclFldNode(resumedDef->GetLclNum(), TYP_UBYTE, resumedDef->GetLclOffs(),
-                                                 m_compiler->gtNewIconNode(1));
+        store = m_compiler->gtNewStoreLclFldNode(resumedDef->GetLclNum(), TYP_I_IMPL, resumedDef->GetLclOffs(),
+                                                 m_compiler->gtNewIconNode(1, TYP_I_IMPL));
         m_compiler->lvaSetVarDoNotEnregister(resumedDef->GetLclNum() DEBUGARG(DoNotEnregisterReason::LocalField));
     }
 
@@ -3605,10 +3605,10 @@ BasicBlock* AsyncTransformation::CreateSharedFinishContextHandlingBB(SuspensionC
         {
             m_sharedFinishContextHandlingResumedVar =
                 m_compiler->lvaGrabTemp(false DEBUGARG("'resumed' for shared finish context handling"));
-            m_compiler->lvaGetDesc(m_sharedFinishContextHandlingResumedVar)->lvType = TYP_UBYTE;
+            m_compiler->lvaGetDesc(m_sharedFinishContextHandlingResumedVar)->lvType = TYP_INT;
         }
 
-        resumed = m_compiler->gtNewLclVarNode(m_sharedFinishContextHandlingResumedVar, TYP_UBYTE);
+        resumed = m_compiler->gtNewLclVarNode(m_sharedFinishContextHandlingResumedVar, TYP_INT);
     }
     else
     {
