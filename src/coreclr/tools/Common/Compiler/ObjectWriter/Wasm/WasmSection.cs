@@ -13,19 +13,6 @@ namespace ILCompiler.ObjectWriter
         public WasmSectionType Type { get; }
         public Utf8String Name { get; }
 
-        public int? PrependCount = null;
-        public int PrependCountSize => PrependCount.HasValue ? (int)DwarfHelper.SizeOfULEB128((ulong)PrependCount.Value) : 0;
-
-        private int EncodePrependCount(Span<byte> dest)
-        {
-            if (PrependCount.HasValue)
-            {
-                return DwarfHelper.WriteULEB128(dest, (ulong)PrependCount.Value);
-            }
-
-            return 0;
-        }
-
         public Stream Stream
         {
             get
@@ -41,7 +28,11 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        Stream _dataStream;
+        private Stream _dataStream;
+
+        protected virtual int ContentPrefixSize => 0;
+
+        protected virtual int EncodeContentPrefix(Span<byte> destination) => 0;
 
         public virtual int HeaderSize
         {
@@ -52,7 +43,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public virtual int ContentSize => (int)_dataStream.Length + PrependCountSize;
+        public virtual int ContentSize => (int)_dataStream.Length + ContentPrefixSize;
 
         public virtual int EncodeSize()
         {
@@ -80,25 +71,178 @@ namespace ILCompiler.ObjectWriter
 
             outputFileStream.Write(headerBuffer);
 
-            if (PrependCount.HasValue)
+            if (ContentPrefixSize > 0)
             {
-                Span<byte> prependCount = stackalloc byte[PrependCountSize];
-                int encoded = EncodePrependCount(prependCount);
-                outputFileStream.Write(prependCount);
+                Span<byte> contentPrefix = stackalloc byte[ContentPrefixSize];
+                int encodedSize = EncodeContentPrefix(contentPrefix);
+                Debug.Assert(encodedSize == contentPrefix.Length);
+                outputFileStream.Write(contentPrefix);
             }
 
             Stream.Position = 0;
             Stream.CopyTo(outputFileStream);
 
-            return HeaderSize + (int)(PrependCountSize + Stream.Length);
+            return HeaderSize + ContentSize;
         }
 
-        public WasmSection(WasmSectionType type, Stream stream, Utf8String name, int? prependCount = null)
+        public WasmSection(WasmSectionType type, Stream stream, Utf8String name)
         {
             Type = type;
             Name = name;
             _dataStream = stream;
-            PrependCount = prependCount;
+        }
+    }
+
+    internal abstract class WasmVectorSection : WasmSection
+    {
+        public int EntryCount { get; protected set; }
+
+        protected override int ContentPrefixSize => (int)DwarfHelper.SizeOfULEB128((ulong)EntryCount);
+
+        protected override int EncodeContentPrefix(Span<byte> destination) =>
+            DwarfHelper.WriteULEB128(destination, (ulong)EntryCount);
+
+        protected void CompleteEntry()
+        {
+            EntryCount++;
+        }
+
+        protected WasmVectorSection(WasmSectionType type, Stream stream, Utf8String name)
+            : base(type, stream, name)
+        {
+        }
+    }
+
+    // ObjectWriter writes directly to the section writer for the code and type sections without going through
+    // the WasmSection abstraction.
+    internal sealed class WasmExternallyCountedSection : WasmVectorSection
+    {
+        public WasmExternallyCountedSection(WasmSectionType type, Stream stream, Utf8String name)
+            : base(type, stream, name)
+        {
+        }
+
+        public void SetEntryCount(int entryCount)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(entryCount);
+            EntryCount = entryCount;
+        }
+    }
+
+    internal abstract class WasmSection<TEntry> : WasmVectorSection
+    {
+        public void WriteEntry(SectionWriter writer, TEntry entry)
+        {
+            WriteEntryCore(writer, entry);
+            CompleteEntry();
+        }
+
+        protected abstract void WriteEntryCore(SectionWriter writer, TEntry entry);
+
+        protected static void WriteEncodable<TEncodable>(SectionWriter writer, TEncodable entry)
+            where TEncodable : IWasmEncodable
+        {
+            int encodeSize = entry.EncodeSize();
+            int bytesWritten = entry.Encode(writer.Buffer.GetSpan(encodeSize));
+            Debug.Assert(bytesWritten == encodeSize);
+            writer.Buffer.Advance(bytesWritten);
+        }
+
+        protected WasmSection(WasmSectionType type, Stream stream, Utf8String name)
+            : base(type, stream, name)
+        {
+        }
+    }
+
+    internal sealed class WasmImportSection : WasmSection<WasmImport>
+    {
+        public WasmImportSection(Stream stream, Utf8String name)
+            : base(WasmSectionType.Import, stream, name)
+        {
+        }
+
+        protected override void WriteEntryCore(SectionWriter writer, WasmImport entry)
+        {
+            writer.EmitSymbolDefinition(new Utf8String(entry.Name));
+            writer.WriteUtf8WithLength(entry.Module);
+            writer.WriteUtf8WithLength(entry.Name);
+            writer.WriteByte((byte)entry.Kind);
+            WriteEncodable(writer, entry);
+        }
+    }
+
+    internal sealed class WasmFunctionSection : WasmSection<int>
+    {
+        public WasmFunctionSection(Stream stream, Utf8String name)
+            : base(WasmSectionType.Function, stream, name)
+        {
+        }
+
+        protected override void WriteEntryCore(SectionWriter writer, int typeIndex) =>
+            writer.WriteULEB128((ulong)typeIndex);
+    }
+
+    internal sealed class WasmGlobalSection : WasmSection<WasmGlobal>
+    {
+        public WasmGlobalSection(Stream stream, Utf8String name)
+            : base(WasmSectionType.Global, stream, name)
+        {
+        }
+
+        protected override void WriteEntryCore(SectionWriter writer, WasmGlobal entry)
+        {
+            writer.EmitSymbolDefinition(new Utf8String(entry.Name));
+            WriteEncodable(writer, entry);
+        }
+    }
+
+    internal readonly struct WasmExport
+    {
+        public string Name { get; }
+        public WasmExportKind Kind { get; }
+        public int Index { get; }
+
+        public WasmExport(string name, WasmExportKind kind, int index)
+        {
+            Name = name;
+            Kind = kind;
+            Index = index;
+        }
+    }
+
+    internal sealed class WasmExportSection : WasmSection<WasmExport>
+    {
+        public WasmExportSection(Stream stream, Utf8String name)
+            : base(WasmSectionType.Export, stream, name)
+        {
+        }
+
+        protected override void WriteEntryCore(SectionWriter writer, WasmExport entry)
+        {
+            writer.WriteUtf8WithLength(entry.Name);
+            writer.WriteByte((byte)entry.Kind);
+            writer.WriteULEB128((ulong)entry.Index);
+        }
+    }
+
+    internal sealed class WasmElementSection : WasmSection<ReadOnlyMemory<int>>
+    {
+        public WasmElementSection(Stream stream, Utf8String name)
+            : base(WasmSectionType.Element, stream, name)
+        {
+        }
+
+        protected override void WriteEntryCore(SectionWriter writer, ReadOnlyMemory<int> entry)
+        {
+            ReadOnlySpan<int> functionIndices = entry.Span;
+
+            writer.WriteByte(1); // Passive element segment
+            writer.WriteByte(0); // element type: ref func
+            writer.WriteULEB128((ulong)functionIndices.Length);
+            foreach (int functionIndex in functionIndices)
+            {
+                writer.WriteULEB128((ulong)functionIndex);
+            }
         }
     }
 }
