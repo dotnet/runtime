@@ -15,8 +15,6 @@ namespace ILCompiler.ObjectWriter
         public const int TableBaseGlobalIndex = WasmGlobalImports.TableBaseGlobalIndex;
         public const int AsyncContinuationGlobalIndex = WasmGlobalImports.AsyncContinuationGlobalIndex;
 
-        public const int WebcilSectionAlignment = 16;
-
         protected WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
         {
