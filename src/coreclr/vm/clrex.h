@@ -26,11 +26,11 @@ enum StackTraceElementFlags
     STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the "ip" field has already been adjusted (decremented)
-    STEF_IP_ADJUSTED = 0x0002,
+    STEF_IP_ADJUSTED = 0x0002, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the element references a method that needs a keep alive object
     STEF_KEEPALIVE = 0x0004,
-    STEF_CONTINUATION = 0x0008,
+    STEF_CONTINUATION = 0x0008, // [cDAC] [Exception]: Contract depends on this value.
 };
 
 // This struct is used by SOS in the diagnostic repo.

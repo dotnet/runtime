@@ -35,8 +35,6 @@ TargetPointer GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPoin
 | `Module` | `EnCClassList` | `pointer` | Pointer to the list of classes added through Edit and Continue |
 | `Object` | *(type size)* | `uint32` | Size in bytes of the fixed Object portion through its MethodTable pointer |
 | `SyncBlock` | `EnCInfo` | `pointer` | Pointer to Edit-and-Continue added-field information for the object; optional when Edit and Continue is not configured |
-| `SyncBlock` | `InteropInfo` | `pointer` | Pointer to optional COM interop data associated with the sync block |
-| `SyncBlock` | `Lock` | `ObjectHandle` | Object handle referring to the System.Threading.Lock used for the object's monitor |
 | `System.Diagnostics.EditAndContinueHelper` | `_objectReference` | `pointer` | Holds the per-field storage for an EnC-added instance field. |
 | `UnorderedArrayBase` | `Count` | `uint32` | Number of valid entries currently stored in the array. |
 | `UnorderedArrayBase` | `Table` | `pointer` | Pointer to the backing storage holding the array's entries. |

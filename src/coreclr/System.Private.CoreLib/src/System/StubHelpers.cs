@@ -2169,9 +2169,6 @@ namespace System.StubHelpers
     internal static partial class StubHelpers
     {
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetDelegateTarget(Delegate pThis);
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern void ClearLastError();
 
         [MethodImpl(MethodImplOptions.InternalCall)]

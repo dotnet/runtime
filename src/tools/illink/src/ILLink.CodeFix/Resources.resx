@@ -156,6 +156,9 @@
   <data name="ReplaceUnsafeWithSafeCodeFixTitle" xml:space="preserve">
     <value>Replace 'unsafe' with 'safe' on this member</value>
   </data>
+  <data name="AddUnsafeToLibraryImportCodeFixTitle" xml:space="preserve">
+    <value>Mark 'LibraryImport' method 'unsafe'</value>
+  </data>
   <data name="UconditionalSuppressMessageCodeFixTitle" xml:space="preserve">
     <value>Add UnconditionalSuppressMessage attribute to parent method</value>
   </data>
