@@ -206,15 +206,22 @@ namespace System.IO.Compression
         /// </summary>
         /// <remarks>
         /// The comment encoding is determined by the <c>entryNameEncoding</c> parameter of the <see cref="ZipArchive(Stream,ZipArchiveMode,bool,Encoding?)"/> constructor.
-        /// If the comment byte length is larger than <see cref="ushort.MaxValue"/>, it will be truncated when disposing the archive.
         /// </remarks>
+        /// <exception cref="ArgumentException">The encoded comment exceeds <see cref="ushort.MaxValue"/> bytes.</exception>
         [AllowNull]
         public string Comment
         {
             get => (EntryNameAndCommentEncoding ?? Encoding.UTF8).GetString(_archiveComment);
             set
             {
-                _archiveComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, EntryNameAndCommentEncoding, ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength, out _);
+                byte[] encodedComment = ZipHelper.GetEncodedTruncatedBytesFromString(value, EntryNameAndCommentEncoding, 0 /* No truncation */, out _);
+
+                if (encodedComment.Length > ZipEndOfCentralDirectoryBlock.ZipFileCommentMaxLength)
+                {
+                    throw new ArgumentException(SR.CommentTooLong, nameof(Comment));
+                }
+
+                _archiveComment = encodedComment;
                 Changed |= ChangeState.DynamicLengthMetadata;
             }
         }

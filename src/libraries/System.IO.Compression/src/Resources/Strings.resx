@@ -210,6 +210,9 @@
   <data name="EntryNamesTooLong" xml:space="preserve">
     <value>Entry names cannot require more than 2^16 bits.</value>
   </data>
+  <data name="CommentTooLong" xml:space="preserve">
+    <value>Comments cannot require more than 2^16 bits.</value>
+  </data>
   <data name="EntryTooLarge" xml:space="preserve">
     <value>Entries larger than 4GB are not supported in Update mode.</value>
   </data>
