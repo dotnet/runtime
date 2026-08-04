@@ -1,5 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
+    <!-- Needed for CLRTestTargetUnsupported -->
+    <RequiresProcessIsolation Condition="'$(FeatureMultithreading)' != 'true'">true</RequiresProcessIsolation>
+    <CLRTestTargetUnsupported Condition="'$(FeatureMultithreading)' != 'true'">true</CLRTestTargetUnsupported>
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>

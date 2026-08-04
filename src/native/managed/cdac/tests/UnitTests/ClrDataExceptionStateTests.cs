@@ -15,6 +15,7 @@ public unsafe class ExceptionStateTests
 {
     private const ulong ExceptionObjectSize = 0x40;
     private static readonly TargetPointer s_exceptionObjectAddress = new(0xAA00_0000);
+    private static readonly TargetPointer s_exceptionMethodTableAddress = new(0xBB00_0000);
 
     private static (TestPlaceholderTarget Target, TargetPointer ThrownObjectHandle) CreateTargetWithException(
         MockTarget.Architecture arch,
@@ -43,12 +44,19 @@ public unsafe class ExceptionStateTests
 
         var mockObject = new Mock<IObject>();
         mockObject.Setup(o => o.GetSize(s_exceptionObjectAddress)).Returns(ExceptionObjectSize);
+        mockObject.Setup(o => o.GetMethodTableAddress(s_exceptionObjectAddress)).Returns(s_exceptionMethodTableAddress);
         if (messageAddr != TargetPointer.Null && messageString is not null)
             mockObject.Setup(o => o.GetStringValue(messageAddr)).Returns(messageString);
+
+        var mockRuntimeTypeSystem = new Mock<IRuntimeTypeSystem>();
+        mockRuntimeTypeSystem
+            .Setup(rts => rts.GetTypeHandle(s_exceptionMethodTableAddress))
+            .Returns(new TargetTypeHandle(s_exceptionMethodTableAddress));
 
         var target = targetBuilder
             .AddMockContract(mockException)
             .AddMockContract(mockObject)
+            .AddMockContract(mockRuntimeTypeSystem)
             .Build();
 
         return (target, thrownObjectHandle);
@@ -269,6 +277,10 @@ public unsafe class ExceptionStateTests
         Assert.Equal(HResults.S_OK, value.Interface.GetLocationByIndex(0, &locationFlags, &location));
         Assert.Equal(ClrDataVLocFlag.CLRDATA_VLOC_MEMORY, locationFlags);
         Assert.Equal(s_exceptionObjectAddress.ToClrDataAddress(target), location);
+
+        DacComNullableByRef<IXCLRDataTypeInstance> type = new(isNullRef: false);
+        Assert.Equal(HResults.S_OK, value.Interface.GetType(type));
+        Assert.NotNull(type.Interface);
     }
 
     [Theory]
