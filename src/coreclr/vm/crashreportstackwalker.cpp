@@ -482,40 +482,49 @@ CrashReportGetExceptionForThread(
     return result;
 }
 
-// Suspend non-crashing managed threads via SuspendEE so their stacks
-// can be walked from runtime-known safe points. SuspendEE acquires the
-// thread store lock and waits for every other managed thread to reach a
-// safe point (and for any in-progress GC to complete), so skip it when
-// a known pre-condition would prevent forward progress:
+// SuspendEE acquires the ThreadStore lock and retains it until the matching
+// RestartEE. SysIsSuspended becomes true only after all managed threads have
+// reached safe points. That completed suspension is usable only when the
+// crashing thread holds the lock and therefore controls when RestartEE runs;
+// otherwise, another thread could call RestartEE during enumeration and allow
+// the managed threads being walked to leave their safe points.
 //
-//  * g_fFatalErrorOccurredOnGCThread: GC thread faulted mid-GC, so GC
-//    will never finish and SuspendEE's GC wait would hang.
-//  * GCHeapUtilities::IsGCInProgress(): a GC is already running; if it
-//    is wedged (common in runtime-internal crashes) SuspendEE hangs.
-//  * IsGCSpecialThread(): we are a GC thread ourselves; the GC wait
-//    would wait on us.
-//  * ThreadStore::HoldingThreadStore(pCrashThread): SuspendEE's
-//    LockThreadStore asserts the holder is unknown, so it would
-//    assert-fail in checked builds (undefined in release).
+// Do not wait for the ThreadStore lock while another suspension is starting or
+// ending. In particular, a Server GC coordinator may hold the lock while waiting
+// for a crashing parallel worker at a GC join. A fatal error already recorded on
+// a GC thread also means the interrupted GC may never complete.
 //
-// The crash reporter is best-effort; on hang the Android watchdog
-// kills the process and we keep whatever crash report JSON was flushed
-// beforehand.
+// Otherwise create a reporter-owned suspension. The result records whether a
+// stable suspension is unavailable, inherited, or created by the reporter so
+// only the reporter-created suspension is resumed here.
+enum class CrashReportSuspensionOwnership
+{
+    Unavailable,
+    Existing,
+    Reporter,
+};
 
 static
-bool
+CrashReportSuspensionOwnership
 CrashReportSuspendThreads(Thread* pCrashThread)
 {
+    bool crashThreadOwnsSuspension = ThreadStore::HoldingThreadStore(pCrashThread);
+    if (ThreadSuspend::SysIsSuspended())
+    {
+        return crashThreadOwnsSuspension
+            ? CrashReportSuspensionOwnership::Existing
+            : CrashReportSuspensionOwnership::Unavailable;
+    }
+
     if (g_fFatalErrorOccurredOnGCThread
         || GCHeapUtilities::IsGCInProgress()
-        || IsGCSpecialThread()
-        || ThreadStore::HoldingThreadStore(pCrashThread))
+        || crashThreadOwnsSuspension)
     {
-        return false;
+        return CrashReportSuspensionOwnership::Unavailable;
     }
 
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
-    return true;
+    return CrashReportSuspensionOwnership::Reporter;
 }
 
 static
@@ -560,7 +569,7 @@ CrashReportEnumerateThreads(
             &crashHresult);
     }
 
-    bool runtimeSuspended = CrashReportSuspendThreads(pCrashThread);
+    CrashReportSuspensionOwnership suspensionOwnership = CrashReportSuspendThreads(pCrashThread);
 
     // Emit the crashing thread first so the report keeps the most important
     // thread even if later enumeration is incomplete.
@@ -575,7 +584,7 @@ CrashReportEnumerateThreads(
     // Walk the remaining managed threads only when the runtime was
     // successfully suspended; otherwise the walker is not guaranteed
     // to be at a safe point for them.
-    if (runtimeSuspended)
+    if (suspensionOwnership != CrashReportSuspensionOwnership::Unavailable)
     {
         Thread* pThread = nullptr;
         while ((pThread = ThreadStore::GetThreadList(pThread)) != nullptr)
@@ -591,7 +600,10 @@ CrashReportEnumerateThreads(
             CrashReportWalkThread(pThread, frameCallback, ctx);
         }
 
-        CrashReportResumeThreads();
+        if (suspensionOwnership == CrashReportSuspensionOwnership::Reporter)
+        {
+            CrashReportResumeThreads();
+        }
     }
 }
 
