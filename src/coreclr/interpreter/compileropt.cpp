@@ -264,7 +264,6 @@ void InterpCompiler::AllocOffsets()
             if (pIns->opcode == INTOP_NOP)
                 continue;
 
-            // TODO NewObj will be marked as noCallArgs
             if (pIns->flags & INTERP_INST_FLAG_CALL)
             {
                 if (pIns->info.pCallInfo && pIns->info.pCallInfo->pCallArgs)
@@ -274,11 +273,10 @@ void InterpCompiler::AllocOffsets()
 
                     while (var != -1)
                     {
-                        if (m_pVars[var].global || m_pVars[var].noCallArgs)
+                        if (m_pVars[var].global)
                         {
-                            // Some vars can't be allocated on the call args stack, since the constraint is that
-                            // call args vars die after the call. This isn't necessarily true for global vars or
-                            // vars that are used by other instructions aside from the call.
+                            // Global vars can't be allocated on the call args stack, since the constraint is that
+                            // call args vars die after the call. This isn't necessarily true for global vars.
                             // We need to copy the var into a new tmp var
                             int newVar = CreateVarExplicit(m_pVars[var].interpType, m_pVars[var].clsHnd, m_pVars[var].size);
                             m_pVars[newVar].call = pIns;
