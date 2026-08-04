@@ -119,7 +119,10 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
             wait_code = waitpid(child_pid, &child_status, WNOHANG);
 
             if (wait_code == -1)
+            {
+                printf("waitpid failed: errno=%d (%s)\n", errno, strerror(errno));
                 return EINVAL;
+            }
 
             std::this_thread::sleep_for(std::chrono::milliseconds(check_interval_ms));
 
@@ -127,6 +130,13 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
             {
                 if (WIFEXITED(child_status))
                     return WEXITSTATUS(child_status);
+
+                if (WIFSIGNALED(child_status))
+                {
+                    int sig = WTERMSIG(child_status);
+                    printf("Child killed by signal %d\n", sig);
+                    return 128 + sig;  // Convention: 128 + signal number
+                }
             }
             check_count++;
 
