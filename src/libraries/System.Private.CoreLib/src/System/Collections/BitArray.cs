@@ -172,10 +172,11 @@ namespace System.Collections
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(bytes));
             }
 
-            bitLength = bytes.Length * BitsPerByte;
-            byte[] array = AllocateByteArray(bitLength);
+            int length = bytes.Length * BitsPerByte;
+            byte[] array = AllocateByteArray(length);
 
             bytes.CopyTo(array);
+            bitLength = length;
             return array;
         }
 
@@ -192,7 +193,8 @@ namespace System.Collections
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            _array = CreateArray(values, out _bitLength);
+            _array = CreateArray(values);
+            _bitLength = values.Length;
         }
 
         /// <summary>
@@ -205,15 +207,15 @@ namespace System.Collections
         /// </remarks>
         public BitArray(ReadOnlySpan<bool> values)
         {
-            _array = CreateArray(values, out _bitLength);
+            _array = CreateArray(values);
+            _bitLength = values.Length;
         }
 
-        private static byte[] CreateArray(ReadOnlySpan<bool> values, out int bitLength)
+        private static byte[] CreateArray(ReadOnlySpan<bool> values)
         {
-            bitLength = values.Length;
-            byte[] array = AllocateByteArray(bitLength);
+            byte[] array = AllocateByteArray(values.Length);
 
-            uint i = 0;
+            int i = 0;
 
             if (!BitConverter.IsLittleEndian || values.Length < Vector256<byte>.Count)
             {
@@ -234,8 +236,8 @@ namespace System.Collections
                     Vector512<byte> isFalse = Vector512.Equals(vector, Vector512<byte>.Zero);
 
                     ulong result = isFalse.ExtractMostSignificantBits();
-                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(ulong) * (i / 64u)), ~result);
-                    i += (uint)Vector512<byte>.Count;
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(ulong) * (i / 64)), ~result);
+                    i += Vector512<byte>.Count;
                     valuesAsBytes = valuesAsBytes.Slice(Vector512<byte>.Count);
                 }
             }
@@ -247,8 +249,8 @@ namespace System.Collections
                     Vector256<byte> isFalse = Vector256.Equals(vector, Vector256<byte>.Zero);
 
                     uint result = isFalse.ExtractMostSignificantBits();
-                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32u)), ~result);
-                    i += (uint)Vector256<byte>.Count;
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32)), ~result);
+                    i += Vector256<byte>.Count;
                     valuesAsBytes = valuesAsBytes.Slice(Vector256<byte>.Count);
                 }
             }
@@ -265,20 +267,20 @@ namespace System.Collections
                     uint upperResult = upperIsFalse.ExtractMostSignificantBits();
 
                     Unsafe.WriteUnaligned(
-                        ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32u)),
+                        ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32)),
                         ~((upperResult << 16) | lowerResult));
-                    i += (uint)Vector128<byte>.Count * 2u;
+                    i += Vector128<byte>.Count * 2;
                     valuesAsBytes = valuesAsBytes.Slice(Vector128<byte>.Count * 2);
                 }
             }
 
         Remainder:
-            for (; i < (uint)values.Length; i++)
+            for (; i < values.Length; i++)
             {
-                if (values[(int)i])
+                if (values[i])
                 {
-                    (uint byteIndex, uint bitOffset) = Math.DivRem(i, BitsPerByte);
-                    array[byteIndex] |= (byte)(1 << (int)bitOffset);
+                    (int byteIndex, int bitOffset) = Math.DivRem(i, BitsPerByte);
+                    array[byteIndex] |= (byte)(1 << bitOffset);
                 }
             }
 
@@ -333,8 +335,8 @@ namespace System.Collections
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
             }
 
-            bitLength = values.Length * BitsPerInt32;
-            byte[] array = AllocateByteArray(bitLength);
+            int length = values.Length * BitsPerInt32;
+            byte[] array = AllocateByteArray(length);
 
             if (BitConverter.IsLittleEndian)
             {
@@ -345,6 +347,7 @@ namespace System.Collections
                 BinaryPrimitives.ReverseEndianness(values, MemoryMarshal.Cast<byte, int>((Span<byte>)array));
             }
 
+            bitLength = length;
             return array;
         }
 
