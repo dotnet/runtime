@@ -147,7 +147,7 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
                 }
             }
 
-            const std::chrono::steady_clock::time_point next_check_time =
+            std::chrono::steady_clock::time_point next_check_time =
                 std::chrono::steady_clock::now() + std::chrono::milliseconds(check_interval_ms);
             if (next_check_time > timeout_time)
             {
