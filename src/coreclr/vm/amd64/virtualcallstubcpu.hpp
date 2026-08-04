@@ -137,7 +137,7 @@ struct DispatchStubShort
         LIMITED_METHOD_CONTRACT;
         // JMPABS encoding starts with 0x0F 0x85 (jne near)
         // Legacy encoding starts with 0x48 0xB8 (mov rax, imm64)
-        return _bytes[0] == 0x0F;
+        return _bytes[0] == 0x0F && _bytes[1] == 0x85;
     }
 
     inline PCODE implTarget() const
@@ -674,6 +674,7 @@ void DispatchHolder::InitializeStatic()
 {
     // Check that _implTarget is aligned in the DispatchStub for backpatching
     static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubShort, _legacy._implTarget)) % sizeof(void *)) == 0);
+    static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubShort, _apx._implTarget)) % sizeof(void *)) == 0);
     static_assert(((sizeof(DispatchStub) + offsetof(DispatchStubLong, _implTarget)) % sizeof(void *)) == 0);
 
     static_assert(((sizeof(DispatchStub) + sizeof(DispatchStubShort)) % sizeof(void*)) == 0);

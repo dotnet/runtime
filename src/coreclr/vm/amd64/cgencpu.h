@@ -500,7 +500,7 @@ INT32 rel32UsingPreallocatedJumpStub(INT32 UNALIGNED * pRel32, PCODE target, PCO
 void emitBackToBackJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
 // Emits raw 11-byte JMPABS instruction (D5 00 A1 + 8-byte immediate)
-// Requires g_IsJmpAbsAvailable == true.
+// Caller must ensure IsJmpAbsAvailable() == true.
 void emitJmpAbsJump(LPBYTE pBufferRX, LPBYTE pBufferRW, LPVOID target);
 
 bool isBackToBackJump(PCODE pCode);
