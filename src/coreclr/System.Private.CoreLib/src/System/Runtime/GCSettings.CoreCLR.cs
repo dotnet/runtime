@@ -18,16 +18,19 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static safe extern GCLatencyMode GetGCLatencyMode();
 
-        /// <safety>Runtime FCall that updates the GC latency mode from an enum argument and returns a status enum; it accesses no caller-supplied memory.</safety>
+        /// <safety>The runtime stores the argument as the GC's pause mode without validating it, so the caller must
+        /// pass a mode the GC defines. <see cref="LatencyMode"/> is the audited entry point that range-checks first.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static safe extern SetLatencyModeStatus SetGCLatencyMode(GCLatencyMode newLatencyMode);
+        private static unsafe extern SetLatencyModeStatus SetGCLatencyMode(GCLatencyMode newLatencyMode);
 
         /// <safety>Runtime FCall that returns the large-object-heap compaction mode as an enum value; it accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static safe extern GCLargeObjectHeapCompactionMode GetLOHCompactionMode();
 
-        /// <safety>Runtime FCall that updates the large-object-heap compaction mode from an enum argument; it accesses no caller-supplied memory.</safety>
+        /// <safety>The GC documents this argument as already verified by CoreLib and stores it without validating it,
+        /// so the caller must pass a mode the GC defines. <see cref="LargeObjectHeapCompactionMode"/> is the audited
+        /// entry point that range-checks first.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static safe extern void SetLOHCompactionMode(GCLargeObjectHeapCompactionMode newLOHCompactionMode);
+        private static unsafe extern void SetLOHCompactionMode(GCLargeObjectHeapCompactionMode newLOHCompactionMode);
     }
 }

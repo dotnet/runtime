@@ -87,9 +87,12 @@ namespace System
             return new GCMemoryInfo(data);
         }
 
-        /// <safety>QCall that starts a no-GC region from scalar size and flag arguments and returns a status code; it accesses no caller-supplied memory.</safety>
+        /// <safety>The runtime only asserts that the sizes are in range and then subtracts them as unsigned values, so
+        /// the caller must pass a positive <paramref name="totalSize"/> and a <paramref name="lohSize"/> that does not
+        /// exceed it. <see cref="StartNoGCRegionWorker(long, bool, long, bool)"/> is the audited entry point that
+        /// validates both.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_StartNoGCRegion")]
-        internal static partial int _StartNoGCRegion(long totalSize, [MarshalAs(UnmanagedType.Bool)] bool lohSizeKnown, long lohSize, [MarshalAs(UnmanagedType.Bool)] bool disallowFullBlockingGC);
+        internal static unsafe partial int _StartNoGCRegion(long totalSize, [MarshalAs(UnmanagedType.Bool)] bool lohSizeKnown, long lohSize, [MarshalAs(UnmanagedType.Bool)] bool disallowFullBlockingGC);
 
         /// <safety>QCall that ends the no-GC region and returns a status code; it takes no arguments and accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_EndNoGCRegion")]
@@ -110,17 +113,21 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalMemory")]
         private static safe partial long GetTotalMemory();
 
-        /// <safety>QCall that triggers a collection from scalar generation and mode arguments; it accesses no caller-supplied memory.</safety>
+        /// <safety>The runtime only asserts that <paramref name="generation"/> is at least -1 before handing it to the
+        /// GC, so the caller must not pass a smaller value. <see cref="Collect(int, GCCollectionMode, bool, bool, bool)"/>
+        /// is the audited entry point that validates it.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_Collect")]
-        private static partial void _Collect(int generation, int mode, [MarshalAs(UnmanagedType.U1)] bool lowMemoryPressure);
+        private static unsafe partial void _Collect(int generation, int mode, [MarshalAs(UnmanagedType.U1)] bool lowMemoryPressure);
 
         /// <safety>FCall that returns the maximum supported generation number as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static safe extern int GetMaxGeneration();
 
-        /// <safety>FCall that returns a collection count computed from scalar arguments; it accesses no caller-supplied memory.</safety>
+        /// <safety>The GC indexes its per-generation tables with <paramref name="generation"/> and the runtime only
+        /// asserts that it is non-negative, so the caller must not pass a negative value.
+        /// <see cref="CollectionCount(int)"/> is the audited entry point that validates it.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static safe extern int _CollectionCount(int generation, int getSpecialGCCount);
+        private static unsafe extern int _CollectionCount(int generation, int getSpecialGCCount);
 
         /// <safety>FCall that returns the GC segment size as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -130,9 +137,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static safe extern int GetLastGCPercentTimeInGC();
 
-        /// <safety>FCall that returns the size of the generation identified by an integer argument as a scalar; it accesses no caller-supplied memory.</safety>
+        /// <safety>The GC indexes its generation-size table with <paramref name="gen"/> without bounds-checking it, so
+        /// the caller must pass an existing generation number.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static safe extern ulong GetGenerationSize(int gen);
+        internal static unsafe extern ulong GetGenerationSize(int gen);
 
         /// <safety>QCall that records added memory pressure from a scalar byte count; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
@@ -789,9 +797,10 @@ namespace System
             return _GetGenerationBudget(generation);
         }
 
-        /// <safety>QCall that returns the allocation budget of the generation identified by an integer argument as a scalar; it accesses no caller-supplied memory.</safety>
+        /// <safety>The GC indexes its per-generation dynamic data with <paramref name="generation"/> without
+        /// bounds-checking it, so the caller must pass an existing generation number.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetGenerationBudget")]
-        internal static safe partial long _GetGenerationBudget(int generation);
+        internal static unsafe partial long _GetGenerationBudget(int generation);
 
         internal static void UnregisterMemoryLoadChangeNotification(Action notification)
         {
