@@ -1389,38 +1389,13 @@ PhaseStatus Compiler::fgCloneFinally()
             originalWeight = BB_ZERO_WEIGHT;
         }
 
-        for (BasicBlock* block = firstBlock; block != nextBlock; block = block->Next())
+        for (BasicBlock* block = firstBlock; !reachedEnd; block = block->Next())
         {
-            BasicBlock* newBlock;
-
-            if (block == firstBlock)
-            {
-                // Put first cloned finally block into the appropriate
-                // region, somewhere within or after the range of
-                // callfinallys, depending on the EH implementation.
-                const unsigned    hndIndex = 0;
-                BasicBlock* const nearBlk  = cloneInsertAfter;
-                newBlock                   = fgNewBBinRegion(BBJ_ALWAYS, finallyTryIndex, hndIndex, nearBlk);
-
-                // If the clone ends up just after the finally, adjust
-                // the stopping point for finally traversal.
-                if (newBlock->NextIs(nextBlock))
-                {
-                    assert(newBlock->PrevIs(lastBlock));
-                    nextBlock = newBlock;
-                }
-            }
-            else
-            {
-                // Put subsequent blocks in the same region...
-                const bool extendRegion = true;
-                newBlock                = fgNewBBafter(BBJ_ALWAYS, insertAfter, extendRegion);
-            }
-
+            BasicBlock* newBlock = fgNewBBafter(BBJ_ALWAYS, cloneInsertAfter, /* extendRegion */ false);
+            cloneInsertAfter     = newBlock;
             cloneBBCount++;
             assert(cloneBBCount <= regionBBCount);
 
-            insertAfter = newBlock;
             blockMap.Set(block, newBlock);
 
             BasicBlock::CloneBlockState(this, newBlock, block);
@@ -1436,13 +1411,14 @@ PhaseStatus Compiler::fgCloneFinally()
             {
                 // Mark the block as the end of the cloned finally.
                 newBlock->SetFlags(BBF_CLONED_FINALLY_END);
+                reachedEnd = true;
             }
 
             // Cloned finally block does not need any special protection.
             newBlock->RemoveFlags(BBF_DONT_REMOVE);
 
             // Make sure clone block state hasn't munged the try region.
-            assert(newBlock->bbTryIndex == finallyTryIndex);
+            assert(newBlock->bbTryIndex == firstBlock->bbTryIndex);
 
             // Cloned handler block is no longer within the handler.
             newBlock->clearHndIndex();
@@ -1450,6 +1426,17 @@ PhaseStatus Compiler::fgCloneFinally()
             // Jump dests are set in a post-pass; make sure CloneBlockState hasn't tried to set them.
             assert(newBlock->KindIs(BBJ_ALWAYS));
             assert(!newBlock->HasInitializedTarget());
+        }
+
+        // If the cloned blocks were inserted at the end of a try region, update the region's end pointer
+        if (firstBlock->hasTryIndex())
+        {
+            BasicBlock* const oldLastTry = ehGetDsc(firstBlock->getTryIndex())->ebdTryLast;
+            if (!oldLastTry->IsLast() && BasicBlock::sameTryRegion(oldLastTry, oldLastTry->Next()))
+            {
+                assert(oldLastTry->NextIs(blockMap[firstBlock]));
+                ehUpdateLastTryBlocks(oldLastTry, blockMap[lastBlock]);
+            }
         }
 
         // We should have cloned all the finally region blocks.
@@ -1461,7 +1448,7 @@ PhaseStatus Compiler::fgCloneFinally()
         // Redirect any branches within the newly-cloned
         // finally, and any finally returns to jump to the return
         // point.
-        for (BasicBlock* block = firstBlock; block != nextBlock; block = block->Next())
+        for (BasicBlock* block = firstBlock; !lastBlock->NextIs(block); block = block->Next())
         {
             BasicBlock* newBlock = blockMap[block];
             // Jump kind/target should not be set yet
