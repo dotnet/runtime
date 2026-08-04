@@ -1070,6 +1070,14 @@ public enum ClrDataValueFlag : uint
     IS_REFERENCE = 0x00000010,
     IS_POINTER = 0x00000020,
     IS_ENUM = 0x00000040,
+    ALL_KINDS = 0x0000007f,
+    IS_INHERITED = 0x00000080,
+    IS_LITERAL = 0x00000100,
+    FROM_INSTANCE = 0x00000200,
+    FROM_TASK_LOCAL = 0x00000400,
+    FROM_STATIC = 0x00000800,
+    ALL_LOCATIONS = 0x00000e00,
+    ALL_FIELDS = 0x00000eff,
 }
 
 public static class ClrDataVLocFlag
@@ -1151,9 +1159,9 @@ public unsafe partial interface IXCLRDataValue
     int GetString(uint bufLen, uint* strLen, char* str);
 
     [PreserveSig]
-    int GetArrayProperties(uint* rank, uint* totalElements, uint numDim, uint* dims, uint numBases, int* bases);
+    int GetArrayProperties(uint* rank, uint* totalElements, uint numDim, [Out, MarshalUsing(CountElementName = nameof(numDim))] uint[] dims, uint numBases, [Out, MarshalUsing(CountElementName = nameof(numBases))] int[] bases);
     [PreserveSig]
-    int GetArrayElement(uint numInd, int* indices, DacComNullableByRef<IXCLRDataValue> value);
+    int GetArrayElement(uint numInd, [In, MarshalUsing(CountElementName = nameof(numInd))] int[] indices, DacComNullableByRef<IXCLRDataValue> value);
 
     [PreserveSig]
     int EnumField2(
