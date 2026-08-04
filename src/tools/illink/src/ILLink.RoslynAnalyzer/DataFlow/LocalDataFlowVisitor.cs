@@ -786,6 +786,12 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 if (deconstructMethod.TryGetAttribute(nameof(DoesNotReturnAttribute), out _))
                     return DeconstructionValue.NonReturning;
 
+                IParameterSymbol? receiverParameter = isExtensionMethod
+                    ? deconstructMethod.Parameters[0]
+                    : deconstructMethod.ContainingType.ExtensionParameter;
+                if (receiverParameter is not null && source is not null)
+                    ApplyDoesNotReturnIfCondition(receiverParameter, source, state);
+
                 var nestedValues = ImmutableArray.CreateBuilder<DeconstructionValue>(targetTuple.Elements.Length);
                 for (int i = 0; i < targetTuple.Elements.Length; i++)
                 {
@@ -1415,21 +1421,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 if (parameterProxy.ParameterSymbol is not IParameterSymbol parameter)
                     continue;
 
-                if (!parameter.TryGetAttribute(nameof(DoesNotReturnIfAttribute), out var attributeData))
-                    continue;
-
-                if (attributeData.ConstructorArguments.Length != 1)
-                    continue;
-
-                var attributeArgument = attributeData.ConstructorArguments[0];
-                if (attributeArgument.Kind != TypedConstantKind.Primitive)
-                    continue;
-
-                if (attributeArgument.Value is not bool doesNotReturnIfConditionValue)
+                if (!parameter.TryGetAttribute(nameof(DoesNotReturnIfAttribute), out _))
                     continue;
 
                 var argumentIndex = parameterProxy.MetadataIndex;
-                var argument = arguments[argumentIndex];
 
                 IArgumentOperation argumentOperation;
                 switch (operation)
@@ -1446,19 +1441,38 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 }
                 ;
 
-                // Get the condition value that is being asserted. If the attribute is DoesNotReturnIf(true),
-                // the condition value needs to be negated so that we can assert the false condition.
-                TConditionValue conditionValue = GetConditionValue(argumentOperation, state);
-                var current = state.Current;
-                ApplyCondition(
-                    !doesNotReturnIfConditionValue
-                        ? conditionValue
-                        : conditionValue.Negate(),
-                    ref current);
-                state.Current = current;
+                ApplyDoesNotReturnIfCondition(parameter, argumentOperation, state);
             }
 
             return value;
+        }
+
+        private void ApplyDoesNotReturnIfCondition(
+            IParameterSymbol parameter,
+            IOperation argumentOperation,
+            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
+        {
+            if (!parameter.TryGetAttribute(nameof(DoesNotReturnIfAttribute), out var attributeData) ||
+                attributeData.ConstructorArguments.Length != 1 ||
+                attributeData.ConstructorArguments[0] is not
+                {
+                    Kind: TypedConstantKind.Primitive,
+                    Value: bool doesNotReturnIfConditionValue
+                })
+            {
+                return;
+            }
+
+            // Get the condition value that is being asserted. If the attribute is DoesNotReturnIf(true),
+            // the condition value needs to be negated so that we can assert the false condition.
+            TConditionValue conditionValue = GetConditionValue(argumentOperation, state);
+            var current = state.Current;
+            ApplyCondition(
+                !doesNotReturnIfConditionValue
+                    ? conditionValue
+                    : conditionValue.Negate(),
+                ref current);
+            state.Current = current;
         }
 
         private TValue ProcessMethodCall(

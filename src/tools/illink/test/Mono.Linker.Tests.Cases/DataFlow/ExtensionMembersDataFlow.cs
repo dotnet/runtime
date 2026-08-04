@@ -25,6 +25,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             TestExtensionMethodWithParams();
             TestExtensionMethodWithParamsMismatch();
             TestExtensionDeconstructMismatch();
+            TestExtensionDeconstructDoesNotReturnIf();
             TestExtensionStaticMethodRequires();
             TestExtensionMethodAnnotation();
             TestExtensionStaticMethodAnnotation();
@@ -71,6 +72,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
         static void TestExtensionDeconstructMismatch()
         {
             var (first, second) = GetWithMethods();
+        }
+
+        [ExpectedWarning("IL3050", nameof(RequiresDynamicCode), Tool.NativeAot, "NativeAOT doesn't model DoesNotReturnIf on Deconstruct methods")]
+        static void TestExtensionDeconstructDoesNotReturnIf()
+        {
+            (_, _) = !RuntimeFeature.IsDynamicCodeSupported;
+            RequiresDynamicCode();
         }
 
         [ExpectedWarning("IL2026", nameof(ExtensionMembers.ExtensionMembersStaticMethodRequires))]
@@ -164,6 +172,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
         public static Type GetWithMethods() => null;
+
+        [RequiresDynamicCode(nameof(RequiresDynamicCode))]
+        static void RequiresDynamicCode() { }
     }
 
     [ExpectedNoWarnings]
@@ -296,6 +307,15 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 left.RequiresPublicMethods();
                 right.RequiresPublicMethods();
                 return ExtensionMembersDataFlow.GetWithMethods();
+            }
+        }
+
+        extension([DoesNotReturnIf(true)] bool value)
+        {
+            public void Deconstruct(out object first, out object second)
+            {
+                first = null;
+                second = null;
             }
         }
     }
