@@ -2832,7 +2832,7 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
 
         fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreCall));
 
-        GenTree* const store = gtNewStoreLclVarNode(resumedCaller, gtNewIconNode(1));
+        GenTree* const store = gtNewStoreLclVarNode(resumedCaller, gtNewIconNode(1, TYP_I_IMPL));
         fgInsertStmtAtEnd(restoreBlock, gtNewStmt(store));
 
         restoreBlock->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(restBlock, restoreBlock));
