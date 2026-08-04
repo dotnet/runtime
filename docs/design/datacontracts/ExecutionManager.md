@@ -218,6 +218,8 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `RangeSectionFragment` | `RangeEndOpen` | `pointer` | End address of the fragment |
 | `RangeSectionFragment` | `RangeSection` | `pointer` | Pointer to the corresponding `RangeSection` |
 | `RangeSectionMap` | `TopLevelData` | `pointer` | Pointer to the outermost RangeSection |
+| `ReadyToRunCoreHeader` | *(type size)* | `uint32` | Size of the ReadyToRun core header in bytes |
+| `ReadyToRunCoreHeader` | `NumberOfSections` | `uint32` | Number of sections following the header |
 | `ReadyToRunCoreInfo` | `Header` | `pointer` | Pointer to the `READYTORUN_CORE_HEADER` |
 | `ReadyToRunHeader` | `MajorVersion` | `uint16` | ReadyToRun major version |
 | `ReadyToRunInfo` | `Composite` | `pointer` | Pointer to the `ReadyToRunCoreInfo` used for section lookup |
@@ -226,13 +228,12 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | `pointer` | Pointer to an `ImageDataDirectory` for the delay load method call thunks |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
 | `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
-| `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
 | `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap` |
-| `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
 | `ReadyToRunInfo` | `ReadyToRunHeader` | `pointer` | Pointer to the ReadyToRunHeader |
 | `ReadyToRunInfo` | `RuntimeFunctions` | `pointer` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions) |
+| `ReadyToRunSection` | *(type size)* | `uint32` | Size of a ReadyToRun section entry in bytes |
 | `ReadyToRunSection` | `Section` | `ImageDataDirectory` | `IMAGE_DATA_DIRECTORY` for the section data |
 | `ReadyToRunSection` | `Type` | `uint32` | Section type (`ReadyToRunSectionType`) |
 | `RealCodeHeader` | `DebugInfo` | `pointer` | Pointer to the DebugInfo |

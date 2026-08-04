@@ -2168,9 +2168,6 @@ namespace System.StubHelpers
 
     internal static partial class StubHelpers
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern IntPtr GetDelegateTarget(Delegate pThis);
-
         /// <safety>Runtime FCall that clears the thread's stored last-error slot; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static safe extern void ClearLastError();
