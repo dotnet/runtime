@@ -77,9 +77,10 @@ public static partial class ZipFileExtensions
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(destinationDirectoryName);
 
-        string destinationDirectoryFullPath = ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
+        string? destinationDirectoryFullPath = null;
         foreach (ZipArchiveEntry entry in source.Entries)
         {
+            destinationDirectoryFullPath ??= ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
             await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
     }
@@ -95,10 +96,11 @@ public static partial class ZipFileExtensions
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        string destinationDirectoryFullPath = ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
+        string? destinationDirectoryFullPath = null;
         foreach (ZipArchiveEntry entry in source.Entries)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            destinationDirectoryFullPath ??= ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
             await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, options.OverwriteFiles, options.Password, cancellationToken).ConfigureAwait(false);
         }
     }

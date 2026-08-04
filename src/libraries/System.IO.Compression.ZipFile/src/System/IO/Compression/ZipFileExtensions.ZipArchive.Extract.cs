@@ -68,9 +68,10 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationDirectoryName);
 
-            string destinationDirectoryFullPath = GetDestinationDirectoryFullPath(destinationDirectoryName);
+            string? destinationDirectoryFullPath = null;
             foreach (ZipArchiveEntry entry in source.Entries)
             {
+                destinationDirectoryFullPath ??= GetDestinationDirectoryFullPath(destinationDirectoryName);
                 entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles);
             }
         }
@@ -88,9 +89,10 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(destinationDirectoryName);
             ArgumentNullException.ThrowIfNull(options);
 
-            string destinationDirectoryFullPath = GetDestinationDirectoryFullPath(destinationDirectoryName);
+            string? destinationDirectoryFullPath = null;
             foreach (ZipArchiveEntry entry in source.Entries)
             {
+                destinationDirectoryFullPath ??= GetDestinationDirectoryFullPath(destinationDirectoryName);
                 entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, options.OverwriteFiles, options.Password.Span);
             }
         }

@@ -37,6 +37,18 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        public async Task ExtractToDirectory_EmptyArchive_DoesNotCreateNonExistentDestinationDirectory(bool async)
+        {
+            string zipFileName = zfile("empty.zip");
+            string destinationDirectoryName = GetTestFilePath();
+
+            Assert.False(Directory.Exists(destinationDirectoryName));
+            await CallZipFileExtractToDirectory(async, zipFileName, destinationDirectoryName);
+            Assert.False(Directory.Exists(destinationDirectoryName));
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         public async Task ExtractToDirectoryNull(bool async)
         {
             await AssertExtensions.ThrowsAsync<ArgumentNullException>("sourceArchiveFileName", () => CallZipFileExtractToDirectory(async, sourceArchiveFileName: null, GetTestFilePath()));

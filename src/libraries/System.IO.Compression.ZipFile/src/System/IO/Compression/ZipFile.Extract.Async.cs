@@ -270,10 +270,11 @@ public static partial class ZipFile
         ZipArchive archive = await OpenAsync(sourceArchiveFileName, ZipArchiveMode.Read, entryNameEncoding, cancellationToken).ConfigureAwait(false);
         await using (archive.ConfigureAwait(false))
         {
-            string destinationDirectoryFullPath = ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
+            string? destinationDirectoryFullPath = null;
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                destinationDirectoryFullPath ??= ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
                 await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, password, cancellationToken).ConfigureAwait(false);
             }
         }
@@ -489,10 +490,11 @@ public static partial class ZipFile
         ZipArchive archive = await ZipArchive.CreateAsync(source, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding, cancellationToken).ConfigureAwait(false);
         await using (archive.ConfigureAwait(false))
         {
-            string destinationDirectoryFullPath = ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
+            string? destinationDirectoryFullPath = null;
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                destinationDirectoryFullPath ??= ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
                 await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, password, cancellationToken).ConfigureAwait(false);
             }
         }

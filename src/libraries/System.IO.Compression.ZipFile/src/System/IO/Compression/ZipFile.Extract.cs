@@ -246,9 +246,10 @@ namespace System.IO.Compression
             ArgumentNullException.ThrowIfNull(sourceArchiveFileName);
 
             using ZipArchive archive = Open(sourceArchiveFileName, ZipArchiveMode.Read, entryNameEncoding);
-            string destinationDirectoryFullPath = ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
+            string? destinationDirectoryFullPath = null;
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
+                destinationDirectoryFullPath ??= ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
                 entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, password);
             }
         }
@@ -439,9 +440,10 @@ namespace System.IO.Compression
             }
 
             using ZipArchive archive = new ZipArchive(source, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding);
-            string destinationDirectoryFullPath = ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
+            string? destinationDirectoryFullPath = null;
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
+                destinationDirectoryFullPath ??= ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
                 entry.ExtractRelativeToDirectory(destinationDirectoryFullPath, overwriteFiles, password);
             }
         }
