@@ -2563,7 +2563,8 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
             // If either of the value operands is const zero and the mask is either all
             // zeros or all ones per-element, we can optimize down to AND or AND_NOT.
-            if (op3->IsVectorPerElementMask(TYP_BYTE, simdSize) && (op1->IsVectorZero() || op2->IsVectorZero()))
+            if (op3->IsVectorPerElementMask(m_compiler, TYP_BYTE, simdSize) &&
+                (op1->IsVectorZero() || op2->IsVectorZero()))
             {
                 var_types simdType = node->TypeGet();
                 GenTree*  binOp    = nullptr;
@@ -3461,7 +3462,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
         resultNode = m_compiler->gtNewSimdHWIntrinsicNode(simdType, op1, op2, op3, control, NI_AVX512_TernaryLogic,
                                                           simdBaseType, simdSize);
     }
-    else if (op1->IsVectorPerElementMask(TYP_BYTE, simdSize))
+    else if (op1->IsVectorPerElementMask(m_compiler, TYP_BYTE, simdSize))
     {
         // If the condition vector comes from a hardware intrinsic that
         // returns a per-element mask, we can optimize the entire
@@ -3475,7 +3476,7 @@ GenTree* Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
         // Next, determine if the target architecture supports BlendVariable
         NamedIntrinsic blendVariableId = NI_Illegal;
 
-        if (varTypeIsFloating(simdBaseType) && !op1->IsVectorPerElementMask(simdBaseType, simdSize))
+        if (varTypeIsFloating(simdBaseType) && !op1->IsVectorPerElementMask(m_compiler, simdBaseType, simdSize))
         {
             // For floating-point, we want to preserve the base type if the
             // mask is also compatible with it, otherwise we need to fixup
