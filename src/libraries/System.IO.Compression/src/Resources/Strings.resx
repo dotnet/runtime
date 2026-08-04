@@ -177,6 +177,9 @@
   <data name="CentralDirectoryInvalid" xml:space="preserve">
     <value>Central Directory is invalid.</value>
   </data>
+  <data name="CommentTooLong" xml:space="preserve">
+    <value>Comments cannot require more than 2^16 bits.</value>
+  </data>
   <data name="CreateInReadMode" xml:space="preserve">
     <value>Cannot create entries on an archive opened in read mode.</value>
   </data>
@@ -209,9 +212,6 @@
   </data>
   <data name="EntryNamesTooLong" xml:space="preserve">
     <value>Entry names cannot require more than 2^16 bits.</value>
-  </data>
-  <data name="CommentTooLong" xml:space="preserve">
-    <value>Comments cannot require more than 2^16 bits.</value>
   </data>
   <data name="EntryTooLarge" xml:space="preserve">
     <value>Entries larger than 4GB are not supported in Update mode.</value>
