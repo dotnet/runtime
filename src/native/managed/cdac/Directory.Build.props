@@ -3,7 +3,7 @@
 
     <PropertyGroup>
       <!-- Source build and platforms absent from the released ILCompiler pack must use the in-repo NativeAOT toolchain. -->
-      <CDacTfm Condition="'$(CDacTfm)' == '' and ('$(DotNetBuildSourceOnly)' == 'true' or '$(TargetOS)' == 'haiku' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'openbsd' or '$(TargetOS)' == 'solaris')">$(NetCoreAppToolCurrent)</CDacTfm>
+      <CDacTfm Condition="'$(CDacTfm)' == '' and ('$(DotNetBuildSourceOnly)' == 'true' or '$(TargetOS)' == 'haiku' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'openbsd' or '$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'solaris')">$(NetCoreAppToolCurrent)</CDacTfm>
       <CDacTfm Condition="'$(CDacTfm)' == ''">$(NetCoreAppMinimum)</CDacTfm>
     </PropertyGroup>
 
