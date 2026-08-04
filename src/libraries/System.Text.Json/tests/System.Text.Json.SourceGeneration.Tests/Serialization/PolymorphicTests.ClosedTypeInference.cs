@@ -15,9 +15,21 @@ namespace System.Text.Json.SourceGeneration.Tests
         protected override JsonSerializerOptions ClosedTypeInferenceOptions =>
             ClosedInferenceContext_Metadata.Default.Options;
 
+        [JsonSerializable(typeof(ClosedAttributeExplicitBase))]
+        [JsonSerializable(typeof(ClosedAttributeOptInBase))]
+        [JsonSerializable(typeof(ClosedAttributeOptOutBase))]
+        [JsonSerializable(typeof(ClosedEmptyAttributeOptInBase))]
         [JsonSerializable(typeof(ClosedEmptyBase))]
+        [JsonSerializable(typeof(ClosedEmptyOptOutWithCustomDiscriminatorBase))]
+        [JsonSerializable(typeof(ClosedEmptyOptOutWithIgnoreUnrecognizedDiscriminatorsBase))]
+        [JsonSerializable(typeof(ClosedEmptyOptOutWithTypeClassifierBase))]
+        [JsonSerializable(typeof(ClosedEmptyOptOutWithUnknownDerivedTypeHandlingBase))]
+        [JsonSerializable(typeof(ClosedEmptyPolymorphicBase))]
+        [JsonSerializable(typeof(ClosedExplicitBase))]
+        [JsonSerializable(typeof(ClosedExplicitOptOutBase))]
         [JsonSerializable(typeof(ClosedNumberList))]
         [JsonSerializable(typeof(ClosedShape))]
+        [JsonSerializable(typeof(NonClosedAttributeBase))]
         internal sealed partial class PolymorphicTestsContext_Metadata;
 
         [Theory]
@@ -97,6 +109,9 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Contains(
                 $"{nameof(JsonSourceGenerationOptionsAttribute)}.{nameof(JsonSourceGenerationOptionsAttribute.InferClosedTypePolymorphism)}",
                 exception.Message);
+            Assert.Contains(
+                $"{nameof(JsonPolymorphicAttribute)}.{nameof(JsonPolymorphicAttribute.InferClosedTypePolymorphism)}",
+                exception.Message);
         }
     }
 
@@ -111,9 +126,21 @@ namespace System.Text.Json.SourceGeneration.Tests
         protected override JsonSerializerOptions ClosedTypeInferenceOptions =>
             ClosedInferenceContext_Default.Default.Options;
 
+        [JsonSerializable(typeof(ClosedAttributeExplicitBase))]
+        [JsonSerializable(typeof(ClosedAttributeOptInBase))]
+        [JsonSerializable(typeof(ClosedAttributeOptOutBase))]
+        [JsonSerializable(typeof(ClosedEmptyAttributeOptInBase))]
         [JsonSerializable(typeof(ClosedEmptyBase))]
+        [JsonSerializable(typeof(ClosedEmptyOptOutWithCustomDiscriminatorBase))]
+        [JsonSerializable(typeof(ClosedEmptyOptOutWithIgnoreUnrecognizedDiscriminatorsBase))]
+        [JsonSerializable(typeof(ClosedEmptyOptOutWithTypeClassifierBase))]
+        [JsonSerializable(typeof(ClosedEmptyOptOutWithUnknownDerivedTypeHandlingBase))]
+        [JsonSerializable(typeof(ClosedEmptyPolymorphicBase))]
+        [JsonSerializable(typeof(ClosedExplicitBase))]
+        [JsonSerializable(typeof(ClosedExplicitOptOutBase))]
         [JsonSerializable(typeof(ClosedNumberList))]
         [JsonSerializable(typeof(ClosedShape))]
+        [JsonSerializable(typeof(NonClosedAttributeBase))]
         internal sealed partial class PolymorphicTestsContext_Default;
     }
 
@@ -133,6 +160,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Metadata, InferClosedTypePolymorphism = true)]
     [JsonSerializable(typeof(ClosedAccessBase))]
     [JsonSerializable(typeof(ClosedArrayBase<int[]>))]
+    [JsonSerializable(typeof(ClosedAttributeOptInBase))]
     [JsonSerializable(typeof(ClosedCollisionBase))]
     // Both inferred types are named Node, so give their generated metadata properties unique names.
     [JsonSerializable(typeof(ClosedCollisionHolderA.Node), TypeInfoPropertyName = "ClosedCollisionNodeA")]
@@ -151,8 +179,15 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClosedDuplicateArityDerived<int>), TypeInfoPropertyName = "ClosedDuplicateArityDerivedOne")]
     [JsonSerializable(typeof(ClosedDuplicateArityDerived<int, int>), TypeInfoPropertyName = "ClosedDuplicateArityDerivedTwoIntInt")]
     [JsonSerializable(typeof(ClosedDuplicateArityDerived<int, string>), TypeInfoPropertyName = "ClosedDuplicateArityDerivedTwoIntString")]
+    [JsonSerializable(typeof(ClosedEmptyAttributeOptInBase))]
     [JsonSerializable(typeof(ClosedEmptyBase))]
+    [JsonSerializable(typeof(ClosedEmptyOptOutWithCustomDiscriminatorBase))]
+    [JsonSerializable(typeof(ClosedEmptyOptOutWithIgnoreUnrecognizedDiscriminatorsBase))]
+    [JsonSerializable(typeof(ClosedEmptyOptOutWithTypeClassifierBase))]
+    [JsonSerializable(typeof(ClosedEmptyOptOutWithUnknownDerivedTypeHandlingBase))]
+    [JsonSerializable(typeof(ClosedEmptyPolymorphicBase))]
     [JsonSerializable(typeof(ClosedExplicitBase))]
+    [JsonSerializable(typeof(ClosedExplicitOptOutBase))]
     [JsonSerializable(typeof(ClosedGroundMismatchBase<int, string>))]
     [JsonSerializable(typeof(ClosedKvpBase<KeyValuePair<string, int>>))]
     [JsonSerializable(typeof(ClosedMixedBase<int>))]
@@ -181,6 +216,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSourceGenerationOptions(InferClosedTypePolymorphism = true)]
     [JsonSerializable(typeof(ClosedAccessBase))]
     [JsonSerializable(typeof(ClosedArrayBase<int[]>))]
+    [JsonSerializable(typeof(ClosedAttributeOptInBase))]
     [JsonSerializable(typeof(ClosedCollisionBase))]
     [JsonSerializable(typeof(ClosedCollisionHolderA.Node), TypeInfoPropertyName = "ClosedCollisionNodeA")]
     [JsonSerializable(typeof(ClosedCollisionHolderB.Node), TypeInfoPropertyName = "ClosedCollisionNodeB")]
@@ -198,8 +234,15 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(ClosedDuplicateArityDerived<int>), TypeInfoPropertyName = "ClosedDuplicateArityDerivedOne")]
     [JsonSerializable(typeof(ClosedDuplicateArityDerived<int, int>), TypeInfoPropertyName = "ClosedDuplicateArityDerivedTwoIntInt")]
     [JsonSerializable(typeof(ClosedDuplicateArityDerived<int, string>), TypeInfoPropertyName = "ClosedDuplicateArityDerivedTwoIntString")]
+    [JsonSerializable(typeof(ClosedEmptyAttributeOptInBase))]
     [JsonSerializable(typeof(ClosedEmptyBase))]
+    [JsonSerializable(typeof(ClosedEmptyOptOutWithCustomDiscriminatorBase))]
+    [JsonSerializable(typeof(ClosedEmptyOptOutWithIgnoreUnrecognizedDiscriminatorsBase))]
+    [JsonSerializable(typeof(ClosedEmptyOptOutWithTypeClassifierBase))]
+    [JsonSerializable(typeof(ClosedEmptyOptOutWithUnknownDerivedTypeHandlingBase))]
+    [JsonSerializable(typeof(ClosedEmptyPolymorphicBase))]
     [JsonSerializable(typeof(ClosedExplicitBase))]
+    [JsonSerializable(typeof(ClosedExplicitOptOutBase))]
     [JsonSerializable(typeof(ClosedGroundMismatchBase<int, string>))]
     [JsonSerializable(typeof(ClosedKvpBase<KeyValuePair<string, int>>))]
     [JsonSerializable(typeof(ClosedMixedBase<int>))]

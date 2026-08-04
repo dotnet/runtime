@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible -->
+    <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, UnloadabilityIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <CLRTestTargetUnsupported Condition="'$(FeatureMultithreading)' != 'true'">true</CLRTestTargetUnsupported>
 
     <!-- Test needs explicit Main as it uses command-line parameters -->
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
