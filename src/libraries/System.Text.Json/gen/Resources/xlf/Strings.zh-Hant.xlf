@@ -74,22 +74,22 @@
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</target>
+        <target state="translated">類型 '{0}' 會啟用 JsonPolymorphicAttribute.InferClosedTypePolymorphism，但不是封閉類型，因此無法推斷衍生類型。將類型宣告為「封閉」，或使用 JsonDerivedTypeAttribute 註冊其衍生類型。</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeTitle">
         <source>Inferred closed type polymorphism is enabled on a type that is not a closed type.</source>
-        <target state="new">Inferred closed type polymorphism is enabled on a type that is not a closed type.</target>
+        <target state="translated">已在不是封閉類型的類型上啟用推斷的封閉類型多型。</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</target>
+        <target state="translated">類型 '{0}' 會啟用 JsonPolymorphicAttribute.InferClosedTypePolymorphism，但也會宣告 JsonDerivedTypeAttribute。明確註冊會取代推斷，因此只有明確宣告的衍生類型會以多型方式序列化。</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesTitle">
         <source>Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</source>
-        <target state="new">Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</target>
+        <target state="translated">推斷的封閉類型多型對明確註冊衍生類型的類型沒有作用。</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleMessageFormat">
