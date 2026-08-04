@@ -210,6 +210,7 @@ public unsafe class IXCLRDataProcessTests
         const ulong PeAssemblyAddress = 0x3000;
         const ulong FirstHeaderAddress = 0x5000;
         const ulong SecondHeaderAddress = 0x6000;
+        const ulong MethodDefToDescAddress = 0x7000;
         const uint FirstToken = 0x06000002;
         const uint SecondToken = 0x06000003;
         const byte TinyFormat = 0x2;
@@ -241,6 +242,12 @@ public unsafe class IXCLRDataProcessTests
             loader.Setup(l => l.GetILAddr(new TargetPointer(PeAssemblyAddress), 0x20)).Returns(new TargetPointer(SecondHeaderAddress));
             loader.Setup(l => l.GetILHeader(module, FirstToken)).Returns(new TargetPointer(FirstHeaderAddress));
             loader.Setup(l => l.GetILHeader(module, SecondToken)).Returns(new TargetPointer(SecondHeaderAddress));
+            ModuleLookupTables lookupTables = new() { MethodDefToDesc = new TargetPointer(MethodDefToDescAddress) };
+            loader.Setup(l => l.GetLookupTables(module)).Returns(lookupTables);
+            loader.Setup(l => l.GetModuleLookupMapElement(
+                lookupTables.MethodDefToDesc,
+                It.IsAny<uint>(),
+                out It.Ref<TargetNUInt>.IsAny)).Returns(TargetPointer.Null);
 
             Mock<IEcmaMetadata> ecmaMetadata = new(MockBehavior.Strict);
             ecmaMetadata.Setup(e => e.GetMetadata(module)).Returns(reader);
@@ -360,6 +367,11 @@ public unsafe class IXCLRDataProcessTests
         Mock<ILoader> loader = new(MockBehavior.Strict);
         loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(ModuleAddress))).Returns(module);
         loader.Setup(l => l.GetILHeader(module, Token)).Returns(TargetPointer.Null);
+        loader.Setup(l => l.GetLookupTables(module)).Returns(default(ModuleLookupTables));
+        loader.Setup(l => l.GetModuleLookupMapElement(
+            TargetPointer.Null,
+            Token,
+            out It.Ref<TargetNUInt>.IsAny)).Returns(TargetPointer.Null);
         TestPlaceholderTarget.Builder builder = new(arch);
         builder.AddMockContract(loader.Object);
         IXCLRDataMethodDefinition method = new ClrDataMethodDefinition(
@@ -374,6 +386,65 @@ public unsafe class IXCLRDataProcessTests
 
         ClrDataAddress address;
         Assert.Equal(CorDbgHResults.E_UNEXPECTED, method.GetRepresentativeEntryAddress(&address));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void MethodDefinitionUsesActiveEnCIL(MockTarget.Architecture arch)
+    {
+        const ulong ModuleAddress = 0x2000;
+        const ulong DefaultHeaderAddress = 0x3000;
+        const ulong EnCHeaderAddress = 0x4000;
+        const ulong MethodDescAddress = 0x5000;
+        const ulong MethodDefToDescAddress = 0x6000;
+        const uint Token = 0x06000001;
+        const byte TinyFormat = 0x2;
+        const int DefaultCodeSize = 1;
+        const int EnCCodeSize = 3;
+
+        ModuleHandle module = new(new TargetPointer(ModuleAddress));
+        ModuleLookupTables lookupTables = new() { MethodDefToDesc = new TargetPointer(MethodDefToDescAddress) };
+        Mock<ILoader> loader = new(MockBehavior.Strict);
+        loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(ModuleAddress))).Returns(module);
+        loader.Setup(l => l.GetLookupTables(module)).Returns(lookupTables);
+        loader.Setup(l => l.GetModuleLookupMapElement(
+            lookupTables.MethodDefToDesc,
+            Token,
+            out It.Ref<TargetNUInt>.IsAny)).Returns(new TargetPointer(MethodDescAddress));
+        loader.Setup(l => l.GetILHeader(module, Token)).Returns(new TargetPointer(DefaultHeaderAddress));
+
+        ILCodeVersionHandle activeVersion = ILCodeVersionHandle.CreateExplicit(new TargetPointer(0x7000));
+        Mock<ICodeVersions> codeVersions = new(MockBehavior.Strict);
+        codeVersions.Setup(c => c.GetActiveILCodeVersion(new TargetPointer(MethodDescAddress))).Returns(activeVersion);
+        codeVersions.Setup(c => c.GetSource(activeVersion)).Returns(CodeVersionSource.EnC);
+        codeVersions.Setup(c => c.GetIL(activeVersion)).Returns(new TargetPointer(EnCHeaderAddress));
+
+        TestPlaceholderTarget.Builder builder = new(arch);
+        builder.AddMockContract(loader.Object);
+        builder.AddMockContract(codeVersions.Object);
+        builder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = DefaultHeaderAddress,
+            Data = [(byte)((DefaultCodeSize << 2) | TinyFormat), 0],
+            Name = nameof(DefaultHeaderAddress),
+        });
+        builder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = EnCHeaderAddress,
+            Data = [(byte)((EnCCodeSize << 2) | TinyFormat), 0, 0, 0],
+            Name = nameof(EnCHeaderAddress),
+        });
+
+        IXCLRDataMethodDefinition method = new ClrDataMethodDefinition(
+            builder.Build(),
+            new TargetPointer(ModuleAddress),
+            Token,
+            legacyImpl: null);
+
+        AssertMethodDefinitionExtent(
+            method,
+            EnCHeaderAddress + sizeof(byte),
+            EnCHeaderAddress + sizeof(byte) + EnCCodeSize - 1);
     }
 
     private static void AssertMethodDefinitionExtent(

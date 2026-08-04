@@ -63,9 +63,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
         if (methodDesc != TargetPointer.Null && _target.Contracts.TryGetContract(out ICodeVersions codeVersions))
         {
             ILCodeVersionHandle activeVersion = codeVersions.GetActiveILCodeVersion(methodDesc);
-            if (activeVersion.IsValid
-                && activeVersion.IsExplicit
-                && codeVersions.GetSource(activeVersion) == CodeVersionSource.EnC)
+            if (activeVersion.IsValid && codeVersions.GetSource(activeVersion) == CodeVersionSource.EnC)
             {
                 ilHeader = codeVersions.GetIL(activeVersion);
             }
