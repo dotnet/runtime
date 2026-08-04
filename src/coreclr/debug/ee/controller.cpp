@@ -7974,8 +7974,13 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
     LOG((LF_CORDB, LL_INFO10000, "DebuggerStepper::TriggerMethodEnter: Consistency_check_MSGF not needed because we skip setting breakpoints in certain patches on arm64-macOS\n"));
 #else
     // Interpreter step-in intentionally relies on MethodEnter instead of stub managers.
+#ifdef FEATURE_INTERPRETER
     EECodeInfo codeInfo((PCODE)dji->m_addrOfCode);
-    if (!codeInfo.IsInterpretedCode() &&
+    const bool isInterpretedCode = codeInfo.IsInterpretedCode();
+#else
+    const bool isInterpretedCode = false;
+#endif // FEATURE_INTERPRETER
+    if (!isInterpretedCode &&
         (m_StepInStartMethod != pDesc) &&
         (!m_StepInStartMethod->IsLCGMethod()))
     {
