@@ -1,7 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <HasMergedInTests>true</HasMergedInTests>
     <!--
         Test unsupported outside of windows
@@ -12,9 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="largearraytest.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
