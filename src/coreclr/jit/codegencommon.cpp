@@ -1820,12 +1820,10 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         // be using the return buffer then.
         if (m_compiler->lvaIsUnknownSizeLocal(lclNum))
         {
-            info.returnValueLoc.vlType = VLT_INVALID;
+            return;
         }
-        else
-        {
-            info.returnValueLoc = getSiVarLoc(m_compiler->lvaGetDesc(lclNum), lclOffs, stackLevelBias);
-        }
+        
+        info.returnValueLoc = getSiVarLoc(m_compiler->lvaGetDesc(lclNum), lclOffs, stackLevelBias);
     }
     else if (call->HasMultiRegRetVal())
     {
