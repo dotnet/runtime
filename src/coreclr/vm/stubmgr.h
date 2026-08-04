@@ -451,6 +451,8 @@ typedef VPTR(class StubLinkStubManager) PTR_StubLinkStubManager;
 
 class StubLinkStubManager : public StubManager
 {
+    friend struct ::cdac_data<StubLinkStubManager>;
+
     VPTR_VTABLE_CLASS(StubLinkStubManager, StubManager)
 
   public:
@@ -503,6 +505,12 @@ class StubLinkStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("StubLinkStub"); }
 #endif
 } ;
+
+template<>
+struct cdac_data<StubLinkStubManager>
+{
+    static constexpr size_t RangeList = offsetof(StubLinkStubManager, m_rangeList);
+};
 
 //
 // Stub manager for code sections. It forwards the query to the more appropriate

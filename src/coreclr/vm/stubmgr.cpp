@@ -1435,6 +1435,9 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
     switch (GetStubKind(stubStartAddress))
     {
+#ifdef DACCESS_COMPILE
+    case STUB_CODE_BLOCK_DYNAMICHELPER:
+#endif // DACCESS_COMPILE
     case STUB_CODE_BLOCK_JUMPSTUB:
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
 #ifdef FEATURE_TIERED_COMPILATION
@@ -1514,6 +1517,8 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
 
     switch (GetStubKind(addr))
     {
+    case STUB_CODE_BLOCK_DYNAMICHELPER:
+        return W("DynamicHelper");
     case STUB_CODE_BLOCK_JUMPSTUB:
         return W("JumpStub");
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:

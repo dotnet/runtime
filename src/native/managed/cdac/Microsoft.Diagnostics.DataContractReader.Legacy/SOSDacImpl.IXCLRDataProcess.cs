@@ -341,6 +341,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         if (codeKind is Contracts.CodeKind.Unknown
             or Contracts.CodeKind.Jitted
             or Contracts.CodeKind.ReadyToRun
+            or Contracts.CodeKind.Interpreter
             or Contracts.CodeKind.ThePreStub)
         {
             return null;

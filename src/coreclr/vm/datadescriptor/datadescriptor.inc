@@ -1045,6 +1045,29 @@ CDAC_TYPE_INDETERMINATE(CodeRangeMapRangeList)
 CDAC_TYPE_FIELD(CodeRangeMapRangeList, T_INT32, RangeListType, cdac_data<CodeRangeMapRangeList>::RangeListType)
 CDAC_TYPE_END(CodeRangeMapRangeList)
 
+CDAC_TYPE_BEGIN(StubLinkStubManager)
+CDAC_TYPE_INDETERMINATE(StubLinkStubManager)
+CDAC_TYPE_FIELD(StubLinkStubManager, TYPE(RangeList), RangeList, cdac_data<StubLinkStubManager>::RangeList)
+CDAC_TYPE_END(StubLinkStubManager)
+
+CDAC_TYPE_BEGIN(RangeList)
+CDAC_TYPE_INDETERMINATE(RangeList)
+CDAC_TYPE_FIELD(RangeList, TYPE(RangeListBlock), StarterBlock, cdac_data<RangeList>::StarterBlock)
+CDAC_TYPE_END(RangeList)
+
+CDAC_TYPE_BEGIN(RangeListBlock)
+CDAC_TYPE_SIZE(cdac_data<RangeList>::RangeListBlock::Size)
+CDAC_TYPE_FIELD(RangeListBlock, T_ARRAY(TYPE(RangeListRange)), Ranges, cdac_data<RangeList>::RangeListBlock::Ranges)
+CDAC_TYPE_FIELD(RangeListBlock, T_POINTER, Next, cdac_data<RangeList>::RangeListBlock::Next)
+CDAC_TYPE_END(RangeListBlock)
+
+CDAC_TYPE_BEGIN(RangeListRange)
+CDAC_TYPE_SIZE(cdac_data<RangeList>::Range::Size)
+CDAC_TYPE_FIELD(RangeListRange, T_POINTER, Start, cdac_data<RangeList>::Range::Start)
+CDAC_TYPE_FIELD(RangeListRange, T_POINTER, End, cdac_data<RangeList>::Range::End)
+CDAC_TYPE_FIELD(RangeListRange, T_POINTER, Id, cdac_data<RangeList>::Range::Id)
+CDAC_TYPE_END(RangeListRange)
+
 CDAC_TYPE_BEGIN(EEJitManager)
 CDAC_TYPE_INDETERMINATE(EEJitManager)
 CDAC_TYPE_FIELD(EEJitManager, T_BOOL, StoreRichDebugInfo, cdac_data<EEJitManager>::StoreRichDebugInfo)
@@ -1797,6 +1820,8 @@ CDAC_GLOBAL(StressLogEnabled, T_UINT8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
+CDAC_GLOBAL(RangeListRangeCount, T_UINT32, RangeList::RANGE_COUNT)
+CDAC_GLOBAL_POINTER(StubLinkStubManagerAddress, &StubLinkStubManager::g_pManager)
 #ifdef TARGET_WASM
 CDAC_GLOBAL_POINTER(FunctionTableIndexRangeList, cdac_data<ExecutionManager>::FunctionTableIndexRangeListAddress)
 #endif // TARGET_WASM

@@ -2788,6 +2788,8 @@ typedef VPTR(class RangeList) PTR_RangeList;
 
 class RangeList
 {
+    friend struct ::cdac_data<RangeList>;
+
   public:
     VPTR_BASE_CONCRETE_VTABLE_CLASS(RangeList)
 
@@ -2894,6 +2896,27 @@ class RangeList
     RangeListBlock       m_starterBlock;
     DPTR(RangeListBlock) m_firstEmptyBlock;
     TADDR                m_firstEmptyRange;
+};
+
+template<>
+struct cdac_data<RangeList>
+{
+    static constexpr size_t StarterBlock = offsetof(RangeList, m_starterBlock);
+
+    struct RangeListBlock
+    {
+        static constexpr size_t Ranges = offsetof(RangeList::RangeListBlock, ranges);
+        static constexpr size_t Next = offsetof(RangeList::RangeListBlock, next);
+        static constexpr size_t Size = sizeof(RangeList::RangeListBlock);
+    };
+
+    struct Range
+    {
+        static constexpr size_t Start = offsetof(RangeList::Range, start);
+        static constexpr size_t End = offsetof(RangeList::Range, end);
+        static constexpr size_t Id = offsetof(RangeList::Range, id);
+        static constexpr size_t Size = sizeof(RangeList::Range);
+    };
 };
 
 

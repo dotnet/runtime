@@ -23,6 +23,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     private readonly ReadyToRunJitManager _r2rJitManager;
     private readonly InterpreterJitManager _interpreterJitManager;
     private readonly TargetPointer _thePreStub;
+    private readonly TargetPointer _stubLinkStubRangeList;
 
     private Data.RangeSectionMap _topRangeSectionMap
         => _target.ProcessedData.GetOrAdd<Data.RangeSectionMap>(_topRangeSectionMapAddress);
@@ -39,6 +40,15 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         _thePreStub = _target.TryReadGlobalPointer(Constants.Globals.ThePreStub, out TargetPointer? thePreStubPtr)
             ? _target.ReadPointer(thePreStubPtr.Value)
             : TargetPointer.Null;
+        if (_target.TryReadGlobalPointer(Constants.Globals.StubLinkStubManagerAddress, out TargetPointer? stubLinkStubManagerPtr))
+        {
+            TargetPointer stubLinkStubManagerAddress = _target.ReadPointer(stubLinkStubManagerPtr.Value);
+            if (stubLinkStubManagerAddress != TargetPointer.Null)
+            {
+                Data.StubLinkStubManager stubLinkStubManager = _target.ProcessedData.GetOrAdd<Data.StubLinkStubManager>(stubLinkStubManagerAddress);
+                _stubLinkStubRangeList = stubLinkStubManager.RangeList;
+            }
+        }
     }
 
     public void Flush(FlushScope scope)
@@ -673,6 +683,9 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             if (address == _thePreStub && _thePreStub != TargetPointer.Null)
                 return CodeKind.ThePreStub;
 
+            if (IsStubLinkStub(address))
+                return CodeKind.StubLinkStub;
+
             return CodeKind.Unknown;
         }
 
@@ -684,5 +697,20 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             return GetStubKind((StubKind)rangeList.RangeListType);
         }
         return jitManager.GetCodeKind(range, codeAddress);
+    }
+
+    private bool IsStubLinkStub(TargetPointer address)
+    {
+        if (_stubLinkStubRangeList == TargetPointer.Null)
+            return false;
+
+        Data.RangeList rangeList = _target.ProcessedData.GetOrAdd<Data.RangeList>(_stubLinkStubRangeList);
+        foreach (Data.RangeListRange range in rangeList.Ranges)
+        {
+            if (range.Id != TargetPointer.Null && address >= range.Start && address < range.End)
+                return true;
+        }
+
+        return false;
     }
 }

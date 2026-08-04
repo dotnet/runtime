@@ -204,6 +204,10 @@ public enum DataType
     VASigCookie,
     Signature,
     CodeRangeMapRangeList,
+    StubLinkStubManager,
+    RangeList,
+    RangeListBlock,
+    RangeListRange,
 
     /* GC Data Types */
 
