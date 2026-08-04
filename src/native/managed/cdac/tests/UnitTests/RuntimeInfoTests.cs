@@ -139,7 +139,6 @@ public class RuntimeInfoTests
         Assert.Equal(RuntimeInfoArchitecture.X64, runtimeInfo.GetTargetArchitecture());
         Assert.Equal(RuntimeInfoOperatingSystem.Windows, runtimeInfo.GetTargetOperatingSystem());
         Assert.Equal(RuntimeInfoRuntimeFlavor.Coreclr, runtimeInfo.GetRuntimeFlavor());
-        Assert.Equal(new Version(11, 0, 25, 32301), runtimeInfo.GetRuntimeFileVersion());
         Assert.Equal("11.0.0-preview.7.26365.101", runtimeInfo.GetRuntimeProductVersion());
         Assert.Equal((uint)42, runtimeInfo.GetRecommendedReaderVersion());
 
@@ -152,7 +151,6 @@ public class RuntimeInfoTests
             _ = runtimeInfo.GetTargetArchitecture();
             _ = runtimeInfo.GetTargetOperatingSystem();
             _ = runtimeInfo.GetRuntimeFlavor();
-            _ = runtimeInfo.GetRuntimeFileVersion();
             _ = runtimeInfo.GetRuntimeProductVersion();
             _ = runtimeInfo.GetRecommendedReaderVersion();
         }
@@ -164,7 +162,6 @@ public class RuntimeInfoTests
         _ = runtimeInfo.GetTargetArchitecture();
         _ = runtimeInfo.GetTargetOperatingSystem();
         _ = runtimeInfo.GetRuntimeFlavor();
-        _ = runtimeInfo.GetRuntimeFileVersion();
         _ = runtimeInfo.GetRuntimeProductVersion();
         _ = runtimeInfo.GetRecommendedReaderVersion();
         Assert.True(target.GlobalStringReadCount > baselineStringReads);
@@ -183,10 +180,6 @@ public class RuntimeInfoTests
                 globals:
                 [
                     (Constants.Globals.RecommendedReaderVersion, 42UL),
-                    (Constants.Globals.RuntimeFileVersionMajor, 11UL),
-                    (Constants.Globals.RuntimeFileVersionMinor, 0UL),
-                    (Constants.Globals.RuntimeFileVersionBuild, 25UL),
-                    (Constants.Globals.RuntimeFileVersionRevision, 32301UL),
                 ],
                 globalStrings:
                 [
@@ -232,19 +225,12 @@ public class RuntimeInfoTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void RuntimeVersions_ReturnDescriptorValues(MockTarget.Architecture arch)
+    public void RuntimeProductVersion_ReturnsDescriptorValue(MockTarget.Architecture arch)
     {
         Target target = CreateTarget(
             arch,
-            [(Constants.Globals.RuntimeProductVersionString, "11.0.0-preview.7.26365.101")],
-            [
-                (Constants.Globals.RuntimeFileVersionMajor, 11UL),
-                (Constants.Globals.RuntimeFileVersionMinor, 0UL),
-                (Constants.Globals.RuntimeFileVersionBuild, 25UL),
-                (Constants.Globals.RuntimeFileVersionRevision, 32301UL),
-            ]);
+            [(Constants.Globals.RuntimeProductVersionString, "11.0.0-preview.7.26365.101")]);
 
-        Assert.Equal(new Version(11, 0, 25, 32301), target.Contracts.RuntimeInfo.GetRuntimeFileVersion());
         Assert.Equal("11.0.0-preview.7.26365.101", target.Contracts.RuntimeInfo.GetRuntimeProductVersion());
     }
 }
