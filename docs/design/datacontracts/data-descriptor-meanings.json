@@ -22,7 +22,7 @@
     "AsyncMethodData.Signature": "The async variant's signature (see `Signature`)",
     "AsyncMethodData.Size": "Size of the async method data, added when HasAsyncMethodData flag is set",
     "AsyncResumeInfo.DiagnosticIP": "Native IP into the resumed method used for diagnostics (may be null)",
-    "AuxiliarySymbolInfo.Address": "Code pointer to the dynamically-located helper function",
+    "AuxiliarySymbolInfo.Address": "Code pointer to the helper function",
     "AuxiliarySymbolInfo.Name": "Pointer to a null-terminated char string with the helper name",
     "AuxiliarySymbolInfo.Size": "Size in bytes of each entry in the auxiliary symbol array",
     "Bucket.Keys": "Array of keys of `HashMapSlotsPerBucket` length",
