@@ -2,8 +2,18 @@
     <Import Project="..\Directory.Build.props" />
 
     <PropertyGroup>
-      <!-- Source build and platforms absent from the released ILCompiler pack must use the in-repo NativeAOT toolchain. -->
-      <CDacTfm Condition="'$(CDacTfm)' == '' and ('$(DotNetBuildSourceOnly)' == 'true' or '$(TargetOS)' == 'haiku' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'openbsd' or '$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'solaris')">$(NetCoreAppToolCurrent)</CDacTfm>
+      <!-- Source-build and bootstrap NativeAOT publishing on community platforms require toolchain assets that are not in the released SDK. -->
+      <CDacTfm Condition="
+        '$(CDacTfm)' == '' and
+        ('$(DotNetBuildSourceOnly)' == 'true' or
+         ('$(UseBootstrapLayout)' == 'true' and
+          '$(TargetOS)' != 'windows' and
+          '$(TargetOS)' != 'osx' and
+          !('$(TargetOS)' == 'linux' and
+            ('$(TargetArchitecture)' == 'x64' or
+             '$(TargetArchitecture)' == 'x86' or
+             '$(TargetArchitecture)' == 'arm' or
+             '$(TargetArchitecture)' == 'arm64'))))">$(NetCoreAppToolCurrent)</CDacTfm>
       <CDacTfm Condition="'$(CDacTfm)' == ''">$(NetCoreAppMinimum)</CDacTfm>
     </PropertyGroup>
 
