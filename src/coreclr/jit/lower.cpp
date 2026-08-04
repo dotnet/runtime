@@ -1429,8 +1429,8 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
 
     //
     // Build a bit table where a bit set to 0 corresponds to bbCase0 and a bit set to 1 corresponds to
-    // bbCase1. Simply use the first block in the jump table as bbCase1, later we can invert the bit
-    // table and/or swap the blocks if it's beneficial.
+    // bbCase1. Simply use the first edge in the jump table as case1Edge, later we can invert the bit
+    // table and/or swap the edges if it's beneficial.
     //
 
     FlowEdge* case0Edge = nullptr;
@@ -1456,11 +1456,6 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
         }
     }
 
-    BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
-    BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
-
-    JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
-
 #if defined(TARGET_64BIT) && defined(TARGET_XARCH)
     //
     // See if we can avoid a 8 byte immediate on 64 bit targets. If all upper 32 bits are 1
@@ -1473,9 +1468,14 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     if (~bitTable <= UINT32_MAX)
     {
         bitTable = ~bitTable;
-        std::swap(bbCase0, bbCase1);
+        std::swap(case0Edge, case1Edge);
     }
 #endif
+
+    BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
+    BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
+
+    JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
 
     //
     // Set successor edge dup counts to 1 each
