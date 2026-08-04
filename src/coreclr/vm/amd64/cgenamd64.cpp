@@ -354,6 +354,16 @@ bool isBackToBackJump(PCODE pCode)
     LIMITED_METHOD_CONTRACT;
     PTR_BYTE pbCode = PTR_BYTE(pCode);
 
+    // Check for JMPABS encoding (APX): D5 00 A1 [8 bytes] 90
+    if (0xD5 == pbCode[0] &&
+        0x00 == pbCode[1] &&
+        0xA1 == pbCode[2] &&
+        0x90 == pbCode[11])
+    {
+        return true;
+    }
+
+    // Check for legacy encoding: 48 B8 [8 bytes] FF E0
     return 0x48 == pbCode[0]  &&
            0xB8 == pbCode[1]  &&
            0xFF == pbCode[10] &&
@@ -364,11 +374,18 @@ PCODE decodeBackToBackJump(PCODE pBuffer)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // mov rax, xxx
-    // jmp rax
     _ASSERTE(isBackToBackJump(pBuffer));
 
-    return *PTR_UINT64(pBuffer+2);
+    PTR_BYTE pbCode = PTR_BYTE(pBuffer);
+
+    // JMPABS encoding (APX): D5 00 A1 [8 bytes at offset 3-10] 90
+    if (0xD5 == pbCode[0])
+    {
+        return *PTR_UINT64(pBuffer + 3);
+    }
+
+    // Legacy encoding: 48 B8 [8 bytes at offset 2-9] FF E0
+    return *PTR_UINT64(pBuffer + 2);
 }
 
 #ifdef DACCESS_COMPILE
