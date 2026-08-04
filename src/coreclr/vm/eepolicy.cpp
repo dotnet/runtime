@@ -889,6 +889,12 @@ static void InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
         {
             ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
         }
+
+        // If the wait ever returns (for example, a spurious wakeup), the owner failed to
+        // terminate the process. Terminate here rather than running the handler on a
+        // non-owner thread and breaking the single-invocation guarantee.
+        CrashDumpAndTerminateProcess(exitCode);
+        UNREACHABLE();
     }
 
     // Capture the crash address for the property getter.
