@@ -270,10 +270,11 @@ public static partial class ZipFile
         ZipArchive archive = await OpenAsync(sourceArchiveFileName, ZipArchiveMode.Read, entryNameEncoding, cancellationToken).ConfigureAwait(false);
         await using (archive.ConfigureAwait(false))
         {
+            string destinationDirectoryFullPath = ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, password, cancellationToken).ConfigureAwait(false);
+                await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, password, cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -488,10 +489,11 @@ public static partial class ZipFile
         ZipArchive archive = await ZipArchive.CreateAsync(source, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding, cancellationToken).ConfigureAwait(false);
         await using (archive.ConfigureAwait(false))
         {
+            string destinationDirectoryFullPath = ZipFileExtensions.GetDestinationDirectoryFullPath(destinationDirectoryName);
             foreach (ZipArchiveEntry entry in archive.Entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryName, overwriteFiles, password, cancellationToken).ConfigureAwait(false);
+                await entry.ExtractRelativeToDirectoryAsync(destinationDirectoryFullPath, overwriteFiles, password, cancellationToken).ConfigureAwait(false);
             }
         }
     }

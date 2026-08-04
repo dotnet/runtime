@@ -212,9 +212,10 @@ namespace System.IO.Compression
         private static void ExtractToFileFinalize(ZipArchiveEntry source, string destinationFileName) =>
             ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, source.LastWriteTime);
 
-        private static bool ExtractRelativeToDirectoryCheckIfFile(ZipArchiveEntry source, string destinationDirectoryName, out string fileDestinationPath)
+        // Computes the normalized destination directory root once per extraction call, so that it can be
+        // reused across all entries instead of being recomputed for every single one.
+        internal static string GetDestinationDirectoryFullPath(string destinationDirectoryName)
         {
-            ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(destinationDirectoryName);
 
             // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
@@ -225,6 +226,14 @@ namespace System.IO.Compression
                 char sep = Path.DirectorySeparatorChar;
                 destinationDirectoryFullPath = string.Concat(destinationDirectoryFullPath, new ReadOnlySpan<char>(in sep));
             }
+
+            return destinationDirectoryFullPath;
+        }
+
+        private static bool ExtractRelativeToDirectoryCheckIfFile(ZipArchiveEntry source, string destinationDirectoryFullPath, out string fileDestinationPath)
+        {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(destinationDirectoryFullPath);
 
             fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
 
@@ -248,9 +257,9 @@ namespace System.IO.Compression
             return true; // It is a file
         }
 
-        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, ReadOnlySpan<char> password = default)
+        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryFullPath, bool overwrite, ReadOnlySpan<char> password = default)
         {
-            if (ExtractRelativeToDirectoryCheckIfFile(source, destinationDirectoryName, out string fileDestinationPath))
+            if (ExtractRelativeToDirectoryCheckIfFile(source, destinationDirectoryFullPath, out string fileDestinationPath))
             {
                 // If it is a file:
                 // Create containing directory:
