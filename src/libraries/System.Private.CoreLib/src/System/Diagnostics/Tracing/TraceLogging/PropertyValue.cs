@@ -39,7 +39,7 @@ namespace System.Diagnostics.Tracing
 
             [FieldOffset(0)]
             public safe ushort AsUInt16;
- 
+
             [FieldOffset(0)]
             public safe int AsInt32;
 
