@@ -477,12 +477,10 @@ namespace System.Formats.Tar
 
         private static void CreateSymlinkPlaceholderFile(string filePath, string linkTarget, bool overwrite, Dictionary<FileId, (string, string)> pendingLinks)
         {
-            if (overwrite && File.Exists(filePath))
-            {
-                FileId existingId = TarHelpers.GetFileId(filePath);
-                pendingLinks.Remove(existingId);
-                File.Delete(filePath);
-            }
+            // Performs the same existing-destination handling as the non-deferred path, which includes
+            // dropping the pending entry of a placeholder that is being overwritten.
+            VerifyDestinationPath(filePath, overwrite, pendingLinks);
+
             var options = new FileStreamOptions
             {
                 Mode = FileMode.CreateNew,

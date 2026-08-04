@@ -980,6 +980,32 @@ namespace System.Formats.Tar.Tests
 
             Assert.Throws<IOException>(() => TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true));
         }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [InlineData("../b")] // deferred: contains '..'
+        [InlineData("b")]    // not deferred
+        public void ExtractToDirectory_OverwritesExistingDanglingSymlink(string linkName)
+        {
+            using TempDirectory root = new TempDirectory();
+            string destDir = Path.Combine(root.Path, "dest");
+            Directory.CreateDirectory(Path.Combine(destDir, "a"));
+
+            // A pre-existing symlink whose target does not exist.
+            File.CreateSymbolicLink(Path.Combine(destDir, "a", "link"), "does_not_exist");
+
+            string tarPath = Path.Combine(root.Path, "overwrite_dangling.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = NormalizePathSeparators(linkName) });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
+            }
+
+            TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
+
+            Assert.Equal(NormalizePathSeparators(linkName), new FileInfo(Path.Combine(destDir, "a", "link")).LinkTarget);
+        }
     }
 }
 

@@ -537,15 +537,22 @@ namespace System.Formats.Tar
             // Now create all pending links (that have ".." segments)
             var resolver = new PendingLinkResolver(destinationDirectoryFullPath, resolvedDestinationDirectoryFullPath, destinationSymlinkDepth, pendingLinks);
 
-            while (pendingLinks.Count > 0)
+            // CreateLink removes the link from pendingLinks once it is created, and it may create (and remove) several
+            // more when a link resolves through other pending links. Because that mutates the dictionary, we can't
+            // enumerate it directly, so we take a snapshot of the keys and skip the ones that were already created.
+            // The order of creation doesn't matter.
+            FileId[] fileIds = new FileId[pendingLinks.Count];
+            pendingLinks.Keys.CopyTo(fileIds, 0);
+
+            foreach (FileId fileId in fileIds)
             {
-                // CreateLink will remove the link from pendingLinks if it is successfully created. It can also create multiple intermediate links as necessary.
-                // Since we don't care about the order of creation, we just create a fresh enumerator and grab the first entry.
-                using var enumerator = pendingLinks.GetEnumerator();
-                enumerator.MoveNext();
-                (FileId fileId, (string symlinkPath, string linkTarget)) = enumerator.Current;
-                resolver.CreateLink(fileId, symlinkPath, linkTarget);
+                if (pendingLinks.TryGetValue(fileId, out (string SymlinkPath, string LinkTarget) pendingLink))
+                {
+                    resolver.CreateLink(fileId, pendingLink.SymlinkPath, pendingLink.LinkTarget);
+                }
             }
+
+            Debug.Assert(pendingLinks.Count == 0);
         }
 
         // checks if a path is equal to or nested under a full path. The full path must end with a directory separator.
@@ -652,10 +659,13 @@ namespace System.Formats.Tar
                     }
                     if (component is "..")
                     {
-                        // traverse to the parent, make sure we don't have a trailing '/' or '\'.
+                        // Traverse to the parent. Strip any trailing separators first, otherwise
+                        // GetDirectoryName only strips them and doesn't move up a level.
                         ReadOnlySpan<char> resolvedFullPathSpan = resolvedFullPath.AsSpan();
-                        resolvedFullPathSpan = resolvedFullPathSpan.TrimEnd(Path.DirectorySeparatorChar);
-                        resolvedFullPathSpan = resolvedFullPathSpan.TrimEnd(Path.AltDirectorySeparatorChar);
+                        while (!resolvedFullPathSpan.IsEmpty && PathInternal.IsDirectorySeparator(resolvedFullPathSpan[^1]))
+                        {
+                            resolvedFullPathSpan = resolvedFullPathSpan[..^1];
+                        }
 
                         // GetDirectoryName returns null at the root, map back to root (.. on / yields /).
                         resolvedFullPathSpan = Path.GetDirectoryName(resolvedFullPathSpan);
