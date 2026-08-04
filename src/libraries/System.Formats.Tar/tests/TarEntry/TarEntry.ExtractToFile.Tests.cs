@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -16,7 +17,17 @@ namespace System.Formats.Tar.Tests
         [InlineData(TarEntryFormat.Ustar)]
         [InlineData(TarEntryFormat.Pax)]
         [InlineData(TarEntryFormat.Gnu)]
-        public void Constructor_Name_FullPath_DestinationDirectory_Mismatch_Throws(TarEntryFormat format)
+        public Task ExtractToFileAsync_Cancel(TarEntryFormat format)
+        {
+            TarEntry entry = InvokeTarEntryCreationConstructor(format, TarEntryType.Directory, "dir");
+            CancellationTokenSource cs = new CancellationTokenSource();
+            cs.Cancel();
+            return Assert.ThrowsAsync<TaskCanceledException>(() => entry.ExtractToFileAsync("dir", overwrite: true, cs.Token));
+        }
+
+        [Theory]
+        [MemberData(nameof(GetFormatBooleanData))]
+        public async Task Constructor_Name_FullPath_DestinationDirectory_Mismatch_Throws(TarEntryFormat format, bool async)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -28,17 +39,14 @@ namespace System.Formats.Tar.Tests
             entry.DataStream.Write(new byte[] { 0x1 });
             entry.DataStream.Seek(0, SeekOrigin.Begin);
 
-            Assert.Throws<IOException>(() => entry.ExtractToFile(root.Path, overwrite: false));
+            await Assert.ThrowsAsync<IOException>(() => ExtractToFile(entry, root.Path, overwrite: false, async));
 
             Assert.False(File.Exists(fullPath));
         }
 
         [Theory]
-        [InlineData(TarEntryFormat.V7)]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public void Constructor_Name_FullPath_DestinationDirectory_Match_AdditionalSubdirectory_Throws(TarEntryFormat format)
+        [MemberData(nameof(GetFormatBooleanData))]
+        public async Task Constructor_Name_FullPath_DestinationDirectory_Match_AdditionalSubdirectory_Throws(TarEntryFormat format, bool async)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -50,17 +58,14 @@ namespace System.Formats.Tar.Tests
             entry.DataStream.Write(new byte[] { 0x1 });
             entry.DataStream.Seek(0, SeekOrigin.Begin);
 
-            Assert.Throws<IOException>(() => entry.ExtractToFile(root.Path, overwrite: false));
+            await Assert.ThrowsAsync<IOException>(() => ExtractToFile(entry, root.Path, overwrite: false, async));
 
             Assert.False(File.Exists(fullPath));
         }
 
         [Theory]
-        [InlineData(TarEntryFormat.V7)]
-        [InlineData(TarEntryFormat.Ustar)]
-        [InlineData(TarEntryFormat.Pax)]
-        [InlineData(TarEntryFormat.Gnu)]
-        public void Constructor_Name_FullPath_DestinationDirectory_Match(TarEntryFormat format)
+        [MemberData(nameof(GetFormatBooleanData))]
+        public async Task Constructor_Name_FullPath_DestinationDirectory_Match(TarEntryFormat format, bool async)
         {
             using TempDirectory root = new TempDirectory();
 
@@ -72,40 +77,45 @@ namespace System.Formats.Tar.Tests
             entry.DataStream.Write(new byte[] { 0x1 });
             entry.DataStream.Seek(0, SeekOrigin.Begin);
 
-            entry.ExtractToFile(fullPath, overwrite: false);
+            await ExtractToFile(entry, fullPath, overwrite: false, async);
 
             Assert.True(File.Exists(fullPath));
         }
 
         [Theory]
         [MemberData(nameof(GetFormatsAndLinks))]
-        public void ExtractToFile_Link_Throws(TarEntryFormat format, TarEntryType entryType)
+        public async Task ExtractToFile_Link_Throws(TarEntryFormat format, TarEntryType entryType)
         {
-            using TempDirectory root = new TempDirectory();
-            string fileName = "mylink";
-            string fullPath = Path.Join(root.Path, fileName);
+            foreach (bool async in Booleans)
+            {
+                using TempDirectory root = new TempDirectory();
+                string fileName = "mylink";
 
-            string linkTarget = PlatformDetection.IsWindows ? @"C:\Windows\system32\notepad.exe" : "/usr/bin/nano";
+                string linkTarget = PlatformDetection.IsWindows ? @"C:\Windows\system32\notepad.exe" : "/usr/bin/nano";
 
-            TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, fileName);
-            entry.LinkName = linkTarget;
+                TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, fileName);
+                entry.LinkName = linkTarget;
 
-            Assert.Throws<InvalidOperationException>(() => entry.ExtractToFile(fileName, overwrite: false));
+                await Assert.ThrowsAsync<InvalidOperationException>(() => ExtractToFile(entry, fileName, overwrite: false, async));
 
-            Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
+                Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
+            }
         }
 
         [Theory]
         [MemberData(nameof(GetFormatsAndFiles))]
-        public void Extract(TarEntryFormat format, TarEntryType entryType)
+        public async Task Extract(TarEntryFormat format, TarEntryType entryType)
         {
-            using TempDirectory root = new TempDirectory();
+            foreach (bool async in Booleans)
+            {
+                using TempDirectory root = new TempDirectory();
 
-            (string entryName, string destination, TarEntry entry) = Prepare_Extract(root, format, entryType);
+                (string entryName, string destination, TarEntry entry) = Prepare_Extract(root, format, entryType);
 
-            entry.ExtractToFile(destination, overwrite: true);
+                await ExtractToFile(entry, destination, overwrite: true, async);
 
-            Verify_Extract(destination, entry, entryType);
+                Verify_Extract(destination, entry, entryType);
+            }
         }
     }
 }
