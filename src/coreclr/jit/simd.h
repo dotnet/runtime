@@ -333,10 +333,6 @@ struct simdmask_t
         return !(*this == other);
     }
 
-#if defined(TARGET_ARM64)
-    bool EqualsSveMask(const simdmask_t& other) const;
-#endif
-
     static uint64_t GetBitMask(uint32_t elementCount)
     {
         assert((elementCount >= 1) && (elementCount <= 64));
@@ -2124,47 +2120,6 @@ SveMaskPattern EvaluateSimdMaskToPattern(var_types baseType, simdmask_t arg0)
             unreached();
         }
     }
-}
-
-//------------------------------------------------------------------------
-// simdmask_t::EqualsSveMask: Check whether two masks represent the same SVE mask constant.
-//
-// Arguments:
-//    other - The other mask.
-//
-// Return Value:
-//    True if both masks represent the same SVE mask constant; otherwise false.
-//
-inline bool simdmask_t::EqualsSveMask(const simdmask_t& other) const
-{
-    if (IsZero() || other.IsZero())
-    {
-        return IsZero() && other.IsZero();
-    }
-
-    auto tryGetPattern = [](const simdmask_t& mask, var_types* baseType, SveMaskPattern* pattern) {
-        const var_types types[] = {TYP_BYTE, TYP_SHORT, TYP_INT, TYP_LONG};
-        for (var_types type : types)
-        {
-            SveMaskPattern result = EvaluateSimdMaskToPattern<simd16_t>(type, mask);
-            if (result != SveMaskPatternNone)
-            {
-                *baseType = type;
-                *pattern  = result;
-                return true;
-            }
-        }
-
-        return false;
-    };
-
-    var_types      thisBaseType;
-    SveMaskPattern thisPattern;
-    var_types      otherBaseType;
-    SveMaskPattern otherPattern;
-
-    return tryGetPattern(*this, &thisBaseType, &thisPattern) && tryGetPattern(other, &otherBaseType, &otherPattern) &&
-           (thisBaseType == otherBaseType) && (thisPattern == otherPattern);
 }
 
 // Functionality for handling constant vectors of unknown size

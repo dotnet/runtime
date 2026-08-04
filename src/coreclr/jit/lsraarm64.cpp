@@ -1457,37 +1457,6 @@ int LinearScan::BuildNode(GenTree* tree)
 
 #include "hwintrinsic.h"
 
-#if defined(FEATURE_MASKED_HW_INTRINSICS)
-//------------------------------------------------------------------------
-// areMatchingSveMaskConstants: Check whether two nodes materialize the same SVE mask constant.
-//
-// Arguments:
-//    tree1 - The first node.
-//    tree2 - The second node.
-//
-// Return Value:
-//    True if both nodes represent the same SVE mask constant; otherwise false.
-//
-bool LinearScan::areMatchingSveMaskConstants(GenTree* tree1, GenTree* tree2)
-{
-    if (!tree1->OperIs(GT_CNS_MSK) || !tree2->OperIs(GT_CNS_MSK))
-    {
-        return false;
-    }
-
-#ifdef DEBUG
-    // Scalable mask constants do not use the legacy fixed-size mask representation.
-    if (JitConfig.JitUseScalableVectorT())
-    {
-        return false;
-    }
-#endif
-
-    return tree1->AsMskCon()->gtSimdMaskVal.EqualsSveMask(tree2->AsMskCon()->gtSimdMaskVal);
-}
-
-#endif // FEATURE_MASKED_HW_INTRINSICS
-
 //------------------------------------------------------------------------
 // BuildHWIntrinsic: Set the NodeInfo for a GT_HWINTRINSIC tree.
 //

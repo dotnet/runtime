@@ -2717,13 +2717,6 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
     GenTree* otherTreeNode = physRegRecord->assignedInterval->firstRefPosition->treeNode;
     noway_assert(otherTreeNode != nullptr);
 
-#if defined(TARGET_ARM64) && defined(FEATURE_MASKED_HW_INTRINSICS)
-    if (areMatchingSveMaskConstants(refPosition->treeNode, otherTreeNode))
-    {
-        return true;
-    }
-#endif
-
     if (refPosition->treeNode->OperGet() != otherTreeNode->OperGet())
     {
         return false;
