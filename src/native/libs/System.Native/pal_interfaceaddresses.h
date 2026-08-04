@@ -18,7 +18,7 @@ typedef enum
 typedef struct
 {
     uint32_t InterfaceIndex; // The index of the interface to which this address belongs.
-    uint8_t AddressBytes[12]; // A pointer to the bytes containing the address.
+    uint8_t AddressBytes[12]; // The bytes containing the address.
     uint8_t NumAddressBytes; // The number of bytes actually stored in the address.
     uint8_t _padding;
     uint16_t HardwareType;

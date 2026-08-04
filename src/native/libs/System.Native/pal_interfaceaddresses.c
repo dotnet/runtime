@@ -290,7 +290,10 @@ int32_t SystemNative_EnumerateInterfaceAddresses(void* context,
                     }
                 }
 #endif
-                memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), (uint8_t*)LLADDR(sadl), lla.NumAddressBytes);
+                if (lla.NumAddressBytes != 0)
+                {
+                    memcpy_s(&lla.AddressBytes, sizeof_member(LinkLayerAddressInfo, AddressBytes), (uint8_t*)LLADDR(sadl), lla.NumAddressBytes);
+                }
                 onLinkLayerFound(context, current->ifa_name, &lla);
             }
         }
@@ -468,7 +471,10 @@ int32_t SystemNative_GetNetworkInterfaces(int32_t * interfaceCount, NetworkInter
 
             nii->HardwareType = MapHardwareType(sadl->sdl_type);
             nii->NumAddressBytes = GetLinkLayerAddressLength(sadl, sizeof(nii->AddressBytes));
-            memcpy_s(&nii->AddressBytes, sizeof_member(NetworkInterfaceInfo, AddressBytes), (uint8_t*)LLADDR(sadl), nii->NumAddressBytes);
+            if (nii->NumAddressBytes != 0)
+            {
+                memcpy_s(&nii->AddressBytes, sizeof_member(NetworkInterfaceInfo, AddressBytes), (uint8_t*)LLADDR(sadl), nii->NumAddressBytes);
+            }
 
 #if defined(SIOCGIFMTU)
             struct ifreq ifr;
