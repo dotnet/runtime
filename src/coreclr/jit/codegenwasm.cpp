@@ -398,17 +398,17 @@ void CodeGen::genFnEpilog(BasicBlock* block)
     {
         if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
         {
-            instGen(INS_end);
+            genEmitFunctionEnd(/* emitTerminalUnreachable */ false);
         }
         return;
     }
 
     // TODO-WASM: shadow stack maintenance
-    // TODO-WASM: we need to handle the end-of-function case if we reach the end of a codegen for a function
-    // and do NOT have an epilog. In those cases we currently will not emit an end instruction.
+    // Close the root function before the first funclet starts. Other returns
+    // within the root function leave the remaining root blocks reachable.
     if (block->IsLast() || m_compiler->bbIsFuncletBeg(block->Next()))
     {
-        instGen(INS_end);
+        genEmitFunctionEnd(/* emitTerminalUnreachable */ false);
     }
     else
     {
@@ -3220,7 +3220,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     if (target != nullptr)
     {
         // Codegen should have already evaluated our target node (last) and pushed it onto the stack,
-        //  ready for call_indirect. Consume it.
+        // ready for call_indirect. Consume it.
         genConsumeReg(target);
 
         params.callType = EC_INDIR_R;
@@ -3231,16 +3231,22 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         // Generate a direct call to a non-virtual user defined or helper method
         assert(call->IsHelperCall() || (call->gtCallType == CT_USER_FUNC));
 
-        assert(call->gtEntryPoint.addr == NULL);
-
         if (call->IsHelperCall())
         {
             assert(!call->IsFastTailCall());
-            CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
-            noway_assert(helperNum != CORINFO_HELP_UNDEF);
-            CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
-            assert(helperLookup.accessType == IAT_VALUE);
-            params.addr = helperLookup.addr;
+
+            if (call->gtDirectCallAddress != nullptr)
+            {
+                params.addr = call->gtDirectCallAddress;
+            }
+            else
+            {
+                CorInfoHelpFunc helperNum = m_compiler->eeGetHelperNum(params.methHnd);
+                noway_assert(helperNum != CORINFO_HELP_UNDEF);
+                CORINFO_CONST_LOOKUP helperLookup = m_compiler->compGetHelperFtn(helperNum);
+                assert(helperLookup.accessType == IAT_VALUE);
+                params.addr = helperLookup.addr;
+            }
         }
         else
         {
@@ -3283,9 +3289,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
     }
     else
     {
-        params.addr = nullptr;
         assert(helperFunction.accessType == IAT_PVALUE);
-
+        params.addr     = nullptr;
         params.callType = EC_INDIR_R;
     }
 
