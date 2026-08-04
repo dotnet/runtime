@@ -34,6 +34,23 @@ public class CustomStructAwaiters
         await RunGeneric(new object());
         // Value type instantiations are exact.
         await RunGeneric(44);
+
+        // The canonical helper requires an instantiation argument, but the
+        // exact instantiation is known statically rather than runtime determined.
+        await RunKnownReferenceType();
+    }
+
+    private static async Task RunKnownReferenceType()
+    {
+        string value = "known reference type";
+
+        string safeResult =
+            await new GenericSafeAwaitable<string>(value);
+        Assert.Equal(value, safeResult);
+
+        string unsafeResult =
+            await new GenericUnsafeAwaitable<string>(value);
+        Assert.Equal(value, unsafeResult);
     }
 
     private static async Task RunGeneric<T>(T value)
