@@ -33,7 +33,7 @@ namespace System
             if ((mantissa >> TNumber.DenormalMantissaBits) != 0)
             {
                 mantissaHighBitIdx = TNumber.DenormalMantissaBits;
-                hasUnequalMargins = (mantissa == (1U << TNumber.DenormalMantissaBits));
+                hasUnequalMargins = (mantissa == (1UL << TNumber.DenormalMantissaBits));
             }
             else
             {

@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ContinuationObject))]
 internal sealed partial class ContinuationObject : IData<ContinuationObject>
 {
-    [Field] public TargetPointer Next { get; }
-    [Field] public TargetPointer ResumeInfo { get; }
-    [Field] public int State { get; }
+    [Field] public partial TargetPointer Next { get; }
+    [Field] public partial TargetPointer ResumeInfo { get; }
+    [Field] public partial int State { get; }
 }

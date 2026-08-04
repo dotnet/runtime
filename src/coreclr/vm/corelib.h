@@ -256,6 +256,8 @@ DEFINE_FIELD(DELEGATEWRAPPER, VALUE,              Value)
 DEFINE_CLASS(INT128,               System,                 Int128)
 DEFINE_CLASS(UINT128,              System,                 UInt128)
 
+DEFINE_CLASS(DECIMAL128,           Numerics,               Decimal128)
+
 DEFINE_CLASS(MATH,                  System,                 Math)
 DEFINE_METHOD(MATH,                 CONVERT_TO_INT32_CHECKED,    ConvertToInt32Checked,    NoSig)
 DEFINE_METHOD(MATH,                 CONVERT_TO_UINT32_CHECKED,   ConvertToUInt32Checked,   NoSig)
@@ -1055,7 +1057,6 @@ DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,             
 DEFINE_METHOD(BUFFER,               MEMCOPYGC,              BulkMoveWithWriteBarrier, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
-DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_TARGET,    GetDelegateTarget,          SM_Delegate_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_IntPtr_IntPtr_RetException)
 DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr)

@@ -182,6 +182,15 @@ public partial class ZipArchiveEntry
             return;
         }
 
+        // A corrupt central directory can point the local header offset past the end of the
+        // archive. Seeking there throws ArgumentOutOfRangeException on some streams (e.g.
+        // MemoryStream). Mirror the check in IsOpenableInitialVerifications and defer the error
+        // to when the entry is actually opened, same as for non AES encrypted entries.
+        if (_offsetOfLocalHeader > _archive.ArchiveStream.Length)
+        {
+            return;
+        }
+
         long savedPosition = _archive.ArchiveStream.Position;
         try
         {

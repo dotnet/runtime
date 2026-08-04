@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Needed for CLRTestTargetUnsupported -->
+    <RequiresProcessIsolation Condition="'$(FeatureMultithreading)' != 'true'">true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
-    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(FeatureMultithreading)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test12224.cs" />

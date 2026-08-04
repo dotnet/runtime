@@ -18,54 +18,92 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
     TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(TargetCodePointer entryPoint);
 ```
 
-## Version 1, 2, and 3
+## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| PrecodeMachineDescriptor | OffsetOfPrecodeType | See `ReadPrecodeType` (Version 1 and 2 only) |
-| PrecodeMachineDescriptor | ShiftOfPrecodeType | See `ReadPrecodeType`  (Version 1 and 2 only) |
-| PrecodeMachineDescriptor | ReadWidthOfPrecodeType | See `ReadPrecodeType`  (Version 1 and 2 only) |
-| PrecodeMachineDescriptor | StubCodePageSize | Size of a precode code page (in bytes) |
-| PrecodeMachineDescriptor | CodePointerToInstrPointerMask | mask to apply to code pointers to get an address (see arm32 note)
-| PrecodeMachineDescriptor | StubPrecodeType | precode sort byte for stub precodes |
-| PrecodeMachineDescriptor | HasPInvokeImportPrecode | 1 if platform supports PInvoke precode stubs |
-| PrecodeMachineDescriptor | PInvokeImportPrecodeType |  precode sort byte for PInvoke precode stubs, if supported |
-| PrecodeMachineDescriptor | HasFixupPrecode | 1 if platform supports fixup precode stubs |
-| PrecodeMachineDescriptor | FixupPrecodeType | precode sort byte for fixup precode stubs, if supported |
-| PrecodeMachineDescriptor | ThisPointerRetBufPrecodeType | precode sort byte for this pointer ret buf precodes |
-| PrecodeMachineDescriptor | FixupStubPrecodeSize | Byte size of `FixupBytes` and `FixupIgnoredBytes` (Version 3 only) |
-| PrecodeMachineDescriptor | FixupBytes | Assembly code of a FixupStub (Version 3 only) |
-| PrecodeMachineDescriptor | FixupIgnoredBytes | Bytes to ignore of when comparing `FixupBytes` to an actual block of memory in the target process. (Version 3 only) |
-| PrecodeMachineDescriptor | StubPrecodeSize | Byte size of `StubBytes` and `StubIgnoredBytes` (Version 3 only) |
-| PrecodeMachineDescriptor | StubBytes | Assembly code of a StubPrecode (Version 3 only) |
-| PrecodeMachineDescriptor | StubIgnoredBytes | Bytes to ignore of when comparing `StubBytes` to an actual block of memory in the target process. (Version 3 only) |
-| PrecodeMachineDescriptor | FixupCodeOffset | Offset of second entrypoint into a `FixupStub` (Present in data for Version 3 and above only.) |
-| PrecodeMachineDescriptor | InterpreterPrecodeType | precode sort byte for the entrypoint into the interpreter (Version 3 only) |
-| PrecodeMachineDescriptor | UMEntryPrecodeType | precode sort byte for the entrypoint into the UMEntry thunk (Version 3 only) |
-| PrecodeMachineDescriptor | DynamicHelperPrecodeType | precode sort byte for the entrypoint into a dynamic helper (Version 3 only) |
-| StubPrecodeData | MethodDesc | pointer to the MethodDesc associated with this stub precode (Version 1 only) |
-| StubPrecodeData | SecretParam | pointer to the MethodDesc associated with this stub precode or a second stub data pointer for other types (Version 2 only) |
-| StubPrecodeData | Type | precise sort of stub precode |
-| FixupPrecodeData | MethodDesc | pointer to the MethodDesc associated with this fixup precode |
-| ThisPtrRetBufPrecodeData | MethodDesc | pointer to the MethodDesc associated with the ThisPtrRetBufPrecode (Version 2 only) |
-| InterpreterPrecodeData | ByteCodeAddr | pointer to the `InterpByteCodeStart` for the interpreter bytecode (Version 3 only) |
-| InterpreterPrecodeData | Type | precode sort byte identifying this as an interpreter precode (Version 3 only) |
-| InterpByteCodeStart | Method | pointer to the `InterpMethod` associated with the bytecode |
-| InterpMethod | MethodDesc | pointer to the MethodDesc for the interpreted method |
+<!-- BEGIN GENERATED: usage contract=PrecodeStubs version=c1 -->
+### Data descriptors used
 
-arm32 note: the `CodePointerToInstrPointerMask` is used to convert IP values that may include an arm Thumb bit (for example extracted from disassembling a call instruction or from a snapshot of the registers) into an address.  On other architectures applying the mask is a no-op.
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `FixupPrecodeData` | `MethodDesc` | `pointer` | pointer to the MethodDesc associated with this fixup precode |
+| `PrecodeMachineDescriptor` | `FixupPrecodeType` | `uint8` | Precode type byte for a fixup precode |
+| `PrecodeMachineDescriptor` | `OffsetOfPrecodeType` | `uint8` | See ReadPrecodeType (Version 1 and 2 only) |
+| `PrecodeMachineDescriptor` | `PInvokeImportPrecodeType` | `uint8` | Precode type byte for a P/Invoke import precode |
+| `PrecodeMachineDescriptor` | `ReadWidthOfPrecodeType` | `uint8` | See ReadPrecodeType  (Version 1 and 2 only) |
+| `PrecodeMachineDescriptor` | `ShiftOfPrecodeType` | `uint8` | See ReadPrecodeType  (Version 1 and 2 only) |
+| `PrecodeMachineDescriptor` | `StubCodePageSize` | `uint32` | Size of a precode code page (in bytes) |
+| `PrecodeMachineDescriptor` | `StubPrecodeType` | `uint8` | precode sort byte for stub precodes |
+| `PrecodeMachineDescriptor` | `ThisPointerRetBufPrecodeType` | `uint8` | Precode type byte for a this-pointer return-buffer precode |
+| `StubPrecodeData` | `MethodDesc` | `pointer` | pointer to the MethodDesc associated with this stub precode (Version 1 only) |
+| `StubPrecodeData` | `Type` | `uint8` | precise sort of stub precode |
 
+### Global variables used
 
-Global variables used:
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-| PrecodeMachineDescriptor | pointer | address of the `PrecodeMachineDescriptor` data |
+_None._
 
-Contracts used:
+### Contracts used
+
 | Contract Name |
 | --- |
 | `PlatformMetadata` |
+<!-- END GENERATED: usage contract=PrecodeStubs version=c1 -->
+
+## Version 2 dependency changes from Version 1
+
+<!-- BEGIN GENERATED: usage contract=PrecodeStubs version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+| Change | Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- | --- |
+| Removed | `StubPrecodeData` | `MethodDesc` | `pointer` | pointer to the MethodDesc associated with this stub precode (Version 1 only) |
+| Added | `StubPrecodeData` | `SecretParam` | `pointer` | pointer to the MethodDesc associated with this stub precode or a second stub data pointer for other types (Version 2 only) |
+| Added | `ThisPtrRetBufPrecodeData` | `MethodDesc` | `pointer` | pointer to the MethodDesc associated with the ThisPtrRetBufPrecode (Version 2 only) |
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=PrecodeStubs version=c2 diff-from=c1 -->
+
+## Version 3 dependency changes from Version 2
+
+<!-- BEGIN GENERATED: usage contract=PrecodeStubs version=c3 diff-from=c2 -->
+### Data descriptor changes from `c2`
+
+| Change | Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- | --- |
+| Added | `InterpByteCodeStart` | `Method` | `pointer` | pointer to the InterpMethod associated with the bytecode |
+| Added | `InterpMethod` | `MethodDesc` | `pointer` | pointer to the MethodDesc for the interpreted method |
+| Added | `InterpreterPrecodeData` | `ByteCodeAddr` | `pointer` | pointer to the InterpByteCodeStart for the interpreter bytecode (Version 3 only) |
+| Added | `PrecodeMachineDescriptor` | `DynamicHelperPrecodeType` | `uint8` | Precode type byte for a dynamic helper precode |
+| Added | `PrecodeMachineDescriptor` | `FixupBytes` | `uint8[]` | Assembly code of a FixupStub (Version 3 only) |
+| Added | `PrecodeMachineDescriptor` | `FixupIgnoredBytes` | `uint8[]` | Bytes to ignore of when comparing FixupBytes to an actual block of memory in the target process. (Version 3 only) |
+| Removed | `PrecodeMachineDescriptor` | `FixupPrecodeType` | `uint8` | Precode type byte for a fixup precode |
+| Added | `PrecodeMachineDescriptor` | `FixupStubPrecodeSize` | `uint8` | Byte size of FixupBytes and FixupIgnoredBytes (Version 3 only) |
+| Added | `PrecodeMachineDescriptor` | `InterpreterPrecodeType` | `uint8` | Precode type byte for an interpreter precode |
+| Removed | `PrecodeMachineDescriptor` | `OffsetOfPrecodeType` | `uint8` | See ReadPrecodeType (Version 1 and 2 only) |
+| Removed | `PrecodeMachineDescriptor` | `ReadWidthOfPrecodeType` | `uint8` | See ReadPrecodeType  (Version 1 and 2 only) |
+| Removed | `PrecodeMachineDescriptor` | `ShiftOfPrecodeType` | `uint8` | See ReadPrecodeType  (Version 1 and 2 only) |
+| Added | `PrecodeMachineDescriptor` | `StubBytes` | `uint8[]` | Assembly code of a StubPrecode (Version 3 only) |
+| Added | `PrecodeMachineDescriptor` | `StubIgnoredBytes` | `uint8[]` | Bytes to ignore of when comparing StubBytes to an actual block of memory in the target process. (Version 3 only) |
+| Added | `PrecodeMachineDescriptor` | `StubPrecodeSize` | `uint8` | Byte size of StubBytes and StubIgnoredBytes (Version 3 only) |
+| Added | `PrecodeMachineDescriptor` | `UMEntryPrecodeType` | `uint8` | Precode type byte for a UMEntry precode |
+
+### Global variable changes from `c2`
+
+_No changes._
+
+### Contract dependency changes from `c2`
+
+_No changes._
+<!-- END GENERATED: usage contract=PrecodeStubs version=c3 diff-from=c2 -->
+
+The `CodePointerToInstrPointerMask` converts IP values that may include an arm Thumb bit
+(for example, extracted from disassembling a call instruction or from a snapshot of the
+registers) into an address. On other architectures applying the mask is a no-op.
 
 ### Determining the precode type (Version 3)
 ``` csharp

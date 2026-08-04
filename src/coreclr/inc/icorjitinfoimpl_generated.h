@@ -24,6 +24,9 @@ public:
 bool isIntrinsic(
           CORINFO_METHOD_HANDLE ftn) override;
 
+bool canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn) override;
+
 bool notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn) override;
 

@@ -507,5 +507,13 @@ namespace Microsoft.Extensions
 
             bool IReadOnlyDictionary<string, string>.TryGetValue(string key, out string value) => _dictionary.TryGetValue(key, out value);
         }
+
+        public record PositionalRecordWithNullableParam(int Id, string? Name);
+
+        public class OptionsWithPositionalRecordCollection
+        {
+            public string? EnableFeatureX { get; set; }
+            public List<PositionalRecordWithNullableParam> Users { get; set; } = new();
+        }
     }
 }

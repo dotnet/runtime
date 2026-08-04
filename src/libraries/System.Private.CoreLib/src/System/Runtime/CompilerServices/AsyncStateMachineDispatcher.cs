@@ -19,7 +19,7 @@ namespace System.Runtime.CompilerServices
 #else
         [FieldOffset(4)]
 #endif
-        public AsyncStateMachineDispatcher? Dispatcher;
+        public Task? Dispatcher;
 
 #if TARGET_64BIT
         [FieldOffset(16)]
@@ -45,16 +45,21 @@ namespace System.Runtime.CompilerServices
 #endif
         }
 
-        internal static unsafe AsyncStateMachineDispatcher? GetActiveDispatcher()
+        internal object? NextContinuationForDiagnostics
         {
-            if (!IsSupported)
+            get
             {
-                return null;
-            }
+                IAsyncStateMachineBox? last = AsyncProfilerInfo.LastContinuation;
+                if (last is Task task)
+                {
+                    return task.ContinuationForDiagnostics;
+                }
 
-            AsyncStateMachineDispatcherInfo* info = AsyncStateMachineDispatcherInfo.t_current;
-            return info != null ? info->Dispatcher : null;
+                return last is not null && last.GetDiagnosticData(out _, out _, out object? next) ? next : null;
+            }
         }
+
+        internal bool ContinuationChainChanged => NextContinuationForDiagnostics != null;
 
         internal static unsafe IAsyncStateMachineBox CreateDispatcher(IAsyncStateMachineBox box, AsyncInstrumentation.Flags flags)
         {
@@ -63,42 +68,68 @@ namespace System.Runtime.CompilerServices
                 return box;
             }
 
-            if (box is AsyncStateMachineDispatcher)
+            IAsyncStateMachineDispatcher? dispatcherBox = box as IAsyncStateMachineDispatcher;
+
+            if (dispatcherBox?.IsLeaf == true)
             {
                 return box;
             }
 
             AsyncStateMachineDispatcherInfo* info = AsyncStateMachineDispatcherInfo.t_current;
-            AsyncStateMachineDispatcher? activeDispatcher = info != null ? info->Dispatcher : null;
+            Task? activeDispatcher = info != null ? info->Dispatcher : null;
 
-            if (activeDispatcher != null && ReferenceEquals(activeDispatcher.InnerBox, box))
+            if (activeDispatcher is AsyncStateMachineDispatcher reusedDispatcher)
+            {
+                if (ReferenceEquals(reusedDispatcher.InnerBox, box))
+                {
+                    if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
+                    {
+                        AsyncProfiler.CreateAsyncContext.Append(ref *info);
+                    }
+
+                    info->AsyncProfilerInfo.CurrentContinuationResumes = true;
+                    return reusedDispatcher;
+                }
+            }
+            else if (ReferenceEquals(activeDispatcher, box))
             {
                 if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
                 {
-                    AsyncProfiler.CreateAsyncContext.Append(activeDispatcher, ref info->AsyncProfilerInfo);
+                    AsyncProfiler.CreateAsyncContext.Append(ref *info);
                 }
 
-                return activeDispatcher;
+                Debug.Assert(dispatcherBox != null);
+                dispatcherBox!.IsLeaf = true;
+
+                info->AsyncProfilerInfo.CurrentContinuationResumes = true;
+                return box;
+            }
+
+            if (dispatcherBox is Task)
+            {
+                EmitCreateAsyncContext(info, dispatcherBox, flags);
+                dispatcherBox.IsLeaf = true;
+                return box;
             }
 
             AsyncStateMachineDispatcher dispatcher = new AsyncStateMachineDispatcher(box);
+            EmitCreateAsyncContext(info, dispatcher, flags);
+            return dispatcher;
+        }
 
+        private static unsafe void EmitCreateAsyncContext(AsyncStateMachineDispatcherInfo* info, IAsyncStateMachineDispatcher dispatcher, AsyncInstrumentation.Flags flags)
+        {
             if (AsyncInstrumentation.IsEnabled.CreateAsyncContext(flags) || AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
             {
-                ulong parentDispatcherId = AsyncProfiler.DispatcherIds.CaptureParentDispatcherId();
-                ulong dispatcherId = AsyncProfiler.DispatcherIds.GetDispatcherId(dispatcher);
-
-                if (activeDispatcher != null)
+                if (info != null)
                 {
-                    AsyncProfiler.CreateAsyncContext.Create(activeDispatcher, ref info->AsyncProfilerInfo, parentDispatcherId, dispatcherId);
+                    AsyncProfiler.CreateAsyncContext.Create(ref *info, dispatcher);
                 }
                 else
                 {
-                    AsyncProfiler.CreateAsyncContext.Create(parentDispatcherId, dispatcherId);
+                    AsyncProfiler.CreateAsyncContext.Create(dispatcher);
                 }
             }
-
-            return dispatcher;
         }
 
         internal static unsafe void UnwindAsyncFrame(object completingBox, AsyncInstrumentation.Flags flags)
@@ -128,7 +159,7 @@ namespace System.Runtime.CompilerServices
             }
 
             AsyncStateMachineDispatcherInfo* info = t_current;
-            AsyncStateMachineDispatcher? activeDispatcher = info != null ? info->Dispatcher : null;
+            Task? activeDispatcher = info != null ? info->Dispatcher : null;
             if (activeDispatcher == null)
             {
                 return;
@@ -141,27 +172,61 @@ namespace System.Runtime.CompilerServices
 
             bool methodEventEnabled = AsyncInstrumentation.IsEnabled.ResumeAsyncMethod(flags);
             bool callstackEnabled = AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags);
-            if (!methodEventEnabled && !(callstackEnabled && activeDispatcher.LastContinuation != null))
+            if (!methodEventEnabled && !(callstackEnabled && info->AsyncProfilerInfo.LastContinuation != null))
             {
                 return;
             }
 
-            ResumeAsyncMethod(activeDispatcher, info, box, methodEventEnabled, callstackEnabled);
+            ResumeAsyncMethod(info, box, methodEventEnabled, callstackEnabled);
         }
 
-        private static unsafe void ResumeAsyncMethod(AsyncStateMachineDispatcher activeDispatcher, AsyncStateMachineDispatcherInfo* info, IAsyncStateMachineBox box, bool methodEventEnabled, bool callstackEnabled)
+        private static unsafe void ResumeAsyncMethod(AsyncStateMachineDispatcherInfo* info, IAsyncStateMachineBox box, bool methodEventEnabled, bool callstackEnabled)
         {
-            bool callstackEventEnabled = callstackEnabled && activeDispatcher.ReachedLastContinuation;
+            bool callstackEventEnabled = callstackEnabled && info->AsyncProfilerInfo.ReachedLastContinuation;
 
-            if (!activeDispatcher.ReachedLastContinuation && ReferenceEquals(activeDispatcher.LastContinuation, box))
+            if (!info->AsyncProfilerInfo.ReachedLastContinuation && ReferenceEquals(info->AsyncProfilerInfo.LastContinuation, box))
             {
-                activeDispatcher.ReachedLastContinuation = true;
+                info->AsyncProfilerInfo.ReachedLastContinuation = true;
             }
 
             if (methodEventEnabled || callstackEventEnabled)
             {
-                AsyncProfiler.ResumeAsyncMethod.Resume(activeDispatcher, box, ref info->AsyncProfilerInfo);
+                AsyncProfiler.ResumeAsyncMethod.Resume(ref *info, box);
             }
+        }
+
+        internal static bool SuspendOrCompleteContext(ref AsyncStateMachineDispatcherInfo info, AsyncInstrumentation.Flags flags)
+        {
+            bool suspended = false;
+
+            try
+            {
+                // A node ends this dispatch in a suspend only when the method has not completed and
+                // it re-armed itself as a leaf (it will be resumed again under this same node).
+                // Otherwise the node is done: the method completed, or leaf-ship was handed off to a
+                // child context that took over the chain (this node won't be resumed again).
+                suspended = !info.AsyncProfilerInfo.CurrentContinuationCompleted && info.AsyncProfilerInfo.CurrentContinuationResumes;
+                if (suspended)
+                {
+                    if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(flags))
+                    {
+                        AsyncProfiler.SuspendAsyncContext.Suspend(ref info.AsyncProfilerInfo);
+                    }
+                }
+                else
+                {
+                    if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags))
+                    {
+                        AsyncProfiler.CompleteAsyncContext.Complete(ref info);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Best-effort instrumentation: swallow so the dispatch frame is always popped.
+            }
+
+            return suspended;
         }
 
         internal static unsafe void CompleteAsyncMethod(object completingBox, AsyncInstrumentation.Flags flags)
@@ -184,36 +249,31 @@ namespace System.Runtime.CompilerServices
         }
     }
 
-    internal sealed class AsyncStateMachineDispatcher : Task<VoidTaskResult>, IAsyncStateMachineBox
+    internal interface IAsyncStateMachineDispatcher
+    {
+        bool IsLeaf { get; set; }
+        ulong DispatcherId { get; }
+    }
+
+    internal sealed class AsyncStateMachineDispatcher : Task<VoidTaskResult>, IAsyncStateMachineBox, IAsyncStateMachineDispatcher
     {
         private IAsyncStateMachineBox? _inner;
 
         internal IAsyncStateMachineBox? InnerBox => _inner;
 
-        internal IAsyncStateMachineBox? LastContinuation;
-
-        internal bool ReachedLastContinuation;
-
-        internal object? NextContinuationForDiagnostics
-        {
-            get
-            {
-                IAsyncStateMachineBox? last = LastContinuation;
-                if (last is Task task)
-                {
-                    return task.ContinuationForDiagnostics;
-                }
-
-                return last is not null && last.GetDiagnosticData(out _, out _, out object? next) ? next : null;
-            }
-        }
-
-        internal bool ContinuationChainChanged => NextContinuationForDiagnostics != null;
-
         internal AsyncStateMachineDispatcher(IAsyncStateMachineBox inner) : base()
         {
             _inner = inner;
         }
+
+        // The wrapper is always the leaf dispatcher for its inner box, so this is permanently true;
+        bool IAsyncStateMachineDispatcher.IsLeaf
+        {
+            get => true;
+            set { }
+        }
+
+        ulong IAsyncStateMachineDispatcher.DispatcherId => (ulong)Id;
 
         internal sealed override void ExecuteDirectly(Thread? threadPoolThread) => MoveNext();
 
@@ -234,17 +294,23 @@ namespace System.Runtime.CompilerServices
             AsyncProfiler.InitInfo(ref info.AsyncProfilerInfo);
 
             info.Dispatcher = this;
+            info.AsyncProfilerInfo.DispatcherId = (ulong)Id;
             info.AsyncProfilerInfo.CurrentContinuation = inner;
 
-            LastContinuation = null;
-            ReachedLastContinuation = false;
+            AsyncInstrumentation.Flags flags = AsyncInstrumentation.LoadFlags();
 
             try
             {
-                InstrumentedMoveNext(ref info, inner);
+                if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
+                {
+                    AsyncProfiler.ResumeAsyncContext.Resume(ref info);
+                }
+
+                inner.MoveNext();
             }
             finally
             {
+                AsyncStateMachineDispatcherInfo.SuspendOrCompleteContext(ref info, flags);
                 refInfo = info.Next;
             }
         }
@@ -261,9 +327,6 @@ namespace System.Runtime.CompilerServices
         {
             _inner?.ClearStateUponCompletion();
             _inner = null;
-
-            LastContinuation = null;
-            ReachedLastContinuation = false;
         }
 
         public bool GetDiagnosticData(out ulong methodId, out int state, out object? nextContinuation)
@@ -278,32 +341,6 @@ namespace System.Runtime.CompilerServices
             state = -1;
             nextContinuation = null;
             return false;
-        }
-
-        private void InstrumentedMoveNext(ref AsyncStateMachineDispatcherInfo info, IAsyncStateMachineBox inner)
-        {
-            AsyncInstrumentation.Flags flags = AsyncInstrumentation.LoadFlags();
-            try
-            {
-                if (AsyncInstrumentation.IsEnabled.ResumeAsyncContext(flags))
-                {
-                    AsyncProfiler.ResumeAsyncContext.Resume(ref info);
-                }
-
-                inner.MoveNext();
-            }
-            finally
-            {
-                bool isCompleted = info.AsyncProfilerInfo.CurrentContinuationCompleted;
-                if (AsyncInstrumentation.IsEnabled.CompleteAsyncContext(flags) && isCompleted)
-                {
-                    AsyncProfiler.CompleteAsyncContext.Complete(this, ref info.AsyncProfilerInfo);
-                }
-                else if (AsyncInstrumentation.IsEnabled.SuspendAsyncContext(flags) && !isCompleted)
-                {
-                    AsyncProfiler.SuspendAsyncContext.Suspend(this, ref info.AsyncProfilerInfo);
-                }
-            }
         }
     }
 }

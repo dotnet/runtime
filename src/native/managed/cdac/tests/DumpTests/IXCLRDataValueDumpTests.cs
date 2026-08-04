@@ -242,7 +242,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
 
         // --- GenericInst and ByRef ---
         // GenericInstAndByRefVars(List<int> listArg, KeyValuePair<int,string> kvpArg, ref int refArg)
-        // Native DAC passes ByRef TypeHandle directly to GetTypeFieldValueFlags which
+        // Native DAC passes ByRef ITypeHandle directly to GetTypeFieldValueFlags which
         // returns DEFAULT (ELEMENT_TYPE_BYREF is not IsObjRef, not primitive, etc.).
         var genericInstArgs = GetArgumentValues("GenericInstAndByRefVars");
         AssertEach(genericInstArgs, new Dictionary<string, Action<IXCLRDataValue, string>>

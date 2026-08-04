@@ -53,7 +53,7 @@ void Lowering::MakeSrcContained(GenTree* parentNode, GenTree* childNode) const
 
         if (!isSafeToContainMem)
         {
-            JITDUMP("** Unsafe mem containment of [%06u] in [%06u}\n", m_compiler->dspTreeID(childNode),
+            JITDUMP("** Unsafe mem containment of [%06u] in [%06u]\n", m_compiler->dspTreeID(childNode),
                     m_compiler->dspTreeID(parentNode));
             assert(isSafeToContainMem);
         }
@@ -82,7 +82,7 @@ void Lowering::MakeSrcRegOptional(GenTree* parentNode, GenTree* childNode) const
 
     if (!isSafeToMarkRegOptional)
     {
-        JITDUMP("** Unsafe regOptional of [%06u] in [%06u}\n", m_compiler->dspTreeID(childNode),
+        JITDUMP("** Unsafe regOptional of [%06u] in [%06u]\n", m_compiler->dspTreeID(childNode),
                 m_compiler->dspTreeID(parentNode));
         assert(isSafeToMarkRegOptional);
     }
@@ -1306,15 +1306,17 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
                 bool           profileInconsistent = false;
                 for (unsigned i = 0; i < targetCnt; i++)
                 {
-                    FlowEdge* const edge          = uniqueSuccs[i];
-                    weight_t const  oldEdgeWeight = edge->getLikelyWeight();
+                    FlowEdge* const edge = uniqueSuccs[i];
                     edge->setLikelihood(newLikelihood * edge->getDupCount());
-                    weight_t const newEdgeWeight = edge->getLikelyWeight();
 
                     if (afterDefaultCondBlock->hasProfileWeight())
                     {
+                        // Recompute the target's weight from its incoming edges rather than adjusting
+                        // it incrementally: the earlier default-peel scaled afterDefaultCondBlock's
+                        // weight but left the switch targets' weights stale, so an incremental update
+                        // would accumulate on top of a stale value (see #130785).
                         BasicBlock* const targetBlock = edge->getDestinationBlock();
-                        targetBlock->increaseBBProfileWeight(newEdgeWeight - oldEdgeWeight);
+                        targetBlock->setBBProfileWeight(targetBlock->computeIncomingWeight());
                         profileInconsistent |= (targetBlock->NumSucc() > 0);
                     }
                 }
@@ -1427,8 +1429,8 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
 
     //
     // Build a bit table where a bit set to 0 corresponds to bbCase0 and a bit set to 1 corresponds to
-    // bbCase1. Simply use the first block in the jump table as bbCase1, later we can invert the bit
-    // table and/or swap the blocks if it's beneficial.
+    // bbCase1. Simply use the first edge in the jump table as case1Edge, later we can invert the bit
+    // table and/or swap the edges if it's beneficial.
     //
 
     FlowEdge* case0Edge = nullptr;
@@ -1454,11 +1456,6 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
         }
     }
 
-    BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
-    BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
-
-    JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
-
 #if defined(TARGET_64BIT) && defined(TARGET_XARCH)
     //
     // See if we can avoid a 8 byte immediate on 64 bit targets. If all upper 32 bits are 1
@@ -1471,9 +1468,14 @@ bool Lowering::TryLowerSwitchToBitTest(FlowEdge*   jumpTable[],
     if (~bitTable <= UINT32_MAX)
     {
         bitTable = ~bitTable;
-        std::swap(bbCase0, bbCase1);
+        std::swap(case0Edge, case1Edge);
     }
 #endif
+
+    BasicBlock* bbCase0 = case0Edge->getDestinationBlock();
+    BasicBlock* bbCase1 = case1Edge->getDestinationBlock();
+
+    JITDUMP("Lowering switch " FMT_BB " to bit test\n", bbSwitch->bbNum);
 
     //
     // Set successor edge dup counts to 1 each
@@ -1717,7 +1719,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
     if (arg->OperIsFieldList())
     {
-        JITDUMP("Argument is a FIELD_LIST\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a FIELD_LIST\n");
 
         GenTreeFieldList::Use* splitPoint = nullptr;
         // Split the field list into its register and stack parts.
@@ -1740,7 +1742,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
 
         if (splitPoint == nullptr)
         {
-            JITDUMP("No clean split point found, spilling FIELD_LIST\n", splitPoint->GetOffset());
+            JITDUMP("No clean split point found, spilling FIELD_LIST\n");
 
             unsigned int newLcl =
                 StoreFieldListToNewLocal(m_compiler->typGetObjLayout(callArg->GetSignatureClassHandle()),
@@ -1779,7 +1781,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     }
     else if (arg->OperIs(GT_BLK))
     {
-        JITDUMP("Argument is a BLK\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a BLK\n");
 
         GenTree*       blkAddr = arg->AsBlk()->Addr();
         target_ssize_t offset  = 0;
@@ -1794,12 +1796,12 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
             !m_compiler->lvaGetDesc(addrUse.Def()->AsLclVarCommon())->IsAddressExposed() &&
             IsInvariantInRange(addrUse.Def(), arg))
         {
-            JITDUMP("Reusing LCL_VAR\n", numRegs, stackSeg.Size);
+            JITDUMP("Reusing LCL_VAR\n");
             addrLcl = addrUse.Def()->AsLclVarCommon()->GetLclNum();
         }
         else
         {
-            JITDUMP("Spilling address\n", numRegs, stackSeg.Size);
+            JITDUMP("Spilling address\n");
             addrLcl = addrUse.ReplaceWithLclVar(m_compiler);
         }
 
@@ -1841,7 +1843,7 @@ void Lowering::SplitArgumentBetweenRegistersAndStack(GenTreeCall* call, CallArg*
     {
         assert(arg->OperIsLocalRead());
 
-        JITDUMP("Argument is a local\n", numRegs, stackSeg.Size);
+        JITDUMP("Argument is a local\n");
 
         GenTreeLclVarCommon* lcl = arg->AsLclVarCommon();
 
@@ -7019,18 +7021,14 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 
     if (callType == CT_INDIRECT)
     {
-#if !defined(TARGET_64BIT)
-        // On 32-bit targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
+#ifdef TARGET_X86
+        // On x86 targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
         const unsigned stackByteOffset = call->gtArgs.OutgoingArgsStackSize();
         src                            = m_compiler->gtNewIconNode(stackByteOffset, TYP_INT);
 #else
-        // On 64-bit targets, indirect calls may need the stub parameter value in InlinedCallFrame.m_Datum.
-        // If the stub parameter value is not needed, m_Datum will be initialized by the VM.
-        if (m_compiler->info.compPublishStubParam)
-        {
-            src = m_compiler->gtNewLclvNode(m_compiler->lvaStubArgumentVar, TYP_I_IMPL);
-        }
-#endif // !defined(TARGET_64BIT)
+        // On non-x86 targets, indirect calls clear InlinedCallFrame.m_Datum.
+        src = m_compiler->gtNewIconNode(0, TYP_I_IMPL);
+#endif // TARGET_X86
     }
     else
     {
@@ -9287,7 +9285,23 @@ void Lowering::FindInducedParameterRegisterLocals()
 
         GenTree* value = m_compiler->gtNewLclVarNode(remappedLclNum);
 
+#ifdef TARGET_WASM
+        if (varTypeIsSIMD(value) && !varTypeIsSIMD(fld))
+        {
+            // Unlike native targets, wasm cannot reinterpret a v128 local access as a scalar.
+            const unsigned laneOffset = fld->GetLclOffs() - regSegment->Offset;
+            const unsigned scalarSize = genTypeSize(fld);
+            assert((laneOffset % scalarSize) == 0);
+
+            const unsigned laneIndex = laneOffset / scalarSize;
+            value                    = m_compiler->gtNewSimdGetElementNode(fld->TypeGet(), value,
+                                                                           m_compiler->gtNewIconNode(static_cast<ssize_t>(laneIndex)),
+                                                                           fld->TypeGet(), genTypeSize(value));
+        }
+        else if (varTypeUsesFloatReg(value))
+#else
         if (varTypeUsesFloatReg(value))
+#endif // TARGET_WASM
         {
             assert(fld->GetLclOffs() == regSegment->Offset);
 

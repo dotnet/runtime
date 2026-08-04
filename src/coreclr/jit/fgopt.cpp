@@ -5153,10 +5153,13 @@ PhaseStatus Compiler::fgHeadTailMerge(bool early)
         assert(emptyBlock->isEmpty());
         assert(emptyBlock->KindIs(BBJ_RETURN, BBJ_THROW, BBJ_ALWAYS));
 
-        // Try to remove emptyBlock and make its preds jump directly to newTarget
+        // Try to remove emptyBlock and make its preds jump directly to newTarget.
+        // Under OSR, the original method entry (fgEntryBB) has an artificial bbRefs
+        // bump to keep it live until morph un-protects it; removing it here would
+        // leave that ref dangling and trip asserts in fgRemoveBlock.
         //
-        bool canRemove =
-            !emptyBlock->HasFlag(BBF_DONT_REMOVE) && (emptyBlock != fgFirstBB) && (emptyBlock != fgOSREntryBB);
+        bool canRemove = !emptyBlock->HasFlag(BBF_DONT_REMOVE) && (emptyBlock != fgFirstBB) &&
+                         (emptyBlock != fgOSREntryBB) && (!opts.IsOSR() || (emptyBlock != fgEntryBB));
         if (canRemove)
         {
             for (BasicBlock* const pred : emptyBlock->PredBlocksEditing())

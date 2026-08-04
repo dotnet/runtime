@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <!-- Needed for CLRTestTargetUnsupported -->
+    <RequiresProcessIsolation Condition="'$(FeatureMultithreading)' != 'true'">true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestPriority>1</CLRTestPriority>
-    <!-- Issue #22339 -->
-    <GCStressIncompatible>true</GCStressIncompatible>
+    <CLRTestTargetUnsupported Condition="'$(FeatureMultithreading)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="RecursiveException.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

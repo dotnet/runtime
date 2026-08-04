@@ -116,13 +116,13 @@ namespace System.Tests
         public static IEnumerable<object[]> Parse_Preserve_TrailingZero_TestData()
         {
             yield return new object[] { "0.00", "0.00" };
-            yield return new object[] { "0." + new string('0', 6176), "0." + new string('0', 6176) };
-            yield return new object[] { "0." + new string('0', 10000), "0." + new string('0', 6176) };
-            yield return new object[] { "0." + new string('0', 10000) + "1234567", "0." + new string('0', 6176) };
+            yield return new object[] { "0." + new string('0', 6176), "0E-6176" };
+            yield return new object[] { "0." + new string('0', 10000), "0E-6176" };
+            yield return new object[] { "0." + new string('0', 10000) + "1234567", "0E-6176" };
             yield return new object[] { "0e-2", "0.00" };
-            yield return new object[] { "0e-6176", "0." + new string('0', 6176) };
-            yield return new object[] { "0e-10000", "0." + new string('0', 6176) };
-            yield return new object[] { "0.123e-10000", "0." + new string('0', 6176) };
+            yield return new object[] { "0e-6176", "0E-6176" };
+            yield return new object[] { "0e-10000", "0E-6176" };
+            yield return new object[] { "0.123e-10000", "0E-6176" };
         }
 
         public static IEnumerable<object[]> Parse_Invalid_TestData()
@@ -392,32 +392,92 @@ namespace System.Tests
             {
                 yield return new object[] { Decimal128.Parse("-0"), "G", defaultFormat, "-0" };
                 yield return new object[] { Decimal128.NegativeZero, "G", defaultFormat, "-0" };
+
+                // A signed zero is a distinct IEEE value, so the sign survives every specifier, as it does for double
+                yield return new object[] { Decimal128.NegativeZero, "E2", defaultFormat, "-0.00E+000" };
+                yield return new object[] { Decimal128.NegativeZero, "F2", defaultFormat, "-0.00" };
+                yield return new object[] { Decimal128.NegativeZero, "N2", defaultFormat, "-0.00" };
+                yield return new object[] { Decimal128.NegativeZero, "P0", defaultFormat, "-0 %" };
+                yield return new object[] { Decimal128.NegativeZero, "C2", defaultFormat, "(\u00A40.00)" };
+                yield return new object[] { Decimal128.NegativeZero, "0.00", defaultFormat, "-0.00" };
+                yield return new object[] { Decimal128.Parse("-0e2"), "F2", defaultFormat, "-0.00" };
+                yield return new object[] { Decimal128.Parse("-0.001"), "F2", defaultFormat, "-0.00" };
                 yield return new object[] { Decimal128.Parse("-0.0000"), "G", defaultFormat, "-0.0000" };
                 yield return new object[] { Decimal128.Parse("0"), "G", defaultFormat, "0" };
                 yield return new object[] { Decimal128.Zero, "G", defaultFormat, "0" };
                 yield return new object[] { Decimal128.Parse("0.0000"), "G", defaultFormat, "0.0000" };
-                yield return new object[] { Decimal128.Parse($"{Int128.MinValue}"), "G", defaultFormat, "-170141183460469231731687303715884100000" };
-                yield return new object[] { Decimal128.Parse($"{Int128.MaxValue}"), "G", defaultFormat, "170141183460469231731687303715884100000" };
-                yield return new object[] { Decimal128.Parse("3e6144"), "G", defaultFormat, "3" + new string('0', 6144) };
-                yield return new object[] { Decimal128.Parse("-3e6144"), "G", defaultFormat, "-3" + new string('0', 6144) };
+                yield return new object[] { Decimal128.Parse($"{Int128.MinValue}"), "G", defaultFormat, "-1.701411834604692317316873037158841E+38" };
+                yield return new object[] { Decimal128.Parse($"{Int128.MaxValue}"), "G", defaultFormat, "1.701411834604692317316873037158841E+38" };
+                yield return new object[] { Decimal128.Parse("3e6144"), "G", defaultFormat, "3." + new string('0', 33) + "E+6144" };
+                yield return new object[] { Decimal128.Parse("-3e6144"), "G", defaultFormat, "-3." + new string('0', 33) + "E+6144" };
                 yield return new object[] { Decimal128.Parse("-4567"), "G", defaultFormat, "-4567" };
                 yield return new object[] { Decimal128.Parse("-4567.891"), "G", defaultFormat, "-4567.891" };
                 yield return new object[] { Decimal128.Parse("0"), "G", defaultFormat, "0" };
                 yield return new object[] { Decimal128.Parse("4567"), "G", defaultFormat, "4567" };
                 yield return new object[] { Decimal128.Parse("4567.891"), "G", defaultFormat, "4567.891" };
 
+                // A positive quantum exponent has no fixed-point spelling, so scientific notation is required
+                yield return new object[] { Decimal128.Parse("1e7"), "G", defaultFormat, "1E+07" };
+                yield return new object[] { Decimal128.Parse("10e6"), "G", defaultFormat, "1.0E+07" };
+                yield return new object[] { Decimal128.Parse("0e2"), "G", defaultFormat, "0E+02" };
+                yield return new object[] { Decimal128.Parse("-0e2"), "G", defaultFormat, "-0E+02" };
+                yield return new object[] { Decimal128.Parse("0.0001"), "G", defaultFormat, "0.0001" };
+                yield return new object[] { Decimal128.Parse("0.00001"), "G", defaultFormat, "1E-05" };
+                yield return new object[] { Decimal128.Parse("0.000100"), "G", defaultFormat, "0.000100" };
+                yield return new object[] { Decimal128.MaxValue, "G", defaultFormat, "9." + new string('9', 33) + "E+6144" };
+                yield return new object[] { Decimal128.MinValue, "G", defaultFormat, "-9." + new string('9', 33) + "E+6144" };
+                yield return new object[] { Decimal128.Epsilon, "G", defaultFormat, "1E-6176" };
+
+                // The general specifier honors a precision specifier, whereas the roundtrip specifier ignores it
+                yield return new object[] { Decimal128.Parse("1234"), "G3", defaultFormat, "1.23E+03" };
+                yield return new object[] { Decimal128.Parse("999"), "G2", defaultFormat, "1E+03" };
+                yield return new object[] { Decimal128.Parse("1." + new string('0', 33)), "G1", defaultFormat, "1" };
+                yield return new object[] { Decimal128.MaxValue, "G1", defaultFormat, "1E+6145" };
+                yield return new object[] { Decimal128.Parse("1234567890123456789012345678901234"), "R5", defaultFormat, "1234567890123456789012345678901234" };
+                yield return new object[] { Decimal128.Parse("1234567890123456789012345678901234"), "G5", defaultFormat, "1.2346E+33" };
+
+                // Rounding drops trailing coefficient digits without changing the quantum exponent
+                yield return new object[] { Decimal128.Parse("10.00000"), "G2", defaultFormat, "10" };
+                yield return new object[] { Decimal128.Parse("10.00000"), "G3", defaultFormat, "10" };
+                yield return new object[] { Decimal128.Parse("1000.400"), "G4", defaultFormat, "1000" };
+                yield return new object[] { Decimal128.Parse("1000.500"), "G3", defaultFormat, "1E+03" };
+                yield return new object[] { Decimal128.Parse("100.0"), "G2", defaultFormat, "1E+02" };
+                yield return new object[] { Decimal128.Parse("0.00012345"), "G2", defaultFormat, "0.00012" };
+
+                // Ties round to even, as IEEE 754 §5.12.1 requires of every conversion to a character
+                // sequence, including the custom formats where the binary types round away from zero
+                yield return new object[] { Decimal128.Parse("0.5"), "F0", defaultFormat, "0" };
+                yield return new object[] { Decimal128.Parse("1.5"), "F0", defaultFormat, "2" };
+                yield return new object[] { Decimal128.Parse("2.5"), "F0", defaultFormat, "2" };
+                yield return new object[] { Decimal128.Parse("3.5"), "F0", defaultFormat, "4" };
+                yield return new object[] { Decimal128.Parse("-0.5"), "F0", defaultFormat, "-0" };
+                yield return new object[] { Decimal128.Parse("-2.5"), "F0", defaultFormat, "-2" };
+                yield return new object[] { Decimal128.Parse("2.500"), "F0", defaultFormat, "2" };
+                yield return new object[] { Decimal128.Parse("2.5001"), "F0", defaultFormat, "3" };
+                yield return new object[] { Decimal128.Parse("2.4999"), "F0", defaultFormat, "2" };
+                yield return new object[] { Decimal128.Parse("0.25"), "F1", defaultFormat, "0.2" };
+                yield return new object[] { Decimal128.Parse("0.35"), "F1", defaultFormat, "0.4" };
+                yield return new object[] { Decimal128.Parse("1.25"), "E1", defaultFormat, "1.2E+000" };
+                yield return new object[] { Decimal128.Parse("12.5"), "N0", defaultFormat, "12" };
+                yield return new object[] { Decimal128.Parse("12.5"), "G2", defaultFormat, "12" };
+                yield return new object[] { Decimal128.Parse("1000.500"), "G4", defaultFormat, "1000" };
+                yield return new object[] { Decimal128.Parse("0.25"), "0.0", defaultFormat, "0.2" };
+                yield return new object[] { Decimal128.Parse("0.75"), "0.0", defaultFormat, "0.8" };
+                yield return new object[] { Decimal128.Parse("1.25"), "#.#", defaultFormat, "1.2" };
+                yield return new object[] { Decimal128.Parse("1.75"), "#.#", defaultFormat, "1.8" };
+
                 yield return new object[] { Decimal128.Parse("2468"), "N", defaultFormat, "2,468.00" };
 
                 yield return new object[] { Decimal128.Parse("2467"), "[#-##-#]", defaultFormat, "[2-46-7]" };
 
-                yield return new object[] { Decimal128.Parse("4e-6177"), "G", defaultFormat, "0." + new string('0', 6176) };
-                yield return new object[] { Decimal128.Parse("5e-6177"), "G", defaultFormat, "0." + new string('0', 6176) };
-                yield return new object[] { Decimal128.Parse("5.00000000000000000000000000000000000000001e-6177"), "G", defaultFormat, "0." + new string('0', 6175) + "1" };
-                yield return new object[] { Decimal128.Parse("6e-6177"), "G", defaultFormat, "0." + new string('0', 6175) + "1" };
-                yield return new object[] { Decimal128.Parse("-4e-6177"), "G", defaultFormat, "-0." + new string('0', 6176) };
-                yield return new object[] { Decimal128.Parse("-5e-6177"), "G", defaultFormat, "-0." + new string('0', 6176) };
-                yield return new object[] { Decimal128.Parse("-5.00000000000000000000000000000000000000001e-6177"), "G", defaultFormat, "-0." + new string('0', 6175) + "1" };
-                yield return new object[] { Decimal128.Parse("-6e-6177"), "G", defaultFormat, "-0." + new string('0', 6175) + "1" };
+                yield return new object[] { Decimal128.Parse("4e-6177"), "G", defaultFormat, "0E-6176" };
+                yield return new object[] { Decimal128.Parse("5e-6177"), "G", defaultFormat, "0E-6176" };
+                yield return new object[] { Decimal128.Parse("5.00000000000000000000000000000000000000001e-6177"), "G", defaultFormat, "1E-6176" };
+                yield return new object[] { Decimal128.Parse("6e-6177"), "G", defaultFormat, "1E-6176" };
+                yield return new object[] { Decimal128.Parse("-4e-6177"), "G", defaultFormat, "-0E-6176" };
+                yield return new object[] { Decimal128.Parse("-5e-6177"), "G", defaultFormat, "-0E-6176" };
+                yield return new object[] { Decimal128.Parse("-5.00000000000000000000000000000000000000001e-6177"), "G", defaultFormat, "-1E-6176" };
+                yield return new object[] { Decimal128.Parse("-6e-6177"), "G", defaultFormat, "-1E-6176" };
 
             }
         }
@@ -455,6 +515,50 @@ namespace System.Tests
             }
             Assert.Equal(expected.Replace('e', 'E'), f.ToString(format.ToUpperInvariant(), provider));
             Assert.Equal(expected.Replace('E', 'e'), f.ToString(format.ToLowerInvariant(), provider));
+        }
+
+        public static IEnumerable<object[]> ToString_Roundtrip_TestData()
+        {
+            yield return new object[] { "0" };
+            yield return new object[] { "-0" };
+            yield return new object[] { "0.00" };
+            yield return new object[] { "0e2" };
+            yield return new object[] { "0e6111" };
+            yield return new object[] { "0e-6176" };
+            yield return new object[] { "-0e-6176" };
+            yield return new object[] { "1" };
+            yield return new object[] { "1.0" };
+            yield return new object[] { "1." + new string('0', 33) };
+            yield return new object[] { "1e7" };
+            yield return new object[] { "10e6" };
+            yield return new object[] { "1" + new string('0', 33) + "e1" };
+            yield return new object[] { "-4567.891" };
+            yield return new object[] { "0.0001" };
+            yield return new object[] { "0.00001" };
+            yield return new object[] { "0.000100" };
+            yield return new object[] { "170141183460469231731687303715884105728" };
+            yield return new object[] { new string('9', 34) + "e6111" };
+            yield return new object[] { "-" + new string('9', 34) + "e6111" };
+            yield return new object[] { "1e-6176" };
+            yield return new object[] { "1234567890123456789012345678901234e-6176" };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToString_Roundtrip_TestData))]
+        public static void ToString_Roundtrips_And_PreservesQuantum(string value)
+        {
+            Decimal128 expected = Decimal128.Parse(value, CultureInfo.InvariantCulture);
+
+            foreach (string format in new[] { null, "G", "g", "R", "r" })
+            {
+                string formatted = expected.ToString(format, CultureInfo.InvariantCulture);
+                Decimal128 actual = Decimal128.Parse(formatted, CultureInfo.InvariantCulture);
+                Assert.Equal(Decimal128.EncodeDecimal(expected), Decimal128.EncodeDecimal(actual));
+            }
+
+            // The roundtrip specifier ignores any precision specifier
+            Assert.Equal(expected.ToString("R", CultureInfo.InvariantCulture), expected.ToString("R1", CultureInfo.InvariantCulture));
+            Assert.Equal(expected.ToString("r", CultureInfo.InvariantCulture), expected.ToString("r5", CultureInfo.InvariantCulture));
         }
 
         [Theory]
@@ -3041,7 +3145,7 @@ namespace System.Tests
         [InlineData(0xFC00000000000000UL, 0x0000000000000000UL, 0xFC00000000000000UL, 0x0000000000000000UL)] // quantum(-NaN) = -NaN (propagated)
         public static void QuantumTest(ulong valueUpper, ulong valueLower, ulong expectedUpper, ulong expectedLower)
         {
-            Decimal128 result = Decimal128.Quantum(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(valueUpper, valueLower)));
+            Decimal128 result = Decimal128.GetQuantum(Unsafe.BitCast<UInt128, Decimal128>(new UInt128(valueUpper, valueLower)));
             Assert.Equal(new UInt128(expectedUpper, expectedLower), Unsafe.BitCast<Decimal128, UInt128>(result));
         }
 
@@ -3057,7 +3161,73 @@ namespace System.Tests
         {
             Decimal128 x = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(xUpper, xLower));
             Decimal128 y = Unsafe.BitCast<UInt128, Decimal128>(new UInt128(yUpper, yLower));
-            Assert.Equal(expected, Decimal128.SameQuantum(x, y));
+            Assert.Equal(expected, Decimal128.HaveSameQuantum(x, y));
+        }
+
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL)] // +0
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL)] // -0
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL)] // +1
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL)] // -Infinity
+        [InlineData(0x7C00000000000000UL, 0x0000000000000000UL)] // NaN
+        [InlineData(0x7DFFC00000000000UL, 0x00000000000004D2UL)] // NaN with reserved-bit garbage (binary copy preserves non-canonical bits)
+        public static void EncodeDecodeBinaryRoundTrips(ulong upper, ulong lower)
+        {
+            UInt128 bits = new UInt128(upper, lower);
+            Decimal128 value = Decimal128.DecodeBinary(bits);
+            Assert.Equal(bits, Decimal128.EncodeBinary(value));
+            Assert.Equal(bits, Unsafe.BitCast<Decimal128, UInt128>(value));
+        }
+
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL, 0x2208000000000000UL, 0x0000000000000000UL)] // +0
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL, 0x2208000000000000UL, 0x0000000000000001UL)] // +1
+        public static void EncodeDecimalKnownVectors(ulong bidUpper, ulong bidLower, ulong dpdUpper, ulong dpdLower)
+        {
+            UInt128 bid = new UInt128(bidUpper, bidLower);
+            UInt128 dpd = new UInt128(dpdUpper, dpdLower);
+            Assert.Equal(dpd, Decimal128.EncodeDecimal(Decimal128.DecodeBinary(bid)));
+            Assert.Equal(bid, Decimal128.EncodeBinary(Decimal128.DecodeDecimal(dpd)));
+        }
+
+        [Theory]
+        [InlineData(0x3040000000000000UL, 0x0000000000000000UL)] // +0
+        [InlineData(0xB040000000000000UL, 0x0000000000000000UL)] // -0
+        [InlineData(0x3040000000000000UL, 0x0000000000000001UL)] // +1
+        [InlineData(0x3041ED09BEAD87C0UL, 0x378D8E63FFFFFFFFUL)] // 34 nines (leading digit 9)
+        [InlineData(0x7800000000000000UL, 0x0000000000000000UL)] // +Infinity
+        [InlineData(0xF800000000000000UL, 0x0000000000000000UL)] // -Infinity
+        [InlineData(0x7C00000000000000UL, 0x0000000000000000UL)] // NaN
+        [InlineData(0x7C00000000000000UL, 0x00000000000004D2UL)] // NaN with payload
+        public static void EncodeDecodeDecimalRoundTrips(ulong upper, ulong lower)
+        {
+            UInt128 bits = new UInt128(upper, lower);
+            Decimal128 value = Decimal128.DecodeBinary(bits);
+            Assert.Equal(bits, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.DecodeDecimal(Decimal128.EncodeDecimal(value))));
+        }
+
+        [Fact]
+        public static void CrossEncodingCanonicalizesNaN()
+        {
+            // The bits between the signaling bit and the payload are reserved; a cross-encoding conversion drops them.
+            UInt128 reservedMask = new UInt128(0x01FF_C000_0000_0000UL, 0x0000_0000_0000_0000UL);
+            UInt128 signalingBit = new UInt128(0x0200_0000_0000_0000UL, 0x0000_0000_0000_0000UL);
+            UInt128 canonicalNaN = new UInt128(0x7C00_0000_0000_0000UL, 0x0000_0000_0000_04D2UL);
+
+            // BID -> DPD drops reserved-bit garbage while preserving the sign, marker, signaling bit, and payload.
+            UInt128 canonicalDpd = Decimal128.EncodeDecimal(Decimal128.DecodeBinary(canonicalNaN));
+            UInt128 garbageDpd = Decimal128.EncodeDecimal(Decimal128.DecodeBinary(canonicalNaN | reservedMask));
+            Assert.Equal(canonicalDpd, garbageDpd);
+            Assert.Equal(UInt128.Zero, garbageDpd & reservedMask);
+
+            // DPD -> BID canonicalizes the same way.
+            Assert.Equal(canonicalNaN, Decimal128.EncodeBinary(Decimal128.DecodeDecimal(canonicalDpd | reservedMask)));
+
+            // The signaling bit is preserved both ways (IEEE 754 exceptions are treated as disabled, so sNaN is not quieted).
+            UInt128 signalingDpd = Decimal128.EncodeDecimal(Decimal128.DecodeBinary(canonicalNaN | signalingBit));
+            Assert.Equal(signalingBit, signalingDpd & signalingBit);
+            Assert.Equal(canonicalNaN | signalingBit, Decimal128.EncodeBinary(Decimal128.DecodeDecimal(signalingDpd)));
         }
 
 
@@ -3229,7 +3399,7 @@ namespace System.Tests
         [MemberData(nameof(DecimalIeee754IntelTestData.Decimal128Quantum), MemberType = typeof(DecimalIeee754IntelTestData))]
         public static void Quantum_IntelReferenceVectors(UInt128 value, UInt128 expected)
         {
-            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.Quantum(Unsafe.BitCast<UInt128, Decimal128>(value))));
+            Assert.Equal(expected, Unsafe.BitCast<Decimal128, UInt128>(Decimal128.GetQuantum(Unsafe.BitCast<UInt128, Decimal128>(value))));
         }
 
         [ConditionalTheory(typeof(DecimalIeee754IntelTestData), nameof(DecimalIeee754IntelTestData.IsAvailable))]

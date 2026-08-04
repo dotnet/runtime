@@ -26,9 +26,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    // emitIns_Lane
-    // emitIns_Memarg_Lane
-
     const HWIntrinsic info(node);
     genConsumeMultiOpOperands(node);
 
@@ -40,7 +37,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             case HW_Category_SIMD:
             {
-                if ((info.id == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
+                if (info.id == NI_PackedSimd_Shuffle)
+                {
+                    assert(node->Op(3)->isContained());
+                    GetEmitter()->emitIns_V128Imm(ins, node->Op(3)->AsVecCon()->gtSimdVal.u8);
+                }
+                else if ((info.id == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
                 {
                     // A constant, fully in-range mask was lowered to an immediate i8x16.shuffle.
                     // prior codegen left the source on the value stack once (the mask
@@ -70,9 +72,35 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
             }
+            case HW_Category_MemoryStore:
+            case HW_Category_MemoryLoad:
+            {
+                emitAttr elemSize = emitActualTypeSize(node->GetSimdBaseType());
+                GenTree* addr     = nullptr;
+                bool     isMem    = node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr);
+                assert(isMem && addr != nullptr);
+
+                regNumber addrReg = GetMultiUseOperandReg(addr);
+                genEmitNullCheck(addrReg);
+
+                if (info.needsJumpTableFallback())
+                {
+                    genHWIntrinsicJumpTableFallback(node, info);
+                }
+                else if (HWIntrinsicInfo::HasImmediateOperand(info.id))
+                {
+                    GetEmitter()->emitIns_MemargLane(ins, elemSize, 0, info.GetImmediateLaneOperand());
+                }
+                else
+                {
+                    GetEmitter()->emitIns_I(ins, elemSize, 0);
+                }
+
+                break;
+            }
             default:
             {
-                NYI_WASM_SIMD("CodeGen::genHWIntrinsic: Unsupported category for table-driven intrinsic");
+                unreached();
             }
         }
     }
@@ -92,7 +120,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             default:
             {
-                NYI_WASM_SIMD("!codeGenIsTableDriven");
+                unreached();
             }
         }
     }
@@ -142,7 +170,11 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
     int               simdSize      = node->GetSimdSize();
     instruction const ins           = HWIntrinsicInfo::lookupIns(info.id, info.baseType, m_compiler);
     int               immUpperBound = HWIntrinsicInfo::lookupImmUpperBound(info.id, simdSize, info.baseType);
-    WasmValueType     resultType    = ActualTypeToWasmValueType(genActualType(node->TypeGet()));
+    WasmValueType     resultType    = WasmValueType::Invalid;
+    if (!node->TypeIs(TYP_VOID))
+    {
+        resultType = ActualTypeToWasmValueType(genActualType(node->TypeGet()));
+    }
 
     GenTree*  immOp  = node->GetImmOp();
     regNumber immReg = GetMultiUseOperandReg(immOp);
@@ -208,10 +240,16 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
                     GetEmitter()->emitIns_Lane(ins, static_cast<uint8_t>(i));
                     break;
                 }
+                case HW_Category_MemoryLoad:
+                case HW_Category_MemoryStore:
+                {
+                    emitAttr elemSize = emitActualTypeSize(node->GetSimdBaseType());
+                    GetEmitter()->emitIns_MemargLane(ins, elemSize, 0, static_cast<uint8_t>(i));
+                    break;
+                }
                 default:
                 {
-                    NYI_WASM_SIMD(
-                        "CodeGen::genHWIntrinsicJumpTableFallback: Unsupported category for jump table intrinsic");
+                    unreached();
                 }
             }
             // proper branch depth is immUpperBound + 1 - i; The $inner block accounts for the + 1.
