@@ -1849,15 +1849,18 @@ RtlVirtualUnwind (
     *EstablisherFrame = 0;
 
     // Reverse-pinvoke frames (UnmanagedCallersOnly methods and reverse P/Invoke IL stubs) are called from
-    // native code, so terminate the R2R walk at this boundary.
+    // native code, so terminate the R2R walk at this boundary. Funclets share their parent method's GC info,
+    // so exclude them: a funclet is entered either from managed code (a non-exceptional finally) or from the
+    // VM's CallFunclet helpers, never directly across the reverse-pinvoke boundary.
     bool callerIsNative = false;
     {
         EECodeInfo codeInfo;
-        codeInfo.Init((PCODE)ControlPc);
+        codeInfo.Init(static_cast<PCODE>(ControlPc));
         if (codeInfo.IsValid())
         {
             GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
-            callerIsNative = gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME;
+            callerIsNative = (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME) &&
+                             !codeInfo.IsFunclet();
         }
     }
 
