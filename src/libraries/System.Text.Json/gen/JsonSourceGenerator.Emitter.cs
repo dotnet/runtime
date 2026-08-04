@@ -782,23 +782,14 @@ namespace System.Text.Json.SourceGeneration
                             continue;
                         }
 
-                        string patternTypeFQN = caseSpec.PatternType.FullyQualifiedName;
-
-                        if (patternTypeFQN == typeMetadata.TypeRef.FullyQualifiedName)
-                        {
-                            // Recursive case: the case type is the union type itself. A type pattern `T`
-                            // applied to a union is equivalent to `T or { Value: T }`, so a bare type
-                            // pattern here is also satisfied by the union instance itself. That both binds
-                            // the union rather than its payload -- making the converter recurse on the same
-                            // value forever -- and renders any later arm unreachable. Match the payload
-                            // explicitly so that only the unwrapped value is bound.
-                            writer.WriteLine($"{{ Value: {patternTypeFQN} caseValue{deconArmIndex} }} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
-                        }
-                        else
-                        {
-                            writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
-                        }
-
+                        // Match the payload through a property pattern rather than applying a type
+                        // pattern to the union itself. A type pattern `T` applied to a union is
+                        // equivalent to `T or { Value: T }`, so for a case whose type is the union
+                        // type itself the union instance also matches: that would bind the union
+                        // rather than its payload -- making the converter recurse on the same value
+                        // forever -- and would render every later arm unreachable. The explicit form
+                        // binds only the unwrapped value and behaves the same for all other cases.
+                        writer.WriteLine($"{{ Value: {caseSpec.PatternType.FullyQualifiedName} caseValue{deconArmIndex} }} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
                         deconArmIndex++;
                     }
 
