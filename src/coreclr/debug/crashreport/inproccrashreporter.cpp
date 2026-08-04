@@ -58,6 +58,8 @@ static const char CRASHREPORT_ARCHITECTURE_NAME[] =
     "riscv64";
 #elif defined(TARGET_LOONGARCH64)
     "loongarch64";
+#elif defined(TARGET_S390X)
+    "s390x";
 #else
 #error "Unsupported arch"
 #endif
@@ -1241,6 +1243,10 @@ CrashReportHelpers::WriteRegistersToJson(
     #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.__gregs[2]))
     #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.__gregs[8]))
 
+#elif defined(TARGET_S390X)
+    #define CRASH_MCREG_PC(uc) (static_cast<uint64_t>((uc)->uc_mcontext.psw.addr))
+    #define CRASH_MCREG_SP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[15]))
+    #define CRASH_MCREG_FP(uc) (static_cast<uint64_t>((uc)->uc_mcontext.gregs[11]))
 #else
     #error "Unsupported arch"
 #endif
