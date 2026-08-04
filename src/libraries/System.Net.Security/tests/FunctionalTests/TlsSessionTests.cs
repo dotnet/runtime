@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -3005,6 +3006,155 @@ namespace System.Net.Security.Tests
             }
             catch
             {
+            }
+        }
+
+        // Regression coverage for the socket-bound write-retry contract. When the socket send
+        // buffer fills, SSL_write reports WANT_WRITE (surfaced as DestinationTooSmall) and OpenSSL
+        // remembers the address of the plaintext buffer it was handed. Managed callers retry with a
+        // span over GC-tracked memory that the collector may have relocated in the meantime, so the
+        // session enables SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER: a retry must make progress rather
+        // than fail with SSL_R_BAD_WRITE_RETRY.
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task SocketBoundSession_WriteRetryWithRelocatedBuffer_Succeeds(bool forceGarbageCollection)
+        {
+            using X509Certificate2 serverCert = TestCertificates.GetServerCertificate();
+            string serverName = serverCert.GetNameInfo(X509NameType.SimpleName, forIssuer: false);
+
+            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            listener.Listen(1);
+            int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
+
+            using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            // Reduce the client's receive buffer so that, once the client stops reading, the server's
+            // socket send buffer fills quickly and drives SSL_write into WANT_WRITE.
+            clientUnderlying.ReceiveBufferSize = 512;
+            Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
+            Socket serverSocket = await listener.AcceptAsync();
+            await connect;
+
+            serverSocket.Blocking = false;
+            serverSocket.SendBufferSize = 512;
+            SafeSocketHandle serverHandle = serverSocket.SafeHandle;
+
+            using TlsContext ctx = TlsContext.CreateServer(new SslServerAuthenticationOptions
+            {
+                ServerCertificate = serverCert,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                ClientCertificateRequired = false,
+            });
+            using TlsSocketSession session = NewSocketSession(ctx, serverHandle);
+
+            using SslStream clientSsl = new SslStream(new NetworkStream(clientUnderlying, ownsSocket: false), leaveInnerStreamOpen: false, TestHelper.AllowAnyServerCertificate);
+            Task clientHandshake = clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+            {
+                TargetHost = serverName,
+                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                RemoteCertificateValidationCallback = TestHelper.AllowAnyServerCertificate,
+            });
+
+            Task serverHandshake = Task.Run(async () =>
+            {
+                while (true)
+                {
+                    TlsOperationStatus s = session.Handshake();
+                    if (s == TlsOperationStatus.Complete)
+                    {
+                        return;
+                    }
+                    if (s == TlsOperationStatus.NeedsCertificateValidation)
+                    {
+                        session.AcceptWithDefaultValidation();
+                        continue;
+                    }
+                    if (s == TlsOperationStatus.NeedMoreData || s == TlsOperationStatus.DestinationTooSmall)
+                    {
+                        await Task.Delay(5);
+                        continue;
+                    }
+                    throw new InvalidOperationException($"Unexpected handshake status: {s}");
+                }
+            });
+
+            await Task.WhenAll(clientHandshake, serverHandshake).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.True(session.IsHandshakeComplete);
+
+            // The client deliberately stops reading now. Encrypt-and-send a chunk repeatedly until the
+            // socket send buffer is full and SSL_write reports WANT_WRITE (DestinationTooSmall). At that
+            // point OpenSSL has stashed the address of 'chunk' as its pending write buffer. The chunk is
+            // small enough to live on the SOH so that a compacting collection can relocate it.
+            byte[] chunk = new byte[4096];
+            new Random(42).NextBytes(chunk);
+
+            TlsOperationStatus status;
+            int guard = 0;
+            while ((status = session.Write(chunk, out _)) == TlsOperationStatus.Complete)
+            {
+                Assert.True(++guard < 20000, "Socket send buffer never filled; could not induce WANT_WRITE.");
+            }
+            Assert.Equal(TlsOperationStatus.DestinationTooSmall, status);
+
+            byte[] retryBuffer;
+            if (forceGarbageCollection)
+            {
+                // Let the GC relocate the very array the pending write was issued from - the situation a
+                // correct caller cannot avoid, since it has no way to keep a span's memory pinned across
+                // two separate calls.
+                retryBuffer = chunk;
+                for (int i = 0; i < 3; i++)
+                {
+                    for (int j = 0; j < 200; j++)
+                    {
+                        GC.KeepAlive(new byte[4096]);
+                    }
+                    GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+                    GC.WaitForPendingFinalizers();
+                }
+            }
+            else
+            {
+                // Deterministically different address, same content.
+                retryBuffer = (byte[])chunk.Clone();
+                Assert.NotSame(chunk, retryBuffer);
+            }
+
+            // Drain on the client so the server's send buffer empties and the retried write can complete.
+            using CancellationTokenSource drainCts = new CancellationTokenSource();
+            Task drain = Task.Run(async () =>
+            {
+                byte[] sink = new byte[16 * 1024];
+                try
+                {
+                    while (await clientSsl.ReadAsync(sink, drainCts.Token) > 0)
+                    {
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                }
+                catch (IOException)
+                {
+                }
+            });
+
+            try
+            {
+                Stopwatch sw = Stopwatch.StartNew();
+                while ((status = session.Write(retryBuffer, out _)) == TlsOperationStatus.DestinationTooSmall)
+                {
+                    Assert.True(sw.Elapsed < TimeSpan.FromSeconds(30), "Retried write never completed.");
+                    await Task.Delay(10);
+                }
+
+                Assert.Equal(TlsOperationStatus.Complete, status);
+            }
+            finally
+            {
+                drainCts.Cancel();
+                await drain;
             }
         }
     }

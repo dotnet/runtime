@@ -77,10 +77,7 @@ ulong GetSize(TargetPointer address);
 | `ObjectHeader` | `SyncBlockValue` | `uint32` | Sync block value from the object header |
 | `String` | `m_FirstChar` | `pointer` | Address of the first UTF-16 character in the string |
 | `String` | `m_StringLength` | `uint32` | Length of the string in UTF-16 characters |
-| `SyncBlock` | `EnCInfo` | `pointer` | Pointer to Edit-and-Continue added-field information for the object; optional when Edit and Continue is not configured |
 | `SyncBlock` | `HashCode` | `uint32` | Hash code stored in the sync block |
-| `SyncBlock` | `InteropInfo` | `pointer` | Pointer to optional COM interop data associated with the sync block |
-| `SyncBlock` | `Lock` | `ObjectHandle` | Object handle referring to the System.Threading.Lock used for the object's monitor |
 
 ### Global variables used
 
