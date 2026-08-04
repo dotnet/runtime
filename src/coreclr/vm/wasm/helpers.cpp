@@ -798,15 +798,10 @@ extern "C" void STDCALL JIT_StackProbe()
     PORTABILITY_ASSERT("JIT_StackProbe is not implemented on wasm");
 }
 
-EXTERN_C FCDECL0(void, JIT_PollGC);
-FCIMPL0(void, JIT_PollGC)
+EXTERN_C void JIT_PollGCRarePath(void* sp)
 {
-    // Fast path: nothing to do unless a GC (or ThreadAbort / debugger suspend) is pending.
-    if (!g_TrapReturningThreads)
-        return;
-
     InlinedCallFrame inlinedCallFrame;
-    JIT_PInvokeBeginImpl((void*)callersStackPointer, &inlinedCallFrame);
+    JIT_PInvokeBeginImpl(sp, &inlinedCallFrame);
 
     Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
@@ -819,7 +814,27 @@ FCIMPL0(void, JIT_PollGC)
         inlinedCallFrame.Pop();
     }
 }
-FCIMPLEND
+
+EXTERN_C FCDECL0(void, JIT_PollGC);
+EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
+{
+    asm(
+        "i32.const 0\n"
+        "i32.load %[g_TrapReturningThreads]\n"
+        "if\n"
+        "  global.get __stack_pointer\n"
+        "  local.set 1\n"                 /* save previous __stack_pointer into the unused pep local */
+        "  local.get 0\n"                 /* callersStackPointer */
+        "  global.set __stack_pointer\n"
+        "  local.get 0\n"                 /* sp argument for the rare-path helper */
+        "  call %[JIT_PollGCRarePath]\n"
+        "  local.get 1\n"                 /* restore previous __stack_pointer */
+        "  global.set __stack_pointer\n"
+        "end_if\n"
+        "return\n"
+        :: [g_TrapReturningThreads] "i" (&g_TrapReturningThreads),
+           [JIT_PollGCRarePath] "i" (JIT_PollGCRarePath));
+}
 
 void InitJITHelpers1()
 {
