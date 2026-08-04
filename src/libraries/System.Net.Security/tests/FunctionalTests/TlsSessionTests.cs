@@ -3029,7 +3029,7 @@ namespace System.Net.Security.Tests
             int port = ((IPEndPoint)listener.LocalEndPoint!).Port;
 
             using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            // Shrink the client's receive window so that, once the client stops reading, the server's
+            // Reduce the client's receive buffer so that, once the client stops reading, the server's
             // socket send buffer fills quickly and drives SSL_write into WANT_WRITE.
             clientUnderlying.ReceiveBufferSize = 512;
             Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
