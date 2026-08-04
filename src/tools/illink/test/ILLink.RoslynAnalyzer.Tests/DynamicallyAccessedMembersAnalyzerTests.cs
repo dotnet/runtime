@@ -430,7 +430,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             }
             """;
 
-            // (6,29): warning IL2092: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 't' of method 'Derived.M(Type)' don't match overridden parameter 't' of method 'Base.M(Type)'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
+            // (6,108): warning IL2092: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 't' of method 'Derived.M(Type)' don't match overridden parameter 't' of method 'Base.M(Type)'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
             return VerifyDynamicallyAccessedMembersAnalyzerWithProjectReference(source, referencedSource,
                 VerifyCSNoCodeFix.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
                 .WithSpan(6, 108, 6, 109)
