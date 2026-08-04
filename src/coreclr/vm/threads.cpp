@@ -1878,7 +1878,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     DWORD threadId;
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
-    if (hThread != INVALID_HANDLE_VALUE)
+    if (hThread != NULL)
     {
         SetThreadName(hThread, pName);
 
