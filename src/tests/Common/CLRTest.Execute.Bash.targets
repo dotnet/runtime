@@ -470,13 +470,29 @@ run_browser_test() {
       __TestTimeout=300000
     fi
 
+    # WebAssembly cannot load native libraries at run time, so a test that calls into its own
+    # native code gets a dedicated corerun with that code statically linked in, built next to
+    # the test assemblies. Prefer it over the shared one from CORE_ROOT when it is present.
+    local corerun_js="${CORE_ROOT}/corerun.js"
+    if [ -f "${PWD}/corerun.js" ]
+    then
+      corerun_js="${PWD}/corerun.js"
+      # Tells PlatformDetection.PlatformDoesNotSupportNativeTestAssets that this test's native
+      # assets are available, so the checks guarding them can run.
+      export __TestNativeAssetsLinked=true
+    else
+      # Set explicitly so an ambient value can never be inherited.
+      export __TestNativeAssetsLinked=false
+    fi
+
     echo Running with node
     echo CORE_ROOT: ${CORE_ROOT}
+    echo corerun: ${corerun_js}
     echo ExePath: ${PWD}/${ExePath}
     echo CLRTestExecutionArguments: ${CLRTestExecutionArguments[@]}
     echo node version: `node -v`
     echo Timeout in ms: $__TestTimeout
-    cmd=( node --experimental-wasm-exnref --stack-size=8192 "${CORE_ROOT}/corerun.js" -c "${CORE_ROOT}" $(CoreRunArgs) "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
+    cmd=( node --experimental-wasm-exnref --stack-size=8192 "${corerun_js}" -c "${CORE_ROOT}" $(CoreRunArgs) "${PWD}/${ExePath}" "${CLRTestExecutionArguments[@]}" )
     echo Running: "${cmd[@]}"
     run_with_timeout $__TestTimeout "${cmd[@]}"
   fi
