@@ -24,26 +24,26 @@ namespace Microsoft.AspNetCore.Hosting.FunctionalTests
         private static readonly TimeSpan s_shutdownExitTimeout = TimeSpan.FromSeconds(30);
         private readonly ITestOutputHelper _output;
 
-        // The deployer launches the test app through the dotnet muxer. The NativeAOT and ReadyToRun
-        // test legs publish the test itself as a self-contained app, so there is no muxer sitting next
-        // to the running host for Process.Start to resolve. The child app would run on the ordinary
-        // shared framework anyway, so those legs gain nothing from these tests; the single file test
-        // runner turns RemoteExecutor off for the same reason.
-        public static bool IsPortableAppLaunchSupported => PlatformDetection.IsNotNativeAot && !PlatformDetection.IsReadyToRunCompiled;
+        // The deployer launches the test application through the dotnet muxer, so these tests can only run
+        // where the environment actually has one. That is a property of the environment rather than of how
+        // the tests themselves were published: legs that publish the tests as a self-contained application
+        // run under their own apphost, so nothing resolves a bare "dotnet" for them unless the machine
+        // happens to have one on PATH.
+        public static bool IsDotNetHostAvailable => DotNetCommands.DotNetMuxerPath is not null;
 
         public ShutdownTests(ITestOutputHelper output)
         {
             _output = output;
         }
 
-        [ConditionalFact(typeof(ShutdownTests), nameof(IsPortableAppLaunchSupported))]
+        [ConditionalFact(typeof(ShutdownTests), nameof(IsDotNetHostAvailable))]
         [PlatformSpecific(TestPlatforms.Linux)]
         public async Task ShutdownTestRun()
         {
             await ExecuteShutdownTest(nameof(ShutdownTestRun), "Run");
         }
 
-        [ConditionalFact(typeof(ShutdownTests), nameof(IsPortableAppLaunchSupported))]
+        [ConditionalFact(typeof(ShutdownTests), nameof(IsDotNetHostAvailable))]
         [PlatformSpecific(TestPlatforms.Linux)]
         public async Task ShutdownTestWaitForShutdown()
         {

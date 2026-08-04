@@ -18,8 +18,6 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
     /// </summary>
     public abstract class ApplicationDeployer : IDisposable
     {
-        public static readonly string DotnetCommandName = "dotnet";
-
         private readonly Stopwatch _stopwatch = new Stopwatch();
 
         private PublishedApplication _publishedApplication;
@@ -102,18 +100,21 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
 
         protected string GetDotNetExeForArchitecture()
         {
-            var executableName = DotnetCommandName;
-            // We expect x64 dotnet.exe to be on the path but we have to go searching for the x86 version.
+            // We have to go searching for the x86 version, everything else runs on the muxer the tests
+            // themselves were launched with.
             if (DotNetCommands.IsRunningX86OnX64(DeploymentParameters.RuntimeArchitecture))
             {
-                executableName = DotNetCommands.GetDotNetExecutable(DeploymentParameters.RuntimeArchitecture);
+                var executableName = DotNetCommands.GetDotNetExecutable(DeploymentParameters.RuntimeArchitecture);
                 if (!File.Exists(executableName))
                 {
-                    throw new Exception($"Unable to find '{executableName}'.'");
+                    throw new Exception($"Unable to find '{executableName}'.");
                 }
+
+                return executableName;
             }
 
-            return executableName;
+            return DotNetCommands.DotNetMuxerPath
+                ?? throw new Exception($"Unable to find '{DotNetCommands.DotNetExecutableName}'.");
         }
 
         protected void ShutDownIfAnyHostProcess(Process hostProcess)
