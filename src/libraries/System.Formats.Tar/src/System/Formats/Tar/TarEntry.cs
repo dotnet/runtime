@@ -760,23 +760,33 @@ namespace System.Formats.Tar
 
         // Determines the number of bytes to preallocate for the destination file.
         // The entry's declared Length comes directly from the (potentially attacker-controlled) tar
-        // header's size field, so when the data section is backed by a seekable SubReadStream over the
-        // archive stream, cap the preallocation to the number of bytes actually remaining in the archive
-        // stream. This prevents a crafted entry that declares a huge size but provides little or no actual
-        // data from causing an excessive up-front file preallocation (which can exhaust disk space or hang).
-        // Non-seekable or non-SubReadStream data sources (e.g. a user-provided DataStream) are preallocated
-        // using the full reported Length, since there is no archive stream to validate against.
+        // header's size field, so when the data section is backed by a SubReadStream over the archive
+        // stream, cap the preallocation to the number of bytes actually remaining in the archive stream.
+        // This prevents a crafted entry that declares a huge size but provides little or no actual data
+        // from causing an excessive up-front file preallocation (which can exhaust disk space or hang).
+        // Since extraction writes from the stream's current position, the remaining declared bytes
+        // (rather than the full Length) are compared against the remaining available archive data.
+        // When the archive stream isn't seekable, its true remaining length can't be determined without
+        // consuming it, so preallocation is skipped entirely rather than trusting the declared size.
+        // Non-SubReadStream data sources (e.g. a user-provided DataStream) are preallocated using the
+        // full remaining reported Length, since there is no archive stream to validate against.
         private long GetPreallocationSize()
         {
             long length = Length;
 
             if (length > 0 && _header._dataStream is SubReadStream subReadStream)
             {
+                long remainingDeclared = length - subReadStream.Position;
+
                 long? availableLength = subReadStream.AvailableLengthInSuperStream;
-                if (availableLength.HasValue && availableLength.Value < length)
+                if (!availableLength.HasValue)
                 {
-                    return availableLength.Value;
+                    // Unseekable archive stream: the declared size cannot be validated against the
+                    // actual remaining data, so don't preallocate based on it at all.
+                    return 0;
                 }
+
+                return Math.Min(remainingDeclared, availableLength.Value);
             }
 
             return length;

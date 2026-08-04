@@ -11,8 +11,10 @@ namespace System.Formats.Tar.Tests
 {
     public class TarEntry_ExtractToFile_Tests : TarTestsBase
     {
-        [Fact]
-        public void ExtractToFile_MismatchedSizeField_DoesNotPreallocateDeclaredSize()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ExtractToFile_MismatchedSizeField_DoesNotPreallocateDeclaredSize(bool seekableArchive)
         {
             // Craft an entry whose header declares a size much larger than the archive
             // actually contains. If the declared size were used verbatim for preallocation,
@@ -20,6 +22,8 @@ namespace System.Formats.Tar.Tests
             // (disk-exhaustion) even though almost no real data backs it. Instead, extraction
             // should only preallocate/write as much data as is actually available, producing
             // a truncated file rather than reserving the bogus declared size.
+            // Covers both a seekable archive stream (where the real remaining length can be
+            // determined) and an unseekable one (where preallocation must be skipped entirely).
             const long HugeDeclaredSize = 500_000_000; // 500 MB declared, far exceeding the tiny real archive.
             byte[] actualData = "small"u8.ToArray();
 
@@ -38,23 +42,30 @@ namespace System.Formats.Tar.Tests
             using TempDirectory root = new TempDirectory();
             string destination = Path.Join(root.Path, "file.bin");
 
-            using var extractStream = new MemoryStream(archive);
-            using var extractReader = new TarReader(extractStream);
-            TarEntry entryToExtract = extractReader.GetNextEntry(copyData: false);
-            Assert.NotNull(entryToExtract);
+            Stream extractStream = seekableArchive
+                ? new MemoryStream(archive)
+                : new WrappedStream(new MemoryStream(archive), canRead: true, canWrite: false, canSeek: false);
+            using (extractStream)
+            using (var extractReader = new TarReader(extractStream))
+            {
+                TarEntry entryToExtract = extractReader.GetNextEntry(copyData: false);
+                Assert.NotNull(entryToExtract);
 
-            // Should complete without hanging or exhausting disk trying to preallocate 500 MB
-            // for a few bytes of real data; the resulting file is truncated to the real data available.
-            entryToExtract.ExtractToFile(destination, overwrite: false);
+                // Should complete without hanging or exhausting disk trying to preallocate 500 MB
+                // for a few bytes of real data; the resulting file is truncated to the real data available.
+                entryToExtract.ExtractToFile(destination, overwrite: false);
+            }
 
             long extractedSize = new FileInfo(destination).Length;
             Assert.True(extractedSize < HugeDeclaredSize);
         }
 
         [Theory]
-        [InlineData(10, 100_000)] // declared size far larger than the entire remaining archive: extraction is bounded by available data, not the bogus declared size
-        [InlineData(100, 25)]     // declared size smaller than actual data: gets truncated to the declared size
-        public void ExtractToFile_MismatchedSizeField_MatchesAvailableData(int dataSize, long headerSizeField)
+        [InlineData(10, 100_000, true)]  // declared size far larger than the entire remaining archive: extraction is bounded by available data, not the bogus declared size
+        [InlineData(100, 25, true)]      // declared size smaller than actual data: gets truncated to the declared size
+        [InlineData(10, 100_000, false)] // same as above, but the archive stream is unseekable
+        [InlineData(100, 25, false)]
+        public void ExtractToFile_MismatchedSizeField_MatchesAvailableData(int dataSize, long headerSizeField, bool seekableArchive)
         {
             byte[] actualData = new byte[dataSize];
             Array.Fill<byte>(actualData, (byte)'X');
@@ -64,12 +75,18 @@ namespace System.Formats.Tar.Tests
             using TempDirectory root = new TempDirectory();
             string destination = Path.Join(root.Path, "file.bin");
 
-            using var extractStream = new MemoryStream(archive);
-            using var reader = new TarReader(extractStream);
-            TarEntry entry = reader.GetNextEntry(copyData: false);
-            Assert.NotNull(entry);
+            Stream extractStream = seekableArchive
+                ? new MemoryStream(archive)
+                : new WrappedStream(new MemoryStream(archive), canRead: true, canWrite: false, canSeek: false);
+            using (extractStream)
+            using (var reader = new TarReader(extractStream))
+            {
+                TarEntry entry = reader.GetNextEntry(copyData: false);
+                Assert.NotNull(entry);
 
-            entry.ExtractToFile(destination, overwrite: false);
+                entry.ExtractToFile(destination, overwrite: false);
+            }
+
             long extractedSize = new FileInfo(destination).Length;
 
             if (headerSizeField <= dataSize)
