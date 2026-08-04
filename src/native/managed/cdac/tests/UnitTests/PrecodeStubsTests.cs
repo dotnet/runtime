@@ -19,9 +19,6 @@ public class PrecodeStubsTests
         public string Name { get; }
         public required MockTarget.Architecture Arch { get; init; }
         public bool IsThumb { get; init; }
-        public required int ReadWidthOfPrecodeType { get; init; }
-        public required int OffsetOfPrecodeType { get; init; }
-        public required int ShiftOfPrecodeType { get; init; }
         // #if defined(TARGET_ARM64) && defined(TARGET_UNIX)
         //    return max(16*1024u, minipal_getpagesize());
         // #elif defined(TARGET_ARM)
@@ -57,41 +54,16 @@ public class PrecodeStubsTests
             Name = name;
         }
 
-        internal void WritePrecodeType(int precodeType,TargetTestHelpers targetTestHelpers, Span<byte> dest)
-        {
-            if (ReadWidthOfPrecodeType == 1)
-            {
-                byte value = (byte)(((byte)precodeType & 0xff) << ShiftOfPrecodeType);
-                // TODO: fill in the other bits with something
-                targetTestHelpers.Write(dest.Slice(OffsetOfPrecodeType, 1), value);
-            }
-            else if (ReadWidthOfPrecodeType == 2)
-            {
-                ushort value = (ushort)(((ushort)precodeType & 0xff) << ShiftOfPrecodeType);
-                // TODO: fill in the other bits with something
-                targetTestHelpers.Write(dest.Slice(OffsetOfPrecodeType, 2), value);
-            }
-            else
-            {
-                throw new InvalidOperationException("Don't know how to write a precode type of width {ReadWidthOfPrecodeType}");
-            }
-        }
     }
 
     internal static PrecodeTestDescriptor X64TestDescriptor = new PrecodeTestDescriptor("X64") {
         Arch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true },
-        ReadWidthOfPrecodeType = 1,
-        ShiftOfPrecodeType = 0,
-        OffsetOfPrecodeType = 0,
         StubCodePageSize = 0x4000u, // 16KiB
         StubPrecode = 0x4c,
         StubPrecodeSize = 24,
     };
     internal static PrecodeTestDescriptor Arm64TestDescriptor = new PrecodeTestDescriptor("Arm64") {
         Arch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true },
-        ReadWidthOfPrecodeType = 1,
-        ShiftOfPrecodeType = 0,
-        OffsetOfPrecodeType = 0,
         StubCodePageSize = 0x4000u, // 16KiB
         StubPrecode = 0x4a,
         StubPrecodeSize = 24,
@@ -99,9 +71,6 @@ public class PrecodeStubsTests
     };
     internal static PrecodeTestDescriptor LoongArch64TestDescriptor = new PrecodeTestDescriptor("LoongArch64") {
         Arch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true },
-        ReadWidthOfPrecodeType = 2,
-        ShiftOfPrecodeType = 5,
-        OffsetOfPrecodeType = 0,
         StubCodePageSize = 0x4000u, // 16KiB
         StubPrecode = 0x4,
         StubPrecodeSize = 24,
@@ -110,9 +79,6 @@ public class PrecodeStubsTests
     internal static PrecodeTestDescriptor Arm32Thumb = new PrecodeTestDescriptor("Arm32Thumb") {
         Arch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = false },
         IsThumb = true,
-        ReadWidthOfPrecodeType = 1,
-        ShiftOfPrecodeType = 0,
-        OffsetOfPrecodeType = 7,
         StubCodePageSize = 0x1000u, // 4KiB
         StubPrecode = 0xff,
         StubPrecodeSize = 12,
@@ -120,9 +86,6 @@ public class PrecodeStubsTests
 
     internal static PrecodeTestDescriptor RiscV64TestDescriptor = new PrecodeTestDescriptor("RiscV64") {
         Arch = new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true },
-        ReadWidthOfPrecodeType = 1,
-        ShiftOfPrecodeType = 0,
-        OffsetOfPrecodeType = 0,
         StubCodePageSize = 0x4000u, // 16KiB
         StubPrecode = 0x17,
         StubPrecodeSize = 24,
@@ -142,27 +105,18 @@ public class PrecodeStubsTests
         // FIXME: maybe make these a little more exotic
         yield return new object[] { new PrecodeTestDescriptor("Fake 32-bit LE") {
             Arch = arch32le,
-            ReadWidthOfPrecodeType = 1,
-            ShiftOfPrecodeType = 0,
-            OffsetOfPrecodeType = 0,
             StubCodePageSize = 0x4000u, // 16KiB
             StubPrecode = 0xa1,
             StubPrecodeSize = 24,
         }};
         yield return new object[] { new PrecodeTestDescriptor("Fake 32-bit BE") {
             Arch = arch32be,
-            ReadWidthOfPrecodeType = 1,
-            ShiftOfPrecodeType = 0,
-            OffsetOfPrecodeType = 0,
             StubCodePageSize = 0x4000u, // 16KiB
             StubPrecode = 0xa1,
             StubPrecodeSize = 24,
         }};
         yield return new object[] { new PrecodeTestDescriptor("Fake 64-bit BE") {
             Arch = arch64be,
-            ReadWidthOfPrecodeType = 1,
-            ShiftOfPrecodeType = 0,
-            OffsetOfPrecodeType = 0,
             StubCodePageSize = 0x4000u, // 16KiB
             StubPrecode = 0xa1,
             StubPrecodeSize = 24,
@@ -173,14 +127,14 @@ public class PrecodeStubsTests
     {
         foreach (var data in PrecodeTestDescriptorData())
         {
-            yield return new object[]{data[0], "c1"};
+            yield return new object[]{data[0], "c3"};
         }
     }
 
-    public static IEnumerable<object[]> PrecodeTestDescriptorDataVersion1()
+    public static IEnumerable<object[]> PrecodeTestDescriptorDataVersion3()
     {
         foreach (object[] data in PrecodeTestDescriptorData())
-            yield return [data[0], "c1"];
+            yield return [data[0], "c3"];
     }
 
     internal struct AllocationRange
@@ -250,8 +204,8 @@ public class PrecodeStubsTests
             };
 
             layout = targetTestHelpers.LayoutFields([
-                new(nameof(Data.StubPrecodeData_1.Type), DataType.uint8),
-                new(nameof(Data.StubPrecodeData_1.SecretParam), DataType.pointer),
+                new(nameof(Data.StubPrecodeData_2.SecretParam), DataType.pointer),
+                new(nameof(Data.StubPrecodeData_2.Type), DataType.uint8),
             ]);
             types[DataType.StubPrecodeData] = new Target.TypeInfo() {
                 Fields = layout.Fields,
@@ -267,8 +221,8 @@ public class PrecodeStubsTests
             };
 
             layout = targetTestHelpers.LayoutFields([
-                new(nameof(Data.InterpreterPrecodeData.Type), DataType.uint8),
                 new(nameof(Data.InterpreterPrecodeData.ByteCodeAddr), DataType.pointer),
+                new(nameof(Data.InterpreterPrecodeData.Type), DataType.uint8),
             ]);
             types[DataType.InterpreterPrecodeData] = new Target.TypeInfo()
             {
@@ -342,8 +296,8 @@ public class PrecodeStubsTests
             Builder.AddHeapFragment(stubCodeFragment);
 
             Span<byte> stubData = Builder.BorrowAddressRange(stubDataFragment.Address, (int)stubDataTypeInfo.Size);
-            Builder.TargetTestHelpers.Write(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_1.Type)].Offset, sizeof(byte)), test.StubPrecode);
-            Builder.TargetTestHelpers.WritePointer(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_1.SecretParam)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
+            Builder.TargetTestHelpers.Write(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_2.Type)].Offset, sizeof(byte)), test.StubPrecode);
+            Builder.TargetTestHelpers.WritePointer(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_2.SecretParam)].Offset, Builder.TargetTestHelpers.PointerSize), methodDesc);
             TargetCodePointer address = stubCodeFragment.Address;
             if (test.IsThumb) {
                 address = new TargetCodePointer(address.Value | 1);
@@ -375,8 +329,8 @@ public class PrecodeStubsTests
 
             Span<byte> stubData = Builder.BorrowAddressRange(stubDataFragment.Address, (int)stubDataTypeInfo.Size);
 
-            Builder.TargetTestHelpers.Write(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_1.Type)].Offset, sizeof(byte)), test.ThisPtrRetBufPrecode);
-            Builder.TargetTestHelpers.WritePointer(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_1.SecretParam)].Offset, Builder.TargetTestHelpers.PointerSize), thisPtrRetBufStubDataFragment.Address);
+            Builder.TargetTestHelpers.Write(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_2.Type)].Offset, sizeof(byte)), test.ThisPtrRetBufPrecode);
+            Builder.TargetTestHelpers.WritePointer(stubData.Slice(stubDataTypeInfo.Fields[nameof(Data.StubPrecodeData_2.SecretParam)].Offset, Builder.TargetTestHelpers.PointerSize), thisPtrRetBufStubDataFragment.Address);
 
             TargetCodePointer address = stubCodeFragment.Address;
             if (test.IsThumb) {
@@ -502,8 +456,8 @@ public class PrecodeStubsTests
     }
 
     [Theory]
-    [MemberData(nameof(PrecodeTestDescriptorDataVersion1))]
-    public void GetInterpreterCode_Version1_ReturnsByteCodeAddress(
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
+    public void GetInterpreterCode_Version3_ReturnsByteCodeAddress(
         PrecodeTestDescriptor test,
         string contractVersion)
     {
@@ -525,8 +479,8 @@ public class PrecodeStubsTests
     }
 
     [Theory]
-    [MemberData(nameof(PrecodeTestDescriptorDataVersion1))]
-    public void GetInterpreterCode_Version1NonInterpreter_ReturnsOriginalAddress(
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
+    public void GetInterpreterCode_Version3NonInterpreter_ReturnsOriginalAddress(
         PrecodeTestDescriptor test,
         string contractVersion)
     {
@@ -546,8 +500,8 @@ public class PrecodeStubsTests
     }
 
     [Theory]
-    [MemberData(nameof(PrecodeTestDescriptorDataVersion1))]
-    public void GetInterpreterCode_Version1NullByteCodeAddress_ReturnsOriginalAddress(
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
+    public void GetInterpreterCode_Version3NullByteCodeAddress_ReturnsOriginalAddress(
         PrecodeTestDescriptor test,
         string contractVersion)
     {
@@ -570,8 +524,8 @@ public class PrecodeStubsTests
     }
 
     [Theory]
-    [MemberData(nameof(PrecodeTestDescriptorDataVersion1))]
-    public void GetInterpreterCode_Version1UnreadableAddress_ReturnsOriginalAddress(
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
+    public void GetInterpreterCode_Version3UnreadableAddress_ReturnsOriginalAddress(
         PrecodeTestDescriptor test,
         string contractVersion)
     {

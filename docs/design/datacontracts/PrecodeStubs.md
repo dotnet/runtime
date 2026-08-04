@@ -18,9 +18,9 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
     TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(TargetCodePointer entryPoint);
 ```
 
-## Version 1
+## Version 3
 
-<!-- BEGIN GENERATED: usage contract=PrecodeStubs version=c1 -->
+<!-- BEGIN GENERATED: usage contract=PrecodeStubs version=c3 -->
 ### Data descriptors used
 
 | Data Descriptor | Field | Type | Meaning |
@@ -29,10 +29,19 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
 | `InterpByteCodeStart` | `Method` | `pointer` | pointer to the InterpMethod associated with the bytecode |
 | `InterpMethod` | `MethodDesc` | `pointer` | pointer to the MethodDesc for the interpreted method |
 | `InterpreterPrecodeData` | `ByteCodeAddr` | `pointer` | pointer to the InterpByteCodeStart for the interpreter bytecode |
+| `PrecodeMachineDescriptor` | `DynamicHelperPrecodeType` | `uint8` | Precode type byte for a dynamic helper precode |
+| `PrecodeMachineDescriptor` | `FixupBytes` | `uint8[]` | Assembly code of a FixupStub |
+| `PrecodeMachineDescriptor` | `FixupIgnoredBytes` | `uint8[]` | Bytes to ignore when comparing FixupBytes to an actual block of memory in the target process. |
+| `PrecodeMachineDescriptor` | `FixupStubPrecodeSize` | `uint8` | Byte size of FixupBytes and FixupIgnoredBytes |
+| `PrecodeMachineDescriptor` | `InterpreterPrecodeType` | `uint8` | Precode type byte for an interpreter precode |
 | `PrecodeMachineDescriptor` | `PInvokeImportPrecodeType` | `uint8` | Precode type byte for a P/Invoke import precode |
+| `PrecodeMachineDescriptor` | `StubBytes` | `uint8[]` | Assembly code of a StubPrecode |
 | `PrecodeMachineDescriptor` | `StubCodePageSize` | `uint32` | Size of a precode code page (in bytes) |
+| `PrecodeMachineDescriptor` | `StubIgnoredBytes` | `uint8[]` | Bytes to ignore when comparing StubBytes to an actual block of memory in the target process. |
+| `PrecodeMachineDescriptor` | `StubPrecodeSize` | `uint8` | Byte size of StubBytes and StubIgnoredBytes |
 | `PrecodeMachineDescriptor` | `StubPrecodeType` | `uint8` | precode sort byte for stub precodes |
 | `PrecodeMachineDescriptor` | `ThisPointerRetBufPrecodeType` | `uint8` | Precode type byte for a this-pointer return-buffer precode |
+| `PrecodeMachineDescriptor` | `UMEntryPrecodeType` | `uint8` | Precode type byte for a UMEntry precode |
 | `StubPrecodeData` | `SecretParam` | `pointer` | pointer to the MethodDesc associated with this stub precode or a second stub data pointer for other types |
 | `StubPrecodeData` | `Type` | `uint8` | precise sort of stub precode |
 | `ThisPtrRetBufPrecodeData` | `MethodDesc` | `pointer` | pointer to the MethodDesc associated with the ThisPtrRetBufPrecode |
@@ -46,7 +55,7 @@ _None._
 | Contract Name |
 | --- |
 | `PlatformMetadata` |
-<!-- END GENERATED: usage contract=PrecodeStubs version=c1 -->
+<!-- END GENERATED: usage contract=PrecodeStubs version=c3 -->
 
 The `CodePointerToInstrPointerMask` converts IP values that may include an arm Thumb bit
 (for example, extracted from disassembling a call instruction or from a snapshot of the

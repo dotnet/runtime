@@ -310,7 +310,7 @@ internal sealed class LargeStressMessageReader(Target target) : IStressMessageRe
     }
 }
 
-internal sealed class StressLog_1(Target target) : IStressLog
+internal sealed class StressLog_2(Target target) : IStressLog
 {
     private readonly StressLogTraversal traversal = new(target, new LargeStressMessageReader(target));
 

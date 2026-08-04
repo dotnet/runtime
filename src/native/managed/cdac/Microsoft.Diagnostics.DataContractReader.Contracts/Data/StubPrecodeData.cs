@@ -4,7 +4,7 @@
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
 [CdacType(nameof(DataType.StubPrecodeData))]
-internal sealed partial class StubPrecodeData_1 : IData<StubPrecodeData_1>
+internal sealed partial class StubPrecodeData_2 : IData<StubPrecodeData_2>
 {
     [Field] public partial TargetPointer SecretParam { get; }
     [Field] public partial byte Type { get; }

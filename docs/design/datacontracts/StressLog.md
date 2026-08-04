@@ -37,9 +37,9 @@ IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddres
 bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 ```
 
-## Version 1
+## Version 2
 
-<!-- BEGIN GENERATED: usage contract=StressLog version=c1 -->
+<!-- BEGIN GENERATED: usage contract=StressLog version=c2 -->
 ### Data descriptors used
 
 | Data Descriptor | Field | Type | Meaning |
@@ -90,7 +90,7 @@ bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 ### Contracts used
 
 _None._
-<!-- END GENERATED: usage contract=StressLog version=c1 -->
+<!-- END GENERATED: usage contract=StressLog version=c2 -->
 
 ```csharp
 bool HasStressLog()

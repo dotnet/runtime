@@ -6,12 +6,12 @@ using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi<Data.StubPrecodeData_1>
+internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi
 {
     public static TargetPointer StubPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
         TargetPointer stubPrecodeDataAddress = instrPointer + precodeMachineDescriptor.StubCodePageSize;
-        Data.StubPrecodeData_1 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_1>(stubPrecodeDataAddress);
+        Data.StubPrecodeData_2 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
         return stubPrecodeData.SecretParam;
     }
 
@@ -25,7 +25,7 @@ internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
     public static TargetPointer ThisPtrRetBufPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
         TargetPointer stubPrecodeDataAddress = instrPointer + precodeMachineDescriptor.StubCodePageSize;
-        Data.StubPrecodeData_1 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_1>(stubPrecodeDataAddress);
+        Data.StubPrecodeData_2 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
         Data.ThisPtrRetBufPrecodeData thisPtrRetBufPrecodeData = target.ProcessedData.GetOrAdd<Data.ThisPtrRetBufPrecodeData>(stubPrecodeData.SecretParam);
         return thisPtrRetBufPrecodeData.MethodDesc;
     }
@@ -40,15 +40,10 @@ internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
         return interpMethod.MethodDesc;
     }
 
-    public static byte StubPrecodeData_GetType(Data.StubPrecodeData_1 stubPrecodeData)
-    {
-        return stubPrecodeData.Type;
-    }
-
-    private static Data.StubPrecodeData_1 GetStubPrecodeData(TargetPointer stubInstrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
+    private static Data.StubPrecodeData_2 GetStubPrecodeData(TargetPointer stubInstrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
         TargetPointer stubPrecodeDataAddress = stubInstrPointer + precodeMachineDescriptor.StubCodePageSize;
-        return target.ProcessedData.GetOrAdd<Data.StubPrecodeData_1>(stubPrecodeDataAddress);
+        return target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
     }
 
     public static KnownPrecodeType? TryGetKnownPrecodeType(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
@@ -56,7 +51,7 @@ internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
         if (ReadBytesAndCompare(instrPointer, precodeMachineDescriptor.StubBytes!, precodeMachineDescriptor.StubIgnoredBytes!, target))
         {
             // get the actual type from the StubPrecodeData
-            Data.StubPrecodeData_1 stubPrecodeData = GetStubPrecodeData(instrPointer, target, precodeMachineDescriptor);
+            Data.StubPrecodeData_2 stubPrecodeData = GetStubPrecodeData(instrPointer, target, precodeMachineDescriptor);
             byte exactPrecodeType = stubPrecodeData.Type;
             if (exactPrecodeType == 0)
                 return null;
@@ -111,9 +106,9 @@ internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
     }
 }
 
-internal sealed class PrecodeStubs_1 : PrecodeStubsCommon<PrecodeStubs_1_Impl, Data.StubPrecodeData_1>
+internal sealed class PrecodeStubs_3 : PrecodeStubsCommon<PrecodeStubs_3_Impl>
 {
-    public PrecodeStubs_1(Target target) : base(target) { }
+    public PrecodeStubs_3(Target target) : base(target) { }
 
     public override TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(
         TargetCodePointer entryPoint)
@@ -124,7 +119,7 @@ internal sealed class PrecodeStubs_1 : PrecodeStubsCommon<PrecodeStubs_1_Impl, D
             if (!Target.IsAlignedToPointerSize(instrPointer))
                 return entryPoint;
 
-            if (PrecodeStubs_1_Impl.TryGetKnownPrecodeType(
+            if (PrecodeStubs_3_Impl.TryGetKnownPrecodeType(
                     instrPointer,
                     Target,
                     MachineDescriptor) is not KnownPrecodeType.Interpreter)
