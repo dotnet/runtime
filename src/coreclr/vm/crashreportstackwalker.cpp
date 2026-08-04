@@ -489,10 +489,12 @@ CrashReportGetExceptionForThread(
 // otherwise, another thread could call RestartEE during enumeration and allow
 // the managed threads being walked to leave their safe points.
 //
-// Do not wait for the ThreadStore lock while another suspension is starting or
-// ending. In particular, a Server GC coordinator may hold the lock while waiting
-// for a crashing parallel worker at a GC join. A fatal error already recorded on
-// a GC thread also means the interrupted GC may never complete.
+// Avoid calling SuspendEE when a suspension is already in progress (or unwinding) since
+// that can require waiting for the ThreadStore lock. Note that IsGCInProgress is set
+// after LockThreadStore acquires the lock, so this is a best-effort check.
+// In particular, a Server GC coordinator may hold the lock while waiting for a crashing
+// parallel worker at a GC join. A fatal error already recorded on a GC thread also means
+// the interrupted GC may never complete.
 //
 // Otherwise create a reporter-owned suspension. The result records whether a
 // stable suspension is unavailable, inherited, or created by the reporter so
