@@ -133,12 +133,11 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
         {
             yield return HostExecutableDirectory;
             yield return Directory.GetCurrentDirectory();
-            
-            const StringSplitOptions splitOptions = StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries;
+
             var path = Environment.GetEnvironmentVariable("PATH");
             if (!string.IsNullOrEmpty(path))
             {
-                foreach (var directory in path.Split(Path.PathSeparator, splitOptions))
+                foreach (var directory in path.Split(Path.PathSeparator))
                 {
                     yield return directory;
                 }
