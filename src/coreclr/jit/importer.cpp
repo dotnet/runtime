@@ -9473,12 +9473,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP("\nHave extra IL stack entry after tail await\n");
                         GenTree* val = impPopStack().val;
-                        if (varTypeIsStruct(val))
+                        if ((val->gtFlags & GTF_SIDE_EFFECT) != 0)
                         {
-                            val = impNormStructVal(val, CHECK_SPILL_ALL);
-                        }
+                            if (varTypeIsStruct(val))
+                            {
+                                val = impNormStructVal(val, CHECK_SPILL_ALL);
+                            }
 
-                        impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+                            impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+                        }
                     }
 
                     prefixFlags &= ~PREFIX_TAILCALL;

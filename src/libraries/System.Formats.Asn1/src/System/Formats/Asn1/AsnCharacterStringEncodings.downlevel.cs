@@ -6,6 +6,14 @@ using System.Diagnostics;
 
 namespace System.Formats.Asn1
 {
+    internal abstract class RestrictedAsciiSetEncoding : RestrictedAsciiStringEncoding
+    {
+        protected RestrictedAsciiSetEncoding(string allowedChars)
+            : base(allowedChars)
+        {
+        }
+    }
+
     internal abstract class RestrictedAsciiRangeEncoding : RestrictedAsciiStringEncoding
     {
         protected RestrictedAsciiRangeEncoding(byte minCharAllowed, byte maxCharAllowed)

@@ -1160,11 +1160,18 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  # Don't send arm/arm64 tests to Helix on internal: there is no internal Android
+                  # device queue, so those APKs fail with DEVICE_NOT_FOUND on the x86_64 emulator
+                  # queue. Keep building them, and keep sending x64 (its emulator queue works).
                   condition: >-
+                    and(
                     or(
                     eq(variables['librariesContainsChange'], true),
                     eq(variables['coreclrContainsChange'], true),
-                    eq(variables['isRollingBuild'], true))
+                    eq(variables['isRollingBuild'], true)),
+                    or(
+                    eq(variables['System.TeamProject'], 'public'),
+                    eq(variables['_archParameter'], '-arch x64')))
 
       #
       # iOS Simulator

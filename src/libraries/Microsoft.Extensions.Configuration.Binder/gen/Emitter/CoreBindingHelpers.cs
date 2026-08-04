@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
@@ -54,7 +55,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     Debug.Assert(_typeIndex.HasBindableMembers(objectType));
 
                     HashSet<string>? keys = null;
-                    static string GetCacheElement(MemberSpec member) => $@"""{member.ConfigurationKeyName}""";
+                    static string GetCacheElement(MemberSpec member) => SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true);
 
                     if (objectType.ConstructorParameters?.Select(m => GetCacheElement(m)) is IEnumerable<string> paramNames)
                     {
@@ -334,7 +335,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (ParameterSpec parameter in type.ConstructorParameters)
                 {
-                    string name = parameter.Name;
+                    string name = EscapeIdentifier(parameter.Name);
                     string argExpr = parameter.RefKind switch
                     {
                         RefKind.None => name,
@@ -368,8 +369,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {
                         // Properties bound through a matching constructor parameter don't have a local of their
                         // own; their bound value lives in the local named after the parameter.
-                        string valueExpr = property.MatchingCtorParam?.Name ?? property.Name;
-                        _writer.WriteLine($@"{property.Name} = {valueExpr},");
+                        string valueExpr = EscapeIdentifier(property.MatchingCtorParam?.Name ?? property.Name);
+                        _writer.WriteLine($@"{EscapeIdentifier(property.Name)} = {valueExpr},");
                     }
                     EmitEndBlock(endBraceTrailingSource: ";");
                 }
@@ -381,17 +382,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 void EmitBindImplForMember(MemberSpec member)
                 {
                     TypeSpec memberType = _typeIndex.GetTypeSpec(member.TypeRef);
-                    string parsedMemberDeclarationLhs = $"{memberType.TypeRef.FullyQualifiedName} {member.Name}";
+                    string escapedName = EscapeIdentifier(member.Name);
+                    string parsedMemberDeclarationLhs = $"{memberType.TypeRef.FullyQualifiedName} {escapedName}";
                     string configKeyName = member.ConfigurationKeyName;
 
                     switch (memberType)
                     {
                         case ParsableFromStringSpec { StringParsableTypeKind: StringParsableTypeKind.AssignFromSectionValue }:
                             {
-                                if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
+                                // string and object take the section value as-is, whether it is absent or explicitly null.
+                                if (member is ParameterSpec { ErrorOnFailedBinding: true })
                                 {
-                                    string condition = $@"if ({Identifier.configuration}[""{configKeyName}""] is not {parsedMemberDeclarationLhs})";
-                                    EmitThrowBlock(condition);
+                                    _writer.WriteLine($"{parsedMemberDeclarationLhs} = {Identifier.configuration}[{SymbolDisplay.FormatLiteral(configKeyName, quote: true)}];");
                                     _writer.WriteLine();
                                     return;
                                 }
@@ -410,7 +412,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     bool canBindToMember = this.EmitBindImplForMember(
                         member,
-                        member.Name,
+                        escapedName,
                         sectionPathExpr: GetSectionPathFromConfigurationExpression(configKeyName),
                         // Since we're binding to local variables, we can always get and set
                         canSet: true,
@@ -420,24 +422,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     if (canBindToMember)
                     {
-                        if (member is ParameterSpec parameter && parameter.ErrorOnFailedBinding)
+                        // A type that can hold null is left at its null default rather than treated as an error.
+                        if (member is ParameterSpec { ErrorOnFailedBinding: true } && !member.TypeRef.CanBeNull)
                         {
-                            // Add exception logic for parameter ctors; must be present in configuration object.
-                            // In case of Arrays and IEnumerable<T>, we emit extra block to handle collection. The throw block will not be `else` case at that time.
-                            TypeSpec typeSpec = _typeIndex.GetEffectiveTypeSpec(member.TypeRef);
-                            EmitThrowBlock(condition: typeSpec is ArraySpec || typeSpec.IsExactIEnumerableOfT ? $"if ({member.Name} is null)" : "else");
+                            _writer.WriteLine($$"""
+                                else
+                                {
+                                    throw new {{Identifier.InvalidOperationException}}("{{string.Format(ExceptionMessages.ParameterHasNoMatchingConfig, type.FullName, member.Name)}}");
+                                }
+                                """);
                         }
 
                         _writer.WriteLine();
                     }
-
-                    void EmitThrowBlock(string condition) =>
-                        _writer.WriteLine($$"""
-                            {{condition}}
-                            {
-                                throw new {{Identifier.InvalidOperationException}}("{{string.Format(ExceptionMessages.ParameterHasNoMatchingConfig, type.FullName, member.Name)}}");
-                            }
-                            """);
                 }
             }
 
@@ -924,7 +921,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     string containingTypeRef = property.IsStatic ? type.TypeRef.FullyQualifiedName : Identifier.instance;
                     EmitBindImplForMember(
                         property,
-                        memberAccessExpr: $"{containingTypeRef}.{property.Name}",
+                        memberAccessExpr: $"{containingTypeRef}.{EscapeIdentifier(property.Name)}",
                         GetSectionPathFromConfigurationExpression(property.ConfigurationKeyName),
                         canSet: property.CanSet,
                         canGet: property.CanGet,
@@ -1000,19 +997,40 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 EmitBlankLineIfRequired();
                                 string valueIdentifier = GetIncrementalIdentifier(Identifier.value);
-                                EmitStartBlock($@"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: ""{member.ConfigurationKeyName}"", out string? {valueIdentifier}))");
+
+                                // A non-nullable value type parameter cannot take null: without a declared default
+                                // that falls through to the caller's else-branch, which throws; with one it keeps the
+                                // default. An empty value still reaches the parse, which reports the conversion
+                                // failure as the reflection binder does.
+                                bool requireValue = bindingToLocal && !member.TypeRef.CanBeNull && member is ParameterSpec;
+
+                                // A parameter's declared default has to survive a null value.
+                                bool hasDeclaredDefault = bindingToLocal && member is ParameterSpec { ErrorOnFailedBinding: false };
+
+                                string valueCondition = requireValue ? $" && {valueIdentifier} is not null" : string.Empty;
+                                EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true)}, out string? {valueIdentifier}){valueCondition})");
 
                                 // Decide to emit the null check block for nullable types (e.g. int?).
                                 // We don't emit this block for types that can be assigned directly from IConfigurationSection.Value as the valueIdentifier value can assigned
                                 // anyway to the memberAccessExpr regardless of the nullability. This can reduce the emitted code size when assigning objects or strings which
-                                // are common cases.
-                                bool emitNullCheck = member.TypeRef.CanBeNull && stringParsableType.StringParsableTypeKind != StringParsableTypeKind.AssignFromSectionValue;
+                                // are common cases. A parameter with a declared default is the exception.
+                                bool emitNullCheck = member.TypeRef.CanBeNull &&
+                                    (stringParsableType.StringParsableTypeKind != StringParsableTypeKind.AssignFromSectionValue || hasDeclaredDefault);
+
+                                // TryConvertValue turns an empty value into null for Nullable<T>, but leaves other nullable
+                                // types to their type converter.
+                                bool treatEmptyValueAsNull = member.TypeRef.SpecialType is SpecialType.System_Nullable_T;
 
                                 // Nullable type can be set to null
                                 if (emitNullCheck)
                                 {
-                                    EmitStartBlock($"if ({valueIdentifier} is null)");
-                                    _writer.WriteLine($"{memberAccessExpr} = null;");
+                                    // A parameter's declared default outranks a null or empty value, as in BindParameter.
+                                    string nullValueExpr = hasDeclaredDefault ? member.DefaultValueExpr : "null";
+
+                                    EmitStartBlock(treatEmptyValueAsNull
+                                        ? $"if (string.IsNullOrEmpty({valueIdentifier}))"
+                                        : $"if ({valueIdentifier} is null)");
+                                    _writer.WriteLine($"{memberAccessExpr} = {nullValueExpr};");
                                     EmitEndBlock(); // End if-check for input type.
                                     EmitStartBlock($"else");
                                 }
@@ -1022,7 +1040,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     valueIdentifier,
                                     sectionPathExpr,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr};"),
-                                    checkForNullSectionValue: true);
+                                    checkForNullSectionValue: !(emitNullCheck && treatEmptyValueAsNull) && !requireValue);
 
                                 if (emitNullCheck)
                                 {
@@ -1146,6 +1164,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (member.CanGet)
                 {
+                    if (!canSet)
+                    {
+                        _writer.WriteLine($"{effectiveMemberType.TypeRef.FullyQualifiedName}? {tempIdentifier} = {memberAccessExpr};");
+                        EmitStartBlock($"if ({tempIdentifier} is not null)");
+                        EmitBindingLogic(
+                            effectiveMemberType,
+                            tempIdentifier,
+                            configArgExpr,
+                            InitializationKind.None,
+                            ValueDefaulting.None);
+                        EmitEndBlock();
+                        return;
+                    }
+
                     targetObjAccessExpr = memberAccessExpr;
                     initKind = InitializationKind.AssignmentWithNullCheck;
                 }
@@ -1507,7 +1539,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static string GetSectionFromConfigurationExpression(string configurationKeyName, bool addQuotes = true)
             {
-                string argExpr = addQuotes ? $@"""{configurationKeyName}""" : configurationKeyName;
+                string argExpr = addQuotes ? SymbolDisplay.FormatLiteral(configurationKeyName, quote: true) : configurationKeyName;
                 return $@"{Identifier.configuration}.{Identifier.GetSection}({argExpr})";
             }
 

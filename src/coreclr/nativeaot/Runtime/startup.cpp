@@ -42,8 +42,6 @@ LONG WINAPI RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs);
 int32_t RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 #endif
 
-extern "C" void PopulateDebugHeaders();
-
 static bool DetectCPUFeatures();
 
 extern RhConfig * g_pRhConfig;
@@ -371,9 +369,6 @@ extern "C" bool RhInitialize(bool isDll)
 
     if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
         return false;
-
-    // Populate the values needed for debugging
-    PopulateDebugHeaders();
 
     return true;
 }
