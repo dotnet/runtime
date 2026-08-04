@@ -261,6 +261,9 @@
       <MergedWrapperReferenceFolders Remove="@(OutOfProcessTestFolders)" />
       <!-- For merged project wrappers, include native libraries in all project references -->
       <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" Condition="'@(MergedWrapperReferenceFolders)' != ''" />
+      <!-- On WebAssembly a test's native code is a static library that has to be linked into the
+           wrapper's corerun, so the wrapper needs those too. -->
+      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(StaticLibSuffix)" Condition="'@(MergedWrapperReferenceFolders)' != '' and '$(TargetOS)' == 'browser'" />
     </ItemGroup>
     <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
         DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')"

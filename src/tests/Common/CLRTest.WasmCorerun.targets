@@ -103,7 +103,17 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     </ItemGroup>
 
     <PropertyGroup>
+      <!-- The corerun has to sit in the directory the test actually runs from, which is the
+           project's own output directory only for out-of-process tests, standalone builds, and
+           merged runner assemblies (those are the wrapper). A test merged into a wrapper runs from
+           the wrapper's directory instead, and CopyAllNativeProjectReferenceBinaries copies its
+           static library into the wrapper's output directory, so the wrapper's corerun links it. -->
+      <_WasmCorerunRunsFromOutDir Condition="'$(RequiresProcessIsolation)' == 'true' or
+                                             '$(BuildAsStandalone)' == 'true' or
+                                             '$(IsMergedTestRunnerAssembly)' == 'true'">true</_WasmCorerunRunsFromOutDir>
+
       <_WasmCorerunSkip Condition="'@(_WasmCorerunTestLib)' == ''">true</_WasmCorerunSkip>
+      <_WasmCorerunSkip Condition="'$(_WasmCorerunRunsFromOutDir)' != 'true' and '$(InMergedTestDirectory)' == 'true'">true</_WasmCorerunSkip>
     </PropertyGroup>
 
     <!-- The test declares a CMake project but it produced no static library for this platform;
@@ -112,10 +122,9 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
              Importance="Normal"
              Text="$(MSBuildProjectName): no native static libraries in $(OutDir), skipping the test-specific corerun." />
 
-    <!-- A test that carries its own host has to ship its whole output directory to Helix, which
-         only happens for out-of-process tests (they get an .OutOfProcessTest marker). Without it
-         corerun.js/.wasm would be dropped and the test would silently fall back to CORE_ROOT. -->
-    <Error Condition="'$(_WasmCorerunSkip)' != 'true' and '$(RequiresProcessIsolation)' != 'true'"
+    <!-- Anything else that produced a static library but does not run from its own output directory
+         would have corerun.js/.wasm dropped and silently fall back to CORE_ROOT. -->
+    <Error Condition="'$(_WasmCorerunSkip)' != 'true' and '$(_WasmCorerunRunsFromOutDir)' != 'true'"
            Text="$(MSBuildProjectName) links native test code into a test-specific corerun on browser-wasm, so it must set &lt;RequiresProcessIsolation&gt;true&lt;/RequiresProcessIsolation&gt;; otherwise its output directory is not sent to Helix." />
 
     <Error Condition="'$(_WasmCorerunSkip)' != 'true' and !Exists('$(WasmCorerunKitDir)corerun-link.rsp')"
