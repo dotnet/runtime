@@ -1089,7 +1089,7 @@ extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, Me
 
     END_QCALL;
 
-    return (pMatchingMethod != NULL);
+    return pMatchingMethod != NULL;
 }
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT,
@@ -1513,20 +1513,19 @@ void COMDelegate::ValidateDelegatePInvoke(MethodDesc* pMD)
 // static
 PCODE COMDelegate::GetStubForILStub(EEImplMethodDesc* pDelegateMD, MethodDesc** ppStubMD, DWORD dwStubFlags)
 {
-    CONTRACT(PCODE)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
 
         PRECONDITION(CheckPointer(pDelegateMD));
-        POSTCONDITION(RETVAL != NULL);
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     ValidateDelegatePInvoke(pDelegateMD);
 
     dwStubFlags |= PINVOKESTUB_FL_DELEGATE;
 
-    RETURN PInvoke::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
+    return PInvoke::GetStubForILStub(pDelegateMD, ppStubMD, dwStubFlags);
 }
 
 
@@ -2277,7 +2276,7 @@ BOOL COMDelegate::IsDelegateInvokeMethod(MethodDesc *pMD)
     MethodTable *pMT = pMD->GetMethodTable();
     _ASSERTE(pMT->IsDelegate());
 
-    return (pMD == ((DelegateEEClass *)pMT->GetClass())->GetInvokeMethod());
+    return pMD == ((DelegateEEClass *)pMT->GetClass())->GetInvokeMethod();
 }
 
 bool COMDelegate::IsMethodDescCompatible(TypeHandle   thFirstArg,

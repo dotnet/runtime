@@ -40,6 +40,13 @@ public enum CLRDataByNameFlag : uint
     CLRDATA_BYNAME_CASE_INSENSITIVE = 1
 }
 
+public enum CLRDataAddressType : uint
+{
+    CLRDATA_ADDRESS_UNRECOGNIZED = 0,
+    CLRDATA_ADDRESS_MANAGED_METHOD = 1,
+    CLRDATA_ADDRESS_RUNTIME_UNMANAGED_STUB = 6,
+}
+
 [Flags]
 public enum CLRDataMethodCodeNotification : uint
 {
@@ -201,7 +208,7 @@ public unsafe partial interface IXCLRDataProcess
     int SetDesiredExecutionState(uint state);
 
     [PreserveSig]
-    int GetAddressType(ClrDataAddress address, /*CLRDataAddressType*/ uint* type);
+    int GetAddressType(ClrDataAddress address, CLRDataAddressType* type);
 
     [PreserveSig]
     int GetRuntimeNameByAddress(
@@ -215,11 +222,11 @@ public unsafe partial interface IXCLRDataProcess
     [PreserveSig]
     int StartEnumAppDomains(ulong* handle);
     [PreserveSig]
-    int EnumAppDomain(ulong* handle, /*IXCLRDataAppDomain*/ void** appDomain);
+    int EnumAppDomain(ulong* handle, DacComNullableByRef<IXCLRDataAppDomain> appDomain);
     [PreserveSig]
     int EndEnumAppDomains(ulong handle);
     [PreserveSig]
-    int GetAppDomainByUniqueID(ulong id, /*IXCLRDataAppDomain*/ void** appDomain);
+    int GetAppDomainByUniqueID(ulong id, DacComNullableByRef<IXCLRDataAppDomain> appDomain);
 
     [PreserveSig]
     int StartEnumAssemblies(ulong* handle);
@@ -400,7 +407,7 @@ public unsafe partial interface IXCLRDataStackWalk
     int GetStackSizeSkipped(ulong* stackSizeSkipped);
 
     [PreserveSig]
-    int GetFrameType(/*CLRDataSimpleFrameType*/ uint* simpleType, /*CLRDataDetailedFrameType*/ uint* detailedType);
+    int GetFrameType(CLRDataSimpleFrameType* simpleType, CLRDataDetailedFrameType* detailedType);
 
     [PreserveSig]
     int GetFrame(DacComNullableByRef<IXCLRDataFrame> frame);
@@ -542,6 +549,13 @@ public enum ClrDataSourceType : uint
     CLRDATA_SOURCE_TYPE_INVALID = 0,
 }
 
+public enum CLRDataILOffsetMarker : uint
+{
+    CLRDATA_IL_OFFSET_NO_MAPPING = unchecked((uint)-1),
+    CLRDATA_IL_OFFSET_PROLOG = unchecked((uint)-2),
+    CLRDATA_IL_OFFSET_EPILOG = unchecked((uint)-3),
+}
+
 // CLRDATA_IL_ADDRESS_MAP
 public struct ClrDataILAddressMap
 {
@@ -604,7 +618,7 @@ public unsafe partial interface IXCLRDataMethodInstance
         uint ilOffset,
         uint rangesLen,
         uint* rangesNeeded,
-        /*CLRDATA_ADDRESS_RANGE* */ void* addressRanges);
+        [In, Out, MarshalUsing(CountElementName = nameof(rangesLen))] ClrDataAddressRange[]? addressRanges);
 
     [PreserveSig]
     int GetILAddressMap(
@@ -913,12 +927,17 @@ public unsafe partial interface IXCLRDataTypeInstance
         char* nameBuf);
 }
 
+public enum CLRDataMethodDefinitionExtentType : uint
+{
+    CLRDATA_METHDEF_IL,
+}
+
 public struct ClrDataMethodDefinitionExtent
 {
     public ClrDataAddress startAddress;
     public ClrDataAddress endAddress;
     public uint enCVersion;
-    public uint /* CLRDataMethodDefinitionExtentType */ type;
+    public CLRDataMethodDefinitionExtentType type;
 }
 
 [GeneratedComInterface]
@@ -970,6 +989,31 @@ public unsafe partial interface IXCLRDataMethodDefinition
 public enum CLRDataGeneralRequest : uint
 {
     CLRDATA_REQUEST_REVISION = 0xe0000000,
+}
+
+public enum CLRDataStackWalkRequest : uint
+{
+    CLRDATA_STACK_WALK_REQUEST_SET_FIRST_FRAME = 0xe1000000,
+}
+
+[Flags]
+public enum CLRDataStackSetContextFlag : uint
+{
+    CLRDATA_STACK_SET_UNWIND_CONTEXT = 0x00000000,
+    CLRDATA_STACK_SET_CURRENT_CONTEXT = 0x00000001,
+}
+
+public enum CLRDataSimpleFrameType : uint
+{
+    CLRDATA_SIMPFRAME_UNRECOGNIZED = 0x1,
+    CLRDATA_SIMPFRAME_MANAGED_METHOD = 0x2,
+    CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE = 0x8,
+}
+
+public enum CLRDataDetailedFrameType : uint
+{
+    CLRDATA_DETFRAME_UNRECOGNIZED = 0,
+    CLRDATA_DETFRAME_EXCEPTION_FILTER = 3,
 }
 
 [Flags]

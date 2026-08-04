@@ -143,7 +143,8 @@ public enum CodeKind : uint
     MethodCallThunk = 10,
     Jitted = 11,
     ReadyToRun = 12,
-    Interpreter = 13
+    Interpreter = 13,
+    ThePreStub = 14
 }
 ```
 
@@ -163,6 +164,7 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `Bucket` | `Keys` | `pointer` | Array of keys of `HashMapSlotsPerBucket` length |
 | `Bucket` | `Values` | `pointer` | Array of values of `HashMapSlotsPerBucket` length |
 | `CodeHeap` | `HeapType` | `uint8` | `uint8` discriminant identifying the concrete heap type |
+| `CodeHeapListNode` | `CLRPersonalityRoutine` | `pointer` | Address of the CLR personality routine; when non-null, this is the module base for a Windows dynamic function table |
 | `CodeHeapListNode` | `EndAddress` | `pointer` | End address of the used portion of the code heap |
 | `CodeHeapListNode` | `HeaderMap` | `pointer` | Bit array used to find the start of methods - relative to `MapBase` |
 | `CodeHeapListNode` | `Heap` | `pointer` | Pointer to the `CodeHeap` object managed by this node |
@@ -170,6 +172,8 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `CodeHeapListNode` | `Next` | `pointer` | Next node |
 | `CodeHeapListNode` | `StartAddress` | `pointer` | Start address of the used portion of the code heap |
 | `CodeRangeMapRangeList` | `RangeListType` | `int32` | Integer identifying the stub code block kind for this range list |
+| `DynamicFunctionTable` | `Context` | `pointer` | Tagged pointer to the owning `EEJitManager`; low bits are flags |
+| `DynamicFunctionTable` | `MinimumAddress` | `pointer` | Module base address covered by the dynamic function table |
 | `EEExceptionClause` | *(type size)* | `uint32` | Size of an exception clause in bytes |
 | `EEExceptionClause` | `Flags` | `uint32` | Exception clause flags (`COR_ILEXCEPTION_CLAUSE_*` bit flags) |
 | `EEExceptionClause` | `HandlerEndPC` | `uint32` | Native offset of the end of the handler |
@@ -214,6 +218,8 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `RangeSectionFragment` | `RangeEndOpen` | `pointer` | End address of the fragment |
 | `RangeSectionFragment` | `RangeSection` | `pointer` | Pointer to the corresponding `RangeSection` |
 | `RangeSectionMap` | `TopLevelData` | `pointer` | Pointer to the outermost RangeSection |
+| `ReadyToRunCoreHeader` | *(type size)* | `uint32` | Size of the ReadyToRun core header in bytes |
+| `ReadyToRunCoreHeader` | `NumberOfSections` | `uint32` | Number of sections following the header |
 | `ReadyToRunCoreInfo` | `Header` | `pointer` | Pointer to the `READYTORUN_CORE_HEADER` |
 | `ReadyToRunHeader` | `MajorVersion` | `uint16` | ReadyToRun major version |
 | `ReadyToRunInfo` | `Composite` | `pointer` | Pointer to the `ReadyToRunCoreInfo` used for section lookup |
@@ -222,13 +228,12 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `ReadyToRunInfo` | `DelayLoadMethodCallThunks` | `pointer` | Pointer to an `ImageDataDirectory` for the delay load method call thunks |
 | `ReadyToRunInfo` | `EntryPointToMethodDescMap` | `HashMap` | `HashMap` of entry point addresses to `MethodDesc` pointers |
 | `ReadyToRunInfo` | `HotColdMap` | `pointer` | Pointer to an array of 32-bit integers - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontypehotcoldmap-v80) |
-| `ReadyToRunInfo` | `ImportSections` | `pointer` | Pointer to the array of ReadyToRun import sections |
 | `ReadyToRunInfo` | `LoadedImageBase` | `pointer` | Base address of the loaded R2R image |
 | `ReadyToRunInfo` | `NumHotColdMap` | `uint32` | Number of entries in the `HotColdMap` |
-| `ReadyToRunInfo` | `NumImportSections` | `uint32` | Number of ReadyToRun import sections |
 | `ReadyToRunInfo` | `NumRuntimeFunctions` | `uint32` | Number of `RuntimeFunctions` |
 | `ReadyToRunInfo` | `ReadyToRunHeader` | `pointer` | Pointer to the ReadyToRunHeader |
 | `ReadyToRunInfo` | `RuntimeFunctions` | `pointer` | Pointer to an array of `RuntimeFunctions` - [see R2R format](../coreclr/botr/readytorun-format.md#readytorunsectiontyperuntimefunctions) |
+| `ReadyToRunSection` | *(type size)* | `uint32` | Size of a ReadyToRun section entry in bytes |
 | `ReadyToRunSection` | `Section` | `ImageDataDirectory` | `IMAGE_DATA_DIRECTORY` for the section data |
 | `ReadyToRunSection` | `Type` | `uint32` | Section type (`ReadyToRunSectionType`) |
 | `RealCodeHeader` | `DebugInfo` | `pointer` | Pointer to the DebugInfo |
@@ -254,6 +259,7 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `HashMapValueMask` | `uint64` | Bitmask used when storing values in a `HashMap` |
 | `ObjectMethodTable` | `pointer` | Address of the global variable holding the System.Object MethodTable pointer |
 | `StubCodeBlockLast` | `uint8` | Maximum sentinel code header value indentifying a stub code block |
+| `ThePreStub` | `pointer` | Address of the global containing the prestub entrypoint |
 
 ### Contracts used
 
@@ -543,7 +549,7 @@ After obtaining the clause array bounds, the common iteration logic classifies e
 
 `IExecutionManager.IsGcSafe` returns whether a given instruction pointer is in managed code at a GC-safe point. First it resolves the instruction pointer to a `CodeBlockHandle` via `GetCodeBlockHandle`; if the pointer is not in managed code, it returns `false`. Otherwise it obtains the code block's relative offset and GC info, decodes the GC info via the `GCInfo` contract, and delegates to `GCInfo` `IsGcSafe`.
 
-`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, and interpreter code. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
+`GetCodeKind` classifies a code address by finding its owning range section and determining the code kind. It distinguishes between jitted code, stub code blocks (jump stubs, precode stubs, VSD stubs, etc.), ReadyToRun code, interpreter code, and the global prestub entrypoint. If no range section owns the address, it compares the address against the exposed prestub entrypoint. Returns `Unknown` if the address cannot be classified. We depend on the values of the StubCodeBlockKind enum defined in codeman.h; for non-R2R code, we compare either the RangeList type or the code header against the values of this enum.
 ### FindReadyToRunModule
 
 `FindReadyToRunModule` locates the ReadyToRun module whose PE image contains the given address. Unlike `GetCodeBlockHandle` (which only matches code regions), this API matches against the full PE image range - including data sections such as import tables. This is used in GCRefMap resolution as it requires finding the module that owns an import section indirection address, which is in the data section rather than the code section.
@@ -607,6 +613,19 @@ IEnumerable<ICodeHeapInfo> IExecutionManager.GetCodeHeapInfos()
     }
 }
 ```
+
+### Dynamic Function Table Entries
+
+`GetDynamicFunctionTableEntries` returns the target addresses of the
+`RUNTIME_FUNCTION` records for a Windows dynamic function table. These records describe
+the unwind information for dynamically generated JIT code and are consumed by
+out-of-process unwinders.
+
+`tableAddress` identifies a target `DYNAMIC_FUNCTION_TABLE`. Its `Context` identifies
+the owning `EEJitManager`, and its `MinimumAddress` identifies the associated code heap.
+The result contains the entries for that heap, ordered by descending method start address
+and then by ascending entry address within a method. If the table does not identify a
+known code heap, or if the target is not Windows non-x86, the result is empty.
 
 ### RangeSectionMap
 

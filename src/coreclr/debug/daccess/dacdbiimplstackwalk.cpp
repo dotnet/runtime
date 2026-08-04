@@ -394,25 +394,8 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetStackWalkCurrentFrameInfo(Stac
                     break;
 
                 case StackFrameIterator::SFITER_FRAMELESS_METHOD:
-                    {
-                        MethodDesc *pMD = pIter->m_crawl.GetFunction();
-                        // EH.DispatchEx, EH.RhThrowEx, EH.RhThrowHwEx, ExceptionServices.InternalCalls.SfiInit, ExceptionServices.InternalCalls.SfiNext
-                        // and System.Runtime.StackFrameIterator.*
-                        if (pMD->GetMethodTable() == g_pEHClass || pMD->GetMethodTable() == g_pExceptionServicesInternalCallsClass || pMD->GetMethodTable() == g_pStackFrameIteratorClass)
-                        {
-                            ftResult = kManagedExceptionHandlingCodeFrame;
-                        }
-                        // Environment.CallEntryPoint
-                        else if (pMD == g_pEnvironmentCallEntryPointMethodDesc)
-                        {
-                            ftResult = kRuntimeEntryPointFrame;
-                        }
-                        else
-                        {
-                            ftResult = kManagedStackFrame;
-                            fInitFrameData = TRUE;
-                        }
-                    }
+                    ftResult = kManagedStackFrame;
+                    fInitFrameData = TRUE;
                     break;
 
                 case StackFrameIterator::SFITER_FRAME_FUNCTION:

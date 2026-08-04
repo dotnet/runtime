@@ -157,12 +157,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     [Flags]
-    internal enum AsyncMethodFlags : uint
+    internal enum AsyncMethodFlags_1 : uint
     {
         None = 0,
         AsyncCall = 0x1,
         IsAsyncVariant = 0x4,
-        Thunk = 16,
+        Thunk = 0x10,
+        ReturnDroppingThunk = 0x20,
     }
 
     [Flags]
@@ -546,7 +547,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             {
                 return GetModule(GetTypeParam(typeHandle));
             }
-            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _, out _))
             {
                 return genericParamModule;
             }
@@ -1448,10 +1449,11 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return GetTypeHandle(typeHandlePtr);
     }
 
-    public bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token)
+    public bool IsGenericVariable(ITypeHandle typeHandle, out TargetPointer module, out uint token, out uint index)
     {
         module = TargetPointer.Null;
         token = 0;
+        index = 0;
 
         if (!typeHandle.IsTypeDesc())
             return false;
@@ -1465,6 +1467,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
                 TypeVarTypeDesc typeVarTypeDesc = _target.ProcessedData.GetOrAdd<TypeVarTypeDesc>(typeHandle.TypeDescAddress());
                 module = typeVarTypeDesc.Module;
                 token = typeVarTypeDesc.Token;
+                index = typeVarTypeDesc.Index;
                 return true;
         }
         return false;
@@ -1516,7 +1519,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
             {
                 return GetLoaderModule(GetTypeParam(typeHandle));
             }
-            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _))
+            else if (IsGenericVariable(typeHandle, out TargetPointer genericParamModule, out _, out _))
             {
                 return genericParamModule;
             }
@@ -1706,7 +1709,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         // Read the AsyncMethodFlags (first field) and check for AsyncCall.
         TargetPointer asyncDataAddr = methodDesc.GetAddressOfAsyncMethodData();
         uint asyncFlags = _target.Read<uint>(asyncDataAddr);
-        return (asyncFlags & (uint)AsyncMethodFlags.AsyncCall) != 0;
+        return (asyncFlags & (uint)AsyncMethodFlags_1.AsyncCall) != 0;
     }
 
     public uint GetMethodToken(MethodDescHandle methodDescHandle)
@@ -1795,7 +1798,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (methodDesc.HasAsyncMethodData)
         {
             Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(methodDesc.GetAddressOfAsyncMethodData());
-            if (((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.IsAsyncVariant))
+            if (((AsyncMethodFlags_1)asyncData.Flags).HasFlag(AsyncMethodFlags_1.IsAsyncVariant))
             {
                 byte[] sig = new byte[asyncData.Signature.SignatureLength];
                 _target.ReadBuffer(asyncData.Signature.SignaturePointer, sig.AsSpan());
@@ -2046,6 +2049,26 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         }
     }
 
+    TargetPointer IRuntimeTypeSystem.GetAsyncVariant(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        ITypeHandle methodTable = GetTypeHandle(methodDesc.MethodTable);
+        ITypeHandle canonicalMethodTable = GetTypeHandle(GetCanonicalMethodTable(methodTable));
+
+        foreach (MethodDescHandle candidateHandle in GetIntroducedMethods(canonicalMethodTable))
+        {
+            MethodDesc candidate = _methodDescs[candidateHandle.Address];
+            if (candidate.Slot != methodDesc.Slot)
+                continue;
+
+            AsyncMethodFlags flags = ((IRuntimeTypeSystem)this).GetAsyncMethodFlags(candidateHandle);
+            if (flags.HasFlag(AsyncMethodFlags.IsAsyncVariant) && !flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk))
+                return candidateHandle.Address;
+        }
+
+        return TargetPointer.Null;
+    }
+
     IEnumerable<TargetPointer> IRuntimeTypeSystem.GetIntroducedMethodDescs(ITypeHandle typeHandle)
     {
         if (!typeHandle.IsMethodTable())
@@ -2251,16 +2274,25 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         return methodDesc.IsEligibleForTieredCompilation;
     }
 
-    public bool IsAsyncThunkMethod(MethodDescHandle methodDescHandle)
+    public AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDescHandle)
     {
         MethodDesc md = _methodDescs[methodDescHandle.Address];
         if (!md.HasAsyncMethodData)
         {
-            return false;
+            return AsyncMethodFlags.None;
         }
 
-        Data.AsyncMethodData asyncData = _target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData());
-        return ((AsyncMethodFlags)asyncData.Flags).HasFlag(AsyncMethodFlags.Thunk);
+        AsyncMethodFlags_1 raw = (AsyncMethodFlags_1)_target.ProcessedData.GetOrAdd<Data.AsyncMethodData>(md.GetAddressOfAsyncMethodData()).Flags;
+        AsyncMethodFlags result = AsyncMethodFlags.None;
+        if ((raw & AsyncMethodFlags_1.AsyncCall) != 0)
+            result |= AsyncMethodFlags.AsyncCall;
+        if ((raw & AsyncMethodFlags_1.IsAsyncVariant) != 0)
+            result |= AsyncMethodFlags.IsAsyncVariant;
+        if ((raw & AsyncMethodFlags_1.Thunk) != 0)
+            result |= AsyncMethodFlags.Thunk;
+        if ((raw & AsyncMethodFlags_1.ReturnDroppingThunk) != 0)
+            result |= AsyncMethodFlags.ReturnDroppingThunk;
+        return result;
     }
 
     public bool IsWrapperStub(MethodDescHandle methodDescHandle)
@@ -2273,6 +2305,14 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     {
         MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
         return methodDesc.IsUnboxingStub;
+    }
+
+    public bool IsVarArg(MethodDescHandle methodDescHandle)
+    {
+        if (!TryGetMethodSignature(methodDescHandle, out ReadOnlySpan<byte> signature) || signature.IsEmpty)
+            return false;
+
+        return (SignatureCallingConvention)(signature[0] & 0x0F) == SignatureCallingConvention.VarArgs;
     }
 
     private sealed class NonValidatedMethodTableQueries : MethodValidation.IMethodTableQueries
@@ -2433,14 +2473,17 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         if (md is null)
             return TargetPointer.Null;
 
-        TargetPointer fieldDefToDescMap = loader.GetLookupTables(moduleHandle).FieldDefToDesc;
         foreach (FieldDefinitionHandle fieldDefHandle in md.GetTypeDefinition(typeDefHandle).GetFields())
         {
             FieldDefinition fieldDef = md.GetFieldDefinition(fieldDefHandle);
             if (md.GetString(fieldDef.Name) == fieldName)
             {
                 uint fieldDefToken = (uint)MetadataTokens.GetToken(fieldDefHandle);
-                TargetPointer fieldDescPtr = loader.GetModuleLookupMapElement(fieldDefToDescMap, fieldDefToken, out _);
+                TargetPointer fieldDescPtr = loader.GetModuleLookupMapElement(
+                    moduleHandle,
+                    ModuleLookupMapKind.FieldDefToDesc,
+                    fieldDefToken,
+                    out _);
                 return fieldDescPtr;
             }
         }
@@ -2471,40 +2514,43 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
         ILoader loader = _target.Contracts.Loader;
         ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(modulePtr);
         CorElementType type = ((IRuntimeTypeSystem)this).GetFieldDescType(fieldDescPointer);
-        TargetPointer @base;
-        if (type == CorElementType.Class || type == CorElementType.ValueType)
-        {
-            if (thread.HasValue)
-            {
-                @base = GetGCThreadStaticsBasePointer(ctx, thread.Value);
-            }
-            else
-            {
-                @base = GetGCStaticsBasePointer(ctx);
-            }
-        }
-        else
-        {
-            if (thread.HasValue)
-            {
-                @base = GetNonGCThreadStaticsBasePointer(ctx, thread.Value);
-            }
-            else
-            {
-                @base = GetNonGCStaticsBasePointer(ctx);
-            }
-        }
+        bool isRVA = ((IRuntimeTypeSystem)this).IsFieldDescRVA(fieldDescPointer);
 
-        if (@base == TargetPointer.Null)
-            return TargetPointer.Null;
+        TargetPointer @base = TargetPointer.Null;
+        if (!isRVA)
+        {
+            if (type == CorElementType.Class || type == CorElementType.ValueType)
+            {
+                if (thread.HasValue)
+                {
+                    @base = GetGCThreadStaticsBasePointer(ctx, thread.Value);
+                }
+                else
+                {
+                    @base = GetGCStaticsBasePointer(ctx);
+                }
+            }
+            else
+            {
+                if (thread.HasValue)
+                {
+                    @base = GetNonGCThreadStaticsBasePointer(ctx, thread.Value);
+                }
+                else
+                {
+                    @base = GetNonGCStaticsBasePointer(ctx);
+                }
+            }
+
+            if (@base == TargetPointer.Null)
+                return TargetPointer.Null;
+        }
 
         MetadataReader mdReader = _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)!;
         uint token = ((IRuntimeTypeSystem)this).GetFieldDescMemberDef(fieldDescPointer);
         FieldDefinitionHandle fieldHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)token);
         FieldDefinition fieldDef = mdReader.GetFieldDefinition(fieldHandle);
-
         uint offset = ((IRuntimeTypeSystem)this).GetFieldDescOffset(fieldDescPointer, fieldDef);
-        bool isRVA = ((IRuntimeTypeSystem)this).IsFieldDescRVA(fieldDescPointer);
         TargetPointer handleAddr = GetStaticAddressHandle(@base, offset, isRVA, fieldDescPointer, moduleHandle);
         if (unboxValueTypes && type == CorElementType.ValueType && !isRVA)
         {

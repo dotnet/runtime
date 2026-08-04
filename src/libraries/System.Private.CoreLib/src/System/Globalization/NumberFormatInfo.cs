@@ -96,6 +96,24 @@ namespace System.Globalization
         // negative sign is not the hyphen. For example, the Swedish culture (e.g. "sv-SE") has U+2212 as the negative sign.
         private bool _allowHyphenDuringParsing;
 
+        // Each UTF-8 cache is allocated one byte longer than the text it holds and the returned span
+        // excludes that trailing NUL. Consumers should still bound themselves by the span length; the
+        // terminator only exists so that a helper which scans for one cannot run off the end.
+        private static ReadOnlySpan<byte> GetUtf8Span(ref byte[]? utf8Cache, string value)
+        {
+            byte[] utf8 = utf8Cache ?? CreateUtf8Cache(ref utf8Cache, value);
+            Debug.Assert(utf8.Length > 0);
+            return MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(utf8), utf8.Length - 1);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static byte[] CreateUtf8Cache(ref byte[]? utf8Cache, string value)
+        {
+            byte[] utf8 = new byte[Encoding.UTF8.GetByteCount(value) + 1];
+            Encoding.UTF8.GetBytes(value, utf8);
+            return utf8Cache = utf8;
+        }
+
         public NumberFormatInfo()
         {
         }
@@ -269,7 +287,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_currencyDecimalSeparator) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_currencyDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_currencyDecimalSeparator));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _currencyDecimalSeparatorUtf8, _currencyDecimalSeparator));
         }
 
         public bool IsReadOnly => _isReadOnly;
@@ -361,7 +379,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_currencyGroupSeparator) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_currencyGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_currencyGroupSeparator));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _currencyGroupSeparatorUtf8, _currencyGroupSeparator));
         }
 
         public string CurrencySymbol
@@ -383,10 +401,8 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_currencySymbol) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_currencySymbolUtf8 ??= Encoding.UTF8.GetBytes(_currencySymbol));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _currencySymbolUtf8, _currencySymbol));
         }
-
-        internal byte[]? CurrencySymbolUtf8 => _currencySymbolUtf8 ??= Encoding.UTF8.GetBytes(_currencySymbol);
 
         /// <summary>
         /// Returns the current culture's NumberFormatInfo. Used by Parse methods.
@@ -429,7 +445,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_nanSymbol) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_nanSymbolUtf8 ??= Encoding.UTF8.GetBytes(_nanSymbol));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _nanSymbolUtf8, _nanSymbol));
         }
 
         public int CurrencyNegativePattern
@@ -514,7 +530,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_negativeInfinitySymbol) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_negativeInfinitySymbolUtf8 ??= Encoding.UTF8.GetBytes(_negativeInfinitySymbol));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _negativeInfinitySymbolUtf8, _negativeInfinitySymbol));
         }
 
         public string NegativeSign
@@ -537,7 +553,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_negativeSign) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_negativeSignUtf8 ??= Encoding.UTF8.GetBytes(_negativeSign));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _negativeSignUtf8, _negativeSign));
         }
 
         public int NumberDecimalDigits
@@ -573,7 +589,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_numberDecimalSeparator) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_numberDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_numberDecimalSeparator));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _numberDecimalSeparatorUtf8, _numberDecimalSeparator));
         }
 
         public string NumberGroupSeparator
@@ -594,7 +610,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_numberGroupSeparator) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_numberGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_numberGroupSeparator));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _numberGroupSeparatorUtf8, _numberGroupSeparator));
         }
 
         public int CurrencyPositivePattern
@@ -631,7 +647,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_positiveInfinitySymbol) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_positiveInfinitySymbolUtf8 ??= Encoding.UTF8.GetBytes(_positiveInfinitySymbol));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _positiveInfinitySymbolUtf8, _positiveInfinitySymbol));
         }
 
         public string PositiveSign
@@ -654,7 +670,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_positiveSign) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_positiveSignUtf8 ??= Encoding.UTF8.GetBytes(_positiveSign));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _positiveSignUtf8, _positiveSign));
         }
 
         public int PercentDecimalDigits
@@ -690,7 +706,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_percentDecimalSeparator) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_percentDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_percentDecimalSeparator));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _percentDecimalSeparatorUtf8, _percentDecimalSeparator));
         }
 
         public string PercentGroupSeparator
@@ -711,7 +727,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_percentGroupSeparator) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_percentGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_percentGroupSeparator));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _percentGroupSeparatorUtf8, _percentGroupSeparator));
         }
 
         public string PercentSymbol
@@ -732,7 +748,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_percentSymbol) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_percentSymbolUtf8 ??= Encoding.UTF8.GetBytes(_percentSymbol));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _percentSymbolUtf8, _percentSymbol));
         }
 
         public string PerMilleSymbol
@@ -754,7 +770,7 @@ namespace System.Globalization
             Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
             return typeof(TChar) == typeof(char) ?
                 Unsafe.BitCast<ReadOnlySpan<char>, ReadOnlySpan<TChar>>(_perMilleSymbol) :
-                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(_perMilleSymbolUtf8 ??= Encoding.UTF8.GetBytes(_perMilleSymbol));
+                Unsafe.BitCast<ReadOnlySpan<byte>, ReadOnlySpan<TChar>>(GetUtf8Span(ref _perMilleSymbolUtf8, _perMilleSymbol));
         }
 
         public string[] NativeDigits

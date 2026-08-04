@@ -43,11 +43,15 @@ on:
         description: "The cache key suffix to use for staged data/models (use 'ACTIVE' to bypass staging). Defaults to 'staged'."
         required: true
         default: "staged"
+      excluded_labels:
+        description: "Additional labels to exclude from training/testing datasets (comma-separated)."
+        required: false
 
 env:
   CACHE_KEY: ${{ inputs.cache_key_suffix }}
   REPOSITORY: ${{ github.repository }}
   LABEL_PREFIX: "area-"
+  DEFAULT_EXCLUDED_LABELS: "area-crossgen2-coreclr,area-AssemblyLoader-coreclr"
   THRESHOLD: ${{ vars.ISSUE_LABELER_PREDICTION_THRESHOLD || '0.05' }}
   LIMIT: ${{ inputs.limit }}
   PAGE_SIZE: ${{ inputs.page_size }}
@@ -61,12 +65,13 @@ jobs:
       issues: read
     steps:
       - name: "Download Issues"
-        uses: dotnet/issue-labeler/download@46125e85e6a568dc712f358c39f35317366f5eed # v2.0.0-release
+        uses: dotnet/issue-labeler/download@160b6b1e1e8d36da09beb34ef1e4806d2c0520a3 # v2.2.0
         with:
           type: "issues"
           cache_key: ${{ env.CACHE_KEY }}
           repository: ${{ env.REPOSITORY }}
           label_prefix: ${{ env.LABEL_PREFIX }}
+          excluded_labels: ${{ format('{0}{1}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && format(',{0}', inputs.excluded_labels) || '') }}
           limit: ${{ env.LIMIT }}
           page_size: ${{ env.PAGE_SIZE }}
           page_limit: ${{ env.PAGE_LIMIT }}
@@ -80,12 +85,13 @@ jobs:
       pull-requests: read
     steps:
       - name: "Download Pull Requests"
-        uses: dotnet/issue-labeler/download@46125e85e6a568dc712f358c39f35317366f5eed # v2.0.0-release
+        uses: dotnet/issue-labeler/download@160b6b1e1e8d36da09beb34ef1e4806d2c0520a3 # v2.2.0
         with:
           type: "pulls"
           cache_key: ${{ env.CACHE_KEY }}
           repository: ${{ env.REPOSITORY }}
           label_prefix: ${{ env.LABEL_PREFIX }}
+          excluded_labels: ${{ format('{0}{1}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && format(',{0}', inputs.excluded_labels) || '') }}
           limit: ${{ env.LIMIT }}
           page_size: ${{ env.PAGE_SIZE }}
           page_limit: ${{ env.PAGE_LIMIT }}
@@ -99,7 +105,7 @@ jobs:
     needs: download-issues
     steps:
       - name: "Train Model for Issues"
-        uses: dotnet/issue-labeler/train@46125e85e6a568dc712f358c39f35317366f5eed # v2.0.0-release
+        uses: dotnet/issue-labeler/train@160b6b1e1e8d36da09beb34ef1e4806d2c0520a3 # v2.2.0
         with:
           type: "issues"
           data_cache_key: ${{ env.CACHE_KEY }}
@@ -112,7 +118,7 @@ jobs:
     needs: download-pulls
     steps:
       - name: "Train Model for Pull Requests"
-        uses: dotnet/issue-labeler/train@46125e85e6a568dc712f358c39f35317366f5eed # v2.0.0-release
+        uses: dotnet/issue-labeler/train@160b6b1e1e8d36da09beb34ef1e4806d2c0520a3 # v2.2.0
         with:
           type: "pulls"
           data_cache_key: ${{ env.CACHE_KEY }}
@@ -126,12 +132,13 @@ jobs:
     needs: train-issues
     steps:
       - name: "Test Model for Issues"
-        uses: dotnet/issue-labeler/test@46125e85e6a568dc712f358c39f35317366f5eed # v2.0.0-release
+        uses: dotnet/issue-labeler/test@160b6b1e1e8d36da09beb34ef1e4806d2c0520a3 # v2.2.0
         with:
           type: "issues"
           cache_key: ${{ env.CACHE_KEY }}
           repository: ${{ env.REPOSITORY }}
           label_prefix: ${{ env.LABEL_PREFIX }}
+          excluded_labels: ${{ format('{0}{1}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && format(',{0}', inputs.excluded_labels) || '') }}
           threshold: ${{ env.THRESHOLD }}
           limit: ${{ env.LIMIT }}
           page_size: ${{ env.PAGE_SIZE }}
@@ -147,12 +154,13 @@ jobs:
     needs: train-pulls
     steps:
       - name: "Test Model for Pull Requests"
-        uses: dotnet/issue-labeler/test@46125e85e6a568dc712f358c39f35317366f5eed # v2.0.0-release
+        uses: dotnet/issue-labeler/test@160b6b1e1e8d36da09beb34ef1e4806d2c0520a3 # v2.2.0
         with:
           type: "pulls"
           cache_key: ${{ env.CACHE_KEY }}
           repository: ${{ env.REPOSITORY }}
           label_prefix: ${{ env.LABEL_PREFIX }}
+          excluded_labels: ${{ format('{0}{1}', env.DEFAULT_EXCLUDED_LABELS, inputs.excluded_labels && format(',{0}', inputs.excluded_labels) || '') }}
           threshold: ${{ env.THRESHOLD }}
           limit: ${{ env.LIMIT }}
           page_size: ${{ env.PAGE_SIZE }}
