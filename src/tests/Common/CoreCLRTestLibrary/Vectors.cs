@@ -16,7 +16,7 @@ namespace TestLibrary
             MemoryMarshal.Write(span, src);
         }
 
-        public static Vector<T> GetRandomVector<T>()
+        public static unsafe Vector<T> GetRandomVector<T>()
         {
             long vsize = sizeof(Vector<T>);
             byte[] data = new byte[vsize];
@@ -46,7 +46,7 @@ namespace TestLibrary
             return new Vector<T>(data.AsSpan());
         }
 
-        public static Vector<T> GetRandomMask<T>()
+        public static unsafe Vector<T> GetRandomMask<T>()
         {
             long vsize = sizeof(Vector<T>);
             long tsize = sizeof(T);
@@ -98,7 +98,7 @@ namespace TestLibrary
                 Alloc(data, alignment);
             }
 
-            public PinnedVector(Vector<T> inVector, int alignment)
+            public unsafe PinnedVector(Vector<T> inVector, int alignment)
             {
                 long tsize = sizeof(T);
                 long vsize = sizeof(Vector<T>);

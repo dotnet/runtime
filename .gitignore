@@ -381,5 +381,8 @@ test:.cs
 *.testResults.xml
 *.testStats.csv
 
+# BuildXL
+Out/
+
 # Copilot CLI local configuration
 .github/copilot/settings.local.json

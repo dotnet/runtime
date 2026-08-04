@@ -1,0 +1,32 @@
+parameters:
+  archType: 'x64'
+  osGroup: 'linux'
+  osSubgroup: ''
+
+steps:
+  - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.archType, 'x64')) }}:
+    # Install BuildXL from the version pinned in .config/dotnet-tools.json
+    - script: |
+        BXL_VERSION=$(dotnet tool list | grep agtest.bxl.tool | awk '{print $2}' 2>/dev/null || true)
+        if [ -z "$BXL_VERSION" ]; then
+          BXL_VERSION=$(python3 -c "import json; print(json.load(open('.config/dotnet-tools.json'))['tools']['agtest.bxl.tool']['version'])")
+        fi
+        dotnet tool install --global agtest.bxl.tool --version "$BXL_VERSION"
+        echo "##vso[task.prependpath]$HOME/.dotnet/tools"
+      displayName: Install BuildXL
+
+    # Set up Azure Pipeline Cache for BuildXL's local cache directory.
+    # Uses a rolling key so each build can update the cache; restoreKeys
+    # falls back to the most recent saved entry.
+    - task: Cache@2
+      displayName: BuildXL cache
+      continueOnError: true
+      inputs:
+        key: bxl | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }} | "$(Build.BuildId)"
+        path: $(Pipeline.Workspace)/.bxl-cache
+        restoreKeys: |
+          bxl | ${{ parameters.osGroup }}${{ parameters.osSubgroup }} | ${{ parameters.archType }}
+
+    - script: |
+        echo "##vso[task.setvariable variable=BXL_CACHE_DIR]$(Pipeline.Workspace)/.bxl-cache"
+      displayName: Configure BuildXL cache directory
