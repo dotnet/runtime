@@ -80,7 +80,7 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
     return Limit(Limit::keUnknown);
 }
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
+#if defined(FEATURE_HW_INTRINSICS)
 //----------------------------------------------------------------------------------------------
 // optAssertionProp_HWIntrinsic: Propagate VN-derived facts to local var metadata.
 //
@@ -140,7 +140,7 @@ static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tre
         varDsc->SetIsVectorPerElementMask(tree->GetSimdBaseType());
     }
 }
-#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
+#endif // FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
 // SymbolicToRealValue: Convert a symbolic value to a 64-bit signed integer.
@@ -5909,11 +5909,11 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
         case GT_CALL:
             return optAssertionProp_Call(assertions, tree->AsCall(), stmt);
 
-#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_ARM64)
+#if defined(FEATURE_HW_INTRINSICS)
         case GT_HWINTRINSIC:
             optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
             return nullptr;
-#endif // FEATURE_HW_INTRINSICS && TARGET_ARM64
+#endif // FEATURE_HW_INTRINSICS
 
         case GT_EQ:
         case GT_NE:

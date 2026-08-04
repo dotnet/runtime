@@ -34851,25 +34851,23 @@ bool GenTree::IsInvariant() const
 }
 
 //-------------------------------------------------------------------
-// IsVectorPerElementMask: returns true if this node is a vector constant per-element mask
-//                         (every element has either all bits set or none of them) for the
-//                         given simd size and base type.
+// IsVectorPerElementMask: returns true if this node is known to be a vector per-element mask
+//                         (every element has either all bits set or none of them) for the given
+//                         SIMD size and base type.
 //
 // Arguments:
-//    simdBaseType - the base type of the constant being checked.
+//    comp         - the compiler instance.
+//    simdBaseType - the base type being checked.
 //    simdSize     - the size of the SIMD type of the intrinsic.
 //
 // Returns:
 //     True if this node is a per-element mask compatible with simdBaseType and simdSize
 //
-bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const
-{
-    return IsVectorPerElementMask(nullptr, simdBaseType, simdSize);
-}
-
 bool GenTree::IsVectorPerElementMask(Compiler* comp, var_types simdBaseType, unsigned simdSize) const
 {
 #ifdef FEATURE_SIMD
+    assert(comp != nullptr);
+
     // This should be kept in sync with ValueNumStore::IsVectorPerElementMask
 
     var_types simdType     = TypeGet();
@@ -34886,7 +34884,7 @@ bool GenTree::IsVectorPerElementMask(Compiler* comp, var_types simdBaseType, uns
         return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal, simdBaseType, elementCount);
     }
 
-    if ((comp != nullptr) && OperIs(GT_LCL_VAR))
+    if (OperIs(GT_LCL_VAR))
     {
         return comp->lvaGetDesc(AsLclVar())->IsVectorPerElementMask(simdBaseType);
     }
@@ -34929,10 +34927,14 @@ bool GenTree::IsVectorPerElementMask(Compiler* comp, var_types simdBaseType, uns
     bool       isScalar = false;
     genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
 
+#if defined(TARGET_ARM64)
+    // TODO-Arm64: Remove this once all AdvSimd compare intrinsics are annotated with
+    // HW_Flag_ReturnsPerElementMask.
     if (!isScalar && GenTree::OperIsCmpCompare(oper))
     {
         return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
     }
+#endif // TARGET_ARM64
 
     switch (oper)
     {
@@ -36316,7 +36318,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             break;
                         }
                     }
-                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
+                    else if (otherNode->IsVectorPerElementMask(this, simdBaseType, simdSize))
                     {
                         // Handle `Equals(PerElementMask, AllBitsSet)` and `Equals(AllBitsSet, PerElementMask)` for
                         // integrals
@@ -36504,7 +36506,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             break;
                         }
                     }
-                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
+                    else if (otherNode->IsVectorPerElementMask(this, simdBaseType, simdSize))
                     {
                         // Handle `~Equals(PerElementMask, Zero)` and `~Equals(Zero, PerElementMask)` for integrals
                         if (cnsNode->IsVectorZero())

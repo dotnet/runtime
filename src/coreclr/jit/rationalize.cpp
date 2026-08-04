@@ -672,7 +672,7 @@ void Rationalizer::RewriteHWIntrinsicBlendv(GenTree** use, Compiler::GenTreeStac
         // per-element mask, or we can simply use the equivalent-sized floating type.
         GenTree* maskVector = op3->AsHWIntrinsic()->Op(1);
 
-        if (!maskVector->IsVectorPerElementMask(simdBaseType, simdSize))
+        if (!maskVector->IsVectorPerElementMask(m_compiler, simdBaseType, simdSize))
         {
             switch (simdBaseType)
             {
@@ -1317,63 +1317,45 @@ bool Rationalizer::ShouldRewriteToNonMaskHWIntrinsic(GenTree* node)
 
 #if defined(TARGET_ARM64)
 //----------------------------------------------------------------------------------------------
-// NormalizeCmpMaskSimdBaseType: Normalize a SIMD comparison mask's base type to unsigned.
-//
-// Arguments:
-//    simdBaseType - The SIMD base type.
-//
-// Return Value:
-//    The normalized SIMD base type, or TYP_UNDEF if it is unsupported.
-//
-static var_types NormalizeCmpMaskSimdBaseType(var_types simdBaseType)
-{
-    switch (simdBaseType)
-    {
-        case TYP_BYTE:
-        case TYP_UBYTE:
-        case TYP_SHORT:
-        case TYP_USHORT:
-        case TYP_INT:
-        case TYP_UINT:
-        {
-            return Compiler::getUnsignedSimdBaseType(simdBaseType);
-        }
-
-        default:
-        {
-            return TYP_UNDEF;
-        }
-    }
-}
-
-//----------------------------------------------------------------------------------------------
 // IsHWIntrinsicCmpMaskExtractMsb: Checks if an ExtractMostSignificantBits node consumes a SIMD
 // comparison mask.
 //
 // Arguments:
-//    comp - The compiler instance.
-//    node - The hwintrinsic node.
+//    comp         - The compiler instance.
+//    node         - The hwintrinsic node.
+//    simdBaseType - On success, the unsigned SIMD base type of the reduction; otherwise unchanged.
 //
 // Return Value:
 //    True if the node is an ExtractMostSignificantBits over a SIMD comparison mask.
 //
-static bool IsHWIntrinsicCmpMaskExtractMsb(Compiler* comp, GenTreeHWIntrinsic* node)
+static bool IsHWIntrinsicCmpMaskExtractMsb(Compiler* comp, GenTreeHWIntrinsic* node, var_types* simdBaseType = nullptr)
 {
     if (node->GetHWIntrinsicId() != NI_Vector_ExtractMostSignificantBits)
     {
         return false;
     }
 
-    var_types simdBaseType = NormalizeCmpMaskSimdBaseType(node->GetSimdBaseType());
+    var_types unsignedSimdBaseType = Compiler::getUnsignedSimdBaseType(node->GetSimdBaseType());
 
-    if (simdBaseType == TYP_UNDEF)
+    // AdvSimd does not support across or pairwise reductions for 64-bit elements.
+    if (unsignedSimdBaseType == TYP_ULONG)
     {
         return false;
     }
 
     GenTree* op1 = node->Op(1);
 
-    return op1->IsVectorPerElementMask(comp, simdBaseType, node->GetSimdSize());
+    if (!op1->IsVectorPerElementMask(comp, unsignedSimdBaseType, node->GetSimdSize()))
+    {
+        return false;
+    }
+
+    if (simdBaseType != nullptr)
+    {
+        *simdBaseType = unsignedSimdBaseType;
+    }
+
+    return true;
 }
 
 //----------------------------------------------------------------------------------------------
@@ -1539,15 +1521,8 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsb(GenTree** use, Compiler::
 {
     GenTreeHWIntrinsic* node = (*use)->AsHWIntrinsic();
 
-    var_types simdBaseType = node->GetSimdBaseType();
-    unsigned  simdSize     = node->GetSimdSize();
-
-    simdBaseType = NormalizeCmpMaskSimdBaseType(simdBaseType);
-
-    if (simdBaseType == TYP_UNDEF)
-    {
-        return false;
-    }
+    var_types simdBaseType;
+    unsigned  simdSize = node->GetSimdSize();
 
     if (parents.Height() <= 1)
     {
@@ -1570,12 +1545,12 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsb(GenTree** use, Compiler::
         return false;
     }
 
-    GenTree* op1 = node->Op(1);
-
-    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, node))
+    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, node, &simdBaseType))
     {
         return false;
     }
+
+    GenTree* op1 = node->Op(1);
 
     // A comparison produces elements whose value is either all-bits-set or zero. When the
     // ExtractMostSignificantBits result is only being compared against zero, use a horizontal max
@@ -1627,15 +1602,10 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbPopCount(GenTree** use, Co
         return false;
     }
 
-    GenTreeHWIntrinsic* extractNode  = extract->AsHWIntrinsic();
-    var_types           simdBaseType = NormalizeCmpMaskSimdBaseType(extractNode->GetSimdBaseType());
+    GenTreeHWIntrinsic* extractNode = extract->AsHWIntrinsic();
+    var_types           simdBaseType;
 
-    if (simdBaseType == TYP_UNDEF)
-    {
-        return false;
-    }
-
-    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, extractNode))
+    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, extractNode, &simdBaseType))
     {
         return false;
     }
@@ -1714,15 +1684,10 @@ bool Rationalizer::RewriteHWIntrinsicCmpMaskExtractMsbZeroCount(GenTree** use, C
         return false;
     }
 
-    GenTreeHWIntrinsic* extractNode  = extract->AsHWIntrinsic();
-    var_types           simdBaseType = NormalizeCmpMaskSimdBaseType(extractNode->GetSimdBaseType());
+    GenTreeHWIntrinsic* extractNode = extract->AsHWIntrinsic();
+    var_types           simdBaseType;
 
-    if (simdBaseType == TYP_UNDEF)
-    {
-        return false;
-    }
-
-    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, extractNode))
+    if (!IsHWIntrinsicCmpMaskExtractMsb(m_compiler, extractNode, &simdBaseType))
     {
         return false;
     }
