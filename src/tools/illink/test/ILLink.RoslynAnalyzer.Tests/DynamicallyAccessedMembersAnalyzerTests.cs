@@ -3,15 +3,14 @@
 
 using System.Threading.Tasks;
 using ILLink.Shared;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
-using Microsoft.CodeAnalysis.Text;
+using SourceGenerators.Tests;
 using Xunit;
 using VerifyCS = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
     ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
     ILLink.CodeFix.DynamicallyAccessedMembersCodeFixProvider>;
-using VerifyCSNoCodeFix = ILLink.RoslynAnalyzer.Tests.CSharpCodeFixVerifier<
-    ILLink.RoslynAnalyzer.DynamicallyAccessedMembersAnalyzer,
-    Microsoft.CodeAnalysis.Testing.EmptyCodeFixProvider>;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
@@ -401,7 +400,7 @@ namespace ILLink.RoslynAnalyzer.Tests
             // (5,9): warning IL2075: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethod(String)'. The return value of method 'Referenced.GetFoo()' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
             // No code fix location is expected, because 'Referenced.GetFoo()' is declared outside of the compilation being analyzed.
             return VerifyDynamicallyAccessedMembersAnalyzerWithProjectReference(source, referencedSource,
-                VerifyCSNoCodeFix.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
                 .WithSpan(5, 9, 5, 45)
                 .WithArguments("System.Type.GetMethod(String)", "Referenced.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'"));
         }
@@ -432,50 +431,35 @@ namespace ILLink.RoslynAnalyzer.Tests
 
             // (6,108): warning IL2092: 'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the parameter 't' of method 'Derived.M(Type)' don't match overridden parameter 't' of method 'Base.M(Type)'. All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
             return VerifyDynamicallyAccessedMembersAnalyzerWithProjectReference(source, referencedSource,
-                VerifyCSNoCodeFix.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
                 .WithSpan(6, 108, 6, 109)
                 .WithArguments("t", "Derived.M(Type)", "t", "Base.M(Type)"));
         }
 
         /// <summary>
-        /// Runs the analyzer against <paramref name="source"/> with <paramref name="referencedSource"/> compiled into a
-        /// separate project that is referenced by project reference. The Roslyn test infrastructure models this as a
-        /// <see cref="Microsoft.CodeAnalysis.CompilationReference"/>, which is how the IDE models project-to-project
-        /// references. Symbols exposed that way are source symbols whose declaring syntax lives in a syntax tree that is
-        /// not part of the compilation being analyzed, so no code fix location may be attached to diagnostics about them
-        /// - otherwise Roslyn rejects the diagnostic and reports AD0001 instead.
+        /// Runs the analyzer against <paramref name="source"/>, with <paramref name="referencedSource"/> compiled
+        /// separately and referenced via a <see cref="Microsoft.CodeAnalysis.CompilationReference"/>, which is how the
+        /// IDE models a project-to-project reference. Symbols exposed that way are source symbols whose declaring
+        /// syntax lives in a syntax tree that is not part of the compilation being analyzed, so no code fix location
+        /// may be attached to diagnostics about them - otherwise Roslyn rejects the diagnostic and reports AD0001.
         /// </summary>
         static Task VerifyDynamicallyAccessedMembersAnalyzerWithProjectReference(
             string source,
             string referencedSource,
             params DiagnosticResult[] expected)
         {
-            const string ReferencedProjectName = "ReferencedProject";
+            var referencedCompilation = CSharpCompilation.Create(
+                assemblyName: "ReferencedProject",
+                syntaxTrees: new[] { CSharpSyntaxTree.ParseText(referencedSource, new CSharpParseOptions(LanguageVersion.Preview)) },
+                references: LiveReferencePack.GetMetadataReferences(),
+                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
-            var test = new VerifyCSNoCodeFix.Test
-            {
-                TestState =
-                {
-                    Sources = { source },
-                    AdditionalProjectReferences = { ReferencedProjectName },
-                    AdditionalProjects =
-                    {
-                        [ReferencedProjectName] =
-                        {
-                            Sources = { referencedSource }
-                        }
-                    }
-                }
-            };
-
-            test.TestState.AdditionalProjects[ReferencedProjectName].AdditionalReferences.AddRange(test.TestState.AdditionalReferences);
-            test.TestState.AnalyzerConfigFiles.Add(("/.editorconfig", SourceText.From($"""
-            is_global = true
-            build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true
-            """)));
-            test.ExpectedDiagnostics.AddRange(expected);
-
-            return test.RunAsync();
+            return VerifyCS.VerifyAnalyzerAsync(
+                source,
+                consoleApplication: false,
+                TestCaseUtils.UseMSBuildProperties(MSBuildPropertyOptionNames.EnableTrimAnalyzer),
+                additionalReferences: new[] { referencedCompilation.ToMetadataReference() },
+                expected: expected);
         }
 
         #endregion
