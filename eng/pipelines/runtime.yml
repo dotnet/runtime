@@ -1174,8 +1174,7 @@ extends:
                     eq(variables['_archParameter'], '-arch x64')))
 
       #
-      # iOS Simulator
-      # Temporarily use the iOS Simulator instead of iOS devices until https://github.com/dotnet/runtime/issues/123796 is resolved.
+      # iOS devices
       # Build the whole product using Native AOT and run libraries tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1185,7 +1184,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1218,8 +1217,7 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS Simulator
-      # Temporarily use the iOS Simulator instead of iOS devices until https://github.com/dotnet/runtime/issues/123796 is resolved.
+      # iOS devices
       # Build the whole product using CoreCLR and run libraries tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1229,7 +1227,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
