@@ -1675,6 +1675,12 @@ CDAC_GLOBAL_STRING(Architecture, wasm)
 
 CDAC_GLOBAL_STRING(RuntimeFlavor, Coreclr)
 
+CDAC_GLOBAL(RuntimeFileVersionMajor, T_UINT32, RuntimeFileMajorVersion)
+CDAC_GLOBAL(RuntimeFileVersionMinor, T_UINT32, RuntimeFileMinorVersion)
+CDAC_GLOBAL(RuntimeFileVersionBuild, T_UINT32, RuntimeFileBuildVersion)
+CDAC_GLOBAL(RuntimeFileVersionRevision, T_UINT32, RuntimeFileRevisionVersion)
+CDAC_GLOBAL_STRING(RuntimeProductVersionString, RuntimeProductVersion)
+
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL(GCInfoVersion, T_UINT32, GCINFO_VERSION)

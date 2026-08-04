@@ -10,8 +10,10 @@ internal sealed class RuntimeInfo_1 : IRuntimeInfo
     private readonly Target _target;
 
     private RuntimeInfoArchitecture? _architecture;
+    private Version? _runtimeFileVersion;
     private RuntimeInfoOperatingSystem? _operatingSystem;
     private RuntimeInfoRuntimeFlavor? _runtimeFlavor;
+    private string? _runtimeProductVersion;
     private uint? _recommendedReaderVersion;
 
     public RuntimeInfo_1(Target target)
@@ -22,8 +24,10 @@ internal sealed class RuntimeInfo_1 : IRuntimeInfo
     public void Flush(FlushScope scope)
     {
         _architecture = null;
+        _runtimeFileVersion = null;
         _operatingSystem = null;
         _runtimeFlavor = null;
+        _runtimeProductVersion = null;
         _recommendedReaderVersion = null;
     }
 
@@ -35,6 +39,12 @@ internal sealed class RuntimeInfo_1 : IRuntimeInfo
 
     RuntimeInfoRuntimeFlavor IRuntimeInfo.GetRuntimeFlavor()
         => _runtimeFlavor ??= ReadRuntimeFlavor();
+
+    Version IRuntimeInfo.GetRuntimeFileVersion()
+        => _runtimeFileVersion ??= ReadRuntimeFileVersion();
+
+    string IRuntimeInfo.GetRuntimeProductVersion()
+        => _runtimeProductVersion ??= _target.ReadGlobalString(Constants.Globals.RuntimeProductVersionString);
 
     uint IRuntimeInfo.GetCurrentReaderVersion() => 1;
 
@@ -79,6 +89,13 @@ internal sealed class RuntimeInfo_1 : IRuntimeInfo
 
         return RuntimeInfoRuntimeFlavor.Unknown;
     }
+
+    private Version ReadRuntimeFileVersion()
+        => new(
+            checked((int)_target.ReadGlobal<uint>(Constants.Globals.RuntimeFileVersionMajor)),
+            checked((int)_target.ReadGlobal<uint>(Constants.Globals.RuntimeFileVersionMinor)),
+            checked((int)_target.ReadGlobal<uint>(Constants.Globals.RuntimeFileVersionBuild)),
+            checked((int)_target.ReadGlobal<uint>(Constants.Globals.RuntimeFileVersionRevision)));
 
     private uint ReadRecommendedReaderVersion()
     {

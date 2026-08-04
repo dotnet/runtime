@@ -33,6 +33,11 @@ public static class Constants
         public const string SOSBreakingChangeVersion = nameof(SOSBreakingChangeVersion);
         public const string RecommendedReaderVersion = nameof(RecommendedReaderVersion);
         public const string CorDBDefaultEnCFunctionVersion = nameof(CorDBDefaultEnCFunctionVersion);
+        public const string RuntimeFileVersionBuild = nameof(RuntimeFileVersionBuild);
+        public const string RuntimeFileVersionMajor = nameof(RuntimeFileVersionMajor);
+        public const string RuntimeFileVersionMinor = nameof(RuntimeFileVersionMinor);
+        public const string RuntimeFileVersionRevision = nameof(RuntimeFileVersionRevision);
+        public const string RuntimeProductVersionString = nameof(RuntimeProductVersionString);
 
         public const string ContinuationMethodTable = nameof(ContinuationMethodTable);
         public const string CanonMethodTable = nameof(CanonMethodTable);

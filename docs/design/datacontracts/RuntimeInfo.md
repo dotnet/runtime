@@ -52,6 +52,12 @@ RuntimeInfoOperatingSystem GetTargetOperatingSystem();
 // implemented or call contract APIs that probe for specific capabilities.
 RuntimeInfoRuntimeFlavor GetRuntimeFlavor();
 
+// Gets the four-part file version used for the runtime binary.
+Version GetRuntimeFileVersion();
+
+// Gets the runtime product version, including any prerelease label and build number.
+string GetRuntimeProductVersion();
+
 // Returns the runtime's RecommendedReaderVersion global. Returns 0 if the global is absent.
 uint GetRecommendedReaderVersion();
 
@@ -73,7 +79,12 @@ _None._
 | `Architecture` | `string` | Target architecture |
 | `OperatingSystem` | `string` | Target operating system |
 | `RecommendedReaderVersion` | `uint32` | Incremented when an update to the latest contracts is recommended |
+| `RuntimeFileVersionBuild` | `uint32` | Build component of the runtime file version |
+| `RuntimeFileVersionMajor` | `uint32` | Major component of the runtime file version |
+| `RuntimeFileVersionMinor` | `uint32` | Minor component of the runtime file version |
+| `RuntimeFileVersionRevision` | `uint32` | Revision component of the runtime file version |
 | `RuntimeFlavor` | `string` | Target runtime flavor |
+| `RuntimeProductVersionString` | `string` | Runtime product version, including prerelease information |
 
 ### Contracts used
 
@@ -84,6 +95,11 @@ _None._
 The contract implementation returns the architecture, operating system, and runtime flavor global
 values parsed as the respective enum case-insensitively. If these globals are not available, the
 contract returns Unknown.
+
+The runtime file version is constructed from the `RuntimeFileVersionMajor`,
+`RuntimeFileVersionMinor`, `RuntimeFileVersionBuild`, and `RuntimeFileVersionRevision`
+globals. The runtime product version is returned directly from the
+`RuntimeProductVersionString` global.
 
 `Apple` covers all Apple platforms (macOS, iOS, tvOS, MacCatalyst) — i.e. any target where the
 runtime is compiled with `TARGET_APPLE` defined. It is distinct from `Unix` so that consumers which

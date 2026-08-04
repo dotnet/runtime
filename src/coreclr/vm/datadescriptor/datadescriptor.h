@@ -11,6 +11,7 @@
 #include <stddef.h>
 
 #include <sospriv.h>
+#include <runtime_version.h>
 #include "cdacplatformmetadata.hpp"
 #include "interoplibinterface_comwrappers.h"
 #include "comcallablewrapper.h"
