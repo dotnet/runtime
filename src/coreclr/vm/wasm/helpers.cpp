@@ -813,19 +813,10 @@ FCIMPL0(void, JIT_PollGC)
     // pending GC can suspend and walk this thread's R2R frames at this safe point. The end sequence then
     // returns to cooperative mode; when a GC/abort is still pending JIT_PInvokeEndRarePath performs the
     // actual suspension (RareDisablePreemptiveGC), services any ThreadAbort, and pops the frame.
-    InlinedCallFrame inlinedCallFrame;
-    JIT_PInvokeBeginImpl((void*)callersStackPointer, &inlinedCallFrame);
-
-    Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
-    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
-    if (g_TrapReturningThreads)
-    {
-        JIT_PInvokeEndRarePath();
-    }
-    else
-    {
-        inlinedCallFrame.Pop();
-    }
+    alignas(InlinedCallFrame) uint8_t inlinedCallFrameStorage[sizeof(InlinedCallFrame)];
+    InlinedCallFrame* pInlinedCallFrame = reinterpret_cast<InlinedCallFrame*>(inlinedCallFrameStorage);
+    JIT_PInvokeBeginImpl(reinterpret_cast<void*>(callersStackPointer), pInlinedCallFrame);
+    JIT_PInvokeEnd(reinterpret_cast<void*>(callersStackPointer), pInlinedCallFrame, portableEntryPointContext);
 }
 FCIMPLEND
 
