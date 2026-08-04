@@ -280,7 +280,7 @@ bool emitter::HasRex2Encoding(instruction ins)
 bool emitter::IsApxNddCompatibleInstruction(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_Has_NDD) != 0;
+    return (flags & INS_FLAGS_HAS_NDD) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -295,7 +295,7 @@ bool emitter::IsApxNddCompatibleInstruction(instruction ins)
 bool emitter::IsApxNfCompatibleInstruction(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_Has_NF) != 0;
+    return (flags & INS_FLAGS_HAS_NF) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -392,7 +392,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
         }
 
         insFlags flags = CodeGenInterface::instInfo[ins];
-        return ((flags & INS_FLAGS_APX_EVEX_Mask) != 0) || IsBMIInstruction(ins) || IsKMOVInstruction(ins);
+        return ((flags & INS_FLAGS_APX_EVEX_MASK) != 0) || IsBMIInstruction(ins) || IsKMOVInstruction(ins);
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
@@ -416,7 +416,7 @@ bool emitter::IsEvexEncodableInstruction(instruction ins) const
 
     // APX-only instructions and instructions with NDD/NF support
     // can be EVEX-encoded when promoted EVEX encoding is available.
-    if ((flags & INS_FLAGS_APX_EVEX_Mask) != 0)
+    if ((flags & INS_FLAGS_APX_EVEX_MASK) != 0)
     {
         return UsePromotedEVEXEncoding();
     }
@@ -552,7 +552,7 @@ bool emitter::IsApxExtendedEvexInstruction(instruction ins) const
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_FLAGS_APX_EVEX_Mask) != 0;
+    return (flags & INS_FLAGS_APX_EVEX_MASK) != 0;
 #else // !TARGET_AMD64
     return false;
 #endif
@@ -689,7 +689,7 @@ bool emitter::IsDstDstSrcAVXInstruction(instruction ins) const
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_IsDstDstSrcAVXInstruction) != 0;
+    return (flags & INS_FLAGS_IS_DST_DST_SRC_AVX_INSTRUCTION) != 0;
 }
 
 // Returns true if the AVX instruction requires 3 operands that duplicate the source
@@ -702,7 +702,7 @@ bool emitter::IsDstSrcSrcAVXInstruction(instruction ins) const
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_IsDstSrcSrcAVXInstruction) != 0;
+    return (flags & INS_FLAGS_IS_DST_SRC_SRC_AVX_INSTRUCTION) != 0;
 }
 
 bool emitter::IsThreeOperandAVXInstruction(instruction ins) const
@@ -713,7 +713,7 @@ bool emitter::IsThreeOperandAVXInstruction(instruction ins) const
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_Is3OperandInstructionMask) != 0;
+    return (flags & INS_FLAGS_IS_3_OPERAND_INSTRUCTION_MASK) != 0;
 }
 
 // Returns true if the AVX instruction has op1/op2 being commutative
@@ -725,7 +725,7 @@ bool emitter::IsAvxCommutative(instruction ins) const
     }
 
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_Flags_IsAvxCommutative) != 0;
+    return (flags & INS_FLAGS_IS_AVX_COMMUTATIVE) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -746,7 +746,7 @@ bool emitter::IsAvxCommutative(instruction ins) const
 bool emitter::HasRegularWideForm(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_FLAGS_Has_Wbit) != 0;
+    return (flags & INS_FLAGS_HAS_W_BIT) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -766,7 +766,7 @@ bool emitter::HasRegularWideForm(instruction ins)
 bool emitter::HasRegularWideImmediateForm(instruction ins)
 {
     insFlags flags = CodeGenInterface::instInfo[ins];
-    return (flags & INS_FLAGS_Has_Sbit) != 0;
+    return (flags & INS_FLAGS_HAS_S_BIT) != 0;
 }
 
 //------------------------------------------------------------------------
@@ -2306,7 +2306,7 @@ emitter::code_t emitter::AddEvexPrefix(const instrDesc* id, code_t code, emitAtt
             // (ADD, SUB, IMUL, INC, DEC, ...), all of which move to Map 4 under EVEX.
             //
             // VEX- and EVEX-origin instructions that are merely APX-promoted (e.g. BLSR with NF via
-            // INS_Flags_Has_NF) keep their original map (map 2 for 0F38, etc.); their mm bits are
+            // INS_FLAGS_HAS_NF) keep their original map (map 2 for 0F38, etc.); their mm bits are
             // written later by emitExtractEvexPrefix from the opcode's leading bytes. Applying MAP4
             // to those instructions would merge mmm[2]=1 with mm=0b10 from 0F38 extraction,
             // producing mmm=0b110 (map 6) instead of the correct 0b010 (map 2).
