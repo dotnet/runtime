@@ -902,6 +902,8 @@ class BaseContract
 class Contract final : public BaseContract
 { };
 
+#define EE_THREAD_NOT_REQUIRED
+
 #endif // ENABLE_CONTRACTS_IMPL
 
 
@@ -1155,8 +1157,6 @@ public:
 #define CONTRACTL  CONTRACTL_SETUP(EEContract)
 #define LIMITED_METHOD_CONTRACT CUSTOM_LIMITED_METHOD_CONTRACT(EEContract)
 #define WRAPPER_NO_CONTRACT CUSTOM_WRAPPER_NO_CONTRACT(EEContract)
-
-#define EE_THREAD_NOT_REQUIRED
 
 #else // ENABLE_CONTRACTS_IMPL
 
@@ -1588,6 +1588,7 @@ inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 
 #else // defined(ENABLE_CONTRACTS_IMPL)
 
+#ifdef ENABLE_CONTRACTS_DATA
 inline ClrDebugState *GetClrDebugState(BOOL fAlloc)
 {
     static ClrDebugState s_ClrDebugState;
@@ -1598,6 +1599,7 @@ inline ClrDebugState *CheckClrDebugState()
 {
     return GetClrDebugState(FALSE);
 }
+#endif // ENABLE_CONTRACTS_DATA
 
 #define LOCK_TAKEN_MULTIPLE(dbgStateLockType, cEntrances, pvLock)
 #define LOCK_RELEASED_MULTIPLE(dbgStateLockType, cExits, pvLock)
