@@ -616,7 +616,6 @@ namespace System.Formats.Tar
                 {
                     if (!Resolve(ref rootPathLocal, resolvedPath, directoryPath, out resolvedPath, visitedLinks))
                     {
-                        resolvedFullPath = resolvedPath;
                         throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkTarget, _destination));
                     }
                     Debug.Assert(rootPathLocal is not null);
@@ -636,8 +635,9 @@ namespace System.Formats.Tar
             }
 
             // Returns whether the path formed by combining baseFullPath and relativePath resides in either the root path or the destination path.
-            // The root path tracks a location that may not be in the destination path but which is reachable and considered a root that a delayed link target may point under.
-            private bool Resolve(ref string? rootPath, string baseFullPath, ReadOnlySpan<char> relativePath, out string resolvedFullPath, HashSet<FileId>? visitedLinks)
+            // The containmentRootPath path tracks a location that may not be in the destination path but which is reachable (via preexisting links)
+            // and considered a root that a delayed link target may point under.
+            private bool Resolve(ref string? containmentRootPath, string baseFullPath, ReadOnlySpan<char> relativePath, out string resolvedFullPath, HashSet<FileId>? visitedLinks)
             {
                 resolvedFullPath = baseFullPath;
                 bool checkExists = true;
@@ -661,7 +661,7 @@ namespace System.Formats.Tar
                         resolvedFullPathSpan = Path.GetDirectoryName(resolvedFullPathSpan);
                         resolvedFullPath = resolvedFullPathSpan.IsEmpty ? resolvedFullPath : resolvedFullPathSpan.ToString();
 
-                        if (!IsInRootOrDestination(rootPath, resolvedFullPath))
+                        if (containmentRootPath is not null && !IsInRootOrDestination(containmentRootPath, resolvedFullPath))
                         {
                             return false;
                         }
@@ -715,8 +715,9 @@ namespace System.Formats.Tar
 
                     if (isSymlink)
                     {
-                        if (!FollowExistingSymlink(ref rootPath, resolvedFullPath, linkTarget, visitedLinks, out resolvedFullPath))
+                        if (!FollowExistingSymlink(ref containmentRootPath, resolvedFullPath, linkTarget, visitedLinks, out resolvedFullPath))
                         {
+                            Debug.Fail("Should be able to follow existing symlinks");
                             return false;
                         }
                     }
@@ -725,10 +726,10 @@ namespace System.Formats.Tar
                         // Pending link. A fully qualified target must point inside the destination.
                         if (Path.IsPathFullyQualified(linkTarget))
                         {
-                            rootPath = _resolvedDestination;
+                            containmentRootPath = _resolvedDestination;
                         }
                         // If no rootPath was set yet, limit the pending link to the destination dir.
-                        AddPendingLink(rootPath ?? _destination, fileId, pendingLink.SymlinkPath!, pendingLink.LinkTarget!, visitedLinks, out resolvedFullPath);
+                        AddPendingLink(containmentRootPath ?? _destination, fileId, pendingLink.SymlinkPath!, pendingLink.LinkTarget!, visitedLinks, out resolvedFullPath);
                     }
 
                     if (!visitedLinks.Remove(fileId))
@@ -738,7 +739,7 @@ namespace System.Formats.Tar
                     }
                 }
 
-                return IsInRootOrDestination(rootPath, resolvedFullPath);
+                return containmentRootPath is null || IsInRootOrDestination(containmentRootPath, resolvedFullPath);
             }
 
             // Follows a pre-existing symlink that is already on disk. Existing symlinks are not limited to a root path;
@@ -758,6 +759,7 @@ namespace System.Formats.Tar
                     resolveTarget = linkTarget;
                 }
 
+                // set root path as null to disable the containment checks inside Resolve
                 string? symlinkRootPath = null;
                 if (!Resolve(ref symlinkRootPath, resolveFrom, resolveTarget, out resolvedFullPath, visitedLinks))
                 {
@@ -772,10 +774,9 @@ namespace System.Formats.Tar
                 return true;
             }
 
-            private bool IsInRootOrDestination(string? rootPath, string resolvedPath)
-                => rootPath is null
-                || FullPathIsEqualOrNested(_destination, resolvedPath)
-                || (!ReferenceEquals(rootPath, _destination) && FullPathIsEqualOrNested(rootPath, resolvedPath));
+            private bool IsInRootOrDestination(string rootPath, string resolvedPath)
+                => FullPathIsEqualOrNested(rootPath, resolvedPath)
+                || (!ReferenceEquals(rootPath, _destination) && FullPathIsEqualOrNested(_destination, resolvedPath));
         }
     }
 }
