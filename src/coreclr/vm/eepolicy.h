@@ -57,6 +57,10 @@ public:
         FatalErrorPlatformPropertyGetter getPlatformProperty,
         void* context);
 
+#ifdef TARGET_WINDOWS
+    static void HandleFatalErrorForNativeException(PEXCEPTION_POINTERS pExceptionInfo);
+#endif
+
 private:
     static void InvokeFatalErrorHandlerForNativeException(
         DWORD exceptionCode,

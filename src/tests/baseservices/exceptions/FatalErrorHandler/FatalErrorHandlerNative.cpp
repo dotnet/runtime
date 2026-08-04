@@ -12,6 +12,8 @@
 
 #include <fatal_error_handling.h> // Public API for fatal error handling
 
+#include <thread>
+
 #ifdef _WIN32
 #include <windows.h>
 #else
@@ -150,6 +152,16 @@ extern "C" DLL_EXPORT void TriggerNativeAccessViolation()
 {
     volatile int* p = NULL;
     *p = 0;
+}
+
+// Triggers a native access violation on a raw OS thread that has no managed
+// Thread object, matching the thread model used by CoreCLR server GC workers.
+extern "C" DLL_EXPORT void TriggerNativeAccessViolationOnNewThread()
+{
+    std::thread(TriggerNativeAccessViolation).join();
+
+    // The process should have terminated from the access violation.
+    abort();
 }
 
 extern "C" DLL_EXPORT void TriggerNativeAbort()

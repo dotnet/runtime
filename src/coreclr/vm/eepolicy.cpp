@@ -876,11 +876,19 @@ static void InvokeFatalErrorHandler(UINT exitCode, UINT_PTR address)
             return;
         }
 
-        // A different thread is already running the handler and terminating the process. Switch
-        // to preemptive mode to avoid blocking that thread (it may suspend the runtime for GC
-        // while reporting) and wait here until the process exits.
-        GCX_PREEMP();
-        ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
+        // A different thread is already running the handler and terminating the process.
+        // Managed threads must switch to preemptive mode before waiting because the owner
+        // may suspend the runtime while reporting. Native utility threads have no Thread
+        // object and are not part of managed suspension.
+        if (GetThreadNULLOk() != nullptr)
+        {
+            GCX_PREEMP();
+            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
+        }
+        else
+        {
+            ClrSleepEx(INFINITE, /*bAlertable*/ FALSE);
+        }
     }
 
     // Capture the crash address for the property getter.
@@ -963,6 +971,39 @@ static bool IsFatalHardwareExceptionForFatalErrorHandler(DWORD exceptionCode)
     default:
         return false;
     }
+}
+
+void EEPolicy::HandleFatalErrorForNativeException(PEXCEPTION_POINTERS pExceptionInfo)
+{
+    WRAPPER_NO_CONTRACT;
+
+    _ASSERTE(pExceptionInfo != nullptr && pExceptionInfo->ExceptionRecord != nullptr);
+
+    DWORD exceptionCode = pExceptionInfo->ExceptionRecord->ExceptionCode;
+    if (!IsFatalHardwareExceptionForFatalErrorHandler(exceptionCode))
+    {
+        return;
+    }
+
+    // Only genuine hardware faults reach this point, and the OS always supplies a
+    // context record for those when the top-level unhandled filter is invoked.
+    _ASSERTE(pExceptionInfo->ContextRecord != nullptr);
+
+    WindowsFatalErrorContext fatalErrorContext =
+    {
+        pExceptionInfo->ExceptionRecord,
+        pExceptionInfo->ContextRecord
+    };
+
+    InvokeFatalErrorHandlerForNativeException(
+        exceptionCode,
+        pExceptionInfo->ExceptionRecord->ExceptionAddress,
+        pExceptionInfo,
+        GetWindowsFatalErrorProperty,
+        &fatalErrorContext,
+        nullptr,
+        nullptr,
+        nullptr);
 }
 
 #endif // TARGET_WINDOWS

@@ -35,6 +35,9 @@ unsafe class FatalErrorHandlerTest
     private static extern void TriggerNativeAccessViolation();
 
     [DllImport("FatalErrorHandlerNative")]
+    private static extern void TriggerNativeAccessViolationOnNewThread();
+
+    [DllImport("FatalErrorHandlerNative")]
     private static extern void TriggerNativeAbort();
 
     //
@@ -84,6 +87,13 @@ unsafe class FatalErrorHandlerTest
         // Trigger an access violation from *native* code (inside the P/Invoked
         // TriggerNativeAccessViolation).
         TriggerNativeAccessViolation();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunChildNativeThreadException()
+    {
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckNativeInfo());
+        TriggerNativeAccessViolationOnNewThread();
     }
 
     private sealed class CorruptedObject
@@ -309,14 +319,14 @@ unsafe class FatalErrorHandlerTest
         return handlerInvoked && addressReported && addressPopulated && exited;
     }
 
-    static bool TestNativeCodeException()
+    static bool TestNativeCodeException(string scenario)
     {
-        Console.WriteLine("=== TestNativeCodeException ===");
+        Console.WriteLine($"=== TestNativeCodeException ({scenario}) ===");
 
         // A genuinely unmanaged fatal fault (an access violation whose faulting
         // instruction pointer is inside native code).
 
-        var (exitCode, stderr) = LaunchChild("native-code-exception");
+        var (exitCode, stderr) = LaunchChild(scenario);
 
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
         // For the unmanaged fatal path the runtime forwards the live platform-native fault
@@ -359,6 +369,18 @@ unsafe class FatalErrorHandlerTest
             Console.WriteLine("  FAIL: Expected non-zero exit code");
 
         return handlerInvoked && addressPopulated && logAvailabilityCorrect && platformInfoPopulated && exited;
+    }
+
+    static bool TestNativeThreadException()
+    {
+        if (!TestLibrary.Utilities.IsNativeAot && !OperatingSystem.IsWindows())
+        {
+            Console.WriteLine("=== TestNativeThreadException ===");
+            Console.WriteLine("  SKIP: CoreCLR raw native-thread handling is Windows-specific");
+            return true;
+        }
+
+        return TestNativeCodeException("native-thread-exception");
     }
 
     static bool TestCorruptedObject()
@@ -492,6 +514,7 @@ unsafe class FatalErrorHandlerTest
                 case "log-handler":  RunChildLogHandler();  return 1;
                 case "native-exception":        RunChildNativeException();         return 1;
                 case "native-code-exception":   RunChildNativeCodeException();      return 1;
+                case "native-thread-exception": RunChildNativeThreadException();    return 1;
                 case "corrupted-object":        RunChildCorruptedObject();          return 1;
                 case "native-abort":            RunChildNativeAbort();              return 1;
                 case "nested-native-exception": RunChildNestedNativeException();   return 1;
@@ -507,7 +530,8 @@ unsafe class FatalErrorHandlerTest
         allPassed &= TestRunHandler();
         allPassed &= TestLogHandler();
         allPassed &= TestNativeException("native-exception");
-        allPassed &= TestNativeCodeException();
+        allPassed &= TestNativeCodeException("native-code-exception");
+        allPassed &= TestNativeThreadException();
         allPassed &= TestCorruptedObject();
         allPassed &= TestNativeAbort();
         allPassed &= TestNestedHardwareFault();
