@@ -97,7 +97,7 @@ namespace System.IO.Compression
             if (overwrite && File.Exists(destinationFileName))
             {
                 // Use GetTempFileName for a unique temp file in the system temp directory.
-                // This avoids conflicts and ensures cleanup by the OS if the process crashes.
+                // This avoids conflicts; we attempt to delete the temp file if extraction fails.
                 tempPath = Path.GetTempFileName();
                 extractPath = tempPath;
             }
