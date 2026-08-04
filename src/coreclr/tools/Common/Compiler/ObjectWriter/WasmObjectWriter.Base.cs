@@ -21,11 +21,6 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal abstract partial class WasmObjectWriter : ObjectWriter
     {
-        public const int StackPointerGlobalIndex = WasmGlobalImports.StackPointerGlobalIndex;
-        public const int ImageBaseGlobalIndex = WasmGlobalImports.ImageBaseGlobalIndex;
-        public const int TableBaseGlobalIndex = WasmGlobalImports.TableBaseGlobalIndex;
-        public const int AsyncContinuationGlobalIndex = WasmGlobalImports.AsyncContinuationGlobalIndex;
-
         private readonly Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
         {
             { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
@@ -74,13 +69,10 @@ namespace ILCompiler.ObjectWriter
         {
             get
             {
-                if (_sectionEmitOrder is null)
-                {
-                    _sectionEmitOrder = _sectionOrder
-                        .Where(name => _sections.Contains(name))
-                        .Select(name => _sections.GetSectionIndex(name))
-                        .ToArray();
-                }
+                _sectionEmitOrder ??= _sectionOrder
+                    .Where(_sections.Contains)
+                    .Select(_sections.GetSectionIndex)
+                    .ToArray();
 
                 return _sectionEmitOrder;
             }
