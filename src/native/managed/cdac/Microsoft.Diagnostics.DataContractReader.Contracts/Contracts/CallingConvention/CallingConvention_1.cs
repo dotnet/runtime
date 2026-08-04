@@ -4,11 +4,13 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using Internal.CallingConvention;
 using Internal.CorConstants;
 using Internal.JitInterface;
 using Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
 
 using CallingConventions = Internal.CallingConvention.CallingConventions;
 using CdacCorElementType = Microsoft.Diagnostics.DataContractReader.Contracts.CorElementType;
@@ -18,17 +20,16 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal sealed class CallingConvention_1 : ICallingConvention
 {
     private readonly Target _target;
-    private readonly TypeInformation _typeInformation;
+    private readonly Dictionary<ModuleHandle, SignatureTypeInfoProvider> _signatureTypeInfoProviders = [];
 
     internal CallingConvention_1(Target target)
     {
         _target = target;
-        _typeInformation = new TypeInformation(target);
     }
 
     public void Flush(FlushScope scope)
     {
-        _typeInformation.Flush();
+        _signatureTypeInfoProviders.Clear();
     }
 
     public bool TryComputeArgGCRefMapBlob(MethodDescHandle methodDesc, out byte[] blob)
@@ -53,6 +54,78 @@ internal sealed class CallingConvention_1 : ICallingConvention
         }
     }
 
+    private MethodSignature<SignatureTypeInfo> DecodeMethodSignature(MethodDescHandle methodDesc)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        ITypeHandle owningTypeHandle = rts.GetTypeHandle(rts.GetMethodTable(methodDesc));
+        ModuleHandle moduleHandle = GetModuleHandle(owningTypeHandle);
+        MetadataReader metadataReader = GetMetadataReader(moduleHandle);
+
+        if (!rts.TryGetMethodSignature(methodDesc, out ReadOnlySpan<byte> signature))
+        {
+            throw new InvalidOperationException("Method has no signature.");
+        }
+
+        SignatureTypeInfoProvider provider = GetSignatureTypeInfoProvider(moduleHandle);
+        SignatureTypeContext context = new(methodDesc, provider.FromExactType(owningTypeHandle));
+        RuntimeSignatureDecoder<SignatureTypeInfo, SignatureTypeContext> decoder =
+            new(provider, _target, metadataReader, context);
+
+        unsafe
+        {
+            fixed (byte* signaturePointer = signature)
+            {
+                BlobReader blobReader = new(signaturePointer, signature.Length);
+                return decoder.DecodeMethodSignature(ref blobReader);
+            }
+        }
+    }
+
+    internal SignatureTypeInfo GetFieldTypeInfo(TargetPointer fieldDesc, SignatureTypeInfo owningType)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        ITypeHandle enclosingType = rts.GetTypeHandle(rts.GetMTOfEnclosingClass(fieldDesc));
+        ModuleHandle moduleHandle = GetModuleHandle(enclosingType);
+        MetadataReader metadataReader = GetMetadataReader(moduleHandle);
+
+        uint memberDef = rts.GetFieldDescMemberDef(fieldDesc);
+        FieldDefinitionHandle fieldDefinitionHandle = (FieldDefinitionHandle)MetadataTokens.Handle((int)memberDef);
+        FieldDefinition fieldDefinition = metadataReader.GetFieldDefinition(fieldDefinitionHandle);
+
+        SignatureTypeContext context = new(Method: null, owningType);
+        RuntimeSignatureDecoder<SignatureTypeInfo, SignatureTypeContext> decoder =
+            new(GetSignatureTypeInfoProvider(moduleHandle), _target, metadataReader, context);
+        BlobReader blobReader = metadataReader.GetBlobReader(fieldDefinition.Signature);
+        return decoder.DecodeFieldSignature(ref blobReader);
+    }
+
+    private SignatureTypeInfoProvider GetSignatureTypeInfoProvider(ModuleHandle moduleHandle)
+    {
+        if (_signatureTypeInfoProviders.TryGetValue(moduleHandle, out SignatureTypeInfoProvider? provider))
+        {
+            return provider;
+        }
+
+        provider = new SignatureTypeInfoProvider(_target, moduleHandle);
+        _signatureTypeInfoProviders[moduleHandle] = provider;
+        return provider;
+    }
+
+    private ModuleHandle GetModuleHandle(ITypeHandle typeHandle)
+    {
+        TargetPointer modulePointer = _target.Contracts.RuntimeTypeSystem.GetModule(typeHandle);
+        if (modulePointer == TargetPointer.Null)
+        {
+            throw new InvalidOperationException("Type has no module.");
+        }
+
+        return _target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
+    }
+
+    private MetadataReader GetMetadataReader(ModuleHandle moduleHandle)
+        => _target.Contracts.EcmaMetadata.GetMetadata(moduleHandle)
+            ?? throw new InvalidOperationException("Cannot read metadata for module.");
+
     // Result of GetArgumentLayout: a single ArgIterator walk produces the
     // per-argument locations the encoder iterates plus the x86 callee-pop
     // stack-byte count it needs for the WriteStackPop prefix. Bundled so the
@@ -66,7 +139,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
         IRuntimeInfo runtimeInfo = _target.Contracts.RuntimeInfo;
 
-        MethodSignature<SignatureTypeInfo> methodSig = _typeInformation.DecodeMethodSignature(methodDesc);
+        MethodSignature<SignatureTypeInfo> methodSig = DecodeMethodSignature(methodDesc);
 
         bool isVarArg = methodSig.Header.CallingConvention is SignatureCallingConvention.VarArgs;
 
@@ -86,10 +159,10 @@ internal sealed class CallingConvention_1 : ICallingConvention
         CdacTypeHandle[] parameterTypes = new CdacTypeHandle[methodSig.ParameterTypes.Length];
         for (int i = 0; i < parameterTypes.Length; i++)
         {
-            parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target, _typeInformation);
+            parameterTypes[i] = new CdacTypeHandle(methodSig.ParameterTypes[i], _target, this);
         }
 
-        CdacTypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target, _typeInformation);
+        CdacTypeHandle returnType = new CdacTypeHandle(methodSig.ReturnType, _target, this);
 
         TransitionBlock transitionBlock = BuildTransitionBlock(runtimeInfo);
 
@@ -269,12 +342,12 @@ internal sealed class CallingConvention_1 : ICallingConvention
     private CdacTypeHandle GetObjectTypeHandle(IRuntimeTypeSystem rts)
     {
         TargetPointer objectMt = rts.GetWellKnownMethodTable(WellKnownMethodTable.Object);
-        return new CdacTypeHandle(rts.GetTypeHandle(objectMt), _target, _typeInformation);
+        return new CdacTypeHandle(rts.GetTypeHandle(objectMt), _target, this);
     }
 
     private CdacTypeHandle GetIntPtrTypeHandle(IRuntimeTypeSystem rts)
     {
-        return new CdacTypeHandle(rts.GetPrimitiveType(CdacCorElementType.I), _target, _typeInformation);
+        return new CdacTypeHandle(rts.GetPrimitiveType(CdacCorElementType.I), _target, this);
     }
 
     // =====================================================================
@@ -612,7 +685,7 @@ internal sealed class CallingConvention_1 : ICallingConvention
                 SignatureTypeInfo nestedType;
                 try
                 {
-                    nestedType = _typeInformation.GetFieldTypeInfo(fdPtr, byRefLikeType);
+                    nestedType = GetFieldTypeInfo(fdPtr, byRefLikeType);
                 }
                 catch
                 {

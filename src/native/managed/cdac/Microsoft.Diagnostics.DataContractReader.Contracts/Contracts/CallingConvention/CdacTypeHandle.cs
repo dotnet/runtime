@@ -21,12 +21,12 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
 {
     private readonly SignatureTypeInfo _typeInfo;
     private readonly Target _target;
-    private readonly TypeInformation _typeInformation;
+    private readonly CallingConvention_1 _callingConvention;
 
-    public CdacTypeHandle(CdacITypeHandle? typeHandle, Target target, TypeInformation typeInformation)
+    public CdacTypeHandle(CdacITypeHandle? typeHandle, Target target, CallingConvention_1 callingConvention)
     {
         _target = target;
-        _typeInformation = typeInformation;
+        _callingConvention = callingConvention;
         _typeInfo = typeHandle is null
             ? default
             : new SignatureTypeInfo(
@@ -34,11 +34,11 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
                 typeHandle);
     }
 
-    public CdacTypeHandle(SignatureTypeInfo typeInfo, Target target, TypeInformation typeInformation)
+    public CdacTypeHandle(SignatureTypeInfo typeInfo, Target target, CallingConvention_1 callingConvention)
     {
         _typeInfo = typeInfo;
         _target = target;
-        _typeInformation = typeInformation;
+        _callingConvention = callingConvention;
     }
 
     private IRuntimeTypeSystem Rts => _target.Contracts.RuntimeTypeSystem;
@@ -234,7 +234,7 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
                 SignatureTypeInfo nested;
                 try
                 {
-                    nested = _typeInformation.GetFieldTypeInfo(
+                    nested = _callingConvention.GetFieldTypeInfo(
                         singleFieldType.Value,
                         _typeInfo);
                 }
@@ -242,7 +242,7 @@ internal readonly struct CdacTypeHandle : Internal.CallingConvention.ITypeHandle
                 {
                     return false;
                 }
-                return new CdacTypeHandle(nested, _target, _typeInformation).IsTrivialPointerSizedStruct();
+                return new CdacTypeHandle(nested, _target, _callingConvention).IsTrivialPointerSizedStruct();
 
             default:
                 return false;

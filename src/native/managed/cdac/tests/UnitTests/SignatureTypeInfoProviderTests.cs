@@ -13,12 +13,12 @@ using Moq;
 using Xunit;
 
 using ModuleHandle = Microsoft.Diagnostics.DataContractReader.Contracts.ModuleHandle;
-using SignatureTypeContext = Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers.TypeInformation.SignatureTypeContext;
-using SignatureTypeInfoProvider = Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers.TypeInformation.SignatureTypeInfoProvider;
+using SignatureTypeContext = Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers.SignatureTypeContext;
+using SignatureTypeInfoProvider = Microsoft.Diagnostics.DataContractReader.Contracts.CallingConventionHelpers.SignatureTypeInfoProvider;
 
 namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
-public class CallingConventionTypeInformationTests
+public class SignatureTypeInfoProviderTests
 {
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
@@ -140,7 +140,7 @@ public class CallingConventionTypeInformationTests
             .AddMockContract(loader)
             .AddMockContract(ecmaMetadata)
             .Build();
-        TypeInformation typeInformation = new(target);
+        CallingConvention_1 callingConvention = new(target);
         SignatureTypeInfo owningType = new(
             CorElementType.ValueType,
             exactTypeHandle: null,
@@ -148,7 +148,7 @@ public class CallingConventionTypeInformationTests
             [argumentInfo]);
 
         SignatureTypeInfo result =
-            typeInformation.GetFieldTypeInfo(fieldDesc, owningType);
+            callingConvention.GetFieldTypeInfo(fieldDesc, owningType);
 
         Assert.Equal(argumentInfo, result);
     }
@@ -161,14 +161,14 @@ public class CallingConventionTypeInformationTests
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
             .AddMockContract(rts)
             .Build();
-        TypeInformation typeInformation = new(target);
+        CallingConvention_1 callingConvention = new(target);
         CdacTypeHandle typeHandle = new(
             new SignatureTypeInfo(
                 CorElementType.ValueType,
                 exactTypeHandle: null,
                 genericTypeDefinition: Mock.Of<ITypeHandle>()),
             target,
-            typeInformation);
+            callingConvention);
 
         Assert.True(typeHandle.HasIndeterminateSize());
         Assert.Throws<NotImplementedException>(() => typeHandle.GetSize());
@@ -192,7 +192,7 @@ public class CallingConventionTypeInformationTests
         MetadataBuilder metadataBuilder = new();
         metadataBuilder.AddModule(
             generation: 0,
-            metadataBuilder.GetOrAddString("CallingConventionTypeInformationTests"),
+            metadataBuilder.GetOrAddString(nameof(SignatureTypeInfoProviderTests)),
             metadataBuilder.GetOrAddGuid(Guid.Empty),
             encId: default,
             encBaseId: default);
