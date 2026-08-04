@@ -5,6 +5,7 @@
     <!-- This test leaves random number of WaitOrTimerCallbacks registered at the exit, which prevents unloading -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(FeatureMultithreading)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="437017.cs" />

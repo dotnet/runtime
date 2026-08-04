@@ -8,6 +8,8 @@ public class Test
     // This test uses the same set of types as the type system unittests use, and attempts to validate that the R2R usage of said types works well.
     // This is done by touching the various types, and then relying on the verification logic in R2R images to detect failures.
     [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/pull/131421", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/131767", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
     [Fact]
     public static void TestEntryPoint()
     {

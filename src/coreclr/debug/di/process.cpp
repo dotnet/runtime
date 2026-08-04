@@ -571,6 +571,7 @@ CordbProcess::CreateDacDbiInterface()
 {
     _ASSERTE(m_pDACDataTarget != NULL);
     _ASSERTE(m_pDacPrimitives == NULL); // don't double-init
+    _ASSERTE(m_pLegacyDac == NULL);
 
     // Caller has already determined which CLR in the target is being debugged.
     _ASSERTE(m_clrInstanceId != 0);
@@ -612,20 +613,23 @@ CordbProcess::CreateDacDbiInterface()
         CLRDATA_ADDRESS,
         IDacDbiInterface::IAllocator *,
         IDacDbiInterface::IMetaDataLookup *,
-        IDacDbiInterface **);
+        IDacDbiInterface **,
+        IUnknown **);
 
     IDacDbiInterface* pInterfacePtr = NULL;
+    IUnknown* pLegacyDac = NULL;
     PFN_DacDbiInterfaceInstance pfnEntry = (PFN_DacDbiInterfaceInstance)GetProcAddress(m_hDacModule, "DacDbiInterfaceInstance");
     if (!pfnEntry)
     {
         ThrowLastError();
     }
 
-    hrStatus = pfnEntry(m_pDACDataTarget, m_clrInstanceId, contractDescriptorAddress, pAllocator, pMetaDataLookup, &pInterfacePtr);
+    hrStatus = pfnEntry(m_pDACDataTarget, m_clrInstanceId, contractDescriptorAddress, pAllocator, pMetaDataLookup, &pInterfacePtr, &pLegacyDac);
     IfFailThrow(hrStatus);
 
-    // We now have a resource, pInterfacePtr, that needs to be freed.
+    // We now have resources that need to be freed.
     m_pDacPrimitives = pInterfacePtr;
+    m_pLegacyDac = pLegacyDac;
 
     // Setup DAC target consistency checking based on what we're using for DBI
     IfFailThrow(m_pDacPrimitives->DacSetTargetConsistencyChecks( m_fAssertOnTargetInconsistency ));
@@ -881,6 +885,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_dispatchedEvent(DB_IPCE_DEBUGGER_INVALID),
     m_hDacModule(hDacModule),
     m_pDacPrimitives(NULL),
+    m_pLegacyDac(NULL),
     m_pEventChannel(NULL),
     m_fAssertOnTargetInconsistency(false),
     m_runtimeOffsetsInitialized(false),
@@ -1465,8 +1470,21 @@ void CordbProcess::FreeDac()
 
     if (m_pDacPrimitives != NULL)
     {
+        HRESULT hr = m_pDacPrimitives->Destroy();
+        _ASSERTE(SUCCEEDED(hr));
+        if (FAILED(hr))
+        {
+            LOG((LF_CORDB, LL_ERROR, "Failed to prepare DAC for unload, hr=0x%08x\n", hr));
+            return;
+        }
         m_pDacPrimitives->Release();
         m_pDacPrimitives = NULL;
+    }
+
+    if (m_pLegacyDac != NULL)
+    {
+        m_pLegacyDac->Release();
+        m_pLegacyDac = NULL;
     }
 
     if (m_hDacModule != NULL)
