@@ -842,11 +842,7 @@ namespace System.IO.Packaging
                     return 1;
 
                 //Compare the normalized uri strings for the two part uris.
-                return string.Compare(
-                    NormalizedPartUriString,
-                    otherPartUri.NormalizedPartUriString,
-                    StringComparison.OrdinalIgnoreCase
-                );
+                return string.CompareOrdinal(NormalizedPartUriString, otherPartUri.NormalizedPartUriString);
             }
 
             //------------------------------------------------------
