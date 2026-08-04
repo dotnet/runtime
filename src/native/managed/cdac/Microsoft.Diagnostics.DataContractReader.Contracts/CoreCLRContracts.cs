@@ -35,9 +35,7 @@ public static class CoreCLRContracts
         registry.Register<IDebugger>("c1", static t => new Debugger_1(t));
 
         registry.Register<IDebugInfo>("c1", static t => new DebugInfo_1(t));
-        registry.Register<IDebugInfo>("c2", static t => new DebugInfo_2(t));
         registry.Register<IStressLog>("c1", static t => new StressLog_1(t));
-        registry.Register<IStressLog>("c2", static t => new StressLog_2(t));
 
         registry.Register<IThread>("c1", static t => new Thread_1(t));
         registry.Register<IWindowsErrorReporting>("c1", static t => new WindowsErrorReporting_1(t));
@@ -51,8 +49,6 @@ public static class CoreCLRContracts
         registry.Register<IFeatureFlags>("c1", static t => new FeatureFlags_1(t));
 
         registry.Register<IPrecodeStubs>("c1", static t => new PrecodeStubs_1(t));
-        registry.Register<IPrecodeStubs>("c2", static t => new PrecodeStubs_2(t));
-        registry.Register<IPrecodeStubs>("c3", static t => new PrecodeStubs_3(t));
 
         registry.Register<IReJIT>("c1", static t => new ReJIT_1(t));
 
@@ -76,7 +72,6 @@ public static class CoreCLRContracts
         registry.Register<ISyncBlock>("c1", static t => new SyncBlock_1(t));
 
         registry.Register<IExecutionManager>("c1", static t => new ExecutionManager_1(t));
-        registry.Register<IExecutionManager>("c2", static t => new ExecutionManager_2(t));
 
         registry.Register<IRuntimeMutableTypeSystem>("c1", static t => new RuntimeMutableTypeSystem_1(t));
     }

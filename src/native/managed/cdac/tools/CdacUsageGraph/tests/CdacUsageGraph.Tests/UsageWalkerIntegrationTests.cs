@@ -103,7 +103,7 @@ public sealed class UsageWalkerIntegrationTests
 
     [Theory]
     [InlineData("IExecutionManager", "c1", "Data.UnwindInfo", "FunctionLength")]
-    [InlineData("IPrecodeStubs", "c1", "Data.PrecodeMachineDescriptor", "OffsetOfPrecodeType")]
+    [InlineData("IPrecodeStubs", "c1", "Data.PrecodeMachineDescriptor", "StubCodePageSize")]
     [InlineData("IStackWalk", "c1", "Data.ReadyToRunInfo", "ImportSections")]
     [InlineData("IThread", "c1", "Data.Thread", "ThreadHandle")]
     [InlineData("IThread", "c1", "Data.Thread", "DebuggerControlledThreadState")]
@@ -244,28 +244,23 @@ public sealed class UsageWalkerIntegrationTests
         if (built is null) return; // cDAC source not found (running outside the repo)
         UsageGraph graph = built!.Value.Graph;
 
-        // PrecodeStubs c3 reaches Data types only via a generic base + static-abstract dispatch.
+        // PrecodeStubs c1 reaches Data types only via a generic base + static-abstract dispatch.
         HashSet<string> precodeTypes = DataTypesUsed(
             graph,
-            new ContractVersion(new ContractInterface("IPrecodeStubs"), "c3"));
+            new ContractVersion(new ContractInterface("IPrecodeStubs"), "c1"));
         Assert.Contains("Data.InterpMethod", precodeTypes);
     }
 
-    [Theory]
-    [InlineData("c1", false)]
-    [InlineData("c2", false)]
-    [InlineData("c3", true)]
-    public void ReportsInterpreterPrecodeUsageOnlyForSupportingVersion(
-        string version,
-        bool expected)
+    [Fact]
+    public void ReportsInterpreterPrecodeUsage()
     {
         (UsageGraph Graph, string Root)? built = BuildRealGraph();
         if (built is null) return; // cDAC source not found (running outside the repo)
 
         HashSet<string> dataTypes = DataTypesUsed(
             built.Value.Graph,
-            new ContractVersion(new ContractInterface("IPrecodeStubs"), version));
-        Assert.Equal(expected, dataTypes.Contains("Data.InterpreterPrecodeData"));
+            new ContractVersion(new ContractInterface("IPrecodeStubs"), "c1"));
+        Assert.Contains("Data.InterpreterPrecodeData", dataTypes);
     }
 
     [Fact]
@@ -275,7 +270,7 @@ public sealed class UsageWalkerIntegrationTests
         if (built is null) return; // cDAC source not found (running outside the repo)
         UsageGraph graph = built!.Value.Graph;
 
-        // StressLog_1's SmallStressMessageReader is constructed in a field initializer and reads
+        // StressLog_1's message reader is constructed in a field initializer and reads
         // Data.StressMsg fields; walking initializers is what surfaces these.
         Assert.Contains(
             "Header",
@@ -361,7 +356,6 @@ public sealed class UsageWalkerIntegrationTests
 
     [Theory]
     [InlineData("IExecutionManager", "c1")]
-    [InlineData("IExecutionManager", "c2")]
     public void ExplicitDependenciesIncludeCompositeInfoWhereUsed(string contract, string version)
     {
         (UsageGraph Graph, string Root)? built = BuildRealGraph();

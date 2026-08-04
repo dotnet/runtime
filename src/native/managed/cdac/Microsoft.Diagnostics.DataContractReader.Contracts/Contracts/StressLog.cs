@@ -273,36 +273,6 @@ internal sealed class StressLogTraversal(Target target, IStressMessageReader mes
     }
 }
 
-internal sealed class SmallStressMessageReader(Target target) : IStressMessageReader
-{
-    public StressMsgData GetStressMsgData(Data.StressMsg msg, Func<ulong, TargetPointer> getFormatPointerFromOffset)
-    {
-        // Message header layout:
-        // struct
-        // {
-        //     uint32_t numberOfArgsLow  : 3;
-        //     uint32_t formatOffset  : 26;
-        //     uint32_t numberOfArgsHigh : 3;
-        //     uint32_t facility;
-        //     uint64_t timeStamp;
-        // };
-        uint pointerSize = (uint)target.PointerSize;
-        uint payload = target.Read<uint>(msg.Header);
-        int numArgs = (int)((payload & 0x7) | ((payload >> 29) & 0x7));
-        var args = new TargetPointer[numArgs];
-        for (int i = 0; i < numArgs; i++)
-        {
-            args[i] = target.ReadPointer((ulong)msg.Args + (ulong)(i * pointerSize));
-        }
-
-        return new StressMsgData(
-            Facility: target.Read<uint>((ulong)msg.Header + 4),
-            FormatString: getFormatPointerFromOffset(((payload >> 3) & ((1 << 26) - 1))),
-            Timestamp: target.Read<ulong>((ulong)msg.Header + 8),
-            Args: args);
-    }
-}
-
 internal sealed class LargeStressMessageReader(Target target) : IStressMessageReader
 {
     public StressMsgData GetStressMsgData(Data.StressMsg msg, Func<ulong, TargetPointer> getFormatPointerFromOffset)
@@ -341,20 +311,6 @@ internal sealed class LargeStressMessageReader(Target target) : IStressMessageRe
 }
 
 internal sealed class StressLog_1(Target target) : IStressLog
-{
-    private readonly StressLogTraversal traversal = new(target, new SmallStressMessageReader(target));
-
-    public bool HasStressLog() => traversal.HasStressLog();
-    public StressLogData GetStressLogData() => traversal.GetStressLogData();
-    public StressLogData GetStressLogData(TargetPointer stressLog) => traversal.GetStressLogData(stressLog);
-    public IEnumerable<ThreadStressLogData> GetThreadStressLogs(TargetPointer Logs) => traversal.GetThreadStressLogs(Logs);
-    public IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddress) => traversal.GetStressMessages(threadStressLogAddress);
-    public bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer) => traversal.IsPointerInStressLog(stressLog, pointer);
-    public IEnumerable<StressLogMemoryRange> GetStressLogMemoryRanges(StressLogData stressLog) => traversal.GetStressLogMemoryRanges(stressLog);
-}
-
-
-internal sealed class StressLog_2(Target target) : IStressLog
 {
     private readonly StressLogTraversal traversal = new(target, new LargeStressMessageReader(target));
 
