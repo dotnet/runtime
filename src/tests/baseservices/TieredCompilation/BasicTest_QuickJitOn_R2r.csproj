@@ -6,7 +6,9 @@
     <Optimize>true</Optimize>
 
     <!-- This is an explicit crossgen test -->
-    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <AlwaysUseCrossGen2 Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(TargetOS)' != 'browser'">true</AlwaysUseCrossGen2>
+    <CrossGenTest Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</CrossGenTest>
+    <DefineConstants>$(DefineConstants);BROWSER_WASM_COMPOSITE_R2R_TEST</DefineConstants>
     <!-- No crossgen folder under Core_Root -->
      <NativeAotIncompatible>true</NativeAotIncompatible>
   </PropertyGroup>

@@ -21,8 +21,6 @@ byte[] GetWatsonBuckets(TargetPointer threadPointer);
 | `ExceptionInfo` | `ExceptionWatsonBucketTrackerBuckets` | `pointer` | Pointer to Watson unhandled buckets on non-Unix |
 | `ExceptionInfo` | `ThrownObject` | `pointer` | Handle to the thrown exception object |
 | `Thread` | `ExceptionTracker` | `pointer` | Pointer to exception tracking information |
-| `Thread` | `RuntimeThreadLocals` | `pointer` | Pointer to some thread-local storage |
-| `Thread` | `ThreadHandle` | `pointer` | OS thread handle (optional, Windows only; readers should expect `TargetPointer.Null` on non-Windows targets) |
 | `Thread` | `UEWatsonBucketTrackerBuckets` | `pointer` | Pointer to thread Watson buckets data (optional, Windows only) |
 
 ### Global variables used

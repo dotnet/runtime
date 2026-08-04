@@ -47,7 +47,40 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         => HResults.E_NOTIMPL;
 
     int IXCLRDataMethodInstance.GetDefinition(DacComNullableByRef<IXCLRDataMethodDefinition> methodDefinition)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetDefinition(methodDefinition) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        int hrLocal = HResults.S_OK;
+        IXCLRDataMethodDefinition? legacyMethodDefinition = null;
+
+        try
+        {
+            if (LegacyFallbackHelper.CanFallback() && _legacyImpl is not null)
+            {
+                DacComNullableByRef<IXCLRDataMethodDefinition> legacyMethodDefinitionOut = new(isNullRef: methodDefinition.IsNullRef);
+                hrLocal = _legacyImpl.GetDefinition(legacyMethodDefinitionOut);
+                legacyMethodDefinition = legacyMethodDefinitionOut.Interface;
+            }
+
+            IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+            uint token = rts.GetMethodToken(_methodDesc);
+            TargetPointer methodTable = rts.GetMethodTable(_methodDesc);
+            TargetPointer module = rts.GetModule(rts.GetTypeHandle(methodTable));
+            methodDefinition.Interface = new ClrDataMethodDefinition(_target, module, token, legacyMethodDefinition);
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            Debug.ValidateHResult(hr, hrLocal);
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.GetTokenAndScope(uint* token, DacComNullableByRef<IXCLRDataModule> mod)
     {
@@ -221,7 +254,7 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
             uint hits = 0;
             for (int i = 0; i < map.Count; i++)
             {
-                bool isEpilog = map[i].ILOffset == unchecked((uint)-3); // -3 is used to indicate an epilog
+                bool isEpilog = map[i].ILOffset == (uint)CLRDataILOffsetMarker.CLRDATA_IL_OFFSET_EPILOG;
                 bool lastValue = i == map.Count - 1;
                 uint nativeEndOffset = lastValue ? 0 : map[i + 1].NativeOffset;
                 if (codeOffset >= map[i].NativeOffset && (((isEpilog || lastValue) && nativeEndOffset == 0) || codeOffset < nativeEndOffset))
@@ -289,8 +322,103 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
         return hr;
     }
 
-    int IXCLRDataMethodInstance.GetAddressRangesByILOffset(uint ilOffset, uint rangesLen, uint* rangesNeeded, void* addressRanges)
-        => HResults.E_NOTIMPL;
+    int IXCLRDataMethodInstance.GetAddressRangesByILOffset(
+        uint ilOffset,
+        uint rangesLen,
+        uint* rangesNeeded,
+        [In, Out, MarshalUsing(CountElementName = nameof(rangesLen))] ClrDataAddressRange[]? addressRanges)
+    {
+        int hr = HResults.S_OK;
+
+        try
+        {
+            if (rangesNeeded is not null)
+            {
+                *rangesNeeded = 0;
+            }
+
+            TargetCodePointer nativeCode = _target.Contracts.RuntimeTypeSystem.GetNativeCode(_methodDesc);
+            TargetCodePointer pCode = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(nativeCode);
+            TargetPointer codeStart = pCode.ToAddress(_target);
+            if (!_target.Contracts.DebugInfo.HasDebugInfo(pCode))
+                throw Marshal.GetExceptionForHR(HResults.E_FAIL)!;
+
+            IEnumerable<OffsetMapping> mapEnumerable = _target.Contracts.DebugInfo.GetMethodNativeMap(
+                pCode,
+                preferUninstrumented: false,
+                out uint _);
+
+            List<OffsetMapping> map = [.. mapEnumerable];
+            uint hits = 0;
+
+            for (int i = 0; i < map.Count; i++)
+            {
+                OffsetMapping entry = map[i];
+                if (entry.ILOffset != ilOffset)
+                    continue;
+
+                if (addressRanges is not null && hits < addressRanges.Length)
+                {
+                    uint nativeEndOffset = i == map.Count - 1 ? 0 : map[i + 1].NativeOffset;
+                    addressRanges[hits].startAddress = new TargetPointer(codeStart + entry.NativeOffset).ToClrDataAddress(_target);
+                    addressRanges[hits].endAddress = entry.ILOffset == (uint)CLRDataILOffsetMarker.CLRDATA_IL_OFFSET_EPILOG && nativeEndOffset == 0
+                        ? default
+                        : new TargetPointer(codeStart + nativeEndOffset).ToClrDataAddress(_target);
+                }
+
+                hits++;
+            }
+
+            if (rangesNeeded is not null)
+            {
+                *rangesNeeded = hits;
+            }
+
+            if (hits == 0)
+                throw new InvalidCastException();
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            bool validateRangesNeeded = rangesNeeded is not null;
+            uint rangesNeededLocal = 0;
+            ClrDataAddressRange[]? addressRangesLocal = rangesLen > 0 ? new ClrDataAddressRange[rangesLen] : null;
+
+            int hrLocal = _legacyImpl.GetAddressRangesByILOffset(
+                ilOffset,
+                rangesLen,
+                validateRangesNeeded ? &rangesNeededLocal : null,
+                addressRangesLocal);
+
+            Debug.ValidateHResult(hr, hrLocal);
+
+            if (hr == HResults.S_OK && hrLocal == HResults.S_OK)
+            {
+                if (validateRangesNeeded)
+                {
+                    Debug.Assert(rangesNeededLocal == *rangesNeeded, $"cDAC: {*rangesNeeded:x}, DAC: {rangesNeededLocal:x}");
+                }
+
+                if (addressRangesLocal is not null && addressRanges is not null)
+                {
+                    int countToCheck = Math.Min(addressRangesLocal.Length, (int)rangesNeededLocal);
+                    for (int i = 0; i < countToCheck; i++)
+                    {
+                        Debug.Assert(addressRangesLocal[i].startAddress == addressRanges[i].startAddress, $"StartAddress - cDAC: {addressRanges[i].startAddress:x}, DAC: {addressRangesLocal[i].startAddress:x}");
+                        Debug.Assert(addressRangesLocal[i].endAddress == addressRanges[i].endAddress, $"EndAddress - cDAC: {addressRanges[i].endAddress:x}, DAC: {addressRangesLocal[i].endAddress:x}");
+                    }
+                }
+            }
+        }
+#endif
+
+        return hr;
+    }
 
     int IXCLRDataMethodInstance.GetILAddressMap(uint mapLen, uint* mapNeeded, [In, Out, MarshalUsing(CountElementName = "mapLen")] ClrDataILAddressMap[]? maps)
     {
@@ -345,7 +473,8 @@ public sealed unsafe partial class ClrDataMethodInstance : IXCLRDataMethodInstan
                 *mapNeeded = (uint)map.Count;
             }
 
-            hr = map.Count > 0 ? HResults.S_OK : HResults.COR_E_INVALIDCAST /*E_NOINTERFACE*/;
+            if (map.Count == 0)
+                throw new InvalidCastException();
         }
         catch (System.Exception ex)
         {

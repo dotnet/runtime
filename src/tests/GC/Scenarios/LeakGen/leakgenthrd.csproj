@@ -10,6 +10,7 @@
     <!-- The test leaves secondary threads running at exit -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(FeatureMultithreading)' != 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="leakgenthrd.cs" />

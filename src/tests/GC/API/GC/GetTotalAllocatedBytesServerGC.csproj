@@ -3,6 +3,8 @@
     <!-- Needed for CLRTestEnvironmentVariable and GCStressIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
+    <!-- NativeAOT selects the Server GC implementation at link time -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
     <!-- DATAS heap-count adaptation is a CoreCLR Server GC behavior -->
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
   </PropertyGroup>

@@ -549,6 +549,13 @@ public enum ClrDataSourceType : uint
     CLRDATA_SOURCE_TYPE_INVALID = 0,
 }
 
+public enum CLRDataILOffsetMarker : uint
+{
+    CLRDATA_IL_OFFSET_NO_MAPPING = unchecked((uint)-1),
+    CLRDATA_IL_OFFSET_PROLOG = unchecked((uint)-2),
+    CLRDATA_IL_OFFSET_EPILOG = unchecked((uint)-3),
+}
+
 // CLRDATA_IL_ADDRESS_MAP
 public struct ClrDataILAddressMap
 {
@@ -611,7 +618,7 @@ public unsafe partial interface IXCLRDataMethodInstance
         uint ilOffset,
         uint rangesLen,
         uint* rangesNeeded,
-        /*CLRDATA_ADDRESS_RANGE* */ void* addressRanges);
+        [In, Out, MarshalUsing(CountElementName = nameof(rangesLen))] ClrDataAddressRange[]? addressRanges);
 
     [PreserveSig]
     int GetILAddressMap(

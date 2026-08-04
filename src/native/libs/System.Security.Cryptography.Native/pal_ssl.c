@@ -498,6 +498,12 @@ int32_t CryptoNative_SslSetFd(SSL* ssl, intptr_t fd)
     return SSL_set_fd(ssl, (int)fd);
 }
 
+void CryptoNative_SslSetAcceptMovingWriteBuffer(SSL* ssl)
+{
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
+    SSL_set_mode(ssl, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
+}
+
 int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode)
 {
     ERR_clear_error();

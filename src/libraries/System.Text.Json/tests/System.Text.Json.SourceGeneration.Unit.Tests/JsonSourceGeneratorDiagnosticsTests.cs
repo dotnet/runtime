@@ -2183,6 +2183,190 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Assert.Contains("InaccessibleBase", diagnostic.GetMessage());
         }
 
+        [Fact]
+        public void ClosedTypeInference_JsonPolymorphicAttribute_InaccessibleDerivedType_ProducesSYSLIB1241()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(InaccessibleBase))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonPolymorphic(InferClosedTypePolymorphism = true)]
+                    public closed abstract class InaccessibleBase { }
+                    internal sealed class InaccessibleDerived : InaccessibleBase { }
+                }
+                """;
+
+            Compilation compilation = CreateCompilationWithClosedType(source, "InaccessibleBase");
+            JsonSourceGeneratorResult result =
+                CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+            Assert.Equal("SYSLIB1241", diagnostic.Id);
+            Assert.Contains("InaccessibleDerived", diagnostic.GetMessage());
+            Assert.Contains("InaccessibleBase", diagnostic.GetMessage());
+        }
+
+        [Fact]
+        public void ClosedTypeInference_JsonPolymorphicAttribute_OnNonClosedType_ProducesSYSLIB1243()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(NonClosedBase))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonPolymorphic(InferClosedTypePolymorphism = true)]
+                    public abstract class NonClosedBase { }
+                    public sealed class NonClosedDerived : NonClosedBase { }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result =
+                CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+            Assert.Equal("SYSLIB1243", diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            Assert.Contains("NonClosedBase", diagnostic.GetMessage());
+
+            Assert.Equal(
+                "JsonPolymorphic(InferClosedTypePolymorphism = true)",
+                diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan));
+        }
+
+        [Fact]
+        public void ClosedTypeInference_JsonPolymorphicAttribute_OnNonClosedTypeWithExplicitDerivedTypes_ProducesSYSLIB1243()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(NonClosedBase))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonPolymorphic(InferClosedTypePolymorphism = true)]
+                    [JsonDerivedType(typeof(NonClosedDerived), "derived")]
+                    public abstract class NonClosedBase { }
+                    public sealed class NonClosedDerived : NonClosedBase { }
+                }
+                """;
+
+            // Explicit registrations must not mask the opt-in being meaningless on a type that is not closed.
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            JsonSourceGeneratorResult result =
+                CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+            Assert.Equal("SYSLIB1243", diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Error, diagnostic.Severity);
+            Assert.Contains("NonClosedBase", diagnostic.GetMessage());
+        }
+
+        [Fact]
+        public void ClosedTypeInference_JsonPolymorphicAttribute_OnClosedTypeWithoutDerivedTypes_DoesNotProduceSYSLIB1243()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(EmptyClosedBase))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonPolymorphic(InferClosedTypePolymorphism = true)]
+                    public closed abstract class EmptyClosedBase { }
+                }
+                """;
+
+            // A closed type declaring no derived types is a valid declaration, so opting in is not a mistake.
+            Compilation compilation = CreateCompilationWithClosedType(source, "EmptyClosedBase");
+            JsonSourceGeneratorResult result =
+                CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "SYSLIB1243");
+        }
+
+        [Fact]
+        public void ClosedTypeInference_JsonPolymorphicAttribute_WithExplicitDerivedTypes_ProducesSYSLIB1244()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(ClosedBase))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonPolymorphic(InferClosedTypePolymorphism = true)]
+                    [JsonDerivedType(typeof(ClosedDerived), "derived")]
+                    public closed abstract class ClosedBase { }
+                    public sealed class ClosedDerived : ClosedBase { }
+                    public sealed class ClosedUnregistered : ClosedBase { }
+                }
+                """;
+
+            // Explicit registrations replace inference, so ClosedUnregistered is silently dropped.
+            Compilation compilation = CreateCompilationWithClosedType(source, "ClosedBase");
+            JsonSourceGeneratorResult result =
+                CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Diagnostic diagnostic = Assert.Single(result.Diagnostics);
+            Assert.Equal("SYSLIB1244", diagnostic.Id);
+            Assert.Equal(DiagnosticSeverity.Warning, diagnostic.Severity);
+            Assert.Contains("ClosedBase", diagnostic.GetMessage());
+
+            Assert.Equal(
+                "JsonPolymorphic(InferClosedTypePolymorphism = true)",
+                diagnostic.Location.SourceTree!.GetText().ToString(diagnostic.Location.SourceSpan));
+        }
+
+        [Fact]
+        public void ClosedTypeInference_ContextWideOptIn_WithExplicitDerivedTypes_DoesNotProduceSYSLIB1244()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSourceGenerationOptions(InferClosedTypePolymorphism = true)]
+                    [JsonSerializable(typeof(ClosedBase))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    [JsonDerivedType(typeof(ClosedDerived), "derived")]
+                    public closed abstract class ClosedBase { }
+                    public sealed class ClosedDerived : ClosedBase { }
+                }
+                """;
+
+            // A context-wide opt-in is meant to be overridden by explicit registrations, so reporting it
+            // would fire on every explicitly registered hierarchy in the context.
+            Compilation compilation = CreateCompilationWithClosedType(source, "ClosedBase");
+            JsonSourceGeneratorResult result =
+                CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
+
+            Assert.DoesNotContain(result.Diagnostics, diagnostic => diagnostic.Id == "SYSLIB1244");
+        }
+
         [Theory]
         [InlineData("\"duplicate\"")]
         [InlineData("42")]
