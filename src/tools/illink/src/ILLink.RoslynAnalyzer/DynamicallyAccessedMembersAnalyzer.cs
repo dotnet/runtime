@@ -223,7 +223,7 @@ namespace ILLink.RoslynAnalyzer
                 Location attributableSymbolLocation = GetPrimaryLocation(attributableMethod.Locations);
 
                 // code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
-                (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
+                (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!CanOfferCodeFixAt(attributableSymbolLocation, context.Compilation)
                     || (overrideMethod.TryGetReturnAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
                         && baseMethod.TryGetReturnAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
                         ) ? (null, null) : CreateArguments(attributableSymbolLocation, missingAttribute);
@@ -247,7 +247,7 @@ namespace ILLink.RoslynAnalyzer
                     Location attributableSymbolLocation = attributableMethod.GetParameter(overrideParam.Index).Location!;
 
                     // code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
-                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
+                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!CanOfferCodeFixAt(attributableSymbolLocation, context.Compilation)
                         || (overrideParam.ParameterSymbol!.TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
                             && baseParam.ParameterSymbol!.TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
                             ) ? (null, null) : CreateArguments(attributableSymbolLocation, missingAttribute);
@@ -273,7 +273,7 @@ namespace ILLink.RoslynAnalyzer
                     Location attributableSymbolLocation = GetPrimaryLocation(attributableSymbol.Locations);
 
                     // code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
-                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
+                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!CanOfferCodeFixAt(attributableSymbolLocation, context.Compilation)
                         || (overrideMethod.TypeParameters[i].TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
                             && baseMethod.TypeParameters[i].TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
                             ) ? (null, null) : CreateArguments(attributableSymbolLocation, missingAttribute);
@@ -351,8 +351,16 @@ namespace ILLink.RoslynAnalyzer
             }
         }
 
-        private static (IMethodSymbol Method, DynamicallyAccessedMemberTypes Requirements) GetTargetAndRequirements(IMethodSymbol method, IMethodSymbol overriddenMethod, DynamicallyAccessedMemberTypes methodAnnotation, DynamicallyAccessedMemberTypes overriddenMethodAnnotation)
-        {
+        /// <summary>
+        /// Determines whether a code fix location can be attached to a diagnostic. The location must point into the
+        /// compilation being analyzed, otherwise Roslyn rejects the reported diagnostic. Note that a location can be in
+        /// source and still belong to another project: the IDE models project-to-project references as compilation
+        /// references, which expose source symbols whose syntax trees belong to a different compilation.
+        /// </summary>
+        private static bool CanOfferCodeFixAt(Location location, Compilation compilation)
+            => location.SourceTree is { } sourceTree && compilation.ContainsSyntaxTree(sourceTree);
+
+        private static (IMethodSymbol Method, DynamicallyAccessedMemberTypes Requirements) GetTargetAndRequirements(IMethodSymbol method, IMethodSymbol overriddenMethod, DynamicallyAccessedMemberTypes methodAnnotation, DynamicallyAccessedMemberTypes overriddenMethodAnnotation)        {
             DynamicallyAccessedMemberTypes mismatchedArgument;
             IMethodSymbol paramNeedsAttributes;
             if (methodAnnotation == DynamicallyAccessedMemberTypes.None)

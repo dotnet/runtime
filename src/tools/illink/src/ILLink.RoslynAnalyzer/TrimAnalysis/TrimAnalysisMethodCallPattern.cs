@@ -92,7 +92,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 InvocationExpressionSyntax invocationSyntax => invocationSyntax.Expression.GetLocation(),
                 _ => location
             };
-            var diagnosticContext = new DiagnosticContext(location, reportDiagnostic);
+            var diagnosticContext = new DiagnosticContext(location, context.Compilation, reportDiagnostic);
             foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
             {
                 if (!requiresAnalyzer.IsIntrinsicallyHandled(CalledMethod, Instance, Arguments))
