@@ -653,8 +653,7 @@ public:
         // Notify the profiler of call out of the runtime
         if (CORProfilerTrackTransitions()
             && !SF_SkipTransitionNotify(m_dwStubFlags)
-            && !SF_IsReverseCOMStub(m_dwStubFlags)
-            && !SF_IsReverseDelegateStub(m_dwStubFlags))
+            && SF_IsForwardStub(m_dwStubFlags))
         {
             dwMethodDescLocalNum = m_slIL.EmitProfilerBeginTransitionCallback(pcsDispatch, m_dwStubFlags);
             _ASSERTE(dwMethodDescLocalNum != (DWORD)-1);
