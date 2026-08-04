@@ -117,6 +117,19 @@ public static class SingleBit
     [MethodImpl(MethodImplOptions.NoInlining)]
     static int InvertNegatedBit(int a, int b) => ~(1 << a) ^ (1 << b);
 
+    // bts/btr/btc write a 32-bit destination, which zeroes the upper 32 bits of the register. A
+    // widening cast of the result therefore still needs its sign-extension even though the value
+    // operand was itself produced by a sign-extending load.
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static long SetWiden(sbyte a, int b) => a | (1 << b);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static long ClearWiden(sbyte a, int b) => a & ~(1 << b);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static long InvertWiden(short a, int b) => a ^ (1 << b);
+
     // Bit-test recognition: testing a single bit to feed a branch should become 'bt'. Both the
     // '(x >> y) & 1' and 'x & (1 << y)' shapes select bit 'y', and 'bt' masks the index modulo the
     // operand size, matching the C# masked-shift semantics even for an out-of-range 'y'.
@@ -217,6 +230,11 @@ public static class SingleBit
         Assert.Equal(int.MinValue, Invert31(0));
         Assert.Equal(-1, InvertNegatedBit(0, 0 + 32));
         Assert.Equal(-4, InvertNegatedBit(0, 1 + 32));
+
+        // The result of a 32-bit bts/btr/btc is not sign-extended into the upper 32 bits.
+        Assert.Equal(-127L, SetWiden(-128, 0));
+        Assert.Equal(-256L, ClearWiden(-128, 7 + 32));
+        Assert.Equal(-127L, InvertWiden(-128, 0));
 
         // Long variants (exercise the 64-bit bts/btr/btc forms). The reg,reg encoding masks the
         // bit index modulo 64, matching the C# masked-shift semantics even for out-of-range indices.

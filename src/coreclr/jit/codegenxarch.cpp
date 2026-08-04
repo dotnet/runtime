@@ -1163,13 +1163,9 @@ void CodeGen::genCodeForBitOp(GenTreeOp* treeNode)
     // op2 hold the same value, in which case the `mov` writes that same value back into op2's
     // register and nothing is clobbered before the bit-test reads it. When the operands are distinct
     // values, delayFree guarantees the destination and op2 use different registers.
-
-    // These are read-modify-write: the destination register also supplies the value operand.
     inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
 
-    // The BT-family reg,reg encoding places the destination in the r/m slot and the bit index in
-    // the reg slot, so the operands are passed reversed (see the note in instrsxarch.h).
-    emit->emitIns_R_R(ins, size, op2->GetRegNum(), targetReg);
+    emit->emitIns_R_R(ins, size, targetReg, op2->GetRegNum());
 
     genProduceReg(treeNode);
 }
@@ -6449,11 +6445,6 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
         // TYP_INT but the op size is TYP_LONG the instruction itself will
         // ignore the upper part of the register anyway.
         type = genActualType(op1->TypeGet());
-
-        // The emitter's general logic handles op1/op2 for bt reversed. As a
-        // small hack we reverse it in codegen instead of special casing the
-        // emitter throughout.
-        std::swap(op1, op2);
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
