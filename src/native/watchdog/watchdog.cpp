@@ -120,10 +120,16 @@ int run_timed_process(const long timeout_ms, const int proc_argc, const char *pr
 
             if (wait_code == -1)
             {
-                printf("waitpid failed: errno=%d (%s)\n", errno, strerror(errno));
-                return EINVAL;
-            }
+                int err = errno;
+                if (err != EINTR)
+                {
+                    printf("waitpid failed: errno=%d (%s)\n", err, strerror(err));
+                    return err;
+                }
 
+                // Retry on interrupt.
+                wait_code = 0;
+            }
             std::this_thread::sleep_for(std::chrono::milliseconds(check_interval_ms));
 
             if (wait_code)
