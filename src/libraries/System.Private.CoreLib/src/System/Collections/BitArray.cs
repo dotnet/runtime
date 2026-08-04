@@ -215,64 +215,57 @@ namespace System.Collections
 
             uint i = 0;
 
-            if (!BitConverter.IsLittleEndian || values.Length < Vector256<byte>.Count)
+            if (BitConverter.IsLittleEndian && values.Length >= Vector256<byte>.Count)
             {
-                goto Remainder;
-            }
+                // Comparing with 1s would get rid of the final negation, however this would not work for some CLR bools
+                // (true for any non-zero values, false for 0) - any values between 2-255 will be interpreted as false.
+                // Instead, we compare with zeroes (== false) then negate the result to ensure compatibility.
+                //
+                // The loops below consume a whole vector of bools per iteration and emit the resulting bit mask into
+                // the destination. Both spans are tested against a constant length and then sliced by that same
+                // constant so that the JIT can elide all of the bounds checks. The destination test can never fail
+                // before the source one does: 'array' always holds at least one bit per bool in 'values'.
+                ReadOnlySpan<byte> source = MemoryMarshal.AsBytes(values);
+                Span<byte> destination = array;
 
-            // Comparing with 1s would get rid of the final negation, however this would not work for some CLR bools
-            // (true for any non-zero values, false for 0) - any values between 2-255 will be interpreted as false.
-            // Instead, we compare with zeroes (== false) then negate the result to ensure compatibility.
-
-            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(array);
-            ReadOnlySpan<byte> valuesAsBytes = MemoryMarshal.AsBytes(values);
-            if (Vector512.IsHardwareAccelerated)
-            {
-                while (valuesAsBytes.Length >= Vector512<byte>.Count)
+                if (Vector512.IsHardwareAccelerated)
                 {
-                    Vector512<byte> vector = Vector512.Create(valuesAsBytes);
-                    Vector512<byte> isFalse = Vector512.Equals(vector, Vector512<byte>.Zero);
+                    while (source.Length >= Vector512<byte>.Count && destination.Length >= sizeof(ulong))
+                    {
+                        ulong isFalse = Vector512.Equals(Vector512.Create(source), Vector512<byte>.Zero).ExtractMostSignificantBits();
+                        BinaryPrimitives.WriteUInt64LittleEndian(destination, ~isFalse);
 
-                    ulong result = isFalse.ExtractMostSignificantBits();
-                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(ulong) * (i / 64u)), ~result);
-                    i += (uint)Vector512<byte>.Count;
-                    valuesAsBytes = valuesAsBytes.Slice(Vector512<byte>.Count);
+                        source = source.Slice(Vector512<byte>.Count);
+                        destination = destination.Slice(sizeof(ulong));
+                    }
                 }
-            }
-            else if (Vector256.IsHardwareAccelerated)
-            {
-                while (valuesAsBytes.Length >= Vector256<byte>.Count)
+                else if (Vector256.IsHardwareAccelerated)
                 {
-                    Vector256<byte> vector = Vector256.Create(valuesAsBytes);
-                    Vector256<byte> isFalse = Vector256.Equals(vector, Vector256<byte>.Zero);
+                    while (source.Length >= Vector256<byte>.Count && destination.Length >= sizeof(uint))
+                    {
+                        uint isFalse = Vector256.Equals(Vector256.Create(source), Vector256<byte>.Zero).ExtractMostSignificantBits();
+                        BinaryPrimitives.WriteUInt32LittleEndian(destination, ~isFalse);
 
-                    uint result = isFalse.ExtractMostSignificantBits();
-                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32u)), ~result);
-                    i += (uint)Vector256<byte>.Count;
-                    valuesAsBytes = valuesAsBytes.Slice(Vector256<byte>.Count);
+                        source = source.Slice(Vector256<byte>.Count);
+                        destination = destination.Slice(sizeof(uint));
+                    }
                 }
-            }
-            else if (Vector128.IsHardwareAccelerated)
-            {
-                while (valuesAsBytes.Length >= Vector128<byte>.Count * 2)
+                else if (Vector128.IsHardwareAccelerated)
                 {
-                    Vector128<byte> lowerVector = Vector128.Create(valuesAsBytes);
-                    Vector128<byte> lowerIsFalse = Vector128.Equals(lowerVector, Vector128<byte>.Zero);
-                    uint lowerResult = lowerIsFalse.ExtractMostSignificantBits();
+                    while (source.Length >= Vector128<byte>.Count * 2 && destination.Length >= sizeof(uint))
+                    {
+                        uint lowerIsFalse = Vector128.Equals(Vector128.Create(source), Vector128<byte>.Zero).ExtractMostSignificantBits();
+                        uint upperIsFalse = Vector128.Equals(Vector128.Create(source.Slice(Vector128<byte>.Count)), Vector128<byte>.Zero).ExtractMostSignificantBits();
+                        BinaryPrimitives.WriteUInt32LittleEndian(destination, ~((upperIsFalse << 16) | lowerIsFalse));
 
-                    Vector128<byte> upperVector = Vector128.Create(valuesAsBytes.Slice(Vector128<byte>.Count));
-                    Vector128<byte> upperIsFalse = Vector128.Equals(upperVector, Vector128<byte>.Zero);
-                    uint upperResult = upperIsFalse.ExtractMostSignificantBits();
-
-                    Unsafe.WriteUnaligned(
-                        ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32u)),
-                        ~((upperResult << 16) | lowerResult));
-                    i += (uint)Vector128<byte>.Count * 2u;
-                    valuesAsBytes = valuesAsBytes.Slice(Vector128<byte>.Count * 2);
+                        source = source.Slice(Vector128<byte>.Count * 2);
+                        destination = destination.Slice(sizeof(uint));
+                    }
                 }
+
+                i = (uint)(values.Length - source.Length);
             }
 
-        Remainder:
             for (; i < (uint)values.Length; i++)
             {
                 if (values[(int)i])
