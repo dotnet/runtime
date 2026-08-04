@@ -69,11 +69,11 @@ public sealed class UsageWalkerIntegrationTests
 
         INamedTypeSymbol thread = compilation.GetTypeByMetadataName(
             "Microsoft.Diagnostics.DataContractReader.Data.Thread")!;
-        IPropertySymbol threadHandle = thread.GetMembers("ThreadHandle")
-            .OfType<IPropertySymbol>()
+        IMethodSymbol initThreadHandle = thread.GetMembers("InitThreadHandle")
+            .OfType<IMethodSymbol>()
             .Single();
         Assert.True(new CdacAttributeMatcher(compilation).TryGetDescriptorDependencies(
-            threadHandle,
+            initThreadHandle,
             out _));
     }
 
@@ -384,7 +384,7 @@ public sealed class UsageWalkerIntegrationTests
 
         DataTypeUsage syncBlock = DataType(graph, label, "Data.SyncBlock");
         Assert.Equal(
-            ["EnCInfo", "InteropInfo", "LinkNext", "Lock", "ThinLock"],
+            ["InteropInfo", "LinkNext", "Lock", "ThinLock"],
             syncBlock.Fields.Select(field => field.Name).Order().ToArray());
         Assert.DoesNotContain(syncBlock.Fields, field => field.Name == "Address");
 

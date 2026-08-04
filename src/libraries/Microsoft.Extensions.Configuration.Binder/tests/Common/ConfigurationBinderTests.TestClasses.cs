@@ -175,6 +175,39 @@ namespace Microsoft.Extensions
 
         public record Line(string Color, int Length, int Thickness);
 
+        public enum ConstructorParameterKind
+        {
+            StringType,
+            ObjectType,
+            NullableValueType,
+            ComplexType,
+            ArrayType,
+        }
+
+        public record RecordWithStringValue(string Value);
+
+        public record RecordWithObjectValue(object Value);
+
+        public record RecordWithNullableIntValue(int? Value);
+
+        public record RecordWithIntValue(int Value);
+
+        public record RecordWithComplexValue(NestedOptions Value);
+
+        public record RecordWithArrayValue(string[] Value);
+
+        public record RecordWithDefaultedStringValue(string Value = "fallback");
+
+        public record RecordWithDefaultedObjectValue(object Value = null);
+
+        public record RecordWithDefaultedNullableIntValue(int? Value = 42);
+
+        public record RecordWithDefaultedIntValue(int Value = 42);
+
+        public record RecordWithDefaultedComplexValue(NestedOptions Value = null);
+
+        public record RecordWithDefaultedArrayValue(string[] Value = null);
+
         public class ClassWithMatchingParametersAndProperties
         {
             private readonly string _color;
@@ -1078,6 +1111,23 @@ namespace Microsoft.Extensions
         internal class ClassWithAbstractProp
         {
             public AbstractBase AbstractProp { get; set; }
+        }
+
+        internal class ClassWithGetterOnlyProperties
+        {
+            public ClassWithGetterOnlyProperties(bool initializeProperties)
+            {
+                if (initializeProperties)
+                {
+                    Nested = new();
+                    Collection = ["existing"];
+                    Abstract = new Derived();
+                }
+            }
+
+            public NestedOptions? Nested { get; }
+            public List<string>? Collection { get; }
+            public AbstractBase? Abstract { get; }
         }
 
         internal class ClassWithAbstractCtorParam

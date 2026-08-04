@@ -75,16 +75,22 @@ public class SignatureTypeProvider<T> : IRuntimeSignatureTypeProvider<ITypeHandl
     public ITypeHandle? GetTypeFromDefinition(MetadataReader reader, TypeDefinitionHandle handle, byte rawTypeKind)
     {
         int token = MetadataTokens.GetToken((EntityHandle)handle);
-        TargetPointer typeDefToMethodTable = _loader.GetLookupTables(_moduleHandle).TypeDefToMethodTable;
-        TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(typeDefToMethodTable, (uint)token, out _);
+        TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(
+            _moduleHandle,
+            ModuleLookupMapKind.TypeDefToMethodTable,
+            (uint)token,
+            out _);
         return typeHandlePtr == TargetPointer.Null ? null : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
     }
 
     public ITypeHandle? GetTypeFromReference(MetadataReader reader, TypeReferenceHandle handle, byte rawTypeKind)
     {
         int token = MetadataTokens.GetToken((EntityHandle)handle);
-        TargetPointer typeRefToMethodTable = _loader.GetLookupTables(_moduleHandle).TypeRefToMethodTable;
-        TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(typeRefToMethodTable, (uint)token, out _);
+        TargetPointer typeHandlePtr = _loader.GetModuleLookupMapElement(
+            _moduleHandle,
+            ModuleLookupMapKind.TypeRefToMethodTable,
+            (uint)token,
+            out _);
         return typeHandlePtr == TargetPointer.Null ? null : _runtimeTypeSystem.GetTypeHandle(typeHandlePtr);
     }
 

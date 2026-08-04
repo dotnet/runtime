@@ -980,6 +980,8 @@ namespace System.Text.Json.SourceGeneration
 
                 bool hasPolymorphicAttribute = false;
                 bool ignoreUnrecognizedTypeDiscriminators = false;
+                bool? inferClosedTypePolymorphismOverride = null;
+                Location? polymorphicAttributeLocation = null;
                 JsonUnknownDerivedTypeHandling unknownDerivedTypeHandling = default;
                 string? typeDiscriminatorPropertyName = null;
                 TypeRef? polymorphicClassifierFactoryType = null;
@@ -1079,6 +1081,7 @@ namespace System.Text.Json.SourceGeneration
                     else if (SymbolEqualityComparer.Default.Equals(attributeType, _knownSymbols.JsonPolymorphicAttributeType))
                     {
                         hasPolymorphicAttribute = true;
+                        polymorphicAttributeLocation = attributeData.GetLocation();
 
                         foreach (KeyValuePair<string, TypedConstant> namedArg in attributeData.NamedArguments)
                         {
@@ -1086,6 +1089,9 @@ namespace System.Text.Json.SourceGeneration
                             {
                                 case "IgnoreUnrecognizedTypeDiscriminators":
                                     ignoreUnrecognizedTypeDiscriminators = (bool)namedArg.Value.Value!;
+                                    break;
+                                case "InferClosedTypePolymorphism":
+                                    inferClosedTypePolymorphismOverride = (bool)namedArg.Value.Value!;
                                     break;
                                 case "TypeDiscriminatorPropertyName":
                                     typeDiscriminatorPropertyName = (string?)namedArg.Value.Value;
@@ -1123,16 +1129,48 @@ namespace System.Text.Json.SourceGeneration
                 // whether generated metadata must reject runtime-only inference. Explicit derived-type
                 // registrations suppress inference, while any explicit polymorphism metadata makes the
                 // runtime-only inference guard unnecessary.
+                //
+                // A value specified on the declaration overrides the context-wide
+                // JsonSourceGenerationOptionsAttribute setting; the context-wide value applies when unset.
                 bool shouldInferClosedTypePolymorphism =
-                    options?.InferClosedTypePolymorphism is true && !hasExplicitDerivedTypeAttribute;
+                    (inferClosedTypePolymorphismOverride ?? (options?.InferClosedTypePolymorphism is true)) &&
+                    !hasExplicitDerivedTypeAttribute;
                 bool needsRuntimeInferenceGuard =
                     options?.InferClosedTypePolymorphism is not true &&
                     !hasPolymorphicAttribute &&
                     derivedTypes is null;
 
-                if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard) &&
-                    typeToGenerate.Type is INamedTypeSymbol closedBaseType &&
-                    closedBaseType.IsClosedType())
+                INamedTypeSymbol? closedBaseType = null;
+                if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard || inferClosedTypePolymorphismOverride is true) &&
+                    typeToGenerate.Type is INamedTypeSymbol namedBaseType &&
+                    namedBaseType.IsClosedType())
+                {
+                    closedBaseType = namedBaseType;
+                }
+
+                // Enabling inference on a type that is not closed can never infer derived types, so it is
+                // always a mistake -- including when the declaration carries explicit JsonDerivedTypeAttribute
+                // registrations, which would otherwise mask the error behind a working hierarchy.
+                if (inferClosedTypePolymorphismOverride is true && closedBaseType is null)
+                {
+                    ReportDiagnostic(
+                        DiagnosticDescriptors.InferClosedTypePolymorphismOnNonClosedType,
+                        polymorphicAttributeLocation ?? typeToGenerate.Location,
+                        typeToGenerate.Type.ToDisplayString());
+                }
+                else if (inferClosedTypePolymorphismOverride is true && hasExplicitDerivedTypeAttribute)
+                {
+                    // Explicit registrations replace inference rather than adding to it, so a declaration
+                    // requesting both silently drops every derived type it did not register. Only the
+                    // declaration-level opt-in is reported: a context-wide opt-in is meant to be overridden
+                    // by explicit registrations.
+                    ReportDiagnostic(
+                        DiagnosticDescriptors.InferClosedTypePolymorphismWithExplicitDerivedTypes,
+                        polymorphicAttributeLocation ?? typeToGenerate.Location,
+                        typeToGenerate.Type.ToDisplayString());
+                }
+
+                if ((shouldInferClosedTypePolymorphism || needsRuntimeInferenceGuard) && closedBaseType is not null)
                 {
                     List<ITypeSymbol>? closedDerivedTypes = closedBaseType.GetClosedDerivedTypes();
                     hasClosedDerivedTypes = closedDerivedTypes is { Count: > 0 };
@@ -1143,7 +1181,23 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                if (hasPolymorphicAttribute || derivedTypes is { Count: > 0 })
+                // A declaration that explicitly opts out of inference, registers no derived types of its own,
+                // and specifies no other polymorphism metadata is left non-polymorphic: JsonPolymorphicAttribute
+                // is being used to exclude the type from a context-wide opt-in rather than to declare a hierarchy.
+                // The generator emits an empty JsonPolymorphismOptions instance for a null spec, which the runtime
+                // recognizes as 'no polymorphism metadata'; emitting a configured instance with an empty
+                // registration list would instead fail configuration at run time.
+                bool hasNonDefaultPolymorphismSettings =
+                    ignoreUnrecognizedTypeDiscriminators ||
+                    polymorphicClassifierFactoryType is not null ||
+                    typeDiscriminatorPropertyName is not null ||
+                    unknownDerivedTypeHandling != default;
+                bool optedOutOfPolymorphism =
+                    inferClosedTypePolymorphismOverride is false &&
+                    derivedTypes is not { Count: > 0 } &&
+                    !hasNonDefaultPolymorphismSettings;
+
+                if (!optedOutOfPolymorphism && (hasPolymorphicAttribute || derivedTypes is { Count: > 0 }))
                 {
                     polymorphismOptions = new PolymorphismOptionsSpec
                     {

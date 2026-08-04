@@ -85,6 +85,8 @@ public unsafe class StackWalkTests
         // consult IRuntimeInfo for the target architecture. Register a mock when the test needs it.
         if (runtimeArchitecture is RuntimeInfoArchitecture rtArch)
         {
+            targetBuilder.AddGlobalStrings((Constants.Globals.Architecture, rtArch.ToString().ToLowerInvariant()));
+
             Mock<IRuntimeInfo> runtimeInfo = new();
             runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(rtArch);
             targetBuilder.AddMockContract(runtimeInfo.Object);
@@ -227,9 +229,8 @@ public unsafe class StackWalkTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void IsExceptionHandlingHelperInlinedCallFrame_DetectsMarkedActiveIcf(MockTarget.Architecture arch)
     {
-        // Match enum class InlinedCallFrameMarker in src/coreclr/vm/exceptionhandling.h:
-        // ExceptionHandlingHelper == 2 on 64-bit, 1 on 32-bit. The Mask is the same value.
-        ulong ehMarker = arch.Is64Bit ? 2u : 1u;
+        // Match enum class InlinedCallFrameMarker in src/coreclr/vm/exceptionhandling.h.
+        const ulong ehMarker = 1;
         ulong activeReturnAddr = 0xCAFE_BABE;
 
         ulong ehHelperAddr = 0;
@@ -268,7 +269,7 @@ public unsafe class StackWalkTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void IsExceptionHandlingHelperInlinedCallFrame_ReturnsFalseForInactiveIcf(MockTarget.Architecture arch)
     {
-        ulong ehMarker = arch.Is64Bit ? 2u : 1u;
+        const ulong ehMarker = 1;
 
         ulong inactiveAddr = 0;
         TestPlaceholderTarget target = CreateTarget(
@@ -299,6 +300,27 @@ public unsafe class StackWalkTests
 
         IStackWalk contract = target.Contracts.StackWalk;
         Assert.False(contract.IsExceptionHandlingHelperInlinedCallFrame(new TargetPointer(framedAddr)));
+    }
+
+    [Theory]
+    [InlineData(RuntimeInfoArchitecture.X86, 0ul)]
+    [InlineData(RuntimeInfoArchitecture.Arm, 0x1000ul)]
+    public void GetMethodDescPtr_InlinedCallFrame_UsesX86StackSizeSentinel(RuntimeInfoArchitecture runtimeArchitecture, ulong expectedMethodDesc)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
+
+        ulong inlinedCallFrameAddr = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                inlinedCallFrameAddr = frameBuilder.AddInlinedCallFrame(callerReturnAddress: 0xCAFE_BABE, datum: 0x1000).Address;
+            },
+            runtimeArchitecture: runtimeArchitecture);
+
+        IStackWalk contract = target.Contracts.StackWalk;
+        Assert.Equal(expectedMethodDesc, contract.GetMethodDescPtr(new TargetPointer(inlinedCallFrameAddr)).Value);
     }
 
     [Theory]
