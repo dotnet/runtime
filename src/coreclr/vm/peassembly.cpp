@@ -9,7 +9,7 @@
 
 #include "common.h"
 #include "peassembly.h"
-#include "eecontract.h"
+#include <contract.h>
 #include "eeconfig.h"
 #include "eventtrace.h"
 #include "dbginterface.h"

@@ -25,7 +25,7 @@
 #include "sstring.h"
 #include "ex.h"
 #include "assemblyspecbase.h"
-#include "eecontract.h"
+#include <contract.h>
 #include "stackwalktypes.h"
 #include <specstrings.h>
 #include "slist.h"

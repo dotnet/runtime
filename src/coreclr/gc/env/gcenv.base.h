@@ -379,8 +379,6 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
 #define STATIC_CONTRACT_GC_NOTRIGGER
 #define STATIC_CONTRACT_MODE_COOPERATIVE
 #define CONTRACTL
-#define CONTRACT(_expr)
-#define CONTRACT_VOID
 #define THROWS
 #define NOTHROW
 #define INSTANCE_CHECK

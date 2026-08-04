@@ -147,7 +147,7 @@ namespace
 
         bool noPrefix = CheckLookupOption(options, LookupOptions::DontPrependPrefix);
         bool coreclrFallbackPrefix = CheckLookupOption(options, LookupOptions::CoreclrFallbackPrefix);
-        
+
         if (noPrefix)
         {
             if (namelen >= ARRAY_SIZE(buff))
