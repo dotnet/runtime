@@ -2192,6 +2192,10 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
     while (it.Next(pAssembly.This()))
     {
         MethodDesc * pLoadedMD = it.Current();
+        if (pLoadedMD == NULL)
+        {
+            continue;
+        }
 
         if (!pLoadedMD->IsVersionable())
         {
