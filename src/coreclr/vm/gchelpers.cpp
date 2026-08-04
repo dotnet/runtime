@@ -1009,7 +1009,6 @@ OBJECTREF AllocatePrimitiveArray(CorElementType type, DWORD cElements)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
         MODE_COOPERATIVE;  // returns an objref without pinning it => cooperative
     }
     CONTRACTL_END

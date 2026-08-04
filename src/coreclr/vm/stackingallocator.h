@@ -111,7 +111,6 @@ public:
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
-            INJECT_FAULT(return NULL;);
             PRECONDITION(m_CheckpointDepth > 0);
         }
         CONTRACTL_END;

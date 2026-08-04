@@ -186,7 +186,6 @@ HashMap::HashMap()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     m_rgBuckets = NULL;
     m_pCompare = NULL;  // comparison object
@@ -262,7 +261,6 @@ void HashMap::Init(DWORD cbInitialSize, ComparePtr* pCompare, BOOL fAsyncMode, L
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -313,7 +311,6 @@ void PtrHashMap::Init(DWORD cbInitialSize, CompareFnPtr ptr, BOOL fAsyncMode, Lo
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -332,7 +329,6 @@ HashMap::~HashMap()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // free the current table
     Clear();
@@ -350,7 +346,6 @@ void HashMap::Clear()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     // free the current table
     FreeBuckets(m_rgBuckets);
@@ -437,7 +432,6 @@ void HashMap::ProfileLookup(UPTR ntry, UPTR retValue)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifndef DACCESS_COMPILE
     #ifdef HASHTABLE_PROFILE
@@ -668,7 +662,6 @@ UPTR HashMap::DeleteValue (UPTR key, UPTR value)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE (OwnLock());
 
@@ -753,7 +746,6 @@ UPTR HashMap::PutEntry (Bucket* rgBuckets, UPTR key, UPTR value)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 
@@ -789,7 +781,6 @@ UPTR HashMap::NewSize() const
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     ASSERT(m_cbInserts >= m_cbDeletes);
     UPTR cbValidSlots = m_cbInserts-m_cbDeletes;
@@ -991,7 +982,6 @@ void HashMap::Compact()
     {
         EX_TRY
         {
-            FAULT_NOT_FATAL();
             Rehash();
         }
         EX_CATCH
@@ -1038,7 +1028,6 @@ BOOL HashMap::OwnLock()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     DEBUG_ONLY_FUNCTION;
 

@@ -208,7 +208,6 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
 
         // The member info must have been initialized before this is called.
         PRECONDITION(TRUE == m_bInitialized);
@@ -478,7 +477,6 @@ LPWSTR DispatchMemberInfo::GetMemberName(OBJECTREF MemberInfoObj, ComMTMemberInf
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(MemberInfoObj != NULL);
         PRECONDITION(CheckPointer(pMemberMap, NULL_OK));
     }
@@ -878,7 +876,6 @@ void DispatchMemberInfo::SetUpDispParamAttributes(int iParam, MarshalInfo* Info)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(Info));
     }
     CONTRACTL_END;
@@ -1027,7 +1024,6 @@ DispatchMemberInfo* DispatchInfo::CreateDispatchMemberInfoInstance(DISPID dispID
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1111,7 +1107,6 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         // there are too many fields in pObjs, here I assume once one of them is
         // protected, the whole structure is protected.
         PRECONDITION(IsProtectedByGCFrame(&pObjs->MemberInfo));
@@ -1760,7 +1755,6 @@ HRESULT DispatchInfo::InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id,
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pSimpleWrap));
         PRECONDITION(CheckPointer(pdp, NULL_OK));
         PRECONDITION(CheckPointer(pVarRes, NULL_OK));
@@ -2233,7 +2227,6 @@ void DispatchInfo::SetUpNamedParamArray(DispatchMemberInfo *pMemberInfo, DISPID 
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMemberInfo, NULL_OK));
         PRECONDITION(CheckPointer(pSrcArgNames));
         PRECONDITION(pNamedParamArray != NULL);
@@ -2662,7 +2655,6 @@ OBJECTREF DispatchInfo::GetOleAutBinder()
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -2829,7 +2821,6 @@ ComMTMemberInfoMap *DispatchInfo::GetMemberInfoMap()
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 

@@ -226,7 +226,6 @@ void* StackingAllocator::UnsafeAllocSafeThrow(UINT32 Size)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(m_CheckpointDepth > 0);
     }
     CONTRACTL_END;
@@ -247,7 +246,6 @@ void *StackingAllocator::UnsafeAlloc(UINT32 Size)
         THROWS;
         GC_NOTRIGGER;
         MODE_ANY;
-        INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(m_CheckpointDepth > 0);
     }
     CONTRACTL_END;

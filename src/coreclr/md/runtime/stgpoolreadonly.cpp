@@ -42,7 +42,6 @@ HRESULT StgPoolReadOnly::InitOnMemReadOnly(// Return code.
     CONTRACTL
     {
         NOTHROW;
-        INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END
 
@@ -107,7 +106,6 @@ StgPoolReadOnly::GetBlob(
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     HRESULT hr;
     UINT32  cbBlobContentSize;
@@ -159,7 +157,6 @@ StgBlobPoolReadOnly::GetBlob(
     MetaData::DataBlob *pData)
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     HRESULT hr;
     UINT32  cbBlobContentSize;

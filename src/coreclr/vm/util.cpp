@@ -64,7 +64,6 @@ CQuickHeap::~CQuickHeap()
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -89,7 +88,6 @@ LPVOID CQuickHeap::Alloc(UINT sz)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     } CONTRACTL_END;
 
     sz = (sz+7) & ~7;
@@ -126,7 +124,6 @@ void PrintToStdErrA(const char *pszString)
     {
         NOTHROW;
         GC_NOTRIGGER;
-        FORBID_FAULT;
     }
     CONTRACTL_END
 
@@ -139,7 +136,6 @@ void PrintToStdErrW(const WCHAR *pwzString)
     {
         THROWS;
         GC_NOTRIGGER;
-        INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
 
@@ -158,7 +154,6 @@ bool operator ==(const ICorDebugInfo::VarLoc &varLoc1,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     if (varLoc1.vlType != varLoc2.vlType)
         return false;
@@ -215,7 +210,6 @@ SIZE_T GetRegOffsInCONTEXT(ICorDebugInfo::RegNum regNum)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
 #ifdef TARGET_X86
     switch(regNum)
@@ -449,7 +443,6 @@ ULONG NativeVarLocations(const ICorDebugInfo::VarLoc &   varLoc,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     _ASSERTE(numLocs >= MAX_NATIVE_VAR_LOCS);
 
@@ -561,7 +554,6 @@ SIZE_T *NativeVarStackAddr(const ICorDebugInfo::VarLoc &   varLoc,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     SIZE_T *dwAddr = NULL;
 
@@ -669,7 +661,6 @@ bool    GetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
 
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     switch(varLoc.vlType)
     {
@@ -775,7 +766,6 @@ bool    SetNativeVarVal(const ICorDebugInfo::VarLoc &   varLoc,
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     switch(varLoc.vlType)
     {
@@ -1011,7 +1001,6 @@ BOOL CLRFreeLibrary(HMODULE hModule)
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FORBID_FAULT;
 
     return FreeLibrary(hModule);
 }
@@ -1779,7 +1768,6 @@ int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2)
     {
         THROWS;
         GC_TRIGGERS;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END
 

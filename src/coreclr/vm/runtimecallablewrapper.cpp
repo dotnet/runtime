@@ -55,7 +55,6 @@ void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -87,7 +86,6 @@ IUnknown *ComClassFactory::CreateInstanceFromClassFactory(IClassFactory *pClassF
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pClassFact));
         PRECONDITION(CheckPointer(punkOuter, NULL_OK));
         PRECONDITION(CheckPointer(pfDidContainment, NULL_OK));
@@ -235,7 +233,6 @@ OBJECTREF ComClassFactory::CreateAggregatedInstance(MethodTable* pMTClass, BOOL 
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMTClass));
     }
     CONTRACTL_END;
@@ -452,7 +449,6 @@ OBJECTREF ComClassFactory::CreateInstance(MethodTable* pMTClass, BOOL ForManaged
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMTClass, NULL_OK));
     }
     CONTRACTL_END;
@@ -1204,7 +1200,6 @@ RCW* RCW::CreateRCW(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags, MethodT
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
     }
     CONTRACTL_END;
 
@@ -1225,7 +1220,6 @@ RCW* RCW::CreateRCWInternal(IUnknown *pUnk, DWORD dwSyncBlockIndex, DWORD flags,
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pUnk));
         PRECONDITION(dwSyncBlockIndex != 0);
         PRECONDITION(CheckPointer(pClassMT));
@@ -1262,7 +1256,6 @@ void RCW::Initialize(IUnknown* pUnk, DWORD dwSyncBlockIndex, MethodTable *pClass
         THROWS;
         GC_TRIGGERS;
         MODE_PREEMPTIVE;
-        INJECT_FAULT(ThrowOutOfMemory());
         PRECONDITION(CheckPointer(pUnk));
         PRECONDITION(dwSyncBlockIndex != 0);
         PRECONDITION(CheckPointer(pClassMT));
@@ -1621,7 +1614,6 @@ void RCW::CreateDuplicateWrapper(MethodTable *pNewMT, RCWHolder* pNewRCW)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pNewMT));
         PRECONDITION(pNewMT->IsComObjectType());
         PRECONDITION(CheckPointer(pNewRCW));
@@ -2152,7 +2144,6 @@ OBJECTREF ComObject::CreateComObjectRef(MethodTable* pMT)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(CheckPointer(pMT));
         PRECONDITION(pMT->IsComObjectType());
     }
@@ -2178,7 +2169,6 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
-        INJECT_FAULT(COMPlusThrowOM());
         PRECONDITION(oref != NULL);
         PRECONDITION(CheckPointer(pIntfTable));
     }
