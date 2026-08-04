@@ -713,6 +713,7 @@ namespace ILCompiler.ObjectWriter
             ObjectWriter objectWriter =
                 factory.Target.IsApplePlatform ? new MachObjectWriter(factory, options) :
                 factory.Target.OperatingSystem == TargetOS.Windows ? new CoffObjectWriter(factory, options) :
+                factory.Target.Architecture == TargetArchitecture.Wasm32 ? new WasmRelocatableObjectWriter(factory, options) :
                 new ElfObjectWriter(factory, options);
 
             using Stream outputFileStream = new FileStream(objectFilePath, FileMode.Create);
