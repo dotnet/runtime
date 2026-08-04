@@ -11,7 +11,7 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
-            throw new NotImplementedException();
+            throw new PlatformNotSupportedException("NativeAOT WebAssembly jump stubs are not supported.");
         }
     }
 }
