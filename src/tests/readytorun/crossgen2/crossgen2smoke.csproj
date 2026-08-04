@@ -6,6 +6,9 @@
     <!-- This is an explicit crossgen test -->
     <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
     <CrossGen2TestCheckPdb>true</CrossGen2TestCheckPdb>
+    <!-- TODO: Re-enable when WASM R2R generic ldtoken calls no longer fail with a function-signature mismatch.
+         Tracked by https://github.com/dotnet/runtime/issues/131321. -->
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>

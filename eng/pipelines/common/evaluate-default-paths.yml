@@ -81,15 +81,12 @@ parameters:
         eng/testing/performance/*
     ]
 
-    # src/workloads is only used in runtime-official builds
-    # where evaluate-paths is not used
     _always_exclude: [
         eng/pipelines/common/evaluate-default-paths.yml
         '*.md'
         LICENSE.TXT
         PATENTS.TXT
         THIRD-PARTY-NOTICES.TXT
-        src/workloads/*
         src/mono/wasm/sln/*
     ]
 

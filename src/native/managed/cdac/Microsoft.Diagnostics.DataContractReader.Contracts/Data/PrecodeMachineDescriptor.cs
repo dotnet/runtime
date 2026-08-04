@@ -9,94 +9,102 @@ internal sealed partial class PrecodeMachineDescriptor : IData<PrecodeMachineDes
     [Field] public partial byte InvalidPrecodeType { get; }
     [Field] public partial byte StubPrecodeType { get; }
     [Field] public partial uint StubCodePageSize { get; }
+    [CustomInit(nameof(InitOffsetOfPrecodeType))] public partial byte? OffsetOfPrecodeType { get; } // Not present for version 3 and above
+    [CustomInit(nameof(InitReadWidthOfPrecodeType))] public partial byte? ReadWidthOfPrecodeType { get; } // Not present for version 3 and above
+    [CustomInit(nameof(InitShiftOfPrecodeType))] public partial byte? ShiftOfPrecodeType { get; } // Not present for version 3 and above
+    [CustomInit(nameof(InitPInvokeImportPrecodeType))] public partial byte? PInvokeImportPrecodeType { get; }
+    [CustomInit(nameof(InitFixupPrecodeType))] public partial byte? FixupPrecodeType { get; }
+    [CustomInit(nameof(InitThisPointerRetBufPrecodeType))] public partial byte? ThisPointerRetBufPrecodeType { get; }
+    [CustomInit(nameof(InitInterpreterPrecodeType))] public partial byte? InterpreterPrecodeType { get; } // May be present for version 3 and above
+    [CustomInit(nameof(InitUMEntryPrecodeType))] public partial byte? UMEntryPrecodeType { get; } // May be present for version 3 and above
+    [CustomInit(nameof(InitDynamicHelperPrecodeType))] public partial byte? DynamicHelperPrecodeType { get; } // May be present for version 3 and above
+    [CustomInit(nameof(InitFixupStubPrecodeSize))] public partial byte? FixupStubPrecodeSize { get; } // Present for version 3 and above
+    [CustomInit(nameof(InitFixupBytes))] public partial byte[]? FixupBytes { get; } // Present for version 3 and above
+    [CustomInit(nameof(InitFixupIgnoredBytes))] public partial byte[]? FixupIgnoredBytes { get; } // Present for version 3 and above
+    [CustomInit(nameof(InitStubPrecodeSize))] public partial byte? StubPrecodeSize { get; } // Present for version 3 and above
+    [CustomInit(nameof(InitStubBytes))] public partial byte[]? StubBytes { get; } // Present for version 3 and above
+    [CustomInit(nameof(InitStubIgnoredBytes))] public partial byte[]? StubIgnoredBytes { get; } // Present for version 3 and above
 
     [DataDescriptorDependency(nameof(OffsetOfPrecodeType), "uint8")]
-    public byte? OffsetOfPrecodeType { get; private set; } // Not present for version 3 and above
+    private partial byte? InitOffsetOfPrecodeType(Target target, TargetPointer address)
+        => MaybeGetByte(target, address, nameof(OffsetOfPrecodeType));
 
     [DataDescriptorDependency(nameof(ReadWidthOfPrecodeType), "uint8")]
-    public byte? ReadWidthOfPrecodeType { get; private set; } // Not present for version 3 and above
+    private partial byte? InitReadWidthOfPrecodeType(Target target, TargetPointer address)
+        => MaybeGetByte(target, address, nameof(ReadWidthOfPrecodeType));
 
     [DataDescriptorDependency(nameof(ShiftOfPrecodeType), "uint8")]
-    public byte? ShiftOfPrecodeType { get; private set; } // Not present for version 3 and above
+    private partial byte? InitShiftOfPrecodeType(Target target, TargetPointer address)
+        => MaybeGetByte(target, address, nameof(ShiftOfPrecodeType));
 
     [DataDescriptorDependency(nameof(PInvokeImportPrecodeType), "uint8")]
-    public byte? PInvokeImportPrecodeType { get; private set; }
+    private partial byte? InitPInvokeImportPrecodeType(Target target, TargetPointer address)
+        => MaybeGetByte(target, address, nameof(PInvokeImportPrecodeType));
 
     [DataDescriptorDependency(nameof(FixupPrecodeType), "uint8")]
-    public byte? FixupPrecodeType { get; private set; }
+    private partial byte? InitFixupPrecodeType(Target target, TargetPointer address)
+        => MaybeGetByte(target, address, nameof(FixupPrecodeType));
 
     [DataDescriptorDependency(nameof(ThisPointerRetBufPrecodeType), "uint8")]
-    public byte? ThisPointerRetBufPrecodeType { get; private set; }
+    private partial byte? InitThisPointerRetBufPrecodeType(Target target, TargetPointer address)
+        => MaybeGetByte(target, address, nameof(ThisPointerRetBufPrecodeType));
 
     [DataDescriptorDependency(nameof(InterpreterPrecodeType), "uint8")]
-    public byte? InterpreterPrecodeType { get; private set; } // May be present for version 3 and above
+    private partial byte? InitInterpreterPrecodeType(Target target, TargetPointer address)
+        => MaybeGetByte(target, address, nameof(InterpreterPrecodeType));
 
     [DataDescriptorDependency(nameof(UMEntryPrecodeType), "uint8")]
-    public byte? UMEntryPrecodeType { get; private set; } // May be present for version 3 and above
+    private partial byte? InitUMEntryPrecodeType(Target target, TargetPointer address)
+        => MaybeGetByte(target, address, nameof(UMEntryPrecodeType));
 
     [DataDescriptorDependency(nameof(DynamicHelperPrecodeType), "uint8")]
-    public byte? DynamicHelperPrecodeType { get; private set; } // May be present for version 3 and above
+    private partial byte? InitDynamicHelperPrecodeType(Target target, TargetPointer address)
+        => MaybeGetByte(target, address, nameof(DynamicHelperPrecodeType));
 
     [DataDescriptorDependency(nameof(FixupStubPrecodeSize), "uint8")]
-    public byte? FixupStubPrecodeSize { get; private set; } // Present for version 3 and above
+    private partial byte? InitFixupStubPrecodeSize(Target target, TargetPointer address)
+        => MaybeGetByte(target, address, nameof(FixupStubPrecodeSize));
 
     [DataDescriptorDependency(nameof(FixupStubPrecodeSize), "uint8")]
     [DataDescriptorDependency(nameof(FixupBytes), "uint8[]")]
-    public byte[]? FixupBytes { get; private set; } // Present for version 3 and above
+    private partial byte[]? InitFixupBytes(Target target, TargetPointer address)
+        => MaybeGetBytes(target, address, FixupStubPrecodeSize, nameof(FixupBytes));
 
     [DataDescriptorDependency(nameof(FixupStubPrecodeSize), "uint8")]
     [DataDescriptorDependency(nameof(FixupIgnoredBytes), "uint8[]")]
-    public byte[]? FixupIgnoredBytes { get; private set; } // Present for version 3 and above
+    private partial byte[]? InitFixupIgnoredBytes(Target target, TargetPointer address)
+        => MaybeGetBytes(target, address, FixupStubPrecodeSize, nameof(FixupIgnoredBytes));
 
     [DataDescriptorDependency(nameof(StubPrecodeSize), "uint8")]
-    public byte? StubPrecodeSize { get; private set; } // Present for version 3 and above
+    private partial byte? InitStubPrecodeSize(Target target, TargetPointer address)
+        => MaybeGetByte(target, address, nameof(StubPrecodeSize));
 
     [DataDescriptorDependency(nameof(StubPrecodeSize), "uint8")]
     [DataDescriptorDependency(nameof(StubBytes), "uint8[]")]
-    public byte[]? StubBytes { get; private set; } // Present for version 3 and above
+    private partial byte[]? InitStubBytes(Target target, TargetPointer address)
+        => MaybeGetBytes(target, address, StubPrecodeSize, nameof(StubBytes));
 
     [DataDescriptorDependency(nameof(StubPrecodeSize), "uint8")]
     [DataDescriptorDependency(nameof(StubIgnoredBytes), "uint8[]")]
-    public byte[]? StubIgnoredBytes { get; private set; } // Present for version 3 and above
+    private partial byte[]? InitStubIgnoredBytes(Target target, TargetPointer address)
+        => MaybeGetBytes(target, address, StubPrecodeSize, nameof(StubIgnoredBytes));
 
-    partial void OnInit(Target target, TargetPointer address)
+    private static byte? MaybeGetByte(Target target, TargetPointer address, string fieldName)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.PrecodeMachineDescriptor);
-        if (type.Fields.ContainsKey(nameof(OffsetOfPrecodeType)))
-        {
-            OffsetOfPrecodeType = target.ReadField<byte>(address, type, nameof(OffsetOfPrecodeType));
-            ReadWidthOfPrecodeType = target.ReadField<byte>(address, type, nameof(ReadWidthOfPrecodeType));
-            ShiftOfPrecodeType = target.ReadField<byte>(address, type, nameof(ShiftOfPrecodeType));
-        }
+        return type.Fields.ContainsKey(fieldName)
+            ? target.Read<byte>(address + (ulong)type.Fields[fieldName].Offset)
+            : null;
+    }
 
-        if (type.Fields.ContainsKey(nameof(FixupStubPrecodeSize)))
-        {
-            FixupStubPrecodeSize = target.ReadField<byte>(address, type, nameof(FixupStubPrecodeSize));
-            FixupBytes = new byte[FixupStubPrecodeSize.Value];
-            target.ReadBuffer(address + (ulong)type.Fields[nameof(FixupBytes)].Offset, FixupBytes);
-            FixupIgnoredBytes = new byte[FixupStubPrecodeSize.Value];
-            target.ReadBuffer(address + (ulong)type.Fields[nameof(FixupIgnoredBytes)].Offset, FixupIgnoredBytes);
-        }
+    private static byte[]? MaybeGetBytes(Target target, TargetPointer address, byte? size, string fieldName)
+    {
+        if (size is not byte length)
+            return null;
 
-        if (type.Fields.ContainsKey(nameof(StubPrecodeSize)))
-        {
-            StubPrecodeSize = target.ReadField<byte>(address, type, nameof(StubPrecodeSize));
-            StubBytes = new byte[StubPrecodeSize.Value];
-            target.ReadBuffer(address + (ulong)type.Fields[nameof(StubBytes)].Offset, StubBytes);
-            StubIgnoredBytes = new byte[StubPrecodeSize.Value];
-            target.ReadBuffer(address + (ulong)type.Fields[nameof(StubIgnoredBytes)].Offset, StubIgnoredBytes);
-        }
-
-        PInvokeImportPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(PInvokeImportPrecodeType));
-        FixupPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(FixupPrecodeType));
-        ThisPointerRetBufPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(ThisPointerRetBufPrecodeType));
-        InterpreterPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(InterpreterPrecodeType));
-        UMEntryPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(UMEntryPrecodeType));
-        DynamicHelperPrecodeType = MaybeGetPrecodeType(target, address, type, nameof(DynamicHelperPrecodeType));
-
-        static byte? MaybeGetPrecodeType(Target target, TargetPointer address, Target.TypeInfo type, string fieldName)
-            => type.Fields.ContainsKey(fieldName)
-                ? target.Read<byte>(address + (ulong)type.Fields[fieldName].Offset)
-                : null;
+        Target.TypeInfo type = target.GetTypeInfo(DataType.PrecodeMachineDescriptor);
+        byte[] bytes = new byte[length];
+        target.ReadBuffer(address + (ulong)type.Fields[fieldName].Offset, bytes);
+        return bytes;
     }
 }

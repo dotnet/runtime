@@ -496,7 +496,9 @@
 
   <Target Name="GetRequiresProcessIsolation" Returns="@(ProjectRequiringProcessIsolation)">
     <ItemGroup Condition="'$(RequiresProcessIsolation)' == 'true'">
-      <ProjectRequiringProcessIsolation Include="$(MSBuildProjectFullPath)" />
+      <ProjectRequiringProcessIsolation Include="$(MSBuildProjectFullPath)">
+        <IsRunnable Condition="'$(GenerateRunScript)' == 'true' and '$(_WillCLRTestProjectBuild)' == 'true'">true</IsRunnable>
+      </ProjectRequiringProcessIsolation>
     </ItemGroup>
   </Target>
 
@@ -511,7 +513,8 @@
 
     <ItemGroup>
       <ProjectReference Remove="@(ReferencedProjectRequiringProcessIsolation)" MatchOnMetadata="FullPath" />
-      <ProjectReference Include="@(ReferencedProjectRequiringProcessIsolation->'%(FullPath)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" Private="False" />
+      <RunnableProjectRequiringProcessIsolation Include="@(ReferencedProjectRequiringProcessIsolation)" Condition="'%(ReferencedProjectRequiringProcessIsolation.IsRunnable)' == 'true'" />
+      <ProjectReference Include="@(RunnableProjectRequiringProcessIsolation->'%(FullPath)')" OutputItemType="OutOfProcessTests" BuildReference="true" ReferenceOutputAssembly="false" Private="False" />
     </ItemGroup>
   </Target>
 

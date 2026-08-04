@@ -2048,48 +2048,8 @@ IUnknown* ComCallWrapper::GetBasicIP(bool inspectionOnly)
     }
     CONTRACTL_END;
 
-    // If the legacy switch is set, we'll always return the IClassX IP
-    //  when QIing for IUnknown or IDispatch.
-    // Whidbey Tactics has decided to make this opt-in rather than
-    // opt-out for now.  Remove the check for the legacy switch.
-    if (GetComCallWrapperTemplate()->SupportsIClassX())
-        return GetIClassXIP(inspectionOnly);
-
-    ComCallWrapper *pWrap = this;
-    IUnknown *pIntf = NULL;
-
-    // The IClassX VTable pointer is in the start wrapper.
-    if (pWrap->IsLinked())
-        pWrap = ComCallWrapper::GetStartWrapper(pWrap);
-
-    ComMethodTable* pIBasicComMT = (ComMethodTable*)pWrap->m_rgpIPtr[Slot_Basic] - 1;
-    _ASSERTE(pIBasicComMT);
-
-    // Lay out the basic COM method table if it has not yet been laid out.
-    if (!pIBasicComMT->IsLayoutComplete())
-    {
-        if (inspectionOnly)
-            return NULL;
-        else
-            pIBasicComMT->LayOutBasicMethodTable();
-    }
-
-    // Return the basic vtable pointer.
-    pIntf = (IUnknown*)&pWrap->m_rgpIPtr[Slot_Basic];
-
-    // If we are not addref'ing the IUnknown (for passive inspection like ETW), return it now.
-    if (inspectionOnly)
-        {
-            return pIntf;
-        }
-
-    // AddRef the wrapper.
-    // Note that we don't do SafeAddRef(pIntf) because it's overkill to
-    // go via IUnknown when we already have the wrapper in-hand.
-    ULONG cbRef = pWrap->AddRefWithAggregationCheck();
-
-    // 0xbadF00d implies the AddRef didn't go through
-    return (cbRef != 0xbadf00d) ? pIntf : NULL;
+    // We always return the IClassX IP when QIing for IUnknown or IDispatch.
+    return GetIClassXIP(inspectionOnly);
 }
 
 //--------------------------------------------------------------------------
@@ -2280,23 +2240,20 @@ static IUnknown *GetComIPFromCCW_ForIntfMT_Worker(ComCallWrapper *pWrap, MethodT
 
         // Retrieve the COM method table for the requested interface.
         ComCallWrapperTemplate *pIntfCCWTemplate = ComCallWrapperTemplate::GetTemplate(TypeHandle(pIntfMT));
-        if (pIntfCCWTemplate->SupportsIClassX())
+        ComMethodTable * pIntfComMT = pIntfCCWTemplate->GetClassComMT();
+
+        // If the class that this IClassX's was generated for is marked
+        // as ClassInterfaceType.AutoDual or AutoDisp,
+        // then give out the IClassX IP.
+        if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp)
         {
-            ComMethodTable * pIntfComMT = pIntfCCWTemplate->GetClassComMT();
+            // Make sure the all the base classes of the class this IClassX corresponds to
+            // are visible to COM.
+            pIntfComMT->CheckParentComVisibility();
 
-            // If the class that this IClassX's was generated for is marked
-            // as ClassInterfaceType.AutoDual or AutoDisp,
-            // then give out the IClassX IP.
-            if (pIntfComMT->GetClassInterfaceType() == clsIfAutoDual || pIntfComMT->GetClassInterfaceType() == clsIfAutoDisp)
-            {
-                // Make sure the all the base classes of the class this IClassX corresponds to
-                // are visible to COM.
-                pIntfComMT->CheckParentComVisibility();
-
-                // Giveout IClassX
-                IUnknown * pIntf = pWrap->GetIClassXIP();
-                return GetComIPFromCCW_VisibilityCheck(pIntf, pIntfMT, pIntfComMT, flags);
-            }
+            // Giveout IClassX
+            IUnknown * pIntf = pWrap->GetIClassXIP();
+            return GetComIPFromCCW_VisibilityCheck(pIntf, pIntfMT, pIntfComMT, flags);
         }
     }
     return NULL;
@@ -3648,7 +3605,6 @@ ComMethodTable* ComCallWrapperTemplate::GetClassComMT()
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        PRECONDITION(SupportsIClassX());
     }
     CONTRACTL_END;
 
@@ -3851,7 +3807,6 @@ ComMethodTable* ComCallWrapperTemplate::CreateComMethodTableForClass(MethodTable
         PRECONDITION(CheckPointer(pClassMT));
         PRECONDITION(!pClassMT->IsInterface());
         PRECONDITION(!pClassMT->GetComPlusParentMethodTable() || pClassMT->GetComPlusParentMethodTable()->GetComCallWrapperTemplate());
-        PRECONDITION(SupportsIClassX());
     }
     CONTRACTL_END;
 
@@ -4385,12 +4340,6 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
         pTemplate->m_pBasicComMT = pTemplate->CreateComMethodTableForBasic(pMT);
         pTemplate->m_pBasicComMT->AddRef();
 
-        if (ClassSupportsIClassX(pMT))
-        {
-            // we will allow building IClassX for the class
-            pTemplate->m_flags |= enum_SupportsIClassX;
-        }
-
         // Eagerly create the interface CMTs.
         // when iterate the interfaces implemented by the methodtable, we can check whether
         // the interface supports ICustomQueryInterface.
@@ -4417,36 +4366,33 @@ ComCallWrapperTemplate* ComCallWrapperTemplate::CreateTemplate(TypeHandle thClas
 
 #ifdef PROFILING_SUPPORTED
         // Notify profiler of the CCW, so it can avoid double-counting.
-        if (pRetTemplate->SupportsIClassX())
-        {
-            BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
-            // When under the profiler, we'll eagerly generate the IClassX CMT.
-            pRetTemplate->GetClassComMT();
+        BEGIN_PROFILER_CALLBACK(CORProfilerTrackCCW());
+        // When under the profiler, we'll eagerly generate the IClassX CMT.
+        pRetTemplate->GetClassComMT();
 
-            IID IClassXIID = GUID_NULL;
-            SLOT *pComVtable = (SLOT *)(pRetTemplate->m_pClassComMT + 1);
+        IID IClassXIID = GUID_NULL;
+        SLOT *pComVtable = (SLOT *)(pRetTemplate->m_pClassComMT + 1);
 
-            // If the class is visible from COM, then give out the IClassX IID.
-            if (pRetTemplate->m_pClassComMT->IsComVisible())
-                GenerateClassItfGuid(thClass, &IClassXIID);
+        // If the class is visible from COM, then give out the IClassX IID.
+        if (pRetTemplate->m_pClassComMT->IsComVisible())
+            GenerateClassItfGuid(thClass, &IClassXIID);
 
 #if defined(_DEBUG)
-            CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
-            minipal_guid_as_string(IClassXIID, rIID, MINIPAL_GUID_BUFFER_LEN);
-            SString ssName;
-            thClass.GetName(ssName);
-            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",
-                 ssName.GetUTF8(), rIID, pComVtable));
+        CHAR rIID[MINIPAL_GUID_BUFFER_LEN];
+        minipal_guid_as_string(IClassXIID, rIID, MINIPAL_GUID_BUFFER_LEN);
+        SString ssName;
+        thClass.GetName(ssName);
+        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated Class:%s, IID:%s, vTbl:%#08x\n",
+             ssName.GetUTF8(), rIID, pComVtable));
 #else
-            LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated TypeHandle:%#x, IID:{%08x-...}, vTbl:%#08x\n",
-                 thClass.AsPtr(), IClassXIID.Data1, pComVtable));
+        LOG((LF_CORPROF, LL_INFO100, "COMClassicVTableCreated TypeHandle:%#x, IID:{%08x-...}, vTbl:%#08x\n",
+             thClass.AsPtr(), IClassXIID.Data1, pComVtable));
 #endif
-            (&g_profControlBlock)->COMClassicVTableCreated(
-                (ClassID) thClass.AsPtr(), IClassXIID, pComVtable,
-                pRetTemplate->m_pClassComMT->m_cbSlots +
-                    ComMethodTable::GetNumExtraSlots(pRetTemplate->m_pClassComMT->GetInterfaceType()));
-            END_PROFILER_CALLBACK();
-        }
+        (&g_profControlBlock)->COMClassicVTableCreated(
+            (ClassID) thClass.AsPtr(), IClassXIID, pComVtable,
+            pRetTemplate->m_pClassComMT->m_cbSlots +
+                ComMethodTable::GetNumExtraSlots(pRetTemplate->m_pClassComMT->GetInterfaceType()));
+        END_PROFILER_CALLBACK();
 #endif // PROFILING_SUPPORTED
         return pRetTemplate;
     }
