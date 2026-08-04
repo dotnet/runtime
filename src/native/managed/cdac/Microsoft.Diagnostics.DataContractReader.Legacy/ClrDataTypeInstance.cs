@@ -154,8 +154,11 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
                 token = rts.GetTypeDefToken(_typeHandle);
                 ILoader loader = _target.Contracts.Loader;
                 Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
-                ModuleLookupTables tables = loader.GetLookupTables(moduleHandle);
-                TargetPointer definitionTypeAddress = loader.GetModuleLookupMapElement(tables.TypeDefToMethodTable, token, out _);
+                TargetPointer definitionTypeAddress = loader.GetModuleLookupMapElement(
+                    moduleHandle,
+                    ModuleLookupMapKind.TypeDefToMethodTable,
+                    token,
+                    out _);
                 definitionType = definitionTypeAddress == TargetPointer.Null ? null : rts.GetTypeHandle(definitionTypeAddress);
             }
 

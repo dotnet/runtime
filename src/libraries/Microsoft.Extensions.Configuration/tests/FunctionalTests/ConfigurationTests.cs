@@ -19,8 +19,10 @@ namespace Microsoft.Extensions.Configuration.Test
 {
     public class ConfigurationTests : IDisposable
     {
-        private const int _retries = 100;
+        private const int _retries = 150;
         private const int _msDelay = 200;
+
+        private static readonly TimeSpan s_maxWaitForReload = TimeSpan.FromSeconds(30);
 
         private readonly DisposableFileSystem _fileSystem;
         private readonly PhysicalFileProvider _fileProvider;
@@ -485,7 +487,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task ReloadOnChangeWorksAfterError()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -732,7 +733,6 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task TouchingFileWillReload()
         {
             _fileSystem.WriteFile("reload.json", @"{""JsonKey1"": ""JsonValue1""}");
@@ -1103,33 +1103,54 @@ IniKey1=IniValue2");
         }
 
         [Fact]
-        [ActiveIssue("File watching is flaky (particularly on non windows. https://github.com/dotnet/runtime/issues/42036")]
         public async Task TouchingFileWillReloadForUserSecrets()
         {
-            string userSecretsId = "Test";
+            // A unique id keeps concurrently running assemblies from sharing the same secrets folder.
+            string userSecretsId = $"Test_{Guid.NewGuid():N}";
             var userSecretsPath = PathHelper.GetSecretsPathFromSecretsId(userSecretsId);
             var userSecretsFolder = Path.GetDirectoryName(userSecretsPath);
 
-            _fileSystem.CreateFolder(userSecretsFolder);
-            _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue1""}");
+            // The secrets path is absolute and lives under the real user profile, so DisposableFileSystem
+            // writes straight through it and cannot clean it up for us.
+            IConfigurationRoot config = null;
 
-            var config = CreateBuilder()
-                .AddUserSecrets(userSecretsId, reloadOnChange: true)
-                .Build();
+            try
+            {
+                _fileSystem.CreateFolder(userSecretsFolder);
+                _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue1""}");
 
-            Assert.Equal("UserSecretValue1", config["UserSecretKey1"]);
+                config = CreateBuilder()
+                    .AddUserSecrets(userSecretsId, reloadOnChange: true)
+                    .Build();
 
-            var token = config.GetReloadToken();
+                Assert.Equal("UserSecretValue1", config["UserSecretKey1"]);
 
-            // Update file
-            _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue2""}");
+                var token = config.GetReloadToken();
 
-            await WaitForChange(
-                () => config["UserSecretKey1"] == "UserSecretValue2",
-                "Reload failed after create-delete-create.");
+                // Update file
+                _fileSystem.WriteFile(userSecretsPath, @"{""UserSecretKey1"": ""UserSecretValue2""}");
 
-            Assert.Equal("UserSecretValue2", config["UserSecretKey1"]);
-            Assert.True(token.HasChanged);
+                await WaitForChange(
+                    () => config["UserSecretKey1"] == "UserSecretValue2",
+                    "Reload failed after create-delete-create.");
+
+                Assert.Equal("UserSecretValue2", config["UserSecretKey1"]);
+                Assert.True(token.HasChanged);
+            }
+            finally
+            {
+                // Stop watching before removing the folder the watcher is pointed at.
+                (config as IDisposable)?.Dispose();
+
+                try
+                {
+                    Directory.Delete(userSecretsFolder, true);
+                }
+                catch
+                {
+                    // Don't throw if this fails.
+                }
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
@@ -1211,30 +1232,66 @@ IniKey1=IniValue2");
             public string XmlKey1 { get; set; }
         }
 
-        private async Task WatchOverConfigJsonFileAndUpdateIt(string filePath)
+        private async Task WatchOverConfigJsonFileAndUpdateIt(string relativePathPrefix)
         {
-            var builder = new ConfigurationBuilder().AddJsonFile(filePath, true, true).Build();
-            bool reloaded = false;
-            ChangeToken.OnChange(builder.GetReloadToken, () =>
+            // Use a unique file name so that repeated or concurrent runs sharing the same output
+            // directory cannot observe each other's files.
+            string fileName = $"testFileToReload_{Guid.NewGuid():N}.json";
+
+            // The prefix is concatenated rather than combined on purpose: preserving the unnormalized
+            // "./" or ".\" is the whole point of the test, and Path.Combine would strip it.
+            string configuredPath = relativePathPrefix + fileName;
+
+            // A relative path is resolved against the default file provider root (AppContext.BaseDirectory)
+            // rather than the current working directory, so the file has to be written there for the
+            // watcher to see it.
+            string watchedFilePath = Path.Combine(_basePath, fileName);
+
+            IConfigurationRoot config = new ConfigurationBuilder()
+                .AddJsonFile(configuredPath, optional: true, reloadOnChange: true)
+                .Build();
+
+            IFileProvider defaultFileProvider = config.Providers
+                .OfType<FileConfigurationProvider>()
+                .Single()
+                .Source.FileProvider;
+
+            try
             {
-                reloaded = true;
-            });
-            File.WriteAllText(filePath, "{\"Prop2\":\"Value2\"}");
-            await WaitForChange(
-                () => reloaded,
-                "on file change event handler did not get executed");
+                var reloadedSignal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                using IDisposable subscription = ChangeToken.OnChange(config.GetReloadToken, () => reloadedSignal.TrySetResult(true));
+
+                File.WriteAllText(watchedFilePath, @"{""Prop2"": ""Value2""}");
+                await Task.WhenAny(reloadedSignal.Task, Task.Delay(s_maxWaitForReload));
+                Assert.True(reloadedSignal.Task.IsCompleted, "on file change event handler did not get executed");
+                Assert.Equal("Value2", config["Prop2"]);
+            }
+            finally
+            {
+                (config as IDisposable)?.Dispose();
+                (defaultFileProvider as IDisposable)?.Dispose();
+
+                try
+                {
+                    File.Delete(watchedFilePath);
+                }
+                catch
+                {
+                    // Don't throw if this fails; a cleanup error must not mask an assertion failure.
+                }
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public async Task OnChangeGetFiredForRelativeWindowsPath()
         {
-            await WatchOverConfigJsonFileAndUpdateIt(".\\testFileToReload.json");
+            await WatchOverConfigJsonFileAndUpdateIt(".\\");
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsLinux))]
         public async Task OnChangeGetFiredForRelativeLinuxPath()
         {
-            await WatchOverConfigJsonFileAndUpdateIt("./testFileToReload.json");
+            await WatchOverConfigJsonFileAndUpdateIt("./");
         }
     }
 }

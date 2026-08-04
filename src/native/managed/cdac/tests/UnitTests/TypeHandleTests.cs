@@ -274,7 +274,6 @@ public unsafe class TypeHandleTests
     public void ClrDataTypeInstance_GetDefinition(MockTarget.Architecture architecture)
     {
         const uint TypeDefToken = 0x02000001;
-        TargetPointer lookupMap = new(0x2000);
         TargetPointer definitionTypeAddress = new(0x3000);
         TargetTypeHandle typeHandle = new(0x4000);
         TargetTypeHandle definitionType = new(definitionTypeAddress);
@@ -287,20 +286,15 @@ public unsafe class TypeHandleTests
         runtimeTypeSystem.TypeDefTokens[definitionType] = TypeDefToken;
         runtimeTypeSystem.TypeHandles[definitionTypeAddress] = definitionType;
 
-        ModuleLookupTables lookupTables = new(
-            FieldDefToDesc: TargetPointer.Null,
-            ManifestModuleReferences: TargetPointer.Null,
-            MemberRefToDesc: TargetPointer.Null,
-            MethodDefToDesc: TargetPointer.Null,
-            TypeDefToMethodTable: lookupMap,
-            TypeRefToMethodTable: TargetPointer.Null,
-            MethodDefToILCodeVersioningState: TargetPointer.Null,
-            TableDataOffset: 0);
         Mock<ILoader> loader = new();
         loader.Setup(l => l.GetModuleHandleFromModulePtr(new TargetPointer(ModuleAddress))).Returns(moduleHandle);
-        loader.Setup(l => l.GetLookupTables(moduleHandle)).Returns(lookupTables);
         TargetNUInt lookupFlags = default;
-        loader.Setup(l => l.GetModuleLookupMapElement(lookupMap, TypeDefToken, out lookupFlags)).Returns(definitionTypeAddress);
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.TypeDefToMethodTable,
+                TypeDefToken,
+                out lookupFlags))
+            .Returns(definitionTypeAddress);
 
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(architecture)
             .AddMockContract<IRuntimeTypeSystem>(runtimeTypeSystem)
@@ -315,7 +309,12 @@ public unsafe class TypeHandleTests
         DacComNullableByRef<IXCLRDataTypeDefinition> nullTypeDefinition = new(isNullRef: true);
         Assert.Equal(HResults.E_POINTER, typeInstance.GetDefinition(nullTypeDefinition));
 
-        loader.Setup(l => l.GetModuleLookupMapElement(lookupMap, TypeDefToken, out lookupFlags)).Returns(TargetPointer.Null);
+        loader.Setup(l => l.GetModuleLookupMapElement(
+                moduleHandle,
+                ModuleLookupMapKind.TypeDefToMethodTable,
+                TypeDefToken,
+                out lookupFlags))
+            .Returns(TargetPointer.Null);
         DacComNullableByRef<IXCLRDataTypeDefinition> unloadedTypeDefinition = new(isNullRef: false);
         Assert.Equal(HResults.S_OK, typeInstance.GetDefinition(unloadedTypeDefinition));
         Assert.IsType<ClrDataTypeDefinition>(unloadedTypeDefinition.Interface);
