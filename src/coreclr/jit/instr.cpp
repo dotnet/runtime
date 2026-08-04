@@ -500,7 +500,7 @@ bool CodeGenInterface::instIsFP(instruction ins)
     assert((unsigned)ins < ArrLen(instInfo));
 
 #ifdef TARGET_XARCH
-    return (instInfo[ins] & INS_FLAGS_X87_INSTR) != 0;
+    return (instInfo[ins] & INS_FLAGS_X87Instr) != 0;
 #else
     return (instInfo[ins] & INST_FP) != 0;
 #endif
@@ -594,7 +594,7 @@ unsigned CodeGenInterface::instKMaskBaseSize(instruction ins)
 bool CodeGenInterface::instHasPseudoName(instruction ins)
 {
     assert((unsigned)ins < ArrLen(instInfo));
-    return (instInfo[ins] & INS_FLAGS_HAS_PSEUDO_NAME) != 0;
+    return (instInfo[ins] & INS_FLAGS_HasPseudoName) != 0;
 }
 #endif // TARGET_XARCH
 

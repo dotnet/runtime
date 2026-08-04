@@ -181,21 +181,21 @@ enum insFlags : uint64_t
     Restore_SF_ZF_AF_PF_CF = 1ULL << 24,
 
     // x87 instruction
-    INS_FLAGS_X87_INSTR = 1ULL << 25,
+    INS_FLAGS_X87Instr = 1ULL << 25,
 
     // Avx
-    INS_FLAGS_IS_DST_DST_SRC_AVX_INSTRUCTION = 1ULL << 26,
-    INS_FLAGS_IS_DST_SRC_SRC_AVX_INSTRUCTION = 1ULL << 27,
-    INS_FLAGS_IS_3_OPERAND_INSTRUCTION_MASK =
-        (INS_FLAGS_IS_DST_DST_SRC_AVX_INSTRUCTION | INS_FLAGS_IS_DST_SRC_SRC_AVX_INSTRUCTION),
+    INS_FLAGS_IsDstDstSrcAVXInstruction = 1ULL << 26,
+    INS_FLAGS_IsDstSrcSrcAVXInstruction = 1ULL << 27,
+    INS_FLAGS_Is3OperandInstructionMask =
+        (INS_FLAGS_IsDstDstSrcAVXInstruction | INS_FLAGS_IsDstSrcSrcAVXInstruction),
 
     // The instruction is commutative for op1/op2 and so can have
     // these operands swapped if it will result in a smaller encoding.
-    INS_FLAGS_IS_AVX_COMMUTATIVE = 1ULL << 28,
+    INS_FLAGS_IsAvxCommutative = 1ULL << 28,
 
     // w and s bits
-    INS_FLAGS_HAS_W_BIT = 1ULL << 29,
-    INS_FLAGS_HAS_S_BIT = 1ULL << 30,
+    INS_FLAGS_HasWBit = 1ULL << 29,
+    INS_FLAGS_HasSBit = 1ULL << 30,
 
     // instruction input size which is used to determine
     // the scalar or broadcast load amount for SIMD instructions
@@ -228,23 +228,23 @@ enum insFlags : uint64_t
 
     // APX: extended EVEX encoding for instruction IDs that only exist in the APX EVEX space
     // (including *_apx variants such as crc32_apx/movbe_apx). Do not use this for existing instruction IDs
-    // that merely gain an APX encoding through NDD/NF; use INS_FLAGS_HAS_NDD and/or INS_FLAGS_HAS_NF instead.
+    // that merely gain an APX encoding through NDD/NF; use INS_FLAGS_HasNDD and/or INS_FLAGS_HasNF instead.
     Encoding_EVEX_APX_ONLY = 1ULL << 43,
 
     // APX: REX2 prefix:
     Encoding_REX2  = 1ULL << 44,
 
     // APX: EVEX.ND:
-    INS_FLAGS_HAS_NDD  = 1ULL << 45,
+    INS_FLAGS_HasNDD  = 1ULL << 45,
 
     // APX: EVEX.NF:
-    INS_FLAGS_HAS_NF  = 1ULL << 46,
+    INS_FLAGS_HasNF  = 1ULL << 46,
 
     // Mask of all APX-EVEX related flags. An instruction matches this mask if it either only exists in the
     // APX EVEX space (Encoding_EVEX_APX_ONLY, e.g. crc32_apx/movbe_apx) or gains an APX encoding through the
-    // NDD (INS_FLAGS_HAS_NDD) or NF (INS_FLAGS_HAS_NF) features. Use it to quickly test whether an instruction
+    // NDD (INS_FLAGS_HasNDD) or NF (INS_FLAGS_HasNF) features. Use it to quickly test whether an instruction
     // has any APX-EVEX capability.
-    INS_FLAGS_APX_EVEX_MASK = (Encoding_EVEX_APX_ONLY | INS_FLAGS_HAS_NDD | INS_FLAGS_HAS_NF),
+    INS_FLAGS_ApxEvexMask = (Encoding_EVEX_APX_ONLY | INS_FLAGS_HasNDD | INS_FLAGS_HasNF),
 
     // base kmask size used for a 128-bit vector
     // used to determine if we can use embedded masking
@@ -256,9 +256,11 @@ enum insFlags : uint64_t
     KMask_BaseMask = (0x1FULL) << 47,
 
     // The instruction has a pseudo name that should be used for disasm display
-    INS_FLAGS_HAS_PSEUDO_NAME = 1ULL << 52,
+    INS_FLAGS_HasPseudoName = 1ULL << 52,
 
-    //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
+    // Keep the legacy spelling because shared code and the non-xarch insFlags enum also use
+    // INS_FLAGS_DONT_CARE. Renaming it would extend this xarch-only cleanup into other targets.
+    // TODO-Cleanup: Remove this flag and its usage from TARGET_XARCH.
     INS_FLAGS_DONT_CARE = 0x00ULL,
 };
 
