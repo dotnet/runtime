@@ -142,8 +142,15 @@ namespace System.Collections
         public BitArray(byte[] bytes)
         {
             ArgumentNullException.ThrowIfNull(bytes);
+            if (bytes.Length > int.MaxValue / BitsPerByte)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(bytes));
+            }
 
-            _array = CreateArray(bytes, out _bitLength);
+            _bitLength = bytes.Length * BitsPerByte;
+            _array = AllocateByteArray(_bitLength);
+
+            Array.Copy(bytes, _array, bytes.Length);
         }
 
         /// <summary>
@@ -162,22 +169,15 @@ namespace System.Collections
         /// </remarks>
         public BitArray(ReadOnlySpan<byte> bytes)
         {
-            _array = CreateArray(bytes, out _bitLength);
-        }
-
-        private static byte[] CreateArray(ReadOnlySpan<byte> bytes, out int bitLength)
-        {
             if (bytes.Length > int.MaxValue / BitsPerByte)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerByte), nameof(bytes));
             }
 
-            int length = bytes.Length * BitsPerByte;
-            byte[] array = AllocateByteArray(length);
+            _bitLength = bytes.Length * BitsPerByte;
+            _array = AllocateByteArray(_bitLength);
 
-            bytes.CopyTo(array);
-            bitLength = length;
-            return array;
+            bytes.CopyTo(_array);
         }
 
         /// <summary>
@@ -193,27 +193,8 @@ namespace System.Collections
         {
             ArgumentNullException.ThrowIfNull(values);
 
-            _array = CreateArray(values);
+            _array = AllocateByteArray(values.Length);
             _bitLength = values.Length;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values
-        /// copied from the specified read-only span of Booleans.
-        /// </summary>
-        /// <param name="values">A read-only span of Booleans to copy.</param>
-        /// <remarks>
-        /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
-        /// </remarks>
-        public BitArray(ReadOnlySpan<bool> values)
-        {
-            _array = CreateArray(values);
-            _bitLength = values.Length;
-        }
-
-        private static byte[] CreateArray(ReadOnlySpan<bool> values)
-        {
-            byte[] array = AllocateByteArray(values.Length);
 
             uint i = 0;
 
@@ -226,8 +207,8 @@ namespace System.Collections
             // (true for any non-zero values, false for 0) - any values between 2-255 will be interpreted as false.
             // Instead, we compare with zeroes (== false) then negate the result to ensure compatibility.
 
-            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(array);
-            ReadOnlySpan<byte> valuesAsBytes = MemoryMarshal.AsBytes(values);
+            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(_array);
+            ReadOnlySpan<byte> valuesAsBytes = MemoryMarshal.AsBytes(values.AsSpan());
             if (Vector512.IsHardwareAccelerated)
             {
                 while (valuesAsBytes.Length >= Vector512<byte>.Count)
@@ -277,14 +258,95 @@ namespace System.Collections
         Remainder:
             for (; i < (uint)values.Length; i++)
             {
-                if (values[(int)i])
+                if (values[i])
                 {
                     (uint byteIndex, uint bitOffset) = Math.DivRem(i, BitsPerByte);
-                    array[byteIndex] |= (byte)(1 << (int)bitOffset);
+                    _array[byteIndex] |= (byte)(1 << (int)bitOffset);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitArray"/> class that contains bit values
+        /// copied from the specified read-only span of Booleans.
+        /// </summary>
+        /// <param name="values">A read-only span of Booleans to copy.</param>
+        /// <remarks>
+        /// This constructor is an <c>O(n)</c> operation, where <c>n</c> is the number of elements in <paramref name="values"/>.
+        /// </remarks>
+        public BitArray(ReadOnlySpan<bool> values)
+        {
+            _array = AllocateByteArray(values.Length);
+            _bitLength = values.Length;
+
+            int i = 0;
+
+            if (!BitConverter.IsLittleEndian || values.Length < Vector256<byte>.Count)
+            {
+                goto Remainder;
+            }
+
+            // Comparing with 1s would get rid of the final negation, however this would not work for some CLR bools
+            // (true for any non-zero values, false for 0) - any values between 2-255 will be interpreted as false.
+            // Instead, we compare with zeroes (== false) then negate the result to ensure compatibility.
+
+            ref byte arrayRef = ref MemoryMarshal.GetArrayDataReference(_array);
+            ReadOnlySpan<byte> valuesAsBytes = MemoryMarshal.AsBytes(values);
+            if (Vector512.IsHardwareAccelerated)
+            {
+                while (valuesAsBytes.Length >= Vector512<byte>.Count)
+                {
+                    Vector512<byte> vector = Vector512.Create(valuesAsBytes);
+                    Vector512<byte> isFalse = Vector512.Equals(vector, Vector512<byte>.Zero);
+
+                    ulong result = isFalse.ExtractMostSignificantBits();
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(ulong) * (i / 64)), ~result);
+                    i += Vector512<byte>.Count;
+                    valuesAsBytes = valuesAsBytes.Slice(Vector512<byte>.Count);
+                }
+            }
+            else if (Vector256.IsHardwareAccelerated)
+            {
+                while (valuesAsBytes.Length >= Vector256<byte>.Count)
+                {
+                    Vector256<byte> vector = Vector256.Create(valuesAsBytes);
+                    Vector256<byte> isFalse = Vector256.Equals(vector, Vector256<byte>.Zero);
+
+                    uint result = isFalse.ExtractMostSignificantBits();
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32)), ~result);
+                    i += Vector256<byte>.Count;
+                    valuesAsBytes = valuesAsBytes.Slice(Vector256<byte>.Count);
+                }
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                while (valuesAsBytes.Length >= Vector128<byte>.Count * 2)
+                {
+                    Vector128<byte> lowerVector = Vector128.Create(valuesAsBytes);
+                    Vector128<byte> lowerIsFalse = Vector128.Equals(lowerVector, Vector128<byte>.Zero);
+                    uint lowerResult = lowerIsFalse.ExtractMostSignificantBits();
+
+                    Vector128<byte> upperVector = Vector128.Create(valuesAsBytes.Slice(Vector128<byte>.Count));
+                    Vector128<byte> upperIsFalse = Vector128.Equals(upperVector, Vector128<byte>.Zero);
+                    uint upperResult = upperIsFalse.ExtractMostSignificantBits();
+
+                    Unsafe.WriteUnaligned(
+                        ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32)),
+                        ~((upperResult << 16) | lowerResult));
+                    i += Vector128<byte>.Count * 2;
+                    valuesAsBytes = valuesAsBytes.Slice(Vector128<byte>.Count * 2);
                 }
             }
 
-            return array;
+        Remainder:
+            for (; i < values.Length; i++)
+            {
+                if (values[i])
+                {
+                    (int byteIndex, int bitOffset) = Math.DivRem(i, BitsPerByte);
+                    _array[byteIndex] |= (byte)(1 << bitOffset);
+                }
+            }
         }
 
         /// <summary>
@@ -305,8 +367,22 @@ namespace System.Collections
         public BitArray(int[] values)
         {
             ArgumentNullException.ThrowIfNull(values);
+            if (values.Length > int.MaxValue / BitsPerInt32)
+            {
+                throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
+            }
 
-            _array = CreateArray(values, out _bitLength);
+            _bitLength = values.Length * BitsPerInt32;
+            _array = AllocateByteArray(_bitLength);
+
+            if (BitConverter.IsLittleEndian)
+            {
+                MemoryMarshal.AsBytes(values).CopyTo(_array);
+            }
+            else
+            {
+                BinaryPrimitives.ReverseEndianness(values, MemoryMarshal.Cast<byte, int>((Span<byte>)_array));
+            }
         }
 
         /// <summary>
@@ -325,30 +401,22 @@ namespace System.Collections
         /// </remarks>
         public BitArray(ReadOnlySpan<int> values)
         {
-            _array = CreateArray(values, out _bitLength);
-        }
-
-        private static byte[] CreateArray(ReadOnlySpan<int> values, out int bitLength)
-        {
             if (values.Length > int.MaxValue / BitsPerInt32)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_ArrayTooLarge, BitsPerInt32), nameof(values));
             }
 
-            int length = values.Length * BitsPerInt32;
-            byte[] array = AllocateByteArray(length);
+            _bitLength = values.Length * BitsPerInt32;
+            _array = AllocateByteArray(_bitLength);
 
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.AsBytes(values).CopyTo(array);
+                MemoryMarshal.AsBytes(values).CopyTo(_array);
             }
             else
             {
-                BinaryPrimitives.ReverseEndianness(values, MemoryMarshal.Cast<byte, int>((Span<byte>)array));
+                BinaryPrimitives.ReverseEndianness(values, MemoryMarshal.Cast<byte, int>((Span<byte>)_array));
             }
-
-            bitLength = length;
-            return array;
         }
 
         /// <summary>
