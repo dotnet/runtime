@@ -85,9 +85,7 @@ ClassLayout* ContinuationMember::GetCustomAwaiterLayout() const
 
 unsigned ContinuationMember::GetInlineDepth() const
 {
-    assert((Type == ContinuationMemberType::InlineFrameExecutionContext) ||
-           (Type == ContinuationMemberType::InlineFrameContinuationContext) ||
-           (Type == ContinuationMemberType::InlineFrameFlags));
+    assert(IsInlineFrameMember());
     return m_inlineDepth;
 }
 
@@ -215,6 +213,41 @@ size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
 
     root->m_asyncContinuationMembers->push_back(member);
     return root->m_asyncContinuationMembers->size() - 1;
+}
+
+//------------------------------------------------------------------------
+// Compiler::TryGetContinuationMemberIndex:
+//   Look up the index of an already registered continuation member.
+//
+// Parameters:
+//   member - The member
+//   index  - [out] Index of the member, if it is registered
+//
+// Returns:
+//   True if the member is registered.
+//
+// Remarks:
+//   Unlike GetContinuationMemberIndex this does not register the member. Use it after
+//   the continuation layout has been created, where growing the member table would put
+//   the new member beyond the end of the layout.
+//
+bool Compiler::TryGetContinuationMemberIndex(const ContinuationMember& member, size_t* index)
+{
+    Compiler* const root = impInlineRoot();
+
+    if (root->m_asyncContinuationMembers != nullptr)
+    {
+        for (size_t i = 0; i < root->m_asyncContinuationMembers->size(); i++)
+        {
+            if (ContinuationMember::AreCompatible(member, root->m_asyncContinuationMembers->at(i)))
+            {
+                *index = i;
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 size_t Compiler::GetContinuationMemberCount()
@@ -1827,6 +1860,46 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
             allocLayout(std::min(alignment, (unsigned)TARGET_POINTER_SIZE), size);
     }
 
+    // The suspension tail hands all three members of an inlined frame to
+    // CaptureInlinedFrameTransition together, so if any of them still has a read then the
+    // other two need storage as well. When none of them does the members are dead: the
+    // post-inline transition IR that reads them was optimized away (for example because a
+    // no-return call in the inlinee made it unreachable), and the tail skips the capture
+    // instead of storing values nothing can observe.
+    for (size_t i = 0; i < continuationMemberCount; i++)
+    {
+        if (layout->ContinuationMemberOffsets[i] == UINT_MAX)
+        {
+            continue;
+        }
+
+        const ContinuationMember& liveMember = m_compiler->GetContinuationMember(i);
+        if (!liveMember.IsInlineFrameMember())
+        {
+            continue;
+        }
+
+        unsigned const depth = liveMember.GetInlineDepth();
+        for (size_t j = 0; j < continuationMemberCount; j++)
+        {
+            if (layout->ContinuationMemberOffsets[j] != UINT_MAX)
+            {
+                continue;
+            }
+
+            const ContinuationMember& member = m_compiler->GetContinuationMember(j);
+            if (!member.IsInlineFrameMember() || (member.GetInlineDepth() != depth))
+            {
+                continue;
+            }
+
+            var_types const storageType = member.GetStorageType();
+            unsigned const  alignment   = genTypeAlignments[storageType];
+            layout->ContinuationMemberOffsets[j] =
+                allocLayout(std::min(alignment, (unsigned)TARGET_POINTER_SIZE), genTypeSize(storageType));
+        }
+    }
+
     if (m_needsKeepAlive)
     {
         layout->KeepAliveOffset = allocLayout(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE);
@@ -3162,27 +3235,46 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
         GenTree* const outerSync    = values.Bottom((int)((i + 1) * 3 + 2));
         unsigned const depth        = numFrames - 1 - i;
 
-        // Capture what this frame hands to its caller.
-        GenTreeCall* captureCall =
-            m_compiler->gtNewUserCallNode(m_asyncInfo->captureInlinedFrameTransitionMethHnd, TYP_VOID);
-        captureCall->gtArgs
-            .PushFront(m_compiler,
-                       NewCallArg::Primitive(
-                           ContinuationMemberAddress(layout, ContinuationMember::InlineFrameExecutionContext(depth))));
-        captureCall->gtArgs.PushFront(m_compiler,
-                                      NewCallArg::Primitive(
-                                          ContinuationMemberAddress(layout,
-                                                                    ContinuationMember::InlineFrameFlags(depth))));
-        captureCall->gtArgs.PushFront(m_compiler,
-                                      NewCallArg::Primitive(
-                                          ContinuationMemberAddress(layout,
-                                                                    ContinuationMember::InlineFrameContinuationContext(
-                                                                        depth))));
-        captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(frameResumed)));
+        // Capture what this frame hands to its caller. The members are only ever read by
+        // the post-inline frame transition IR, so if that IR was optimized away -- for
+        // example because a no-return call in the inlinee made it unreachable -- the
+        // members have no storage and there is nothing to capture. The layout gives all
+        // three members of a frame storage if any of them is read, so testing one is
+        // enough.
+        size_t flagsIndex = 0;
+        bool   membersAreLive =
+            m_compiler->TryGetContinuationMemberIndex(ContinuationMember::InlineFrameFlags(depth), &flagsIndex);
+        assert(membersAreLive && "suspension tail needs a frame whose members were never registered");
+        membersAreLive = membersAreLive && (layout.ContinuationMemberOffsets[flagsIndex] != UINT_MAX);
 
-        m_compiler->compCurBB = tailBB;
-        m_compiler->fgMorphTree(captureCall);
-        LIR::AsRange(tailBB).InsertAtEnd(LIR::SeqTree(m_compiler, captureCall));
+        if (membersAreLive)
+        {
+            GenTreeCall* captureCall =
+                m_compiler->gtNewUserCallNode(m_asyncInfo->captureInlinedFrameTransitionMethHnd, TYP_VOID);
+            captureCall->gtArgs.PushFront(m_compiler,
+                                          NewCallArg::Primitive(
+                                              ContinuationMemberAddress(layout,
+                                                                        ContinuationMember::InlineFrameExecutionContext(
+                                                                            depth))));
+            captureCall->gtArgs.PushFront(m_compiler,
+                                          NewCallArg::Primitive(
+                                              ContinuationMemberAddress(layout,
+                                                                        ContinuationMember::InlineFrameFlags(depth))));
+            captureCall->gtArgs
+                .PushFront(m_compiler,
+                           NewCallArg::Primitive(
+                               ContinuationMemberAddress(layout,
+                                                         ContinuationMember::InlineFrameContinuationContext(depth))));
+            captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(frameResumed)));
+
+            m_compiler->compCurBB = tailBB;
+            m_compiler->fgMorphTree(captureCall);
+            LIR::AsRange(tailBB).InsertAtEnd(LIR::SeqTree(m_compiler, captureCall));
+        }
+        else
+        {
+            JITDUMP("    No reads of inline frame depth %u members survived; skipping its capture\n", depth);
+        }
 
         // Then restore the caller's contexts, as its physical frame's return would have.
         GenTreeCall* restoreCall =

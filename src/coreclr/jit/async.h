@@ -31,6 +31,15 @@ public:
     ClassLayout* GetCustomAwaiterLayout() const;
     unsigned     GetInlineDepth() const;
 
+    // Whether this member describes what an inlined async frame hands to its caller, and
+    // so is keyed by inline depth.
+    bool IsInlineFrameMember() const
+    {
+        return (Type == ContinuationMemberType::InlineFrameExecutionContext) ||
+               (Type == ContinuationMemberType::InlineFrameContinuationContext) ||
+               (Type == ContinuationMemberType::InlineFrameFlags);
+    }
+
     // The type of the storage this member requires in the continuation.
     var_types GetStorageType() const;
 

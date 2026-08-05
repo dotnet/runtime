@@ -6266,6 +6266,7 @@ public:
 
     jitstd::vector<ContinuationMember>* m_asyncContinuationMembers = nullptr;
     size_t GetContinuationMemberIndex(const ContinuationMember& member);
+    bool   TryGetContinuationMemberIndex(const ContinuationMember& member, size_t* index);
     size_t GetContinuationMemberCount();
     const ContinuationMember& GetContinuationMember(size_t index);
 
