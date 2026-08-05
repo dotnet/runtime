@@ -53,6 +53,7 @@
 #include "crst.h"
 #include "util.hpp"
 #include "eecontract.h"
+enum StubCodeBlockKind : int;
 
 //-------------------------------------------------------------------------
 // Forward refs
@@ -177,7 +178,7 @@ class StubLinker
         //
         // Throws exception on failure.
         //---------------------------------------------------------------
-        Stub *Link(LoaderHeap *heap, DWORD flags, const char *stubType);
+        Stub *Link(LoaderAllocator *pLoaderAllocator, DWORD flags, const char *stubType);
 
     private:
         CodeElement   *m_pCodeElements;     // stored in *reverse* order
@@ -213,7 +214,7 @@ class StubLinker
 
         // Writes out the code element into memory following the
         // stub object.
-        void EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap* pHeap);
+        void EmitStub(Stub* pStub, int globalsize, int totalSize);
 
         CodeRun *GetLastCodeRunIfAny();
 };
@@ -489,7 +490,7 @@ class Stub
         //-------------------------------------------------------------------
         // This creates stubs.
         //-------------------------------------------------------------------
-        static Stub* NewStub(LoaderHeap *pLoaderHeap, UINT numCodeBytes,
+        static Stub* NewStub(LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind, UINT numCodeBytes,
                              DWORD flags = NEWSTUB_FL_NONE);
 
         static Stub* NewStub(PTR_VOID pCode, DWORD flags = NEWSTUB_FL_NONE);

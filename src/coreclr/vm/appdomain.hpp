@@ -1297,7 +1297,6 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
-    PTR_LoaderHeap GetStubHeap();
     PTR_LoaderHeap GetLowFrequencyHeap();
     PTR_LoaderHeap GetHighFrequencyHeap();
 

@@ -175,7 +175,7 @@ struct ShuffleEntry
 class ShuffleThunkCache : public StubCacheBase
 {
 public:
-    ShuffleThunkCache(LoaderHeap* heap) : StubCacheBase(heap)
+    ShuffleThunkCache(LoaderAllocator* pLoaderAllocator) : StubCacheBase(pLoaderAllocator)
     {
     }
 private:

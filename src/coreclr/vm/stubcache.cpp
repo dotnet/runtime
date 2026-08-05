@@ -18,7 +18,7 @@
 //---------------------------------------------------------
 // Constructor
 //---------------------------------------------------------
-StubCacheBase::StubCacheBase(LoaderHeap *pHeap) :
+StubCacheBase::StubCacheBase(LoaderAllocator *pLoaderAllocator) :
     CClosedHashBase(
 #ifdef _DEBUG
                       3,
@@ -30,15 +30,9 @@ StubCacheBase::StubCacheBase(LoaderHeap *pHeap) :
                       FALSE
                    ),
     m_crst(CrstStubCache),
-    m_heap(pHeap)
+    m_pLoaderAllocator(pLoaderAllocator)
 {
     WRAPPER_NO_CONTRACT;
-
-#ifdef TARGET_UNIX
-    if (m_heap == NULL)
-        m_heap = SystemDomain::GetGlobalLoaderAllocator()->GetExecutableHeap();
-#endif
-
 }
 
 
@@ -112,7 +106,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
     // and link up the stub.
     CodeLabel *plabel = psl->EmitNewCodeLabel();
     psl->EmitBytes(pRawStub, Length(pRawStub));
-    pstub = psl->Link(m_heap, linkFlags, stubType);
+    pstub = psl->Link(m_pLoaderAllocator, linkFlags, stubType);
     UINT32 offset = psl->GetLabelOffset(plabel);
 
     if (offset > 0xffff)

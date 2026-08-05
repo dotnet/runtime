@@ -1743,13 +1743,13 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
     }
 #elif defined(TARGET_X86)
     CPUSTUBLINKER sl;
     if (sl.EmitUnboxMethodStub(pUnboxedMD))
     {
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), NEWSTUB_FL_NONE, "UnboxingStub");
     }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
@@ -1798,13 +1798,13 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
     }
 #elif defined(TARGET_X86)
     CPUSTUBLINKER sl;
     if (sl.EmitInstantiatingMethodStub(pSharedMD, extraArg))
     {
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), NEWSTUB_FL_NONE, "InstantiatingStub");
     }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 

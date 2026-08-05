@@ -544,22 +544,21 @@ static BOOL LabelCanReach(LabelRef *pLabelRef)
 //
 // Throws exception on failure.
 //---------------------------------------------------------------
-Stub *StubLinker::Link(LoaderHeap *pHeap, DWORD flags, const char *stubType)
+Stub *StubLinker::Link(LoaderAllocator *pLoaderAllocator, DWORD flags, const char *stubType)
 {
     STANDARD_VM_CONTRACT;
 
     int globalsize = 0;
     int size = CalculateSize(&globalsize);
 
-    _ASSERTE(!pHeap || pHeap->IsExecutable());
-
     StubHolder<Stub> pStub{ Stub::NewStub(
-                pHeap,
+                pLoaderAllocator,
+                ((flags & NEWSTUB_FL_SHUFFLE_THUNK) != 0) ? STUB_CODE_BLOCK_SHUFFLE_THUNK : STUB_CODE_BLOCK_STUBLINK,
                 size,
                 flags) };
     ASSERT(pStub != NULL);
 
-    EmitStub(pStub, globalsize, size, pHeap);
+    EmitStub(pStub, globalsize, size);
 
     PerfMap::LogStubs(__FUNCTION__, stubType, pStub->GetEntryPoint(), pStub->GetNumCodeBytes(), PerfMapStubType::Individual);
 
@@ -698,7 +697,7 @@ int StubLinker::CalculateSize(int* pGlobalSize)
     return globalsize + datasize;
 }
 
-void StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize, LoaderHeap* pHeap)
+void StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize)
 {
     STANDARD_VM_CONTRACT;
 
@@ -888,7 +887,7 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     }
     CONTRACTL_END;
 
-    Stub* pStub = NewStub(NULL, 0, flags | NEWSTUB_FL_EXTERNAL);
+    Stub* pStub = NewStub(NULL, STUB_CODE_BLOCK_UNKNOWN, 0, flags | NEWSTUB_FL_EXTERNAL);
 
     // Passing NEWSTUB_FL_EXTERNAL requests the stub struct be
     // expanded in size by a single pointer. Insert the code point at this
@@ -902,7 +901,8 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
 // Stub allocation done here.
 //-------------------------------------------------------------------
 /*static*/ Stub* Stub::NewStub(
-        LoaderHeap *pHeap,
+        LoaderAllocator *pLoaderAllocator,
+        StubCodeBlockKind kind,
         UINT numCodeBytes,
         DWORD flags)
 {
@@ -925,7 +925,7 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
 
     if (flags & NEWSTUB_FL_EXTERNAL)
     {
-        _ASSERTE(pHeap == NULL);
+        _ASSERTE(pLoaderAllocator == NULL);
         _ASSERTE(numCodeBytes == 0);
         size += sizeof(PTR_PCODE);
     }
@@ -941,14 +941,13 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     size_t totalSize = size.Value();
 
     BYTE *pBlock;
-    if (pHeap == NULL)
+    if (pLoaderAllocator == NULL)
     {
         pBlock = new BYTE[totalSize];
     }
     else
     {
-        TaggedMemAllocPtr ptr = pHeap->AllocAlignedMem(totalSize, CODE_SIZE_ALIGN);
-        pBlock = (BYTE*)(void*)ptr;
+        pBlock = reinterpret_cast<BYTE*>(ExecutionManager::GetEEJitManager()->AllocCodeFragmentBlock(totalSize, CODE_SIZE_ALIGN, pLoaderAllocator, kind));
         flags |= NEWSTUB_FL_LOADERHEAP;
     }
 
@@ -957,7 +956,7 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     Stub* pStubRW;
     ExecutableWriterHolderNoLog<Stub> stubWriterHolder;
 
-    if (pHeap == NULL)
+    if (pLoaderAllocator == NULL)
     {
         pStubRW = pStubRX;
     }
@@ -1015,4 +1014,3 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags)
 }
 
 #endif // #ifndef DACCESS_COMPILE
-

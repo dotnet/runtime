@@ -783,7 +783,7 @@ void COMDelegate::Init()
     }
     CONTRACTL_END;
 #if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
-    s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
+    s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator());
 #endif
 }
 
@@ -821,9 +821,9 @@ CLRToCOMCallInfo * COMDelegate::PopulateCLRToCOMCallInfo(MethodTable * pDelMT)
 #endif // FEATURE_COMINTEROP
 
 // We need a LoaderHeap that lives at least as long as the DelegateEEClass, but ideally no longer
-LoaderHeap *DelegateEEClass::GetStubHeap()
+LoaderAllocator *DelegateEEClass::GetStubHeap()
 {
-    return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
+    return GetInvokeMethod()->GetLoaderAllocator();
 }
 
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)

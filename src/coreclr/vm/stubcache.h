@@ -44,7 +44,7 @@ public:
     //---------------------------------------------------------
     // Constructor
     //---------------------------------------------------------
-    StubCacheBase(LoaderHeap *heap = 0);
+    StubCacheBase(LoaderAllocator *pLoaderAllocator = NULL);
 
     //---------------------------------------------------------
     // Destructor
@@ -127,7 +127,7 @@ private:
 
 private:
     Crst        m_crst;
-    LoaderHeap* m_heap;
+    LoaderAllocator* m_pLoaderAllocator;
 };
 
 

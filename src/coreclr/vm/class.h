@@ -1922,7 +1922,7 @@ public:
     }
 
     // We need a LoaderHeap that lives at least as long as the DelegateEEClass, but ideally no longer
-    LoaderHeap *GetStubHeap();
+    LoaderAllocator *GetStubHeap();
 #endif // !DACCESS_COMPILE
 
 };
