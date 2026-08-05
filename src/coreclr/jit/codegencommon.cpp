@@ -1822,7 +1822,7 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
         {
             return;
         }
-        
+
         info.returnValueLoc = getSiVarLoc(m_compiler->lvaGetDesc(lclNum), lclOffs, stackLevelBias);
     }
     else if (call->HasMultiRegRetVal())
