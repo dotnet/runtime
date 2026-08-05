@@ -92,6 +92,15 @@ internal sealed class PInvokeCollector {
 
         if (HasAttribute(type, "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"))
         {
+            // Each instantiation of an open generic delegate would marshal differently, so there is
+            // no single native signature to emit a thunk for. The encoding this used to produce came
+            // from mapping the type parameter itself, which was only ever right by accident.
+            if (type.ContainsGenericParameters)
+            {
+                Log.Warning("WASM0001", $"Skipping generic function pointer delegate '{type.FullName}', which has no single native signature");
+                return;
+            }
+
             var method = type.GetMethod("Invoke");
 
             if (method != null)

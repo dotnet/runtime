@@ -39,16 +39,24 @@ internal sealed class InternalCallSignatureCollector
             if ((method.GetMethodImplementationFlags() & MethodImplAttributes.InternalCall) == 0)
                 continue;
 
+            // An uninstantiated generic has no single signature to generate a thunk from, because
+            // its parameters stand for whatever the instantiation supplies.
+            if (method.ContainsGenericParameters)
+            {
+                _log.Warning("WASM0001", $"Skipping generic InternalCall method '{type.FullName}::{method.Name}', which has no single signature");
+                continue;
+            }
+
             try
             {
+                // A managed signature: the lowering adds the 'T' for an instance method and the
+                // trailing 'p' for the portable entry point parameter.
                 string? signature = _signatureMapper.MethodToSignature(method, includeThis: true);
                 if (signature is null)
                 {
                     _log.Warning("WASM0001", $"Could not generate signature for InternalCall method '{type.FullName}::{method.Name}'");
                     continue;
                 }
-
-                signature += "p";
 
                 if (_signatures.Add(signature))
                     _log.LogMessage(MessageImportance.Low, $"Adding InternalCall signature {signature} for method '{type.FullName}.{method.Name}'");

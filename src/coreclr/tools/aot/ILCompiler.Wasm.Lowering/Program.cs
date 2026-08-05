@@ -22,9 +22,17 @@ namespace ILCompiler.Wasm
     /// Usage:
     ///   ILCompiler.Wasm.Lowering --targetos &lt;browser|wasi&gt; [--assembly &lt;path&gt;]... [@responsefile]
     ///
-    /// Each stdin line is "&lt;assemblySimpleName&gt; &lt;metadataToken&gt;", where the token is the decimal or
-    /// 0x-prefixed hexadecimal metadata token of a type. Each reply line is either the ABI encoding
-    /// ('i', 'l', 'f', 'd', 'V' or "S&lt;size&gt;") or '!' followed by an error message.
+    /// Each stdin line is one query, and each reply line is either the answer or '!' followed by an
+    /// error message. Two query forms are supported:
+    ///
+    ///   t &lt;assemblySimpleName&gt; &lt;typeToken&gt;
+    ///     Replies with the ABI encoding of a type in parameter position ('i', 'l', 'f', 'd', 'V' or
+    ///     "S&lt;size&gt;").
+    ///
+    ///   m &lt;assemblySimpleName&gt; &lt;methodToken&gt; &lt;loweringFlags&gt;
+    ///     Replies with the full signature string of a method.
+    ///
+    /// Tokens are decimal or 0x-prefixed hexadecimal; flags are a decimal LoweringFlags value.
     /// </remarks>
     internal static class Program
     {
@@ -96,17 +104,7 @@ namespace ILCompiler.Wasm
                 string reply;
                 try
                 {
-                    int separator = line.LastIndexOf(' ');
-                    if (separator < 0)
-                        throw new FormatException($"Malformed query '{line}'; expected '<assembly> <token>'.");
-
-                    string assemblyName = line.Substring(0, separator);
-                    string tokenText = line.Substring(separator + 1);
-                    int metadataToken = tokenText.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
-                        ? int.Parse(tokenText.Substring(2), System.Globalization.NumberStyles.HexNumber)
-                        : int.Parse(tokenText, System.Globalization.CultureInfo.InvariantCulture);
-
-                    reply = resolver.GetAbiToken(assemblyName, metadataToken);
+                    reply = Answer(resolver, line);
                 }
                 catch (Exception ex)
                 {
@@ -116,6 +114,51 @@ namespace ILCompiler.Wasm
                 Console.Out.WriteLine(reply);
                 Console.Out.Flush();
             }
+        }
+
+        private static string Answer(WasmAbiTypeResolver resolver, string query)
+        {
+            if (query.Length < 2 || query[1] != ' ')
+                throw new FormatException($"Malformed query '{query}'; expected a 't' or 'm' verb.");
+
+            string rest = query.Substring(2);
+
+            // Parsed right to left so that the assembly name, which is whatever is left over, is not
+            // assumed to be free of spaces.
+            switch (query[0])
+            {
+                case 't':
+                {
+                    (string assemblyName, int typeToken) = SplitToken(rest, query);
+                    return resolver.GetAbiToken(assemblyName, typeToken);
+                }
+
+                case 'm':
+                {
+                    (string head, int flags) = SplitToken(rest, query);
+                    (string assemblyName, int methodToken) = SplitToken(head, query);
+                    return resolver.GetMethodSignature(assemblyName, methodToken, flags);
+                }
+
+                default:
+                    throw new FormatException($"Unrecognized query verb '{query[0]}'.");
+            }
+        }
+
+        private static (string Head, int Value) SplitToken(string text, string query)
+        {
+            int separator = text.LastIndexOf(' ');
+            if (separator < 0)
+                throw new FormatException($"Malformed query '{query}'; not enough fields.");
+
+            return (text.Substring(0, separator), ParseToken(text.Substring(separator + 1)));
+        }
+
+        private static int ParseToken(string text)
+        {
+            return text.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+                ? int.Parse(text.Substring(2), System.Globalization.NumberStyles.HexNumber)
+                : int.Parse(text, System.Globalization.CultureInfo.InvariantCulture);
         }
     }
 }

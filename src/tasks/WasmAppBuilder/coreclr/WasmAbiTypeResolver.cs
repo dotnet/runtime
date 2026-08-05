@@ -30,7 +30,8 @@ internal sealed class WasmAbiTypeResolver : IWasmAbiTypeResolver, IDisposable
     private readonly string _targetOS;
     private readonly IReadOnlyList<string> _assemblies;
     private readonly LogAdapter _log;
-    private readonly Dictionary<(string Assembly, int Token), string> _cache = new();
+    private readonly Dictionary<(string Assembly, int Token), string> _typeCache = new();
+    private readonly Dictionary<(string Assembly, int Token, WasmLoweringFlags Flags), string> _methodCache = new();
 
     private Process? _process;
     private string? _responseFilePath;
@@ -59,17 +60,38 @@ internal sealed class WasmAbiTypeResolver : IWasmAbiTypeResolver, IDisposable
         int metadataToken = type.MetadataToken;
 
         var key = (assemblyName, metadataToken);
-        if (_cache.TryGetValue(key, out string? cached))
+        if (_typeCache.TryGetValue(key, out string? cached))
             return cached;
 
-        string reply = Query($"{assemblyName} 0x{metadataToken:x8}");
+        string reply = Query($"t {assemblyName} 0x{metadataToken:x8}");
         if (reply[0] == '!')
         {
             throw new LogAsErrorException(
                 $"Could not compute the wasm ABI encoding of '{type.FullName ?? type.Name}': {reply.Substring(1)}");
         }
 
-        _cache[key] = reply;
+        _typeCache[key] = reply;
+        return reply;
+    }
+
+    public string GetMethodSignature(MethodInfo method, WasmLoweringFlags flags)
+    {
+        string assemblyName = method.Module.Assembly.GetName().Name
+            ?? throw new LogAsErrorException($"Method '{method.Name}' comes from an assembly with no simple name.");
+        int metadataToken = method.MetadataToken;
+
+        var key = (assemblyName, metadataToken, flags);
+        if (_methodCache.TryGetValue(key, out string? cached))
+            return cached;
+
+        string reply = Query($"m {assemblyName} 0x{metadataToken:x8} {(int)flags}");
+        if (reply[0] == '!')
+        {
+            throw new LogAsErrorException(
+                $"Could not compute the wasm signature of '{method.DeclaringType?.FullName}::{method.Name}': {reply.Substring(1)}");
+        }
+
+        _methodCache[key] = reply;
         return reply;
     }
 

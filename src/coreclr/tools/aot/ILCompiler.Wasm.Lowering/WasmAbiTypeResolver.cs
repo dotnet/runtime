@@ -13,13 +13,16 @@ using Internal.TypeSystem.Ecma;
 namespace ILCompiler.Wasm
 {
     /// <summary>
-    /// Answers "what does this type look like in a wasm ABI signature?" using the same lowering
-    /// crossgen2 uses, so callers that need to agree with compiled code do not have to reimplement it.
+    /// Answers "what does this look like in a wasm ABI signature?" for methods and for individual
+    /// types, using the same lowering crossgen2 uses, so callers that need to agree with compiled
+    /// code do not have to reimplement it.
     /// </summary>
     /// <remarks>
-    /// Types are identified by assembly simple name plus metadata token rather than by name. Name-based
-    /// lookup would have to reproduce nested-type and generic name mangling, and would silently pick
-    /// the wrong type when it got that wrong; a token cannot be ambiguous.
+    /// Methods and types are identified by assembly simple name plus metadata token rather than by
+    /// name. Name-based lookup would have to reproduce nested-type and generic name mangling, and
+    /// would silently pick the wrong member when it got that wrong; a token cannot be ambiguous.
+    /// Note that this makes constructed generics unnameable — they have no token — which is why
+    /// whole signatures are queried per method rather than a token at a time.
     /// </remarks>
     public sealed class WasmAbiTypeResolver
     {
@@ -57,6 +60,38 @@ namespace ILCompiler.Wasm
             TypeDesc type = module.GetType(MetadataTokens.EntityHandle(metadataToken));
 
             return GetAbiToken(type);
+        }
+
+        /// <summary>
+        /// Gets the full wasm signature string for a method, using the same lowering the compiler
+        /// applies to the code that will implement or call it.
+        /// </summary>
+        /// <remarks>
+        /// Preferred over per-parameter <see cref="GetAbiToken(string, int)"/> queries: the parameter
+        /// types come from the method's signature blob, so generic instantiations resolve here even
+        /// though they have no metadata token of their own and cannot be named over the wire.
+        /// </remarks>
+        /// <param name="assemblySimpleName">Simple name of the assembly defining the method.</param>
+        /// <param name="methodToken">The method's MethodDef token.</param>
+        /// <param name="flags">A <see cref="WasmLowering.LoweringFlags"/> value.</param>
+        public string GetMethodSignature(string assemblySimpleName, int methodToken, int flags)
+        {
+            // The caller keeps its own copy of LoweringFlags, because a build task cannot reference
+            // the type system. Reject bits this build does not define rather than letting a copy that
+            // has drifted ahead silently ask for a lowering that is not the one it means.
+            const int KnownFlags = (int)(WasmLowering.LoweringFlags.HasGenericContextArg
+                | WasmLowering.LoweringFlags.IsAsyncCall
+                | WasmLowering.LoweringFlags.IsUnmanagedCallersOnly);
+
+            if ((flags & ~KnownFlags) != 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(flags), $"Unknown wasm lowering flags 0x{flags:x}; this build understands 0x{KnownFlags:x}.");
+            }
+
+            var module = (EcmaModule)_context.GetModuleForSimpleName(assemblySimpleName);
+            MethodDesc method = module.GetMethod(MetadataTokens.EntityHandle(methodToken));
+
+            return WasmLowering.GetSignature(method.Signature, (WasmLowering.LoweringFlags)flags).SignatureString;
         }
 
         /// <summary>

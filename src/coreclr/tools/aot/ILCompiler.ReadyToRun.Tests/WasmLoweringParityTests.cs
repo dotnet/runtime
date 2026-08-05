@@ -24,6 +24,7 @@ using Crossgen2Context = crossgen2::ILCompiler.ReadyToRunCompilerContext;
 using Crossgen2Lowering = crossgen2::Internal.JitInterface.WasmLowering;
 using Crossgen2LoweringFlags = crossgen2::Internal.JitInterface.WasmLowering.LoweringFlags;
 using WasmResolverContext = wasmlowering::ILCompiler.Wasm.WasmTypeSystemContext;
+using WasmResolver = wasmlowering::ILCompiler.Wasm.WasmAbiTypeResolver;
 using WasmResolverLowering = wasmlowering::Internal.JitInterface.WasmLowering;
 using WasmResolverLoweringFlags = wasmlowering::Internal.JitInterface.WasmLowering.LoweringFlags;
 
@@ -195,6 +196,123 @@ public class WasmLoweringParityTests
         return definition.MakeInstantiatedType(argument);
     }
 
+    /// <summary>
+    /// Sweeps CoreLib's methods through both stacks by MethodDef token. This is the seam the
+    /// generator actually uses — it asks for a whole signature per method rather than for one
+    /// parameter type at a time — so a disagreement here is a disagreement in generated code.
+    /// </summary>
+    /// <remarks>
+    /// Signatures also reach further than the per-type sweep above can. Parameter types are read out
+    /// of the method's signature blob, so a constructed generic such as <c>Nullable&lt;int&gt;</c>
+    /// resolves here despite having no metadata token of its own to be asked about.
+    /// </remarks>
+    [Theory]
+    [InlineData((int)Crossgen2LoweringFlags.None)]
+    [InlineData((int)Crossgen2LoweringFlags.IsUnmanagedCallersOnly)]
+    public void ResolverAgreesWithCrossgen2ForCoreLibMethodSignatures(int flags)
+    {
+        Crossgen2Context crossgen2Context = CreateCrossgen2Context();
+        WasmResolver resolver = CreateResolver();
+
+        var crossgen2CoreLib = (EcmaModule)crossgen2Context.SystemModule;
+
+        List<string> mismatches = new();
+        int compared = 0;
+        int namingConstructedGenerics = 0;
+
+        foreach (MethodDefinitionHandle handle in crossgen2CoreLib.MetadataReader.MethodDefinitions)
+        {
+            if (!TryGetComparableMethod(crossgen2CoreLib, handle, out MethodDesc method))
+                continue;
+
+            string crossgen2Signature;
+            try
+            {
+                crossgen2Signature = Crossgen2Lowering.GetSignature(method.Signature, (Crossgen2LoweringFlags)flags).SignatureString;
+            }
+            catch (TypeSystemException)
+            {
+                // Agreeing to throw is not the parity this test is about.
+                continue;
+            }
+
+            string resolverSignature;
+            try
+            {
+                resolverSignature = resolver.GetMethodSignature("System.Private.CoreLib", MetadataTokens.GetToken(handle), flags);
+            }
+            catch (TypeSystemException e)
+            {
+                // crossgen2 answered and the resolver did not: the resolver is the production path,
+                // so this is a divergence, not something to quietly leave out of the comparison.
+                mismatches.Add($"{method}: crossgen2 '{crossgen2Signature}' vs resolver threw {e.GetType().Name}: {e.Message}");
+                continue;
+            }
+
+            compared++;
+            if (NamesConstructedGenericType(method.Signature))
+                namingConstructedGenerics++;
+
+            if (crossgen2Signature != resolverSignature)
+                mismatches.Add($"{method}: crossgen2 '{crossgen2Signature}' vs resolver '{resolverSignature}'");
+        }
+
+        _output.WriteLine($"Compared {compared} CoreLib method signatures, {namingConstructedGenerics} of them naming a constructed generic type.");
+
+        Assert.True(compared > 1000, $"Expected to compare a meaningful number of methods, but only saw {compared}.");
+        Assert.True(namingConstructedGenerics > 0, "Expected to cover methods naming constructed generic types, since resolving those is the reason signatures are queried per method.");
+        Assert.Empty(mismatches);
+    }
+
+    private static bool TryGetComparableMethod(EcmaModule module, MethodDefinitionHandle handle, out MethodDesc method)
+    {
+        method = null!;
+
+        try
+        {
+            MethodDesc candidate = module.GetMethod(handle);
+
+            // A signature variable stands for whatever type the instantiation supplies, so it has no
+            // ABI of its own; only fully concrete signatures describe how a call is really made.
+            if (candidate.HasInstantiation || candidate.OwningType.HasInstantiation)
+                return false;
+
+            // Touch the signature up front so a module that cannot be read fails the same way on
+            // both stacks rather than only on the one that got there first.
+            _ = candidate.Signature;
+
+            method = candidate;
+            return true;
+        }
+        catch (TypeSystemException)
+        {
+            return false;
+        }
+        catch (BadImageFormatException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// True when the signature names a constructed generic type, the case a per-type token query
+    /// cannot express: <c>Nullable&lt;int&gt;</c> and <c>Nullable&lt;long&gt;</c> share the metadata
+    /// token of <c>Nullable&lt;T&gt;</c> and would be indistinguishable over the wire.
+    /// </summary>
+    private static bool NamesConstructedGenericType(MethodSignature signature)
+    {
+        if (signature.ReturnType is InstantiatedType)
+            return true;
+
+        for (int i = 0; i < signature.Length; i++)
+        {
+            if (signature[i] is InstantiatedType)
+                return true;
+        }
+
+        return false;
+    }
+
     private static string GetCrossgen2Signature(Crossgen2Context context, TypeDesc parameterType)
     {
         return Crossgen2Lowering.GetSignature(
@@ -285,6 +403,12 @@ public class WasmLoweringParityTests
 
         return context;
     }
+
+    /// <summary>
+    /// Builds the resolver the way the standalone tool does, so the token round-trip the generator
+    /// depends on is part of what gets tested.
+    /// </summary>
+    private WasmResolver CreateResolver() => new("browser", new[] { CoreLibPath });
 
     private string CoreLibPath
     {

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
@@ -105,54 +104,21 @@ internal sealed class SignatureMapper
         => TypeToChar(t, out isByRefStruct, out _, depth);
 
     /// <summary>
-    /// Builds the multi-char token for a type in the signature string.
-    /// For most types this is a single character; for multi-field structs it is "S&lt;N&gt;".
+    /// Returns the wasm signature string for a method.
     /// </summary>
-    private string? TypeToSignatureToken(Type t, out bool isByRefStruct)
-    {
-        char? c = TypeToChar(t, out isByRefStruct, out int structSize);
-        if (c is null)
-            return null;
-
-        if (c == 'S' && structSize > 0)
-            return $"S{structSize}";
-
-        return c.Value.ToString();
-    }
-
+    /// <remarks>
+    /// Delegates to the compiler's own lowering rather than building the string from
+    /// <see cref="TypeToChar"/>. That resolves each parameter from the method's signature blob, so
+    /// generic instantiations work, and it keeps one implementation of the encoding instead of a
+    /// second one here that has to be kept in agreement with compiled code.
+    /// </remarks>
     public string? MethodToSignature(MethodInfo method, bool includeThis = false)
     {
-        string? returnToken = TypeToSignatureToken(method.ReturnType, out bool resultIsByRef);
-        if (returnToken is null)
-            return null;
+        // A managed signature is what picks up the 'T' for an instance method and the trailing 'p';
+        // everything else describes a native function.
+        WasmLoweringFlags flags = includeThis ? WasmLoweringFlags.None : WasmLoweringFlags.IsUnmanagedCallersOnly;
 
-        var sb = new StringBuilder();
-
-        if (resultIsByRef)
-        {
-            // Struct return — encode as S<N> (the return type token already has the size)
-            sb.Append(returnToken);
-        }
-        else
-        {
-            sb.Append(returnToken);
-        }
-
-        if (includeThis && !method.IsStatic)
-        {
-            sb.Append('T');
-        }
-
-        foreach (var parameter in method.GetParameters())
-        {
-            string? paramToken = TypeToSignatureToken(parameter.ParameterType, out _);
-            if (paramToken is null)
-                return null;
-
-            sb.Append(paramToken);
-        }
-
-        return sb.ToString();
+        return _resolver.GetMethodSignature(method, flags);
     }
 
     /// <summary>
