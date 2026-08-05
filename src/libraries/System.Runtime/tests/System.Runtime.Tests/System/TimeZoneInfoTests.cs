@@ -2346,6 +2346,8 @@ namespace System.Tests
         [InlineData("!1;2147483647;")]
         [InlineData("!1;1;123;9;")]
         [InlineData("!1;1;123;0;456;0;0;0;0;Z;D;")]
+        // A NoDaylightTransitions flag other than 0 or 1 is rejected rather than treated as true.
+        [InlineData("!1;1;0;0;630000000000000000;0;0;0;2;D;D;")]
         // Valid dates but extreme delta ticks that overflow while CreateAdjustmentRule normalizes them.
         [InlineData("!1;1;0;0;630000000000000000;0;9223372036854775807;9223372036854775807;1;D;D;")]
         public static void FromSerializedString_MalformedFullFidelityTrailer_Throws(string trailer)

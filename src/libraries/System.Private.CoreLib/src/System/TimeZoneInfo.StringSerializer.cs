@@ -651,6 +651,11 @@ namespace System
                 long daylightDeltaTicks = GetNextInt64Value();
                 long baseUtcOffsetDeltaTicks = GetNextInt64Value();
                 int noDaylightTransitions = GetNextInt32Value();
+                if (noDaylightTransitions is not (0 or 1))
+                {
+                    // The writer only emits 0 or 1; reject any other value rather than treating it as true.
+                    throw new SerializationException(SR.Serialization_InvalidData);
+                }
                 TransitionTime daylightStart = GetNextFullFidelityTransitionTimeValue();
                 TransitionTime daylightEnd = GetNextFullFidelityTransitionTimeValue();
 
