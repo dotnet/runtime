@@ -26,12 +26,12 @@ namespace ILCompiler.ObjectWriter
             _paddingHelper = new PaddingHelper(WasmObjectWriter.WebcilSectionAlignment);
         }
 
-        public override int EncodeSize()
+        public override int EncodedSize()
         {
             return (int)_stream.Length;
         }
 
-        public override int Emit(Stream outputFileStream)
+        public override int EmitToStream(Stream outputFileStream)
         {
             // Emit the raw contents of this Webcil section followed by any required padding.
             _stream.Position = 0;
