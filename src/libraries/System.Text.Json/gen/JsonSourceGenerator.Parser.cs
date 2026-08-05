@@ -988,7 +988,7 @@ namespace System.Text.Json.SourceGeneration
                 List<DerivedTypeSpec>? derivedTypes = null;
                 HashSet<object>? typeDiscriminators = null;
                 bool hasExplicitDerivedTypeAttribute = false;
-                bool hasUnionTypeClassifierSpecified = false;
+                bool hasUnionTypeClassifierSpecified = options?.TypeClassifiers is { Count: > 0 };
                 bool isUnionType = IsUnionType(typeToGenerate.Type);
                 INamedTypeSymbol? namedUnionType = typeToGenerate.Type as INamedTypeSymbol;
 
