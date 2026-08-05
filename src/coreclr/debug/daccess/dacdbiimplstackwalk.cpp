@@ -481,7 +481,16 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::GetCountOfInternalFrames(VMPTR_Th
                 InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
                 PTR_PInvokeMethodDesc pMD = pInlinedCallFrame->m_Datum;
                 TADDR datum = dac_cast<TADDR>(pMD);
+#ifdef TARGET_64BIT
+                // On 64-bit platforms, an unmanaged calli target is encoded as (target << 1) | 1,
+                // so bit 0 must be checked first to distinguish it from a MethodDesc pointer with
+                // the InlinedCallFrameMarker::ExceptionHandlingHelper bit set. Otherwise, an odd
+                // calli target's shifted-in low bit can be misread as the marker.
+                if ((datum & 0x1) == 0 &&
+                    (datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
+#else
                 if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
+#endif // TARGET_64BIT
                 {
                     pFrame = pFrame->Next();
                     continue;
@@ -547,7 +556,16 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::EnumerateInternalFrames(VMPTR_Thr
                 InlinedCallFrame *pInlinedCallFrame = dac_cast<PTR_InlinedCallFrame>(pFrame);
                 PTR_PInvokeMethodDesc pMD = pInlinedCallFrame->m_Datum;
                 TADDR datum = dac_cast<TADDR>(pMD);
+#ifdef TARGET_64BIT
+                // On 64-bit platforms, an unmanaged calli target is encoded as (target << 1) | 1,
+                // so bit 0 must be checked first to distinguish it from a MethodDesc pointer with
+                // the InlinedCallFrameMarker::ExceptionHandlingHelper bit set. Otherwise, an odd
+                // calli target's shifted-in low bit can be misread as the marker.
+                if ((datum & 0x1) == 0 &&
+                    (datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
+#else
                 if ((datum & (TADDR)InlinedCallFrameMarker::Mask) == (TADDR)InlinedCallFrameMarker::ExceptionHandlingHelper)
+#endif // TARGET_64BIT
                 {
                     pFrame = pFrame->Next();
                     continue;
