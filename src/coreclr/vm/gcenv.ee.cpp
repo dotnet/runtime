@@ -60,7 +60,7 @@ void GCToEEInterface::RestartEE(bool bUnused)
     if (g_pDebugInterface)
         g_pDebugInterface->ResumeForGarbageCollectionStarted();
 
-    ThreadSuspend::RestartEE(TRUE);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 }
 
 VOID GCToEEInterface::SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
@@ -1080,7 +1080,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
         {
             assert(!args->is_runtime_suspended &&
                 "if runtime was suspended in patching routines then it was in running state at beginning");
-            ThreadSuspend::RestartEE(TRUE);
+            ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
         }
         return; // unlike other branches we have already done cleanup so bailing out here
 
@@ -1181,7 +1181,7 @@ void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
     {
         assert(!args->is_runtime_suspended &&
             "if runtime was suspended in patching routines then it was in running state at beginning");
-        ThreadSuspend::RestartEE(TRUE);
+        ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
     }
 }
 

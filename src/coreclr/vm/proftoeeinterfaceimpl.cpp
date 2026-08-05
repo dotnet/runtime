@@ -6879,7 +6879,7 @@ HRESULT ProfToEEInterfaceImpl::ResumeRuntime()
     }
 
     g_profControlBlock.fProfilerRequestedRuntimeSuspend = false;
-    ThreadSuspend::RestartEE(TRUE /* SuspendSucceeded */);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
     return S_OK;
 }
 
@@ -7705,7 +7705,7 @@ HRESULT ProfToEEInterfaceImpl::EnumerateGCHeapObjects(ObjectCallback callback, v
     if (ownEESuspension)
     {
         g_profControlBlock.fProfilerRequestedRuntimeSuspend = false;
-        ThreadSuspend::RestartEE(TRUE /* SuspendSucceeded */);
+        ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
     }
 
     return hr;

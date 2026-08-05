@@ -205,8 +205,7 @@ public:
     virtual
     void SuspendEE(SUSPEND_REASON reason) PURE_VIRTUAL
 
-    // Resumes all paused threads, with a boolean indicating
-    // if the EE is being restarted because a GC is complete.
+    // Resumes all paused threads.
     virtual
     void RestartEE(bool bUnused) PURE_VIRTUAL
 

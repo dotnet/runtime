@@ -5681,7 +5681,7 @@ retry_for_debugger:
             "***** Giving up on current GC suspension due to debugger *****\n"));
 
         // Mark that we're done with the gc, so that the debugger can proceed.
-        RestartEE(FALSE);
+        RestartEE(false /* SuspendSucceeded */);
 
         LOG((LF_GCROOTS | LF_GC | LF_CORDB, LL_INFO10, "The EE is free now...\n"));
 
