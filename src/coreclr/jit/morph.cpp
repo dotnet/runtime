@@ -12534,6 +12534,31 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             noway_assert(GenTree::OperIsRotate(rotateOp));
 
+            // The rotate amount must be in the range [0, bitsize - 1]. IL masks shift/rotate
+            // amounts explicitly, but the recognition above stripped that mask off the index.
+            // Reintroduce it so a later constant fold cannot leave an out-of-range amount that
+            // trips downstream invariants (e.g. arm64 containment in lowering):
+            //  - an in-range constant needs no change,
+            //  - an out-of-range constant is masked in place,
+            //  - a non-constant amount is wrapped in AND(amount, bitsize - 1).
+            // Targets whose rotate instructions mask the amount implicitly strip the AND again
+            // in lowering.
+            if (rotateIndex->IsCnsIntOrI())
+            {
+                ssize_t rotateAmount = rotateIndex->AsIntCon()->IconValue();
+
+                if ((rotateAmount < 0) || (rotateAmount > minimalMask))
+                {
+                    rotateIndex->AsIntCon()->SetIconValue(rotateAmount & minimalMask);
+                }
+            }
+            else
+            {
+                rotateIndex =
+                    gtNewOperNode(GT_AND, genActualType(rotateIndex), rotateIndex, gtNewIconNode(minimalMask));
+                rotateIndex->SetMorphed(this, /* doChildren */ true);
+            }
+
             GenTreeFlags inputTreeEffects = tree->gtFlags & GTF_ALL_EFFECT;
 
             // We can use the same tree only during global morph; reusing the tree in a later morph
