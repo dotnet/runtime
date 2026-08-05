@@ -783,22 +783,20 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         string patternTypeFQN = caseSpec.PatternType.FullyQualifiedName;
+                        string caseTypeFQN = caseSpec.CaseType.FullyQualifiedName;
 
-                        if (patternTypeFQN == typeMetadata.TypeRef.FullyQualifiedName)
-                        {
-                            // Recursive case: the case type is the union type itself. A type pattern `T`
-                            // applied to a union is equivalent to `T or { Value: T }`, so a bare type
-                            // pattern here is also satisfied by the union instance itself. That both binds
-                            // the union rather than its payload -- making the converter recurse on the same
-                            // value forever -- and renders any later arm unreachable. Match the payload
-                            // explicitly so that only the unwrapped value is bound.
-                            writer.WriteLine($"{{ Value: {patternTypeFQN} caseValue{deconArmIndex} }} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
-                        }
-                        else
-                        {
-                            writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
-                        }
+                        // C# union matching tests a type pattern against the union instance before
+                        // falling back to the union's value, so for a case the union instance can
+                        // itself match, a bare type pattern binds the incoming union rather than its
+                        // payload. For a recursive case that makes the converter recurse on the same
+                        // value forever and renders any later arm unreachable; where the compiler
+                        // cannot tell the two apart it is a hard error instead (CS8780). The property
+                        // pattern forces the test onto the payload, so only the unwrapped value binds.
+                        string armPattern = caseSpec.MatchesUnionInstance
+                            ? $"{{ Value: {patternTypeFQN} caseValue{deconArmIndex} }}"
+                            : $"{patternTypeFQN} caseValue{deconArmIndex}";
 
+                        writer.WriteLine($"{armPattern} => (typeof({caseTypeFQN}), (object?)caseValue{deconArmIndex}),");
                         deconArmIndex++;
                     }
 

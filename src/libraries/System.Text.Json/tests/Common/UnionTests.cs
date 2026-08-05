@@ -1759,18 +1759,147 @@ namespace System.Text.Json.Serialization.Tests
         // shadow the arms that follow it.
         public union RecursiveNatReversed(RecursiveNatReversed, bool);
 
-        [Fact]
-        public async Task RecursiveUnion_RecursiveCaseDeclaredFirst_RoundTrips()
+        [Theory]
+        [InlineData(0, true, "true")]
+        [InlineData(1, false, "false")]
+        [InlineData(2, true, "true")]
+        [InlineData(5, false, "false")]
+        public async Task RecursiveUnion_RecursiveCaseDeclaredFirst_RoundTrips(int nestingDepth, bool leaf, string expectedJson)
         {
-            var tripleNested = new RecursiveNatReversed(new RecursiveNatReversed(new RecursiveNatReversed(true)));
+            RecursiveNatReversed nested = new RecursiveNatReversed(leaf);
+            for (int i = 0; i < nestingDepth; i++)
+            {
+                nested = new RecursiveNatReversed(nested);
+            }
 
-            string json = await Serializer.SerializeWrapper(tripleNested);
-            Assert.Equal("true", json);
+            string json = await Serializer.SerializeWrapper(nested);
+            Assert.Equal(expectedJson, json);
 
             RecursiveNatReversed? deserialized = await Serializer.DeserializeWrapper<RecursiveNatReversed>(json);
             Assert.NotNull(deserialized);
             Assert.IsType<bool>(GetUnionValue(deserialized!));
-            Assert.Equal(true, GetUnionValue(deserialized!));
+            Assert.Equal(leaf, GetUnionValue(deserialized!));
+        }
+
+        // The self-referential case is nullable, which makes it the union's null case as well:
+        // the generated null arm reports typeof(NullableNat?) while the payload arm still has
+        // to dispatch off Value. Covers the interaction between Nullable<T> case unwrapping
+        // and union-instance matching, since both apply to the same case here.
+        public union NullableNat(bool, NullableNat?);
+
+        [Theory]
+        [InlineData(0, true, "true")]
+        [InlineData(1, false, "false")]
+        [InlineData(3, true, "true")]
+        public async Task RecursiveUnion_NullableSelfCase_RoundTrip_FlattensNesting(int nestingDepth, bool leaf, string expectedJson)
+        {
+            NullableNat nested = new NullableNat(leaf);
+            for (int i = 0; i < nestingDepth; i++)
+            {
+                nested = new NullableNat(nested);
+            }
+
+            string json = await Serializer.SerializeWrapper(nested);
+            Assert.Equal(expectedJson, json);
+
+            NullableNat? deserialized = await Serializer.DeserializeWrapper<NullableNat>(json);
+            Assert.NotNull(deserialized);
+            Assert.IsType<bool>(GetUnionValue(deserialized!));
+            Assert.Equal(leaf, GetUnionValue(deserialized!));
+        }
+
+        [Fact]
+        public async Task RecursiveUnion_NullableSelfCase_NullPayload_RoundTripsAsJsonNull()
+        {
+            var nullNat = new NullableNat((NullableNat?)null);
+
+            string json = await Serializer.SerializeWrapper(nullNat);
+            Assert.Equal("null", json);
+
+            NullableNat? deserialized = await Serializer.DeserializeWrapper<NullableNat>(json);
+            Assert.NotNull(deserialized);
+            Assert.Null(GetUnionValue(deserialized!));
+        }
+
+        #endregion
+
+        #region Class unions with subtype cases
+
+        // A [Union] class is not sealed, so a case type can derive from the union itself.
+        // The union instance is then pattern compatible with the case type, exactly as it is
+        // for a self-referential case, but by the opposite subtyping direction.
+        //
+        // Value is [JsonIgnore]d because CircleShape inherits it, and would otherwise carry it
+        // into its own JSON object. That has no bearing on union recognition: ShapeUnion is
+        // serialized as a union, not as an object.
+        [Union]
+        public class ShapeUnion : IUnion
+        {
+            public ShapeUnion(int i) { Value = i; }
+            public ShapeUnion(CircleShape c) { Value = c; }
+            protected ShapeUnion() { Value = null; }
+
+            [JsonIgnore]
+            public object? Value { get; set; }
+        }
+
+        public sealed class CircleShape : ShapeUnion
+        {
+            public double Radius { get; set; }
+        }
+
+        [Fact]
+        public async Task ClassUnion_SubclassCase_SerializesPayload()
+        {
+            var union = new ShapeUnion(new CircleShape { Radius = 2.5 });
+
+            string json = await Serializer.SerializeWrapper(union);
+            Assert.Equal("""{"Radius":2.5}""", json);
+        }
+
+        [Fact]
+        public async Task ClassUnion_SubclassCase_ScalarPayload_SerializesPayload()
+        {
+            var union = new ShapeUnion(42);
+
+            string json = await Serializer.SerializeWrapper(union);
+            Assert.Equal("42", json);
+        }
+
+        [Fact]
+        public async Task ClassUnion_SubclassCase_Deserialize_YieldsSubclassPayload()
+        {
+            ShapeUnion? deserialized = await Serializer.DeserializeWrapper<ShapeUnion>("""{"Radius":2.5}""");
+
+            Assert.NotNull(deserialized);
+            CircleShape circle = Assert.IsType<CircleShape>(GetUnionValue(deserialized!));
+            Assert.Equal(2.5, circle.Radius);
+        }
+
+        [Fact]
+        public void ClassUnion_SubclassCase_UnionConstructor_RoundTripsBothCases()
+        {
+            JsonTypeInfo<ShapeUnion> typeInfo = Serializer.GetTypeInfo<ShapeUnion>();
+            Assert.NotNull(typeInfo.UnionConstructor);
+
+            var circle = new CircleShape { Radius = 1.5 };
+            ShapeUnion circleUnion = typeInfo.UnionConstructor!(typeof(CircleShape), circle);
+            Assert.Same(circle, GetUnionValue(circleUnion));
+
+            ShapeUnion intUnion = typeInfo.UnionConstructor!(typeof(int), 7);
+            Assert.Equal(7, GetUnionValue(intUnion));
+        }
+
+        // A subclass instance is a legal ShapeUnion, so the deconstructor receives a value whose
+        // runtime type matches one of its own case types. It must still report the wrapped value
+        // rather than binding the instance it was handed.
+        [Fact]
+        public async Task ClassUnion_SubclassInstanceAsUnion_SerializesWrappedValue()
+        {
+            ShapeUnion union = new CircleShape { Radius = 3.5, Value = 11 };
+
+            string json = await Serializer.SerializeWrapper(union);
+            Assert.Equal("11", json);
         }
 
         #endregion
