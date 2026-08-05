@@ -6607,9 +6607,28 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* op2 = impStackTop().val;
 
+            unsigned rotateMask = varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
             if (!op2->IsIntegralConst())
             {
-                // TODO-CQ: ROL currently expects op2 to be a constant
+#ifndef TARGET_64BIT
+                if (varTypeIsLong(baseType))
+                {
+                    // TODO-X86-CQ: variable-sized long rotates need special handling on 32-bit.
+                    break;
+                }
+#endif // !TARGET_64BIT
+
+                // The rotate amount is not a constant. Import ROL(op1, AND(op2, mask)) directly
+                // instead of bailing to the managed fallback. The native rotate instructions mask
+                // the amount implicitly on the platforms we care about; the explicit AND keeps the
+                // IR in the masked form the rest of the JIT expects and is stripped again in
+                // lowering where possible.
+                impPopStack();
+                GenTree* rotateValue  = impPopStack().val;
+                GenTree* rotateAmount = gtNewOperNode(GT_AND, genActualType(op2), op2,
+                                                      gtNewIconNode(rotateMask, genActualType(op2)));
+                result                = gtNewOperNode(GT_ROL, baseType, rotateValue, rotateAmount);
                 break;
             }
 
@@ -6620,7 +6639,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
 
             // Mask the offset to ensure deterministic xplat behavior for overshifting
-            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
+            cns2 &= rotateMask;
 
             if (cns2 == 0)
             {
@@ -6656,9 +6675,28 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
 
             GenTree* op2 = impStackTop().val;
 
+            unsigned rotateMask = varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
             if (!op2->IsIntegralConst())
             {
-                // TODO-CQ: ROR currently expects op2 to be a constant
+#ifndef TARGET_64BIT
+                if (varTypeIsLong(baseType))
+                {
+                    // TODO-X86-CQ: variable-sized long rotates need special handling on 32-bit.
+                    break;
+                }
+#endif // !TARGET_64BIT
+
+                // The rotate amount is not a constant. Import ROR(op1, AND(op2, mask)) directly
+                // instead of bailing to the managed fallback. The native rotate instructions mask
+                // the amount implicitly on the platforms we care about; the explicit AND keeps the
+                // IR in the masked form the rest of the JIT expects and is stripped again in
+                // lowering where possible.
+                impPopStack();
+                GenTree* rotateValue  = impPopStack().val;
+                GenTree* rotateAmount = gtNewOperNode(GT_AND, genActualType(op2), op2,
+                                                      gtNewIconNode(rotateMask, genActualType(op2)));
+                result                = gtNewOperNode(GT_ROR, baseType, rotateValue, rotateAmount);
                 break;
             }
 
@@ -6669,7 +6707,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
 
             // Mask the offset to ensure deterministic xplat behavior for overshifting
-            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
+            cns2 &= rotateMask;
 
             if (cns2 == 0)
             {
