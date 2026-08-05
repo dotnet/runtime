@@ -184,21 +184,13 @@ namespace System.Net.Security
             _ownsSessionCertificateContext = _options.OwnsCertificateContext;
             _options.OwnsCertificateContext = false;
 
-            // Platform-specific hook: lets a per-platform partial (e.g. Android's
-            // TlsSession.Android.cs) attach per-session native bridge state (the JavaProxy
-            // that SafeDeleteSslContext requires) to the options bag before any PAL call
-            // reads it. No-op on platforms whose PAL does not need such state.
             InitializePlatformSpecificSessionState();
 
             OnContextInitialized();
         }
 
-        // Implemented as `partial void` so it compiles to a no-op on platforms that don't
-        // supply a body (Windows, Linux/FreeBSD, macOS/iOS/tvOS, Haiku, OpenBSD).
         partial void InitializePlatformSpecificSessionState();
 
-        // Android folds the JSSE trust-manager verdict captured during handshake into the
-        // policy errors seen by AcceptWithDefaultValidation. No-op on all other platforms.
         partial void SeedPlatformValidationErrors(ref SslPolicyErrors sslPolicyErrors);
 
         internal virtual void OnContextInitialized()

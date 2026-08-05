@@ -5,12 +5,6 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
-    // Android-only helpers for TlsSession. JSSE's X509TrustManager is a synchronous
-    // decision point with no retry-verify equivalent, so we accept-and-defer at the
-    // trust-manager checkpoint (like OpenSSL 1.1.x / SecureTransport) and let the
-    // caller drive validation via NeedsCertificateValidation. We still record the
-    // platform verdict so AcceptWithDefaultValidation can honor it, matching
-    // SslStream.Android's ShouldRespectPlatformValidation behavior.
     public abstract partial class TlsSession
     {
         private bool _platformChainRejected;
@@ -22,19 +16,18 @@ namespace System.Net.Security
 
         partial void SeedPlatformValidationErrors(ref SslPolicyErrors sslPolicyErrors)
         {
-            if (_platformChainRejected && ShouldRespectPlatformValidation())
+            if (_platformChainRejected)
             {
                 sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
             }
         }
 
-        // Invoked synchronously from Android's DotnetProxyTrustManager while JSSE processes
-        // the peer's certificate message. Always accepts so the handshake progresses; the
-        // rejection reason (if any) is recorded on the session and surfaced later through
-        // AcceptWithDefaultValidation or observable via _platformChainRejected.
+        // Invoked synchronously from Android's DotnetProxyTrustManager. Always accepts so
+        // the handshake progresses; the platform verdict (if respected) is recorded and
+        // surfaced later through AcceptWithDefaultValidation.
         private SslStream.JavaProxy.RemoteCertificateValidationResult AcceptAndDeferPlatformValidation(IntPtr platformValidationError)
         {
-            if (platformValidationError != IntPtr.Zero)
+            if (platformValidationError != IntPtr.Zero && ShouldRespectPlatformValidation())
             {
                 _platformChainRejected = true;
 
@@ -54,9 +47,6 @@ namespace System.Net.Security
             };
         }
 
-        // Mirrors SslStream.Android's ShouldRespectPlatformValidation: a caller that
-        // brings its own trust anchors (CustomRootTrust or CertificateContext.Trust)
-        // has taken responsibility for validation, so the OS verdict is ignored.
         private bool ShouldRespectPlatformValidation()
         {
             return _options.CertificateChainPolicy is not null

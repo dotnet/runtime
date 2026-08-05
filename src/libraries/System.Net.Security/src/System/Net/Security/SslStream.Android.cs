@@ -68,10 +68,6 @@ namespace System.Net.Security
         {
             private static bool s_initialized;
 
-            // Session-side validator. SslStream supplies one that closes over its own
-            // VerifyRemoteCertificate(IntPtr) method; TlsSession supplies one that routes
-            // the platform trust result into the session's own state. Neither implementation
-            // is aware of the other.
             private readonly Func<IntPtr, RemoteCertificateValidationResult> _validator;
             private GCHandle? _handle;
 
@@ -83,9 +79,6 @@ namespace System.Net.Security
             public Exception? ValidationException { get; private set; }
             public RemoteCertificateValidationResult? ValidationResult { get; private set; }
 
-            // Delegate-based ctor used by TlsSession (and by the SslStream convenience overload
-            // below). Keeps this proxy decoupled from any specific session/stream type so both
-            // SslStream and TlsSession can own their own instance.
             public JavaProxy(Func<IntPtr, RemoteCertificateValidationResult> validator)
             {
                 ArgumentNullException.ThrowIfNull(validator);
@@ -96,8 +89,6 @@ namespace System.Net.Security
                 _handle = GCHandle.Alloc(this);
             }
 
-            // Convenience overload preserved for SslStream — captures the stream's private
-            // VerifyRemoteCertificate(IntPtr) method as the validator.
             public JavaProxy(SslStream sslStream)
                 : this(sslStream.VerifyRemoteCertificate)
             {

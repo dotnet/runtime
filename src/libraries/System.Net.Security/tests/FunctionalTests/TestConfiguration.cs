@@ -30,12 +30,7 @@ namespace System.Net.Security.Tests
         public static bool SupportsHandshakeAlerts { get { return OperatingSystem.IsLinux() || OperatingSystem.IsWindows() || OperatingSystem.IsFreeBSD() || RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD")); } }
         public static bool SupportsRenegotiation { get { return OperatingSystem.IsWindows() || ((OperatingSystem.IsLinux() || OperatingSystem.IsFreeBSD() || RuntimeInformation.IsOSPlatform(OSPlatform.Create("OPENBSD"))) && PlatformDetection.OpenSslVersion >= new Version(1, 1, 1)); } }
 
-        // Whether the platform PAL can produce a tls-unique channel binding.
-        // Android's PAL only implements tls-server-end-point (SslStreamPal.Android.cs
-        // returns null for other ChannelBindingKind values because JSSE does not
-        // expose the TLS Finished messages). macOS/SecureTransport has the same
-        // limitation for the exporter path tested by TlsSession's binding test.
-        public static bool SupportsUniqueChannelBinding => !OperatingSystem.IsAndroid() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS() && !OperatingSystem.IsMacCatalyst();
+        public static bool SupportsUniqueChannelBinding => PlatformDetection.IsNotMobile && !PlatformDetection.IsApplePlatform;
 
         public static readonly X509Certificate2 ServerCertificate = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
 
