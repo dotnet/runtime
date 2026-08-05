@@ -2039,7 +2039,7 @@ namespace System.Net.Security.Tests
 
             using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
-            Socket serverSocket = await listener.AcceptAsync();
+            using Socket serverSocket = await listener.AcceptAsync();
             await connect;
 
             // Configure as non-blocking; TlsSession contract requires it.
@@ -2166,7 +2166,7 @@ namespace System.Net.Security.Tests
 
             using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
-            Socket serverSocket = await listener.AcceptAsync();
+            using Socket serverSocket = await listener.AcceptAsync();
             await connect;
 
             serverSocket.Blocking = false;
@@ -2265,7 +2265,7 @@ namespace System.Net.Security.Tests
 
                 using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
-                Socket serverSocket = await listener.AcceptAsync();
+                using Socket serverSocket = await listener.AcceptAsync();
                 await connect;
 
                 serverSocket.Blocking = false;
@@ -2347,7 +2347,7 @@ namespace System.Net.Security.Tests
 
             using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
-            Socket serverSocket = await listener.AcceptAsync();
+            using Socket serverSocket = await listener.AcceptAsync();
             await connect;
 
             serverSocket.Blocking = false;
@@ -2427,7 +2427,7 @@ namespace System.Net.Security.Tests
 
             using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
-            Socket serverSocket = await listener.AcceptAsync();
+            using Socket serverSocket = await listener.AcceptAsync();
             await connect;
 
             serverSocket.Blocking = false;
@@ -2613,7 +2613,7 @@ namespace System.Net.Security.Tests
 
             using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
-            Socket serverSocket = await listener.AcceptAsync();
+            using Socket serverSocket = await listener.AcceptAsync();
             await connect;
             serverSocket.Blocking = false;
 
@@ -2954,7 +2954,7 @@ namespace System.Net.Security.Tests
 
             using Socket clientUnderlying = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
-            Socket serverSocket = await listener.AcceptAsync();
+            using Socket serverSocket = await listener.AcceptAsync();
             await connect;
 
             serverSocket.Blocking = false;
@@ -3042,7 +3042,7 @@ namespace System.Net.Security.Tests
             // socket send buffer fills quickly and drives SSL_write into WANT_WRITE.
             clientUnderlying.ReceiveBufferSize = 512;
             Task connect = clientUnderlying.ConnectAsync(IPAddress.Loopback, port);
-            Socket serverSocket = await listener.AcceptAsync();
+            using Socket serverSocket = await listener.AcceptAsync();
             await connect;
 
             serverSocket.Blocking = false;
