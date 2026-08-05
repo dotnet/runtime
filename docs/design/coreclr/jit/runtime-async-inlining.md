@@ -276,6 +276,33 @@ if (resumed_C)
 
 Initially we will skip inlining async calls that may suspend in try clauses.
 
+### Propagating the resumed indicator through the inserted fault
+
+Leaving out suspending awaits in try clauses is not quite enough on its own.
+Recall that every runtime async function body is wrapped in a save/restore of the async contexts, and that the restore also runs from a fault handler when an exception unwinds out of the body.
+Inlining preserves that wrapper: the inlinee's fault handler survives as a clause of the caller.
+
+An exception unwinding out of an inlined frame never reaches the frame's logical return, so the post-inline IR above does not run and `resumed_B` is never set.
+The caller's restore then believes its frame did not resume and restores the contexts its own entry code captured.
+But a resumption jumps straight to the resumption point and never runs that entry code, so those values are still null, and the restore faults with a `NullReferenceException` in place of the original exception.
+
+It is enough to set the indicator from the inlinee's fault handler:
+
+```csharp
+fault
+{
+  resumed_B |= resumed_C;
+  AsyncHelpers.RestoreContexts(resumed_C, execContext_C, syncContext_C);
+}
+```
+
+Once `resumed_B` is set every enclosing restore is a no-op, which is exactly the state a normal logical return would have left behind.
+Fault handlers run innermost first, so a chain of inlined frames propagates the indicator outwards one frame at a time as the exception unwinds.
+
+The rest of the transition cannot move into the handler.
+Getting back onto the caller's continuation context may suspend, and a funclet cannot return a continuation, so that part stays on the normal path until the catch-and-rethrow expansion above is implemented.
+That is not observable as long as we do not inline into try clauses: the only EH around an inlined frame is then the inserted context restores, which are no-ops once the frame has resumed, and any user `catch` further out belongs to a physical frame that the async infrastructure resumes on its own captured context.
+
 ## Some examples
 
 In the following assume the presence of two synchronization contexts `_syncContext1` and `_syncContext2` that set up the global environment in some distinguishable way.
