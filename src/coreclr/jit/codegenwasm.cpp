@@ -303,7 +303,8 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
         // Skip homing parameters that are dead at method entry (not live into the first block).
         // Exception: on wasm all on-frame GC locals are reported to the GC stack walk as untracked
         // (i.e. live for the whole method), so a GC parameter's frame slot must still be homed
-        if (varDsc->lvTracked && !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
+        if (varDsc->lvTracked &&
+            !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
             !(varDsc->lvOnFrame && varDsc->HasGCPtr()))
         {
             return;
