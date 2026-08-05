@@ -12535,7 +12535,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
             noway_assert(GenTree::OperIsRotate(rotateOp));
 
             // Explicitly mask the rotate amount to the range [0, bitsize-1]. Otherwise, a later
-            // tranform can stick an out of range constant here and trip up lowering.  If the
+            // transform can stick an out of range constant here and trip up lowering.  If the
             // target's rotate or shift instructions mask their operand implicitly, those targets
             // remove this mask again during lowering.
             if (rotateIndex->IsCnsIntOrI())
