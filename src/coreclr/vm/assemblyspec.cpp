@@ -295,7 +295,7 @@ AssemblyBinder* AssemblySpec::GetInitialBinder()
         //
         // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding
         // context should be used as the parent assembly binder.
-        pParentAssemblyBinder = static_cast<AssemblyBinder*>(AppDomain::GetCurrentDomain()->GetDefaultBinder());
+        pParentAssemblyBinder = AppDomain::GetCurrentDomain()->GetDefaultBinder();
     }
 
     return pParentAssemblyBinder;
