@@ -1920,9 +1920,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         // Note: Memory allocated on loader heap is zero filled
     }
-
-    // We need a LoaderHeap that lives at least as long as the DelegateEEClass, but ideally no longer
-    LoaderAllocator *GetStubHeap();
 #endif // !DACCESS_COMPILE
 
 };

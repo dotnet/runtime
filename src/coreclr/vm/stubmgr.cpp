@@ -1259,8 +1259,9 @@ BOOL StubLinkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-    StubCodeBlockKind kind = RangeSectionStubManager::GetStubKind(stubStartAddress);
-    return (kind == STUB_CODE_BLOCK_WRAPPER_STUB) || (kind == STUB_CODE_BLOCK_SHUFFLE_THUNK);
+
+    // Forwarded to from RangeSectionStubManager
+    return FALSE;
 }
 
 BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,

@@ -820,12 +820,6 @@ CLRToCOMCallInfo * COMDelegate::PopulateCLRToCOMCallInfo(MethodTable * pDelMT)
 }
 #endif // FEATURE_COMINTEROP
 
-// We need a LoaderHeap that lives at least as long as the DelegateEEClass, but ideally no longer
-LoaderAllocator *DelegateEEClass::GetStubHeap()
-{
-    return GetInvokeMethod()->GetLoaderAllocator();
-}
-
 static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
 {
     SigTypeContext typeContext(pDelegateMD);
