@@ -302,13 +302,33 @@ namespace BasicEventSourceTests
             }
         }
 
-        [Fact]
-        public void Test_EventSource_DisposeInOnEventSourceCreated_Throws()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Test_EventSource_DisposeInOnEventSourceCreated_Throws(bool sourceBeforeListener)
         {
-            using var listener = new DisposeOnCreatedListener();
-            using var source = new DisposeOnCreatedEventSource();
+            DisposeOnCreatedEventSource? source = null;
+            DisposeOnCreatedListener? listener = null;
+            try
+            {
+                if (sourceBeforeListener)
+                {
+                    source = new DisposeOnCreatedEventSource();
+                    listener = new DisposeOnCreatedListener();
+                }
+                else
+                {
+                    listener = new DisposeOnCreatedListener();
+                    source = new DisposeOnCreatedEventSource();
+                }
 
-            Assert.IsType<InvalidOperationException>(listener._disposeException);
+                Assert.IsType<InvalidOperationException>(listener._disposeException);
+            }
+            finally
+            {
+                source?.Dispose();
+                listener?.Dispose();
+            }
         }
 
         private sealed class DisposeOnCreatedListener : EventListener
