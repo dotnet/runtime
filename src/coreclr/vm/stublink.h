@@ -178,7 +178,7 @@ class StubLinker
         //
         // Throws exception on failure.
         //---------------------------------------------------------------
-        Stub *Link(LoaderAllocator *pLoaderAllocator, DWORD flags, const char *stubType);
+        Stub *Link(LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind, const char *stubType);
 
     private:
         CodeElement   *m_pCodeElements;     // stored in *reverse* order
@@ -206,15 +206,12 @@ class StubLinker
         VOID AppendCodeElement(CodeElement *pCodeElement);
 
 
-        // Calculates the size of the stub code that is allocate
-        // immediately after the stub object. Returns the
-        // total size. GlobalSize contains the size without
-        // that data part.
+        // Calculates the size of the stub code. Returns the total size.
+        // GlobalSize contains the size without that data part.
         virtual int CalculateSize(int* globalsize);
 
-        // Writes out the code element into memory following the
-        // stub object.
-        void EmitStub(Stub* pStub, int globalsize, int totalSize);
+        // Writes out the code element into a code fragment.
+        void EmitStub(Stub* pStub, LoaderAllocator* pLoaderAllocator, StubCodeBlockKind kind, int globalsize, int totalSize);
 
         CodeRun *GetLastCodeRunIfAny();
 };
@@ -276,6 +273,7 @@ class Stub
 {
     friend class CheckDuplicatedStructLayouts;
     friend class CheckAsmOffsets;
+    friend class StubLinker;
 
     protected:
     enum
@@ -358,10 +356,6 @@ class Stub
         }
 
         //-------------------------------------------------------------------
-        // Returns pointer to the start of the allocation containing this Stub.
-        //-------------------------------------------------------------------
-        TADDR GetAllocationBase();
-
         //-------------------------------------------------------------------
         // Return executable entrypoint after checking the ref count.
         //-------------------------------------------------------------------
@@ -396,7 +390,7 @@ class Stub
         }
 
         //-------------------------------------------------------------------
-        // Return start of the stub blob
+        // Return start of the stub code
         //-------------------------------------------------------------------
         PTR_CBYTE GetBlob()
         {
@@ -410,10 +404,7 @@ class Stub
         }
 
         //-------------------------------------------------------------------
-        // Return the Stub as in GetEntryPoint and size of the stub+code in bytes
-        //   WARNING: Depending on the stub kind this may be just Stub size as
-        //            not all stubs have the info about the code size.
-        //            It's the caller responsibility to determine that
+        // Return the Stub and code size.
         //-------------------------------------------------------------------
         static Stub* RecoverStubAndSize(PCODE pEntryPoint, DWORD *pSize)
         {
@@ -428,23 +419,8 @@ class Stub
             CONTRACTL_END;
 
             Stub *pStub = Stub::RecoverStub(pEntryPoint);
-            *pSize = sizeof(Stub) + pStub->GetNumCodeBytes();
+            *pSize = pStub->GetNumCodeBytes();
             return pStub;
-        }
-
-        HRESULT CloneStub(BYTE *pBuffer, DWORD dwBufferSize)
-        {
-            LIMITED_METHOD_CONTRACT;
-            if ((pBuffer == NULL) ||
-                (dwBufferSize < (sizeof(*this) + GetNumCodeBytes())))
-            {
-                return E_INVALIDARG;
-            }
-
-            memcpyNoGCRefs(pBuffer, this, sizeof(*this) + GetNumCodeBytes());
-            reinterpret_cast<Stub *>(pBuffer)->m_refcount = 1;
-
-            return S_OK;
         }
 
         //-------------------------------------------------------------------
@@ -457,7 +433,7 @@ class Stub
 
             TADDR pStubData = PCODEToPINSTR(pEntryPoint);
 
-            Stub *pStub = PTR_Stub(pStubData - sizeof(*pStub));
+            Stub *pStub = *dac_cast<PTR_PTR_Stub>(pStubData - sizeof(PTR_Stub));
 
 #if !defined(DACCESS_COMPILE)
             _ASSERTE(pStub->m_signature == kUsedStub);
@@ -488,9 +464,9 @@ class Stub
         }
 
         //-------------------------------------------------------------------
-        // This creates stubs.
+        // This creates stub metadata.
         //-------------------------------------------------------------------
-        static Stub* NewStub(LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind, UINT numCodeBytes,
+        static Stub* NewStub(LoaderAllocator *pLoaderAllocator, UINT numCodeBytes,
                              DWORD flags = NEWSTUB_FL_NONE);
 
         static Stub* NewStub(PTR_VOID pCode, DWORD flags = NEWSTUB_FL_NONE);
@@ -514,17 +490,10 @@ class Stub
             _ASSERTE(m_signature == kUsedStub);
 
 
-            if (HasExternalEntryPoint())
-            {
-                return dac_cast<PTR_BYTE>(*dac_cast<PTR_PCODE>(dac_cast<TADDR>(this) + sizeof(*this)));
-            }
-            else
-            {
-                // StubLink always puts the entrypoint first.
-                return dac_cast<PTR_CBYTE>(this) + sizeof(*this);
-            }
+            return m_entryPoint;
         }
 
+        PTR_CBYTE m_entryPoint;
         UINT32 m_refcount;
         UINT32 m_numCodeBytesAndFlags;
         union

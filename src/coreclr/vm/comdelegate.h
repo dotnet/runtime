@@ -183,13 +183,13 @@ private:
     // Compile a static delegate shufflethunk. Always returns
     // STANDALONE since we don't interpret these things.
     //---------------------------------------------------------
-    virtual DWORD CompileStub(const BYTE *pRawStub,
-                             StubLinker *pstublinker)
+    virtual StubCodeBlockKind CompileStub(const BYTE *pRawStub,
+                                          StubLinker *pstublinker)
     {
         STANDARD_VM_CONTRACT;
 
         ((CPUSTUBLINKER*)pstublinker)->EmitShuffleThunk((ShuffleEntry*)pRawStub);
-        return NEWSTUB_FL_SHUFFLE_THUNK;
+        return STUB_CODE_BLOCK_SHUFFLE_THUNK;
     }
 
     //---------------------------------------------------------

@@ -941,15 +941,7 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     Stub* pExistingThunk = InterlockedCompareExchangeT(ppThunk, pShuffleThunk, NULL);
     if (pExistingThunk != NULL)
     {
-        if (pShuffleThunk->HasExternalEntryPoint()) // IL thunk
-        {
-            pShuffleThunk->DecRef();
-        }
-        else
-        {
-            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
-            shuffleThunkWriterHolder.GetRW()->DecRef();
-        }
+        pShuffleThunk->DecRef();
         pShuffleThunk = pExistingThunk;
     }
 

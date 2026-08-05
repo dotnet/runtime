@@ -53,8 +53,7 @@ StubCacheBase::~StubCacheBase()
     while (phe)
     {
         _ASSERTE(NULL != phe->m_pStub);
-        ExecutableWriterHolder<Stub> stubWriterHolder(phe->m_pStub, sizeof(Stub));
-        stubWriterHolder.GetRW()->DecRef();
+        phe->m_pStub->DecRef();
         phe = (STUBHASHENTRY*)GetNext((BYTE*)phe);
     }
 }
@@ -89,9 +88,8 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
         {
             pstub = phe->m_pStub;
 
-            ExecutableWriterHolder<Stub> stubWriterHolder(pstub, sizeof(Stub));
             // IncRef as we're returning a reference to our caller.
-            stubWriterHolder.GetRW()->IncRef();
+            pstub->IncRef();
 
             return pstub.Detach();
         }
@@ -100,13 +98,13 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
     // Couldn't find it, let's try to compile it.
     CPUSTUBLINKER sl;
     CPUSTUBLINKER *psl = &sl;
-    DWORD linkFlags = CompileStub(pRawStub, psl);
+    StubCodeBlockKind kind = CompileStub(pRawStub, psl);
 
     // Append the raw stub to the native stub
     // and link up the stub.
     CodeLabel *plabel = psl->EmitNewCodeLabel();
     psl->EmitBytes(pRawStub, Length(pRawStub));
-    pstub = psl->Link(m_pLoaderAllocator, linkFlags, stubType);
+    pstub = psl->Link(m_pLoaderAllocator, kind, stubType);
     UINT32 offset = psl->GetLabelOffset(plabel);
 
     if (offset > 0xffff)
@@ -142,8 +140,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
                 pstub = phe->m_pStub;
             }
             // IncRef so that caller has firm ownership of stub.
-            ExecutableWriterHolder<Stub> stubWriterHolder(pstub, sizeof(Stub));
-            stubWriterHolder.GetRW()->IncRef();
+            pstub->IncRef();
         }
     }
 

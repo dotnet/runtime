@@ -92,15 +92,7 @@ void EEClass::Destruct()
 
             _ASSERTE(pThunk->IsShuffleThunk());
 
-            if (pThunk->HasExternalEntryPoint()) // IL thunk
-            {
-                pThunk->DecRef();
-            }
-            else
-            {
-                ExecutableWriterHolder<Stub> stubWriterHolder(pThunk, sizeof(Stub));
-                stubWriterHolder.GetRW()->DecRef();
-            }
+            pThunk->DecRef();
         }
     }
 

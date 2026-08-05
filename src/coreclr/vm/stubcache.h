@@ -19,6 +19,7 @@
 
 class Stub;
 class StubLinker;
+enum StubCodeBlockKind : int;
 
 class StubCacheBase : private CClosedHashBase
 {
@@ -67,10 +68,10 @@ protected:
     // This method should compile into the provided stublinker (but
     // not call the Link method.)
     //
-    // It can return flags that will be passed to StubLinker::Link().
+    // It can return the kind passed to StubLinker::Link().
     //---------------------------------------------------------
-    virtual DWORD CompileStub(const BYTE *pRawStub,
-                             StubLinker *psl) = 0;
+    virtual StubCodeBlockKind CompileStub(const BYTE *pRawStub,
+                                          StubLinker *psl) = 0;
 
     //---------------------------------------------------------
     // OVERRIDE

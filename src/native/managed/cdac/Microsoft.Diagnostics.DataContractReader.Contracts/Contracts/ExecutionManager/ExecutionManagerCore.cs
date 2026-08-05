@@ -102,6 +102,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
         VSDLookupStub = 8,
         VSDVTableStub = 9,
         CallCountingStub = 10,
+        WrapperStub = 11,
+        ShuffleThunk = 12,
     }
 
     private abstract class JitManager

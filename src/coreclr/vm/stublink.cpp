@@ -544,21 +544,25 @@ static BOOL LabelCanReach(LabelRef *pLabelRef)
 //
 // Throws exception on failure.
 //---------------------------------------------------------------
-Stub *StubLinker::Link(LoaderAllocator *pLoaderAllocator, DWORD flags, const char *stubType)
+Stub *StubLinker::Link(LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind, const char *stubType)
 {
     STANDARD_VM_CONTRACT;
 
     int globalsize = 0;
     int size = CalculateSize(&globalsize);
+    DWORD flags = (m_pTargetMethod != NULL) ? NEWSTUB_FL_INSTANTIATING_METHOD : NEWSTUB_FL_NONE;
+    if (kind == STUB_CODE_BLOCK_SHUFFLE_THUNK)
+    {
+        flags |= NEWSTUB_FL_SHUFFLE_THUNK;
+    }
 
     StubHolder<Stub> pStub{ Stub::NewStub(
                 pLoaderAllocator,
-                ((flags & NEWSTUB_FL_SHUFFLE_THUNK) != 0) ? STUB_CODE_BLOCK_SHUFFLE_THUNK : STUB_CODE_BLOCK_WRAPPER_STUB,
                 size,
                 flags) };
     ASSERT(pStub != NULL);
 
-    EmitStub(pStub, globalsize, size);
+    EmitStub(pStub, pLoaderAllocator, kind, globalsize, size);
 
     PerfMap::LogStubs(__FUNCTION__, stubType, pStub->GetEntryPoint(), pStub->GetNumCodeBytes(), PerfMapStubType::Individual);
 
@@ -697,16 +701,29 @@ int StubLinker::CalculateSize(int* pGlobalSize)
     return globalsize + datasize;
 }
 
-void StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize)
+void StubLinker::EmitStub(Stub* pStub, LoaderAllocator* pLoaderAllocator, StubCodeBlockKind kind, int globalsize, int totalSize)
 {
     STANDARD_VM_CONTRACT;
 
-    BYTE *pCode = (BYTE*)(pStub->GetBlob());
+    S_SIZE_T allocationSize(totalSize);
+    allocationSize += CODE_SIZE_ALIGN;
+    if (allocationSize.IsOverflow())
+        COMPlusThrowArithmetic();
 
-    ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub) + totalSize);
-    Stub *pStubRW = stubWriterHolder.GetRW();
+    BYTE* pBlock = reinterpret_cast<BYTE*>(ExecutionManager::GetEEJitManager()->AllocCodeFragmentBlock(
+        allocationSize.Value(),
+        CODE_SIZE_ALIGN,
+        pLoaderAllocator,
+        kind));
+    size_t codeOffset = ALIGN_UP(reinterpret_cast<size_t>(pBlock) + sizeof(PTR_Stub), CODE_SIZE_ALIGN) - reinterpret_cast<size_t>(pBlock);
+    BYTE* pCode = pBlock + codeOffset;
+    pStub->m_entryPoint = pCode;
 
-    BYTE *pCodeRW = (BYTE*)(pStubRW->GetBlob());
+    ExecutableWriterHolder<BYTE> stubWriterHolder(pBlock, allocationSize.Value());
+    BYTE* pBlockRW = stubWriterHolder.GetRW();
+    BYTE* pCodeRW = pBlockRW + codeOffset;
+    SET_UNALIGNED_PTR(pCodeRW - sizeof(PTR_Stub), reinterpret_cast<TADDR>(pStub));
+
     BYTE *pDataRW = pCodeRW+globalsize; // start of data area
     {
         int lastCodeOffset = 0;
@@ -772,10 +789,10 @@ void StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize)
     }
 
     // Fill in the target method for the Instantiating stub.
-    if (pStubRW->IsInstantiatingStub())
+    if (pStub->IsInstantiatingStub())
     {
         _ASSERTE(m_pTargetMethod != NULL);
-        pStubRW->SetInstantiatedMethodDesc(m_pTargetMethod);
+        pStub->SetInstantiatedMethodDesc(m_pTargetMethod);
 
         LOG((LF_CORDB, LL_INFO100, "SL::ES: InstantiatedMethod fd:0x%x\n",
             pStub->GetInstantiatedMethodDesc()));
@@ -792,13 +809,6 @@ void StubLinker::EmitStub(Stub* pStub, int globalsize, int totalSize)
 #endif // #ifndef DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
-
-// Redeclaring the Stub type here and assert its size.
-// The size assertion is done here because of where CODE_SIZE_ALIGN
-// is defined - it is not included in all places where stublink.h
-// is consumed.
-class Stub;
-static_assert((sizeof(Stub) % CODE_SIZE_ALIGN) == 0);
 
 //-------------------------------------------------------------------
 // Inc the refcount.
@@ -850,32 +860,11 @@ VOID Stub::DeleteStub()
     {
 #ifdef _DEBUG
         m_signature = kFreedStub;
-        FillMemory(this+1, GetNumCodeBytes(), 0xcc);
+        FillMemory(this, sizeof(*this), 0xcc);
 #endif
 
-        delete [] (BYTE*)GetAllocationBase();
+        delete [] reinterpret_cast<BYTE*>(this);
     }
-}
-
-TADDR Stub::GetAllocationBase()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    TADDR info = dac_cast<TADDR>(this);
-    SIZE_T cbPrefix = 0;
-
-    if (!HasExternalEntryPoint())
-    {
-        cbPrefix = ALIGN_UP(cbPrefix + sizeof(Stub), CODE_SIZE_ALIGN) - sizeof(Stub);
-    }
-
-    return info - cbPrefix;
 }
 
 Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
@@ -887,12 +876,8 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     }
     CONTRACTL_END;
 
-    Stub* pStub = NewStub(NULL, STUB_CODE_BLOCK_UNKNOWN, 0, flags | NEWSTUB_FL_EXTERNAL);
-
-    // Passing NEWSTUB_FL_EXTERNAL requests the stub struct be
-    // expanded in size by a single pointer. Insert the code point at this
-    // location.
-    *(PTR_VOID *)(pStub + 1) = pCode;
+    Stub* pStub = NewStub(NULL, 0, flags | NEWSTUB_FL_EXTERNAL);
+    pStub->m_entryPoint = reinterpret_cast<PTR_CBYTE>(pCode);
 
     return pStub;
 }
@@ -902,7 +887,6 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
 //-------------------------------------------------------------------
 /*static*/ Stub* Stub::NewStub(
         LoaderAllocator *pLoaderAllocator,
-        StubCodeBlockKind kind,
         UINT numCodeBytes,
         DWORD flags)
 {
@@ -913,26 +897,12 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     }
     CONTRACTL_END;
 
-    // The memory layout of the allocated memory for the Stub instance is as follows:
-    //  Offset:
-    //  - 0
-    //      optional: unwind info - see nUnwindInfoSize usage.
-    //  - stubPayloadOffset
-    //      Stub instance
-    //      optional: external pointer | padding + code
-    size_t stubPayloadOffset = 0;
     S_SIZE_T size = S_SIZE_T(sizeof(Stub));
 
     if (flags & NEWSTUB_FL_EXTERNAL)
     {
         _ASSERTE(pLoaderAllocator == NULL);
         _ASSERTE(numCodeBytes == 0);
-        size += sizeof(PTR_PCODE);
-    }
-    else
-    {
-        size.AlignUp(CODE_SIZE_ALIGN);
-        size += numCodeBytes;
     }
 
     if (size.IsOverflow())
@@ -947,31 +917,15 @@ Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
     }
     else
     {
-        pBlock = reinterpret_cast<BYTE*>(ExecutionManager::GetEEJitManager()->AllocCodeFragmentBlock(totalSize, CODE_SIZE_ALIGN, pLoaderAllocator, kind));
+        TaggedMemAllocPtr ptr = pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(totalSize));
+        pBlock = static_cast<BYTE*>(static_cast<void*>(ptr));
         flags |= NEWSTUB_FL_LOADERHEAP;
     }
 
-    _ASSERTE((stubPayloadOffset % CODE_SIZE_ALIGN) == 0);
-    Stub* pStubRX = (Stub*)(pBlock + stubPayloadOffset);
-    Stub* pStubRW;
-    ExecutableWriterHolderNoLog<Stub> stubWriterHolder;
+    Stub* pStub = reinterpret_cast<Stub*>(pBlock);
+    pStub->SetupStub(numCodeBytes, flags);
 
-    if (pLoaderAllocator == NULL)
-    {
-        pStubRW = pStubRX;
-    }
-    else
-    {
-        stubWriterHolder.AssignExecutableWriterHolder(pStubRX, sizeof(Stub));
-        pStubRW = stubWriterHolder.GetRW();
-    }
-    pStubRW->SetupStub(
-            numCodeBytes,
-            flags);
-
-    _ASSERTE((BYTE *)pStubRX->GetAllocationBase() == pBlock);
-
-    return pStubRX;
+    return pStub;
 }
 
 void Stub::SetupStub(int numCodeBytes, DWORD flags)
@@ -997,6 +951,7 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags)
 
     m_numCodeBytesAndFlags = numCodeBytes;
 
+    m_entryPoint = NULL;
     m_refcount = 1;
     m_data = {};
 
