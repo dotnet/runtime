@@ -1238,6 +1238,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
         public void ShellExecute_Nano_Fails_Start()
         {
+            ProcessTestHangDiagnostics.Log("ShellExecute_Nano_Fails_Start started.");
             string tempFile = GetTestFilePath() + ".txt";
             File.Create(tempFile).Dispose();
 
@@ -1250,7 +1251,9 @@ namespace System.Diagnostics.Tests
             // Nano does not support either the STA apartment or ShellExecute.
             // Since we try to start an STA thread for ShellExecute, we hit a ThreadStartException
             // before we get to the PlatformNotSupportedException.
+            ProcessTestHangDiagnostics.Log("ShellExecute_Nano_Fails_Start calling Process.Start.");
             Assert.Throws<ThreadStartException>(() => Process.Start(info));
+            ProcessTestHangDiagnostics.Log("ShellExecute_Nano_Fails_Start completed Process.Start.");
         }
 
         public static TheoryData<bool> UseShellExecute
@@ -1359,6 +1362,7 @@ namespace System.Diagnostics.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestRuntimes.Mono)]
         public void StartInfo_NotepadWithContent_withArgumentList(bool useShellExecute)
         {
+            ProcessTestHangDiagnostics.Log($"StartInfo_NotepadWithContent_withArgumentList started; UseShellExecute={useShellExecute}.");
             string tempFile = GetTestFilePath() + ".txt";
             File.WriteAllText(tempFile, $"StartInfo_NotepadWithContent({useShellExecute})");
 
@@ -1372,8 +1376,10 @@ namespace System.Diagnostics.Tests
 
             info.ArgumentList.Add(tempFile);
 
+            ProcessTestHangDiagnostics.Log($"StartInfo_NotepadWithContent_withArgumentList calling Process.Start; UseShellExecute={useShellExecute}.");
             using (var process = Process.Start(info))
             {
+                ProcessTestHangDiagnostics.Log($"StartInfo_NotepadWithContent_withArgumentList completed Process.Start; UseShellExecute={useShellExecute}; ProcessId={process?.Id}.");
                 Assert.True(process != null, $"Could not start {info.FileName} {info.Arguments} UseShellExecute={info.UseShellExecute}");
 
                 try

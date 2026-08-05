@@ -11,6 +11,11 @@
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
     <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows'">$(DefineConstants);TargetsWindows</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <TestDisableParallelization>true</TestDisableParallelization>
+    <XUnitOptions>$(XUnitOptions) -class System.Diagnostics.Tests.ProcessStartInfoTests -parallel none</XUnitOptions>
+    <XUnitShowProgress>true</XUnitShowProgress>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\IO\StringParser.cs"
              Link="Common\System\IO\StringParser.cs" />
@@ -33,6 +38,7 @@
     <Compile Include="ProcessStreamReadTests.cs" />
     <Compile Include="ProcessMultiplexingTests.cs" />
     <Compile Include="ProcessStreamingTests.cs" />
+    <Compile Include="ProcessTestHangDiagnostics.cs" />
     <Compile Include="ProcessTestBase.cs" />
     <Compile Include="ProcessTestBase.NonUap.cs" />
     <Compile Include="ProcessTests.cs" />
