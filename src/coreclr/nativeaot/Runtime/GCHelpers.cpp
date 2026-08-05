@@ -482,7 +482,7 @@ EXTERN_C int64_t QCALLTYPE RhGetTotalAllocatedBytesPrecise()
     }
     END_FOREACH_THREAD
 
-    GCToEEInterface::RestartEE(TRUE);
+    GCToEEInterface::RestartEE(true);
 
     return allocated;
 }

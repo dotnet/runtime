@@ -14,9 +14,9 @@ namespace standalone
             ::GCToEEInterface::SuspendEE(reason);
         }
 
-        void RestartEE(bool bUnuused)
+        void RestartEE(bool bUnused)
         {
-            ::GCToEEInterface::RestartEE(/* bUnused */ TRUE);
+            ::GCToEEInterface::RestartEE(/* bUnused */ true);
         }
 
         void GcScanRoots(promote_func* fn, int condemned, int max_gen, ScanContext* sc)

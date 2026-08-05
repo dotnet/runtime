@@ -117,10 +117,10 @@ public:
     void FireGCAllocationTick_V1(uint32_t allocationAmount, uint32_t allocationKind) PURE_VIRTUAL
 
     virtual
-    void FireGCAllocationTick_V4(uint64_t allocationAmount,
-                                 uint32_t allocationKind,
-                                 uint32_t heapIndex,
-                                 void* objectAddress,
+    void FireGCAllocationTick_V4(uint64_t allocationAmount, 
+                                 uint32_t allocationKind, 
+                                 uint32_t heapIndex, 
+                                 void* objectAddress, 
                                  uint64_t objectSize) PURE_VIRTUAL
 
     virtual
