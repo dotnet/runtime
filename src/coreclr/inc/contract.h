@@ -902,8 +902,6 @@ class BaseContract
 class Contract final : public BaseContract
 { };
 
-#define EE_THREAD_NOT_REQUIRED
-
 #endif // ENABLE_CONTRACTS_IMPL
 
 
@@ -1707,6 +1705,8 @@ extern Volatile<LONG> g_DbgSuppressAllocationAsserts;
 
 // LIMITED_METHOD_DAC_CONTRACT is a shortcut for LIMITED_METHOD_CONTRACT and SUPPORTS_DAC. Usefull for one-line inline functions.
 #define LIMITED_METHOD_DAC_CONTRACT LIMITED_METHOD_CONTRACT; SUPPORTS_DAC
+
+#define EE_THREAD_NOT_REQUIRED
 
 //
 // The default contract is the recommended contract for ordinary EE code.
