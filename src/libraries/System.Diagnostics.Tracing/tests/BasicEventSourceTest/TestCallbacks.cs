@@ -254,5 +254,39 @@ namespace BasicEventSourceTests
                 }
             }
         }
+
+        [Fact]
+        public void Test_EventSource_DisposeInOnEventSourceCreated_Throws()
+        {
+            using var listener = new DisposeOnCreatedListener();
+            using var source = new DisposeOnCreatedEventSource();
+
+            Assert.IsType<InvalidOperationException>(listener._disposeException);
+        }
+
+        private sealed class DisposeOnCreatedListener : EventListener
+        {
+            internal InvalidOperationException? _disposeException;
+
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "TestsEventSourceCallbacks.DisposeOnCreatedEventSource")
+                {
+                    try
+                    {
+                        eventSource.Dispose();
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        _disposeException = ex;
+                    }
+                }
+            }
+        }
+
+        [EventSource(Name = "TestsEventSourceCallbacks.DisposeOnCreatedEventSource")]
+        private sealed class DisposeOnCreatedEventSource : EventSource
+        {
+        }
     }
 }

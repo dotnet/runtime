@@ -1798,17 +1798,25 @@ namespace System.Diagnostics.Tracing
 
                 }
 #endif
-                // Add the eventSource to the global (weak) list.
-                // This also sets m_id, which is the index in the list.
-                EventListener.AddEventSource(this);
+                ObjectDisposedException.ThrowIf(!TryEnterCallback(), this);
+                try
+                {
+                    // Add the eventSource to the global (weak) list.
+                    // This also sets m_id, which is the index in the list.
+                    EventListener.AddEventSource(this);
 
-                // OK if we get this far without an exception, then we can at least write out error messages.
-                // Set m_provider, which allows this.
-                m_etwProvider = etwProvider;
+                    // OK if we get this far without an exception, then we can at least write out error messages.
+                    // Set m_provider, which allows this.
+                    m_etwProvider = etwProvider;
 
 #if FEATURE_PERFTRACING
-                m_eventPipeProvider = eventPipeProvider;
+                    m_eventPipeProvider = eventPipeProvider;
 #endif
+                }
+                finally
+                {
+                    ExitCallback();
+                }
                 Debug.Assert(!m_eventSourceEnabled);     // We can't be enabled until we are completely initted.
             }
             catch (Exception e)
