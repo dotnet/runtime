@@ -191,6 +191,63 @@ namespace System.Net.NameResolution.Tests
                 $"Unexpected TTL: {record.Ttl}");
         }
 
+#if !WINDOWS
+        // The following behaviors are specific to the managed resolver; the Windows PAL
+        // delegates server failover and record validation to DnsQueryEx.
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_ServerFailure_FailsOverToNextServer(bool async)
+        {
+            await using LoopbackDnsServer failing = LoopbackDnsServer.Start();
+            string name = UniqueName("failover");
+            failing.AddResponse(name, DnsRecordType.A, b => b.ResponseCode(DnsResponseCode.ServerFailure));
+            _server.AddResponse(name, DnsRecordType.A, b => b.Answer(new byte[] { 10, 0, 0, 7 }, ttl: 120));
+
+            using DnsResolver resolver = new DnsResolver(new DnsResolverOptions
+            {
+                Servers = { failing.EndPoint, _server.EndPoint }
+            });
+
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, resolver, name, AddressFamily.InterNetwork);
+
+            // The first server returned SERVFAIL, so the query fell over to the second server.
+            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            AddressRecord record = Assert.Single(result.Records);
+            Assert.Equal("10.0.0.7", record.Address.ToString());
+            Assert.True(failing.RequestCount > 0, "The first (failing) server should have been queried.");
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_AllServersFail_ReturnsServerFailure(bool async)
+        {
+            string name = UniqueName("allfail");
+            _server.AddResponse(name, DnsRecordType.A, b => b.ResponseCode(DnsResponseCode.ServerFailure));
+
+            DnsResult<AddressRecord> result = await ResolveAddresses(async, Resolver, name, AddressFamily.InterNetwork);
+
+            // No server produced a definitive answer, so the SERVFAIL response is surfaced.
+            Assert.Equal(DnsResponseCode.ServerFailure, result.ResponseCode);
+            Assert.Empty(result.Records);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ResolveAddresses_MalformedARecord_Throws(bool async)
+        {
+            string name = UniqueName("malformed");
+            // An A record must carry a 4-byte address; a 3-byte RDATA is malformed.
+            _server.AddResponse(name, DnsRecordType.A, b => b.Answer(new byte[] { 10, 0, 0 }, ttl: 120));
+
+            await Assert.ThrowsAsync<System.IO.InvalidDataException>(
+                () => ResolveAddresses(async, Resolver, name, AddressFamily.InterNetwork));
+        }
+#endif
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]

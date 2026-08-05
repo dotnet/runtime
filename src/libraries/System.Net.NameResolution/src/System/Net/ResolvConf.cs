@@ -13,7 +13,53 @@ namespace System.Net
         private const string ResolvConfPath = "/etc/resolv.conf";
         internal const int DefaultDnsPort = 53;
 
+        private static readonly object s_lock = new object();
+        private static List<IPEndPoint>? s_cachedServers;
+        private static DateTime s_cachedWriteTimeUtc;
+
         public static List<IPEndPoint> GetNameServers()
+        {
+            // /etc/resolv.conf is read on every query when no explicit servers are configured.
+            // Cache the parsed result and only re-parse when the file's last-write time changes.
+            DateTime writeTimeUtc = GetLastWriteTimeUtc();
+
+            lock (s_lock)
+            {
+                if (s_cachedServers is not null && writeTimeUtc == s_cachedWriteTimeUtc)
+                {
+                    return s_cachedServers;
+                }
+            }
+
+            List<IPEndPoint> servers = ReadNameServers();
+
+            lock (s_lock)
+            {
+                s_cachedServers = servers;
+                s_cachedWriteTimeUtc = writeTimeUtc;
+                return servers;
+            }
+        }
+
+        private static DateTime GetLastWriteTimeUtc()
+        {
+            try
+            {
+                // Returns a sentinel (not an exception) when the file is missing, which is a
+                // stable key that avoids re-reading a nonexistent file on every query.
+                return File.GetLastWriteTimeUtc(ResolvConfPath);
+            }
+            catch (IOException)
+            {
+                return default;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return default;
+            }
+        }
+
+        private static List<IPEndPoint> ReadNameServers()
         {
             try
             {

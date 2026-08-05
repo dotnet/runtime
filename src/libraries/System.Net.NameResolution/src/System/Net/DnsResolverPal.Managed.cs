@@ -126,12 +126,29 @@ namespace System.Net
             for (int i = 0; i < header.AnswerCount; i++)
             {
                 DnsRecord record = ReadRecord(ref reader);
-                if (qtype == DnsRecordType.A && record.TryParseARecord(out DnsARecordData a))
+                if (record.Type != qtype)
                 {
+                    // A different record type (e.g. a CNAME in the chain); not our answer.
+                    continue;
+                }
+
+                // The record type matches the query, so a parse failure indicates a malformed
+                // record (e.g. an A record whose RDLENGTH is not 4) rather than NODATA.
+                if (qtype == DnsRecordType.A)
+                {
+                    if (!record.TryParseARecord(out DnsARecordData a))
+                    {
+                        ThrowMalformedResponse();
+                    }
                     records.Add(new AddressRecord(a.ToIPAddress(), TimeSpan.FromSeconds(record.TimeToLive)));
                 }
-                else if (qtype == DnsRecordType.AAAA && record.TryParseAAAARecord(out DnsAAAARecordData aaaa))
+                else
                 {
+                    Debug.Assert(qtype == DnsRecordType.AAAA);
+                    if (!record.TryParseAAAARecord(out DnsAAAARecordData aaaa))
+                    {
+                        ThrowMalformedResponse();
+                    }
                     records.Add(new AddressRecord(aaaa.ToIPAddress(), TimeSpan.FromSeconds(record.TimeToLive)));
                 }
             }
@@ -376,6 +393,8 @@ namespace System.Net
 
                 byte[] responseBuffer = ArrayPool<byte>.Shared.Rent(MaxUdpResponseSize);
                 Exception? lastException = null;
+                byte[]? softErrorBuffer = null;
+                int softErrorLength = 0;
 
                 foreach (IPEndPoint server in serverList)
                 {
@@ -417,7 +436,27 @@ namespace System.Net
                                         continue;
                                     }
 
+                                    if (IsServerFailure(tcpBuffer.AsSpan(0, tcpLength)))
+                                    {
+                                        // The server could not answer (SERVFAIL/REFUSED); try
+                                        // the next server but keep the response as a fallback.
+                                        if (softErrorBuffer is null)
+                                        {
+                                            softErrorBuffer = tcpBuffer;
+                                            softErrorLength = tcpLength;
+                                        }
+                                        else
+                                        {
+                                            ArrayPool<byte>.Shared.Return(tcpBuffer);
+                                        }
+                                        break;
+                                    }
+
                                     ArrayPool<byte>.Shared.Return(responseBuffer);
+                                    if (softErrorBuffer is not null)
+                                    {
+                                        ArrayPool<byte>.Shared.Return(softErrorBuffer);
+                                    }
                                     return new DnsResponse(tcpBuffer, tcpLength);
                                 }
 
@@ -425,11 +464,37 @@ namespace System.Net
                                 continue;
                             }
 
+                            if (IsServerFailure(responseBuffer.AsSpan(0, responseLength)))
+                            {
+                                // The server could not answer (SERVFAIL/REFUSED). Remember the
+                                // response and try the next server; it is returned only if no
+                                // other server produces a definitive answer.
+                                if (softErrorBuffer is null)
+                                {
+                                    softErrorBuffer = responseBuffer;
+                                    softErrorLength = responseLength;
+                                    responseBuffer = ArrayPool<byte>.Shared.Rent(MaxUdpResponseSize);
+                                }
+                                break;
+                            }
+
+                            if (softErrorBuffer is not null)
+                            {
+                                // A previous server returned SERVFAIL/REFUSED but this one
+                                // produced a definitive answer; discard the saved response.
+                                ArrayPool<byte>.Shared.Return(softErrorBuffer);
+                                softErrorBuffer = null;
+                            }
+
                             return new DnsResponse(responseBuffer, responseLength);
                         }
                         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                         {
                             ArrayPool<byte>.Shared.Return(responseBuffer);
+                            if (softErrorBuffer is not null)
+                            {
+                                ArrayPool<byte>.Shared.Return(softErrorBuffer);
+                            }
                             throw;
                         }
                         catch (OperationCanceledException)
@@ -454,6 +519,13 @@ namespace System.Net
 
                 ArrayPool<byte>.Shared.Return(responseBuffer);
 
+                if (softErrorBuffer is not null)
+                {
+                    // Every server that responded returned SERVFAIL/REFUSED; surface that
+                    // response so the caller sees the server's response code.
+                    return new DnsResponse(softErrorBuffer, softErrorLength);
+                }
+
                 if (lastException is not null)
                 {
                     ExceptionDispatchInfo.Throw(lastException);
@@ -471,6 +543,12 @@ namespace System.Net
             Ok,
             Retry,
             TcpFallback,
+        }
+
+        private static bool IsServerFailure(ReadOnlySpan<byte> response)
+        {
+            return DnsMessageHeader.TryRead(response, out DnsMessageHeader header)
+                && header.ResponseCode is DnsResponseCode.ServerFailure or DnsResponseCode.Refused;
         }
 
         private static ResponseValidation ValidateResponse(
