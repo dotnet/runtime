@@ -2389,16 +2389,21 @@ namespace System.Tests
             string baseSerialized = baseZone.ToSerializedString();
 
             // Two adjacent NoDaylightTransitions rules whose UTC boundaries land on the same calendar day
-            // (rule 1 ends at 2000-10-01 01:59:59.9999999Z, rule 2 starts at 2000-10-01 02:00:00Z).
-            DateTime rule1Start = new DateTime(1999, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            // (rule 1 ends at 2000-10-01 01:59:59.9999999Z, rule 2 starts at 2000-10-01 02:00:00Z). Both
+            // rules stay within a single calendar year so the Unix projection does not split them across
+            // years, and both carry a non-zero whole-minute BaseUtcOffsetDelta so the Unix projection keeps
+            // them (it drops NoDaylightTransitions rules only when every delta is zero). That way the legacy
+            // portion contains the two rules on every platform and the ordering check below is not vacuous.
+            DateTime rule1Start = new DateTime(2000, 3, 1, 0, 0, 0, DateTimeKind.Utc);
             DateTime rule1End = new DateTime(2000, 10, 1, 2, 0, 0, DateTimeKind.Utc).AddTicks(-1);
             DateTime rule2Start = new DateTime(2000, 10, 1, 2, 0, 0, DateTimeKind.Utc);
-            DateTime rule2End = new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(-1);
+            DateTime rule2End = new DateTime(2000, 12, 31, 0, 0, 0, DateTimeKind.Utc);
             int utc = (int)DateTimeKind.Utc;
+            long baseUtcOffsetDeltaTicks = TimeSpan.FromHours(1).Ticks;
 
             string trailer =
-                $"!1;2;{rule1Start.Ticks};{utc};{rule1End.Ticks};{utc};0;0;1;D;D;" +
-                $"{rule2Start.Ticks};{utc};{rule2End.Ticks};{utc};0;0;1;D;D;";
+                $"!1;2;{rule1Start.Ticks};{utc};{rule1End.Ticks};{utc};0;{baseUtcOffsetDeltaTicks};1;D;D;" +
+                $"{rule2Start.Ticks};{utc};{rule2End.Ticks};{utc};0;{baseUtcOffsetDeltaTicks};1;D;D;";
 
             TimeZoneInfo zone = TimeZoneInfo.FromSerializedString(baseSerialized + trailer);
             string serialized = zone.ToSerializedString();
@@ -2411,13 +2416,15 @@ namespace System.Tests
             // rule boundaries (two per rule) and verify each rule's start is on or before its end, and each
             // rule ends strictly before the next rule starts. Without the ordering fix, the first rule's end
             // and the second rule's start both land on 2000-10-01 and overlap, which an older reader rejects.
-            // The exact rule shape differs by platform (Windows returns the raw rules; Unix projects them),
-            // so this checks the ordering invariant rather than a fixed rule count.
+            // Both rules survive the Unix projection, so the legacy portion carries at least the two rules
+            // (four dates) on every platform; asserting that minimum keeps the ordering check from passing
+            // vacuously.
             List<DateTime> legacyDates = new List<DateTime>();
             foreach (Match match in Regex.Matches(legacyOnly, @"\b\d{2}:\d{2}:\d{4}\b"))
             {
                 legacyDates.Add(DateTime.ParseExact(match.Value, "MM:dd:yyyy", CultureInfo.InvariantCulture));
             }
+            Assert.True(legacyDates.Count >= 4, "The legacy portion must contain at least the two colliding rules so the ordering check is exercised.");
             Assert.Equal(0, legacyDates.Count % 2);
             for (int i = 0; i + 1 < legacyDates.Count; i += 2)
             {
