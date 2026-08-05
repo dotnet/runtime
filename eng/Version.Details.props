@@ -46,7 +46,7 @@ This file should be imported by eng/Versions.props
     <SystemReflectionMetadataLoadContextPackageVersion>10.0.12</SystemReflectionMetadataLoadContextPackageVersion>
     <SystemTextJsonPackageVersion>10.0.12</SystemTextJsonPackageVersion>
     <!-- dotnet-hotreload-utils dependencies -->
-    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>10.0.0-alpha.0.25479.2</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>
+    <MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>10.0.0-alpha.0.26202.1</MicrosoftDotNetHotReloadUtilsGeneratorBuildToolPackageVersion>
     <!-- dotnet-icu dependencies -->
     <MicrosoftNETCoreRuntimeICUTransportPackageVersion>10.0.0-rtm.26364.2</MicrosoftNETCoreRuntimeICUTransportPackageVersion>
     <!-- dotnet-llvm-project dependencies -->
