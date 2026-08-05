@@ -8,37 +8,17 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Buffers;
+using System.Buffers.Text;
 
 namespace System.Net
 {
     internal sealed class Base64Stream : DelegatedStream, IEncodableStream
     {
-        private static ReadOnlySpan<byte> Base64DecodeMap =>
-        [
-            //0   1   2    3    4    5    6    7    8    9    A    B     C    D    E    F
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // 0
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // 1
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 62,   255, 255, 255,  63, // 2
-             52,  53,  54,  55,  56,  57,  58,  59,  60,  61, 255, 255,  255, 255, 255, 255, // 3
-            255,   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,   11,  12,  13,  14, // 4
-             15,  16,  17,  18,  19,  20,  21,  22,  23,  24,  25, 255,  255, 255, 255, 255, // 5
-            255,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,  36,   37,  38,  39,  40, // 6
-             41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51, 255,  255, 255, 255, 255, // 7
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // 8
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // 9
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // A
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // B
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // C
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // D
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // E
-            255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,  255, 255, 255, 255, // F
-        ];
+        /// <summary>Characters that are ignored when decoding: whitespace used for folding, and padding.</summary>
+        private static readonly SearchValues<byte> s_ignoredChars = SearchValues.Create("\r\n= \t"u8);
 
         private readonly Base64WriteStateInfo _writeState;
         private readonly Base64Encoder _encoder;
-
-        //bytes with this value in the decode map are invalid
-        private const byte InvalidBase64Value = 255;
 
         internal Base64Stream(Stream stream, Base64WriteStateInfo writeStateInfo) : base(stream)
         {
@@ -79,50 +59,96 @@ namespace System.Net
 
         public int DecodeBytes(Span<byte> buffer)
         {
-            int source = 0;
-            int destination = 0;
-
-            while (source < buffer.Length)
+            // Strip out any characters that are ignored when decoding, compacting the remaining
+            // base64 characters to the beginning of the buffer.
+            int length = 0;
+            ReadOnlySpan<byte> remaining = buffer;
+            while (true)
             {
-                byte current = buffer[source++];
-
-                //space and tab are ok because folding must include a whitespace char.
-                if (current == '\r' || current == '\n' || current == '=' || current == ' ' || current == '\t')
+                int index = remaining.IndexOfAny(s_ignoredChars);
+                if (index < 0)
                 {
-                    continue;
+                    remaining.CopyTo(buffer.Slice(length));
+                    length += remaining.Length;
+                    break;
                 }
 
-                byte s = Base64DecodeMap[current];
-
-                if (s == InvalidBase64Value)
-                {
-                    throw new FormatException(SR.MailBase64InvalidCharacter);
-                }
-
-                switch (ReadState.Pos)
-                {
-                    case 0:
-                        ReadState.Val = (byte)(s << 2);
-                        ReadState.Pos++;
-                        break;
-                    case 1:
-                        buffer[destination++] = (byte)(ReadState.Val + (s >> 4));
-                        ReadState.Val = unchecked((byte)(s << 4));
-                        ReadState.Pos++;
-                        break;
-                    case 2:
-                        buffer[destination++] = (byte)(ReadState.Val + (s >> 2));
-                        ReadState.Val = unchecked((byte)(s << 6));
-                        ReadState.Pos++;
-                        break;
-                    case 3:
-                        buffer[destination++] = (byte)(ReadState.Val + s);
-                        ReadState.Pos = 0;
-                        break;
-                }
+                remaining.Slice(0, index).CopyTo(buffer.Slice(length));
+                length += index;
+                remaining = remaining.Slice(index + 1);
             }
 
-            return destination;
+            ReadStateInfo readState = ReadState;
+            int leftoverCount = readState.LeftoverCount;
+
+            // As with the base stream, bytes are produced as soon as enough base64 characters have been
+            // seen to produce them, even if that means decoding a partial four character block. Characters
+            // belonging to such a partial block are remembered, along with how many bytes they've already
+            // produced, so that the remainder of the block can be decoded once more data arrives.
+            int total = leftoverCount + length;
+            int leftoverBytes = readState.LeftoverBytes;
+            int newLeftoverCount = total % 4;
+
+            // A trailing partial block of two or three characters still yields one or two bytes, so it's
+            // padded out to a full block with characters that contribute zero bits and decoded; a single
+            // trailing character yields nothing.
+            int sourceLength = total - newLeftoverCount + (newLeftoverCount >= 2 ? 4 : 0);
+            int totalBytes = sourceLength / 4 * 3 - (newLeftoverCount >= 2 ? 4 - newLeftoverCount : 0);
+
+            if (sourceLength == 0)
+            {
+                // Not enough data to produce anything yet.
+                buffer.Slice(0, length).CopyTo(readState.Leftover.Slice(leftoverCount));
+                readState.LeftoverCount = total;
+                return 0;
+            }
+
+            OperationStatus status;
+            if (leftoverCount == 0 && newLeftoverCount == 0)
+            {
+                // The buffer contains a whole number of four character blocks and nothing needs to be
+                // prepended, so it can be decoded in place.
+                Debug.Assert(leftoverBytes == 0);
+                status = Base64.DecodeFromUtf8InPlace(buffer.Slice(0, length), out _);
+            }
+            else
+            {
+                // Concatenate the characters left over from the previous chunk with the new ones, padding
+                // any trailing partial block so that it decodes to as many bytes as it can produce.
+                int destinationLength = sourceLength / 4 * 3;
+                int scratchLength = Math.Max(sourceLength, total);
+                byte[] rented = ArrayPool<byte>.Shared.Rent(scratchLength + destinationLength);
+                Span<byte> scratch = rented.AsSpan(0, scratchLength);
+                Span<byte> destination = rented.AsSpan(scratchLength, destinationLength);
+
+                readState.Leftover.Slice(0, leftoverCount).CopyTo(scratch);
+                buffer.Slice(0, length).CopyTo(scratch.Slice(leftoverCount));
+
+                scratch.Slice(total - newLeftoverCount, newLeftoverCount).CopyTo(readState.Leftover);
+                readState.LeftoverCount = newLeftoverCount;
+                readState.LeftoverBytes = totalBytes - (total - newLeftoverCount) / 4 * 3;
+
+                // 'A' contributes no bits, so padding with it produces the same leading bytes as the
+                // partial block on its own, and unlike '=' it doesn't require the trailing bits to be zero.
+                scratch.Slice(total).Fill((byte)'A');
+
+                status = Base64.DecodeFromUtf8(scratch.Slice(0, sourceLength), destination, out _, out _);
+
+                if (status == OperationStatus.Done)
+                {
+                    destination.Slice(leftoverBytes, totalBytes - leftoverBytes).CopyTo(buffer);
+                }
+
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+
+            if (status != OperationStatus.Done)
+            {
+                throw new FormatException(SR.MailBase64InvalidCharacter);
+            }
+
+            // Exclude the bytes that were already produced from the leftover characters.
+            return totalBytes - leftoverBytes;
         }
 
         public int EncodeBytes(ReadOnlySpan<byte> buffer) =>
@@ -253,8 +279,15 @@ namespace System.Net
 
         private sealed class ReadStateInfo
         {
-            internal byte Val { get; set; }
-            internal byte Pos { get; set; }
+            private readonly byte[] _leftover = new byte[3];
+
+            /// <summary>Base64 characters left over from a previous chunk that didn't form a complete four character block.</summary>
+            internal Span<byte> Leftover => _leftover;
+
+            internal int LeftoverCount { get; set; }
+
+            /// <summary>Number of bytes already produced from the characters in <see cref="Leftover"/>.</summary>
+            internal int LeftoverBytes { get; set; }
         }
     }
 }

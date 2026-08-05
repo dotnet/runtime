@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Text;
 using Xunit;
 
@@ -113,6 +114,42 @@ namespace System.Net.Mime.Tests
             int result = s.DecodeBytes(stringToDecode.AsSpan(0, encodedString.Length));
 
             Assert.Equal(LongString, Encoding.UTF8.GetString(stringToDecode, 0, result));
+        }
+
+        public static IEnumerable<object[]> DecodeData()
+        {
+            yield return [new[] { "SGVsbG8gV29ybGQh" }, "Hello World!"];
+            yield return [new[] { "SGVs", "bG8g", "V29y", "bGQh" }, "Hello World!"];
+            yield return [new[] { "S", "G", "V", "s", "b", "G", "8", "=" }, "Hello"];
+            yield return [new[] { "SGVsbG8gV2", "9ybGQh" }, "Hello World!"];
+            yield return [new[] { "SGVsbG8g\r\n", "V29ybGQh" }, "Hello World!"];
+            yield return [new[] { "SGVsbG8g", "\r\n V29ybGQh" }, "Hello World!"];
+            yield return [new[] { "SGVsbG8", "=" }, "Hello"];
+            yield return [new[] { "", "SGVsbG8h" }, "Hello!"];
+        }
+
+        [Theory]
+        [MemberData(nameof(DecodeData))]
+        public void DecodeBytes_SplitInput_DecodesCorrectly(string[] chunks, string expected)
+        {
+            var s = new Base64Stream(new Base64WriteStateInfo());
+            var result = new StringBuilder();
+
+            foreach (string chunk in chunks)
+            {
+                byte[] buffer = Encoding.ASCII.GetBytes(chunk);
+                int bytesWritten = s.DecodeBytes(buffer);
+                result.Append(Encoding.ASCII.GetString(buffer, 0, bytesWritten));
+            }
+
+            Assert.Equal(expected, result.ToString());
+        }
+
+        [Fact]
+        public void DecodeBytes_InvalidCharacter_Throws()
+        {
+            var s = new Base64Stream(new Base64WriteStateInfo());
+            Assert.Throws<FormatException>(() => s.DecodeBytes(Encoding.ASCII.GetBytes("SGVs*G8h")));
         }
 
         private const string LongString =
