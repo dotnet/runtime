@@ -1761,7 +1761,7 @@ PAL_GenerateCoreDump(
     BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, nullptr, dumpType, flags);
     if (result)
     {
-        result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer, CrashDumpSerializeMode_None);
+        result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer, CrashDumpSerialize_None);
     }
     free(program);
     free(pidarg);
@@ -1829,7 +1829,7 @@ Return:
 static bool
 TryEnterCrashDumpGate(CrashDumpSerializeMode serializeMode)
 {
-    if (serializeMode == CrashDumpSerializeMode_None)
+    if (serializeMode == CrashDumpSerialize_None)
     {
         // No serialization requested.
         return true;
@@ -1845,14 +1845,14 @@ TryEnterCrashDumpGate(CrashDumpSerializeMode serializeMode)
 
     // Lost the gate, or this is a reentrant call on the owning thread. A
     // WaitInfinite contender (other than the owner) waits indefinitely; the owner
-    // and CrashDumpSerializeMode_NoWait fall through and return immediately.
-    if (previousThreadId != currentThreadId && serializeMode == CrashDumpSerializeMode_WaitInfinite)
+    // and CrashDumpSerialize_NoWait fall through and return immediately.
+    if (previousThreadId != currentThreadId && serializeMode == CrashDumpSerialize_WaitInfinite)
     {
         // The winner generates diagnostics and should terminate the process.
         // Wait here until that happens.
         while (true)
         {
-            poll(NULL, 0, INFTIM);
+            pause();
         }
     }
 
@@ -1869,9 +1869,9 @@ Function:
 static void
 ExitCrashDumpGate(CrashDumpSerializeMode serializeMode)
 {
-    // CrashDumpSerializeMode_None never acquired the gate, and
-    // CrashDumpSerializeMode_WaitInfinite intentionally leaves it held.
-    if (serializeMode == CrashDumpSerializeMode_None || serializeMode == CrashDumpSerializeMode_WaitInfinite)
+    // CrashDumpSerialize_None never acquired the gate, and
+    // CrashDumpSerialize_WaitInfinite intentionally leaves it held.
+    if (serializeMode == CrashDumpSerialize_None || serializeMode == CrashDumpSerialize_WaitInfinite)
     {
         return;
     }
@@ -1944,9 +1944,9 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, Cras
     {
         // The in-proc crash reporter runs only on terminal crash paths. Non-terminal
         // paths that may continue execution after signal handling (e.g. SIGTERM, which
-        // uses CrashDumpSerializeMode_None) are skipped, because the reporter does not
+        // uses CrashDumpSerialize_None) are skipped, because the reporter does not
         // support recurrent invocations.
-        if (serializeMode != CrashDumpSerializeMode_None)
+        if (serializeMode != CrashDumpSerialize_None)
         {
             PROCCreateInProcCrashReport(signal, siginfo, context, serializeMode);
         }
@@ -2047,7 +2047,7 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, CrashDumpSerializeMode_WaitInfinite);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, CrashDumpSerialize_WaitInfinite);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.

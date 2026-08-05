@@ -122,25 +122,25 @@ VOID PROCNotifyProcessShutdown(bool isExecutingOnAltStack = false);
 
 // Controls how concurrent crash diagnostics -- both the out-of-proc
 // crash dump and the in-proc crash report -- are serialized across threads.
-// Except for CrashDumpSerializeMode_None, only one thread (the "winner") ever
+// Except for CrashDumpSerialize_None, only one thread (the "winner") ever
 // generates diagnostics at a time; the mode names the action a contending
 // thread takes when it finds the gate already held.
 enum CrashDumpSerializeMode
 {
     // Don't serialize at all: no gate, every thread generates crash diagnostics
     // concurrently.
-    CrashDumpSerializeMode_None,
+    CrashDumpSerialize_None,
 
     // On contention, don't wait: if another thread is already generating crash
     // diagnostics, return immediately without generating a (duplicate) dump or
     // report. Otherwise generate it and continue. The gate is re-armed
     // afterwards so a later crash can generate diagnostics again.
-    CrashDumpSerializeMode_NoWait,
+    CrashDumpSerialize_NoWait,
 
     // On contention, wait indefinitely: the winner generates the crash dump or
     // report and then expects to terminate the process; a contending thread waits
     // indefinitely until that happens.
-    CrashDumpSerializeMode_WaitInfinite
+    CrashDumpSerialize_WaitInfinite
 };
 
 /*++
