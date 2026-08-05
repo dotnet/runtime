@@ -45,6 +45,13 @@ if(CLR_CMAKE_TARGET_ARCH_WASM)
     # WebAssembly has no dynamic loading, so a test's native code is linked into a test-specific
     # corerun instead (see src/tests/Common/CLRTest.WasmCorerun.targets).
     set(TEST_LIB_TYPE STATIC)
+
+    # That corerun is only produced for browser CoreCLR. CLR_CMAKE_TARGET_ARCH_WASM is also true
+    # for wasi, and the same tree is configured for the mono browser leg, so gate on both.
+    string(TOLOWER "${CMAKE_BUILD_RUNTIME_FLAVOR}" _TESTS_RUNTIME_FLAVOR)
+    if(CLR_CMAKE_TARGET_BROWSER AND _TESTS_RUNTIME_FLAVOR STREQUAL "coreclr")
+        set(_TESTS_WASM_BUILDS_CORERUN 1)
+    endif()
 else()
     set(TEST_LIB_TYPE SHARED)
 endif()
@@ -71,10 +78,9 @@ MACRO(ADDSUBDIR_REC  curdir)
     ENDFOREACH()
 ENDMACRO()
 
-if(CLR_CMAKE_TARGET_WASI)
-    # Only the browser links the static libraries into a test-specific corerun, so building the
-    # rest of the tree here would cost a full compile of every native test library for nothing.
-    # None of them have been built with the wasi-sdk toolchain.
+if(CLR_CMAKE_TARGET_ARCH_WASM AND NOT _TESTS_WASM_BUILDS_CORERUN)
+    # Nothing links the native test libraries here, so walking the whole tree would cost a full
+    # compile of every one of them for nothing.
     add_subdirectory(JIT/interpreter)
 else()
     ADDSUBDIR_REC("${CMAKE_CURRENT_SOURCE_DIR}")
