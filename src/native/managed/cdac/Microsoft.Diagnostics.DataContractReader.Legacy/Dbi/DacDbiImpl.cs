@@ -4449,7 +4449,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             *pIsValidRef = Interop.BOOL.TRUE;
             *pObjSize = 0;
             *pObjOffsetToVars = 0;
-            *pObjTypeData = default;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             // verify the object reference is readable and has a valid MethodTable
             ITypeHandle? th = null;
