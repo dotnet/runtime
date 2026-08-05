@@ -7,7 +7,7 @@
 # own native library cannot run against the prebuilt corerun.js -- the test's
 # native code, and the call tables generated for it, have to be linked into the
 # host itself. The runtime test build therefore re-links a test-specific corerun
-# outside of CMake (see src/tests/Common/CLRTest.NativeRelink.targets).
+# outside of CMake (see src/tests/Common/CLRTest.WasmCorerun.targets).
 #
 # This module exports everything that re-link needs:
 #   * libcorerun_static.a -- corerun's own objects, so the host does not have to

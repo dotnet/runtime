@@ -130,6 +130,9 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     <Error Condition="'$(_WasmCorerunSkip)' != 'true' and !Exists('$(WasmCorerunKitDir)corerun-link.rsp')"
            Text="The corerun link kit is missing from '$(WasmCorerunKitDir)'. Build the 'clr.hosts' subset for browser-wasm first (the kit is produced by src/coreclr/hosts/corerun/wasm/testkit.cmake)." />
 
+    <!-- '%24' below is an escaped '$': these messages name the property literally and then show its
+         value, so they read as e.g. "$(TasksConfiguration)='Checked'". Writing a bare '$' would
+         expand the property and lose the name. -->
     <Error Condition="'$(_WasmCorerunSkip)' != 'true' and !Exists('$(WasmAppBuilderDir)WasmAppBuilder.dll')"
            Text="WasmAppBuilder.dll was not found at '$(WasmAppBuilderDir)'. It is built by the 'tasks' subset into %24(TasksConfiguration)='$(TasksConfiguration)'; build the repo in that configuration, or pass /p:TasksConfiguration=&lt;config&gt; to the test build." />
 
@@ -195,7 +198,8 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     </PropertyGroup>
 
     <!-- The text round-trips through MSBuild properties and WriteLinesToFile, which would split on
-         ';' and reinterpret '%xx'. testkit.cmake never emits either; fail loudly if that changes. -->
+         ';' and reinterpret '%xx'. '%25' is an escaped '%', so the check below catches any percent
+         escape. testkit.cmake never emits either; fail loudly if that changes. -->
     <Error Condition="$(_WasmCorerunCompileRspText.Contains(';')) or $(_WasmCorerunLinkRspText.Contains(';')) or
                       $(_WasmCorerunCompileRspText.Contains('%25')) or $(_WasmCorerunLinkRspText.Contains('%25'))"
            Text="The corerun link kit response files must not contain ';' or '%25' - see src/coreclr/hosts/corerun/wasm/testkit.cmake." />
