@@ -2777,6 +2777,36 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
 
     const DebugInfo& di = inlineInfo->iciStmt->GetDebugInfo();
 
+    // An exception unwinding out of the inlinee never reaches the logical return below,
+    // so mark the caller as resumed from the inlinee's context restore handler instead.
+    // That handler is the fault half of the try-finally SaveAsyncContexts wrapped the
+    // inlinee's body in, and it survives inlining as its own clause in this method.
+    //
+    // Setting the indicator is all that is needed there: the enclosing frames' restores
+    // are no-ops once their frame has resumed, which is exactly what a normal logical
+    // return would have left behind. The rest of the transition cannot run in a handler
+    // anyway, since getting back onto the caller's continuation context may suspend and
+    // a funclet cannot return a continuation.
+    //
+    // Handlers run innermost first, so a chain of inlined frames propagates the
+    // indicator outwards one frame at a time as the exception unwinds through them.
+    if (InlineeCompiler->asyncContextRestoreEHID != USHRT_MAX)
+    {
+        EHblkDsc* const inlineeContextRestore = ehFindEHblkDscById(InlineeCompiler->asyncContextRestoreEHID);
+        assert((inlineeContextRestore != nullptr) && inlineeContextRestore->HasFaultHandler());
+
+        var_types const indicatorType    = lvaGetDesc(resumedCaller)->TypeGet();
+        GenTree* const  callerResumed    = gtNewLclvNode(resumedCaller, indicatorType);
+        GenTree* const  inlineeDidResume = gtNewLclvNode(resumedInlinee, indicatorType);
+        GenTree* const  merged           = gtNewOperNode(GT_OR, indicatorType, callerResumed, inlineeDidResume);
+        GenTree* const  store            = gtNewStoreLclVarNode(resumedCaller, merged);
+
+        fgInsertStmtAtBeg(inlineeContextRestore->ebdHndBeg, gtNewStmt(store));
+
+        JITDUMP("Marking V%02u as resumed from the inlinee's context restore handler " FMT_BB "\n", resumedCaller,
+                inlineeContextRestore->ebdHndBeg->bbNum);
+    }
+
     // Split so that the transition IR precedes the remainder of the caller's code.
     BasicBlock* const restBlock = fgSplitBlockAtBeginning(joinBlock);
 
