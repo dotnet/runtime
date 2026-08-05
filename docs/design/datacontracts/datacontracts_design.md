@@ -61,7 +61,7 @@ In some cases we allow previously defined contract versions to be amended after 
  - Fix a bug in the documentation
  - Describe additional optional globals, types, fields, or algorithms
 
-When amending a contract version, the change must be compatible - a runtime that advertises it supports context version X must be understandable by a tool implements the original definition of X as well as any amended definition of X.
+When amending a contract version, the change must be compatible: a runtime that advertises it supports contract version X must be understandable by a tool that implements the original definition of X as well as any amended definition of X.
 There is some subjective leeway in making this determination. Generally we expect that additive contract amendments either add brand new APIs that are documented to return a default value/error for some older runtime builds, or
 an existing API might be extended to return additional or more refined information.
 

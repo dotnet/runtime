@@ -346,7 +346,7 @@ The following is an example of an in-memory descriptor that references the above
 
 ```jsonc
 {
-  "version": "2",
+  "version": 2,
   "baseline": "example-64",
   "types":
   {

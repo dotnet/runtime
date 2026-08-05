@@ -73,7 +73,7 @@ a JSON string.
 
 ``` jsonc
 {
-  "version": "2",
+  "version": 2,
   "baseline": "example-64",
   "types":
   {
