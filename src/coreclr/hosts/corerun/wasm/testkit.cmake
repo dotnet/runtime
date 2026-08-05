@@ -92,6 +92,12 @@ function(_corerun_kit_visit target)
         elseif(IS_ABSOLUTE "${dependency}")
             # A prebuilt archive linked by path rather than by target, such as the
             # ICU libraries pulled in from a NuGet package by link_libraries().
+            # Those paths come from MSBuild, so on a Windows host they arrive with
+            # backslashes. install() writes them into cmake_install.cmake as quoted
+            # strings, where a backslash is an escape, so normalize them here.
+            # file(TO_CMAKE_PATH) is not usable: off Windows it also splits on ':'
+            # and would turn a drive letter into a list separator.
+            string(REPLACE "\\" "/" dependency "${dependency}")
             set_property(GLOBAL APPEND PROPERTY _corerun_kit_order "FILE:${dependency}")
         else()
             # A bare library name. CMake renders these as -l<name>; stdc++ arrives
