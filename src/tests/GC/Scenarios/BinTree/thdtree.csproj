@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, UnloadabilityIncompatible -->
+    <!-- Needed for GCStressIncompatible, UnloadabilityIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
 
     <!-- Test needs explicit Main as it uses command-line parameters -->
