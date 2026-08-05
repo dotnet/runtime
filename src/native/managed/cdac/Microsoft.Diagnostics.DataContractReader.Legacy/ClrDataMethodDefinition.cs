@@ -242,7 +242,7 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
 #if DEBUG
         if (_legacyImpl is not null)
         {
-            Debug.ValidateHResult(hr, hrLocal, HResultValidationMode.AllowCdacSuccess);
+            Debug.ValidateHResult(hr, hrLocal);
         }
 #endif
 
