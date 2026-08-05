@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.RemoteExecutor;
@@ -2310,7 +2311,8 @@ namespace System.Tests
                 "Malformed", TimeSpan.FromHours(2), "Malformed", "Malformed");
             string baseSerialized = baseZone.ToSerializedString();
 
-            Assert.Throws<System.Runtime.Serialization.SerializationException>(() => TimeZoneInfo.FromSerializedString(baseSerialized + trailer));
+            Assert.Throws<SerializationException>(() => TimeZoneInfo.FromSerializedString(baseSerialized + trailer));
+            Assert.NotNull(TimeZoneInfo.FromSerializedString(baseSerialized));
         }
 
         [Fact]
