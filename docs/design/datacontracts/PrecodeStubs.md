@@ -18,9 +18,9 @@ This contract provides support for examining [precode](../coreclr/botr/method-de
     TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(TargetCodePointer entryPoint);
 ```
 
-## Version 3
+## Version 1
 
-<!-- BEGIN GENERATED: usage contract=PrecodeStubs version=c3 -->
+<!-- BEGIN GENERATED: usage contract=PrecodeStubs version=c1 -->
 ### Data descriptors used
 
 | Data Descriptor | Field | Type | Meaning |
@@ -55,7 +55,7 @@ _None._
 | Contract Name |
 | --- |
 | `PlatformMetadata` |
-<!-- END GENERATED: usage contract=PrecodeStubs version=c3 -->
+<!-- END GENERATED: usage contract=PrecodeStubs version=c1 -->
 
 The `CodePointerToInstrPointerMask` converts IP values that may include an arm Thumb bit
 (for example, extracted from disassembling a call instruction or from a snapshot of the

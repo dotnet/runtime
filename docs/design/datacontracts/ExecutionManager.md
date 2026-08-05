@@ -148,14 +148,14 @@ public enum CodeKind : uint
 }
 ```
 
-## Version 2
+## Version 1
 
 The execution manager uses two data structures to map the entire target address space to native executable code.
 The [range section map](#rangesectionmap) is used to partition the address space into large chunks which point to range section fragments.  Each chunk is relatively large.  If there is any executable code in the chunk, the chunk will contain one or more range section fragments that cover subsets of the chunk.  Conversely if a massive method is JITed a single range section fragment may span multiple adjacent chunks.
 
 Within a range section fragment, a [nibble map](#nibblemap) structure is used to map arbitrary IP addresses back to the start of the method (and to the code header which immediately preceeeds the entrypoint to the code).
 
-<!-- BEGIN GENERATED: usage contract=ExecutionManager version=c2 -->
+<!-- BEGIN GENERATED: usage contract=ExecutionManager version=c1 -->
 ### Data descriptors used
 
 | Data Descriptor | Field | Type | Meaning |
@@ -272,7 +272,7 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `PrecodeStubs` |
 | `RuntimeInfo` |
 | `RuntimeTypeSystem` |
-<!-- END GENERATED: usage contract=ExecutionManager version=c2 -->
+<!-- END GENERATED: usage contract=ExecutionManager version=c1 -->
 
 Contract constants used:
 | Name | Type | Purpose | Value |

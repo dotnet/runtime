@@ -19,7 +19,7 @@ public unsafe class FunctionTableAccessTests
         foreach (object[] arr in new MockTarget.StdArch())
         {
             MockTarget.Architecture arch = (MockTarget.Architecture)arr[0];
-            yield return new object[] { "c2", arch };
+            yield return new object[] { "c1", arch };
         }
     }
 
