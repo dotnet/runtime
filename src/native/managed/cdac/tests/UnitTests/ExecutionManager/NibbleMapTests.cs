@@ -19,7 +19,7 @@ public class NibbleMapTestsBase
     }
 }
 
-public class NibbleMapLinearLookupTests : NibbleMapTestsBase
+public class NibbleMapHelpersTests
 {
     [Fact]
     public void RoundTripAddressTest()
@@ -59,62 +59,6 @@ public class NibbleMapLinearLookupTests : NibbleMapTestsBase
         }
     }
 
-    [Theory]
-    [ClassData(typeof(MockTarget.StdArch))]
-    public void NibbleMapOneItemLookupOk(MockTarget.Architecture arch)
-    {
-        // SETUP:
-
-        // this is the beginning of the address range where code pointers might point
-        TargetPointer mapBase = new(0x5f5f_0000u);
-        // this is the beginning of the nibble map itself
-        TargetPointer mapStart = new(0x0456_1000u);
-        /// this is how big the address space is that the map covers
-        const uint MapRangeSize = 0x1000;
-        TargetPointer MapEnd = mapBase + MapRangeSize;
-        var builder = new NibbleMapTestBuilder_1(mapBase, MapRangeSize, mapStart, arch);
-
-        // don't put the code too close to the start - the NibbleMap bails if the code is too close to the start of the range
-        TargetCodePointer inputPC = new(mapBase + 0x0200u);
-        uint codeSize = 0x80; // doesn't matter
-        builder.AllocateCodeChunk (inputPC, codeSize);
-        Target target = CreateTarget(builder);
-
-        // TESTCASE:
-
-        NibbleMapLinearLookup map = (NibbleMapLinearLookup)NibbleMapLinearLookup.Create(target);
-        Assert.NotNull(map);
-
-        TargetPointer methodCode = map.FindMethodCode(mapBase, mapStart, inputPC);
-        Assert.Equal(inputPC.Value, methodCode.Value);
-
-        // All addresses in the code chunk should map to the same method
-        for (int i = 0; i < codeSize; i++)
-        {
-            methodCode = map.FindMethodCode(mapBase, mapStart, inputPC.Value + (uint)i);
-            // we should always find the beginning of the method
-            Assert.Equal(inputPC.Value, methodCode.Value);
-        }
-
-        // All addresses before the code chunk should return null
-        for (ulong i = mapBase; i < inputPC; i++)
-        {
-            methodCode = map.FindMethodCode(mapBase, mapStart, i);
-            Assert.Equal(0u, methodCode.Value);
-        }
-
-        methodCode = map.FindMethodCode(mapBase, mapStart, inputPC.Value + 0x100u);
-        Assert.Equal<TargetPointer>(inputPC.Value, methodCode.Value);
-
-        // interestingly, all addresses after the code chunk should also return the beginning of the method
-        // we don't track how long the method is, so we can't tell if we're past the end
-        for (TargetCodePointer ptr = inputPC + (uint)codeSize; ptr < MapEnd; ptr++)
-        {
-            methodCode = map.FindMethodCode(mapBase, mapStart, ptr);
-            Assert.Equal<TargetPointer>(inputPC.Value, methodCode);
-        }
-
-    }
 }
 
 public class NibbleMapConstantLookupTests : NibbleMapTestsBase

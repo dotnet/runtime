@@ -368,14 +368,40 @@ public unsafe partial class TargetTests
 
     // The contracts required by the data-access interfaces, advertised at the versions
     // CoreCLRContracts registers. Mirrors CoreCLRContracts.ValidateForDataAccess.
-    private static readonly string[] s_requiredDataAccessContracts =
-    [
-        "AuxiliarySymbols", "BuiltInCOM", "CodeNotifications", "CodeVersions", "ComWrappers",
-        "ConditionalWeakTable", "DacStreams", "Debugger", "DebugInfo", "EcmaMetadata", "Exception",
-        "ExecutionManager", "FeatureFlags", "GC", "GCInfo", "Loader", "Notifications", "Object",
-        "PlatformMetadata", "PrecodeStubs", "ReJIT", "RuntimeInfo", "RuntimeMutableTypeSystem",
-        "RuntimeTypeSystem", "SHash", "Signature", "StackWalk", "StressLog", "SyncBlock", "Thread",
-    ];
+    private static readonly IReadOnlyDictionary<string, string> s_requiredDataAccessContracts =
+        new Dictionary<string, string>
+        {
+            ["AuxiliarySymbols"] = "c1",
+            ["BuiltInCOM"] = "c1",
+            ["CodeNotifications"] = "c1",
+            ["CodeVersions"] = "c1",
+            ["ComWrappers"] = "c1",
+            ["ConditionalWeakTable"] = "c1",
+            ["DacStreams"] = "c1",
+            ["Debugger"] = "c1",
+            ["DebugInfo"] = "c2",
+            ["EcmaMetadata"] = "c1",
+            ["Exception"] = "c1",
+            ["ExecutionManager"] = "c2",
+            ["FeatureFlags"] = "c1",
+            ["GC"] = "c1",
+            ["GCInfo"] = "c1",
+            ["Loader"] = "c1",
+            ["Notifications"] = "c1",
+            ["Object"] = "c1",
+            ["PlatformMetadata"] = "c1",
+            ["PrecodeStubs"] = "c3",
+            ["ReJIT"] = "c1",
+            ["RuntimeInfo"] = "c1",
+            ["RuntimeMutableTypeSystem"] = "c1",
+            ["RuntimeTypeSystem"] = "c1",
+            ["SHash"] = "c1",
+            ["Signature"] = "c1",
+            ["StackWalk"] = "c1",
+            ["StressLog"] = "c2",
+            ["SyncBlock"] = "c1",
+            ["Thread"] = "c1",
+        };
 
     // A string-valued "OperatingSystem" contract-descriptor global, used to drive the target
     // platform that ValidateForDataAccess reads when deciding which OS-specific contracts to require.
@@ -454,7 +480,10 @@ public unsafe partial class TargetTests
         TargetTestHelpers targetTestHelpers = new(arch);
         ContractDescriptorBuilder builder = new(targetTestHelpers);
         ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
-        descriptorBuilder.SetContracts(s_requiredDataAccessContracts.Where(static c => c != "RuntimeInfo").ToArray());
+        descriptorBuilder.SetContracts(
+            s_requiredDataAccessContracts
+                .Where(static pair => pair.Key != "RuntimeInfo")
+                .ToDictionary(static pair => pair.Key, static pair => pair.Value));
 
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
@@ -475,7 +504,10 @@ public unsafe partial class TargetTests
             TargetTestHelpers targetTestHelpers = new(arch);
             ContractDescriptorBuilder builder = new(targetTestHelpers);
             ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
-            descriptorBuilder.SetContracts(s_requiredDataAccessContracts.Where(c => c != missingContract).ToArray());
+            descriptorBuilder.SetContracts(
+                s_requiredDataAccessContracts
+                    .Where(pair => pair.Key != missingContract)
+                    .ToDictionary(static pair => pair.Key, static pair => pair.Value));
 
             Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
 
@@ -493,7 +525,7 @@ public unsafe partial class TargetTests
         TargetTestHelpers targetTestHelpers = new(arch);
         ContractDescriptorBuilder builder = new(targetTestHelpers);
         ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
-        Dictionary<string, string> contracts = s_requiredDataAccessContracts.ToDictionary(static c => c, static _ => "c1");
+        Dictionary<string, string> contracts = new(s_requiredDataAccessContracts);
         contracts["RuntimeInfo"] = "version-from-the-future";
         descriptorBuilder.SetContracts(contracts);
 
@@ -513,7 +545,7 @@ public unsafe partial class TargetTests
         TargetTestHelpers targetTestHelpers = new(arch);
         ContractDescriptorBuilder builder = new(targetTestHelpers);
         ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
-        Dictionary<string, string> contracts = s_requiredDataAccessContracts.ToDictionary(static c => c, static _ => "c1");
+        Dictionary<string, string> contracts = new(s_requiredDataAccessContracts);
         contracts["RuntimeInfo"] = "deprecated-version";
         descriptorBuilder.SetContracts(contracts);
 
@@ -562,8 +594,12 @@ public unsafe partial class TargetTests
         ContractDescriptorBuilder builder = new(targetTestHelpers);
         ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
 
+        Dictionary<string, string> contracts = new(s_requiredDataAccessContracts)
+        {
+            ["WindowsErrorReporting"] = "c1",
+        };
         descriptorBuilder
-            .SetContracts([.. s_requiredDataAccessContracts, "WindowsErrorReporting"])
+            .SetContracts(contracts)
             .SetGlobals(s_windowsOperatingSystemGlobal);
 
         Assert.True(builder.TryCreateTarget(descriptorBuilder, out ContractDescriptorTarget? target));
