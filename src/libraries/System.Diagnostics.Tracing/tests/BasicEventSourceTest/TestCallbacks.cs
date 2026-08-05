@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.NETCore.Client;
@@ -84,7 +86,7 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Validates that calling Dispose() on an EventSource from within OnEventCommand is rejected.
+        /// Validates that disposing an EventSource from its own OnEventCommand callback is rejected.
         /// </summary>
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "DiagnosticsClient IPC is not available on browser")]
@@ -146,6 +148,66 @@ namespace BasicEventSourceTests
                     {
                         _callbackCompleted.Set();
                     }
+                }
+            }
+        }
+
+        [Fact]
+        public void Test_EventSource_ConcurrentDisposeWaitsForCallback()
+        {
+            using var callbackEntered = new ManualResetEventSlim(false);
+            using var callbackRelease = new ManualResetEventSlim(false);
+            using var disposeStarted = new ManualResetEventSlim(false);
+            using var source = new BlockingCallbackEventSource(callbackEntered, callbackRelease);
+            using var listener = new PassiveListener();
+
+            Task enableTask = Task.Run(() => listener.EnableEvents(source, EventLevel.Verbose));
+            Task? disposeTask = null;
+            try
+            {
+                Assert.True(callbackEntered.Wait(TimeSpan.FromSeconds(30)));
+
+                disposeTask = Task.Run(() =>
+                {
+                    disposeStarted.Set();
+                    source.Dispose();
+                });
+                Assert.True(disposeStarted.Wait(TimeSpan.FromSeconds(30)));
+                Assert.False(disposeTask.Wait(TimeSpan.FromMilliseconds(100)));
+            }
+            finally
+            {
+                callbackRelease.Set();
+                Assert.True(disposeTask is null
+                    ? enableTask.Wait(TimeSpan.FromSeconds(30))
+                    : Task.WaitAll(new[] { enableTask, disposeTask }, TimeSpan.FromSeconds(30)));
+            }
+        }
+
+        private sealed class PassiveListener : EventListener
+        {
+        }
+
+        [EventSource(Name = "TestsEventSourceCallbacks.BlockingCallbackEventSource")]
+        private sealed class BlockingCallbackEventSource : EventSource
+        {
+            private readonly ManualResetEventSlim _callbackEntered;
+            private readonly ManualResetEventSlim _callbackRelease;
+
+            internal BlockingCallbackEventSource(
+                ManualResetEventSlim callbackEntered,
+                ManualResetEventSlim callbackRelease)
+            {
+                _callbackEntered = callbackEntered;
+                _callbackRelease = callbackRelease;
+            }
+
+            protected override void OnEventCommand(EventCommandEventArgs command)
+            {
+                if (command.Command == EventCommand.Enable)
+                {
+                    _callbackEntered.Set();
+                    _callbackRelease.Wait();
                 }
             }
         }
