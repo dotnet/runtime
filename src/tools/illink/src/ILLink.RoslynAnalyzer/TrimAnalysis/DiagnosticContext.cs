@@ -14,9 +14,9 @@ namespace ILLink.Shared.TrimAnalysis
         public readonly Location Location { get; }
 
         private readonly Action<Diagnostic>? _reportDiagnostic;
-        private readonly Compilation? _compilation;
+        private readonly Compilation _compilation;
 
-        public DiagnosticContext(Location location, Action<Diagnostic>? reportDiagnostic, Compilation? compilation = null)
+        public DiagnosticContext(Location location, Action<Diagnostic>? reportDiagnostic, Compilation compilation)
         {
             Location = location;
             _reportDiagnostic = reportDiagnostic;
@@ -87,15 +87,12 @@ namespace ILLink.Shared.TrimAnalysis
 
         private bool TryGetLocalDeclarationLocation(ISymbol symbol, out Location location)
         {
-            if (_compilation is not null)
+            foreach (SyntaxReference syntaxReference in symbol.DeclaringSyntaxReferences)
             {
-                foreach (SyntaxReference syntaxReference in symbol.DeclaringSyntaxReferences)
+                if (_compilation.ContainsSyntaxTree(syntaxReference.SyntaxTree))
                 {
-                    if (_compilation.ContainsSyntaxTree(syntaxReference.SyntaxTree))
-                    {
-                        location = syntaxReference.GetSyntax().GetLocation();
-                        return true;
-                    }
+                    location = syntaxReference.GetSyntax().GetLocation();
+                    return true;
                 }
             }
 
