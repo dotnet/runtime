@@ -252,6 +252,24 @@ public unsafe partial class TargetTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void Create_UnsupportedDataDescriptorVersion_ThrowsFormatException(MockTarget.Architecture arch)
+    {
+        int?[] unsupportedVersions = [null, 0, 1, 3];
+
+        foreach (int? version in unsupportedVersions)
+        {
+            TargetTestHelpers targetTestHelpers = new(arch);
+            ContractDescriptorBuilder builder = new(targetTestHelpers);
+            ContractDescriptorBuilder.DescriptorBuilder descriptorBuilder = new(builder);
+            descriptorBuilder.SetVersion(version);
+
+            FormatException ex = Assert.Throws<FormatException>(() => builder.CreateTarget(descriptorBuilder));
+            Assert.Equal(CdacHResults.CDAC_E_DESCRIPTOR_MALFORMED, ex.HResult);
+        }
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void Create_InvalidMagic_ThrowsDescriptorNotFound(MockTarget.Architecture arch)
     {
         TargetTestHelpers targetTestHelpers = new(arch);
