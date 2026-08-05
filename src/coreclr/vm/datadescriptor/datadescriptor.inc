@@ -1675,6 +1675,8 @@ CDAC_GLOBAL_STRING(Architecture, wasm)
 
 CDAC_GLOBAL_STRING(RuntimeFlavor, Coreclr)
 
+CDAC_GLOBAL_STRING(RuntimeProductVersionString, RuntimeProductVersion)
+
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL(GCInfoVersion, T_UINT32, GCINFO_VERSION)

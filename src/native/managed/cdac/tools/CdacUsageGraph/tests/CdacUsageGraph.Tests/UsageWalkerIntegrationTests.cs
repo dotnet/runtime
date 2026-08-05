@@ -198,6 +198,7 @@ public sealed class UsageWalkerIntegrationTests
     [InlineData("IThread", "c1", "ThreadStore", "pointer", false)]
     [InlineData("IRuntimeInfo", "c1", "Architecture", "string", true)]
     [InlineData("IRuntimeInfo", "c1", "RecommendedReaderVersion", "uint32", true)]
+    [InlineData("IRuntimeInfo", "c1", "RuntimeProductVersionString", "string", false)]
     [InlineData("IStackWalk", "c1", "<FrameType>Identifier", "pointer", true)]
     [InlineData("IDacStreams", "c1", "MiniMetaDataBuffAddress", "pointer", false)]
     [InlineData("IDacStreams", "c1", "MiniMetaDataBuffMaxSize", "pointer", false)]

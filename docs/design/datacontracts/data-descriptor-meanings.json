@@ -819,6 +819,7 @@
     "RCWInterfaceCacheSize": "Number of entries in the inline interface entry cache (INTERFACE_ENTRY_CACHE_SIZE)",
     "RecommendedReaderVersion": "Incremented when an update to the latest contracts is recommended",
     "RuntimeFlavor": "Target runtime flavor",
+    "RuntimeProductVersionString": "Runtime product version, including prerelease information",
     "SizeOfGenericModeBlock": "Size of the GenericModeBlock structure",
     "StaticsPointerMask": "For masking out a bit of DynamicStaticsInfo pointer fields",
     "StressLog": "Pointer to the stress log",
