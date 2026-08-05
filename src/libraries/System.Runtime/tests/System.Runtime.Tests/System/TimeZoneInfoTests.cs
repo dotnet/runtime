@@ -2384,6 +2384,58 @@ namespace System.Tests
             Assert.NotNull(legacyZone);
         }
 
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)] // GetAdjustmentRules() returns NoDaylightTransitions rules verbatim only on Windows; Unix projects them to Windows-shaped rules.
+        public static void ToSerializedString_NoDaylightTransitionsRule_LegacyPortionPreservesMarker()
+        {
+            // A NoDaylightTransitions rule is carried in the full-fidelity trailer, but its legacy portion
+            // must also emit the NoDaylightTransitions marker so a reader that ignores the trailer (for
+            // example an older runtime) reconstructs a Linux-style rule and treats DateStart/DateEnd as an
+            // exact UTC window. Without the marker the same reader parses a Windows-style seasonal rule and
+            // interprets the placeholder transitions as local time, changing the calculated offsets.
+            //
+            // The legacy reader distinguishes the optional BaseUtcOffsetDelta and NoDaylightTransitions
+            // fields positionally, so a zero BaseUtcOffsetDelta must be written before the marker; otherwise
+            // a bare '1' is misread as a one-minute BaseUtcOffsetDelta. This rule uses a zero
+            // BaseUtcOffsetDelta to exercise that positional case.
+            TimeZoneInfo baseZone = TimeZoneInfo.CreateCustomTimeZone(
+                "NoDstMarker", TimeSpan.FromHours(2), "NoDstMarker", "NoDstMarker");
+            string baseSerialized = baseZone.ToSerializedString();
+
+            DateTime dateStart = new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime dateEnd = new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddTicks(-1);
+            TimeSpan daylightDelta = TimeSpan.FromHours(1);
+            int utc = (int)DateTimeKind.Utc;
+
+            // NoDaylightTransitions rule, zero BaseUtcOffsetDelta, default (empty) transitions.
+            string trailer =
+                $"!1;1;{dateStart.Ticks};{utc};{dateEnd.Ticks};{utc};{daylightDelta.Ticks};0;1;D;D;";
+
+            TimeZoneInfo zone = TimeZoneInfo.FromSerializedString(baseSerialized + trailer);
+            string serialized = zone.ToSerializedString();
+            Assert.Contains('!', serialized);
+
+            // Simulate a reader that ignores the full-fidelity trailer: strip it and parse the legacy rules alone.
+            string legacyOnly = serialized.Substring(0, serialized.IndexOf('!'));
+            TimeZoneInfo legacyZone = TimeZoneInfo.FromSerializedString(legacyOnly);
+            TimeZoneInfo.AdjustmentRule legacyRule = Assert.Single(legacyZone.GetAdjustmentRules());
+
+            // The marker must survive in the legacy portion so the rule keeps the UTC-window (Linux) dialect.
+            // Reverting the serializer change drops the marker and this reads false.
+            bool noDaylightTransitions = (bool)legacyRule.GetType()
+                .GetProperty("NoDaylightTransitions", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(legacyRule)!;
+            Assert.True(noDaylightTransitions, "The legacy portion must preserve the NoDaylightTransitions marker.");
+
+            // The marker must land in its own field, not be misread as a one-minute BaseUtcOffsetDelta.
+            Assert.Equal(TimeSpan.Zero, legacyRule.BaseUtcOffsetDelta);
+
+            // The full string (legacy portion plus trailer) must still round trip exactly.
+            TimeZoneInfo roundTripped = TimeZoneInfo.FromSerializedString(serialized);
+            Assert.Equal(zone, roundTripped);
+            Assert.Equal(serialized, roundTripped.ToSerializedString());
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(SystemTimeZonesTestData))]
         public static void BinaryFormatter_RoundTrips(TimeZoneInfo timeZone)

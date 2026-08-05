@@ -98,14 +98,26 @@ namespace System
                     serializedText.Append(Sep);
                     SerializeTransitionTime(legacyEnd, ref serializedText);
                     serializedText.Append(Sep);
-                    if (rule.BaseUtcOffsetDelta != TimeSpan.Zero)
+                    if (rule.BaseUtcOffsetDelta != TimeSpan.Zero || rule.NoDaylightTransitions)
                     {
                         // Serialize it only when BaseUtcOffsetDelta has a value to reduce the impact of adding rule.BaseUtcOffsetDelta.
                         // The legacy format stores this offset in whole minutes and its reader rejects a fractional value, so write a
                         // whole-minute value here. Some Unix rules carry a sub-minute BaseUtcOffsetDelta; its exact value is preserved
                         // in the full-fidelity trailer below, and this whole-minute value keeps the legacy portion parseable for readers
                         // that ignore the trailer.
+                        // It is also written (as 0 when absent) whenever the NoDaylightTransitions marker below is emitted, because the
+                        // legacy reader distinguishes these two optional fields positionally: it consumes a leading digit as the
+                        // BaseUtcOffsetDelta, so without a preceding offset token the '1' marker would be misread as a one-minute offset.
                         serializedText.AppendSpanFormattable(rule.BaseUtcOffsetDelta.Ticks / TimeSpan.TicksPerMinute, format: default, CultureInfo.InvariantCulture);
+                        serializedText.Append(Sep);
+                    }
+                    if (rule.NoDaylightTransitions)
+                    {
+                        // Emit the NoDaylightTransitions marker so a reader that ignores the full-fidelity trailer (for example an
+                        // older runtime) reconstructs a Linux-style rule and treats DateStart/DateEnd as the UTC window. Without it,
+                        // such a reader would parse the rule as a Windows-style seasonal rule and interpret the placeholder transitions
+                        // as local-time transitions, changing the calculated offsets. The exact rule is still preserved in the trailer.
+                        serializedText.Append('1');
                         serializedText.Append(Sep);
                     }
                     serializedText.Append(Rhs);
