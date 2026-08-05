@@ -251,17 +251,17 @@ namespace Microsoft.NET.Sdk.WebAssembly
             }).ToList();
 
             assets.icu = MapGeneralAssets(resources.icu);
-            assets.coreAssembly = MapGeneralAssets(resources.coreAssembly);
-            assets.assembly = MapGeneralAssets(resources.assembly);
+            assets.coreAssembly = MapWebcilAssets(resources.coreAssembly);
+            assets.assembly = MapWebcilAssets(resources.assembly);
             assets.corePdb = MapGeneralAssets(resources.corePdb);
             assets.pdb = MapGeneralAssets(resources.pdb);
-            assets.lazyAssembly = MapGeneralAssets(resources.lazyAssembly);
+            assets.lazyAssembly = MapWebcilAssets(resources.lazyAssembly);
 
             if (resources.satelliteResources != null)
             {
                 assets.satelliteResources = resources.satelliteResources.ToDictionary(
                     kvp => kvp.Key,
-                    kvp => MapGeneralAssets(kvp.Value, variableNamePrefix: kvp.Key, subFolder: kvp.Key)
+                    kvp => MapWebcilAssets(kvp.Value, variableNamePrefix: kvp.Key, subFolder: kvp.Key)
                 );
             }
 
@@ -290,6 +290,27 @@ namespace Microsoft.NET.Sdk.WebAssembly
             List<GeneralAsset>? MapGeneralAssets(Dictionary<string, string>? assets, string? variableNamePrefix = null, string? subFolder = null) => assets?.Select(a =>
             {
                 var asset = new GeneralAsset()
+                {
+                    virtualPath = resources.fingerprinting?[a.Key] ?? a.Key,
+                    name = a.Key,
+                    hash = a.Value,
+                    cache = GetCacheControl(a.Key, resources)
+                };
+
+                if (bundlerFriendly)
+                {
+                    string escaped = EscapeName(string.Concat(subFolder, a.Key));
+                    string subFolderWithSeparator = subFolder != null ? $"{subFolder}/" : string.Empty;
+                    imports.Add($"import {escaped} from \"./{subFolderWithSeparator}{a.Key}\";");
+                    asset.resolvedUrl = EncodeJavascriptVariableInJson(escaped);
+                }
+
+                return asset;
+            }).ToList();
+
+            List<WebcilAsset>? MapWebcilAssets(Dictionary<string, string>? assets, string? variableNamePrefix = null, string? subFolder = null) => assets?.Select(a =>
+            {
+                var asset = new WebcilAsset()
                 {
                     virtualPath = resources.fingerprinting?[a.Key] ?? a.Key,
                     name = a.Key,

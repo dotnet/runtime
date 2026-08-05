@@ -59,18 +59,25 @@ export async function instantiateWebcilModule(webcilPromise: Promise<Response>, 
     const payloadPtr = allocWebcilPayload(payloadSize);
     const imports: WebAssembly.Imports = { webcil: buildWebcilImports(memory, payloadPtr, tableEntries) };
 
-    let instance: WebAssembly.Instance;
-    const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
-    const streamingOk = hasInstantiateStreaming && typeof globalThis.Response === "function" && res instanceof globalThis.Response && contentType === "application/wasm";
-    if (streamingOk) {
-        const instantiated = await WebAssembly.instantiateStreaming(res, imports);
-        instance = instantiated.instance;
-    } else {
-        const data = await res.arrayBuffer();
-        const instantiated = await WebAssembly.instantiate(data, imports);
-        instance = instantiated.instance;
+    try {
+        let instance: WebAssembly.Instance;
+        const contentType = res.headers && res.headers.get ? res.headers.get("Content-Type") : undefined;
+        const streamingOk = hasInstantiateStreaming && typeof globalThis.Response === "function" && res instanceof globalThis.Response && contentType === "application/wasm";
+        if (streamingOk) {
+            const instantiated = await WebAssembly.instantiateStreaming(res, imports);
+            instance = instantiated.instance;
+        } else {
+            const data = await res.arrayBuffer();
+            const instantiated = await WebAssembly.instantiate(data, imports);
+            instance = instantiated.instance;
+        }
+        finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath);
+    } catch (err) {
+        // Instantiation failed after the payload buffer was allocated; free it to avoid leaking
+        // unmanaged memory. (A grown R2R table cannot be shrunk back, but a failed R2R instantiate is fatal.)
+        _ems_._free(payloadPtr as any);
+        throw err;
     }
-    finishWebcilInstance(instance, payloadPtr, payloadSize, tableEntries, virtualPath);
 }
 
 async function checkWebcilResponse(webcilPromise: Promise<Response>, virtualPath: string): Promise<Response> {
