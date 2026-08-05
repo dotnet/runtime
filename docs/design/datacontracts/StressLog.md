@@ -37,9 +37,9 @@ IEnumerable<StressMsgData> GetStressMessages(TargetPointer threadStressLogAddres
 bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 ```
 
-## Version 2
+## Version 1 dependency summary
 
-<!-- BEGIN GENERATED: usage contract=StressLog version=c2 -->
+<!-- BEGIN GENERATED: usage contract=StressLog version=c1 -->
 ### Data descriptors used
 
 | Data Descriptor | Field | Type | Meaning |
@@ -90,7 +90,24 @@ bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 ### Contracts used
 
 _None._
-<!-- END GENERATED: usage contract=StressLog version=c2 -->
+<!-- END GENERATED: usage contract=StressLog version=c1 -->
+
+## Version 2 dependency changes from Version 1
+
+<!-- BEGIN GENERATED: usage contract=StressLog version=c2 diff-from=c1 -->
+### Data descriptor changes from `c1`
+
+_No changes._
+
+### Global variable changes from `c1`
+
+_No changes._
+
+### Contract dependency changes from `c1`
+
+_No changes._
+<!-- END GENERATED: usage contract=StressLog version=c2 diff-from=c1 -->
+
 
 ```csharp
 bool HasStressLog()
@@ -261,9 +278,51 @@ A StressLog message, represented by a `StressMsgData` struct, can be formatted a
 | `%pV` | pointer | A pointer to an unmanaged symbol in the image. |
 | `%pK` | pointer | A pointer to an offset from a symbol in the image, generally representing an IP in a stack trace. |
 
-### Message encoding
+## Version 1
 
-These stress logs are included in any .NET runtime version corresponding to an SOS breaking change version of 4 or a memory-mapped version of `0x00010002`.
+Version 1 stress logs are included in any .NET runtime version corresponding to an SOS breaking change version of 0, 1, 2, or 3, or a memory-mapped version of `0x00010001`.
+SOS breaking change versions of 0, 1, or 2 do not have a module table. SOS breaking change version 3 logs and memory mapped logs have a module table.
+
+These functions implement additional logic required for the shared contract implementation above.
+
+The message header data is stored in the following format:
+
+```c++
+struct
+{
+    uint32_t numberOfArgsLow  : 3;
+    uint32_t formatOffset  : 26;
+    uint32_t numberOfArgsHigh : 3;
+    uint32_t facility;
+    uint64_t timeStamp;
+};
+```
+
+The format offset refers to the offset from the module offset on the stress log.
+
+```csharp
+StressMsgData GetStressMsgData(StressMsg msg)
+{
+    uint pointerSize = Target.GetTypeInfo(DataType.pointer).Size!.Value;
+    uint payload = Target.Read<uint>(msg.Header);
+    int numArgs = (int)((payload & 0x7) | ((payload >> 29) & 0x7));
+    var args = new TargetPointer[numArgs];
+    for (int i = 0; i < numArgs; i++)
+    {
+        args[i] = Target.ReadPointer((ulong)msg.Args + (ulong)(i * pointerSize));
+    }
+
+    return new StressMsgData(
+        Facility: Target.Read<uint>((ulong)msg.Header + 4),
+        FormatString: GetFormatPointer(((payload >> 3) & ((1 << 26) - 1))),
+        Timestamp: Target.Read<ulong>((ulong)msg.Header + 8),
+        Args: args);
+}
+```
+
+## Version 2
+
+Version 2 stress logs are included in any .NET runtime version corresponding to an SOS breaking change version of 4 or a memory-mapped version of `0x00010002`.
 SOS breaking change version 4 stress logs and memory mapped stress logs will have a module table.
 
 These functions implement additional logic required for the shared contract implementation above.

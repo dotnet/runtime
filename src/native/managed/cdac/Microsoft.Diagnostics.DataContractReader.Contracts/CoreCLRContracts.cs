@@ -35,6 +35,7 @@ public static class CoreCLRContracts
         registry.Register<IDebugger>("c1", static t => new Debugger_1(t));
 
         registry.Register<IDebugInfo>("c2", static t => new DebugInfo_2(t));
+        registry.Register<IStressLog>("c1", static t => new StressLog_1(t));
         registry.Register<IStressLog>("c2", static t => new StressLog_2(t));
 
         registry.Register<IThread>("c1", static t => new Thread_1(t));
