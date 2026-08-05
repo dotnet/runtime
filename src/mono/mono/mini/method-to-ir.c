@@ -11978,6 +11978,9 @@ mono_ldptr:
 					MonoInst *method_ins = emit_get_rgctx_virt_method (cfg, -1, constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD);
 					MonoInst *obj = handle_alloc (cfg, ctor_method->klass, FALSE, dele_context_used);
 
+					if (!obj)
+						CHECK_CFG_ERROR;
+
 					if (obj) {
 						/* Set the target field (typically null for a static method) */
 						if (!MONO_INS_IS_PCONST_NULL (target_ins)) {
