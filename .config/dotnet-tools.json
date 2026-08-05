@@ -27,7 +27,7 @@
       ]
     },
     "microsoft.dotnet.helix.jobmonitor": {
-      "version": "11.0.0-beta.26381.1",
+      "version": "11.0.0-beta.26404.8",
       "commands": [
         "dotnet-helix-job-monitor"
       ]
