@@ -42,12 +42,12 @@ namespace ILLink.Shared.TrimAnalysis
             _reportDiagnostic = reportDiagnostic;
             _reflectionAccessAnalyzer = reflectionAccessAnalyzer;
             _owningSymbol = owningSymbol;
-            _diagnosticContext = new(location, typeNameResolver.Compilation, reportDiagnostic);
+            _diagnosticContext = new(location, reportDiagnostic);
         }
 
         public partial bool TryResolveTypeNameAndMark(string typeName, bool needsAssemblyName, out TypeProxy type)
         {
-            var diagnosticContext = new DiagnosticContext(_location, _typeNameResolver.Compilation, _reportDiagnostic);
+            var diagnosticContext = new DiagnosticContext(_location, _reportDiagnostic);
             if (_reflectionAccessAnalyzer.TryResolveTypeNameAndMark(typeName, diagnosticContext, needsAssemblyName, out ITypeSymbol? foundType))
             {
                 if (foundType is INamedTypeSymbol namedType && namedType.IsGenericType)

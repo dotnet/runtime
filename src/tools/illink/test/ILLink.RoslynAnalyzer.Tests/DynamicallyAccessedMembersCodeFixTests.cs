@@ -2922,6 +2922,50 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         }
 
         [Fact]
+        public async Task CodeFix_IL2092_NoCodeFixWhenAttributableMethodIsInAnotherFile()
+        {
+            // The override is annotated and the base is not, so the base method is the one that would need
+            // the attribute. It is declared in a different file than the diagnostic, and the code fix provider
+            // resolves the attached location's span against the syntax root of the document that contains the
+            // diagnostic. Attaching a location from another file would therefore apply the attribute to whatever
+            // happens to sit at that offset in the wrong file, so no code fix is offered at all.
+            var derived = """
+            using System;
+            using System.Diagnostics.CodeAnalysis;
+
+            public class Derived : Base
+            {
+                public override void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t) {}
+            }
+            """;
+            var baseSource = """
+            using System;
+
+            public class Base
+            {
+                public virtual void M(Type t) {}
+            }
+            """;
+
+            var expected = VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
+                .WithSpan("/0/Test0.cs", 6, 108, 6, 109)
+                .WithArguments("t", "Derived.M(Type)", "t", "Base.M(Type)");
+
+            var test = new VerifyCS.Test();
+            test.TestState.Sources.Add(derived);
+            test.TestState.Sources.Add(baseSource);
+            test.FixedState.Sources.Add(derived);
+            test.FixedState.Sources.Add(baseSource);
+            test.TestState.AnalyzerConfigFiles.Add(
+                        ("/.editorconfig", SourceText.From(@$"
+is_global = true
+build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
+            test.ExpectedDiagnostics.Add(expected);
+            test.FixedState.ExpectedDiagnostics.Add(expected);
+            await test.RunAsync();
+        }
+
+        [Fact]
         public async Task CodeFix_IL2093_BothAttributesTurnOffCodeFix()
         {
             var test = $$"""

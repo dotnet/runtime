@@ -14,14 +14,11 @@ namespace ILLink.Shared.TrimAnalysis
     {
         public readonly Location Location { get; }
 
-        private readonly Compilation _compilation;
-
         private readonly Action<Diagnostic>? _reportDiagnostic;
 
-        public DiagnosticContext(Location location, Compilation compilation, Action<Diagnostic>? reportDiagnostic)
+        public DiagnosticContext(Location location, Action<Diagnostic>? reportDiagnostic)
         {
             Location = location;
-            _compilation = compilation;
             _reportDiagnostic = reportDiagnostic;
         }
 
@@ -94,17 +91,9 @@ namespace ILLink.Shared.TrimAnalysis
 
         /// <summary>
         /// Determines whether a code fix location can be attached to a diagnostic for <paramref name="symbol"/>.
-        /// The symbol must be declared in source that is part of the compilation being analyzed, otherwise Roslyn
-        /// rejects the reported diagnostic. Note that a symbol from another project can still have declaring syntax
-        /// references: the IDE models project-to-project references as compilation references, which expose source
-        /// symbols whose syntax trees belong to a different compilation.
         /// </summary>
         private bool CanOfferCodeFixOn(ISymbol symbol)
-        {
-            if (symbol.DeclaringSyntaxReferences.Length == 0)
-                return false;
-
-            return _compilation.ContainsSyntaxTree(symbol.DeclaringSyntaxReferences[0].SyntaxTree);
-        }
+            => symbol.DeclaringSyntaxReferences is [var syntaxReference, ..]
+                && DynamicallyAccessedMembersAnalyzer.CanOfferCodeFixAt(syntaxReference.SyntaxTree, Location);
     }
 }

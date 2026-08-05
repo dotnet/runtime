@@ -53,7 +53,7 @@ namespace ILLink.RoslynAnalyzer
 
                 if (publicParameterlessConstructor != null)
                 {
-                    var diagnosticContext = new DiagnosticContext(location, typeNameResolver.Compilation, reportDiagnostic);
+                    var diagnosticContext = new DiagnosticContext(location, reportDiagnostic);
                     CheckAndCreateRequiresDiagnostic(
                         publicParameterlessConstructor,
                         owningSymbol,
@@ -201,7 +201,6 @@ namespace ILLink.RoslynAnalyzer
 
             var diagnosticContext = new DiagnosticContext(
                 typeSymbol.Locations[0],
-                context.Compilation,
                 context.ReportDiagnostic);
 
             CheckAndCreateRequiresDiagnostic(

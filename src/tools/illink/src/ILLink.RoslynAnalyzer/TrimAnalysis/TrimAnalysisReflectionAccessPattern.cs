@@ -55,7 +55,7 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
                 reflectionAccessAnalyzer.GetDiagnosticsForReflectionAccessToDAMOnMethod(location, ReferencedMethod);
             }
 
-            DiagnosticContext diagnosticContext = new(location, context.Compilation, reportDiagnostic);
+            DiagnosticContext diagnosticContext = new(location, reportDiagnostic);
             foreach (var requiresAnalyzer in context.EnabledRequiresAnalyzers)
                 requiresAnalyzer.CheckAndCreateRequiresDiagnostic(Operation, ReferencedMethod, OwningSymbol, context, FeatureContext, diagnosticContext);
         }
