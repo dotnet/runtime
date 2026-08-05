@@ -9071,7 +9071,6 @@ void CodeGen::genAmd64EmitterUnitTestsApx()
     theEmitter->emitIns_S_I(INS_imul_19, EA_4BYTE, 0, 20, 30);
     theEmitter->emitIns_S_I(INS_imul_09, EA_4BYTE, 0, 20, 30);
     theEmitter->emitIns_R_AR(INS_crc32_apx, EA_4BYTE, REG_R17, REG_EAX, 0x14);
-    theEmitter->emitIns_I(INS_jmpabs, EA_8BYTE, 1234345234ULL); // jump to absolute address in imm64
 }
 
 void CodeGen::genAmd64EmitterUnitTestsAvx10v2()

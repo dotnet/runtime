@@ -1226,8 +1226,7 @@ INST3(setl_apx,         "setzul",           IUM_WR, SSEDBLMAP(4, 0x4C),  BAD_COD
 INST3(setge_apx,        "setzuge",          IUM_WR, SSEDBLMAP(4, 0x4D),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF | Encoding_EVEX_APX_ONLY)
 INST3(setle_apx,        "setzule",          IUM_WR, SSEDBLMAP(4, 0x4E),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF | Encoding_EVEX_APX_ONLY)
 INST3(setg_apx,         "setzug",           IUM_WR, SSEDBLMAP(4, 0x4F),  BAD_CODE, BAD_CODE,                             1C,                2X,         INS_TT_NONE,    Reads_OF | Reads_SF | Reads_ZF | Encoding_EVEX_APX_ONLY)
-INST3(jmpabs,           "jmpabs",           IUM_WR, BAD_CODE          ,  0xA1,     BAD_CODE,                             BRANCH_DIRECT,     2C,         INS_TT_NONE,    Encoding_REX2 | REX_W0)
-#define LAST_APX_INSTRUCTION INS_jmpabs
+#define LAST_APX_INSTRUCTION INS_setg_apx
 #endif // TARGET_AMD64
 
 // Scalar instructions in SSE4.2
