@@ -53,9 +53,8 @@ class AssemblySpec  : public BaseAssemblySpec
   private:
     Assembly  *m_pParentAssembly;
 
-    // The binder to bind against, when the caller has explicitly named the load context to use
-    // (AssemblyLoadContext.LoadFromAssemblyName). When set, it takes precedence over the binder
-    // of the parent assembly.
+    // The initial binder to use when the caller explicitly provided a load context for this load.
+    // When set, it takes precedence over the binder of the parent assembly as the initial binder.
     AssemblyBinder *m_pExplicitBinder;
 
     HRESULT InitializeSpecInternal(mdToken kAssemblyRefOrDef,

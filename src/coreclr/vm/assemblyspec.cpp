@@ -273,8 +273,7 @@ AssemblyBinder* AssemblySpec::GetInitialBinder()
     }
     CONTRACTL_END;
 
-    // If the caller explicitly named the load context to bind against
-    // (AssemblyLoadContext.LoadFromAssemblyName), it wins over the parent's context.
+    // If the caller explicitly named the load context to bind against, it wins over the parent's context.
     if (GetExplicitBinder() != NULL)
         return GetExplicitBinder();
 
