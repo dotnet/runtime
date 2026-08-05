@@ -631,11 +631,11 @@ void LookupHolder::InitializeStatic()
     lookupInit._entryPoint [1]     = 0x48;
     lookupInit._entryPoint [2]     = 0xB8;
     lookupInit._token              = 0xcccccccccccccccc;
-    lookupInit.part2 [0]           = 0x50;  // push rax
-    lookupInit.part2 [1]           = 0x48;  // mov rax, (fallback encoding, overwritten if APX available)
+    lookupInit.part2 [0]           = 0x50;
+    lookupInit.part2 [1]           = 0x48;
     lookupInit.part2 [2]           = 0xB8;
     lookupInit._resolveWorkerAddr  = 0xcccccccccccccccc;
-    lookupInit.part3 [0]           = 0xFF;  // jmp rax (fallback encoding, overwritten if APX available)
+    lookupInit.part3 [0]           = 0xFF;
     lookupInit.part3 [1]           = 0xE0;
 }
 
@@ -644,25 +644,8 @@ void  LookupHolder::Initialize(LookupHolder* pLookupHolderRX, PCODE resolveWorke
     _stub = lookupInit;
 
     //fill in the stub specific fields
-    _stub._token = dispatchToken;
-
-#if defined(TARGET_AMD64)
-    if (IsJmpAbsAvailable())
-    {
-        // Use JMPABS at offset 12-22 (11 bytes) + NOP padding at 23
-        BYTE* pStubRW = reinterpret_cast<BYTE*>(&_stub);
-        BYTE* pStubRX = reinterpret_cast<BYTE*>(&pLookupHolderRX->_stub);
-
-        pStubRW[11] = 0x50;  // push rax
-        emitJmpAbsJump(pStubRX + 12, pStubRW + 12, (LPVOID)resolveWorkerTarget);
-        pStubRW[23] = 0x90;  // NOP padding to maintain 12-byte jump size
-    }
-    else
-#endif
-    {
-        // Fallback: mov rax, imm64; jmp rax
-        _stub._resolveWorkerAddr = (size_t)resolveWorkerTarget;
-    }
+    _stub._token              = dispatchToken;
+    _stub._resolveWorkerAddr  = (size_t) resolveWorkerTarget;
 }
 
 /* Template used to generate the stub.  We generate a stub by allocating a block of
