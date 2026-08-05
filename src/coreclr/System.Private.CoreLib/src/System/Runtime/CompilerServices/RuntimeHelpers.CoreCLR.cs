@@ -237,13 +237,18 @@ namespace System.Runtime.CompilerServices
         /// returned.
         /// </summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int TryGetHashCode(object? o);
+        internal static extern int TryGetHashCode(object o);
 
         [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeSlow")]
         private static partial int GetHashCodeSlow(ObjectHandleOnStack o);
 
         public static int GetHashCode(object? o)
         {
+            if (o is null)
+            {
+                return 0;
+            }
+
             int hashCode = TryGetHashCode(o);
             if (hashCode == 0)
             {
@@ -254,10 +259,6 @@ namespace System.Runtime.CompilerServices
             [MethodImpl(MethodImplOptions.NoInlining)]
             static int GetHashCodeWorker(object? o)
             {
-                if (o is null)
-                {
-                    return 0;
-                }
                 return GetHashCodeSlow(ObjectHandleOnStack.Create(ref o));
             }
         }
