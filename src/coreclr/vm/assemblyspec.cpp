@@ -263,14 +263,13 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     spec.AssemblyNameInit(assemblyNameRef);
 }
 
-AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
+AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly()
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(pDomain != NULL);
     }
     CONTRACTL_END;
 
@@ -297,7 +296,7 @@ AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
         //
         // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding
         // context should be used as the parent assembly binder.
-        pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetDefaultBinder());
+        pParentAssemblyBinder = static_cast<AssemblyBinder*>(AppDomain::GetCurrentDomain()->GetDefaultBinder());
     }
 
     return pParentAssemblyBinder;
@@ -317,7 +316,7 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel,
     CONTRACTL_END;
 
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
-    AppDomain* pDomain = GetAppDomain();
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
 
     Assembly* assembly = pDomain->FindCachedAssembly(this);
     if (assembly)
@@ -579,7 +578,7 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     if (fGetBindingContextFromParent)
     {
-        pBinderForLookup = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
+        pBinderForLookup = pSpec->GetBinderFromParentAssembly();
         pSpec->SetBinder(pBinderForLookup);
     }
 
@@ -992,7 +991,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         pBinderToSaveException = pSpec->GetBinder();
         if (pBinderToSaveException == NULL)
         {
-            pBinderToSaveException = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
+            pBinderToSaveException = pSpec->GetBinderFromParentAssembly();
             key = key ^ (UPTR)pBinderToSaveException;
         }
     }

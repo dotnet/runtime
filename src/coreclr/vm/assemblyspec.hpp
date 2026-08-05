@@ -51,7 +51,6 @@ enum NotificationStatus
 class AssemblySpec  : public BaseAssemblySpec
 {
   private:
-    AppDomain       *m_pAppDomain;
     Assembly  *m_pParentAssembly;
 
     // The binder to bind against, when the caller has explicitly named the load context to use
@@ -72,26 +71,16 @@ class AssemblySpec  : public BaseAssemblySpec
 
   public:
 
-#ifndef DACCESS_COMPILE
-    AssemblySpec() : m_pAppDomain(::GetAppDomain())
+    AssemblySpec()
     {
         LIMITED_METHOD_CONTRACT;
         m_pParentAssembly = NULL;
         m_pExplicitBinder = NULL;
     }
-#endif //!DACCESS_COMPILE
-
-    AssemblySpec(AppDomain *pAppDomain) : m_pAppDomain(pAppDomain)
-    {
-        LIMITED_METHOD_CONTRACT
-        m_pParentAssembly = NULL;
-        m_pExplicitBinder = NULL;
-    }
-
 
     Assembly* GetParentAssembly();
 
-    AssemblyBinder* GetBinderFromParentAssembly(AppDomain *pDomain);
+    AssemblyBinder* GetBinderFromParentAssembly();
 
     bool HasParentAssembly()
     { WRAPPER_NO_CONTRACT; return GetParentAssembly() != NULL; }
@@ -169,7 +158,6 @@ class AssemblySpec  : public BaseAssemblySpec
                       mdAssemblyRef *pToken);
 
     HRESULT Bind(
-        AppDomain* pAppDomain,
         BINDER_SPACE::Assembly** ppAssembly,
         SString* pDiagnosticInfo = NULL);
 
@@ -189,14 +177,6 @@ class AssemblySpec  : public BaseAssemblySpec
 
     // Initialize an AssemblyName managed object based on the specified assemblyName
     static void InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* assemblyName, _Out_ ASSEMBLYNAMEREF* assemblyNameRef);
-
-  public:
-    AppDomain *GetAppDomain()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pAppDomain;
-    }
-
 };
 
 #define INITIAL_ASM_SPEC_HASH_SIZE 7
