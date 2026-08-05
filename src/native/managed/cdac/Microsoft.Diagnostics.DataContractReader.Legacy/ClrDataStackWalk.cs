@@ -15,7 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 {
     private readonly TargetPointer _threadAddr;
-    private readonly uint _flags;
+    private readonly CLRDataStackWalkFlag _flags;
     private readonly Target _target;
     private readonly IXCLRDataStackWalk? _legacyImpl;
     private readonly ThreadData _threadData;
@@ -23,7 +23,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     private bool _currentFrameIsValid;
     private IEnumerator<IStackDataFrameHandle> _dataFrames;
 
-    public ClrDataStackWalk(TargetPointer threadAddr, uint flags, Target target, IXCLRDataStackWalk? legacyImpl)
+    public ClrDataStackWalk(TargetPointer threadAddr, CLRDataStackWalkFlag flags, Target target, IXCLRDataStackWalk? legacyImpl)
     {
         _threadAddr = threadAddr;
         _flags = flags;
@@ -54,10 +54,10 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         return false;
     }
 
-    internal static bool IsLegacyVisible(IStackDataFrameHandle frame)
+    internal bool IsLegacyVisible(IStackDataFrameHandle frame)
         => frame.State is StackWalkState.Frameless
-                       or StackWalkState.Frame
-                       or StackWalkState.SkippedFrame;
+            || ((_flags & CLRDataStackWalkFlag.CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE) != 0
+                && frame.State is StackWalkState.Frame or StackWalkState.SkippedFrame);
 
     private void Reseed(byte[] context, bool isFirst)
     {
