@@ -1825,10 +1825,20 @@ namespace System.Diagnostics.Tracing
                 // Note that we are NOT resetting m_deferredCommands to NULL here,
                 // We are giving for EventHandler<EventCommandEventArgs> that will be attached later
                 EventCommandEventArgs? deferredCommands = m_deferredCommands;
-                while (deferredCommands != null)
+                if (deferredCommands != null && TryEnterCallback())
                 {
-                    DoCommand(deferredCommands);      // This can never throw, it catches them and reports the errors.
-                    deferredCommands = deferredCommands.nextCommand;
+                    try
+                    {
+                        while (deferredCommands != null)
+                        {
+                            DoCommand(deferredCommands);      // This can never throw, it catches them and reports the errors.
+                            deferredCommands = deferredCommands.nextCommand;
+                        }
+                    }
+                    finally
+                    {
+                        ExitCallback();
+                    }
                 }
 
                 if (m_constructionException == null)

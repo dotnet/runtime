@@ -211,5 +211,48 @@ namespace BasicEventSourceTests
                 }
             }
         }
+
+        [Fact]
+        public void Test_EventSource_DisposeInDeferredOnEventCommand_Throws()
+        {
+            DeferredCommandEventSource.s_disposeException = null;
+
+            using var listener = new DeferredCommandListener();
+            using var source = new DeferredCommandEventSource();
+
+            Assert.IsType<InvalidOperationException>(DeferredCommandEventSource.s_disposeException);
+        }
+
+        private sealed class DeferredCommandListener : EventListener
+        {
+            protected override void OnEventSourceCreated(EventSource eventSource)
+            {
+                if (eventSource.Name == "TestsEventSourceCallbacks.DeferredCommandEventSource")
+                {
+                    EnableEvents(eventSource, EventLevel.Verbose);
+                }
+            }
+        }
+
+        [EventSource(Name = "TestsEventSourceCallbacks.DeferredCommandEventSource")]
+        private sealed class DeferredCommandEventSource : EventSource
+        {
+            internal static InvalidOperationException? s_disposeException;
+
+            protected override void OnEventCommand(EventCommandEventArgs command)
+            {
+                if (command.Command == EventCommand.Enable)
+                {
+                    try
+                    {
+                        Dispose();
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        s_disposeException = ex;
+                    }
+                }
+            }
+        }
     }
 }
