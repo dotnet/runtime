@@ -215,14 +215,14 @@ namespace System.Collections
 
             uint i = 0;
 
-            if (BitConverter.IsLittleEndian && values.Length >= Vector256<byte>.Count)
+            if (BitConverter.IsLittleEndian && values.Length >= sizeof(ulong))
             {
                 // Comparing with 1s would get rid of the final negation, however this would not work for some CLR bools
                 // (true for any non-zero values, false for 0) - any values between 2-255 will be interpreted as false.
                 // Instead, we compare with zeroes (== false) then negate the result to ensure compatibility.
                 //
-                // The loops below consume a whole vector of bools per iteration and emit the resulting bit mask into
-                // the destination. Both spans are tested against a constant length and then sliced by that same
+                // Every step below consumes a fixed number of bools and emits the matching bit mask into the
+                // destination. Both spans are tested against a constant length and then sliced by that same
                 // constant so that the JIT can elide all of the bounds checks. The destination test can never fail
                 // before the source one does: 'array' always holds at least one bit per bool in 'values'.
                 ReadOnlySpan<byte> source = MemoryMarshal.AsBytes(values);
@@ -260,6 +260,44 @@ namespace System.Collections
 
                         source = source.Slice(Vector128<byte>.Count * 2);
                         destination = destination.Slice(sizeof(uint));
+                    }
+                }
+
+                // Too few bools are left for another iteration of the loop above. Drain them with progressively
+                // narrower steps, each of which runs at most once, so that the scalar loop below handles at most
+                // seven bools. The whole block is skipped when the loop above consumed everything.
+                if (source.Length >= sizeof(ulong))
+                {
+                    if (Vector512.IsHardwareAccelerated &&
+                        source.Length >= Vector256<byte>.Count && destination.Length >= sizeof(uint))
+                    {
+                        uint isFalse = Vector256.Equals(Vector256.Create(source), Vector256<byte>.Zero).ExtractMostSignificantBits();
+                        BinaryPrimitives.WriteUInt32LittleEndian(destination, ~isFalse);
+
+                        source = source.Slice(Vector256<byte>.Count);
+                        destination = destination.Slice(sizeof(uint));
+                    }
+
+                    if (Vector128.IsHardwareAccelerated)
+                    {
+                        if (source.Length >= Vector128<byte>.Count && destination.Length >= sizeof(ushort))
+                        {
+                            uint isFalse = Vector128.Equals(Vector128.Create(source), Vector128<byte>.Zero).ExtractMostSignificantBits();
+                            BinaryPrimitives.WriteUInt16LittleEndian(destination, (ushort)~isFalse);
+
+                            source = source.Slice(Vector128<byte>.Count);
+                            destination = destination.Slice(sizeof(ushort));
+                        }
+
+                        // A ulong holds exactly eight bools, so the low half of a Vector128 produces the last byte.
+                        if (source.Length >= sizeof(ulong) && destination.Length >= sizeof(byte))
+                        {
+                            ulong eightBools = BinaryPrimitives.ReadUInt64LittleEndian(source);
+                            uint isFalse = Vector128.Equals(Vector128.CreateScalar(eightBools).AsByte(), Vector128<byte>.Zero).ExtractMostSignificantBits();
+                            destination[0] = (byte)~isFalse;
+
+                            source = source.Slice(sizeof(ulong));
+                        }
                     }
                 }
 
