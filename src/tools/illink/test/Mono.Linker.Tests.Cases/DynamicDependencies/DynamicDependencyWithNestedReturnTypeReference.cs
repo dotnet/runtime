@@ -8,7 +8,6 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
 {
-    [IgnoreTestCase("https://github.com/dotnet/runtime/issues/131892", IgnoredBy = Tool.Trimmer)]
     [SetupCompileBefore("library.dll", new[] { "Dependencies/DynamicDependencyWithNestedTypeReferenceLibrary.cs" })]
     public class DynamicDependencyWithNestedReturnTypeReference
     {

@@ -123,19 +123,19 @@ namespace Mono.Linker
             }
         }
 
-        public static TypeReference? GetInflatedDeclaringType(this TypeReference type, ITryResolveMetadata resolver)
+        public static TypeReference? GetInflatedDeclaringType(this TypeReference type)
         {
             if (type.IsGenericParameter || type.IsByReference || type.IsPointer)
                 return null;
 
             if (type is SentinelType sentinelType)
-                return sentinelType.ElementType.GetInflatedDeclaringType(resolver);
+                return sentinelType.ElementType.GetInflatedDeclaringType();
 
             if (type is PinnedType pinnedType)
-                return pinnedType.ElementType.GetInflatedDeclaringType(resolver);
+                return pinnedType.ElementType.GetInflatedDeclaringType();
 
             if (type is RequiredModifierType requiredModifierType)
-                return requiredModifierType.ElementType.GetInflatedDeclaringType(resolver);
+                return requiredModifierType.ElementType.GetInflatedDeclaringType();
 
             if (type is GenericInstanceType genericInstance)
             {
@@ -153,11 +153,7 @@ namespace Mono.Linker
                 return declaringType;
             }
 
-            if (type is TypeDefinition typeDefinition)
-                return typeDefinition.DeclaringType;
-
-            Debug.Assert(false);
-            return null;
+            return type.DeclaringType;
         }
 
         public static TypeReference InflateFrom(this TypeReference typeToInflate, IGenericInstance? maybeGenericInstanceProvider)
