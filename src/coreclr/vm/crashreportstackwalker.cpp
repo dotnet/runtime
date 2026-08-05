@@ -484,10 +484,10 @@ CrashReportGetExceptionForThread(
 
 // SuspendEE acquires the ThreadStore lock and retains it until the matching
 // RestartEE. SysIsSuspended becomes true only after all managed threads have
-// reached safe points. That completed suspension is usable only when the
-// crashing thread holds the lock and therefore controls when RestartEE runs;
-// otherwise, another thread could call RestartEE during enumeration and allow
-// the managed threads being walked to leave their safe points.
+// reached safe points. That completed suspension is usable when the crashing
+// thread holds the lock and therefore controls when RestartEE runs. This covers
+// the Server GC coordinator. A participating parallel Server GC worker may also
+// use the suspension because it executes as part of that blocking collection.
 //
 // Avoid calling SuspendEE when a suspension is already in progress (or unwinding) since
 // that can require waiting for the ThreadStore lock. Note that IsGCInProgress is set
@@ -513,7 +513,11 @@ CrashReportSuspendThreads(Thread* pCrashThread)
     bool crashThreadOwnsSuspension = ThreadStore::HoldingThreadStore(pCrashThread);
     if (ThreadSuspend::SysIsSuspended())
     {
-        return crashThreadOwnsSuspension
+        // Foreground Server GC workers are non-suspendable GC-special threads.
+        // Suspendable background GC threads have an associated EE Thread.
+        bool isServerGCWorker = IsGCSpecialThread() && pCrashThread == nullptr;
+
+        return (crashThreadOwnsSuspension || isServerGCWorker)
             ? CrashReportSuspensionOwnership::Existing
             : CrashReportSuspensionOwnership::Unavailable;
     }
