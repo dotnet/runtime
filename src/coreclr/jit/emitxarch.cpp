@@ -7373,9 +7373,9 @@ void emitter::emitIns_I(instruction ins, emitAttr attr, cnsval_ssize_t val)
     bool           valInByte = ((signed char)val == (target_ssize_t)val);
 
 #ifdef TARGET_AMD64
-    // mov reg, imm64 and jmpabs are the only opcodes which take a full 8 byte immediate
+    // mov reg, imm64 is the only opcode which takes a full 8 byte immediate
     // all other opcodes take a sign-extended 4-byte immediate
-    noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr) || ins == INS_jmpabs);
+    noway_assert(EA_SIZE(attr) < EA_8BYTE || !EA_IS_CNS_RELOC(attr));
 #endif
 
     if (EA_IS_CNS_RELOC(attr))
@@ -17372,10 +17372,6 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
             dst += emitOutputRexOrSimdPrefixIfNeeded(ins, dst, code);
             dst += emitOutputByte(dst, code);
             dst += emitOutputSizeT(dst, val);
-            if (id->idIsCnsReloc())
-            {
-                emitRecordRelocation((void*)(dst - sizeof(size_t)), (void*)(size_t)val, CorInfoReloc::DIRECT);
-            }
         }
         break;
 #endif // TARGET_AMD64
