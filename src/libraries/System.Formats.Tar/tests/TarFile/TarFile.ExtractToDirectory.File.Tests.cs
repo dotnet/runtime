@@ -634,7 +634,7 @@ namespace System.Formats.Tar.Tests
 
             string linkPath = Path.Combine(destDir, "a", "link");
             FileSystemInfo linkInfo = new FileInfo(linkPath);
-            Assert.Equal("../b", linkInfo.LinkTarget);
+            Assert.Equal(NormalizePathSeparators("../b"), linkInfo.LinkTarget);
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
