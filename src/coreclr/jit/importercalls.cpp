@@ -6060,10 +6060,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 //    IR tree to use in place of the call, or nullptr if the jit should treat
 //    the intrinsic call like a normal call.
 //
-// Notes:
-//    Expects the value to rotate and the rotate amount to be on the top of the
-//    stack (rotate amount on top). Pops both when it produces a result.
-//
 GenTree* Compiler::impRotateHelper(var_types baseType, genTreeOps rotateOper)
 {
     assert((rotateOper == GT_ROL) || (rotateOper == GT_ROR));
