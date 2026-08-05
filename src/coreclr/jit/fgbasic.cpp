@@ -2425,7 +2425,12 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
         compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
 
-        if ((retBlocks == 0) && isInlining &&
+        // An async call has an exit that is not a return in the IL: when it suspends it
+        // returns a continuation to its caller, and the async transformation materializes
+        // the check and the resumption point after the call much later. Marking such a
+        // call no-return would let the code after it be trimmed away, leaving the
+        // resumption with nothing to resume into.
+        if ((retBlocks == 0) && isInlining && !impInlineInfo->iciCall->IsAsync() &&
             info.compCompHnd->notifyMethodInfoUsage(impInlineInfo->iciCall->gtCallMethHnd))
         {
             // Mark the call node as "no return" as it can impact caller's code quality.
