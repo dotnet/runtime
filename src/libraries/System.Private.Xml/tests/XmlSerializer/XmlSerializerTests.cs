@@ -2179,6 +2179,63 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
 
 #if !XMLSERIALIZERGENERATORTESTS
     [Fact]
+    public static void XmlBuiltInTypedMembersWithoutAttributesAvoidAttributeEnumeration()
+    {
+        XmlSerializer serializer = new XmlSerializer(typeof(TypeWithBuiltInTypedMembers));
+        string xmlFileContent = WithXmlHeader(@"<TypeWithBuiltInTypedMembers>
+            <StringMember>hello</StringMember>
+            <IntMember>42</IntMember>
+            <NullableIntMember>7</NullableIntMember>
+            <ListMember>
+                <string>a</string>
+                <string>b</string>
+            </ListMember>
+            <ArrayMember>
+                <int>1</int>
+                <int>2</int>
+            </ArrayMember>
+        </TypeWithBuiltInTypedMembers>");
+
+        using var reader = new AttributeTrackingXmlReader(XmlReader.Create(GetStreamFromString(xmlFileContent)));
+        var result = (TypeWithBuiltInTypedMembers)serializer.Deserialize(reader);
+
+        Assert.NotNull(result);
+        foreach (string elementName in new[] { "StringMember", "IntMember", "NullableIntMember", "ListMember", "string", "ArrayMember", "int" })
+        {
+            Assert.Equal(0, reader.GetOperationCount(elementName, nameof(XmlReader.MoveToNextAttribute)));
+        }
+    }
+
+    [Fact]
+    public static void XmlBuiltInTypedMembersWithAttributesWithoutSubscribers()
+    {
+        XmlSerializer serializer = new XmlSerializer(typeof(TypeWithBuiltInTypedMembers));
+        string xmlFileContent = WithXmlHeader(@"<TypeWithBuiltInTypedMembers>
+            <StringMember strayA=""1"">hello</StringMember>
+            <IntMember>42</IntMember>
+            <NullableIntMember>7</NullableIntMember>
+            <ListMember>
+                <string>a</string>
+            </ListMember>
+            <ArrayMember strayB=""2"">
+                <int>1</int>
+            </ArrayMember>
+        </TypeWithBuiltInTypedMembers>");
+
+        using var reader = new AttributeTrackingXmlReader(XmlReader.Create(GetStreamFromString(xmlFileContent)));
+        var result = (TypeWithBuiltInTypedMembers)serializer.Deserialize(reader);
+
+        Assert.NotNull(result);
+#if ReflectionOnly
+        Assert.Equal(0, reader.GetOperationCount("StringMember", nameof(XmlReader.MoveToNextAttribute)));
+        Assert.Equal(0, reader.GetOperationCount("ArrayMember", nameof(XmlReader.MoveToNextAttribute)));
+#else
+        Assert.True(reader.GetOperationCount("StringMember", nameof(XmlReader.MoveToNextAttribute)) > 0);
+        Assert.True(reader.GetOperationCount("ArrayMember", nameof(XmlReader.MoveToNextAttribute)) > 0);
+#endif
+    }
+
+    [Fact]
     public static void XmlUnknownAttributeOnBuiltInTypedMembersTest()
     {
         var unknownAttributes = new List<string>();
@@ -2201,7 +2258,8 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
                 <int>2</int>
             </ArrayMember>
         </TypeWithBuiltInTypedMembers>");
-        var result = (TypeWithBuiltInTypedMembers)serializer.Deserialize(GetStreamFromString(xmlFileContent));
+        using var reader = new AttributeTrackingXmlReader(XmlReader.Create(GetStreamFromString(xmlFileContent)));
+        var result = (TypeWithBuiltInTypedMembers)serializer.Deserialize(reader);
 
         // The stray attributes must not disrupt deserialization of the element content.
         Assert.NotNull(result);
@@ -2220,6 +2278,9 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         {
             Assert.Contains(name, unknownAttributes);
         }
+        Assert.Equal(1, reader.GetAttributeCount("NullableIntMember", "nil", XmlSchema.InstanceNamespace));
+        Assert.True(reader.GetOperationCount("StringMember", nameof(XmlReader.MoveToNextAttribute)) > 0);
+        Assert.True(reader.GetOperationCount("ArrayMember", nameof(XmlReader.MoveToNextAttribute)) > 0);
     }
 
     [Fact]
@@ -2238,7 +2299,8 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
             <ArrayMember xsi:nil=""true"" />
             <ListMember xsi:nil=""true"" />
         </TypeWithNullableBuiltInTypedMembers>");
-        var result = (TypeWithNullableBuiltInTypedMembers)serializer.Deserialize(GetStreamFromString(xmlFileContent));
+        using var reader = new AttributeTrackingXmlReader(XmlReader.Create(GetStreamFromString(xmlFileContent)));
+        var result = (TypeWithNullableBuiltInTypedMembers)serializer.Deserialize(reader);
 
         Assert.NotNull(result);
         Assert.Null(result.StringMember);
@@ -2251,6 +2313,11 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         // serializer, so it must not be surfaced as an unknown attribute. This matches how elements
         // mapped to structs behave, where a nil element returns before its attributes are inspected.
         Assert.Empty(unknownAttributes);
+        foreach (string elementName in new[] { "StringMember", "NullableIntMember", "ArrayMember", "ListMember" })
+        {
+            Assert.Equal(1, reader.GetAttributeCount(elementName, "nil", XmlSchema.InstanceNamespace));
+            Assert.Equal(0, reader.GetOperationCount(elementName, nameof(XmlReader.MoveToNextAttribute)));
+        }
     }
 #endif
 
@@ -2262,6 +2329,116 @@ WithXmlHeader(@"<SimpleType xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instanc
         writer.Flush();
         stream.Position = 0;
         return stream;
+    }
+
+    private sealed class AttributeTrackingXmlReader : XmlReader
+    {
+        private readonly XmlReader _reader;
+        private readonly Dictionary<(string ElementName, string Operation), int> _operationCounts = new();
+        private string? _attributeOwnerName;
+
+        public AttributeTrackingXmlReader(XmlReader reader)
+        {
+            _reader = reader;
+        }
+
+        public int GetOperationCount(string elementName, string operation) =>
+            _operationCounts.TryGetValue((elementName, operation), out int count) ? count : 0;
+
+        public int GetAttributeCount(string elementName, string localName, string namespaceUri) =>
+            GetOperationCount(elementName, $"{nameof(GetAttribute)}:{localName}:{namespaceUri}");
+
+        public override XmlReaderSettings? Settings => _reader.Settings;
+        public override XmlNodeType NodeType => _reader.NodeType;
+        public override string Name => _reader.Name;
+        public override string LocalName => _reader.LocalName;
+        public override string NamespaceURI => _reader.NamespaceURI;
+        public override string Prefix => _reader.Prefix;
+        public override bool HasValue => _reader.HasValue;
+        public override string Value => _reader.Value;
+        public override int Depth => _reader.Depth;
+        public override string BaseURI => _reader.BaseURI;
+        public override bool IsEmptyElement => _reader.IsEmptyElement;
+        public override bool IsDefault => _reader.IsDefault;
+        public override XmlSpace XmlSpace => _reader.XmlSpace;
+        public override string XmlLang => _reader.XmlLang;
+        public override Type ValueType => _reader.ValueType;
+        public override int AttributeCount => _reader.AttributeCount;
+        public override bool EOF => _reader.EOF;
+        public override ReadState ReadState => _reader.ReadState;
+        public override XmlNameTable NameTable => _reader.NameTable;
+        public override bool CanResolveEntity => _reader.CanResolveEntity;
+
+        public override bool HasAttributes
+        {
+            get
+            {
+                RecordElementOperation(nameof(HasAttributes));
+                return _reader.HasAttributes;
+            }
+        }
+
+        public override string? GetAttribute(string name) => _reader.GetAttribute(name);
+
+        public override string? GetAttribute(string name, string? namespaceURI)
+        {
+            RecordElementOperation($"{nameof(GetAttribute)}:{name}:{namespaceURI}");
+            return _reader.GetAttribute(name, namespaceURI);
+        }
+
+        public override string GetAttribute(int i) => _reader.GetAttribute(i);
+        public override bool MoveToAttribute(string name) => _reader.MoveToAttribute(name);
+        public override bool MoveToAttribute(string name, string? ns) => _reader.MoveToAttribute(name, ns);
+        public override void MoveToAttribute(int i) => _reader.MoveToAttribute(i);
+        public override bool MoveToFirstAttribute() => _reader.MoveToFirstAttribute();
+
+        public override bool MoveToNextAttribute()
+        {
+            if (_reader.NodeType == XmlNodeType.Element)
+            {
+                _attributeOwnerName = _reader.LocalName;
+            }
+            RecordOperation(_attributeOwnerName, nameof(MoveToNextAttribute));
+            return _reader.MoveToNextAttribute();
+        }
+
+        public override bool MoveToElement()
+        {
+            RecordOperation(_attributeOwnerName, nameof(MoveToElement));
+            bool result = _reader.MoveToElement();
+            if (result)
+            {
+                _attributeOwnerName = _reader.LocalName;
+            }
+            return result;
+        }
+
+        public override bool Read() => _reader.Read();
+        public override void Close() => _reader.Close();
+        public override void Skip() => _reader.Skip();
+        public override string? LookupNamespace(string prefix) => _reader.LookupNamespace(prefix);
+        public override void ResolveEntity() => _reader.ResolveEntity();
+        public override bool ReadAttributeValue() => _reader.ReadAttributeValue();
+
+        private void RecordElementOperation(string operation)
+        {
+            if (_reader.NodeType == XmlNodeType.Element)
+            {
+                RecordOperation(_reader.LocalName, operation);
+            }
+        }
+
+        private void RecordOperation(string? elementName, string operation)
+        {
+            if (elementName is null)
+            {
+                return;
+            }
+
+            var key = (elementName, operation);
+            _operationCounts.TryGetValue(key, out int count);
+            _operationCounts[key] = count + 1;
+        }
     }
 
     [Fact]
