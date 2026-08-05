@@ -167,12 +167,6 @@ internal sealed class Debugger_1 : IDebugger
     {
         try
         {
-            if (!_target.TryReadGlobalPointer(Constants.Globals.DebuggerPatchTableValid, out TargetPointer? patchTableValidAddress))
-                return _target.Read<byte>(address);
-
-            if (_target.Read<int>(patchTableValidAddress.Value) == 0)
-                return _target.Read<byte>(address);
-
             Dictionary<TargetPointer, byte> patches = GetPatches();
             if (patches.TryGetValue(address, out byte opcode))
             {

@@ -63,7 +63,6 @@ TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byt
 | `CORDebuggerControlFlags` | `pointer` | Pointer to g_CORDebuggerControlFlags |
 | `Debugger` | `pointer` | Address of the pointer to the Debugger instance (&g_pDebugger) |
 | `DebuggerPatchTable` | `pointer` | Address of the pointer to the debugger breakpoint patch table. Only available on AMD64. |
-| `DebuggerPatchTableValid` | `pointer` | Pointer to the flag indicating whether the debugger patch table can be inspected. Only available on AMD64. |
 | `MaxHijackFunctions` | `uint32` | Number of entries in the hijack function array. |
 | `MetadataUpdatesApplied` | `pointer` | Pointer to the g_metadataUpdatesApplied flag |
 
@@ -205,12 +204,6 @@ HijackKind GetHijackKind(TargetCodePointer controlPC)
 
 byte ReadInstructionByte(TargetPointer address)
 {
-    if (!target.TryReadGlobalPointer("DebuggerPatchTableValid", out TargetPointer patchTableValidAddress))
-        return target.Read<byte>(address);
-
-    if (target.Read<int>(patchTableValidAddress) == 0)
-        return target.Read<byte>(address);
-
     Dictionary<TargetPointer, byte> patches =
         cachedPatches ??= ReadActivePatches();
     if (patches.TryGetValue(address, out byte opcode))

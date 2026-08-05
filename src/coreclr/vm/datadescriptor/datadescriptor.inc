@@ -1706,7 +1706,6 @@ CDAC_GLOBAL_POINTER(ThePreStub, &g_cdacThePreStub)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
 #if defined(TARGET_AMD64)
 CDAC_GLOBAL_POINTER(DebuggerPatchTable, cdac_data<DebuggerController>::PatchTable)
-CDAC_GLOBAL_POINTER(DebuggerPatchTableValid, cdac_data<DebuggerController>::PatchTableValid)
 #endif // TARGET_AMD64
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
 CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)

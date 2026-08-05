@@ -528,10 +528,10 @@ public class DebuggerTests
 
     private static TestPlaceholderTarget BuildTargetWithPatchTable(
         MockTarget.Architecture arch,
-        bool patchTableValid,
         (ulong Address, ulong Opcode)[] patches,
         (ulong Address, byte[] Data)? memory = null,
-        bool patchTableValidReadable = true)
+        bool patchTableAvailable = true,
+        bool patchTablePointerReadable = true)
     {
         TargetTestHelpers helpers = new(arch);
         TestPlaceholderTarget.Builder builder = new(arch);
@@ -581,22 +581,17 @@ public class DebuggerTests
                 sizeof(uint)),
             (uint)patches.Length);
 
-        MockMemorySpace.HeapFragment patchTablePointerFragment = allocator.Allocate((ulong)helpers.PointerSize, "g_patches");
-        helpers.WritePointer(patchTablePointerFragment.Data, patchTableFragment.Address);
-
-        ulong patchTableValidAddress = 0x60_0000;
-        if (patchTableValidReadable)
+        ulong patchTablePointerAddress = 0x60_0000;
+        if (patchTablePointerReadable)
         {
-            MockMemorySpace.HeapFragment patchTableValidFragment = allocator.Allocate(sizeof(int), "g_patchTableValid");
-            helpers.Write(
-                patchTableValidFragment.Data.AsSpan(0, sizeof(int)),
-                patchTableValid ? 1 : 0);
-            patchTableValidAddress = patchTableValidFragment.Address;
+            MockMemorySpace.HeapFragment patchTablePointerFragment = allocator.Allocate((ulong)helpers.PointerSize, "g_patches");
+            helpers.WritePointer(
+                patchTablePointerFragment.Data,
+                patchTableAvailable ? patchTableFragment.Address : 0);
+            patchTablePointerAddress = patchTablePointerFragment.Address;
         }
 
-        builder.AddGlobals(
-            (Constants.Globals.DebuggerPatchTable, patchTablePointerFragment.Address),
-            (Constants.Globals.DebuggerPatchTableValid, patchTableValidAddress));
+        builder.AddGlobals((Constants.Globals.DebuggerPatchTable, patchTablePointerAddress));
         builder.AddContract<IDebugger>(version: "c1");
 
         if (memory is not null)
@@ -619,7 +614,6 @@ public class DebuggerTests
         const ulong InstructionAddress = 0x50_0000;
         TestPlaceholderTarget target = BuildTargetWithPatchTable(
             arch,
-            patchTableValid: true,
             [(InstructionAddress, 0x1_C3)]);
 
         byte instruction = target.Contracts.Debugger.ReadInstructionByte(InstructionAddress);
@@ -634,7 +628,6 @@ public class DebuggerTests
         const ulong InstructionAddress = 0x50_0000;
         TestPlaceholderTarget target = BuildTargetWithPatchTable(
             arch,
-            patchTableValid: true,
             [(InstructionAddress + 1, 0x90)],
             (InstructionAddress, [0x41]));
 
@@ -645,14 +638,14 @@ public class DebuggerTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
-    public void ReadInstructionByte_ReadsTargetMemoryWhenPatchTableIsInvalid(MockTarget.Architecture arch)
+    public void ReadInstructionByte_ReadsTargetMemoryWhenPatchTableIsUnavailable(MockTarget.Architecture arch)
     {
         const ulong InstructionAddress = 0x50_0000;
         TestPlaceholderTarget target = BuildTargetWithPatchTable(
             arch,
-            patchTableValid: false,
             [(InstructionAddress, 0x90)],
-            (InstructionAddress, [0xCC]));
+            (InstructionAddress, [0xCC]),
+            patchTableAvailable: false);
 
         byte instruction = target.Contracts.Debugger.ReadInstructionByte(InstructionAddress);
 
@@ -680,10 +673,9 @@ public class DebuggerTests
         const ulong InstructionAddress = 0x50_0000;
         TestPlaceholderTarget target = BuildTargetWithPatchTable(
             arch,
-            patchTableValid: true,
             [(0, 0)],
             (InstructionAddress, [0x41]),
-            patchTableValidReadable: false);
+            patchTablePointerReadable: false);
 
         byte instruction = target.Contracts.Debugger.ReadInstructionByte(InstructionAddress);
 
@@ -697,7 +689,6 @@ public class DebuggerTests
         const ulong InstructionAddress = 0x50_0000;
         TestPlaceholderTarget target = BuildTargetWithPatchTable(
             arch,
-            patchTableValid: true,
             [(InstructionAddress, 0x90)]);
         IDebugger debugger = target.Contracts.Debugger;
 

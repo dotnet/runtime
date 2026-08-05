@@ -1512,7 +1512,6 @@ template<>
 struct cdac_data<DebuggerController>
 {
     static constexpr DebuggerPatchTable **PatchTable = &DebuggerController::g_patches;
-    static constexpr BOOL *PatchTableValid = &DebuggerController::g_patchTableValid;
 };
 
 // this structure stores useful information about single-stepping over a call instruction

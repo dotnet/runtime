@@ -737,7 +737,6 @@
     "DebugDestroyedHandleValue": "Sentinel handle value used for destroyed handles",
     "Debugger": "Address of the pointer to the Debugger instance (&g_pDebugger)",
     "DebuggerPatchTable": "Address of the pointer to the debugger breakpoint patch table. Only available on AMD64.",
-    "DebuggerPatchTableValid": "Pointer to the flag indicating whether the debugger patch table can be inspected. Only available on AMD64.",
     "DispatchThisPtrMask": "Used to mask low bits of CCW pointer to the nearest valid address from which to read a managed object wrapper",
     "DynamicAdaptationMode": "GC heap dynamic adaptation mode. Only available when GCIdentifiers contains dynamic_heap.",
     "EEConfig": "Pointer to the runtime configuration",
