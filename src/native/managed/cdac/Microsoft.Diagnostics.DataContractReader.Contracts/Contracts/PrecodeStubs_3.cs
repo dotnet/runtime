@@ -6,24 +6,28 @@ using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi<Data.StubPrecodeData_2>
+internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi
 {
     public static TargetPointer StubPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
-        // Version 3 of this contract behaves just like version 2
-        return PrecodeStubs_2_Impl.StubPrecode_GetMethodDesc(instrPointer, target, precodeMachineDescriptor);
+        TargetPointer stubPrecodeDataAddress = instrPointer + precodeMachineDescriptor.StubCodePageSize;
+        Data.StubPrecodeData_2 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
+        return stubPrecodeData.SecretParam;
     }
 
     public static TargetPointer FixupPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
-        // Version 3 of this contract behaves just like version 1
-        return PrecodeStubs_1_Impl.FixupPrecode_GetMethodDesc(instrPointer, target, precodeMachineDescriptor);
+        TargetPointer fixupPrecodeDataAddress = instrPointer + precodeMachineDescriptor.StubCodePageSize;
+        Data.FixupPrecodeData fixupPrecodeData = target.ProcessedData.GetOrAdd<Data.FixupPrecodeData>(fixupPrecodeDataAddress);
+        return fixupPrecodeData.MethodDesc;
     }
 
     public static TargetPointer ThisPtrRetBufPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
-        // Version 3 of this contract behaves just like version 2
-        return PrecodeStubs_2_Impl.ThisPtrRetBufPrecode_GetMethodDesc(instrPointer, target, precodeMachineDescriptor);
+        TargetPointer stubPrecodeDataAddress = instrPointer + precodeMachineDescriptor.StubCodePageSize;
+        Data.StubPrecodeData_2 stubPrecodeData = target.ProcessedData.GetOrAdd<Data.StubPrecodeData_2>(stubPrecodeDataAddress);
+        Data.ThisPtrRetBufPrecodeData thisPtrRetBufPrecodeData = target.ProcessedData.GetOrAdd<Data.ThisPtrRetBufPrecodeData>(stubPrecodeData.SecretParam);
+        return thisPtrRetBufPrecodeData.MethodDesc;
     }
 
     public static TargetPointer InterpreterPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
@@ -34,12 +38,6 @@ internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
         Data.InterpMethod interpMethod = target.ProcessedData.GetOrAdd<Data.InterpMethod>(byteCodeStart.Method);
 
         return interpMethod.MethodDesc;
-    }
-
-    public static byte StubPrecodeData_GetType(Data.StubPrecodeData_2 stubPrecodeData)
-    {
-        // Version 3 of this contract behaves just like version 2
-        return PrecodeStubs_2_Impl.StubPrecodeData_GetType(stubPrecodeData);
     }
 
     private static Data.StubPrecodeData_2 GetStubPrecodeData(TargetPointer stubInstrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
@@ -108,7 +106,7 @@ internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi<Data.StubPr
     }
 }
 
-internal sealed class PrecodeStubs_3 : PrecodeStubsCommon<PrecodeStubs_3_Impl, Data.StubPrecodeData_2>
+internal sealed class PrecodeStubs_3 : PrecodeStubsCommon<PrecodeStubs_3_Impl>
 {
     public PrecodeStubs_3(Target target) : base(target) { }
 

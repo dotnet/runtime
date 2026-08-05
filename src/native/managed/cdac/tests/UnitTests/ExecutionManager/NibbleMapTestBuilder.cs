@@ -73,48 +73,6 @@ internal abstract class NibbleMapTestBuilderBase
     public abstract void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize);
 }
 
-internal class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
-{
-    public NibbleMapTestBuilder_1(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
-        : base(mapBase, mapRangeSize, mapStart, arch)
-    {
-    }
-
-    public NibbleMapTestBuilder_1(TargetPointer mapBase, ulong mapRangeSize, MockMemorySpace.BumpAllocator allocator, MockTarget.Architecture arch)
-        : base(mapBase, mapRangeSize, allocator, arch)
-    {
-    }
-
-    public override void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize)
-    {
-        // paraphrased from EEJitManager::NibbleMapSetUnlocked
-        if (codeStart.Value < MapBase.Value)
-        {
-            throw new ArgumentException("Code start address is below the map base");
-        }
-        ulong delta = codeStart.Value - MapBase.Value;
-        ulong pos = Addr2Pos(delta);
-        bool bSet = true;
-        uint value = bSet?Addr2Offs(delta):0;
-
-        uint index = (uint) (pos >>> Log2NibblesPerDword);
-        uint mask = ~(HighestNibbleMask >>> (int)((pos & NibblesPerDwordMask) << Log2NibbleSize));
-
-        value = value << Pos2ShiftCount(pos);
-
-        Span<byte> entry = NibbleMapFragment.Data.AsSpan((int)(index * sizeof(uint)), sizeof(uint));
-        uint oldValue = TestPlaceholderTarget.ReadFromSpan<uint>(entry, Arch.IsLittleEndian);
-
-        if (value != 0 && (oldValue & ~mask) != 0)
-        {
-            throw new InvalidOperationException("Overwriting existing offset");
-        }
-
-        uint newValue = (oldValue & mask) | value;
-        TestPlaceholderTarget.WriteToSpan(newValue, Arch.IsLittleEndian, entry);
-    }
-}
-
 internal class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
 {
     public NibbleMapTestBuilder_2(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)

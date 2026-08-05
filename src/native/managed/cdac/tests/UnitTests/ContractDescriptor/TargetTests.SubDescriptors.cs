@@ -266,8 +266,8 @@ public unsafe partial class TargetTests
     // IGC, each advertised at the version CoreCLRContracts registers.
     private static Dictionary<string, string> RequiredContractsWithoutGC()
         => s_requiredDataAccessContracts
-            .Where(static c => c != "GC")
-            .ToDictionary(static c => c, static c => "c1");
+            .Where(static pair => pair.Key != "GC")
+            .ToDictionary(static pair => pair.Key, static pair => pair.Value);
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]

@@ -16,14 +16,10 @@ public unsafe class FunctionTableAccessTests
 {
     public static IEnumerable<object[]> StdArchAllVersions()
     {
-        const int highestVersion = 2;
         foreach (object[] arr in new MockTarget.StdArch())
         {
             MockTarget.Architecture arch = (MockTarget.Architecture)arr[0];
-            for (int version = 1; version <= highestVersion; version++)
-            {
-                yield return new object[] { $"c{version}", arch };
-            }
+            yield return new object[] { "c2", arch };
         }
     }
 

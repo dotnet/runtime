@@ -102,8 +102,8 @@ public sealed class UsageWalkerIntegrationTests
     }
 
     [Theory]
-    [InlineData("IExecutionManager", "c1", "Data.UnwindInfo", "FunctionLength")]
-    [InlineData("IPrecodeStubs", "c1", "Data.PrecodeMachineDescriptor", "OffsetOfPrecodeType")]
+    [InlineData("IExecutionManager", "c2", "Data.UnwindInfo", "FunctionLength")]
+    [InlineData("IPrecodeStubs", "c3", "Data.PrecodeMachineDescriptor", "StubCodePageSize")]
     [InlineData("IStackWalk", "c1", "Data.ReadyToRunInfo", "ImportSections")]
     [InlineData("IThread", "c1", "Data.Thread", "ThreadHandle")]
     [InlineData("IThread", "c1", "Data.Thread", "DebuggerControlledThreadState")]
@@ -132,7 +132,7 @@ public sealed class UsageWalkerIntegrationTests
 
         Assert.True(DataType(
             built.Value.Graph,
-            new ContractVersion(new ContractInterface("IExecutionManager"), "c1"),
+            new ContractVersion(new ContractInterface("IExecutionManager"), "c2"),
             "Data.R2RExceptionClause").UsesTypeSize);
     }
 
@@ -251,21 +251,16 @@ public sealed class UsageWalkerIntegrationTests
         Assert.Contains("Data.InterpMethod", precodeTypes);
     }
 
-    [Theory]
-    [InlineData("c1", false)]
-    [InlineData("c2", false)]
-    [InlineData("c3", true)]
-    public void ReportsInterpreterPrecodeUsageOnlyForSupportingVersion(
-        string version,
-        bool expected)
+    [Fact]
+    public void ReportsInterpreterPrecodeUsage()
     {
         (UsageGraph Graph, string Root)? built = BuildRealGraph();
         if (built is null) return; // cDAC source not found (running outside the repo)
 
         HashSet<string> dataTypes = DataTypesUsed(
             built.Value.Graph,
-            new ContractVersion(new ContractInterface("IPrecodeStubs"), version));
-        Assert.Equal(expected, dataTypes.Contains("Data.InterpreterPrecodeData"));
+            new ContractVersion(new ContractInterface("IPrecodeStubs"), "c3"));
+        Assert.Contains("Data.InterpreterPrecodeData", dataTypes);
     }
 
     [Fact]
@@ -275,17 +270,17 @@ public sealed class UsageWalkerIntegrationTests
         if (built is null) return; // cDAC source not found (running outside the repo)
         UsageGraph graph = built!.Value.Graph;
 
-        // StressLog_1's SmallStressMessageReader is constructed in a field initializer and reads
+        // StressLog_2's message reader is constructed in a field initializer and reads
         // Data.StressMsg fields; walking initializers is what surfaces these.
         Assert.Contains(
             "Header",
-            DataType(graph, new ContractVersion(new ContractInterface("IStressLog"), "c1"), "Data.StressMsg")
+            DataType(graph, new ContractVersion(new ContractInterface("IStressLog"), "c2"), "Data.StressMsg")
                 .Fields.Select(field => field.Name));
 
         // StressMsgHeader is used only via Data.StressMsgHeader.GetSize.
         Assert.True(DataType(
             graph,
-            new ContractVersion(new ContractInterface("IStressLog"), "c1"),
+            new ContractVersion(new ContractInterface("IStressLog"), "c2"),
             "Data.StressMsgHeader").UsesTypeSize);
     }
 
@@ -302,7 +297,7 @@ public sealed class UsageWalkerIntegrationTests
         // referenced by a concrete-typed read.
         DataTypeUsage r2rUsage = DataType(
             graph,
-            new ContractVersion(new ContractInterface("IExecutionManager"), "c1"),
+            new ContractVersion(new ContractInterface("IExecutionManager"), "c2"),
             "Data.R2RExceptionClause");
         string[] r2rFields = r2rUsage.Fields.Select(field => field.Name).ToArray();
         Assert.Contains("Flags", r2rFields);
@@ -310,7 +305,7 @@ public sealed class UsageWalkerIntegrationTests
 
         string[] eeFields = DataType(
             graph,
-            new ContractVersion(new ContractInterface("IExecutionManager"), "c1"),
+            new ContractVersion(new ContractInterface("IExecutionManager"), "c2"),
             "Data.EEExceptionClause").Fields.Select(field => field.Name).ToArray();
         Assert.Contains("Flags", eeFields);
 
@@ -360,7 +355,6 @@ public sealed class UsageWalkerIntegrationTests
     }
 
     [Theory]
-    [InlineData("IExecutionManager", "c1")]
     [InlineData("IExecutionManager", "c2")]
     public void ExplicitDependenciesIncludeCompositeInfoWhereUsed(string contract, string version)
     {
