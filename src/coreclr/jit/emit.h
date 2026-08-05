@@ -1194,6 +1194,11 @@ protected:
                 case INS_dr:
                 case INS_lcr:
                 case INS_basr:
+                case INS_ar:
+                case INS_sr:
+                case INS_nr:
+                case INS_or:
+                case INS_xr:
                     size = 2;
                     break;
                 case INS_lgfi:

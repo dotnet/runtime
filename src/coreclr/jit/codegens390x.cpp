@@ -4291,6 +4291,26 @@ void CodeGen::genCodeForMulLong(GenTreeOp* mul)
 }
 */
 
+static instruction ins3RegTo2Reg(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_agrk:   return INS_agr;
+        case INS_ark:    return INS_ar;
+        case INS_sgrk:   return INS_sgr;
+        case INS_srk:    return INS_sr;
+        case INS_ngrk:   return INS_ngr;
+        case INS_nrk:    return INS_nr;
+        case INS_ogrk:   return INS_ogr;
+        case INS_ork:    return INS_or;
+        case INS_xgrk:   return INS_xgr;
+        case INS_xrk:    return INS_xr;
+        case INS_msgrkc: return INS_msgr;
+        case INS_mul:    return INS_msr;
+        default:         return INS_invalid;
+    }
+}
+
 //------------------------------------------------------------------------
 // genCodeForBinary: Generate code for many binary arithmetic operators
 // This method is expected to have called genConsumeOperands() before calling it.
@@ -4329,6 +4349,21 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             emit->emitIns_R_R(INS_lgr, EA_PTRSIZE, targetReg, op1->GetRegNum());
         regNumber r = emit->emitInsBinary(ins, emitTypeSize(treeNode), treeNode, op2);
         assert(r == targetReg);
+    }
+    else if (targetReg == op1->GetRegNum() || targetReg == op2->GetRegNum())
+    {
+        assert(targetReg == op1->GetRegNum() || treeNode->OperIsCommutative());
+        regNumber src  = (targetReg == op1->GetRegNum()) ? op2->GetRegNum() : op1->GetRegNum();
+        instruction ins2 = ins3RegTo2Reg(ins);
+        if (ins2 != INS_invalid)
+        {
+            emit->emitIns_R_R(ins2, emitTypeSize(treeNode), targetReg, src);
+        }
+        else
+        {
+            regNumber r = emit->emitInsTernary(ins, emitTypeSize(treeNode), treeNode, op1, op2);
+            assert(r == targetReg);
+        }
     }
     else
     {

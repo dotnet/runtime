@@ -3882,6 +3882,18 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_lgr:
         case INS_lr:
         case INS_vlr:
+        case INS_agr:
+        case INS_ar:
+        case INS_sr:
+        case INS_sgr:
+        case INS_nr:
+        case INS_ngr:
+        case INS_xr:
+        case INS_xgr:
+        case INS_or:
+        case INS_ogr:
+        case INS_msr:
+        case INS_msgr:
             fmt = IF_DR_2E;
             break;
 
@@ -10272,7 +10284,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             S390_RI_a(dst, op, id->idReg1(), imm);
             break;
 
-	case INS_nop:
+	    case INS_nop:
             op = emitInsCode(ins, fmt);
             S390_RR(dst, op, 0, 0);
             break;
@@ -10787,6 +10799,56 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
            op = emitInsCode(ins, fmt);
            S390_RR(dst, op, id->idReg1(), id->idReg2());
            break;
+
+        case INS_xr:
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_or:
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_ogr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_nr:
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_ngr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_msgr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_msr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_agr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_sr:
+            op = emitInsCode(ins, fmt);
+            S390_RR(dst, op, id->idReg1(), id->idReg2());
+            break;
+
+        case INS_sgr:
+            op = emitInsCode(ins, fmt);
+            S390_RRE(dst, op, id->idReg1(), id->idReg2());
+            break;
 
         default:
             _ASSERTE(!"NYI");
