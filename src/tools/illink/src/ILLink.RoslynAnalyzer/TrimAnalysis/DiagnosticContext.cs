@@ -94,6 +94,6 @@ namespace ILLink.Shared.TrimAnalysis
         /// </summary>
         private bool CanOfferCodeFixOn(ISymbol symbol)
             => symbol.DeclaringSyntaxReferences is [var syntaxReference, ..]
-                && DynamicallyAccessedMembersAnalyzer.CanOfferCodeFixAt(syntaxReference.SyntaxTree, Location);
+                && syntaxReference.SyntaxTree == Location.SourceTree;
     }
 }

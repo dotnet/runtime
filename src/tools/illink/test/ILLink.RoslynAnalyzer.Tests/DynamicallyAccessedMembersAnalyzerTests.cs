@@ -406,10 +406,10 @@ namespace ILLink.RoslynAnalyzer.Tests
         }
 
         [Fact]
-        public Task SourceMethodInReferencedProjectParameterDoesNotMatchOverride()
+        public Task AnnotatedOverrideDoesNotOfferCodeFixOnBaseInReferencedProject()
         {
-            // Here the method that would need the attribute applied is the base method, which lives in
-            // the referenced project. The code fix location must be omitted in that case as well.
+            // The analyzer only offers to annotate an unannotated override. It must not offer to change
+            // the base method's contract, regardless of which compilation contains the base method.
             var referencedSource = """
             using System;
 

@@ -210,25 +210,27 @@ namespace ILLink.RoslynAnalyzer
             }
         }
 
-        private static void VerifyDamOnMethodsMatch(SymbolAnalysisContext context, IMethodSymbol overrideMethod, IMethodSymbol baseMethod, ISymbol? origin = null)
+        private static void VerifyDamOnMethodsMatch(
+            SymbolAnalysisContext context,
+            IMethodSymbol overrideMethod,
+            IMethodSymbol baseMethod,
+            ISymbol? origin = null,
+            bool canOfferCodeFixOnOverride = true)
         {
             var overrideMethodReturnAnnotation = FlowAnnotations.GetMethodReturnValueAnnotation(overrideMethod);
             var baseMethodReturnAnnotation = FlowAnnotations.GetMethodReturnValueAnnotation(baseMethod);
             if (overrideMethodReturnAnnotation != baseMethodReturnAnnotation)
             {
-
-                (IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements(overrideMethod,
-                    baseMethod, overrideMethodReturnAnnotation, baseMethodReturnAnnotation);
-
-                Location attributableSymbolLocation = GetPrimaryLocation(attributableMethod.Locations);
+                Location attributableSymbolLocation = GetPrimaryLocation(overrideMethod.Locations);
                 var returnOrigin = origin ??= overrideMethod;
                 Location diagnosticLocation = GetPrimaryLocation(returnOrigin.Locations);
 
-                // code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
-                (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!CanOfferCodeFixAt(attributableSymbolLocation.SourceTree, diagnosticLocation)
-                    || (overrideMethod.TryGetReturnAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
-                        && baseMethod.TryGetReturnAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-                        ) ? (null, null) : CreateArguments(attributableSymbolLocation, missingAttribute);
+                // Only offer to add the missing annotation to the override. Never change the base method's contract.
+                (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!canOfferCodeFixOnOverride
+                    || overrideMethodReturnAnnotation != DynamicallyAccessedMemberTypes.None
+                    || overrideMethod.TryGetReturnAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
+                        ? (null, null)
+                        : CreateArguments(attributableSymbolLocation, baseMethodReturnAnnotation);
 
                 context.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides),
@@ -242,18 +244,16 @@ namespace ILLink.RoslynAnalyzer
                 var overrideParameterAnnotation = FlowAnnotations.GetMethodParameterAnnotation(overrideParam);
                 if (overrideParameterAnnotation != baseParameterAnnotation)
                 {
-                    (IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements(overrideMethod,
-                        baseMethod, overrideParameterAnnotation, baseParameterAnnotation);
-
-                    Location attributableSymbolLocation = attributableMethod.GetParameter(overrideParam.Index).Location!;
+                    Location attributableSymbolLocation = overrideParam.Location!;
                     var parameterOrigin = origin ?? overrideParam.ParameterSymbol;
                     Location diagnosticLocation = GetPrimaryLocation(parameterOrigin?.Locations);
 
-                    // code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
-                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!CanOfferCodeFixAt(attributableSymbolLocation.SourceTree, diagnosticLocation)
-                        || (overrideParam.ParameterSymbol!.TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
-                            && baseParam.ParameterSymbol!.TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-                            ) ? (null, null) : CreateArguments(attributableSymbolLocation, missingAttribute);
+                    // Only offer to add the missing annotation to the override. Never change the base method's contract.
+                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!canOfferCodeFixOnOverride
+                        || overrideParameterAnnotation != DynamicallyAccessedMemberTypes.None
+                        || overrideParam.ParameterSymbol!.TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
+                            ? (null, null)
+                            : CreateArguments(attributableSymbolLocation, baseParameterAnnotation);
 
                     context.ReportDiagnostic(Diagnostic.Create(
                         DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides),
@@ -268,19 +268,17 @@ namespace ILLink.RoslynAnalyzer
                 var overriddenMethodTypeParameterAnnotation = baseMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes();
                 if (methodTypeParameterAnnotation != overriddenMethodTypeParameterAnnotation)
                 {
-
-                    (IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements(overrideMethod, baseMethod, methodTypeParameterAnnotation, overriddenMethodTypeParameterAnnotation);
-
-                    var attributableSymbol = attributableMethod.TypeParameters[i];
+                    var attributableSymbol = overrideMethod.TypeParameters[i];
                     Location attributableSymbolLocation = GetPrimaryLocation(attributableSymbol.Locations);
                     var typeParameterOrigin = origin ?? overrideMethod.TypeParameters[i];
                     Location diagnosticLocation = GetPrimaryLocation(typeParameterOrigin.Locations);
 
-                    // code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
-                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!CanOfferCodeFixAt(attributableSymbolLocation.SourceTree, diagnosticLocation)
-                        || (overrideMethod.TypeParameters[i].TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
-                            && baseMethod.TypeParameters[i].TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-                            ) ? (null, null) : CreateArguments(attributableSymbolLocation, missingAttribute);
+                    // Only offer to add the missing annotation to the override. Never change the base method's contract.
+                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!canOfferCodeFixOnOverride
+                        || methodTypeParameterAnnotation != DynamicallyAccessedMemberTypes.None
+                        || overrideMethod.TypeParameters[i].TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
+                            ? (null, null)
+                            : CreateArguments(attributableSymbolLocation, overriddenMethodTypeParameterAnnotation);
 
                     context.ReportDiagnostic(Diagnostic.Create(
                         DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides),
@@ -319,7 +317,12 @@ namespace ILLink.RoslynAnalyzer
                     if (!implementationType.IsInterface() && !SymbolEqualityComparer.Default.Equals(implementationType, type))
                         origin = type;
 
-                    VerifyDamOnMethodsMatch(context, implementationMethod, interfaceMethod, origin);
+                    VerifyDamOnMethodsMatch(
+                        context,
+                        implementationMethod,
+                        interfaceMethod,
+                        origin,
+                        canOfferCodeFixOnOverride: SymbolEqualityComparer.Default.Equals(implementationType, type));
                 }
             }
         }
@@ -352,38 +355,6 @@ namespace ILLink.RoslynAnalyzer
                 ));
                 return;
             }
-        }
-
-        /// <summary>
-        /// Determines whether a code fix location in <paramref name="syntaxTree"/> can be attached to a diagnostic
-        /// reported at <paramref name="diagnosticLocation"/>.
-        /// <para>
-        /// The code fix provider resolves the attached location's span against the syntax root of the document that
-        /// contains the diagnostic, so the two must be in the same syntax tree. A location in a different tree is at
-        /// best resolved against the wrong file, and at worst belongs to a different compilation entirely, which Roslyn
-        /// rejects outright. Note that a symbol can be declared in source and still belong to another compilation: the
-        /// IDE models project-to-project references as compilation references, which expose source symbols whose
-        /// syntax trees are not part of the compilation being analyzed.
-        /// </para>
-        /// </summary>
-        internal static bool CanOfferCodeFixAt(SyntaxTree? syntaxTree, Location diagnosticLocation)
-            => syntaxTree is not null && syntaxTree == diagnosticLocation.SourceTree;
-
-        private static (IMethodSymbol Method, DynamicallyAccessedMemberTypes Requirements) GetTargetAndRequirements(IMethodSymbol method, IMethodSymbol overriddenMethod, DynamicallyAccessedMemberTypes methodAnnotation, DynamicallyAccessedMemberTypes overriddenMethodAnnotation)
-        {
-            DynamicallyAccessedMemberTypes mismatchedArgument;
-            IMethodSymbol paramNeedsAttributes;
-            if (methodAnnotation == DynamicallyAccessedMemberTypes.None)
-            {
-                mismatchedArgument = overriddenMethodAnnotation;
-                paramNeedsAttributes = method;
-            }
-            else
-            {
-                mismatchedArgument = methodAnnotation;
-                paramNeedsAttributes = overriddenMethod;
-            }
-            return (paramNeedsAttributes, mismatchedArgument);
         }
 
         private static (Location[]?, Dictionary<string, string?>?) CreateArguments(Location attributableSymbolLocation, DynamicallyAccessedMemberTypes mismatchedArgument)
