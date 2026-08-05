@@ -2,6 +2,7 @@
   <PropertyGroup>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
+    <CLRTestTargetUnsupported Condition="'$(FeatureMultithreading)' != 'true'">true</CLRTestTargetUnsupported>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>

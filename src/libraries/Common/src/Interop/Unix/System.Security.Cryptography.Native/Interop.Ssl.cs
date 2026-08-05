@@ -124,6 +124,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetFd")]
         internal static partial int SslSetFd(SafeSslHandle ssl, SafeSocketHandle socket);
 
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetAcceptMovingWriteBuffer")]
+        internal static partial void SslSetAcceptMovingWriteBuffer(SafeSslHandle ssl);
+
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake")]
         internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
 
@@ -582,6 +585,15 @@ namespace Microsoft.Win32.SafeHandles
             // CertVerifyCallback needs the SafeSslHandle to stash a
             // CertificateValidationException; expose it via the options.
             options.SafeSslHandle = handle;
+
+            if (useFd)
+            {
+                // Socket-bound sessions can see SSL_write flush only part of a record and
+                // report WANT_WRITE. The retry hands OpenSSL a span over the same managed
+                // buffer, but the GC may have relocated it in the meantime; without this
+                // mode OpenSSL rejects the changed address with SSL_R_BAD_WRITE_RETRY.
+                Interop.Ssl.SslSetAcceptMovingWriteBuffer(handle);
+            }
 
             if (useFd && !useReplayBio)
             {

@@ -907,6 +907,16 @@ public:
     //------------------------------------------------------------------------
     UINT32 GetMapSize();
 
+    //------------------------------------------------------------------------
+    // Returns a pointer to the raw encoded mapping bytes. Used when reusing the
+    // encoded dispatch map of a generic type's typical instantiation for its
+    // non-typical instantiations (the encoding is instantiation-independent).
+    PTR_BYTE GetEncodedMapData()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return dac_cast<PTR_BYTE>(PTR_HOST_MEMBER_TADDR(DispatchMap, this, m_rgMap));
+    }
+
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
 #endif

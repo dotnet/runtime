@@ -914,9 +914,15 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         // which delegates some operations to it.
         ulong handleLocal = default;
         int hrLocal = default;
+        IXCLRDataAppDomain? legacyAppDomain = appDomain;
+        if (appDomain is ClrDataAppDomain cdacAppDomain)
+        {
+            legacyAppDomain = cdacAppDomain.LegacyImpl;
+        }
+
         if (_legacyProcess is not null)
         {
-            hrLocal = _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, &handleLocal);
+            hrLocal = _legacyProcess.StartEnumMethodInstancesByAddress(address, legacyAppDomain, &handleLocal);
         }
 
         try

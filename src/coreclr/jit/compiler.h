@@ -668,6 +668,9 @@ private:
 
     unsigned char lvIsSpan : 1; // The local is a Span<T>
 
+    unsigned char lvIsVectorPerElementMask           : 1; // The local is known to be a per-element mask
+    unsigned char lvVectorPerElementMaskElemSizeLog2 : 2; // Maximum log2(element size) for the local mask
+
 public:
     union
     {
@@ -868,6 +871,58 @@ public:
     {
         lvIsSpan = value;
     }
+
+#ifdef FEATURE_HW_INTRINSICS
+    // Is this local a per-element mask compatible with the given base type?
+    bool IsVectorPerElementMask(var_types simdBaseType) const
+    {
+        return lvIsVectorPerElementMask &&
+               (GetVectorPerElementMaskElemSizeLog2(simdBaseType) <= lvVectorPerElementMaskElemSizeLog2);
+    }
+
+    // Mark this local as a per-element mask with the given base type.
+    void SetIsVectorPerElementMask(var_types simdBaseType)
+    {
+        unsigned elemSizeLog2 = GetVectorPerElementMaskElemSizeLog2(simdBaseType);
+
+        if (!lvIsVectorPerElementMask || (elemSizeLog2 > lvVectorPerElementMaskElemSizeLog2))
+        {
+            lvVectorPerElementMaskElemSizeLog2 = static_cast<unsigned char>(elemSizeLog2);
+        }
+
+        lvIsVectorPerElementMask = true;
+    }
+
+private:
+    static unsigned GetVectorPerElementMaskElemSizeLog2(var_types simdBaseType)
+    {
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                return 0;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                return 1;
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                return 2;
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                return 3;
+
+            default:
+                unreached();
+        }
+    }
+
+public:
+#endif // FEATURE_HW_INTRINSICS
 
     /////////////////////
 
@@ -4344,6 +4399,7 @@ public:
     unsigned lvaMonAcquired = BAD_VAR_NUM; // boolean variable introduced into in synchronized methods
                              // that tracks whether the lock has been taken
 
+    unsigned lvaResumedIndicator = BAD_VAR_NUM;               // Variable representing "have we resumed?" for async methods
     unsigned lvaAsyncThreadObjectVar = BAD_VAR_NUM;           // Thread local for async methods
     unsigned lvaAsyncExecutionContextVar = BAD_VAR_NUM;       // ExecutionContext local for async methods
     unsigned lvaAsyncSynchronizationContextVar = BAD_VAR_NUM; // SynchronizationContext local for async methods
@@ -4388,9 +4444,6 @@ public:
 
     // Variable representing async continuation argument passed.
     unsigned lvaAsyncContinuationArg = BAD_VAR_NUM;
-
-    // Variable representing "have we resumed?" for async methods
-    unsigned lvaResumedIndicator = BAD_VAR_NUM;
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
@@ -10461,7 +10514,7 @@ public:
         return simdType;
     }
 
-    static var_types getIndexTypeForShuffle(var_types simdBaseType)
+    static var_types getUnsignedSimdBaseType(var_types simdBaseType)
     {
         switch (simdBaseType)
         {
@@ -11766,7 +11819,7 @@ public:
         bool compIsVarArgs             : 1; // Does the method have varargs parameters?
         bool compInitMem               : 1; // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback      : 1; // JIT inserted a profiler Enter callback
-        bool compPublishStubParam      : 1; // EAX captured in prolog will be available through an intrinsic
+        bool compPublishStubParam      : 1; // Hidden argument captured in prolog will be available through an intrinsic
         bool compHasNextCallRetAddr    : 1; // The NextCallReturnAddress intrinsic is used.
         bool compUsesAsyncContinuation : 1; // The AsyncCallContinuation intrinsic is used.
 

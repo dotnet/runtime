@@ -132,7 +132,7 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             if (!_currentFrameIsValid)
                 throw new ArgumentException();
 
-            frame.Interface = new ClrDataFrame(_target, _dataFrames.Current, legacyFrame);
+            frame.Interface = new ClrDataFrame(_target, _threadAddr, _dataFrames.Current, legacyFrame);
         }
         catch (System.Exception ex)
         {
