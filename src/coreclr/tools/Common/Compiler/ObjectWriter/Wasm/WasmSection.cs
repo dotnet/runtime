@@ -8,27 +8,13 @@ using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {
+
     internal class WasmSection
     {
         public WasmSectionType Type { get; }
         public Utf8String Name { get; }
 
-        public Stream Stream
-        {
-            get
-            {
-                Debug.Assert(_dataStream != null, $"{this.Name} has null data stream");
-                return _dataStream;
-            }
-
-            set
-            {
-                Debug.Assert(value != null);
-                _dataStream = value;
-            }
-        }
-
-        private Stream _dataStream;
+        public Stream ContentReadStream { get; set; }
 
         protected virtual int ContentPrefixSize => 0;
 
@@ -43,14 +29,14 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        public virtual int ContentSize => (int)_dataStream.Length + ContentPrefixSize;
+        public virtual int ContentSize => (int)ContentReadStream.Length + ContentPrefixSize;
 
-        public virtual int EncodeSize()
+        public virtual int EncodedSize()
         {
             return HeaderSize + ContentSize;
         }
 
-        public virtual int EncodeHeader(Span<byte> headerBuffer)
+        protected virtual int EncodeHeader(Span<byte> headerBuffer)
         {
             ulong contentSize = (ulong)ContentSize;
             uint encodeLength = DwarfHelper.SizeOfULEB128(contentSize);
@@ -64,7 +50,7 @@ namespace ILCompiler.ObjectWriter
             return 1 + (int)encodeLength;
         }
 
-        public virtual int Emit(Stream outputFileStream)
+        public virtual int EmitToStream(Stream outputFileStream)
         {
             Span<byte> headerBuffer = stackalloc byte[HeaderSize];
             EncodeHeader(headerBuffer);
@@ -79,8 +65,8 @@ namespace ILCompiler.ObjectWriter
                 outputFileStream.Write(contentPrefix);
             }
 
-            Stream.Position = 0;
-            Stream.CopyTo(outputFileStream);
+            ContentReadStream.Position = 0;
+            ContentReadStream.CopyTo(outputFileStream);
 
             return HeaderSize + ContentSize;
         }
@@ -89,7 +75,7 @@ namespace ILCompiler.ObjectWriter
         {
             Type = type;
             Name = name;
-            _dataStream = stream;
+            ContentReadStream = stream;
         }
     }
 
