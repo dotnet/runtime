@@ -2192,6 +2192,21 @@ namespace System.Tests
             Assert.Equal(serialized, deserialized.ToSerializedString());
         }
 
+        private static void AssertAllRulesHaveNoDaylightTransitions(TimeZoneInfo tz, bool expected)
+        {
+            // AdjustmentRule.Equals (used by TimeZoneInfo.Equals) does not compare NoDaylightTransitions, so
+            // asserting zone equality cannot verify that this flag round-trips. Check it directly on the internal
+            // rules, which keep the flag on every platform (GetAdjustmentRules() projects it away on Unix).
+            FieldInfo rulesField = typeof(TimeZoneInfo).GetField("_adjustmentRules", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            PropertyInfo noDstProp = typeof(TimeZoneInfo.AdjustmentRule).GetProperty("NoDaylightTransitions", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var rules = (TimeZoneInfo.AdjustmentRule[])rulesField.GetValue(tz)!;
+            Assert.NotEmpty(rules);
+            foreach (TimeZoneInfo.AdjustmentRule rule in rules)
+            {
+                Assert.Equal(expected, (bool)noDstProp.GetValue(rule)!);
+            }
+        }
+
         [Fact]
         public static void FromSerializedString_FullFidelityRules_RoundTripsExactly()
         {
@@ -2222,6 +2237,7 @@ namespace System.Tests
             TimeZoneInfo roundTripped = TimeZoneInfo.FromSerializedString(reserialized);
             Assert.Equal(zone, roundTripped);
             Assert.Equal(reserialized, roundTripped.ToSerializedString());
+            AssertAllRulesHaveNoDaylightTransitions(roundTripped, expected: true);
         }
 
         [Fact]
@@ -2260,6 +2276,7 @@ namespace System.Tests
             TimeZoneInfo roundTripped = TimeZoneInfo.FromSerializedString(reserialized);
             Assert.Equal(zone, roundTripped);
             Assert.Equal(reserialized, roundTripped.ToSerializedString());
+            AssertAllRulesHaveNoDaylightTransitions(roundTripped, expected: true);
         }
 
         [Fact]
