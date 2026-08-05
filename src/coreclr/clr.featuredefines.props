@@ -1,4 +1,6 @@
 <Project>
+    <Import Project="$(MSBuildThisFileDirectory)clr.featuremultithreading.props" Condition="'$(_ClrFeatureMultithreadingPropsImported)' != 'true'" />
+
     <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>
         <FeaturePerfTracing>true</FeaturePerfTracing>
@@ -7,7 +9,6 @@
         <ProfilingSupportedBuild>true</ProfilingSupportedBuild>
         <FeaturePortableThreadPool>true</FeaturePortableThreadPool>
         <FeaturePortableTimer>true</FeaturePortableTimer>
-        <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsAndroid)' == 'true' OR '$(Configuration)' == 'debug' OR '$(Configuration)' == 'checked'">

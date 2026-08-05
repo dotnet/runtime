@@ -1761,7 +1761,7 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     }
 }
 
-static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase, PRUNTIME_FUNCTION FunctionEntry)
+static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase, PRUNTIME_FUNCTION FunctionEntry, bool callerIsNative = false)
 {
     TADDR sp = *pSP;
     TADDR fp = GetWasmFramePointerFromStackPointer_Internal(sp);
@@ -1774,7 +1774,9 @@ static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase,
     {
         PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
         *pSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
-        *pIP = GetWasmVirtualIPFromStackPointer(*pSP);
+        // A reverse-pinvoke frame's caller is native, not an R2R shadow frame; leave the IP unset so the walk
+        // continues via the Frame chain instead of reading the native caller SP as a shadow frame.
+        *pIP = callerIsNative ? 0 : GetWasmVirtualIPFromStackPointer(*pSP);
     }
 }
 
@@ -1846,7 +1848,23 @@ RtlVirtualUnwind (
     *HandlerData = 0;
     *EstablisherFrame = 0;
 
-    WasmUnwindStackFrameCore((TADDR*)&ContextRecord->InterpreterSP, (TADDR*)&ContextRecord->InterpreterIP, ImageBase, FunctionEntry);
+    // Reverse-pinvoke frames (UnmanagedCallersOnly methods and reverse P/Invoke IL stubs) are called from
+    // native code, so terminate the R2R walk at this boundary. Funclets share their parent method's GC info,
+    // so exclude them: a funclet is entered either from managed code (a non-exceptional finally) or from the
+    // VM's CallFunclet helpers, never directly across the reverse-pinvoke boundary.
+    bool callerIsNative = false;
+    {
+        EECodeInfo codeInfo;
+        codeInfo.Init(static_cast<PCODE>(ControlPc));
+        if (codeInfo.IsValid())
+        {
+            GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+            callerIsNative = (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME) &&
+                             !codeInfo.IsFunclet();
+        }
+    }
+
+    WasmUnwindStackFrameCore((TADDR*)&ContextRecord->InterpreterSP, (TADDR*)&ContextRecord->InterpreterIP, ImageBase, FunctionEntry, callerIsNative);
 
     if (ContextRecord->InterpreterSP != 0)
     {
