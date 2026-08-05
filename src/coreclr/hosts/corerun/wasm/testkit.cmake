@@ -117,10 +117,15 @@ function(corerun_kit_collect_link_inputs target outVar)
     set_property(GLOBAL PROPERTY _corerun_kit_order "")
     _corerun_kit_visit(${target})
     get_property(order GLOBAL PROPERTY _corerun_kit_order)
-    list(REVERSE order)
-    # After reversing, the first occurrence of an input is its most dependent
-    # position, which is the one that has to win.
+    # Deduplicate before reversing. REMOVE_DUPLICATES keeps the first occurrence,
+    # and in a post-order walk that is the deepest one -- it precedes every target
+    # that depends on it, so reversing moves it after all of them, which is where
+    # a single-pass linker needs it. Deduplicating after the reverse would instead
+    # keep the shallowest position and hoist the input ahead of its dependents.
+    # Only FILE: and FLAG: entries can repeat; targets are already unique through
+    # _corerun_kit_visited.
     list(REMOVE_DUPLICATES order)
+    list(REVERSE order)
     set(${outVar} "${order}" PARENT_SCOPE)
 endfunction()
 
