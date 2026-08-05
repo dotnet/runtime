@@ -1622,7 +1622,11 @@ Function:
   called from the unhandled native exception handler.
 
 Return:
-  TRUE - succeeds, FALSE - fails or another thread owns the gate
+  TRUE  - succeeds.
+  FALSE - fails, or another thread already owns the gate under
+          CrashDumpSerialize_NoWait. Under CrashDumpSerialize_WaitInfinite a
+          losing thread blocks indefinitely in TryEnterCrashDumpGate instead
+          of returning.
 --*/
 static BOOL
 PROCCreateCrashDump(
@@ -1824,7 +1828,9 @@ Function:
 
 Return:
   TRUE  - the calling thread owns the gate.
-  FALSE - the calling thread does not own the gate.
+  FALSE - the calling thread does not own the gate. Only returned for
+          CrashDumpSerialize_NoWait; a losing CrashDumpSerialize_WaitInfinite
+          thread blocks indefinitely instead and never returns.
 --*/
 static bool
 TryEnterCrashDumpGate(CrashDumpSerializeMode serializeMode)
@@ -1852,7 +1858,11 @@ TryEnterCrashDumpGate(CrashDumpSerializeMode serializeMode)
         // Wait here until that happens.
         while (true)
         {
+#if HAVE_POLL
+            poll(NULL, 0, INFTIM);
+#else
             pause();
+#endif
         }
     }
 
