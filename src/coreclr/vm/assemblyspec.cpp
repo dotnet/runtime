@@ -263,7 +263,7 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     spec.AssemblyNameInit(assemblyNameRef);
 }
 
-AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly()
+AssemblyBinder* AssemblySpec::GetInitialBinder()
 {
     CONTRACTL
     {
@@ -563,23 +563,18 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
     UPTR key = (UPTR)pSpec->Hash();
 
     AssemblyBinder *pBinderForLookup = NULL;
-    bool fGetBindingContextFromParent = true;
+    bool fUsedInitialBinder = false;
 
     // Check if the AssemblySpec already has specified its binding context. This will be set for assemblies that are
     // attempted to be explicitly bound using AssemblyLoadContext LoadFrom* methods.
     pBinderForLookup = pSpec->GetBinder();
 
-    if (pBinderForLookup != NULL)
+    if (pBinderForLookup == NULL)
     {
-        // We are working with the actual binding context in which the assembly was expected to be loaded.
-        // Thus, we don't need to get it from the parent assembly.
-        fGetBindingContextFromParent = false;
-    }
-
-    if (fGetBindingContextFromParent)
-    {
-        pBinderForLookup = pSpec->GetBinderFromParentAssembly();
+        // No binder is associated with the spec yet, so use the one the bind would start against.
+        pBinderForLookup = pSpec->GetInitialBinder();
         pSpec->SetBinder(pBinderForLookup);
+        fUsedInitialBinder = true;
     }
 
     if (pBinderForLookup)
@@ -589,9 +584,9 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(key, pSpec);
 
-    // Reset the binding context if one was originally never present in the AssemblySpec and we didnt find any entry
+    // Reset the binder if one was originally never present in the AssemblySpec and we didn't find any entry
     // in the cache.
-    if (fGetBindingContextFromParent)
+    if (fUsedInitialBinder)
     {
         if (pEntry == (AssemblyBinding *) INVALIDENTRY)
         {
@@ -991,7 +986,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         pBinderToSaveException = pSpec->GetBinder();
         if (pBinderToSaveException == NULL)
         {
-            pBinderToSaveException = pSpec->GetBinderFromParentAssembly();
+            pBinderToSaveException = pSpec->GetInitialBinder();
             key = key ^ (UPTR)pBinderToSaveException;
         }
     }

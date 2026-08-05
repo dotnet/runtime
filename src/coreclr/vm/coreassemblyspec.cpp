@@ -39,8 +39,7 @@ HRESULT  AssemblySpec::Bind(BINDER_SPACE::Assembly** ppAssembly, SString* pDiagn
 
     HRESULT hr=S_OK;
 
-    // Have a default binding context setup
-    AssemblyBinder *pBinder = GetBinderFromParentAssembly();
+    AssemblyBinder *pBinder = GetInitialBinder();
 
     ReleaseHolder<BINDER_SPACE::Assembly> pPrivAsm;
     _ASSERTE(pBinder != NULL);

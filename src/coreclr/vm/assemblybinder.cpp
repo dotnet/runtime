@@ -213,7 +213,7 @@ void AssemblyBinder::GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ S
 
     AssemblyBinder* binder = spec->GetBinder();
     if (binder == nullptr)
-        binder = spec->GetBinderFromParentAssembly();
+        binder = spec->GetInitialBinder();
 
     binder->GetNameForDiagnostics(alcName);
 }

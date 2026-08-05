@@ -80,7 +80,7 @@ class AssemblySpec  : public BaseAssemblySpec
 
     Assembly* GetParentAssembly();
 
-    AssemblyBinder* GetBinderFromParentAssembly();
+    AssemblyBinder* GetInitialBinder();
 
     bool HasParentAssembly()
     { WRAPPER_NO_CONTRACT; return GetParentAssembly() != NULL; }
