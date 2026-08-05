@@ -63,8 +63,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   -->
   <Target Name="_WasmBuildTestCorerunAfterBuild"
           AfterTargets="Build"
-          Condition="'$(WasmBuildTestCorerun)' == 'true' and
-                     '@(CMakeProjectReference)' != '' and
+          Condition="'@(CMakeProjectReference)' != '' and
                      '$(__CopyNativeTestBinaries)' != '1' and
                      '$(CLRTestBuildAllTargets)' != 'allTargets' and
                      '$(_WillCLRTestProjectBuild)' == 'true'"
@@ -72,8 +71,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
   <Target Name="_WasmBuildTestCorerunAfterCopyNative"
           AfterTargets="CopyAllNativeProjectReferenceBinaries"
-          Condition="'$(WasmBuildTestCorerun)' == 'true' and
-                     '@(CMakeProjectReference)' != '' and
+          Condition="'@(CMakeProjectReference)' != '' and
                      '$(__CopyNativeTestBinaries)' == '1' and
                      '$(CLRTestBuildAllTargets)' != 'allTargets' and
                      '$(_WillCLRTestProjectBuild)' == 'true'"
@@ -112,15 +110,27 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
                                              '$(BuildAsStandalone)' == 'true' or
                                              '$(IsMergedTestRunnerAssembly)' == 'true'">true</_WasmCorerunRunsFromOutDir>
 
+      <_WasmCorerunSkip Condition="'$(WasmBuildTestCorerun)' != 'true'">true</_WasmCorerunSkip>
       <_WasmCorerunSkip Condition="'@(_WasmCorerunTestLib)' == ''">true</_WasmCorerunSkip>
       <_WasmCorerunSkip Condition="'$(_WasmCorerunRunsFromOutDir)' != 'true' and '$(InMergedTestDirectory)' == 'true'">true</_WasmCorerunSkip>
+
+      <_WasmCorerunSkipReason Condition="'$(WasmBuildTestCorerun)' != 'true'">the project opted out with WasmBuildTestCorerun=false</_WasmCorerunSkipReason>
+      <_WasmCorerunSkipReason Condition="'$(_WasmCorerunSkipReason)' == '' and '@(_WasmCorerunTestLib)' == ''">its CMake project produced no static library in $(OutDir)</_WasmCorerunSkipReason>
+      <_WasmCorerunSkipReason Condition="'$(_WasmCorerunSkipReason)' == '' and '$(_WasmCorerunSkip)' == 'true'">it is merged into a wrapper, whose own corerun links its native code</_WasmCorerunSkipReason>
     </PropertyGroup>
 
-    <!-- The test declares a CMake project but it produced no static library for this platform;
-         leave the test on CORE_ROOT/corerun.js. -->
+    <!-- Leave the test on CORE_ROOT/corerun.js. -->
     <Message Condition="'$(_WasmCorerunSkip)' == 'true'"
              Importance="Normal"
-             Text="$(MSBuildProjectName): no native static libraries in $(OutDir), skipping the test-specific corerun." />
+             Text="$(MSBuildProjectName): skipping the test-specific corerun because $(_WasmCorerunSkipReason)." />
+
+    <!-- A corerun left over from an earlier build would still be picked up by the run script, which
+         only checks that the file exists, so the test would silently keep running against a stale
+         host with the previous build's native code linked in. Only a project that owns the
+         directory it runs from may clean it: a test merged into a wrapper shares the wrapper's
+         output directory, and the corerun there belongs to the wrapper. -->
+    <Delete Condition="'$(_WasmCorerunSkip)' == 'true' and '$(_WasmCorerunRunsFromOutDir)' == 'true'"
+            Files="$(OutDir)corerun.js;$(OutDir)corerun.wasm" />
 
     <!-- Anything else that produced a static library but does not run from its own output directory
          would have corerun.js/.wasm dropped and silently fall back to CORE_ROOT. -->
