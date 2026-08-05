@@ -5688,7 +5688,11 @@ void gc_heap::thread_final_regions (bool compact_p)
         else
         {
             start_region = get_free_region (gen_idx);
-            assert (start_region);
+            if (start_region == NULL)
+            {
+                dprintf (REGIONS_LOG, ("OOM creating new gen%d region", gen_idx));
+                FATAL_GC_ERROR();
+            }
             num_new_regions++;
             thread_start_region (gen, start_region);
             dprintf (REGIONS_LOG, ("creating new gen%d at %p", gen_idx, heap_segment_mem (start_region)));

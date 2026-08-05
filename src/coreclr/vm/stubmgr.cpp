@@ -1743,11 +1743,6 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         // This is unmanaged CALLI stub, the argument is the target
         target = (PCODE)arg;
 
-        // The value is mangled on 64-bit
-#ifdef TARGET_AMD64
-        target = target >> 1; // call target is encoded as (addr << 1) | 1
-#endif // TARGET_AMD64
-
         LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Unmanaged CALLI case %p\n", target));
         trace->InitForUnmanaged(target);
     }

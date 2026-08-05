@@ -1057,7 +1057,6 @@ DEFINE_METHOD(BUFFER,               MEMCPY,                 Memcpy,             
 DEFINE_METHOD(BUFFER,               MEMCOPYGC,              BulkMoveWithWriteBarrier, SM_RefByte_RefByte_UIntPtr_RetVoid)
 
 DEFINE_CLASS(STUBHELPERS,           StubHelpers,            StubHelpers)
-DEFINE_METHOD(STUBHELPERS,          GET_DELEGATE_TARGET,    GetDelegateTarget,          SM_Delegate_RetIntPtr)
 #ifdef FEATURE_COMINTEROP
 DEFINE_METHOD(STUBHELPERS,          GET_COM_HR_EXCEPTION_OBJECT,              GetCOMHRExceptionObject,            SM_Int_IntPtr_IntPtr_RetException)
 DEFINE_METHOD(STUBHELPERS,          GET_COM_IP_FROM_RCW,                      GetCOMIPFromRCW,                    SM_Obj_IntPtr_RefIntPtr_RefBool_RetIntPtr)
@@ -1443,13 +1442,8 @@ DEFINE_FIELD_U(_generation, GCMemoryInfoData, generation)
 DEFINE_FIELD_U(_pauseTimePercentage, GCMemoryInfoData, pauseTimePercent)
 DEFINE_FIELD_U(_compacted, GCMemoryInfoData, isCompaction)
 DEFINE_FIELD_U(_concurrent, GCMemoryInfoData, isConcurrent)
-DEFINE_FIELD_U(_pauseDuration0, GCMemoryInfoData, pauseDuration0)
-DEFINE_FIELD_U(_pauseDuration1, GCMemoryInfoData, pauseDuration1)
-DEFINE_FIELD_U(_generationInfo0, GCMemoryInfoData, generationInfo0)
-DEFINE_FIELD_U(_generationInfo1, GCMemoryInfoData, generationInfo1)
-DEFINE_FIELD_U(_generationInfo2, GCMemoryInfoData, generationInfo2)
-DEFINE_FIELD_U(_generationInfo3, GCMemoryInfoData, generationInfo3)
-DEFINE_FIELD_U(_generationInfo4, GCMemoryInfoData, generationInfo4)
+DEFINE_FIELD_U(_pauseDurations, GCMemoryInfoData, pauseDurations)
+DEFINE_FIELD_U(_generationInfo, GCMemoryInfoData, generationInfo)
 
 #undef DEFINE_CLASS
 #undef DEFINE_METHOD

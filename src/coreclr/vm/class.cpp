@@ -2865,11 +2865,6 @@ CorClassIfaceAttr MethodTable::GetComClassInterfaceType()
     if (HasGenericClassInstantiationInHierarchy())
         return clsIfNone;
 
-    // If the class does not support IClassX,
-    // then it is considered ClassInterfaceType.None unless explicitly overridden by the CA
-    if (!ClassSupportsIClassX(this))
-        return clsIfNone;
-
     return ReadClassInterfaceTypeCustomAttribute(TypeHandle(this));
 }
 #endif // FEATURE_COMINTEROP

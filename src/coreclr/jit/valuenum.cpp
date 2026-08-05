@@ -10060,6 +10060,15 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
     bool       isScalar = false;
     genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
 
+#if defined(TARGET_ARM64)
+    // TODO-Arm64: Remove this once all AdvSimd compare intrinsics are annotated with
+    // HW_Flag_ReturnsPerElementMask.
+    if (!isScalar && GenTree::OperIsCmpCompare(oper))
+    {
+        return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
+    }
+#endif // TARGET_ARM64
+
     switch (oper)
     {
         case GT_AND:

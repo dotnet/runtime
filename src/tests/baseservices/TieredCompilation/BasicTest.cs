@@ -13,6 +13,9 @@ public static class BasicTest
     [ActiveIssue("missing assembly", TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
     [ActiveIssue("No crossgen folder under Core_Root", TestPlatforms.Android)]
     [ActiveIssue("missing assembly", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+#if BROWSER_WASM_COMPOSITE_R2R_TEST
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/131767", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
+#endif
     [Fact]
     public static void TestEntryPoint()
     {
