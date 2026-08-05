@@ -2208,6 +2208,34 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void FullFidelitySerialization_RuleAndTransitionFields_AreKnown()
+        {
+            // The full-fidelity trailer serializes every instance field of AdjustmentRule and TransitionTime.
+            // If a field is added or removed, update SerializeFullFidelityRules / GetNextFullFidelityRules (and
+            // the transition serialization), bump FullFidelityRulesVersion, and then update the expected sets
+            // below. This guard exists so the format is not silently left incomplete when the types change.
+            AssertInstanceFieldNames(typeof(TimeZoneInfo.AdjustmentRule), new[]
+            {
+                "_dateStart", "_dateEnd", "_daylightDelta", "_daylightTransitionStart",
+                "_daylightTransitionEnd", "_baseUtcOffsetDelta", "_noDaylightTransitions",
+            });
+            AssertInstanceFieldNames(typeof(TimeZoneInfo.TransitionTime), new[]
+            {
+                "_timeOfDay", "_month", "_week", "_day", "_dayOfWeek", "_isFixedDateRule",
+            });
+        }
+
+        private static void AssertInstanceFieldNames(Type type, string[] expected)
+        {
+            string[] actual = type
+                .GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public)
+                .Select(f => f.Name)
+                .OrderBy(n => n, StringComparer.Ordinal)
+                .ToArray();
+            Assert.Equal(expected.OrderBy(n => n, StringComparer.Ordinal).ToArray(), actual);
+        }
+
+        [Fact]
         public static void FromSerializedString_FullFidelityRules_RoundTripsExactly()
         {
             // Native (Unix) time zones store rules that the Windows-shaped public projection cannot
