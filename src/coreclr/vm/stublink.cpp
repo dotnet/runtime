@@ -553,7 +553,7 @@ Stub *StubLinker::Link(LoaderAllocator *pLoaderAllocator, DWORD flags, const cha
 
     StubHolder<Stub> pStub{ Stub::NewStub(
                 pLoaderAllocator,
-                ((flags & NEWSTUB_FL_SHUFFLE_THUNK) != 0) ? STUB_CODE_BLOCK_SHUFFLE_THUNK : STUB_CODE_BLOCK_STUBLINK,
+                ((flags & NEWSTUB_FL_SHUFFLE_THUNK) != 0) ? STUB_CODE_BLOCK_SHUFFLE_THUNK : STUB_CODE_BLOCK_WRAPPER_STUB,
                 size,
                 flags) };
     ASSERT(pStub != NULL);

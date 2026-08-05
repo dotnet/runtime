@@ -1260,7 +1260,7 @@ BOOL StubLinkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
     StubCodeBlockKind kind = RangeSectionStubManager::GetStubKind(stubStartAddress);
-    return (kind == STUB_CODE_BLOCK_STUBLINK) || (kind == STUB_CODE_BLOCK_SHUFFLE_THUNK);
+    return (kind == STUB_CODE_BLOCK_WRAPPER_STUB) || (kind == STUB_CODE_BLOCK_SHUFFLE_THUNK);
 }
 
 BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
@@ -1438,7 +1438,7 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
-    case STUB_CODE_BLOCK_STUBLINK:
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
     case STUB_CODE_BLOCK_SHUFFLE_THUNK:
 #ifdef FEATURE_TIERED_COMPILATION
     case STUB_CODE_BLOCK_CALLCOUNTING:
@@ -1479,7 +1479,7 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
         return TRUE;
     }
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
-    case STUB_CODE_BLOCK_STUBLINK:
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
     case STUB_CODE_BLOCK_SHUFFLE_THUNK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
 #ifdef FEATURE_TIERED_COMPILATION
@@ -1524,8 +1524,8 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
         return W("JumpStub");
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return W("MethodCallThunk");
-    case STUB_CODE_BLOCK_STUBLINK:
-        return W("StubLinkStub");
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
+        return W("WrapperStub");
     case STUB_CODE_BLOCK_SHUFFLE_THUNK:
         return W("ShuffleThunk");
 #ifdef FEATURE_TIERED_COMPILATION

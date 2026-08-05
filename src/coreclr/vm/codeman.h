@@ -102,8 +102,6 @@ enum StubCodeBlockKind : int
     STUB_CODE_BLOCK_DYNAMICHELPER = 3,
     STUB_CODE_BLOCK_STUBPRECODE = 4,
     STUB_CODE_BLOCK_FIXUPPRECODE = 5,
-    STUB_CODE_BLOCK_STUBLINK = 0xB,
-    STUB_CODE_BLOCK_SHUFFLE_THUNK = 0xC,
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     STUB_CODE_BLOCK_VSD_DISPATCH_STUB = 6,
     STUB_CODE_BLOCK_VSD_RESOLVE_STUB = 7,
@@ -113,6 +111,8 @@ enum StubCodeBlockKind : int
 #ifdef FEATURE_TIERED_COMPILATION
     STUB_CODE_BLOCK_CALLCOUNTING = 0xA,
 #endif // FEATURE_TIERED_COMPILATION
+    STUB_CODE_BLOCK_WRAPPER_STUB = 0xB,
+    STUB_CODE_BLOCK_SHUFFLE_THUNK = 0xC,
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholder used by ReadyToRun images
@@ -131,8 +131,8 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     case STUB_CODE_BLOCK_CALLCOUNTING:
         return "CallCountingStub";
 #endif
-    case STUB_CODE_BLOCK_STUBLINK:
-        return "StubLink";
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
+        return "WrapperStub";
     case STUB_CODE_BLOCK_SHUFFLE_THUNK:
         return "ShuffleThunk";
     case STUB_CODE_BLOCK_DYNAMICHELPER:

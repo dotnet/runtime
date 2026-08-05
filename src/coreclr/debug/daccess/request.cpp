@@ -2453,7 +2453,6 @@ ClrDataAccess::GetAppDomainData(CLRDATA_ADDRESS addr, struct DacpAppDomainData *
         PTR_LoaderAllocator pLoaderAllocator = SystemDomain::GetGlobalLoaderAllocator();
         appdomainData->pHighFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetHighFrequencyHeap());
         appdomainData->pLowFrequencyHeap = HOST_CDADDR(pLoaderAllocator->GetLowFrequencyHeap());
-        appdomainData->pStubHeap = HOST_CDADDR(pLoaderAllocator->GetExecutableHeap());
         appdomainData->appDomainStage = STAGE_OPEN;
 
         appdomainData->dwId = DefaultADID;
@@ -3681,7 +3680,6 @@ static const char *LoaderAllocatorLoaderHeapNames[] =
     "LowFrequencyHeap",
     "HighFrequencyHeap",
     "StaticsHeap",
-    "ExecutableStubHeap",
     "ExecutableHeap",
     "FixupPrecodeHeap",
     "NewStubPrecodeHeap",
