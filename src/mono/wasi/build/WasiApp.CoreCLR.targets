@@ -157,6 +157,13 @@
       <_WasiIgnoredPInvokeModules Include="libSystem.Globalization.Native" Condition="'$(InvariantGlobalization)' == 'true'" />
     </ItemGroup>
 
+    <!-- crossgen2 computes the wasm ABI struct sizes the generated helpers need. Query mode does not
+         load the JIT, so the in-build (host-targeting) crossgen2 answers wasm questions correctly. -->
+    <PropertyGroup>
+      <_WasmAbiQueryExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_WasmAbiQueryExeSuffix>
+      <WasmAbiQueryCrossgen2Path Condition="'$(WasmAbiQueryCrossgen2Path)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmAbiQueryExeSuffix)'))</WasmAbiQueryCrossgen2Path>
+    </PropertyGroup>
+
     <ManagedToNativeGenerator
       Assemblies="@(_WasiManagedAssemblies)"
       PInvokeModules="@(_WasiPInvokeModules)"
@@ -166,6 +173,8 @@
       InterpToNativeOutputPath="$(_WasiInterpToNativeTablePath)"
       CacheFilePath="$(_WasiM2NCachePath)"
       TargetOS="wasi"
+      Crossgen2Path="$(WasmAbiQueryCrossgen2Path)"
+      DotNetHostPath="$(DOTNET_HOST_PATH)"
       WarnOnUnresolvedPInvokeModules="false"
       IsLibraryMode="false">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />

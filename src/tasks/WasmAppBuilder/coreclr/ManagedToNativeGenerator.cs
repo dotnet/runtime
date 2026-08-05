@@ -46,52 +46,33 @@ public class ManagedToNativeGenerator : Task
     public string TargetOS { get; set; } = "browser";
 
     /// <summary>
-    /// Path to ILCompiler.Wasm.Lowering.dll, which computes struct sizes and ABI lowering using the
-    /// same type system crossgen2 uses; reflection alone cannot compute field layout. Defaults to
-    /// the copy shipped alongside this task.
+    /// Path to crossgen2, which is run in its <c>--wasm-abi-query</c> mode to compute struct sizes
+    /// and ABI lowering. Reflection alone cannot compute field layout, and the answers have to be the
+    /// ones the compiler itself would produce.
     /// </summary>
-    public string? SignatureResolverPath { get; set; }
+    /// <remarks>
+    /// Query mode does not load the JIT, so this does not have to be a wasm-targeting crossgen2.
+    /// </remarks>
+    public string? Crossgen2Path { get; set; }
 
     /// <summary>
-    /// Path to the dotnet host used to run the signature resolver.
+    /// Path to the dotnet host, used when <see cref="Crossgen2Path"/> points at an IL-only build of
+    /// crossgen2 rather than an apphost.
     /// </summary>
     public string? DotNetHostPath { get; set; }
 
     private static readonly string[] s_knownTargetOSes = new[] { "browser", "wasi" };
 
-    /// <summary>
-    /// The resolver ships next to this task, in its own directory so its type system assemblies
-    /// cannot collide with the task's. Callers only need to set <see cref="SignatureResolverPath"/>
-    /// when running against a layout that matches neither of the probed conventions.
-    /// </summary>
-    private string ResolveSignatureResolverPath()
+    private string ResolveCrossgen2Path()
     {
-        if (!string.IsNullOrEmpty(SignatureResolverPath))
-            return SignatureResolverPath!;
-
-        string taskDir = Path.GetDirectoryName(typeof(ManagedToNativeGenerator).Assembly.Location)!;
-
-        foreach (string candidate in GetSignatureResolverCandidates(taskDir))
+        if (string.IsNullOrEmpty(Crossgen2Path))
         {
-            if (File.Exists(candidate))
-                return Path.GetFullPath(candidate);
+            throw new LogAsErrorException(
+                "The Crossgen2Path task parameter is required: computing the wasm ABI struct sizes for the " +
+                "generated helpers needs crossgen2's type system.");
         }
 
-        throw new LogAsErrorException(
-            "Could not locate ILCompiler.Wasm.Lowering.dll, which is required to compute wasm ABI struct sizes. " +
-            $"Looked in: {string.Join(", ", GetSignatureResolverCandidates(taskDir))}. " +
-            "Set the SignatureResolverPath task parameter to its location.");
-    }
-
-    private static IEnumerable<string> GetSignatureResolverCandidates(string taskDir)
-    {
-        // In the repo and in the Helix payload the resolver is nested in the task's own directory,
-        // so it travels with whatever copies that directory.
-        yield return Path.Combine(taskDir, "ILCompiler.Wasm.Lowering", "ILCompiler.Wasm.Lowering.dll");
-
-        // In the SDK pack it sits beside the per-TFM task directories instead, since the .NET and
-        // .NET Framework copies of the task both launch the same .NET tool and need not duplicate it.
-        yield return Path.GetFullPath(Path.Combine(taskDir, "..", "ILCompiler.Wasm.Lowering", "ILCompiler.Wasm.Lowering.dll"));
+        return Crossgen2Path!;
     }
 
     private string ResolveDotNetHostPath()
@@ -170,7 +151,7 @@ public class ManagedToNativeGenerator : Task
         Dictionary<string, string> _symbolNameFixups = new();
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
 
-        using var abiTypeResolver = new WasmAbiTypeResolver(ResolveDotNetHostPath(), ResolveSignatureResolverPath(), TargetOS, managedAssemblies, log);
+        using var abiTypeResolver = new WasmAbiTypeResolver(ResolveDotNetHostPath(), ResolveCrossgen2Path(), TargetOS, managedAssemblies, log);
         var signatureMapper = new SignatureMapper(log, abiTypeResolver);
         var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode, TargetOS, signatureMapper, WarnOnUnresolvedPInvokeModules);
         var internalCallCollector = new InternalCallSignatureCollector(log, signatureMapper);

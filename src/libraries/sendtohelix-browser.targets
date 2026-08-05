@@ -188,6 +188,7 @@
     <HelixPreCommand Include="$(EnvVarCommand) REPOSITORY_ENGINEERING_DIR=$HELIX_CORRELATION_PAYLOAD/build/eng/" />
     <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=$HELIX_CORRELATION_PAYLOAD/build/wasm/" />
     <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$HELIX_CORRELATION_PAYLOAD/build/WasmAppBuilder/WasmAppBuilder.dll" />
+    <HelixPreCommand Include="$(EnvVarCommand) WASM_ABI_QUERY_CROSSGEN2_PATH=$HELIX_CORRELATION_PAYLOAD/build/crossgen2/crossgen2" />
     <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/" />
     <HelixPreCommand Include="$(EnvVarCommand) MINIPAL_INCLUDE_DIR=$HELIX_CORRELATION_PAYLOAD/build/minipal/" />
     <HelixPreCommand Include="$(EnvVarCommand) CORECLR_VM_WASM_INCLUDE_DIR=$HELIX_CORRELATION_PAYLOAD/build/coreclr-vm-wasm/" />
@@ -197,6 +198,7 @@
     <HelixPreCommand Include="$(EnvVarCommand) REPOSITORY_ENGINEERING_DIR=%HELIX_CORRELATION_PAYLOAD%\build\eng\" />
     <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=%HELIX_CORRELATION_PAYLOAD%\build\wasm\" />
     <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=%HELIX_CORRELATION_PAYLOAD%\build\WasmAppBuilder\WasmAppBuilder.dll" />
+    <HelixPreCommand Include="$(EnvVarCommand) WASM_ABI_QUERY_CROSSGEN2_PATH=%HELIX_CORRELATION_PAYLOAD%\build\crossgen2\crossgen2.exe" />
     <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\" />
     <HelixPreCommand Include="$(EnvVarCommand) MINIPAL_INCLUDE_DIR=%HELIX_CORRELATION_PAYLOAD%\build\minipal\" />
     <HelixPreCommand Include="$(EnvVarCommand) CORECLR_VM_WASM_INCLUDE_DIR=%HELIX_CORRELATION_PAYLOAD%\build\coreclr-vm-wasm\" />
@@ -293,6 +295,10 @@
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)"              Destination="build/emsdk" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
+      <!-- crossgen2 answers the wasm ABI struct-size queries the CoreCLR generator makes while
+           building the test apps on the Helix machine. -->
+      <HelixCorrelationPayload Include="$(Crossgen2InBuildDir)"                  Destination="build/crossgen2"
+                               Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
       <HelixCorrelationPayload Include="$(BrowserBuildTargetsDir)"               Destination="build/wasm" />
 
       <!-- WebAssembly SDK pack is required by the `dotnet new wasmbrowser` template regardless of runtime flavor. -->

@@ -98,6 +98,8 @@ namespace ILCompiler
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
+        public Option<bool> WasmAbiQuery { get; } =
+            new("--wasm-abi-query") { Description = SR.WasmAbiQueryOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -201,6 +203,7 @@ namespace ILCompiler
             Options.Add(TargetOS);
             Options.Add(JitPath);
             Options.Add(PrintReproInstructions);
+            Options.Add(WasmAbiQuery);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);

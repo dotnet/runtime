@@ -78,8 +78,10 @@ run_generator() {
     echo "[$target_os] Scan path: $scan_path"
     echo "[$target_os] Output path: $output_dir"
     echo "Running generator for $target_os..."
-    echo "./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:TargetOS=$target_os /p:GeneratorOutputPath=$output_dir /p:AssembliesScanPath=$scan_path src/tasks/WasmAppBuilder/WasmAppBuilder.csproj"
-    ./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:TargetOS=$target_os" "/p:GeneratorOutputPath=$output_dir" "/p:AssembliesScanPath=$scan_path" src/tasks/WasmAppBuilder/WasmAppBuilder.csproj
+    # RuntimeConfiguration selects which built crossgen2 answers the ABI queries; it has to match the
+    # configuration the scanned assemblies came from.
+    echo "./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR /p:TargetOS=$target_os /p:RuntimeConfiguration=$configuration /p:GeneratorOutputPath=$output_dir /p:AssembliesScanPath=$scan_path src/tasks/WasmAppBuilder/WasmAppBuilder.csproj"
+    ./dotnet.sh build /t:RunGenerator /p:RuntimeFlavor=CoreCLR "/p:TargetOS=$target_os" "/p:RuntimeConfiguration=$configuration" "/p:GeneratorOutputPath=$output_dir" "/p:AssembliesScanPath=$scan_path" src/tasks/WasmAppBuilder/WasmAppBuilder.csproj
 }
 
 # Resolve scan paths (allow overrides).

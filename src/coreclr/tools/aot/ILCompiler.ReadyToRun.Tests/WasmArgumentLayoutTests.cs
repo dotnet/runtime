@@ -6,12 +6,14 @@ extern alias crossgen2;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection.Metadata.Ecma335;
 
 using crossgen2::ILCompiler;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
 using crossgen2::Internal.CallingConvention;
 using crossgen2::Internal.JitInterface;
+using crossgen2::Internal.Text;
 
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
@@ -149,6 +151,105 @@ public class WasmArgumentLayoutTests
 
         Assert.Same(InstantiateVector(context, Vector128OfT, WellKnownType.Byte), raised[1]);
         Assert.Equal(GetArgumentOffsets(context, signature), GetArgumentOffsets(context, raised));
+    }
+
+    /// <summary>
+    /// The type query answers with the encoding of a type in parameter position. These are the three
+    /// shapes that encoding exists to tell apart: a multi-field struct, which goes by reference and
+    /// carries its size; a single-field wrapper, which is passed as the field it wraps; and a
+    /// primitive.
+    /// </summary>
+    [Theory]
+    [InlineData("Guid", "S16")]
+    [InlineData("DateTime", "l")]
+    [InlineData("Int32", "i")]
+    public void WasmAbiQueryAnswersTypeQueries(string typeName, string expected)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+
+        Assert.Equal(new[] { expected }, RunQueries(context, TypeQuery(context, typeName)));
+    }
+
+    /// <summary>
+    /// A struct that holds a reference lays out through the auto-layout path, which asks the
+    /// compilation group whether the base offset needs aligning. Query mode is not a compilation, so
+    /// it has to configure a group itself for that question to have an answer at all.
+    /// </summary>
+    [Fact]
+    public void WasmAbiQueryComputesLayoutOfStructsHoldingReferences()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        var type = GetSystemType(context, "RuntimeTypeHandle");
+
+        // If this stops holding, the test no longer covers the auto-layout path it was written for.
+        Assert.True(type.ContainsGCPointers, $"{type} was chosen because it holds a reference");
+
+        // One field the size of the whole struct: lowered to that field, a reference, passed as i32.
+        Assert.Equal(new[] { "i" }, RunQueries(context, TypeQuery(context, "RuntimeTypeHandle")));
+    }
+
+    /// <summary>
+    /// Parameter types come from the signature blob rather than being named one by one, because a
+    /// generic instantiation has no metadata token of its own and so cannot be named over the wire.
+    /// The answer has to be the signature the compiler itself would lower the method to.
+    /// </summary>
+    [Fact]
+    public void WasmAbiQueryAnswersMethodQueriesLikeTheCompiler()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        var method = (EcmaMethod)GetSystemType(context, "DateTime").GetMethod(new Utf8String("AddTicks"), null);
+
+        string expected = WasmLowering.GetSignature(method.Signature, WasmLowering.LoweringFlags.None).SignatureString;
+        _output.WriteLine($"{method} lowers to '{expected}'");
+
+        string query = $"m {CoreLibSimpleName} 0x{MetadataTokens.GetToken(method.Handle):x8} 0";
+        Assert.Equal(new[] { expected }, RunQueries(context, query));
+    }
+
+    /// <summary>
+    /// The caller cannot reference the type system, so it keeps its own copy of the lowering flags and
+    /// its own idea of the wire format. A copy that has drifted has to be told, rather than quietly
+    /// handed a lowering that is not the one it asked for.
+    /// </summary>
+    [Theory]
+    [InlineData("x System.Private.CoreLib 1", "Unrecognized query verb")]
+    [InlineData("t System.Private.CoreLib", "not enough fields")]
+    [InlineData("m System.Private.CoreLib 0x06000001 0x40000000", "Unknown wasm lowering flags")]
+    public void WasmAbiQueryRejectsQueriesItCannotAnswer(string query, string expectedMessage)
+    {
+        string reply = RunQueries(CreateWasmContext(), query)[0];
+
+        Assert.StartsWith("!", reply);
+        Assert.Contains(expectedMessage, reply);
+    }
+
+    private const string CoreLibSimpleName = "System.Private.CoreLib";
+
+    private static EcmaType GetSystemType(ReadyToRunCompilerContext context, string typeName)
+    {
+        return (EcmaType)context.SystemModule.GetType(new Utf8String("System"), new Utf8String(typeName));
+    }
+
+    private static string TypeQuery(ReadyToRunCompilerContext context, string typeName)
+    {
+        EcmaType type = GetSystemType(context, typeName);
+
+        return $"t {CoreLibSimpleName} 0x{MetadataTokens.GetToken(type.Handle):x8}";
+    }
+
+    /// <summary>
+    /// Runs the query loop over in-memory streams and returns the replies, minus the readiness line
+    /// that precedes them.
+    /// </summary>
+    private static string[] RunQueries(ReadyToRunCompilerContext context, params string[] queries)
+    {
+        StringWriter output = new();
+        Assert.Equal(0, WasmAbiQuery.Run(context, new StringReader(string.Join(Environment.NewLine, queries)), output));
+
+        string[] replies = output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal("ready", replies[0]);
+
+        return replies[1..];
     }
 
     /// <summary>

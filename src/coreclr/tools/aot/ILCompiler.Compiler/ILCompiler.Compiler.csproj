@@ -350,8 +350,6 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmEmitter.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmEmitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.cs" />
-    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.Encoding.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.Encoding.cs" />
-    <Compile Include="..\..\Common\Compiler\IWasmTypeCacheContext.cs" Link="Compiler\IWasmTypeCacheContext.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\Register.cs" Link="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />

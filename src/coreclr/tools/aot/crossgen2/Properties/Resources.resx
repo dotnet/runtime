@@ -285,6 +285,9 @@
   <data name="TargetOSOption" xml:space="preserve">
     <value>Target OS for cross compilation</value>
   </data>
+  <data name="WasmAbiQueryOption" xml:space="preserve">
+    <value>Answer wasm ABI signature queries on stdin instead of compiling</value>
+  </data>
   <data name="TargetOSUnsupported" xml:space="preserve">
     <value>Target OS is not supported</value>
   </data>

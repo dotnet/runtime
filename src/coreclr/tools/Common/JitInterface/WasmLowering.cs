@@ -207,6 +207,8 @@ namespace Internal.JitInterface
         /// <summary>
         /// Maps a WasmValueType to its single-character signature encoding.
         /// </summary>
+        // internal rather than private so the wasm ABI query mode can answer single-type questions
+        // with the same encoding table the signature builder below uses.
         internal static char WasmValueTypeToSigChar(WasmValueType vt) => vt switch
         {
             WasmValueType.I32 => 'i',
@@ -223,7 +225,7 @@ namespace Internal.JitInterface
             'l' => context.GetWellKnownType(WellKnownType.Int64),
             'f' => context.GetWellKnownType(WellKnownType.Single),
             'd' => context.GetWellKnownType(WellKnownType.Double),
-            'V' => ((IWasmTypeCacheContext)context).WasmV128Type,
+            'V' => ((CompilerTypeSystemContext)context).WasmV128Type,
             _ => throw new InvalidOperationException($"Unknown signature char: {c}")
         };
 
@@ -254,7 +256,7 @@ namespace Internal.JitInterface
             else if (sig[pos] == 'S')
             {
                 int structSize = ParseStructSize(sig, ref pos);
-                returnType = ((IWasmTypeCacheContext)context).GetCachedStructOfSize(structSize);
+                returnType = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize);
                 Debug.Assert(returnType is not null, $"No cached struct of size {structSize} for return type in signature '{sig}'");
             }
             else
@@ -303,7 +305,7 @@ namespace Internal.JitInterface
                 else if (c == 'e')
                 {
                     // Empty struct — include the cached empty struct type for roundtrip fidelity
-                    TypeDesc emptyStruct = ((IWasmTypeCacheContext)context).CachedEmptyStruct;
+                    TypeDesc emptyStruct = ((CompilerTypeSystemContext)context).CachedEmptyStruct;
                     Debug.Assert(emptyStruct is not null, "Encountered 'e' in signature but no empty struct was cached during lowering");
                     parameters.Add(emptyStruct);
                     pos++;
@@ -311,7 +313,7 @@ namespace Internal.JitInterface
                 else if (c == 'S')
                 {
                     int structSize = ParseStructSize(sig, ref pos);
-                    TypeDesc cachedStruct = ((IWasmTypeCacheContext)context).GetCachedStructOfSize(structSize);
+                    TypeDesc cachedStruct = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize);
                     Debug.Assert(cachedStruct is not null, $"No cached struct of size {structSize} for parameter in signature '{sig}'");
                     parameters.Add(cachedStruct);
                 }
@@ -346,7 +348,7 @@ namespace Internal.JitInterface
         }
 
         /// <summary>
-        /// Gets the Wasm-level signature for a given MethodSignature.
+        /// Gets the Wasm-level signature for a given MethodDesc.
         /// The signature string format is documented in docs/design/coreclr/botr/readytorun-format.md
         /// (section "Wasm Signature String Encoding").
         ///
@@ -356,6 +358,31 @@ namespace Internal.JitInterface
         /// For unmanaged callers only (reverse P/Invoke), the layout is simply the native signature
         /// which is just the lowered parameters+return.
         /// </summary>
+        /// <param name="method"></param>
+        /// <returns></returns>
+        public static WasmSignature GetSignature(MethodDesc method)
+        {
+            return GetSignature(method.Signature, GetLoweringFlags(method));
+        }
+
+        public static LoweringFlags GetLoweringFlags(MethodDesc method)
+        {
+            LoweringFlags flags = 0;
+            if (method.RequiresInstMethodDescArg() || method.RequiresInstMethodTableArg())
+            {
+                flags |= LoweringFlags.HasGenericContextArg;
+            }
+            if (method.IsAsyncCall())
+            {
+                flags |= LoweringFlags.IsAsyncCall;
+            }
+            if (method.IsUnmanagedCallersOnly)
+            {
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
+            }
+            return flags;
+        }
+
         [Flags]
         public enum LoweringFlags
         {
@@ -369,7 +396,7 @@ namespace Internal.JitInterface
         {
             if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly) && signature.Flags.HasFlag(MethodSignatureFlags.UnmanagedCallingConvention))
             {
-                flags |= LoweringFlags.IsUnmanagedCallersOnly;
+                flags = flags | LoweringFlags.IsUnmanagedCallersOnly;
             }
 
             TypeDesc returnType = signature.ReturnType;
@@ -401,7 +428,7 @@ namespace Internal.JitInterface
                     int returnSize = returnType.GetElementSize().AsInt;
                     sigBuilder.Append('S');
                     sigBuilder.Append(returnSize);
-                    ((IWasmTypeCacheContext)returnType.Context).CacheStructBySize(returnType);
+                    ((CompilerTypeSystemContext)returnType.Context).CacheStructBySize(returnType);
                 }
             }
             else if (loweredReturnType.IsVoid)
@@ -474,7 +501,7 @@ namespace Internal.JitInterface
                     {
                         // Empty struct — not emitted as a WebAssembly argument
                         sigBuilder.Append('e');
-                        ((IWasmTypeCacheContext)signature.ReturnType.Context).CacheEmptyStruct(paramType);
+                        ((CompilerTypeSystemContext)signature.ReturnType.Context).CacheEmptyStruct(paramType);
                         continue;
                     }
 
@@ -483,7 +510,7 @@ namespace Internal.JitInterface
                     sigBuilder.Append('S');
                     sigBuilder.Append(paramSize);
                     result.Add(pointerType);
-                    ((IWasmTypeCacheContext)paramType.Context).CacheStructBySize(paramType);
+                    ((CompilerTypeSystemContext)paramType.Context).CacheStructBySize(paramType);
                 }
                 else
                 {

@@ -32,11 +32,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Links the same type system sources the compilers do, so it needs the same internals. -->
-    <InternalsVisibleTo Include="ILCompiler.Wasm.Lowering" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Compile Include="$(LibrariesProjectRoot)\Common\src\Internal\VersionResilientHashCode.cs">
       <Link>TypeSystem\Common\VersionResilientHashCode.cs</Link>
     </Compile>

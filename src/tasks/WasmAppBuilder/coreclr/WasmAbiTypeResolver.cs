@@ -12,21 +12,26 @@ using Microsoft.Build.Framework;
 namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 /// <summary>
-/// Resolves wasm ABI encodings by delegating to the ILCompiler.Wasm.Lowering tool, which shares its
-/// lowering and field layout code with crossgen2.
+/// Resolves wasm ABI encodings by asking crossgen2, running in its <c>--wasm-abi-query</c> mode.
 /// </summary>
 /// <remarks>
 /// The generated helpers have to agree with compiled code exactly - a struct whose size is off by one
 /// produces a call that reads the wrong stack slots at runtime - so the sizes come from the compiler's
 /// own type system rather than from reflection, which has no field layout engine.
 ///
-/// The tool runs out of process because this task also runs under .NET Framework MSBuild, which cannot
-/// load a netcoreapp type system assembly. It is started once and reused for every query.
+/// crossgen2 answers rather than a purpose-built tool so that there is exactly one implementation of
+/// the wasm lowering rules and one type system configuration. Query mode never loads the JIT, so the
+/// crossgen2 used here does not have to be the wasm-targeting one; the target is selected by the
+/// <c>--targetos</c> and <c>--targetarch</c> arguments.
+///
+/// It runs out of process because this task also runs under .NET Framework MSBuild, which cannot load
+/// a netcoreapp type system assembly. Loading the assembly closure is the expensive part, so the
+/// process is started once and reused for every query.
 /// </remarks>
 internal sealed class WasmAbiTypeResolver : IWasmAbiTypeResolver, IDisposable
 {
     private readonly string _dotnetHostPath;
-    private readonly string _toolPath;
+    private readonly string _crossgen2Path;
     private readonly string _targetOS;
     private readonly IReadOnlyList<string> _assemblies;
     private readonly LogAdapter _log;
@@ -37,10 +42,10 @@ internal sealed class WasmAbiTypeResolver : IWasmAbiTypeResolver, IDisposable
     private string? _responseFilePath;
     private readonly StringBuilder _stderr = new();
 
-    public WasmAbiTypeResolver(string dotnetHostPath, string toolPath, string targetOS, IReadOnlyList<string> assemblies, LogAdapter log)
+    public WasmAbiTypeResolver(string dotnetHostPath, string crossgen2Path, string targetOS, IReadOnlyList<string> assemblies, LogAdapter log)
     {
         _dotnetHostPath = dotnetHostPath;
-        _toolPath = toolPath;
+        _crossgen2Path = crossgen2Path;
         _targetOS = targetOS;
         _assemblies = assemblies;
         _log = log;
@@ -105,7 +110,7 @@ internal sealed class WasmAbiTypeResolver : IWasmAbiTypeResolver, IDisposable
         if (reply is null)
         {
             throw new LogAsErrorException(
-                $"The wasm signature resolver ('{_toolPath}') exited unexpectedly while resolving '{request}'. {ReadStandardError(process)}");
+                $"crossgen2 ('{_crossgen2Path}') exited unexpectedly while resolving '{request}'. {ReadStandardError(process)}");
         }
 
         return reply;
@@ -116,10 +121,11 @@ internal sealed class WasmAbiTypeResolver : IWasmAbiTypeResolver, IDisposable
         if (_process is not null)
             return _process;
 
-        if (!File.Exists(_toolPath))
+        if (!File.Exists(_crossgen2Path))
         {
             throw new LogAsErrorException(
-                $"The wasm signature resolver was not found at '{_toolPath}'. Set the SignatureResolverPath task parameter to the path of ILCompiler.Wasm.Lowering.dll.");
+                $"crossgen2 was not found at '{_crossgen2Path}'. It computes the wasm ABI struct sizes the generated " +
+                "helpers need. Set the Crossgen2Path task parameter to its location.");
         }
 
         // A response file keeps the command line under the platform limit; the framework alone is
@@ -127,7 +133,20 @@ internal sealed class WasmAbiTypeResolver : IWasmAbiTypeResolver, IDisposable
         _responseFilePath = Path.GetTempFileName();
         File.WriteAllLines(_responseFilePath, _assemblies, Encoding.UTF8);
 
-        var startInfo = new ProcessStartInfo(_dotnetHostPath)
+        // The assemblies are passed as crossgen2's positional inputs rather than as references so
+        // that its "no input files" check is satisfied; query mode writes no image, so nothing is
+        // compiled for them.
+        string arguments = $"--wasm-abi-query --targetos {_targetOS} --targetarch wasm {Quote("@" + _responseFilePath)}";
+
+        // crossgen2 normally ships as an apphost, but an IL-only build is run through the muxer.
+        string executable = _crossgen2Path;
+        if (_crossgen2Path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+        {
+            executable = _dotnetHostPath;
+            arguments = $"exec {Quote(_crossgen2Path)} {arguments}";
+        }
+
+        var startInfo = new ProcessStartInfo(executable)
         {
             UseShellExecute = false,
             RedirectStandardInput = true,
@@ -135,20 +154,20 @@ internal sealed class WasmAbiTypeResolver : IWasmAbiTypeResolver, IDisposable
             RedirectStandardError = true,
             // ProcessStartInfo.ArgumentList is not available on .NET Framework, which this task also
             // targets, so the command line is quoted by hand.
-            Arguments = $"exec {Quote(_toolPath)} --targetos {_targetOS} {Quote("@" + _responseFilePath)}",
+            Arguments = arguments,
         };
 
-        _log.LogMessage(MessageImportance.Low, $"Starting wasm signature resolver: {_dotnetHostPath} {startInfo.Arguments}");
+        _log.LogMessage(MessageImportance.Low, $"Starting wasm ABI query: {executable} {arguments}");
 
         Process process;
         try
         {
             process = Process.Start(startInfo)
-                ?? throw new LogAsErrorException($"Failed to start the wasm signature resolver '{_toolPath}'.");
+                ?? throw new LogAsErrorException($"Failed to start crossgen2 '{_crossgen2Path}'.");
         }
         catch (Exception ex) when (ex is not LogAsErrorException)
         {
-            throw new LogAsErrorException($"Failed to start the wasm signature resolver '{_toolPath}': {ex.Message}");
+            throw new LogAsErrorException($"Failed to start crossgen2 '{_crossgen2Path}': {ex.Message}");
         }
 
         // Take ownership before the handshake so a failure below still goes through Dispose. An
@@ -174,7 +193,7 @@ internal sealed class WasmAbiTypeResolver : IWasmAbiTypeResolver, IDisposable
         if (ready != "ready")
         {
             throw new LogAsErrorException(
-                $"The wasm signature resolver '{_toolPath}' failed to load the assembly closure. {ReadStandardError(process)}");
+                $"crossgen2 '{_crossgen2Path}' failed to load the assembly closure. {ReadStandardError(process)}");
         }
 
         return process;
@@ -221,7 +240,7 @@ internal sealed class WasmAbiTypeResolver : IWasmAbiTypeResolver, IDisposable
             }
             catch (Exception ex)
             {
-                _log.LogMessage(MessageImportance.Low, $"Failed to shut down the wasm signature resolver: {ex.Message}");
+                _log.LogMessage(MessageImportance.Low, $"Failed to shut down the wasm ABI query process: {ex.Message}");
             }
 
             _process.Dispose();

@@ -7,7 +7,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler
 {
-    public partial class CompilerTypeSystemContext : IWasmTypeCacheContext
+    public partial class CompilerTypeSystemContext
     {
         private readonly object _structCacheLock = new object();
         private readonly Dictionary<int, TypeDesc> _structsBySize = new Dictionary<int, TypeDesc>();

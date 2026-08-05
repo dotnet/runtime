@@ -52,13 +52,15 @@
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
 
   <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
-      <!-- The generator needs the type system to compute struct sizes, so build the resolver tool
-           and take its exact output path rather than guessing at the artifacts layout. -->
-      <MSBuild Projects="$(CoreClrProjectRoot)tools\aot\ILCompiler.Wasm.Lowering\ILCompiler.Wasm.Lowering.csproj"
-               Targets="Build"
-               Properties="Configuration=$(Configuration)">
-        <Output TaskParameter="TargetOutputs" ItemName="_WasmSignatureResolver" />
-      </MSBuild>
+      <!-- The generator needs the compiler's type system to compute struct sizes, so it asks
+           crossgen2. Query mode does not load the JIT, so the in-build (host-targeting) crossgen2
+           answers wasm questions just as well as a wasm-targeting one would. -->
+      <PropertyGroup>
+        <_WasmAbiQueryCrossgen2Path Condition="'$(_WasmAbiQueryCrossgen2Path)' == ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</_WasmAbiQueryCrossgen2Path>
+      </PropertyGroup>
+
+      <Error Condition="!Exists('$(_WasmAbiQueryCrossgen2Path)')"
+             Text="crossgen2 was not found at '$(_WasmAbiQueryCrossgen2Path)'. Build the 'clr' subset first, or set _WasmAbiQueryCrossgen2Path." />
 
       <ItemGroup>
         <WasmPInvokeAssembly Include="$(AssembliesScanPath)*.dll" />
@@ -80,7 +82,7 @@
           Assemblies="@(WasmPInvokeAssembly)"
           PInvokeModules="@(WasmPInvokeModule)"
           TargetOS="$(_RunGeneratorTargetOS)"
-          SignatureResolverPath="@(_WasmSignatureResolver)"
+          Crossgen2Path="$(_WasmAbiQueryCrossgen2Path)"
           DotNetHostPath="$(DOTNET_HOST_PATH)"
           PInvokeOutputPath="$(GeneratorOutputPath)callhelpers-pinvoke.cpp"
           ReversePInvokeOutputPath="$(GeneratorOutputPath)callhelpers-reverse.cpp"

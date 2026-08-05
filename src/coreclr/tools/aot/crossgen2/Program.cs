@@ -39,6 +39,7 @@ namespace ILCompiler
         private readonly bool _singleFileCompilation;
         private readonly bool _outNearInput;
         private readonly string _outputFilePath;
+        private readonly bool _wasmAbiQuery;
 
         public Program(Crossgen2RootCommand command)
         {
@@ -47,6 +48,7 @@ namespace ILCompiler
             _singleFileCompilation = Get(command.SingleFileCompilation);
             _outNearInput = Get(command.OutNearInput);
             _outputFilePath = Get(command.OutputFilePath);
+            _wasmAbiQuery = Get(command.WasmAbiQuery);
 
             if (Get(command.WaitForDebugger))
             {
@@ -68,7 +70,9 @@ namespace ILCompiler
 
         public int Run()
         {
-            if (_outputFilePath == null && !_outNearInput)
+            // Query mode answers questions about the input assemblies and writes no image, so the
+            // output arguments the compilation path requires do not apply.
+            if (_outputFilePath == null && !_outNearInput && !_wasmAbiQuery)
                 throw new CommandLineException(SR.MissingOutputFile);
 
             if (_singleFileCompilation && !_outNearInput)
@@ -274,6 +278,11 @@ namespace ILCompiler
             string systemModuleName = Get(_command.SystemModuleName) ?? Helpers.DefaultSystemModule;
             _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
             ReadyToRunCompilerContext typeSystemContext = _typeSystemContext;
+
+            if (_wasmAbiQuery)
+            {
+                return WasmAbiQuery.Run(typeSystemContext, Console.In, Console.Out);
+            }
 
             if (_singleFileCompilation)
             {

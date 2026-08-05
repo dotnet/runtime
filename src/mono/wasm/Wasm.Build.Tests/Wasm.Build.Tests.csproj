@@ -159,7 +159,9 @@
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set BROWSER_BUILD_TARGETS_DIR=$(BrowserProjectRoot)build\" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="export WASM_ABI_QUERY_CROSSGEN2_PATH=$(Crossgen2InBuildDir)crossgen2" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$(WasmAppBuilderDir)WasmAppBuilder.dll" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT' and '$(RuntimeFlavor)' == 'CoreCLR'" Include="set WASM_ABI_QUERY_CROSSGEN2_PATH=$(Crossgen2InBuildDir)crossgen2.exe" />
 
       <!-- CoreCLR WBT: BrowserWasmApp.CoreCLR.targets adds -I include paths for
            <minipal/...> and <callhelpers.hpp> when compiling ManagedToNativeGenerator
