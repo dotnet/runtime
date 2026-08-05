@@ -98,6 +98,9 @@
     <Compile Include="..\..\Common\JitInterface\WasmLowering.cs">
       <Link>JitInterface\WasmLowering.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\JitInterface\WasmLowering.MethodDesc.cs">
+      <Link>JitInterface\WasmLowering.MethodDesc.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs">
       <Link>Pgo\TypeSystemEntityOrUnknown.cs</Link>
     </Compile>

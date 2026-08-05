@@ -16,8 +16,13 @@ internal sealed class InternalCallSignatureCollector
 {
     private readonly HashSet<string> _signatures = new();
     private readonly LogAdapter _log;
+    private readonly SignatureMapper _signatureMapper;
 
-    public InternalCallSignatureCollector(LogAdapter log) => _log = log;
+    public InternalCallSignatureCollector(LogAdapter log, SignatureMapper signatureMapper)
+    {
+        _log = log;
+        _signatureMapper = signatureMapper;
+    }
 
     public void ScanAssembly(Assembly asm)
     {
@@ -36,7 +41,7 @@ internal sealed class InternalCallSignatureCollector
 
             try
             {
-                string? signature = SignatureMapper.MethodToSignature(method, _log, includeThis: true);
+                string? signature = _signatureMapper.MethodToSignature(method, includeThis: true);
                 if (signature is null)
                 {
                     _log.Warning("WASM0001", $"Could not generate signature for InternalCall method '{type.FullName}::{method.Name}'");

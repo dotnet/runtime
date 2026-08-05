@@ -52,6 +52,14 @@
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
 
   <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
+      <!-- The generator needs the type system to compute struct sizes, so build the resolver tool
+           and take its exact output path rather than guessing at the artifacts layout. -->
+      <MSBuild Projects="$(CoreClrProjectRoot)tools\aot\ILCompiler.Wasm.Lowering\ILCompiler.Wasm.Lowering.csproj"
+               Targets="Build"
+               Properties="Configuration=$(Configuration)">
+        <Output TaskParameter="TargetOutputs" ItemName="_WasmSignatureResolver" />
+      </MSBuild>
+
       <ItemGroup>
         <WasmPInvokeAssembly Include="$(AssembliesScanPath)*.dll" />
         <WasmPInvokeModule Include="libSystem.Native" />
@@ -72,6 +80,8 @@
           Assemblies="@(WasmPInvokeAssembly)"
           PInvokeModules="@(WasmPInvokeModule)"
           TargetOS="$(_RunGeneratorTargetOS)"
+          SignatureResolverPath="@(_WasmSignatureResolver)"
+          DotNetHostPath="$(DOTNET_HOST_PATH)"
           PInvokeOutputPath="$(GeneratorOutputPath)callhelpers-pinvoke.cpp"
           ReversePInvokeOutputPath="$(GeneratorOutputPath)callhelpers-reverse.cpp"
           InterpToNativeOutputPath="$(GeneratorOutputPath)callhelpers-interp-to-managed.cpp">

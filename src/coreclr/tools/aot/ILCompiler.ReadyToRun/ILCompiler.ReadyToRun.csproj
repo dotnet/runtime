@@ -128,6 +128,8 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_RiscV64\TargetRegisterMap.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmEmitter.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmEmitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.Encoding.cs" Link="Compiler\DependencyAnalysis\Target_Wasm\WasmTypes.Encoding.cs" />
+    <Compile Include="..\..\Common\Compiler\IWasmTypeCacheContext.cs" Link="Compiler\IWasmTypeCacheContext.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_X64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\Register.cs" Link="Compiler\DependencyAnalysis\Target_X64\Register.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" Link="Compiler\DependencyAnalysis\Target_X64\TargetRegisterMap.cs" />
@@ -176,6 +178,7 @@
     <Compile Include="..\..\Common\Internal\Runtime\RiscVLoongArch64FpStruct.cs" Link="Common\RiscVLoongArch64FpStruct.cs" />
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs" Link="JitInterface\SwiftPhysicalLowering.cs" />
     <Compile Include="..\..\Common\JitInterface\WasmLowering.cs" Link="JitInterface\WasmLowering.cs" />
+    <Compile Include="..\..\Common\JitInterface\WasmLowering.MethodDesc.cs" Link="JitInterface\WasmLowering.MethodDesc.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\InteropTypes.cs" Link="Interop\InteropTypes.cs" />
     <Compile Include="..\..\Common\TypeSystem\Interop\UnmanagedCallingConventions.cs" Link="Interop\UnmanagedCallingConventions.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\Dwarf\DwarfHelper.cs" Link="Compiler\ObjectWriter\Dwarf\DwarfHelper.cs" />
@@ -348,6 +351,7 @@
     <Compile Include="..\..\Common\TypeSystem\Common\VersionResilientHashCode.TypeSystem.cs" />
     <Compile Include="Compiler\ReadyToRunLibraryRootProvider.cs" />
     <Compile Include="Compiler\ReadyToRunCompilerContext.cs" />
+    <Compile Include="Compiler\VectorOfTFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilation.cs" />
     <Compile Include="Compiler\ReadyToRunCodegenCompilationBuilder.cs" />
     <Compile Include="Compiler\FileLayoutOptimizer.cs" />

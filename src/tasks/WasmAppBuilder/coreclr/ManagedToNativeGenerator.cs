@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -44,7 +45,82 @@ public class ManagedToNativeGenerator : Task
 
     public string TargetOS { get; set; } = "browser";
 
+    /// <summary>
+    /// Path to ILCompiler.Wasm.Lowering.dll, which computes struct sizes and ABI lowering using the
+    /// same type system crossgen2 uses; reflection alone cannot compute field layout. Defaults to
+    /// the copy shipped alongside this task.
+    /// </summary>
+    public string? SignatureResolverPath { get; set; }
+
+    /// <summary>
+    /// Path to the dotnet host used to run the signature resolver.
+    /// </summary>
+    public string? DotNetHostPath { get; set; }
+
     private static readonly string[] s_knownTargetOSes = new[] { "browser", "wasi" };
+
+    /// <summary>
+    /// The resolver ships next to this task, in its own directory so its type system assemblies
+    /// cannot collide with the task's. Callers only need to set <see cref="SignatureResolverPath"/>
+    /// when running against a layout that matches neither of the probed conventions.
+    /// </summary>
+    private string ResolveSignatureResolverPath()
+    {
+        if (!string.IsNullOrEmpty(SignatureResolverPath))
+            return SignatureResolverPath!;
+
+        string taskDir = Path.GetDirectoryName(typeof(ManagedToNativeGenerator).Assembly.Location)!;
+
+        foreach (string candidate in GetSignatureResolverCandidates(taskDir))
+        {
+            if (File.Exists(candidate))
+                return Path.GetFullPath(candidate);
+        }
+
+        throw new LogAsErrorException(
+            "Could not locate ILCompiler.Wasm.Lowering.dll, which is required to compute wasm ABI struct sizes. " +
+            $"Looked in: {string.Join(", ", GetSignatureResolverCandidates(taskDir))}. " +
+            "Set the SignatureResolverPath task parameter to its location.");
+    }
+
+    private static IEnumerable<string> GetSignatureResolverCandidates(string taskDir)
+    {
+        // In the repo and in the Helix payload the resolver is nested in the task's own directory,
+        // so it travels with whatever copies that directory.
+        yield return Path.Combine(taskDir, "ILCompiler.Wasm.Lowering", "ILCompiler.Wasm.Lowering.dll");
+
+        // In the SDK pack it sits beside the per-TFM task directories instead, since the .NET and
+        // .NET Framework copies of the task both launch the same .NET tool and need not duplicate it.
+        yield return Path.GetFullPath(Path.Combine(taskDir, "..", "ILCompiler.Wasm.Lowering", "ILCompiler.Wasm.Lowering.dll"));
+    }
+
+    private string ResolveDotNetHostPath()
+    {
+        if (!string.IsNullOrEmpty(DotNetHostPath))
+            return DotNetHostPath!;
+
+        string? fromEnvironment = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+        if (!string.IsNullOrEmpty(fromEnvironment))
+            return fromEnvironment!;
+
+        // When MSBuild itself is running on the .NET host, reuse it rather than trusting PATH to
+        // turn up a compatible one.
+        try
+        {
+            string? currentProcess = Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrEmpty(currentProcess))
+            {
+                string name = Path.GetFileNameWithoutExtension(currentProcess);
+                if (string.Equals(name, "dotnet", StringComparison.OrdinalIgnoreCase))
+                    return currentProcess!;
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        return "dotnet";
+    }
 
     [Output]
     public string[]? FileWrites { get; private set; }
@@ -93,8 +169,11 @@ public class ManagedToNativeGenerator : Task
     {
         Dictionary<string, string> _symbolNameFixups = new();
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
-        var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode, TargetOS, WarnOnUnresolvedPInvokeModules);
-        var internalCallCollector = new InternalCallSignatureCollector(log);
+
+        using var abiTypeResolver = new WasmAbiTypeResolver(ResolveDotNetHostPath(), ResolveSignatureResolverPath(), TargetOS, managedAssemblies, log);
+        var signatureMapper = new SignatureMapper(log, abiTypeResolver);
+        var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode, TargetOS, signatureMapper, WarnOnUnresolvedPInvokeModules);
+        var internalCallCollector = new InternalCallSignatureCollector(log, signatureMapper);
 
         var resolver = new PathAssemblyResolver(managedAssemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");

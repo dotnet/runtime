@@ -24,6 +24,9 @@
     <!-- Aliased because it redefines the ReadyToRun* constant enums that
          ILCompiler.Reflection.ReadyToRun already brings into the global namespace. -->
     <ProjectReference Include="../ILCompiler.ReadyToRun/ILCompiler.ReadyToRun.csproj" Aliases="crossgen2" />
+    <!-- Aliased so WasmLoweringParityTests can hold crossgen2's WasmLowering and the standalone
+         resolver's copy side by side and assert they still agree. -->
+    <ProjectReference Include="../ILCompiler.Wasm.Lowering/ILCompiler.Wasm.Lowering.csproj" Aliases="wasmlowering" />
     <ProjectReference Include="../crossgen2/crossgen2_inbuild.csproj" ReferenceOutputAssembly="false">
       <!-- crossgen2 is a CoreCLR artifact, so publish it in the CoreCLR configuration. This keeps it
            alongside the other CoreCLR artifacts the test consumes (System.Private.CoreLib, the JITs)
