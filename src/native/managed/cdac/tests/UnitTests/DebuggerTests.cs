@@ -118,10 +118,12 @@ public class DebuggerTests
         return builder.Build();
     }
 
-    private static TestPlaceholderTarget BuildNullDebuggerTarget(MockTarget.Architecture arch)
+    private static TestPlaceholderTarget BuildNullDebuggerTarget(
+        MockTarget.Architecture arch,
+        (ulong Address, byte[] Data)? memory = null)
     {
         TargetTestHelpers helpers = new(arch);
-        var builder = new TestPlaceholderTarget.Builder(arch);
+        TestPlaceholderTarget.Builder builder = new(arch);
         MockMemorySpace.Builder memBuilder = builder.MemoryBuilder;
         MockMemorySpace.BumpAllocator allocator = memBuilder.CreateAllocator(0x1_0000, 0x2_0000);
 
@@ -130,6 +132,16 @@ public class DebuggerTests
         helpers.WritePointer(debuggerPtrFrag.Data, 0);
         builder.AddGlobals((Constants.Globals.Debugger, debuggerPtrFrag.Address));
         builder.AddContract<IDebugger>(version: "c1");
+
+        if (memory is not null)
+        {
+            memBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+            {
+                Address = memory.Value.Address,
+                Data = memory.Value.Data,
+                Name = "Target memory",
+            });
+        }
 
         return builder.Build();
     }
@@ -508,6 +520,201 @@ public class DebuggerTests
         IDebugger debugger = target.Contracts.Debugger;
 
         Assert.Equal(HijackKind.None, debugger.GetHijackKind(new TargetCodePointer(0x10_0080)));
+    }
+
+    // -----------------------------------------------------------------------
+    // ReadInstructionByte
+    // -----------------------------------------------------------------------
+
+    private static TestPlaceholderTarget BuildTargetWithPatchTable(
+        MockTarget.Architecture arch,
+        bool patchTableValid,
+        (ulong Address, ulong Opcode)[] patches,
+        (ulong Address, byte[] Data)? memory = null,
+        bool patchTableValidReadable = true)
+    {
+        TargetTestHelpers helpers = new(arch);
+        TestPlaceholderTarget.Builder builder = new(arch);
+        MockMemorySpace.BumpAllocator allocator = builder.MemoryBuilder.CreateAllocator(0x1_0000, 0x10_0000);
+
+        TargetTestHelpers.LayoutResult patchTableLayout = helpers.LayoutFields(
+        [
+            new(nameof(Data.DebuggerPatchTable.Entries), DataType.pointer),
+            new(nameof(Data.DebuggerPatchTable.Count), DataType.uint32),
+        ]);
+        TargetTestHelpers.LayoutResult patchLayout = helpers.LayoutFields(
+        [
+            new("Address", DataType.pointer),
+            new(nameof(Data.DebuggerControllerPatch.Opcode), DataType.nuint),
+        ]);
+        builder.AddTypes(new Dictionary<DataType, Target.TypeInfo>
+        {
+            [DataType.DebuggerPatchTable] = new() { Fields = patchTableLayout.Fields, Size = patchTableLayout.Stride },
+            [DataType.DebuggerControllerPatch] = new() { Fields = patchLayout.Fields, Size = patchLayout.Stride },
+        });
+
+        MockMemorySpace.HeapFragment entriesFragment = allocator.Allocate(
+            (ulong)patches.Length * patchLayout.Stride,
+            "DebuggerControllerPatch entries");
+        int addressOffset = patchLayout.Fields["Address"].Offset;
+        int opcodeOffset = patchLayout.Fields[nameof(Data.DebuggerControllerPatch.Opcode)].Offset;
+        for (int i = 0; i < patches.Length; i++)
+        {
+            int entryOffset = i * (int)patchLayout.Stride;
+            helpers.WritePointer(
+                entriesFragment.Data.AsSpan(entryOffset + addressOffset, helpers.PointerSize),
+                patches[i].Address);
+            helpers.WriteNUInt(
+                entriesFragment.Data.AsSpan(entryOffset + opcodeOffset, helpers.PointerSize),
+                new TargetNUInt(patches[i].Opcode));
+        }
+
+        MockMemorySpace.HeapFragment patchTableFragment = allocator.Allocate(patchTableLayout.Stride, "DebuggerPatchTable");
+        helpers.WritePointer(
+            patchTableFragment.Data.AsSpan(
+                patchTableLayout.Fields[nameof(Data.DebuggerPatchTable.Entries)].Offset,
+                helpers.PointerSize),
+            entriesFragment.Address);
+        helpers.Write(
+            patchTableFragment.Data.AsSpan(
+                patchTableLayout.Fields[nameof(Data.DebuggerPatchTable.Count)].Offset,
+                sizeof(uint)),
+            (uint)patches.Length);
+
+        MockMemorySpace.HeapFragment patchTablePointerFragment = allocator.Allocate((ulong)helpers.PointerSize, "g_patches");
+        helpers.WritePointer(patchTablePointerFragment.Data, patchTableFragment.Address);
+
+        ulong patchTableValidAddress = 0x60_0000;
+        if (patchTableValidReadable)
+        {
+            MockMemorySpace.HeapFragment patchTableValidFragment = allocator.Allocate(sizeof(int), "g_patchTableValid");
+            helpers.Write(
+                patchTableValidFragment.Data.AsSpan(0, sizeof(int)),
+                patchTableValid ? 1 : 0);
+            patchTableValidAddress = patchTableValidFragment.Address;
+        }
+
+        builder.AddGlobals(
+            (Constants.Globals.DebuggerPatchTable, patchTablePointerFragment.Address),
+            (Constants.Globals.DebuggerPatchTableValid, patchTableValidAddress));
+        builder.AddContract<IDebugger>(version: "c1");
+
+        if (memory is not null)
+        {
+            builder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+            {
+                Address = memory.Value.Address,
+                Data = memory.Value.Data,
+                Name = "Target memory",
+            });
+        }
+
+        return builder.Build();
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadInstructionByte_ReturnsOriginalOpcodeWithoutReadingTargetMemory(MockTarget.Architecture arch)
+    {
+        const ulong InstructionAddress = 0x50_0000;
+        TestPlaceholderTarget target = BuildTargetWithPatchTable(
+            arch,
+            patchTableValid: true,
+            [(InstructionAddress, 0x1_C3)]);
+
+        byte instruction = target.Contracts.Debugger.ReadInstructionByte(InstructionAddress);
+
+        Assert.Equal(0xC3, instruction);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadInstructionByte_ReadsTargetMemoryWhenAddressIsNotPatched(MockTarget.Architecture arch)
+    {
+        const ulong InstructionAddress = 0x50_0000;
+        TestPlaceholderTarget target = BuildTargetWithPatchTable(
+            arch,
+            patchTableValid: true,
+            [(InstructionAddress + 1, 0x90)],
+            (InstructionAddress, [0x41]));
+
+        byte instruction = target.Contracts.Debugger.ReadInstructionByte(InstructionAddress);
+
+        Assert.Equal(0x41, instruction);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadInstructionByte_ReadsTargetMemoryWhenPatchTableIsInvalid(MockTarget.Architecture arch)
+    {
+        const ulong InstructionAddress = 0x50_0000;
+        TestPlaceholderTarget target = BuildTargetWithPatchTable(
+            arch,
+            patchTableValid: false,
+            [(InstructionAddress, 0x90)],
+            (InstructionAddress, [0xCC]));
+
+        byte instruction = target.Contracts.Debugger.ReadInstructionByte(InstructionAddress);
+
+        Assert.Equal(0xCC, instruction);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadInstructionByte_ReadsTargetMemoryWhenPatchTableGlobalsAreUnavailable(MockTarget.Architecture arch)
+    {
+        const ulong InstructionAddress = 0x50_0000;
+        TestPlaceholderTarget target = BuildNullDebuggerTarget(
+            arch,
+            (InstructionAddress, [0x41]));
+
+        byte instruction = target.Contracts.Debugger.ReadInstructionByte(InstructionAddress);
+
+        Assert.Equal(0x41, instruction);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadInstructionByte_ReadsTargetMemoryWhenPatchMetadataIsUnavailable(MockTarget.Architecture arch)
+    {
+        const ulong InstructionAddress = 0x50_0000;
+        TestPlaceholderTarget target = BuildTargetWithPatchTable(
+            arch,
+            patchTableValid: true,
+            [(0, 0)],
+            (InstructionAddress, [0x41]),
+            patchTableValidReadable: false);
+
+        byte instruction = target.Contracts.Debugger.ReadInstructionByte(InstructionAddress);
+
+        Assert.Equal(0x41, instruction);
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
+    public void ReadInstructionByte_RefreshesCachedPatchesAfterFlush(MockTarget.Architecture arch)
+    {
+        const ulong InstructionAddress = 0x50_0000;
+        TestPlaceholderTarget target = BuildTargetWithPatchTable(
+            arch,
+            patchTableValid: true,
+            [(InstructionAddress, 0x90)]);
+        IDebugger debugger = target.Contracts.Debugger;
+
+        Assert.Equal(0x90, debugger.ReadInstructionByte(InstructionAddress));
+
+        TargetPointer patchTablePointerAddress = target.ReadGlobalPointer(Constants.Globals.DebuggerPatchTable);
+        TargetPointer patchTableAddress = target.ReadPointer(patchTablePointerAddress);
+        Data.DebuggerPatchTable patchTable = target.ProcessedData.GetOrAdd<Data.DebuggerPatchTable>(patchTableAddress);
+        int opcodeOffset = target.GetTypeInfo(DataType.DebuggerControllerPatch).Fields["Opcode"].Offset;
+        target.WriteNUInt(patchTable.Entries.Value + (ulong)opcodeOffset, new TargetNUInt(0xC3));
+
+        Assert.Equal(0x90, debugger.ReadInstructionByte(InstructionAddress));
+
+        target.Flush(FlushScope.ForwardExecution);
+        debugger.Flush(FlushScope.ForwardExecution);
+
+        Assert.Equal(0xC3, debugger.ReadInstructionByte(InstructionAddress));
     }
 
     // -----------------------------------------------------------------------
