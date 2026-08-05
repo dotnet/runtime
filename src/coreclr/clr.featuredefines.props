@@ -1,5 +1,7 @@
 <Project>
-    <Import Project="$(MSBuildThisFileDirectory)clr.featuremultithreading.props" Condition="'$(_ClrFeatureMultithreadingPropsImported)' != 'true'" />
+    <PropertyGroup>
+        <FeatureMultithreading Condition="('$(TargetsBrowser)' != 'true' and '$(TargetsWasi)' != 'true') or '$(WasmEnableThreads)' == 'true'">true</FeatureMultithreading>
+    </PropertyGroup>
 
     <PropertyGroup>
         <FeatureCoreCLR>true</FeatureCoreCLR>

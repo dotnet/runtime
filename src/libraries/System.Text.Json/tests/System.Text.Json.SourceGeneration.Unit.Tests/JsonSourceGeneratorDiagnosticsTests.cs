@@ -781,7 +781,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
-        public void UnionWithAmbiguousCaseTypesAndOptionsClassifier_CompilesWithWarning()
+        public void UnionWithAmbiguousCaseTypesAndOptionsClassifier_CompilesWithoutWarning()
         {
             string source = """
                 using System;
@@ -815,14 +815,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
-            Location unionLocation = compilation.GetSymbolsWithName("IntOrLongUnion").First().Locations[0];
 
-            var expectedDiagnostics = new DiagnosticData[]
-            {
-                new(DiagnosticSeverity.Warning, unionLocation, "Union type 'IntOrLongUnion': case types 'int', 'long' all serialize as JSON value type 'Number'. Set JsonUnionAttribute.TypeClassifier to provide a custom classifier that can disambiguate."),
-            };
-
-            CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
