@@ -208,8 +208,8 @@ FORCEINLINE  void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockH
 #define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (8 * minipal_getpagesize())
 #define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        (1 * minipal_getpagesize())
 
-#define STUB_HEAP_RESERVE_SIZE                 (3 * minipal_getpagesize())
-#define STUB_HEAP_COMMIT_SIZE                  (1 * minipal_getpagesize())
+#define EXECUTABLE_HEAP_RESERVE_SIZE           (3 * minipal_getpagesize())
+#define EXECUTABLE_HEAP_COMMIT_SIZE            (1 * minipal_getpagesize())
 
 #define STATIC_FIELD_HEAP_RESERVE_SIZE         (2 * minipal_getpagesize())
 #define STATIC_FIELD_HEAP_COMMIT_SIZE          (1 * minipal_getpagesize())

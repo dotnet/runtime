@@ -1095,7 +1095,6 @@ void LoaderAllocator::ActivateManagedTracking()
 // This is carefully tuned to sum up to 16 pages to reduce waste.
 #define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        0
 #define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * minipal_getpagesize())
-#define COLLECTIBLE_STUB_HEAP_SIZE                 minipal_getpagesize()
 #define COLLECTIBLE_CODEHEAP_SIZE                  (10 * minipal_getpagesize())
 #define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * minipal_getpagesize())
 
@@ -1198,8 +1197,8 @@ void LoaderAllocator::Init(BYTE *pExecutableHeapMemory)
     {
         _ASSERTE(!IsCollectible());
 
-        m_pExecutableHeap = new (pExecutableHeapMemory) LoaderHeap(STUB_HEAP_RESERVE_SIZE,
-                                                                      STUB_HEAP_COMMIT_SIZE,
+        m_pExecutableHeap = new (pExecutableHeapMemory) LoaderHeap(EXECUTABLE_HEAP_RESERVE_SIZE,
+                                                                      EXECUTABLE_HEAP_COMMIT_SIZE,
                                                                       initReservedMem,
                                                                       dwExecutableHeapReserveSize,
                                                                       NULL,
