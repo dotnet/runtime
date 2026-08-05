@@ -94,13 +94,6 @@
     </ItemGroup>
   </Target>
 
-  <!--
-    WASM CoreCLR ships the VM/minipal headers needed to relink dotnet.native.wasm with emcc
-    (see BrowserWasmApp.CoreCLR.targets). The browserhost CMakeLists installs them under
-    sharedFramework/include, but the generic runtime-file harvest (eng/liveBuilds.targets) only
-    globs the top level of sharedFramework, so the include/ subtree is dropped. Harvest it here,
-    mirroring how the Mono pack ships its relink headers under native/include.
-  -->
   <Target Name="AddCoreCLRWasmIncludeFiles"
           Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'"
           AfterTargets="AddRuntimeFilesToPackage">
