@@ -165,6 +165,7 @@ namespace System.Collections
             _array = CreateArray(bytes, out _bitLength);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static byte[] CreateArray(ReadOnlySpan<byte> bytes, out int bitLength)
         {
             if (bytes.Length > int.MaxValue / BitsPerByte)
