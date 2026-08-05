@@ -16400,12 +16400,18 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 
         if (IsVNConstantNonHandle(app.GetArg(0)) && (app.GetArg(0) != VNForNull()))
         {
-            *offset += ConstantValue<target_ssize_t>(app.GetArg(0));
+            // Ref/byref constants are stored as host size_t, so read them as such and truncate.
+            //
+            *offset += varTypeIsGC(TypeOfVN(app.GetArg(0)))
+                           ? (target_ssize_t)CoercedConstantValue<ssize_t>(app.GetArg(0))
+                           : ConstantValue<target_ssize_t>(app.GetArg(0));
             *vn = app.GetArg(1);
         }
         else if (IsVNConstantNonHandle(app.GetArg(1)) && (app.GetArg(1) != VNForNull()))
         {
-            *offset += ConstantValue<target_ssize_t>(app.GetArg(1));
+            *offset += varTypeIsGC(TypeOfVN(app.GetArg(1)))
+                           ? (target_ssize_t)CoercedConstantValue<ssize_t>(app.GetArg(1))
+                           : ConstantValue<target_ssize_t>(app.GetArg(1));
             *vn = app.GetArg(0);
         }
         else
