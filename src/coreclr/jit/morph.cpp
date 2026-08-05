@@ -12534,15 +12534,10 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         {
             noway_assert(GenTree::OperIsRotate(rotateOp));
 
-            // The rotate amount must be in the range [0, bitsize - 1]. IL masks shift/rotate
-            // amounts explicitly, but the recognition above stripped that mask off the index.
-            // Reintroduce it so a later constant fold cannot leave an out-of-range amount that
-            // trips downstream invariants (e.g. arm64 containment in lowering):
-            //  - an in-range constant needs no change,
-            //  - an out-of-range constant is masked in place,
-            //  - a non-constant amount is wrapped in AND(amount, bitsize - 1).
-            // Targets whose rotate instructions mask the amount implicitly strip the AND again
-            // in lowering.
+            // Explicitly mask the rotate amount to the range [0, bitsize-1]. Otherwise, a later
+            // tranform can stick an out of range constant here and trip up lowering.  If the
+            // target's rotate or shift instructions mask their operand implicitly, those targets
+            // remove this mask again during lowering.
             if (rotateIndex->IsCnsIntOrI())
             {
                 ssize_t rotateAmount = rotateIndex->AsIntCon()->IconValue();

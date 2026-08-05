@@ -8824,10 +8824,8 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
 //    op - the shift or rotate node (GT_LSH, GT_RSH, GT_RSZ, GT_ROL or GT_ROR)
 //
 // Notes:
-//    On the targets that call this, the shift/rotate instructions mask the
-//    count to 5 bits (or 6 bits for 64 bit operations), so an explicit
-//    AND(count, mask) that keeps at least those low bits is redundant and can
-//    be removed.
+//    Some targets' shift/rotate instructions mask their count to bitsize.
+//    Remove the explicit AND(count, mask) that keeps at least those low bits.
 //
 void Lowering::TryRemoveShiftRotateMask(GenTreeOp* op)
 {
