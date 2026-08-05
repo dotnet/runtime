@@ -27,6 +27,8 @@ namespace ILLink.RoslynAnalyzer.Tests
                 TestCode = source,
                 FixedCode = fixedSource
             };
+            IgnoreAdditionalLocations(baselineExpected);
+            IgnoreAdditionalLocations(fixedExpected);
             test.ExpectedDiagnostics.AddRange(baselineExpected);
             test.TestState.AnalyzerConfigFiles.Add(
                         ("/.editorconfig", SourceText.From(@$"
@@ -37,7 +39,36 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 test.NumberOfIncrementalIterations = numberOfIterations;
                 test.NumberOfFixAllIterations = numberOfIterations;
             }
-            test.FixedState.ExpectedDiagnostics.AddRange(fixedExpected);
+            test.FixedState.ExpectedDiagnostics.AddRange(
+                fixedSource == source && fixedExpected.Length == 0 ? baselineExpected : fixedExpected);
+            return test.RunAsync();
+        }
+
+        private static void IgnoreAdditionalLocations(DiagnosticResult[] diagnostics)
+        {
+            for (int i = 0; i < diagnostics.Length; i++)
+                diagnostics[i] = diagnostics[i].WithOptions(DiagnosticOptions.IgnoreAdditionalLocations);
+        }
+
+        static Task VerifyDynamicallyAccessedMembersCodeFixWithReference(
+            string source,
+            string fixedSource,
+            string referenceSource,
+            DiagnosticResult expected)
+        {
+            var test = ReferenceCompatibilityTestUtils.CreateTestWithReference<
+                DynamicallyAccessedMembersAnalyzer,
+                ILLink.CodeFix.DynamicallyAccessedMembersCodeFixProvider>(source, referenceSource);
+            test.FixedCode = fixedSource;
+            expected = expected.WithOptions(DiagnosticOptions.IgnoreAdditionalLocations);
+            test.ExpectedDiagnostics.Add(expected);
+            if (fixedSource == source)
+                test.FixedState.ExpectedDiagnostics.Add(expected);
+            test.TestState.AnalyzerConfigFiles.Add(
+                ("/.editorconfig", SourceText.From($"""
+                    is_global = true
+                    build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true
+                    """)));
             return test.RunAsync();
         }
 
@@ -81,7 +112,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter)
                         .WithSpan(7, 9, 7, 14)
-                        .WithSpan(6, 19, 6, 25)
                         .WithArguments("t",
                             "C.M2(Type)",
                             "t",
@@ -89,6 +119,88 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                             "'DynamicallyAccessedMemberTypes.All'")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
+        }
+
+        [Fact]
+        public Task CodeFix_IL2067_TargetsMatchingParameterWithMultipleArguments()
+        {
+            var source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                class C
+                {
+                    static void M(Type p1, Type p2) => M2(p1, p2);
+
+                    static void M2(Type a, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type b) {}
+                }
+                """;
+            var fixedSource = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                class C
+                {
+                    static void M(Type p1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type p2) => M2(p1, p2);
+
+                    static void M2(Type a, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type b) {}
+                }
+                """;
+
+            return VerifyDynamicallyAccessedMembersCodeFix(
+                source,
+                fixedSource,
+                [
+                    VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter)
+                        .WithSpan(6, 40, 6, 50)
+                        .WithArguments("b", "C.M2(Type, Type)", "p2", "C.M(Type, Type)", "'DynamicallyAccessedMemberTypes.PublicMethods'")
+                ],
+                []);
+        }
+
+        [Fact]
+        public Task CodeFix_IL2067_ResolvesParameterThroughLocal()
+        {
+            var source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                class C
+                {
+                    static void M(Type p)
+                    {
+                        Type local = p;
+                        {|#0:M2(local)|};
+                    }
+
+                    static void M2([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t) {}
+                }
+                """;
+            var fixedSource = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                class C
+                {
+                    static void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type p)
+                    {
+                        Type local = p;
+                        M2(local);
+                    }
+
+                    static void M2([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t) {}
+                }
+                """;
+
+            return VerifyDynamicallyAccessedMembersCodeFix(
+                source,
+                fixedSource,
+                [
+                    VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter)
+                        .WithLocation(0)
+                        .WithArguments("t", "C.M2(Type)", "p", "C.M(Type)", "'DynamicallyAccessedMemberTypes.PublicMethods'")
+                ],
+                []);
         }
 
         [Fact]
@@ -135,7 +247,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter)
                         .WithSpan(8, 9, 8, 14)
-                        .WithSpan(7, 21, 7, 27)
                         .WithArguments("t",
                             "C.M2(Type)",
                             "t",
@@ -167,7 +278,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                 VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter)
                     .WithSpan(7, 9, 7, 14)
-                    .WithSpan(6, 19, 6, 25)
                     .WithArguments("t",
                         "C.M2(Type)",
                         "t",
@@ -247,7 +357,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // /0/Test0.cs(8,10): warning IL2068: 'C.M(Type)' method return value does not satisfy 'DynamicallyAccessedMemberTypes.All' requirements. The parameter 't' of method 'C.M(Type)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType)
                     .WithSpan(8, 16, 8, 17)
-                    .WithSpan(7, 12, 7, 18)
                     .WithArguments("C.M(Type)",
                             "t",
                             "C.M(Type)",
@@ -336,7 +445,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     //The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                         VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsField)
                         .WithSpan(13, 9, 13, 17)
-                        .WithSpan(11, 27, 11, 36)
                         .WithArguments("C.f",
                             "type",
                             "C.M(Type)",
@@ -387,7 +495,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // /0/Test0.cs(12,3): warning IL2070: 'this' argument does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' in call to 'System.Type.GetMethods()'. The parameter 't' of method 'C.M(Type)' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter)
                     .WithSpan(12, 9, 12, 23)
-                    .WithSpan(10, 19, 10, 25)
                     .WithArguments("System.Type.GetMethods()",
                         "t",
                         "C.M(Type)",
@@ -443,7 +550,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter)
                         .WithSpan(13, 9, 13, 45)
-                        .WithSpan(11, 19, 11, 25)
                         .WithArguments("System.Type.GetMethods(BindingFlags)",
                             "t",
                             "C.M(Type)",
@@ -510,7 +616,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter)
                     .WithSpan(10, 36, 10, 50)
-                    .WithSpan(8, 26, 8, 32)
                     .WithArguments("System.Type.GetMethods()",
                         "t",
                         "System.C.Main(Type)",
@@ -578,13 +683,72 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
                     .WithSpan(8, 9, 8, 46)
-                    .WithSpan(16, 5, 19, 6)
                     .WithArguments("type",
                         "C.NeedsPublicMethodsOnParameter(Type)",
                         "C.GetC()",
                         "'DynamicallyAccessedMemberTypes.PublicMethods'")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
+        }
+
+        [Fact]
+        public Task CodeFix_IL2072_UserDefinedConversionReturn()
+        {
+            var source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                class ConvertsToType
+                {
+                    public static implicit operator Type(ConvertsToType value) => typeof(ConvertsToType);
+                }
+
+                class C
+                {
+                    static void M()
+                    {
+                        {|#0:NeedsPublicMethods(new ConvertsToType())|};
+                    }
+
+                    static void NeedsPublicMethods(
+                        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type) {}
+                }
+                """;
+            var fixedSource = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                class ConvertsToType
+                {
+                    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                    public static implicit operator Type(ConvertsToType value) => typeof(ConvertsToType);
+                }
+
+                class C
+                {
+                    static void M()
+                    {
+                        NeedsPublicMethods(new ConvertsToType());
+                    }
+
+                    static void NeedsPublicMethods(
+                        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type type) {}
+                }
+                """;
+
+            return VerifyDynamicallyAccessedMembersCodeFix(
+                source,
+                fixedSource,
+                [
+                    VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
+                        .WithLocation(0)
+                        .WithArguments(
+                            "type",
+                            "C.NeedsPublicMethods(Type)",
+                            "ConvertsToType.implicit operator Type(ConvertsToType)",
+                            "'DynamicallyAccessedMemberTypes.PublicMethods'")
+                ],
+                []);
         }
 
         [Fact]
@@ -646,7 +810,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter)
                         .WithSpan(8, 9, 8, 55)
-                        .WithSpan(16, 5, 19, 6)
                         .WithArguments("t",
                             "C.NeedsPublicMethodsOnParameter(Type)",
                             "C.GetC(Type)",
@@ -778,7 +941,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType)
                         .WithSpan(11, 16, 11, 31)
-                        .WithSpan(5, 5, 7, 6)
                         .WithArguments("C.M()",
                             "C.Main(Type)",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -829,7 +991,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType)
                         .WithSpan(11, 16, 11, 23)
-                        .WithSpan(5, 5, 7, 6)
                         .WithArguments("C.M(Type)",
                             "C.Main(Type)",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -890,7 +1051,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField)
                         .WithSpan(8, 9, 8, 16)
-                        .WithSpan(11, 5, 14, 6)
                         .WithArguments("C.f",
                             "C.M()",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -946,7 +1106,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     //The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
                         .WithSpan(8, 9, 8, 32)
-                        .WithSpan(11, 5, 14, 6)
                         .WithArguments("System.Type.GetMethod(String)",
                             "C.GetC()",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -1003,7 +1162,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     //The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
                         .WithSpan(194, 13, 194, 36)
-                        .WithSpan(197, 9, 200, 10)
                         .WithArguments("System.Type.GetMethod(String)",
                             "System.C.GetC()",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -1060,7 +1218,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     //The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
                         .WithSpan(193, 13, 193, 36)
-                        .WithSpan(196, 9, 200, 10)
                         .WithArguments("System.Type.GetMethod(String)",
                             "System.C.GetC()",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -1119,7 +1276,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     //The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
                         .WithSpan(194, 13, 194, 36)
-                        .WithSpan(198, 9, 201, 10)
                         .WithArguments("System.Type.GetMethod(String)",
                             "System.C.GetC()",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -1178,7 +1334,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsParameter)
                         .WithSpan(10, 9, 10, 30)
-                        .WithSpan(6, 25, 6, 38)
                         .WithArguments("type",
                             "C.NeedsPublicMethods(Type)",
                             "C.f",
@@ -1266,7 +1421,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnType)
                         .WithSpan(9, 16, 9, 17)
-                        .WithSpan(12, 25, 12, 26)
                         .WithArguments("C.Main()",
                             "C.f",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -1351,7 +1505,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsField)
                         .WithSpan(13, 9, 13, 16)
-                        .WithSpan(6, 25, 6, 39)
                         .WithArguments("C.f2",
                             "C.f1",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -1434,7 +1587,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter)
                         .WithSpan(10, 9, 10, 27)
-                        .WithSpan(6, 25, 6, 38)
                         .WithArguments("System.Type.GetMethod(String)",
                             "C.f",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -1483,7 +1635,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter)
                         .WithSpan(10, 9, 10, 27)
-                        .WithSpan(6, 24, 6, 37)
                         .WithArguments("System.Type.GetMethod(String)",
                             "C.f",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -1578,7 +1729,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter)
                         .WithSpan(198, 13, 198, 21)
-                        .WithSpan(196, 9, 199, 10)
                         .WithArguments("t",
                             "System.C.M2(Type)",
                             "System.C.M1()",
@@ -1653,7 +1803,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter)
                         .WithSpan(199, 13, 199, 21)
-                        .WithSpan(196, 9, 201, 10)
                         .WithArguments("t",
                             "System.C.M2(Type)",
                             "System.C.M1()",
@@ -1728,7 +1877,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter)
                         .WithSpan(199, 13, 199, 21)
-                        .WithSpan(196, 9, 201, 10)
                         .WithArguments("t",
                             "System.C.M2(Type)",
                             "System.C.M1(String)",
@@ -1836,7 +1984,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // /0/Test0.cs(199,11): warning IL2083: 'System.C.M1()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements. The implicit 'this' argument of method 'System.C.M1()' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType)
                         .WithSpan(199, 20, 199, 24)
-                        .WithSpan(196, 9, 200, 10)
                         .WithArguments("System.C.M1()",
                             "System.C.M1()",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -1900,7 +2047,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // /0/Test0.cs(199,11): warning IL2083: 'System.C.M1()' method return value does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements. The implicit 'this' argument of method 'System.C.M1()' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType)
                         .WithSpan(200, 20, 200, 24)
-                        .WithSpan(196, 9, 201, 10)
                         .WithArguments("System.C.M1(String)",
                             "System.C.M1(String)",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -2008,7 +2154,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField)
                         .WithSpan(198, 13, 198, 21)
-                        .WithSpan(196, 9, 199, 10)
                         .WithArguments("System.C.f",
                             "System.C.M()",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -2080,7 +2225,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter)
                         .WithSpan(198, 13, 198, 22)
-                        .WithSpan(196, 9, 199, 10)
                         .WithArguments("System.C.M2()",
                             "System.C.M1()",
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
@@ -2195,7 +2339,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter)
                         .WithSpan(18, 9, 18, 22)
-                        .WithSpan(16, 28, 16, 29)
                         .WithArguments("type",
                             "C.M1(Type)",
                             "T",
@@ -2253,7 +2396,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType)
                         .WithSpan(14, 16, 14, 25)
-                        .WithSpan(12, 27, 12, 28)
                         .WithArguments("C.M<T>()",
                             "T",
                             "C.M<T>()",
@@ -2337,7 +2479,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // /0/Test0.cs(8,3): warning IL2089: value stored in field 'C.f' does not satisfy 'DynamicallyAccessedMemberTypes.PublicMethods' requirements. The generic parameter 'T' of 'C.Main<T>()' does not have matching annotations. The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField)
                         .WithSpan(8, 9, 8, 22)
-                        .WithSpan(6, 29, 6, 30)
                         .WithArguments("C.f",
                             "T",
                             "C.Main<T>()",
@@ -2413,7 +2554,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter)
                         .WithSpan(8, 9, 8, 31)
-                        .WithSpan(4, 9, 4, 10)
                         .WithArguments("System.Type.GetMethods()",
                             "T",
                             "C<T>",
@@ -2531,7 +2671,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // The source value must declare at least the same requirements as those declared on the target location it is assigned to.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter)
                         .WithSpan(16, 9, 16, 16)
-                        .WithSpan(14, 28, 14, 29)
                         .WithArguments("T",
                             "C.M1<T>()",
                             "S",
@@ -2539,6 +2678,70 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                             "'DynamicallyAccessedMemberTypes.PublicMethods'")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
+        }
+
+        [Fact]
+        public Task CodeFix_IL2091_TargetsMatchingTypeParameterWithMultipleArguments()
+        {
+            var source = """
+                using System.Diagnostics.CodeAnalysis;
+
+                class C
+                {
+                    static void M1<T1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T2>() {}
+
+                    static void M2<S1, S2>() => M1<S1, S2>();
+                }
+                """;
+            var fixedSource = """
+                using System.Diagnostics.CodeAnalysis;
+
+                class C
+                {
+                    static void M1<T1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T2>() {}
+
+                    static void M2<S1, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] S2>() => M1<S1, S2>();
+                }
+                """;
+
+            return VerifyDynamicallyAccessedMembersCodeFix(
+                source,
+                fixedSource,
+                [
+                    VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter)
+                        .WithSpan(7, 33, 7, 45)
+                        .WithArguments("T2", "C.M1<T1, T2>()", "S2", "C.M2<S1, S2>()", "'DynamicallyAccessedMemberTypes.PublicMethods'")
+                ],
+                []);
+        }
+
+        [Fact]
+        public Task CodeFix_IL2091_ResolvesTypeParameterFromBaseList()
+        {
+            var source = """
+                using System.Diagnostics.CodeAnalysis;
+
+                interface I<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T> {}
+
+                class {|#0:C|}<T> : I<T> {}
+                """;
+            var fixedSource = """
+                using System.Diagnostics.CodeAnalysis;
+
+                interface I<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T> {}
+
+                class C<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T> : I<T> {}
+                """;
+
+            return VerifyDynamicallyAccessedMembersCodeFix(
+                source,
+                fixedSource,
+                [
+                    VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter)
+                        .WithLocation(0)
+                        .WithArguments("T", "I<T>", "T", "C<T>", "'DynamicallyAccessedMemberTypes.PublicMethods'")
+                ],
+                []);
         }
 
         [Fact]
@@ -2622,12 +2825,84 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 // All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
                 VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
                 .WithSpan(11, 33, 11, 34)
-                .WithSpan(11, 33, 11, 34)
                 .WithArguments("t",
                     "C.M(Type)",
                     "t",
                     "Base.M(Type)") },
                 fixedExpected: Array.Empty<DiagnosticResult>(), 1);
+        }
+
+        [Fact]
+        public Task CodeFix_IL2092_AddsAttributeToInterfaceImplementationParameter()
+        {
+            var source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                interface I
+                {
+                    void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t);
+                }
+
+                class C : I
+                {
+                    public void M(Type {|#0:t|}) {}
+                }
+                """;
+            var fixedSource = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                interface I
+                {
+                    void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t);
+                }
+
+                class C : I
+                {
+                    public void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type t) {}
+                }
+                """;
+
+            return VerifyDynamicallyAccessedMembersCodeFix(
+                source,
+                fixedSource,
+                [
+                    VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
+                        .WithLocation(0)
+                        .WithArguments("t", "C.M(Type)", "t", "I.M(Type)")
+                ],
+                []);
+        }
+
+        [Fact]
+        public Task CodeFix_IL2092_DoesNotRemoveAttributeFromInterfaceImplementationParameter()
+        {
+            var source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                interface I
+                {
+                    void M(Type t);
+                }
+
+                class C : I
+                {
+                    public void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] Type {|#0:t|}) {}
+                }
+                """;
+            var fixedSource = source;
+
+            return VerifyDynamicallyAccessedMembersCodeFix(
+                source,
+                fixedSource,
+                [
+                    VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
+                        .WithLocation(0)
+                        .WithArguments("t", "C.M(Type)", "t", "I.M(Type)")
+                ],
+                []);
         }
 
         [Fact]
@@ -2651,24 +2926,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 }
             }
             """;
-            var fixtest = $$"""
-            using System;
-            using System.Diagnostics.CodeAnalysis;
-
-            public class Base
-            {
-                public virtual void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)] Type t) {}
-            }
-
-            public class C : Base
-            {
-                public override void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)] Type t) {}
-
-                public static void Main() {
-
-                }
-            }
-            """;
+            var fixtest = test;
             await VerifyDynamicallyAccessedMembersCodeFix(
                 source: test,
                 fixedSource: fixtest,
@@ -2678,13 +2936,83 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
                     .WithSpan(11, 111, 11, 112)
-                    .WithSpan(6, 32, 6, 33)
                     .WithArguments("t",
                         "C.M(Type)",
                         "t",
                         "Base.M(Type)")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
+        }
+
+        [Fact]
+        public Task CodeFix_IL2092_AddsAttributeToOverrideOfMetadataMethod()
+        {
+            var referenceSource = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                public class Base
+                {
+                    public virtual void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)] Type t) {}
+                }
+                """;
+            var source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C : Base
+                {
+                    public override void M(Type {|#0:t|}) {}
+                }
+                """;
+            var fixedSource = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C : Base
+                {
+                    public override void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)] Type t) {}
+                }
+                """;
+
+            return VerifyDynamicallyAccessedMembersCodeFixWithReference(
+                source,
+                fixedSource,
+                referenceSource,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
+                    .WithLocation(0)
+                    .WithArguments("t", "C.M(Type)", "t", "Base.M(Type)"));
+        }
+
+        [Fact]
+        public Task CodeFix_IL2092_DoesNotRemoveAttributeFromOverrideOfMetadataMethod()
+        {
+            var referenceSource = """
+                using System;
+
+                public class Base
+                {
+                    public virtual void M(Type t) {}
+                }
+                """;
+            var source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C : Base
+                {
+                    public override void M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)] Type {|#0:t|}) {}
+                }
+                """;
+            var fixedSource = source;
+
+            return VerifyDynamicallyAccessedMembersCodeFixWithReference(
+                source,
+                fixedSource,
+                referenceSource,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
+                    .WithLocation(0)
+                    .WithArguments("t", "C.M(Type)", "t", "Base.M(Type)"));
         }
 
         [Fact]
@@ -2748,7 +3076,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 // don't match overridden parameter 't' of method 'Base.M(Type)'.
                 // All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
                 VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
-                .WithSpan(11, 33, 11, 34)
                 .WithSpan(11, 33, 11, 34)
                 .WithArguments("t",
                     "C.M(Type)",
@@ -2850,7 +3177,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides)
                         .WithSpan(14, 26, 14, 27)
-                        .WithSpan(14, 26, 14, 27)
                         .WithArguments("C.M(Type)",
                             "Base.M(Type)")
                 },
@@ -2882,29 +3208,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 }
             }
             """;
-            var fixtest = $$"""
-            using System;
-            using System.Diagnostics.CodeAnalysis;
-
-            public class Base
-            {
-                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)]
-                public virtual Type M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)] Type t) {
-                    return t;
-                }
-            }
-
-            public class C : Base
-            {
-                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)]
-                public override Type M([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)] Type t) {
-                    return t;
-                }
-
-                public static void Main() {
-                }
-            }
-            """;
+            var fixtest = test;
             await VerifyDynamicallyAccessedMembersCodeFix(
                 source: test,
                 fixedSource: fixtest,
@@ -2914,11 +3218,84 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides)
                         .WithSpan(14, 26, 14, 27)
-                        .WithSpan(6, 25, 6, 26)
                         .WithArguments("C.M(Type)",
                         "Base.M(Type)")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
+        }
+
+        [Fact]
+        public Task CodeFix_IL2093_AddsAttributeToOverrideOfMetadataMethod()
+        {
+            var referenceSource = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                public class Base
+                {
+                    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)]
+                    public virtual Type M() => typeof(object);
+                }
+                """;
+            var source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C : Base
+                {
+                    public override Type {|#0:M|}() => typeof(object);
+                }
+                """;
+            var fixedSource = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C : Base
+                {
+                    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)]
+                    public override Type M() => typeof(object);
+                }
+                """;
+
+            return VerifyDynamicallyAccessedMembersCodeFixWithReference(
+                source,
+                fixedSource,
+                referenceSource,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides)
+                    .WithLocation(0)
+                    .WithArguments("C.M()", "Base.M()"));
+        }
+
+        [Fact]
+        public Task CodeFix_IL2093_DoesNotRemoveAttributeFromOverrideOfMetadataMethod()
+        {
+            var referenceSource = """
+                using System;
+
+                public class Base
+                {
+                    public virtual Type M() => typeof(object);
+                }
+                """;
+            var source = """
+                using System;
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C : Base
+                {
+                    [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.NonPublicMethods)]
+                    public override Type {|#0:M|}() => typeof(object);
+                }
+                """;
+            var fixedSource = source;
+
+            return VerifyDynamicallyAccessedMembersCodeFixWithReference(
+                source,
+                fixedSource,
+                referenceSource,
+                VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides)
+                    .WithLocation(0)
+                    .WithArguments("C.M()", "Base.M()"));
         }
 
         [Fact]

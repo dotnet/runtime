@@ -216,22 +216,22 @@ namespace ILLink.RoslynAnalyzer
             var baseMethodReturnAnnotation = FlowAnnotations.GetMethodReturnValueAnnotation(baseMethod);
             if (overrideMethodReturnAnnotation != baseMethodReturnAnnotation)
             {
+                Location[]? additionalLocations = null;
+                ImmutableDictionary<string, string?>? properties = null;
+                if (overrideMethodReturnAnnotation == DynamicallyAccessedMemberTypes.None
+                    && !overrideMethod.TryGetReturnAttribute(DynamicallyAccessedMembersAttribute, out _))
+                {
+                    (additionalLocations, properties) = CreateCodeFixArguments(
+                        context.Compilation,
+                        GetPrimaryLocation(overrideMethod.Locations),
+                        baseMethodReturnAnnotation);
+                }
 
-                (IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements(overrideMethod,
-                    baseMethod, overrideMethodReturnAnnotation, baseMethodReturnAnnotation);
-
-                Location attributableSymbolLocation = GetPrimaryLocation(attributableMethod.Locations);
-
-                // code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
-                (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
-                    || (overrideMethod.TryGetReturnAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
-                        && baseMethod.TryGetReturnAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-                        ) ? (null, null) : CreateArguments(attributableSymbolLocation, missingAttribute);
-
-                var returnOrigin = origin ??= overrideMethod;
+                var returnOrigin = origin ?? overrideMethod;
                 context.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides),
-                    GetPrimaryLocation(returnOrigin.Locations), sourceLocation, DAMArgs?.ToImmutableDictionary(), overrideMethod.GetDisplayName(), baseMethod.GetDisplayName()));
+                    GetPrimaryLocation(returnOrigin.Locations), additionalLocations, properties,
+                    overrideMethod.GetDisplayName(), baseMethod.GetDisplayName()));
             }
 
             foreach (var overrideParam in overrideMethod.GetMetadataParameters())
@@ -241,21 +241,21 @@ namespace ILLink.RoslynAnalyzer
                 var overrideParameterAnnotation = FlowAnnotations.GetMethodParameterAnnotation(overrideParam);
                 if (overrideParameterAnnotation != baseParameterAnnotation)
                 {
-                    (IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements(overrideMethod,
-                        baseMethod, overrideParameterAnnotation, baseParameterAnnotation);
-
-                    Location attributableSymbolLocation = attributableMethod.GetParameter(overrideParam.Index).Location!;
-
-                    // code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
-                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
-                        || (overrideParam.ParameterSymbol!.TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
-                            && baseParam.ParameterSymbol!.TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-                            ) ? (null, null) : CreateArguments(attributableSymbolLocation, missingAttribute);
+                    Location[]? additionalLocations = null;
+                    ImmutableDictionary<string, string?>? properties = null;
+                    if (overrideParameterAnnotation == DynamicallyAccessedMemberTypes.None
+                        && !overrideParam.ParameterSymbol!.TryGetAttribute(DynamicallyAccessedMembersAttribute, out _))
+                    {
+                        (additionalLocations, properties) = CreateCodeFixArguments(
+                            context.Compilation,
+                            overrideParam.Location!,
+                            baseParameterAnnotation);
+                    }
 
                     var parameterOrigin = origin ?? overrideParam.ParameterSymbol;
                     context.ReportDiagnostic(Diagnostic.Create(
                         DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides),
-                        GetPrimaryLocation(parameterOrigin?.Locations), sourceLocation, DAMArgs?.ToImmutableDictionary(),
+                        GetPrimaryLocation(parameterOrigin?.Locations), additionalLocations, properties,
                         overrideParam.GetDisplayName(), overrideMethod.GetDisplayName(), baseParam.GetDisplayName(), baseMethod.GetDisplayName()));
                 }
             }
@@ -266,22 +266,10 @@ namespace ILLink.RoslynAnalyzer
                 var overriddenMethodTypeParameterAnnotation = baseMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes();
                 if (methodTypeParameterAnnotation != overriddenMethodTypeParameterAnnotation)
                 {
-
-                    (IMethodSymbol attributableMethod, DynamicallyAccessedMemberTypes missingAttribute) = GetTargetAndRequirements(overrideMethod, baseMethod, methodTypeParameterAnnotation, overriddenMethodTypeParameterAnnotation);
-
-                    var attributableSymbol = attributableMethod.TypeParameters[i];
-                    Location attributableSymbolLocation = GetPrimaryLocation(attributableSymbol.Locations);
-
-                    // code fix does not support merging multiple attributes. If an attribute is present or the method is not in source, do not provide args for code fix.
-                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!attributableSymbolLocation.IsInSource
-                        || (overrideMethod.TypeParameters[i].TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)
-                            && baseMethod.TypeParameters[i].TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-                            ) ? (null, null) : CreateArguments(attributableSymbolLocation, missingAttribute);
-
                     var typeParameterOrigin = origin ?? overrideMethod.TypeParameters[i];
                     context.ReportDiagnostic(Diagnostic.Create(
                         DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides),
-                        GetPrimaryLocation(typeParameterOrigin.Locations), sourceLocation, DAMArgs?.ToImmutableDictionary(),
+                        GetPrimaryLocation(typeParameterOrigin.Locations),
                         overrideMethod.TypeParameters[i].GetDisplayName(), overrideMethod.GetDisplayName(),
                         baseMethod.TypeParameters[i].GetDisplayName(), baseMethod.GetDisplayName()));
                 }
@@ -308,7 +296,7 @@ namespace ILLink.RoslynAnalyzer
             {
                 if (implementationMember is IMethodSymbol implementationMethod && interfaceMember is IMethodSymbol interfaceMethod)
                 {
-                    ISymbol origin = implementationMethod;
+                    ISymbol? origin = null;
                     INamedTypeSymbol implementationType = implementationMethod.ContainingType;
 
                     // If this type implements an interface method through a base class, the origin of the warning is this type,
@@ -351,29 +339,24 @@ namespace ILLink.RoslynAnalyzer
             }
         }
 
-        private static (IMethodSymbol Method, DynamicallyAccessedMemberTypes Requirements) GetTargetAndRequirements(IMethodSymbol method, IMethodSymbol overriddenMethod, DynamicallyAccessedMemberTypes methodAnnotation, DynamicallyAccessedMemberTypes overriddenMethodAnnotation)
+        private static (Location[]?, ImmutableDictionary<string, string?>?) CreateCodeFixArguments(
+            Compilation compilation,
+            Location targetLocation,
+            DynamicallyAccessedMemberTypes annotation)
         {
-            DynamicallyAccessedMemberTypes mismatchedArgument;
-            IMethodSymbol paramNeedsAttributes;
-            if (methodAnnotation == DynamicallyAccessedMemberTypes.None)
+            if (targetLocation.SourceTree is not { } syntaxTree
+                || !compilation.ContainsSyntaxTree(syntaxTree))
             {
-                mismatchedArgument = overriddenMethodAnnotation;
-                paramNeedsAttributes = method;
+                return default;
             }
-            else
-            {
-                mismatchedArgument = methodAnnotation;
-                paramNeedsAttributes = overriddenMethod;
-            }
-            return (paramNeedsAttributes, mismatchedArgument);
+
+            return (
+                [targetLocation],
+                new Dictionary<string, string?>
+                {
+                    [attributeArgument] = annotation.ToString()
+                }.ToImmutableDictionary());
         }
 
-        private static (Location[]?, Dictionary<string, string?>?) CreateArguments(Location attributableSymbolLocation, DynamicallyAccessedMemberTypes mismatchedArgument)
-        {
-            Dictionary<string, string?>? DAMArgument = new();
-            Location[]? sourceLocation = new Location[] { attributableSymbolLocation };
-            DAMArgument.Add(DynamicallyAccessedMembersAnalyzer.attributeArgument, mismatchedArgument.ToString());
-            return (sourceLocation, DAMArgument);
-        }
     }
 }

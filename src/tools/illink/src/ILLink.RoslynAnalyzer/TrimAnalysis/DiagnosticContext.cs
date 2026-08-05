@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 
@@ -15,11 +14,13 @@ namespace ILLink.Shared.TrimAnalysis
         public readonly Location Location { get; }
 
         private readonly Action<Diagnostic>? _reportDiagnostic;
+        private readonly Compilation? _compilation;
 
-        public DiagnosticContext(Location location, Action<Diagnostic>? reportDiagnostic)
+        public DiagnosticContext(Location location, Action<Diagnostic>? reportDiagnostic, Compilation? compilation = null)
         {
             Location = location;
             _reportDiagnostic = reportDiagnostic;
+            _compilation = compilation;
         }
 
         private Diagnostic CreateDiagnostic(DiagnosticId id, params string[] args)
@@ -45,8 +46,6 @@ namespace ILLink.Shared.TrimAnalysis
 
         private Diagnostic CreateDiagnostic(DiagnosticId id, ValueWithDynamicallyAccessedMembers actualValue, ValueWithDynamicallyAccessedMembers expectedAnnotationsValue, params string[] args)
         {
-            Debug.Assert(Location != null);
-
             actualValue = actualValue switch
             {
                 NullableValueWithDynamicallyAccessedMembers nv => nv.UnderlyingTypeValue,
@@ -57,36 +56,51 @@ namespace ILLink.Shared.TrimAnalysis
             ISymbol symbol = actualValue switch
             {
                 FieldValue field => field.FieldSymbol,
-                MethodParameterValue maybeThisParameter when maybeThisParameter.Parameter.IsImplicitThis => maybeThisParameter.MethodSymbol,
-                MethodParameterValue methodParameter => methodParameter.Parameter.ParameterSymbol!,
-                MethodReturnValue mrv => mrv.MethodSymbol,
-                GenericParameterValue gpv => gpv.GenericParameter.TypeParameterSymbol,
+                MethodParameterValue { Parameter.IsImplicitThis: true } thisParameter => thisParameter.MethodSymbol,
+                MethodParameterValue { Parameter.ParameterSymbol: { } parameterSymbol } => parameterSymbol,
+                MethodReturnValue methodReturnValue => methodReturnValue.MethodSymbol,
+                GenericParameterValue genericParameter => genericParameter.GenericParameter.TypeParameterSymbol,
                 _ => throw new InvalidOperationException()
             };
 
-            Location[]? sourceLocation;
-            Dictionary<string, string?>? DAMArgument = new Dictionary<string, string?>();
+            bool hasAttribute = actualValue is MethodReturnValue
+                ? ((IMethodSymbol)symbol).TryGetReturnAttribute(
+                    DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute,
+                    out _)
+                : symbol.TryGetAttribute(
+                    DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute,
+                    out _);
 
-            // not supporting merging differing attributes, check to make sure symbol has no other attributes
-            if (symbol.DeclaringSyntaxReferences.Length == 0
-                    || (actualValue is not MethodReturnValue
-                        && symbol.TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-                    || (actualValue is MethodReturnValue
-                        && symbol is IMethodSymbol method
-                        && method.TryGetReturnAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _)))
+            Dictionary<string, string?>? properties = null;
+            Location[]? additionalLocations = null;
+            if (!hasAttribute && TryGetLocalDeclarationLocation(symbol, out Location declarationLocation))
             {
-                sourceLocation = null;
-                DAMArgument = null;
-            }
-            else
-            {
-                Location symbolLocation;
-                symbolLocation = symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLocation();
-                DAMArgument.Add("attributeArgument", expectedAnnotationsValue.DynamicallyAccessedMemberTypes.ToString());
-                sourceLocation = new Location[] { symbolLocation };
+                properties = new Dictionary<string, string?>
+                {
+                    ["attributeArgument"] = expectedAnnotationsValue.DynamicallyAccessedMemberTypes.ToString(),
+                };
+                additionalLocations = [declarationLocation];
             }
 
-            return Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(id), Location, sourceLocation, DAMArgument?.ToImmutableDictionary(), args);
+            return Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(id), Location, additionalLocations, properties?.ToImmutableDictionary(), args);
+        }
+
+        private bool TryGetLocalDeclarationLocation(ISymbol symbol, out Location location)
+        {
+            if (_compilation is not null)
+            {
+                foreach (SyntaxReference syntaxReference in symbol.DeclaringSyntaxReferences)
+                {
+                    if (_compilation.ContainsSyntaxTree(syntaxReference.SyntaxTree))
+                    {
+                        location = syntaxReference.GetSyntax().GetLocation();
+                        return true;
+                    }
+                }
+            }
+
+            location = null!;
+            return false;
         }
     }
 }
