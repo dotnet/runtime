@@ -322,6 +322,47 @@ public class DnsEncodedNameTests
     }
 
     [Fact]
+    public void CompressionPointer_Truncated_TryParseFails()
+    {
+        // A compression pointer needs two bytes but only one is present.
+        byte[] message = [0xC0];
+        Assert.False(DnsEncodedName.TryParse(message, 0, out _, out _));
+    }
+
+    [Fact]
+    public void CompressionPointer_ExceedsMaxHops_TryParseFails()
+    {
+        // Build a long chain of strictly-backward pointers. Each hop is legal on its own
+        // (points to a lower offset), but the chain length exceeds the pointer-hop limit,
+        // so a malicious response cannot force unbounded work.
+        const int PointerCount = 20;
+        byte[] message = new byte[1 + PointerCount * 2];
+        message[0] = 0; // root label
+
+        for (int k = 1; k <= PointerCount; k++)
+        {
+            int offset = 2 * k - 1;
+            int target = k == 1 ? 0 : 2 * (k - 1) - 1;
+            message[offset] = (byte)(0xC0 | (target >> 8));
+            message[offset + 1] = (byte)(target & 0xFF);
+        }
+
+        Assert.False(DnsEncodedName.TryParse(message, 2 * PointerCount - 1, out _, out _));
+    }
+
+    [Fact]
+    public void TryDecode_NonAsciiLabelByte_WidensWithoutGarbage()
+    {
+        // Response names are validated structurally only, so a label may contain bytes
+        // outside the ASCII range. Decoding must widen each byte deterministically rather
+        // than emitting undefined characters.
+        byte[] message = [1, 0xFF, 0];
+        Assert.True(DnsEncodedName.TryParse(message, 0, out DnsEncodedName name, out _));
+        Assert.Equal("\u00FF", name.ToString());
+        Assert.Equal(1, name.GetFormattedLength());
+    }
+
+    [Fact]
     public void TryCreate_TrailingDoubleDot_ReturnsInvalidData()
     {
         Span<byte> nameBuf = stackalloc byte[DnsEncodedName.MaxEncodedLength];

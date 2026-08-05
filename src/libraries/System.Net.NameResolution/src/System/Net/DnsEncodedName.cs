@@ -394,7 +394,14 @@ namespace System.Net
                     return false;
                 }
 
-                Ascii.ToUtf16(label, destination.Slice(charsWritten, label.Length), out _);
+                // Response labels are only validated structurally (validateContent: false), so a
+                // label may contain bytes outside the ASCII range. Widen each byte directly
+                // instead of using Ascii.ToUtf16, whose result would be undefined for such input.
+                Span<char> labelChars = destination.Slice(charsWritten, label.Length);
+                for (int i = 0; i < label.Length; i++)
+                {
+                    labelChars[i] = (char)label[i];
+                }
                 charsWritten += label.Length;
             }
 

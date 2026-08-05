@@ -393,7 +393,9 @@ namespace System.Net
 
                             if (validation == ResponseValidation.Retry)
                             {
-                                lastException = validationError;
+                                // Preserve an earlier failure reason when this attempt was
+                                // rejected without a specific error (e.g. an ID mismatch).
+                                lastException = validationError ?? lastException;
                                 continue;
                             }
 
@@ -436,7 +438,12 @@ namespace System.Net
                         }
                         catch (SocketException ex)
                         {
-                            lastException = ex;
+                            // Normalize the synchronous per-attempt timeout (surfaced as a
+                            // timed-out SocketException) to the same TimeoutException produced
+                            // by the asynchronous path's cancellation.
+                            lastException = ex.SocketErrorCode == SocketError.TimedOut
+                                ? new TimeoutException()
+                                : ex;
                         }
                         catch (IOException ex)
                         {
@@ -505,13 +512,15 @@ namespace System.Net
                 return false;
             }
 
-            DnsMessageReader.TryCreate(response, out DnsMessageReader reader);
-            if (!reader.TryReadQuestion(out DnsQuestion question))
+            if (!DnsMessageReader.TryCreate(response, out DnsMessageReader reader) ||
+                !reader.TryReadQuestion(out DnsQuestion question))
             {
                 return false;
             }
 
-            return question.Type == expectedType && question.Name.Equals(expectedName);
+            return question.Type == expectedType
+                && question.Class == DnsRecordClass.Internet
+                && question.Name.Equals(expectedName);
         }
 
         private static unsafe int WriteQuery(ushort queryId, string name, DnsRecordType type, Span<byte> destination)
@@ -672,7 +681,9 @@ namespace System.Net
                 int received = await socket.ReceiveAsync(buffer[totalReceived..], cancellationToken).ConfigureAwait(false);
                 if (received == 0)
                 {
-                    ThrowMalformedResponse();
+                    // The peer closed the connection before sending the full message. Treat this
+                    // as a transport failure so the query is retried against the next server.
+                    throw new IOException(SR.net_io_eof);
                 }
                 totalReceived += received;
             }
@@ -686,7 +697,9 @@ namespace System.Net
                 int received = socket.Receive(buffer.Slice(totalReceived));
                 if (received == 0)
                 {
-                    ThrowMalformedResponse();
+                    // The peer closed the connection before sending the full message. Treat this
+                    // as a transport failure so the query is retried against the next server.
+                    throw new IOException(SR.net_io_eof);
                 }
                 totalReceived += received;
             }
