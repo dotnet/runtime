@@ -2463,7 +2463,7 @@ public:
 
     void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
     {
-        fn(dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation)), sc, 0);
+        fn(GetContinuationPtr(), sc, 0);
     }
 
     void SetContinuation(OBJECTREF continuation)
@@ -2481,7 +2481,7 @@ public:
     PTR_PTR_Object GetContinuationPtr()
     {
         LIMITED_METHOD_CONTRACT;
-        return dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation));
+        return dac_cast<PTR_PTR_Object>(PTR_HOST_MEMBER_TADDR(InterpreterFrame, this, m_continuation));
     }
 private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to
