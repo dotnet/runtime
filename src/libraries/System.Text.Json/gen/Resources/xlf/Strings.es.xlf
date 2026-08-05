@@ -74,22 +74,22 @@
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</target>
+        <target state="translated">El tipo "{0}" habilita JsonPolymorphicAttribute.InferClosedTypePolymorphism, pero no es un tipo cerrado, por lo que no se puede inferir ningún tipo derivado. Declare el tipo como "closed" o registre sus tipos derivados mediante JsonDerivedTypeAttribute.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeTitle">
         <source>Inferred closed type polymorphism is enabled on a type that is not a closed type.</source>
-        <target state="new">Inferred closed type polymorphism is enabled on a type that is not a closed type.</target>
+        <target state="translated">El polimorfismo de tipo cerrado inferido está habilitado en un tipo que no es un tipo cerrado.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</target>
+        <target state="translated">El tipo "{0}" habilita JsonPolymorphicAttribute.InferClosedTypePolymorism, pero también declara JsonDerivedTypeAttribute. Los registros explícitos reemplazan la inferencia, por lo que solo los tipos derivados declarados explícitamente se serializan polimórficamente.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesTitle">
         <source>Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</source>
-        <target state="new">Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</target>
+        <target state="translated">El polimorfismo de tipo cerrado inferido no tiene ningún efecto en un tipo que registra tipos derivados explícitamente.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleMessageFormat">

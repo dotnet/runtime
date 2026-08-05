@@ -74,22 +74,22 @@
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</target>
+        <target state="translated">'{0}' türü JsonPolymorphicAttribute.InferClosedTypePolymorphism'i etkinleştirir ancak kapalı bir tür değildir, bu nedenle hiçbir türetilmiş tür çıkarılamaz. Türü 'closed' olarak bildirin veya türetilmiş türlerini JsonDerivedTypeAttribute kullanarak kaydedin.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismOnNonClosedTypeTitle">
         <source>Inferred closed type polymorphism is enabled on a type that is not a closed type.</source>
-        <target state="new">Inferred closed type polymorphism is enabled on a type that is not a closed type.</target>
+        <target state="translated">Kapalı tür olmayan bir türde çıkarılan kapalı tür polimorfizmi etkinleştirildi.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesMessageFormat">
         <source>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</source>
-        <target state="new">The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but also declares JsonDerivedTypeAttribute. Explicit registrations replace inference, so only the derived types declared explicitly are serialized polymorphically.</target>
+        <target state="translated">'{0}' türü JsonPolymorphicAttribute.InferClosedTypePolymorphism'i etkinleştirir ancak JsonDerivedTypeAttribute da bildirir. Açık kayıtlar çıkarımın yerini aldığından yalnızca açıkça bildirilen türetilmiş türler polimorfik olarak seri hale getirilir.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferClosedTypePolymorphismWithExplicitDerivedTypesTitle">
         <source>Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</source>
-        <target state="new">Inferred closed type polymorphism has no effect on a type that registers derived types explicitly.</target>
+        <target state="translated">Çıkarılan kapalı tür polimorfizminin, türetilmiş türleri açıkça kaydeden bir tür üzerinde hiçbir etkisi yoktur.</target>
         <note />
       </trans-unit>
       <trans-unit id="InferredDerivedTypeIsNotAccessibleMessageFormat">
