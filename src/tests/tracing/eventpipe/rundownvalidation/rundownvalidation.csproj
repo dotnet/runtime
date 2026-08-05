@@ -7,6 +7,8 @@
     <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- MethodILToNativeMap rundown events are emitted only for JIT-compiled methods. -->
+    <CrossGenTest>false</CrossGenTest>
     <!-- The test launches a secondary process and process launch creates
     an infinite event loop in the SocketAsyncEngine on Linux. Since
     runincontext loads even framework assemblies into the unloadable
