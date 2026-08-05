@@ -148,7 +148,8 @@ namespace System.ComponentModel.DataAnnotations
         ///     During validation, especially property-level validation, the object instance might be in an indeterminate state.
         ///     For example, the property being validated, as well as other properties on the instance might not have been
         ///     updated to their new values.
-        ///     For ownerless parameters or standalone values (as in minimal APIs), <see cref="ObjectInstance" /> is a meaningless placeholder.
+        ///     When validation is performed without an owning object (for example, validating standalone values),
+        ///     <see cref="ObjectInstance" /> may be a placeholder and should not be treated as the owner of the value.
         /// </remarks>
         public object ObjectInstance { get; }
 
