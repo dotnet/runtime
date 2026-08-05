@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.NETCore.Client;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace BasicEventSourceTests
@@ -86,16 +87,35 @@ namespace BasicEventSourceTests
         }
 
         /// <summary>
-        /// Validates that disposing an EventSource from its own OnEventCommand callback is rejected.
+        /// Validates disposing the current or another EventSource from within OnEventCommand.
         /// </summary>
-        [Fact]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.Browser, "DiagnosticsClient IPC is not available on browser")]
-        public void Test_EventSource_DisposeInOnEventCommand_Throws()
+        public void Test_EventSource_DisposeInOnEventCommand(bool disposeOtherSource)
         {
+            RemoteExecutor.Invoke(
+                RunDisposeInOnEventCommand,
+                disposeOtherSource.ToString(),
+                new RemoteInvokeOptions { TimeOut = 45_000 }).Dispose();
+        }
+
+        private static void RunDisposeInOnEventCommand(string disposeOtherSourceString)
+        {
+            bool disposeOtherSource = bool.Parse(disposeOtherSourceString);
             using var callbackCompleted = new ManualResetEventSlim(false);
             using var source = new DisposeInCallbackEventSource(callbackCompleted);
+            using var otherSource = disposeOtherSource ? new PassiveEventSource() : null;
+            source._sourceToDispose = otherSource;
 
-            var providers = new[] { new EventPipeProvider(source.Name, System.Diagnostics.Tracing.EventLevel.Verbose, long.MaxValue) };
+            var providers = disposeOtherSource
+                ? new[]
+                {
+                    new EventPipeProvider(source.Name, System.Diagnostics.Tracing.EventLevel.Verbose, long.MaxValue),
+                    new EventPipeProvider(otherSource!.Name, System.Diagnostics.Tracing.EventLevel.Verbose, long.MaxValue)
+                }
+                : new[] { new EventPipeProvider(source.Name, System.Diagnostics.Tracing.EventLevel.Verbose, long.MaxValue) };
             var client = new DiagnosticsClient(Environment.ProcessId);
             using var session = client.StartEventPipeSession(providers, requestRundown: false);
 
@@ -118,14 +138,27 @@ namespace BasicEventSourceTests
             readerTask.Wait(TimeSpan.FromSeconds(5));
 
             Assert.True(completed, "The EventSource callback did not complete.");
-            Assert.IsType<InvalidOperationException>(source._disposeException);
+            if (disposeOtherSource)
+            {
+                Assert.Null(source._disposeException);
+                Assert.True(source._disposeCompleted);
+                Assert.False(source._targetCallbackObservedBeforeDispose);
+            }
+            else
+            {
+                Assert.IsType<InvalidOperationException>(source._disposeException);
+                Assert.False(source._disposeCompleted);
+            }
         }
 
         [EventSource(Name = "TestsEventSourceCallbacks.DisposeInCallbackEventSource")]
         private class DisposeInCallbackEventSource : EventSource
         {
             private readonly ManualResetEventSlim _callbackCompleted;
+            internal EventSource? _sourceToDispose;
+            internal bool _disposeCompleted;
             internal InvalidOperationException? _disposeException;
+            internal bool _targetCallbackObservedBeforeDispose;
 
             internal DisposeInCallbackEventSource(ManualResetEventSlim callbackCompleted)
             {
@@ -138,7 +171,10 @@ namespace BasicEventSourceTests
                 {
                     try
                     {
-                        Dispose();
+                        _targetCallbackObservedBeforeDispose =
+                            _sourceToDispose is PassiveEventSource passiveSource && passiveSource._callbackObserved;
+                        (_sourceToDispose ?? this).Dispose();
+                        _disposeCompleted = true;
                     }
                     catch (InvalidOperationException ex)
                     {
@@ -149,6 +185,17 @@ namespace BasicEventSourceTests
                         _callbackCompleted.Set();
                     }
                 }
+            }
+        }
+
+        [EventSource(Name = "TestsEventSourceCallbacks.PassiveEventSource")]
+        private sealed class PassiveEventSource : EventSource
+        {
+            internal bool _callbackObserved;
+
+            protected override void OnEventCommand(EventCommandEventArgs command)
+            {
+                _callbackObserved = true;
             }
         }
 
