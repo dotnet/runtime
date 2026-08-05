@@ -69,11 +69,11 @@ public sealed class UsageWalkerIntegrationTests
 
         INamedTypeSymbol thread = compilation.GetTypeByMetadataName(
             "Microsoft.Diagnostics.DataContractReader.Data.Thread")!;
-        IPropertySymbol threadHandle = thread.GetMembers("ThreadHandle")
-            .OfType<IPropertySymbol>()
+        IMethodSymbol initThreadHandle = thread.GetMembers("InitThreadHandle")
+            .OfType<IMethodSymbol>()
             .Single();
         Assert.True(new CdacAttributeMatcher(compilation).TryGetDescriptorDependencies(
-            threadHandle,
+            initThreadHandle,
             out _));
     }
 
@@ -198,6 +198,7 @@ public sealed class UsageWalkerIntegrationTests
     [InlineData("IThread", "c1", "ThreadStore", "pointer", false)]
     [InlineData("IRuntimeInfo", "c1", "Architecture", "string", true)]
     [InlineData("IRuntimeInfo", "c1", "RecommendedReaderVersion", "uint32", true)]
+    [InlineData("IRuntimeInfo", "c1", "RuntimeProductVersionString", "string", false)]
     [InlineData("IStackWalk", "c1", "<FrameType>Identifier", "pointer", true)]
     [InlineData("IDacStreams", "c1", "MiniMetaDataBuffAddress", "pointer", false)]
     [InlineData("IDacStreams", "c1", "MiniMetaDataBuffMaxSize", "pointer", false)]
@@ -384,7 +385,7 @@ public sealed class UsageWalkerIntegrationTests
 
         DataTypeUsage syncBlock = DataType(graph, label, "Data.SyncBlock");
         Assert.Equal(
-            ["EnCInfo", "InteropInfo", "LinkNext", "Lock", "ThinLock"],
+            ["InteropInfo", "LinkNext", "Lock", "ThinLock"],
             syncBlock.Fields.Select(field => field.Name).Order().ToArray());
         Assert.DoesNotContain(syncBlock.Fields, field => field.Name == "Address");
 

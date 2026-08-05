@@ -10060,6 +10060,15 @@ bool ValueNumStore::IsVectorPerElementMask(ValueNum vn, var_types simdBaseType, 
     bool       isScalar = false;
     genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
 
+#if defined(TARGET_ARM64)
+    // TODO-Arm64: Remove this once all AdvSimd compare intrinsics are annotated with
+    // HW_Flag_ReturnsPerElementMask.
+    if (!isScalar && GenTree::OperIsCmpCompare(oper))
+    {
+        return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
+    }
+#endif // TARGET_ARM64
+
     switch (oper)
     {
         case GT_AND:
@@ -12909,10 +12918,11 @@ void Compiler::fgValueNumberStore(GenTree* store)
 
             valueVNPair.SetBoth(initObjVN);
         }
-        else if (value->TypeIs(TYP_REF))
+        else if (varTypeIsGC(value))
         {
-            // If we have an unsafe IL store of a TYP_REF to a non-ref (typically a TYP_BYREF)
-            // then don't propagate this ValueNumber to the lhs, instead create a new unique VN.
+            // A GC reference reinterpreted as another type (an unsafe IL store of a TYP_REF, or one of
+            // morph's "Cast away GC" temps) is a raw address snapshot that is only valid until the
+            // referent can next move, so give each store its own VN rather than letting CSE share one.
             valueVNPair.SetBoth(vnStore->VNForExpr(compCurBB, store->TypeGet()));
         }
         else

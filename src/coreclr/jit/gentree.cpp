@@ -15662,8 +15662,8 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
     {
         case NI_System_Enum_HasFlag:
         {
-            GenTree* thisOp = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* flagOp = call->gtArgs.GetArgByIndex(1)->GetNode();
+            GenTree* thisOp = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* flagOp = call->gtArgs.GetUserArgByIndex(1)->GetNode();
             GenTree* result = gtOptimizeEnumHasFlag(thisOp, flagOp);
 
             if (result != nullptr)
@@ -15676,8 +15676,8 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
         case NI_System_Enum_Equals:
         {
             assert(call->AsCall()->gtArgs.CountUserArgs() == 2);
-            GenTree* arg0 = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* arg1 = call->AsCall()->gtArgs.GetArgByIndex(1)->GetNode();
+            GenTree* arg0 = call->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* arg1 = call->AsCall()->gtArgs.GetUserArgByIndex(1)->GetNode();
 
             bool isArg0Exact;
             bool isArg1Exact;
@@ -15721,8 +15721,8 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
         case NI_System_Type_op_Inequality:
         {
             noway_assert(call->TypeIs(TYP_INT));
-            GenTree* op1 = call->gtArgs.GetArgByIndex(0)->GetNode();
-            GenTree* op2 = call->gtArgs.GetArgByIndex(1)->GetNode();
+            GenTree* op1 = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+            GenTree* op2 = call->gtArgs.GetUserArgByIndex(1)->GetNode();
 
             // If either operand is known to be a RuntimeType, this can be folded
             GenTree* result = gtFoldTypeEqualityCall(ni == NI_System_Type_op_Equality, op1, op2);
@@ -16022,7 +16022,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     if (((op2Kind == TPK_Null) && (op1Kind == TPK_Handle)) || ((op1Kind == TPK_Null) && (op2Kind == TPK_Handle)))
     {
         GenTree* call   = op1Kind == TPK_Handle ? op1 : op2;
-        GenTree* handle = call->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        GenTree* handle = call->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
         if (gtGetHelperArgClassHandle(handle) != NO_CLASS_HANDLE)
         {
             return oper == GT_EQ ? gtNewFalse() : gtNewTrue();
@@ -16034,10 +16034,10 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     if ((op1Kind == TPK_Handle) && (op2Kind == TPK_Handle))
     {
         JITDUMP("Optimizing compare of types-from-handles to instead compare handles\n");
-        assert((tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.CountArgs() == 1) &&
-               (tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.CountArgs() == 1));
-        GenTree* op1ClassFromHandle  = tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
-        GenTree* op2ClassFromHandle  = tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+        assert((tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.CountUserArgs() == 1) &&
+               (tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.CountUserArgs() == 1));
+        GenTree* op1ClassFromHandle  = tree->AsOp()->gtGetOp1()->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
+        GenTree* op2ClassFromHandle  = tree->AsOp()->gtGetOp2()->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
         CORINFO_CLASS_HANDLE cls1Hnd = NO_CLASS_HANDLE;
         CORINFO_CLASS_HANDLE cls2Hnd = NO_CLASS_HANDLE;
 
@@ -16139,7 +16139,7 @@ GenTree* Compiler::gtFoldTypeCompare(GenTree* tree)
     GenTree* const opOther  = (op1Kind == TPK_Handle) ? op2 : op1;
 
     // Tunnel through the handle operand to get at the class handle involved.
-    GenTree* const       opHandleArgument = opHandle->AsCall()->gtArgs.GetArgByIndex(0)->GetNode();
+    GenTree* const       opHandleArgument = opHandle->AsCall()->gtArgs.GetUserArgByIndex(0)->GetNode();
     CORINFO_CLASS_HANDLE clsHnd           = gtGetHelperArgClassHandle(opHandleArgument);
 
     // If we couldn't find the class handle, give up.
@@ -17066,14 +17066,14 @@ GenTree* Compiler::gtTryRemoveBoxUpstreamEffects(GenTree* op, BoxRemovalOptions 
 
             // In R2R expansions the handle may not be an explicit operand to the helper,
             // so we can't remove the box.
-            if (newobjCall->gtArgs.IsEmpty())
+            if (newobjCall->gtArgs.CountUserArgs() == 0)
             {
                 assert(newobjCall->IsHelperCall(CORINFO_HELP_READYTORUN_NEW));
                 JITDUMP(" bailing; newobj via R2R helper\n");
                 return nullptr;
             }
 
-            boxTypeHandle = newobjCall->gtArgs.GetArgByIndex(0)->GetNode();
+            boxTypeHandle = newobjCall->gtArgs.GetUserArgByIndex(0)->GetNode();
         }
         else
         {
@@ -21659,7 +21659,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
         case CORINFO_HELP_ISINSTANCEOFANY:
         {
             // Fetch the class handle from the helper call arglist
-            GenTree*             typeArg = call->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree*             typeArg = call->gtArgs.GetUserArgByIndex(0)->GetNode();
             CORINFO_CLASS_HANDLE castHnd = gtGetHelperArgClassHandle(typeArg);
 
             // We generally assume the type being cast to is the best type
@@ -21683,7 +21683,7 @@ CORINFO_CLASS_HANDLE Compiler::gtGetHelperCallClassHandle(GenTreeCall* call, boo
             // type from the value being cast instead.
             if (castHnd == nullptr)
             {
-                GenTree* valueArg = call->gtArgs.GetArgByIndex(1)->GetNode();
+                GenTree* valueArg = call->gtArgs.GetUserArgByIndex(1)->GetNode();
                 castHnd           = gtGetClassHandle(valueArg, pIsExact, pIsNonNull);
             }
 
@@ -21854,8 +21854,8 @@ bool Compiler::gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle)
         GenTreeCall* call = tree->AsCall();
         if (gtIsTypeHandleToRuntimeTypeHelper(call))
         {
-            assert(call->gtArgs.CountArgs() == 1);
-            CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtArgs.GetArgByIndex(0)->GetEarlyNode());
+            assert(call->gtArgs.CountUserArgs() == 1);
+            CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(call->gtArgs.GetUserArgByIndex(0)->GetEarlyNode());
             if (hClass != NO_CLASS_HANDLE)
             {
                 if (handle != nullptr)
@@ -28012,7 +28012,7 @@ GenTree* Compiler::gtNewSimdWasmTwoSourceShuffleNode(
     assert(varTypeIsArithmetic(simdBaseType));
 
     uint32_t  simdCount = getSIMDVectorLength(simdSize, simdBaseType);
-    var_types indexType = getIndexTypeForShuffle(simdBaseType);
+    var_types indexType = getUnsignedSimdBaseType(simdBaseType);
 
     GenTreeVecCon* indices1 = gtNewVconNode(type);
     GenTreeVecCon* indices2 = gtNewVconNode(type);
@@ -28259,7 +28259,7 @@ GenTree* Compiler::gtNewSimdZipNode(
         }
 
         GenTreeVecCon* shuffle       = gtNewVconNode(type);
-        var_types      indexBaseType = getIndexTypeForShuffle(simdBaseType);
+        var_types      indexBaseType = getUnsignedSimdBaseType(simdBaseType);
         uint32_t       start         = upper ? (simdCount / 2) : 0;
 
         for (uint32_t index = 0; index < simdCount; index++)
@@ -28378,7 +28378,7 @@ GenTree* Compiler::gtNewSimdUnzipNode(
 #elif defined(TARGET_XARCH)
 
     unsigned  elementSize   = genTypeSize(simdBaseType);
-    var_types indexBaseType = getIndexTypeForShuffle(simdBaseType);
+    var_types indexBaseType = getUnsignedSimdBaseType(simdBaseType);
 
     if (simdSize == 16)
     {
@@ -28545,7 +28545,7 @@ GenTree* Compiler::gtNewSimdReverseNode(var_types type, GenTree* op1, var_types 
     // return Shuffle(op1, indices);
 
     GenTreeVecCon* shuffle       = gtNewVconNode(type);
-    var_types      indexBaseType = getIndexTypeForShuffle(simdBaseType);
+    var_types      indexBaseType = getUnsignedSimdBaseType(simdBaseType);
 
     for (uint32_t index = 0; index < simdCount; index++)
     {
@@ -30349,7 +30349,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
     // only lane 0 is ever read.
 
     unsigned  vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
-    var_types indexType    = getIndexTypeForShuffle(simdBaseType);
+    var_types indexType    = getUnsignedSimdBaseType(simdBaseType);
 
     for (unsigned stride = 1; stride < vectorLength; stride *= 2)
     {
@@ -30984,7 +30984,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, var_typ
 
         // WASM only has f64x2.promote_low_f32x4, so move the upper two floats into the low lanes
         // with a shuffle and then promote them; the resulting upper lanes are unused by the promote.
-        var_types      indexType = getIndexTypeForShuffle(simdBaseType);
+        var_types      indexType = getUnsignedSimdBaseType(simdBaseType);
         uint32_t       simdCount = getSIMDVectorLength(simdSize, simdBaseType);
         GenTreeVecCon* indices   = gtNewVconNode(type);
 
@@ -34855,32 +34855,42 @@ bool GenTree::IsInvariant() const
 }
 
 //-------------------------------------------------------------------
-// IsVectorPerElementMask: returns true if this node is a vector constant per-element mask
-//                         (every element has either all bits set or none of them) for the
-//                         given simd size and base type.
+// IsVectorPerElementMask: returns true if this node is known to be a vector per-element mask
+//                         (every element has either all bits set or none of them) for the given
+//                         SIMD size and base type.
 //
 // Arguments:
-//    simdBaseType - the base type of the constant being checked.
+//    comp         - the compiler instance.
+//    simdBaseType - the base type being checked.
 //    simdSize     - the size of the SIMD type of the intrinsic.
 //
 // Returns:
 //     True if this node is a per-element mask compatible with simdBaseType and simdSize
 //
-bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const
+bool GenTree::IsVectorPerElementMask(Compiler* comp, var_types simdBaseType, unsigned simdSize) const
 {
 #ifdef FEATURE_SIMD
+    assert(comp != nullptr);
+
     // This should be kept in sync with ValueNumStore::IsVectorPerElementMask
 
     var_types simdType     = TypeGet();
     unsigned  elementCount = GenTreeVecCon::ElementCount(simdSize, simdBaseType);
 
-    assert(varTypeIsSIMD(simdType));
-    assert(genTypeSize(simdType) == simdSize);
+    if (!varTypeIsSIMD(simdType) || (genTypeSize(simdType) != simdSize))
+    {
+        return false;
+    }
 
     if (IsCnsVec())
     {
         const GenTreeVecCon* vecCon = AsVecCon();
         return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal, simdBaseType, elementCount);
+    }
+
+    if (OperIs(GT_LCL_VAR))
+    {
+        return comp->lvaGetDesc(AsLclVar())->IsVectorPerElementMask(simdBaseType);
     }
 
     if (!OperIsHWIntrinsic())
@@ -34921,6 +34931,15 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
     bool       isScalar = false;
     genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
 
+#if defined(TARGET_ARM64)
+    // TODO-Arm64: Remove this once all AdvSimd compare intrinsics are annotated with
+    // HW_Flag_ReturnsPerElementMask.
+    if (!isScalar && GenTree::OperIsCmpCompare(oper))
+    {
+        return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
+    }
+#endif // TARGET_ARM64
+
     switch (oper)
     {
         case GT_AND:
@@ -34936,14 +34955,14 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
             // there isn't any way to statically determine this for non-constants and
             // the constant cases should've already been folded.
 
-            return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize) &&
-                   intrinsic->Op(2)->IsVectorPerElementMask(simdBaseType, simdSize);
+            return intrinsic->Op(1)->IsVectorPerElementMask(comp, simdBaseType, simdSize) &&
+                   intrinsic->Op(2)->IsVectorPerElementMask(comp, simdBaseType, simdSize);
         }
 
         case GT_NOT:
         {
             // We are a unary bitwise operation where the input is a per-element mask
-            return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize);
+            return intrinsic->Op(1)->IsVectorPerElementMask(comp, simdBaseType, simdSize);
         }
 
         default:
@@ -36303,7 +36322,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             break;
                         }
                     }
-                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
+                    else if (otherNode->IsVectorPerElementMask(this, simdBaseType, simdSize))
                     {
                         // Handle `Equals(PerElementMask, AllBitsSet)` and `Equals(AllBitsSet, PerElementMask)` for
                         // integrals
@@ -36491,7 +36510,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             break;
                         }
                     }
-                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
+                    else if (otherNode->IsVectorPerElementMask(this, simdBaseType, simdSize))
                     {
                         // Handle `~Equals(PerElementMask, Zero)` and `~Equals(Zero, PerElementMask)` for integrals
                         if (cnsNode->IsVectorZero())

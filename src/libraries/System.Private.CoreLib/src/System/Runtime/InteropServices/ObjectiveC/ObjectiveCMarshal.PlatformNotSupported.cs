@@ -11,6 +11,9 @@ namespace System.Runtime.InteropServices.ObjectiveC
     /// API to enable Objective-C marshalling.
     /// </summary>
     [SupportedOSPlatform("macos")]
+    [SupportedOSPlatform("ios")]
+    [SupportedOSPlatform("tvos")]
+    [SupportedOSPlatform("maccatalyst")]
     [CLSCompliant(false)]
     public static class ObjectiveCMarshal
     {
