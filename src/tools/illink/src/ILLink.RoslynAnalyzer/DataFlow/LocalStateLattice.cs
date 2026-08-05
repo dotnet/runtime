@@ -135,6 +135,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public TValue Get(LocalKey key) => Dictionary.Get(key);
 
+        // Local dataflow states are mutable and should never be used as dictionary keys.
         public override int GetHashCode()
             => throw new NotImplementedException();
 
