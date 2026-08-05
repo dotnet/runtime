@@ -553,9 +553,8 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             // constructor parameter (no other bindable property) used to make the generator emit a
             // call to an Initialize method that was never generated, producing CS0103 at compile time.
             //
-            // This only covers the top-level GetCore path. Binding this same shape as a *nested*
-            // member (reached via BindCore/EmitObjectInit) silently produces null instead of the
-            // real value, a separate pre-existing bug tracked in dotnet/runtime#131399.
+            // This only covers the top-level GetCore path; NestedSoleReadOnlyCollectionConstructorParameterIsBindable
+            // covers the same shape reached as a nested member.
             string source = $$"""
                 using Microsoft.Extensions.Configuration;
                 using System.Collections.Generic;
@@ -589,6 +588,80 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             // running the assembly proves it also binds the right values, not just compilable code.
             var boundValues = (IEnumerable<string>)LoadAndInvokeMain(result.OutputCompilation, "Result")!;
             Assert.Equal(new[] { "a", "b" }, boundValues);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("IReadOnlyList")]
+        [InlineData("IReadOnlyCollection")]
+        [InlineData("IReadOnlySet")]
+        [InlineData("IEnumerable")]
+        public async Task NestedSoleReadOnlyCollectionConstructorParameterIsBindable(string collectionType)
+        {
+            // Regression test: the same shape as SoleReadOnlyCollectionConstructorParameterIsBindable, but
+            // reached as a nested member rather than as the top-level bound type. The member was silently
+            // left at null, since the emitter skipped every complex member without bindable members - even
+            // one whose constructor parameters its Initialize method binds. Covers every way such a member is
+            // reached: a constructor parameter (bound in Initialize), a settable property (bound in BindCore),
+            // and a settable property with a matching constructor parameter (bound in Initialize when the
+            // instance is created, and in BindCore when binding an existing one).
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static object? Result;
+
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["Nested:Values:0"] = "a",
+                            ["Nested:Values:1"] = "b",
+                        });
+                        IConfiguration config = configurationBuilder.Build();
+
+                        Outer outer = config.Get<Outer>();
+                        Holder holder = config.Get<Holder>();
+                        Rebindable rebindable = config.Get<Rebindable>();
+
+                        Rebindable existing = new(null!);
+                        config.Bind(existing);
+
+                        Result = new object?[]
+                        {
+                            outer.Nested?.Values,
+                            holder.Nested?.Values,
+                            rebindable.Nested?.Values,
+                            existing.Nested?.Values,
+                        };
+                    }
+                }
+
+                public record Inner({{collectionType}}<string> Values);
+
+                public record Outer(Inner Nested);
+
+                public class Holder
+                {
+                    public Inner Nested { get; set; }
+                }
+
+                public class Rebindable
+                {
+                    public Rebindable(Inner nested) => Nested = nested;
+
+                    public Inner Nested { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            var boundValues = (object?[])LoadAndInvokeMain(result.OutputCompilation, "Result")!;
+            Assert.All(boundValues, boundValue => Assert.Equal(new[] { "a", "b" }, (IEnumerable<string>?)boundValue));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
