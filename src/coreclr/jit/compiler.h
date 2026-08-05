@@ -4352,6 +4352,15 @@ public:
 
     unsigned short asyncContextRestoreEHID = USHRT_MAX;
 
+    // IDs of every EH clause created by SaveAsyncContexts, both for this method and for
+    // all frames inlined into it. Maintained on the inline root, since an inlinee's
+    // clause survives inlining as a clause of the root. EH IDs are stable across
+    // inlining, so this stays valid after the tables are merged.
+    jitstd::vector<unsigned short>* m_asyncContextRestoreEHIDs = nullptr;
+
+    bool ehIsAsyncContextRestore(unsigned short ehID);
+    bool ehIsInsideNonAsyncContextRestoreRegion(BasicBlock* block);
+
     unsigned lvaArg0Var = BAD_VAR_NUM; // The lclNum of arg0. Normally this will be info.compThisArg.
                          // However, if there is a "ldarga 0" or "starg 0" in the IL,
                          // we will redirect all "ldarg(a) 0" and "starg 0" to this temp.

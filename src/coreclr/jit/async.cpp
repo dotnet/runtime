@@ -264,7 +264,83 @@ const ContinuationMember& Compiler::GetContinuationMember(size_t index)
 }
 
 //------------------------------------------------------------------------
+// Compiler::ehIsAsyncContextRestore:
+//   Check whether an EH clause is one of the context restore clauses created by
+//   SaveAsyncContexts.
+//
+// Parameters:
+//   ehID - ID of the EH clause
+//
+// Returns:
+//   True if so.
+//
+bool Compiler::ehIsAsyncContextRestore(unsigned short ehID)
+{
+    Compiler* const root = impInlineRoot();
+
+    if (root->m_asyncContextRestoreEHIDs == nullptr)
+    {
+        return false;
+    }
+
+    for (unsigned short candidate : *root->m_asyncContextRestoreEHIDs)
+    {
+        if (candidate == ehID)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// Compiler::ehIsInsideNonAsyncContextRestoreRegion:
+//   Check whether a block is inside any protected region other than the context
+//   restore regions created by SaveAsyncContexts.
+//
+// Parameters:
+//   block - The block
+//
+// Returns:
+//   True if so.
+//
+// Remarks:
+//   Every async frame gets a context restore try-fault wrapped around its whole
+//   body, so a plain hasTryIndex() check cannot distinguish user EH from the EH
+//   the JIT itself introduced.
+//
+bool Compiler::ehIsInsideNonAsyncContextRestoreRegion(BasicBlock* block)
+{
+    if (block->hasTryIndex())
+    {
+        for (unsigned index = block->getTryIndex(); index != EHblkDsc::NO_ENCLOSING_INDEX;
+             index          = ehGetDsc(index)->ebdEnclosingTryIndex)
+        {
+            if (!ehIsAsyncContextRestore(ehGetDsc(index)->ebdID))
+            {
+                return true;
+            }
+        }
+    }
+
+    if (block->hasHndIndex())
+    {
+        for (unsigned index = block->getHndIndex(); index != EHblkDsc::NO_ENCLOSING_INDEX;
+             index          = ehGetDsc(index)->ebdEnclosingHndIndex)
+        {
+            if (!ehIsAsyncContextRestore(ehGetDsc(index)->ebdID))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;}
+
+//------------------------------------------------------------------------
 // Compiler::SaveAsyncContexts:
+
 //   Insert code in async methods that saves and restores contexts.
 //
 // Returns:
@@ -338,6 +414,17 @@ PhaseStatus Compiler::SaveAsyncContexts()
     asyncContextRestoreEHID  = impInlineRoot()->compEHID++;
     newEntry->ebdID          = asyncContextRestoreEHID;
     newEntry->ebdHandlerType = EH_HANDLER_FAULT;
+
+    {
+        Compiler* const root = impInlineRoot();
+        if (root->m_asyncContextRestoreEHIDs == nullptr)
+        {
+            root->m_asyncContextRestoreEHIDs =
+                new (root, CMK_Async) jitstd::vector<unsigned short>(root->getAllocator(CMK_Async));
+        }
+
+        root->m_asyncContextRestoreEHIDs->push_back(asyncContextRestoreEHID);
+    }
 
     newEntry->ebdTryBeg  = tryBegBB;
     newEntry->ebdTryLast = tryLastBB;

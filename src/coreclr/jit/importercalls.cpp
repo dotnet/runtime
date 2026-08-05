@@ -7424,8 +7424,31 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
             // method, and the inlinee's own contexts (created by its SaveAsyncContexts)
             // are used rather than the caller's.
 
-            // Suspending inside a protected region additionally requires catching and
-            // rethrowing around the post-inline handling, which is not implemented yet.
+            // The inlined frame must not end up inside a protected region of the caller.
+            // An exception unwinding out of it skips the post-inline handling, and getting
+            // back onto the caller's continuation context cannot be recovered from a
+            // handler because it may suspend. A user 'catch' between the frame and the
+            // resumption would then run on the wrong continuation context. Doing this
+            // correctly needs the catch-and-rethrow expansion described in
+            // docs/design/coreclr/jit/runtime-async-inlining.md, which is not implemented
+            // yet.
+            //
+            // This covers nesting as well: a caller that is itself inlined into a
+            // protected region was rejected by this same check.
+            //
+            // Only user EH matters here. Every async frame has a context restore
+            // try-fault wrapped around its whole body by SaveAsyncContexts, which by
+            // this point has run both for the caller and for every frame it was inlined
+            // into, so those clauses must be ignored.
+            BasicBlock* const callSiteBlock = impInlineInfo->iciBlock;
+            if (impInlineInfo->InlinerCompiler->ehIsInsideNonAsyncContextRestoreRegion(callSiteBlock))
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT_IN_TRY);
+                return;
+            }
+
+            // Suspending inside a protected region of the inlinee itself is not handled
+            // yet either.
             if ((compCurBB != nullptr) && (compCurBB->hasTryIndex() || compCurBB->hasHndIndex()))
             {
                 compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT_IN_TRY);
