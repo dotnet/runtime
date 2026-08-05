@@ -373,8 +373,9 @@ namespace System.IO.Packaging.Tests
             object a = validated;
             object b = plain;
 
-            // object.Equals must be symmetric.
-            Assert.Equal(a.Equals(b), b.Equals(a));
+            // object.Equals must be symmetric and treat a value-equal plain System.Uri as equal.
+            Assert.True(a.Equals(b));
+            Assert.True(b.Equals(a));
 
             // GetHashCode must be consistent with a value-equal plain System.Uri so both types can
             // coexist as keys in the same hash-based collection.

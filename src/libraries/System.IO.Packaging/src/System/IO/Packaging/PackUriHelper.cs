@@ -877,9 +877,8 @@ namespace System.IO.Packaging
         }
 
         /// <summary>
-        /// Compares <see cref="ValidatedPartUri"/> instances for equality using the same
-        /// case-insensitive, normalized comparison as <see cref="ValidatedPartUri.Compare"/>
-        /// via <see cref="IEquatable{ValidatedPartUri}"/>.
+        /// Compares <see cref="ValidatedPartUri"/> instances for equality using the normalized (upper-cased) part URI
+        /// string comparison implemented by <see cref="IEquatable{ValidatedPartUri}.Equals(ValidatedPartUri)"/>.
         /// This is used explicitly by internal collections that need case-insensitive part-name
         /// semantics (e.g. <see cref="ZipPackage"/>'s content-type override dictionary), without
         /// relying on <see cref="ValidatedPartUri"/> overriding <see cref="object.Equals(object?)"/>
