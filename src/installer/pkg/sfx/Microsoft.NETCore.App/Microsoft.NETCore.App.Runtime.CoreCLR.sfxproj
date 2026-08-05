@@ -93,19 +93,4 @@
       <ReferenceCopyLocalPaths Include="@(CoreCLRCrossTargetFiles)" />
     </ItemGroup>
   </Target>
-
-  <Target Name="AddCoreCLRWasmIncludeFiles"
-          Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'"
-          AfterTargets="AddRuntimeFilesToPackage">
-    <ItemGroup>
-      <!-- Glob first, then map in a separate item so %(RecursiveDir) refers to the globbed
-           items (preserving the include/minipal subtree) instead of self-referencing (MSB4120). -->
-      <_CoreCLRWasmIncludeFile Include="$(CoreCLRSharedFrameworkDir)include\**\*.*" />
-      <ReferenceCopyLocalPaths Include="@(_CoreCLRWasmIncludeFile)">
-        <TargetPath>runtimes/$(RuntimeIdentifier)/native/include/%(RecursiveDir)</TargetPath>
-        <IsNative>true</IsNative>
-        <ExcludeFromDataFiles>true</ExcludeFromDataFiles>
-      </ReferenceCopyLocalPaths>
-    </ItemGroup>
-  </Target>
 </Project>
