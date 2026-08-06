@@ -77,7 +77,6 @@ class   MethodDescChunk;
 class   MethodTable;
 class   Module;
 class   Object;
-class   Stub;
 enum class AsyncMethodFlags;
 class   Substitution;
 class   SystemDomain;
@@ -1898,8 +1897,8 @@ class DelegateEEClass : public EEClass
 {
 public:
     DAC_ALIGNAS(EEClass) // Align the first member to the alignment of the base class
-    PTR_Stub                         m_pStaticCallStub;
-    PTR_Stub                         m_pInstRetBuffCallStub;
+    PCODE                            m_pStaticCallStub;
+    PCODE                            m_pInstRetBuffCallStub;
     PTR_MethodDesc                   m_pInvokeMethod;
     PCODE                            m_pMultiCastInvokeStub;
     UMThunkMarshInfo*                m_pUMThunkMarshInfo;

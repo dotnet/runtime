@@ -1264,6 +1264,17 @@ BOOL StubLinkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     return FALSE;
 }
 
+typedef DPTR(PTR_MethodDesc) PTR_PTR_MethodDesc;
+
+static PTR_MethodDesc GetStubTargetMethod(PCODE stubStartAddress)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+
+    TADDR pStubData = PCODEToPINSTR(stubStartAddress);
+    return *dac_cast<PTR_PTR_MethodDesc>(pStubData - sizeof(PTR_MethodDesc));
+}
+
 BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
                                       TraceDestination *trace)
 {
@@ -1280,19 +1291,14 @@ BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
          "StubLinkStubManager::DoTraceStub: stubStartAddress=%p\n",
          stubStartAddress));
 
-    Stub *stub = Stub::RecoverStub(stubStartAddress);
-
-    LOG((LF_CORDB, LL_INFO10000,
-         "StubLinkStubManager::DoTraceStub: stub=%p\n", stub));
-
-    TADDR pRealAddr = 0;
-    if (stub->IsInstantiatingStub())
+    StubCodeBlockKind kind = RangeSectionStubManager::GetStubKind(stubStartAddress);
+    if (kind == STUB_CODE_BLOCK_WRAPPER_STUB && GetStubTargetMethod(stubStartAddress) != NULL)
     {
         trace->InitForManagerPush(stubStartAddress, this);
         LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager(InstantiatingMethod)::DoTraceStub");
         return TRUE;
     }
-    else if (stub->IsShuffleThunk())
+    else if (kind == STUB_CODE_BLOCK_SHUFFLE_THUNK)
     {
         trace->InitForManagerPush(stubStartAddress, this);
         LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager(ShuffleThunk)::DoTraceStub");
@@ -1374,11 +1380,11 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
     LOG((LF_CORDB,LL_INFO10000, "SLSM:TM %p, retAddr is %p\n", pc, (*pRetAddr)));
 
-    Stub *stub = Stub::RecoverStub((PCODE)pc);
-    if (stub->IsInstantiatingStub())
+    StubCodeBlockKind kind = RangeSectionStubManager::GetStubKind((PCODE)pc);
+    if (kind == STUB_CODE_BLOCK_WRAPPER_STUB)
     {
         LOG((LF_CORDB,LL_INFO10000, "SLSM:TM Instantiating method stub\n"));
-        PTR_MethodDesc pMD = stub->GetInstantiatedMethodDesc();
+        PTR_MethodDesc pMD = GetStubTargetMethod((PCODE)pc);
         _ASSERTE(pMD != NULL);
 
         PCODE target = GetStubTarget(pMD);
@@ -1392,7 +1398,7 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
         trace->InitForManaged(target);
         return TRUE;
     }
-    else if (stub->IsShuffleThunk())
+    else if (kind == STUB_CODE_BLOCK_SHUFFLE_THUNK)
     {
         LOG((LF_CORDB,LL_INFO10000, "SLSM:TM ShuffleThunk\n"));
         return TraceShuffleThunk(trace, pContext, pRetAddr);

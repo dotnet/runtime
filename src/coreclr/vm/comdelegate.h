@@ -10,7 +10,6 @@
 #ifndef _COMDELEGATE_H_
 #define _COMDELEGATE_H_
 
-class Stub;
 class ShuffleThunkCache;
 
 #include "cgensys.h"
@@ -65,7 +64,7 @@ public:
     static BOOL IsDelegate(MethodTable *pMT);
 
     // Get the cpu stub for a delegate invoke.
-    static Stub* GetInvokeMethodStub(EEImplMethodDesc* pMD);
+    static PCODE GetInvokeMethodStub(EEImplMethodDesc* pMD);
 
     static MethodDesc* GetMethodDesc(OBJECTREF obj);
     static MethodDesc* GetMethodDescForOpenVirtualDelegate(DELEGATEREF delegate);

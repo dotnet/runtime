@@ -85,15 +85,6 @@ void EEClass::Destruct()
     if (IsDelegate())
     {
         DelegateEEClass* pDelegateEEClass = (DelegateEEClass*)this;
-        for (Stub* pThunk : {pDelegateEEClass->m_pStaticCallStub, pDelegateEEClass->m_pInstRetBuffCallStub})
-        {
-            if (pThunk == nullptr)
-                continue;
-
-            _ASSERTE(pThunk->IsShuffleThunk());
-
-            pThunk->DecRef();
-        }
     }
 
 #ifdef FEATURE_COMINTEROP

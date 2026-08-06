@@ -52,8 +52,7 @@ StubCacheBase::~StubCacheBase()
     STUBHASHENTRY *phe = (STUBHASHENTRY*)GetFirst();
     while (phe)
     {
-        _ASSERTE(NULL != phe->m_pStub);
-        phe->m_pStub->DecRef();
+        _ASSERTE(NULL != phe->m_pCode);
         phe = (STUBHASHENTRY*)GetNext((BYTE*)phe);
     }
 }
@@ -61,14 +60,10 @@ StubCacheBase::~StubCacheBase()
 
 
 //---------------------------------------------------------
-// Returns the equivalent hashed Stub, creating a new hash
+// Returns the equivalent hashed code, creating a new hash
 // entry if necessary. If the latter, will call out to CompileStub.
-//
-// Refcounting:
-//    The caller is responsible for DecRef'ing the returned stub in
-//    order to avoid leaks.
 //---------------------------------------------------------
-Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
+PCODE StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
 {
     CONTRACTL
     {
@@ -78,7 +73,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
 
     STUBHASHENTRY *phe = NULL;
 
-    StubHolder<Stub> pstub;
+    PCODE pCode = NULL;
     {
         CrstHolder ch(&m_crst);
 
@@ -86,12 +81,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
         phe = (STUBHASHENTRY*)Find((LPVOID)pRawStub);
         if (phe)
         {
-            pstub = phe->m_pStub;
-
-            // IncRef as we're returning a reference to our caller.
-            pstub->IncRef();
-
-            return pstub.Detach();
+            return phe->m_pCode;
         }
     }
 
@@ -104,7 +94,7 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
     // and link up the stub.
     CodeLabel *plabel = psl->EmitNewCodeLabel();
     psl->EmitBytes(pRawStub, Length(pRawStub));
-    pstub = psl->Link(m_pLoaderAllocator, kind, stubType);
+    pCode = psl->Link(m_pLoaderAllocator, kind, stubType);
     UINT32 offset = psl->GetLabelOffset(plabel);
 
     if (offset > 0xffff)
@@ -119,10 +109,10 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
         {
             if (bNew)
             {
-                phe->m_pStub = pstub;
+                phe->m_pCode = pCode;
                 phe->m_offsetOfRawStub = (UINT16)offset;
 
-                AddStub(pRawStub, pstub);
+                AddStub(pRawStub, pCode);
             }
             else
             {
@@ -135,12 +125,9 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
                 // toggling between inlined TLSGetValue and api TLSGetValue.
                 //_ASSERTE(phe->m_offsetOfRawStub == (UINT16)offset);
 
-                //Use the previously created stub
-                // This will DecRef the new stub for us.
-                pstub = phe->m_pStub;
+                // Use the previously created stub
+                pCode = phe->m_pCode;
             }
-            // IncRef so that caller has firm ownership of stub.
-            pstub->IncRef();
         }
     }
 
@@ -150,11 +137,11 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
         COMPlusThrowOM();
     }
 
-            return pstub.Detach();
+    return pCode;
 }
 
 
-void StubCacheBase::AddStub(const BYTE* pRawStub, Stub* pNewStub)
+void StubCacheBase::AddStub(const BYTE* pRawStub, PCODE pNewStub)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -235,11 +222,11 @@ CClosedHashBase::ELEMENTSTATUS StubCacheBase::Status(           // The status of
     }
     CONTRACTL_END;
 
-    Stub *pStub = ((STUBHASHENTRY*)pElement)->m_pStub;
+    PCODE pCode = ((STUBHASHENTRY*)pElement)->m_pCode;
 
-    if (pStub == NULL)
+    if (pCode == NULL)
         return FREE;
-    else if (pStub == (Stub*)(-1))
+    else if (pCode == (PCODE)-1)
         return DELETED;
     else
         return USED;
@@ -264,8 +251,8 @@ void StubCacheBase::SetStatus(
 
     switch (eStatus)
     {
-        case FREE:    phe->m_pStub = NULL;   break;
-        case DELETED: phe->m_pStub = (Stub*)(-1); break;
+        case FREE:    phe->m_pCode = NULL;   break;
+        case DELETED: phe->m_pCode = (PCODE)-1; break;
         default:
             _ASSERTE(!"MLCacheEntry::SetStatus(): Bad argument.");
     }
@@ -286,5 +273,5 @@ void *StubCacheBase::GetKey(                   // The data to hash on.
     CONTRACTL_END;
 
     STUBHASHENTRY *phe = (STUBHASHENTRY*)pElement;
-    return (void *)(phe->m_pStub->GetBlob() + phe->m_offsetOfRawStub);
+    return (void *)(PCODEToPINSTR(phe->m_pCode) + phe->m_offsetOfRawStub);
 }

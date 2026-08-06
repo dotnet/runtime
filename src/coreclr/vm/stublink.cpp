@@ -112,6 +112,18 @@ StubLinker::StubLinker()
     m_fDataOnly         = FALSE;
 }
 
+void StubLinker::SetTargetMethod(PTR_MethodDesc pMD)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pMD != NULL);
+    }
+    CONTRACTL_END;
+    m_pTargetMethod = pMD;
+}
+
 
 
 //---------------------------------------------------------------
@@ -393,22 +405,6 @@ CodeLabel* StubLinker::NewExternalCodeLabel(LPVOID pExternalAddress)
 }
 
 //---------------------------------------------------------------
-// Set the target method for Instantiating stubs.
-//---------------------------------------------------------------
-void StubLinker::SetTargetMethod(PTR_MethodDesc pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(pMD != NULL);
-    }
-    CONTRACTL_END;
-    m_pTargetMethod = pMD;
-}
-
-
-//---------------------------------------------------------------
 // Append an instruction containing a reference to a label.
 //
 //      target          - the label being referenced.
@@ -538,35 +534,23 @@ static BOOL LabelCanReach(LabelRef *pLabelRef)
 }
 
 //---------------------------------------------------------------
-// Generate the actual stub. The returned stub has a refcount of 1.
+// Generate the actual stub.
 // No other methods (other than the destructor) should be called
 // after calling Link().
 //
 // Throws exception on failure.
 //---------------------------------------------------------------
-Stub *StubLinker::Link(LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind, const char *stubType)
+PCODE StubLinker::Link(LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind, const char *stubType)
 {
     STANDARD_VM_CONTRACT;
 
     int globalsize = 0;
     int size = CalculateSize(&globalsize);
-    DWORD flags = (m_pTargetMethod != NULL) ? NEWSTUB_FL_INSTANTIATING_METHOD : NEWSTUB_FL_NONE;
-    if (kind == STUB_CODE_BLOCK_SHUFFLE_THUNK)
-    {
-        flags |= NEWSTUB_FL_SHUFFLE_THUNK;
-    }
+    PCODE pCode = EmitStub(pLoaderAllocator, kind, globalsize, size);
 
-    StubHolder<Stub> pStub{ Stub::NewStub(
-                pLoaderAllocator,
-                size,
-                flags) };
-    ASSERT(pStub != NULL);
+    PerfMap::LogStubs(__FUNCTION__, stubType, pCode, size, PerfMapStubType::Individual);
 
-    EmitStub(pStub, pLoaderAllocator, kind, globalsize, size);
-
-    PerfMap::LogStubs(__FUNCTION__, stubType, pStub->GetEntryPoint(), pStub->GetNumCodeBytes(), PerfMapStubType::Individual);
-
-    return pStub.Detach();
+    return pCode;
 }
 
 int StubLinker::CalculateSize(int* pGlobalSize)
@@ -701,12 +685,12 @@ int StubLinker::CalculateSize(int* pGlobalSize)
     return globalsize + datasize;
 }
 
-void StubLinker::EmitStub(Stub* pStub, LoaderAllocator* pLoaderAllocator, StubCodeBlockKind kind, int globalsize, int totalSize)
+PCODE StubLinker::EmitStub(LoaderAllocator* pLoaderAllocator, StubCodeBlockKind kind, int globalsize, int totalSize)
 {
     STANDARD_VM_CONTRACT;
 
     S_SIZE_T allocationSize(totalSize);
-    allocationSize += CODE_SIZE_ALIGN;
+    allocationSize += sizeof(PTR_MethodDesc) + CODE_SIZE_ALIGN - 1;
     if (allocationSize.IsOverflow())
         COMPlusThrowArithmetic();
 
@@ -715,14 +699,13 @@ void StubLinker::EmitStub(Stub* pStub, LoaderAllocator* pLoaderAllocator, StubCo
         CODE_SIZE_ALIGN,
         pLoaderAllocator,
         kind));
-    size_t codeOffset = ALIGN_UP(reinterpret_cast<size_t>(pBlock) + sizeof(PTR_Stub), CODE_SIZE_ALIGN) - reinterpret_cast<size_t>(pBlock);
+    size_t codeOffset = ALIGN_UP(reinterpret_cast<size_t>(pBlock) + sizeof(PTR_MethodDesc), CODE_SIZE_ALIGN) - reinterpret_cast<size_t>(pBlock);
     BYTE* pCode = pBlock + codeOffset;
-    pStub->m_entryPoint = pCode;
 
     ExecutableWriterHolder<BYTE> stubWriterHolder(pBlock, allocationSize.Value());
     BYTE* pBlockRW = stubWriterHolder.GetRW();
     BYTE* pCodeRW = pBlockRW + codeOffset;
-    SET_UNALIGNED_PTR(pCodeRW - sizeof(PTR_Stub), reinterpret_cast<TADDR>(pStub));
+    SET_UNALIGNED_PTR(pCodeRW - sizeof(PTR_MethodDesc), reinterpret_cast<TADDR>(m_pTargetMethod));
 
     BYTE *pDataRW = pCodeRW+globalsize; // start of data area
     {
@@ -788,184 +771,23 @@ void StubLinker::EmitStub(Stub* pStub, LoaderAllocator* pLoaderAllocator, StubCo
             ZeroMemory(pCodeRW + lastCodeOffset, globalsize - lastCodeOffset);
     }
 
-    // Fill in the target method for the Instantiating stub.
-    if (pStub->IsInstantiatingStub())
-    {
-        _ASSERTE(m_pTargetMethod != NULL);
-        pStub->SetInstantiatedMethodDesc(m_pTargetMethod);
-
-        LOG((LF_CORDB, LL_INFO100, "SL::ES: InstantiatedMethod fd:0x%x\n",
-            pStub->GetInstantiatedMethodDesc()));
-    }
-
     if (!m_fDataOnly)
     {
         FlushInstructionCache(GetCurrentProcess(), pCode, globalsize);
     }
 
     _ASSERTE(m_fDataOnly || DbgIsExecutable(pCode, globalsize));
-}
 
-#endif // #ifndef DACCESS_COMPILE
+#ifdef TARGET_ARM
 
-#ifndef DACCESS_COMPILE
-
-//-------------------------------------------------------------------
-// Inc the refcount.
-//-------------------------------------------------------------------
-VOID Stub::IncRef()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_signature == kUsedStub);
-    InterlockedIncrement((LONG*)&m_refcount);
-}
-
-//-------------------------------------------------------------------
-// Dec the refcount.
-//-------------------------------------------------------------------
-BOOL Stub::DecRef()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    _ASSERTE(m_signature == kUsedStub);
-    int count = InterlockedDecrement((LONG*)&m_refcount);
-    if (count <= 0) {
-        DeleteStub();
-        return TRUE;
-    }
-    return FALSE;
-}
-
-VOID Stub::DeleteStub()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if ((m_numCodeBytesAndFlags & LOADER_HEAP_BIT) == 0)
-    {
-#ifdef _DEBUG
-        m_signature = kFreedStub;
-        FillMemory(this, sizeof(*this), 0xcc);
+#ifndef THUMB_CODE
+#define THUMB_CODE 1
 #endif
 
-        delete [] reinterpret_cast<BYTE*>(this);
-    }
-}
-
-Stub* Stub::NewStub(PTR_VOID pCode, DWORD flags)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    Stub* pStub = NewStub(NULL, 0, flags | NEWSTUB_FL_EXTERNAL);
-    pStub->m_entryPoint = reinterpret_cast<PTR_CBYTE>(pCode);
-
-    return pStub;
-}
-
-//-------------------------------------------------------------------
-// Stub allocation done here.
-//-------------------------------------------------------------------
-/*static*/ Stub* Stub::NewStub(
-        LoaderAllocator *pLoaderAllocator,
-        UINT numCodeBytes,
-        DWORD flags)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-    S_SIZE_T size = S_SIZE_T(sizeof(Stub));
-
-    if (flags & NEWSTUB_FL_EXTERNAL)
-    {
-        _ASSERTE(pLoaderAllocator == NULL);
-        _ASSERTE(numCodeBytes == 0);
-    }
-
-    if (size.IsOverflow())
-        COMPlusThrowArithmetic();
-
-    size_t totalSize = size.Value();
-
-    BYTE *pBlock;
-    if (pLoaderAllocator == NULL)
-    {
-        pBlock = new BYTE[totalSize];
-    }
-    else
-    {
-        TaggedMemAllocPtr ptr = pLoaderAllocator->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(totalSize));
-        pBlock = static_cast<BYTE*>(static_cast<void*>(ptr));
-        flags |= NEWSTUB_FL_LOADERHEAP;
-    }
-
-    Stub* pStub = reinterpret_cast<Stub*>(pBlock);
-    pStub->SetupStub(numCodeBytes, flags);
-
-    return pStub;
-}
-
-void Stub::SetupStub(int numCodeBytes, DWORD flags)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END;
-
-#ifdef _DEBUG
-    m_signature = kUsedStub;
-#ifdef HOST_64BIT
-    m_pad_code_bytes1 = 0;
-    m_pad_code_bytes2 = 0;
-    m_pad_code_bytes3 = 0;
+    return (PCODE)(reinterpret_cast<TADDR>(pCode) | THUMB_CODE);
+#else
+    return (PCODE)pCode;
 #endif
-#endif
-
-    if (((DWORD)numCodeBytes) >= MAX_CODEBYTES)
-        COMPlusThrowHR(COR_E_OVERFLOW);
-
-    m_numCodeBytesAndFlags = numCodeBytes;
-
-    m_entryPoint = NULL;
-    m_refcount = 1;
-    m_data = {};
-
-    if (flags != NEWSTUB_FL_NONE)
-    {
-        if((flags & NEWSTUB_FL_LOADERHEAP) != 0)
-            m_numCodeBytesAndFlags |= LOADER_HEAP_BIT;
-        if ((flags & NEWSTUB_FL_EXTERNAL) != 0)
-            m_numCodeBytesAndFlags |= EXTERNAL_ENTRY_BIT;
-        if ((flags & NEWSTUB_FL_INSTANTIATING_METHOD) != 0)
-            m_numCodeBytesAndFlags |= INSTANTIATING_STUB_BIT;
-        if ((flags & NEWSTUB_FL_SHUFFLE_THUNK) != 0)
-            m_numCodeBytesAndFlags |= SHUFFLE_THUNK_BIT;
-    }
 }
 
 #endif // #ifndef DACCESS_COMPILE

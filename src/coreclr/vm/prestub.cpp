@@ -1517,7 +1517,7 @@ void MethodDesc::CreateDerivedTargetSig(MetaSig& msig, SigBuilder *stubSigBuilde
     }
 }
 
-Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
+PCODE CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
 {
 
     CONTRACTL
@@ -1603,11 +1603,11 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
     pResolver->SetStubTargetMethodDesc(pTargetMD);
 
-    return Stub::NewStub(JitILStub(pStubMD));
+    return JitILStub(pStubMD);
 
 }
 
-Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
+PCODE CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 {
 
     CONTRACTL
@@ -1696,19 +1696,17 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
     pResolver->SetStubTargetMethodDesc(pTargetMD);
 
-    return Stub::NewStub(JitILStub(pStubMD));
+    return JitILStub(pStubMD);
 }
 
 /* Make a stub that for a value class method that expects a BOXed this pointer */
-Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
+PCODE MakeUnboxingStubWorker(MethodDesc *pMD)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
-
-    Stub *pstub = NULL;
 
     _ASSERTE (pMD->GetMethodTable()->IsValueType());
     _ASSERTE(!pMD->ContainsGenericVariables());
@@ -1757,7 +1755,7 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 }
 
 #if defined(FEATURE_SHARE_GENERIC_CODE)
-Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
+PCODE MakeInstantiatingStubWorker(MethodDesc *pMD)
 {
     CONTRACTL
     {
@@ -2362,7 +2360,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     }
     CONTRACTL_END;
 
-    Stub *pStub = NULL;
+    PCODE pStub = NULL;
     PCODE pCode = (PCODE)NULL;
 
     Thread *pThread = GetThread();
@@ -2600,8 +2598,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     else
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        pCode = pStub->GetEntryPoint();
-        pStub->DecRef();
+        pCode = pStub;
 
         void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
         _ASSERTE(ilStubInterpData != NULL);
@@ -2613,16 +2610,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         PortableEntryPoint::SetInterpreterData(pCode, (PCODE)(TADDR)ilStubInterpData);
         SetCodeEntryPoint(pCode);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
-        if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))
-        {
-            pStub->DecRef();
-        }
-        else if (pStub->HasExternalEntryPoint())
-        {
-            // If the Stub wraps code that is outside of the Stub allocation, then we
-            // need to free the Stub allocation now.
-            pStub->DecRef();
-        }
+        GetOrCreatePrecode()->SetTargetInterlocked(pStub);
 #if defined(FEATURE_INTERPRETER) && defined(HAS_FIXUP_PRECODE)
         if (GetOrCreatePrecode()->GetType() == PRECODE_FIXUP)
         {

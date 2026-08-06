@@ -59,7 +59,6 @@ enum StubCodeBlockKind : int;
 // Forward refs
 //-------------------------------------------------------------------------
 class  InstructionFormat;
-class  Stub;
 class  CheckDuplicatedStructLayouts;
 class  CodeBasedStubCache;
 struct  CodeLabel;
@@ -146,9 +145,6 @@ class StubLinker
             return NewExternalCodeLabel((LPVOID)pExternalAddress);
         }
 
-        //---------------------------------------------------------------
-        // Set the target method for Instantiating stubs.
-        //---------------------------------------------------------------
         void SetTargetMethod(PTR_MethodDesc pMD);
 
         //---------------------------------------------------------------
@@ -172,13 +168,13 @@ class StubLinker
     public:
 
         //---------------------------------------------------------------
-        // Generate the actual stub. The returned stub has a refcount of 1.
+        // Generate the actual stub.
         // No other methods (other than the destructor) should be called
         // after calling Link().
         //
         // Throws exception on failure.
         //---------------------------------------------------------------
-        Stub *Link(LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind, const char *stubType);
+        PCODE Link(LoaderAllocator *pLoaderAllocator, StubCodeBlockKind kind, const char *stubType);
 
     private:
         CodeElement   *m_pCodeElements;     // stored in *reverse* order
@@ -211,7 +207,7 @@ class StubLinker
         virtual int CalculateSize(int* globalsize);
 
         // Writes out the code element into a code fragment.
-        void EmitStub(Stub* pStub, LoaderAllocator* pLoaderAllocator, StubCodeBlockKind kind, int globalsize, int totalSize);
+        PCODE EmitStub(LoaderAllocator* pLoaderAllocator, StubCodeBlockKind kind, int globalsize, int totalSize);
 
         CodeRun *GetLastCodeRunIfAny();
 };
@@ -249,275 +245,6 @@ struct CodeLabel
             LPVOID           m_pExternalAddress;
         } e;
     };
-};
-
-enum NewStubFlags
-{
-    NEWSTUB_FL_NONE                 = 0x00000000,
-    NEWSTUB_FL_INSTANTIATING_METHOD = 0x00000001,
-    NEWSTUB_FL_EXTERNAL             = 0x00000002,
-    NEWSTUB_FL_LOADERHEAP           = 0x00000004,
-    NEWSTUB_FL_SHUFFLE_THUNK        = 0x00000008
-};
-
-
-//-------------------------------------------------------------------------
-// An executable stub. These can only be created by the StubLinker().
-// Each stub has a reference count (which is maintained in a thread-safe
-// manner.) When the ref-count goes to zero, the stub automatically
-// cleans itself up.
-//-------------------------------------------------------------------------
-typedef DPTR(class Stub) PTR_Stub;
-typedef DPTR(PTR_Stub) PTR_PTR_Stub;
-class Stub
-{
-    friend class CheckDuplicatedStructLayouts;
-    friend class CheckAsmOffsets;
-    friend class StubLinker;
-
-    protected:
-    enum
-    {
-        EXTERNAL_ENTRY_BIT      = 0x80000000,
-        LOADER_HEAP_BIT         = 0x40000000,
-        INSTANTIATING_STUB_BIT  = 0x20000000,
-        SHUFFLE_THUNK_BIT       = 0x10000000,
-
-        CODEBYTES_MASK          = SHUFFLE_THUNK_BIT - 1,
-        MAX_CODEBYTES           = CODEBYTES_MASK + 1,
-    };
-    static_assert(CODEBYTES_MASK < SHUFFLE_THUNK_BIT);
-
-    public:
-        //-------------------------------------------------------------------
-        // Inc the refcount.
-        //-------------------------------------------------------------------
-        VOID IncRef();
-
-        //-------------------------------------------------------------------
-        // Dec the refcount.
-        // Returns true if the count went to zero and the stub was deleted
-        //-------------------------------------------------------------------
-        BOOL DecRef();
-
-        //-------------------------------------------------------------------
-        // Used for throwing out unused stubs from stub caches. This
-        // method cannot be 100% accurate due to race conditions. This
-        // is ok because stub cache management is robust in the face
-        // of missed or premature cleanups.
-        //-------------------------------------------------------------------
-        BOOL HeuristicLooksOrphaned()
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(m_signature == kUsedStub);
-            return m_refcount == 1;
-        }
-
-        //-------------------------------------------------------------------
-        // Used by the debugger to help step through stubs
-        //-------------------------------------------------------------------
-        BOOL IsInstantiatingStub()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return (m_numCodeBytesAndFlags & INSTANTIATING_STUB_BIT) != 0;
-        }
-
-        //-------------------------------------------------------------------
-        // Used by the debugger to help step through stubs
-        //-------------------------------------------------------------------
-        BOOL IsShuffleThunk()
-        {
-            LIMITED_METHOD_CONTRACT;
-            return (m_numCodeBytesAndFlags & SHUFFLE_THUNK_BIT) != 0;
-        }
-
-        //-------------------------------------------------------------------
-        // For instantiating methods, the target MethodDesc needs to be set
-        // to tell the debugger where to step through the instantiating method
-        // stub.
-        //-------------------------------------------------------------------
-        void SetInstantiatedMethodDesc(PTR_MethodDesc pMD)
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(IsInstantiatingStub());
-            m_data.InstantiatedMethod = pMD;
-        }
-
-        //-------------------------------------------------------------------
-        // For instantiating methods, the target MethodDesc needs to be set
-        // to tell the debugger where to step through the instantiating method
-        // stub.
-        //-------------------------------------------------------------------
-        PTR_MethodDesc GetInstantiatedMethodDesc()
-        {
-            LIMITED_METHOD_CONTRACT;
-            _ASSERTE(IsInstantiatingStub());
-            return m_data.InstantiatedMethod;
-        }
-
-        //-------------------------------------------------------------------
-        //-------------------------------------------------------------------
-        // Return executable entrypoint after checking the ref count.
-        //-------------------------------------------------------------------
-        PCODE GetEntryPoint()
-        {
-            WRAPPER_NO_CONTRACT;
-            SUPPORTS_DAC;
-
-            _ASSERTE(m_signature == kUsedStub);
-            _ASSERTE(m_refcount > 0);
-
-            TADDR pEntryPoint = dac_cast<TADDR>(GetEntryPointInternal());
-
-#ifdef TARGET_ARM
-
-#ifndef THUMB_CODE
-#define THUMB_CODE 1
-#endif
-
-            pEntryPoint |= THUMB_CODE;
-#endif
-
-            return pEntryPoint;
-        }
-
-        UINT GetNumCodeBytes()
-        {
-            WRAPPER_NO_CONTRACT;
-            SUPPORTS_DAC;
-
-            return m_numCodeBytesAndFlags & CODEBYTES_MASK;
-        }
-
-        //-------------------------------------------------------------------
-        // Return start of the stub code
-        //-------------------------------------------------------------------
-        PTR_CBYTE GetBlob()
-        {
-            WRAPPER_NO_CONTRACT;
-            SUPPORTS_DAC;
-
-            _ASSERTE(m_signature == kUsedStub);
-            _ASSERTE(m_refcount > 0);
-
-            return GetEntryPointInternal();
-        }
-
-        //-------------------------------------------------------------------
-        // Return the Stub and code size.
-        //-------------------------------------------------------------------
-        static Stub* RecoverStubAndSize(PCODE pEntryPoint, DWORD *pSize)
-        {
-            CONTRACTL
-            {
-                NOTHROW;
-                GC_NOTRIGGER;
-                MODE_ANY;
-
-                PRECONDITION(pEntryPoint && pSize);
-            }
-            CONTRACTL_END;
-
-            Stub *pStub = Stub::RecoverStub(pEntryPoint);
-            *pSize = pStub->GetNumCodeBytes();
-            return pStub;
-        }
-
-        //-------------------------------------------------------------------
-        // Reverse GetEntryPoint.
-        //-------------------------------------------------------------------
-        static Stub* RecoverStub(PCODE pEntryPoint)
-        {
-            STATIC_CONTRACT_NOTHROW;
-            STATIC_CONTRACT_GC_NOTRIGGER;
-
-            TADDR pStubData = PCODEToPINSTR(pEntryPoint);
-
-            Stub *pStub = *dac_cast<PTR_PTR_Stub>(pStubData - sizeof(PTR_Stub));
-
-#if !defined(DACCESS_COMPILE)
-            _ASSERTE(pStub->m_signature == kUsedStub);
-            _ASSERTE(pStub->GetEntryPoint() == pEntryPoint);
-#elif defined(_DEBUG)
-            // If this isn't really a stub we don't want
-            // to continue with it.
-            // TODO: This should be removed once IsStub
-            // can adverstise whether it's safe to call
-            // further StubManager methods.
-            if (pStub->m_signature != kUsedStub ||
-                pStub->GetEntryPoint() != pEntryPoint)
-            {
-                DacError(E_INVALIDARG);
-            }
-#endif
-            return pStub;
-        }
-
-        //-------------------------------------------------------------------
-        // Returns TRUE if entry point is not inside the Stub allocation.
-        //-------------------------------------------------------------------
-        BOOL HasExternalEntryPoint() const
-        {
-            LIMITED_METHOD_CONTRACT;
-
-            return (m_numCodeBytesAndFlags & EXTERNAL_ENTRY_BIT) != 0;
-        }
-
-        //-------------------------------------------------------------------
-        // This creates stub metadata.
-        //-------------------------------------------------------------------
-        static Stub* NewStub(LoaderAllocator *pLoaderAllocator, UINT numCodeBytes,
-                             DWORD flags = NEWSTUB_FL_NONE);
-
-        static Stub* NewStub(PTR_VOID pCode, DWORD flags = NEWSTUB_FL_NONE);
-        static Stub* NewStub(PCODE pCode, DWORD flags = NEWSTUB_FL_NONE)
-        {
-            return NewStub((PTR_VOID)pCode, flags);
-        }
-
-    protected:
-        void SetupStub(int numCodeBytes, DWORD flags);
-        void DeleteStub();
-
-        //-------------------------------------------------------------------
-        // Return executable entrypoint without checking the ref count.
-        //-------------------------------------------------------------------
-        inline PTR_CBYTE GetEntryPointInternal()
-        {
-            LIMITED_METHOD_CONTRACT;
-            SUPPORTS_DAC;
-
-            _ASSERTE(m_signature == kUsedStub);
-
-
-            return m_entryPoint;
-        }
-
-        PTR_CBYTE m_entryPoint;
-        UINT32 m_refcount;
-        UINT32 m_numCodeBytesAndFlags;
-        union
-        {
-            // Stub kind specific data
-            PTR_MethodDesc  InstantiatedMethod; // Valid for IsInstantiatingStub() only
-        } m_data;
-
-#ifdef _DEBUG
-        enum {
-            kUsedStub  = 0x42555453,     // 'STUB'
-            kFreedStub = 0x46555453,     // 'STUF'
-        };
-
-        UINT32  m_signature;
-#ifdef HOST_64BIT
-        //README ALIGNMENT: Enusure code after the Stub struct align to 16-bytes.
-        UINT32  m_pad_code_bytes1;
-        UINT32  m_pad_code_bytes2;
-        UINT32  m_pad_code_bytes3;
-#endif // HOST_64BIT
-#endif // _DEBUG
-
-        Stub() = delete; // Stubs are created by NewStub(), not "new".
 };
 
 //-------------------------------------------------------------------------

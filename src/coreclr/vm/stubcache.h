@@ -17,7 +17,6 @@
 #include "util.hpp"
 #include "crst.h"
 
-class Stub;
 class StubLinker;
 enum StubCodeBlockKind : int;
 
@@ -33,7 +32,7 @@ private:
         //   NULL  = free
         //   -1    = deleted
         //   other = used
-        Stub    *m_pStub;
+        PCODE    m_pCode;
 
         // Offset where the RawStub begins (the RawStub can be
         // preceded by native stub code.)
@@ -53,12 +52,12 @@ public:
     virtual ~StubCacheBase();
 
     //---------------------------------------------------------
-    // Returns the equivalent hashed Stub, creating a new hash
+    // Returns the equivalent hashed code, creating a new hash
     // entry if necessary. If the latter, will call out to CompileStub.
     //
     // Throws on out of memory or other fatal error.
     //---------------------------------------------------------
-    Stub *Canonicalize(const BYTE *pRawStub, const char *stubType);
+    PCODE Canonicalize(const BYTE *pRawStub, const char *stubType);
 
 protected:
     //---------------------------------------------------------
@@ -83,7 +82,7 @@ protected:
     // OVERRIDE (OPTIONAL)
     // Notifies the various derived classes that a new stub has been created
     //---------------------------------------------------------
-    virtual void AddStub(const BYTE* pRawStub, Stub* pNewStub);
+    virtual void AddStub(const BYTE* pRawStub, PCODE pNewStub);
 
 
 private:

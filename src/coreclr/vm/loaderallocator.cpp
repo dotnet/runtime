@@ -1762,7 +1762,7 @@ void AssemblyLoaderAllocator::Init()
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
     if (IsCollectible())
     {
-        // TODO: the ShuffleThunkCache should really be using collectible stub-linked executable memory, however the unloadability support
+        // TODO: the ShuffleThunkCache should really be using collectible executable memory, however the unloadability support
         // doesn't track the stubs or the related delegate classes and so we get crashes when a stub is used after
         // the AssemblyLoaderAllocator is gone (the stub memory is unmapped).
         // https://github.com/dotnet/runtime/issues/55697 tracks this issue.
