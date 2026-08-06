@@ -477,7 +477,7 @@ public sealed class DataTypeIndexTests
     }
 
     [Fact]
-    public void DependencyAttributesReplaceOnInitInference()
+    public void DependencyAttributesOnPartialPropertiesReplaceInitializerInference()
     {
         const string source = """
             namespace Microsoft.Diagnostics.DataContractReader
@@ -507,21 +507,16 @@ public sealed class DataTypeIndexTests
                     public int Raw { get; }
 
                     [Microsoft.Diagnostics.DataContractReader.DataDescriptorDependency("Raw", "int32")]
-                    public int Derived { get; private set; }
+                    public partial int Derived { get; }
 
                     [Microsoft.Diagnostics.DataContractReader.DataDescriptorDependency("Raw", "int32")]
-                    public int CompoundDerived { get; private set; }
-
-                    partial void OnInit();
+                    public partial int CompoundDerived { get; }
                 }
 
                 public sealed partial class Widget
                 {
-                    partial void OnInit()
-                    {
-                        Derived = Raw;
-                        CompoundDerived += Raw;
-                    }
+                    public partial int Derived => Raw;
+                    public partial int CompoundDerived => Raw + Raw;
                 }
             }
             namespace Microsoft.Diagnostics.DataContractReader.Contracts
@@ -539,7 +534,7 @@ public sealed class DataTypeIndexTests
             }
             """;
         CSharpCompilation compilation = CSharpCompilation.Create(
-            "OnInitPropertyTest",
+            "PartialPropertyDependencyTest",
             [CSharpSyntaxTree.ParseText(source)],
             RuntimeReferences(),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
@@ -558,6 +553,93 @@ public sealed class DataTypeIndexTests
         Assert.Contains("Raw", fields.Select(field => field.Name));
         Assert.DoesNotContain("Derived", fields.Select(field => field.Name));
         Assert.DoesNotContain("CompoundDerived", fields.Select(field => field.Name));
+    }
+
+    [Fact]
+    public void CustomInitDependenciesAreCombinedWithInitializerInference()
+    {
+        const string source = """
+            namespace Microsoft.Diagnostics.DataContractReader
+            {
+                public sealed class CdacTypeAttribute : System.Attribute
+                {
+                    public CdacTypeAttribute(params string[] names) { }
+                }
+                public sealed class FieldAttribute : System.Attribute { }
+                public sealed class CustomInitAttribute : System.Attribute
+                {
+                    public CustomInitAttribute(string methodName) { }
+                }
+                [System.AttributeUsage(
+                    System.AttributeTargets.Property | System.AttributeTargets.Method,
+                    AllowMultiple = true)]
+                public sealed class DataDescriptorDependencyAttribute : System.Attribute
+                {
+                    public DataDescriptorDependencyAttribute(string fieldName, string nativeType) { }
+                }
+            }
+            namespace Microsoft.Diagnostics.DataContractReader.Data
+            {
+                public interface IData<T> { }
+
+                [Microsoft.Diagnostics.DataContractReader.CdacType("Widget")]
+                public sealed partial class Widget : IData<Widget>
+                {
+                    [Microsoft.Diagnostics.DataContractReader.Field]
+                    [Microsoft.Diagnostics.DataContractReader.DataDescriptorDependency("Raw", "int32")]
+                    public int Raw { get; }
+
+                    [Microsoft.Diagnostics.DataContractReader.Field]
+                    [Microsoft.Diagnostics.DataContractReader.DataDescriptorDependency("Nested", "int32")]
+                    public int Nested { get; }
+
+                    [Microsoft.Diagnostics.DataContractReader.CustomInit(nameof(InitDerived))]
+                    public partial int Derived { get; }
+
+                    [Microsoft.Diagnostics.DataContractReader.DataDescriptorDependency("Raw", "int32")]
+                    private partial int InitDerived() => Raw + Nested;
+                }
+
+                public sealed partial class Widget
+                {
+                    public partial int Derived => InitDerived();
+                    private partial int InitDerived();
+                }
+            }
+            namespace Microsoft.Diagnostics.DataContractReader.Contracts
+            {
+                public interface ITest
+                {
+                    int Read(Microsoft.Diagnostics.DataContractReader.Data.Widget widget);
+                }
+
+                public sealed class TestContract : ITest
+                {
+                    public int Read(Microsoft.Diagnostics.DataContractReader.Data.Widget widget)
+                        => widget.Derived;
+                }
+            }
+            """;
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            "CustomInitPropertyDependencyTest",
+            [CSharpSyntaxTree.ParseText(source)],
+            RuntimeReferences(),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+        INamedTypeSymbol impl = compilation.GetTypeByMetadataName(
+            "Microsoft.Diagnostics.DataContractReader.Contracts.TestContract")!;
+        DataTypeIndex index = DataTypeDiscovery.BuildIndex(compilation);
+        UsageGraph graph = new UsageWalker(compilation, index).Walk(
+            [Registration(
+                new ContractVersion(new ContractInterface("ITest"), "c1"),
+                impl)], "");
+        IReadOnlyCollection<FieldUsage> fields = DataType(
+            graph,
+            new ContractVersion(new ContractInterface("ITest"), "c1"),
+            "Data.Widget").Fields;
+
+        Assert.Equal(
+            ["Nested", "Raw"],
+            fields.Select(field => field.Name).OrderBy(name => name, StringComparer.Ordinal));
     }
 
     [Fact]

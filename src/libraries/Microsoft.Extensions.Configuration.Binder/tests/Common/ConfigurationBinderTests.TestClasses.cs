@@ -1113,6 +1113,23 @@ namespace Microsoft.Extensions
             public AbstractBase AbstractProp { get; set; }
         }
 
+        internal class ClassWithGetterOnlyProperties
+        {
+            public ClassWithGetterOnlyProperties(bool initializeProperties)
+            {
+                if (initializeProperties)
+                {
+                    Nested = new();
+                    Collection = ["existing"];
+                    Abstract = new Derived();
+                }
+            }
+
+            public NestedOptions? Nested { get; }
+            public List<string>? Collection { get; }
+            public AbstractBase? Abstract { get; }
+        }
+
         internal class ClassWithAbstractCtorParam
         {
             public AbstractBase AbstractProp { get; }

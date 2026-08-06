@@ -2,6 +2,7 @@
   <PropertyGroup>
     <CLRTestKind>BuildOnly</CLRTestKind>
     <IsTestProject>false</IsTestProject>
+    <OutputType>Library</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
