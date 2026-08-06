@@ -1546,7 +1546,16 @@ namespace System
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
         [Intrinsic]
-        public static Half FusedMultiplyAdd(Half left, Half right, Half addend) => (Half)MathF.FusedMultiplyAdd((float)left, (float)right, (float)addend);
+        public static Half FusedMultiplyAdd(Half left, Half right, Half addend)
+        {
+            // The intermediate has to be wide enough that rounding it down to Half matches rounding
+            // the exact result directly. float isn't: for `1.5 * 0x3956 + Half.Epsilon` the exact
+            // result sits exactly half a float ulp above a Half midpoint, so the float rounding lands
+            // on the midpoint and the subsequent ties-to-even then goes the wrong way. x*y+z is always
+            // a multiple of 2^-48, which is far enough below double's granularity that the same
+            // collision can't happen, so a double intermediate is correctly rounded.
+            return (Half)Math.FusedMultiplyAdd((double)left, (double)right, (double)addend);
+        }
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
         public static Half Ieee754Remainder(Half left, Half right) => (Half)MathF.IEEERemainder((float)left, (float)right);
