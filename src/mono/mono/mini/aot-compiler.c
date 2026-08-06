@@ -6287,6 +6287,37 @@ add_generic_instances (MonoAotCompile *acfg)
 			add_instances_of (acfg, klass, insts, ninsts, TRUE);
 
 		/*
+		 * Nullable<T>.Box/Unbox have variable-size signatures that the llvmonly gsharedvt
+		 * runtime cannot share, so they are resolved to concrete methods and gsharedvt
+		 * callers are adapted with out/in-sig wrappers that are only emitted when those
+		 * concrete methods are AOT-compiled (see add_generic_class_with_depth). When corelib
+		 * is AOT-compiled but the consuming assembly is interpreted, value types such as
+		 * Int128 are never instantiated as Nullable<T> in corelib's metadata, so the wrappers
+		 * are absent and boxing such a value through the non-generic IEnumerator.Current traps
+		 * with a "function signature mismatch" (#131537). Explicitly instantiate Nullable<T>
+		 * for the corelib value types whose gsharedvt layout is otherwise absent (the small
+		 * primitives are already covered by existing corelib Nullable usage); missing names
+		 * are skipped, and already-added instances are deduplicated by add_generic_class.
+		 */
+		{
+			MonoType *nullable_insts [32];
+			int nullable_ninsts = 0;
+			const char *nullable_vtypes [] = {
+				"Int128", "UInt128", "Half", "Decimal", "Guid",
+				"DateTime", "DateTimeOffset", "TimeSpan", "DateOnly", "TimeOnly",
+				"IntPtr", "UIntPtr"
+			};
+			for (size_t i = 0; i < G_N_ELEMENTS (nullable_vtypes); ++i) {
+				MonoClass *k = mono_class_try_load_from_name (acfg->image, "System", nullable_vtypes [i]);
+				if (k)
+					nullable_insts [nullable_ninsts ++] = m_class_get_byval_arg (k);
+			}
+			klass = mono_class_try_load_from_name (acfg->image, "System", "Nullable`1");
+			if (klass && nullable_ninsts)
+				add_instances_of (acfg, klass, nullable_insts, nullable_ninsts, TRUE);
+		}
+
+		/*
 		 * Add a managed-to-native wrapper of Array.GetGenericValue_icall<object>, which is
 		 * used for all instances of GetGenericValue_icall by the AOT runtime.
 		 */
