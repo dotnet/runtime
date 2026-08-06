@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
@@ -14,6 +15,50 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class StackWalkTests
 {
+    [Theory]
+    [InlineData(false, 0ul)]
+    [InlineData(true, 0x200ul)]
+    public void GetStackSizeSkipped_ReturnsBytesSkippedByLastNext(bool includeHiddenFrame, ulong expected)
+    {
+        TargetPointer threadAddress = new(0x1000);
+        ThreadData threadData = default;
+
+        var thread = new Mock<IThread>();
+        thread.Setup(t => t.GetThreadData(threadAddress)).Returns(threadData);
+
+        var currentFrame = new Mock<IStackDataFrameHandle>();
+        currentFrame.SetupGet(f => f.State).Returns(StackWalkState.Frameless);
+        var nextFrame = new Mock<IStackDataFrameHandle>();
+        nextFrame.SetupGet(f => f.State).Returns(StackWalkState.Frameless);
+
+        List<IStackDataFrameHandle> frames = [currentFrame.Object];
+        var stackWalk = new Mock<IStackWalk>();
+        stackWalk.Setup(s => s.GetStackPointer(currentFrame.Object)).Returns(new TargetPointer(0x1000));
+        if (includeHiddenFrame)
+        {
+            var hiddenFrame = new Mock<IStackDataFrameHandle>();
+            hiddenFrame.SetupGet(f => f.State).Returns(StackWalkState.NativeMarker);
+            frames.Add(hiddenFrame.Object);
+            stackWalk.Setup(s => s.GetStackPointer(hiddenFrame.Object)).Returns(new TargetPointer(0x1100));
+        }
+        frames.Add(nextFrame.Object);
+        stackWalk.Setup(s => s.GetStackPointer(nextFrame.Object)).Returns(new TargetPointer(0x1300));
+        stackWalk.Setup(s => s.CreateStackWalk(threadData)).Returns(frames);
+
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true })
+            .AddMockContract(thread)
+            .AddMockContract(stackWalk)
+            .Build();
+        IXCLRDataStackWalk api = new ClrDataStackWalk(threadAddress, flags: 0, target, legacyImpl: null);
+
+        Assert.Equal(System.HResults.S_OK, api.Next());
+
+        ulong stackSizeSkipped;
+        Assert.Equal(System.HResults.S_OK, api.GetStackSizeSkipped(&stackSizeSkipped));
+        Assert.Equal(expected, stackSizeSkipped);
+        Assert.Equal(System.HResults.E_INVALIDARG, api.GetStackSizeSkipped(null));
+    }
+
     [Fact]
     public void GenericContextStorage_PreservesRegisterRepresentation()
     {
