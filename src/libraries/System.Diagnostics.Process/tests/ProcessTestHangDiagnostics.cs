@@ -32,7 +32,7 @@ namespace System.Diagnostics.Tests
         private const string InstallationTypeKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion";
         private static readonly TimeSpan WatchdogTimeout = TimeSpan.FromMinutes(3);
         private static readonly TextWriter s_log = TextWriter.Synchronized(
-            new StreamWriter(Console.OpenStandardError(), Encoding.UTF8, bufferSize: 1024, leaveOpen: true) { AutoFlush = true });
+            new StreamWriter(Console.OpenStandardError(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), bufferSize: 1024, leaveOpen: true) { AutoFlush = true });
 
         [ModuleInitializer]
         internal static void Initialize()
@@ -65,10 +65,12 @@ namespace System.Diagnostics.Tests
         private static void ConfigureWindowsErrorReporting()
         {
             string? dumpFolder = Environment.GetEnvironmentVariable("HELIX_DUMP_FOLDER");
+            string? uploadFolder = Environment.GetEnvironmentVariable("HELIX_WORKITEM_UPLOAD_ROOT");
+            string? werDumpFolder = uploadFolder ?? dumpFolder;
             string? processPath = Environment.ProcessPath;
-            if (string.IsNullOrEmpty(dumpFolder) || string.IsNullOrEmpty(processPath))
+            if (string.IsNullOrEmpty(werDumpFolder) || string.IsNullOrEmpty(processPath))
             {
-                Log($"WER LocalDumps not configured; HELIX_DUMP_FOLDER={dumpFolder ?? "<null>"}.");
+                Log($"WER LocalDumps not configured; HELIX_WORKITEM_UPLOAD_ROOT={uploadFolder ?? "<null>"}; HELIX_DUMP_FOLDER={dumpFolder ?? "<null>"}.");
                 return;
             }
 
@@ -85,9 +87,9 @@ namespace System.Diagnostics.Tests
                 }
 
                 key.SetValue("DumpCount", 2, RegistryValueKind.DWord);
-                key.SetValue("DumpFolder", dumpFolder, RegistryValueKind.ExpandString);
+                key.SetValue("DumpFolder", werDumpFolder, RegistryValueKind.ExpandString);
                 key.SetValue("DumpType", 2, RegistryValueKind.DWord);
-                Log($"WER LocalDumps configured for {executableName} in {dumpFolder}.");
+                Log($"WER LocalDumps configured for {executableName} in {werDumpFolder}.");
             }
             catch (Exception e) when (e is IOException or SecurityException or UnauthorizedAccessException)
             {
