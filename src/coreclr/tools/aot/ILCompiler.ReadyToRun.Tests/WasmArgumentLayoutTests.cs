@@ -223,6 +223,24 @@ public class WasmArgumentLayoutTests
         Assert.Contains(expectedMessage, reply);
     }
 
+    /// <summary>
+    /// Real builds hand query mode the whole app closure, not one assembly. The compilation group it
+    /// configures has to accept that: a multi-assembly set is only legal in composite mode, and a
+    /// group built without it asserts in checked builds and lays out nothing in any build.
+    /// </summary>
+    [Fact]
+    public void WasmAbiQueryAcceptsMoreThanOneInputAssembly()
+    {
+        // Any second real assembly will do; the queries below still target CoreLib. This one is
+        // guaranteed to exist because it is the assembly currently executing.
+        string extraInput = typeof(WasmArgumentLayoutTests).Assembly.Location;
+        Assert.True(File.Exists(extraInput), $"test assembly not found at '{extraInput}'");
+
+        ReadyToRunCompilerContext context = CreateWasmContext(extraInput);
+
+        Assert.Equal(new[] { "S16" }, RunQueries(context, TypeQuery(context, "Guid")));
+    }
+
     private const string CoreLibSimpleName = "System.Private.CoreLib";
 
     private static EcmaType GetSystemType(ReadyToRunCompilerContext context, string typeName)
@@ -254,9 +272,10 @@ public class WasmArgumentLayoutTests
 
     /// <summary>
     /// Configures a type system context the way crossgen2 does for
-    /// <c>--targetarch wasm --targetos browser</c>.
+    /// <c>--targetarch wasm --targetos browser</c>. Extra input assemblies stand in for the rest of an
+    /// app closure, which a real build always supplies alongside CoreLib.
     /// </summary>
-    private ReadyToRunCompilerContext CreateWasmContext()
+    private ReadyToRunCompilerContext CreateWasmContext(params string[] extraInputAssemblyPaths)
     {
         string coreLibPath = new TestPaths(_output).SystemPrivateCoreLibPath;
         Assert.True(File.Exists(coreLibPath), $"System.Private.CoreLib.dll not found at '{coreLibPath}'");
@@ -264,14 +283,20 @@ public class WasmArgumentLayoutTests
         InstructionSetSupport instructionSetSupport = new(default, default, TargetArchitecture.Wasm32);
         TargetDetails target = new(TargetArchitecture.Wasm32, TargetOS.Browser, TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
+        Dictionary<string, string> inputFilePaths = new(StringComparer.OrdinalIgnoreCase) { { CoreLibSimpleName, coreLibPath } };
+        foreach (string path in extraInputAssemblyPaths)
+        {
+            inputFilePaths.Add(Path.GetFileNameWithoutExtension(path), path);
+        }
+
         // Wasm cannot generate code at runtime, matching what crossgen2's Program computes for this target.
         ReadyToRunCompilerContext context = new(target, SharedGenericsMode.CanonicalReferenceTypes, bubbleIncludesCoreModule: true, targetAllowsRuntimeCodeGeneration: false, instructionSetSupport, oldTypeSystemContext: null)
         {
-            InputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { { "System.Private.CoreLib", coreLibPath } },
+            InputFilePaths = inputFilePaths,
             ReferenceFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase),
         };
 
-        EcmaModule coreLib = (EcmaModule)context.GetModuleForSimpleName("System.Private.CoreLib");
+        EcmaModule coreLib = (EcmaModule)context.GetModuleForSimpleName(CoreLibSimpleName);
         context.SetSystemModule(coreLib);
 
         // The R2R field layout algorithm reaches into the compilation group to decide whether base

@@ -105,6 +105,10 @@ namespace ILCompiler
             context.SetCompilationGroup(new ReadyToRunSingleAssemblyCompilationModuleGroup(new ReadyToRunCompilationModuleGroupConfig
             {
                 Context = context,
+                // "Many inputs, one output unit" is what composite mode means, and it is what makes
+                // the group treat every input as a single compilation unit. Without it the group
+                // asserts on a compilation set larger than one assembly.
+                IsCompositeBuildMode = true,
                 IsInputBubble = true,
                 CompilationModuleSet = modules,
                 VersionBubbleModuleSet = modules,

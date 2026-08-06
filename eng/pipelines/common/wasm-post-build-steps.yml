@@ -8,6 +8,10 @@ parameters:
 
 steps:
 
+  # The wasm CoreCLR generator shells out to crossgen2 for P/Invoke struct sizes while building test
+  # apps, so the Wasm.Build.Tests leg ships it to Helix as a correlation payload. That leg builds only
+  # the test project and takes everything else from here, so crossgen2 has to travel in these
+  # artifacts. The glob matches nothing for Mono, which has no crossgen2 to send.
   - task: CopyFiles@2
     displayName: Copy artifacts needed for running WBT
     condition: and(succeeded(), ${{ parameters.publishArtifactsForWorkload }})
@@ -21,6 +25,7 @@ steps:
         bin/WorkloadBuildTasks/**
         bin/installer.tasks/**
         bin/Crossgen2Tasks/**
+        bin/coreclr/${{ parameters.osGroup }}.wasm.*/*/crossgen2/**
       TargetFolder: '$(Build.StagingDirectory)/IntermediateArtifacts'
       CleanTargetFolder: true
 
