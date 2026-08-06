@@ -790,16 +790,7 @@ PCODE StubLinker::EmitStub(LoaderAllocator* pLoaderAllocator, StubCodeBlockKind 
 
     _ASSERTE(m_fDataOnly || DbgIsExecutable(pCode, globalsize));
 
-#ifdef TARGET_ARM
-
-#ifndef THUMB_CODE
-#define THUMB_CODE 1
-#endif
-
-    return (PCODE)(reinterpret_cast<TADDR>(pCode) | THUMB_CODE);
-#else
-    return (PCODE)pCode;
-#endif
+    return PINSTRToPCODE(reinterpret_cast<TADDR>(pCode));
 }
 
 #endif // #ifndef DACCESS_COMPILE

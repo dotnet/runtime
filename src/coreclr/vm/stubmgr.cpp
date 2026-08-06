@@ -1444,18 +1444,18 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     switch (GetStubKind(stubStartAddress))
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
-    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
-    case STUB_CODE_BLOCK_WRAPPER_STUB:
-    case STUB_CODE_BLOCK_SHUFFLE_THUNK:
-#ifdef FEATURE_TIERED_COMPILATION
-    case STUB_CODE_BLOCK_CALLCOUNTING:
-#endif // FEATURE_TIERED_COMPILATION
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
     case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
     case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
     case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+#endif // FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
+    case STUB_CODE_BLOCK_SHUFFLE_THUNK:
+    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return TRUE;
     default:
         break;
@@ -1486,17 +1486,6 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
         return TRUE;
     }
 #endif // FEATURE_DYNAMIC_CODE_COMPILED
-    case STUB_CODE_BLOCK_WRAPPER_STUB:
-    case STUB_CODE_BLOCK_SHUFFLE_THUNK:
-        return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
-#ifdef FEATURE_TIERED_COMPILATION
-    case STUB_CODE_BLOCK_CALLCOUNTING:
-    {
-        trace->InitForStub(CallCountingManager::GetTargetForMethod(stubStartAddress));
-        return TRUE;
-    }
-#endif // FEATURE_TIERED_COMPILATION
-
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
     case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
@@ -1504,6 +1493,16 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
     case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
         return VirtualCallStubManagerManager::GlobalManager()->DoTraceStub(stubStartAddress, trace);
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+    {
+        trace->InitForStub(CallCountingManager::GetTargetForMethod(stubStartAddress));
+        return TRUE;
+    }
+#endif // FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
+    case STUB_CODE_BLOCK_SHUFFLE_THUNK:
+        return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
 
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
 #ifdef DACCESS_COMPILE
@@ -1529,17 +1528,6 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
         return W("JumpStub");
-    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
-        return W("MethodCallThunk");
-    case STUB_CODE_BLOCK_WRAPPER_STUB:
-        return W("WrapperStub");
-    case STUB_CODE_BLOCK_SHUFFLE_THUNK:
-        return W("ShuffleThunk");
-#ifdef FEATURE_TIERED_COMPILATION
-    case STUB_CODE_BLOCK_CALLCOUNTING:
-        return W("CallCountingStub");
-#endif // FEATURE_TIERED_COMPILATION
-
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
     case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
         return W("VSD_DispatchStub");
@@ -1553,6 +1541,16 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
     case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
         return W("VSD_VTableStub");
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return W("CallCountingStub");
+#endif // FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
+        return W("WrapperStub");
+    case STUB_CODE_BLOCK_SHUFFLE_THUNK:
+        return W("ShuffleThunk");
+    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+        return W("MethodCallThunk");
 
     default:
         break;

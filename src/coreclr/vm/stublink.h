@@ -145,6 +145,9 @@ class StubLinker
             return NewExternalCodeLabel((LPVOID)pExternalAddress);
         }
 
+        //---------------------------------------------------------------
+        // Set the target method for wrapper stubs.
+        //---------------------------------------------------------------
         void SetTargetMethod(PTR_MethodDesc pMD);
 
         //---------------------------------------------------------------
