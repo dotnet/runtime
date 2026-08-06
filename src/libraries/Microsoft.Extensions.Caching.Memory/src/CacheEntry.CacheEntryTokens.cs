@@ -17,23 +17,52 @@ namespace Microsoft.Extensions.Caching.Memory
         // which typically is not using expiration tokens or callbacks
         private sealed class CacheEntryTokens
         {
-            private List<IChangeToken>? _expirationTokens;
+            // The tokens are copy-on-write so that CheckForExpiredTokens, which runs on every cache
+            // hit, can scan them without taking a lock while another thread propagates a child
+            // entry's tokens into this one.
+            private CopyOnWriteList<IChangeToken>? _expirationTokens;
             private List<IDisposable>? _expirationTokenRegistrations;
             private List<PostEvictionCallbackRegistration>? _postEvictionCallbacks; // this is not really related to tokens, but was moved here to shrink typical CacheEntry size
 
-            internal List<IChangeToken> ExpirationTokens => _expirationTokens ??= new List<IChangeToken>();
-            internal List<PostEvictionCallbackRegistration> PostEvictionCallbacks => _postEvictionCallbacks ??= new List<PostEvictionCallbackRegistration>();
+            internal CopyOnWriteList<IChangeToken> ExpirationTokens
+            {
+                get
+                {
+                    CopyOnWriteList<IChangeToken>? expirationTokens = _expirationTokens;
+                    if (expirationTokens is not null)
+                    {
+                        return expirationTokens;
+                    }
+
+                    expirationTokens = new CopyOnWriteList<IChangeToken>();
+                    return Interlocked.CompareExchange(ref _expirationTokens, expirationTokens, null) ?? expirationTokens;
+                }
+            }
+
+            internal List<PostEvictionCallbackRegistration> PostEvictionCallbacks
+            {
+                get
+                {
+                    List<PostEvictionCallbackRegistration>? postEvictionCallbacks = _postEvictionCallbacks;
+                    if (postEvictionCallbacks is not null)
+                    {
+                        return postEvictionCallbacks;
+                    }
+
+                    postEvictionCallbacks = new List<PostEvictionCallbackRegistration>();
+                    return Interlocked.CompareExchange(ref _postEvictionCallbacks, postEvictionCallbacks, null) ?? postEvictionCallbacks;
+                }
+            }
 
             internal void AttachTokens(CacheEntry cacheEntry)
             {
-                List<IChangeToken>? expirationTokens = _expirationTokens;
+                CopyOnWriteList<IChangeToken>? expirationTokens = _expirationTokens;
                 if (expirationTokens is not null)
                 {
                     lock (this)
                     {
-                        for (int i = 0; i < expirationTokens.Count; i++)
+                        foreach (IChangeToken expirationToken in expirationTokens.Snapshot)
                         {
-                            IChangeToken expirationToken = expirationTokens[i];
                             if (expirationToken.ActiveChangeCallbacks)
                             {
                                 _expirationTokenRegistrations ??= new List<IDisposable>(1);
@@ -47,12 +76,11 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal bool CheckForExpiredTokens(CacheEntry cacheEntry)
             {
-                List<IChangeToken>? expirationTokens = _expirationTokens;
+                CopyOnWriteList<IChangeToken>? expirationTokens = _expirationTokens;
                 if (expirationTokens is not null)
                 {
-                    for (int i = 0; i < expirationTokens.Count; i++)
+                    foreach (IChangeToken expiredToken in expirationTokens.Snapshot)
                     {
-                        IChangeToken expiredToken = expirationTokens[i];
                         if (expiredToken.HasChanged)
                         {
                             cacheEntry.SetExpired(EvictionReason.TokenExpired);
@@ -67,16 +95,10 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal void PropagateTokens(CacheEntry parentEntry)
             {
-                if (_expirationTokens != null)
+                CopyOnWriteList<IChangeToken>? expirationTokens = _expirationTokens;
+                if (expirationTokens is not null)
                 {
-                    lock (this)
-                    {
-                        CacheEntryTokens parentTokens = parentEntry.GetOrCreateTokens();
-                        lock (parentTokens)
-                        {
-                            parentTokens.ExpirationTokens.AddRange(_expirationTokens);
-                        }
-                    }
+                    parentEntry.GetOrCreateTokens().ExpirationTokens.AddRange(expirationTokens.Snapshot);
                 }
             }
 

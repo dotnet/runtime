@@ -259,6 +259,36 @@ namespace Microsoft.Extensions.Caching.Memory
             Assert.False(cache.TryGetValue(key, out _));
         }
 
+        [Fact]
+        public async Task AddingExpirationTokensIsSafeWhileTheEntryIsRead()
+        {
+            const int TokenCount = 2_000;
+
+            var cache = CreateCache();
+            string key = "myKey";
+
+            ICacheEntry entry = cache.CreateEntry(key);
+            entry.SetValue(new object());
+            entry.Dispose(); // commits the entry, making it visible to readers
+
+            Task writer = Task.Run(() =>
+            {
+                for (int i = 0; i < TokenCount; i++)
+                {
+                    entry.AddExpirationToken(new TestExpirationToken());
+                }
+            });
+
+            // Every read scans the entry's expiration tokens; it must never observe a torn list.
+            while (!writer.IsCompleted)
+            {
+                Assert.True(cache.TryGetValue(key, out _));
+            }
+
+            await writer;
+            Assert.Equal(TokenCount, entry.ExpirationTokens.Count);
+        }
+
         internal class TestToken : IChangeToken
         {
             private bool _hasChanged;
