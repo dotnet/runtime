@@ -1442,13 +1442,8 @@ DEFINE_FIELD_U(_generation, GCMemoryInfoData, generation)
 DEFINE_FIELD_U(_pauseTimePercentage, GCMemoryInfoData, pauseTimePercent)
 DEFINE_FIELD_U(_compacted, GCMemoryInfoData, isCompaction)
 DEFINE_FIELD_U(_concurrent, GCMemoryInfoData, isConcurrent)
-DEFINE_FIELD_U(_pauseDuration0, GCMemoryInfoData, pauseDuration0)
-DEFINE_FIELD_U(_pauseDuration1, GCMemoryInfoData, pauseDuration1)
-DEFINE_FIELD_U(_generationInfo0, GCMemoryInfoData, generationInfo0)
-DEFINE_FIELD_U(_generationInfo1, GCMemoryInfoData, generationInfo1)
-DEFINE_FIELD_U(_generationInfo2, GCMemoryInfoData, generationInfo2)
-DEFINE_FIELD_U(_generationInfo3, GCMemoryInfoData, generationInfo3)
-DEFINE_FIELD_U(_generationInfo4, GCMemoryInfoData, generationInfo4)
+DEFINE_FIELD_U(_pauseDurations, GCMemoryInfoData, pauseDurations)
+DEFINE_FIELD_U(_generationInfo, GCMemoryInfoData, generationInfo)
 
 #undef DEFINE_CLASS
 #undef DEFINE_METHOD

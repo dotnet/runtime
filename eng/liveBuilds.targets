@@ -270,6 +270,19 @@
         "
         IsNative="true" />
 
+      <!-- Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets).
+           The browserhost CMakeLists installs them into the host sharedFramework; mirrors the Mono include\wasm handling. -->
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"
+                             Include="$(HostSharedFrameworkDir)include\callhelpers.hpp"
+                             NativeSubDirectory="include"
+                             IsNative="true" />
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR' and '$(IsTestsCommonProject)' != 'true'"
+                             Include="
+        $(HostSharedFrameworkDir)include\minipal\entrypoints.h;
+        $(HostSharedFrameworkDir)include\minipal\utils.h;"
+                             NativeSubDirectory="include\minipal"
+                             IsNative="true" />
+
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;

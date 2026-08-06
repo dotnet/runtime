@@ -346,7 +346,7 @@ interface IDacDbiInterface : IUnknown
     HRESULT GetTypedByRefInfo([in] CORDB_ADDRESS pTypedByRef, [out] CORDB_ADDRESS * pObjRef, [out] struct DebuggerIPCE_BasicTypeData * pTypedByRefType);
     HRESULT GetStringData([in] CORDB_ADDRESS objectAddress, [out] UINT * pLength, [out] UINT * pOffsetToStringBase);
     HRESULT GetArrayData([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidArray, [out] struct DacDbiArrayInfo * pArrayInfo);
-    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidRef, [out] UINT * pObjSize, [out] UINT * pObjOffsetToVars, [out] struct DebuggerIPCE_ExpandedTypeData * pObjTypeData);
+    HRESULT GetBasicObjectInfo([in] CORDB_ADDRESS objectAddress, [out] BOOL * pIsValidRef, [out] UINT * pObjSize, [out] UINT * pObjOffsetToVars, [in, out] struct DebuggerIPCE_ExpandedTypeData * pObjTypeData);
 
     // Debugger Control Block
     HRESULT GetDebuggerControlBlockAddress([out] CORDB_ADDRESS * pRetVal);
