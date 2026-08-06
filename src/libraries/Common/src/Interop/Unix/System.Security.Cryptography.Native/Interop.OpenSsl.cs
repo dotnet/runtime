@@ -1364,7 +1364,10 @@ internal static partial class Interop
             }
         }
 
-        private static Exception? GetSslError(int result, Ssl.SslErrorCode retVal)
+        // Builds the most specific inner exception available for a failed SSL_* call:
+        // errno / the ERR_LIB_SYS queue entry for SSL_ERROR_SYSCALL, the error queue for
+        // SSL_ERROR_SSL.
+        internal static Exception? GetSslError(int result, Ssl.SslErrorCode retVal)
         {
             Exception? innerError;
             switch (retVal)
