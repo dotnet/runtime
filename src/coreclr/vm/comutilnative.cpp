@@ -479,14 +479,11 @@ extern "C" CLR_BOOL QCALLTYPE ExceptionHandling_TrySetFatalErrorHandler(void* ha
 
     BEGIN_QCALL;
 
-    set = InterlockedCompareExchangeT(&s_fatalErrorHandler, handler, NULL) == NULL;
-
 #ifdef FEATURE_INPROC_CRASHREPORT
-    if (set)
-    {
-        CrashReportInitialize();
-    }
+    CrashReportInitialize();
 #endif
+
+    set = InterlockedCompareExchangeT(&s_fatalErrorHandler, handler, NULL) == NULL;
 
     END_QCALL;
 
