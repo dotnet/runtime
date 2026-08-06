@@ -152,7 +152,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     </para>
         ///     <para>
         ///     When validation is performed without an owning object (for example, validating standalone values),
-        ///     <see cref="ObjectInstance" /> may be a placeholder and should not be treated as the owner of the value.
+        ///     <see cref="ObjectInstance" /> might be a placeholder and should not be treated as the owner of the value.
         ///     </para>
         /// </remarks>
         public object ObjectInstance { get; }
