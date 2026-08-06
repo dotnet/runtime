@@ -327,7 +327,8 @@ namespace Microsoft.Extensions.Configuration
             BindingPoint bindingPoint,
             IConfiguration config,
             BinderOptions options,
-            bool isParentCollection)
+            bool isParentCollection,
+            bool errorOnFailedBinding = false)
         {
             // if binding IConfigurationSection, break early
             if (type == typeof(IConfigurationSection))
@@ -361,7 +362,15 @@ namespace Microsoft.Extensions.Configuration
             {
                 if (error != null)
                 {
-                    throw error;
+                    // A conversion failure is only reported when the caller opted in, matching how the binder treats
+                    // a leaf value it has no converter for at all. Otherwise the binding point is left alone so the
+                    // member keeps whatever value it already had.
+                    if (options.ErrorOnUnknownConfiguration || errorOnFailedBinding)
+                    {
+                        throw error;
+                    }
+
+                    return;
                 }
 
                 if (type == typeof(byte[]) && bindingPoint.Value is byte[] byteArray && byteArray.Length > 0)
@@ -1153,24 +1162,41 @@ namespace Microsoft.Extensions.Configuration
 
             var propertyBindingPoint = new BindingPoint(isReadOnly: false);
 
+            bool canBeNull = CanBeNull(parameter.ParameterType);
+            bool hasDefaultValue = false;
+            object? defaultValue = null;
+
+            // A parameter that can hold null is always satisfiable, so its default is only needed on the failure
+            // path. For the rest, knowing up front whether a default exists decides whether a value that is present
+            // but unconvertible should surface as a conversion error instead of being reported as missing.
+            if (!canBeNull)
+            {
+                hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(parameter, out defaultValue);
+            }
+
             BindInstance(
                 parameter.ParameterType,
                 propertyBindingPoint,
                 config.GetSection(parameterName),
                 options,
-                false);
+                false,
+                errorOnFailedBinding: !canBeNull && !hasDefaultValue);
 
             if (propertyBindingPoint.Value is null)
             {
-                if (ParameterDefaultValue.TryGetDefaultValue(parameter, out object? defaultValue))
+                if (canBeNull)
                 {
-                    return defaultValue;
+                    return ParameterDefaultValue.TryGetDefaultValue(parameter, out object? nullableDefaultValue)
+                        ? nullableDefaultValue
+                        : null;
                 }
 
-                if (!CanBeNull(parameter.ParameterType))
+                if (!hasDefaultValue)
                 {
                     throw new InvalidOperationException(SR.Format(SR.Error_ParameterHasNoMatchingConfig, type, parameterName));
                 }
+
+                return defaultValue;
             }
 
             return propertyBindingPoint.Value;

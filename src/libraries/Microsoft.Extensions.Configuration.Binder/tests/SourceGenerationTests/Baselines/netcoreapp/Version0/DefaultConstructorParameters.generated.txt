@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_Program__ClassWhereParametersHaveDefaultValue = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Name", "Address", "Age", "F", "D", "M", "SC", "C", "NAge", "NF", "ND", "NM", "NSC", "NC" });
+        private readonly static Lazy<global::System.Collections.Generic.HashSet<string>> s_configKeys_Program__ClassWhereParametersHaveDefaultValue = new(() => new global::System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Name", "Address", "Age", "F", "D", "M", "SC", "C", "NAge", "NF", "ND", "NM", "NSC", "NC" });
 
         public static void BindCore(IConfiguration configuration, ref global::Program.ClassWhereParametersHaveDefaultValue instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
@@ -63,161 +63,157 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             string name = "John Doe"!;
             if (TryGetConfigurationValue(configuration, key: "Name", out string? value0))
             {
-                name = value0;
+                if (value0 is null)
+                {
+                    name = "John Doe";
+                }
+                else
+                {
+                    name = value0;
+                }
             }
 
             string address = "1 Microsoft Way"!;
             if (TryGetConfigurationValue(configuration, key: "Address", out string? value1))
             {
-                address = value1;
-            }
-
-            int age = (int)(42);
-            if (TryGetConfigurationValue(configuration, key: "Age", out string? value2))
-            {
-                if (!string.IsNullOrEmpty(value2))
+                if (value1 is null)
                 {
-                    age = ParseInt(value2, configuration.GetSection("Age").Path);
-                }
-            }
-
-            float f = 42F;
-            if (TryGetConfigurationValue(configuration, key: "F", out string? value3))
-            {
-                if (!string.IsNullOrEmpty(value3))
-                {
-                    f = ParseFloat(value3, configuration.GetSection("F").Path);
-                }
-            }
-
-            double d = 3.1415899999999999D;
-            if (TryGetConfigurationValue(configuration, key: "D", out string? value4))
-            {
-                if (!string.IsNullOrEmpty(value4))
-                {
-                    d = ParseDouble(value4, configuration.GetSection("D").Path);
-                }
-            }
-
-            decimal m = 3.1415926535897932384626433M;
-            if (TryGetConfigurationValue(configuration, key: "M", out string? value5))
-            {
-                if (!string.IsNullOrEmpty(value5))
-                {
-                    m = ParseDecimal(value5, configuration.GetSection("M").Path);
-                }
-            }
-
-            global::System.StringComparison sc = (global::System.StringComparison)(4);
-            if (TryGetConfigurationValue(configuration, key: "SC", out string? value6))
-            {
-                if (!string.IsNullOrEmpty(value6))
-                {
-                    sc = ParseEnum<global::System.StringComparison>(value6, configuration.GetSection("SC").Path);
-                }
-            }
-
-            char c = 'q';
-            if (TryGetConfigurationValue(configuration, key: "C", out string? value7))
-            {
-                if (!string.IsNullOrEmpty(value7))
-                {
-                    c = ParseChar(value7, configuration.GetSection("C").Path);
-                }
-            }
-
-            int? nage = (int?)(42);
-            if (TryGetConfigurationValue(configuration, key: "NAge", out string? value8))
-            {
-                if (value8 is null)
-                {
-                    nage = null;
+                    address = "1 Microsoft Way";
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value8))
+                    address = value1;
+                }
+            }
+
+            int age = (int)(42);
+            if (TryGetConfigurationValue(configuration, key: "Age", out string? value2) && value2 is not null && TryParseInt(value2, configuration.GetSection("Age").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp3))
+            {
+                age = temp3;
+            }
+
+            float f = 42F;
+            if (TryGetConfigurationValue(configuration, key: "F", out string? value4) && value4 is not null && TryParseFloat(value4, configuration.GetSection("F").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out float temp5))
+            {
+                f = temp5;
+            }
+
+            double d = 3.1415899999999999D;
+            if (TryGetConfigurationValue(configuration, key: "D", out string? value6) && value6 is not null && TryParseDouble(value6, configuration.GetSection("D").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out double temp7))
+            {
+                d = temp7;
+            }
+
+            decimal m = 3.1415926535897932384626433M;
+            if (TryGetConfigurationValue(configuration, key: "M", out string? value8) && value8 is not null && TryParseDecimal(value8, configuration.GetSection("M").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out decimal temp9))
+            {
+                m = temp9;
+            }
+
+            global::System.StringComparison sc = (global::System.StringComparison)(4);
+            if (TryGetConfigurationValue(configuration, key: "SC", out string? value10) && value10 is not null && TryParseEnum<global::System.StringComparison>(value10, configuration.GetSection("SC").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.StringComparison temp11))
+            {
+                sc = temp11;
+            }
+
+            char c = 'q';
+            if (TryGetConfigurationValue(configuration, key: "C", out string? value12) && value12 is not null && TryParseChar(value12, configuration.GetSection("C").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out char temp13))
+            {
+                c = temp13;
+            }
+
+            int? nage = (int?)(42);
+            if (TryGetConfigurationValue(configuration, key: "NAge", out string? value14))
+            {
+                if (string.IsNullOrEmpty(value14))
+                {
+                    nage = (int?)(42);
+                }
+                else
+                {
+                    if (TryParseInt(value14, configuration.GetSection("NAge").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp15))
                     {
-                        nage = ParseInt(value8, configuration.GetSection("NAge").Path);
+                        nage = temp15;
                     }
                 }
             }
 
             float? nf = 42F;
-            if (TryGetConfigurationValue(configuration, key: "NF", out string? value9))
+            if (TryGetConfigurationValue(configuration, key: "NF", out string? value16))
             {
-                if (value9 is null)
+                if (string.IsNullOrEmpty(value16))
                 {
-                    nf = null;
+                    nf = 42F;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value9))
+                    if (TryParseFloat(value16, configuration.GetSection("NF").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out float temp17))
                     {
-                        nf = ParseFloat(value9, configuration.GetSection("NF").Path);
+                        nf = temp17;
                     }
                 }
             }
 
             double? nd = 3.1415899999999999D;
-            if (TryGetConfigurationValue(configuration, key: "ND", out string? value10))
+            if (TryGetConfigurationValue(configuration, key: "ND", out string? value18))
             {
-                if (value10 is null)
+                if (string.IsNullOrEmpty(value18))
                 {
-                    nd = null;
+                    nd = 3.1415899999999999D;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value10))
+                    if (TryParseDouble(value18, configuration.GetSection("ND").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out double temp19))
                     {
-                        nd = ParseDouble(value10, configuration.GetSection("ND").Path);
+                        nd = temp19;
                     }
                 }
             }
 
             decimal? nm = 3.1415926535897932384626433M;
-            if (TryGetConfigurationValue(configuration, key: "NM", out string? value11))
+            if (TryGetConfigurationValue(configuration, key: "NM", out string? value20))
             {
-                if (value11 is null)
+                if (string.IsNullOrEmpty(value20))
                 {
-                    nm = null;
+                    nm = 3.1415926535897932384626433M;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value11))
+                    if (TryParseDecimal(value20, configuration.GetSection("NM").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out decimal temp21))
                     {
-                        nm = ParseDecimal(value11, configuration.GetSection("NM").Path);
+                        nm = temp21;
                     }
                 }
             }
 
             global::System.StringComparison? nsc = (global::System.StringComparison?)(4);
-            if (TryGetConfigurationValue(configuration, key: "NSC", out string? value12))
+            if (TryGetConfigurationValue(configuration, key: "NSC", out string? value22))
             {
-                if (value12 is null)
+                if (string.IsNullOrEmpty(value22))
                 {
-                    nsc = null;
+                    nsc = (global::System.StringComparison?)(4);
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value12))
+                    if (TryParseEnum<global::System.StringComparison>(value22, configuration.GetSection("NSC").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.StringComparison temp23))
                     {
-                        nsc = ParseEnum<global::System.StringComparison>(value12, configuration.GetSection("NSC").Path);
+                        nsc = temp23;
                     }
                 }
             }
 
             char? nc = 'q';
-            if (TryGetConfigurationValue(configuration, key: "NC", out string? value13))
+            if (TryGetConfigurationValue(configuration, key: "NC", out string? value24))
             {
-                if (value13 is null)
+                if (string.IsNullOrEmpty(value24))
                 {
-                    nc = null;
+                    nc = 'q';
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value13))
+                    if (TryParseChar(value24, configuration.GetSection("NC").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out char temp25))
                     {
-                        nc = ParseChar(value13, configuration.GetSection("NC").Path);
+                        nc = temp25;
                     }
                 }
             }
@@ -239,17 +235,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
-        public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
+        public static void ValidateConfigurationKeys(Type type, Lazy<global::System.Collections.Generic.HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
         {
             if (binderOptions?.ErrorOnUnknownConfiguration is true)
             {
-                List<string>? temp = null;
+                global::System.Collections.Generic.List<string>? temp = null;
         
                 foreach (IConfigurationSection section in configuration.GetChildren())
                 {
                     if (!keys.Value.Contains(section.Key))
                     {
-                        (temp ??= new List<string>()).Add($"'{section.Key}'");
+                        (temp ??= new global::System.Collections.Generic.List<string>()).Add($"'{section.Key}'");
                     }
                 }
         
@@ -260,11 +256,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static T ParseEnum<T>(string value, string? path) where T : struct
+        public static bool TryParseEnum<T>(string value, string? path, bool errorOnFailedBinding, out T result) where T : struct
         {
             try
             {
-                return Enum.Parse<T>(value, ignoreCase: true);
+                result = Enum.Parse<T>(value, ignoreCase: true);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -272,11 +274,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static int ParseInt(string value, string? path)
+        public static bool TryParseInt(string value, string? path, bool errorOnFailedBinding, out int result)
         {
             try
             {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -284,11 +292,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static float ParseFloat(string value, string? path)
+        public static bool TryParseFloat(string value, string? path, bool errorOnFailedBinding, out float result)
         {
             try
             {
-                return float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                result = float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -296,11 +310,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static double ParseDouble(string value, string? path)
+        public static bool TryParseDouble(string value, string? path, bool errorOnFailedBinding, out double result)
         {
             try
             {
-                return double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                result = double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -308,11 +328,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static decimal ParseDecimal(string value, string? path)
+        public static bool TryParseDecimal(string value, string? path, bool errorOnFailedBinding, out decimal result)
         {
             try
             {
-                return decimal.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                result = decimal.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -320,11 +346,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static char ParseChar(string value, string? path)
+        public static bool TryParseChar(string value, string? path, bool errorOnFailedBinding, out char result)
         {
             try
             {
-                return char.Parse(value);
+                result = char.Parse(value);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {

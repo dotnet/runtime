@@ -710,13 +710,13 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             // act
 #pragma warning disable SYSLIB1104
             var exception = Assert.Throws<InvalidOperationException>(
-                () => config.Bind(options));
+                () => config.Bind(options, o => o.ErrorOnUnknownConfiguration = true));
 
             var getValueException = Assert.Throws<InvalidOperationException>(
                 () => config.GetValue(type, "Value"));
 
             var getException = Assert.Throws<InvalidOperationException>(
-                () => config.GetSection("Value").Get(type));
+                () => config.GetSection("Value").Get(type, o => o.ErrorOnUnknownConfiguration = true));
 #pragma warning restore SYSLIB1104
 
             // assert
@@ -751,7 +751,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             var options = new OptionsWithNesting();
 
             var exception = Assert.Throws<InvalidOperationException>(
-                () => config.Bind(options));
+                () => config.Bind(options, o => o.ErrorOnUnknownConfiguration = true));
 
             Assert.Equal(SR.Format(SR.Error_FailedBinding, IncorrectValue, ConfigKey, typeof(int)),
                 exception.Message);
@@ -1161,7 +1161,8 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             {
                 if (hasDefaultValue)
                 {
-                    config.Get<RecordWithDefaultedIntValue>();
+                    // A declared default absorbs the unconvertible value unless the caller opts into errors.
+                    config.Get<RecordWithDefaultedIntValue>(o => o.ErrorOnUnknownConfiguration = true);
                 }
                 else
                 {
@@ -1172,6 +1173,14 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             Assert.Equal(
                 SR.Format(SR.Error_FailedBinding, string.Empty, nameof(RecordWithIntValue.Value), typeof(int)),
                 exception.Message);
+        }
+
+        [Fact]
+        public void ConstructorParameterUsesItsDefaultValueWhenConfigurationValueCannotBeConverted()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "Value": "" }""");
+
+            Assert.Equal(42, config.Get<RecordWithDefaultedIntValue>().Value);
         }
 
         [Theory]
@@ -2300,7 +2309,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            var exception = Assert.Throws<InvalidOperationException>(() => config.Get<ByteArrayOptions>());
+            var exception = Assert.Throws<InvalidOperationException>(() => config.Get<ByteArrayOptions>(o => o.ErrorOnUnknownConfiguration = true));
             Assert.Equal(
                 SR.Format(SR.Error_FailedBinding, "(not a valid base64 string)", "MyByteArray", typeof(byte[])),
                 exception.Message);
@@ -3436,6 +3445,40 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
         internal class TestSettings { public Dictionary<DayOfWeek, string[]> Values { get; init; } = []; }
 #endif
+
+        [Theory]
+        [InlineData("""{ "IntegerValue": "" }""")]
+        [InlineData("""{ "IntegerValue": "not-an-integer" }""")]
+        public void UnconvertibleValueLeavesMemberAloneWhenErrorOnUnknownConfigurationIsNotSet(string json)
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString(json);
+
+            Assert.Equal(11, config.Get<OptionsWithPresetIntegerValue>().IntegerValue);
+
+            OptionsWithPresetIntegerValue instance = new() { IntegerValue = 7 };
+            config.Bind(instance);
+            Assert.Equal(7, instance.IntegerValue);
+        }
+
+        [Fact]
+        public void UnconvertibleValueThrowsWhenErrorOnUnknownConfigurationIsSet()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "IntegerValue": "not-an-integer" }""");
+
+            Assert.Throws<InvalidOperationException>(
+                () => config.Get<OptionsWithPresetIntegerValue>(o => o.ErrorOnUnknownConfiguration = true));
+
+            Assert.Throws<InvalidOperationException>(
+                () => config.Bind(new OptionsWithPresetIntegerValue(), o => o.ErrorOnUnknownConfiguration = true));
+        }
+
+        [Fact]
+        public void GetValueStillThrowsOnUnconvertibleValue()
+        {
+            IConfiguration config = TestHelpers.GetConfigurationFromJsonString("""{ "IntegerValue": "not-an-integer" }""");
+
+            Assert.Throws<InvalidOperationException>(() => config.GetValue<int>("IntegerValue"));
+        }
 
         [Fact]
         public void BindWithNullValues()

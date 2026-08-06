@@ -165,7 +165,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 
                 IEnumerable<string> lines = resultSourceText.Lines.Select(l => l.ToString());
                 string source = string.Join(Environment.NewLine, lines).TrimEnd(Environment.NewLine.ToCharArray()) + Environment.NewLine;
-                path = Path.Combine($"{repoRootDir}\\src\\libraries\\Microsoft.Extensions.Configuration.Binder\\tests\\SourceGenerationTests\\", path);
+                path = Path.Combine(repoRootDir, "src", "libraries", "Microsoft.Extensions.Configuration.Binder", "tests", "SourceGenerationTests", path);
 
 #if NET
                 await File.WriteAllTextAsync(path, source);

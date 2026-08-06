@@ -50,7 +50,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (type == typeof(global::System.Globalization.CultureInfo))
                 {
-                    return ParseSystemGlobalizationCultureInfo(value, section.Path);
+                    if (TryParseSystemGlobalizationCultureInfo(value, section.Path, true, out global::System.Globalization.CultureInfo temp0))
+                    {
+                        return temp0;
+                    }
                 }
             }
 
@@ -69,11 +72,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return value != null;
         }
 
-        public static global::System.Globalization.CultureInfo ParseSystemGlobalizationCultureInfo(string value, string? path)
+        public static bool TryParseSystemGlobalizationCultureInfo(string value, string? path, bool errorOnFailedBinding, out global::System.Globalization.CultureInfo result)
         {
             try
             {
-                return CultureInfo.GetCultureInfo(value);
+                result = CultureInfo.GetCultureInfo(value);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
