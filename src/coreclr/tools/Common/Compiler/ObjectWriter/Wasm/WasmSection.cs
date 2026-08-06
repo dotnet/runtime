@@ -140,14 +140,22 @@ namespace ILCompiler.ObjectWriter
     // the WasmSection abstraction.
     internal sealed class WasmExternallyCountedSection : WasmVectorSection
     {
+        private bool _entryCountSet = false;
+
         public WasmExternallyCountedSection(WasmSectionType type, Stream stream, Utf8String name, int sectionIndex)
             : base(type, stream, name, sectionIndex)
         {
         }
 
+        public override int EmitToStream(Stream outputFileStream)
+        {
+            Debug.Assert(_entryCountSet);
+            return base.EmitToStream(outputFileStream);
+        }
+
         public void SetEntryCount(int entryCount)
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(entryCount);
+            _entryCountSet = true;
             EntryCount = entryCount;
         }
     }
