@@ -112,18 +112,6 @@ StubLinker::StubLinker()
     m_fDataOnly         = FALSE;
 }
 
-void StubLinker::SetTargetMethod(PTR_MethodDesc pMD)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        PRECONDITION(pMD != NULL);
-    }
-    CONTRACTL_END;
-    m_pTargetMethod = pMD;
-}
-
 
 
 //---------------------------------------------------------------
@@ -403,6 +391,22 @@ CodeLabel* StubLinker::NewExternalCodeLabel(LPVOID pExternalAddress)
     m_pFirstCodeLabel = pCodeLabel;
     return pCodeLabel;
 }
+
+//---------------------------------------------------------------
+// Set the target method for Instantiating stubs.
+//---------------------------------------------------------------
+void StubLinker::SetTargetMethod(PTR_MethodDesc pMD)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(pMD != NULL);
+    }
+    CONTRACTL_END;
+    m_pTargetMethod = pMD;
+}
+
 
 //---------------------------------------------------------------
 // Append an instruction containing a reference to a label.
@@ -689,8 +693,13 @@ PCODE StubLinker::EmitStub(LoaderAllocator* pLoaderAllocator, StubCodeBlockKind 
 {
     STANDARD_VM_CONTRACT;
 
+    // The target method is stored right before the code of the stub. It is used by the debugger
+    // to trace through the stub.
+    size_t headerSize = (m_pTargetMethod != NULL) ? sizeof(PTR_MethodDesc) : 0;
+    _ASSERTE((kind == STUB_CODE_BLOCK_WRAPPER_STUB) == (m_pTargetMethod != NULL));
+
     S_SIZE_T allocationSize(totalSize);
-    allocationSize += sizeof(PTR_MethodDesc) + CODE_SIZE_ALIGN - 1;
+    allocationSize += headerSize + CODE_SIZE_ALIGN - 1;
     if (allocationSize.IsOverflow())
         COMPlusThrowArithmetic();
 
@@ -699,13 +708,16 @@ PCODE StubLinker::EmitStub(LoaderAllocator* pLoaderAllocator, StubCodeBlockKind 
         CODE_SIZE_ALIGN,
         pLoaderAllocator,
         kind));
-    size_t codeOffset = ALIGN_UP(reinterpret_cast<size_t>(pBlock) + sizeof(PTR_MethodDesc), CODE_SIZE_ALIGN) - reinterpret_cast<size_t>(pBlock);
+    size_t codeOffset = ALIGN_UP(reinterpret_cast<size_t>(pBlock) + headerSize, CODE_SIZE_ALIGN) - reinterpret_cast<size_t>(pBlock);
     BYTE* pCode = pBlock + codeOffset;
 
     ExecutableWriterHolder<BYTE> stubWriterHolder(pBlock, allocationSize.Value());
     BYTE* pBlockRW = stubWriterHolder.GetRW();
     BYTE* pCodeRW = pBlockRW + codeOffset;
-    SET_UNALIGNED_PTR(pCodeRW - sizeof(PTR_MethodDesc), reinterpret_cast<TADDR>(m_pTargetMethod));
+    if (m_pTargetMethod != NULL)
+    {
+        SET_UNALIGNED_PTR(pCodeRW - sizeof(PTR_MethodDesc), reinterpret_cast<TADDR>(m_pTargetMethod));
+    }
 
     BYTE *pDataRW = pCodeRW+globalsize; // start of data area
     {

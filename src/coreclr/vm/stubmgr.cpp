@@ -1292,7 +1292,7 @@ BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
          stubStartAddress));
 
     StubCodeBlockKind kind = RangeSectionStubManager::GetStubKind(stubStartAddress);
-    if (kind == STUB_CODE_BLOCK_WRAPPER_STUB && GetStubTargetMethod(stubStartAddress) != NULL)
+    if (kind == STUB_CODE_BLOCK_WRAPPER_STUB)
     {
         trace->InitForManagerPush(stubStartAddress, this);
         LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager(InstantiatingMethod)::DoTraceStub");
