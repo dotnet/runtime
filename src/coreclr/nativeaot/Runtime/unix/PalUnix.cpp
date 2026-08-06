@@ -842,9 +842,13 @@ bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ vo
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
 {
     HANDLE moduleHandle = NULL;
+
+#if defined(HOST_WASM)
+    (void)pinModule;
+#endif
 
     // Emscripten's implementation of dladdr corrupts memory,
     // but always returns 0 for the module handle, so just skip the call
@@ -854,7 +858,7 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
     if (st != 0)
     {
 #if defined(RTLD_NODELETE)
-        if (info.dli_fname != nullptr)
+        if (pinModule && info.dli_fname != nullptr)
         {
             // NativeAOT runtime state cannot be safely unloaded.
             void* module = dlopen(info.dli_fname, RTLD_LAZY | RTLD_NODELETE);
@@ -863,6 +867,8 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
                 dlclose(module);
             }
         }
+#else
+        (void)pinModule;
 #endif
 
         moduleHandle = info.dli_fbase;
