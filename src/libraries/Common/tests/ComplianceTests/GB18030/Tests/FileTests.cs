@@ -67,7 +67,7 @@ public class FileTests : FileTestBase
         const string initialContent = "Initial content: ";
         File.WriteAllText(tempFile, initialContent, TestHelper.GB18030Encoding);
         File.AppendAllText(tempFile, s_expectedText, TestHelper.GB18030Encoding);
-        
+
         byte[] expected = TestHelper.GB18030Encoding.GetBytes(initialContent + s_expectedText);
         Assert.True(expected.AsSpan().SequenceEqual(File.ReadAllBytes(tempFile)));
     }
