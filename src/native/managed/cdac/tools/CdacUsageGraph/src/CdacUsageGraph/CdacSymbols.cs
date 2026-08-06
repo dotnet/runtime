@@ -29,6 +29,8 @@ internal static class CdacSymbols
         "Microsoft.Diagnostics.DataContractReader.CdacTypeAttribute";
     public const string DataDescriptorDependencyAttributeMetadataName =
         "Microsoft.Diagnostics.DataContractReader.DataDescriptorDependencyAttribute";
+    public const string CustomInitAttributeMetadataName =
+        "Microsoft.Diagnostics.DataContractReader.CustomInitAttribute";
     public const string UsesDataDescriptorTypeSizeAttributeMetadataName =
         "Microsoft.Diagnostics.DataContractReader.UsesDataDescriptorTypeSizeAttribute";
     public const string StaticReferenceAttributeMetadataName =

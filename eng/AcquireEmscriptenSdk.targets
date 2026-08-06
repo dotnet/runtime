@@ -4,18 +4,15 @@
     - By default, this target is conditioned on $(TargetsBrowser).
     - You can depend on "AcquireEmscriptenSdkUnconditional" instead if this doesn't work for your project.
   - Use $(EMSDK_PATH) (set by "AcquireEmscriptenSdk") to refer to the SDK root in your target.
+
+  The SDK is composed from NuGet packages into the shared cache described in
+  eng/wasm/WasmToolCache.props, keyed by emscripten version and host RID, so that a version
+  bump provisions a fresh entry and every clone and git worktree on the machine shares one copy.
 -->
 <Project>
-  <!-- Directory to provision and use emscripten if EMSDK_PATH env variable is not set -->
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' or $(MonoGenerateOffsetsOSGroups.Contains('browser'))">
-    <ProvisionEmscriptenDir>$([MSBuild]::NormalizeDirectory('$(MonoProjectRoot)', 'browser', 'emsdk'))</ProvisionEmscriptenDir>
-    <ShouldProvisionEmscripten Condition="'$(EMSDK_PATH)' == '' and !Exists('$(ProvisionEmscriptenDir)')">true</ShouldProvisionEmscripten>
-    <EMSDK_PATH Condition="Exists('$(ProvisionEmscriptenDir)') and '$(EMSDK_PATH)' == ''">$(ProvisionEmscriptenDir.Replace('\', '/'))</EMSDK_PATH>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <_AcquireEmscriptenSdkInputsFile>$(MSBuildThisFileFullPath)</_AcquireEmscriptenSdkInputsFile>
-    <_AcquireEmscriptenSdkOutputsFile>$(ProvisionEmscriptenDir)emscripten/.emscripten</_AcquireEmscriptenSdkOutputsFile>
+    <ShouldProvisionEmscripten Condition="'$(EMSDK_PATH)' == '' and !Exists('$(EmscriptenSdkStampFile)')">true</ShouldProvisionEmscripten>
+    <EMSDK_PATH Condition="Exists('$(EmscriptenSdkStampFile)') and '$(EMSDK_PATH)' == ''">$(EmscriptenSdkCacheDir.Replace('\', '/'))</EMSDK_PATH>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ShouldProvisionEmscripten)' == 'true'">
@@ -39,6 +36,10 @@
 
   <!-- Validate that EMSDK_PATH is set -->
   <Target Name="_ValidateEmscriptenSdk">
+    <!-- $(EmsdkVersion) drives the package ids while emscripten-version.txt drives the native
+         build and the cache key, so they must agree. -->
+    <Error Condition="'$(ShouldProvisionEmscripten)' == 'true' and '$(EmsdkVersion)' != '$(EmscriptenVersion)'"
+           Text="%24(EmsdkVersion) is '$(EmsdkVersion)' in eng/Versions.props but src/mono/browser/emscripten-version.txt says '$(EmscriptenVersion)'. Both must be updated together." />
     <PropertyGroup>
       <_UseRuntimeLocalEmscriptenSdk Condition="'$(ShouldProvisionEmscripten)' == 'true'">true</_UseRuntimeLocalEmscriptenSdk>
     </PropertyGroup>
@@ -46,23 +47,19 @@
 
   <!-- Provision Emscripten SDK from NuGet packages. -->
   <Target Name="_AcquireLocalEmscriptenSdk"
-          Condition="'$(_UseRuntimeLocalEmscriptenSdk)' == 'true'"
-          Inputs="$(_AcquireEmscriptenSdkInputsFile)"
-          Outputs="$(_AcquireEmscriptenSdkOutputsFile)">
+          Condition="'$(_UseRuntimeLocalEmscriptenSdk)' == 'true'">
 
-    <Message Text="Provisioning Emscripten SDK to '$(ProvisionEmscriptenDir)'" Importance="High" />
-
-    <ReadLinesFromFile File="$(MonoProjectRoot)browser/emscripten-version.txt">
-      <Output TaskParameter="Lines" ItemName="_VersionLines" />
-    </ReadLinesFromFile>
+    <Message Text="Provisioning Emscripten SDK $(EmscriptenVersion) to '$(EmscriptenSdkCacheDir)'" Importance="High" />
 
     <PropertyGroup>
       <ScriptExt Condition="'$(HostOS)' == 'windows'">.cmd</ScriptExt>
       <ScriptExt Condition="'$(HostOS)' != 'windows'">.sh</ScriptExt>
-      <EMSDK_PATH>$(ProvisionEmscriptenDir)</EMSDK_PATH>
-      <BrowserLocalPath>$([MSBuild]::NormalizeDirectory('$(MonoProjectRoot)', 'browser'))</BrowserLocalPath>
-      <EmsdkLocalPath>emsdk</EmsdkLocalPath>
-      <EmscriptenVersion>%(_VersionLines.Identity)</EmscriptenVersion>
+      <!-- Compose into a unique staging directory and only publish it under the final name once
+           complete, so a concurrent or interrupted build can't leave a partial SDK behind. -->
+      <_EmsdkStagingDir>$([MSBuild]::EnsureTrailingSlash('$(EmscriptenSdkCacheDir.TrimEnd('\/')).tmp-$([System.Guid]::NewGuid().ToString('N'))'))</_EmsdkStagingDir>
+      <_EmsdkFinalDir>$(EmscriptenSdkCacheDir.TrimEnd('\/'))</_EmsdkFinalDir>
+      <_EmsdkParentDir>$([System.IO.Path]::GetDirectoryName($(_EmsdkFinalDir)))</_EmsdkParentDir>
+      <EMSDK_PATH>$(_EmsdkStagingDir)</EMSDK_PATH>
       <_EmsdkPaths Condition="'$(HostOS)' != 'windows'">
 CURRENT_SCRIPT=
 DIR="."
@@ -146,7 +143,8 @@ JS_ENGINES = [NODE_JS]
       </_EmscriptenPaths>
     </PropertyGroup>
 
-    <RemoveDir Directories="$(EMSDK_PATH)" />
+    <RemoveDir Directories="$(_EmsdkStagingDir)" />
+    <MakeDir Directories="$(_EmsdkParentDir);$(_EmsdkStagingDir)" />
 
     <ItemGroup>
       <EmsdkFiles   Condition="'%(PackageReference.Identity)' != 'runtime.$(NETCoreSdkPortableRuntimeIdentifier).Microsoft.NETCore.Runtime.Wasm.Node.Transport' and '%(PackageReference.Identity)' != 'Microsoft.NET.Runtime.Emscripten.$(EmsdkVersion).Python.win-$(BuildArchitecture)'"
@@ -185,7 +183,34 @@ JS_ENGINES = [NODE_JS]
       File="%(NodeModulesBinFiles.RootDir)%(NodeModulesBinFiles.Directory)%(NodeModulesBinFiles.Filename)"
       Overwrite="true" />
 
+    <!-- Publish the staged SDK under its final, version-keyed name and only then record it as
+         complete. The staging-dir -> final-dir move is a rename within the cache root (same
+         filesystem) and therefore atomic, so a final directory that already exists is a complete
+         SDK from an earlier or concurrent build: never delete it (another build may be using it),
+         just move ours in when the slot is free and always ensure the sentinel exists (which also
+         self-heals a complete-but-unstamped directory). -->
     <PropertyGroup>
+      <_MoveEmsdkIntoPlace Condition="!Exists('$(_EmsdkFinalDir)')">true</_MoveEmsdkIntoPlace>
+    </PropertyGroup>
+    <Message Condition="'$(_MoveEmsdkIntoPlace)' != 'true'" Importance="High"
+             Text="Emscripten SDK $(EmscriptenVersion) is already present at '$(_EmsdkFinalDir)'; using it." />
+
+    <!-- The existence test lives inside the command rather than in the task Condition because both
+         'mv' and 'move' move the source *into* an existing destination directory instead of
+         failing, which would pollute a complete cache entry. Re-testing immediately before the
+         rename keeps the window down to a single shell statement; a build that loses the race
+         discards its staging copy (removed below) and just re-stamps. -->
+    <Exec Condition="'$(HostOS)' != 'windows'"
+          Command="if [ ! -e &quot;$(_EmsdkFinalDir)&quot; ]; then mv &quot;$(_EmsdkStagingDir.TrimEnd('\/'))&quot; &quot;$(_EmsdkFinalDir)&quot;; fi"
+          IgnoreStandardErrorWarningFormat="true" />
+    <Exec Condition="'$(HostOS)' == 'windows'"
+          Command="if not exist &quot;$(_EmsdkFinalDir)&quot; move /Y &quot;$(_EmsdkStagingDir.TrimEnd('\/'))&quot; &quot;$(_EmsdkFinalDir)&quot;"
+          IgnoreStandardErrorWarningFormat="true" />
+    <RemoveDir Directories="$(_EmsdkStagingDir)" />
+    <Touch Files="$(EmscriptenSdkStampFile)" AlwaysCreate="true" />
+
+    <PropertyGroup>
+      <EMSDK_PATH>$(EmscriptenSdkCacheDir)</EMSDK_PATH>
       <ShouldProvisionEmscripten>false</ShouldProvisionEmscripten>
     </PropertyGroup>
   </Target>
@@ -193,7 +218,7 @@ JS_ENGINES = [NODE_JS]
   <Target Name="AcquireEmscriptenSdkUnconditional"
           DependsOnTargets="_ValidateEmscriptenSdk;_AcquireLocalEmscriptenSdk">
     <PropertyGroup>
-      <EMSDK_PATH Condition="'$(_UseRuntimeLocalEmscriptenSdk)' == 'true'">$(ProvisionEmscriptenDir.Replace('\', '/'))</EMSDK_PATH>
+      <EMSDK_PATH Condition="'$(_UseRuntimeLocalEmscriptenSdk)' == 'true'">$(EmscriptenSdkCacheDir.Replace('\', '/'))</EMSDK_PATH>
     </PropertyGroup>
     <Error Condition="'$(EMSDK_PATH)' == ''" Text="The EMSDK_PATH environment variable should be set pointing to the emscripten SDK root dir."/>
   </Target>

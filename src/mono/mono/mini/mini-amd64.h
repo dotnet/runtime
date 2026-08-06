@@ -345,6 +345,7 @@ typedef struct {
 	int byte_arg_size;
 	guint8 pass_empty_struct : 1; // Set in scenarios when empty structs needs to be represented as argument.
 	guint8 is_signed : 1;
+	guint8 swift_error_in_reg : 1;
 } ArgInfo;
 
 struct CallInfo {

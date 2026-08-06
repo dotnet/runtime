@@ -21,6 +21,7 @@ namespace Internal.JitInterface
             static ICorJitInfoCallbacks()
             {
                 s_callbacks.isIntrinsic = &_isIntrinsic;
+                s_callbacks.canValueClassInstancePointerEscape = &_canValueClassInstancePointerEscape;
                 s_callbacks.notifyMethodInfoUsage = &_notifyMethodInfoUsage;
                 s_callbacks.getMethodAttribs = &_getMethodAttribs;
                 s_callbacks.setMethodAttribs = &_setMethodAttribs;
@@ -205,6 +206,7 @@ namespace Internal.JitInterface
             }
 
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> isIntrinsic;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> canValueClassInstancePointerEscape;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte> notifyMethodInfoUsage;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint> getMethodAttribs;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CorInfoMethodRuntimeFlags, void> setMethodAttribs;
@@ -400,6 +402,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.isIntrinsic(ftn) ? (byte)1 : (byte)0;
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static byte _canValueClassInstancePointerEscape(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* ftn)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.canValueClassInstancePointerEscape(ftn) ? (byte)1 : (byte)0;
             }
             catch (Exception ex)
             {

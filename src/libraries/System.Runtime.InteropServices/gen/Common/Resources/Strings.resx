@@ -700,6 +700,15 @@
   <data name="RequiresAllowUnsafeBlocksTitleLibraryImport" xml:space="preserve">
     <value>LibraryImportAttribute requires unsafe code.</value>
   </data>
+  <data name="RequiresExplicitSafetyModifierTitleLibraryImport" xml:space="preserve">
+    <value>Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</value>
+  </data>
+  <data name="RequiresExplicitSafetyModifierMessageLibraryImport" xml:space="preserve">
+    <value>Method '{0}' with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</value>
+  </data>
+  <data name="RequiresExplicitSafetyModifierDescriptionLibraryImport" xml:space="preserve">
+    <value>Under the updated memory safety rules, calling into native code is a safety contract that the compiler cannot verify. Mark the method 'unsafe' to require callers to audit the call, or 'safe' after auditing the interop boundary. This matches the requirement the language places on 'extern' members.</value>
+  </data>
   <data name="RequiresAllowUnsafeBlocksTitleCom" xml:space="preserve">
     <value>'GeneratedComInterfaceAttribute' and 'GeneratedComClassAttribute' require unsafe code.</value>
   </data>

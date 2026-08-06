@@ -324,6 +324,9 @@
   <data name="net_http_invalid_response_chunk_terminator_invalid" xml:space="preserve">
     <value>Received an invalid chunk terminator: '{0}'.</value>
   </data>
+  <data name="net_http_invalid_response_chunk_line_ending" xml:space="preserve">
+    <value>Received an invalid chunk line ending. Chunked encoding lines must be terminated by CRLF.</value>
+  </data>
   <data name="net_http_invalid_response_status_line" xml:space="preserve">
     <value>Received an invalid status line: '{0}'.</value>
   </data>
