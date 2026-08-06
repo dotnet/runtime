@@ -6078,11 +6078,8 @@ GenTree* Compiler::impRotateHelper(var_types baseType, genTreeOps rotateOper)
         }
 #endif // !TARGET_64BIT
 
-        // The rotate amount is not a constant. Import ROL/ROR(op1, AND(op2, mask)) directly
-        // instead of bailing to the managed fallback. The native rotate instructions mask
-        // the amount implicitly on the platforms we care about; the explicit AND keeps the
-        // IR in the masked form the rest of the JIT expects and is stripped again in
-        // lowering where possible.
+        // Import non-constant rotates as an explicitly masked ROL/ROR(op1, AND(op2, mask)) instead.
+        // Lowering will remove this mask if the target's rotate implicitly masks its operand.
         impPopStack();
         GenTree* rotateValue = impPopStack().val;
         GenTree* rotateAmount =
