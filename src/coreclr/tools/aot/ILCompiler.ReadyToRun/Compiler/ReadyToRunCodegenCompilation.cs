@@ -1055,6 +1055,8 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null),
                 asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null),
                 asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null),
+                asyncHelpers.GetKnownMethod("RestoreInlinedFrameContexts"u8, null),
+                asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransition"u8, null),
 
                 // R2R Helpers
                 asyncHelpers.GetKnownMethod("AllocContinuation"u8, null),

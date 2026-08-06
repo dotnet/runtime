@@ -1071,6 +1071,11 @@ namespace Internal.IL
             _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
             _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null)), asyncReason);
             _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null)), asyncReason);
+
+            // The JIT synthesizes calls to these when it inlines an async callee that may
+            // suspend, which it can do at any async call site.
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreInlinedFrameContexts"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransition"u8, null)), asyncReason);
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
