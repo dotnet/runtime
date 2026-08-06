@@ -2,6 +2,7 @@
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
 
     <CLRTestBatchPreCommands><![CDATA[
       $(CLRTestBatchPreCommands)
