@@ -1904,6 +1904,189 @@ namespace System.Text.Json.Serialization.Tests
 
         #endregion
 
+        #region Class unions matched by their own case types
+
+        // ShapeUnion above covers a case type deriving from the union. This region covers the
+        // opposite subtyping direction: the union derives from, or implements, one of its own
+        // case types.
+        //
+        // Both directions make the union instance pattern compatible with the case type, but the
+        // language treats them very differently. An explicit reference conversion (case derives
+        // from union) puts the compiler into Try-Both mode, which it reports. An implicit one
+        // (union derives from case) suppresses union matching altogether, so a bare type pattern
+        // binds the union instance rather than the payload, silently and with no diagnostic.
+        // These tests pin the payload as the observable result in that silent direction.
+
+        [JsonConverter(typeof(JsonWritableConverter))]
+        public interface IJsonWritable
+        {
+            void WriteTo(Utf8JsonWriter writer);
+        }
+
+        public sealed class JsonWritableConverter : JsonConverter<IJsonWritable>
+        {
+            public override IJsonWritable? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                new WritablePoco { Label = reader.GetString() };
+
+            public override void Write(Utf8JsonWriter writer, IJsonWritable value, JsonSerializerOptions options) =>
+                value.WriteTo(writer);
+        }
+
+        public sealed class WritablePoco : IJsonWritable
+        {
+            public string? Label { get; set; }
+
+            public void WriteTo(Utf8JsonWriter writer) => writer.WriteStringValue(Label);
+        }
+
+        // The union implements the same interface it declares as a case. Because the converter is
+        // attached to the interface, a deconstructor that bound the union instance instead of the
+        // payload would still serialize successfully — through the union's own WriteTo — and
+        // produce "union" instead of the payload's label. The union itself is unaffected by the
+        // converter and continues to use built-in union serialization.
+#pragma warning disable SYSLIB1227
+        public union WritableUnion(int, IJsonWritable) : IJsonWritable
+        {
+            public void WriteTo(Utf8JsonWriter writer) => writer.WriteStringValue("union");
+        }
+#pragma warning restore SYSLIB1227
+
+        [Fact]
+        public async Task Union_ImplementingOwnCaseInterface_SerializesPayloadNotUnionInstance()
+        {
+            WritableUnion union = new WritablePoco { Label = "payload" };
+
+            string json = await Serializer.SerializeWrapper(union);
+            Assert.Equal("\"payload\"", json);
+        }
+
+        [Fact]
+        public async Task Union_ImplementingOwnCaseInterface_ScalarCase_SerializesPayload()
+        {
+            WritableUnion union = 42;
+
+            string json = await Serializer.SerializeWrapper(union);
+            Assert.Equal("42", json);
+        }
+
+        [Fact]
+        public void Union_ImplementingOwnCaseInterface_Deconstructor_ReportsPayload()
+        {
+            JsonTypeInfo<WritableUnion> typeInfo = Serializer.GetTypeInfo<WritableUnion>();
+            Assert.NotNull(typeInfo.UnionDeconstructor);
+
+            var poco = new WritablePoco { Label = "payload" };
+            WritableUnion union = poco;
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(union);
+            Assert.Equal(typeof(IJsonWritable), caseType);
+            Assert.Same(poco, caseValue);
+
+            (Type? intType, object? intValue) = typeInfo.UnionDeconstructor!(7);
+            Assert.Equal(typeof(int), intType);
+            Assert.Equal(7, intValue);
+        }
+
+        [Fact]
+        public void Union_ImplementingOwnCaseInterface_UnionConstructor_RoundTripsBothCases()
+        {
+            JsonTypeInfo<WritableUnion> typeInfo = Serializer.GetTypeInfo<WritableUnion>();
+            Assert.NotNull(typeInfo.UnionConstructor);
+
+            var poco = new WritablePoco { Label = "payload" };
+            WritableUnion pocoUnion = typeInfo.UnionConstructor!(typeof(IJsonWritable), poco);
+            Assert.Same(poco, GetUnionValue(pocoUnion));
+
+            WritableUnion intUnion = typeInfo.UnionConstructor!(typeof(int), 9);
+            Assert.Equal(9, GetUnionValue(intUnion));
+        }
+
+        [Fact]
+        public async Task Union_ImplementingOwnCaseInterface_WithClassifier_RoundTrips()
+        {
+            // The interface case carries a custom converter, so the union cannot be classified by
+            // value shape; supply a classifier explicitly, as UnionWithCustomConverterCase does.
+            JsonSerializerOptions options = Serializer.GetDefaultOptionsWithMetadataModifier(typeInfo =>
+            {
+                if (typeInfo.Type == typeof(WritableUnion))
+                {
+                    typeInfo.TypeClassifier = static (ref Utf8JsonReader reader) =>
+                        reader.TokenType is JsonTokenType.String ? typeof(IJsonWritable) : typeof(int);
+                }
+            });
+
+            WritableUnion union = new WritablePoco { Label = "payload" };
+            string json = await Serializer.SerializeWrapper(union, options);
+            Assert.Equal("\"payload\"", json);
+
+            WritableUnion? deserialized = await Serializer.DeserializeWrapper<WritableUnion>(json, options);
+            Assert.NotNull(deserialized);
+            WritablePoco poco = Assert.IsType<WritablePoco>(GetUnionValue(deserialized!));
+            Assert.Equal("payload", poco.Label);
+        }
+
+        // The [Union] class equivalent: the union derives from one of its own case types, so the
+        // conversion from the union to the case is an implicit reference conversion.
+        public class NodeCase
+        {
+            public string? Label { get; set; }
+        }
+
+        [Union]
+        public class NodeUnion : NodeCase, IUnion
+        {
+            public NodeUnion(int i) { Value = i; }
+            public NodeUnion(NodeCase n) { Value = n; }
+            protected NodeUnion() { Value = null; }
+
+            [JsonIgnore]
+            public object? Value { get; set; }
+        }
+
+        [Fact]
+        public async Task ClassUnion_DerivingFromOwnCase_SerializesPayloadNotUnionInstance()
+        {
+            var union = new NodeUnion(new NodeCase { Label = "payload" }) { Label = "union" };
+
+            string json = await Serializer.SerializeWrapper(union);
+            Assert.Equal("""{"Label":"payload"}""", json);
+        }
+
+        [Fact]
+        public async Task ClassUnion_DerivingFromOwnCase_ScalarCase_SerializesPayload()
+        {
+            var union = new NodeUnion(42) { Label = "union" };
+
+            string json = await Serializer.SerializeWrapper(union);
+            Assert.Equal("42", json);
+        }
+
+        [Fact]
+        public async Task ClassUnion_DerivingFromOwnCase_Deserialize_YieldsPayload()
+        {
+            NodeUnion? deserialized = await Serializer.DeserializeWrapper<NodeUnion>("""{"Label":"payload"}""");
+
+            Assert.NotNull(deserialized);
+            NodeCase node = Assert.IsType<NodeCase>(GetUnionValue(deserialized!));
+            Assert.Equal("payload", node.Label);
+        }
+
+        [Fact]
+        public void ClassUnion_DerivingFromOwnCase_Deconstructor_ReportsPayload()
+        {
+            JsonTypeInfo<NodeUnion> typeInfo = Serializer.GetTypeInfo<NodeUnion>();
+            Assert.NotNull(typeInfo.UnionDeconstructor);
+
+            var payload = new NodeCase { Label = "payload" };
+            var union = new NodeUnion(payload) { Label = "union" };
+
+            (Type? caseType, object? caseValue) = typeInfo.UnionDeconstructor!(union);
+            Assert.Equal(typeof(NodeCase), caseType);
+            Assert.Same(payload, caseValue);
+        }
+
+        #endregion
+
         #region Cyclic object graph
 
         [Union]

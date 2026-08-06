@@ -55,6 +55,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(NullableNat))]
         [JsonSerializable(typeof(SelfReferentialUnion))]
         [JsonSerializable(typeof(ShapeUnion))]
+        [JsonSerializable(typeof(WritableUnion))]
+        [JsonSerializable(typeof(NodeUnion))]
         internal sealed partial class UnionTestsContext_Metadata : JsonSerializerContext
         {
         }
@@ -117,6 +119,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(NullableNat))]
         [JsonSerializable(typeof(SelfReferentialUnion))]
         [JsonSerializable(typeof(ShapeUnion))]
+        [JsonSerializable(typeof(WritableUnion))]
+        [JsonSerializable(typeof(NodeUnion))]
         internal sealed partial class UnionTestsContext_Default : JsonSerializerContext
         {
         }
