@@ -1138,7 +1138,15 @@ namespace System
 
             var vlb = new ValueListBuilder<TChar>(destination);
             FormatCustomized(dateTime, format, dtfi, offset, ref vlb);
-            bool success = vlb.TryCopyTo(destination, out charsWritten);
+            bool success = Unsafe.AreSame(ref MemoryMarshal.GetReference(destination), ref MemoryMarshal.GetReference(vlb.AsSpan()));
+            if (success)
+            {
+                charsWritten = vlb.Length;
+            }
+            else
+            {
+                success = vlb.TryCopyTo(destination, out charsWritten);
+            }
             vlb.Dispose();
             return success;
         }

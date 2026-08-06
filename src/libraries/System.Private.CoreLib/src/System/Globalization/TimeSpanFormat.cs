@@ -265,7 +265,7 @@ namespace System.Globalization
                 // the JIT prove that all suffix writes at constant offsets 0..7 are in bounds.
                 if ((uint)suffixLen < 8u)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                    ThrowHelper.ThrowUnreachableException();
                 }
                 Span<TChar> suffix = destination.Slice(pos, suffixLen);
 
@@ -306,7 +306,7 @@ namespace System.Globalization
                 // the JIT prove that all suffix writes at constant offsets 0..6 are in bounds.
                 if ((uint)suffixLen < 7u)
                 {
-                    ThrowHelper.ThrowArgumentOutOfRangeException();
+                    ThrowHelper.ThrowUnreachableException();
                 }
                 Span<TChar> suffix = destination.Slice(pos, suffixLen);
 
