@@ -12,18 +12,16 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal class WebcilSection : SectionDataEmitter
     {
-        public readonly int Index;
         public WebcilSectionHeader Header;
         private PaddingHelper _paddingHelper;
         public int MinAlignment = 1;
 
         public uint Padding => Header.SizeOfRawData - (uint)ContentReadStream.Length;
 
-        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int index)
-            : base(stream, name)
+        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int sectionIndex)
+            : base(stream, name, sectionIndex)
         {
             Header = header;
-            Index = index;
             _paddingHelper = new PaddingHelper(WasmObjectWriter.WebcilSectionAlignment);
         }
 

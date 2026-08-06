@@ -386,7 +386,7 @@ namespace ILCompiler.ObjectWriter
             for (int i = 0; i < sections.Length; i++)
             {
                 WebcilSection section = sections[i];
-                if (definition.SectionIndex == section.Index)
+                if (definition.SectionIndex == section.SectionIndex)
                 {
                     return section.Header.VirtualAddress + definition.Value;
                 }
@@ -502,7 +502,7 @@ namespace ILCompiler.ObjectWriter
                 // This is a section which is internally wrapping a Webcil section
                 wasmSection = new WebcilSection(new Utf8String(section.Name), default(WebcilSectionHeader), sectionStream, sectionIndex);
 #else
-                wasmSection = new WasmSection(WasmSectionType.Data, sectionStream, new Utf8String(section.Name));
+                wasmSection = new WasmSection(WasmSectionType.Data, sectionStream, new Utf8String(section.Name), sectionIndex);
 #endif
             }
             else
@@ -510,13 +510,13 @@ namespace ILCompiler.ObjectWriter
                 Utf8String sectionName = new(section.Name);
                 wasmSection = sectionType switch
                 {
-                    WasmSectionType.Type or WasmSectionType.Code => new WasmExternallyCountedSection(sectionType, sectionStream, sectionName),
-                    WasmSectionType.Import => new WasmImportSection(sectionStream, sectionName),
-                    WasmSectionType.Function => new WasmFunctionSection(sectionStream, sectionName),
-                    WasmSectionType.Global => new WasmGlobalSection(sectionStream, sectionName),
-                    WasmSectionType.Export => new WasmExportSection(sectionStream, sectionName),
-                    WasmSectionType.Element => new WasmElementSection(sectionStream, sectionName),
-                    _ => new WasmSection(sectionType, sectionStream, sectionName),
+                    WasmSectionType.Type or WasmSectionType.Code => new WasmExternallyCountedSection(sectionType, sectionStream, sectionName, sectionIndex),
+                    WasmSectionType.Import => new WasmImportSection(sectionStream, sectionName, sectionIndex),
+                    WasmSectionType.Function => new WasmFunctionSection(sectionStream, sectionName, sectionIndex),
+                    WasmSectionType.Global => new WasmGlobalSection(sectionStream, sectionName, sectionIndex),
+                    WasmSectionType.Export => new WasmExportSection(sectionStream, sectionName, sectionIndex),
+                    WasmSectionType.Element => new WasmElementSection(sectionStream, sectionName, sectionIndex),
+                    _ => new WasmSection(sectionType, sectionStream, sectionName, sectionIndex),
                 };
             }
 
@@ -715,12 +715,12 @@ namespace ILCompiler.ObjectWriter
                 long bytesWritten = (long)webcilStream.Position - (long)section.Header.PointerToRawData;
                 Debug.Assert(section.Header.SizeOfRawData - bytesWritten == section.Padding, $"Unexpected padding: {section.Header.SizeOfRawData - bytesWritten} != {section.Padding}");
 
-                if (_resolvableRelocations.TryGetValue(section.Index, out List<SymbolicRelocation> relocations))
+                if (_resolvableRelocations.TryGetValue(section.SectionIndex, out List<SymbolicRelocation> relocations))
                 {
                     // We emit all Webcil sections into one stream, and resolve relocations directly into this combined stream.
                     // As a result, the section-relative offsets that relocs in our list have need to be calculated based on the section's
                     // position within the Webcil segment
-                    ResolveRelocations(section.Index, webcilStream, relocations, sectionStart: (long)section.Header.PointerToRawData);
+                    ResolveRelocations(section.SectionIndex, webcilStream, relocations, sectionStart: (long)section.Header.PointerToRawData);
                 }
             }
 

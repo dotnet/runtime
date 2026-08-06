@@ -33,13 +33,15 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal abstract class SectionDataEmitter : IWasmEmittable
     {
-        public SectionDataEmitter(Stream stream, Utf8String name)
+        public SectionDataEmitter(Stream stream, Utf8String name, int sectionIndex)
         {
             ContentReadStream = stream;
             SectionName = name;
+            SectionIndex = sectionIndex;
         }
-        public Utf8String SectionName { get; }
 
+        public int SectionIndex { get; }
+        public Utf8String SectionName { get; }
         public Stream ContentReadStream { get; set; }
 
         public abstract int EmitToStream(Stream outputFileStream);
@@ -49,7 +51,7 @@ namespace ILCompiler.ObjectWriter
     /// <summary>
     /// The base class for WebAssembly sections that are not composed of subsections.
     /// </summary>
-    internal class WasmSection : SectionDataEmitter
+    internal class WasmSection : SectionDataEmitter, IWasmSection
     {
         public WasmSectionType Type { get; }
 
@@ -108,7 +110,7 @@ namespace ILCompiler.ObjectWriter
             return HeaderSize + ContentSize;
         }
 
-        public WasmSection(WasmSectionType type, Stream stream, Utf8String name) : base(stream, name)
+        public WasmSection(WasmSectionType type, Stream stream, Utf8String name, int sectionIndex) : base(stream, name, sectionIndex)
         {
             Type = type;
         }
@@ -128,8 +130,8 @@ namespace ILCompiler.ObjectWriter
             EntryCount++;
         }
 
-        protected WasmVectorSection(WasmSectionType type, Stream stream, Utf8String name)
-            : base(type, stream, name)
+        protected WasmVectorSection(WasmSectionType type, Stream stream, Utf8String name, int sectionIndex)
+            : base(type, stream, name, sectionIndex)
         {
         }
     }
@@ -138,8 +140,8 @@ namespace ILCompiler.ObjectWriter
     // the WasmSection abstraction.
     internal sealed class WasmExternallyCountedSection : WasmVectorSection
     {
-        public WasmExternallyCountedSection(WasmSectionType type, Stream stream, Utf8String name)
-            : base(type, stream, name)
+        public WasmExternallyCountedSection(WasmSectionType type, Stream stream, Utf8String name, int sectionIndex)
+            : base(type, stream, name, sectionIndex)
         {
         }
 
@@ -154,6 +156,7 @@ namespace ILCompiler.ObjectWriter
     {
         public void WriteEntry(SectionWriter writer, TEntry entry)
         {
+            Debug.Assert(writer.SectionIndex == SectionIndex);
             WriteEntryCore(writer, entry);
             CompleteEntry();
         }
@@ -169,16 +172,16 @@ namespace ILCompiler.ObjectWriter
             writer.Buffer.Advance(bytesWritten);
         }
 
-        protected WasmSection(WasmSectionType type, Stream stream, Utf8String name)
-            : base(type, stream, name)
+        protected WasmSection(WasmSectionType type, Stream stream, Utf8String name, int sectionIndex)
+            : base(type, stream, name, sectionIndex)
         {
         }
     }
 
     internal sealed class WasmImportSection : WasmSection<WasmImport>
     {
-        public WasmImportSection(Stream stream, Utf8String name)
-            : base(WasmSectionType.Import, stream, name)
+        public WasmImportSection(Stream stream, Utf8String name, int sectionIndex)
+            : base(WasmSectionType.Import, stream, name, sectionIndex)
         {
         }
 
@@ -194,19 +197,21 @@ namespace ILCompiler.ObjectWriter
 
     internal sealed class WasmFunctionSection : WasmSection<int>
     {
-        public WasmFunctionSection(Stream stream, Utf8String name)
-            : base(WasmSectionType.Function, stream, name)
+        public WasmFunctionSection(Stream stream, Utf8String name, int sectionIndex)
+            : base(WasmSectionType.Function, stream, name, sectionIndex)
         {
         }
 
-        protected override void WriteEntryCore(SectionWriter writer, int typeIndex) =>
+        protected override void WriteEntryCore(SectionWriter writer, int typeIndex)
+        {
             writer.WriteULEB128((ulong)typeIndex);
+        }
     }
 
     internal sealed class WasmGlobalSection : WasmSection<WasmGlobal>
     {
-        public WasmGlobalSection(Stream stream, Utf8String name)
-            : base(WasmSectionType.Global, stream, name)
+        public WasmGlobalSection(Stream stream, Utf8String name, int sectionIndex)
+            : base(WasmSectionType.Global, stream, name, sectionIndex)
         {
         }
 
@@ -233,8 +238,8 @@ namespace ILCompiler.ObjectWriter
 
     internal sealed class WasmExportSection : WasmSection<WasmExport>
     {
-        public WasmExportSection(Stream stream, Utf8String name)
-            : base(WasmSectionType.Export, stream, name)
+        public WasmExportSection(Stream stream, Utf8String name, int sectionIndex)
+            : base(WasmSectionType.Export, stream, name, sectionIndex)
         {
         }
 
@@ -248,8 +253,8 @@ namespace ILCompiler.ObjectWriter
 
     internal sealed class WasmElementSection : WasmSection<ReadOnlyMemory<int>>
     {
-        public WasmElementSection(Stream stream, Utf8String name)
-            : base(WasmSectionType.Element, stream, name)
+        public WasmElementSection(Stream stream, Utf8String name, int sectionIndex)
+            : base(WasmSectionType.Element, stream, name, sectionIndex)
         {
         }
 
