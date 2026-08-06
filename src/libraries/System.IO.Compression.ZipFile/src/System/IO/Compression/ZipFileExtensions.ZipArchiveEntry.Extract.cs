@@ -219,26 +219,15 @@ namespace System.IO.Compression
 
             // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
             DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
-            string destinationDirectoryFullPath = di.FullName;
-            if (!destinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
-            {
-                char sep = Path.DirectorySeparatorChar;
-                destinationDirectoryFullPath = string.Concat(destinationDirectoryFullPath, new ReadOnlySpan<char>(in sep));
-            }
+            string fullDestination = Path.GetFullPath(di.FullName);
 
             string sanitizedEntryPath = ArchivingUtils.SanitizeEntryFilePath(source.FullName);
+            fileDestinationPath = Path.GetFullPath(Path.Combine(fullDestination, sanitizedEntryPath));
 
-            fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, sanitizedEntryPath));
-
-            // Reject entries that resolve outside the destination root. GetFullPath collapses "." and ".."
-            // but never re-cases the segments it keeps. The root is combined in verbatim with a trailing
-            // separator. That means a resolved path that shares the root's exact casing never climbed above the root;
-            // one that matches the root only case-insensitively did climb out and re-descend under a
-            // different spelling (e.g. "../dest/x" into root "Dest"), which is a distinct directory on a
-            // case-sensitive volume. The two terms below together require that ordinal match. Symlinks and
-            // junctions are not resolved here, so a reparse point inside the root is a separate concern.
-            if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison) ||
-                (!PathInternal.IsCaseSensitive && !fileDestinationPath.StartsWith(destinationDirectoryFullPath, StringComparison.Ordinal)))
+            // Ensure the path stays within the destination directory boundary
+            if (!fileDestinationPath.StartsWith(fullDestination, StringComparison.Ordinal) ||
+                fileDestinationPath.Length <= fullDestination.Length ||
+                fileDestinationPath[fullDestination.Length] != Path.DirectorySeparatorChar)
             {
                 throw new IOException(SR.IO_ExtractingResultsInOutside);
             }
