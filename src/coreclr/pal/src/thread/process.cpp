@@ -125,7 +125,7 @@ using namespace CorUnix;
 Volatile<LONG> terminator = 0;
 
 // Id of thread generating a core dump
-Volatile<LONG> g_crashingThreadId = 0;
+Volatile<LONGLONG> g_crashingThreadId = 0;
 
 // Process ID of this process.
 DWORD gPID = (DWORD) -1;
@@ -1841,8 +1841,8 @@ TryEnterCrashDumpGate(CrashDumpSerializeMode serializeMode)
         return true;
     }
 
-    size_t currentThreadId = THREADSilentGetCurrentThreadId();
-    size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
+    LONGLONG currentThreadId = static_cast<LONGLONG>(THREADSilentGetCurrentThreadId());
+    LONGLONG previousThreadId = InterlockedCompareExchange64(&g_crashingThreadId, currentThreadId, 0);
     if (previousThreadId == 0)
     {
         // Won the gate.
@@ -1888,8 +1888,8 @@ ExitCrashDumpGate(CrashDumpSerializeMode serializeMode)
 
     // Re-arm the gate so a later crash can generate diagnostics again, but only
     // if this thread still owns it.
-    size_t currentThreadId = THREADSilentGetCurrentThreadId();
-    InterlockedCompareExchange(&g_crashingThreadId, 0, currentThreadId);
+    LONGLONG currentThreadId = static_cast<LONGLONG>(THREADSilentGetCurrentThreadId());
+    InterlockedCompareExchange64(&g_crashingThreadId, 0, currentThreadId);
 }
 
 /*++
