@@ -9,7 +9,6 @@ namespace System.Runtime.ExceptionServices
     public static partial class ExceptionHandling
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionHandling_TrySetFatalErrorHandler")]
-        [SuppressGCTransition]
         [return: MarshalAs(UnmanagedType.U1)]
         private static partial bool TrySetFatalErrorHandler(IntPtr handler);
     }

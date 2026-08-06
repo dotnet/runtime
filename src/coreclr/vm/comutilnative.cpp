@@ -38,6 +38,9 @@
 #include "sstring.h"
 #include "array.h"
 #include "eepolicy.h"
+#ifdef FEATURE_INPROC_CRASHREPORT
+#include "crashreportstackwalker.h"
+#endif
 #include <minipal/cpuid.h>
 
 #ifdef FEATURE_COMINTEROP
@@ -470,9 +473,24 @@ extern "C" void QCALLTYPE ExceptionNative_ThrowClassAccessException(MethodDesc* 
 
 extern "C" CLR_BOOL QCALLTYPE ExceptionHandling_TrySetFatalErrorHandler(void* handler)
 {
-    QCALL_CONTRACT_NO_GC_TRANSITION;
+    QCALL_CONTRACT;
 
-    return InterlockedCompareExchangeT(&s_fatalErrorHandler, handler, NULL) == NULL;
+    CLR_BOOL set = FALSE;
+
+    BEGIN_QCALL;
+
+    set = InterlockedCompareExchangeT(&s_fatalErrorHandler, handler, NULL) == NULL;
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+    if (set)
+    {
+        CrashReportInitialize();
+    }
+#endif
+
+    END_QCALL;
+
+    return set;
 }
 
 FCIMPL3(VOID, Buffer::BulkMoveWithWriteBarrier, void *dst, void *src, size_t byteCount)

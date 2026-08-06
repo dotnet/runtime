@@ -16,6 +16,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 #if defined(_MSC_VER) && defined(_M_IX86)
 #define DOTNET_CALLCONV __stdcall
@@ -80,6 +81,10 @@ typedef enum _FatalErrorProperty
     // Value: Mach thread state for the current architecture
     // (arm_thread_state64_t* on arm64, x86_thread_state64_t* on x64).
     FEP_MachExceptionInfo = 0x7,
+
+    // Value: DiagnosticDataFunc. Entry point for producing diagnostic data
+    // on demand, streamed back to the handler through a caller-provided sink.
+    FEP_DiagnosticDataFunc = 0x8,
 } FatalErrorProperty;
 
 // Property-getter callback passed to the fatal error handler. The handler
@@ -91,5 +96,69 @@ typedef enum _FatalErrorProperty
 // Returns a nonzero value if the property is available (and *value has been
 // written), or 0 if the property is not available.
 typedef int32_t (DOTNET_CALLCONV *FatalErrorPropertyGetter)(/* FatalErrorProperty */ int32_t prop, const void** value);
+
+typedef enum _DiagnosticDataType
+{
+    // In-process crash report serialized as length-delimited UTF-8 JSON fragments.
+    JsonInProcCrashReport = 0,
+
+    // In-process crash report serialized as human-readable UTF-8 text fragments.
+    LogInProcCrashReport = 1,
+} DiagnosticDataType;
+
+typedef enum _DiagnosticDataResult
+{
+    // The requested diagnostic data was produced successfully.
+    DiagnosticDataSuccess = 0,
+
+    // The configuration pointer, concrete configuration size, or output
+    // callback was invalid.
+    DiagnosticDataInvalidArgument = 1,
+
+    // The requested diagnostic data type is not supported by this function.
+    DiagnosticDataUnsupported = 2,
+
+    // Diagnostic data generation failed or the output callback aborted it.
+    DiagnosticDataFailure = 3,
+} DiagnosticDataResult;
+
+// Callback that receives diagnostic data. The data is valid only for the
+// duration of the call. Returns true to continue or false to abort.
+typedef bool (DOTNET_CALLCONV *DiagnosticDataOutputFunc)(const char* data, size_t length, void* userContext);
+
+// Base configuration shared by every diagnostic data type. Each concrete
+// configuration embeds this as its first member. size must be the size of the
+// concrete configuration, not sizeof(DiagnosticDataConfig).
+typedef struct _DiagnosticDataConfig
+{
+    int32_t type;
+    uint32_t size;
+    DiagnosticDataOutputFunc pfnOutput;
+    void* userContext;
+} DiagnosticDataConfig;
+
+// Configuration for JsonInProcCrashReport. signal and context describe the
+// crash site to include in the generated report. context is a platform-native
+// signal context, or NULL when no native context is available.
+typedef struct _JsonInProcCrashReportConfig
+{
+    DiagnosticDataConfig base;
+    int32_t signal;
+    const void* context;
+} JsonInProcCrashReportConfig;
+
+// Configuration for LogInProcCrashReport. signal and context have the same
+// meaning as in JsonInProcCrashReportConfig.
+typedef struct _LogInProcCrashReportConfig
+{
+    DiagnosticDataConfig base;
+    int32_t signal;
+    const void* context;
+} LogInProcCrashReportConfig;
+
+// Function pointer retrieved through the property getter as the value of
+// FEP_DiagnosticDataFunc. Produces the requested data synchronously and returns
+// a DiagnosticDataResult. The pointer is valid only while the handler runs.
+typedef DiagnosticDataResult (DOTNET_CALLCONV *DiagnosticDataFunc)(const DiagnosticDataConfig* config);
 
 #endif // FATAL_ERROR_HANDLING_H

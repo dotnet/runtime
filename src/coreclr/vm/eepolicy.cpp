@@ -811,6 +811,48 @@ static void DOTNET_CALLCONV GetFatalErrorLogFunc(FatalErrorLogAction pfnLogActio
     EmitCrashInfo(writer, t_crashExitCode, t_crashMessage, t_crashExceptionInfo, t_crashErrorSource, t_crashExceptionString);
 }
 
+#ifdef FEATURE_INPROC_CRASHREPORT
+static DiagnosticDataResult DOTNET_CALLCONV DiagnosticDataFuncImpl(const DiagnosticDataConfig* config)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (config == nullptr || config->size < sizeof(DiagnosticDataConfig) || config->pfnOutput == nullptr)
+        return DiagnosticDataInvalidArgument;
+
+    InProcCrashReportOutputFormat format;
+    int signal;
+    const void* context;
+
+    switch (static_cast<DiagnosticDataType>(config->type))
+    {
+    case JsonInProcCrashReport:
+        if (config->size < sizeof(JsonInProcCrashReportConfig))
+            return DiagnosticDataInvalidArgument;
+
+        format = InProcCrashReportOutputFormat::Json;
+        signal = reinterpret_cast<const JsonInProcCrashReportConfig*>(config)->signal;
+        context = reinterpret_cast<const JsonInProcCrashReportConfig*>(config)->context;
+        break;
+
+    case LogInProcCrashReport:
+        if (config->size < sizeof(LogInProcCrashReportConfig))
+            return DiagnosticDataInvalidArgument;
+
+        format = InProcCrashReportOutputFormat::Log;
+        signal = reinterpret_cast<const LogInProcCrashReportConfig*>(config)->signal;
+        context = reinterpret_cast<const LogInProcCrashReportConfig*>(config)->context;
+        break;
+
+    default:
+        return DiagnosticDataUnsupported;
+    }
+
+    return InProcCrashReportCreateReport(format, signal, context, config->pfnOutput, config->userContext)
+        ? DiagnosticDataSuccess
+        : DiagnosticDataFailure;
+}
+#endif // FEATURE_INPROC_CRASHREPORT
+
 // Property getter passed to the user's fatal error handler. Surfaces the crash-log entry point
 // and stored crash address. Platform-native fault state is additionally surfaced for a
 // genuinely-unmanaged fatal fault (Path B); it is unavailable on the managed fatal path
@@ -834,6 +876,12 @@ static int32_t DOTNET_CALLCONV FatalErrorPropertyGetterImpl(int32_t prop, const 
             return 0;
         *value = t_crashAddress;
         return 1;
+
+#ifdef FEATURE_INPROC_CRASHREPORT
+    case FEP_DiagnosticDataFunc:
+        *value = reinterpret_cast<const void*>(reinterpret_cast<uintptr_t>(DiagnosticDataFuncImpl));
+        return 1;
+#endif // FEATURE_INPROC_CRASHREPORT
 
     default:
         if (t_getPlatformProperty == nullptr)

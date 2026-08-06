@@ -14,6 +14,14 @@ unsafe class FatalErrorHandlerTest
     const string HandlerInvokedMarker = "FATAL_HANDLER_INVOKED";
     const string LogReceivedMarker = "FATAL_LOG_RECEIVED:";
     const string AddressMarker = "FATAL_ADDRESS:";
+    const string DiagnosticUnsupportedMarker = "FATAL_DIAG:unsupported";
+    const string DiagnosticResultsOkMarker = "FATAL_DIAG_RESULTS:ok";
+    const string DiagnosticJsonOkMarker = "FATAL_DIAG_JSON:ok";
+    const string DiagnosticLogOkMarker = "FATAL_DIAG_LOG:ok";
+    const string SignalMarker = "FATAL_SIGNO:";
+
+    const int SIGABRT = 6;
+    const int SIGSEGV = 11;
 
     //
     // P/Invoke declarations for the native handler library.
@@ -30,6 +38,9 @@ unsafe class FatalErrorHandlerTest
 
     [DllImport("FatalErrorHandlerNative")]
     private static extern delegate* unmanaged<int, void*, int> GetHandlerCheckNativeInfo();
+
+    [DllImport("FatalErrorHandlerNative")]
+    private static extern delegate* unmanaged<int, void*, int> GetHandlerCheckDiagnosticData();
 
     [DllImport("FatalErrorHandlerNative")]
     private static extern void TriggerNativeAccessViolation();
@@ -87,6 +98,20 @@ unsafe class FatalErrorHandlerTest
         // Trigger an access violation from *native* code (inside the P/Invoked
         // TriggerNativeAccessViolation).
         TriggerNativeAccessViolation();
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunChildDiagnosticData()
+    {
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckDiagnosticData());
+        Environment.FailFast("test fatal error");
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static void RunChildDiagnosticDataAccessViolation()
+    {
+        ExceptionHandling.SetFatalErrorHandler(GetHandlerCheckDiagnosticData());
+        *(int*)s_badAddress = 0;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -371,6 +396,32 @@ unsafe class FatalErrorHandlerTest
         return handlerInvoked && addressPopulated && logAvailabilityCorrect && platformInfoPopulated && exited;
     }
 
+    static bool TestDiagnosticData(string scenario, string crashDescription)
+    {
+        Console.WriteLine($"=== TestDiagnosticData ({crashDescription}) ===");
+
+        bool expectSupported = !TestLibrary.Utilities.IsNativeAot && !OperatingSystem.IsWindows();
+        var (exitCode, stderr) = LaunchChild(scenario);
+
+        bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
+        bool reportedUnsupported = stderr.Contains(DiagnosticUnsupportedMarker);
+        bool exited = exitCode != 0;
+
+        if (!expectSupported)
+        {
+            Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, reported unsupported: {reportedUnsupported}, exited: {exited}");
+            return handlerInvoked && exited && reportedUnsupported;
+        }
+
+        bool resultsOk = stderr.Contains(DiagnosticResultsOkMarker);
+        bool jsonOk = stderr.Contains(DiagnosticJsonOkMarker);
+        bool logOk = stderr.Contains(DiagnosticLogOkMarker);
+
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, results: {resultsOk}, JSON: {jsonOk}, log: {logOk}, exited: {exited}");
+
+        return handlerInvoked && exited && !reportedUnsupported && resultsOk && jsonOk && logOk;
+    }
+
     static bool TestNativeThreadException()
     {
         if (!TestLibrary.Utilities.IsNativeAot && !OperatingSystem.IsWindows())
@@ -381,6 +432,33 @@ unsafe class FatalErrorHandlerTest
         }
 
         return TestNativeCodeException("native-thread-exception");
+    }
+
+    static bool TestNativeSignalAccessViolation()
+    {
+        Console.WriteLine("=== TestNativeSignalAccessViolation ===");
+
+        if (!OperatingSystem.IsLinux())
+        {
+            Console.WriteLine("  SKIP: native access-violation signal assertion is Linux-specific");
+            return true;
+        }
+
+        var (exitCode, stderr) = LaunchChild("native-code-exception");
+
+        bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
+        bool signalMatches = stderr.Contains($"{SignalMarker}0x{SIGSEGV:X8}");
+        bool exited = exitCode != 0;
+
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, SIGSEGV reported: {signalMatches}, exited: {exited}");
+        if (!handlerInvoked)
+            Console.WriteLine("  FAIL: Handler was not invoked from the fatal-signal path");
+        if (!signalMatches)
+            Console.WriteLine("  FAIL: siginfo_t.si_signo did not report SIGSEGV");
+        if (!exited)
+            Console.WriteLine("  FAIL: Expected non-zero exit code");
+
+        return handlerInvoked && signalMatches && exited;
     }
 
     static bool TestCorruptedObject()
@@ -458,22 +536,56 @@ unsafe class FatalErrorHandlerTest
         bool handlerInvoked = stderr.Contains(HandlerInvokedMarker);
         bool addressPopulated = stderr.Contains("addr=true");
         bool sigInfoPopulated = stderr.Contains("siginfo=true");
+        bool signalMatches = stderr.Contains($"{SignalMarker}0x{SIGABRT:X8}");
         bool contextPopulated = stderr.Contains("ucontext=true");
         bool exitedWithSigAbort = exitCode == 128 + 6;
 
-        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, siginfo_t ok: {sigInfoPopulated}, ucontext_t ok: {contextPopulated}, SIGABRT exit: {exitedWithSigAbort}");
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invoked: {handlerInvoked}, address ok: {addressPopulated}, siginfo_t ok: {sigInfoPopulated}, SIGABRT reported: {signalMatches}, ucontext_t ok: {contextPopulated}, SIGABRT exit: {exitedWithSigAbort}");
         if (!handlerInvoked)
             Console.WriteLine("  FAIL: Handler was not invoked");
         if (!addressPopulated)
             Console.WriteLine("  FAIL: abort location was not populated");
         if (!sigInfoPopulated)
             Console.WriteLine("  FAIL: siginfo_t was not surfaced for SIGABRT");
+        if (!signalMatches)
+            Console.WriteLine("  FAIL: siginfo_t.si_signo did not report SIGABRT");
         if (!contextPopulated)
             Console.WriteLine("  FAIL: ucontext_t was not surfaced for SIGABRT");
         if (!exitedWithSigAbort)
             Console.WriteLine("  FAIL: Expected SIGABRT exit code");
 
-        return handlerInvoked && addressPopulated && sigInfoPopulated && contextPopulated && exitedWithSigAbort;
+        return handlerInvoked && addressPopulated && sigInfoPopulated && signalMatches && contextPopulated && exitedWithSigAbort;
+    }
+
+    static bool TestFailFastInvokesHandlerOnce()
+    {
+        Console.WriteLine("=== TestFailFastInvokesHandlerOnce ===");
+
+        var (exitCode, stderr) = LaunchChild("run-handler");
+
+        int invocationCount = CountOccurrences(stderr, HandlerInvokedMarker);
+        bool exited = exitCode != 0;
+
+        Console.WriteLine($"  Exit code: 0x{exitCode:X8}, handler invocation count: {invocationCount}, exited: {exited}");
+        if (invocationCount != 1)
+            Console.WriteLine($"  FAIL: Expected exactly one handler invocation, but observed {invocationCount}");
+        if (!exited)
+            Console.WriteLine("  FAIL: Expected non-zero exit code");
+
+        return invocationCount == 1 && exited;
+    }
+
+    static int CountOccurrences(string haystack, string needle)
+    {
+        int count = 0;
+        int index = 0;
+        while ((index = haystack.IndexOf(needle, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += needle.Length;
+        }
+
+        return count;
     }
 
     static bool TestSetNull()
@@ -514,6 +626,8 @@ unsafe class FatalErrorHandlerTest
                 case "log-handler":  RunChildLogHandler();  return 1;
                 case "native-exception":        RunChildNativeException();         return 1;
                 case "native-code-exception":   RunChildNativeCodeException();      return 1;
+                case "diagnostic-data":         RunChildDiagnosticData();           return 1;
+                case "diagnostic-data-av":      RunChildDiagnosticDataAccessViolation(); return 1;
                 case "native-thread-exception": RunChildNativeThreadException();    return 1;
                 case "corrupted-object":        RunChildCorruptedObject();          return 1;
                 case "native-abort":            RunChildNativeAbort();              return 1;
@@ -531,12 +645,16 @@ unsafe class FatalErrorHandlerTest
         allPassed &= TestLogHandler();
         allPassed &= TestNativeException("native-exception");
         allPassed &= TestNativeCodeException("native-code-exception");
+        allPassed &= TestDiagnosticData("diagnostic-data", "FailFast");
+        allPassed &= TestDiagnosticData("diagnostic-data-av", "managed access violation");
         allPassed &= TestNativeThreadException();
+        allPassed &= TestNativeSignalAccessViolation();
         allPassed &= TestCorruptedObject();
         allPassed &= TestNativeAbort();
         allPassed &= TestNestedHardwareFault();
         allPassed &= TestSetNull();
         allPassed &= TestSetTwice();
+        allPassed &= TestFailFastInvokesHandlerOnce();
 
         Console.WriteLine();
         Console.WriteLine(allPassed ? "ALL TESTS PASSED" : "SOME TESTS FAILED");
