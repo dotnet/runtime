@@ -25,16 +25,14 @@ public class SignatureTypeInfoProviderTests
     public void UnresolvedTypeReferenceRetainsSignatureKind(MockTarget.Architecture arch)
     {
         ModuleHandle moduleHandle = new(0x1000);
-        TargetPointer typeRefMap = new(0x2000);
         TypeReferenceHandle typeReference =
             (TypeReferenceHandle)MetadataTokens.Handle(0x01000001);
 
         Mock<ILoader> loader = new();
-        loader.Setup(l => l.GetLookupTables(moduleHandle))
-            .Returns(new ModuleLookupTables { TypeRefToMethodTable = typeRefMap });
         TargetNUInt flags = default;
         loader.Setup(l => l.GetModuleLookupMapElement(
-                typeRefMap,
+                moduleHandle,
+                ModuleLookupMapKind.TypeRefToMethodTable,
                 (uint)MetadataTokens.GetToken(typeReference),
                 out flags))
             .Returns(TargetPointer.Null);

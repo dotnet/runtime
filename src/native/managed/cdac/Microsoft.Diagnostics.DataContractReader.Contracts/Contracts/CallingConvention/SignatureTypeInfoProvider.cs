@@ -118,7 +118,7 @@ internal sealed class SignatureTypeInfoProvider
         byte rawTypeKind)
         => GetTypeFromToken(
             MetadataTokens.GetToken(handle),
-            _loader.GetLookupTables(_moduleHandle).TypeDefToMethodTable,
+            ModuleLookupMapKind.TypeDefToMethodTable,
             rawTypeKind);
 
     public SignatureTypeInfo GetTypeFromReference(
@@ -127,7 +127,7 @@ internal sealed class SignatureTypeInfoProvider
         byte rawTypeKind)
         => GetTypeFromToken(
             MetadataTokens.GetToken(handle),
-            _loader.GetLookupTables(_moduleHandle).TypeRefToMethodTable,
+            ModuleLookupMapKind.TypeRefToMethodTable,
             rawTypeKind);
 
     public SignatureTypeInfo GetTypeFromSpecification(
@@ -181,10 +181,11 @@ internal sealed class SignatureTypeInfoProvider
         return new SignatureTypeInfo(constructedElementType, exactType);
     }
 
-    private SignatureTypeInfo GetTypeFromToken(int token, TargetPointer lookupTable, byte rawTypeKind)
+    private SignatureTypeInfo GetTypeFromToken(int token, ModuleLookupMapKind lookupMapKind, byte rawTypeKind)
     {
         TargetPointer typeHandlePointer = _loader.GetModuleLookupMapElement(
-            lookupTable,
+            _moduleHandle,
+            lookupMapKind,
             (uint)token,
             out _);
         ITypeHandle? exactType = typeHandlePointer == TargetPointer.Null

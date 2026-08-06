@@ -71,9 +71,9 @@ types, but otherwise follows the SRM decoding model.
 
 The type provider is initialized with:
 
-- the module that owns the signature, so it can look up `TypeDef` and `TypeRef`
-  tokens through the module's `TypeDefToMethodTable` and
-  `TypeRefToMethodTable` maps;
+- the module that owns the signature, so it can resolve `TypeDef` and `TypeRef`
+  tokens with `Loader.GetModuleLookupMapElement` and the
+  `TypeDefToMethodTable` and `TypeRefToMethodTable` lookup-map kinds;
 - the method's `MethodDescHandle`, for method generic parameters; and
 - the structural type information of the owning type, for type generic
   parameters.
