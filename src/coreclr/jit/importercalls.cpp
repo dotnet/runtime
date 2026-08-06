@@ -6084,9 +6084,9 @@ GenTree* Compiler::impRotateHelper(var_types baseType, genTreeOps rotateOper)
         // IR in the masked form the rest of the JIT expects and is stripped again in
         // lowering where possible.
         impPopStack();
-        GenTree* rotateValue  = impPopStack().val;
-        GenTree* rotateAmount = gtNewOperNode(GT_AND, genActualType(op2), op2,
-                                              gtNewIconNode(rotateMask, genActualType(op2)));
+        GenTree* rotateValue = impPopStack().val;
+        GenTree* rotateAmount =
+            gtNewOperNode(GT_AND, genActualType(op2), op2, gtNewIconNode(rotateMask, genActualType(op2)));
         return gtNewOperNode(rotateOper, baseType, rotateValue, rotateAmount);
     }
 
