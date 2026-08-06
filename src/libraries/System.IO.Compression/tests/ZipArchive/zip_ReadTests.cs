@@ -1070,6 +1070,11 @@ namespace System.IO.Compression.Tests
             Assert.Equal("Hello", reader.ReadToEnd().TrimEnd());
 
             await DisposeZipArchive(async, archive);
+
+            using MemoryStream createStream = new();
+            ZipArchive createArchive = await CreateZipArchive(async, createStream, ZipArchiveMode.Create, leaveOpen: true);
+            Assert.Throws<PlatformNotSupportedException>(() => createArchive.CreateEntry("aes.txt", Password, ZipEncryptionMethod.Aes256));
+            await DisposeZipArchive(async, createArchive);
         }
 
         [Theory]

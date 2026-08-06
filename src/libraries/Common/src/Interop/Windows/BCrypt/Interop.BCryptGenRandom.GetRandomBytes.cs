@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 internal static partial class Interop
 {
-    internal static unsafe void GetRandomBytes(byte* buffer, int length)
+    internal static unsafe void GetCryptographicallySecureRandomBytes(byte* buffer, int length)
     {
         Debug.Assert(buffer != null);
         Debug.Assert(length >= 0);
@@ -24,8 +24,4 @@ internal static partial class Interop
             }
         }
     }
-
-    // BCryptGenRandom with BCRYPT_USE_SYSTEM_PREFERRED_RNG is always cryptographically secure.
-    internal static unsafe void GetCryptographicallySecureRandomBytes(byte* buffer, int length) =>
-        GetRandomBytes(buffer, length);
 }

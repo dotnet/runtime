@@ -10,6 +10,7 @@ namespace System.IO.Compression
             Span<byte> randomBytes = header.Slice(0, 10);
             fixed (byte* pRandomBytes = randomBytes)
             {
+                // Cryptographically secure on all platforms.
                 Interop.GetCryptographicallySecureRandomBytes(pRandomBytes, randomBytes.Length);
             }
         }
