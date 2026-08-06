@@ -9,6 +9,7 @@
 // Interop library header
 #include <interoplibimports.h>
 
+#include "../gc/gcbridge.h"
 #include "interoplibinterface.h"
 
 using CrossreferenceHandleCallback = void(STDMETHODCALLTYPE *)(MarkCrossReferencesArgs*);
@@ -19,6 +20,23 @@ namespace
 
     Volatile<bool> g_GCBridgeActive = false;
     CLREvent* g_bridgeFinished = nullptr;
+
+    void ClearPendingBridgeBits(
+        _In_reads_(handleCount) uintptr_t* handles,
+        size_t handleCount)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        for (size_t i = 0; i < handleCount; i++)
+        {
+            OBJECTHANDLE handle = reinterpret_cast<OBJECTHANDLE>(handles[i]);
+            Object* object = OBJECTREFToObject(ObjectFromHandle(handle));
+            if (object != nullptr)
+            {
+                object->GetHeader()->ClrBit(BIT_SBLK_BRIDGE_PENDING);
+            }
+        }
+    }
 
     void ReleaseGCBridgeArgumentsWorker(
         _In_ MarkCrossReferencesArgs* args)
@@ -51,6 +69,23 @@ bool Interop::IsGCBridgeActive()
     return g_GCBridgeActive;
 }
 
+bool Interop::TryGetObjectFromHandleWithoutBridgeWait(
+    _In_ OBJECTHANDLE handle,
+    _Out_ Object** result)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    Object* object = OBJECTREFToObject(ObjectFromHandle(handle));
+    if (g_GCBridgeActive && object != nullptr &&
+        (object->GetHeader()->GetBits() & BIT_SBLK_BRIDGE_PENDING) != 0)
+    {
+        return false;
+    }
+
+    *result = OBJECTREFToObject(ObjectFromHandle(handle));
+    return true;
+}
+
 void Interop::WaitForGCBridgeFinish()
 {
     CONTRACTL
@@ -80,8 +115,12 @@ void Interop::TriggerClientBridgeProcessing(
     }
     CONTRACTL_END;
 
+    size_t pendingBridgeHandleCount;
+    uintptr_t* pendingBridgeHandles = GetPendingBridgeHandles(&pendingBridgeHandleCount);
+
     if (g_GCBridgeActive)
     {
+        // FIXME: This should become unreachable once bridge graph recomputation is skipped while active.
         // Release the memory allocated since the GCBridge
         // is already running and we're not passing them to it.
         ReleaseGCBridgeArgumentsWorker(args);
@@ -94,6 +133,7 @@ void Interop::TriggerClientBridgeProcessing(
     {
         // Release the memory allocated since the GCBridge
         // wasn't trigger for some reason.
+        ClearPendingBridgeBits(pendingBridgeHandles, pendingBridgeHandleCount);
         ReleaseGCBridgeArgumentsWorker(args);
         return;
     }
@@ -122,11 +162,13 @@ void Interop::FinishCrossReferenceProcessing(
         GCX_COOP();
 
         GCHeapUtilities::GetGCHeap()->NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
+        size_t pendingBridgeHandleCount;
+        uintptr_t* pendingBridgeHandles = GetPendingBridgeHandles(&pendingBridgeHandleCount);
+        ClearPendingBridgeBits(pendingBridgeHandles, pendingBridgeHandleCount);
 
         IGCHandleManager* pHandleManager = GCHandleUtilities::GetGCHandleManager();
         for (size_t i = 0; i < length; i++)
             pHandleManager->DestroyHandleOfUnknownType(((OBJECTHANDLE*)unreachableObjectHandles)[i]);
-
         g_GCBridgeActive = false;
         g_bridgeFinished->Set();
     }

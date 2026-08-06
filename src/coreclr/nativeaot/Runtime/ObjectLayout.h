@@ -7,6 +7,7 @@
 
 // Bits stolen from the sync block index that the GC/HandleTable knows about (currently these are at the same
 // positions as the mainline runtime).
+#define BIT_SBLK_BRIDGE_PENDING             0x80000000
 #define BIT_SBLK_GC_RESERVE                 0x20000000
 #define BIT_SBLK_FINALIZER_RUN              0x40000000
 

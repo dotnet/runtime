@@ -13,6 +13,8 @@ void BridgeResetData();
 MarkCrossReferencesArgs* ProcessBridgeObjects();
 
 void RegisterBridgeObject(Object *object, uintptr_t context);
+void RegisterPendingBridgeHandle(uintptr_t handle);
+uintptr_t* GetPendingBridgeHandles(size_t* count);
 uint8_t** GetRegisteredBridges(size_t *pNumBridges);
 
 #endif // FEATURE_JAVAMARSHAL
