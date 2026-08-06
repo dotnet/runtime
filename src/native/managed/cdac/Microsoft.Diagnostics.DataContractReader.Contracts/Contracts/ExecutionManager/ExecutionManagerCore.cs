@@ -94,16 +94,16 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     {
         Unknown = 0,
         JumpStub = 1,
-        DynamicHelper = 3,
-        StubPrecode = 4,
-        FixupPrecode = 5,
-        VSDDispatchStub = 6,
-        VSDResolveStub = 7,
-        VSDLookupStub = 8,
-        VSDVTableStub = 9,
-        CallCountingStub = 10,
-        WrapperStub = 11,
-        ShuffleThunk = 12,
+        DynamicHelper = 2,
+        StubPrecode = 3,
+        FixupPrecode = 4,
+        VSDDispatchStub = 5,
+        VSDResolveStub = 6,
+        VSDLookupStub = 7,
+        VSDVTableStub = 8,
+        CallCountingStub = 9,
+        WrapperStub = 10,
+        ShuffleThunk = 11,
     }
 
     private abstract class JitManager

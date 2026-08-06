@@ -1094,7 +1094,7 @@ void LoaderAllocator::ActivateManagedTracking()
 // We don't actually allocate a low frequency heap for collectible types.
 // This is carefully tuned to sum up to 16 pages to reduce waste.
 #define COLLECTIBLE_LOW_FREQUENCY_HEAP_SIZE        0
-#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (3 * minipal_getpagesize())
+#define COLLECTIBLE_HIGH_FREQUENCY_HEAP_SIZE       (4 * minipal_getpagesize())
 #define COLLECTIBLE_CODEHEAP_SIZE                  (10 * minipal_getpagesize())
 #define COLLECTIBLE_VIRTUALSTUBDISPATCH_HEAP_SPACE (2 * minipal_getpagesize())
 

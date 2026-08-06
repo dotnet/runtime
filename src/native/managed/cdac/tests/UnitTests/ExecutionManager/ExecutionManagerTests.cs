@@ -773,7 +773,7 @@ public class ExecutionManagerTests
         const ulong codeRangeStart = 0x0a0a_0000u;
         const uint codeRangeSize = 0x4000u;
         const ulong jitManagerAddress = 0x000b_ff00;
-        const int stubCodeBlockKindPrecode = 4; // STUB_CODE_BLOCK_STUBPRECODE
+        const int stubCodeBlockKindPrecode = 3; // STUB_CODE_BLOCK_STUBPRECODE
 
         IExecutionManager em = CreateExecutionManagerContract(
             version,
