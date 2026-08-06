@@ -950,7 +950,7 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
         }
     }
 
-    ThreadSuspend::RestartEE(FALSE, TRUE);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 
     END_QCALL;
 

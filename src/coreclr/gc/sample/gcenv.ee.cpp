@@ -131,7 +131,7 @@ void GCToEEInterface::SuspendEE(SUSPEND_REASON reason)
     // TODO: Implement
 }
 
-void GCToEEInterface::RestartEE(bool bFinishedGC)
+void GCToEEInterface::RestartEE(bool bUnused)
 {
     // TODO: Implement
 
