@@ -4392,7 +4392,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             ITypeHandle th = rts.GetTypeHandle(mt);
             if (rts.IsArray(th, out uint rank))
             {
-                TargetPointer dataStart = objectContract.GetArrayData(objectAddress, out uint numComponents, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+                TargetPointer dataStart = objectContract.GetArrayData(objectAddress, out uint numComponents, out TargetPointer boundsStart, out TargetPointer lowerBounds, out _, out _);
                 *pIsValidArray = Interop.BOOL.TRUE;
 
                 uint offsetToArrayBase = (uint)(dataStart - objectAddress);
@@ -4449,7 +4449,6 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             *pIsValidRef = Interop.BOOL.TRUE;
             *pObjSize = 0;
             *pObjOffsetToVars = 0;
-            *pObjTypeData = default;
             IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
             // verify the object reference is readable and has a valid MethodTable
             ITypeHandle? th = null;

@@ -1662,8 +1662,33 @@ HRESULT CodeVersionManager::SetActiveILCodeVersions(ILCodeVersion* pActiveVersio
         }
         *pMethodDescs = CDynArray<MethodDesc*>();
 
-        MethodDesc* pLoadedMethodDesc = pActiveVersions[i].GetModule()->LookupMethodDef(pActiveVersions[i].GetMethodDef());
-        if (FAILED(hr = CodeVersionManager::EnumerateClosedMethodDescs(pLoadedMethodDesc, pMethodDescs, &errorRecords)))
+        ILCodeVersion activeVersion = pActiveVersions[i];
+        MethodDesc* pLoadedMethodDesc = activeVersion.GetModule()->LookupMethodDef(activeVersion.GetMethodDef());
+        bool redirectAsyncThunk = activeVersion.GetSource() == CodeVersionSource::kEnC;
+
+        // A Task- or ValueTask-returning method may also have an async variant with native code
+        // compiled from the same IL. ReJIT activation and revert must publish both variants.
+        if (!redirectAsyncThunk && pLoadedMethodDesc != NULL && pLoadedMethodDesc->ReturnsTaskOrValueTask())
+        {
+            MethodDesc* pAsyncVariant =
+                pLoadedMethodDesc->GetMethodTable()->GetParallelMethodDesc(pLoadedMethodDesc, AsyncVariantLookup::Async);
+            if (pAsyncVariant != NULL &&
+                FAILED(hr = CodeVersionManager::EnumerateClosedMethodDescs(
+                    pAsyncVariant,
+                    false,
+                    pMethodDescs,
+                    &errorRecords)))
+            {
+                _ASSERTE(hr == E_OUTOFMEMORY);
+                return hr;
+            }
+        }
+
+        if (FAILED(hr = CodeVersionManager::EnumerateClosedMethodDescs(
+                pLoadedMethodDesc,
+                redirectAsyncThunk,
+                pMethodDescs,
+                &errorRecords)))
         {
             _ASSERTE(hr == E_OUTOFMEMORY);
             return hr;
@@ -2050,6 +2075,7 @@ HRESULT CodeVersionManager::PublishNativeCodeVersion(MethodDesc* pMethod, Native
 // static
 HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
     MethodDesc* pMD,
+    bool redirectAsyncThunk,
     CDynArray<MethodDesc*> * pClosedMethodDescs,
     CDynArray<CodePublishError> * pUnsupportedMethodErrors)
 {
@@ -2071,7 +2097,7 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
         return S_OK;
     }
 
-    if (pMD->IsAsyncThunkMethod())
+    if (redirectAsyncThunk && pMD->IsAsyncThunkMethod())
     {
         pMD = pMD->GetAsyncVariantNoCreate();
     }
@@ -2097,14 +2123,10 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
     // Ok, now the case of a generic function (or function on generic class), which
     // is loaded, and may thus have compiled instantiations.
     // It's impossible to get to any other kind of domain from the profiling API
-    Module* pModule = pMD->GetModule();
-    mdMethodDef methodDef = pMD->GetMemberDef();
-
     // Module is unshared, so just use the module's domain to find instantiations.
     hr = EnumerateDomainClosedMethodDescs(
         AppDomain::GetCurrentDomain(),
-        pModule,
-        methodDef,
+        pMD,
         pClosedMethodDescs,
         pUnsupportedMethodErrors);
 
@@ -2120,8 +2142,7 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
 // static
 HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
     AppDomain * pAppDomainToSearch,
-    Module* pModuleContainingMethodDef,
-    mdMethodDef methodDef,
+    MethodDesc* pMethodDesc,
     CDynArray<MethodDesc*> * pClosedMethodDescs,
     CDynArray<CodePublishError> * pUnsupportedMethodErrors)
 {
@@ -2132,12 +2153,14 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
         MODE_PREEMPTIVE;
         CAN_TAKE_LOCK;
         PRECONDITION(CheckPointer(pAppDomainToSearch, NULL_OK));
-        PRECONDITION(CheckPointer(pModuleContainingMethodDef));
+        PRECONDITION(CheckPointer(pMethodDesc));
         PRECONDITION(CheckPointer(pClosedMethodDescs));
         PRECONDITION(CheckPointer(pUnsupportedMethodErrors));
     }
     CONTRACTL_END;
 
+    Module* pModuleContainingMethodDef = pMethodDesc->GetModule();
+    mdMethodDef methodDef = pMethodDesc->GetMemberDef();
     _ASSERTE(methodDef != mdTokenNil);
 
     HRESULT hr;
@@ -2151,19 +2174,24 @@ HRESULT CodeVersionManager::EnumerateDomainClosedMethodDescs(
     {
         assemFlags = (AssemblyIterationFlags)(kIncludeAvailableToProfilers | kIncludeExecution);
     }
-    LoadedMethodDescIterator it(
-        pAppDomainToSearch,
-        pModuleContainingMethodDef,
-        methodDef,
-        assemFlags);
+    LoadedMethodDescIterator it;
+    if (pMethodDesc->ReturnsTaskOrValueTask() || pMethodDesc->IsAsyncVariantMethod())
+    {
+        it.StartForAsyncVariant(
+            pAppDomainToSearch,
+            pModuleContainingMethodDef,
+            methodDef,
+            pMethodDesc,
+            assemFlags);
+    }
+    else
+    {
+        it.Start(pAppDomainToSearch, pModuleContainingMethodDef, methodDef, assemFlags);
+    }
     CollectibleAssemblyHolder<Assembly *> pAssembly;
     while (it.Next(pAssembly.This()))
     {
         MethodDesc * pLoadedMD = it.Current();
-        if (pLoadedMD->IsAsyncThunkMethod())
-        {
-            pLoadedMD = pLoadedMD->GetAsyncVariantNoCreate();
-        }
         if (pLoadedMD == NULL)
         {
             continue;

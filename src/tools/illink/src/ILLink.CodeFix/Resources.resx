@@ -132,6 +132,9 @@
   <data name="AddUnsafeToExternCodeFixTitle" xml:space="preserve">
     <value>Mark extern member 'unsafe'</value>
   </data>
+  <data name="AddSafeToDocumentedMemberCodeFixTitle" xml:space="preserve">
+    <value>Mark documented member 'safe'</value>
+  </data>
   <data name="RemoveInvalidUnsafeCodeFixTitle" xml:space="preserve">
     <value>Remove invalid 'unsafe' modifier</value>
   </data>

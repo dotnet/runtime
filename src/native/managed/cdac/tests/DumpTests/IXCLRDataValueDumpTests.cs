@@ -438,7 +438,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
             ["arrayArg"] = (v, d) =>
             {
                 TargetPointer ptr = ReadPointerFromValue(v, d);
-                Target.Contracts.Object.GetArrayData(ptr, out uint count, out _, out _);
+                Target.Contracts.Object.GetArrayData(ptr, out uint count, out _, out _, out _, out _);
                 Assert.Equal(3u, count);
             },
         });
@@ -522,6 +522,159 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
         Assert.True(hr < 0, $"Expected failure for out-of-range location index {numLocs}");
     }
 
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void AssociatedValues_ExposeTypesStringsAndFields(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        Dictionary<string, IXCLRDataValue> arguments = GetArgumentValues("ReferenceTypeVars");
+
+        DacComNullableByRef<IXCLRDataTypeInstance> referenceType = new(isNullRef: false);
+        AssertHResult(HResults.S_FALSE, arguments["classArg"].GetType(referenceType));
+
+        DacComNullableByRef<IXCLRDataTypeInstance> associatedType = new(isNullRef: false);
+        AssertHResult(HResults.S_OK, arguments["classArg"].GetAssociatedType(associatedType));
+        Assert.NotNull(associatedType.Interface);
+
+        IXCLRDataValue classValue = GetAssociatedValue(arguments["classArg"]);
+        DacComNullableByRef<IXCLRDataTypeInstance> classType = new(isNullRef: false);
+        AssertHResult(HResults.S_OK, classValue.GetType(classType));
+        Assert.NotNull(classType.Interface);
+
+        uint fieldFlags = (uint)(ClrDataValueFlag.ALL_KINDS | ClrDataValueFlag.FROM_INSTANCE);
+        uint fieldCount;
+        AssertHResult(HResults.S_OK, classValue.GetNumFields2(fieldFlags, null, &fieldCount));
+        Assert.Equal(2u, fieldCount);
+
+        ulong handle;
+        AssertHResult(HResults.S_OK, classValue.StartEnumFields(fieldFlags, null, &handle));
+        Dictionary<string, IXCLRDataValue> fields = new();
+        try
+        {
+            while (true)
+            {
+                char* name = stackalloc char[32];
+                uint nameLength;
+                uint token;
+                DacComNullableByRef<IXCLRDataValue> field = new(isNullRef: false);
+                int hr = classValue.EnumField(&handle, field, 32, &nameLength, name, &token);
+                if (hr == HResults.S_FALSE)
+                    break;
+                AssertHResult(HResults.S_OK, hr);
+                fields.Add(new string(name), field.Interface!);
+            }
+        }
+        finally
+        {
+            AssertHResult(HResults.S_OK, classValue.EndEnumFields(handle));
+        }
+
+        AssertBytes(fields["Value"], BitConverter.GetBytes(99), "SimpleClass.Value");
+        IXCLRDataValue nameValue = GetAssociatedValue(fields["Name"]);
+        char* stringBuffer = stackalloc char[16];
+        uint stringLength;
+        AssertHResult(HResults.S_OK, nameValue.GetString(16, &stringLength, stringBuffer));
+        Assert.Equal(6u, stringLength);
+        Assert.Equal("hello", new string(stringBuffer));
+
+        char* fieldName = stackalloc char[6];
+        "value".AsSpan().CopyTo(new Span<char>(fieldName, 5));
+        fieldName[5] = '\0';
+        ulong nameHandle;
+        AssertHResult(
+            HResults.S_OK,
+            classValue.StartEnumFieldsByName(
+                fieldName,
+                (uint)CLRDataByNameFlag.CLRDATA_BYNAME_CASE_INSENSITIVE,
+                fieldFlags,
+                null,
+                &nameHandle));
+        try
+        {
+            uint token;
+            DacComNullableByRef<IXCLRDataValue> field = new(isNullRef: false);
+            AssertHResult(HResults.S_OK, classValue.EnumFieldByName(&nameHandle, field, &token));
+            AssertBytes(field.Interface!, BitConverter.GetBytes(99), "SimpleClass.Value by name");
+            AssertHResult(HResults.S_FALSE, classValue.EnumFieldByName(&nameHandle, field, &token));
+        }
+        finally
+        {
+            AssertHResult(HResults.S_OK, classValue.EndEnumFieldsByName(nameHandle));
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void ThreadStaticFields_UseValueThread(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+        IXCLRDataValue classValue = GetAssociatedValue(GetArgumentValues("ReferenceTypeVars")["classArg"]);
+        uint fieldFlags = (uint)(ClrDataValueFlag.ALL_KINDS | ClrDataValueFlag.FROM_STATIC);
+
+        ulong handle;
+        AssertHResult(HResults.S_OK, classValue.StartEnumFields(fieldFlags, null, &handle));
+        try
+        {
+            char* name = stackalloc char[32];
+            uint nameLength;
+            uint token;
+            DacComNullableByRef<IXCLRDataValue> field = new(isNullRef: false);
+            AssertHResult(HResults.S_OK, classValue.EnumField(&handle, field, 32, &nameLength, name, &token));
+            Assert.Equal("ThreadValue", new string(name));
+            AssertBytes(field.Interface!, BitConverter.GetBytes(1234), "SimpleClass.ThreadValue");
+
+            uint flags = AssertGetFlags(field.Interface!, "SimpleClass.ThreadValue");
+            // Thread-static FieldDescs are also static, and the legacy DAC reports FROM_STATIC.
+            Assert.Equal((uint)ClrDataValueFlag.FROM_STATIC, flags & (uint)ClrDataValueFlag.ALL_LOCATIONS);
+            AssertHResult(HResults.S_FALSE, classValue.EnumField(&handle, field, 32, &nameLength, name, &token));
+        }
+        finally
+        {
+            AssertHResult(HResults.S_OK, classValue.EndEnumFields(handle));
+        }
+    }
+
+    [ConditionalTheory]
+    [MemberData(nameof(TestConfigurations))]
+    [SkipOnVersion("net10.0", "InlinedCallFrame.Datum was added after net10.0")]
+    public void Arrays_ExposePropertiesElementsAndElementTypes(TestConfiguration config)
+    {
+        InitializeDumpTest(config);
+
+        IXCLRDataValue singleDimension = GetAssociatedValue(GetArgumentValues("SingleDimArrayVars")["arrayArg"]);
+        uint rank;
+        uint count;
+        uint[] dimensions = new uint[1];
+        int[] lowerBounds = new int[1];
+        AssertHResult(HResults.S_OK, singleDimension.GetArrayProperties(&rank, &count, 1, dimensions, 1, lowerBounds));
+        Assert.Equal(1u, rank);
+        Assert.Equal(3u, count);
+        Assert.Equal(3u, dimensions[0]);
+        Assert.Equal(0, lowerBounds[0]);
+
+        DacComNullableByRef<IXCLRDataValue> element = new(isNullRef: false);
+        AssertHResult(HResults.S_OK, singleDimension.GetArrayElement(1, [1], element));
+        AssertBytes(element.Interface!, BitConverter.GetBytes(20), "arrayArg[1]");
+
+        DacComNullableByRef<IXCLRDataTypeInstance> elementType = new(isNullRef: false);
+        AssertHResult(HResults.S_OK, singleDimension.GetAssociatedType(elementType));
+        Assert.NotNull(elementType.Interface);
+
+        IXCLRDataValue multiDimension = GetAssociatedValue(GetArgumentValues("MultiDimArrayVars")["multiDimArg"]);
+        dimensions = new uint[2];
+        lowerBounds = new int[2];
+        AssertHResult(HResults.S_OK, multiDimension.GetArrayProperties(&rank, &count, 2, dimensions, 2, lowerBounds));
+        Assert.Equal(2u, rank);
+        Assert.Equal(6u, count);
+        Assert.Equal([2u, 3u], dimensions);
+        Assert.Equal([0, 0], lowerBounds);
+
+        AssertHResult(HResults.S_OK, multiDimension.GetArrayElement(2, [1, 2], element));
+        AssertBytes(element.Interface!, BitConverter.GetBytes(6), "multiDimArg[1,2]");
+    }
+
     // ========== Comprehensive: all frames ==========
 
     [ConditionalTheory]
@@ -544,7 +697,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
             if (md == TargetPointer.Null)
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null);
             IXCLRDataFrame xclrFrame = frame;
 
             uint numArgs;
@@ -678,6 +831,13 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
         return new TargetPointer(ptr);
     }
 
+    private static IXCLRDataValue GetAssociatedValue(IXCLRDataValue value)
+    {
+        DacComNullableByRef<IXCLRDataValue> associatedValue = new(isNullRef: false);
+        AssertHResult(HResults.S_OK, value.GetAssociatedValue(associatedValue));
+        return Assert.IsAssignableFrom<IXCLRDataValue>(associatedValue.Interface);
+    }
+
     private static void AssertFlags(IXCLRDataValue value, ClrDataValueFlag expectedFlags, string description)
     {
         uint flags = AssertGetFlags(value, description);
@@ -740,7 +900,7 @@ public unsafe class IXCLRDataValueDumpTests : DumpTestBase
             string? name = DumpTestHelpers.GetMethodName(Target, md);
             if (name == methodName)
             {
-                ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+                ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null);
 
                 return (frame, dataFrame);
             }

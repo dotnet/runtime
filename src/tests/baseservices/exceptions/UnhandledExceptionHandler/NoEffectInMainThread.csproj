@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- tests process-wide state -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <CLRTestTargetUnsupported Condition="'$(FeatureMultithreading)' != 'true'">true</CLRTestTargetUnsupported>
     <!-- Test checks the behavior of Main -->
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
