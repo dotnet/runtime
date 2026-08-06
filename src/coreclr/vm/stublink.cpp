@@ -716,7 +716,8 @@ PCODE StubLinker::EmitStub(LoaderAllocator* pLoaderAllocator, StubCodeBlockKind 
     BYTE* pCodeRW = pBlockRW + codeOffset;
     if (m_pTargetMethod != NULL)
     {
-        SET_UNALIGNED_PTR(pCodeRW - sizeof(PTR_MethodDesc), reinterpret_cast<TADDR>(m_pTargetMethod));
+        _ASSERTE(IS_ALIGNED(pCodeRW - sizeof(PTR_MethodDesc), sizeof(PTR_MethodDesc)));
+        *reinterpret_cast<PTR_MethodDesc*>(pCodeRW - sizeof(PTR_MethodDesc)) = m_pTargetMethod;
     }
 
     BYTE *pDataRW = pCodeRW+globalsize; // start of data area
