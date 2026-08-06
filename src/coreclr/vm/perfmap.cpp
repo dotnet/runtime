@@ -541,11 +541,4 @@ void PerfMap::GetNativeImageSignature(PEAssembly * pPEAssembly, CHAR * pszSig, u
     minipal_guid_as_string(mvid, pszSig, nSigSize);
 }
 
-void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
-{
-    WRAPPER_NO_CONTRACT;
-
-    PerfMap::LogStubs(__FUNCTION__, GetStubCodeBlockKindString(kind), (PCODE)start, size, PerfMapStubType::Block);
-}
-
 #endif // FEATURE_PERFMAP && !DACCESS_COMPILE

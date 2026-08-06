@@ -762,9 +762,7 @@ void EEStartupHelper()
         InitializeLogging();
 #endif
 
-#ifdef FEATURE_PERFMAP
-        InitThreadManagerPerfMapData();
-#endif
+        InitThreadManagerTracingData();
 
 #ifdef FEATURE_PGO
         PgoManager::Initialize();
@@ -2057,4 +2055,3 @@ void ContractRegressionCheck()
 }
 
 #endif // ENABLE_CONTRACTS_IMPL
-

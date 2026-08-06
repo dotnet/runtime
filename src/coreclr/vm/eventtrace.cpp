@@ -3625,7 +3625,11 @@ VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
         {
             DWORD dwHelperSize=0;
             Stub::RecoverStubAndSize((TADDR)ullHelperStartAddress, &dwHelperSize);
-            ETW::MethodLog::SendHelperEvent(ullHelperStartAddress, dwHelperSize, pHelperName);
+            ETW::MethodLog::SendHelperEvent(
+                ullHelperStartAddress,
+                dwHelperSize,
+                pHelperName,
+                ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
         }
     } EX_CATCH { } EX_END_CATCH
 }
@@ -4921,23 +4925,74 @@ VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNat
     delete[] (BYTE*)mappings;
 }
 
-VOID ETW::MethodLog::SendHelperEvent(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
+VOID ETW::MethodLog::SendHelperEvent(
+    ULONGLONG ullHelperStartAddress,
+    ULONG ulHelperSize,
+    LPCWSTR pHelperName,
+    DWORD dwEventOptions)
 {
     WRAPPER_NO_CONTRACT;
-    if(pHelperName)
+
+    if (pHelperName == nullptr || ulHelperSize == 0)
     {
-         PCWSTR szDtraceOutput1=W("");
-         ULONG methodFlags = ETW::MethodLog::MethodStructs::JitHelperMethod; // helper flag set
-         FireEtwMethodLoadVerbose_V1(ullHelperStartAddress,
-                                     0,
-                                     ullHelperStartAddress,
-                                     ulHelperSize,
-                                     0,
-                                     methodFlags,
-                                     NULL,
-                                     pHelperName,
-                                     NULL,
-                                     GetClrInstanceId());
+        return;
+    }
+
+    if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodLoad)
+    {
+        FireEtwMethodLoadVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
+    }
+    else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodUnload)
+    {
+        FireEtwMethodUnloadVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
+    }
+    else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCStart)
+    {
+        FireEtwMethodDCStartVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
+    }
+    else if (dwEventOptions & ETW::EnumerationLog::EnumerationStructs::JitMethodDCEnd)
+    {
+        FireEtwMethodDCEndVerbose_V1(
+            ullHelperStartAddress,
+            0,
+            ullHelperStartAddress,
+            ulHelperSize,
+            0,
+            MethodStructs::JitHelperMethod,
+            nullptr,
+            pHelperName,
+            nullptr,
+            GetClrInstanceId());
     }
 }
 
@@ -5040,7 +5095,17 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
     {
         MethodDesc * pMD = heapIterator.GetMethod();
         if (pMD == NULL)
+        {
+            if (fSendMethodEvent && heapIterator.GetStubCodeBlockKind() != STUB_CODE_BLOCK_UNKNOWN)
+            {
+                ETW::MethodLog::SendHelperEvent(
+                    heapIterator.GetMethodCode(),
+                    heapIterator.GetCodeSize(),
+                    GetStubCodeBlockKindEtwName(heapIterator.GetStubCodeBlockKind()),
+                    dwEventOptions);
+            }
             continue;
+        }
 
         PCODE codeStart = PINSTRToPCODE(heapIterator.GetMethodCode());
 

@@ -148,9 +148,42 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     }
 }
 
-void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind);
-#ifndef FEATURE_PERFMAP
-inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
+inline LPCWSTR GetStubCodeBlockKindEtwName(StubCodeBlockKind kind)
+{
+    switch (kind)
+    {
+    case STUB_CODE_BLOCK_JUMPSTUB:
+        return W("@JumpStub");
+    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+        return W("@MethodCallThunk");
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return W("@CallCountingStub");
+#endif
+    case STUB_CODE_BLOCK_DYNAMICHELPER:
+        return W("@DynamicHelper");
+    case STUB_CODE_BLOCK_STUBPRECODE:
+    case STUB_CODE_BLOCK_FIXUPPRECODE:
+        return W("@MethodCallThunk");
+#ifdef FEATURE_VIRTUAL_STUB_DISPATCH
+    case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
+        return W("@VSD_DispatchStub");
+    case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
+        return W("@VSD_ResolveStub");
+    case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
+        return W("@VSD_LookupStub");
+    case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
+        return W("@VSD_VTableStub");
+#endif // FEATURE_VIRTUAL_STUB_DISPATCH
+    default:
+        return W("@Unknown");
+    }
+}
+
+#ifndef DACCESS_COMPILE
+void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind, bool reportToEtw = false);
+#else
+inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind, bool reportToEtw = false)
 {
     CONTRACTL
     {
@@ -159,7 +192,7 @@ inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
     }
     CONTRACTL_END;
 }
-#endif
+#endif // DACCESS_COMPILE
 
 //-----------------------------------------------------------------------------
 // Method header which exists just before the code.
@@ -1667,6 +1700,8 @@ class CodeFragmentHeap : public ILoaderHeapBackout
     void RemoveBlock(FreeBlock ** ppBlock);
 
 public:
+    static constexpr size_t MinBlockSize = 0x100;
+
     CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKind kind);
     virtual ~CodeFragmentHeap();
 
@@ -1847,6 +1882,7 @@ class CodeHeapIterator final
         void* MapBase;
         void* HdrMap;
         size_t MaxCodeHeapSize;
+        TADDR EndAddress;
     };
 
     class EECodeGenManagerReleaseIteratorHolder
@@ -1870,8 +1906,15 @@ class CodeHeapIterator final
     MethodSectionIterator m_Iterator;
     CUnorderedArray<HeapListState, 64> m_Heaps;
     int32_t m_HeapsIndexNext;
-    LoaderAllocator* m_pLoaderAllocatorFilter;
+    HeapList* m_pIteratorHeap;
+    TADDR m_iteratorHeapEnd;
+    BYTE* m_pNextCode;
+    HeapList* m_pNextCodeHeap;
+    TADDR m_nextCodeHeapEnd;
+    BYTE* m_pCurrentCode;
     MethodDesc* m_pCurrent;
+    StubCodeBlockKind m_stubCodeBlockKind;
+    DWORD m_codeSize;
     DWORD m_codeType;
 
 public:
@@ -1893,10 +1936,23 @@ public:
     TADDR GetMethodCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (TADDR)m_Iterator.GetMethodCode();
+        return (TADDR)m_pCurrentCode;
+    }
+
+    StubCodeBlockKind GetStubCodeBlockKind()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_stubCodeBlockKind;
+    }
+
+    DWORD GetCodeSize()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_codeSize;
     }
 
 private:
+    bool NextCode(BYTE** code, HeapList** heap, TADDR* heapEnd);
     bool NextMethodSectionIterator();
 };
 #endif // !DACCESS_COMPILE

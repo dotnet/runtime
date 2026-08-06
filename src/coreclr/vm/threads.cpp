@@ -959,6 +959,15 @@ DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
 
+#ifdef TARGET_X86
+extern "C" void STDCALL JIT_PatchedWriteBarrierGroup_End();
+#else
+extern "C" void STDCALL JIT_WriteBarrier_End();
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+extern "C" void STDCALL JIT_CheckedWriteBarrier_End();
+#endif
+#endif // TARGET_X86
+
 static void* s_barrierCopy = NULL;
 
 BYTE* GetWriteBarrierCodeLocation(VOID* barrier)
@@ -1032,7 +1041,23 @@ static void SetIlsIndex(DWORD tlsIndex)
 #pragma optimize("", on)
 #endif
 
-void InitThreadManagerPerfMapData()
+#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PORTABLE_HELPERS)
+static void ReportCopiedWriteBarrier(void* start, void* end, LPCWSTR name)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE((BYTE*)start < (BYTE*)end);
+    size_t size = (BYTE*)end - (BYTE*)start;
+    _ASSERTE(FitsInU4(size));
+    ETW::MethodLog::SendHelperEvent(
+        reinterpret_cast<ULONGLONG>(GetWriteBarrierCodeLocation(start)),
+        static_cast<ULONG>(size),
+        name,
+        ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
+}
+#endif // FEATURE_EVENT_TRACE && !FEATURE_PORTABLE_HELPERS
+
+void InitThreadManagerTracingData()
 {
     CONTRACTL {
         THROWS;
@@ -1044,6 +1069,22 @@ void InitThreadManagerPerfMapData()
     {
         size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
         PerfMap::LogStubs(__FUNCTION__, "JIT_CopiedWriteBarriers", (PCODE)s_barrierCopy, writeBarrierSize, PerfMapStubType::Individual);
+
+#ifdef FEATURE_EVENT_TRACE
+#ifdef TARGET_X86
+        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierEAX, (void*)JIT_WriteBarrierEBX, W("@WriteBarrierEAX"));
+        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierEBX, (void*)JIT_WriteBarrierECX, W("@WriteBarrierEBX"));
+        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierECX, (void*)JIT_WriteBarrierESI, W("@WriteBarrierECX"));
+        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierESI, (void*)JIT_WriteBarrierEDI, W("@WriteBarrierESI"));
+        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierEDI, (void*)JIT_WriteBarrierEBP, W("@WriteBarrierEDI"));
+        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierEBP, (void*)JIT_PatchedWriteBarrierGroup_End, W("@WriteBarrierEBP"));
+#else
+        ReportCopiedWriteBarrier((void*)JIT_WriteBarrier, (void*)JIT_WriteBarrier_End, W("@WriteBarrier"));
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        ReportCopiedWriteBarrier((void*)JIT_CheckedWriteBarrier, (void*)JIT_CheckedWriteBarrier_End, W("@CheckedWriteBarrier"));
+#endif
+#endif // TARGET_X86
+#endif // FEATURE_EVENT_TRACE
     }
 #endif // !FEATURE_PORTABLE_HELPERS
 }
@@ -1092,8 +1133,7 @@ void InitThreadManager()
 
 #define X86_WRITE_BARRIER_REGISTER(reg) \
     SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_##reg, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg)); \
-    SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg); \
-    ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), W("@WriteBarrier" #reg));
+    SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg);
 
         ENUM_X86_WRITE_BARRIER_REGISTERS()
 
@@ -1104,7 +1144,6 @@ void InitThreadManager()
 #endif // TARGET_X86
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
         SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), "JIT_WriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), W("@WriteBarrier"));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
@@ -1114,7 +1153,6 @@ void InitThreadManager()
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
         SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), "JIT_CheckedWriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
