@@ -9,21 +9,21 @@ namespace ILCompiler.ObjectWriter
 {
     internal sealed class WasmSections
     {
-        private readonly List<WasmSection> _sections = new();
+        private readonly List<SectionDataEmitter> _sections = new();
         private readonly Dictionary<string, int> _sectionNameToIndex = new();
 
         public int Count => _sections.Count;
 
-        public IReadOnlyList<WasmSection> Sections => _sections;
+        public IReadOnlyList<SectionDataEmitter> Sections => _sections;
 
-        public WasmSection this[int sectionIndex] => _sections[sectionIndex];
+        public SectionDataEmitter this[int sectionIndex] => _sections[sectionIndex];
 
-        public WasmSection this[string sectionName] => _sections[_sectionNameToIndex[sectionName]];
+        public SectionDataEmitter this[string sectionName] => _sections[_sectionNameToIndex[sectionName]];
 
         public TSection GetSection<TSection>(int sectionIndex)
-            where TSection : WasmSection
+            where TSection : SectionDataEmitter
         {
-            WasmSection section = _sections[sectionIndex];
+            SectionDataEmitter section = _sections[sectionIndex];
             if (section is TSection typedSection)
             {
                 return typedSection;
@@ -34,10 +34,12 @@ namespace ILCompiler.ObjectWriter
         }
 
         public TSection GetSection<TSection>(string sectionName)
-            where TSection : WasmSection =>
-            GetSection<TSection>(_sectionNameToIndex[sectionName]);
+            where TSection : SectionDataEmitter
+        {
+            return GetSection<TSection>(_sectionNameToIndex[sectionName]);
+        }
 
-        public void Add(string sectionName, int sectionIndex, WasmSection section)
+        public void Add(string sectionName, int sectionIndex, SectionDataEmitter section)
         {
             Debug.Assert(_sections.Count == sectionIndex);
             _sections.Add(section);
