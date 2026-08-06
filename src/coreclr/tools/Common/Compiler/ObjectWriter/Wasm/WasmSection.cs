@@ -2,19 +2,56 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {
-
-    internal class WasmSection
+    /// <summary>
+    /// Interface for types that can be emitted to an object stream.
+    /// </summary>
+    interface IWasmEmittable
     {
-        public WasmSectionType Type { get; }
-        public Utf8String Name { get; }
+        int EmitToStream(Stream outputFileStream);
+        int EncodedSize();
+    }
+
+    /// <summary>
+    /// Interface for types that represent a WebAssembly section.
+    /// </summary>
+    interface IWasmSection : IWasmEmittable
+    {
+        WasmSectionType Type { get; }
+    }
+
+    /// <summary>
+    /// A read-only view of a SectionWriter's Stream.
+    /// The section should be written to via the SectionWriter, and SectionDataEmitter implementations
+    /// handle copying the data to the output stream and adding any required headers and padding.
+    /// </summary>
+    internal abstract class SectionDataEmitter : IWasmEmittable
+    {
+        public SectionDataEmitter(Stream stream, Utf8String name)
+        {
+            ContentReadStream = stream;
+            SectionName = name;
+        }
+        public Utf8String SectionName { get; }
 
         public Stream ContentReadStream { get; set; }
+
+        public abstract int EmitToStream(Stream outputFileStream);
+        public abstract int EncodedSize();
+    }
+
+    /// <summary>
+    /// The base class for WebAssembly sections that are not composed of subsections.
+    /// </summary>
+    internal class WasmSection : SectionDataEmitter
+    {
+        public WasmSectionType Type { get; }
 
         protected virtual int ContentPrefixSize => 0;
 
@@ -31,7 +68,7 @@ namespace ILCompiler.ObjectWriter
 
         public virtual int ContentSize => (int)ContentReadStream.Length + ContentPrefixSize;
 
-        public virtual int EncodedSize()
+        public override int EncodedSize()
         {
             return HeaderSize + ContentSize;
         }
@@ -50,7 +87,7 @@ namespace ILCompiler.ObjectWriter
             return 1 + (int)encodeLength;
         }
 
-        public virtual int EmitToStream(Stream outputFileStream)
+        public override int EmitToStream(Stream outputFileStream)
         {
             Span<byte> headerBuffer = stackalloc byte[HeaderSize];
             EncodeHeader(headerBuffer);
@@ -71,11 +108,9 @@ namespace ILCompiler.ObjectWriter
             return HeaderSize + ContentSize;
         }
 
-        public WasmSection(WasmSectionType type, Stream stream, Utf8String name)
+        public WasmSection(WasmSectionType type, Stream stream, Utf8String name) : base(stream, name)
         {
             Type = type;
-            Name = name;
-            ContentReadStream = stream;
         }
     }
 

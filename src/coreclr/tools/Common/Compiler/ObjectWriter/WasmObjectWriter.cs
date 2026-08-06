@@ -41,7 +41,6 @@ namespace ILCompiler.ObjectWriter
     internal static class WasmObjectNodeSection
     {
         // TODO-WASM: Consider alignment needs for data sections
-        public static readonly ObjectNodeSection DataSection = new ObjectNodeSection("wasm.data", SectionType.Writeable, needsAlign: false);
         public static readonly ObjectNodeSection DataCountSection = new ObjectNodeSection("wasm.datacount", SectionType.ReadOnly, needsAlign: false);
         public static readonly ObjectNodeSection CombinedDataSection = new ObjectNodeSection("wasm.alldata", SectionType.Writeable, needsAlign: false);
         public static readonly ObjectNodeSection FunctionSection = new ObjectNodeSection("wasm.function", SectionType.ReadOnly, needsAlign: false);
@@ -221,27 +220,27 @@ namespace ILCompiler.ObjectWriter
         private WasmSections _sections = new();
 
         private TSection GetOrCreateSection<TSection>(ObjectNodeSection section, out SectionWriter writer)
-            where TSection : WasmSection
+            where TSection : SectionDataEmitter
         {
             writer = base.GetOrCreateSection(section);
             return _sections.GetSection<TSection>(writer.SectionIndex);
         }
 
         private TSection GetOrCreateSection<TSection>(ObjectNodeSection section)
-            where TSection : WasmSection
+            where TSection : SectionDataEmitter
         {
             var writer = base.GetOrCreateSection(section);
             return _sections.GetSection<TSection>(writer.SectionIndex);
         }
 
-        private WasmSection GetOrCreateSection(ObjectNodeSection section, out SectionWriter writer)
+        private SectionDataEmitter GetOrCreateSection(ObjectNodeSection section, out SectionWriter writer)
         {
-            return GetOrCreateSection<WasmSection>(section, out writer);
+            return GetOrCreateSection<SectionDataEmitter>(section, out writer);
         }
 
-        private new WasmSection GetOrCreateSection(ObjectNodeSection section)
+        private new SectionDataEmitter GetOrCreateSection(ObjectNodeSection section)
         {
-            return GetOrCreateSection<WasmSection>(section, out _);
+            return GetOrCreateSection<SectionDataEmitter>(section, out _);
         }
 
         private Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
@@ -319,7 +318,7 @@ namespace ILCompiler.ObjectWriter
                 return size;
             }
 
-           }
+        }
 
         static WasmFunctionBody GetWebcilSize = new WasmFunctionBody(
             new WasmFuncType(new([WasmValueType.I32]), new([])), // (func (destPtr i32) (result))
@@ -370,7 +369,7 @@ namespace ILCompiler.ObjectWriter
 
         private void InsertWasmStub(Utf8String name, WasmFunctionBody body)
         {
-            WasmSection codeSection = GetOrCreateSection<WasmSection>(ObjectNodeSection.WasmCodeSection, out SectionWriter codeWriter);
+            SectionDataEmitter codeSection = GetOrCreateSection<SectionDataEmitter>(ObjectNodeSection.WasmCodeSection, out SectionWriter codeWriter);
 
             int codeSize = body.EncodeSize();
             byte[] data = new byte[codeSize];
@@ -461,7 +460,7 @@ namespace ILCompiler.ObjectWriter
             if (_baseRelocMap.Count > 0)
             {
                 Debug.Assert(webcilSections.Length > 0);
-                Debug.Assert(webcilSections[webcilSections.Length - 1].Name.ToString() == "reloc");
+                Debug.Assert(webcilSections[webcilSections.Length - 1].SectionName.ToString() == "reloc");
             }
             ushort relocSectionIdx = _baseRelocMap.Count > 0 ? checked((ushort)webcilSections.Length) : (ushort)0;
 
@@ -496,7 +495,7 @@ namespace ILCompiler.ObjectWriter
         private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
         {
             WasmSectionType sectionType = GetWasmSectionType(section);
-            WasmSection wasmSection = null;
+            SectionDataEmitter wasmSection = null;
             if (sectionType == WasmSectionType.Data)
             {
 #if READYTORUN
@@ -527,7 +526,7 @@ namespace ILCompiler.ObjectWriter
 
         private void WriteDataCountSection()
         {
-            WasmSection section = GetOrCreateSection(WasmObjectNodeSection.DataCountSection, out SectionWriter writer);
+            SectionDataEmitter section = GetOrCreateSection(WasmObjectNodeSection.DataCountSection, out SectionWriter writer);
             writer.WriteULEB128(NumDataSegments); // number of data segments
         }
 
@@ -608,7 +607,7 @@ namespace ILCompiler.ObjectWriter
         private static readonly ObjectNodeSection WebcilRelocSection = new ObjectNodeSection("reloc", SectionType.ReadOnly);
         private void EmitRelocSectionData()
         {
-            GetOrCreateSection<WasmSection>(WebcilRelocSection, out SectionWriter writer);
+            GetOrCreateSection<WebcilSection>(WebcilRelocSection, out SectionWriter writer);
             Debug.Assert(writer.SectionIndex == _sections.Count - 1, "The .reloc section must be the last section we emit.");
 
             foreach (var kv in _baseRelocMap)
@@ -643,7 +642,7 @@ namespace ILCompiler.ObjectWriter
 
             if (_pendingBaseRelocs.Count > 0)
             {
-                GetOrCreateSection(WebcilRelocSection);
+                GetOrCreateSection<WebcilSection>(WebcilRelocSection);
             }
 
             WebcilSection[] webcilSections = _sections.Sections.OfType<WebcilSection>().ToArray();
@@ -675,9 +674,9 @@ namespace ILCompiler.ObjectWriter
             EmitWasmHeader(outputFileStream);
             foreach (int index in SectionEmitOrder)
             {
-                WasmSection section = _sections[index];
+                SectionDataEmitter section = _sections[index];
                 if (_resolvableRelocations.TryGetValue(index, out List<SymbolicRelocation> relocations) &&
-                    section.Type is not WasmSectionType.Data)
+                    section is WasmSection)
                 {
                     using (Stream originalStream = section.ContentReadStream)
                     {
@@ -740,11 +739,11 @@ namespace ILCompiler.ObjectWriter
             BinaryPrimitives.WriteUInt32LittleEndian(lengthBuffer.AsSpan().Slice(4), (uint)MethodCount);
             MemoryStream webcilSizeSegmentStream = new MemoryStream(lengthBuffer);
             WasmDataSegment webcilSizeSegment = new WasmDataSegment(webcilSizeSegmentStream, new Utf8String("webcilCount"),
-                WasmDataSectionType.Passive, null);
+                WasmDataSegmentType.Passive, null);
 
             // Passive data segment for webcil payload contents
             WasmDataSegment webcilContentsSegment = new WasmDataSegment(webcilStream, new Utf8String("webcilPayload"),
-                WasmDataSectionType.Passive, null);
+                WasmDataSegmentType.Passive, null);
 
             // Create combined data section and emit
             WasmDataSection dataSection = new WasmDataSection([webcilSizeSegment, webcilContentsSegment], new Utf8String("data"), contentAlign: 4);
