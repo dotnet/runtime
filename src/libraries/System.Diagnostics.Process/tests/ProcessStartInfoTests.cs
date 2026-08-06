@@ -1298,20 +1298,8 @@ namespace System.Diagnostics.Tests
         public void StartInfo_BadExe(bool useShellExecute)
         {
             string tempFile = GetTestFilePath() + ".exe";
-            const int MalformedExecutableSize = 512;
-            const int PeHeaderOffset = 0x80;
-            const int PeOptionalHeaderSizeOffset = PeHeaderOffset + 20;
-            const byte PeOptionalHeaderSize = 0xF0;
-
-            // A truncated PE avoids special shell handling for an empty executable while still producing ERROR_BAD_EXE_FORMAT.
-            byte[] malformedExecutable = new byte[MalformedExecutableSize];
-            malformedExecutable[0] = (byte)'M';
-            malformedExecutable[1] = (byte)'Z';
-            malformedExecutable[0x3C] = PeHeaderOffset;
-            malformedExecutable[PeHeaderOffset] = (byte)'P';
-            malformedExecutable[PeHeaderOffset + 1] = (byte)'E';
-            malformedExecutable[PeOptionalHeaderSizeOffset] = PeOptionalHeaderSize;
-            File.WriteAllBytes(tempFile, malformedExecutable);
+            // A DLL is a valid PE that cannot be executed, avoiding malformed-image shell recovery paths.
+            File.Copy(Path.Combine(Environment.SystemDirectory, "kernel32.dll"), tempFile);
 
             ProcessStartInfo info = new ProcessStartInfo
             {
