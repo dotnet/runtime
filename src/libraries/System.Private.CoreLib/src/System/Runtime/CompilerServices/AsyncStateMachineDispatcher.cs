@@ -14,19 +14,21 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(0)]
         public AsyncStateMachineDispatcherInfo* Next;
 
+        /// <safety>Managed-reference field at an explicit offset that does not overlap any other field, so reading or writing it cannot alias a pointer or forge a reference.</safety>
 #if TARGET_64BIT
         [FieldOffset(8)]
 #else
         [FieldOffset(4)]
 #endif
-        public Task? Dispatcher;
+        public safe Task? Dispatcher;
 
+        /// <safety>Value-type field at an explicit offset that does not overlap the Next pointer or Dispatcher reference, so accessing it cannot alias a pointer or forge a reference.</safety>
 #if TARGET_64BIT
         [FieldOffset(16)]
 #else
         [FieldOffset(8)]
 #endif
-        public AsyncProfiler.Info AsyncProfilerInfo;
+        public safe AsyncProfiler.Info AsyncProfilerInfo;
 
         [ThreadStatic]
         internal static unsafe AsyncStateMachineDispatcherInfo* t_current;

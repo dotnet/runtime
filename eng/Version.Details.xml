@@ -63,9 +63,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>93eebf1a31a5eaafd44326f1a81ca107913e098c</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.JobMonitor" Version="11.0.0-beta.26381.1">
+    <Dependency Name="Microsoft.DotNet.Helix.JobMonitor" Version="11.0.0-beta.26404.8">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>93eebf1a31a5eaafd44326f1a81ca107913e098c</Sha>
+      <Sha>35ea7e6192f7ab5fddd068ea9ce3f5e3d5491298</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.GenAPI" Version="11.0.0-beta.26379.102">
       <Uri>https://github.com/dotnet/dotnet</Uri>

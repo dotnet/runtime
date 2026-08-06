@@ -28012,7 +28012,7 @@ GenTree* Compiler::gtNewSimdWasmTwoSourceShuffleNode(
     assert(varTypeIsArithmetic(simdBaseType));
 
     uint32_t  simdCount = getSIMDVectorLength(simdSize, simdBaseType);
-    var_types indexType = getIndexTypeForShuffle(simdBaseType);
+    var_types indexType = getUnsignedSimdBaseType(simdBaseType);
 
     GenTreeVecCon* indices1 = gtNewVconNode(type);
     GenTreeVecCon* indices2 = gtNewVconNode(type);
@@ -28259,7 +28259,7 @@ GenTree* Compiler::gtNewSimdZipNode(
         }
 
         GenTreeVecCon* shuffle       = gtNewVconNode(type);
-        var_types      indexBaseType = getIndexTypeForShuffle(simdBaseType);
+        var_types      indexBaseType = getUnsignedSimdBaseType(simdBaseType);
         uint32_t       start         = upper ? (simdCount / 2) : 0;
 
         for (uint32_t index = 0; index < simdCount; index++)
@@ -28378,7 +28378,7 @@ GenTree* Compiler::gtNewSimdUnzipNode(
 #elif defined(TARGET_XARCH)
 
     unsigned  elementSize   = genTypeSize(simdBaseType);
-    var_types indexBaseType = getIndexTypeForShuffle(simdBaseType);
+    var_types indexBaseType = getUnsignedSimdBaseType(simdBaseType);
 
     if (simdSize == 16)
     {
@@ -28545,7 +28545,7 @@ GenTree* Compiler::gtNewSimdReverseNode(var_types type, GenTree* op1, var_types 
     // return Shuffle(op1, indices);
 
     GenTreeVecCon* shuffle       = gtNewVconNode(type);
-    var_types      indexBaseType = getIndexTypeForShuffle(simdBaseType);
+    var_types      indexBaseType = getUnsignedSimdBaseType(simdBaseType);
 
     for (uint32_t index = 0; index < simdCount; index++)
     {
@@ -30349,7 +30349,7 @@ GenTree* Compiler::gtNewSimdSumNode(var_types type, GenTree* op1, var_types simd
     // only lane 0 is ever read.
 
     unsigned  vectorLength = getSIMDVectorLength(simdSize, simdBaseType);
-    var_types indexType    = getIndexTypeForShuffle(simdBaseType);
+    var_types indexType    = getUnsignedSimdBaseType(simdBaseType);
 
     for (unsigned stride = 1; stride < vectorLength; stride *= 2)
     {
@@ -30984,7 +30984,7 @@ GenTree* Compiler::gtNewSimdWidenUpperNode(var_types type, GenTree* op1, var_typ
 
         // WASM only has f64x2.promote_low_f32x4, so move the upper two floats into the low lanes
         // with a shuffle and then promote them; the resulting upper lanes are unused by the promote.
-        var_types      indexType = getIndexTypeForShuffle(simdBaseType);
+        var_types      indexType = getUnsignedSimdBaseType(simdBaseType);
         uint32_t       simdCount = getSIMDVectorLength(simdSize, simdBaseType);
         GenTreeVecCon* indices   = gtNewVconNode(type);
 
@@ -34855,32 +34855,42 @@ bool GenTree::IsInvariant() const
 }
 
 //-------------------------------------------------------------------
-// IsVectorPerElementMask: returns true if this node is a vector constant per-element mask
-//                         (every element has either all bits set or none of them) for the
-//                         given simd size and base type.
+// IsVectorPerElementMask: returns true if this node is known to be a vector per-element mask
+//                         (every element has either all bits set or none of them) for the given
+//                         SIMD size and base type.
 //
 // Arguments:
-//    simdBaseType - the base type of the constant being checked.
+//    comp         - the compiler instance.
+//    simdBaseType - the base type being checked.
 //    simdSize     - the size of the SIMD type of the intrinsic.
 //
 // Returns:
 //     True if this node is a per-element mask compatible with simdBaseType and simdSize
 //
-bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) const
+bool GenTree::IsVectorPerElementMask(Compiler* comp, var_types simdBaseType, unsigned simdSize) const
 {
 #ifdef FEATURE_SIMD
+    assert(comp != nullptr);
+
     // This should be kept in sync with ValueNumStore::IsVectorPerElementMask
 
     var_types simdType     = TypeGet();
     unsigned  elementCount = GenTreeVecCon::ElementCount(simdSize, simdBaseType);
 
-    assert(varTypeIsSIMD(simdType));
-    assert(genTypeSize(simdType) == simdSize);
+    if (!varTypeIsSIMD(simdType) || (genTypeSize(simdType) != simdSize))
+    {
+        return false;
+    }
 
     if (IsCnsVec())
     {
         const GenTreeVecCon* vecCon = AsVecCon();
         return ElementsAreAllBitsSetOrZero(&vecCon->gtSimdVal, simdBaseType, elementCount);
+    }
+
+    if (OperIs(GT_LCL_VAR))
+    {
+        return comp->lvaGetDesc(AsLclVar())->IsVectorPerElementMask(simdBaseType);
     }
 
     if (!OperIsHWIntrinsic())
@@ -34921,6 +34931,15 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
     bool       isScalar = false;
     genTreeOps oper     = GenTreeHWIntrinsic::GetOperForHWIntrinsicId(intrinsicId, simdBaseType, &isScalar);
 
+#if defined(TARGET_ARM64)
+    // TODO-Arm64: Remove this once all AdvSimd compare intrinsics are annotated with
+    // HW_Flag_ReturnsPerElementMask.
+    if (!isScalar && GenTree::OperIsCmpCompare(oper))
+    {
+        return genTypeSize(intrinsicSimdBaseType) >= genTypeSize(simdBaseType);
+    }
+#endif // TARGET_ARM64
+
     switch (oper)
     {
         case GT_AND:
@@ -34936,14 +34955,14 @@ bool GenTree::IsVectorPerElementMask(var_types simdBaseType, unsigned simdSize) 
             // there isn't any way to statically determine this for non-constants and
             // the constant cases should've already been folded.
 
-            return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize) &&
-                   intrinsic->Op(2)->IsVectorPerElementMask(simdBaseType, simdSize);
+            return intrinsic->Op(1)->IsVectorPerElementMask(comp, simdBaseType, simdSize) &&
+                   intrinsic->Op(2)->IsVectorPerElementMask(comp, simdBaseType, simdSize);
         }
 
         case GT_NOT:
         {
             // We are a unary bitwise operation where the input is a per-element mask
-            return intrinsic->Op(1)->IsVectorPerElementMask(simdBaseType, simdSize);
+            return intrinsic->Op(1)->IsVectorPerElementMask(comp, simdBaseType, simdSize);
         }
 
         default:
@@ -36303,7 +36322,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             break;
                         }
                     }
-                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
+                    else if (otherNode->IsVectorPerElementMask(this, simdBaseType, simdSize))
                     {
                         // Handle `Equals(PerElementMask, AllBitsSet)` and `Equals(AllBitsSet, PerElementMask)` for
                         // integrals
@@ -36491,7 +36510,7 @@ GenTree* Compiler::gtFoldExprHWIntrinsic(GenTreeHWIntrinsic* tree)
                             break;
                         }
                     }
-                    else if (otherNode->IsVectorPerElementMask(simdBaseType, simdSize))
+                    else if (otherNode->IsVectorPerElementMask(this, simdBaseType, simdSize))
                     {
                         // Handle `~Equals(PerElementMask, Zero)` and `~Equals(Zero, PerElementMask)` for integrals
                         if (cnsNode->IsVectorZero())

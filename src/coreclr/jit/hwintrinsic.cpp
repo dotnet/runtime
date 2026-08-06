@@ -4077,6 +4077,26 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
+#if defined(TARGET_WASM)
+            {
+                // An out-of-range constant lane index cannot be encoded by extract_lane, so
+                // fall back to the throwing software implementation. A non-constant index is
+                // handled by the jump-table expansion during lowering.
+                GenTree* indexOp = impStackTop(0).val;
+
+                if (indexOp->OperIsConst())
+                {
+                    ssize_t imm8  = indexOp->AsIntCon()->IconValue();
+                    ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+                    if ((imm8 < 0) || (imm8 >= count))
+                    {
+                        return nullptr;
+                    }
+                }
+            }
+#endif // TARGET_WASM
+
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
 
@@ -5277,6 +5297,24 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     // Using software fallback if index is out of range (throw exception)
                     return nullptr;
+                }
+            }
+#elif defined(TARGET_WASM)
+            {
+                // An out-of-range constant lane index cannot be encoded by replace_lane, so
+                // fall back to the throwing software implementation. A non-constant index is
+                // handled by the jump-table expansion during lowering.
+                GenTree* indexOp = impStackTop(1).val;
+
+                if (indexOp->OperIsConst())
+                {
+                    ssize_t imm8  = indexOp->AsIntCon()->IconValue();
+                    ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+                    if ((imm8 < 0) || (imm8 >= count))
+                    {
+                        return nullptr;
+                    }
                 }
             }
 #endif
