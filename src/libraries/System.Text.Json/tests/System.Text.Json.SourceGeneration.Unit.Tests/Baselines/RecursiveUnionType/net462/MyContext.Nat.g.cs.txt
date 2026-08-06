@@ -40,7 +40,7 @@ namespace TestApp
                         return value switch
                         {
                             null => ((global::System.Type?)null, (object?)null),
-                            bool caseValue0 => (typeof(bool), (object?)caseValue0),
+                            { Value: bool caseValue0 } => (typeof(bool), (object?)caseValue0),
                             { Value: global::TestApp.Nat caseValue1 } => (typeof(global::TestApp.Nat), (object?)caseValue1),
                         };
                     },

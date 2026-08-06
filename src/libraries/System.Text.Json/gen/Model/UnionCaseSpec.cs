@@ -43,21 +43,5 @@ namespace System.Text.Json.SourceGeneration
         /// rather than <c>typeof(Nullable&lt;T&gt;)</c>.
         /// </summary>
         public required bool IsSwitchArm { get; init; }
-
-        /// <summary>
-        /// Whether the union instance itself, rather than the value it wraps, can match a
-        /// type pattern over <see cref="PatternType"/>.
-        /// </summary>
-        /// <remarks>
-        /// C# union matching tests a type pattern against the union instance before the
-        /// union's value, so for such a case a bare <c>PatternType caseValue</c> arm binds
-        /// the incoming union rather than its payload — or, where the compiler cannot tell
-        /// the two apart, fails to compile at all. The emitter keeps <c>value</c> as the
-        /// switch operand and emits a <c>{ Value: PatternType }</c> property pattern for
-        /// these cases, which forces the test onto the payload. The most common shape is a
-        /// union declaring itself as one of its case types, e.g. <c>union Nat(bool, Nat);</c>,
-        /// but an unsealed class union whose case type derives from it has the same problem.
-        /// </remarks>
-        public required bool MatchesUnionInstance { get; init; }
     }
 }

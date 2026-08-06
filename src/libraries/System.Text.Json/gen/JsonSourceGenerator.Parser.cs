@@ -869,15 +869,12 @@ namespace System.Text.Json.SourceGeneration
                                     ? caseTypeRef
                                     : new TypeRef(patternType);
 
-                                bool matchesUnionInstance = UnionInstanceCanMatchPattern(namedUnionType, patternType);
-
                                 resolvedUnionCaseSpecs.Add(new UnionCaseSpec
                                 {
                                     CaseType = caseTypeRef,
                                     PatternType = patternTypeRef,
                                     IsNullable = acceptsNull,
                                     IsSwitchArm = switchArmRoles[i],
-                                    MatchesUnionInstance = matchesUnionInstance,
                                 });
                             }
 
@@ -1731,28 +1728,6 @@ namespace System.Text.Json.SourceGeneration
 
                 static bool IsNullableValueType(ITypeSymbol type)
                     => type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T };
-            }
-
-            /// <summary>
-            /// Determines whether the union instance itself — as opposed to the value it wraps —
-            /// can match a type pattern of <paramref name="patternType"/>.
-            /// </summary>
-            /// <remarks>
-            /// C# union matching tests a type pattern against the union instance before falling back
-            /// to the union's value, so any arm whose pattern type is inhabitable by the union type
-            /// binds the incoming union rather than its payload. That covers two directions: pattern
-            /// types every union instance satisfies (the union's own type, a base type, an implemented
-            /// interface, <see cref="object"/>) and pattern types only some instances satisfy (a case
-            /// type deriving from an unsealed class union, or any interface such a union does not seal
-            /// itself off from). Both are exactly the conversions the compiler classifies as identity,
-            /// reference, or boxing, which is why this defers to <c>ClassifyConversion</c> rather than
-            /// walking the base and interface lists. User-defined conversions are excluded because
-            /// pattern matching does not consider them.
-            /// </remarks>
-            private bool UnionInstanceCanMatchPattern(INamedTypeSymbol unionType, ITypeSymbol patternType)
-            {
-                Conversion conversion = _knownSymbols.Compilation.ClassifyConversion(unionType, patternType);
-                return conversion.IsIdentity || conversion.IsReference || conversion.IsBoxing;
             }
 
             private List<ITypeSymbol> SortCaseTypesTopologically(List<ITypeSymbol> caseTypes)
