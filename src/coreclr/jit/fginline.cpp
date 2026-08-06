@@ -10,6 +10,150 @@
 
 // Flowgraph Inline Support
 
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// fgIsAsyncFrameTransitionCall: check whether a call is the synthesized call to
+//   AsyncHelpers.RestoreInlinedFrameContexts.
+//
+// Arguments:
+//    call - the call
+//
+// Return Value:
+//    True if so.
+//
+bool Compiler::fgIsAsyncFrameTransitionCall(GenTreeCall* call)
+{
+    return (call->gtCallType == CT_USER_FUNC) &&
+           (call->gtCallMethHnd == eeGetAsyncInfo()->restoreInlinedFrameContextsMethHnd);
+}
+
+//------------------------------------------------------------------------
+// fgAsyncStressNoteCandidate: record an async inline candidate for async
+//   inlining stress.
+//
+// Arguments:
+//    call            - the async call that just became an inline candidate
+//    inlinersContext - inline context of the body containing the call
+//
+// Notes:
+//    Candidates are grouped per method body. The group is completed when the
+//    body has been fully imported, which is guaranteed to be the case by the
+//    time any of its candidates is considered for inlining in fgInline.
+//
+void Compiler::fgAsyncStressNoteCandidate(GenTreeCall* call, InlineContext* inlinersContext)
+{
+    assert(compAsyncInliningStress() && call->IsAsync());
+
+    jitstd::vector<GenTreeCall*>* candidates = inlinersContext->GetAsyncStressCandidates();
+
+    if (candidates == nullptr)
+    {
+        Compiler* const root = impInlineRoot();
+        candidates = new (root, CMK_Inlining) jitstd::vector<GenTreeCall*>(root->getAllocator(CMK_Inlining));
+        inlinersContext->SetAsyncStressCandidates(candidates);
+    }
+
+    // A call can be noted twice: calls that are async when they are marked are noted
+    // there, while calls that only become async afterwards are noted at that point.
+    //
+    for (GenTreeCall* candidate : *candidates)
+    {
+        if (candidate == call)
+        {
+            return;
+        }
+    }
+
+    candidates->push_back(call);
+}
+
+//------------------------------------------------------------------------
+// fgAsyncStressShouldInline: decide whether to inline an async candidate
+//   under async inlining stress.
+//
+// Arguments:
+//    call        - the async call being considered
+//    inlineDepth - depth this inline would be at; top level candidates are at
+//                  depth 1
+//
+// Return Value:
+//    True if the inline should be attempted.
+//
+// Notes:
+//    The async candidates of a single body are shuffled and then inlined with
+//    a probability that decays geometrically, so that a body with many async
+//    calls does not inline all of them and the ones that are picked vary. The
+//    n'th candidate (0 based) of a body whose inlines land at depth d is
+//    inlined with probability pct^(d + n).
+//
+bool Compiler::fgAsyncStressShouldInline(GenTreeCall* call, unsigned inlineDepth)
+{
+    assert(compAsyncInliningStress() && call->IsAsync());
+
+    if (inlineDepth > (unsigned)JitConfig.JitStressAsyncInliningMaxDepth())
+    {
+        JITDUMP("Async inlining stress: rejecting [%06u], depth %u is over the limit\n", dspTreeID(call), inlineDepth);
+        return false;
+    }
+
+    CLRRandom* const     random          = impInlineRoot()->m_inlineStrategy->GetRandom(
+        JitConfig.JitStressAsyncInlining());
+    InlineContext* const inlinersContext = call->GetSingleInlineCandidateInfo()->inlinersContext;
+
+    jitstd::vector<GenTreeCall*>* candidates = inlinersContext->GetAsyncStressCandidates();
+    size_t                        groupSize  = 0;
+    size_t                        index      = 0;
+
+    if (candidates != nullptr)
+    {
+        if (!inlinersContext->AreAsyncStressCandidatesShuffled())
+        {
+            // Fisher-Yates. The enclosing body is fully imported by now, so the group is
+            // complete and shuffling it here gives every candidate the same chance at the
+            // high probability slots.
+            //
+            for (size_t i = candidates->size(); i > 1; i--)
+            {
+                size_t j = (size_t)random->Next((int)i);
+                std::swap(candidates->at(i - 1), candidates->at(j));
+            }
+
+            inlinersContext->SetAsyncStressCandidatesShuffled();
+        }
+
+        groupSize = candidates->size();
+
+        // A call that is not in the group became a candidate after its body was imported,
+        // for instance through late devirtualization. Give it the first slot rather than
+        // the tail, where the decayed probability would amount to a deterministic reject.
+        //
+        for (size_t i = 0; i < groupSize; i++)
+        {
+            if (candidates->at(i) == call)
+            {
+                index = i;
+                break;
+            }
+        }
+    }
+
+    double probability = 1.0;
+    for (size_t i = 0; i < (size_t)inlineDepth + index; i++)
+    {
+        probability *= (double)JitConfig.JitStressAsyncInliningPct() / 100.0;
+    }
+
+    bool const inlineIt = random->NextDouble() < probability;
+
+    JITDUMP("Async inlining stress: [%06u] is candidate %zu of %zu at depth %u, probability %.4f: %s\n",
+            dspTreeID(call), index, groupSize, inlineDepth, probability, inlineIt ? "inlining" : "rejecting");
+
+    return inlineIt;
+}
+
+#endif // DEBUG
+
 //------------------------------------------------------------------------
 // fgCheckInlineDepthAndRecursion: compute depth of the candidate, and
 // check for recursion.
@@ -1352,6 +1496,15 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
 #endif // DEBUG
         return;
     }
+
+#ifdef DEBUG
+    if (compAsyncInliningStress() && call->IsAsync() && !fgIsAsyncFrameTransitionCall(call) &&
+        !fgAsyncStressShouldInline(call, inlineDepth))
+    {
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_RANDOM_REJECT);
+        return;
+    }
+#endif // DEBUG
 
     // Set the trap to catch all errors (including recoverable ones from the EE)
     struct Param

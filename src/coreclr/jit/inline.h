@@ -934,6 +934,34 @@ public:
         return m_isAsyncFrame;
     }
 
+#if defined(DEBUG)
+
+    // Async inlining stress (JitStressAsyncInlining) groups the async inline candidates
+    // of a single method body together: they are collected here as they are marked, then
+    // shuffled once the body is fully imported so that the decaying inline probability is
+    // applied in a random order rather than in call site order.
+    jitstd::vector<GenTreeCall*>* GetAsyncStressCandidates() const
+    {
+        return m_asyncStressCandidates;
+    }
+
+    void SetAsyncStressCandidates(jitstd::vector<GenTreeCall*>* candidates)
+    {
+        m_asyncStressCandidates = candidates;
+    }
+
+    bool AreAsyncStressCandidatesShuffled() const
+    {
+        return m_asyncStressCandidatesShuffled;
+    }
+
+    void SetAsyncStressCandidatesShuffled()
+    {
+        m_asyncStressCandidatesShuffled = true;
+    }
+
+#endif // defined(DEBUG)
+
 private:
     InlineContext(InlineStrategy* strategy);
 
@@ -955,6 +983,11 @@ private:
     bool                   m_Success : 1;      // true if this was a successful inline
 
     bool m_isAsyncFrame = false;
+
+#if defined(DEBUG)
+    jitstd::vector<GenTreeCall*>* m_asyncStressCandidates         = nullptr;
+    bool                          m_asyncStressCandidatesShuffled = false;
+#endif // defined(DEBUG)
 
 #if defined(DEBUG)
 

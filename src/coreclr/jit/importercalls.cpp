@@ -9065,6 +9065,22 @@ void Compiler::impMarkInlineCandidateHelper(GenTreeCall*           call,
     // Let the strategy know there's another candidate.
     impInlineRoot()->m_inlineStrategy->NoteCandidate();
 
+#ifdef DEBUG
+    // Under async inlining stress, remember this candidate as part of the enclosing
+    // body's group. The group is shuffled and thinned out once the body is fully
+    // imported; see Compiler::fgAsyncStressShouldInline.
+    //
+    // The synthesized frame transition call is excluded: it is created during fgInline,
+    // long after the enclosing body's group was completed and shuffled, so adding it
+    // would both inflate that group and leave the call itself permanently in its worst
+    // slot. It is left to the normal policy instead.
+    //
+    if (compAsyncInliningStress() && call->IsAsync() && !fgIsAsyncFrameTransitionCall(call))
+    {
+        fgAsyncStressNoteCandidate(call, inlinersContext);
+    }
+#endif // DEBUG
+
     // Since we're not actually inlining yet, and this call site is
     // still just an inline candidate, there's nothing to report.
     inlineResult->SetSuccessResult(INLINE_CHECK_CAN_INLINE_SUCCESS);

@@ -7518,6 +7518,18 @@ private:
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
+#ifdef DEBUG
+    bool fgIsAsyncFrameTransitionCall(GenTreeCall* call);
+    void fgAsyncStressNoteCandidate(GenTreeCall* call, InlineContext* inlinersContext);
+    bool fgAsyncStressShouldInline(GenTreeCall* call, unsigned inlineDepth);
+
+    // Is general runtime async inlining being stressed, i.e. are async callees forcibly
+    // inlined with a decaying random probability? See AsyncStressPolicy.
+    static bool compAsyncInliningStress()
+    {
+        return JitConfig.JitStressAsyncInlining() != 0;
+    }
+#endif // DEBUG
     bool IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo);
     bool ContextComplexityExceeds(CORINFO_CONTEXT_HANDLE handle, int max);
     bool MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE handle, int& cur, int max);

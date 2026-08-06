@@ -12032,6 +12032,17 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     if (awaitCall->IsInlineCandidate())
     {
+#ifdef DEBUG
+        // This call became async after it was marked an inline candidate, so async
+        // inlining stress did not see it back then. Note it now, while the enclosing
+        // body is still being imported and its candidate group is still open.
+        //
+        if (compAsyncInliningStress())
+        {
+            fgAsyncStressNoteCandidate(awaitCall, compInlineContext);
+        }
+#endif // DEBUG
+
         // The struct return fixup does not create a new node for inline
         // candidates, so 'toPush' is still the call itself.
         assert(toPush == awaitCall);
