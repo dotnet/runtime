@@ -539,6 +539,8 @@ public:
     }
 
     // ICorDebugInfo stuff.
+    void getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
+                 bool *extendOthers) override final;
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
@@ -1006,7 +1008,7 @@ struct VMAUXILIARYSYMBOLDEF
     PTR_CSTR name;
 };
 
-#define MAX_AUXILIARY_SYMBOLS 7
+#define MAX_AUXILIARY_SYMBOLS 17
 
 #if defined(DACCESS_COMPILE)
 

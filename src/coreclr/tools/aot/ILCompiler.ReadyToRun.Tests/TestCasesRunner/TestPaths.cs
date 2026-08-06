@@ -134,6 +134,30 @@ internal sealed class TestPaths
     }
 
     /// <summary>
+    /// Path to System.Private.CoreLib.dll. It lives in the runtime pack native/ dir in full builds
+    /// (placed by externals.csproj BinPlace during libs.pretest), but partial builds that skip
+    /// libs.pretest only have it in the CoreCLR artifacts directory.
+    /// </summary>
+    public string SystemPrivateCoreLibPath
+    {
+        get
+        {
+            string path = Path.Combine(RuntimePackNativeDir, "System.Private.CoreLib.dll");
+            if (!File.Exists(path))
+            {
+                string fallback = Path.Combine(CoreCLRArtifactsDir, "System.Private.CoreLib.dll");
+                if (File.Exists(fallback))
+                {
+                    _output.WriteLine($"[TestPaths] '{path}' not found; falling back to '{fallback}'");
+                    return fallback;
+                }
+            }
+
+            return path;
+        }
+    }
+
+    /// <summary>
     /// Path to the CoreCLR artifacts directory (contains native bits like corerun).
     /// e.g. artifacts/bin/coreclr/linux.x64.Checked/
     /// Falls back to Checked or Release if the configured path doesn't exist.

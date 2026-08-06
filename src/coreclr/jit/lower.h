@@ -442,6 +442,10 @@ private:
     bool TryRemoveCast(GenTreeCast* node);
     bool TryRemoveBitCast(GenTreeUnOp* node);
 
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
+    GenTree* TryLowerBitwiseOpToBitOp(GenTreeOp* binOp);
+#endif // TARGET_XARCH || TARGET_RISCV64
+
 #ifdef TARGET_XARCH
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
@@ -499,6 +503,7 @@ private:
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
+    GenTree* TryLowerAndOpToZeroHighBits(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void     LowerBswapOp(GenTreeOp* node);
     GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);
@@ -512,6 +517,7 @@ private:
 #elif defined(TARGET_WASM)
     GenTree* LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node);
     void     LowerHWIntrinsicSwizzle(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types type,

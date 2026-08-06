@@ -365,6 +365,9 @@ class EEClassLayoutInfo
             e_HAS_AUTO_LAYOUT_FIELD_IN_LAYOUT = 0x10,
             // Type type recursively has a field which is an Int128
             e_IS_OR_HAS_INT128_FIELD          = 0x20,
+            // The type recursively has a field which is a decimal floating-point type
+            // (Decimal32/Decimal64/Decimal128).
+            e_IS_OR_HAS_DECIMAL_FIELD         = 0x40,
         };
 
         LayoutType m_LayoutType;
@@ -419,6 +422,12 @@ class EEClassLayoutInfo
             return (m_bFlags & e_IS_OR_HAS_INT128_FIELD) == e_IS_OR_HAS_INT128_FIELD;
         }
 
+        BOOL IsDecimalFloatingPointOrHasDecimalFloatingPointFields() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return (m_bFlags & e_IS_OR_HAS_DECIMAL_FIELD) == e_IS_OR_HAS_DECIMAL_FIELD;
+        }
+
         BYTE GetAlignmentRequirement() const
         {
             LIMITED_METHOD_CONTRACT;
@@ -450,6 +459,13 @@ class EEClassLayoutInfo
             LIMITED_METHOD_CONTRACT;
             m_bFlags = hasInt128Field ? (m_bFlags | e_IS_OR_HAS_INT128_FIELD)
                                        : (m_bFlags & ~e_IS_OR_HAS_INT128_FIELD);
+        }
+
+        void SetIsDecimalFloatingPointOrHasDecimalFloatingPointFields(BOOL hasDecimalField)
+        {
+            LIMITED_METHOD_CONTRACT;
+            m_bFlags = hasDecimalField ? (m_bFlags | e_IS_OR_HAS_DECIMAL_FIELD)
+                                       : (m_bFlags & ~e_IS_OR_HAS_DECIMAL_FIELD);
         }
 
         void SetHasExplicitSize(BOOL hasExplicitSize)
@@ -534,6 +550,7 @@ class EEClassLayoutInfo
             Align8 = 0x4,
             AutoLayout = 0x8,
             Int128 = 0x10,
+            DecimalFloatingPoint = 0x20,
         };
 
         static NestedFieldFlags GetNestedFieldFlags(Module* pModule, FieldDesc *pFD, ULONG cFields, CorNativeLinkType nlType, MethodTable** pByValueClassCache);
@@ -1376,6 +1393,9 @@ public:
     // Only accurate on non-auto layout types
     BOOL IsInt128OrHasInt128Fields();
 
+    // Only accurate on non-auto layout types
+    BOOL IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
+
     static void GetBestFitMapping(MethodTable * pMT, BOOL *pfBestFitMapping, BOOL *pfThrowOnUnmappableChar);
 
     /*
@@ -1959,6 +1979,14 @@ inline BOOL EEClass::IsInt128OrHasInt128Fields()
     LIMITED_METHOD_CONTRACT;
     // If this type is not auto
     return HasLayout() && GetLayoutInfo()->IsInt128OrHasInt128Fields();
+}
+
+inline BOOL EEClass::IsDecimalFloatingPointOrHasDecimalFloatingPointFields()
+{
+    // As with IsInt128OrHasInt128Fields, this doesn't detect fields on auto layout types,
+    // but that's sufficient for the interop scenarios where it is used.
+    LIMITED_METHOD_CONTRACT;
+    return HasLayout() && GetLayoutInfo()->IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
 }
 
 //==========================================================================

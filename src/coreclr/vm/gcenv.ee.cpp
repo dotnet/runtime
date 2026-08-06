@@ -1586,7 +1586,7 @@ namespace
         ThreadStubArguments args;
         args.Argument = argument;
         args.ThreadStart = threadStart;
-        args.Thread = INVALID_HANDLE_VALUE;
+        args.Thread = NULL;
 #ifdef __APPLE__
         args.name = name;
 #endif //__APPLE__
@@ -1619,7 +1619,7 @@ namespace
         };
 
         args.Thread = Thread::CreateUtilityThread(Thread::StackSize_Medium, threadStub, &args, name);
-        if (args.Thread == INVALID_HANDLE_VALUE)
+        if (args.Thread == NULL)
         {
             args.ThreadStartedEvent.CloseEvent();
             return false;
