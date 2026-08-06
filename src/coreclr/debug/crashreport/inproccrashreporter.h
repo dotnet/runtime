@@ -114,7 +114,7 @@ void InProcCrashReportInitializeServices(const InProcCrashReporterServicesSettin
 bool InProcCrashReportCreateReport(
     InProcCrashReportOutputFormat outputFormat,
     int signal,
-    void* context,
+    const void* context,
     InProcCrashReportOutputCallback outputCallback,
     void* callbackContext);
 

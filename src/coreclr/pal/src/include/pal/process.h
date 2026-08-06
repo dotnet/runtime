@@ -120,6 +120,13 @@ Function:
 --*/
 VOID PROCNotifyProcessShutdown(bool isExecutingOnAltStack = false);
 
+VOID PROCInvokeFatalErrorHandlerForNativeException(
+    DWORD exceptionCode,
+    LPVOID faultAddress,
+    PEXCEPTION_POINTERS exceptionInfo,
+    PFATALERRORPLATFORMPROPERTYGETTER getPlatformProperty,
+    LPVOID context);
+
 /*++
 Function:
   PROCCreateCrashDumpIfEnabled

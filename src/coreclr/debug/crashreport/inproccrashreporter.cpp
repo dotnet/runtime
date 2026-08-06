@@ -218,7 +218,7 @@ public:
         size_t methodNameScratchSize,
         uint64_t crashingTid,
         uint32_t frameLimitPerThread,
-        void* signalContext)
+        const void* signalContext)
     {
         Init(writer, consoleWriter, moduleInfoCallback, moduleTable, formatter, methodNameScratch, methodNameScratchSize, crashingTid, frameLimitPerThread, signalContext);
     }
@@ -241,7 +241,7 @@ public:
         size_t methodNameScratchSize,
         uint64_t crashingTid,
         uint32_t frameLimitPerThread,
-        void* signalContext)
+        const void* signalContext)
     {
         m_frameContext.jsonWriter = writer;
         m_frameContext.consoleWriter = consoleWriter;
@@ -314,7 +314,7 @@ private:
     void EndCurrentJsonThreadBlock();
 
     FrameContext m_frameContext;
-    void* m_signalContext;
+    const void* m_signalContext;
     size_t m_threadCount;
     uint64_t m_crashingTid;
     uint32_t m_currentThreadFrameCount;
@@ -370,7 +370,7 @@ public:
     // Signal-path report generation, invoked by the PAL fatal-signal dispatcher.
     bool CreateReport(
         int signal,
-        void* context,
+        const void* context,
         bool serialize);
 
     // On-demand report generation. Runs the same emit core as the signal path
@@ -379,7 +379,7 @@ public:
     bool CreateReport(
         InProcCrashReportOutputFormat outputFormat,
         int signal,
-        void* context,
+        const void* context,
         InProcCrashReportOutputCallback outputCallback,
         void* callbackContext);
 
@@ -397,14 +397,14 @@ private:
     InProcCrashReporter& operator=(const InProcCrashReporter&) = delete;
 
     void EmitSynthesizedCrashThread(
-        void* context,
+        const void* context,
         bool walkStack);
 
     void EmitStackOverflowCrashThread();
 
     void EmitThreads(
         InProcCrashReportCrashKind crashKind,
-        void* context);
+        const void* context);
 
     void BeginConsoleReport(int signal);
     bool EndConsoleReport();
@@ -457,20 +457,20 @@ public:
 
     static void WriteRegistersToJson(
         SignalSafeJsonWriter* writer,
-        void* context);
+        const void* context);
 
     static uint64_t GetInstructionPointer(
-        void* context);
+        const void* context);
 
     static uint64_t GetStackPointer(
-        void* context);
+        const void* context);
 
     static uint64_t GetFramePointer(
-        void* context);
+        const void* context);
 
     static void WriteCrashSiteFrameToJson(
         SignalSafeJsonWriter* writer,
-        void* context);
+        const void* context);
 
     static void BuildMethodName(
         char* buffer,
@@ -533,7 +533,7 @@ public:
     static void BeginJsonStackFrames(
         SignalSafeJsonWriter* jsonWriter,
         bool writeCrashSiteFrame,
-        void* signalContext);
+        const void* signalContext);
 
     static void EndJsonStackFrames(
         SignalSafeJsonWriter* jsonWriter);
@@ -591,7 +591,7 @@ public:
 bool
 InProcCrashReporter::CreateReport(
     int signal,
-    void* context,
+    const void* context,
     bool serialize)
 {
     if (!serialize)
@@ -668,7 +668,7 @@ bool
 InProcCrashReporter::CreateReport(
     InProcCrashReportOutputFormat outputFormat,
     int signal,
-    void* context,
+    const void* context,
     InProcCrashReportOutputCallback outputCallback,
     void* callbackContext)
 {
@@ -726,7 +726,7 @@ InProcCrashReporter::CreateReport(
 void
 InProcCrashReporter::EmitThreads(
     InProcCrashReportCrashKind crashKind,
-    void* context)
+    const void* context)
 {
     m_jsonWriter.OpenArray("threads");
     if (crashKind == InProcCrashReportCrashKind::StackOverflow)
@@ -975,7 +975,7 @@ bool
 InProcCrashReportCreateReport(
     InProcCrashReportOutputFormat outputFormat,
     int signal,
-    void* context,
+    const void* context,
     InProcCrashReportOutputCallback outputCallback,
     void* callbackContext)
 {
@@ -1174,7 +1174,7 @@ CrashReportHelpers::AppendString(
 void
 CrashReportHelpers::WriteRegistersToJson(
     SignalSafeJsonWriter* writer,
-    void* context)
+    const void* context)
 {
     uint64_t ipValue = GetInstructionPointer(context);
     uint64_t spValue = GetStackPointer(context);
@@ -1260,47 +1260,47 @@ CrashReportHelpers::WriteRegistersToJson(
 
 uint64_t
 CrashReportHelpers::GetInstructionPointer(
-    void* context)
+    const void* context)
 {
     if (context == nullptr)
     {
         return 0;
     }
 
-    ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
+    const ucontext_t* ucontext = reinterpret_cast<const ucontext_t*>(context);
     return CRASH_MCREG_PC(ucontext);
 }
 
 uint64_t
 CrashReportHelpers::GetStackPointer(
-    void* context)
+    const void* context)
 {
     if (context == nullptr)
     {
         return 0;
     }
 
-    ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
+    const ucontext_t* ucontext = reinterpret_cast<const ucontext_t*>(context);
     return CRASH_MCREG_SP(ucontext);
 }
 
 uint64_t
 CrashReportHelpers::GetFramePointer(
-    void* context)
+    const void* context)
 {
     if (context == nullptr)
     {
         return 0;
     }
 
-    ucontext_t* ucontext = reinterpret_cast<ucontext_t*>(context);
+    const ucontext_t* ucontext = reinterpret_cast<const ucontext_t*>(context);
     return CRASH_MCREG_FP(ucontext);
 }
 
 void
 CrashReportHelpers::WriteCrashSiteFrameToJson(
     SignalSafeJsonWriter* writer,
-    void* context)
+    const void* context)
 {
     uint64_t ipValue = GetInstructionPointer(context);
     uint64_t spValue = GetStackPointer(context);
@@ -1632,7 +1632,7 @@ void
 CrashReportHelpers::BeginJsonStackFrames(
     SignalSafeJsonWriter* jsonWriter,
     bool writeCrashSiteFrame,
-    void* signalContext)
+    const void* signalContext)
 {
     if (jsonWriter == nullptr)
     {
@@ -2006,7 +2006,7 @@ ThreadEnumerationContext::EnumerateThreads(
 
 void
 InProcCrashReporter::EmitSynthesizedCrashThread(
-    void* context,
+    const void* context,
     bool walkStack)
 {
     uint64_t crashingTid = static_cast<uint64_t>(minipal_get_current_thread_id());
