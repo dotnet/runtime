@@ -1256,6 +1256,7 @@ IniKey1=IniValue2");
 
             if (UsesPolling(config))
             {
+                // Polling detects overwrites by timestamp, so ensure the new write gets a different timestamp.
                 previousWriteTimes = filePaths.Select(File.GetLastWriteTimeUtc).ToArray();
                 DateTime latestWriteTime = previousWriteTimes.Max();
                 TimeSpan delay = latestWriteTime.AddSeconds(1) - DateTime.UtcNow;
