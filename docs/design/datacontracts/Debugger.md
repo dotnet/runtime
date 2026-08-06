@@ -28,6 +28,7 @@ void SetSendExceptionsOutsideOfJMC(bool sendExceptionsOutsideOfJMC);
 TargetPointer GetDebuggerControlBlockAddress();
 void EnableGCNotificationEvents(bool fEnable);
 HijackKind GetHijackKind(TargetCodePointer controlPC);
+byte ReadInstructionByte(TargetPointer address);
 TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byte[]? exceptionRecord, int reason, TargetPointer userData)
 ```
 
@@ -44,6 +45,11 @@ TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byt
 | `Debugger` | `RgHijackFunction` | `pointer` | Pointer to the runtime's array of hijack-stub address ranges. |
 | `Debugger` | `RSRequestedSync` | `int32` | Sync-at-event request flag |
 | `Debugger` | `SendExceptionsOutsideOfJMC` | `int32` | Exception delivery policy flag |
+| `DebuggerControllerPatch` | *(type size)* | `uint32` | Size in bytes of each DebuggerControllerPatch entry. Only available on AMD64. |
+| `DebuggerControllerPatch` | `Address` | `pointer` | Address patched with a debugger breakpoint, or null for an inactive entry. Only available on AMD64. |
+| `DebuggerControllerPatch` | `Opcode` | `nuint` | Original instruction value replaced by the debugger breakpoint. Only available on AMD64. |
+| `DebuggerPatchTable` | `Count` | `uint32` | Capacity of the DebuggerControllerPatch backing array. Only available on AMD64. |
+| `DebuggerPatchTable` | `Entries` | `pointer` | Pointer to the backing array of DebuggerControllerPatch entries. Only available on AMD64. |
 | `DebuggerRCThread` | `DCB` | `pointer` | Pointer to DebuggerIPCControlBlock |
 | `MemoryRange` | *(type size)* | `uint32` | Size of the data descriptor layout |
 | `MemoryRange` | `Size` | `nuint` | Size of the range in bytes; the range covers [StartAddress, StartAddress + Size) |
@@ -56,6 +62,7 @@ TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byt
 | `CLRJitAttachState` | `pointer` | Pointer to the CLR JIT attach state flags |
 | `CORDebuggerControlFlags` | `pointer` | Pointer to g_CORDebuggerControlFlags |
 | `Debugger` | `pointer` | Address of the pointer to the Debugger instance (&g_pDebugger) |
+| `DebuggerPatchTable` | `pointer` | Address of the pointer to the debugger breakpoint patch table. Only available on AMD64. |
 | `MaxHijackFunctions` | `uint32` | Number of entries in the hijack function array. |
 | `MetadataUpdatesApplied` | `pointer` | Pointer to the g_metadataUpdatesApplied flag |
 
@@ -194,6 +201,20 @@ HijackKind GetHijackKind(TargetCodePointer controlPC)
     }
     return HijackKind.None;
 }
+
+byte ReadInstructionByte(TargetPointer address)
+{
+    Dictionary<TargetPointer, byte> patches =
+        cachedPatches ??= ReadActivePatches();
+    if (patches.TryGetValue(address, out byte opcode))
+        return opcode;
+
+    return target.Read<byte>(address);
+}
+
+// ReadActivePatches reads the patch table global and creates an address-indexed
+// map from backing-array entries with nonzero addresses and opcodes. Clear
+// cachedPatches for every contract flush scope.
 
 private TargetPointer GetHijackAddress()
 {

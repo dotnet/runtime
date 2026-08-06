@@ -2566,7 +2566,11 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
 
     if (castIsLoad)
     {
-        const var_types srcLoadType = src->TypeGet();
+        // A spill temp holds the full actual-type value, already extended per the source's own
+        // signedness, so we allow a bit more leeway with it, in that the cast's own sign can be
+        // allowed to not match the source's, by being executed "as-if" it was from TYP_INT.
+        // This flexibility is used by some HWI lowering which tweaks casts.
+        const var_types srcLoadType = src->isUsedFromSpillTemp() ? srcType : src->TypeGet();
 
         switch (m_extendKind)
         {

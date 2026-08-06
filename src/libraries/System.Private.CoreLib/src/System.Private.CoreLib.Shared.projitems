@@ -1311,7 +1311,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Lock.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LockRecursionException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelLock.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelSpinWaiter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelThreadBlocker.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ManualResetEvent.cs" />
@@ -1708,7 +1707,7 @@
       <Link>Common\Interop\Windows\Advapi32\Interop.EncryptDecrypt.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EqualSid.cs">
-      <Link>Interop\Windows\Advapi32\Interop.EqualSid.cs</Link>
+      <Link>Common\Interop\Windows\Advapi32\Interop.EqualSid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.EventActivityIdControl.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.EventActivityIdControl.cs</Link>
@@ -1735,13 +1734,13 @@
       <Link>Common\Interop\Windows\Advapi32\Interop.GetLengthSid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetSecurityInfoByHandle.cs">
-      <Link>Interop\Windows\Advapi32\Interop.GetSecurityInfoByHandle.cs</Link>
+      <Link>Common\Interop\Windows\Advapi32\Interop.GetSecurityInfoByHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetSidIdentifierAuthority.cs">
-      <Link>Interop\Windows\Advapi32\Interop.GetSidIdentifierAuthority.cs</Link>
+      <Link>Common\Interop\Windows\Advapi32\Interop.GetSidIdentifierAuthority.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation.cs">
-      <Link>Interop\Windows\Advapi32\Interop.GetTokenInformation.cs</Link>
+      <Link>Common\Interop\Windows\Advapi32\Interop.GetTokenInformation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.GetTokenInformation_void.cs</Link>
@@ -1822,16 +1821,13 @@
       <Link>Common\Interop\Windows\Kernel32\Interop.CancelIoEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.CancelSynchronousIo.cs">
-      <Link>Interop\Windows\Kernel32\Interop.CancelSynchronousIo.cs</Link>
+      <Link>Common\Interop\Windows\Kernel32\Interop.CancelSynchronousIo.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CloseHandle.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CompletionPort.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CompletionPort.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ConditionVariable.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.ConditionVariable.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.Constants.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.Constants.cs</Link>
@@ -1867,13 +1863,13 @@
       <Link>Common\Interop\Windows\Kernel32\Interop.Semaphore.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.Timer.cs">
-      <Link>Interop\Windows\Kernel32\Interop.Timer.cs</Link>
+      <Link>Common\Interop\Windows\Kernel32\Interop.Timer.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPoolIO.cs">
-      <Link>Interop\Windows\Kernel32\Interop.ThreadPoolIO.cs</Link>
+      <Link>Common\Interop\Windows\Kernel32\Interop.ThreadPoolIO.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ThreadPool.cs">
-      <Link>Interop\Windows\Kernel32\Interop.ThreadPool.cs</Link>
+      <Link>Common\Interop\Windows\Kernel32\Interop.ThreadPool.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\NtDll\Interop.NtCreateFile.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.NtCreateFile.cs</Link>
@@ -1904,9 +1900,6 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.CreateSymbolicLink.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CriticalSection.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.CriticalSection.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeviceIoControl.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.DeviceIoControl.cs</Link>
@@ -1999,7 +1992,7 @@
       <Link>Common\Interop\Windows\Kernel32\Interop.GetCurrentThreadId.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetTickCount64.cs">
-      <Link>Interop\Windows\Kernel32\Interop.GetTickCount64.cs</Link>
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetTickCount64.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetFileAttributesEx.cs</Link>
@@ -2104,7 +2097,7 @@
       <Link>Common\Interop\Windows\Kernel32\Interop.MoveFileEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.OpenThread.cs">
-      <Link>Interop\Windows\Kernel32\Interop.OpenThread.cs</Link>
+      <Link>Common\Interop\Windows\Kernel32\Interop.OpenThread.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.OSVERSIONINFOEX.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.OSVERSIONINFOEX.cs</Link>
@@ -2263,7 +2256,7 @@
       <Link>Common\Interop\Windows\Ole32\Interop.CoCreateGuid.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetContextToken.cs">
-      <Link>Interop\Windows\Ole32\Interop.CoGetContextToken.cs</Link>
+      <Link>Common\Interop\Windows\Ole32\Interop.CoGetContextToken.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetStandardMarshal.cs">
       <Link>Common\Interop\Windows\Ole32\Interop.CoGetStandardMarshal.cs</Link>
@@ -2390,7 +2383,6 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\DeferredDisposableLifetime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventWaitHandle.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Mutex.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\PreAllocatedOverlapped.WindowsThreadPool.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\RegisteredWaitHandle.WindowsThreadPool.cs" />
@@ -2728,6 +2720,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\InteropServices\StandardOleMarshalObject.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Security\SecureString.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelFutex.Unix.cs" Condition="'$(TargetsLinux)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LowLevelMonitor.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Thread.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\TimerQueue.Unix.cs" Condition="'$(FeaturePortableTimer)' == 'true'" />

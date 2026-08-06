@@ -237,6 +237,8 @@ template<class T> void DeleteDbiArrayMemory(T *p, int count)
 //    pMetadataLookup - callback interface to do internal metadata lookup. This is because
 //                  metadata is not dac-ized.
 //    ppInterface - mandatory out-parameter
+//    ppLegacyDac - mandatory out-parameter; receives a reference to the native
+//                  DAC when ppInterface receives a cDAC implementation
 //
 // Return Value:
 //    S_OK on success.
@@ -249,7 +251,7 @@ template<class T> void DeleteDbiArrayMemory(T *p, int count)
 //    This will yield an IDacDbiInterface to provide structured access to the
 //    data-target.
 //
-//    Must call Release on interface to free its resources.
+//    Must call Release on each returned interface to free its resources.
 //
 //---------------------------------------------------------------------------------------
 STDAPI
@@ -260,7 +262,8 @@ DacDbiInterfaceInstance(
     CLRDATA_ADDRESS contractDescriptorAddress,
     IDacDbiInterface::IAllocator * pAllocator,
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
-    IDacDbiInterface ** ppInterface)
+    IDacDbiInterface ** ppInterface,
+    IUnknown ** ppLegacyDac)
 {
 #ifndef CAN_USE_CDAC
     // Consumed only by the cDAC path, which is compiled out here.
@@ -273,12 +276,13 @@ DacDbiInterfaceInstance(
     SUPPORTS_DAC_HOST_ONLY;
 
     // Since this is public, verify it.
-    if ((ppInterface == NULL) || (pTarget == NULL) || (baseAddress == 0))
+    if ((ppInterface == NULL) || (ppLegacyDac == NULL) || (pTarget == NULL) || (baseAddress == 0))
     {
         return E_INVALIDARG;
     }
 
     *ppInterface = NULL;
+    *ppLegacyDac = NULL;
 
     //
     // Actually allocate the real object and initialize it.
@@ -323,11 +327,11 @@ DacDbiInterfaceInstance(
                         HRESULT hr = cdacInterface->QueryInterface(__uuidof(IDacDbiInterface), (void**)&pCDacDbi);
                         if (SUCCEEDED(hr))
                         {
-                            // Lifetime is now managed by cDAC implementation
-                            pDac->Release();
-                            // Release the AddRef from the QI for legacyImpl
+                            // Transfer the QI reference to DBI so the legacy DAC remains alive
+                            // until the managed cDAC interface has been released.
                             pDac->Release();
                             *ppInterface = pCDacDbi;
+                            *ppLegacyDac = legacyImpl;
                             return S_OK;
                         }
                     }
@@ -542,6 +546,11 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::FlushCache()
     // Current impl of Flush() should always succeed. If it ever fails, we want to know.
     _ASSERTE(SUCCEEDED(hr));
     return hr;
+}
+
+HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::Destroy()
+{
+    return S_OK;
 }
 
 // enable or disable DAC target consistency checks
