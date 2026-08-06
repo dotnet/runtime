@@ -12,6 +12,10 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies
 
     public class GenericOuter<T>
     {
+        public class NonGenericNested
+        {
+        }
+
         public class GenericMiddle<U>
         {
             public class GenericNested<V>
