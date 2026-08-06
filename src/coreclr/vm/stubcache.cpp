@@ -52,7 +52,7 @@ StubCacheBase::~StubCacheBase()
     STUBHASHENTRY *phe = (STUBHASHENTRY*)GetFirst();
     while (phe)
     {
-        _ASSERTE(NULL != phe->m_pCode);
+        _ASSERTE((PCODE)NULL != phe->m_pCode);
         phe = (STUBHASHENTRY*)GetNext((BYTE*)phe);
     }
 }
@@ -73,7 +73,7 @@ PCODE StubCacheBase::Canonicalize(const BYTE * pRawStub, const char *stubType)
 
     STUBHASHENTRY *phe = NULL;
 
-    PCODE pCode = NULL;
+    PCODE pCode = (PCODE)NULL;
     {
         CrstHolder ch(&m_crst);
 
@@ -224,7 +224,7 @@ CClosedHashBase::ELEMENTSTATUS StubCacheBase::Status(           // The status of
 
     PCODE pCode = ((STUBHASHENTRY*)pElement)->m_pCode;
 
-    if (pCode == NULL)
+    if (pCode == (PCODE)NULL)
         return FREE;
     else if (pCode == (PCODE)-1)
         return DELETED;
@@ -251,7 +251,7 @@ void StubCacheBase::SetStatus(
 
     switch (eStatus)
     {
-        case FREE:    phe->m_pCode = NULL;   break;
+        case FREE:    phe->m_pCode = (PCODE)NULL;   break;
         case DELETED: phe->m_pCode = (PCODE)-1; break;
         default:
             _ASSERTE(!"MLCacheEntry::SetStatus(): Bad argument.");
