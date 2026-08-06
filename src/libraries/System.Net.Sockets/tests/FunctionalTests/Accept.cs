@@ -501,11 +501,9 @@ namespace System.Net.Sockets.Tests
         // remote sockaddr. Without a guard on the resulting zero-sized SocketAddress, the
         // shared FinishOperationSyncSuccess path throws ArgumentException from EndPoint.Create
         // and permanently breaks the listener (observed in Kestrel's accept loop).
-        [Fact]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
         public async Task AcceptAsync_DualStackListener_PeerImmediatelyResets_ListenerStaysHealthy()
         {
-            if (!Socket.OSSupportsIPv6) return;
-
             using Socket listener = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp);
             listener.DualMode = true;
             listener.Bind(new IPEndPoint(IPAddress.IPv6Any, 0));
