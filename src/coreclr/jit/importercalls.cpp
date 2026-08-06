@@ -4620,62 +4620,27 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     assert((op1Type == TYP_STRUCT) && isSystemHalfClass(op1ClsHnd));
 
 #if defined(TARGET_XARCH)
-                    if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
+                    // Half -> integer is deliberately not accelerated here. `vcvttsh2si`/`vcvttsh2usi`
+                    // produce the "integer indefinite" value for NaN and for anything out of range,
+                    // while .NET requires saturation with NaN mapping to zero. Leaving the conversion
+                    // as `(int)(float)value` lets the accelerated Half -> float conversion below feed
+                    // the normal GT_CAST, which Lowering already fixes up for saturation.
+                    if (varTypeIsFloating(retType) && compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                     {
-                        NamedIntrinsic opId = NI_Illegal;
+                        NamedIntrinsic opId = (retType == TYP_FLOAT) ? NI_AVX10v1_ConvertScalarToVector128Single
+                                                                     : NI_AVX10v1_ConvertScalarToVector128Double;
 
-                        switch (retType)
-                        {
-                            case TYP_FLOAT:
-                                opId = NI_AVX10v1_ConvertScalarToVector128Single;
-                                break;
-                            case TYP_DOUBLE:
-                                opId = NI_AVX10v1_ConvertScalarToVector128Double;
-                                break;
-                            case TYP_INT:
-                                opId = NI_AVX10v1_ConvertToInt32WithTruncation;
-                                break;
-                            case TYP_UINT:
-                                opId = NI_AVX10v1_ConvertToUInt32WithTruncation;
-                                break;
-#ifdef TARGET_AMD64
-                            case TYP_LONG:
-                                opId = NI_AVX10v1_ConvertToInt64WithTruncation;
-                                break;
-                            case TYP_ULONG:
-                                opId = NI_AVX10v1_ConvertToUInt64WithTruncation;
-                                break;
-#endif // TARGET_AMD64
-                            default:
-                                break;
-                        }
+                        GenTree* op1 = impSimdCreateScalarHalf(impPopStack().val);
 
-                        if (opId != NI_Illegal)
-                        {
-                            GenTree* op1 = impPopStack().val;
-                            op1          = impSimdCreateScalarHalf(op1);
-
-                            if (varTypeIsFloating(retType))
-                            {
-                                GenTree* zeroVec = gtNewZeroConNode(TYP_SIMD16);
-                                retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, op1, opId, TYP_USHORT, 16);
-                                retNode = gtNewSimdToScalarNode(retType, retNode, retType, 16);
-                            }
-                            else
-                            {
-                                // The result is produced directly in a general purpose register. The node
-                                // type must be the actual machine type (TYP_INT/TYP_LONG); signedness is
-                                // encoded by the selected instruction (vcvttsh2si vs vcvttsh2usi).
-                                retNode = gtNewSimdHWIntrinsicNode(genActualType(retType), op1, opId, TYP_USHORT, 16);
-                            }
-                            break;
-                        }
+                        GenTree* zeroVec = gtNewZeroConNode(TYP_SIMD16);
+                        retNode          = gtNewSimdHWIntrinsicNode(TYP_SIMD16, zeroVec, op1, opId, TYP_USHORT, 16);
+                        retNode          = gtNewSimdToScalarNode(retType, retNode, retType, 16);
+                        break;
                     }
 
                     if ((retType == TYP_FLOAT) && compOpportunisticallyDependsOn(InstructionSet_AVX2))
                     {
-                        GenTree* op1 = impPopStack().val;
-                        op1          = impSimdCreateScalarHalf(op1);
+                        GenTree* op1 = impSimdCreateScalarHalf(impPopStack().val);
 
                         retNode =
                             gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, NI_AVX2_ConvertToVector128Single, TYP_USHORT, 16);
@@ -4683,7 +4648,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     }
 #elif defined(TARGET_ARM64)
                     // Half -> single/double is a baseline FCVT (no FEAT_FP16 needed); Half -> integer
-                    // (FCVTZS/FCVTZU with a half operand) requires FEAT_FP16.
+                    // (FCVTZS/FCVTZU with a half operand) requires FEAT_FP16. Those saturate and map
+                    // NaN to zero natively, which is exactly the .NET conversion contract.
                     NamedIntrinsic opId   = NI_Illegal;
                     bool           isFp16 = false;
 
@@ -4717,8 +4683,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                     if ((opId != NI_Illegal) && (!isFp16 || compOpportunisticallyDependsOn(InstructionSet_Fp16)))
                     {
-                        GenTree* op1 = impPopStack().val;
-                        op1          = impSimdCreateScalarHalf(op1);
+                        GenTree* op1 = impSimdCreateScalarHalf(impPopStack().val);
 
                         // The Arm64 scalar convert instructions produce their result directly in the
                         // target register (an FP register for float/double, a general purpose register

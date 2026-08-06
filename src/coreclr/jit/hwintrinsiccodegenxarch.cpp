@@ -3702,22 +3702,6 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             break;
         }
 
-        case NI_AVX10v1_ConvertToInt32WithTruncation:
-        case NI_AVX10v1_ConvertToUInt32WithTruncation:
-#if defined(TARGET_AMD64)
-        case NI_AVX10v1_ConvertToInt64WithTruncation:
-        case NI_AVX10v1_ConvertToUInt64WithTruncation:
-#endif // TARGET_AMD64
-        {
-            // The source is a scalar `Half` (bound as `TYP_USHORT`) held in a vector register while the
-            // result is produced directly into a general purpose register. Use the size of the target
-            // integer type so the correct register width is displayed (e.g. `eax` rather than `rax`).
-            assert(baseType == TYP_USHORT);
-            attr = emitTypeSize(targetType);
-            genHWIntrinsic_R_RM(node, ins, attr, targetReg, op1, instOptions);
-            break;
-        }
-
         case NI_AVX10v1_ConvertScalarToVector128Half:
         {
             // For integer sources the value is read directly from a general purpose register, so the
