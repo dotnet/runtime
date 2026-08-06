@@ -6,11 +6,11 @@ using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-public sealed class ExecutionManager_2 : IExecutionManager
+public sealed class ExecutionManager_1 : IExecutionManager
 {
     private IExecutionManager _executionManagerCore;
 
-    internal ExecutionManager_2(Target target)
+    internal ExecutionManager_1(Target target)
     {
         TargetPointer addr = target.ReadGlobalPointer(Constants.Globals.ExecutionManagerCodeRangeMapAddress);
         _executionManagerCore = new ExecutionManagerCore<NibbleMapConstantLookup>(target, addr);

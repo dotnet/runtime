@@ -73,14 +73,14 @@ internal abstract class NibbleMapTestBuilderBase
     public abstract void AllocateCodeChunk(TargetCodePointer codeStart, uint codeSize);
 }
 
-internal class NibbleMapTestBuilder_2 : NibbleMapTestBuilderBase
+internal class NibbleMapTestBuilder_1 : NibbleMapTestBuilderBase
 {
-    public NibbleMapTestBuilder_2(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
+    public NibbleMapTestBuilder_1(TargetPointer mapBase, ulong mapRangeSize, TargetPointer mapStart, MockTarget.Architecture arch)
         : base(mapBase, mapRangeSize, mapStart, arch)
     {
     }
 
-    public NibbleMapTestBuilder_2(TargetPointer mapBase, ulong mapRangeSize, MockMemorySpace.BumpAllocator allocator, MockTarget.Architecture arch)
+    public NibbleMapTestBuilder_1(TargetPointer mapBase, ulong mapRangeSize, MockMemorySpace.BumpAllocator allocator, MockTarget.Architecture arch)
         : base(mapBase, mapRangeSize, allocator, arch)
     {
     }

@@ -35,9 +35,9 @@ bool HasDebugInfo(TargetCodePointer pCode);
 IEnumerable<OffsetMapping> GetMethodNativeMap(TargetCodePointer pCode, bool preferUninstrumented, out uint codeOffset);
 ```
 
-## Version 2
+## Version 1
 
-<!-- BEGIN GENERATED: usage contract=DebugInfo version=c2 -->
+<!-- BEGIN GENERATED: usage contract=DebugInfo version=c1 -->
 ### Data descriptors used
 
 _None._
@@ -54,7 +54,7 @@ _None._
 | `ExecutionManager` |
 | `PlatformMetadata` |
 | `RuntimeInfo` |
-<!-- END GENERATED: usage contract=DebugInfo version=c2 -->
+<!-- END GENERATED: usage contract=DebugInfo version=c1 -->
 
 ### Constants
 

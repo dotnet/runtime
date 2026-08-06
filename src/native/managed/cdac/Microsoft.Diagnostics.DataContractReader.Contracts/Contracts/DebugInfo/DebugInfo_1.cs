@@ -7,7 +7,7 @@ using ILCompiler.Reflection.ReadyToRun;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal sealed class DebugInfo_2(Target target) : IDebugInfo
+internal sealed class DebugInfo_1(Target target) : IDebugInfo
 {
     private const uint DEBUG_INFO_FAT = 0;
 
