@@ -798,7 +798,7 @@ extern "C" void STDCALL JIT_StackProbe()
     PORTABILITY_ASSERT("JIT_StackProbe is not implemented on wasm");
 }
 
-EXTERN_C void JIT_PollGCRarePath(void* sp)
+EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
 {
     InlinedCallFrame inlinedCallFrame;
     JIT_PInvokeBeginImpl(sp, &inlinedCallFrame);
