@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -11,6 +10,11 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
     public static class DotNetCommands
     {
         private const string _dotnetFolderName = ".dotnet";
+
+        // Set by the test run script to the host it was handed via --runtime-path: the locally built
+        // testhost for a local run, the Helix correlation payload in CI. See the SetTestDotNetHostPath
+        // target in Microsoft.Extensions.Hosting.Functional.Tests.csproj.
+        private const string HostPathVariableName = "__TestDotNetHostPath";
 
         internal static string DotNetHome { get; } = GetDotNetHome();
 
@@ -75,82 +79,22 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
 
         private static string FindDotNetMuxer()
         {
-            var fileName = DotNetExecutableName;
-
-            foreach (var directory in GetMuxerProbingDirectories())
+            var fromRunScript = Environment.GetEnvironmentVariable(HostPathVariableName);
+            if (!string.IsNullOrEmpty(fromRunScript) && File.Exists(fromRunScript))
             {
-                if (string.IsNullOrEmpty(directory))
-                {
-                    continue;
-                }
-
-                string candidate;
-                try
-                {
-                    candidate = Path.Combine(directory, fileName);
-                }
-                catch (ArgumentException)
-                {
-                    // Ignore malformed PATH entries.
-                    continue;
-                }
-
-                if (IsExecutable(candidate))
-                {
-                    return candidate;
-                }
+                return fromRunScript;
             }
 
+#if NETFRAMEWORK
             return null;
-        }
-
-        // Process.Start only accepts a candidate that is executable, so a stray non-executable file named
-        // "dotnet" must not shadow a real muxer further along the search path.
-        private static bool IsExecutable(string path)
-        {
-            if (!File.Exists(path))
-            {
-                return false;
-            }
-
-#if NETFRAMEWORK
-            return true;
 #else
-            if (OperatingSystem.IsWindows())
-            {
-                return true;
-            }
-
-            const UnixFileMode ExecuteBits = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
-            return (File.GetUnixFileMode(path) & ExecuteBits) != 0;
+            // Outside the run script the only host we can vouch for is the one running the tests, which is
+            // the muxer itself on every leg that does not publish the tests as a self-contained application.
+            var processPath = Environment.ProcessPath;
+            return string.Equals(Path.GetFileName(processPath), DotNetExecutableName, StringComparison.OrdinalIgnoreCase)
+                ? processPath
+                : null;
 #endif
         }
-
-        // Probe the same places Process.Start searches when it is handed a bare file name: the directory
-        // holding the executable that is running the tests, the current directory, and then every entry on
-        // PATH. See ResolvePath in System.Diagnostics.Process.
-        private static IEnumerable<string> GetMuxerProbingDirectories()
-        {
-            yield return HostExecutableDirectory;
-            yield return Directory.GetCurrentDirectory();
-
-            var path = Environment.GetEnvironmentVariable("PATH");
-            if (!string.IsNullOrEmpty(path))
-            {
-                foreach (var directory in path.Split(Path.PathSeparator))
-                {
-                    yield return directory;
-                }
-            }
-        }
-
-        private static string HostExecutableDirectory =>
-#if NETFRAMEWORK
-            // On .NET Framework the entry executable is the application itself, so the app base
-            // directory is the directory holding it.
-            AppContext.BaseDirectory;
-#else
-            Path.GetDirectoryName(Environment.ProcessPath);
-#endif
     }
 }

@@ -31,4 +31,19 @@
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 
+  <!--
+       ShutdownTests launches its test application as a portable application, so it needs a muxer. Hand it the
+       host the run script was pointed at rather than letting it resolve a bare "dotnet" against PATH, which
+       could be any host that happens to be installed on the machine. $(RunScriptHost) expands to the runtime
+       path the run script is given: the locally built testhost for a local run, the Helix correlation payload
+       (that same testhost, unzipped) in CI.
+  -->
+  <Target Name="SetTestDotNetHostPath"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'"
+          BeforeTargets="GenerateRunScript">
+    <ItemGroup>
+      <SetScriptCommands Include="$(EnvVarCommand) &quot;__TestDotNetHostPath=$(RunScriptHost)&quot;" />
+    </ItemGroup>
+  </Target>
+
 </Project>
