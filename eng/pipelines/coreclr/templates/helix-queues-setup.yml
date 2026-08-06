@@ -127,6 +127,9 @@ jobs:
     - ${{ if eq(parameters.platform, 'linux_x64') }}:
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - AzureLinux.3.Amd64.Open
+        - AzureLinux.3.Amd64.Experimental.Open
+        - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:1608f79ebd2c4f6da701818047b3b02bb91429f1086a775644b0aab0a857aab4
+        - (AzureLinux.3.0.Amd64.Open)AzureLinux.3.Amd64.Experimental.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-helix-amd64@sha256:1608f79ebd2c4f6da701818047b3b02bb91429f1086a775644b0aab0a857aab4
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - AzureLinux.3.Amd64
 
@@ -147,7 +150,8 @@ jobs:
     # windows x64
     - ${{ if eq(parameters.platform, 'windows_x64') }}:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), ne(parameters.jobParameters.helixQueueGroup, 'cet')) }}:
-        - Windows.10.Amd64.Open
+        - Windows.11.Amd64.Client.Open
+        - Windows.11.Amd64.Experimental.Open
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.jobParameters.helixQueueGroup, 'cet')) }}:
         - Windows.11.Amd64.Cet.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
