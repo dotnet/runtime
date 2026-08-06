@@ -4741,11 +4741,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
 
-                    GenTree* op2 = impPopStack().val;
-                    GenTree* op1 = impPopStack().val;
+                    GenTree* op2 = impSimdCreateScalarHalf(impPopStack().val);
+                    GenTree* op1 = impSimdCreateScalarHalf(impPopStack().val);
 
-                    op2     = impSimdCreateScalarHalf(op2);
-                    op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, opId, TYP_USHORT, 16);
                     retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
@@ -4755,11 +4753,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
 
-                    GenTree* op2 = impPopStack().val;
-                    GenTree* op1 = impPopStack().val;
+                    GenTree* op2 = impSimdCreateScalarHalf(impPopStack().val);
+                    GenTree* op1 = impSimdCreateScalarHalf(impPopStack().val);
 
-                    op2     = impSimdCreateScalarHalf(op2);
-                    op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, opId, TYP_USHORT, 16);
                     retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
                 }
@@ -4806,13 +4802,10 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #if defined(TARGET_XARCH)
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX10v1))
                 {
-                    GenTree* op3 = impPopStack().val;
-                    GenTree* op2 = impPopStack().val;
-                    GenTree* op1 = impPopStack().val;
+                    GenTree* op3 = impSimdCreateScalarHalf(impPopStack().val);
+                    GenTree* op2 = impSimdCreateScalarHalf(impPopStack().val);
+                    GenTree* op1 = impSimdCreateScalarHalf(impPopStack().val);
 
-                    op3     = impSimdCreateScalarHalf(op3);
-                    op2     = impSimdCreateScalarHalf(op2);
-                    op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_SIMD16, op1, op2, op3, NI_AVX10v1_FusedMultiplyAddScalar,
                                                        TYP_USHORT, 16);
                     retNode = impSimdToScalarHalf(retNode, sig->retTypeSigClass);
@@ -4820,13 +4813,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 #elif defined(TARGET_ARM64)
                 if (compOpportunisticallyDependsOn(InstructionSet_Fp16))
                 {
-                    GenTree* op3 = impPopStack().val;
-                    GenTree* op2 = impPopStack().val;
-                    GenTree* op1 = impPopStack().val;
-
-                    op3 = impSimdCreateScalarHalf(op3);
-                    op2 = impSimdCreateScalarHalf(op2);
-                    op1 = impSimdCreateScalarHalf(op1);
+                    GenTree* op3 = impSimdCreateScalarHalf(impPopStack().val);
+                    GenTree* op2 = impSimdCreateScalarHalf(impPopStack().val);
+                    GenTree* op1 = impSimdCreateScalarHalf(impPopStack().val);
 
                     // fmadd computes Rd = Rn * Rm + Ra, so (op1 * op2) + op3 == x * y + z.
                     retNode =
@@ -4886,11 +4875,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
 
-                    GenTree* op2 = impPopStack().val;
-                    GenTree* op1 = impPopStack().val;
+                    GenTree* op2 = impSimdCreateScalarHalf(impPopStack().val);
+                    GenTree* op1 = impSimdCreateScalarHalf(impPopStack().val);
 
-                    op2     = impSimdCreateScalarHalf(op2);
-                    op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, op2, opId, TYP_USHORT, 16);
                 }
 #elif defined(TARGET_ARM64)
@@ -4899,11 +4886,9 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
                     NamedIntrinsic opId = lookupHalfIntrinsic(ni);
                     assert(opId != NI_Illegal);
 
-                    GenTree* op2 = impPopStack().val;
-                    GenTree* op1 = impPopStack().val;
+                    GenTree* op2 = impSimdCreateScalarHalf(impPopStack().val);
+                    GenTree* op1 = impSimdCreateScalarHalf(impPopStack().val);
 
-                    op2     = impSimdCreateScalarHalf(op2);
-                    op1     = impSimdCreateScalarHalf(op1);
                     retNode = gtNewSimdHWIntrinsicNode(TYP_INT, op1, op2, opId, TYP_USHORT, 16);
                 }
 #endif // TARGET_XARCH
