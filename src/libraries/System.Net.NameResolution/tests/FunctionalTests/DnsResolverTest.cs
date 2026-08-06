@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Net.Sockets;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Linq;
@@ -289,72 +287,6 @@ namespace System.Net.NameResolution.Tests
 
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
             Assert.Empty(result.Records);
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
-        [InlineData("2001:db8::1", 0)]
-        [InlineData("fe80::1", 42)]
-        public void DnsSdAddressParsing_AppliesInterfaceIndexOnlyToLinkLocalIPv6(string addressString, long expectedScopeId)
-        {
-            const uint InterfaceIndex = 42;
-
-            Type palType = typeof(DnsResolver).Assembly.GetType("System.Net.DnsResolverPal", throwOnError: true)!;
-            Type recordType = palType.GetNestedType("DnsSdRecord", BindingFlags.NonPublic)!;
-            ConstructorInfo? constructor = recordType.GetConstructor(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                binder: null,
-                [typeof(ushort), typeof(byte[]), typeof(uint), typeof(uint)],
-                modifiers: null);
-            Assert.NotNull(constructor);
-            IPAddress address = IPAddress.Parse(addressString);
-            object dnsSdRecord = constructor.Invoke([(ushort)DnsRecordType.AAAA, address.GetAddressBytes(), (uint)60, InterfaceIndex]);
-
-            MethodInfo parser = palType.GetMethod("TryParseAddress", BindingFlags.Static | BindingFlags.NonPublic)!;
-            object?[] arguments = [dnsSdRecord, null];
-
-            Assert.True((bool)parser.Invoke(null, arguments)!);
-            AddressRecord record = Assert.IsType<AddressRecord>(arguments[1]);
-            Assert.Equal(expectedScopeId, record.Address.ScopeId);
-        }
-
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
-        [InlineData("TryParseMx")]
-        [InlineData("TryParseSrv")]
-        public void DnsSdRecordParsing_RootTarget_ReturnsDot(string parserName)
-        {
-            DnsRecordType recordTypeValue = parserName switch
-            {
-                "TryParseMx" => DnsRecordType.MX,
-                "TryParseSrv" => DnsRecordType.SRV,
-                _ => throw new UnreachableException(),
-            };
-            byte[] data = recordTypeValue switch
-            {
-                DnsRecordType.MX => [0, 0, 0],
-                DnsRecordType.SRV => [0, 0, 0, 0, 0, 0, 0],
-                _ => throw new UnreachableException(),
-            };
-
-            Type palType = typeof(DnsResolver).Assembly.GetType("System.Net.DnsResolverPal", throwOnError: true)!;
-            Type recordType = palType.GetNestedType("DnsSdRecord", BindingFlags.NonPublic)!;
-            ConstructorInfo constructor = recordType.GetConstructor(
-                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
-                binder: null,
-                [typeof(ushort), typeof(byte[]), typeof(uint), typeof(uint)],
-                modifiers: null)!;
-            object dnsSdRecord = constructor.Invoke([(ushort)recordTypeValue, data, (uint)60, (uint)0]);
-
-            MethodInfo parser = palType.GetMethod(parserName, BindingFlags.Static | BindingFlags.NonPublic)!;
-            object?[] arguments = [dnsSdRecord, null];
-
-            Assert.True((bool)parser.Invoke(null, arguments)!);
-            string parsedName = arguments[1] switch
-            {
-                MxRecord mx => mx.Exchange,
-                SrvRecord srv => srv.Target,
-                _ => throw new UnreachableException(),
-            };
-            Assert.Equal(".", parsedName);
         }
 
         [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]

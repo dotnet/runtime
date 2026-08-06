@@ -131,6 +131,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx'">
     <Compile Include="System\Net\NameResolutionPal.Unix.cs" />
     <Compile Include="System\Net\DnsResolverPal.OSX.cs" />
+    <Compile Include="System\Net\DnsSdRecordParsing.cs" />
     <Compile Include="$(CommonPath)System\Net\InteropIPAddressExtensions.Unix.cs"
              Link="Common\System\Net\InteropIPAddressExtensions.Unix.cs" />
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Unix.cs"

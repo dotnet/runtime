@@ -1,13 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -24,37 +22,37 @@ namespace System.Net
 
         public static Task<DnsResult<AddressRecord>> ResolveAddresses(IPEndPoint[] servers, bool async, string name, AddressFamily addressFamily, CancellationToken cancellationToken)
             => servers.Length == 0
-                ? Query<AddressRecord>(servers, async, name, AddressFamilyToQueryType(addressFamily), cancellationToken, TryParseAddress)
+                ? Query<AddressRecord>(servers, async, name, AddressFamilyToQueryType(addressFamily), cancellationToken, DnsSdRecordParsing.TryParseAddress)
                 : ResolveAddresses((IList<IPEndPoint>)servers, async, name, addressFamily, cancellationToken);
 
         public static Task<DnsResult<SrvRecord>> ResolveSrv(IPEndPoint[] servers, bool async, string name, CancellationToken cancellationToken)
             => servers.Length == 0
-                ? Query<SrvRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_SRV, cancellationToken, TryParseSrv)
+                ? Query<SrvRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_SRV, cancellationToken, DnsSdRecordParsing.TryParseSrv)
                 : ResolveSrv((IList<IPEndPoint>)servers, async, name, cancellationToken);
 
         public static Task<DnsResult<MxRecord>> ResolveMx(IPEndPoint[] servers, bool async, string name, CancellationToken cancellationToken)
             => servers.Length == 0
-                ? Query<MxRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_MX, cancellationToken, TryParseMx)
+                ? Query<MxRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_MX, cancellationToken, DnsSdRecordParsing.TryParseMx)
                 : ResolveMx((IList<IPEndPoint>)servers, async, name, cancellationToken);
 
         public static Task<DnsResult<TxtRecord>> ResolveTxt(IPEndPoint[] servers, bool async, string name, CancellationToken cancellationToken)
             => servers.Length == 0
-                ? Query<TxtRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_TXT, cancellationToken, TryParseTxt)
+                ? Query<TxtRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_TXT, cancellationToken, DnsSdRecordParsing.TryParseTxt)
                 : ResolveTxt((IList<IPEndPoint>)servers, async, name, cancellationToken);
 
         public static Task<DnsResult<CNameRecord>> ResolveCName(IPEndPoint[] servers, bool async, string name, CancellationToken cancellationToken)
             => servers.Length == 0
-                ? Query<CNameRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_CNAME, cancellationToken, TryParseCName)
+                ? Query<CNameRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_CNAME, cancellationToken, DnsSdRecordParsing.TryParseCName)
                 : ResolveCName((IList<IPEndPoint>)servers, async, name, cancellationToken);
 
         public static Task<DnsResult<PtrRecord>> ResolvePtr(IPEndPoint[] servers, bool async, string name, CancellationToken cancellationToken)
             => servers.Length == 0
-                ? Query<PtrRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_PTR, cancellationToken, TryParsePtr)
+                ? Query<PtrRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_PTR, cancellationToken, DnsSdRecordParsing.TryParsePtr)
                 : ResolvePtr((IList<IPEndPoint>)servers, async, name, cancellationToken);
 
         public static Task<DnsResult<NsRecord>> ResolveNs(IPEndPoint[] servers, bool async, string name, CancellationToken cancellationToken)
             => servers.Length == 0
-                ? Query<NsRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_NS, cancellationToken, TryParseNs)
+                ? Query<NsRecord>(servers, async, name, Interop.Dnssd.kDNSServiceType_NS, cancellationToken, DnsSdRecordParsing.TryParseNs)
                 : ResolveNs((IList<IPEndPoint>)servers, async, name, cancellationToken);
 
         private static ushort AddressFamilyToQueryType(AddressFamily addressFamily) =>
@@ -71,7 +69,7 @@ namespace System.Net
             string name,
             ushort queryType,
             CancellationToken cancellationToken,
-            TryParseRecord<TRecord> tryParse)
+            TryParseDnsSdRecord<TRecord> tryParse)
         {
             ValidateServers(servers);
 
@@ -89,7 +87,7 @@ namespace System.Net
             string name,
             ushort queryType,
             CancellationToken cancellationToken,
-            TryParseRecord<TRecord> tryParse)
+            TryParseDnsSdRecord<TRecord> tryParse)
         {
             DnsSdQueryResult raw = QueryRecord(name, queryType, cancellationToken);
             if (raw.ResponseCode != DnsResponseCode.NoError)
@@ -213,169 +211,6 @@ namespace System.Net
             catch (Exception ex)
             {
                 state?.SetException(ex);
-            }
-        }
-
-        private delegate bool TryParseRecord<TRecord>(DnsSdRecord record, out TRecord parsed);
-
-        private static bool TryParseAddress(DnsSdRecord record, out AddressRecord parsed)
-        {
-            if (record.Data.Length == 4 || record.Data.Length == 16)
-            {
-                IPAddress address = new IPAddress(record.Data);
-                if (address.IsIPv6LinkLocal)
-                {
-                    address.ScopeId = record.InterfaceIndex;
-                }
-
-                parsed = new AddressRecord(address, TimeSpan.FromSeconds(record.Ttl));
-                return true;
-            }
-
-            parsed = default;
-            return false;
-        }
-
-        private static bool TryParseSrv(DnsSdRecord record, out SrvRecord parsed)
-        {
-            ReadOnlySpan<byte> data = record.Data;
-            if (data.Length >= 7 && TryParseDnsName(data.Slice(6), out string target, out _))
-            {
-                parsed = new SrvRecord(
-                    target,
-                    BinaryPrimitives.ReadUInt16BigEndian(data.Slice(4, 2)),
-                    BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0, 2)),
-                    BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2, 2)),
-                    TimeSpan.FromSeconds(record.Ttl),
-                    // DNSServiceQueryRecord exposes only the queried record's rdata, not
-                    // additional-section glue A/AAAA records.
-                    null);
-                return true;
-            }
-
-            parsed = default;
-            return false;
-        }
-
-        private static bool TryParseMx(DnsSdRecord record, out MxRecord parsed)
-        {
-            ReadOnlySpan<byte> data = record.Data;
-            if (data.Length >= 3 && TryParseDnsName(data.Slice(2), out string exchange, out _))
-            {
-                parsed = new MxRecord(exchange, BinaryPrimitives.ReadUInt16BigEndian(data.Slice(0, 2)), TimeSpan.FromSeconds(record.Ttl));
-                return true;
-            }
-
-            parsed = default;
-            return false;
-        }
-
-        private static bool TryParseTxt(DnsSdRecord record, out TxtRecord parsed)
-        {
-            ReadOnlySpan<byte> data = record.Data;
-            List<string> values = new();
-            int offset = 0;
-
-            while (offset < data.Length)
-            {
-                int length = data[offset++];
-                if (length > data.Length - offset)
-                {
-                    parsed = default;
-                    return false;
-                }
-
-                values.Add(Encoding.UTF8.GetString(data.Slice(offset, length)));
-                offset += length;
-            }
-
-            parsed = new TxtRecord(values, TimeSpan.FromSeconds(record.Ttl));
-            return true;
-        }
-
-        private static bool TryParseCName(DnsSdRecord record, out CNameRecord parsed)
-        {
-            if (TryParseDnsName(record.Data, out string name, out _))
-            {
-                parsed = new CNameRecord(name, TimeSpan.FromSeconds(record.Ttl));
-                return true;
-            }
-
-            parsed = default;
-            return false;
-        }
-
-        private static bool TryParsePtr(DnsSdRecord record, out PtrRecord parsed)
-        {
-            if (TryParseDnsName(record.Data, out string name, out _))
-            {
-                parsed = new PtrRecord(name, TimeSpan.FromSeconds(record.Ttl));
-                return true;
-            }
-
-            parsed = default;
-            return false;
-        }
-
-        private static bool TryParseNs(DnsSdRecord record, out NsRecord parsed)
-        {
-            if (TryParseDnsName(record.Data, out string name, out _))
-            {
-                parsed = new NsRecord(name, TimeSpan.FromSeconds(record.Ttl));
-                return true;
-            }
-
-            parsed = default;
-            return false;
-        }
-
-        private static bool TryParseDnsName(ReadOnlySpan<byte> data, out string name, out int bytesConsumed)
-        {
-            StringBuilder builder = new();
-            int offset = 0;
-
-            while (offset < data.Length)
-            {
-                byte length = data[offset++];
-                if (length == 0)
-                {
-                    name = builder.Length == 0 ? "." : builder.ToString();
-                    bytesConsumed = offset;
-                    return true;
-                }
-
-                if ((length & 0xC0) != 0 || length > 63 || length > data.Length - offset)
-                {
-                    break;
-                }
-
-                if (builder.Length != 0)
-                {
-                    builder.Append('.');
-                }
-
-                builder.Append(Encoding.UTF8.GetString(data.Slice(offset, length)));
-                offset += length;
-            }
-
-            name = string.Empty;
-            bytesConsumed = 0;
-            return false;
-        }
-
-        private readonly struct DnsSdRecord
-        {
-            public ushort Type { get; }
-            public byte[] Data { get; }
-            public uint Ttl { get; }
-            public uint InterfaceIndex { get; }
-
-            public DnsSdRecord(ushort type, byte[] data, uint ttl, uint interfaceIndex)
-            {
-                Type = type;
-                Data = data;
-                Ttl = ttl;
-                InterfaceIndex = interfaceIndex;
             }
         }
 
