@@ -711,15 +711,15 @@ extern "C" void STDCALL GenericPInvokeCalliHelper(void)
 }
 
 // Does the pinvoke frame transition; the naked wrappers below have already set the wasm
-// __stack_pointer global to sp so it is safe to run native code here.
-EXTERN_C void JIT_PInvokeBeginImpl(void* sp, InlinedCallFrame* pFrame)
+// __stack_pointer global to callersStackPointer so it is safe to run native code here.
+EXTERN_C void JIT_PInvokeBeginImpl(uintptr_t callersStackPointer, InlinedCallFrame* pFrame)
 {
     Thread* pThread = GetThread();
 
-    // Initialize the JIT-provided frame storage, deriving its state from sp/pep since wasm
+    // Initialize the JIT-provided frame storage, deriving its state from callersStackPointer since wasm
     // has no machine registers to read the caller SP / return address from.
     ::new ((void*)pFrame) InlinedCallFrame();
-    pFrame->m_pCallSiteSP          = sp;
+    pFrame->m_pCallSiteSP          = (void*)callersStackPointer;
     pFrame->m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R; // When this is true, UpdateRegDisplay_Impl derives state from m_pCallSiteSP.
     pFrame->m_pCalleeSavedFP       = 0;
     pFrame->m_pThread              = pThread;
@@ -801,7 +801,7 @@ extern "C" void STDCALL JIT_StackProbe()
 EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
 {
     InlinedCallFrame inlinedCallFrame;
-    JIT_PInvokeBeginImpl(sp, &inlinedCallFrame);
+    JIT_PInvokeBeginImpl(callersStackPointer, &inlinedCallFrame);
 
     Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
     pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
