@@ -188,17 +188,21 @@ namespace System.Net.Security.Tests
             using X509Certificate2 leafPub = leafReq.Create(intermediateWithKey, now.AddDays(-1), now.AddDays(365), new byte[] { 2 });
             using X509Certificate2 leafWithKey = leafPub.CopyWithPrivateKey(leafKey);
 
+            // The root is included in the additional certificates because some platforms (e.g. Android)
+            // can only build the chain when its root is among the certificates offered as trusted.
+            X509Certificate2Collection additionalCertificates = new X509Certificate2Collection { intermediateWithKey, rootCert };
+
             // Create a caller-owned context with an intermediate certificate
             SslStreamCertificateContext callerContext = SslStreamCertificateContext.Create(
                 leafWithKey,
-                new X509Certificate2Collection { intermediateWithKey },
+                additionalCertificates,
                 offline: true);
 
             // Simulate first UpdateOptions call: bare ServerCertificate creates and owns a context
             var options = new SslAuthenticationOptions();
             SslStreamCertificateContext ownedContext = SslStreamCertificateContext.Create(
                 leafWithKey,
-                new X509Certificate2Collection { intermediateWithKey },
+                additionalCertificates,
                 offline: true);
             // Capture the internal intermediate cert object before it is released
             Assert.NotEmpty(ownedContext.IntermediateCertificates);
@@ -226,7 +230,8 @@ namespace System.Net.Security.Tests
             options.Dispose();
 
             // Verify that the caller's intermediate certificates were not disposed
-            Assert.Equal(1, callerContext.IntermediateCertificates.Count);
+            // (the exact count varies by platform, some platforms keep the root in the chain)
+            Assert.NotEmpty(callerContext.IntermediateCertificates);
             // Export() requires the native certificate handle; a CryptographicException would indicate the certificate was incorrectly disposed.
             foreach (X509Certificate2 cert in callerContext.IntermediateCertificates)
             {
