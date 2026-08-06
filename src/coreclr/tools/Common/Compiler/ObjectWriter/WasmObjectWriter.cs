@@ -701,7 +701,7 @@ namespace ILCompiler.ObjectWriter
                         MemoryStream destStream = new MemoryStream((int)originalStream.Length);
                         originalStream.Position = 0;
                         //originalStream.CopyTo(stream);
-                        ResolveRelocations(index, originalStream, destStream, relocations, sectionStart: 0);
+                        ResolveRelocations(index, originalStream, destStream, relocations, sectionStart: 0, shrink: false);
                         destStream.SetLength(destStream.Position);
                         section.Stream = destStream;
                         Console.WriteLine("Saved: {0} bytes of relocations in section {1}", originalStream.Length - destStream.Length, section.Name);
@@ -737,7 +737,7 @@ namespace ILCompiler.ObjectWriter
                     // We emit all Webcil sections into one stream, and copy data / resolve relocations directly into this combined stream.
                     // As a result, the real offsets that relocs in our list have need to be calculated based on the section's
                     // position within the Webcil segment
-                    ResolveRelocations(section.Index, section.Stream, webcilStream, relocations, sectionStart: (long)section.Header.PointerToRawData);
+                    ResolveRelocations(section.Index, section.Stream, webcilStream, relocations, sectionStart: (long)section.Header.PointerToRawData, shrink: false);
                 }
                 else
                 {
@@ -939,6 +939,7 @@ namespace ILCompiler.ObjectWriter
             //  write the temporary stream to the destination stream with the new size
             MemoryStream tempStream = new MemoryStream((int)maxBlobSize);
             byte[] copyBuffer = new byte[4096];
+            byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
             int[] blobShrink = new int[blobs.Count];
 
             blobs.Sort((a, b) => a.Start.CompareTo(b.Start));
@@ -969,7 +970,7 @@ namespace ILCompiler.ObjectWriter
                             nextReloc = blobRelocs[i + 1];
                         }
 
-                        int size = ResolveReloc(sectionIndex, sectionStream, tempStream, curReloc);
+                        int size = ResolveReloc(sectionIndex, sectionStream, tempStream, curReloc, relocScratchBuffer);
                         blobShrink[b] += (int)Relocation.GetSize(curReloc.Type) - size;
 
                         long nextStart = curReloc.Offset + Relocation.GetSize(curReloc.Type);
@@ -1009,10 +1010,8 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private unsafe int ResolveReloc(int sectionIndex, Stream sectionStream, MemoryStream dstStream, SymbolicRelocation reloc, long? destPos = null)
+        private unsafe int ResolveReloc(int sectionIndex, Stream sectionStream, MemoryStream dstStream, SymbolicRelocation reloc,  byte[] relocScratchBuffer, long? destPos = null, bool shrink = false)
         {
-            byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
-
             WebcilSection? curSectionAsWebcil = null;
             uint webcilVirtualStart = 0;
             if (_sections[sectionIndex] is WebcilSection curSection)
@@ -1072,7 +1071,8 @@ namespace ILCompiler.ObjectWriter
                         {
                             throw new InvalidOperationException($"Symbol '{reloc.SymbolName}' was not registered. Relocation type {reloc.Type}.");
                         }
-                        if (Relocation.IsVariableLength(reloc.Type))
+
+                        if (shrink && Relocation.IsVariableLength(reloc.Type))
                         {
                             actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, symbol.Index + addend);
                         }
@@ -1123,7 +1123,15 @@ namespace ILCompiler.ObjectWriter
                             throw new InvalidDataException($"WASM_MEMORY_ADDR_REL_SLEB: symbol '{reloc.SymbolName}' (sectionIndex {definedSymbol.SectionIndex}, section type {_sections[definedSymbol.SectionIndex]?.GetType().Name}) is not in a WebcilSection. Reloc in section {sectionIndex} ({_sections[sectionIndex]?.GetType().Name}), offset {reloc.Offset:X}.");
                         }
 
-                        actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
+                        if (shrink)
+                        {
+                            actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
+                        }
+                        else
+                        {
+                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
+                        }
+
                         break;
                     }
                     case RelocType.WASM_MEMORY_ADDR_REL_LEB:
@@ -1139,14 +1147,29 @@ namespace ILCompiler.ObjectWriter
                             throw new InvalidDataException($"WASM_MEMORY_ADDR_REL_LEB: symbol '{reloc.SymbolName}' (sectionIndex {definedSymbol.SectionIndex}, section type {_sections[definedSymbol.SectionIndex]?.GetType().Name}) is not in a WebcilSection. Reloc in section {sectionIndex} ({_sections[sectionIndex]?.GetType().Name}), offset {reloc.Offset:X}.");
                         }
 
-                        actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
+                        if (shrink)
+                        {
+                            actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
+                        }
+                        else
+                        {
+                            Relocation.WriteValue(reloc.Type, pData, virtualSymbolImageOffset + addend);
+                        }
+
                         break;
                     }
                     case RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB:
                     {
                         WasmSymbol symbol = _wasmSymbolManager.GetSymbol(RtlRestoreContextTagName);
                         Debug.Assert(symbol.IndexSpace == WasmIndexSpace.Tag);
-                        actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, symbol.Index + addend);
+                        if (shrink)
+                        {
+                            actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, symbol.Index + addend);
+                        }
+                        else
+                        {
+                            Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
+                        }
                         break;
                     }
                     default:
@@ -1178,7 +1201,7 @@ namespace ILCompiler.ObjectWriter
         }
 
         private record Segment(long Start, long End, SymbolicRelocation? Reloc);
-        private void ResolveRelocations(int sectionIndex, Stream sectionStream, MemoryStream dstStream, List<SymbolicRelocation> relocs, long sectionStart = 0)
+        private void ResolveRelocations(int sectionIndex, Stream sectionStream, MemoryStream dstStream, List<SymbolicRelocation> relocs, long sectionStart = 0, bool shrink = false)
         {
             if (relocs.Count == 0)
             {
@@ -1186,7 +1209,7 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
-            if (_sections[sectionIndex] is WasmSection { Type: WasmSectionType.Code })
+            if (shrink && _sections[sectionIndex] is WasmSection { Type: WasmSectionType.Code })
             {
                 List<CodeBlob> blobs = ParseCodeBlobs(sectionStream);
                 sectionStream.Position = 0;
@@ -1194,13 +1217,21 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
+            byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
+
             // Otherwise, we can resolve relocations on top of the copied in section stream, since the size and layout of the stream won't be changing.
             long startPos = dstStream.Position;
             sectionStream.CopyTo(dstStream);
-            foreach (SymbolicRelocation reloc in relocs)
+            for (int i = 0; i < relocs.Count; i++)
             {
-                long? destPos = sectionStart != 0 ? sectionStart + reloc.Offset : null;
-                ResolveReloc(sectionIndex, sectionStream, dstStream, reloc, destPos: destPos);
+                if (i % 10000 == 0)
+                {
+                    Console.WriteLine("Resolving relocation {0}/{1} in section {2}", i, relocs.Count, sectionIndex);
+                }
+
+                SymbolicRelocation reloc = relocs[i];
+                long? destPos = sectionStart + reloc.Offset;
+                ResolveReloc(sectionIndex, sectionStream, dstStream, reloc, relocScratchBuffer, destPos: destPos);
             }
             dstStream.Position = sectionStream.Length + startPos;
         }
