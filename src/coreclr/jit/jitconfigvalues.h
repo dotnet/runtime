@@ -689,7 +689,9 @@ CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
 // Stress general runtime async inlining: forcibly inline async callees that may suspend,
 // with a probability that decays with inline depth. Nonzero enables; the value is the
 // external random seed. See AsyncStressPolicy.
-CONFIG_INTEGER(JitStressAsyncInlining, "JitStressAsyncInlining", 0)
+// TEMPORARY: enabled by default to get CI coverage of async inlining. Revert to 0 before
+// merging.
+CONFIG_INTEGER(JitStressAsyncInlining, "JitStressAsyncInlining", 1)
 CONFIG_INTEGER(JitStressAsyncInliningMaxDepth, "JitStressAsyncInliningMaxDepth", 8)
 // Probability, in percent, that the first async candidate of a body at depth 1 is inlined.
 // The n'th candidate of a body at depth d is inlined with probability (pct/100)^(d + n).
