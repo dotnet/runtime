@@ -145,6 +145,19 @@ namespace Microsoft.Extensions.Hosting.Internal
                                 // option instances; flatten so every failure is reported together.
                                 (validationFailures ??= new()).AddRange(ex.InnerExceptions);
                             }
+                            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                            {
+                                // Preserve StartAsync cancellation semantics: cancellation of the startup token
+                                // propagates as OperationCanceledException rather than being aggregated.
+                                throw;
+                            }
+                            catch (Exception ex)
+                            {
+                                // An unexpected (non-validation) failure stops further validation, but any
+                                // validation failures already collected are retained and reported alongside it.
+                                (validationFailures ??= new()).Add(ex);
+                                break;
+                            }
                         }
 
                         if (validationFailures is not null)
@@ -309,7 +322,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             using (cts)
             {
                 List<Exception> exceptions = new();
-                if (!_hostStarting) // Started?
+                if (!_hostStarting || _hostedServices is null) // Started (and hosted services resolved)?
                 {
 
                     // Cancel IHostApplicationLifetime.ApplicationStopping.

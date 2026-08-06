@@ -587,6 +587,49 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.False(asyncResolved);
         }
 
+        [Fact]
+        public async Task ValidateOnStart_FailedStartupValidation_StopAsyncDoesNotThrow()
+        {
+            var hostBuilder = CreateHostBuilder(services =>
+                services.AddSingleton<IAsyncStartupValidator>(new ThrowingAsyncStartupValidator()));
+
+            using var host = hostBuilder.Build();
+
+            // Startup validation runs before hosted services are resolved, so a failure leaves the host in a
+            // "starting" state with no resolved hosted services. StopAsync must handle that without throwing.
+            await Assert.ThrowsAsync<OptionsValidationException>(async () => await host.StartAsync());
+            await host.StopAsync();
+        }
+
+        [Fact]
+        public async Task ValidateOnStart_UnexpectedExceptionAfterFailure_RetainsFailuresAndStopsIterating()
+        {
+            var first = new CountingThrowingAsyncStartupValidator("first failed");
+            var second = new ThrowingUnexpectedAsyncStartupValidator();
+            var third = new TrackingAsyncStartupValidator();
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddSingleton<IAsyncStartupValidator>(first);
+                services.AddSingleton<IAsyncStartupValidator>(second);
+                services.AddSingleton<IAsyncStartupValidator>(third);
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                AggregateException error = await Assert.ThrowsAsync<AggregateException>(async () => await host.StartAsync());
+
+                // The earlier validation failure is retained and reported alongside the unexpected exception.
+                Assert.Equal(2, error.InnerExceptions.Count);
+                Assert.IsType<OptionsValidationException>(error.InnerExceptions[0]);
+                Assert.IsType<InvalidOperationException>(error.InnerExceptions[1]);
+            }
+
+            // Iteration stops at the unexpected failure, so validators after it do not run.
+            Assert.True(first.Validated);
+            Assert.True(second.Validated);
+            Assert.False(third.Validated);
+        }
+
         private sealed class TrackingStartupValidator : IStartupValidator
         {
             public bool Validated { get; private set; }
@@ -629,6 +672,17 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             public Task ValidateAsync(CancellationToken cancellationToken = default) =>
                 throw new OptionsValidationException("name", typeof(object), new[] { "async startup validation failed" });
+        }
+
+        private sealed class ThrowingUnexpectedAsyncStartupValidator : IAsyncStartupValidator
+        {
+            public bool Validated { get; private set; }
+
+            public Task ValidateAsync(CancellationToken cancellationToken = default)
+            {
+                Validated = true;
+                throw new InvalidOperationException("unexpected failure");
+            }
         }
 
         private sealed class CountingThrowingAsyncStartupValidator : IAsyncStartupValidator
