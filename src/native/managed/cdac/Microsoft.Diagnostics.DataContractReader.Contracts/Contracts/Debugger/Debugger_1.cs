@@ -181,14 +181,7 @@ internal sealed class Debugger_1 : IDebugger
         return _target.Read<byte>(address);
     }
 
-    private Dictionary<TargetPointer, byte> GetPatches()
-    {
-        Dictionary<TargetPointer, byte>? patches = _patches;
-        if (patches is not null)
-            return patches;
-
-        return _patches ??= ReadPatches();
-    }
+    private Dictionary<TargetPointer, byte> GetPatches() => _patches ??= ReadPatches();
 
     private Dictionary<TargetPointer, byte> ReadPatches()
     {
