@@ -125,7 +125,7 @@ using namespace CorUnix;
 Volatile<LONG> terminator = 0;
 
 // Id of thread generating a core dump
-Volatile<LONGLONG> g_crashingThreadId = 0;
+volatile LONGLONG g_crashingThreadId = 0;
 
 // Process ID of this process.
 DWORD gPID = (DWORD) -1;
