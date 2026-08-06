@@ -1023,11 +1023,9 @@ namespace System.Net.Sockets
                         {
                             try
                             {
-                                NetEventSource.Accepted(_acceptSocket, _acceptSocket.RemoteEndPoint, _acceptSocket.LocalEndPoint);
+                                NetEventSource.Accepted(_acceptSocket, remoteEndPoint, _acceptSocket.LocalEndPoint);
                             }
                             catch (ObjectDisposedException) { }
-                            // RemoteEndPoint may call getpeername which can fail with ENOTCONN if the peer reset between accept and here.
-                            catch (SocketException) { }
                         }
                     }
                     else
