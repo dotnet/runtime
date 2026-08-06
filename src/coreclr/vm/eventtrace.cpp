@@ -3623,7 +3623,7 @@ VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_JIT_KEYWORD))
         {
-            DWORD dwHelperSize = 0;
+            DWORD dwHelperSize = 1;
             ETW::MethodLog::SendHelperEvent(ullHelperStartAddress, dwHelperSize, pHelperName);
         }
     } EX_CATCH { } EX_END_CATCH
