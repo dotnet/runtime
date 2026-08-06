@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
-internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi
+internal struct PrecodeStubs_1_Impl : IPrecodeStubsContractCommonApi
 {
     public static TargetPointer StubPrecode_GetMethodDesc(TargetPointer instrPointer, Target target, Data.PrecodeMachineDescriptor precodeMachineDescriptor)
     {
@@ -106,9 +106,9 @@ internal struct PrecodeStubs_3_Impl : IPrecodeStubsContractCommonApi
     }
 }
 
-internal sealed class PrecodeStubs_3 : PrecodeStubsCommon<PrecodeStubs_3_Impl>
+internal sealed class PrecodeStubs_1 : PrecodeStubsCommon<PrecodeStubs_1_Impl>
 {
-    public PrecodeStubs_3(Target target) : base(target) { }
+    public PrecodeStubs_1(Target target) : base(target) { }
 
     public override TargetCodePointer GetInterpreterCodeFromInterpreterPrecodeIfPresent(
         TargetCodePointer entryPoint)
@@ -119,7 +119,7 @@ internal sealed class PrecodeStubs_3 : PrecodeStubsCommon<PrecodeStubs_3_Impl>
             if (!Target.IsAlignedToPointerSize(instrPointer))
                 return entryPoint;
 
-            if (PrecodeStubs_3_Impl.TryGetKnownPrecodeType(
+            if (PrecodeStubs_1_Impl.TryGetKnownPrecodeType(
                     instrPointer,
                     Target,
                     MachineDescriptor) is not KnownPrecodeType.Interpreter)

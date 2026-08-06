@@ -102,8 +102,8 @@ public sealed class UsageWalkerIntegrationTests
     }
 
     [Theory]
-    [InlineData("IExecutionManager", "c2", "Data.UnwindInfo", "FunctionLength")]
-    [InlineData("IPrecodeStubs", "c3", "Data.PrecodeMachineDescriptor", "StubCodePageSize")]
+    [InlineData("IExecutionManager", "c1", "Data.UnwindInfo", "FunctionLength")]
+    [InlineData("IPrecodeStubs", "c1", "Data.PrecodeMachineDescriptor", "StubCodePageSize")]
     [InlineData("IStackWalk", "c1", "Data.ReadyToRunInfo", "ImportSections")]
     [InlineData("IThread", "c1", "Data.Thread", "ThreadHandle")]
     [InlineData("IThread", "c1", "Data.Thread", "DebuggerControlledThreadState")]
@@ -132,7 +132,7 @@ public sealed class UsageWalkerIntegrationTests
 
         Assert.True(DataType(
             built.Value.Graph,
-            new ContractVersion(new ContractInterface("IExecutionManager"), "c2"),
+            new ContractVersion(new ContractInterface("IExecutionManager"), "c1"),
             "Data.R2RExceptionClause").UsesTypeSize);
     }
 
@@ -244,10 +244,10 @@ public sealed class UsageWalkerIntegrationTests
         if (built is null) return; // cDAC source not found (running outside the repo)
         UsageGraph graph = built!.Value.Graph;
 
-        // PrecodeStubs c3 reaches Data types only via a generic base + static-abstract dispatch.
+        // PrecodeStubs c1 reaches Data types only via a generic base + static-abstract dispatch.
         HashSet<string> precodeTypes = DataTypesUsed(
             graph,
-            new ContractVersion(new ContractInterface("IPrecodeStubs"), "c3"));
+            new ContractVersion(new ContractInterface("IPrecodeStubs"), "c1"));
         Assert.Contains("Data.InterpMethod", precodeTypes);
     }
 
@@ -259,7 +259,7 @@ public sealed class UsageWalkerIntegrationTests
 
         HashSet<string> dataTypes = DataTypesUsed(
             built.Value.Graph,
-            new ContractVersion(new ContractInterface("IPrecodeStubs"), "c3"));
+            new ContractVersion(new ContractInterface("IPrecodeStubs"), "c1"));
         Assert.Contains("Data.InterpreterPrecodeData", dataTypes);
     }
 
@@ -297,7 +297,7 @@ public sealed class UsageWalkerIntegrationTests
         // referenced by a concrete-typed read.
         DataTypeUsage r2rUsage = DataType(
             graph,
-            new ContractVersion(new ContractInterface("IExecutionManager"), "c2"),
+            new ContractVersion(new ContractInterface("IExecutionManager"), "c1"),
             "Data.R2RExceptionClause");
         string[] r2rFields = r2rUsage.Fields.Select(field => field.Name).ToArray();
         Assert.Contains("Flags", r2rFields);
@@ -305,7 +305,7 @@ public sealed class UsageWalkerIntegrationTests
 
         string[] eeFields = DataType(
             graph,
-            new ContractVersion(new ContractInterface("IExecutionManager"), "c2"),
+            new ContractVersion(new ContractInterface("IExecutionManager"), "c1"),
             "Data.EEExceptionClause").Fields.Select(field => field.Name).ToArray();
         Assert.Contains("Flags", eeFields);
 
@@ -355,7 +355,7 @@ public sealed class UsageWalkerIntegrationTests
     }
 
     [Theory]
-    [InlineData("IExecutionManager", "c2")]
+    [InlineData("IExecutionManager", "c1")]
     public void ExplicitDependenciesIncludeCompositeInfoWhereUsed(string contract, string version)
     {
         (UsageGraph Graph, string Root)? built = BuildRealGraph();
