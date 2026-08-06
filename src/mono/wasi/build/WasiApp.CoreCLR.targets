@@ -158,11 +158,18 @@
     </ItemGroup>
 
     <!-- crossgen2 computes the wasm ABI struct sizes the generated helpers need. Query mode does not
-         load the JIT, so the in-build (host-targeting) crossgen2 answers wasm questions correctly. -->
+         load the JIT, so a host-targeting crossgen2 answers wasm questions correctly. In the repo it
+         comes from the build output; outside it, from a crossgen2 pack that sets $(Crossgen2ToolPath).
+         The wasi-experimental workload does not acquire that pack today, so out-of-repo wasi relink
+         needs $(WasmAbiQueryCrossgen2Path) or $(Crossgen2ToolPath) to be set explicitly. -->
     <PropertyGroup>
       <_WasmAbiQueryExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_WasmAbiQueryExeSuffix>
       <WasmAbiQueryCrossgen2Path Condition="'$(WasmAbiQueryCrossgen2Path)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmAbiQueryExeSuffix)'))</WasmAbiQueryCrossgen2Path>
+      <WasmAbiQueryCrossgen2Path Condition="'$(WasmAbiQueryCrossgen2Path)' == ''">$(Crossgen2ToolPath)</WasmAbiQueryCrossgen2Path>
     </PropertyGroup>
+
+    <Error Condition="'$(WasmAbiQueryCrossgen2Path)' == ''"
+           Text="crossgen2 was not found, so the wasi P/Invoke helpers cannot be generated. Set %24(WasmAbiQueryCrossgen2Path) to a crossgen2 executable." />
 
     <ManagedToNativeGenerator
       Assemblies="@(_WasiManagedAssemblies)"

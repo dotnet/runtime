@@ -11,7 +11,8 @@
         "Microsoft.NET.Sdk.WebAssembly.Pack.${NetVersion}",
         "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.browser-wasm",
         "Microsoft.NETCore.App.Runtime.${NetVersion}.browser-wasm",
-        "Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.browser-wasm"
+        "Microsoft.NETCore.App.Runtime.AOT.Cross.${NetVersion}.browser-wasm",
+        "Microsoft.NETCore.App.Crossgen2.${NetVersion}"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
       "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "linux-musl-x64", "linux-musl-arm64", "osx-x64", "osx-arm64" ]
@@ -450,6 +451,20 @@
         "linux-musl-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-musl-arm64.Cross.wasi-wasm",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.wasi-wasm",
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.wasi-wasm"
+      }
+    },
+    "Microsoft.NETCore.App.Crossgen2.${NetVersion}": {
+      "kind": "Sdk",
+      "version": "${PackageVersion}",
+      "alias-to": {
+        "win-x64": "Microsoft.NETCore.App.Crossgen2.win-x64",
+        "win-arm64": "Microsoft.NETCore.App.Crossgen2.win-arm64",
+        "linux-x64": "Microsoft.NETCore.App.Crossgen2.linux-x64",
+        "linux-arm64": "Microsoft.NETCore.App.Crossgen2.linux-arm64",
+        "linux-musl-x64": "Microsoft.NETCore.App.Crossgen2.linux-musl-x64",
+        "linux-musl-arm64": "Microsoft.NETCore.App.Crossgen2.linux-musl-arm64",
+        "osx-x64": "Microsoft.NETCore.App.Crossgen2.osx-x64",
+        "osx-arm64": "Microsoft.NETCore.App.Crossgen2.osx-arm64"
       }
     },
     "Microsoft.NETCore.App.Runtime.Mono.${NetVersion}.browser-wasm" : {
