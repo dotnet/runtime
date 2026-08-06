@@ -119,7 +119,14 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
 {
     assert(ins != INS_invalid);
     // NOTE: please reference the file "instrsloongarch64.h" for details !!!
-    return (INS_mov <= ins) && (ins <= INS_jirl) ? true : false;
+    return (((INS_mov <= ins) && (ins <= INS_jirl)) || (ins == INS_movfcsr2gr) || (ins == INS_movcf2gr)
+#ifdef FEATURE_SIMD
+            || (ins == INS_vpickve2gr_d) || (ins == INS_vpickve2gr_du) || (ins == INS_vpickve2gr_w)
+            || (ins == INS_vpickve2gr_wu) || (ins == INS_vpickve2gr_hu) || (ins == INS_vpickve2gr_hu)
+            || (ins == vpickve2gr_b) || (ins == INS_vpickve2gr_bu) || (ins == xvpickve2gr_d)
+            || (ins == xvpickve2gr_du) || (ins == xvpickve2gr_w) || (ins == xvpickve2gr_wu)
+#endif
+           )? true : false;
 }
 
 bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
