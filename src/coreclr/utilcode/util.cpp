@@ -962,6 +962,7 @@ int GetCurrentProcessCpuCount()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         CANNOT_TAKE_LOCK;
     }
     CONTRACTL_END;

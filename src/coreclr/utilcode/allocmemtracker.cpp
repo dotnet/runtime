@@ -13,6 +13,7 @@ AllocMemTracker::AllocMemTracker()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
         CANNOT_TAKE_LOCK;
     }
@@ -30,6 +31,7 @@ AllocMemTracker::~AllocMemTracker()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END
@@ -92,6 +94,7 @@ void *AllocMemTracker::Track(TaggedMemAllocPtr tmap)
     CONTRACTL
     {
         THROWS;
+        GC_NOTRIGGER;
         INJECT_FAULT(ThrowOutOfMemory(););
     }
     CONTRACTL_END
@@ -109,6 +112,7 @@ void *AllocMemTracker::Track_NoThrow(TaggedMemAllocPtr tmap)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return NULL;);
     }
     CONTRACTL_END
