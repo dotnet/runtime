@@ -48,6 +48,7 @@ extends:
                   testScope: innerloop
                   testRunNamePrefixSuffix: coreclr_Checked
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
                   SuperPmiCollect: true
                   SuperPmiCollectionName: libraries_tests
                   scenarios:
@@ -58,6 +59,7 @@ extends:
                   testScope: innerloop
                   testRunNamePrefixSuffix: coreclr_Checked
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
                   SuperPmiCollect: true
                   SuperPmiCollectionName: libraries_tests_no_tiered_compilation
                   scenarios:
@@ -112,6 +114,7 @@ extends:
                   testScope: innerloop
                   testRunNamePrefixSuffix: coreclr_Checked
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
                   SuperPmiCollect: true
                   SuperPmiCollectionName: libraries_tests
                   scenarios:
@@ -122,6 +125,7 @@ extends:
                   testScope: innerloop
                   testRunNamePrefixSuffix: coreclr_Checked
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
                   SuperPmiCollect: true
                   SuperPmiCollectionName: libraries_tests_no_tiered_compilation
                   scenarios:
@@ -180,6 +184,7 @@ extends:
                   testScope: innerloop
                   testRunNamePrefixSuffix: coreclr_Checked
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
                   SuperPmiCollect: true
                   SuperPmiCollectionName: libraries_tests
                   scenarios:
@@ -190,6 +195,7 @@ extends:
                   testScope: innerloop
                   testRunNamePrefixSuffix: coreclr_Checked
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
                   SuperPmiCollect: true
                   SuperPmiCollectionName: libraries_tests_no_tiered_compilation
                   scenarios:

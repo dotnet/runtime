@@ -712,6 +712,7 @@ extends:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: coreclr_checked
                   useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
                   condition: >-
                     or(
                     eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
