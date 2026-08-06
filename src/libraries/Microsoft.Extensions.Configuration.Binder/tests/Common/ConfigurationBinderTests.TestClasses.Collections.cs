@@ -515,5 +515,16 @@ namespace Microsoft.Extensions
             public string? EnableFeatureX { get; set; }
             public List<PositionalRecordWithNullableParam> Users { get; set; } = new();
         }
+
+        public record SoleReadOnlyCollectionParamRecord(IReadOnlyList<string> Values);
+
+        public readonly record struct SoleReadOnlyCollectionParamStruct(IReadOnlyList<string> Values);
+
+        public class SoleReadOnlyCollectionParamHolder
+        {
+            public SoleReadOnlyCollectionParamRecord? Class { get; set; }
+            public SoleReadOnlyCollectionParamStruct Struct { get; set; }
+            public SoleReadOnlyCollectionParamStruct? NullableStruct { get; set; }
+        }
     }
 }

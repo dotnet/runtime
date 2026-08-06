@@ -664,6 +664,86 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.All(boundValues, boundValue => Assert.Equal(new[] { "a", "b" }, (IEnumerable<string>?)boundValue));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("IReadOnlyList")]
+        [InlineData("IReadOnlyCollection")]
+        [InlineData("IReadOnlySet")]
+        [InlineData("IEnumerable")]
+        public async Task NestedSoleReadOnlyCollectionConstructorParameterOfStructIsBindable(string collectionType)
+        {
+            // The value-type counterpart of NestedSoleReadOnlyCollectionConstructorParameterIsBindable. A struct
+            // member is bound through a temporary (binding one in place would only mutate the copy its getter
+            // returns), and that path never instantiated a type without bindable members - so a struct whose only
+            // member is a read-only collection constructor parameter was left at its default. Covers a settable
+            // property, a nullable one, a constructor parameter, and a settable property with a matching
+            // constructor parameter.
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static object? Result;
+
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["Nested:Values:0"] = "a",
+                            ["Nested:Values:1"] = "b",
+                        });
+                        IConfiguration config = configurationBuilder.Build();
+
+                        Holder holder = config.Get<Holder>();
+                        NullableHolder nullableHolder = config.Get<NullableHolder>();
+                        Outer outer = config.Get<Outer>();
+                        Rebindable rebindable = config.Get<Rebindable>();
+
+                        Rebindable existing = new(default);
+                        config.Bind(existing);
+
+                        Result = new object?[]
+                        {
+                            holder.Nested.Values,
+                            nullableHolder.Nested?.Values,
+                            outer.Nested.Values,
+                            rebindable.Nested.Values,
+                            existing.Nested.Values,
+                        };
+                    }
+                }
+
+                public readonly record struct Inner({{collectionType}}<string> Values);
+
+                public class Holder
+                {
+                    public Inner Nested { get; set; }
+                }
+
+                public class NullableHolder
+                {
+                    public Inner? Nested { get; set; }
+                }
+
+                public record Outer(Inner Nested);
+
+                public class Rebindable
+                {
+                    public Rebindable(Inner nested) => Nested = nested;
+
+                    public Inner Nested { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            var boundValues = (object?[])LoadAndInvokeMain(result.OutputCompilation, "Result")!;
+            Assert.All(boundValues, boundValue => Assert.Equal(new[] { "a", "b" }, (IEnumerable<string>?)boundValue));
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task SoleReadOnlyCollectionConstructorParameterOfComplexElementIsBindable()
         {
