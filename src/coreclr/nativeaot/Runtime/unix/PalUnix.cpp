@@ -853,6 +853,21 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
+#if defined(RTLD_NODELETE)
+        if (info.dli_fname == nullptr)
+        {
+            return NULL;
+        }
+
+        // NativeAOT runtime state cannot be safely unloaded.
+        void* module = dlopen(info.dli_fname, RTLD_LAZY | RTLD_NODELETE);
+        if (module == nullptr)
+        {
+            return NULL;
+        }
+        dlclose(module);
+#endif
+
         moduleHandle = info.dli_fbase;
     }
 #endif //!defined(HOST_WASM)
