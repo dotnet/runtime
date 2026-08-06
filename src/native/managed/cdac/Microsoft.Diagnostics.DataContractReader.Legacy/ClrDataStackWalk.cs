@@ -57,21 +57,32 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
             stackPointerAfterNext = _target.Contracts.StackWalk.GetStackPointer(_dataFrames.Current);
         }
 
-        do
+        TargetPointer currentStackPointer = stackPointerAfterNext;
+        while (true)
         {
             if (IsLegacyVisible(_dataFrames.Current))
             {
                 if (trackStackSizeSkipped)
                 {
-                    TargetPointer currentStackPointer = _target.Contracts.StackWalk.GetStackPointer(_dataFrames.Current);
                     stackSizeSkipped = currentStackPointer.Value - stackPointerAfterNext.Value;
                 }
                 return true;
             }
-        }
-        while (_dataFrames.MoveNext());
 
-        return false;
+            if (!_dataFrames.MoveNext())
+            {
+                if (trackStackSizeSkipped)
+                {
+                    stackSizeSkipped = currentStackPointer.Value - stackPointerAfterNext.Value;
+                }
+                return false;
+            }
+
+            if (trackStackSizeSkipped)
+            {
+                currentStackPointer = _target.Contracts.StackWalk.GetStackPointer(_dataFrames.Current);
+            }
+        }
     }
 
     internal static bool IsLegacyVisible(IStackDataFrameHandle frame)

@@ -16,9 +16,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 public unsafe class StackWalkTests
 {
     [Theory]
-    [InlineData(false, 0ul)]
-    [InlineData(true, 0x200ul)]
-    public void GetStackSizeSkipped_ReturnsBytesSkippedByLastNext(bool includeHiddenFrame, ulong expected)
+    [InlineData(false, true, 0ul)]
+    [InlineData(true, true, 0x200ul)]
+    [InlineData(true, false, 0x200ul)]
+    public void GetStackSizeSkipped_ReturnsBytesSkippedByLastNext(bool includeHiddenFrame, bool hasNextFrame, ulong expected)
     {
         TargetPointer threadAddress = new(0x1000);
         ThreadData threadData = default;
@@ -41,17 +42,31 @@ public unsafe class StackWalkTests
             frames.Add(hiddenFrame.Object);
             stackWalk.Setup(s => s.GetStackPointer(hiddenFrame.Object)).Returns(new TargetPointer(0x1100));
         }
-        frames.Add(nextFrame.Object);
-        stackWalk.Setup(s => s.GetStackPointer(nextFrame.Object)).Returns(new TargetPointer(0x1300));
+        if (hasNextFrame)
+        {
+            frames.Add(nextFrame.Object);
+            stackWalk.Setup(s => s.GetStackPointer(nextFrame.Object)).Returns(new TargetPointer(0x1300));
+        }
+        else
+        {
+            var finalHiddenFrame = new Mock<IStackDataFrameHandle>();
+            finalHiddenFrame.SetupGet(f => f.State).Returns(StackWalkState.NativeMarker);
+            frames.Add(finalHiddenFrame.Object);
+            stackWalk.Setup(s => s.GetStackPointer(finalHiddenFrame.Object)).Returns(new TargetPointer(0x1300));
+        }
         stackWalk.Setup(s => s.CreateStackWalk(threadData)).Returns(frames);
 
         TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(new MockTarget.Architecture { IsLittleEndian = true, Is64Bit = true })
             .AddMockContract(thread)
             .AddMockContract(stackWalk)
             .Build();
-        IXCLRDataStackWalk api = new ClrDataStackWalk(threadAddress, flags: 0, target, legacyImpl: null);
+        IXCLRDataStackWalk api = new ClrDataStackWalk(
+            threadAddress,
+            flags: (uint)CLRDataSimpleFrameType.CLRDATA_SIMPFRAME_MANAGED_METHOD,
+            target,
+            legacyImpl: null);
 
-        Assert.Equal(System.HResults.S_OK, api.Next());
+        Assert.Equal(hasNextFrame ? System.HResults.S_OK : System.HResults.S_FALSE, api.Next());
 
         ulong stackSizeSkipped;
         Assert.Equal(System.HResults.S_OK, api.GetStackSizeSkipped(&stackSizeSkipped));
