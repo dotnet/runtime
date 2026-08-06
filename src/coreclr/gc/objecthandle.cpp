@@ -1505,6 +1505,7 @@ void CALLBACK GetBridgeObjectsForProcessing(_UNCHECKED_OBJECTREF* pObjRef, uintp
     if (!g_theGCHeap->IsPromoted(*ppRef))
     {
         RegisterBridgeObject(*ppRef, *pExtraInfo);
+        RegisterPendingBridgeHandle((uintptr_t)pObjRef);
     }
 }
 
@@ -1516,6 +1517,8 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
     uint32_t flags = HNDGCF_NORMAL;
     uint32_t type = HNDTYPE_CROSSREFERENCE;
 
+    // FIXME: Skip rebuilding bridge data while client bridge processing from a previous GC is active.
+    // The pending bridge handle array is borrowed by the interop layer until that processing completes.
     BridgeResetData();
 
     HandleTableMap* walk = &g_HandleTableMap;
