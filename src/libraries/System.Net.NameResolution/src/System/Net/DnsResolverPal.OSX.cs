@@ -73,11 +73,6 @@ namespace System.Net
         {
             ValidateServers(servers);
 
-            if (name.Contains('\0'))
-            {
-                throw new ArgumentException(SR.net_hostname_invalid_character, nameof(name));
-            }
-
             // The Linux managed PAL owns the DNS UDP/TCP socket end-to-end and reads bytes via
             // Socket.ReceiveAsync; async there is a plain socket read. Here mDNSResponder (a system
             // daemon) owns the socket. Its client library exposes only an fd via DNSServiceRefSockFD,

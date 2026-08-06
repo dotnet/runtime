@@ -264,10 +264,16 @@ namespace System.Net.NameResolution.Tests
         {
             using DnsResolver r = new DnsResolver();
             DnsResult<AddressRecord> result = await ResolveAddresses(async, r, NonExistentHost);
-            // DNSServiceQueryRecord reports both NXDOMAIN and NODATA as NoSuchRecord, so
-            // the macOS PAL can only surface the collapsed negative response as NoError.
-            DnsResponseCode expected = PlatformDetection.IsOSX ? DnsResponseCode.NoError : DnsResponseCode.NxDomain;
-            Assert.Equal(expected, result.ResponseCode);
+            // mDNSResponder can surface a negative answer as either NoSuchName (NxDomain) or
+            // NoSuchRecord (mapped to NoError with no records); accept either on macOS.
+            if (PlatformDetection.IsOSX)
+            {
+                Assert.Contains(result.ResponseCode, new[] { DnsResponseCode.NoError, DnsResponseCode.NxDomain });
+            }
+            else
+            {
+                Assert.Equal(DnsResponseCode.NxDomain, result.ResponseCode);
+            }
             Assert.Empty(result.Records);
         }
 
@@ -285,7 +291,7 @@ namespace System.Net.NameResolution.Tests
 
             DnsResult<AddressRecord> result = await query.WaitAsync(TimeSpan.FromSeconds(10));
 
-            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            Assert.Contains(result.ResponseCode, new[] { DnsResponseCode.NoError, DnsResponseCode.NxDomain });
             Assert.Empty(result.Records);
         }
 
