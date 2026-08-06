@@ -215,7 +215,7 @@ namespace System.Collections
         {
             byte[] array = AllocateByteArray(values.Length);
 
-            int i = 0;
+            uint i = 0;
 
             if (!BitConverter.IsLittleEndian || values.Length < Vector256<byte>.Count)
             {
@@ -236,8 +236,8 @@ namespace System.Collections
                     Vector512<byte> isFalse = Vector512.Equals(vector, Vector512<byte>.Zero);
 
                     ulong result = isFalse.ExtractMostSignificantBits();
-                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(ulong) * (i / 64)), ~result);
-                    i += Vector512<byte>.Count;
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(ulong) * (i / 64u)), ~result);
+                    i += (uint)Vector512<byte>.Count;
                     valuesAsBytes = valuesAsBytes.Slice(Vector512<byte>.Count);
                 }
             }
@@ -249,8 +249,8 @@ namespace System.Collections
                     Vector256<byte> isFalse = Vector256.Equals(vector, Vector256<byte>.Zero);
 
                     uint result = isFalse.ExtractMostSignificantBits();
-                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32)), ~result);
-                    i += Vector256<byte>.Count;
+                    Unsafe.WriteUnaligned(ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32u)), ~result);
+                    i += (uint)Vector256<byte>.Count;
                     valuesAsBytes = valuesAsBytes.Slice(Vector256<byte>.Count);
                 }
             }
@@ -267,20 +267,20 @@ namespace System.Collections
                     uint upperResult = upperIsFalse.ExtractMostSignificantBits();
 
                     Unsafe.WriteUnaligned(
-                        ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32)),
+                        ref Unsafe.Add(ref arrayRef, sizeof(uint) * (i / 32u)),
                         ~((upperResult << 16) | lowerResult));
-                    i += Vector128<byte>.Count * 2;
+                    i += (uint)Vector128<byte>.Count * 2u;
                     valuesAsBytes = valuesAsBytes.Slice(Vector128<byte>.Count * 2);
                 }
             }
 
         Remainder:
-            for (; i < values.Length; i++)
+            for (; i < (uint)values.Length; i++)
             {
-                if (values[i])
+                if (values[(int)i])
                 {
-                    (int byteIndex, int bitOffset) = Math.DivRem(i, BitsPerByte);
-                    array[byteIndex] |= (byte)(1 << bitOffset);
+                    (uint byteIndex, uint bitOffset) = Math.DivRem(i, BitsPerByte);
+                    array[byteIndex] |= (byte)(1 << (int)bitOffset);
                 }
             }
 
