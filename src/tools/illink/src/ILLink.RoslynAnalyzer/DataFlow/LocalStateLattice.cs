@@ -128,6 +128,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
         public bool Equals(LocalState<TValue> other) =>
             Dictionary.Equals(other.Dictionary) &&
+            CapturedReferences.Equals(other.CapturedReferences) &&
             CapturedTargetValues.Equals(other.CapturedTargetValues);
 
         public override bool Equals(object obj)
