@@ -8,10 +8,25 @@ namespace Refresh
 {
     public static class Program
     {
+        static bool UsesGcWithRegions()
+        {
+            if (GC.GetConfigurationVariables().TryGetValue("GCUseRegions", out object? value) && value is true)
+            {
+                return true;
+            }
+            return false;
+        }
+
         [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
         [Fact]
         public static int TestEntryPoint()
         {
+            if (!UsesGcWithRegions())
+            {
+                Console.WriteLine("Test skipped because GC does not use regions and the GCHeapHardLimit configuration variable is not supported.");
+                return 100;
+            }
+
             long hundred_mb = 100 * 1024 * 1024;
             long two_hundred_mb = 2 * hundred_mb;
             AppContext.SetData("GCHeapHardLimit", (ulong)hundred_mb);
