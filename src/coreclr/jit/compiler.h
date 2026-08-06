@@ -7519,8 +7519,7 @@ private:
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
 #ifdef DEBUG
-    bool fgIsAsyncFrameTransitionCall(GenTreeCall* call);
-    void fgAsyncStressNoteCandidate(GenTreeCall* call, InlineContext* inlinersContext);
+    void fgAsyncStressPrepare(BasicBlock* firstBB, BasicBlock* lastBB, unsigned depth);
     bool fgAsyncStressShouldInline(GenTreeCall* call, unsigned inlineDepth);
 
     // Is general runtime async inlining being stressed, i.e. are async callees forcibly
