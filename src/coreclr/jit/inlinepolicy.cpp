@@ -3355,6 +3355,9 @@ void AsyncStressPolicy::NoteBool(InlineObservation obs, bool value)
 //    would also mark the callee NOINLINE for every other call site, so there is
 //    no point in letting the base policy see them first.
 //
+//    CALLEE_MAXSTACK is deliberately not among them: stack heavy callees are
+//    left on the normal policy rather than being forced in.
+//
 void AsyncStressPolicy::NoteInt(InlineObservation obs, int value)
 {
     if (m_IsAsyncCall)
