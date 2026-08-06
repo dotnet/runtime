@@ -3406,7 +3406,7 @@ CreateCrashDumpIfEnabled(bool stackoverflow)
         if (stackoverflow)
         {
             HandleHolder createDumpThreadHandle{ Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET SO Dumper")) };
-            if (createDumpThreadHandle != INVALID_HANDLE_VALUE)
+            if (createDumpThreadHandle != NULL)
             {
                 // Wait for the dump to be generated
                 DWORD res = WaitForSingleObject(createDumpThreadHandle, INFINITE);
