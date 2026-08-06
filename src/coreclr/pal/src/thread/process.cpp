@@ -124,8 +124,25 @@ using namespace CorUnix;
 // Thread ID of thread that has started the ExitProcess process
 Volatile<LONG> terminator = 0;
 
+static SIZE_T InterlockedCompareExchangeSizeT(SIZE_T volatile* destination, SIZE_T exchange, SIZE_T comparand)
+{
+#ifdef HOST_64BIT
+    LONGLONG result = InterlockedCompareExchange64(
+        reinterpret_cast<LONGLONG volatile*>(destination),
+        *reinterpret_cast<LONGLONG*>(&exchange),
+        *reinterpret_cast<LONGLONG*>(&comparand));
+    return *reinterpret_cast<SIZE_T*>(&result);
+#else
+    LONG result = InterlockedCompareExchange(
+        reinterpret_cast<LONG volatile*>(destination),
+        *reinterpret_cast<LONG*>(&exchange),
+        *reinterpret_cast<LONG*>(&comparand));
+    return *reinterpret_cast<SIZE_T*>(&result);
+#endif
+}
+
 // Id of thread generating a core dump
-volatile LONGLONG g_crashingThreadId = 0;
+SIZE_T g_crashingThreadId = 0;
 
 // Process ID of this process.
 DWORD gPID = (DWORD) -1;
@@ -1623,10 +1640,10 @@ Function:
 
 Return:
   TRUE  - succeeds.
-  FALSE - fails, or another thread already owns the gate under
-          CrashDumpSerialize_NoWait. Under CrashDumpSerialize_WaitInfinite a
-          losing thread blocks indefinitely in TryEnterCrashDumpGate instead
-          of returning.
+  FALSE - fails, another thread already owns the gate under
+          CrashDumpSerialize_NoWait, or the owning thread re-enters the gate.
+          Under CrashDumpSerialize_WaitInfinite a losing non-owner thread blocks
+          indefinitely in TryEnterCrashDumpGate instead of returning.
 --*/
 static BOOL
 PROCCreateCrashDump(
@@ -1828,9 +1845,10 @@ Function:
 
 Return:
   TRUE  - the calling thread owns the gate.
-  FALSE - the calling thread does not own the gate. Only returned for
-          CrashDumpSerialize_NoWait; a losing CrashDumpSerialize_WaitInfinite
-          thread blocks indefinitely instead and never returns.
+  FALSE - the calling thread does not own the gate. Returned for
+          CrashDumpSerialize_NoWait and for a reentrant call by the owning
+          thread; a losing non-owner CrashDumpSerialize_WaitInfinite thread
+          blocks indefinitely instead and never returns.
 --*/
 static bool
 TryEnterCrashDumpGate(CrashDumpSerializeMode serializeMode)
@@ -1841,8 +1859,8 @@ TryEnterCrashDumpGate(CrashDumpSerializeMode serializeMode)
         return true;
     }
 
-    LONGLONG currentThreadId = static_cast<LONGLONG>(THREADSilentGetCurrentThreadId());
-    LONGLONG previousThreadId = InterlockedCompareExchange64(&g_crashingThreadId, currentThreadId, 0);
+    SIZE_T currentThreadId = THREADSilentGetCurrentThreadId();
+    SIZE_T previousThreadId = InterlockedCompareExchangeSizeT(&g_crashingThreadId, currentThreadId, 0);
     if (previousThreadId == 0)
     {
         // Won the gate.
@@ -1888,8 +1906,8 @@ ExitCrashDumpGate(CrashDumpSerializeMode serializeMode)
 
     // Re-arm the gate so a later crash can generate diagnostics again, but only
     // if this thread still owns it.
-    LONGLONG currentThreadId = static_cast<LONGLONG>(THREADSilentGetCurrentThreadId());
-    InterlockedCompareExchange64(&g_crashingThreadId, 0, currentThreadId);
+    SIZE_T currentThreadId = THREADSilentGetCurrentThreadId();
+    InterlockedCompareExchangeSizeT(&g_crashingThreadId, 0, currentThreadId);
 }
 
 /*++
