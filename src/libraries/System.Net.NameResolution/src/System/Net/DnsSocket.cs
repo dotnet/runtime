@@ -43,6 +43,8 @@ namespace System.Net
             public object SocketTypeStream = null!;
             public object ProtocolTypeUdp = null!;
             public object ProtocolTypeTcp = null!;
+            public ConstructorInfo SafeSocketHandleConstructor = null!;
+            public ConstructorInfo SocketFromSafeHandleConstructor = null!;
         }
 
         private static readonly SocketReflection s_reflection = CreateReflection();
@@ -64,11 +66,14 @@ namespace System.Net
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties,
             "System.Net.Sockets.Socket", "System.Net.Sockets")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors,
+            "System.Net.Sockets.SafeSocketHandle", "System.Net.Sockets")]
         private static SocketReflection CreateReflection()
         {
             Type socketType = Type.GetType("System.Net.Sockets.Socket, System.Net.Sockets", throwOnError: true)!;
             Type socketTypeEnum = Type.GetType("System.Net.Sockets.SocketType, System.Net.Sockets", throwOnError: true)!;
             Type protocolTypeEnum = Type.GetType("System.Net.Sockets.ProtocolType, System.Net.Sockets", throwOnError: true)!;
+            Type safeSocketHandleType = Type.GetType("System.Net.Sockets.SafeSocketHandle, System.Net.Sockets", throwOnError: true)!;
 
             return new SocketReflection
             {
@@ -88,6 +93,8 @@ namespace System.Net
                 DisposeMethod = socketType.GetMethod("Dispose", Type.EmptyTypes)!,
                 SetSendTimeoutMethod = socketType.GetProperty("SendTimeout")!.GetSetMethod()!,
                 SetReceiveTimeoutMethod = socketType.GetProperty("ReceiveTimeout")!.GetSetMethod()!,
+                SafeSocketHandleConstructor = safeSocketHandleType.GetConstructor(new[] { typeof(IntPtr), typeof(bool) })!,
+                SocketFromSafeHandleConstructor = socketType.GetConstructor(new[] { safeSocketHandleType })!,
             };
         }
 
@@ -163,5 +170,38 @@ namespace System.Net
         }
 
         public void Dispose() => _dispose();
+
+        // Awaits an empty-buffer ReceiveAsync on a caller-owned fd. Used by the macOS DNS PAL
+        // to wait for readiness on the mDNSResponder socket without consuming any bytes; the
+        // actual read is performed synchronously by DNSServiceProcessResult afterwards.
+        // The wrapped SafeSocketHandle is created with ownsHandle: false so disposing the
+        // scratch Socket does not close the fd — the caller (mDNSResponder client library)
+        // continues to own it.
+        public static async ValueTask WaitReadableAsync(IntPtr fileDescriptor, CancellationToken cancellationToken)
+        {
+            SocketReflection reflection = s_reflection;
+            object safeHandle;
+            object socket;
+            try
+            {
+                safeHandle = reflection.SafeSocketHandleConstructor.Invoke(new object[] { fileDescriptor, false })!;
+                socket = reflection.SocketFromSafeHandleConstructor.Invoke(new object[] { safeHandle })!;
+            }
+            catch (TargetInvocationException e) when (e.InnerException is not null)
+            {
+                ExceptionDispatchInfo.Throw(e.InnerException);
+                throw; // Unreachable.
+            }
+
+            try
+            {
+                var receiveAsync = reflection.ReceiveAsyncMethod.CreateDelegate<Func<Memory<byte>, CancellationToken, ValueTask<int>>>(socket);
+                await receiveAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+            }
+            finally
+            {
+                reflection.DisposeMethod.CreateDelegate<Action>(socket)();
+            }
+        }
     }
 }
