@@ -1,10 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DebugType>PdbOnly</DebugType>
-    <!-- Needed for InterpreterIncompatible, which is only honored by the generated run script -->
-    <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <!-- Interpreter reports locals as pinned, causing generation demotion that this test does not expect -->
-    <InterpreterIncompatible>true</InterpreterIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="GetGeneration.cs" />
