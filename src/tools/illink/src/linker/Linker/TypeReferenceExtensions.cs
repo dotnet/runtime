@@ -123,28 +123,29 @@ namespace Mono.Linker
             }
         }
 
-        public static TypeReference? GetInflatedDeclaringType(this TypeReference type)
+        public static TypeReference? GetInflatedDeclaringType(this TypeReference type, ITryResolveMetadata resolver)
         {
             if (type.IsGenericParameter || type.IsByReference || type.IsPointer)
                 return null;
 
             if (type is SentinelType sentinelType)
-                return sentinelType.ElementType.GetInflatedDeclaringType();
+                return sentinelType.ElementType.GetInflatedDeclaringType(resolver);
 
             if (type is PinnedType pinnedType)
-                return pinnedType.ElementType.GetInflatedDeclaringType();
+                return pinnedType.ElementType.GetInflatedDeclaringType(resolver);
 
             if (type is RequiredModifierType requiredModifierType)
-                return requiredModifierType.ElementType.GetInflatedDeclaringType();
+                return requiredModifierType.ElementType.GetInflatedDeclaringType(resolver);
 
             if (type is GenericInstanceType genericInstance)
             {
                 var declaringType = genericInstance.DeclaringType;
+                var declaringArity = declaringType.GetGenericParameterCount(resolver);
 
-                if (declaringType.HasGenericParameters)
+                if (declaringArity > 0)
                 {
                     var result = new GenericInstanceType(declaringType);
-                    for (var i = 0; i < declaringType.GenericParameters.Count; ++i)
+                    for (var i = 0; i < declaringArity; ++i)
                         result.GenericArguments.Add(genericInstance.GenericArguments[i]);
 
                     return result;
@@ -154,6 +155,14 @@ namespace Mono.Linker
             }
 
             return type.DeclaringType;
+        }
+
+        public static int GetGenericParameterCount(this TypeReference type, ITryResolveMetadata resolver)
+        {
+            if (type.HasGenericParameters)
+                return type.GenericParameters.Count;
+
+            return resolver.TryResolve(type)?.GenericParameters.Count ?? 0;
         }
 
         public static TypeReference InflateFrom(this TypeReference typeToInflate, IGenericInstance? maybeGenericInstanceProvider)

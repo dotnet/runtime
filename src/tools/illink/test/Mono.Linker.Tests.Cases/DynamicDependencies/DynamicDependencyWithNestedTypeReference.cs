@@ -18,6 +18,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 
         [Kept]
         [DynamicDependency("MethodWithParameter(Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.Outer.Nested)", typeof(Target))]
+        [DynamicDependency("MethodWithGenericParameter(Mono.Linker.Tests.Cases.DynamicDependencies.Dependencies.GenericOuter{System.Int32}.GenericMiddle{System.String}.GenericNested{System.Boolean})", typeof(Target))]
         private static void Dependency()
         {
         }
@@ -26,6 +27,11 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
         {
             [Kept]
             private static void MethodWithParameter(Outer.Nested value)
+            {
+            }
+
+            [Kept]
+            private static void MethodWithGenericParameter(GenericOuter<int>.GenericMiddle<string>.GenericNested<bool> value)
             {
             }
         }

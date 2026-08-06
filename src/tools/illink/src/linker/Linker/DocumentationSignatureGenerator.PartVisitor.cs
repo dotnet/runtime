@@ -161,7 +161,7 @@ namespace Mono.Linker
                     Debug.Assert(typeReference is not SentinelType && typeReference is not PinnedType);
                     // GetInflatedDeclaringType may return null for generic parameters, byrefs, and pointers, but these
                     // are separately handled above.
-                    VisitTypeReference(typeReference.GetInflatedDeclaringType()!, builder, resolver);
+                    VisitTypeReference(typeReference.GetInflatedDeclaringType(resolver)!, builder, resolver);
                     builder.Append('.');
                 }
 
@@ -178,9 +178,7 @@ namespace Mono.Linker
 
                 // Compute arity counting only the newly-introduced generic parameters
                 var declaringType = genericInstance.DeclaringType;
-                var declaringArity = 0;
-                if (declaringType != null && declaringType.HasGenericParameters)
-                    declaringArity = declaringType.GenericParameters.Count;
+                var declaringArity = declaringType?.GetGenericParameterCount(resolver) ?? 0;
                 var totalArity = genericInstance.GenericArguments.Count;
                 var arity = totalArity - declaringArity;
 
