@@ -2207,7 +2207,7 @@ namespace System.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBuiltWithAggressiveTrimming))]
         public static void FullFidelitySerialization_RuleAndTransitionFields_AreKnown()
         {
             // The full-fidelity trailer serializes every instance field of AdjustmentRule and TransitionTime.
