@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -41,7 +42,7 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.libSystem, StringMarshalling = StringMarshalling.Utf8)]
         internal static partial int DNSServiceQueryRecord(
-            out IntPtr sdRef,
+            out SafeDnsServiceHandle sdRef,
             uint flags,
             uint interfaceIndex,
             string fullname,
@@ -51,10 +52,10 @@ internal static partial class Interop
             IntPtr context);
 
         [LibraryImport(Libraries.libSystem)]
-        internal static partial int DNSServiceRefSockFD(IntPtr sdRef);
+        internal static partial int DNSServiceRefSockFD(SafeDnsServiceHandle sdRef);
 
         [LibraryImport(Libraries.libSystem)]
-        internal static partial int DNSServiceProcessResult(IntPtr sdRef);
+        internal static partial int DNSServiceProcessResult(SafeDnsServiceHandle sdRef);
 
         [LibraryImport(Libraries.libSystem)]
         internal static partial void DNSServiceRefDeallocate(IntPtr sdRef);

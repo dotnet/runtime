@@ -73,41 +73,30 @@ namespace System.Net
         {
             ValidateServers(servers);
 
-            // The Linux managed PAL owns the DNS UDP/TCP socket end-to-end and reads bytes via
-            // Socket.ReceiveAsync; async there is a plain socket read. Here mDNSResponder (a system
-            // daemon) owns the socket. Its client library exposes only an fd via DNSServiceRefSockFD,
-            // and the actual DNS wire read + parse + callback dispatch happen inside
-            // DNSServiceProcessResult. So the async path awaits an empty-buffer ReceiveAsync on the
-            // fd (a truly async POLLIN wait) and then calls DNSServiceProcessResult synchronously
-            // when it fires. The sync path stays with Interop.Sys.Poll since the caller is already
-            // committed to blocking a thread.
-            if (async)
+            if (cancellationToken.IsCancellationRequested)
             {
-                return cancellationToken.IsCancellationRequested
-                    ? Task.FromCanceled<DnsResult<TRecord>>(cancellationToken)
-                    : QueryCoreAsync(name, queryType, cancellationToken, tryParse);
+                return Task.FromCanceled<DnsResult<TRecord>>(cancellationToken);
             }
 
-            return Task.FromResult(QueryCoreSync(name, queryType, cancellationToken, tryParse));
+            return QueryCore(name, queryType, async, cancellationToken, tryParse);
         }
 
-        private static DnsResult<TRecord> QueryCoreSync<TRecord>(
+        // The Linux managed PAL owns the DNS UDP/TCP socket end-to-end and reads bytes via
+        // Socket.ReceiveAsync; async there is a plain socket read. Here mDNSResponder (a system
+        // daemon) owns the socket. Its client library exposes only an fd via DNSServiceRefSockFD,
+        // and the actual DNS wire read + parse + callback dispatch happen inside
+        // DNSServiceProcessResult. So on async we await readability on the fd (a truly async
+        // POLLIN wait via DnsSocket.WaitReadableAsync) and then call DNSServiceProcessResult
+        // synchronously to consume it. Sync stays with Interop.Sys.Poll — the caller has
+        // already committed a thread.
+        private static async Task<DnsResult<TRecord>> QueryCore<TRecord>(
             string name,
             ushort queryType,
+            bool async,
             CancellationToken cancellationToken,
             TryParseDnsSdRecord<TRecord> tryParse)
         {
-            DnsSdQueryResult raw = QueryRecordSync(name, queryType, cancellationToken);
-            return BuildResult(raw, queryType, tryParse);
-        }
-
-        private static async Task<DnsResult<TRecord>> QueryCoreAsync<TRecord>(
-            string name,
-            ushort queryType,
-            CancellationToken cancellationToken,
-            TryParseDnsSdRecord<TRecord> tryParse)
-        {
-            DnsSdQueryResult raw = await QueryRecordAsync(name, queryType, cancellationToken).ConfigureAwait(false);
+            DnsSdQueryResult raw = await QueryRecord(name, queryType, async, cancellationToken).ConfigureAwait(false);
             return BuildResult(raw, queryType, tryParse);
         }
 
@@ -133,26 +122,21 @@ namespace System.Net
             return new DnsResult<TRecord>(DnsResponseCode.NoError, records, TimeSpan.Zero);
         }
 
-        private static unsafe DnsSdQueryResult QueryRecordSync(string name, ushort queryType, CancellationToken cancellationToken)
+        private static async Task<DnsSdQueryResult> QueryRecord(string name, ushort queryType, bool async, CancellationToken cancellationToken)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-
             DnsSdQueryState state = new(queryType);
             GCHandle stateHandle = GCHandle.Alloc(state);
-            IntPtr serviceRef = IntPtr.Zero;
+            SafeDnsServiceHandle? dnsService = null;
 
             try
             {
-                int status = StartQuery(name, queryType, stateHandle, out serviceRef);
+                int status = StartQuery(name, queryType, stateHandle, out dnsService);
                 if (status != Interop.Dnssd.kDNSServiceErr_NoError)
                 {
                     return DnsSdQueryResult.FromStatus(status);
                 }
 
-                using SafeDnsServiceHandle dnsService = new(serviceRef);
-                serviceRef = IntPtr.Zero;
-
-                int fileDescriptor = Interop.Dnssd.DNSServiceRefSockFD(dnsService.DangerousGetHandle());
+                int fileDescriptor = Interop.Dnssd.DNSServiceRefSockFD(dnsService);
                 if (fileDescriptor < 0)
                 {
                     return DnsSdQueryResult.FromStatus(Interop.Dnssd.kDNSServiceErr_DefunctConnection);
@@ -164,25 +148,45 @@ namespace System.Net
                 {
                     cancellationToken.ThrowIfCancellationRequested();
 
-                    Interop.Error error = Interop.Sys.Poll(fileHandle, Interop.PollEvents.POLLIN, PollTimeoutMilliseconds, out Interop.PollEvents triggered);
-                    if (error == Interop.Error.EINTR)
+                    if (async)
                     {
-                        continue;
+                        try
+                        {
+                            await DnsSocket.WaitReadableAsync((IntPtr)fileDescriptor, cancellationToken).ConfigureAwait(false);
+                        }
+                        catch (SocketException)
+                        {
+                            return DnsSdQueryResult.FromStatus(Interop.Dnssd.kDNSServiceErr_DefunctConnection);
+                        }
+                    }
+                    else
+                    {
+                        Interop.Error error = Interop.Sys.Poll(fileHandle, Interop.PollEvents.POLLIN, PollTimeoutMilliseconds, out Interop.PollEvents triggered);
+                        if (error == Interop.Error.EINTR)
+                        {
+                            continue;
+                        }
+
+                        if (error != Interop.Error.SUCCESS)
+                        {
+                            return DnsSdQueryResult.FromStatus(Interop.Dnssd.kDNSServiceErr_Unknown);
+                        }
+
+                        if ((triggered & (Interop.PollEvents.POLLERR | Interop.PollEvents.POLLHUP | Interop.PollEvents.POLLNVAL)) != 0)
+                        {
+                            return DnsSdQueryResult.FromStatus(Interop.Dnssd.kDNSServiceErr_DefunctConnection);
+                        }
+
+                        if ((triggered & Interop.PollEvents.POLLIN) == 0)
+                        {
+                            continue;
+                        }
                     }
 
-                    if (error != Interop.Error.SUCCESS)
+                    int processStatus = Interop.Dnssd.DNSServiceProcessResult(dnsService);
+                    if (processStatus != Interop.Dnssd.kDNSServiceErr_NoError)
                     {
-                        return DnsSdQueryResult.FromStatus(Interop.Dnssd.kDNSServiceErr_Unknown);
-                    }
-
-                    if ((triggered & (Interop.PollEvents.POLLERR | Interop.PollEvents.POLLHUP | Interop.PollEvents.POLLNVAL)) != 0)
-                    {
-                        return DnsSdQueryResult.FromStatus(Interop.Dnssd.kDNSServiceErr_DefunctConnection);
-                    }
-
-                    if ((triggered & Interop.PollEvents.POLLIN) != 0)
-                    {
-                        ProcessResult(dnsService, state);
+                        state.SetError(processStatus);
                     }
                 }
 
@@ -190,68 +194,12 @@ namespace System.Net
             }
             finally
             {
-                if (serviceRef != IntPtr.Zero)
-                {
-                    Interop.Dnssd.DNSServiceRefDeallocate(serviceRef);
-                }
-
+                dnsService?.Dispose();
                 stateHandle.Free();
             }
         }
 
-        private static async Task<DnsSdQueryResult> QueryRecordAsync(string name, ushort queryType, CancellationToken cancellationToken)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            DnsSdQueryState state = new(queryType);
-            GCHandle stateHandle = GCHandle.Alloc(state);
-            IntPtr serviceRef = IntPtr.Zero;
-
-            try
-            {
-                int status = StartQuery(name, queryType, stateHandle, out serviceRef);
-                if (status != Interop.Dnssd.kDNSServiceErr_NoError)
-                {
-                    return DnsSdQueryResult.FromStatus(status);
-                }
-
-                using SafeDnsServiceHandle dnsService = new(serviceRef);
-                serviceRef = IntPtr.Zero;
-
-                int fileDescriptor = Interop.Dnssd.DNSServiceRefSockFD(dnsService.DangerousGetHandle());
-                if (fileDescriptor < 0)
-                {
-                    return DnsSdQueryResult.FromStatus(Interop.Dnssd.kDNSServiceErr_DefunctConnection);
-                }
-
-                while (!state.IsComplete)
-                {
-                    try
-                    {
-                        await DnsSocket.WaitReadableAsync((IntPtr)fileDescriptor, cancellationToken).ConfigureAwait(false);
-                    }
-                    catch (SocketException)
-                    {
-                        return DnsSdQueryResult.FromStatus(Interop.Dnssd.kDNSServiceErr_DefunctConnection);
-                    }
-
-                    ProcessResult(dnsService, state);
-                }
-
-                return state.ToResult();
-            }
-            finally
-            {
-                if (serviceRef != IntPtr.Zero)
-                {
-                    Interop.Dnssd.DNSServiceRefDeallocate(serviceRef);
-                }
-
-                stateHandle.Free();
-            }
-        }
-
-        private static unsafe int StartQuery(string name, ushort queryType, GCHandle stateHandle, out IntPtr serviceRef) =>
+        private static unsafe int StartQuery(string name, ushort queryType, GCHandle stateHandle, out SafeDnsServiceHandle serviceRef) =>
             Interop.Dnssd.DNSServiceQueryRecord(
                 out serviceRef,
                 flags: Interop.Dnssd.kDNSServiceFlagsReturnIntermediates | Interop.Dnssd.kDNSServiceFlagsTimeout,
@@ -261,15 +209,6 @@ namespace System.Net
                 rrclass: Interop.Dnssd.kDNSServiceClass_IN,
                 callBack: &QueryRecordCallback,
                 context: GCHandle.ToIntPtr(stateHandle));
-
-        private static void ProcessResult(SafeDnsServiceHandle dnsService, DnsSdQueryState state)
-        {
-            int status = Interop.Dnssd.DNSServiceProcessResult(dnsService.DangerousGetHandle());
-            if (status != Interop.Dnssd.kDNSServiceErr_NoError)
-            {
-                state.SetError(status);
-            }
-        }
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
@@ -379,22 +318,6 @@ namespace System.Net
             }
         }
 
-        private sealed class SafeDnsServiceHandle : SafeHandle
-        {
-            public SafeDnsServiceHandle(IntPtr handle)
-                : base(IntPtr.Zero, ownsHandle: true)
-            {
-                SetHandle(handle);
-            }
-
-            public override bool IsInvalid => handle == IntPtr.Zero;
-
-            protected override bool ReleaseHandle()
-            {
-                Interop.Dnssd.DNSServiceRefDeallocate(handle);
-                return true;
-            }
-        }
 
         private static DnsResponseCode MapDnsServiceErrorToResponseCode(int status) =>
             status switch
@@ -416,5 +339,22 @@ namespace System.Net
                 Interop.Dnssd.kDNSServiceErr_NotPermitted => DnsResponseCode.Refused,
                 _ => DnsResponseCode.ServerFailure,
             };
+    }
+
+    // SafeHandle wrapping the DNSServiceRef returned by DNSServiceQueryRecord.
+    // Lives at file scope so Interop.Dnssd can marshal it via [LibraryImport].
+    internal sealed class SafeDnsServiceHandle : SafeHandle
+    {
+        // Public parameterless ctor required by the LibraryImport source generator
+        // to construct the SafeHandle for `out SafeDnsServiceHandle` parameters.
+        public SafeDnsServiceHandle() : base(IntPtr.Zero, ownsHandle: true) { }
+
+        public override bool IsInvalid => handle == IntPtr.Zero;
+
+        protected override bool ReleaseHandle()
+        {
+            Interop.Dnssd.DNSServiceRefDeallocate(handle);
+            return true;
+        }
     }
 }

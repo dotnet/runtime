@@ -45,6 +45,8 @@ namespace System.Net
             public object ProtocolTypeTcp = null!;
             public ConstructorInfo SafeSocketHandleConstructor = null!;
             public ConstructorInfo SocketFromSafeHandleConstructor = null!;
+            public MethodInfo ReceiveAsyncWithFlagsMethod = null!;
+            public object SocketFlagsPeek = null!;
         }
 
         private static readonly SocketReflection s_reflection = CreateReflection();
@@ -74,6 +76,7 @@ namespace System.Net
             Type socketTypeEnum = Type.GetType("System.Net.Sockets.SocketType, System.Net.Sockets", throwOnError: true)!;
             Type protocolTypeEnum = Type.GetType("System.Net.Sockets.ProtocolType, System.Net.Sockets", throwOnError: true)!;
             Type safeSocketHandleType = Type.GetType("System.Net.Sockets.SafeSocketHandle, System.Net.Sockets", throwOnError: true)!;
+            Type socketFlagsEnum = Type.GetType("System.Net.Sockets.SocketFlags, System.Net.Sockets", throwOnError: true)!;
 
             return new SocketReflection
             {
@@ -95,6 +98,8 @@ namespace System.Net
                 SetReceiveTimeoutMethod = socketType.GetProperty("ReceiveTimeout")!.GetSetMethod()!,
                 SafeSocketHandleConstructor = safeSocketHandleType.GetConstructor(new[] { typeof(IntPtr), typeof(bool) })!,
                 SocketFromSafeHandleConstructor = socketType.GetConstructor(new[] { safeSocketHandleType })!,
+                ReceiveAsyncWithFlagsMethod = socketType.GetMethod("ReceiveAsync", new[] { typeof(Memory<byte>), socketFlagsEnum, typeof(CancellationToken) })!,
+                SocketFlagsPeek = Enum.Parse(socketFlagsEnum, "Peek"),
             };
         }
 
@@ -171,11 +176,12 @@ namespace System.Net
 
         public void Dispose() => _dispose();
 
-        // Awaits an empty-buffer ReceiveAsync on a caller-owned fd. Used by the macOS DNS PAL
-        // to wait for readiness on the mDNSResponder socket without consuming any bytes; the
-        // actual read is performed synchronously by DNSServiceProcessResult afterwards.
-        // The wrapped SafeSocketHandle is created with ownsHandle: false so disposing the
-        // scratch Socket does not close the fd — the caller (mDNSResponder client library)
+        // Awaits real readability on a caller-owned fd. On Unix, an empty-buffer
+        // Socket.ReceiveAsync completes synchronously with 0 bytes without ever waiting
+        // for POLLIN, so we peek 1 byte instead; SocketFlags.Peek leaves the byte in the
+        // socket for the subsequent DNSServiceProcessResult to consume. The wrapped
+        // SafeSocketHandle is created with ownsHandle: false so disposing the scratch
+        // Socket does not close the fd — the caller (mDNSResponder client library)
         // continues to own it.
         public static async ValueTask WaitReadableAsync(IntPtr fileDescriptor, CancellationToken cancellationToken)
         {
@@ -195,12 +201,24 @@ namespace System.Net
 
             try
             {
-                var receiveAsync = reflection.ReceiveAsyncMethod.CreateDelegate<Func<Memory<byte>, CancellationToken, ValueTask<int>>>(socket);
-                await receiveAsync(Memory<byte>.Empty, cancellationToken).ConfigureAwait(false);
+                object result;
+                try
+                {
+                    result = reflection.ReceiveAsyncWithFlagsMethod.Invoke(
+                        socket,
+                        new object[] { (Memory<byte>)new byte[1], reflection.SocketFlagsPeek, cancellationToken })!;
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Throw(e.InnerException);
+                    throw; // Unreachable.
+                }
+
+                await ((ValueTask<int>)result).ConfigureAwait(false);
             }
             finally
             {
-                reflection.DisposeMethod.CreateDelegate<Action>(socket)();
+                ((IDisposable)socket).Dispose();
             }
         }
     }
