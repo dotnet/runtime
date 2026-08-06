@@ -178,10 +178,6 @@ public:
     {
     }
 private:
-    //---------------------------------------------------------
-    // Compile a static delegate shufflethunk. Always returns
-    // STANDALONE since we don't interpret these things.
-    //---------------------------------------------------------
     virtual StubCodeBlockKind CompileStub(const BYTE *pRawStub,
                                           StubLinker *pstublinker)
     {
