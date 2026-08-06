@@ -61,7 +61,20 @@ public sealed unsafe partial class ClrDataMethodDefinition : IXCLRDataMethodDefi
     {
         ILoader loader = _target.Contracts.Loader;
         Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(_module);
-        TargetPointer ilHeader = loader.GetILHeader(moduleHandle, _token);
+        TargetPointer ilHeader = TargetPointer.Null;
+        TargetPointer methodDesc = TryResolveMethodDesc();
+        if (methodDesc != TargetPointer.Null && _target.Contracts.TryGetContract(out ICodeVersions codeVersions))
+        {
+            ILCodeVersionHandle activeVersion = codeVersions.GetActiveILCodeVersion(methodDesc);
+            if (activeVersion.IsValid && codeVersions.GetSource(activeVersion) == CodeVersionSource.EnC)
+            {
+                ilHeader = codeVersions.GetIL(activeVersion);
+            }
+        }
+
+        if (ilHeader == TargetPointer.Null)
+            ilHeader = loader.GetILHeader(moduleHandle, _token);
+
         if (ilHeader == TargetPointer.Null)
         {
             codeSize = 0;
