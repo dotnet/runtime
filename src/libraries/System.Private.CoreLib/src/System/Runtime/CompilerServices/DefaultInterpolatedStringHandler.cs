@@ -279,7 +279,7 @@ namespace System.Runtime.CompilerServices
                 if (value is ISpanFormattable spanFormattableValue)
                 {
                     int charsWritten;
-                    while (!spanFormattableValue.TryFormat(_chars.Slice(_pos), out charsWritten, default, _provider)) // constrained call avoiding boxing for value types
+                    while (!spanFormattableValue.TryFormat(_chars.Slice(_pos), out charsWritten, default, _provider))
                     {
                         Grow();
                     }
@@ -346,7 +346,7 @@ namespace System.Runtime.CompilerServices
                 if (value is ISpanFormattable spanFormattableValue)
                 {
                     int charsWritten;
-                    while (!spanFormattableValue.TryFormat(_chars.Slice(_pos), out charsWritten, format, _provider)) // constrained call avoiding boxing for value types
+                    while (!spanFormattableValue.TryFormat(_chars.Slice(_pos), out charsWritten, format, _provider))
                     {
                         Grow();
                     }
