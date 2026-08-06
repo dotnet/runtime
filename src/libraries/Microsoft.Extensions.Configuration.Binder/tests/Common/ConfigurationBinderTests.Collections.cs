@@ -2488,6 +2488,38 @@ namespace Microsoft.Extensions
             Assert.Throws<ArgumentNullException>(() => configuration.Bind("", elements));
         }
 
+        [Fact]
+        public void TestNullHandling_BindCollectionOfNonInstantiableElements_NullKeyThrows()
+        {
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            List<AbstractElement>? elements = new();
+            string? key = null;
+
+            // The key overload resolves the section before it looks at the instance, so the lookup
+            // still rejects a null key even though there is nothing to bind.
+            Assert.Throws<ArgumentNullException>(() => configuration.Bind(key, elements));
+        }
+
+        [Fact]
+        public void TestNullHandling_BindCollectionOfNonInstantiableElements_NullInstanceIsNoOp()
+        {
+            IConfiguration configuration = new ConfigurationBuilder().Build();
+            List<AbstractElement>? elements = null;
+            bool configureOptionsInvoked = false;
+
+            // A null instance is a no-op: the binder options are never created, so the callback never
+            // runs and an unsupported option on it can never be observed.
+            configuration.Bind(elements);
+            configuration.Bind(elements, options =>
+            {
+                configureOptionsInvoked = true;
+                options.BindNonPublicProperties = true;
+            });
+            configuration.Bind("key", elements);
+
+            Assert.False(configureOptionsInvoked);
+        }
+
         // Test behavior for root level arrays.
 
         // Tests for TypeConverter usage.

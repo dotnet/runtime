@@ -777,10 +777,16 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
                 loop => loop.Statement is BlockSyntax { Statements.Count: 0 });
 
             // The element type is only reachable through the collection, so it needs no binding logic either.
+            // The generator emits fully qualified parameter types, so the comparison has to match that.
+            MethodDeclarationSyntax[] bindCoreMethods = root.DescendantNodes()
+                .OfType<MethodDeclarationSyntax>()
+                .Where(method => method.Identifier.ValueText == "BindCore")
+                .ToArray();
+
+            Assert.NotEmpty(bindCoreMethods);
             Assert.DoesNotContain(
-                root.DescendantNodes().OfType<MethodDeclarationSyntax>(),
-                method => method.Identifier.ValueText == "BindCore" &&
-                    method.ParameterList.Parameters.Any(parameter => parameter.Type!.ToString() == "AbstractElement"));
+                bindCoreMethods,
+                method => method.ParameterList.Parameters.Any(parameter => parameter.Type!.ToString() == "global::AbstractElement"));
 
             // The member is still recognized as bindable; it is assigned an empty collection.
             Assert.Contains("instance.Elements", generated);

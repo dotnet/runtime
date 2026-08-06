@@ -46,6 +46,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public static void Bind_Program__MyClass1(this IConfiguration configuration, object? instance, Action<BinderOptions>? configureOptions)
         {
             ArgumentNullException.ThrowIfNull(configuration);
+
+            if (instance is null)
+            {
+                return;
+            }
+
             GetBinderOptions(configureOptions);
         }
 
@@ -54,6 +60,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public static void Bind_Program__MyClass2(this IConfiguration configuration, string key, object? instance)
         {
             ArgumentNullException.ThrowIfNull(configuration);
+            _ = configuration.GetSection(key);
         }
         #endregion IConfiguration extensions.
 
