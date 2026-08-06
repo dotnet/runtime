@@ -81,12 +81,6 @@ void EEClass::Destruct()
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
 
-
-    if (IsDelegate())
-    {
-        DelegateEEClass* pDelegateEEClass = (DelegateEEClass*)this;
-    }
-
 #ifdef FEATURE_COMINTEROP
     if (GetSparseCOMInteropVTableMap() != NULL)
         delete GetSparseCOMInteropVTableMap();
