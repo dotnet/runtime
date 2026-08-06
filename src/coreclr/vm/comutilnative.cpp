@@ -502,8 +502,8 @@ FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
 
     GCMEMORYINFODATAREF objGCMemoryInfo = (GCMEMORYINFODATAREF)(ObjectToOBJECTREF (objUNSAFE));
 
-    UINT64* genInfoRaw = (UINT64*)&(objGCMemoryInfo->generationInfo0);
-    UINT64* pauseInfoRaw = (UINT64*)&(objGCMemoryInfo->pauseDuration0);
+    UINT64* genInfoRaw = (UINT64*)&(objGCMemoryInfo->generationInfo[0]);
+    UINT64* pauseInfoRaw = (UINT64*)&(objGCMemoryInfo->pauseDurations[0]);
 
     return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(
         &(objGCMemoryInfo->highMemLoadThresholdBytes),

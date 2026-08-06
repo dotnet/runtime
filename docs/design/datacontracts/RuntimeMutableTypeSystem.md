@@ -173,7 +173,7 @@ TargetPointer GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPoin
                 // Primitive stored in a 1-element array. Return the address of the first element.
                 if (fieldObject == TargetPointer.Null)
                     return TargetPointer.Null;
-                return target.Contracts.Object.GetArrayData(fieldObject, out _, out _, out _);
+                return target.Contracts.Object.GetArrayData(fieldObject, out _, out _, out _, out _, out _);
             }
         }
         entryPtr = target.ReadPointer(entryPtr + /* EnCAddedField::Next offset */);
