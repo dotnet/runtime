@@ -5768,7 +5768,18 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
             }
         }
 #elif defined(TARGET_WASM)
-        NYI_WASM("gtMarkAddrMode");
+        // Only "base + cns" is an addressing mode on Wasm. The constant folds into the memarg, which grows by
+        // the size of its ULEB encoding.
+        //
+        assert((base != nullptr) && (idx == nullptr));
+
+        addrModeCostEx += base->GetCostEx();
+        addrModeCostSz += base->GetCostSz();
+
+        for (target_size_t value = static_cast<target_size_t>(cns); value >= 0x80; value >>= 7)
+        {
+            addrModeCostSz += 1;
+        }
 #else
 #error "Unknown TARGET"
 #endif
