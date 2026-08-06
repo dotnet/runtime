@@ -96,13 +96,18 @@ namespace ILLink.CodeFix
             var diagnostic = context.Diagnostics[0];
             var codeFixTitle = CodeFixTitle.ToString();
 
+            if (!diagnostic.Properties.TryGetValue(DynamicallyAccessedMembersAnalyzer.attributeArgument, out string? stringArgs)
+                || stringArgs is null
+                || stringArgs.Contains(","))
+                return;
             if (await document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } root)
                 return;
-            if (diagnostic.AdditionalLocations.Count == 0)
-                return;
-            if (root.FindNode(diagnostic.AdditionalLocations[0].SourceSpan, getInnermostNodeForTie: true) is not SyntaxNode targetNode)
-                return;
-            if (diagnostic.Properties["attributeArgument"] is not string stringArgs || stringArgs.Contains(","))
+
+            Location targetLocation = diagnostic.AdditionalLocations.Count > 0
+                ? diagnostic.AdditionalLocations[0]
+                : diagnostic.Location;
+
+            if (root.FindNode(targetLocation.SourceSpan, getInnermostNodeForTie: true) is not SyntaxNode targetNode)
                 return;
 
             context.RegisterCodeFix(CodeAction.Create(

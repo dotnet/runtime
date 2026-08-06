@@ -221,20 +221,19 @@ namespace ILLink.RoslynAnalyzer
             var baseMethodReturnAnnotation = FlowAnnotations.GetMethodReturnValueAnnotation(baseMethod);
             if (overrideMethodReturnAnnotation != baseMethodReturnAnnotation)
             {
-                Location attributableSymbolLocation = GetPrimaryLocation(overrideMethod.Locations);
-                var returnOrigin = origin ??= overrideMethod;
+                var returnOrigin = origin ?? overrideMethod;
                 Location diagnosticLocation = GetPrimaryLocation(returnOrigin.Locations);
 
                 // Only offer to add the missing annotation to the override. Never change the base method's contract.
-                (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!canOfferCodeFixOnOverride
+                ImmutableDictionary<string, string?>? DAMArgs = (!canOfferCodeFixOnOverride
                     || overrideMethodReturnAnnotation != DynamicallyAccessedMemberTypes.None
                     || overrideMethod.TryGetReturnAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-                        ? (null, null)
-                        : CreateArguments(attributableSymbolLocation, baseMethodReturnAnnotation);
+                        ? null
+                        : CreateCodeFixProperties(baseMethodReturnAnnotation);
 
                 context.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides),
-                    diagnosticLocation, sourceLocation, DAMArgs?.ToImmutableDictionary(), overrideMethod.GetDisplayName(), baseMethod.GetDisplayName()));
+                    diagnosticLocation, additionalLocations: null, DAMArgs, overrideMethod.GetDisplayName(), baseMethod.GetDisplayName()));
             }
 
             foreach (var overrideParam in overrideMethod.GetMetadataParameters())
@@ -244,20 +243,19 @@ namespace ILLink.RoslynAnalyzer
                 var overrideParameterAnnotation = FlowAnnotations.GetMethodParameterAnnotation(overrideParam);
                 if (overrideParameterAnnotation != baseParameterAnnotation)
                 {
-                    Location attributableSymbolLocation = overrideParam.Location!;
                     var parameterOrigin = origin ?? overrideParam.ParameterSymbol;
                     Location diagnosticLocation = GetPrimaryLocation(parameterOrigin?.Locations);
 
                     // Only offer to add the missing annotation to the override. Never change the base method's contract.
-                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!canOfferCodeFixOnOverride
+                    ImmutableDictionary<string, string?>? DAMArgs = (!canOfferCodeFixOnOverride
                         || overrideParameterAnnotation != DynamicallyAccessedMemberTypes.None
                         || overrideParam.ParameterSymbol!.TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-                            ? (null, null)
-                            : CreateArguments(attributableSymbolLocation, baseParameterAnnotation);
+                            ? null
+                            : CreateCodeFixProperties(baseParameterAnnotation);
 
                     context.ReportDiagnostic(Diagnostic.Create(
                         DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides),
-                        diagnosticLocation, sourceLocation, DAMArgs?.ToImmutableDictionary(),
+                        diagnosticLocation, additionalLocations: null, DAMArgs,
                         overrideParam.GetDisplayName(), overrideMethod.GetDisplayName(), baseParam.GetDisplayName(), baseMethod.GetDisplayName()));
                 }
             }
@@ -268,21 +266,11 @@ namespace ILLink.RoslynAnalyzer
                 var overriddenMethodTypeParameterAnnotation = baseMethod.TypeParameters[i].GetDynamicallyAccessedMemberTypes();
                 if (methodTypeParameterAnnotation != overriddenMethodTypeParameterAnnotation)
                 {
-                    var attributableSymbol = overrideMethod.TypeParameters[i];
-                    Location attributableSymbolLocation = GetPrimaryLocation(attributableSymbol.Locations);
                     var typeParameterOrigin = origin ?? overrideMethod.TypeParameters[i];
-                    Location diagnosticLocation = GetPrimaryLocation(typeParameterOrigin.Locations);
-
-                    // Only offer to add the missing annotation to the override. Never change the base method's contract.
-                    (Location[]? sourceLocation, Dictionary<string, string?>? DAMArgs) = (!canOfferCodeFixOnOverride
-                        || methodTypeParameterAnnotation != DynamicallyAccessedMemberTypes.None
-                        || overrideMethod.TypeParameters[i].TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
-                            ? (null, null)
-                            : CreateArguments(attributableSymbolLocation, overriddenMethodTypeParameterAnnotation);
 
                     context.ReportDiagnostic(Diagnostic.Create(
                         DiagnosticDescriptors.GetDiagnosticDescriptor(DiagnosticId.DynamicallyAccessedMembersMismatchOnGenericParameterBetweenOverrides),
-                        diagnosticLocation, sourceLocation, DAMArgs?.ToImmutableDictionary(),
+                        GetPrimaryLocation(typeParameterOrigin.Locations),
                         overrideMethod.TypeParameters[i].GetDisplayName(), overrideMethod.GetDisplayName(),
                         baseMethod.TypeParameters[i].GetDisplayName(), baseMethod.GetDisplayName()));
                 }
@@ -309,7 +297,7 @@ namespace ILLink.RoslynAnalyzer
             {
                 if (implementationMember is IMethodSymbol implementationMethod && interfaceMember is IMethodSymbol interfaceMethod)
                 {
-                    ISymbol origin = implementationMethod;
+                    ISymbol? origin = null;
                     INamedTypeSymbol implementationType = implementationMethod.ContainingType;
 
                     // If this type implements an interface method through a base class, the origin of the warning is this type,
@@ -357,12 +345,7 @@ namespace ILLink.RoslynAnalyzer
             }
         }
 
-        private static (Location[]?, Dictionary<string, string?>?) CreateArguments(Location attributableSymbolLocation, DynamicallyAccessedMemberTypes mismatchedArgument)
-        {
-            Dictionary<string, string?>? DAMArgument = new();
-            Location[]? sourceLocation = new Location[] { attributableSymbolLocation };
-            DAMArgument.Add(DynamicallyAccessedMembersAnalyzer.attributeArgument, mismatchedArgument.ToString());
-            return (sourceLocation, DAMArgument);
-        }
+        private static ImmutableDictionary<string, string?> CreateCodeFixProperties(DynamicallyAccessedMemberTypes annotation)
+            => ImmutableDictionary<string, string?>.Empty.Add(attributeArgument, annotation.ToString());
     }
 }

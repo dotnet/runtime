@@ -2666,7 +2666,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 // All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
                 VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
                 .WithSpan(11, 33, 11, 34)
-                .WithSpan(11, 33, 11, 34)
                 .WithArguments("t",
                     "C.M(Type)",
                     "t",
@@ -2775,7 +2774,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 fixedSource: fixtest,
                 baselineExpected: new[] {
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
-                        .WithSpan(11, 17, 11, 18)
                         .WithSpan(11, 24, 11, 25)
                         .WithArguments("t",
                             "C.M(Type)",
@@ -2846,7 +2844,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 // don't match overridden parameter 't' of method 'Base.M(Type)'.
                 // All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
                 VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodParameterBetweenOverrides)
-                .WithSpan(11, 33, 11, 34)
                 .WithSpan(11, 33, 11, 34)
                 .WithArguments("t",
                     "C.M(Type)",
@@ -2947,7 +2944,6 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                     // don't match overridden return value of method 'Base.M(Type)'.
                     // All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.
                     VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchOnMethodReturnValueBetweenOverrides)
-                        .WithSpan(14, 26, 14, 27)
                         .WithSpan(14, 26, 14, 27)
                         .WithArguments("C.M(Type)",
                             "Base.M(Type)")
