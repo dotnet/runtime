@@ -71,6 +71,14 @@ public unsafe class StackWalkTests
         ulong stackSizeSkipped;
         Assert.Equal(System.HResults.S_OK, api.GetStackSizeSkipped(&stackSizeSkipped));
         Assert.Equal(expected, stackSizeSkipped);
+
+        if (!hasNextFrame)
+        {
+            Assert.Equal(System.HResults.S_FALSE, api.Next());
+            Assert.Equal(System.HResults.S_OK, api.GetStackSizeSkipped(&stackSizeSkipped));
+            Assert.Equal(expected, stackSizeSkipped);
+        }
+
         Assert.Equal(System.HResults.E_INVALIDARG, api.GetStackSizeSkipped(null));
     }
 

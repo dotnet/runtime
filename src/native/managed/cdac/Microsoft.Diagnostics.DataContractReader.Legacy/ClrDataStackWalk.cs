@@ -259,8 +259,15 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         int hr;
         try
         {
-            _currentFrameIsValid = MoveNextLegacyVisible(trackStackSizeSkipped: true, out _stackSizeSkipped);
-            hr = _currentFrameIsValid ? HResults.S_OK : HResults.S_FALSE;
+            if (_currentFrameIsValid)
+            {
+                _currentFrameIsValid = MoveNextLegacyVisible(trackStackSizeSkipped: true, out _stackSizeSkipped);
+                hr = _currentFrameIsValid ? HResults.S_OK : HResults.S_FALSE;
+            }
+            else
+            {
+                hr = HResults.S_FALSE;
+            }
         }
         catch (System.Exception ex)
         {
