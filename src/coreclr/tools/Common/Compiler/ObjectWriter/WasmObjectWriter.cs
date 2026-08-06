@@ -154,7 +154,7 @@ namespace ILCompiler.ObjectWriter
             };
         }
 
-        private void AddFunctionEntry(int signatureIndex)
+        private void WriteFunctionEntry(int signatureIndex)
         {
             WasmFunctionSection section = GetOrCreateSection<WasmFunctionSection>(
                 WasmObjectNodeSection.FunctionSection,
@@ -171,13 +171,13 @@ namespace ILCompiler.ObjectWriter
                 throw new InvalidOperationException($"Signature index of {key} not found for function: {node.ToString()}");
             }
 
-            AddFunctionEntry(signatureSymbol.Index);
+            WriteFunctionEntry(signatureSymbol.Index);
         }
 
         /// <summary>
         /// Adds the given import entry, including its prefix (module/name/kind) and body (external ref).
         /// </summary>
-        private void AddImport(WasmImport import)
+        private void WriteImport(WasmImport import)
         {
             Utf8String symbolName = new(import.Name);
             _wasmSymbolManager.AddImport(symbolName, GetIndexSpace(import.Kind), import.Index);
@@ -188,7 +188,7 @@ namespace ILCompiler.ObjectWriter
             section.WriteEntry(writer, import);
         }
 
-        private void AddExport(string name, WasmExportKind kind, int index)
+        private void WriteExport(string name, WasmExportKind kind, int index)
         {
             WasmExportSection section = GetOrCreateSection<WasmExportSection>(
                 WasmObjectNodeSection.ExportSection,
@@ -197,19 +197,19 @@ namespace ILCompiler.ObjectWriter
         }
 
         // Convenience methods for specific export types
-        private void AddFunctionExport(string name, int functionIndex) =>
-            AddExport(name, WasmExportKind.Function, functionIndex);
+        private void WriteFunctionExport(string name, int functionIndex) =>
+            WriteExport(name, WasmExportKind.Function, functionIndex);
 
-        private void AddTableExport(string name, int tableIndex) =>
-            AddExport(name, WasmExportKind.Table, tableIndex);
+        private void WriteTableExport(string name, int tableIndex) =>
+            WriteExport(name, WasmExportKind.Table, tableIndex);
 
-        private void AddMemoryExport(string name, int memoryIndex) =>
-            AddExport(name, WasmExportKind.Memory, memoryIndex);
+        private void WriteMemoryExport(string name, int memoryIndex) =>
+            WriteExport(name, WasmExportKind.Memory, memoryIndex);
 
-        private void AddGlobalExport(string name, int globalIndex) =>
-            AddExport(name, WasmExportKind.Global, globalIndex);
+        private void WriteGlobalExport(string name, int globalIndex) =>
+            WriteExport(name, WasmExportKind.Global, globalIndex);
 
-        private void AddElementSegment(ReadOnlyMemory<int> functionIndices)
+        private void WriteElementSegment(ReadOnlyMemory<int> functionIndices)
         {
             WasmElementSection section = GetOrCreateSection<WasmElementSection>(
                 WasmObjectNodeSection.ElementSection,
@@ -364,7 +364,7 @@ namespace ILCompiler.ObjectWriter
         private void RegisterStubIndexAndSignature(WasmFuncType signature)
         {
             int signatureIndex = RegisterSignature(signature);
-            AddFunctionEntry(signatureIndex);
+            WriteFunctionEntry(signatureIndex);
         }
 
         private void InsertWasmStub(Utf8String name, WasmFunctionBody body)
@@ -546,7 +546,7 @@ namespace ILCompiler.ObjectWriter
 
         // TODO-Wasm: In the future, we may want to consider representing Wasm globals in the dependency graph so that they
         // can be referenced by other nodes and we can make effective use of them.
-        private void AddGlobal(string name, WasmValueType valueType, WasmMutabilityType mutability, WasmInstructionGroup initExpr)
+        private void WriteGlobal(string name, WasmValueType valueType, WasmMutabilityType mutability, WasmInstructionGroup initExpr)
         {
             Utf8String symbolName = new(name);
             _wasmSymbolManager.AddDefinition(symbolName, WasmIndexSpace.Global);
@@ -570,7 +570,7 @@ namespace ILCompiler.ObjectWriter
         private void WriteGlobalSection()
         {
             // webcilVersion: i32 const = 0
-            AddGlobal("webcilVersion", WasmValueType.I32, WasmMutabilityType.Const,
+            WriteGlobal("webcilVersion", WasmValueType.I32, WasmMutabilityType.Const,
                 new WasmInstructionGroup([new WasmConstExpr(WasmExprKind.I32Const, WebcilConstants.WC_VERSION_MAJOR)]));
         }
 
@@ -1060,7 +1060,7 @@ namespace ILCompiler.ObjectWriter
         {
             foreach (WasmImport import in CreateDefaultGlobalImports())
             {
-                AddImport(import);
+                WriteImport(import);
             }
         }
 
@@ -1070,15 +1070,15 @@ namespace ILCompiler.ObjectWriter
             uint numPages = Math.Max(dataPages, 1); // Ensure at least one page is allocated for the minimum
 
             WasmImport memoryImport = new WasmImport("webcil", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, numPages)); // memory limits: flags (0 = only minimum)
-            AddImport(memoryImport);
+            WriteImport(memoryImport);
         }
 
         private void WriteExports()
         {
-            AddTableExport("table", 0);
+            WriteTableExport("table", 0);
 
             Debug.Assert(_definedGlobals.ContainsKey("webcilVersion"));
-            AddGlobalExport("webcilVersion", _definedGlobals["webcilVersion"].Index);
+            WriteGlobalExport("webcilVersion", _definedGlobals["webcilVersion"].Index);
 
             // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
             IEnumerable<WasmSymbol> functionSymbols = _wasmSymbolManager.GetDefinitions(
@@ -1086,7 +1086,7 @@ namespace ILCompiler.ObjectWriter
                 Comparer<WasmSymbol>.Create(static (x, y) => x.Name.CompareTo(y.Name)));
             foreach (WasmSymbol symbol in functionSymbols)
             {
-                AddFunctionExport(symbol.Name.ToString(), symbol.Index);
+                WriteFunctionExport(symbol.Name.ToString(), symbol.Index);
             }
         }
 
@@ -1105,7 +1105,7 @@ namespace ILCompiler.ObjectWriter
                 .Select(symbol => symbol.Index)
                 .ToArray();
 
-            AddElementSegment(functionIndices);
+            WriteElementSegment(functionIndices);
         }
 
         // Populate the sections whose entries are derived from the completed symbol table.
