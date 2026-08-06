@@ -49,10 +49,10 @@ namespace System
 #if BIGENDIAN
             /// <safety>Non-reference uint overlapping only the low half of the ulomid integer view, so the union cannot forge a managed reference.</safety>
             [FieldOffset(8)]
-            private uint umid;
+            private safe uint umid;
             /// <safety>Non-reference uint overlapping only the high half of the ulomid integer view, so the union cannot forge a managed reference.</safety>
             [FieldOffset(12)]
-            private uint ulo;
+            private safe uint ulo;
 #else
             /// <safety>Non-reference uint overlapping only the low half of the ulomid integer view, so the union cannot forge a managed reference.</safety>
             [FieldOffset(8)]
@@ -2654,32 +2654,43 @@ done:
             [StructLayout(LayoutKind.Explicit)]
             private struct Buf28
             {
+                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
                 [FieldOffset(0 * 4)]
-                public Buf24 Buf24;
+                public safe Buf24 Buf24;
+                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
                 [FieldOffset(6 * 4)]
-                public uint U6;
+                public safe uint U6;
 
                 // Overlapping 96-bit and 128-bit windows over the buffer, named after the
                 // uints they span. VarDecModFull divides the buffer one uint at a time.
+                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
                 [FieldOffset(0 * 4)]
-                public Buf12 U0To2;
+                public safe Buf12 U0To2;
+                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
                 [FieldOffset(1 * 4)]
-                public Buf12 U1To3;
+                public safe Buf12 U1To3;
+                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
                 [FieldOffset(2 * 4)]
-                public Buf12 U2To4;
+                public safe Buf12 U2To4;
+                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
                 [FieldOffset(3 * 4)]
-                public Buf12 U3To5;
+                public safe Buf12 U3To5;
+                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
                 [FieldOffset(4 * 4)]
-                public Buf12 U4To6;
+                public safe Buf12 U4To6;
 
+                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
                 [FieldOffset(0 * 4)]
-                public Buf16 U0To3;
+                public safe Buf16 U0To3;
+                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
                 [FieldOffset(1 * 4)]
-                public Buf16 U1To4;
+                public safe Buf16 U1To4;
+                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
                 [FieldOffset(2 * 4)]
-                public Buf16 U2To5;
+                public safe Buf16 U2To5;
+                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
                 [FieldOffset(3 * 4)]
-                public Buf16 U3To6;
+                public safe Buf16 U3To6;
 
                 public const int Length = 7;
 
