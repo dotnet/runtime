@@ -17,7 +17,7 @@
 #include "threads.h"
 #include "corinfo.h"
 
-#include "eecontract.h"
+#include <contract.h>
 #include "typectxt.h"
 
 //---------------------------------------------------------------------------------------

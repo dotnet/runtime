@@ -36,7 +36,7 @@
 #include "cgencpu.h"
 #include "interopconverter.h"
 #include "cominterfacemarshaler.h"
-#include "eecontract.h"
+#include <contract.h>
 #include "stdinterfaces_internal.h"
 #include "interoputil.inl"
 

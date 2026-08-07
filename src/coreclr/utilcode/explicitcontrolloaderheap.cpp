@@ -55,6 +55,7 @@ ExplicitControlLoaderHeap::ExplicitControlLoaderHeap(bool fMakeExecutable) :
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END;
@@ -77,6 +78,7 @@ ExplicitControlLoaderHeap::~ExplicitControlLoaderHeap()
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END
@@ -157,6 +159,7 @@ BOOL ExplicitControlLoaderHeap::ReservePages(size_t dwSizeToCommit)
     {
         INSTANCE_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END;
@@ -246,6 +249,7 @@ BOOL ExplicitControlLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         INSTANCE_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END;
@@ -299,6 +303,7 @@ void *ExplicitControlLoaderHeap::AllocMemForCode_NoThrow(size_t dwHeaderSize, si
     {
         INSTANCE_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return NULL;);
         PRECONDITION(0 == (dwCodeAlignment & (dwCodeAlignment - 1))); // require power of 2
     }

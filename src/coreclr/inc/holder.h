@@ -991,6 +991,18 @@ public:
     }
 };
 
+#ifdef ENABLE_CONTRACTS_IMPL
+// Out-of-line hook that enforces the ReleaseHolder release-path contract
+// (NOTHROW / GC_TRIGGERS / MODE_PREEMPTIVE).
+//
+// Exactly one definition is linked into each binary, selected by which utilcode flavor
+// that binary uses - the two are mutually exclusive, so there is never a collision or a
+// gap:
+//   * the hosted EE (coreclr.dll / static host) provides the enforcing definition
+//   * hostless and tool builds provide a no-op stub
+void ContractReleaseValidate();
+#endif // ENABLE_CONTRACTS_IMPL
+
 template <typename TYPE>
 struct ReleaseHolderTraits final
 {
@@ -998,9 +1010,13 @@ struct ReleaseHolderTraits final
     static constexpr Type Default() { return NULL; }
     static void Free(Type value)
     {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_MODE_PREEMPTIVE;
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_PREEMPTIVE;
+
+#ifdef ENABLE_CONTRACTS_IMPL
+    ContractReleaseValidate();
+#endif // ENABLE_CONTRACTS_IMPL
 
         if (value != NULL)
             value->Release();

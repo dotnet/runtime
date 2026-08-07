@@ -50,6 +50,7 @@ UnlockedLoaderHeap::UnlockedLoaderHeap(DWORD dwReserveBlockSize,
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END;
@@ -75,6 +76,7 @@ UnlockedLoaderHeap::~UnlockedLoaderHeap()
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END
@@ -164,6 +166,7 @@ BOOL UnlockedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     {
         INSTANCE_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END;
@@ -289,6 +292,7 @@ BOOL UnlockedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         INSTANCE_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END;
@@ -504,6 +508,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
     {
         INSTANCE_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END;
@@ -672,6 +677,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem_NoThrow(size_t  dwRequestedSiz
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
 
         // Macro syntax can't handle this INJECT_FAULT expression - we'll use a precondition instead
         //INJECT_FAULT( do{ if (*pdwExtra) {*pdwExtra = 0} RETURN NULL; } while(0) );
@@ -802,6 +808,7 @@ void *UnlockedLoaderHeap::UnlockedAllocAlignedMem(size_t  dwRequestedSize,
     CONTRACTL
     {
         THROWS;
+        GC_NOTRIGGER;
         INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END

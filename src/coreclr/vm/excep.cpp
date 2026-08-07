@@ -5891,7 +5891,6 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase2(PEXCEPTION_POINTERS pExcepti
     {
         MAYBE_FAULT_FORBID_NO_ALLOC((pExceptionRecord->ExceptionCode == STATUS_NO_MEMORY));
         CantAllocHolder caHolder;
-
         action = CLRVectoredExceptionHandlerPhase3(pExceptionInfo);
     }
 

@@ -3452,8 +3452,6 @@ namespace util
 
 INDEBUG(BOOL DbgIsExecutable(LPVOID lpMem, SIZE_T length);)
 
-BOOL IsIPInModule(PTR_VOID pModuleBaseAddress, PCODE ip);
-
 namespace UtilCode
 {
     // These are type-safe versions of Interlocked[Compare]Exchange

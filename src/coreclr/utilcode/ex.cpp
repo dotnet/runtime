@@ -146,8 +146,7 @@ Exception *Exception::DomainBoundClone()
 {
     CONTRACTL
     {
-        // Because we may call DomainBoundCloneHelper() of ObjrefException or CLRLastThrownObjectException
-        // this should be GC_TRIGGERS, but we can not include EE contracts in Utilcode.
+        GC_TRIGGERS;
         THROWS;
     }
     CONTRACTL_END;
@@ -178,7 +177,16 @@ BOOL Exception::IsTerminal()
     }
     CONTRACTL_END;
 
-    HRESULT hr = GetHR();
+    // IsTerminal is intentionally GC_NOTRIGGER so it can be used by terminal-exception
+    // checks (e.g., RethrowTerminalExceptions) from GC_NOTRIGGER scopes. The virtual
+    // GetHR() resolves to CLRException::GetHR() for CLR exceptions, which is GC_TRIGGERS
+    // because it can materialize the throwable. On terminal-exception paths the throwable
+    // is already materialized, so no GC actually occurs here.
+    HRESULT hr;
+    {
+        CONTRACT_VIOLATION(GCViolation);
+        hr = GetHR();
+    }
     return (COR_E_THREADABORTED == hr);
 }
 
@@ -1082,7 +1090,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner)
         THROWS;
         GC_NOTRIGGER;
     }
-    CONTRACTL_END
+    CONTRACTL_END;
 
     // Yes, NULL is a legal case. Makes it easier to author uniform helpers for
     // both wrapped and normal exceptions.
@@ -1097,7 +1105,10 @@ Exception *ExThrowWithInnerHelper(Exception *inner)
         PAL_CPP_THROW(Exception*, inner);
     }
 
-    inner = inner->DomainBoundClone();
+    {
+        CONTRACT_VIOLATION(GCViolation);  // We are cloning an exception, which is a GC violation.
+        inner = inner->DomainBoundClone();
+    }
 
     // It isn't useful to wrap OOMs and StackOverflows in other exceptions. Just throw them now.
     //

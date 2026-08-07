@@ -26,6 +26,7 @@ HRESULT SString::LoadResourceAndReturnHR(int resourceID)
     {
         INSTANCE_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
     }
     CONTRACTL_END;
 
