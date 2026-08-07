@@ -857,15 +857,12 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
-#if defined(RTLD_NODELETE)
+#if defined(HOST_OSX)
         if (pinModule && info.dli_fname != nullptr)
         {
             // NativeAOT runtime state cannot be safely unloaded.
-            void* module = dlopen(info.dli_fname, RTLD_LAZY | RTLD_NODELETE);
-            if (module != nullptr)
-            {
-                dlclose(module);
-            }
+            // Keep the extra reference for the lifetime of the process.
+            (void)dlopen(info.dli_fname, RTLD_LAZY | RTLD_NOLOAD);
         }
 #else
         (void)pinModule;
