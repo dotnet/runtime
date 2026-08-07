@@ -53,10 +53,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static class TypeDisplayString
             {
-                public const string NullableActionOfBinderOptions = "Action<BinderOptions>?";
+                public const string NullableActionOfBinderOptions = "global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>?";
                 public const string OptionsBuilderOfTOptions = $"global::Microsoft.Extensions.Options.OptionsBuilder<{Identifier.TOptions}>";
                 public const string HashSetOfString = "global::System.Collections.Generic.HashSet<string>";
-                public const string LazyHashSetOfString = "Lazy<global::System.Collections.Generic.HashSet<string>>";
+                public const string LazyHashSetOfString = "global::System.Lazy<global::System.Collections.Generic.HashSet<string>>";
                 public const string ListOfString = "global::System.Collections.Generic.List<string>";
             }
 

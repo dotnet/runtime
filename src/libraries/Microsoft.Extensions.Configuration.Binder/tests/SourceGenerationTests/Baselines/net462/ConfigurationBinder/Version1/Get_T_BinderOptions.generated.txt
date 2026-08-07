@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #region IConfiguration extensions.
         /// <summary>Attempts to bind the configuration instance to a new instance of type T.</summary>
         [InterceptsLocation(1, "G/3QeDCtvtw8eMmVQBFB100BAABzcmMtMC5jcw==")] // src-0.cs(11,40)
-        public static T? Get<T>(this IConfiguration configuration, Action<BinderOptions>? configureOptions) => (T?)(GetCore(configuration, typeof(T), configureOptions) ?? default(T));
+        public static T? Get<T>(this IConfiguration configuration, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions) => (T?)(GetCore(configuration, typeof(T), configureOptions) ?? default(T));
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
@@ -198,7 +198,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
-        public static void ValidateConfigurationKeys(Type type, Lazy<global::System.Collections.Generic.HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
+        public static void ValidateConfigurationKeys(Type type, global::System.Lazy<global::System.Collections.Generic.HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
         {
             if (binderOptions?.ErrorOnUnknownConfiguration is true)
             {
@@ -237,7 +237,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return null;
         }
 
-        public static BinderOptions? GetBinderOptions(Action<BinderOptions>? configureOptions)
+        public static BinderOptions? GetBinderOptions(global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions)
         {
             if (configureOptions is null)
             {
