@@ -27,8 +27,8 @@ namespace ILCompiler.ObjectWriter
             EmitWasmHeader(outputFileStream);
             foreach (int index in SectionEmitOrder)
             {
-                WasmSection section = _sections[index];
-                section.Emit(outputFileStream);
+                SectionDataEmitter section = _sections[index];
+                section.EmitToStream(outputFileStream);
             }
         }
 
@@ -55,6 +55,14 @@ namespace ILCompiler.ObjectWriter
             //         _pendingBaseRelocs.Add(new PendingBaseReloc(sectionIndex, reloc.Offset, fileRelocType));
             //     }
             // }
+        }
+
+        private protected override SectionDataEmitter CreateDataSection(
+            ObjectNodeSection section,
+            int sectionIndex,
+            Stream sectionStream)
+        {
+            return new WasmSection(WasmSectionType.Data, sectionStream, new Utf8String("data"), sectionIndex);
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)

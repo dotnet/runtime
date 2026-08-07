@@ -97,7 +97,7 @@ namespace ILCompiler.ObjectWriter
             Stream sectionStream)
         {
             WasmSectionType sectionType = GetWasmSectionType(section);
-            WasmSection wasmSection;
+            SectionDataEmitter wasmSection;
             if (sectionType == WasmSectionType.Data)
             {
                 wasmSection = CreateDataSection(section, sectionIndex, sectionStream);
@@ -107,13 +107,13 @@ namespace ILCompiler.ObjectWriter
                 Utf8String sectionName = new(section.Name);
                 wasmSection = sectionType switch
                 {
-                    WasmSectionType.Type or WasmSectionType.Code => new WasmExternallyCountedSection(sectionType, sectionStream, sectionName),
-                    WasmSectionType.Import => new WasmImportSection(sectionStream, sectionName),
-                    WasmSectionType.Function => new WasmFunctionSection(sectionStream, sectionName),
-                    WasmSectionType.Global => new WasmGlobalSection(sectionStream, sectionName),
-                    WasmSectionType.Export => new WasmExportSection(sectionStream, sectionName),
-                    WasmSectionType.Element => new WasmElementSection(sectionStream, sectionName),
-                    _ => new WasmSection(sectionType, sectionStream, sectionName),
+                    WasmSectionType.Type or WasmSectionType.Code => new WasmExternallyCountedSection(sectionType, sectionStream, sectionName, sectionIndex),
+                    WasmSectionType.Import => new WasmImportSection(sectionStream, sectionName, sectionIndex),
+                    WasmSectionType.Function => new WasmFunctionSection(sectionStream, sectionName, sectionIndex),
+                    WasmSectionType.Global => new WasmGlobalSection(sectionStream, sectionName, sectionIndex),
+                    WasmSectionType.Export => new WasmExportSection(sectionStream, sectionName, sectionIndex),
+                    WasmSectionType.Element => new WasmElementSection(sectionStream, sectionName, sectionIndex),
+                    _ => new WasmSection(sectionType, sectionStream, sectionName, sectionIndex),
                 };
             }
 
@@ -121,11 +121,10 @@ namespace ILCompiler.ObjectWriter
             _sections.Add(section.Name, sectionIndex, wasmSection);
         }
 
-        private protected virtual WasmSection CreateDataSection(
+        private protected abstract SectionDataEmitter CreateDataSection(
             ObjectNodeSection section,
             int sectionIndex,
-            Stream sectionStream) =>
-            new(WasmSectionType.Data, sectionStream, new Utf8String(section.Name));
+            Stream sectionStream);
 
         private protected override void RecordMethodSignature(WasmTypeNode signature)
         {
@@ -189,9 +188,9 @@ namespace ILCompiler.ObjectWriter
             };
         }
 
-        private void AddFunctionEntry(int signatureIndex)
+        private void WriteFunctionEntry(int signatureIndex)
         {
-            WasmFunctionSection section = GetOrCreateWasmSection<WasmFunctionSection>(
+            WasmFunctionSection section = GetOrCreateSection<WasmFunctionSection>(
                 WasmObjectNodeSection.FunctionSection,
                 out SectionWriter writer);
             section.WriteEntry(writer, signatureIndex);
@@ -209,18 +208,18 @@ namespace ILCompiler.ObjectWriter
                 throw new InvalidOperationException($"Signature index of {key} not found for function: {node.ToString()}");
             }
 
-            AddFunctionEntry(signatureSymbol.Index);
+            WriteFunctionEntry(signatureSymbol.Index);
         }
 
         /// <summary>
         /// Adds the given import entry, including its prefix (module/name/kind) and body (external ref).
         /// </summary>
-        private protected void AddImport(WasmImport import)
+        private protected void WriteImport(WasmImport import)
         {
             Utf8String symbolName = new(import.Name);
             _wasmSymbolManager.AddImport(symbolName, GetIndexSpace(import.Kind), import.Index);
 
-            WasmImportSection section = GetOrCreateWasmSection<WasmImportSection>(
+            WasmImportSection section = GetOrCreateSection<WasmImportSection>(
                 WasmObjectNodeSection.ImportSection,
                 out SectionWriter writer);
             section.WriteEntry(writer, import);
@@ -240,38 +239,45 @@ namespace ILCompiler.ObjectWriter
             _ => throw new ArgumentOutOfRangeException(nameof(kind)),
         };
 
-        private void AddExport(string name, WasmExportKind kind, int index)
+        private void WriteExport(string name, WasmExportKind kind, int index)
         {
-            WasmExportSection section = GetOrCreateWasmSection<WasmExportSection>(
+            WasmExportSection section = GetOrCreateSection<WasmExportSection>(
                 WasmObjectNodeSection.ExportSection,
                 out SectionWriter writer);
             section.WriteEntry(writer, new WasmExport(name, kind, index));
         }
 
-        private protected void AddFunctionExport(string name, int functionIndex) =>
-            AddExport(name, WasmExportKind.Function, functionIndex);
+        private protected void WriteFunctionExport(string name, int functionIndex) =>
+            WriteExport(name, WasmExportKind.Function, functionIndex);
 
-        private protected void AddTableExport(string name, int tableIndex) =>
-            AddExport(name, WasmExportKind.Table, tableIndex);
+        private protected void WriteTableExport(string name, int tableIndex) =>
+            WriteExport(name, WasmExportKind.Table, tableIndex);
 
-        private protected void AddMemoryExport(string name, int memoryIndex) =>
-            AddExport(name, WasmExportKind.Memory, memoryIndex);
+        private protected void WriteMemoryExport(string name, int memoryIndex) =>
+            WriteExport(name, WasmExportKind.Memory, memoryIndex);
 
-        private protected void AddGlobalExport(string name, int globalIndex) =>
-            AddExport(name, WasmExportKind.Global, globalIndex);
+        private protected void WriteGlobalExport(string name, int globalIndex) =>
+            WriteExport(name, WasmExportKind.Global, globalIndex);
 
-        private protected void AddElementSegment(ReadOnlyMemory<int> functionIndices)
+        private protected void WriteElementSegment(ReadOnlyMemory<int> functionIndices)
         {
-            WasmElementSection section = GetOrCreateWasmSection<WasmElementSection>(
+            WasmElementSection section = GetOrCreateSection<WasmElementSection>(
                 WasmObjectNodeSection.ElementSection,
                 out SectionWriter writer);
             section.WriteEntry(writer, functionIndices);
         }
 
-        private protected TSection GetOrCreateWasmSection<TSection>(
+        private protected SectionDataEmitter GetOrCreateSection(
             ObjectNodeSection section,
             out SectionWriter writer)
-            where TSection : WasmSection
+        {
+            return GetOrCreateSection<SectionDataEmitter>(section, out writer);
+        }
+
+        private protected TSection GetOrCreateSection<TSection>(
+            ObjectNodeSection section,
+            out SectionWriter writer)
+            where TSection : SectionDataEmitter
         {
             writer = GetOrCreateSection(section);
             return _sections.GetSection<TSection>(writer.SectionIndex);
@@ -291,7 +297,7 @@ namespace ILCompiler.ObjectWriter
 
         // TODO-WASM: In the future, we may want to consider representing Wasm globals in the dependency graph so that they
         // can be referenced by other nodes and we can make effective use of them.
-        private protected void AddGlobal(
+        private protected void WriteGlobal(
             string name,
             WasmValueType valueType,
             WasmMutabilityType mutability,
@@ -309,7 +315,7 @@ namespace ILCompiler.ObjectWriter
             bool added = _definedGlobals.TryAdd(name, global);
             Debug.Assert(added, $"Duplicate global name: {name}");
 
-            WasmGlobalSection section = GetOrCreateWasmSection<WasmGlobalSection>(
+            WasmGlobalSection section = GetOrCreateSection<WasmGlobalSection>(
                 WasmObjectNodeSection.GlobalSection,
                 out SectionWriter writer);
             section.WriteEntry(writer, global);
@@ -324,7 +330,7 @@ namespace ILCompiler.ObjectWriter
         private protected void RegisterStubIndexAndSignature(WasmFuncType signature)
         {
             int signatureIndex = RegisterSignature(signature);
-            AddFunctionEntry(signatureIndex);
+            WriteFunctionEntry(signatureIndex);
         }
 
         private protected void InsertWasmStub(Utf8String name, WasmFunctionBody body)
