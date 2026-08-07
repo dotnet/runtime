@@ -332,7 +332,8 @@ namespace System.Formats.Tar
                 default:
                     Debug.Assert(entry.Format == TarEntryFormat.Unknown, "Missing format handler");
                     throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, entry.Format));
-
+            }
+            
             _wroteEntries = true;
         }
 
