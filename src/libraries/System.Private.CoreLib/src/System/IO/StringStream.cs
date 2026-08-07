@@ -74,6 +74,8 @@ namespace System.IO
         public override bool CanRead => !_disposed;
 
         /// <inheritdoc/>
+        // Keep this intentionally non-seekable: backward positioning requires re-running the
+        // encoder from the beginning, making repeated seeks worst-case O(N).
         public override bool CanSeek => false;
 
         /// <inheritdoc/>
