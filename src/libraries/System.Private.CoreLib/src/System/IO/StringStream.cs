@@ -9,7 +9,7 @@ namespace System.IO
 {
     /// <summary>
     /// Provides a read-only, non-seekable <see cref="Stream"/> that encodes a <see cref="string"/> or
-    /// <see cref="ReadOnlyMemory{Char}"/> into bytes on-the-fly using a specified <see cref="System.Text.Encoding"/>.
+    /// <see cref="ReadOnlyMemory{Char}"/> into bytes on-the-fly using a specified <see cref="Encoding"/>.
     /// </summary>
     /// <remarks>
     /// <para>This stream never emits a byte order mark (BOM). Callers who need a BOM can prepend it themselves.</para>

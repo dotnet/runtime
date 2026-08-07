@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>
-    /// Provides a seekable, read-only <see cref="Stream"/> for reading a <see cref="ReadOnlyMemory{Byte}"/>.
+    /// Provides a seekable, read-only <see cref="Stream"/> for reading from a <see cref="ReadOnlyMemory{Byte}"/>.
     /// </summary>
     public sealed class ReadOnlyMemoryStream : Stream
     {

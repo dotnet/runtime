@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace System.Buffers
 {
     /// <summary>
-    /// Provides a read-only, non-seekable <see cref="Stream"/> over a <see cref="ReadOnlySequence{Byte}"/>.
+    /// Provides a read-only, non-seekable <see cref="Stream"/> for reading from a <see cref="ReadOnlySequence{Byte}"/>.
     /// </summary>
     /// <remarks>
     /// <para>The underlying sequence is not copied; reads are served directly from its segments.</para>
@@ -49,8 +49,9 @@ namespace System.Buffers
         private void EnsureNotDisposed() => ObjectDisposedException.ThrowIf(_isDisposed, this);
 
         /// <inheritdoc />
-        // Keep Length and Position unsupported to match the standard contract for streams where
-        // CanSeek is false, even though the underlying sequence can provide its length cheaply.
+        // Keep Length and Position unsupported to match the standard contract encoded by the
+        // stream conformance tests for streams where CanSeek is false, even though the underlying
+        // sequence can provide its length cheaply.
         public override long Length => throw new NotSupportedException(SR.NotSupported_UnseekableStream);
 
         /// <inheritdoc />
@@ -153,17 +154,17 @@ namespace System.Buffers
                 return Task.FromCanceled(cancellationToken);
             }
 
-            if (_sequence.Slice(_position).IsEmpty)
+            ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
+            if (remaining.IsEmpty)
             {
                 return Task.CompletedTask;
             }
 
-            return CopyToAsyncCore(destination, cancellationToken);
+            return CopyToAsyncCore(remaining, destination, cancellationToken);
         }
 
-        private async Task CopyToAsyncCore(Stream destination, CancellationToken cancellationToken)
+        private async Task CopyToAsyncCore(ReadOnlySequence<byte> remaining, Stream destination, CancellationToken cancellationToken)
         {
-            ReadOnlySequence<byte> remaining = _sequence.Slice(_position);
             foreach (ReadOnlyMemory<byte> segment in remaining)
             {
                 await destination.WriteAsync(segment, cancellationToken).ConfigureAwait(false);
