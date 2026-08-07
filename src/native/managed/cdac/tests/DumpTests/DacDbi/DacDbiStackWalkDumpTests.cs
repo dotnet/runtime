@@ -144,7 +144,7 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
     [SkipOnVersion("net10.0", "x86 cDAC stack walking is not available in .NET 10")]
     public unsafe void GetStackWalkCurrentFrameInfo_X86HandlerFrame_IncludesSavedRegistersInAmbientSP(TestConfiguration config)
     {
-        InitializeDumpTest(config);
+        InitializeDumpTest(config, DebuggeeName, dumpType: "heap");
 
         if (Target.Contracts.RuntimeInfo.GetTargetArchitecture() != RuntimeInfoArchitecture.X86)
             throw new SkipTestException("This regression test applies only to x86 dumps.");
