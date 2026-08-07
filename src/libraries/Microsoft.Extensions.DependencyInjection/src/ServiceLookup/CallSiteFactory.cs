@@ -842,6 +842,42 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             _callSiteCache[new ServiceCacheKey(serviceIdentifier, DefaultSlot)] = serviceCallSite;
         }
 
+        internal IEnumerable<object?> GetServiceKeys(Type serviceType)
+        {
+            ArgumentNullException.ThrowIfNull(serviceType);
+
+            List<object?>? serviceKeys = null;
+            HashSet<object?>? serviceKeySet = null;
+
+            for (int i = 0; i < _descriptors.Length; i++)
+            {
+                ServiceDescriptor descriptor = _descriptors[i];
+                if (!descriptor.IsKeyedService || descriptor.ServiceKey == KeyedService.AnyKey)
+                {
+                    continue;
+                }
+
+                if (!ShouldCreateExact(descriptor.ServiceType, serviceType) &&
+                    !ShouldCreateOpenGeneric(descriptor.ServiceType, serviceType))
+                {
+                    continue;
+                }
+
+                object? serviceKey = descriptor.ServiceKey;
+                if (serviceKeySet?.Contains(serviceKey) == true)
+                {
+                    continue;
+                }
+
+                serviceKeySet ??= new HashSet<object?>();
+                serviceKeys ??= new List<object?>();
+                serviceKeySet.Add(serviceKey);
+                serviceKeys.Add(serviceKey);
+            }
+
+            return serviceKeys is null ? Array.Empty<object?>() : serviceKeys;
+        }
+
         public bool IsService(Type serviceType) => IsService(new ServiceIdentifier(null, serviceType));
 
         public bool IsKeyedService(Type serviceType, object? key) => IsService(new ServiceIdentifier(key, serviceType));
