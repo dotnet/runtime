@@ -495,6 +495,29 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        public async Task ValidateOnStart_AsyncSuccessSeedsBuiltInOptionsAndMonitor()
+        {
+            ComplexOptions startupCandidate = null;
+            var hostBuilder = CreateHostBuilder(services =>
+                services.AddOptions<ComplexOptions>()
+                    .Configure(o => o.Boolean = true)
+                    .Validate((ComplexOptions o, CancellationToken ct) =>
+                    {
+                        startupCandidate = o;
+                        return Task.FromResult(true);
+                    })
+                    .ValidateOnStart());
+
+            using IHost host = hostBuilder.Build();
+
+            await host.StartAsync();
+
+            Assert.NotNull(startupCandidate);
+            Assert.Same(startupCandidate, host.Services.GetRequiredService<IOptions<ComplexOptions>>().Value);
+            Assert.Same(startupCandidate, host.Services.GetRequiredService<IOptionsMonitor<ComplexOptions>>().CurrentValue);
+        }
+
+        [Fact]
         public async Task ValidateOnStart_MultipleFailingAsyncStartupValidators_RunAllAndAggregateFailures()
         {
             var first = new CountingThrowingAsyncStartupValidator("first failed");

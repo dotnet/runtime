@@ -17,8 +17,7 @@ namespace Microsoft.Extensions.Options
     {
         private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(concurrencyLevel: 1, capacity: 31, StringComparer.Ordinal); // 31 == default capacity
 
-        // Bounded number of TryRemove + TryAdd attempts used to emulate an atomic replace on a derived cache.
-        private const int DerivedCacheReplaceAttempts = 3;
+        private const int CacheReplaceAttempts = 3;
 
         /// <summary>
         /// Clears all options instances from the cache.
@@ -107,40 +106,33 @@ namespace Microsoft.Extensions.Options
                 options));
         }
 
-        /// <summary>
-        /// Adds or replaces the cached options instance for the given name.
-        /// </summary>
-        /// <param name="name">The name of the options instance.</param>
-        /// <param name="options">The options instance to store.</param>
-        internal void AddOrReplace(string? name, TOptions options)
+        internal static bool TryAddOrReplace(IOptionsMonitorCache<TOptions> cache, string? name, TOptions options)
         {
             ArgumentNullException.ThrowIfNull(options);
 
             name ??= Options.DefaultName;
 
-            if (GetType() != typeof(OptionsCache<TOptions>))
+            if (cache is OptionsCache<TOptions> optionsCache &&
+                optionsCache.GetType() == typeof(OptionsCache<TOptions>))
             {
-                // A derived cache only guarantees the public IOptionsMonitorCache<TOptions> surface, which has no
-                // atomic replace. Emulate one with TryRemove + TryAdd, retrying a bounded number of times: a
-                // concurrent GetOrAdd can insert into the gap between the two calls and make TryAdd a no-op, which
-                // would otherwise drop the value being seeded.
-                for (int attempt = 0; attempt < DerivedCacheReplaceAttempts; attempt++)
-                {
-                    TryRemove(name);
-                    if (TryAdd(name, options))
-                    {
-                        return;
-                    }
-                }
-
-                return;
+                optionsCache._cache[name] = new Lazy<TOptions>(
+#if !(NET || NETSTANDARD2_1)
+                    () =>
+#endif
+                    options);
+                return true;
             }
 
-            _cache[name] = new Lazy<TOptions>(
-#if !(NET || NETSTANDARD2_1)
-                () =>
-#endif
-                options);
+            for (int attempt = 0; attempt < CacheReplaceAttempts; attempt++)
+            {
+                cache.TryRemove(name);
+                if (cache.TryAdd(name, options))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

@@ -391,7 +391,7 @@ namespace Microsoft.Extensions.Options.Tests
 
             await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
 
-            // After startup seeds the shared cache, the singleton IOptions<T>.Value returns the validated value.
+            // After startup seeds the singleton slot, IOptions<T>.Value returns the validated value.
             Assert.Equal("validated", sp.GetRequiredService<IOptions<FakeOptions>>().Value.Message);
         }
 
@@ -404,50 +404,203 @@ namespace Microsoft.Extensions.Options.Tests
                 .Validate(async (FakeOptions o, CancellationToken ct) => await Task.FromResult(true), "async fail");
             using ServiceProvider sp = services.BuildServiceProvider();
 
-            // Without ValidateOnStart nothing seeds the cache, so a synchronous read of an async-validated type
+            // Without ValidateOnStart nothing seeds the singleton slot, so a synchronous read of an async-validated type
             // always fails fast; the value is never silently served unvalidated.
             Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<FakeOptions>>().Value);
         }
 
         [Fact]
-        public async Task AsyncValidatedOptions_IOptionsValue_ServedFromSharedCache()
+        public async Task AsyncOnlyValidation_FailedPreStartAccessorsDoNotWin_StartupSeedsBuiltInAccessors()
         {
+            FakeOptions? startupCandidate = null;
             var services = new ServiceCollection();
             services.AddOptions<FakeOptions>()
                 .Configure(o => o.Message = "validated")
-                .Validate(async (FakeOptions o, CancellationToken ct) => await Task.FromResult(true), "async fail")
+                .Validate((FakeOptions o, CancellationToken ct) =>
+                {
+                    startupCandidate = o;
+                    return Task.FromResult(true);
+                }, "async fail")
+                .ValidateOnStart();
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            IOptions<FakeOptions> options = sp.GetRequiredService<IOptions<FakeOptions>>();
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            Assert.Throws<OptionsValidationException>(() => options.Value);
+            Assert.Throws<OptionsValidationException>(() => monitor.CurrentValue);
+
+            using (IServiceScope scope = sp.CreateScope())
+            {
+                Assert.Throws<OptionsValidationException>(
+                    () => scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Value);
+            }
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+
+            Assert.NotNull(startupCandidate);
+            Assert.Same(startupCandidate, options.Value);
+            Assert.Same(startupCandidate, monitor.CurrentValue);
+
+            using IServiceScope newScope = sp.CreateScope();
+            Assert.Throws<OptionsValidationException>(
+                () => newScope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Value);
+        }
+
+        [Fact]
+        public async Task AsyncOnlyValidation_StartupFirstSeedsExactInstance()
+        {
+            FakeOptions? startupCandidate = null;
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "validated")
+                .Validate((FakeOptions o, CancellationToken ct) =>
+                {
+                    startupCandidate = o;
+                    return Task.FromResult(true);
+                }, "async fail")
                 .ValidateOnStart();
             using ServiceProvider sp = services.BuildServiceProvider();
 
             await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
 
-            // IOptions<T>.Value serves the exact instance seeded into the shared monitor cache during startup,
-            // rather than re-creating (and re-running the throwing synchronous Validate).
-            FakeOptions fromOptions = sp.GetRequiredService<IOptions<FakeOptions>>().Value;
-            FakeOptions fromMonitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>().CurrentValue;
-            Assert.Same(fromMonitor, fromOptions);
+            Assert.NotNull(startupCandidate);
+            Assert.Same(startupCandidate, sp.GetRequiredService<IOptions<FakeOptions>>().Value);
+            Assert.Same(startupCandidate, sp.GetRequiredService<IOptionsMonitor<FakeOptions>>().CurrentValue);
         }
 
         [Fact]
-        public async Task AsyncValidatedOptions_IOptionsValue_ServedFromCustomCache()
+        public async Task BothCapableValidator_PreStartIOptionsValueRemainsWinnerAndAsyncValidationRuns()
         {
+            int configureCalls = 0;
+            var validator = new CountingAsyncValidator();
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = (++configureCalls).ToString())
+                .ValidateOnStart();
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            IOptions<FakeOptions> options = sp.GetRequiredService<IOptions<FakeOptions>>();
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+            FakeOptions preStartWinner = options.Value;
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+
+            Assert.Equal(2, configureCalls);
+            Assert.Equal(1, validator.SyncCalls);
+            Assert.Equal(1, validator.AsyncCalls);
+            Assert.Same(preStartWinner, options.Value);
+            Assert.Same(preStartWinner, monitor.CurrentValue);
+        }
+
+        [Fact]
+        public async Task AsyncStartupValidation_CustomOptionsImplementation_ThrowsInvalidOperationException()
+        {
+            bool asyncValidationCalled = false;
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Validate((FakeOptions o, CancellationToken ct) =>
+                {
+                    asyncValidationCalled = true;
+                    return Task.FromResult(true);
+                }, "async fail")
+                .ValidateOnStart();
+            services.AddSingleton<IOptions<FakeOptions>>(Options.Create(new FakeOptions()));
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None));
+
+            Assert.False(asyncValidationCalled);
+            Assert.Contains(typeof(FakeOptions).ToString(), error.Message);
+            Assert.Contains(typeof(OptionsWrapper<FakeOptions>).ToString(), error.Message);
+        }
+
+        [Fact]
+        public async Task FailedAsyncStartupValidation_DoesNotSeedOptions()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "invalid")
+                .Validate((FakeOptions o, CancellationToken ct) => Task.FromResult(false), "async fail")
+                .ValidateOnStart();
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            await Assert.ThrowsAsync<OptionsValidationException>(
+                () => GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None));
+
+            Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptions<FakeOptions>>().Value);
+            Assert.Throws<OptionsValidationException>(() => sp.GetRequiredService<IOptionsMonitor<FakeOptions>>().CurrentValue);
+        }
+
+        [Fact]
+        public async Task IOptionsValue_RemainsStableAfterMonitorCacheEviction()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "validated")
+                .Validate((FakeOptions o, CancellationToken ct) => Task.FromResult(true), "async fail")
+                .ValidateOnStart();
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+
+            IOptions<FakeOptions> options = sp.GetRequiredService<IOptions<FakeOptions>>();
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+            IOptionsMonitorCache<FakeOptions> sharedCache = sp.GetRequiredService<IOptionsMonitorCache<FakeOptions>>();
+            FakeOptions winner = options.Value;
+
+            Assert.True(sharedCache.TryRemove(Options.DefaultName));
+            Assert.Same(winner, options.Value);
+            Assert.Throws<OptionsValidationException>(() => monitor.CurrentValue);
+        }
+
+        [Fact]
+        public async Task NamedAsyncOptions_StartupPublishesExactCandidate()
+        {
+            FakeOptions? startupCandidate = null;
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>("named")
+                .Configure(o => o.Message = "validated")
+                .Validate((FakeOptions o, CancellationToken ct) =>
+                {
+                    startupCandidate = o;
+                    return Task.FromResult(true);
+                }, "async fail")
+                .ValidateOnStart();
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+
+            Assert.NotNull(startupCandidate);
+            Assert.Same(startupCandidate, sp.GetRequiredService<IOptionsMonitor<FakeOptions>>().Get("named"));
+        }
+
+        [Fact]
+        public async Task AsyncStartupValidation_CustomCachePublishesExactCandidate()
+        {
+            FakeOptions? startupCandidate = null;
             var customCache = new DelegatingOptionsCache<FakeOptions>();
             var services = new ServiceCollection();
             services.AddOptions<FakeOptions>()
                 .Configure(o => o.Message = "validated")
-                .Validate(async (FakeOptions o, CancellationToken ct) => await Task.FromResult(true), "async fail")
+                .Validate((FakeOptions o, CancellationToken ct) =>
+                {
+                    startupCandidate = o;
+                    return Task.FromResult(true);
+                }, "async fail")
                 .ValidateOnStart();
             services.AddSingleton<IOptionsMonitorCache<FakeOptions>>(customCache);
             using ServiceProvider sp = services.BuildServiceProvider();
 
             await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
 
-            // Startup seeded the value into a custom IOptionsMonitorCache<T>. A synchronous read must serve it through
-            // the cache contract instead of re-creating (which would run the async validator's throwing sync Validate).
-            FakeOptions fromOptions = sp.GetRequiredService<IOptions<FakeOptions>>().Value;
-            Assert.Equal("validated", fromOptions.Message);
-            Assert.True(customCache.TryGetValue(Options.DefaultName, out FakeOptions? seeded));
-            Assert.Same(seeded, fromOptions);
+            Assert.NotNull(startupCandidate);
+            Assert.True(customCache.TryGetValue(Options.DefaultName, out FakeOptions? cached));
+            Assert.Same(startupCandidate, cached);
+            Assert.Same(startupCandidate, sp.GetRequiredService<IOptions<FakeOptions>>().Value);
+            Assert.Same(startupCandidate, sp.GetRequiredService<IOptionsMonitor<FakeOptions>>().CurrentValue);
         }
 
         [Fact]
@@ -471,9 +624,56 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal("validated", sp.GetRequiredService<IOptionsMonitor<FakeOptions>>().CurrentValue.Message);
         }
 
+        [Fact]
+        public async Task AsyncStartupValidation_CacheRejectsWinner_ThrowsInvalidOperationException()
+        {
+            FakeOptions? startupCandidate = null;
+            var rejectingCache = new RejectingOptionsCache<FakeOptions>();
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "validated")
+                .Validate((FakeOptions o, CancellationToken ct) =>
+                {
+                    startupCandidate = o;
+                    return Task.FromResult(true);
+                }, "async fail")
+                .ValidateOnStart();
+            services.AddSingleton<IOptionsMonitorCache<FakeOptions>>(rejectingCache);
+            using ServiceProvider sp = services.BuildServiceProvider();
+            IOptions<FakeOptions> options = sp.GetRequiredService<IOptions<FakeOptions>>();
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+
+            InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None));
+
+            Assert.Contains(typeof(FakeOptions).ToString(), error.Message);
+            Assert.Contains($"name '{Options.DefaultName}'", error.Message);
+            Assert.Contains(typeof(RejectingOptionsCache<FakeOptions>).ToString(), error.Message);
+            Assert.Equal(3, rejectingCache.TryAddCalls);
+            Assert.Same(startupCandidate, options.Value);
+            Assert.Throws<OptionsValidationException>(() => monitor.CurrentValue);
+        }
+
         private class CustomSyncOnlyValidator : IStartupValidator
         {
             public void Validate() { }
+        }
+
+        private sealed class RejectingOptionsCache<T> : IOptionsMonitorCache<T> where T : class
+        {
+            public int TryAddCalls { get; private set; }
+
+            public T GetOrAdd(string? name, Func<T> createOptions) => createOptions();
+
+            public bool TryAdd(string? name, T options)
+            {
+                TryAddCalls++;
+                return false;
+            }
+
+            public bool TryRemove(string? name) => false;
+
+            public void Clear() { }
         }
 
         private sealed class RaceInjectingOptionsCache<T> : OptionsCache<T> where T : class
@@ -542,6 +742,27 @@ namespace Microsoft.Extensions.Options.Tests
             public Task<ValidateOptionsResult> ValidateAsync(string? name, FakeOptions options, CancellationToken cancellationToken = default)
             {
                 AsyncCalled = true;
+                return Task.FromResult(ValidateOptionsResult.Success);
+            }
+        }
+
+        private sealed class CountingAsyncValidator : IAsyncValidateOptions<FakeOptions>
+        {
+            public int SyncCalls { get; private set; }
+            public int AsyncCalls { get; private set; }
+
+            public ValidateOptionsResult Validate(string? name, FakeOptions options)
+            {
+                SyncCalls++;
+                return ValidateOptionsResult.Success;
+            }
+
+            public Task<ValidateOptionsResult> ValidateAsync(
+                string? name,
+                FakeOptions options,
+                CancellationToken cancellationToken = default)
+            {
+                AsyncCalls++;
                 return Task.FromResult(ValidateOptionsResult.Success);
             }
         }

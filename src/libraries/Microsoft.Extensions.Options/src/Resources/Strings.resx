@@ -135,6 +135,12 @@
   <data name="Error_NoConfigurationServicesAndAction" xml:space="preserve">
     <value>No IConfigureOptions&lt;&gt;, IPostConfigureOptions&lt;&gt;, or IValidateOptions&lt;&gt; implementations were found, did you mean to call Configure&lt;&gt; or PostConfigure&lt;&gt;?</value>
   </data>
+  <data name="AsyncValidationCachePublicationFailed" xml:space="preserve">
+    <value>The asynchronously validated options instance of type '{0}' with name '{1}' could not be published to the options monitor cache '{2}'.</value>
+  </data>
+  <data name="AsyncValidationUnsupportedIOptions" xml:space="preserve">
+    <value>Asynchronous startup validation for the default options instance of type '{0}' requires the built-in IOptions&lt;TOptions&gt; implementation, but '{1}' was registered.</value>
+  </data>
   <data name="AsyncValidatorSyncValidationUnsupported" xml:space="preserve">
     <value>Options instance of type '{0}' is validated by an asynchronous validator that cannot run during synchronous validation. Validate these options asynchronously before accessing them synchronously.</value>
   </data>

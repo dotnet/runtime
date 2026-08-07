@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.DependencyInjection
             optionsBuilder.Services.TryAddTransient<IStartupValidator, StartupValidator>();
             optionsBuilder.Services.TryAddEnumerable(ServiceDescriptor.Transient<IAsyncStartupValidator, StartupValidator>());
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
-                .Configure<IOptionsMonitor<TOptions>, IOptionsFactory<TOptions>, IOptionsMonitorCache<TOptions>>((vo, monitor, factory, cache) =>
+                .Configure<IOptions<TOptions>, IOptionsMonitor<TOptions>, IOptionsFactory<TOptions>, IOptionsMonitorCache<TOptions>>((vo, options, monitor, factory, sharedCache) =>
                 {
                     // Sync path (custom sync-only IStartupValidator): force evaluation through the monitor,
                     // which runs every validator, including an async validator's fail-fast synchronous Validate.
@@ -44,23 +44,42 @@ namespace Microsoft.Extensions.DependencyInjection
                     // startup returns it instead of re-running the throwing synchronous Validate.
                     vo._asyncValidators[(typeof(TOptions), name)] = async (CancellationToken ct) =>
                     {
-                        if (factory is OptionsFactory<TOptions> asyncFactory)
+                        if (factory is OptionsFactory<TOptions> asyncFactory &&
+                            asyncFactory.GetType() == typeof(OptionsFactory<TOptions>) &&
+                            asyncFactory.HasAsyncValidators)
                         {
-                            TOptions validated = await asyncFactory.CreateAsync(name, ct).ConfigureAwait(false);
-                            if (cache is OptionsCache<TOptions> optionsCache)
+                            UnnamedOptionsManager<TOptions>? optionsManager = null;
+
+                            if (name == Microsoft.Extensions.Options.Options.DefaultName)
                             {
-                                optionsCache.AddOrReplace(name, validated);
+                                optionsManager =
+                                    options as UnnamedOptionsManager<TOptions> ??
+                                    throw new InvalidOperationException(
+                                        SR.Format(
+                                            SR.AsyncValidationUnsupportedIOptions,
+                                            typeof(TOptions),
+                                            options.GetType()));
                             }
-                            else
+
+                            TOptions validated = await asyncFactory.CreateAsync(name, ct).ConfigureAwait(false);
+                            // A successfully created pre-start IOptions value owns the singleton slot, even though
+                            // asynchronous startup validation ran against this separately created candidate.
+                            TOptions winner = optionsManager?.GetOrSetValue(validated) ?? validated;
+
+                            if (!OptionsCache<TOptions>.TryAddOrReplace(sharedCache, name, winner))
                             {
-                                cache.TryRemove(name);
-                                cache.TryAdd(name, validated);
+                                throw new InvalidOperationException(
+                                    SR.Format(
+                                        SR.AsyncValidationCachePublicationFailed,
+                                        typeof(TOptions),
+                                        name,
+                                        sharedCache.GetType()));
                             }
                         }
                         else
                         {
-                            // Custom IOptionsFactory<TOptions>: no async validation path is available,
-                            // so fall back to synchronous evaluation.
+                            // Sync-only validation and custom factories use the monitor so an existing cached
+                            // instance is preserved and configuration does not run again.
                             monitor.Get(name);
                         }
                     };

@@ -11,21 +11,10 @@ namespace Microsoft.Extensions.Options
         where TOptions : class
     {
         private readonly IOptionsFactory<TOptions> _factory;
-        private readonly IOptionsMonitorCache<TOptions>? _validatedCache;
         private object? _syncObj;
         private volatile TOptions? _value;
 
         public UnnamedOptionsManager(IOptionsFactory<TOptions> factory) => _factory = factory;
-
-        public UnnamedOptionsManager(IOptionsFactory<TOptions> factory, IOptionsMonitorCache<TOptions> cache)
-        {
-            _factory = factory;
-
-            if (factory is OptionsFactory<TOptions> optionsFactory && optionsFactory.HasAsyncValidators)
-            {
-                _validatedCache = cache;
-            }
-        }
 
         public TOptions Value
         {
@@ -38,22 +27,22 @@ namespace Microsoft.Extensions.Options
 
                 lock (_syncObj ?? Interlocked.CompareExchange(ref _syncObj, new object(), null) ?? _syncObj)
                 {
-                    return _value ??= CreateValue();
+                    return _value ??= _factory.Create(Options.DefaultName);
                 }
             }
         }
 
-        private TOptions CreateValue()
+        internal TOptions GetOrSetValue(TOptions value)
         {
-            // For an async-validated type, read through the shared cache: when startup validation has seeded
-            // the validated instance it is returned as-is, otherwise it is created
-            // For a genuinely asynchronous validator the synchronous Create fails fast with an exception.
-            if (_validatedCache is not null)
+            if (_value is TOptions existingValue)
             {
-                return _validatedCache.GetOrAdd(Options.DefaultName, () => _factory.Create(Options.DefaultName));
+                return existingValue;
             }
 
-            return _factory.Create(Options.DefaultName);
+            lock (_syncObj ?? Interlocked.CompareExchange(ref _syncObj, new object(), null) ?? _syncObj)
+            {
+                return _value ??= value;
+            }
         }
     }
 }
