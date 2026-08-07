@@ -905,7 +905,7 @@ namespace System.IO.Packaging
             }
 
             public int GetHashCode(ValidatedPartUri obj)
-                => StringComparer.OrdinalIgnoreCase.GetHashCode(obj.NormalizedPartUriString);
+                => StringComparer.Ordinal.GetHashCode(obj.NormalizedPartUriString);
         }
 
         #endregion Private Class
