@@ -403,8 +403,6 @@ namespace ILCompiler.ObjectWriter
             return 0;
         }
 
-        public const int WebcilSectionAlignment = 16;
-
         /// <summary>
         /// Assigns VirtualAddresses and related header fields to each webcil section based on the
         /// total section count and each section's stream length. This can be called before all
@@ -1020,10 +1018,6 @@ namespace ILCompiler.ObjectWriter
         }
 #nullable disable
 
-        public const int StackPointerGlobalIndex = WasmGlobalImports.StackPointerGlobalIndex;
-        public const int ImageBaseGlobalIndex = WasmGlobalImports.ImageBaseGlobalIndex;
-        public const int TableBaseGlobalIndex = WasmGlobalImports.TableBaseGlobalIndex;
-        public const int AsyncContinuationGlobalIndex = WasmGlobalImports.AsyncContinuationGlobalIndex;
         public const int RtlRestoreContextTagIndex = 0;
         private static readonly Utf8String RtlRestoreContextTagName = new("rtlRestoreContextTag");
 
