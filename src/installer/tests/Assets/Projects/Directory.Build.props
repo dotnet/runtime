@@ -17,6 +17,7 @@
   <PropertyGroup>
     <NetCoreAppCurrentVersion Condition="'$(NetCoreAppCurrentVersion)' == ''">$(MajorVersion).$(MinorVersion)</NetCoreAppCurrentVersion>
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
   </PropertyGroup>
 
   <PropertyGroup>
