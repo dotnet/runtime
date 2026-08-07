@@ -11,10 +11,10 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
     {
         private const string _dotnetFolderName = ".dotnet";
 
-        // Set by the test run script to the host it was handed via --runtime-path: the locally built
-        // testhost for a local run, the Helix correlation payload in CI. See the SetTestDotNetHostPath
-        // target in Microsoft.Extensions.Hosting.Functional.Tests.csproj.
-        private const string HostPathVariableName = "__TestDotNetHostPath";
+        // Set by the test run script to the testhost it was handed via --runtime-path: the locally built
+        // testhost for a local run, the Helix correlation payload in CI. See eng/testing/RunnerTemplate.sh
+        // and eng/testing/RunnerTemplate.cmd.
+        private const string RuntimePathVariableName = "RUNTIME_PATH";
 
         internal static string DotNetHome { get; } = GetDotNetHome();
 
@@ -79,10 +79,14 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
 
         private static string FindDotNetMuxer()
         {
-            var fromRunScript = Environment.GetEnvironmentVariable(HostPathVariableName);
-            if (!string.IsNullOrEmpty(fromRunScript) && File.Exists(fromRunScript))
+            var runtimePath = Environment.GetEnvironmentVariable(RuntimePathVariableName);
+            if (!string.IsNullOrEmpty(runtimePath))
             {
-                return fromRunScript;
+                var fromRunScript = Path.Combine(runtimePath, DotNetExecutableName);
+                if (File.Exists(fromRunScript))
+                {
+                    return fromRunScript;
+                }
             }
 
 #if NETFRAMEWORK
