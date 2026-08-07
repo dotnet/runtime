@@ -661,6 +661,8 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             StubKind.VSDLookupStub => CodeKind.VSD_LookupStub,
             StubKind.VSDVTableStub => CodeKind.VSD_VTableStub,
             StubKind.CallCountingStub => CodeKind.CallCountingStub,
+            StubKind.WrapperStub => CodeKind.WrapperStub,
+            StubKind.ShuffleThunk => CodeKind.ShuffleThunk,
             _ => CodeKind.Unknown,
         };
     }
