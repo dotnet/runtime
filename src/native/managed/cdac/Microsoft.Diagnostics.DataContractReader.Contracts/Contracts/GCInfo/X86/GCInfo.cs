@@ -49,7 +49,7 @@ public record X86GCInfo : IGCInfoDecoder
     public uint EpilogOffset { get; set; } = unchecked((uint)-1);
 
     public uint RawStackSize { get; set; }
-    public uint StackSize { get; set; }
+    internal uint StackSize { get; }
 
 
     /// <summary>
