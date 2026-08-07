@@ -1350,6 +1350,16 @@ namespace Internal.JitInterface
             MethodDesc callerMethod = HandleToObject(callerHnd);
             MethodDesc calleeMethod = HandleToObject(calleeHnd);
 
+#if !READYTORUN
+            // Some thunks, like DIM instantiation thunks, are compiled as async but are not
+            // async in the type system. They do not support the suspension points that
+            // inlining an async callee would introduce.
+            if (calleeMethod.IsAsyncCall() && !MethodBeingCompiled.IsAsyncCall())
+            {
+                return CorInfoInline.INLINE_FAIL;
+            }
+#endif
+
             EcmaModule rootModule = (MethodBeingCompiled.OwningType as MetadataType)?.Module as EcmaModule;
             EcmaModule calleeModule = (calleeMethod.OwningType as MetadataType)?.Module as EcmaModule;
 

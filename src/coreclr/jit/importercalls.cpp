@@ -7454,6 +7454,15 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
                 return;
             }
 
+            // Calls from non-async into async go through thunks that are passed the
+            // continuation explicitly, so they cannot be inlined.
+            if (!impInlineRoot()->compIsAsync())
+            {
+                JITDUMP("Cannot inline an await into a non-async root method\n");
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+                return;
+            }
+
             // General case: this is a real await inside the inlinee that may suspend. It
             // gets its own context handling below, exactly like an await in a non-inlined
             // method, and the inlinee's own contexts (created by its SaveAsyncContexts)
