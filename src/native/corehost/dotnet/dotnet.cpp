@@ -52,7 +52,22 @@ int exe_start(const int argc, const pal::char_t* argv[])
         return StatusCode::InvalidArgFailure;
     }
 
-    app_root.assign(host_path);
+    if (pal::getenv(DOTNET_ROOT_REDIRECT_TARGET_ENV_VAR, &app_root))
+    {
+        if (app_root.empty() || !pal::is_path_fully_qualified(app_root) || !pal::fullpath(&app_root))
+        {
+            trace::error(_X("The %s environment variable must specify a valid, fully qualified path."), DOTNET_ROOT_REDIRECT_TARGET_ENV_VAR);
+            return StatusCode::InvalidArgFailure;
+        }
+
+        trace::info(_X("Redirecting dotnet root to [%s]."), app_root.c_str());
+        append_path(&app_root, get_filename(host_path).c_str());
+    }
+    else
+    {
+        app_root.assign(host_path);
+    }
+
     app_path.assign(get_directory(app_root));
     append_path(&app_path, own_name.c_str());
     app_path.append(_X(".dll"));
