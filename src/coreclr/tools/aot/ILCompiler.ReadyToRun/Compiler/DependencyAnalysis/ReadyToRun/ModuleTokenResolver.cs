@@ -84,6 +84,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 {
                     return new ModuleToken(_manifestMutableModule, handle.Value);
                 }
+
+                // The reference wasn't pre-registered while resolving IL tokens. This happens on wasm when the
+                // method that would have registered it was skipped by the JIT (JitWasmNyiToR2RUnsupported) yet a
+                // fixup for the type still exists. Dynamically create the manifest reference while new tokens are
+                // still allowed (this runs before ManifestMetadataTableNode sets DisableNewTokens).
+                if (!_manifestMutableModule.DisableNewTokens)
+                {
+                    handle = _manifestMutableModule.TryGetEntityHandle(type);
+                    if (handle.HasValue)
+                    {
+                        return new ModuleToken(_manifestMutableModule, handle.Value);
+                    }
+                }
             }
 
             // Reverse lookup failed
