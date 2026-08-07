@@ -81,29 +81,6 @@ void EEClass::Destruct()
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
 
-
-    if (IsDelegate())
-    {
-        DelegateEEClass* pDelegateEEClass = (DelegateEEClass*)this;
-        for (Stub* pThunk : {pDelegateEEClass->m_pStaticCallStub, pDelegateEEClass->m_pInstRetBuffCallStub})
-        {
-            if (pThunk == nullptr)
-                continue;
-
-            _ASSERTE(pThunk->IsShuffleThunk());
-
-            if (pThunk->HasExternalEntryPoint()) // IL thunk
-            {
-                pThunk->DecRef();
-            }
-            else
-            {
-                ExecutableWriterHolder<Stub> stubWriterHolder(pThunk, sizeof(Stub));
-                stubWriterHolder.GetRW()->DecRef();
-            }
-        }
-    }
-
 #ifdef FEATURE_COMINTEROP
     if (GetSparseCOMInteropVTableMap() != NULL)
         delete GetSparseCOMInteropVTableMap();

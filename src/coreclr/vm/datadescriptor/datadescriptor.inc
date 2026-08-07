@@ -403,7 +403,6 @@ CDAC_TYPE_FIELD(LoaderAllocator, T_UINT32, ReferenceCount, cdac_data<LoaderAlloc
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, HighFrequencyHeap, cdac_data<LoaderAllocator>::HighFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, StaticsHeap, cdac_data<LoaderAllocator>::StaticsHeap)
-CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, ExecutableHeap, cdac_data<LoaderAllocator>::ExecutableHeap)
 #ifdef HAS_FIXUP_PRECODE
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, FixupPrecodeHeap, cdac_data<LoaderAllocator>::FixupPrecodeHeap)
