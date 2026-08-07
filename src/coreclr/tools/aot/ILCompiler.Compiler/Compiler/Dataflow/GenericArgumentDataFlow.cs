@@ -30,7 +30,7 @@ namespace ILCompiler.Dataflow
             ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, type, contextMethod.OwningType.Instantiation, contextMethod.Instantiation, suppressWarnings: false);
         }
 
-        private static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, Instantiation typeContext, Instantiation methodContext, bool suppressWarnings)
+        public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, Instantiation typeContext, Instantiation methodContext, bool suppressWarnings = false)
         {
             if (!type.HasInstantiation)
                 return;

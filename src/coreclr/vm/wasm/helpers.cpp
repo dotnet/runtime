@@ -563,6 +563,26 @@ __attribute__((naked)) void ThrowRtlRestoreContextTag()
         "unreachable\n" ::);
 }
 
+// Runtime-owned WebAssembly global carrying the runtime-async continuation return
+// value. Exported so every R2R webcil imports this same global (see libCorerun.js).
+// Single-threaded today; like __stack_pointer it becomes per-thread once wasm threads land.
+asm(".globl __async_continuation\n"
+    ".globaltype __async_continuation, i32\n"
+    "__async_continuation:\n");
+
+extern "C" __attribute__((naked)) uint32_t RuntimeAsync_LoadAsyncContinuation()
+{
+    asm("global.get __async_continuation\n"
+        "return\n" ::);
+}
+
+extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uint32_t value)
+{
+    asm("local.get 0\n"
+        "global.set __async_continuation\n"
+        "return\n" ::);
+}
+
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
 {
     UNREFERENCED_PARAMETER(ContextRecord);
@@ -965,6 +985,13 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
     _ASSERTE(cookie != NULL);
 
     (cookie)(ftn, pArgs, pRet);
+
+    // Async callees write their continuation to the shared global; hand it back to the caller.
+    //
+    if (pContinuationRet != nullptr)
+    {
+        *pContinuationRet = (Object*)(uintptr_t)RuntimeAsync_LoadAsyncContinuation();
+    }
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet)
@@ -1197,6 +1224,13 @@ namespace
         {
             if (pos < maxSize)
                 keyBuffer[pos] = 'i';
+            pos++;
+        }
+
+        if (sig.HasAsyncContinuation())
+        {
+            if (pos < maxSize)
+                keyBuffer[pos] = 'a';
             pos++;
         }
 
@@ -1662,7 +1696,10 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
         cookie = pMD->GetCalliCookie();
     }
 
-    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pContinuationRet);
+    // Only pass the continuation arg to async callees.
+    //
+    Object** pCalleeContinuationRet = pMD->IsAsyncMethod() ? pContinuationRet : nullptr;
+    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pCalleeContinuationRet);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
@@ -1724,7 +1761,7 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     }
 }
 
-static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase, PRUNTIME_FUNCTION FunctionEntry)
+static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase, PRUNTIME_FUNCTION FunctionEntry, bool callerIsNative = false)
 {
     TADDR sp = *pSP;
     TADDR fp = GetWasmFramePointerFromStackPointer_Internal(sp);
@@ -1737,7 +1774,9 @@ static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase,
     {
         PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
         *pSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
-        *pIP = GetWasmVirtualIPFromStackPointer(*pSP);
+        // A reverse-pinvoke frame's caller is native, not an R2R shadow frame; leave the IP unset so the walk
+        // continues via the Frame chain instead of reading the native caller SP as a shadow frame.
+        *pIP = callerIsNative ? 0 : GetWasmVirtualIPFromStackPointer(*pSP);
     }
 }
 
@@ -1809,7 +1848,23 @@ RtlVirtualUnwind (
     *HandlerData = 0;
     *EstablisherFrame = 0;
 
-    WasmUnwindStackFrameCore((TADDR*)&ContextRecord->InterpreterSP, (TADDR*)&ContextRecord->InterpreterIP, ImageBase, FunctionEntry);
+    // Reverse-pinvoke frames (UnmanagedCallersOnly methods and reverse P/Invoke IL stubs) are called from
+    // native code, so terminate the R2R walk at this boundary. Funclets share their parent method's GC info,
+    // so exclude them: a funclet is entered either from managed code (a non-exceptional finally) or from the
+    // VM's CallFunclet helpers, never directly across the reverse-pinvoke boundary.
+    bool callerIsNative = false;
+    {
+        EECodeInfo codeInfo;
+        codeInfo.Init(static_cast<PCODE>(ControlPc));
+        if (codeInfo.IsValid())
+        {
+            GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+            callerIsNative = (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME) &&
+                             !codeInfo.IsFunclet();
+        }
+    }
+
+    WasmUnwindStackFrameCore((TADDR*)&ContextRecord->InterpreterSP, (TADDR*)&ContextRecord->InterpreterIP, ImageBase, FunctionEntry, callerIsNative);
 
     if (ContextRecord->InterpreterSP != 0)
     {

@@ -914,9 +914,15 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         // which delegates some operations to it.
         ulong handleLocal = default;
         int hrLocal = default;
+        IXCLRDataAppDomain? legacyAppDomain = appDomain;
+        if (appDomain is ClrDataAppDomain cdacAppDomain)
+        {
+            legacyAppDomain = cdacAppDomain.LegacyImpl;
+        }
+
         if (_legacyProcess is not null)
         {
-            hrLocal = _legacyProcess.StartEnumMethodInstancesByAddress(address, appDomain, &handleLocal);
+            hrLocal = _legacyProcess.StartEnumMethodInstancesByAddress(address, legacyAppDomain, &handleLocal);
         }
 
         try
@@ -1005,28 +1011,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
         catch (System.Exception ex)
         {
-            // The cDAC's IterateMethodInstances() implementation is incomplete compared
-            // to the native DAC's EnumMethodInstances::Next(). The native DAC uses a
-            // MethodIterator backed by AppDomain assembly iteration with EX_TRY/EX_CATCH
-            // error handling around each step. The cDAC re-implements this with
-            // IterateModules()/IterateMethodInstantiations()/IterateTypeParams() which
-            // call into IRuntimeTypeSystem and ILoader contracts. These contract calls
-            // (e.g. GetMethodTable, GetTypeHandle, GetMethodDescForSlot, GetModule,
-            // GetTypeDefToken) can throw when encountering method descs or type handles
-            // from assemblies/modules that the cDAC cannot fully process. This has been
-            // observed for generic method instantiations (cases 2-4 in
-            // IterateMethodInstances) in the SOS.WebApp3 integration test.
-            //
-            // Fall back to the legacy DAC result when available, otherwise propagate the error.
-            if (_legacyProcess is not null)
-            {
-                hr = hrLocal;
-                method.Interface = legacyMethod;
-            }
-            else
-            {
-                hr = ex.HResult;
-            }
+            hr = ex.HResult;
         }
 
 #if DEBUG

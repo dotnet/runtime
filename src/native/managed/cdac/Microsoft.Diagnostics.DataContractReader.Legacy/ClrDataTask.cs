@@ -66,7 +66,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
     int IXCLRDataTask.SetDesiredExecutionState(uint state)
         => HResults.E_NOTIMPL;
 
-    int IXCLRDataTask.CreateStackWalk(uint flags, DacComNullableByRef<IXCLRDataStackWalk> stackWalk)
+    int IXCLRDataTask.CreateStackWalk(CLRDataStackWalkFlag flags, DacComNullableByRef<IXCLRDataStackWalk> stackWalk)
     {
         Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
         if (threadData.State.HasFlag(Contracts.ThreadState.Unstarted))

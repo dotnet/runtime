@@ -107,9 +107,9 @@ Async calling convention adds an extra `Continuation` parameter and an extra ret
 The `Continuation` is a managed object and needs to be tracked accordingly. The GC info includes the continuation result as live at Async call sites.
 
 ### Returning `Continuation`
-To return `Continuation` we use a volatile/calee-trash register that cannot be used to return the actual result.
+To return `Continuation` we use a volatile/calee-trash register that cannot be used to return the actual result. WebAssembly has no register file, so it instead uses a dedicated mutable global.
 
-| arch | `REG_ASYNC_CONTINUATION_RET` |
+| arch | Returned in |
 | ------------- | ------------- |
 | x86  | ecx  |
 | x64  | rcx  |
@@ -117,6 +117,7 @@ To return `Continuation` we use a volatile/calee-trash register that cannot be u
 | arm64  | x2  |
 | risc-v  | a2  |
 | loongarch64  | a2  |
+| wasm | Global `__async_continuation` |
 
 ### Passing `Continuation` argument
 The `Continuation` parameter is passed at the same position as generic instantiation parameter or immediately after, if both present. For x86 the argument order is reversed.

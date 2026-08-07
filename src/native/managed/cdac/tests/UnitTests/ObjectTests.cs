@@ -202,25 +202,31 @@ public unsafe class ObjectTests
             });
 
         {
-            TargetPointer data = contract.GetArrayData(SingleDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+            TargetPointer data = contract.GetArrayData(SingleDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds, out uint[] dimensionLengths, out int[] lowerBoundsValues);
             Assert.Equal(SingleDimensionArrayAddress + targetTestHelpers.ArrayBaseBaseSize - targetTestHelpers.ObjHeaderSize, data.Value);
             Assert.Equal((uint)singleDimension.Length, count);
             Assert.Equal(SingleDimensionArrayAddress + (ulong)numComponentsOffset, boundsStart.Value);
             Assert.Equal(MockDescriptors.MockObjectBuilder.TestArrayBoundsZeroGlobalAddress, lowerBounds.Value);
+            Assert.Equal([10u], dimensionLengths);
+            Assert.Equal([0], lowerBoundsValues);
         }
         {
-            TargetPointer data = contract.GetArrayData(MultiDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+            TargetPointer data = contract.GetArrayData(MultiDimensionArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds, out uint[] dimensionLengths, out int[] lowerBoundsValues);
             Assert.Equal(MultiDimensionArrayAddress + targetTestHelpers.ArrayBaseSize + (ulong)(multiDimension.Rank * sizeof(int) * 2), data.Value);
             Assert.Equal((uint)multiDimension.Length, count);
             Assert.Equal(MultiDimensionArrayAddress + targetTestHelpers.ArrayBaseSize, boundsStart.Value);
             Assert.Equal(boundsStart.Value + (ulong)(multiDimension.Rank * sizeof(int)), lowerBounds.Value);
+            Assert.Equal([1u, 2u, 3u, 4u], dimensionLengths);
+            Assert.Equal([0, 0, 0, 0], lowerBoundsValues);
         }
         {
-            TargetPointer data = contract.GetArrayData(NonZeroLowerBoundArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+            TargetPointer data = contract.GetArrayData(NonZeroLowerBoundArrayAddress, out uint count, out TargetPointer boundsStart, out TargetPointer lowerBounds, out uint[] dimensionLengths, out int[] lowerBoundsValues);
             Assert.Equal(NonZeroLowerBoundArrayAddress + targetTestHelpers.ArrayBaseSize + (ulong)(nonZeroLowerBound.Rank * sizeof(int) * 2), data.Value);
             Assert.Equal((uint)nonZeroLowerBound.Length, count);
             Assert.Equal(NonZeroLowerBoundArrayAddress + targetTestHelpers.ArrayBaseSize, boundsStart.Value);
             Assert.Equal(boundsStart.Value + (ulong)(nonZeroLowerBound.Rank * sizeof(int)), lowerBounds.Value);
+            Assert.Equal([10u], dimensionLengths);
+            Assert.Equal([5], lowerBoundsValues);
         }
     }
 

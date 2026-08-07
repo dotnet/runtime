@@ -116,6 +116,28 @@ void CodeGen::genBeginFnProlog()
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
     }
+
+    genInitImageBaseLocal(func);
+}
+
+//------------------------------------------------------------------------
+// genInitImageBaseLocal: initialize the wasm local caching the image base, if this
+//   function has one.
+//
+// Arguments:
+//   func - the function or funclet whose prolog is being generated
+//
+// Notes:
+//   Emitted in the prolog, which dominates every use. The imageBase global is immutable,
+//   so the cached value never needs refreshing.
+//
+void CodeGen::genInitImageBaseLocal(FuncInfoDsc* func)
+{
+    if (func->funWasmImageBaseLocalIndex != UINT_MAX)
+    {
+        GetEmitter()->emitImageBaseGlobal();
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, func->funWasmImageBaseLocalIndex);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -442,6 +464,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
     }
+
+    genInitImageBaseLocal(func);
 
     // All the funclet params are used from their home registers, so nothing
     // needs homing here.
@@ -1034,6 +1058,22 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // FEATURE_SIMD
 
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
+            break;
+
         default:
 #ifdef DEBUG
             if (JitConfig.JitWasmNyiToR2RUnsupported())
@@ -1135,6 +1175,109 @@ void CodeGen::genCatchArg(GenTree* treeNode)
     // The catch arg is passed as the 3rd parameter, so has Wasm local index 2.
     GetEmitter()->emitIns_I(INS_local_get, EA_GCREF, 2);
     WasmProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genStoreAsyncContinuationGlobal: Pop the operand-stack top into the async continuation global.
+//
+void CodeGen::genStoreAsyncContinuationGlobal()
+{
+    GetEmitter()->emitIns_I(INS_global_set, EA_SET_FLG(EA_GCREF, EA_CNS_RELOC_FLG),
+                            (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->asyncContinuation);
+}
+
+//------------------------------------------------------------------------
+// genClearAsyncContinuationGlobal: Null the async continuation global on the normal-return path.
+//
+void CodeGen::genClearAsyncContinuationGlobal()
+{
+    emitter* emit = GetEmitter();
+    emit->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+    emit->emitIns_I(INS_global_set, EA_SET_FLG(EA_GCREF, EA_CNS_RELOC_FLG),
+                    (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->asyncContinuation);
+}
+
+//------------------------------------------------------------------------
+// genCodeForAsyncContinuation: Read the async continuation global onto the operand stack.
+//
+// Arguments:
+//    tree - The GT_ASYNC_CONTINUATION node.
+//
+void CodeGen::genCodeForAsyncContinuation(GenTree* tree)
+{
+    assert(tree->OperIs(GT_ASYNC_CONTINUATION));
+    assert(tree->TypeIs(TYP_REF));
+
+    GetEmitter()->emitIns_I(INS_global_get, EA_SET_FLG(EA_GCREF, EA_CNS_RELOC_FLG),
+                            (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->asyncContinuation);
+    WasmProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genReturnSuspend: Emit code for a GT_RETURN_SUSPEND node.
+//
+// Stores the continuation into the async global, then pushes a zero of the native return type
+// so the epilog's `return` is well-typed.
+//
+// Arguments:
+//    treeNode - The GT_RETURN_SUSPEND node.
+//
+void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_RETURN_SUSPEND));
+
+    GenTree* op = treeNode->gtGetOp1();
+    assert(op->TypeIs(TYP_REF));
+
+    genConsumeReg(op);
+    genStoreAsyncContinuationGlobal();
+
+    var_types retNativeType = m_compiler->info.compRetNativeType;
+    if (retNativeType != TYP_VOID)
+    {
+        emitter* emit = GetEmitter();
+        switch (genActualType(retNativeType))
+        {
+            case TYP_INT:
+            case TYP_REF:
+            case TYP_BYREF:
+                emit->emitIns_I(INS_i32_const, emitActualTypeSize(retNativeType), 0);
+                break;
+            case TYP_LONG:
+                emit->emitIns_I(INS_i64_const, EA_8BYTE, 0);
+                break;
+            case TYP_FLOAT:
+                emit->emitIns_I(INS_f32_const, EA_4BYTE, 0);
+                break;
+            case TYP_DOUBLE:
+                emit->emitIns_I(INS_f64_const, EA_8BYTE, 0);
+                break;
+            default:
+                unreached();
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// genAsyncResumeInfo: Emit code for a GT_ASYNC_RESUME_INFO node.
+//
+// Pushes the address of the per-method resume-info entry.
+//
+// Arguments:
+//    tree - The GT_ASYNC_RESUME_INFO node.
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* tree)
+{
+    assert(tree->OperIs(GT_ASYNC_RESUME_INFO));
+    assert(tree->TypeIs(TYP_I_IMPL));
+
+    CORINFO_FIELD_HANDLE fieldHnd = genEmitAsyncResumeInfo((unsigned)tree->gtVal1);
+    assert(m_compiler->eeIsJitDataOffs(fieldHnd));
+    int dataOffs = m_compiler->eeGetJitDataOffs(fieldHnd);
+    assert(dataOffs >= 0);
+
+    GetEmitter()->emitDataOffsetConstant((UNATIVE_OFFSET)dataOffs);
+    WasmProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -1570,9 +1713,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForBinary");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
@@ -2000,9 +2141,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             break;
 
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForShift");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
@@ -3159,10 +3298,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
-
         default:
             JITDUMP("Helper '%s' has no hard-coded signature\n", m_compiler->eeGetMethodFullName(params.methHnd));
-            NYI_WASM("Missing signature for helper in genEmitHelperCall");
             unreached();
     }
 
