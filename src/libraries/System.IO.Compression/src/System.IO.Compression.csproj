@@ -66,8 +66,8 @@
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
     <Compile Include="System\IO\Compression\ZipEncryptionMethod.cs" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.cs" />
-    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser' and '$(TargetPlatformIdentifier)' != 'wasi'" />
-    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.BrowserOrWasi.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'" />
+    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
+    <Compile Include="System\IO\Compression\ZipCryptoStream.Random.Browser.cs" Condition="'$(TargetPlatformIdentifier)' == 'browser'" />
     <Compile Include="System\IO\Compression\ZipCryptoStream.ClearSensitiveData.cs" />
     <Compile Include="System\IO\Compression\WinZipAesStream.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
     <Compile Include="System\IO\Compression\WinZipAesKeyMaterial.cs" Condition="'$(TargetPlatformIdentifier)' != 'browser'" />
@@ -91,10 +91,10 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Stat.cs" Link="Common\Interop\Unix\System.Native\Interop.Stat.cs" />
   </ItemGroup>
 
-  <!-- Browser and wasi fill the ZipCrypto header salt through the System.Native random interop
-       instead of RandomNumberGenerator, so that System.IO.Compression does not have to reference
-       System.Security.Cryptography there. See ZipCryptoStream.Random.BrowserOrWasi.cs. -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' or '$(TargetPlatformIdentifier)' == 'wasi'">
+  <!-- Browser fills the ZipCrypto header salt through the System.Native random interop instead of
+       RandomNumberGenerator, so that System.IO.Compression does not have to reference
+       System.Security.Cryptography on browser. See ZipCryptoStream.Random.Browser.cs. -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser'">
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.GetRandomBytes.cs" Link="Common\Interop\Unix\System.Native\Interop.GetRandomBytes.cs" />
   </ItemGroup>
 
