@@ -778,8 +778,8 @@ namespace System.Formats.Tar.Tests
 
             string link1Path = Path.Combine(destDir, "a", "link1");
             string link2Path = Path.Combine(destDir, "b", "link2");
-            Assert.Equal("../b", new FileInfo(link1Path).LinkTarget);
-            Assert.Equal("../a", new FileInfo(link2Path).LinkTarget);
+            Assert.Equal(NormalizePathSeparators("../b"), new FileInfo(link1Path).LinkTarget);
+            Assert.Equal(NormalizePathSeparators("../a"), new FileInfo(link2Path).LinkTarget);
         }
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void ExtractToDirectory_OverwriteDeferredSymlink()
@@ -805,7 +805,7 @@ namespace System.Formats.Tar.Tests
             TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
 
             string linkPath = Path.Combine(destDir, "a", "link");
-            Assert.Equal("../c", new FileInfo(linkPath).LinkTarget);
+            Assert.Equal(NormalizePathSeparators("../c"), new FileInfo(linkPath).LinkTarget);
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
@@ -877,7 +877,7 @@ namespace System.Formats.Tar.Tests
             Directory.CreateDirectory(destDir);
 
             // Absolute target with '..' that resolves back into dest.
-            string absoluteTarget = Path.Combine(destDir, "a", "..", "b");
+            string absoluteTarget = NormalizePathSeparators(Path.Combine(destDir, "a", "..", "b"));
 
             string tarPath = Path.Combine(root.Path, "deferred_absolute.tar");
             using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
@@ -924,8 +924,8 @@ namespace System.Formats.Tar.Tests
 
             string link1Path = Path.Combine(destDir, "a", "link1");
             string link2Path = Path.Combine(destDir, "a", "link2");
-            Assert.Equal("../b", new FileInfo(link1Path).LinkTarget);
-            Assert.Equal("link1/../b/sub", new FileInfo(link2Path).LinkTarget);
+            Assert.Equal(NormalizePathSeparators("../b"), new FileInfo(link1Path).LinkTarget);
+            Assert.Equal(NormalizePathSeparators("link1/../b/sub"), new FileInfo(link2Path).LinkTarget);
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
