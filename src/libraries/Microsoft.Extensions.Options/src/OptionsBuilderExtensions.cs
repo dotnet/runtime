@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,6 +18,21 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Enforces options validation check on start rather than at run time.
         /// </summary>
+        /// <remarks>
+        /// When the built-in <see cref="IOptionsFactory{TOptions}"/> implementation is used, asynchronous validation
+        /// runs during startup and seeds the built-in <see cref="IOptions{TOptions}"/> and
+        /// <see cref="IOptionsMonitor{TOptions}"/> instances for subsequent synchronous access. If an options value
+        /// was successfully created synchronously before startup, that instance retains the singleton slot and is
+        /// published to the monitor cache while asynchronous validation runs against a separate startup candidate.
+        /// A derived or replacement <see cref="IOptionsFactory{TOptions}"/> uses synchronous startup validation and
+        /// does not invoke <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/>.
+        /// Options that require asynchronous validation cannot be accessed synchronously before startup validation
+        /// completes. Default-name asynchronous validation requires the built-in <see cref="IOptions{TOptions}"/>
+        /// implementation so the validated value can be installed safely; startup fails when a custom implementation
+        /// is registered. The built-in <see cref="IOptionsSnapshot{TOptions}"/> implementation validates instances
+        /// synchronously in per-scope caches that startup validation does not populate. The built-in options monitor
+        /// also reloads synchronously and provides no asynchronous last-known-good guarantee.
+        /// </remarks>
         /// <typeparam name="TOptions">The type of options.</typeparam>
         /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure options instance.</param>
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>
@@ -27,47 +41,63 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ArgumentNullException.ThrowIfNull(optionsBuilder);
 
+            string name = optionsBuilder.Name;
+
+            // Register the built-in validator as a single IStartupValidator (for back-compatibility)
+            // and as an enumerable IAsyncStartupValidator so the host can run it alongside any custom async validators.
             optionsBuilder.Services.TryAddTransient<IStartupValidator, StartupValidator>();
-            optionsBuilder.Services.TryAddTransient<IAsyncStartupValidator, StartupValidator>();
+            optionsBuilder.Services.TryAddEnumerable(ServiceDescriptor.Transient<IAsyncStartupValidator, StartupValidator>());
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
-                .Configure<IOptionsMonitor<TOptions>>((vo, options) =>
+                .Configure<IOptions<TOptions>, IOptionsMonitor<TOptions>, IOptionsFactory<TOptions>, IOptionsMonitorCache<TOptions>>((vo, options, monitor, factory, sharedCache) =>
                 {
-                    // This adds an action that resolves the options value to force evaluation
-                    // We don't care about the result as duplicates are not important
-                    vo._validators[(typeof(TOptions), optionsBuilder.Name)] = () => options.Get(optionsBuilder.Name);
-                });
+                    // Sync path (custom sync-only IStartupValidator): force evaluation through the monitor,
+                    // which runs every validator, including an async validator's fail-fast synchronous Validate.
+                    vo._validators[(typeof(TOptions), name)] = () => monitor.Get(name);
 
-            // Register async validator entries if any IAsyncValidateOptions<TOptions> are registered
-            optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
-                .Configure<IOptionsMonitor<TOptions>, IEnumerable<IAsyncValidateOptions<TOptions>>>((vo, options, asyncValidators) =>
-                {
-                    // Materialize the validators into a list to check if any are registered
-                    var validators = new List<IAsyncValidateOptions<TOptions>>(asyncValidators);
-                    if (validators.Count > 0)
+                    // Async path: run the complete validation (both sync and async validators) for this (type, name)
+                    // and seed the monitor cache with the validated instance so the first synchronous access after
+                    // startup returns it instead of re-running the throwing synchronous Validate.
+                    vo._asyncValidators[(typeof(TOptions), name)] = async (CancellationToken ct) =>
                     {
-                        vo._asyncValidators[(typeof(TOptions), optionsBuilder.Name)] = async (CancellationToken ct) =>
+                        if (factory is OptionsFactory<TOptions> asyncFactory &&
+                            asyncFactory.GetType() == typeof(OptionsFactory<TOptions>) &&
+                            asyncFactory.HasAsyncValidators)
                         {
-                            // Retrieve the options value (already created by sync Validate() call)
-                            TOptions optionsValue = options.Get(optionsBuilder.Name);
+                            UnnamedOptionsManager<TOptions>? optionsManager = null;
 
-                            // Run async validators
-                            List<string>? failures = null;
-                            foreach (IAsyncValidateOptions<TOptions> validator in validators)
+                            if (name == Microsoft.Extensions.Options.Options.DefaultName)
                             {
-                                ValidateOptionsResult result = await validator.ValidateAsync(optionsBuilder.Name, optionsValue, ct).ConfigureAwait(false);
-                                if (result is not null && result.Failed)
-                                {
-                                    failures ??= new List<string>();
-                                    failures.AddRange(result.Failures);
-                                }
+                                optionsManager =
+                                    options as UnnamedOptionsManager<TOptions> ??
+                                    throw new InvalidOperationException(
+                                        SR.Format(
+                                            SR.AsyncValidationUnsupportedIOptions,
+                                            typeof(TOptions),
+                                            options.GetType()));
                             }
 
-                            if (failures is not null && failures.Count > 0)
+                            TOptions validated = await asyncFactory.CreateAsync(name, ct).ConfigureAwait(false);
+                            // A successfully created pre-start IOptions value owns the singleton slot, even though
+                            // asynchronous startup validation ran against this separately created candidate.
+                            TOptions winner = optionsManager?.GetOrSetValue(validated) ?? validated;
+
+                            if (!OptionsCache<TOptions>.TryAddOrReplace(sharedCache, name, winner))
                             {
-                                throw new OptionsValidationException(optionsBuilder.Name, typeof(TOptions), failures);
+                                throw new InvalidOperationException(
+                                    SR.Format(
+                                        SR.AsyncValidationCachePublicationFailed,
+                                        typeof(TOptions),
+                                        name,
+                                        sharedCache.GetType()));
                             }
-                        };
-                    }
+                        }
+                        else
+                        {
+                            // Sync-only validation and custom factories use the monitor so an existing cached
+                            // instance is preserved and configuration does not run again.
+                            monitor.Get(name);
+                        }
+                    };
                 });
 
             return optionsBuilder;

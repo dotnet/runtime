@@ -44,6 +44,24 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get; }
 
         /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            // null name is used to configure all named options
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            // ignored if not validating this instance
+            return ValidateOptionsResult.Skip;
+        }
+
+        /// <summary>
         /// Asynchronously validates a specific named options instance (or all when <paramref name="name"/> is null).
         /// </summary>
         /// <param name="name">The name of the options instance being validated.</param>
@@ -111,6 +129,22 @@ namespace Microsoft.Extensions.Options
         /// Gets the error to return when validation fails.
         /// </summary>
         public string FailureMessage { get; }
+
+        /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            return ValidateOptionsResult.Skip;
+        }
 
         /// <inheritdoc/>
         public async Task<ValidateOptionsResult> ValidateAsync(string? name, TOptions options, CancellationToken cancellationToken = default)
@@ -180,6 +214,22 @@ namespace Microsoft.Extensions.Options
         /// Gets the error to return when validation fails.
         /// </summary>
         public string FailureMessage { get; }
+
+        /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            return ValidateOptionsResult.Skip;
+        }
 
         /// <inheritdoc/>
         public async Task<ValidateOptionsResult> ValidateAsync(string? name, TOptions options, CancellationToken cancellationToken = default)
@@ -257,6 +307,22 @@ namespace Microsoft.Extensions.Options
         /// Gets the error to return when validation fails.
         /// </summary>
         public string FailureMessage { get; }
+
+        /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            return ValidateOptionsResult.Skip;
+        }
 
         /// <inheritdoc/>
         public async Task<ValidateOptionsResult> ValidateAsync(string? name, TOptions options, CancellationToken cancellationToken = default)
@@ -342,6 +408,22 @@ namespace Microsoft.Extensions.Options
         /// Gets the error to return when validation fails.
         /// </summary>
         public string FailureMessage { get; }
+
+        /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            return ValidateOptionsResult.Skip;
+        }
 
         /// <inheritdoc/>
         public async Task<ValidateOptionsResult> ValidateAsync(string? name, TOptions options, CancellationToken cancellationToken = default)
@@ -435,6 +517,22 @@ namespace Microsoft.Extensions.Options
         /// Gets the error to return when validation fails.
         /// </summary>
         public string FailureMessage { get; }
+
+        /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            return ValidateOptionsResult.Skip;
+        }
 
         /// <inheritdoc/>
         public async Task<ValidateOptionsResult> ValidateAsync(string? name, TOptions options, CancellationToken cancellationToken = default)

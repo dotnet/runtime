@@ -55,8 +55,6 @@ namespace Microsoft.Extensions.Options
 
         public async Task ValidateAsync(CancellationToken cancellationToken = default)
         {
-            // Async validators only — sync validation is handled separately by
-            // IStartupValidator.Validate() in Host.StartAsync() (two-stage orchestration).
             List<Exception>? exceptions = null;
 
             foreach (Func<CancellationToken, Task> asyncValidator in _validatorOptions._asyncValidators.Values)
