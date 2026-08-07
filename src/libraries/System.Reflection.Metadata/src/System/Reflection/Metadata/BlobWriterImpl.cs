@@ -32,6 +32,33 @@ namespace System.Reflection.Metadata
             return 4;
         }
 
+        internal static int WriteCompressedInteger(Span<byte> buffer, uint value)
+        {
+            unchecked
+            {
+                if (value <= SingleByteCompressedIntegerMaxValue)
+                {
+                    buffer[0] = (byte)value;
+                    return sizeof(byte);
+                }
+                else if (value <= TwoByteCompressedIntegerMaxValue)
+                {
+                    BinaryPrimitives.WriteUInt16BigEndian(buffer, (ushort)(0x8000 | value));
+                    return sizeof(ushort);
+                }
+                else if (value <= MaxCompressedIntegerValue)
+                {
+                    BinaryPrimitives.WriteUInt32BigEndian(buffer, 0xc0000000 | value);
+                    return sizeof(uint);
+                }
+                else
+                {
+                    Throw.ValueArgumentOutOfRange();
+                    return 0;
+                }
+            }
+        }
+
         internal static void WriteCompressedInteger(ref BlobWriter writer, uint value)
         {
             unchecked
