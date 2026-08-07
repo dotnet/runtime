@@ -11,6 +11,8 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueueGroup: superpmi
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: checked
           platforms:
           - windows_x64
@@ -40,6 +42,28 @@ extends:
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testScope: innerloop
+                  testRunNamePrefixSuffix: coreclr_Checked
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
+                  SuperPmiCollect: true
+                  SuperPmiCollectionName: libraries_tests
+                  scenarios:
+                  - normal
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testScope: innerloop
+                  testRunNamePrefixSuffix: coreclr_Checked
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
+                  SuperPmiCollect: true
+                  SuperPmiCollectionName: libraries_tests_no_tiered_compilation
+                  scenarios:
+                  - no_tiered_compilation
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
@@ -49,6 +73,8 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueueGroup: superpmi
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: checked
           platforms:
           - windows_x86
@@ -82,6 +108,28 @@ extends:
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testScope: innerloop
+                  testRunNamePrefixSuffix: coreclr_Checked
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
+                  SuperPmiCollect: true
+                  SuperPmiCollectionName: libraries_tests
+                  scenarios:
+                  - normal
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testScope: innerloop
+                  testRunNamePrefixSuffix: coreclr_Checked
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
+                  SuperPmiCollect: true
+                  SuperPmiCollectionName: libraries_tests_no_tiered_compilation
+                  scenarios:
+                  - no_tiered_compilation
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
@@ -91,6 +139,8 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
+          helixQueueGroup: superpmi
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           buildConfig: checked
           platforms:
           - linux_arm
@@ -128,6 +178,28 @@ extends:
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
                   artifactName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testScope: innerloop
+                  testRunNamePrefixSuffix: coreclr_Checked
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
+                  SuperPmiCollect: true
+                  SuperPmiCollectionName: libraries_tests
+                  scenarios:
+                  - normal
+              - template: /eng/pipelines/libraries/helix.yml
+                parameters:
+                  creator: dotnet-bot
+                  testScope: innerloop
+                  testRunNamePrefixSuffix: coreclr_Checked
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  extraHelixArguments: /p:Configuration=Release /p:RuntimeConfiguration=Checked
+                  SuperPmiCollect: true
+                  SuperPmiCollectionName: libraries_tests_no_tiered_compilation
+                  scenarios:
+                  - no_tiered_compilation
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/native-test-assets-variables.yml
                 parameters:
@@ -473,72 +545,6 @@ extends:
             liveLibrariesBuildConfig: Release
             collectionType: nativeaot
             collectionName: smoke_tests
-
-      #
-      # Collection of libraries test run: normal
-      # Libraries Test Run using Release libraries, and Checked CoreCLR
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-          buildConfig: Release
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: superpmi
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testScope: innerloop
-            liveRuntimeBuildConfig: Checked
-            dependsOnTestBuildConfiguration: Release
-            dependsOnTestArchitecture: x64
-            scenarios:
-            - normal
-            SuperPmiCollect: true
-            SuperPmiCollectionName: libraries_tests
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
-            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
-            unifiedBuildConfigOverride: checked
-            # Default timeout is 150 minutes, which is too low for osx-arm64 queue.
-            timeoutInMinutes: 300
-
-      #
-      # Collection of libraries test run: no_tiered_compilation
-      # Libraries Test Run using Release libraries, and Checked CoreCLR
-      #
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-          buildConfig: Release
-          platforms:
-          - osx_arm64
-          - linux_arm
-          - linux_arm64
-          - linux_x64
-          - windows_x64
-          - windows_x86
-          - windows_arm64
-          helixQueueGroup: superpmi
-          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-          jobParameters:
-            testScope: innerloop
-            liveRuntimeBuildConfig: Checked
-            dependsOnTestBuildConfiguration: Release
-            dependsOnTestArchitecture: x64
-            scenarios:
-            - no_tiered_compilation
-            SuperPmiCollect: true
-            SuperPmiCollectionName: libraries_tests_no_tiered_compilation
-            unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
-            helixArtifactsName: LibrariesTestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
-            unifiedBuildConfigOverride: checked
-            # Default timeout is 150 minutes, which is too low for osx-arm64 queue.
-            timeoutInMinutes: 300
 
       #
       # Collection of aspnet/TechEmpower benchmarks (crank-based): aspnet2
