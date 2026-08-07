@@ -86,7 +86,7 @@ typedef DPTR(EnCSyncBlockInfo) PTR_EnCSyncBlockInfo;
 // reducing the mask.  We use the very high bit, in _DEBUG, to be sure we never forget
 // to mask the Value to obtain the Index
 
-#define BIT_SBLK_UNUSED                     0x80000000
+#define BIT_SBLK_BRIDGE_PENDING             0x80000000
 #define BIT_SBLK_FINALIZER_RUN              0x40000000
 #define BIT_SBLK_GC_RESERVE                 0x20000000
 
