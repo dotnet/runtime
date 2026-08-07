@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -277,6 +278,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static string GetInitializeMethodDisplayString(ObjectSpec type) =>
                 $"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.IdentifierCompatibleSubstring}";
+
+            /// <summary>
+            /// Prefixes an identifier with "@" when it would otherwise be parsed as a C# keyword.
+            /// </summary>
+            private static string EscapeIdentifier(string identifier)
+                => SyntaxFacts.GetKeywordKind(identifier) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(identifier) != SyntaxKind.None
+                    ? "@" + identifier
+                    : identifier;
         }
     }
 }

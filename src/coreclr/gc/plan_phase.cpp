@@ -4548,11 +4548,11 @@ void gc_heap::plan_phase (int condemned_gen_number)
         settings.loh_compaction = FALSE;
     }
 
-#ifdef MULTIPLE_HEAPS
 #ifndef USE_REGIONS
     new_heap_segment = NULL;
 #endif //!USE_REGIONS
 
+#ifdef MULTIPLE_HEAPS
     if (should_compact && should_expand)
         gc_policy = policy_expand;
     else if (should_compact)
@@ -4854,7 +4854,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
         if (should_expand)
         {
 #ifndef MULTIPLE_HEAPS
-            heap_segment* new_heap_segment = soh_get_segment_to_expand();
+            new_heap_segment = soh_get_segment_to_expand();
 #endif //!MULTIPLE_HEAPS
             if (new_heap_segment)
             {
@@ -5688,7 +5688,11 @@ void gc_heap::thread_final_regions (bool compact_p)
         else
         {
             start_region = get_free_region (gen_idx);
-            assert (start_region);
+            if (start_region == NULL)
+            {
+                dprintf (REGIONS_LOG, ("OOM creating new gen%d region", gen_idx));
+                FATAL_GC_ERROR();
+            }
             num_new_regions++;
             thread_start_region (gen, start_region);
             dprintf (REGIONS_LOG, ("creating new gen%d at %p", gen_idx, heap_segment_mem (start_region)));

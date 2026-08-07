@@ -4998,6 +4998,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgDfsBlocksAndRemove);
 
+    // Repair any multiple-entry try regions back to single entry.
+    //
+    DoPhase(this, PHASE_WASM_REPAIR_TRY_ENTRIES, &Compiler::fgWasmRepairTryEntries);
+
     // Transform any strongly connected components into reducible flow.
     //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
@@ -5714,6 +5718,14 @@ void Compiler::generatePatchpointInfo()
         patchpointInfo->SetMonitorAcquiredOffset(varDsc->GetStackOffset() + offsetAdjust);
         JITDUMP("--OSR-- monitor acquired V%02u virtual offset is %d\n", lvaMonAcquired,
                 patchpointInfo->MonitorAcquiredOffset());
+    }
+
+    if (lvaResumedIndicator != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaResumedIndicator);
+        patchpointInfo->SetResumedIndicatorOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- resumed indicator V%02u virtual offset is %d\n", lvaResumedIndicator,
+                patchpointInfo->ResumedIndicatorOffset());
     }
 
     if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
@@ -10383,7 +10395,8 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
             // Sanity check for promoted fields of OSR locals.
             //
             if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) && (varNum != lvaAsyncThreadObjectVar) &&
-                (varNum != lvaAsyncExecutionContextVar) && (varNum != lvaAsyncSynchronizationContextVar))
+                (varNum != lvaResumedIndicator) && (varNum != lvaAsyncExecutionContextVar) &&
+                (varNum != lvaAsyncSynchronizationContextVar))
             {
                 assert(varDsc->lvIsStructField);
                 assert(varDsc->lvParentLcl < info.compLocalsCount);
@@ -10416,6 +10429,10 @@ int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
     if (varNum == lvaMonAcquired)
     {
         return info.compPatchpointInfo->MonitorAcquiredOffset();
+    }
+    if (varNum == lvaResumedIndicator)
+    {
+        return info.compPatchpointInfo->ResumedIndicatorOffset();
     }
     if (varNum == lvaAsyncThreadObjectVar)
     {

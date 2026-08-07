@@ -165,6 +165,11 @@ public:
     IMetaDataImport2 *GetRWImporter();
 #else
     TADDR GetMDInternalRWAddress();
+    BOOL HasReadWriteMetadata()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return m_MDImportIsRW_Debugger_Use_Only;
+    }
 #endif // DACCESS_COMPILE
 
     void ConvertMDInternalToReadWrite();
@@ -432,6 +437,7 @@ struct cdac_data<PEAssembly>
 {
     static constexpr size_t PEImage = offsetof(PEAssembly, m_PEImage);
     static constexpr size_t AssemblyBinder = offsetof(PEAssembly, m_pAssemblyBinder);
+    static constexpr size_t MDImportIsRW = offsetof(PEAssembly, m_MDImportIsRW_Debugger_Use_Only);
 #ifndef DACCESS_COMPILE
     static constexpr size_t MDImport = offsetof(PEAssembly, m_pMDImport);
 #endif

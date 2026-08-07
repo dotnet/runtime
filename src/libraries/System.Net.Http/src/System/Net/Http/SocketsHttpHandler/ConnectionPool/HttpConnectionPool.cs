@@ -1102,7 +1102,9 @@ namespace System.Net.Http
                 // if a pool was used since the last time we cleaned up, give it another chance. New pools
                 // start out saying they've recently been used, to give them a bit of breathing room and time
                 // for the initial collection to be added to it.
-                if (!_usedSinceLastCleanup && _associatedHttp11ConnectionCount == 0 && _associatedHttp2ConnectionCount == 0)
+                if (!_usedSinceLastCleanup && _associatedHttp11ConnectionCount == 0 && _associatedHttp2ConnectionCount == 0 &&
+                    // An HTTP/2 connection may still be draining requests (e.g. after a GOAWAY frame) and need heart beats.
+                    (_http2ConnectionsForHeartBeat?.Count ?? 0) == 0)
                 {
                     _disposed = true;
                     return true; // Pool is disposed of.  It should be removed.

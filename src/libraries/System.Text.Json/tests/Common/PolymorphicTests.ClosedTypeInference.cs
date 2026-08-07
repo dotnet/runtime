@@ -17,13 +17,13 @@ namespace System.Text.Json.Serialization.Tests
                 InferClosedTypePolymorphism = true,
             };
 
-        private static string[] GetInferredDiscriminators(JsonSerializerOptions options, Type baseType)
+        private static (Type DerivedType, string Discriminator)[] GetInferredDerivedTypes(JsonSerializerOptions options, Type baseType)
         {
             JsonTypeInfo typeInfo = options.GetTypeInfo(baseType);
             Assert.NotNull(typeInfo.PolymorphismOptions);
             return typeInfo.PolymorphismOptions.DerivedTypes
-                .Select(derivedType => (string)derivedType.TypeDiscriminator!)
-                .OrderBy(discriminator => discriminator, StringComparer.Ordinal)
+                .Select(derivedType => (derivedType.DerivedType, (string)derivedType.TypeDiscriminator!))
+                .OrderBy(entry => entry.Item2, StringComparer.Ordinal)
                 .ToArray();
         }
 
@@ -69,11 +69,18 @@ namespace System.Text.Json.Serialization.Tests
         public void ClosedTypeInference_InferredDiscriminatorsMatchSimpleTypeName()
         {
             Assert.Equal(
-                new[] { "ClosedCircle", "ClosedSquare", "ClosedTriangle" },
-                GetInferredDiscriminators(ClosedTypeInferenceOptions, typeof(ClosedShape)));
+                [
+                    (typeof(ClosedCircle), nameof(ClosedCircle)),
+                    (typeof(ClosedSquare), nameof(ClosedSquare)),
+                    (typeof(ClosedTriangle), nameof(ClosedTriangle)),
+                ],
+                GetInferredDerivedTypes(ClosedTypeInferenceOptions, typeof(ClosedShape)));
             Assert.Equal(
-                new[] { nameof(ClosedBag<int>), nameof(ClosedBox<int>) },
-                GetInferredDiscriminators(ClosedTypeInferenceOptions, typeof(ClosedContainer<int>)));
+                [
+                    (typeof(ClosedBag<int>), nameof(ClosedBag<int>)),
+                    (typeof(ClosedBox<int>), nameof(ClosedBox<int>)),
+                ],
+                GetInferredDerivedTypes(ClosedTypeInferenceOptions, typeof(ClosedContainer<int>)));
         }
 
         [Fact]
@@ -191,8 +198,147 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
+        public async Task ClosedTypeInference_JsonPolymorphicAttribute_AppliesToAttributedHierarchyOnly()
+        {
+            JsonSerializerOptions options = Serializer.DefaultOptions;
+            Assert.False(options.InferClosedTypePolymorphism);
+            Assert.Equal(
+                [(typeof(ClosedAttributeOptInDerived), nameof(ClosedAttributeOptInDerived))],
+                GetInferredDerivedTypes(options, typeof(ClosedAttributeOptInBase)));
+
+            ClosedAttributeOptInBase optedIn = new ClosedAttributeOptInDerived
+            {
+                BaseValue = "base",
+                DerivedValue = 42,
+            };
+            string optedInJson = await Serializer.SerializeWrapper(optedIn, options);
+            JsonTestHelper.AssertJsonEqual(
+                """{"$kind":"ClosedAttributeOptInDerived","DerivedValue":42,"BaseValue":"base"}""",
+                optedInJson);
+
+            ClosedAttributeOptInBase roundtripped =
+                await Serializer.DeserializeWrapper<ClosedAttributeOptInBase>(optedInJson, options);
+            ClosedAttributeOptInDerived result = Assert.IsType<ClosedAttributeOptInDerived>(roundtripped);
+            Assert.Equal("base", result.BaseValue);
+            Assert.Equal(42, result.DerivedValue);
+
+            Assert.Null(options.GetTypeInfo(typeof(ClosedAttributeOptOutBase)).PolymorphismOptions);
+            ClosedAttributeOptOutBase optedOut = new ClosedAttributeOptOutDerived
+            {
+                BaseValue = "base",
+                DerivedValue = 42,
+            };
+            string optedOutJson = await Serializer.SerializeWrapper(optedOut, options);
+            JsonTestHelper.AssertJsonEqual("""{"BaseValue":"base"}""", optedOutJson);
+        }
+
+        [Fact]
+        public void ClosedTypeInference_JsonPolymorphicAttribute_IsRedundantWithGlobalOption()
+        {
+            JsonSerializerOptions options = ClosedTypeInferenceOptions;
+            Assert.True(options.InferClosedTypePolymorphism);
+            Assert.Equal(
+                [(typeof(ClosedAttributeOptInDerived), nameof(ClosedAttributeOptInDerived))],
+                GetInferredDerivedTypes(options, typeof(ClosedAttributeOptInBase)));
+        }
+
+        [Fact]
+        public void ClosedTypeInference_JsonPolymorphicAttribute_OnNonClosedTypeDoesNotInfer()
+        {
+            JsonSerializerOptions options = Serializer.DefaultOptions;
+
+            // Derived types can never be inferred for a type that is not closed. The reflection resolver
+            // reports that directly; source generation reports it as SYSLIB1243 at compile time and falls
+            // back to the generic empty-registration failure at run time.
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                () => options.GetTypeInfo(typeof(NonClosedAttributeBase)));
+
+            Assert.Contains(typeof(NonClosedAttributeBase).ToString(), exception.Message);
+
+            if (!Serializer.IsSourceGeneratedSerializer)
+            {
+                Assert.Contains(
+                    nameof(JsonPolymorphicAttribute.InferClosedTypePolymorphism),
+                    exception.Message);
+            }
+        }
+
+        [Fact]
+        public void ClosedTypeInference_JsonPolymorphicAttribute_OnNonClosedTypeWithExplicitDerivedTypes_Throws()
+        {
+            // Explicit JsonDerivedTypeAttribute registrations do not make the opt-in meaningful: no derived
+            // type can ever be inferred for a type that is not closed, so the declaration is rejected rather
+            // than left to silently behave like a plain JsonPolymorphicAttribute. Source generation rejects
+            // the equivalent declaration at compile time with SYSLIB1243, so this fixture is unregistered
+            // there and the assertion is reflection-only.
+            if (Serializer.IsSourceGeneratedSerializer)
+            {
+                return;
+            }
+
+            InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                () => Serializer.DefaultOptions.GetTypeInfo(typeof(NonClosedExplicitBase)));
+
+            Assert.Contains(typeof(NonClosedExplicitBase).ToString(), exception.Message);
+            Assert.Contains(
+                nameof(JsonPolymorphicAttribute.InferClosedTypePolymorphism),
+                exception.Message);
+        }
+
+        [Theory]
+        [InlineData(typeof(ClosedEmptyAttributeOptInBase))]
+        [InlineData(typeof(ClosedEmptyOptOutWithCustomDiscriminatorBase))]
+        [InlineData(typeof(ClosedEmptyOptOutWithIgnoreUnrecognizedDiscriminatorsBase))]
+        [InlineData(typeof(ClosedEmptyOptOutWithTypeClassifierBase))]
+        [InlineData(typeof(ClosedEmptyOptOutWithUnknownDerivedTypeHandlingBase))]
+        [InlineData(typeof(ClosedEmptyPolymorphicBase))]
+        public void ClosedTypeInference_JsonPolymorphicAttribute_OnClosedTypeWithoutDerivedTypes_ThrowsMissingDerivedTypes(Type type)
+        {
+            // Enabling inference does not change what an empty JsonPolymorphicAttribute registration means:
+            // a closed type declaring no derived types fails the same way any other polymorphic declaration
+            // without derived types has failed since .NET 7, and the message must not blame the opt-in.
+            JsonSerializerOptions[] optionsToTest = [Serializer.DefaultOptions, ClosedTypeInferenceOptions];
+
+            foreach (JsonSerializerOptions options in optionsToTest)
+            {
+                InvalidOperationException exception = Assert.Throws<InvalidOperationException>(
+                    () => JsonSerializer.Serialize(value: null, options.GetTypeInfo(type)));
+
+                Assert.Contains(type.ToString(), exception.Message);
+                Assert.DoesNotContain(
+                    nameof(JsonPolymorphicAttribute.InferClosedTypePolymorphism),
+                    exception.Message);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ClosedTypeInference_JsonPolymorphicAttribute_ExplicitFalseSuppressesInference(bool globalOptIn)
+        {
+            JsonSerializerOptions options =
+                globalOptIn ? ClosedTypeInferenceOptions : Serializer.DefaultOptions;
+            Assert.Equal(globalOptIn, options.InferClosedTypePolymorphism);
+
+            // A value declared on the type overrides the global setting, so the hierarchy stays
+            // non-polymorphic even when inference is enabled globally.
+            Assert.Null(options.GetTypeInfo(typeof(ClosedExplicitOptOutBase)).PolymorphismOptions);
+
+            ClosedExplicitOptOutBase value = new ClosedExplicitOptOutDerived
+            {
+                BaseValue = "base",
+                DerivedValue = 42,
+            };
+            string json = await Serializer.SerializeWrapper(value, options);
+            JsonTestHelper.AssertJsonEqual("""{"BaseValue":"base"}""", json);
+        }
+
+        [Fact]
         public void ClosedTypeInference_EmptyDerivedTypes_IsInert()
         {
+            // A closed class with no descendants is a valid C# declaration. With no polymorphism attributes
+            // of its own it stays non-polymorphic, whether or not inference is enabled.
+            Assert.Null(Serializer.DefaultOptions.GetTypeInfo(typeof(ClosedEmptyBase)).PolymorphismOptions);
             Assert.Null(ClosedTypeInferenceOptions.GetTypeInfo(typeof(ClosedEmptyBase)).PolymorphismOptions);
         }
 
@@ -270,8 +416,8 @@ namespace System.Text.Json.Serialization.Tests
                 typeof(ClosedArrayBase<int[]>),
                 new ClosedArrayDerived<int>
                 {
-                    BaseValue = new[] { 4, 5 },
-                    Values = new[] { 1, 2, 3 },
+                    BaseValue = [4, 5],
+                    Values = [1, 2, 3],
                 },
                 """{"$type":"ClosedArrayDerived","Values":[1,2,3],"BaseValue":[4,5]}""",
                 typeof(ClosedArrayDerived<int>),
@@ -509,25 +655,34 @@ namespace System.Text.Json.Serialization.Tests
                 () => Serializer.SerializeWrapper(value, baseType, ClosedTypeInferenceOptions));
         }
 
-        [Fact]
-        public async Task ClosedTypeInference_ExplicitJsonDerivedType_SuppressesInference()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task ClosedTypeInference_ExplicitJsonDerivedType_SuppressesInference(bool attributeOptIn)
         {
-            JsonSerializerOptions options = ClosedTypeInferenceOptions;
-            Assert.Equal(
-                new[] { "customA", "customB" },
-                GetInferredDiscriminators(options, typeof(ClosedExplicitBase)));
+            JsonSerializerOptions options =
+                attributeOptIn ? Serializer.DefaultOptions : ClosedTypeInferenceOptions;
+            Type baseType =
+                attributeOptIn ? typeof(ClosedAttributeExplicitBase) : typeof(ClosedExplicitBase);
+            object value = attributeOptIn
+                ? new ClosedAttributeExplicitA { BaseValue = "base", DerivedValue = 42 }
+                : new ClosedExplicitA { BaseValue = "base", DerivedValue = 42 };
+            Type expectedDerivedType =
+                attributeOptIn ? typeof(ClosedAttributeExplicitA) : typeof(ClosedExplicitA);
 
-            ClosedExplicitBase value = new ClosedExplicitA { BaseValue = "base", DerivedValue = 42 };
-            string json = await Serializer.SerializeWrapper(value, options);
+            (Type, string)[] expectedDerivedTypes = attributeOptIn
+                ? [(typeof(ClosedAttributeExplicitA), "customA"), (typeof(ClosedAttributeExplicitB), "customB")]
+                : [(typeof(ClosedExplicitA), "customA"), (typeof(ClosedExplicitB), "customB")];
+
+            Assert.Equal(expectedDerivedTypes, GetInferredDerivedTypes(options, baseType));
+
+            string json = await Serializer.SerializeWrapper(value, baseType, options);
             JsonTestHelper.AssertJsonEqual(
                 """{"$type":"customA","DerivedValue":42,"BaseValue":"base"}""",
                 json);
 
-            ClosedExplicitBase roundtripped =
-                await Serializer.DeserializeWrapper<ClosedExplicitBase>(json, options);
-            ClosedExplicitA result = Assert.IsType<ClosedExplicitA>(roundtripped);
-            Assert.Equal("base", result.BaseValue);
-            Assert.Equal(42, result.DerivedValue);
+            object roundtripped = await Serializer.DeserializeWrapper(json, baseType, options);
+            Assert.IsType(expectedDerivedType, roundtripped);
         }
 
         [Fact]
@@ -572,6 +727,57 @@ namespace System.Text.Json.Serialization.Tests
         public int Height { get; set; }
     }
 
+    [JsonPolymorphic(
+        InferClosedTypePolymorphism = true,
+        TypeDiscriminatorPropertyName = "$kind")]
+    public closed class ClosedAttributeOptInBase
+    {
+        public string? BaseValue { get; set; }
+    }
+    public sealed class ClosedAttributeOptInDerived : ClosedAttributeOptInBase
+    {
+        public int DerivedValue { get; set; }
+    }
+
+    public closed class ClosedAttributeOptOutBase
+    {
+        public string? BaseValue { get; set; }
+    }
+    public sealed class ClosedAttributeOptOutDerived : ClosedAttributeOptOutBase
+    {
+        public int DerivedValue { get; set; }
+    }
+
+    [JsonPolymorphic(InferClosedTypePolymorphism = false)]
+    public closed class ClosedExplicitOptOutBase
+    {
+        public string? BaseValue { get; set; }
+    }
+    public sealed class ClosedExplicitOptOutDerived : ClosedExplicitOptOutBase
+    {
+        public int DerivedValue { get; set; }
+    }
+
+    // The opt-in is intentionally applied to a non-closed type, which the source generator reports.
+#pragma warning disable SYSLIB1243
+    [JsonPolymorphic(InferClosedTypePolymorphism = true)]
+    public abstract class NonClosedAttributeBase;
+#pragma warning restore SYSLIB1243
+    public sealed class NonClosedAttributeDerived : NonClosedAttributeBase;
+
+    // Deliberately not registered with any JsonSerializerContext: source generation rejects this
+    // declaration at compile time, so only the reflection resolver can observe its runtime behavior.
+    [JsonPolymorphic(InferClosedTypePolymorphism = true)]
+    [JsonDerivedType(typeof(NonClosedExplicitDerived), "derived")]
+    public abstract class NonClosedExplicitBase
+    {
+        public string? BaseValue { get; set; }
+    }
+    public sealed class NonClosedExplicitDerived : NonClosedExplicitBase
+    {
+        public int DerivedValue { get; set; }
+    }
+
     public closed class ClosedPayload
     {
         public string? Id { get; set; }
@@ -580,6 +786,51 @@ namespace System.Text.Json.Serialization.Tests
     public sealed class ClosedNumberPayload : ClosedPayload { public int Number { get; set; } }
 
     public closed class ClosedEmptyBase;
+
+    [JsonPolymorphic(InferClosedTypePolymorphism = true)]
+    public closed class ClosedEmptyAttributeOptInBase
+    {
+        public string? BaseValue { get; set; }
+    }
+
+    [JsonPolymorphic(InferClosedTypePolymorphism = false, TypeDiscriminatorPropertyName = "$kind")]
+    public closed class ClosedEmptyOptOutWithCustomDiscriminatorBase
+    {
+        public string? BaseValue { get; set; }
+    }
+
+    [JsonPolymorphic(InferClosedTypePolymorphism = false, IgnoreUnrecognizedTypeDiscriminators = true)]
+    public closed class ClosedEmptyOptOutWithIgnoreUnrecognizedDiscriminatorsBase
+    {
+        public string? BaseValue { get; set; }
+    }
+
+    [JsonPolymorphic(InferClosedTypePolymorphism = false, TypeClassifier = typeof(ClosedEmptyOptOutTypeClassifierFactory))]
+    public closed class ClosedEmptyOptOutWithTypeClassifierBase
+    {
+        public string? BaseValue { get; set; }
+    }
+
+    public sealed class ClosedEmptyOptOutTypeClassifierFactory : JsonTypeClassifierFactory
+    {
+        public override bool CanClassify(JsonTypeClassifierContext context) => true;
+
+        public override JsonTypeClassifier CreateJsonClassifier(
+            JsonTypeClassifierContext context,
+            JsonSerializerOptions options) => (ref Utf8JsonReader reader) => null;
+    }
+
+    [JsonPolymorphic(InferClosedTypePolymorphism = false, UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToBaseType)]
+    public closed class ClosedEmptyOptOutWithUnknownDerivedTypeHandlingBase
+    {
+        public string? BaseValue { get; set; }
+    }
+
+    [JsonPolymorphic]
+    public closed class ClosedEmptyPolymorphicBase
+    {
+        public string? BaseValue { get; set; }
+    }
 
     public abstract class PlainAbstractBase;
     public sealed class PlainAbstractDerived : PlainAbstractBase;
@@ -808,6 +1059,25 @@ namespace System.Text.Json.Serialization.Tests
         public int DerivedValue { get; set; }
     }
     public sealed class ClosedExplicitB : ClosedExplicitBase
+    {
+        public int DerivedValue { get; set; }
+    }
+
+    // Explicit registrations replace inference, which the source generator reports.
+#pragma warning disable SYSLIB1244
+    [JsonPolymorphic(InferClosedTypePolymorphism = true)]
+    [JsonDerivedType(typeof(ClosedAttributeExplicitA), "customA")]
+    [JsonDerivedType(typeof(ClosedAttributeExplicitB), "customB")]
+    public closed class ClosedAttributeExplicitBase
+    {
+        public string? BaseValue { get; set; }
+    }
+#pragma warning restore SYSLIB1244
+    public sealed class ClosedAttributeExplicitA : ClosedAttributeExplicitBase
+    {
+        public int DerivedValue { get; set; }
+    }
+    public sealed class ClosedAttributeExplicitB : ClosedAttributeExplicitBase
     {
         public int DerivedValue { get; set; }
     }

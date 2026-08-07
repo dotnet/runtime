@@ -48,7 +48,6 @@ class   MethodNameHash;
 class   MethodTable;
 class   Module;
 class   Object;
-class   Stub;
 class   Substitution;
 class   SystemDomain;
 class   TypeHandle;

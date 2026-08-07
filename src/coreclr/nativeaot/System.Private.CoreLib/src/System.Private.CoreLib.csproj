@@ -257,10 +257,8 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.ExitProcess.cs">
-      <Link>Interop\Windows\Kernel32\Interop.ExitProcess.cs</Link>
+      <Link>Common\Interop\Windows\Kernel32\Interop.ExitProcess.cs</Link>
     </Compile>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="System\EventReporter.cs" />
     <Compile Include="Internal\Runtime\FrozenObjectHeapManager.Windows.cs" />
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Windows.cs" />
@@ -268,33 +266,31 @@
       <Link>System\Runtime\InteropServices\BuiltInVariantExtensions.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegisterEventSource_IntPtr.cs">
-      <Link>Interop\Windows\Advapi32\Interop.RegisterEventSource_IntPtr.cs</Link>
+      <Link>Common\Interop\Windows\Advapi32\Interop.RegisterEventSource_IntPtr.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs">
-      <Link>Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs</Link>
+      <Link>Common\Interop\Windows\Advapi32\Interop.DeregisterEventSource.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs">
       <Link>Common\Interop\Windows\Advapi32\Interop.ReportEvent_IntPtr.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Kernel32\Interop.RaiseFailFastException.cs">
-      <Link>Interop\Windows\Kernel32\Interop.RaiseFailFastException.cs</Link>
+      <Link>Common\Interop\Windows\Kernel32\Interop.RaiseFailFastException.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoInitializeEx.cs">
-      <Link>Interop\Windows\Ole32\Interop.CoInitializeEx.cs</Link>
+      <Link>Common\Interop\Windows\Ole32\Interop.CoInitializeEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoUninitialize.cs">
-      <Link>Interop\Windows\Ole32\Interop.CoUninitialize.cs</Link>
+      <Link>Common\Interop\Windows\Ole32\Interop.CoUninitialize.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Ole32\Interop.CoGetApartmentType.cs">
-      <Link>Interop\Windows\Ole32\Interop.CoGetApartmentType.cs</Link>
+      <Link>Common\Interop\Windows\Ole32\Interop.CoGetApartmentType.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\OleAut32\Interop.VariantClear.cs">
-      <Link>Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
+      <Link>Common\Interop\Windows\OleAut32\Interop.VariantClear.cs</Link>
     </Compile>
     <Compile Include="System\Environment.NativeAot.Windows.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Windows.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)'=='true'">
     <Compile Include="System\Threading\ThreadPoolCallbackWrapper.NativeAot.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
@@ -303,13 +299,13 @@
     <Compile Include="System\Runtime\InteropServices\PInvokeMarshal.Unix.cs" />
     <Compile Include="System\Threading\Thread.NativeAot.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Abort.cs">
-      <Link>Interop\Unix\System.Native\Interop.Abort.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.Abort.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Exit.cs">
-      <Link>Interop\Unix\System.Native\Interop.Exit.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.Exit.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MProtect.cs">
-      <Link>Interop\Unix\System.Native\Interop.MProtect.cs</Link>
+      <Link>Common\Interop\Unix\System.Native\Interop.MProtect.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
