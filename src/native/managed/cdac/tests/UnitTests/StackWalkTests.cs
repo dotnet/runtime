@@ -82,10 +82,7 @@ public unsafe class StackWalkTests
             .AddMockContract(stackWalk)
             .Build();
 
-        const uint AllVisibleFrameTypes =
-            (uint)CLRDataSimpleFrameType.CLRDATA_SIMPFRAME_MANAGED_METHOD
-            | (uint)CLRDataSimpleFrameType.CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE;
-        return new ClrDataStackWalk(threadAddress, AllVisibleFrameTypes, target, legacyImpl: null);
+        return new ClrDataStackWalk(threadAddress, CLRDataStackWalkFlag.CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE, target, legacyImpl: null);
     }
 
     private sealed record TestStackDataFrameHandle(StackWalkState State, ulong StackPointerValue) : IStackDataFrameHandle
