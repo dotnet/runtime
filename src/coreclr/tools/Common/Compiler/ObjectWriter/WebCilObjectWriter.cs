@@ -52,13 +52,19 @@ namespace ILCompiler.ObjectWriter
         public static readonly ObjectNodeSection GlobalSection = new ObjectNodeSection("wasm.global", SectionType.ReadOnly, needsAlign: false);
     }
 
+    internal abstract partial class WasmObjectWriter : ObjectWriter
+    {
+        protected WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
+            : base(factory, options, outputInfoBuilder)
+        {
+        }
+    }
+
     /// <summary>
     /// WebCIL object file format writer.
     /// </summary>
     internal sealed class WebCilObjectWriter : WasmObjectWriter
     {
-        public const int WebcilSectionAlignment = 16;
-
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
 
         // We use 2 Wasm data segments for webcil,
@@ -396,6 +402,8 @@ namespace ILCompiler.ObjectWriter
 
             return 0;
         }
+
+        public const int WebcilSectionAlignment = 16;
 
         /// <summary>
         /// Assigns VirtualAddresses and related header fields to each webcil section based on the
@@ -1012,6 +1020,10 @@ namespace ILCompiler.ObjectWriter
         }
 #nullable disable
 
+        public const int StackPointerGlobalIndex = WasmGlobalImports.StackPointerGlobalIndex;
+        public const int ImageBaseGlobalIndex = WasmGlobalImports.ImageBaseGlobalIndex;
+        public const int TableBaseGlobalIndex = WasmGlobalImports.TableBaseGlobalIndex;
+        public const int AsyncContinuationGlobalIndex = WasmGlobalImports.AsyncContinuationGlobalIndex;
         public const int RtlRestoreContextTagIndex = 0;
         private static readonly Utf8String RtlRestoreContextTagName = new("rtlRestoreContextTag");
 
