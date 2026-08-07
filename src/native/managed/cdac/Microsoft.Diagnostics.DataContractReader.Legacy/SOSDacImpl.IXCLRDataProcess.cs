@@ -250,31 +250,38 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             IExecutionManager eman = _target.Contracts.ExecutionManager;
             string? resultName = null;
 
-            // Try stub classification
-            CodeKind codeKind = eman.GetCodeKind(codeAddr);
-            if (codeKind == CodeKind.StubPrecode || codeKind == CodeKind.FixupPrecode)
+            TargetCodePointer managedCodeAddr = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(codeAddr);
+            if (eman.GetCodeBlockHandle(managedCodeAddr) is CodeBlockHandle codeBlock)
             {
-                IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
-                TargetPointer entryPoint = precodeStubs.GetPrecodeEntryPointFromInteriorAddress(codeAddr, codeKind == CodeKind.FixupPrecode);
-                TargetPointer methodDesc = eman.NonVirtualEntry2MethodDesc(new TargetCodePointer(entryPoint.Value));
-                if (methodDesc != TargetPointer.Null)
+                if (displacement is not null)
                 {
-                    if (displacement is not null)
-                        *displacement = codeAddr.ToAddress(_target).Value - entryPoint;
-                    IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                    MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
-                    StringBuilder sb = new StringBuilder();
-                    TypeNameBuilder.AppendMethodInternal(_target, sb, mdh, TypeNameFormat.FormatSignature
-                        | TypeNameFormat.FormatNamespace
-                        | TypeNameFormat.FormatFullInst);
-                    resultName = sb.ToString();
+                    *displacement = managedCodeAddr.ToAddress(_target).Value - eman.GetStartAddress(codeBlock).Value;
                 }
+                resultName = GetMethodName(eman.GetMethodDesc(codeBlock));
             }
+
             if (resultName is null)
             {
-                resultName = GetStubName(codeKind);
-                if (resultName is not null && displacement is not null)
-                    *displacement = 0;
+                // Try stub classification
+                CodeKind codeKind = eman.GetCodeKind(codeAddr);
+                if (codeKind == CodeKind.StubPrecode || codeKind == CodeKind.FixupPrecode)
+                {
+                    IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
+                    TargetPointer entryPoint = precodeStubs.GetPrecodeEntryPointFromInteriorAddress(codeAddr, codeKind == CodeKind.FixupPrecode);
+                    TargetPointer methodDesc = eman.NonVirtualEntry2MethodDesc(new TargetCodePointer(entryPoint.Value));
+                    if (methodDesc != TargetPointer.Null)
+                    {
+                        if (displacement is not null)
+                            *displacement = codeAddr.ToAddress(_target).Value - entryPoint;
+                        resultName = GetMethodName(methodDesc);
+                    }
+                }
+                if (resultName is null)
+                {
+                    resultName = GetStubName(codeKind);
+                    if (resultName is not null && displacement is not null)
+                        *displacement = 0;
+                }
             }
 
             // try aux symbols
@@ -334,6 +341,17 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 #endif
 
         return hr;
+    }
+
+    private string GetMethodName(TargetPointer methodDesc)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
+        StringBuilder sb = new StringBuilder();
+        TypeNameBuilder.AppendMethodInternal(_target, sb, mdh, TypeNameFormat.FormatSignature
+            | TypeNameFormat.FormatNamespace
+            | TypeNameFormat.FormatFullInst);
+        return sb.ToString();
     }
 
     private static string? GetStubName(Contracts.CodeKind codeKind)
