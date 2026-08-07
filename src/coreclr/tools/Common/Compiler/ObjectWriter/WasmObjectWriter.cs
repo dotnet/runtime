@@ -701,7 +701,7 @@ namespace ILCompiler.ObjectWriter
                         MemoryStream destStream = new MemoryStream((int)originalStream.Length);
                         originalStream.Position = 0;
                         //originalStream.CopyTo(stream);
-                        ResolveRelocations(index, originalStream, destStream, relocations, sectionStart: 0, shrink: true);
+                        ResolveRelocations(index, originalStream, destStream, relocations, sectionStart: 0, shrink: false);
                         section.Stream = destStream;
                         Console.WriteLine("Saved: {0} bytes of relocations in section {1}", originalStream.Length - destStream.Length, section.Name);
                         // originalStream may be disposed, section.Stream now points to resolved stream
@@ -928,7 +928,6 @@ namespace ILCompiler.ObjectWriter
             //  copy over the blob's contents to the temporary stream, resolving relocations in sorted order 
             //  write the temporary stream to the destination stream with the new size
             MemoryStream tempStream = new MemoryStream((int)maxBlobSize);
-            tempStream.SetLength(maxBlobSize);
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
             int[] blobShrink = new int[blobs.Count];
 
@@ -953,6 +952,7 @@ namespace ILCompiler.ObjectWriter
                 if (hasRelocs)
                 {
                     tempStream.Position = 0;
+                    tempStream.SetLength(blob.Size);
                     sectionStream.Position = blob.Start;
                     SymbolicRelocation firstReloc = relocs[relocCursor];
 
@@ -992,18 +992,18 @@ namespace ILCompiler.ObjectWriter
 
                     Debug.Assert(tempStream.Position <= blob.Size && blob.Size <= tempStream.Length, $"Temp stream position {tempStream.Position} exceeds blob size {blob.Size}");
 
-                    long tempStreamLength = tempStream.Position;
+                    tempStream.SetLength(tempStream.Position);
 
                     // Write the temp stream back into the original stream with a NEW length prefix, starting at writeCursor
-                    DwarfHelper.WriteULEB128(countBuffer, (ulong)tempStreamLength);
+                    DwarfHelper.WriteULEB128(countBuffer, (ulong)tempStream.Length);
                     sectionStream.Position = writeCursor;
-                    sectionStream.Write(countBuffer, 0, (int)DwarfHelper.SizeOfULEB128((ulong)tempStreamLength));
+                    sectionStream.Write(countBuffer, 0, (int)DwarfHelper.SizeOfULEB128((ulong)tempStream.Length));
                     writeCursor = sectionStream.Position; // set writeCursor to the position after the length prefix we just wrote
 
                     tempStream.Position = 0;
                     tempStream.CopyTo(sectionStream);
 
-                    writeCursor += tempStreamLength;
+                    writeCursor += tempStream.Length;
                 }
                 else
                 {
@@ -1226,9 +1226,12 @@ namespace ILCompiler.ObjectWriter
 
             if (shrink && _sections[sectionIndex] is WasmSection { Type: WasmSectionType.Code })
             {
-                List<CodeBlob> blobs = ParseCodeBlobs(sectionStream);
                 sectionStream.Position = 0;
                 sectionStream.CopyTo(dstStream);
+
+                dstStream.Position = 0;
+                List<CodeBlob> blobs = ParseCodeBlobs(dstStream);
+
                 dstStream.Position = 0;
                 ResolveCodeRelocations(sectionIndex, dstStream, blobs, relocs, shrink);
                 return;
