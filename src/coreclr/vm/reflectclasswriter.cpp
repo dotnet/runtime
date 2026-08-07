@@ -15,16 +15,11 @@
 HRESULT RefClassWriter::Init(ICeeGenInternal *pCeeGen, IUnknown *pUnk, LPCWSTR szName)
 {
     CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        // we know that the com implementation is ours so we use mode-any to simplify
-        // having to switch mode
-        MODE_ANY;
+        STANDARD_VM_CHECK;
         INJECT_FAULT(return(E_OUTOFMEMORY));
 
         PRECONDITION(CheckPointer(pCeeGen));
         PRECONDITION(CheckPointer(pUnk));
-
     }
     CONTRACTL_END;
 
