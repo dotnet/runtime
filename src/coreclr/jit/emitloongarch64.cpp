@@ -121,14 +121,11 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
     // NOTE: please reference the file "instrsloongarch64.h" for details !!!
     return (((INS_mov <= ins) && (ins <= INS_jirl)) || (ins == INS_movfcsr2gr) || (ins == INS_movcf2gr)
 #ifdef FEATURE_SIMD
-            || (ins == INS_vpickve2gr_d) || (ins == INS_vpickve2gr_du) || (ins == INS_vpickve2gr_w) ||
-            (ins == INS_vpickve2gr_wu) || (ins == INS_vpickve2gr_hu) || (ins == INS_vpickve2gr_hu) ||
-            (ins == vpickve2gr_b) || (ins == INS_vpickve2gr_bu) || (ins == xvpickve2gr_d) || (ins == xvpickve2gr_du) ||
-            (ins == xvpickve2gr_w) || (ins == xvpickve2gr_wu)
+            || ((INS_vpickve2gr_d <= ins) && (ins <= INS_vpickve2gr_wu)) ||
+            ((INS_vpickve2gr_h <= ins) && (ins <= INS_vpickve2gr_bu)) ||
+            ((INS_xvpickve2gr_d <= ins) && (ins <= INS_xvpickve2gr_wu))
 #endif
-                )
-               ? true
-               : false;
+                ) ? true : false;
 }
 
 bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
@@ -1266,7 +1263,7 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5;  // rj
         code |= (imm & 0xfff) << 10; // si12
     }
-    else if (((INS_vinsgr2vr_d <= ins) && (ins <= INS_vreplvei_d)) || (INS_xvrepl128vei_d == ins))
+    else if (((INS_vinsgr2vr_d <= ins) && (ins <= INS_vpickve2gr_du)) || (INS_xvrepl128vei_d == ins))
     {
 #ifdef DEBUG
         if (INS_vinsgr2vr_d == ins)
@@ -1291,7 +1288,7 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5;
         code |= (imm & 0x1) << 10; // ui1
     }
-    else if (((INS_vinsgr2vr_w <= ins) && (ins <= INS_vreplvei_w)) ||
+    else if (((INS_vpickve2gr_w <= ins) && (ins <= INS_vreplvei_w)) ||
              ((INS_xvinsve0_d <= ins) && (ins <= INS_xvpickve2gr_du)))
     {
 #ifdef DEBUG
@@ -1337,7 +1334,7 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5; // xj/vj/rj
         code |= (imm & 0x3) << 10;  // ui2
     }
-    else if (((INS_vslli_b <= ins) && (ins <= INS_vreplvei_h)) || ((INS_xvslli_b <= ins) && (ins <= INS_xvsat_bu)))
+    else if (((INS_vslli_b <= ins) && (ins <= INS_vpickve2gr_hu)) || ((INS_xvpickve2gr_w <= ins) && (ins <= INS_xvsat_bu)))
     {
 #ifdef DEBUG
         if ((INS_vinsgr2vr_h == ins) || (INS_xvinsgr2vr_w == ins))
@@ -1365,7 +1362,7 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5; // vj(xj)
         code |= (imm & 0x7) << 10;  // ui3
     }
-    else if (((INS_vslli_h <= ins) && (ins <= INS_vreplvei_b)) || ((INS_xvslli_h <= ins) && (ins <= INS_xvsat_hu)))
+    else if (((INS_vpickve2gr_b <= ins) && (ins <= INS_vreplvei_b)) || ((INS_xvslli_h <= ins) && (ins <= INS_xvsat_hu)))
     {
 #ifdef DEBUG
         if (INS_vinsgr2vr_b == ins)
@@ -1373,12 +1370,7 @@ void emitter::emitIns_R_R_I(
             assert(isVectorRegister(reg1));      // vd/xd
             assert(isGeneralRegisterOrR0(reg2)); // rj
         }
-        else if (INS_vpickve2gr_b == ins)
-        {
-            assert(isGeneralRegisterOrR0(reg1)); // rd
-            assert(isVectorRegister(reg2));      // vj/xj
-        }
-        else if (INS_vpickve2gr_bu == ins)
+        else if ((INS_vpickve2gr_b == ins) || (INS_vpickve2gr_bu == ins))
         {
             assert(isGeneralRegisterOrR0(reg1)); // rd
             assert(isVectorRegister(reg2));      // vj/xj
