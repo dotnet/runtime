@@ -232,10 +232,8 @@ namespace System.IO.Compression
                 ? fullDestination
                 : fullDestination + Path.DirectorySeparatorChar;
 
-            // Ensure the path stays within the destination directory boundary. The path is allowed to be
-            // exactly equal to the destination itself (e.g. for an entry named "." or "subdir/..").
-            if (!fileDestinationPath.Equals(fullDestination, StringComparison.Ordinal) &&
-                !fileDestinationPath.StartsWith(destinationPrefix, StringComparison.Ordinal))
+            // Ensure the path stays within the destination directory boundary.
+            if (!fileDestinationPath.StartsWith(destinationPrefix, StringComparison.Ordinal))
             {
                 throw new IOException(SR.IO_ExtractingResultsInOutside);
             }
