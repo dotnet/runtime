@@ -125,7 +125,9 @@ inline bool emitter::emitInsMayWriteToGCReg(instruction ins)
             ((INS_vpickve2gr_h <= ins) && (ins <= INS_vpickve2gr_bu)) ||
             ((INS_xvpickve2gr_d <= ins) && (ins <= INS_xvpickve2gr_wu))
 #endif
-                ) ? true : false;
+                )
+               ? true
+               : false;
 }
 
 bool emitter::emitInsWritesToLclVarStackLoc(instrDesc* id)
@@ -1334,7 +1336,8 @@ void emitter::emitIns_R_R_I(
         code |= (reg2 & 0x1f) << 5; // xj/vj/rj
         code |= (imm & 0x3) << 10;  // ui2
     }
-    else if (((INS_vslli_b <= ins) && (ins <= INS_vpickve2gr_hu)) || ((INS_xvpickve2gr_w <= ins) && (ins <= INS_xvsat_bu)))
+    else if (((INS_vslli_b <= ins) && (ins <= INS_vpickve2gr_hu)) ||
+             ((INS_xvpickve2gr_w <= ins) && (ins <= INS_xvsat_bu)))
     {
 #ifdef DEBUG
         if ((INS_vinsgr2vr_h == ins) || (INS_xvinsgr2vr_w == ins))
