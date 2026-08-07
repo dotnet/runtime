@@ -64,12 +64,14 @@ internal sealed class PInvokeCollector {
     private readonly Dictionary<Type, bool> _typeUnsupportedOnPlatformCache = new();
     private readonly Dictionary<Assembly, bool> _assemblyUnsupportedOnPlatformCache = new();
     private readonly string _targetOS;
+    private readonly SignatureMapper _signatureMapper;
     private LogAdapter Log { get; init; }
 
-    public PInvokeCollector(LogAdapter log, string targetOS)
+    public PInvokeCollector(LogAdapter log, string targetOS, SignatureMapper signatureMapper)
     {
         Log = log;
         _targetOS = targetOS;
+        _signatureMapper = signatureMapper;
     }
 
     public void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, HashSet<string> signatures, Type type)
@@ -90,11 +92,20 @@ internal sealed class PInvokeCollector {
 
         if (HasAttribute(type, "System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute"))
         {
+            // Each instantiation of an open generic delegate would marshal differently, so there is
+            // no single native signature to emit a thunk for. The encoding this used to produce came
+            // from mapping the type parameter itself, which was only ever right by accident.
+            if (type.ContainsGenericParameters)
+            {
+                Log.Warning("WASM0001", $"Skipping generic function pointer delegate '{type.FullName}', which has no single native signature");
+                return;
+            }
+
             var method = type.GetMethod("Invoke");
 
             if (method != null)
             {
-                string? signature = SignatureMapper.MethodToSignature(method!, Log);
+                string? signature = _signatureMapper.MethodToSignature(method!);
                 if (signature == null)
                     throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");
 
@@ -116,7 +127,7 @@ internal sealed class PInvokeCollector {
                 var entrypoint = (string)dllimport.NamedArguments.First(arg => arg.MemberName == "EntryPoint").TypedValue.Value!;
                 pinvokes.Add(new PInvoke(entrypoint, module, method, wasmLinkage));
 
-                string? signature = SignatureMapper.MethodToSignature(method, Log);
+                string? signature = _signatureMapper.MethodToSignature(method);
                 if (signature == null)
                 {
                     throw new NotSupportedException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");

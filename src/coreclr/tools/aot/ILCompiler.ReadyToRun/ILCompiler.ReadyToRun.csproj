@@ -375,6 +375,7 @@
     <Compile Include="Compiler\SystemObjectFieldLayoutAlgorithm.cs" />
     <Compile Include="IL\ReadyToRunILProvider.cs" />
     <Compile Include="JitInterface\CorInfoImpl.ReadyToRun.cs" />
+    <Compile Include="JitInterface\WasmAbiQuery.cs" />
     <Compile Include="JitInterface\WasmLowering.ReadyToRun.cs" />
     <Compile Include="ObjectWriter\TargetExtensions.cs" />
     <Compile Include="TypeSystem\MethodDescExtensions.cs" />

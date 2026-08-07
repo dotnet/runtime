@@ -207,7 +207,9 @@ namespace Internal.JitInterface
         /// <summary>
         /// Maps a WasmValueType to its single-character signature encoding.
         /// </summary>
-        private static char WasmValueTypeToSigChar(WasmValueType vt) => vt switch
+        // internal rather than private so the wasm ABI query mode can answer single-type questions
+        // with the same encoding table the signature builder below uses.
+        internal static char WasmValueTypeToSigChar(WasmValueType vt) => vt switch
         {
             WasmValueType.I32 => 'i',
             WasmValueType.I64 => 'l',

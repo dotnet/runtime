@@ -5,38 +5,30 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 
 // Computes Wasm signature strings from reflection metadata.
 // The signature string format is documented in docs/design/coreclr/botr/readytorun-format.md
 // (section "Wasm Signature String Encoding").
-internal static class SignatureMapper
+internal sealed class SignatureMapper
 {
-    // Hardcoded struct sizes for types that crossgen2 encodes as S<N>.
-    // The fully general case is handled by crossgen2's type system; these
-    // cover the small set of multi-field structs that appear in InternalCall
-    // and PInvoke signatures.
-    private static readonly Dictionary<string, int> s_knownStructSizes = new()
-    {
-        ["System.Runtime.CompilerServices.QCallModule"] = 8,
-        ["System.Runtime.CompilerServices.QCallAssembly"] = 8,
-        ["System.Runtime.CompilerServices.QCallTypeHandle"] = 8,
-        ["System.GC+GCHeapHardLimitInfo"] = 64,
-        // Used by WBT tests
-        ["WasmAppBuilderTestsPairStruct"] = 8,
-        ["WasmAppBuilderTests.S"] = 8,
-        ["WasmAppBuilderTests.Test+S"] = 8,
-    };
+    private readonly LogAdapter _log;
+    private readonly IWasmAbiTypeResolver _resolver;
 
-    internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, out int structSize, int depth = 0)
+    public SignatureMapper(LogAdapter log, IWasmAbiTypeResolver resolver)
+    {
+        _log = log;
+        _resolver = resolver;
+    }
+
+    internal char? TypeToChar(Type t, out bool isByRefStruct, out int structSize, int depth = 0)
     {
         isByRefStruct = false;
         structSize = 0;
 
         if (depth > 5) {
-            log.Warning("WASM0064", $"Unbounded recursion detected through parameter type '{t.Name}'");
+            _log.Warning("WASM0064", $"Unbounded recursion detected through parameter type '{t.Name}'");
             return null;
         }
 
@@ -80,7 +72,7 @@ internal static class SignatureMapper
         else if (t.IsEnum)
         {
             Type underlyingType = t.GetEnumUnderlyingType();
-            c = TypeToChar(underlyingType, log, out _, out structSize, ++depth);
+            c = TypeToChar(underlyingType, out _, out structSize, ++depth);
         }
         else if (t.IsPointer)
             c = 'i';
@@ -88,89 +80,45 @@ internal static class SignatureMapper
             c = 'i';
         else if (t.IsValueType)
         {
-            var fields = t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            if (fields.Length == 1)
+            // Reflection cannot compute field layout, so the ABI encoding of a struct - including
+            // whether it collapses to a single primitive - comes from the compiler's type system.
+            string token = _resolver.GetAbiToken(t);
+            if (token[0] == 'S')
             {
-                Type fieldType = fields[0].FieldType;
-                return TypeToChar(fieldType, log, out isByRefStruct, out structSize, ++depth);
+                structSize = int.Parse(token.Substring(1));
+                isByRefStruct = true;
+                c = 'S';
             }
             else
             {
-                string fullName = t.FullName ?? t.Name;
-                if (s_knownStructSizes.TryGetValue(fullName, out int size))
-                {
-                    structSize = size;
-                }
-                else
-                {
-                    log.Error("WASM0067",
-                        $"SignatureMapper: unknown multi-field struct '{fullName}' (fields: {fields.Length}) — add its size to s_knownStructSizes in SignatureMapper.cs");
-                    return null;
-                }
-
-                c = 'S';
+                c = token[0];
             }
-
-            isByRefStruct = true;
         }
         else
-            log.Warning("WASM0065", $"Unsupported parameter type '{t.Name}'");
+            _log.Warning("WASM0065", $"Unsupported parameter type '{t.Name}'");
 
         return c;
     }
 
-    internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, int depth = 0)
-        => TypeToChar(t, log, out isByRefStruct, out _, depth);
+    internal char? TypeToChar(Type t, out bool isByRefStruct, int depth = 0)
+        => TypeToChar(t, out isByRefStruct, out _, depth);
 
     /// <summary>
-    /// Builds the multi-char token for a type in the signature string.
-    /// For most types this is a single character; for multi-field structs it is "S&lt;N&gt;".
+    /// Returns the wasm signature string for a method.
     /// </summary>
-    private static string? TypeToSignatureToken(Type t, LogAdapter log, out bool isByRefStruct)
+    /// <remarks>
+    /// Delegates to the compiler's own lowering rather than building the string from
+    /// <see cref="TypeToChar"/>. That resolves each parameter from the method's signature blob, so
+    /// generic instantiations work, and it keeps one implementation of the encoding instead of a
+    /// second one here that has to be kept in agreement with compiled code.
+    /// </remarks>
+    public string? MethodToSignature(MethodInfo method, bool includeThis = false)
     {
-        char? c = TypeToChar(t, log, out isByRefStruct, out int structSize);
-        if (c is null)
-            return null;
+        // A managed signature is what picks up the 'T' for an instance method and the trailing 'p';
+        // everything else describes a native function.
+        WasmLoweringFlags flags = includeThis ? WasmLoweringFlags.None : WasmLoweringFlags.IsUnmanagedCallersOnly;
 
-        if (c == 'S' && structSize > 0)
-            return $"S{structSize}";
-
-        return c.Value.ToString();
-    }
-
-    public static string? MethodToSignature(MethodInfo method, LogAdapter log, bool includeThis = false)
-    {
-        string? returnToken = TypeToSignatureToken(method.ReturnType, log, out bool resultIsByRef);
-        if (returnToken is null)
-            return null;
-
-        var sb = new StringBuilder();
-
-        if (resultIsByRef)
-        {
-            // Struct return — encode as S<N> (the return type token already has the size)
-            sb.Append(returnToken);
-        }
-        else
-        {
-            sb.Append(returnToken);
-        }
-
-        if (includeThis && !method.IsStatic)
-        {
-            sb.Append('T');
-        }
-
-        foreach (var parameter in method.GetParameters())
-        {
-            string? paramToken = TypeToSignatureToken(parameter.ParameterType, log, out _);
-            if (paramToken is null)
-                return null;
-
-            sb.Append(paramToken);
-        }
-
-        return sb.ToString();
+        return _resolver.GetMethodSignature(method, flags);
     }
 
     /// <summary>
@@ -257,9 +205,9 @@ internal static class SignatureMapper
     public static string CharToNameType(char c) => TokenToNameType(c.ToString());
     public static string CharToArgType(char c) => TokenToArgType(c.ToString());
 
-    public static string TypeToNameType(Type t, LogAdapter log)
+    public string TypeToNameType(Type t)
     {
-        char? c = TypeToChar(t, log, out _);
+        char? c = TypeToChar(t, out _);
         if (c is null)
             throw new InvalidSignatureCharException('?');
 

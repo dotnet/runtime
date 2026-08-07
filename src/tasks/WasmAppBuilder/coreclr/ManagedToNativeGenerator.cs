@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -44,7 +45,63 @@ public class ManagedToNativeGenerator : Task
 
     public string TargetOS { get; set; } = "browser";
 
+    /// <summary>
+    /// Path to crossgen2, which is run in its <c>--wasm-abi-query</c> mode to compute struct sizes
+    /// and ABI lowering. Reflection alone cannot compute field layout, and the answers have to be the
+    /// ones the compiler itself would produce.
+    /// </summary>
+    /// <remarks>
+    /// Query mode does not load the JIT, so this does not have to be a wasm-targeting crossgen2.
+    /// </remarks>
+    public string? Crossgen2Path { get; set; }
+
+    /// <summary>
+    /// Path to the dotnet host, used when <see cref="Crossgen2Path"/> points at an IL-only build of
+    /// crossgen2 rather than an apphost.
+    /// </summary>
+    public string? DotNetHostPath { get; set; }
+
     private static readonly string[] s_knownTargetOSes = new[] { "browser", "wasi" };
+
+    private string ResolveCrossgen2Path()
+    {
+        if (string.IsNullOrEmpty(Crossgen2Path))
+        {
+            throw new LogAsErrorException(
+                "The Crossgen2Path task parameter is required: computing the wasm ABI struct sizes for the " +
+                "generated helpers needs crossgen2's type system.");
+        }
+
+        return Crossgen2Path!;
+    }
+
+    private string ResolveDotNetHostPath()
+    {
+        if (!string.IsNullOrEmpty(DotNetHostPath))
+            return DotNetHostPath!;
+
+        string? fromEnvironment = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+        if (!string.IsNullOrEmpty(fromEnvironment))
+            return fromEnvironment!;
+
+        // When MSBuild itself is running on the .NET host, reuse it rather than trusting PATH to
+        // turn up a compatible one.
+        try
+        {
+            string? currentProcess = Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrEmpty(currentProcess))
+            {
+                string name = Path.GetFileNameWithoutExtension(currentProcess);
+                if (string.Equals(name, "dotnet", StringComparison.OrdinalIgnoreCase))
+                    return currentProcess!;
+            }
+        }
+        catch (Exception)
+        {
+        }
+
+        return "dotnet";
+    }
 
     [Output]
     public string[]? FileWrites { get; private set; }
@@ -93,8 +150,11 @@ public class ManagedToNativeGenerator : Task
     {
         Dictionary<string, string> _symbolNameFixups = new();
         List<string> managedAssemblies = FilterOutUnmanagedBinaries(Assemblies);
-        var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode, TargetOS, WarnOnUnresolvedPInvokeModules);
-        var internalCallCollector = new InternalCallSignatureCollector(log);
+
+        using var abiTypeResolver = new WasmAbiTypeResolver(ResolveDotNetHostPath(), ResolveCrossgen2Path(), TargetOS, managedAssemblies, log);
+        var signatureMapper = new SignatureMapper(log, abiTypeResolver);
+        var pinvoke = new PInvokeTableGenerator(FixupSymbolName, log, IsLibraryMode, TargetOS, signatureMapper, WarnOnUnresolvedPInvokeModules);
+        var internalCallCollector = new InternalCallSignatureCollector(log, signatureMapper);
 
         var resolver = new PathAssemblyResolver(managedAssemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");

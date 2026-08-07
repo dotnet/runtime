@@ -638,6 +638,19 @@
       <_WasmManagedAssemblies Include="$(_CoreLibPath)" />
     </ItemGroup>
 
+    <!-- crossgen2 computes the wasm ABI struct sizes the generated helpers need. Query mode does not
+         load the JIT, so a host-targeting crossgen2 answers wasm questions correctly. In the repo it
+         comes from the build output; outside it, from the crossgen2 pack the wasm-tools workload
+         acquires, which sets $(Crossgen2ToolPath) from its Sdk.props. -->
+    <PropertyGroup>
+      <_WasmAbiQueryExeSuffix Condition="'$(OS)' == 'Windows_NT'">.exe</_WasmAbiQueryExeSuffix>
+      <WasmAbiQueryCrossgen2Path Condition="'$(WasmAbiQueryCrossgen2Path)' == '' and '$(Crossgen2InBuildDir)' != ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(_WasmAbiQueryExeSuffix)'))</WasmAbiQueryCrossgen2Path>
+      <WasmAbiQueryCrossgen2Path Condition="'$(WasmAbiQueryCrossgen2Path)' == ''">$(Crossgen2ToolPath)</WasmAbiQueryCrossgen2Path>
+    </PropertyGroup>
+
+    <Error Condition="'$(WasmAbiQueryCrossgen2Path)' == ''"
+           Text="crossgen2 was not found, so the wasm P/Invoke helpers cannot be generated. Install the 'wasm-tools' workload, or set %24(WasmAbiQueryCrossgen2Path) to a crossgen2 executable." />
+
     <ManagedToNativeGenerator
       Assemblies="@(_WasmManagedAssemblies)"
       PInvokeModules="@(_WasmPInvokeModules)"
@@ -647,6 +660,8 @@
       InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)"
       CacheFilePath="$(_WasmM2NCachePath)"
       TargetOS="browser"
+      Crossgen2Path="$(WasmAbiQueryCrossgen2Path)"
+      DotNetHostPath="$(DOTNET_HOST_PATH)"
       IsLibraryMode="$(_IsLibraryMode)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>

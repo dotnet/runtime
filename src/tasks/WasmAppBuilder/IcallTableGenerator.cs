@@ -26,6 +26,7 @@ internal sealed class IcallTableGenerator
     private readonly Func<string, string> _fixupSymbolName;
 
     private bool _isCoreClr;
+    private readonly CoreClr.SignatureMapper? _coreClrSignatureMapper;
 
     //
     // Given the runtime generated icall table, and a set of assemblies, generate
@@ -33,11 +34,12 @@ internal sealed class IcallTableGenerator
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public IcallTableGenerator(string? runtimeIcallTableFile, Func<string, string> fixupSymbolName, LogAdapter log, bool isCoreClr)
+    public IcallTableGenerator(string? runtimeIcallTableFile, Func<string, string> fixupSymbolName, LogAdapter log, bool isCoreClr, CoreClr.SignatureMapper? coreClrSignatureMapper = null)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
         _isCoreClr = isCoreClr;
+        _coreClrSignatureMapper = coreClrSignatureMapper;
         if (runtimeIcallTableFile != null)
             ReadTable(runtimeIcallTableFile);
     }
@@ -210,7 +212,9 @@ internal sealed class IcallTableGenerator
 
         void AddSignature(Type type, MethodInfo method)
         {
-            string? signature = _isCoreClr ? CoreClr.SignatureMapper.MethodToSignature(method, Log) : Mono.SignatureMapper.MethodToSignature(method, Log);
+            string? signature = _isCoreClr
+                ? (_coreClrSignatureMapper ?? throw new LogAsErrorException("A CoreCLR signature mapper is required to generate icall signatures for CoreCLR.")).MethodToSignature(method)
+                : Mono.SignatureMapper.MethodToSignature(method, Log);
             if (signature == null)
             {
                 throw new LogAsErrorException($"Unsupported parameter type in method '{type.FullName}.{method.Name}'");

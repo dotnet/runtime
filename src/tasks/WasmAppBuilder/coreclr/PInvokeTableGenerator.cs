@@ -24,14 +24,16 @@ internal sealed class PInvokeTableGenerator
     private readonly List<PInvoke> pinvokes = new();
     private readonly List<PInvokeCallback> callbacks = new();
     private readonly PInvokeCollector _pinvokeCollector;
+    private readonly SignatureMapper _signatureMapper;
     private readonly bool _isLibraryMode;
     private readonly bool _warnOnUnresolvedModules;
 
-    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode, string targetOS, bool warnOnUnresolvedModules = true)
+    public PInvokeTableGenerator(Func<string, string> fixupSymbolName, LogAdapter log, bool isLibraryMode, string targetOS, SignatureMapper signatureMapper, bool warnOnUnresolvedModules = true)
     {
         Log = log;
         _fixupSymbolName = fixupSymbolName;
-        _pinvokeCollector = new(log, targetOS);
+        _signatureMapper = signatureMapper;
+        _pinvokeCollector = new(log, targetOS, signatureMapper);
         _isLibraryMode = isLibraryMode;
         _warnOnUnresolvedModules = warnOnUnresolvedModules;
     }
@@ -352,7 +354,7 @@ internal sealed class PInvokeTableGenerator
         var realReturnType = method.ReturnType;
         var realParameterTypes = method.GetParameters().Select(p => MapType(p.ParameterType)).ToList();
 
-        SignatureMapper.TypeToChar(realReturnType, Log, out bool resultIsByRef);
+        _signatureMapper.TypeToChar(realReturnType, out bool resultIsByRef);
         if (resultIsByRef) {
             realReturnType = typeof(void);
             realParameterTypes.Insert(0, "void *");
@@ -445,7 +447,7 @@ internal sealed class PInvokeTableGenerator
         callbacks = callbacks.OrderBy(c => c, new PInvokeCallbackComparer()).ToList();
         foreach (var cb in callbacks)
         {
-            cb.EntrySymbol = FixedSymbolName(cb, Log);
+            cb.EntrySymbol = FixedSymbolName(cb);
 
             if (callbackNames.Contains(cb.EntrySymbol))
             {
@@ -508,7 +510,7 @@ internal sealed class PInvokeTableGenerator
 
             const ReverseThunkMapEntry g_ReverseThunks[] =
             {
-            {{callbacks.Join($",{w.NewLine}", cb => ThunkMapEntryLine(cb, Log))}}
+            {{callbacks.Join($",{w.NewLine}", ThunkMapEntryLine)}}
             };
 
             const size_t g_ReverseThunksCount = sizeof(g_ReverseThunks) / sizeof(g_ReverseThunks[0]);
@@ -516,18 +518,18 @@ internal sealed class PInvokeTableGenerator
             """);
     }
 
-    private string FixedSymbolName(PInvokeCallback cb, LogAdapter Log)
+    private string FixedSymbolName(PInvokeCallback cb)
     {
-        var paramTypes = cb.Parameters.Length > 0 ? cb.Parameters.Join("_", (info, i) => SignatureMapper.TypeToNameType(info.ParameterType, Log)).ToString() : "Void";
-        var sig = $"{paramTypes}_Ret{SignatureMapper.TypeToNameType(cb.ReturnType, Log)}";
+        var paramTypes = cb.Parameters.Length > 0 ? cb.Parameters.Join("_", (info, i) => _signatureMapper.TypeToNameType(info.ParameterType)).ToString() : "Void";
+        var sig = $"{paramTypes}_Ret{_signatureMapper.TypeToNameType(cb.ReturnType)}";
 
         return _fixupSymbolName($"{cb.EntryName}_{sig}");
     }
 
 
-    private string ThunkMapEntryLine(PInvokeCallback cb, LogAdapter Log)
+    private string ThunkMapEntryLine(PInvokeCallback cb)
     {
-        var fsName = FixedSymbolName(cb, Log);
+        var fsName = FixedSymbolName(cb);
 
         return $"    {{ {HashString(cb.Key)}, \"{EscapeLiteral(cb.Key)}\", {{ &MD_{fsName}, (void*)&Call_{cb.EntrySymbol} }} }}";
     }
