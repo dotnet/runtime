@@ -240,6 +240,10 @@ It is not clear how to represent `continuation.ExecutionContextForB`, `continuat
 This IR is likely something to insert as part of inlining, yet at that point we have not laid out the continuation yet.
 To solve this we will introduce a `GT_CONTINUATION_MEMBER_OFFSET` node that represents the member offset and that is replaced by a constant as part of the async transformation.
 
+If the inlinee throws an exception the post-inline IR will not run.
+Given that the exception may be thrown after resumption we furthermore need to propagate the indicator variable in that scenario so that the inliner's own context restore will not run.
+We can reuse the try-fault inserted in the inlinee for its context save/restore to do that.
+
 ### Exceptions
 
 Inlined functions can finish by throwing exceptions too.
@@ -275,29 +279,6 @@ if (resumed_C)
 ```
 
 Initially we will skip inlining async calls that may suspend in try clauses.
-
-### Propagating the resumed indicator through the inserted fault
-
-Recall that every runtime async function body is wrapped in a save/restore of the async contexts, and that the restore also runs from a fault handler when an exception unwinds out of the body.
-Inlining preserves that wrapper: the inlinee's fault handler survives as a clause of the caller.
-
-An exception unwinding out of an inlined frame never reaches the frame's logical return, so the post-inline IR above does not run.
-The indicator must therefore be propagated from the inlinee's fault handler as well:
-
-```csharp
-fault
-{
-  resumed_B |= resumed_C;
-  AsyncHelpers.RestoreContexts(resumed_C, execContext_C, syncContext_C);
-}
-```
-
-Once `resumed_B` is set every enclosing restore is a no-op, which is exactly the state a normal logical return would have left behind.
-Fault handlers run innermost first, so a chain of inlined frames propagates the indicator outwards one frame at a time as the exception unwinds.
-
-The rest of the transition cannot move into the handler.
-Getting back onto the caller's continuation context may suspend, and a funclet cannot return a continuation, so that part stays on the normal path until the catch-and-rethrow expansion above is implemented.
-That is not observable as long as we do not inline into try clauses: the only EH around an inlined frame is then the inserted context restores, which are no-ops once the frame has resumed, and any user `catch` further out belongs to a physical frame that the async infrastructure resumes on its own captured context.
 
 ## Some examples
 

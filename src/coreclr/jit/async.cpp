@@ -45,6 +45,17 @@
 #include "jitstd/algorithm.h"
 #include "async.h"
 
+//------------------------------------------------------------------------
+// ContinuationMember::CustomAwaiterOfLayout:
+//   Create a continuation member that stores a custom awaiter with the
+//   specified layout.
+//
+// Parameters:
+//   layout - Layout of the custom awaiter.
+//
+// Returns:
+//   A continuation member describing the custom awaiter.
+//
 ContinuationMember ContinuationMember::CustomAwaiterOfLayout(ClassLayout* layout)
 {
     ContinuationMember member;
@@ -53,6 +64,13 @@ ContinuationMember ContinuationMember::CustomAwaiterOfLayout(ClassLayout* layout
     return member;
 }
 
+//------------------------------------------------------------------------
+// ContinuationMember::GetCustomAwaiterLayout:
+//   Get the layout of a custom awaiter continuation member.
+//
+// Returns:
+//   The custom awaiter's layout.
+//
 ContinuationMember ContinuationMember::InlineFrameExecutionContext(unsigned inlineDepth)
 {
     ContinuationMember member;
