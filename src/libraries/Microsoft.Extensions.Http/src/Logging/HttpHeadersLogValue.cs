@@ -75,17 +75,19 @@ namespace Microsoft.Extensions.Http.Logging
         {
 #if NET
             foreach (KeyValuePair<string, HeaderStringValues> kvp in headers.NonValidated)
-            {
-                object value = _shouldRedactHeaderValue(kvp.Key) ? RedactedValue : kvp.Value.ToString();
-                values.Add(new KeyValuePair<string, object>(kvp.Key, value));
-            }
 #else
             foreach (KeyValuePair<string, IEnumerable<string>> kvp in headers)
+#endif
             {
-                object value = _shouldRedactHeaderValue(kvp.Key) ? RedactedValue : kvp.Value;
+                string value = _shouldRedactHeaderValue(kvp.Key)
+                    ? RedactedValue
+#if NET
+                    : kvp.Value.ToString();
+#else
+                    : string.Join(", ", kvp.Value);
+#endif
                 values.Add(new KeyValuePair<string, object>(kvp.Key, value));
             }
-#endif
         }
 
         private static int GetHeaderCount(HttpHeaders? headers)
@@ -119,29 +121,8 @@ namespace Microsoft.Extensions.Http.Logging
                     KeyValuePair<string, object> kvp = Values[i];
                     builder.Append(kvp.Key);
                     builder.Append(": ");
-
-#if NET
                     builder.Append((string)kvp.Value);
                     builder.AppendLine();
-#else
-                    if (kvp.Value is string redactedValue)
-                    {
-                        builder.Append(redactedValue);
-                        builder.AppendLine();
-                    }
-                    else
-                    {
-                        foreach (object value in (IEnumerable<object>)kvp.Value)
-                        {
-                            builder.Append(value);
-                            builder.Append(", ");
-                        }
-
-                        // Remove the extra ', '
-                        builder.Remove(builder.Length - 2, 2);
-                        builder.AppendLine();
-                    }
-#endif
                 }
 
                 _formatted = builder.ToString();
