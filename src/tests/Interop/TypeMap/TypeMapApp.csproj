@@ -18,6 +18,7 @@
     </ProjectReference>
     <ProjectReference Include="TypeMapLib3.csproj" />
     <ProjectReference Include="TypeMapLib4.csproj" />
+    <ProjectReference Include="TypeMapBlobOnlyLib.ilproj" />
     <ProjectReference Include="NoTypeMapEntries.csproj" />
   </ItemGroup>
 </Project>
