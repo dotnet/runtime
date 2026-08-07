@@ -49,6 +49,7 @@ public record X86GCInfo : IGCInfoDecoder
     public uint EpilogOffset { get; set; } = unchecked((uint)-1);
 
     public uint RawStackSize { get; set; }
+    public uint StackSize { get; set; }
 
 
     /// <summary>
@@ -166,6 +167,7 @@ public record X86GCInfo : IGCInfoDecoder
 
         SavedRegsCountExclFP = savedRegsCount;
         SavedRegsMask = savedRegs;
+        StackSize = RawStackSize + savedRegsCount * (uint)target.PointerSize;
         if (Header.EbpFrame || Header.DoubleAlign)
         {
             Debug.Assert(Header.EbpSaved);
@@ -577,7 +579,7 @@ public record X86GCInfo : IGCInfoDecoder
             return _target.ReadPointer(pLocalloc);
         }
 
-        return new TargetPointer(ebp.Value - RawStackSize + (uint)sizeof(int));
+        return new TargetPointer(ebp.Value - StackSize + (uint)sizeof(int));
     }
 
     private ulong GetLocallocSPOffset()
