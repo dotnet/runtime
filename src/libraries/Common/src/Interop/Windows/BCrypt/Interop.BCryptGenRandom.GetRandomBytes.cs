@@ -24,13 +24,4 @@ internal static partial class Interop
             }
         }
     }
-
-    // BCryptGenRandom with BCRYPT_USE_SYSTEM_PREFERRED_RNG is cryptographically secure.
-    // This wrapper gives the method the same name as the Unix implementation's crypto-secure
-    // API (Common/Interop/Unix/System.Native/Interop.GetRandomBytes.cs), which distinguishes it
-    // from a separate, non-cryptographically-secure GetRandomBytes there. Shared cross-platform
-    // callers (e.g. ZipCryptoStream) can therefore call Interop.GetCryptographicallySecureRandomBytes
-    // and get a cryptographically secure implementation on every platform.
-    internal static unsafe void GetCryptographicallySecureRandomBytes(byte* buffer, int length) =>
-        GetRandomBytes(buffer, length);
 }
