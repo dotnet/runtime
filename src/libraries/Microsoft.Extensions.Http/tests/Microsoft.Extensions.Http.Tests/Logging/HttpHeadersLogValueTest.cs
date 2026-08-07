@@ -48,6 +48,12 @@ namespace Microsoft.Extensions.Http.Logging
                 "unsecureHeader2: value2" + Environment.NewLine +
                 "secureHeader2: *" + Environment.NewLine,
                 result);
+
+            // Redaction is applied to the structured values, not just to the formatted string.
+            Assert.Equal("secureHeader1", httpHeadersLogValue[0].Key);
+            Assert.Equal("*", httpHeadersLogValue[0].Value);
+            Assert.Equal("secureHeader2", httpHeadersLogValue[3].Key);
+            Assert.Equal("*", httpHeadersLogValue[3].Value);
         }
 
 #if NET

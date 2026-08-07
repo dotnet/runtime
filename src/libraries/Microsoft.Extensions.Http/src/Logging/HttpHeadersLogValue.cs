@@ -11,6 +11,8 @@ namespace Microsoft.Extensions.Http.Logging
 {
     internal sealed class HttpHeadersLogValue : IReadOnlyList<KeyValuePair<string, object>>
     {
+        private const string RedactedValue = "*";
+
         private readonly Kind _kind;
         private readonly Func<string, bool> _shouldRedactHeaderValue;
 
@@ -69,17 +71,19 @@ namespace Microsoft.Extensions.Http.Logging
 
         // Enumerate the headers without triggering validation/parsing of the values, so that logging
         // doesn't alter how the headers are subsequently serialized on the wire.
-        private static void AddHeaders(List<KeyValuePair<string, object>> values, HttpHeaders headers)
+        private void AddHeaders(List<KeyValuePair<string, object>> values, HttpHeaders headers)
         {
 #if NET
             foreach (KeyValuePair<string, HeaderStringValues> kvp in headers.NonValidated)
             {
-                values.Add(new KeyValuePair<string, object>(kvp.Key, kvp.Value.ToString()));
+                object value = _shouldRedactHeaderValue(kvp.Key) ? RedactedValue : kvp.Value.ToString();
+                values.Add(new KeyValuePair<string, object>(kvp.Key, value));
             }
 #else
             foreach (KeyValuePair<string, IEnumerable<string>> kvp in headers)
             {
-                values.Add(new KeyValuePair<string, object>(kvp.Key, kvp.Value));
+                object value = _shouldRedactHeaderValue(kvp.Key) ? RedactedValue : kvp.Value;
+                values.Add(new KeyValuePair<string, object>(kvp.Key, value));
             }
 #endif
         }
@@ -116,17 +120,17 @@ namespace Microsoft.Extensions.Http.Logging
                     builder.Append(kvp.Key);
                     builder.Append(": ");
 
-                    if (_shouldRedactHeaderValue(kvp.Key))
+#if NET
+                    builder.Append((string)kvp.Value);
+                    builder.AppendLine();
+#else
+                    if (kvp.Value is string redactedValue)
                     {
-                        builder.Append('*');
+                        builder.Append(redactedValue);
                         builder.AppendLine();
                     }
                     else
                     {
-#if NET
-                        builder.Append(kvp.Value.ToString());
-                        builder.AppendLine();
-#else
                         foreach (object value in (IEnumerable<object>)kvp.Value)
                         {
                             builder.Append(value);
@@ -136,8 +140,8 @@ namespace Microsoft.Extensions.Http.Logging
                         // Remove the extra ', '
                         builder.Remove(builder.Length - 2, 2);
                         builder.AppendLine();
-#endif
                     }
+#endif
                 }
 
                 _formatted = builder.ToString();
