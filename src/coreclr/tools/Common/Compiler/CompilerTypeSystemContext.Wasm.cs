@@ -12,6 +12,27 @@ namespace ILCompiler
         private readonly object _structCacheLock = new object();
         private readonly Dictionary<int, TypeDesc> _structsBySize = new Dictionary<int, TypeDesc>();
         private volatile TypeDesc _cachedEmptyStruct;
+        private volatile TypeDesc _wasmV128Type;
+
+        /// <summary>
+        /// Gets the type RaiseSignature produces for the 'V' encoding. All v128 types share the same
+        /// wasm ABI (16 bytes, 16-byte aligned), so any one of them round-trips 'V' identically;
+        /// resolving a fixed one keeps raising independent of the order lowering encountered them in.
+        /// </summary>
+        public TypeDesc WasmV128Type
+        {
+            get
+            {
+                TypeDesc type = _wasmV128Type;
+                if (type is null)
+                {
+                    var vector128 = (MetadataType)SystemModule.GetType("System.Runtime.Intrinsics"u8, "Vector128`1"u8);
+                    _wasmV128Type = type = vector128.MakeInstantiatedType(GetWellKnownType(WellKnownType.Byte));
+                }
+
+                return type;
+            }
+        }
 
         /// <summary>
         /// Gets the first empty struct type encountered during lowering, or null if none has been seen.

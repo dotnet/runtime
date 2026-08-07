@@ -51,9 +51,7 @@
 #include <versionhelpers.h>
 #endif
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #include "exinfo.h"
 
@@ -1041,13 +1039,13 @@ void InitThreadManagerPerfMapData()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-#ifdef FEATURE_PERFMAP
+#ifndef FEATURE_PORTABLE_HELPERS
     if (IsWriteBarrierCopyEnabled())
     {
         size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
         PerfMap::LogStubs(__FUNCTION__, "JIT_CopiedWriteBarriers", (PCODE)s_barrierCopy, writeBarrierSize, PerfMapStubType::Individual);
     }
-#endif
+#endif // !FEATURE_PORTABLE_HELPERS
 }
 
 //---------------------------------------------------------------------------
@@ -1880,7 +1878,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     DWORD threadId;
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
-    if (hThread != INVALID_HANDLE_VALUE)
+    if (hThread != NULL)
     {
         SetThreadName(hThread, pName);
 
@@ -6109,7 +6107,7 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     CONTRACTL
     {
         NOTHROW;
-        DISABLED(GC_TRIGGERS);  // due to UnwindFrameChain from NOTRIGGER areas
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStartFrame));
         PRECONDITION(CheckPointer(pvLimitSP));

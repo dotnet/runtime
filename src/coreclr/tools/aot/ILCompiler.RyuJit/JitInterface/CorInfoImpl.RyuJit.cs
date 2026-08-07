@@ -1450,15 +1450,26 @@ namespace Internal.JitInterface
 
                 if (pResult->exactContextNeedsRuntimeLookup)
                 {
-                    MethodDesc caller = HandleToObject(callerHandle);
-
                     pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup = true;
-                    pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
-                    pResult->codePointerOrStubLookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE;
-                    pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(caller);
-                    object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
-                    ISymbolNode helper = GetGenericLookupHelper(pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind, ReadyToRunHelperId.MethodEntry, caller, helperArg);
-                    pResult->codePointerOrStubLookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
+
+                    // If this is from a different context, abort. The ReadyToRun helper needs to declare
+                    // its dependencies in terms of the dictionary it will be placed in, but the runtime
+                    // determined method we computed is expressed in terms of the inlinee's generic context.
+                    if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
+                    {
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
+                    }
+                    else
+                    {
+                        MethodDesc caller = HandleToObject(callerHandle);
+
+                        pResult->codePointerOrStubLookup.runtimeLookup.indirections = CORINFO.USEHELPER;
+                        pResult->codePointerOrStubLookup.runtimeLookup.helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_GENERIC_HANDLE;
+                        pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind = GetGenericRuntimeLookupKind(caller);
+                        object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+                        ISymbolNode helper = GetGenericLookupHelper(pResult->codePointerOrStubLookup.lookupKind.runtimeLookupKind, ReadyToRunHelperId.MethodEntry, caller, helperArg);
+                        pResult->codePointerOrStubLookup.runtimeLookup.helperEntryPoint = CreateConstLookupToSymbol(helper);
+                    }
                 }
                 else
                 {

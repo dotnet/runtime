@@ -13,6 +13,14 @@ endif()
 # Required to expose symbols for global symbol discovery.
 set(CLR_CMAKE_KEEP_NATIVE_SYMBOLS TRUE)
 
+if (CLR_CMAKE_HOST_APPLE)
+    # Prevent exporting symbols except for GetCurrentClrDetails from corerun. This is necessary
+    # to avoid a problem with local typeinfo for standard C++ EH types like std::bad_alloc,
+    # std::out_of_range etc. being exposed for binding for external shared libraries and causing
+    # mismatch in catch type matching.
+    add_link_options(LINKER:-exported_symbol,_GetCurrentClrDetails)
+endif()
+
 add_executable_clr(corerun
   corerun.cpp
   dotenv.cpp
@@ -122,11 +130,14 @@ else()
             # required because clang only recognizes well-known linker
             # names (lld/bfd/gold/etc.) by short name.
             get_filename_component(_wasi_sdk_bin "${CMAKE_C_COMPILER}" DIRECTORY)
+            set(_wasi_http_world_wit
+                "${CLR_DIR}/../libraries/System.Net.Http/src/System/Net/Http/WasiHttpHandler/WasiHttpWorld_component_type.wit")
             target_link_options(corerun PRIVATE
                 "-fuse-ld=${_wasi_sdk_bin}/wasm-component-ld"
                 -Wl,-z,stack-size=8388608
                 -Wl,--initial-memory=134217728
-                -Wl,--max-memory=4294967296)
+                -Wl,--max-memory=4294967296
+                "-Wl,--component-type,${_wasi_http_world_wit}")
         endif()
 
         if (CORERUN_IN_BROWSER)
