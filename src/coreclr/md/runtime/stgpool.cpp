@@ -275,6 +275,7 @@ bool StgPool::Grow(         // true if successful.
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END
