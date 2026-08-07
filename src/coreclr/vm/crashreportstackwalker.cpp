@@ -12,6 +12,7 @@
 #include <clrconfignocache.h>
 #include <limits>
 #include <minipal/guid.h>
+#include <minipal/thread.h>
 #include <limits.h>
 #include <new>
 #include <stdlib.h>
@@ -548,6 +549,11 @@ CrashReportEnumerateThreads(
     InProcCrashReportFrameCallback frameCallback,
     void* ctx)
 {
+    if (static_cast<uint64_t>(minipal_get_current_thread_id_no_cache()) != crashingTid)
+    {
+        return;
+    }
+
     CrashReportStackWalkerState* state = GetStackWalkerState();
     if (state == nullptr)
     {
