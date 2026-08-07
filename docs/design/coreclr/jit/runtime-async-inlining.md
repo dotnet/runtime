@@ -278,15 +278,11 @@ Initially we will skip inlining async calls that may suspend in try clauses.
 
 ### Propagating the resumed indicator through the inserted fault
 
-Leaving out suspending awaits in try clauses is not quite enough on its own.
 Recall that every runtime async function body is wrapped in a save/restore of the async contexts, and that the restore also runs from a fault handler when an exception unwinds out of the body.
 Inlining preserves that wrapper: the inlinee's fault handler survives as a clause of the caller.
 
-An exception unwinding out of an inlined frame never reaches the frame's logical return, so the post-inline IR above does not run and `resumed_B` is never set.
-The caller's restore then believes its frame did not resume and restores the contexts its own entry code captured.
-But a resumption jumps straight to the resumption point and never runs that entry code, so those values are still null, and the restore faults with a `NullReferenceException` in place of the original exception.
-
-It is enough to set the indicator from the inlinee's fault handler:
+An exception unwinding out of an inlined frame never reaches the frame's logical return, so the post-inline IR above does not run.
+The indicator must therefore be propagated from the inlinee's fault handler as well:
 
 ```csharp
 fault
