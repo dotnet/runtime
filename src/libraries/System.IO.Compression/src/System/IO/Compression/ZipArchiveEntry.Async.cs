@@ -758,7 +758,7 @@ public partial class ZipArchiveEntry
 
                     ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                    ZipCryptoStream encryptionStream = ZipCryptoStream.Create(
+                    Stream encryptionStream = ZipCryptoStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keys: _derivedZipCryptoKeyMaterial.Value,
                         passwordVerifierLow2Bytes: verifierLow2Bytes,
@@ -812,7 +812,7 @@ public partial class ZipArchiveEntry
                     // The AES extra field stores the real compression method
                     bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                    WinZipAesStream encryptionStream = WinZipAesStream.Create(
+                    Stream encryptionStream = WinZipAesStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keyMaterial: _derivedAesKeyMaterial.Value,
                         totalStreamSize: -1,
