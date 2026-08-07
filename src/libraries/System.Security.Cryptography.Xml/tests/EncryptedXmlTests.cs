@@ -299,6 +299,7 @@ namespace System.Security.Cryptography.Xml.Tests
             yield return new object[] { requiredTransformCount, false };
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/131638")]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [MemberData(nameof(EncodedDtdTransformChainLimits))]
         public static void EncryptedXml_DecryptedEncodedDtd_WithExactTransformChainLimit(int maxTransformsPerChain, bool expectTransformLimit)
@@ -321,6 +322,7 @@ namespace System.Security.Cryptography.Xml.Tests
             }, maxTransformsPerChain.ToString(CultureInfo.InvariantCulture), expectTransformLimit.ToString()).Dispose();
         }
 
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/131638")]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public static void EncryptedXml_DecryptedEncodedDtd_WithUnlimitedTransformChain()
         {
