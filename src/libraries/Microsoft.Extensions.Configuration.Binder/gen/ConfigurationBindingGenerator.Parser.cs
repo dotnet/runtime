@@ -219,11 +219,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private static bool IsNullable(ITypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? underlyingType)
             {
-                if (type is INamedTypeSymbol { IsGenericType: true } genericType &&
-                    genericType.ConstructUnboundGenericType() is INamedTypeSymbol { } unboundGeneric &&
-                    unboundGeneric.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+                if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
                 {
-                    underlyingType = genericType.TypeArguments[0];
+                    underlyingType = ((INamedTypeSymbol)type).TypeArguments[0];
                     return true;
                 }
 
@@ -561,9 +559,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return true;
                 }
 
-                if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+                if (IsNullable(type, out ITypeSymbol? underlyingType))
                 {
-                    type = ((INamedTypeSymbol)type).TypeArguments[0]; // extract the T from a Nullable<T>
+                    type = underlyingType;
                 }
 
                 if (SymbolEqualityComparer.Default.Equals(_typeSymbols.IntPtr, type)  ||
