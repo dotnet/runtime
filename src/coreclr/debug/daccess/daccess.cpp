@@ -5335,7 +5335,7 @@ ClrDataAccess::RawGetMethodName(
     PTR_StubManager pStubManager;
     MethodDesc* methodDesc = NULL;
 
-    EECodeInfo codeInfo(GetInterpreterCodeFromEntryPointIfPresent(TO_TADDR(address)));
+    EECodeInfo codeInfo(GetInterpreterCodeFromEntryPointIfPresent(taddr));
     if (codeInfo.IsValid())
     {
         if (displacement)
