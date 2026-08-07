@@ -37,28 +37,6 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    internal static class WasmObjectNodeSection
-    {
-        // TODO-WASM: Consider alignment needs for data sections
-        public static readonly ObjectNodeSection DataCountSection = new ObjectNodeSection("wasm.datacount", SectionType.ReadOnly, needsAlign: false);
-        public static readonly ObjectNodeSection CombinedDataSection = new ObjectNodeSection("wasm.alldata", SectionType.Writeable, needsAlign: false);
-        public static readonly ObjectNodeSection FunctionSection = new ObjectNodeSection("wasm.function", SectionType.ReadOnly, needsAlign: false);
-        public static readonly ObjectNodeSection ExportSection = new ObjectNodeSection("wasm.export", SectionType.ReadOnly, needsAlign: false);
-        public static readonly ObjectNodeSection ElementSection = new ObjectNodeSection("wasm.element", SectionType.ReadOnly, needsAlign: false);
-        public static readonly ObjectNodeSection MemorySection = new ObjectNodeSection("wasm.memory", SectionType.ReadOnly, needsAlign: false);
-        public static readonly ObjectNodeSection TableSection = new ObjectNodeSection("wasm.table", SectionType.ReadOnly, needsAlign: false);
-        public static readonly ObjectNodeSection ImportSection = new ObjectNodeSection("wasm.import", SectionType.ReadOnly, needsAlign: false);
-        public static readonly ObjectNodeSection GlobalSection = new ObjectNodeSection("wasm.global", SectionType.ReadOnly, needsAlign: false);
-    }
-
-    internal abstract partial class WasmObjectWriter : ObjectWriter
-    {
-        protected WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
-            : base(factory, options, outputInfoBuilder)
-        {
-        }
-    }
-
     /// <summary>
     /// WebCIL object file format writer.
     /// </summary>
@@ -90,195 +68,16 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override WasmSection CreateDataSection(
+        private protected override SectionDataEmitter CreateDataSection(
             ObjectNodeSection section,
             int sectionIndex,
             Stream sectionStream)
         {
-<<<<<<< HEAD
-            var mangledNameBuilder = new Utf8StringBuilder();
-            signature.AppendMangledName(_nodeFactory.NameMangler, mangledNameBuilder);
-            Utf8String mangledName = mangledNameBuilder.ToUtf8String();
-            // Record the signature's wasm type index in the shared symbol table. The signature bytes
-            // are emitted by the node's own data; here we only assign its index.
-            _wasmSymbolManager.AddDefinition(mangledName, WasmIndexSpace.Type);
-        }
-
-        private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
-        {
-            WasmLowering.LoweringFlags flags = WasmLowering.LoweringFlags.None;
-            if (node.HasGenericContextArg)
-            {
-                flags |= WasmLowering.LoweringFlags.HasGenericContextArg;
-            }
-            if (node.IsAsyncCall)
-            {
-                flags |= WasmLowering.LoweringFlags.IsAsyncCall;
-            }
-            if (node.IsUnmanagedCallersOnly)
-            {
-                flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
-            }
-            WriteSignatureIndexForFunction(node.Signature, flags, node);
-            RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
-            if (node is INodeWithFunclets nodeWithFunclets)
-            {
-                RecordFunclets(nodeWithFunclets);
-            }
-        }
-
-        private void RecordFunclets(INodeWithFunclets nodeWithFunclets)
-        {
-            FuncletKind[] funcletKinds = nodeWithFunclets.GetFuncletKinds();
-            if (funcletKinds.Length < 1)
-            {
-                return;
-            }
-
-            WasmValueType pointerType = _nodeFactory.Target.PointerSize == 8 ? WasmValueType.I64 : WasmValueType.I32;
-            string mangledNodeName = nodeWithFunclets.GetMangledName(_nodeFactory.NameMangler);
-
-            for (int i = 0; i < funcletKinds.Length; i++)
-            {
-                 WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i], pointerType);
-                RegisterFunctionSymbol(new Utf8String($"{mangledNodeName}_funclet_{i}"));
-                RegisterStubIndexAndSignature(funcletSignature);
-            }
-        }
-
-        private WasmFuncType GetFuncletType(FuncletKind funcletKind, WasmValueType pointerType)
-        {
-            return funcletKind switch
-            {
-                FuncletKind.CatchOrFilterHandler or FuncletKind.Filter => new WasmFuncType(
-                    new([pointerType, pointerType, pointerType]), new([pointerType])), // (FP, SP, EXN) -> RESULT
-                _ => new WasmFuncType(new([pointerType, pointerType]), new([])), // (FP, SP) -> void
-            };
-        }
-
-        private void WriteFunctionEntry(int signatureIndex)
-        {
-            WasmFunctionSection section = GetOrCreateSection<WasmFunctionSection>(
-                WasmObjectNodeSection.FunctionSection,
-                out SectionWriter writer);
-            section.WriteEntry(writer, signatureIndex);
-        }
-
-        private void WriteSignatureIndexForFunction(MethodSignature managedSignature, WasmLowering.LoweringFlags flags, ISymbolNode node)
-        {
-            WasmFuncType signature = WasmLowering.GetSignature(managedSignature, flags).FuncType;
-            Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
-            if (!_wasmSymbolManager.TryGetSymbol(key, out WasmSymbol signatureSymbol))
-            {
-                throw new InvalidOperationException($"Signature index of {key} not found for function: {node.ToString()}");
-            }
-
-            WriteFunctionEntry(signatureSymbol.Index);
-        }
-
-        /// <summary>
-        /// Adds the given import entry, including its prefix (module/name/kind) and body (external ref).
-        /// </summary>
-        private void WriteImport(WasmImport import)
-        {
-            Utf8String symbolName = new(import.Name);
-            _wasmSymbolManager.AddImport(symbolName, GetIndexSpace(import.Kind), import.Index);
-
-            WasmImportSection section = GetOrCreateSection<WasmImportSection>(
-                WasmObjectNodeSection.ImportSection,
-                out SectionWriter writer);
-            section.WriteEntry(writer, import);
-        }
-
-        private void WriteExport(string name, WasmExportKind kind, int index)
-        {
-            WasmExportSection section = GetOrCreateSection<WasmExportSection>(
-                WasmObjectNodeSection.ExportSection,
-                out SectionWriter writer);
-            section.WriteEntry(writer, new WasmExport(name, kind, index));
-        }
-
-        // Convenience methods for specific export types
-        private void WriteFunctionExport(string name, int functionIndex) =>
-            WriteExport(name, WasmExportKind.Function, functionIndex);
-
-        private void WriteTableExport(string name, int tableIndex) =>
-            WriteExport(name, WasmExportKind.Table, tableIndex);
-
-        private void WriteMemoryExport(string name, int memoryIndex) =>
-            WriteExport(name, WasmExportKind.Memory, memoryIndex);
-
-        private void WriteGlobalExport(string name, int globalIndex) =>
-            WriteExport(name, WasmExportKind.Global, globalIndex);
-
-        private void WriteElementSegment(ReadOnlyMemory<int> functionIndices)
-        {
-            WasmElementSection section = GetOrCreateSection<WasmElementSection>(
-                WasmObjectNodeSection.ElementSection,
-                out SectionWriter writer);
-            section.WriteEntry(writer, functionIndices);
-        }
-
-        private WasmSections _sections = new();
-
-        private TSection GetOrCreateSection<TSection>(ObjectNodeSection section, out SectionWriter writer)
-            where TSection : SectionDataEmitter
-        {
-            writer = base.GetOrCreateSection(section);
-            return _sections.GetSection<TSection>(writer.SectionIndex);
-        }
-
-        private TSection GetOrCreateSection<TSection>(ObjectNodeSection section)
-            where TSection : SectionDataEmitter
-        {
-            var writer = base.GetOrCreateSection(section);
-            return _sections.GetSection<TSection>(writer.SectionIndex);
-        }
-
-        private SectionDataEmitter GetOrCreateSection(ObjectNodeSection section, out SectionWriter writer)
-        {
-            return GetOrCreateSection<SectionDataEmitter>(section, out writer);
-        }
-
-        private new SectionDataEmitter GetOrCreateSection(ObjectNodeSection section)
-        {
-            return GetOrCreateSection<SectionDataEmitter>(section, out _);
-        }
-
-        private Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
-        {
-            { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
-            { WasmObjectNodeSection.FunctionSection, WasmSectionType.Function },
-            { WasmObjectNodeSection.TableSection, WasmSectionType.Table },
-            { WasmObjectNodeSection.ElementSection, WasmSectionType.Element },
-            { WasmObjectNodeSection.ExportSection, WasmSectionType.Export },
-            { WasmObjectNodeSection.ImportSection, WasmSectionType.Import },
-            { WasmObjectNodeSection.GlobalSection, WasmSectionType.Global },
-            { ObjectNodeSection.WasmTypeSection, WasmSectionType.Type },
-            { ObjectNodeSection.WasmCodeSection, WasmSectionType.Code },
-            { WasmObjectNodeSection.DataCountSection, WasmSectionType.DataCount },
-        };
-
-        private WasmSectionType GetWasmSectionType(ObjectNodeSection section)
-        {
-            if (!_sectionToType.ContainsKey(section))
-            {
-                // All other sections map to generic data segments in Wasm
-                // TODO-WASM: Consider making the mapping explicit for every possible node type.
-                return WasmSectionType.Data;
-            }
-            return _sectionToType[section];
-=======
-#if READYTORUN
             return new WebcilSection(
                 new Utf8String(section.Name),
                 default(WebcilSectionHeader),
                 sectionStream,
                 sectionIndex);
-#else
-            return base.CreateDataSection(section, sectionIndex, sectionStream);
-#endif
->>>>>>> 9bc33a024e8 (Move shared WASM logic to base writer)
         }
 
         protected internal override void UpdateSectionAlignment(int sectionIndex, int alignment)
@@ -371,32 +170,6 @@ namespace ILCompiler.ObjectWriter
                 ]
         );
 
-<<<<<<< HEAD
-        // This effectively recreates the logic of RecordMethodBody/RecordMethodDeclaration, but for manually inserted stubs that are not
-        // represented by nodes in the dependency graph.
-        // TODO-Wasm: for maintability, we should try and push some of this into the dependency graph when we do more stub generation.
-        private void RegisterStubIndexAndSignature(WasmFuncType signature)
-        {
-            int signatureIndex = RegisterSignature(signature);
-            WriteFunctionEntry(signatureIndex);
-        }
-
-        private void InsertWasmStub(Utf8String name, WasmFunctionBody body)
-        {
-            SectionDataEmitter codeSection = GetOrCreateSection<SectionDataEmitter>(ObjectNodeSection.WasmCodeSection, out SectionWriter codeWriter);
-
-            int codeSize = body.EncodeSize();
-            byte[] data = new byte[codeSize];
-            body.Encode(data);
-
-            codeWriter.EmitSymbolDefinition(name);
-            codeWriter.EmitData(data);
-
-            RegisterFunctionSymbol(name);
-            RegisterStubIndexAndSignature(body.Signature);
-        }
-=======
->>>>>>> 9bc33a024e8 (Move shared WASM logic to base writer)
         private long ResolveSymbolRVA(WebcilSection[] sections, SymbolDefinition definition)
         {
             for (int i = 0; i < sections.Length; i++)
@@ -506,41 +279,6 @@ namespace ILCompiler.ObjectWriter
             return section;
         }
 
-<<<<<<< HEAD
-        private protected override void CreateSection(ObjectNodeSection section, Utf8String comdatName, Utf8String symbolName, int sectionIndex, Stream sectionStream)
-        {
-            WasmSectionType sectionType = GetWasmSectionType(section);
-            SectionDataEmitter wasmSection = null;
-            if (sectionType == WasmSectionType.Data)
-            {
-#if READYTORUN
-                // This is a section which is internally wrapping a Webcil section
-                wasmSection = new WebcilSection(new Utf8String(section.Name), default(WebcilSectionHeader), sectionStream, sectionIndex);
-#else
-                wasmSection = new WasmSection(WasmSectionType.Data, sectionStream, new Utf8String(section.Name), sectionIndex);
-#endif
-            }
-            else
-            {
-                Utf8String sectionName = new(section.Name);
-                wasmSection = sectionType switch
-                {
-                    WasmSectionType.Type or WasmSectionType.Code => new WasmExternallyCountedSection(sectionType, sectionStream, sectionName, sectionIndex),
-                    WasmSectionType.Import => new WasmImportSection(sectionStream, sectionName, sectionIndex),
-                    WasmSectionType.Function => new WasmFunctionSection(sectionStream, sectionName, sectionIndex),
-                    WasmSectionType.Global => new WasmGlobalSection(sectionStream, sectionName, sectionIndex),
-                    WasmSectionType.Export => new WasmExportSection(sectionStream, sectionName, sectionIndex),
-                    WasmSectionType.Element => new WasmElementSection(sectionStream, sectionName, sectionIndex),
-                    _ => new WasmSection(sectionType, sectionStream, sectionName, sectionIndex),
-                };
-            }
-
-            Debug.Assert(_sections.Sections.Count == sectionIndex);
-            _sections.Add(section.Name, sectionIndex, wasmSection);
-        }
-
-=======
->>>>>>> 9bc33a024e8 (Move shared WASM logic to base writer)
         private void WriteDataCountSection()
         {
             SectionDataEmitter section = GetOrCreateSection(WasmObjectNodeSection.DataCountSection, out SectionWriter writer);
@@ -559,36 +297,7 @@ namespace ILCompiler.ObjectWriter
             WriteDataCountSection();
         }
 
-<<<<<<< HEAD
-        private Dictionary<string, WasmGlobal> _definedGlobals = new();
-
-        // TODO-Wasm: In the future, we may want to consider representing Wasm globals in the dependency graph so that they
-        // can be referenced by other nodes and we can make effective use of them.
-        private void WriteGlobal(string name, WasmValueType valueType, WasmMutabilityType mutability, WasmInstructionGroup initExpr)
-        {
-            Utf8String symbolName = new(name);
-            _wasmSymbolManager.AddDefinition(symbolName, WasmIndexSpace.Global);
-            int index = _wasmSymbolManager.GetSymbol(symbolName).Index;
-            WasmGlobal global = new WasmGlobal(
-                index,
-                name: name,
-                valueType,
-                mutability,
-                initExpr);
-            bool added = _definedGlobals.TryAdd(name, global);
-            Debug.Assert(added, $"Duplicate global name: {name}");
-
-            WasmGlobalSection section = GetOrCreateSection<WasmGlobalSection>(
-                WasmObjectNodeSection.GlobalSection,
-                out SectionWriter writer);
-            section.WriteEntry(writer, global);
-        }
-
-
-        private void WriteGlobalSection()
-=======
         private protected override void WriteGlobalSection()
->>>>>>> 9bc33a024e8 (Move shared WASM logic to base writer)
         {
             // webcilVersion: i32 const = 0
             WriteGlobal("webcilVersion", WasmValueType.I32, WasmMutabilityType.Const,
@@ -633,7 +342,7 @@ namespace ILCompiler.ObjectWriter
 
             if (_pendingBaseRelocs.Count > 0)
             {
-                GetOrCreateSection<WebcilSection>(WebcilRelocSection);
+                GetOrCreateSection<WebcilSection>(WebcilRelocSection, out _);
             }
 
             WebcilSection[] webcilSections = _sections.Sections.OfType<WebcilSection>().ToArray();
@@ -991,6 +700,11 @@ namespace ILCompiler.ObjectWriter
             new([]),
             new([]));
 
+        internal const int StackPointerGlobalIndex = 0;
+        internal const int ImageBaseGlobalIndex = 1;
+        internal const int TableBaseGlobalIndex = 2;
+        internal const int AsyncContinuationGlobalIndex = 3;
+
         private WasmImport[] CreateDefaultGlobalImports()
         {
             int rtlRestoreContextTagTypeIndex = RegisterSignature(RtlRestoreContextTagSignature);
@@ -1006,29 +720,7 @@ namespace ILCompiler.ObjectWriter
             ];
         }
 
-<<<<<<< HEAD
-        private int RegisterSignature(WasmFuncType signature)
-        {
-            Utf8String signatureKey = signature.GetMangledName(_nodeFactory.NameMangler);
-            if (_wasmSymbolManager.TryGetSymbol(signatureKey, out WasmSymbol signatureSymbol))
-            {
-                return signatureSymbol.Index;
-            }
-
-            GetOrCreateSection(ObjectNodeSection.WasmTypeSection, out SectionWriter typeSectionWriter);
-            byte[] encodedSignature = new byte[signature.EncodeSize()];
-            signature.Encode(encodedSignature);
-            _wasmSymbolManager.AddDefinition(signatureKey, WasmIndexSpace.Type);
-            typeSectionWriter.EmitSymbolDefinition(signatureKey);
-            typeSectionWriter.EmitData(encodedSignature);
-
-            return _wasmSymbolManager.GetSymbol(signatureKey).Index;
-        }
-
-        private void WriteImports()
-=======
         private protected override void WriteImports()
->>>>>>> 9bc33a024e8 (Move shared WASM logic to base writer)
         {
             foreach (WasmImport import in CreateDefaultGlobalImports())
             {
