@@ -846,10 +846,6 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
 {
     HANDLE moduleHandle = NULL;
 
-#if defined(HOST_WASM)
-    (void)pinModule;
-#endif
-
     // Emscripten's implementation of dladdr corrupts memory,
     // but always returns 0 for the module handle, so just skip the call
 #if !defined(HOST_WASM)
@@ -865,8 +861,6 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
             // Unloading is disabled via `-z,nodelete` linker option on ELF platforms.
             dlopen(info.dli_fname, RTLD_LAZY | RTLD_NOLOAD);
         }
-#else
-        (void)pinModule;
 #endif
 
         moduleHandle = info.dli_fbase;
