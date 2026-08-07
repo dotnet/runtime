@@ -909,14 +909,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             IOperation? operation,
             LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
             Dictionary<IOperation, TValue> savedTargetValues,
-            bool useCapturedTargetValues)
+            bool useStateCapturedTargetValues)
         {
             if (operation is null)
                 return;
 
             TValue value;
             CapturedTargetValue<TValue> capturedTargetValue = state.Current.LocalState.CapturedTargetValues.Get(new CapturedTargetKey(operation));
-            if (useCapturedTargetValues && capturedTargetValue.HasValue)
+            if (useStateCapturedTargetValues && capturedTargetValue.HasValue)
                 value = capturedTargetValue.Value;
             else
                 value = Visit(operation, state);
@@ -964,13 +964,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
             IOperation target,
             LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state,
             Dictionary<IOperation, TValue> savedTargetValues,
-            bool useCapturedTargetValues = true)
+            bool useStateCapturedTargetValues = true)
         {
             target = UnwrapDeconstructionTarget(target);
             if (target is ITupleOperation targetTuple)
             {
                 foreach (var element in targetTuple.Elements)
-                    VisitDeconstructionTargetSideEffects(element, state, savedTargetValues, useCapturedTargetValues);
+                    VisitDeconstructionTargetSideEffects(element, state, savedTargetValues, useStateCapturedTargetValues);
                 return;
             }
 
@@ -981,31 +981,31 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     var capturedReferences = state.Current.LocalState.CapturedReferences.Get(flowCaptureReference.Id);
                     Debug.Assert(!capturedReferences.IsUnknown());
                     foreach (var capturedReference in capturedReferences.GetKnownValues())
-                        VisitDeconstructionTargetSideEffects(capturedReference.Reference, state, savedTargetValues, useCapturedTargetValues);
+                        VisitDeconstructionTargetSideEffects(capturedReference.Reference, state, savedTargetValues, useStateCapturedTargetValues);
                     break;
                 case IFieldReferenceOperation fieldRef:
-                    EvaluateTargetSubExpression(fieldRef.Instance, state, savedTargetValues, useCapturedTargetValues);
+                    EvaluateTargetSubExpression(fieldRef.Instance, state, savedTargetValues, useStateCapturedTargetValues);
                     break;
                 case IPropertyReferenceOperation propertyRef:
                     // Avoid visiting the property reference itself; see the similar comment in
                     // ProcessSingleTargetAssignment about https://github.com/dotnet/roslyn/issues/25057.
-                    EvaluateTargetSubExpression(propertyRef.Instance, state, savedTargetValues, useCapturedTargetValues);
+                    EvaluateTargetSubExpression(propertyRef.Instance, state, savedTargetValues, useStateCapturedTargetValues);
                     break;
                 case IEventReferenceOperation eventRef:
-                    EvaluateTargetSubExpression(eventRef.Instance, state, savedTargetValues, useCapturedTargetValues);
+                    EvaluateTargetSubExpression(eventRef.Instance, state, savedTargetValues, useStateCapturedTargetValues);
                     break;
                 case IArrayElementReferenceOperation arrayElementRef:
-                    EvaluateTargetSubExpression(arrayElementRef.ArrayReference, state, savedTargetValues, useCapturedTargetValues);
+                    EvaluateTargetSubExpression(arrayElementRef.ArrayReference, state, savedTargetValues, useStateCapturedTargetValues);
                     foreach (var index in arrayElementRef.Indices)
-                        EvaluateTargetSubExpression(index, state, savedTargetValues, useCapturedTargetValues);
+                        EvaluateTargetSubExpression(index, state, savedTargetValues, useStateCapturedTargetValues);
                     break;
                 case IInlineArrayAccessOperation inlineArrayAccess:
-                    EvaluateTargetSubExpression(inlineArrayAccess.Instance, state, savedTargetValues, useCapturedTargetValues);
-                    EvaluateTargetSubExpression(inlineArrayAccess.Argument, state, savedTargetValues, useCapturedTargetValues);
+                    EvaluateTargetSubExpression(inlineArrayAccess.Instance, state, savedTargetValues, useStateCapturedTargetValues);
+                    EvaluateTargetSubExpression(inlineArrayAccess.Argument, state, savedTargetValues, useStateCapturedTargetValues);
                     break;
                 case IImplicitIndexerReferenceOperation indexerRef:
-                    EvaluateTargetSubExpression(indexerRef.Instance, state, savedTargetValues, useCapturedTargetValues);
-                    EvaluateTargetSubExpression(indexerRef.Argument, state, savedTargetValues, useCapturedTargetValues);
+                    EvaluateTargetSubExpression(indexerRef.Instance, state, savedTargetValues, useStateCapturedTargetValues);
+                    EvaluateTargetSubExpression(indexerRef.Argument, state, savedTargetValues, useStateCapturedTargetValues);
                     break;
                 default:
                     // Locals, parameters, discards, and declaration expressions have no
@@ -1134,27 +1134,27 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 if (operation.Value is IFlowCaptureReferenceOperation)
                     return TopValue;
 
-                Dictionary<IOperation, TValue>? capturedTargetValues = null;
+                Dictionary<IOperation, TValue>? evaluatedTargetValues = null;
                 if (_deconstructionLValueFlowCaptures.Contains(operation.Id))
                 {
-                    capturedTargetValues = new Dictionary<IOperation, TValue>();
+                    evaluatedTargetValues = new Dictionary<IOperation, TValue>();
                     VisitDeconstructionTargetSideEffects(
                         operation.Value,
                         state,
-                        capturedTargetValues,
-                        useCapturedTargetValues: false);
+                        evaluatedTargetValues,
+                        useStateCapturedTargetValues: false);
                 }
 
                 var capturedRef = new CapturedReferenceValue(operation.Value);
                 var currentState = state.Current;
                 currentState.LocalState.CapturedReferences.Set(operation.Id, capturedRef);
-                if (capturedTargetValues is not null)
+                if (evaluatedTargetValues is not null)
                 {
-                    foreach (var capturedTargetValue in capturedTargetValues)
+                    foreach (var evaluatedTargetValue in evaluatedTargetValues)
                     {
                         currentState.LocalState.CapturedTargetValues.Set(
-                            new CapturedTargetKey(capturedTargetValue.Key),
-                            new CapturedTargetValue<TValue>(capturedTargetValue.Value));
+                            new CapturedTargetKey(evaluatedTargetValue.Key),
+                            new CapturedTargetValue<TValue>(evaluatedTargetValue.Value));
                     }
                 }
                 state.Current = currentState;
