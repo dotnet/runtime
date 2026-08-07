@@ -535,7 +535,8 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return next;
             }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_WASM)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) ||        \
+    defined(TARGET_WASM)
             // These targets mask the rotate amount implicitly, so strip a redundant
             // AND(amount, mask) before lowering the rotate.
             TryRemoveShiftRotateMask(node->AsOp());
