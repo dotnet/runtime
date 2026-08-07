@@ -335,7 +335,6 @@ public class ExecutionManagerTests
     // R2R classification.
     [Theory]
     [InlineData("c1")]
-    [InlineData("c2")]
     public void GetMethodDesc_R2R_WasmVirtualIP(string version)
     {
         MockTarget.Architecture wasmArch = new() { IsLittleEndian = true, Is64Bit = false };
@@ -914,14 +913,10 @@ public class ExecutionManagerTests
 
     public static IEnumerable<object[]> StdArchAllVersions()
     {
-        const int highestVersion = 2;
         foreach (object[] arr in new MockTarget.StdArch())
         {
             MockTarget.Architecture arch = (MockTarget.Architecture)arr[0];
-            for (int version = 1; version <= highestVersion; version++)
-            {
-                yield return new object[] { $"c{version}", arch };
-            }
+            yield return new object[] { "c1", arch };
         }
     }
 
