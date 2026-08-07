@@ -23,14 +23,16 @@ bool parse_arguments(
     pal::string_t managed_application_path;
     if (init.host_mode == host_mode_t::apphost)
     {
-        assert(argc > 0 && argv != nullptr);
-        args.invocation_name = argv[0];
-
         // Find the managed app in the same directory
         managed_application_path = init.host_info.app_path;
 
-        args.app_argv = &argv[1];
-        args.app_argc = argc - 1;
+        if (argc > 0)
+        {
+            assert(argv != nullptr);
+            args.invocation_name = argv[0];
+            args.app_argv = &argv[1];
+            args.app_argc = argc - 1;
+        }
     }
     else if (init.host_mode == host_mode_t::libhost)
     {
