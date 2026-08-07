@@ -95,6 +95,7 @@ enum class WasmValueType : unsigned;
 #ifdef DEBUG
 struct IndentStack;
 #endif
+struct ContinuationMember;
 
 class Lowering; // defined in lower.h
 
@@ -5306,6 +5307,14 @@ protected:
                                 unsigned                clsFlags,
                                 bool                    isReadonlyCall);
 
+    void impTryOptimizeAwaitAwaiter(GenTreeCall*              call,
+                                    CORINFO_RESOLVED_TOKEN*   pResolvedToken,
+                                    CORINFO_CALL_INFO*        callInfo,
+                                    CORINFO_METHOD_HANDLE*    methHnd,
+                                    CORINFO_CONTEXT_HANDLE*   exactContextHnd,
+                                    GenTree**                 instParam,
+                                    NamedIntrinsic            ni);
+
     void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, NamedIntrinsic ni, const DebugInfo& callDI);
 
     void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
@@ -6296,6 +6305,11 @@ public:
     bool shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top);
     PhaseStatus placeLoopAlignInstructions();
 #endif
+
+    jitstd::vector<ContinuationMember>* m_asyncContinuationMembers = nullptr;
+    size_t GetContinuationMemberIndex(const ContinuationMember& member);
+    size_t GetContinuationMemberCount() const;
+    const ContinuationMember& GetContinuationMember(size_t index);
 
     PhaseStatus SaveAsyncContexts();
     void AddContextArgsToAsyncCalls(BasicBlock* block);

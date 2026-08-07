@@ -11963,6 +11963,57 @@ mono_ldptr:
 				mono_method_has_unmanaged_callers_only_attribute (cmethod);
 
 			/*
+			 * ldftn of a static virtual (static abstract) interface method resolved through gsharedvt
+			 * followed by a delegate creation. The target method is only known at runtime (via the rgctx),
+			 * so the generic newobj ctor-call fallback below cannot be used: under llvmonly it would call
+			 * the runtime delegate ctor with an extra rgctx argument it does not accept, producing a wasm
+			 * signature mismatch. Create the delegate directly and let the runtime initialize it from
+			 * del->method instead.
+			 */
+			if (gshared_static_virtual && cfg->llvm_only && (sp > stack_start) && (next_ip + 4 < end) && ip_in_bb (cfg, cfg->cbb, next_ip) && (next_ip [0] == CEE_NEWOBJ)) {
+				MonoMethod *ctor_method = mini_get_method (cfg, method, read32 (next_ip + 1), NULL, generic_context);
+				if (ctor_method && (m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class)) {
+					int dele_context_used = mini_class_check_context_used (cfg, ctor_method->klass);
+					MonoInst *target_ins = sp [-1];
+					MonoInst *method_ins = emit_get_rgctx_virt_method (cfg, -1, constrained_class, cmethod, MONO_RGCTX_INFO_VIRT_METHOD);
+					MonoInst *obj = handle_alloc (cfg, ctor_method->klass, FALSE, dele_context_used);
+
+					if (!obj)
+						CHECK_CFG_ERROR;
+
+					if (obj) {
+						/* Set the target field (typically null for a static method) */
+						if (!MONO_INS_IS_PCONST_NULL (target_ins)) {
+							if (!mini_debug_options.weak_memory_model)
+								mini_emit_memory_barrier (cfg, MONO_MEMORY_BARRIER_REL);
+							MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, target), target_ins->dreg);
+							if (cfg->gen_write_barriers) {
+								MonoInst *ptr;
+								int dreg = alloc_preg (cfg);
+								EMIT_NEW_BIALU_IMM (cfg, ptr, OP_PADD_IMM, dreg, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, target));
+								mini_emit_write_barrier (cfg, ptr, target_ins);
+							}
+						}
+						/* del->method = runtime-resolved implementation; init_delegate derives the rest */
+						MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, obj->dreg, MONO_STRUCT_OFFSET (MonoDelegate, method), method_ins->dreg);
+
+						MonoInst *init_args [2];
+						init_args [0] = obj;
+						EMIT_NEW_PCONST (cfg, init_args [1], NULL);
+						mono_emit_jit_icall (cfg, mini_llvmonly_init_delegate, init_args);
+
+						constrained_class = NULL;
+						sp --;
+						*sp = obj;
+						sp ++;
+						next_ip += 5;
+						il_op = MONO_CEE_NEWOBJ;
+						break;
+					}
+				}
+			}
+
+			/*
 			 * Optimize the common case of ldftn+delegate creation
 			 */
 			if (!gshared_static_virtual && (sp > stack_start) && (next_ip + 4 < end) && ip_in_bb (cfg, cfg->cbb, next_ip) && (next_ip [0] == CEE_NEWOBJ)) {
