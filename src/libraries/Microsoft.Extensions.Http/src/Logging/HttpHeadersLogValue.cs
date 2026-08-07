@@ -38,17 +38,11 @@ namespace Microsoft.Extensions.Http.Logging
                 {
                     var values = new List<KeyValuePair<string, object>>();
 
-                    foreach (KeyValuePair<string, IEnumerable<string>> kvp in Headers)
-                    {
-                        values.Add(new KeyValuePair<string, object>(kvp.Key, kvp.Value));
-                    }
+                    AddHeaders(values, Headers);
 
                     if (ContentHeaders != null)
                     {
-                        foreach (KeyValuePair<string, IEnumerable<string>> kvp in ContentHeaders)
-                        {
-                            values.Add(new KeyValuePair<string, object>(kvp.Key, kvp.Value));
-                        }
+                        AddHeaders(values, ContentHeaders);
                     }
 
                     _values = values;
@@ -73,6 +67,29 @@ namespace Microsoft.Extensions.Http.Logging
 
         public int Count => Values.Count;
 
+        // Enumerate the headers without triggering validation/parsing of the values, so that logging
+        // doesn't alter how the headers are subsequently serialized on the wire.
+        private static void AddHeaders(List<KeyValuePair<string, object>> values, HttpHeaders headers)
+        {
+#if NET
+            foreach (KeyValuePair<string, HeaderStringValues> kvp in headers.NonValidated)
+            {
+                string[] headerValues = new string[kvp.Value.Count];
+                int i = 0;
+                foreach (string value in kvp.Value)
+                {
+                    headerValues[i++] = value;
+                }
+
+                values.Add(new KeyValuePair<string, object>(kvp.Key, headerValues));
+            }
+#else
+            foreach (KeyValuePair<string, IEnumerable<string>> kvp in headers)
+            {
+                values.Add(new KeyValuePair<string, object>(kvp.Key, kvp.Value));
+            }
+#endif
+        }
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
             return Values.GetEnumerator();
