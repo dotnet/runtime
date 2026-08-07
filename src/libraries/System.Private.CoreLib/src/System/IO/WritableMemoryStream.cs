@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>
-    /// Provides a seekable, writable <see cref="Stream"/> over a <see cref="Memory{Byte}"/>.
+    /// Provides a seekable <see cref="Stream"/> for reading from and writing to a <see cref="Memory{Byte}"/>.
     /// </summary>
     public sealed class WritableMemoryStream : Stream
     {
@@ -20,7 +20,11 @@ namespace System.IO
         /// <summary>
         /// Initializes a new instance of the <see cref="WritableMemoryStream"/> class over the specified <see cref="Memory{Byte}"/>.
         /// </summary>
-        /// <param name="buffer">The <see cref="Memory{Byte}"/> to wrap.</param>
+        /// <param name="buffer">The memory region from which to create the stream.</param>
+        /// <remarks>
+        /// The existing contents of <paramref name="buffer"/> are immediately readable.
+        /// Clear rented or reused memory before constructing the stream if its existing contents should not be exposed.
+        /// </remarks>
         public WritableMemoryStream(Memory<byte> buffer)
         {
             _memory = buffer;
