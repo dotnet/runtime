@@ -4,5 +4,5 @@
 #include <minipal/thread.h>
 
 #if !defined(__wasm) || defined(_REENTRANT)
-MINIPAL_THREAD_LOCAL size_t minipal_cached_thread_id;
+PLATFORM_THREAD_LOCAL size_t minipal_cached_thread_id;
 #endif

@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <minipal/utils.h>
 
 #if defined(__linux__)
 #include <unistd.h>
@@ -39,14 +40,6 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-#if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)
-// GCC doesn't support _Thread_local in C++ mode. __thread provides the same
-// static TLS initialization semantics without C++ thread_local initialization checks.
-#define MINIPAL_THREAD_LOCAL __thread
-#else
-#define MINIPAL_THREAD_LOCAL _Thread_local
 #endif
 
 /**
@@ -88,7 +81,7 @@ static inline size_t minipal_get_current_thread_id_no_cache(void)
 }
 
 #if !defined(__wasm) || defined(_REENTRANT)
-extern MINIPAL_THREAD_LOCAL size_t minipal_cached_thread_id;
+extern PLATFORM_THREAD_LOCAL size_t minipal_cached_thread_id;
 #endif
 
 /**
