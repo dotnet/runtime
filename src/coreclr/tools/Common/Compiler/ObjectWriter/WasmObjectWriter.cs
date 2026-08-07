@@ -700,10 +700,8 @@ namespace ILCompiler.ObjectWriter
                     {
                         MemoryStream destStream = new MemoryStream((int)originalStream.Length);
                         originalStream.Position = 0;
-                        //originalStream.CopyTo(stream);
-                        ResolveRelocations(index, originalStream, destStream, relocations, sectionStart: 0, shrink: false);
+                        ResolveRelocations(index, originalStream, destStream, relocations, sectionStart: 0, shrink: true);
                         section.Stream = destStream;
-                        Console.WriteLine("Saved: {0} bytes of relocations in section {1}", originalStream.Length - destStream.Length, section.Name);
                         // originalStream may be disposed, section.Stream now points to resolved stream
                     }
                 }
@@ -875,33 +873,6 @@ namespace ILCompiler.ObjectWriter
             src.GetBuffer().AsSpan((int)srcPos, (int)count).CopyTo(dest.GetBuffer().AsSpan((int)destPos, (int)count));
         }
 
-        private static List<Segment> SplitBlob(Stream src, long start, long end, List<SymbolicRelocation> relocs)
-        {
-            // Build up a list of segments to describe this blob. Each blob is a byte range of [start, end) that is either a relocation or plain data (Reloc == null).
-            // This allows us to resolve each slice of the section with possible shrinkage of the max-sized relocations in between.
-            List<Segment> segments = new();
-            if (relocs.First().Offset > 0)
-            {
-                segments.Add(new Segment(0, relocs.First().Offset, null));
-            }
-
-            for (int i = 0; i < relocs.Count; i++)
-            {
-                SymbolicRelocation curReloc = relocs[i];
-                SymbolicRelocation? nextReloc = null;
-                if (i < relocs.Count - 1)
-                {
-                   nextReloc = relocs[i + 1]; 
-                }
-                segments.Add(new Segment(curReloc.Offset, Relocation.GetSize(curReloc.Type) + curReloc.Offset, curReloc));
-                long nextStart = curReloc.Offset + Relocation.GetSize(curReloc.Type);
-                long nextEnd = nextReloc is not null ? nextReloc.Offset : end;
-                segments.Add(new Segment(nextStart, nextEnd, null));
-            }
-            Debug.Assert(segments.First().Start == 0 && segments.Last().End == end);
-            return segments;
-        }
-
         private record CodeBlob(long Size, long Start, long End);
 
         private List<CodeBlob> ParseCodeBlobs(Stream sectionStream)
@@ -944,8 +915,6 @@ namespace ILCompiler.ObjectWriter
             for (int b = 0; b < blobs.Count; b++)
             {
                 CodeBlob blob = blobs[b];
-                //var blobRelocs = relocs.Where(reloc => reloc.Offset >= blob.Start && reloc.Offset < blob.End).ToList();
-
                 Debug.Assert(writeCursor <= blobs[b].Start, $"Write cursor {writeCursor} is beyond the start of blob {blobs[b].Start}");
 
                 bool hasRelocs = relocCursor < relocs.Count && relocs[relocCursor].Offset >= blob.Start && relocs[relocCursor].Offset < blob.End;
@@ -1215,7 +1184,6 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private record Segment(long Start, long End, SymbolicRelocation? Reloc);
         private void ResolveRelocations(int sectionIndex, Stream sectionStream, MemoryStream dstStream, List<SymbolicRelocation> relocs, long sectionStart = 0, bool shrink = false)
         {
             if (relocs.Count == 0)
@@ -1244,11 +1212,6 @@ namespace ILCompiler.ObjectWriter
             sectionStream.CopyTo(dstStream);
             for (int i = 0; i < relocs.Count; i++)
             {
-                if (i % 10000 == 0)
-                {
-                    Console.WriteLine("Resolving relocation {0}/{1} in section {2}", i, relocs.Count, sectionIndex);
-                }
-
                 SymbolicRelocation reloc = relocs[i];
                 ResolveReloc(sectionIndex, dstStream, srcPos: sectionStart + reloc.Offset, dstStream, destPos: sectionStart + reloc.Offset, reloc, relocScratchBuffer);
             }
