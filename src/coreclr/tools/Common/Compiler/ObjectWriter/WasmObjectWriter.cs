@@ -701,8 +701,7 @@ namespace ILCompiler.ObjectWriter
                         MemoryStream destStream = new MemoryStream((int)originalStream.Length);
                         originalStream.Position = 0;
                         //originalStream.CopyTo(stream);
-                        ResolveRelocations(index, originalStream, destStream, relocations, sectionStart: 0, shrink: false);
-                        destStream.SetLength(destStream.Position);
+                        ResolveRelocations(index, originalStream, destStream, relocations, sectionStart: 0, shrink: true);
                         section.Stream = destStream;
                         Console.WriteLine("Saved: {0} bytes of relocations in section {1}", originalStream.Length - destStream.Length, section.Name);
                         // originalStream may be disposed, section.Stream now points to resolved stream
@@ -734,6 +733,7 @@ namespace ILCompiler.ObjectWriter
 
                 if (_resolvableRelocations.TryGetValue(section.Index, out List<SymbolicRelocation> relocations))
                 {
+                    MemoryStream sectionStream = new MemoryStream((int)section.Stream.Length);
                     // We emit all Webcil sections into one stream, and copy data / resolve relocations directly into this combined stream.
                     // As a result, the real offsets that relocs in our list have need to be calculated based on the section's
                     // position within the Webcil segment
@@ -869,20 +869,10 @@ namespace ILCompiler.ObjectWriter
         // TODO-WASM: Currently, all Wasm relocs are resolved to 5 byte values unconditionally (the same size as the original placeholder padding), which is wasteful.
         // We should remove the padding and shrink the resolved values to their minimal size so we don't bloat the binary size.
 #nullable enable
-        static void CopyOnly(Stream src, Stream dst, byte[] scratchBuff, int count)
+        static void CopyOnly(MemoryStream src, long srcPos, MemoryStream dest, long destPos, long count)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(count);
-            while (count > 0)
-            {
-                int toRead = Math.Min(scratchBuff.Length, count);
-                int read = src.Read(scratchBuff, 0, toRead);
-                if (read == 0)
-                {
-                    throw new EndOfStreamException();
-                }
-                dst.Write(scratchBuff, 0, read);
-                count -= read;
-            }
+            src.GetBuffer().AsSpan((int)srcPos, (int)count).CopyTo(dest.GetBuffer().AsSpan((int)destPos, (int)count));
         }
 
         private static List<Segment> SplitBlob(Stream src, long start, long end, List<SymbolicRelocation> relocs)
@@ -930,7 +920,7 @@ namespace ILCompiler.ObjectWriter
             return blobs;
         }
 
-        private void ResolveCodeRelocations(int sectionIndex, Stream sectionStream, MemoryStream dstStream, List<CodeBlob> blobs, List<SymbolicRelocation> relocs)
+        private void ResolveCodeRelocations(int sectionIndex, MemoryStream sectionStream, List<CodeBlob> blobs, List<SymbolicRelocation> relocs, bool shrink = false)
         {
             long maxBlobSize = blobs.Max(blob => blob.End - blob.Start);
             // for each blob:
@@ -938,70 +928,98 @@ namespace ILCompiler.ObjectWriter
             //  copy over the blob's contents to the temporary stream, resolving relocations in sorted order 
             //  write the temporary stream to the destination stream with the new size
             MemoryStream tempStream = new MemoryStream((int)maxBlobSize);
-            byte[] copyBuffer = new byte[4096];
+            tempStream.SetLength(maxBlobSize);
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
             int[] blobShrink = new int[blobs.Count];
 
             blobs.Sort((a, b) => a.Start.CompareTo(b.Start));
             relocs.Sort((a, b) => a.Offset.CompareTo(b.Offset));
 
+            long writeCursor = 0;
+            int relocCursor = 0;
+
+            // No relocations in this blob, just copy it over, but shrink the size ULEB down to the minimum
+            byte[] countBuffer = new byte[5];
+
+            // Invariant: writeCursor is where we are writing to in the sectionStream. Further, writeCursor is always less than or equal to the start of the current blob we are processing.
             for (int b = 0; b < blobs.Count; b++)
             {
                 CodeBlob blob = blobs[b];
-                var blobRelocs = relocs.Where(reloc => reloc.Offset >= blob.Start && reloc.Offset < blob.End).ToList();
+                //var blobRelocs = relocs.Where(reloc => reloc.Offset >= blob.Start && reloc.Offset < blob.End).ToList();
 
-                tempStream.Position = 0;
-                if (blobRelocs.Count > 0)
+                Debug.Assert(writeCursor <= blobs[b].Start, $"Write cursor {writeCursor} is beyond the start of blob {blobs[b].Start}");
+
+                bool hasRelocs = relocCursor < relocs.Count && relocs[relocCursor].Offset >= blob.Start && relocs[relocCursor].Offset < blob.End;
+                if (hasRelocs)
                 {
+                    tempStream.Position = 0;
                     sectionStream.Position = blob.Start;
-                    if (blobRelocs.First().Offset > 0)
+                    SymbolicRelocation firstReloc = relocs[relocCursor];
+
+                    if (firstReloc.Offset > 0)
                     {
                         // Copy the initial data in the blob before the first relocation
-                        CopyOnly(sectionStream, tempStream, copyBuffer, (int)blobRelocs.First().Offset - (int)blob.Start);
+                        int initialSize = (int)firstReloc.Offset - (int)blob.Start;
+                        CopyOnly(sectionStream, sectionStream.Position, tempStream, tempStream.Position, initialSize);
+                        sectionStream.Position += initialSize;
+                        tempStream.Position += initialSize;
                     }
-                    Debug.Assert(sectionStream.Position == blobRelocs.First().Offset, $"Section stream position sectionStream.Position does not match first reloc offset {blobRelocs.First().Offset}");
+                    Debug.Assert(sectionStream.Position == firstReloc.Offset, $"Section stream position sectionStream.Position does not match first reloc offset {firstReloc.Offset}");
 
-                    for (int i = 0; i < blobRelocs.Count; i++)
+                    while (relocCursor < relocs.Count && relocs[relocCursor].Offset < blob.End)
                     {
-                        SymbolicRelocation curReloc = blobRelocs[i];
+                        SymbolicRelocation curReloc = relocs[relocCursor];
                         SymbolicRelocation? nextReloc = null;
-                        if (i < blobRelocs.Count - 1)
+                        // look ahead to the next relocation, if any, to determine how much data is between this relocation and the next one
+                        if (relocCursor + 1 < relocs.Count && relocs[relocCursor + 1].Offset < blob.End)
                         {
-                            nextReloc = blobRelocs[i + 1];
+                            nextReloc = relocs[relocCursor + 1];
                         }
 
-                        int size = ResolveReloc(sectionIndex, sectionStream, tempStream, curReloc, relocScratchBuffer);
+                        int size = ResolveReloc(sectionIndex, sectionStream, curReloc.Offset, tempStream, tempStream.Position, curReloc, relocScratchBuffer, shrink: shrink);
                         blobShrink[b] += (int)Relocation.GetSize(curReloc.Type) - size;
 
                         long nextStart = curReloc.Offset + Relocation.GetSize(curReloc.Type);
                         long nextEnd = nextReloc is not null ? nextReloc.Offset : blob.End;
-                        Debug.Assert(tempStream.Position <= sectionStream.Position);
-                        CopyOnly(sectionStream, tempStream, copyBuffer, (int)(nextEnd - nextStart));
-                    }
-                    Debug.Assert(tempStream.Position <= blob.Size, $"Temp stream position {tempStream.Position} exceeds blob size {blob.Size}");
-                    tempStream.SetLength(tempStream.Position);
+                        long betweenSize = nextEnd - nextStart;
 
-                    Span<byte> countBuffer = stackalloc byte[(int)DwarfHelper.SizeOfULEB128((ulong)tempStream.Length)];
-                    DwarfHelper.WriteULEB128(countBuffer, (ulong)tempStream.Length);
-                    dstStream.Write(countBuffer);
+                        Debug.Assert(nextStart == sectionStream.Position);
+                        CopyOnly(sectionStream, sectionStream.Position, tempStream, tempStream.Position, (int)betweenSize);
+                        sectionStream.Position += betweenSize;
+                        tempStream.Position += betweenSize;
+                        relocCursor++;
+                    }
+
+                    Debug.Assert(tempStream.Position <= blob.Size && blob.Size <= tempStream.Length, $"Temp stream position {tempStream.Position} exceeds blob size {blob.Size}");
+
+                    long tempStreamLength = tempStream.Position;
+
+                    // Write the temp stream back into the original stream with a NEW length prefix, starting at writeCursor
+                    DwarfHelper.WriteULEB128(countBuffer, (ulong)tempStreamLength);
+                    sectionStream.Position = writeCursor;
+                    sectionStream.Write(countBuffer, 0, (int)DwarfHelper.SizeOfULEB128((ulong)tempStreamLength));
+                    writeCursor = sectionStream.Position; // set writeCursor to the position after the length prefix we just wrote
 
                     tempStream.Position = 0;
-                    tempStream.CopyTo(dstStream);
+                    tempStream.CopyTo(sectionStream);
+
+                    writeCursor += tempStreamLength;
                 }
                 else
                 {
-                    Span<byte> countBuffer = stackalloc byte[(int)DwarfHelper.SizeOfULEB128((ulong)blob.Size)];
                     DwarfHelper.WriteULEB128(countBuffer, (ulong)blob.Size);
-                    dstStream.Write(countBuffer);
-                    // No relocations in this blob, just copy it over
-                    sectionStream.Position = blob.Start;
-                    CopyOnly(src: sectionStream, dst: dstStream, scratchBuff: copyBuffer, count: (int)(blob.End - blob.Start));
+                    sectionStream.Position = writeCursor;
+                    sectionStream.Write(countBuffer, 0, (int)DwarfHelper.SizeOfULEB128((ulong)blob.Size));
+                    writeCursor = sectionStream.Position;
+
+                    CopyOnly(src: sectionStream, srcPos: blob.Start, dest: sectionStream, destPos: writeCursor, count: blob.Size);
+                    writeCursor += blob.Size;
                 }
             }
-            dstStream.SetLength(dstStream.Position);
+            sectionStream.SetLength(writeCursor);
 
-            dstStream.Position = 0;
-            List<CodeBlob> newBlobs = ParseCodeBlobs(dstStream);
+            sectionStream.Position = 0;
+            List<CodeBlob> newBlobs = ParseCodeBlobs(sectionStream);
             Debug.Assert(newBlobs.Count == blobs.Count);
 
             for (int i = 0; i < newBlobs.Count; i++)
@@ -1010,7 +1028,7 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private unsafe int ResolveReloc(int sectionIndex, Stream sectionStream, MemoryStream dstStream, SymbolicRelocation reloc,  byte[] relocScratchBuffer, long? destPos = null, bool shrink = false)
+        private unsafe int ResolveReloc(int sectionIndex, MemoryStream sourceStream, long srcPos, MemoryStream destStream, long destPos, SymbolicRelocation reloc,  byte[] relocScratchBuffer, bool shrink = false)
         {
             WebcilSection? curSectionAsWebcil = null;
             uint webcilVirtualStart = 0;
@@ -1178,24 +1196,21 @@ namespace ILCompiler.ObjectWriter
                         throw new NotSupportedException($"Relocation type {reloc.Type} not yet implemented");
                 }
 
-                return WriteRelocFromDataSpan(reloc, pData, dstStream, actualLength ?? relocLength);
+                return WriteRelocFromDataSpan(reloc, pData, actualLength ?? relocLength);
             }
 
             Span<byte> ReadRelocToDataSpan(SymbolicRelocation reloc, byte[] buffer)
             {
                 Span<byte> relocContents = buffer.AsSpan(0, Relocation.GetSize(reloc.Type));
-                sectionStream.Position = reloc.Offset;
-                sectionStream.ReadExactly(relocContents);
+                sourceStream.Position = srcPos;
+                sourceStream.ReadExactly(relocContents);
                 return relocContents;
             }
 
-            int WriteRelocFromDataSpan(SymbolicRelocation reloc, byte* pData, MemoryStream dstStream, int length)
+            int WriteRelocFromDataSpan(SymbolicRelocation reloc, byte* pData, int length)
             {
-                if (destPos is  not null)
-                {
-                    dstStream.Position = (long)destPos;
-                }
-                dstStream.Write(new Span<byte>(pData, length));
+                destStream.Position = destPos;
+                destStream.Write(new Span<byte>(pData, length));
                 return length;
             }
         }
@@ -1213,7 +1228,9 @@ namespace ILCompiler.ObjectWriter
             {
                 List<CodeBlob> blobs = ParseCodeBlobs(sectionStream);
                 sectionStream.Position = 0;
-                ResolveCodeRelocations(sectionIndex, sectionStream, dstStream, blobs, relocs);
+                sectionStream.CopyTo(dstStream);
+                dstStream.Position = 0;
+                ResolveCodeRelocations(sectionIndex, dstStream, blobs, relocs, shrink);
                 return;
             }
 
@@ -1230,8 +1247,7 @@ namespace ILCompiler.ObjectWriter
                 }
 
                 SymbolicRelocation reloc = relocs[i];
-                long? destPos = sectionStart + reloc.Offset;
-                ResolveReloc(sectionIndex, sectionStream, dstStream, reloc, relocScratchBuffer, destPos: destPos);
+                ResolveReloc(sectionIndex, dstStream, srcPos: sectionStart + reloc.Offset, dstStream, destPos: sectionStart + reloc.Offset, reloc, relocScratchBuffer);
             }
             dstStream.Position = sectionStream.Length + startPos;
         }
