@@ -341,7 +341,7 @@ namespace ILCompiler.ObjectWriter
         WasmFunctionBody FillWebcilTable(int tableSize) => new WasmFunctionBody(
             new WasmFuncType(new([]), new([])), // (func)
                 [
-                    Global.Get(WasmObjectWriter.TableBaseGlobalIndex),
+                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex),
                     I32.Const(0),
                     I32.Const(tableSize),
                     Table.Init(0, 0)
@@ -360,7 +360,7 @@ namespace ILCompiler.ObjectWriter
                     I32.Ge_s,
                     Block.If(WasmBlockType.Empty),
                     Local.Get(0), // (local.get $d)
-                    Global.Get(WasmObjectWriter.TableBaseGlobalIndex), // (global.get $tableBase)
+                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex), // (global.get $tableBase)
                     I32.Store((ulong)WebcilEncoder.TableBaseOffset), // i32.store offset=TableBaseOffset
                     Block.End
                 ]
