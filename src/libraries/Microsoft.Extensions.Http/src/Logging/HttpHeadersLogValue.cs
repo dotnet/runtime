@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.Http.Logging
             {
                 if (_values == null)
                 {
-                    var values = new List<KeyValuePair<string, object>>();
+                    var values = new List<KeyValuePair<string, object>>(GetHeaderCount(Headers) + GetHeaderCount(ContentHeaders));
 
                     AddHeaders(values, Headers);
 
@@ -74,14 +74,7 @@ namespace Microsoft.Extensions.Http.Logging
 #if NET
             foreach (KeyValuePair<string, HeaderStringValues> kvp in headers.NonValidated)
             {
-                string[] headerValues = new string[kvp.Value.Count];
-                int i = 0;
-                foreach (string value in kvp.Value)
-                {
-                    headerValues[i++] = value;
-                }
-
-                values.Add(new KeyValuePair<string, object>(kvp.Key, headerValues));
+                values.Add(new KeyValuePair<string, object>(kvp.Key, kvp.Value.ToString()));
             }
 #else
             foreach (KeyValuePair<string, IEnumerable<string>> kvp in headers)
@@ -90,6 +83,16 @@ namespace Microsoft.Extensions.Http.Logging
             }
 #endif
         }
+
+        private static int GetHeaderCount(HttpHeaders? headers)
+        {
+#if NET
+            return headers?.NonValidated.Count ?? 0;
+#else
+            return 0;
+#endif
+        }
+
         public IEnumerator<KeyValuePair<string, object>> GetEnumerator()
         {
             return Values.GetEnumerator();
@@ -121,7 +124,7 @@ namespace Microsoft.Extensions.Http.Logging
                     else
                     {
 #if NET
-                        builder.AppendJoin(", ", (IEnumerable<object>)kvp.Value);
+                        builder.Append(kvp.Value.ToString());
                         builder.AppendLine();
 #else
                         foreach (object value in (IEnumerable<object>)kvp.Value)

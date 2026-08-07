@@ -70,6 +70,5 @@ namespace Microsoft.Extensions.Http.Logging
 #endif
 
         private class TestHttpHeaders : HttpHeaders { }
-
     }
 }
