@@ -1412,6 +1412,9 @@ gboolean
 mono_class_set_failure (MonoClass *klass, MonoErrorBoxed *boxed_error);
 
 void
+mono_class_set_skip_generic_constraints (MonoClass *klass);
+
+void
 mono_class_set_deferred_failure (MonoClass *klass);
 
 gboolean
