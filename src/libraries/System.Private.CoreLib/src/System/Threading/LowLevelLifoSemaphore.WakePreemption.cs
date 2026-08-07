@@ -28,7 +28,7 @@ namespace System.Threading
             return default;
 #elif TARGET_LINUX
             int result = Interop.Sys.SuppressWakePreemption();
-            Debug.Assert(result == 0 || result == (int)Interop.Error.ENOSYS, $"SuppressWakePreemption failed with error {result}");
+            Debug.Assert(result == 0, $"SuppressWakePreemption failed with error {result}");
             return new WakePreemptionScope(suppressed: result == 0);
 #else
             return default;
