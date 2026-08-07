@@ -628,7 +628,15 @@ namespace System.Formats.Tar
                     Debug.Assert(rootPathLocal is not null);
                 }
 
-                if (!Resolve(ref rootPathLocal, resolvedPath, linkTarget, out resolvedFullPath, visitedLinks))
+                ReadOnlySpan<char> resolveTarget = linkTarget;
+                if (Path.IsPathFullyQualified(linkTarget))
+                {
+                    rootPathLocal = _resolvedDestination;
+                    resolvedPath = Path.GetPathRoot(linkTarget)!;
+                    resolveTarget = linkTarget.AsSpan(resolvedPath.Length);
+                }
+
+                if (!Resolve(ref rootPathLocal, resolvedPath, resolveTarget, out resolvedFullPath, visitedLinks))
                 {
                     throw new IOException(SR.Format(SR.TarExtractingResultsLinkOutside, linkTarget, _destination));
                 }

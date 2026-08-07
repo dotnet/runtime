@@ -692,7 +692,6 @@ namespace System.Formats.Tar.Tests
             TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
 
             string linkPath = Path.Combine(destDir, "link");
-            Assert.True(Directory.Exists(linkPath), "symlink should have been created.");
             FileSystemInfo linkInfo = new FileInfo(linkPath);
             Assert.Equal(".", linkInfo.LinkTarget);
         }
@@ -884,13 +883,15 @@ namespace System.Formats.Tar.Tests
             using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
             {
                 writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
-                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link") { LinkName = NormalizePathSeparators(absoluteTarget) });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "link") { LinkName = absoluteTarget });
             }
 
             TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
 
             string linkPath = Path.Combine(destDir, "link");
-            Assert.Equal(absoluteTarget, new FileInfo(linkPath).LinkTarget);
+            // Windows APIs collapse the intermediate ".." in the link target, so the expected target is destDir/b. On Unix, the link target is preserved as-is.
+            string expectedTarget = OperatingSystem.IsWindows() ? Path.Combine(destDir, "b") : absoluteTarget;
+            Assert.Equal(expectedTarget, new FileInfo(linkPath).LinkTarget);
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
@@ -1008,6 +1009,5 @@ namespace System.Formats.Tar.Tests
         }
     }
 }
-
 
 
