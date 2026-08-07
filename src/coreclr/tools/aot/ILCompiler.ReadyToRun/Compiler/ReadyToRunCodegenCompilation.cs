@@ -1069,6 +1069,16 @@ namespace ILCompiler
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 0, voidType, [valueTaskType])),
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [taskOfTType.MakeInstantiatedType(methodVar)])),
                 asyncHelpers.GetKnownMethod("TransparentAwait"u8, new MethodSignature(MethodSignatureFlags.Static, 1, methodVar, [valueTaskOfTType.MakeInstantiatedType(methodVar)])),
+
+                // For CorInfoImpl.getAwaitAwaiterInContinuationCall. Same as above: the JIT rewrites calls
+                // to AsyncHelpers.AwaitAwaiter/UnsafeAwaitAwaiter into calls to these, so nothing in the
+                // caller's IL refers to them and their manifest tokens must be pre-seeded here.
+                //
+                // Only the typical definitions need tokens. The method fixup signature emits the method's
+                // def/ref token and encodes the instantiation separately as type signatures (see
+                // SignatureBuilder.EmitMethodSpecificationSignature), so no MethodSpec token is required.
+                // The instantiation argument is the awaiter type, which the caller already refers to in its
+                // own IL, so that is guaranteed to be encodable as well.
                 asyncHelpers.GetKnownMethod("AwaitAwaiterInContinuation"u8, null),
                 asyncHelpers.GetKnownMethod("UnsafeAwaitAwaiterInContinuation"u8, null),
             ];

@@ -4490,7 +4490,7 @@ CORINFO_METHOD_HANDLE MethodContext::repGetAwaitReturnCall(CORINFO_METHOD_HANDLE
 }
 
 void MethodContext::recGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHnd,
-                                                         CORINFO_SIG_INFO* callSig,
+                                                         CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                                          bool isUnsafe,
                                                          CORINFO_CONTEXT_HANDLE* contextHandle,
                                                          CORINFO_LOOKUP* instArg,
@@ -4505,8 +4505,8 @@ void MethodContext::recGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE c
     Agnostic_GetAwaitAwaiterInContinuationCall key;
     ZeroMemory(&key, sizeof(key));
     key.callerHnd = CastHandle(callerHnd);
-    key.callSig =
-        SpmiRecordsHelper::StoreAgnostic_CORINFO_SIG_INFO(*callSig, GetAwaitAwaiterInContinuationCall, SigInstHandleMap);
+    key.ResolvedToken =
+        SpmiRecordsHelper::StoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetAwaitAwaiterInContinuationCall);
     key.isUnsafe = isUnsafe;
 
     Agnostic_GetAwaitReturnCallResult value;
@@ -4523,11 +4523,10 @@ void MethodContext::dmpGetAwaitAwaiterInContinuationCall(
     const Agnostic_GetAwaitAwaiterInContinuationCall& key,
     Agnostic_GetAwaitReturnCallResult& value)
 {
-    printf("GetAwaitAwaiterInContinuationCall caller-%016" PRIX64 " sig-%s unsafe-%u "
+    printf("GetAwaitAwaiterInContinuationCall caller-%016" PRIX64 " rt{%s} unsafe-%u "
            "methodHnd-%016" PRIX64 " contextHandle-%016" PRIX64 " instArg %s",
            key.callerHnd,
-           SpmiDumpHelper::DumpAgnostic_CORINFO_SIG_INFO(
-               key.callSig, GetAwaitAwaiterInContinuationCall, SigInstHandleMap).c_str(),
+           SpmiDumpHelper::DumpAgnostic_CORINFO_RESOLVED_TOKEN(key.ResolvedToken).c_str(),
            key.isUnsafe,
            value.methodHnd,
            value.contextHandle,
@@ -4536,7 +4535,7 @@ void MethodContext::dmpGetAwaitAwaiterInContinuationCall(
 
 CORINFO_METHOD_HANDLE MethodContext::repGetAwaitAwaiterInContinuationCall(
     CORINFO_METHOD_HANDLE callerHnd,
-    CORINFO_SIG_INFO* callSig,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
     bool isUnsafe,
     CORINFO_CONTEXT_HANDLE* contextHandle,
     CORINFO_LOOKUP* instArg)
@@ -4544,8 +4543,8 @@ CORINFO_METHOD_HANDLE MethodContext::repGetAwaitAwaiterInContinuationCall(
     Agnostic_GetAwaitAwaiterInContinuationCall key;
     ZeroMemory(&key, sizeof(key));
     key.callerHnd = CastHandle(callerHnd);
-    key.callSig = SpmiRecordsHelper::RestoreAgnostic_CORINFO_SIG_INFO(
-        *callSig, GetAwaitAwaiterInContinuationCall, SigInstHandleMap);
+    key.ResolvedToken =
+        SpmiRecordsHelper::RestoreAgnostic_CORINFO_RESOLVED_TOKEN(pResolvedToken, GetAwaitAwaiterInContinuationCall);
     key.isUnsafe = isUnsafe;
 
     Agnostic_GetAwaitReturnCallResult value =

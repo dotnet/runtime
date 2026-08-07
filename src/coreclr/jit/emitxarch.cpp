@@ -602,6 +602,24 @@ bool emitter::IsShiftInstruction(instruction ins) const
 }
 
 //------------------------------------------------------------------------
+// IsBitTestInstruction: Answer the question - is this one of the bit test instructions.
+//
+// Arguments:
+//    ins - The instruction to check.
+//
+// Returns:
+//    `true` if ins is `bt`, `bts`, `btr`, or `btc`.
+//
+// Notes:
+//    These encode their first operand in the r/m slot and their second in the reg slot, so the
+//    emitter reverses the registers when encoding them.
+//
+/* static */ bool emitter::IsBitTestInstruction(instruction ins)
+{
+    return (ins == INS_bt) || (ins == INS_bts) || (ins == INS_btr) || (ins == INS_btc);
+}
+
+//------------------------------------------------------------------------
 // IsLegacyMap1: Answer the question- Is this instruction on legacy-map-1
 //
 // Arguments:
@@ -12952,17 +12970,6 @@ void emitter::emitDispIns(
         }
 
         case IF_RRD_RRD:
-        {
-            if (ins == INS_bt)
-            {
-                // INS_bt operands are reversed. Display them in the normal order.
-                printf("%s, %s", emitRegName(id->idReg2(), attr), emitRegName(id->idReg1(), attr));
-                break;
-            }
-
-            FALLTHROUGH;
-        }
-
         case IF_RWR_RRD:
         {
             if ((ins == INS_rol) || (ins == INS_ror) || (ins == INS_rcl) || (ins == INS_rcr) || (ins == INS_shl) ||
@@ -16502,6 +16509,11 @@ BYTE* emitter::emitOutputRR(BYTE* dst, instrDesc* id)
         code = insCodeMR(ins);
         code = AddX86PrefixIfNeeded(id, code, size);
         code = insEncodeMRreg(id, code);
+
+        // The BT-family instructions encode their first operand in the r/m slot and their second in
+        // the reg slot, so they need the MR-form register swap below. Their opcodes already have
+        // bit 1 set, so the `code |= 2` below leaves them alone.
+        isInsCodeMR = IsBitTestInstruction(ins);
 
         if (ins != INS_test && !IsShiftInstruction(ins) && !IsCFCMOV(ins) && !IsCTEST(ins))
         {

@@ -10534,7 +10534,7 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHa
 
 CORINFO_METHOD_HANDLE CEEInfo::getAwaitAwaiterInContinuationCall(
     CORINFO_METHOD_HANDLE callerHandle,
-    CORINFO_SIG_INFO* callSig,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
     bool isUnsafe,
     CORINFO_CONTEXT_HANDLE* contextHandle,
     CORINFO_LOOKUP* instArg)
@@ -10549,8 +10549,9 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitAwaiterInContinuationCall(
 
     JIT_TO_EE_TRANSITION();
 
-    _ASSERTE(callSig->sigInst.methInstCount == 1);
-    TypeHandle awaiterType(callSig->sigInst.methInst[0]);
+    MethodDesc* pAwaitAwaiterMD = GetMethod(pResolvedToken->hMethod);
+    _ASSERTE(pAwaitAwaiterMD->GetNumGenericMethodArgs() == 1);
+    TypeHandle awaiterType = pAwaitAwaiterMD->GetMethodInstantiation()[0];
 
     instArg->lookupKind.needsRuntimeLookup = false;
     instArg->constLookup.accessType = IAT_VALUE;
@@ -10566,15 +10567,25 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitAwaiterInContinuationCall(
     MethodDesc* pInliningContext = pMD;
     if (pMD->RequiresInstArg())
     {
+        MethodDesc* pContext = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&awaiterType, 1), FALSE);
+
         if (awaiterType.IsCanonicalSubtype())
         {
-            ComputeRuntimeLookupForAwaitAwaiterInContinuationCall(pCallerMD, pTypicalAwaitMD, callSig, instArg);
+            // The exact instantiation is only known at runtime, so it requires a generic
+            // dictionary lookup. pResolvedToken is for the AsyncHelpers.AwaitAwaiter or
+            // UnsafeAwaitAwaiter call that we are replacing; it has the same owning type and
+            // the same instantiation as the replacement, so it encodes the right lookup as
+            // long as we pass the replacement as the template method.
+            _ASSERTE(pResolvedToken->pMethodSpec != NULL);
+            ComputeRuntimeLookupForSharedGenericToken(MethodDescSlot, pResolvedToken,
+                                                      NULL /* pConstrainedResolvedToken */, pContext, pCallerMD,
+                                                      instArg);
         }
         else
         {
-            MethodDesc* pContext = MethodDesc::FindOrCreateAssociatedMethodDesc(
-                pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&awaiterType, 1), FALSE);
             instArg->constLookup.addr = pContext;
+            // The exact instantiation is known, so use it as the inlining context.
             pInliningContext = pContext;
         }
     }

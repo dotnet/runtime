@@ -133,9 +133,18 @@ GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
 //   Rewrite a struct AwaitAwaiter or UnsafeAwaitAwaiter call to use the
 //   corresponding helper that reads the awaiter from the continuation.
 //
+// Arguments:
+//   call            - The call to the awaiter helper
+//   pResolvedToken  - Resolved token of the call
+//   callInfo        - EE supplied info for the call; updated on success
+//   methHnd         - [in, out] Method handle of the call; updated on success
+//   exactContextHnd - [in, out] Exact context of the call; updated on success
+//   instParam       - [in, out] Instantiation argument of the call; updated on success
+//   ni              - Named intrinsic of the call, used to determine whether
+//                     this is the unsafe variant
+//
 void Compiler::impTryOptimizeAwaitAwaiter(GenTreeCall*            call,
                                           CORINFO_RESOLVED_TOKEN* pResolvedToken,
-                                          CORINFO_SIG_INFO*       sig,
                                           CORINFO_CALL_INFO*      callInfo,
                                           CORINFO_METHOD_HANDLE*  methHnd,
                                           CORINFO_CONTEXT_HANDLE* exactContextHnd,
@@ -148,20 +157,37 @@ void Compiler::impTryOptimizeAwaitAwaiter(GenTreeCall*            call,
         return;
     }
 
-    CORINFO_LOOKUP   newInstArgLookup;
-    CORINFO_SIG_INFO lookupSig = *sig;
-    if (pResolvedToken->pMethodSpec != nullptr)
+    if (info.compCompHnd->isIntrinsicType(awaiterArg->GetSignatureClassHandle()))
     {
-        lookupSig.pSig  = pResolvedToken->pMethodSpec;
-        lookupSig.cbSig = pResolvedToken->cbMethodSpec;
-        lookupSig.scope = pResolvedToken->tokenScope;
+        // Note: no namespace check here. YieldAwaiter is a nested type, and
+        // some hosts report an empty namespace for those. Being an intrinsic
+        // type is enough to know this is the well known type from CoreLib.
+        const char* className =
+            info.compCompHnd->getClassNameFromMetadata(awaiterArg->GetSignatureClassHandle(), nullptr);
+        if (strcmp(className, "YieldAwaiter") == 0)
+        {
+            // YieldAwaiter is specially recognized by
+            // AsyncHelpers.UnsafeAwaitAwaiter and accomplishes more than just
+            // avoiding a box.
+            JITDUMP("Skipping custom awaiter optimization for YieldAwaiter\n");
+            return;
+        }
     }
 
+    JITDUMP("Optimizing awaiter call [%06u] to read its struct awaiter from the continuation\n", dspTreeID(call));
+
+    CORINFO_LOOKUP         newInstArgLookup;
     bool                   isUnsafe = ni == NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter;
     CORINFO_CONTEXT_HANDLE newExactContextHnd;
     CORINFO_METHOD_HANDLE  newMethod =
-        info.compCompHnd->getAwaitAwaiterInContinuationCall(info.compMethodHnd, &lookupSig, isUnsafe,
+        info.compCompHnd->getAwaitAwaiterInContinuationCall(info.compMethodHnd, pResolvedToken, isUnsafe,
                                                             &newExactContextHnd, &newInstArgLookup);
+
+    if (newMethod == NO_METHOD_HANDLE)
+    {
+        JITDUMP("EE returned no method to call; bailing on optimization\n");
+        return;
+    }
 
     CORINFO_SIG_INFO newSig;
     info.compCompHnd->getMethodSig(newMethod, &newSig);
@@ -178,7 +204,16 @@ void Compiler::impTryOptimizeAwaitAwaiter(GenTreeCall*            call,
         }
     }
 
-    JITDUMP("Optimizing awaiter call [%06u] to read its struct awaiter from the continuation\n", dspTreeID(call));
+#ifdef FEATURE_READYTORUN
+    if (IsAot())
+    {
+        // The entry point was computed for the original method, so recompute it
+        // for the replacement.
+        CORINFO_CONST_LOOKUP newEntryPoint;
+        info.compCompHnd->getFunctionEntryPoint(newMethod, &newEntryPoint);
+        call->setEntryPoint(newEntryPoint);
+    }
+#endif
 
     *methHnd              = newMethod;
     *exactContextHnd      = newExactContextHnd;
@@ -1029,8 +1064,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     if (opts.OptimizationEnabled() && ((ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter) ||
                                        (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter)))
     {
-        impTryOptimizeAwaitAwaiter(call->AsCall(), pResolvedToken, sig, callInfo, &methHnd, &exactContextHnd,
-                                   &instParam, ni);
+        impTryOptimizeAwaitAwaiter(call->AsCall(), pResolvedToken, callInfo, &methHnd, &exactContextHnd, &instParam,
+                                   ni);
     }
 
     // Extra args
@@ -12785,28 +12820,10 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     unsigned arrayElemSize = (elemType == TYP_STRUCT) ? elemLayout->GetSize() : genTypeSize(elemType);
 
-    if (!FitsIn<unsigned char>(arrayElemSize))
-    {
-        // arrayElemSize would be truncated as an unsigned char.
-        // This means the array element is too large. Don't do the optimization.
-        JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because arrayElemSize (%d) is too large\n",
-                arrayElemSize);
-        return nullptr;
-    }
-
     GenTree* val = nullptr;
 
     if (intrinsicName == NI_Array_Set)
     {
-        // Stores of structs require more work, and there are more gets than sets.
-        // TODO-CQ: support SET (`a[i,j,k] = s`) for struct element arrays.
-        if (varTypeIsStruct(elemType))
-        {
-            JITDUMP("impArrayAccessIntrinsic: rejecting SET array intrinsic because elemType is TYP_STRUCT"
-                    " (implementation limitation)\n");
-            return nullptr;
-        }
-
         val = impPopStack().val;
         assert((genActualType(elemType) == genActualType(val->gtType)) ||
                (elemType == TYP_FLOAT && val->TypeIs(TYP_DOUBLE)) || (elemType == TYP_INT && val->TypeIs(TYP_BYREF)) ||
@@ -12831,13 +12848,20 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     GenTree* arr = impPopStack().val;
     assert(arr->TypeIs(TYP_REF));
 
-    GenTree* arrElem = new (this, GT_ARR_ELEM) GenTreeArrElem(TYP_BYREF, arr, static_cast<unsigned char>(rank),
-                                                              static_cast<unsigned char>(arrayElemSize), &inds[0]);
+    GenTree* arrElem = new (this, GT_ARR_ELEM)
+        GenTreeArrElem(TYP_BYREF, arr, static_cast<unsigned char>(rank), arrayElemSize, &inds[0]);
     switch (intrinsicName)
     {
         case NI_Array_Set:
-            assert(!varTypeIsStruct(elemType));
-            arrElem = gtNewStoreIndNode(elemType, arrElem, val);
+            if (varTypeIsStruct(elemType))
+            {
+                arrElem = gtNewStoreValueNode(elemLayout, arrElem, val);
+                arrElem = impStoreStruct(arrElem, CHECK_SPILL_ALL);
+            }
+            else
+            {
+                arrElem = gtNewStoreIndNode(elemType, arrElem, val);
+            }
             break;
 
         case NI_Array_Get:

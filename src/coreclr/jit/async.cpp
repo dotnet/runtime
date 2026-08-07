@@ -336,11 +336,11 @@ bool Compiler::ehIsInsideNonAsyncContextRestoreRegion(BasicBlock* block)
         }
     }
 
-    return false;}
+    return false;
+}
 
 //------------------------------------------------------------------------
 // Compiler::SaveAsyncContexts:
-
 //   Insert code in async methods that saves and restores contexts.
 //
 // Returns:
@@ -898,7 +898,8 @@ bool ContinuationLayoutBuilder::Equals(const ContinuationLayoutBuilder& a, const
 }
 
 //------------------------------------------------------------------------
-// TransformAsync: Run async transformation.
+// Compiler::TransformAsync:
+//   Run the async transformation.
 //
 // Returns:
 //   Suitable phase status.
@@ -1791,6 +1792,10 @@ const ReturnInfo* ContinuationLayout::FindReturn(Compiler* comp, GenTreeCall* ca
 //   Finalize the layout by computing offsets for all fields, locals, and
 //   return values. Allocates the continuation type from the VM.
 //
+// Parameters:
+//   continuationMemberOffsets - Symbolic continuation member offset nodes
+//                               that remain in the method.
+//
 // Returns:
 //   The finalized ContinuationLayout with computed offsets and a class
 //   handle for the continuation type.
@@ -1812,16 +1817,8 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
             ClassLayout* layout = dsc->GetLayout();
             assert(!layout->HasGCByRef());
 
-            if (layout->IsCustomLayout())
-            {
-                inf.Alignment = layout->HasGCPtr() ? TARGET_POINTER_SIZE : 1;
-                inf.Size      = layout->GetSize();
-            }
-            else
-            {
-                inf.Alignment = m_compiler->info.compCompHnd->getClassAlignmentRequirement(layout->GetClassHandle());
-                inf.Size      = layout->GetSize();
-            }
+            inf.Alignment = layout->GetAlignmentRequirement(m_compiler);
+            inf.Size      = layout->GetSize();
         }
         else if (dsc->TypeIs(TYP_REF))
         {
@@ -1865,9 +1862,8 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
 
         if (ret.ReturnType == TYP_STRUCT)
         {
-            retInfo.Size = ret.ReturnLayout->GetSize();
-            retInfo.Alignment =
-                m_compiler->info.compCompHnd->getClassAlignmentRequirement(ret.ReturnLayout->GetClassHandle());
+            retInfo.Size      = ret.ReturnLayout->GetSize();
+            retInfo.Alignment = ret.ReturnLayout->GetAlignmentRequirement(m_compiler);
         }
         else
         {
@@ -1930,11 +1926,8 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
         if (member.Type == ContinuationMemberType::CustomAwaiterOfLayout)
         {
             ClassLayout* memberLayout = member.GetCustomAwaiterLayout();
-            alignment =
-                memberLayout->IsCustomLayout()
-                    ? (memberLayout->HasGCPtr() ? TARGET_POINTER_SIZE : 1)
-                    : m_compiler->info.compCompHnd->getClassAlignmentRequirement(memberLayout->GetClassHandle());
-            size = memberLayout->GetSize();
+            alignment                 = memberLayout->GetAlignmentRequirement(m_compiler);
+            size                      = memberLayout->GetSize();
         }
         else
         {
@@ -2700,6 +2693,12 @@ void AsyncTransformation::CreateSuspension(BasicBlock*                      call
 // AsyncTransformation::StoreAsyncAwaiter:
 //   Move the pseudo awaiter argument into its reserved continuation member.
 //
+// Parameters:
+//   callBlock - Block containing the async awaiter call.
+//   call      - Async awaiter call.
+//   suspendBB - Suspension block in which to store the awaiter.
+//   layout    - Layout of the continuation.
+//
 void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
                                             GenTreeCall*              call,
                                             BasicBlock*               suspendBB,
@@ -2721,6 +2720,10 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
     GenTree* awaiter = awaiterArg->GetNode();
     assert(varTypeIsStruct(awaiter));
 
+    unsigned alignment       = awaiterLayout->GetAlignmentRequirement(m_compiler);
+    unsigned heapAlignment   = std::min(alignment, (unsigned)TARGET_POINTER_SIZE);
+    bool     isStructAligned = heapAlignment == alignment;
+
     if (awaiter->OperIs(GT_FIELD_LIST))
     {
         GenTreeFieldList* fieldList = awaiter->AsFieldList();
@@ -2735,10 +2738,13 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
             GenTree* field = use.GetNode();
             LIR::AsRange(callBlock).Remove(field);
 
+            bool         isAligned  = isStructAligned && ((use.GetOffset() % genTypeSize(use.GetType())) == 0);
+            GenTreeFlags indirFlags = GTF_IND_NONFAULTING | (isAligned ? GTF_EMPTY : GTF_IND_UNALIGNED);
+
             GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
             unsigned offset =
                 OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex] + use.GetOffset();
-            GenTree* store = StoreAtOffset(continuation, offset, field, use.GetType());
+            GenTree* store = StoreAtOffset(continuation, offset, field, use.GetType(), indirFlags);
             LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
         }
 
@@ -2755,11 +2761,13 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
 
         LIR::AsRange(callBlock).Remove(awaiter);
 
+        GenTreeFlags indirFlags = GTF_IND_NONFAULTING | (isStructAligned ? GTF_EMPTY : GTF_IND_UNALIGNED);
+
         GenTree* continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
         unsigned offset       = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex];
         GenTree* offsetNode   = m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL);
         GenTree* address      = m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, continuation, offsetNode);
-        GenTree* store        = m_compiler->gtNewStoreValueNode(awaiterLayout, address, awaiter, GTF_IND_NONFAULTING);
+        GenTree* store        = m_compiler->gtNewStoreValueNode(awaiterLayout, address, awaiter, indirFlags);
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
     }
 
@@ -4565,6 +4573,13 @@ GenTreeLclVarCommon* AsyncTransformation::FindAndRemoveCommonAsyncResumedDef()
 // AsyncTransformation::CreateResumptionsAndSuspensions:
 //   Walk all recorded async states and create the suspension and resumption
 //   IR, continuation layouts, and debug info for each one.
+//
+// Parameters:
+//   continuationMemberOffsets - Symbolic continuation member offset nodes
+//                               that remain in the method.
+//
+// Returns:
+//   The continuation layout containing the continuation member offsets.
 //
 const ContinuationLayout* AsyncTransformation::CreateResumptionsAndSuspensions(
     ArrayStack<GenTree*>& continuationMemberOffsets)

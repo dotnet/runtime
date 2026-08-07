@@ -523,7 +523,7 @@ static
 void
 CrashReportResumeThreads()
 {
-    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 }
 
 static

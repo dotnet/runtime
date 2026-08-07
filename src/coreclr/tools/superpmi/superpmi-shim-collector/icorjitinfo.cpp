@@ -1406,15 +1406,15 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitAwaiterInContinuationCall(
     CORINFO_METHOD_HANDLE callerHandle,
-    CORINFO_SIG_INFO* callSig,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
     bool isUnsafe,
     CORINFO_CONTEXT_HANDLE* contextHandle,
     CORINFO_LOOKUP* instArg)
 {
     mc->cr->AddCall("getAwaitAwaiterInContinuationCall");
     CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitAwaiterInContinuationCall(
-        callerHandle, callSig, isUnsafe, contextHandle, instArg);
-    mc->recGetAwaitAwaiterInContinuationCall(callerHandle, callSig, isUnsafe, contextHandle, instArg, result);
+        callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+    mc->recGetAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg, result);
     return result;
 }
 

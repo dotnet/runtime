@@ -4563,6 +4563,15 @@ bool Compiler::fgUpdateFlowGraph(bool doTailDuplication /* = false */, bool isPh
 
                     bool optimizeJump = isJumpAroundEmpty || isJumpToJoinFree;
 
+#ifdef TARGET_WASM
+                    // Don't reverse a wasm try/catch header's GT_WASM_JEXCEPT.
+                    //
+                    if (block->lastNode()->OperIs(GT_WASM_JEXCEPT))
+                    {
+                        optimizeJump = false;
+                    }
+#endif // TARGET_WASM
+
                     // We do not optimize jumps between two different try regions.
                     // However jumping to a block that is not in any try region is OK
                     //

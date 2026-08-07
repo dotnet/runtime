@@ -307,6 +307,11 @@ namespace System.Formats.Tar
 
             if (copyData)
             {
+                if (archiveStream.CanSeek && _size > archiveStream.Length - archiveStream.Position)
+                {
+                    throw new InvalidDataException(SR.TarSizeFieldExceedsStreamLength);
+                }
+
                 MemoryStream copiedData = new MemoryStream();
                 await TarHelpers.CopyBytesCoreAsync<TAdapter>(archiveStream, copiedData, _size, cancellationToken).ConfigureAwait(false);
                 // Reset position pointer so the user can do the first DataStream read from the beginning

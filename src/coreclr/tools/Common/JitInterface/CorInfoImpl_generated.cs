@@ -328,7 +328,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_EE_INFO*, void> getEEInfo;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_ASYNC_INFO*, void> getAsyncInfo;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CONTEXT_STRUCT**, CORINFO_LOOKUP*, CORINFO_METHOD_STRUCT_*> getAwaitReturnCall;
-            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_SIG_INFO*, byte, CORINFO_CONTEXT_STRUCT**, CORINFO_LOOKUP*, CORINFO_METHOD_STRUCT_*> getAwaitAwaiterInContinuationCall;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_CONTEXT_STRUCT**, CORINFO_LOOKUP*, CORINFO_METHOD_STRUCT_*> getAwaitAwaiterInContinuationCall;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, mdToken> getMethodDefFromMethod;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, nuint, nuint*, nuint> printMethodName;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte**, byte**, byte**, nuint, byte*> getMethodNameFromMetadata;
@@ -2198,12 +2198,12 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static CORINFO_METHOD_STRUCT_* _getAwaitAwaiterInContinuationCall(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_SIG_INFO* callSig, byte isUnsafe, CORINFO_CONTEXT_STRUCT** contextHandle, CORINFO_LOOKUP* instArg)
+        private static CORINFO_METHOD_STRUCT_* _getAwaitAwaiterInContinuationCall(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_RESOLVED_TOKEN* pResolvedToken, byte isUnsafe, CORINFO_CONTEXT_STRUCT** contextHandle, CORINFO_LOOKUP* instArg)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                return _this.getAwaitAwaiterInContinuationCall(callerHandle, callSig, isUnsafe != 0, contextHandle, ref *instArg);
+                return _this.getAwaitAwaiterInContinuationCall(callerHandle, ref *pResolvedToken, isUnsafe != 0, contextHandle, ref *instArg);
             }
             catch (Exception ex)
             {

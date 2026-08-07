@@ -568,7 +568,7 @@ public:
     CORINFO_METHOD_HANDLE repGetAwaitReturnCall(CORINFO_METHOD_HANDLE callerHnd, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg);
 
     void recGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHnd,
-                                              CORINFO_SIG_INFO* callSig,
+                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                               bool isUnsafe,
                                               CORINFO_CONTEXT_HANDLE* contextHandle,
                                               CORINFO_LOOKUP* instArg,
@@ -576,7 +576,7 @@ public:
     void dmpGetAwaitAwaiterInContinuationCall(const Agnostic_GetAwaitAwaiterInContinuationCall& key,
                                               Agnostic_GetAwaitReturnCallResult& value);
     CORINFO_METHOD_HANDLE repGetAwaitAwaiterInContinuationCall(CORINFO_METHOD_HANDLE callerHnd,
-                                                              CORINFO_SIG_INFO* callSig,
+                                                              CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                                               bool isUnsafe,
                                                               CORINFO_CONTEXT_HANDLE* contextHandle,
                                                               CORINFO_LOOKUP* instArg);
@@ -1242,8 +1242,8 @@ enum mcPackets
     Packet_GetAwaitReturnCall = 238,
     Packet_GetAddressAlignment = 239,
     Packet_GetWasmWellKnownGlobals = 240,
-    Packet_GetAwaitAwaiterInContinuationCall = 241,
-    Packet_CanValueClassInstancePointerEscape = 242,
+    Packet_CanValueClassInstancePointerEscape = 241,
+    Packet_GetAwaitAwaiterInContinuationCall = 242,
 };
 
 void SetDebugDumpVariables();
