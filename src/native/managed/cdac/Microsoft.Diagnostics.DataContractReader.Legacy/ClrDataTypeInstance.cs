@@ -15,6 +15,9 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
     private readonly ITypeHandle _typeHandle;
     private readonly IXCLRDataTypeInstance? _legacyImpl;
 
+    internal ITypeHandle TypeHandle => _typeHandle;
+    internal IXCLRDataTypeInstance? LegacyImpl => _legacyImpl;
+
     public ClrDataTypeInstance(Target target, ITypeHandle typeHandle, IXCLRDataTypeInstance? legacyImpl)
     {
         _target = target;

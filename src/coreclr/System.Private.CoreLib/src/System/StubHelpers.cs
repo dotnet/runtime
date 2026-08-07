@@ -2167,14 +2167,17 @@ namespace System.StubHelpers
 
     internal static partial class StubHelpers
     {
+        /// <safety>Runtime FCall that clears the thread's stored last-error slot; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void ClearLastError();
+        internal static safe extern void ClearLastError();
 
+        /// <safety>Runtime FCall that captures the OS last-error into the thread's stored slot; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern void SetLastError();
+        internal static safe extern void SetLastError();
 
+        /// <safety>QCall that throws an interop parameter exception selected by integer resource and parameter indices; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropParamException")]
-        internal static partial void ThrowInteropParamException(int resID, int paramIdx);
+        internal static safe partial void ThrowInteropParamException(int resID, int paramIdx);
 
         internal static IntPtr AddToCleanupList(ref CleanupWorkListElement? pCleanupWorkList, SafeHandle handle)
         {

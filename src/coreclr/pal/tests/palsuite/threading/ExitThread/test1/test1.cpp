@@ -62,7 +62,7 @@ BOOL ExitThreadTest()
                             dwStackSize, lpStartAddress, lpParameter,
                             dwCreationFlags, &dwThreadId );
 
-    if (hThread != INVALID_HANDLE_VALUE)
+    if (hThread != NULL)
     {
         dwRet = WaitForSingleObject(hThread,INFINITE);
 

@@ -91,9 +91,15 @@ INST4(lea,              "lea",              IUM_WR, BAD_CODE,     BAD_CODE,     
 
 //    id                nm                  um      mr            mi            rm                                       lat                tp          tt              flags
 
-// Note that emitter has only partial support for BT. It can only emit the reg,reg form
-// and the registers need to be reversed to get the correct encoding.
+// Note that emitter has only partial support for BT. It can only emit the reg,reg form. The
+// emitter treats it as an MR-form instruction and reverses the registers when encoding.
 INST3(bt,               "bt",               IUM_RD, 0x0F00A3,     BAD_CODE,     0x0F00A3,                                1C,                2X,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF | Encoding_REX2)
+
+// BTS/BTR/BTC are only emitted in their reg,reg form (like BT the emitter reverses the registers
+// when encoding). They read+write the first operand and write the old bit value to CF.
+INST3(bts,              "bts",              IUM_RW, 0x0F00AB,     BAD_CODE,     0x0F00AB,                                1C,                2X,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF | Encoding_REX2)
+INST3(btr,              "btr",              IUM_RW, 0x0F00B3,     BAD_CODE,     0x0F00B3,                                1C,                2X,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF | Encoding_REX2)
+INST3(btc,              "btc",              IUM_RW, 0x0F00BB,     BAD_CODE,     0x0F00BB,                                1C,                2X,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Undefined_ZF  | Undefined_AF  | Undefined_PF  | Writes_CF | Encoding_REX2)
 
 INST3(bsr,              "bsr",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BD,                                3C,                1C,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Undefined_CF | Encoding_REX2)
 INST3(bsf,              "bsf",              IUM_WR, BAD_CODE,     BAD_CODE,     0x0F00BC,                                3C,                1C,         INS_TT_NONE,    Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Undefined_CF | Encoding_REX2)
