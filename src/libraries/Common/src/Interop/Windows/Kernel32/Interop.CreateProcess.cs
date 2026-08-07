@@ -58,6 +58,7 @@ internal static partial class Interop
         }
 
         internal const int PROC_THREAD_ATTRIBUTE_HANDLE_LIST = 0x00020002;
+        internal const int CREATE_BREAKAWAY_FROM_JOB = 0x01000000;
         internal const int EXTENDED_STARTUPINFO_PRESENT = 0x00080000;
 
         [StructLayout(LayoutKind.Sequential)]

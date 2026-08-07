@@ -3,6 +3,9 @@
 
 #ifdef FEATURE_INTERPRETER
 
+#include <limits>
+#include <functional>
+
 #include "threads.h"
 #include "gcenv.h"
 #include "interpexec.h"
@@ -213,11 +216,11 @@ static size_t CreateDispatchTokenForMethod(MethodDesc* pMD)
 }
 
 // Call invoker helpers provided by platform.
-void InvokeManagedMethod(ManagedMethodParam *pParam);
+void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
-void InvokeCalliStub(CalliStubParam* pParam);
+void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet);
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet);
-void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam);
+void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
 InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContextMD);
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
 
@@ -261,22 +264,30 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
 
 // Use the NOINLINE to ensure that the InlinedCallFrame in this method is a lower stack address than any InterpMethodContextFrame values.
 NOINLINE
-void InvokeUnmanagedMethodWithTransition(UnmanagedMethodWithTransitionParam *pParam)
+void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack, InterpMethodContextFrame *pFrame, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
     InlinedCallFrame inlinedCallFrame;
-    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pParam->pFrame->ip;
-    inlinedCallFrame.m_pCallSiteSP = pParam->pFrame;
-    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)pParam->stack;
+    inlinedCallFrame.m_pCallerReturnAddress = (TADDR)pFrame->ip;
+    inlinedCallFrame.m_pCallSiteSP = pFrame;
+    inlinedCallFrame.m_pCalleeSavedFP = (TADDR)stack;
     inlinedCallFrame.m_pThread = GetThread();
     inlinedCallFrame.m_Datum = NULL;
     inlinedCallFrame.Push();
 
-    PAL_TRY(UnmanagedMethodWithTransitionParam*, pParam, pParam)
+    struct Param
+    {
+        MethodDesc *targetMethod;
+        int8_t *pArgs;
+        int8_t *pRet;
+        PCODE callTarget;
+    }
+    param = { targetMethod, pArgs, pRet, callTarget };
+
+    PAL_TRY(Param *, pParam, &param)
     {
         GCX_PREEMP_NO_DTOR();
         // WASM-TODO: Handle unmanaged calling conventions
-        ManagedMethodParam param = { pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget, NULL };
-        InvokeManagedMethod(&param);
+        InvokeManagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget, NULL);
         GCX_PREEMP_NO_DTOR_END();
     }
     PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
@@ -400,28 +411,36 @@ MethodDesc* GetTargetPInvokeMethodDesc(PCODE target)
     return NULL;
 }
 
-void InvokeManagedMethod(ManagedMethodParam* pParam)
+static NOINLINE CallStubHeader *InvokeManagedMethodHelper(MethodDesc *pMD, PCODE target)
 {
     CONTRACTL
     {
         THROWS;
         MODE_ANY;
-        PRECONDITION(CheckPointer(pParam->pMD));
-        PRECONDITION(CheckPointer(pParam->pArgs));
-        PRECONDITION(CheckPointer(pParam->pRet));
+        PRECONDITION(CheckPointer(pMD));
     }
     CONTRACTL_END
 
-    MethodDesc *pMD = pParam->pMD;
-    int8_t *pArgs = pParam->pArgs;
-    int8_t *pRet = pParam->pRet;
-    PCODE target = pParam->target;
-    Object** pContinuationRet = pParam->pContinuationRet;
+    GCX_PREEMP();
+    return UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+}
 
-    CallStubHeader *pHeader = pParam->pMD->GetCalliCookie();
+void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pMD));
+        PRECONDITION(CheckPointer(pArgs));
+        PRECONDITION(CheckPointer(pRet));
+    }
+    CONTRACTL_END
+
+    CallStubHeader *pHeader = pMD->GetCalliCookie();
     if (pHeader == NULL)
     {
-        pHeader = UpdateCallStubForMethod(pMD, target == (PCODE)NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target);
+        pHeader = InvokeManagedMethodHelper(pMD, target);
     }
 
     if (target != (PCODE)NULL)
@@ -455,32 +474,39 @@ void InvokeManagedMethod(ManagedMethodParam* pParam)
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
-    ManagedMethodParam param = { targetMethod, pArgs, pRet, callTarget, NULL };
-    InvokeManagedMethod(&param);
+    InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget, NULL);
 }
 
-void InvokeDelegateInvokeMethod(DelegateInvokeMethodParam* pParam)
+static NOINLINE CallStubHeader *InvokeDelegateInvokeMethodHelper(MethodDesc *pMDDelegateInvoke)
+{
+    CONTRACTL
+    {
+        THROWS;
+        MODE_ANY;
+        PRECONDITION(CheckPointer(pMDDelegateInvoke));
+    }
+    CONTRACTL_END
+
+    GCX_PREEMP();
+    return UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+}
+
+void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet)
 {
     CONTRACTL
     {
         THROWS;
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(pParam->pMDDelegateInvoke));
-        PRECONDITION(CheckPointer(pParam->pArgs));
-        PRECONDITION(CheckPointer(pParam->pRet));
+        PRECONDITION(CheckPointer(pMDDelegateInvoke));
+        PRECONDITION(CheckPointer(pArgs));
+        PRECONDITION(CheckPointer(pRet));
     }
     CONTRACTL_END
-
-    MethodDesc *pMDDelegateInvoke = pParam->pMDDelegateInvoke;
-    int8_t *pArgs = pParam->pArgs;
-    int8_t *pRet  = pParam->pRet;
-    PCODE target  = pParam->target;
-    Object** pContinuationRet = pParam->pContinuationRet;
 
     CallStubHeader *stubHeaderTemplate = pMDDelegateInvoke->GetCalliCookie();
     if (stubHeaderTemplate == NULL)
     {
-        stubHeaderTemplate = UpdateCallStubForMethod(pMDDelegateInvoke, (PCODE)pMDDelegateInvoke->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY));
+        stubHeaderTemplate = InvokeDelegateInvokeMethodHelper(pMDDelegateInvoke);
     }
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
@@ -524,22 +550,16 @@ void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArg
     pHeader->Invoke(pHeader->Routines, pArgs, pRet, pHeader->TotalStackSize, &continuationUnused);
 }
 
-void InvokeCalliStub(CalliStubParam* pParam)
+void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet)
 {
     CONTRACTL
     {
         THROWS;
         MODE_ANY;
-        PRECONDITION(CheckPointer((void*)pParam->ftn));
-        PRECONDITION(CheckPointer(pParam->cookie));
+        PRECONDITION(CheckPointer((void*)ftn));
+        PRECONDITION(CheckPointer(cookie));
     }
     CONTRACTL_END
-
-    PCODE ftn = pParam->ftn;
-    void *cookie = pParam->cookie;
-    int8_t *pArgs = pParam->pArgs;
-    int8_t *pRet = pParam->pRet;
-    Object** pContinuationRet = pParam->pContinuationRet;
 
     // CallStubHeaders encode their destination addresses in the Routines array, so they need to be
     // copied to a local buffer before we can actually set their target address.
@@ -918,19 +938,18 @@ template <typename THelper> static THelper GetPossiblyIndirectHelper(const Inter
     return (THelper)addr;
 }
 
-// At present our behavior for float to int conversions is to perform a saturating conversion down to either 32 or 64 bits
-//  and then perform an unchecked truncation from that intermediate size down to the actual result size.
-// See https://github.com/dotnet/runtime/issues/116823
+// Floating-point to integer conversions saturate at the destination type's range. NaN maps to 0.
 template <typename TResult, typename TIntermediate, typename TSource> static void ConvFpHelper(int8_t *stack, const int32_t *ip)
 {
     static_assert(!std::numeric_limits<TSource>::is_integer, "ConvFpHelper is only for use on floats and doubles");
     static_assert(sizeof(TIntermediate) >= sizeof(TResult), "Intermediate type must not be smaller than result type");
     static_assert(std::numeric_limits<TResult>::is_integer, "ConvFpHelper is only for use on floats and doubles to be converted to integers");
 
-    // First, promote the source value to double
+    // First, promote the source value to double. The bounds are derived from TResult so that
+    // out-of-range values saturate at the destination type's range.
     double src = LOCAL_VAR(ip[2], TSource),
-        minValue = (double)std::numeric_limits<TIntermediate>::lowest(),
-        maxValue = (double)std::numeric_limits<TIntermediate>::max();
+        minValue = (double)std::numeric_limits<TResult>::lowest(),
+        maxValue = (double)std::numeric_limits<TResult>::max();
 
     // (src != src) checks for NaN, then we check whether the min and max values (as represented by their closest double)
     //  properly bound the source value so that when it is truncated it will be in range
@@ -939,11 +958,11 @@ template <typename TResult, typename TIntermediate, typename TSource> static voi
     if (src != src)
         result = 0;
     else if (src >= maxValue)
-        result = (TResult)std::numeric_limits<TIntermediate>::max();
-    else if (!std::numeric_limits<TIntermediate>::is_signed && (src <= -1))
+        result = std::numeric_limits<TResult>::max();
+    else if (!std::numeric_limits<TResult>::is_signed && (src <= -1))
         result = 0;
-    else if (std::numeric_limits<TIntermediate>::is_signed && (src < minValue))
-        result = (TResult)std::numeric_limits<TIntermediate>::lowest();
+    else if (std::numeric_limits<TResult>::is_signed && (src < minValue))
+        result = std::numeric_limits<TResult>::lowest();
     else
         result = (TResult)(TIntermediate)src;
 
@@ -3244,8 +3263,9 @@ SWITCH_OPCODE:
                     {
                         // miss, resolve the virtual method and cache it
                         targetMethod = CallWithSEHWrapper(
-                            [&pMD, &pThisArg]() {
-                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pMD->GetMethodTable());
+                            [&pMD, &pThisArg, pObjMT]() {
+                                GCX_PREEMP();
+                                return pMD->GetMethodDescOfVirtualizedCode(pThisArg, pObjMT, pMD->GetMethodTable());
                             });
                         g_InterpDispatchCache.Insert(dispatchToken, pObjMT, targetMethod, (uint16_t)dispatchTokenHash);
                     }
@@ -3299,6 +3319,7 @@ SWITCH_OPCODE:
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
                     else
                     {
+                        Object** pCalliContinuationRet = pInterpreterFrame->GetContinuationPtr();
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
                         // On portable entry point platforms, managed calli targets are portable
                         // entry points and always have a MethodDesc.
@@ -3319,10 +3340,14 @@ SWITCH_OPCODE:
                             targetMethod->SetCalliCookie(cookie);
                             cookie = targetMethod->GetCalliCookie();
                         }
+
+                        // Only async callees take the continuation arg.
+                        //
+                        if (!targetMethod->IsAsyncMethod())
+                            pCalliContinuationRet = nullptr;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
                         frameNeedsTailcallUpdate = false;
-                        CalliStubParam param = { calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr() };
-                        InvokeCalliStub(&param);
+                        InvokeCalliStub(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pCalliContinuationRet);
                     }
 
                     INTOP_NEXT;
@@ -3357,8 +3382,7 @@ SWITCH_OPCODE:
                     }
                     else
                     {
-                        UnmanagedMethodWithTransitionParam param = { targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget };
-                        InvokeUnmanagedMethodWithTransition(&param);
+                        InvokeUnmanagedMethodWithTransition(targetMethod, stack, pFrame, callArgsAddress, returnValueAddress, callTarget);
                     }
 
                     INTOP_NEXT;
@@ -3413,7 +3437,9 @@ SWITCH_OPCODE:
                             NULL_CHECK(*pThisArg);
                             targetMethod = CallWithSEHWrapper(
                                 [&targetMethod, &pThisArg]() {
-                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, targetMethod->GetMethodTable());
+                                    MethodTable* pMT = (*pThisArg)->GetMethodTable();
+                                    GCX_PREEMP();
+                                    return targetMethod->GetMethodDescOfVirtualizedCode(pThisArg, pMT, targetMethod->GetMethodTable());
                                 });
                         }
                         else
@@ -3490,8 +3516,7 @@ SWITCH_OPCODE:
                     pFrame->ip = ip;
 
                     frameNeedsTailcallUpdate = false;
-                    DelegateInvokeMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, targetAddress, pInterpreterFrame->GetContinuationPtr() };
-                    InvokeDelegateInvokeMethod(&param);
+                    InvokeDelegateInvokeMethod(targetMethod, callArgsAddress, returnValueAddress, targetAddress, pInterpreterFrame->GetContinuationPtr());
                     INTOP_NEXT;
                 }
 
@@ -3529,8 +3554,7 @@ CALL_INTERP_METHOD:
                         // If we didn't get the interpreter code pointer setup, then this is a method we need to invoke as a compiled method.
                         // Interpreter-FIXME: Implement tailcall via helpers, see https://github.com/dotnet/runtime/blob/main/docs/design/features/tailcalls-with-helpers.md
                         frameNeedsTailcallUpdate = false;
-                        ManagedMethodParam param = { targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL, pInterpreterFrame->GetContinuationPtr() };
-                        InvokeManagedMethod(&param);
+                        InvokeManagedMethod(targetMethod, callArgsAddress, returnValueAddress, (PCODE)NULL, pInterpreterFrame->GetContinuationPtr());
                         INTOP_NEXT;
                     }
 

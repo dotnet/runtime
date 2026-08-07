@@ -47,7 +47,7 @@ namespace System.Linq.Parallel.Tests
             Assert.Equal(Functions.SumRange(0, count), labeled.Item.WithDegreeOfParallelism(degree).Sum());
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Coordinates work across threads via a Barrier; deadlocks/fails on single-threaded platforms.
         [MemberData(nameof(DegreeData), new[] { 1, 4, 32 }, new int[] { /* same as count */ })]
         [OuterLoop]
         public static void DegreeOfParallelism_Barrier(Labeled<ParallelQuery<int>> labeled, int count, int degree)
@@ -59,7 +59,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Pipelined enumeration relies on concurrent producer threads; unsupported on single-threaded platforms.
         [MemberData(nameof(DegreeData), new int[] { /* Sources.OuterLoopCount */ }, new[] { 1, 4, 64, 128 })]
         [OuterLoop]
         public static void DegreeOfParallelism_Pipelining(Labeled<ParallelQuery<int>> labeled, int count, int degree)
@@ -74,7 +74,7 @@ namespace System.Linq.Parallel.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))] // Pipelined enumeration relies on concurrent producer threads; unsupported on single-threaded platforms.
         [MemberData(nameof(DegreeData), new[] { 1, 4 }, new int[] { /* same as count */ })]
         [MemberData(nameof(DegreeData), new[] { 32 }, new[] { 4 })]
         [OuterLoop]

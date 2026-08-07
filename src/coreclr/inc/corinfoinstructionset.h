@@ -14,6 +14,7 @@
 enum CORINFO_InstructionSet
 {
     InstructionSet_ILLEGAL = 0,
+    InstructionSet_Vector = 126,
     InstructionSet_NONE = 127,
 #ifdef TARGET_ARM64
     InstructionSet_ArmBase=1,
@@ -39,27 +40,29 @@ enum CORINFO_InstructionSet
     InstructionSet_SveAes=21,
     InstructionSet_SveSha3=22,
     InstructionSet_SveSm4=23,
-    InstructionSet_ArmBase_Arm64=24,
-    InstructionSet_AdvSimd_Arm64=25,
-    InstructionSet_Aes_Arm64=26,
-    InstructionSet_Crc32_Arm64=27,
-    InstructionSet_Dp_Arm64=28,
-    InstructionSet_Rdm_Arm64=29,
-    InstructionSet_Sha1_Arm64=30,
-    InstructionSet_Sha256_Arm64=31,
-    InstructionSet_Sve_Arm64=32,
-    InstructionSet_Sve2_Arm64=33,
-    InstructionSet_Sha3_Arm64=34,
-    InstructionSet_Sm4_Arm64=35,
-    InstructionSet_SveAes_Arm64=36,
-    InstructionSet_SveSha3_Arm64=37,
-    InstructionSet_SveSm4_Arm64=38,
+    InstructionSet_Cssc=24,
+    InstructionSet_ArmBase_Arm64=25,
+    InstructionSet_AdvSimd_Arm64=26,
+    InstructionSet_Aes_Arm64=27,
+    InstructionSet_Crc32_Arm64=28,
+    InstructionSet_Dp_Arm64=29,
+    InstructionSet_Rdm_Arm64=30,
+    InstructionSet_Sha1_Arm64=31,
+    InstructionSet_Sha256_Arm64=32,
+    InstructionSet_Sve_Arm64=33,
+    InstructionSet_Sve2_Arm64=34,
+    InstructionSet_Sha3_Arm64=35,
+    InstructionSet_Sm4_Arm64=36,
+    InstructionSet_SveAes_Arm64=37,
+    InstructionSet_SveSha3_Arm64=38,
+    InstructionSet_SveSm4_Arm64=39,
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
     InstructionSet_RiscV64Base=1,
     InstructionSet_Zba=2,
     InstructionSet_Zbb=3,
     InstructionSet_Zbs=4,
+    InstructionSet_Zicond=5,
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
     InstructionSet_WasmBase=1,
@@ -454,6 +457,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Zba);
         if (resultflags.HasInstructionSet(InstructionSet_Zbs) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
             resultflags.RemoveInstructionSet(InstructionSet_Zbs);
+        if (resultflags.HasInstructionSet(InstructionSet_Zicond) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
+            resultflags.RemoveInstructionSet(InstructionSet_Zicond);
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
         if (resultflags.HasInstructionSet(InstructionSet_Vector128) && !resultflags.HasInstructionSet(InstructionSet_PackedSimd))
@@ -744,6 +749,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "SveSm4";
         case InstructionSet_SveSm4_Arm64 :
             return "SveSm4_Arm64";
+        case InstructionSet_Cssc :
+            return "Cssc";
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
         case InstructionSet_RiscV64Base :
@@ -754,6 +761,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Zbb";
         case InstructionSet_Zbs :
             return "Zbs";
+        case InstructionSet_Zicond :
+            return "Zicond";
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
         case InstructionSet_WasmBase :
@@ -957,12 +966,14 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_SveAes: return InstructionSet_SveAes;
         case READYTORUN_INSTRUCTION_SveSha3: return InstructionSet_SveSha3;
         case READYTORUN_INSTRUCTION_SveSm4: return InstructionSet_SveSm4;
+        case READYTORUN_INSTRUCTION_Cssc: return InstructionSet_Cssc;
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
         case READYTORUN_INSTRUCTION_RiscV64Base: return InstructionSet_RiscV64Base;
         case READYTORUN_INSTRUCTION_Zba: return InstructionSet_Zba;
         case READYTORUN_INSTRUCTION_Zbb: return InstructionSet_Zbb;
         case READYTORUN_INSTRUCTION_Zbs: return InstructionSet_Zbs;
+        case READYTORUN_INSTRUCTION_Zicond: return InstructionSet_Zicond;
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
         case READYTORUN_INSTRUCTION_WasmBase: return InstructionSet_WasmBase;

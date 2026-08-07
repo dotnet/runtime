@@ -64,6 +64,9 @@ internal struct AMD64Context : IPlatformContext
         unwinder.Unwind(ref this);
     }
 
+    // Clears the x64 hardware trace flag (EFLAGS.TF, bit 0x100).
+    public void UnsetSingleStepFlag() => EFlags &= ~0x100;
+
     public bool TrySetRegister(string name, TargetNUInt value)
     {
         if (name.Equals("cs", StringComparison.OrdinalIgnoreCase)) { Cs = (ushort)value.Value; return true; }

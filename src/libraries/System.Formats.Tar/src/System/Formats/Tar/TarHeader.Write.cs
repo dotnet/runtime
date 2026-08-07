@@ -664,7 +664,7 @@ namespace System.Formats.Tar
 
         // Calculates how many data bytes should be written, depending on the position pointer of the stream.
         // Only works if the stream is seekable.
-        public long GetTotalDataBytesToWrite()
+        internal long GetTotalDataBytesToWrite()
         {
             if (_dataStream == null)
             {
@@ -686,7 +686,7 @@ namespace System.Formats.Tar
             return checksum;
         }
 
-        // Writes the magic and vresion fields of a gnu entry into the specified spans.
+        // Writes the magic and version fields of a gnu entry into the specified spans.
         private static int WriteGnuMagicAndVersion(Span<byte> buffer)
         {
             int checksum = WriteLeftAlignedBytesAndGetChecksum(GnuMagicBytes, buffer.Slice(FieldLocations.Magic, FieldLengths.Magic));

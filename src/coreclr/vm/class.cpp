@@ -301,8 +301,6 @@ VOID EEClass::FixupFieldDescForEnC(MethodTable * pMT, EnCFieldDesc *pFD, mdField
     // We set this when we first created the FieldDesc, but initializing the FieldDesc
     // may have overwritten it so we need to set it again.
     pFD->SetEnCNew();
-
-    return;
 }
 
 //---------------------------------------------------------------------------------------
@@ -322,7 +320,7 @@ HRESULT EEClass::AddField(MethodTable* pMT, mdFieldDef fieldDef, FieldDesc** ppN
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(ppNewFD != NULL);
     }
@@ -442,7 +440,7 @@ HRESULT EEClass::AddFieldDesc(
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(ppNewFD != NULL);
     }
@@ -508,7 +506,7 @@ HRESULT EEClass::AddMethod(MethodTable* pMT, mdMethodDef methodDef, MethodDesc**
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(methodDef != mdTokenNil);
     }
@@ -776,7 +774,7 @@ HRESULT EEClass::AddMethodDesc(
     {
         THROWS;
         GC_NOTRIGGER;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(pMT != NULL);
         PRECONDITION(methodDef != mdTokenNil);
         PRECONDITION(ppNewMD != NULL);
@@ -964,7 +962,7 @@ EEClass::CheckVarianceInSig(
                 return TRUE;
 
             // Covariant and contravariant parameters can *only* appear in resp. covariant and contravariant positions
-            return ((CorGenericParamAttr) (pVarianceInfo[index]) == position);
+            return (CorGenericParamAttr) (pVarianceInfo[index]) == position;
         }
 
         case ELEMENT_TYPE_GENERICINST:
@@ -1252,13 +1250,12 @@ namespace
 /*static*/
 void ClassLoader::LoadExactParents(MethodTable* pMT)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(pMT->CheckLoadLevel(CLASS_LOAD_EXACTPARENTS));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     if (!pMT->IsCanonicalMethodTable())
     {
@@ -1309,7 +1306,7 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
     // We can now mark this type as having exact parents
     pMT->SetHasExactParent();
 
-    RETURN;
+    _ASSERTE(pMT->CheckLoadLevel(CLASS_LOAD_EXACTPARENTS));
 }
 
 // Get CorElementType of the reduced type of a type.
@@ -1708,17 +1705,17 @@ void TypeHandle::NotifyDebuggerUnload() const
 // This is needed when creating a delegate to an instance method in a value type
 MethodDesc* MethodTable::GetBoxedEntryPointMD(MethodDesc *pMD)
 {
-    CONTRACT (MethodDesc *) {
+    CONTRACTL {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(IsValueType());
         PRECONDITION(!pMD->ContainsGenericVariables());
         PRECONDITION(!pMD->IsUnboxingStub());
-        POSTCONDITION(RETVAL->IsUnboxingStub());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
-    RETURN MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
+    return MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
                                                         pMD->GetMethodTable(),
                                                         TRUE /* get unboxing entry point */,
                                                         pMD->GetMethodInstantiation(),
@@ -1731,7 +1728,8 @@ MethodDesc* MethodTable::GetBoxedEntryPointMD(MethodDesc *pMD)
 // This is used when generating the code for an BoxedEntryPointStub.
 MethodDesc* MethodTable::GetUnboxedEntryPointMD(MethodDesc *pMD)
 {
-    CONTRACT (MethodDesc *) {
+    CONTRACTL {
+        MODE_PREEMPTIVE;
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
@@ -1740,11 +1738,10 @@ MethodDesc* MethodTable::GetUnboxedEntryPointMD(MethodDesc *pMD)
         // so move the assert to the caller when needed
         //PRECONDITION(!pMD->ContainsGenericVariables());
         PRECONDITION(pMD->IsUnboxingStub());
-        POSTCONDITION(!RETVAL->IsUnboxingStub());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     BOOL allowInstParam = (pMD->GetNumGenericMethodArgs() == 0);
-    RETURN MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
+    return MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
                                                         this,
                                                         FALSE /* don't get unboxing entry point */,
                                                         pMD->GetMethodInstantiation(),
@@ -1757,7 +1754,7 @@ MethodDesc* MethodTable::GetUnboxedEntryPointMD(MethodDesc *pMD)
 // This is used when generating the code for an BoxedEntryPointStub.
 MethodDesc* MethodTable::GetExistingUnboxedEntryPointMD(MethodDesc *pMD)
 {
-    CONTRACT (MethodDesc *) {
+    CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM(););
@@ -1766,11 +1763,10 @@ MethodDesc* MethodTable::GetExistingUnboxedEntryPointMD(MethodDesc *pMD)
         // so move the assert to the caller when needed
         //PRECONDITION(!pMD->ContainsGenericVariables());
         PRECONDITION(pMD->IsUnboxingStub());
-        POSTCONDITION(!RETVAL->IsUnboxingStub());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     BOOL allowInstParam = (pMD->GetNumGenericMethodArgs() == 0);
-    RETURN MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
+    return MethodDesc::FindOrCreateAssociatedMethodDesc(pMD,
                                                         this,
                                                         FALSE /* don't get unboxing entry point */,
                                                         pMD->GetMethodInstantiation(),
@@ -2109,7 +2105,7 @@ bool MethodTable::NativeRequiresAlign8()
 
     if (HasLayout() && !IsBlittable())
     {
-        return (GetNativeLayoutInfo()->GetLargestAlignmentRequirement() >= 8);
+        return GetNativeLayoutInfo()->GetLargestAlignmentRequirement() >= 8;
     }
     return RequiresAlign8();
 }
@@ -2867,11 +2863,6 @@ CorClassIfaceAttr MethodTable::GetComClassInterfaceType()
     // Classes that either have generic instantiations (G<int>) or derive from classes
     // with generic instantiations (D : B<int>) are always considered ClassInterfaceType.None.
     if (HasGenericClassInstantiationInHierarchy())
-        return clsIfNone;
-
-    // If the class does not support IClassX,
-    // then it is considered ClassInterfaceType.None unless explicitly overridden by the CA
-    if (!ClassSupportsIClassX(this))
         return clsIfNone;
 
     return ReadClassInterfaceTypeCustomAttribute(TypeHandle(this));

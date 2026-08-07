@@ -266,7 +266,7 @@ namespace ILCompiler
                 if (parameterizedType.IsArray)
                 {
                     LayoutInt elementSize = parameterType.GetElementSize();
-                    if (!elementSize.IsIndeterminate && elementSize.AsInt >= ushort.MaxValue)
+                    if (!elementSize.IsIndeterminate && elementSize.AsInt > ushort.MaxValue)
                     {
                         // Element size over 64k can't be encoded in the GCDesc
                         ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadValueClassTooLarge, parameterType);

@@ -80,6 +80,7 @@ LWM(GetDelegateCtor, Agnostic_GetDelegateCtorIn, Agnostic_GetDelegateCtorOut)
 LWM(GetEEInfo, DWORD, Agnostic_CORINFO_EE_INFO)
 LWM(GetAsyncInfo, DWORD, Agnostic_CORINFO_ASYNC_INFO)
 LWM(GetAwaitReturnCall, DWORDLONG, Agnostic_GetAwaitReturnCallResult)
+LWM(GetAwaitAwaiterInContinuationCall, Agnostic_GetAwaitAwaiterInContinuationCall, Agnostic_GetAwaitReturnCallResult)
 LWM(GetEHinfo, DLD, Agnostic_CORINFO_EH_CLAUSE)
 LWM(GetStaticFieldContent, DLDDD, DD)
 LWM(GetObjectContent, DLDD, DD)
@@ -173,6 +174,9 @@ LWM(GetUnmanagedCallConv, MethodOrSigInfoValue, DD)
 LWM(DoesFieldBelongToClass, DLDL, DWORD)
 DENSELWM(SigInstHandleMap, DWORDLONG)
 LWM(GetWasmTypeSymbol, Agnostic_GetWasmTypeSymbol, DWORDLONG)
+LWM(GetAddressAlignment, DWORDLONG, DWORD)
+LWM(CanValueClassInstancePointerEscape, DWORDLONG, DWORD)
+LWM(GetWasmWellKnownGlobals, DWORD, Agnostic_CORINFO_WASM_WELLKNOWN_GLOBALS)
 
 #undef LWM
 #undef DENSELWM

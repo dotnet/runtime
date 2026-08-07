@@ -40,6 +40,7 @@ namespace Internal.JitInterface
         ARM64_SveAes = InstructionSet_ARM64.SveAes,
         ARM64_SveSha3 = InstructionSet_ARM64.SveSha3,
         ARM64_SveSm4 = InstructionSet_ARM64.SveSm4,
+        ARM64_Cssc = InstructionSet_ARM64.Cssc,
         ARM64_ArmBase_Arm64 = InstructionSet_ARM64.ArmBase_Arm64,
         ARM64_AdvSimd_Arm64 = InstructionSet_ARM64.AdvSimd_Arm64,
         ARM64_Aes_Arm64 = InstructionSet_ARM64.Aes_Arm64,
@@ -59,6 +60,7 @@ namespace Internal.JitInterface
         RiscV64_Zba = InstructionSet_RiscV64.Zba,
         RiscV64_Zbb = InstructionSet_RiscV64.Zbb,
         RiscV64_Zbs = InstructionSet_RiscV64.Zbs,
+        RiscV64_Zicond = InstructionSet_RiscV64.Zicond,
         Wasm32_WasmBase = InstructionSet_Wasm32.WasmBase,
         Wasm32_PackedSimd = InstructionSet_Wasm32.PackedSimd,
         Wasm32_Vector128 = InstructionSet_Wasm32.Vector128,
@@ -182,21 +184,22 @@ namespace Internal.JitInterface
         SveAes = 21,
         SveSha3 = 22,
         SveSm4 = 23,
-        ArmBase_Arm64 = 24,
-        AdvSimd_Arm64 = 25,
-        Aes_Arm64 = 26,
-        Crc32_Arm64 = 27,
-        Dp_Arm64 = 28,
-        Rdm_Arm64 = 29,
-        Sha1_Arm64 = 30,
-        Sha256_Arm64 = 31,
-        Sve_Arm64 = 32,
-        Sve2_Arm64 = 33,
-        Sha3_Arm64 = 34,
-        Sm4_Arm64 = 35,
-        SveAes_Arm64 = 36,
-        SveSha3_Arm64 = 37,
-        SveSm4_Arm64 = 38,
+        Cssc = 24,
+        ArmBase_Arm64 = 25,
+        AdvSimd_Arm64 = 26,
+        Aes_Arm64 = 27,
+        Crc32_Arm64 = 28,
+        Dp_Arm64 = 29,
+        Rdm_Arm64 = 30,
+        Sha1_Arm64 = 31,
+        Sha256_Arm64 = 32,
+        Sve_Arm64 = 33,
+        Sve2_Arm64 = 34,
+        Sha3_Arm64 = 35,
+        Sm4_Arm64 = 36,
+        SveAes_Arm64 = 37,
+        SveSha3_Arm64 = 38,
+        SveSm4_Arm64 = 39,
     }
 
     public enum InstructionSet_RiscV64
@@ -207,6 +210,7 @@ namespace Internal.JitInterface
         Zba = 2,
         Zbb = 3,
         Zbs = 4,
+        Zicond = 5,
     }
 
     public enum InstructionSet_Wasm32
@@ -599,6 +603,8 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
                         if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zbs))
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_Zicond))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_RiscV64Base);
                         break;
 
                     case TargetArchitecture.Wasm32:
@@ -904,6 +910,8 @@ namespace Internal.JitInterface
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_Zba);
                         if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
                             resultflags.AddInstructionSet(InstructionSet.RiscV64_Zbs);
+                        if (resultflags.HasInstructionSet(InstructionSet.RiscV64_RiscV64Base))
+                            resultflags.AddInstructionSet(InstructionSet.RiscV64_Zicond);
                         break;
 
                     case TargetArchitecture.Wasm32:
@@ -1095,7 +1103,14 @@ namespace Internal.JitInterface
                 { ("armv8.4-a",  TargetArchitecture.ARM64), "armv8.3-a dotprod rcpc2" },
                 { ("armv8.5-a",  TargetArchitecture.ARM64), "armv8.4-a" },
                 { ("armv8.6-a",  TargetArchitecture.ARM64), "armv8.5-a" },
+                { ("armv8.7-a",  TargetArchitecture.ARM64), "armv8.6-a" },
+                { ("armv8.8-a",  TargetArchitecture.ARM64), "armv8.7-a" },
+                { ("armv8.9-a",  TargetArchitecture.ARM64), "armv8.8-a cssc" },
                 { ("apple-m1",   TargetArchitecture.ARM64), "armv8.5-a" },
+                { ("apple-m2",   TargetArchitecture.ARM64), "armv8.6-a" },
+                { ("apple-m3",   TargetArchitecture.ARM64), "armv8.6-a" },
+                { ("apple-m4",   TargetArchitecture.ARM64), "armv8.7-a" },
+                { ("apple-m5",   TargetArchitecture.ARM64), "armv8.9-a" },
             };
 
         public static IEnumerable<string> AllCpuNames =>
@@ -1149,6 +1164,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("sve_aes", "SveAes", InstructionSet.ARM64_SveAes, true);
                     yield return new InstructionSetInfo("sve_sha3", "SveSha3", InstructionSet.ARM64_SveSha3, true);
                     yield return new InstructionSetInfo("sve_sm4", "SveSm4", InstructionSet.ARM64_SveSm4, true);
+                    yield return new InstructionSetInfo("cssc", "", InstructionSet.ARM64_Cssc, true);
                     break;
 
                 case TargetArchitecture.RiscV64:
@@ -1156,6 +1172,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("zba", "", InstructionSet.RiscV64_Zba, true);
                     yield return new InstructionSetInfo("zbb", "", InstructionSet.RiscV64_Zbb, true);
                     yield return new InstructionSetInfo("zbs", "", InstructionSet.RiscV64_Zbs, true);
+                    yield return new InstructionSetInfo("zicond", "", InstructionSet.RiscV64_Zicond, true);
                     break;
 
                 case TargetArchitecture.Wasm32:

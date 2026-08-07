@@ -2555,6 +2555,34 @@ namespace System.Tests
             }
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid))]
+        [InlineData("GMT+1", 1)]
+        [InlineData("GMT-1", -1)]
+        [InlineData("GMT+5", 5)]
+        [InlineData("GMT-5", -5)]
+        [InlineData("GMT+12", 12)]
+        [InlineData("GMT-12", -12)]
+        public static void AndroidGMTOffsetTimeZoneTest(string id, int expectedOffsetHours)
+        {
+            TimeZoneInfo tz = TimeZoneInfo.FindSystemTimeZoneById(id);
+            Assert.Equal(TimeSpan.FromHours(expectedOffsetHours), tz.BaseUtcOffset);
+            Assert.False(tz.SupportsDaylightSavingTime);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid), nameof(PlatformDetection.IsIcuGlobalization))]
+        public static void AndroidGMTNameNotMistakenForGMTOffsetTimeZoneTest()
+        {
+            // "GMT Standard Time" is the Windows time zone for Great Britain (Europe/London)
+            // which observes daylight savings time. It should not be treated as a fixed-offset
+            // "GMT+/-" time zone.
+            Assert.True(TimeZoneInfo.TryFindSystemTimeZoneById("GMT Standard Time", out TimeZoneInfo tz));
+            Assert.True(tz.SupportsDaylightSavingTime);
+
+            // In summer, London observes BST (UTC+1)
+            var summerDate = new DateTime(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+            Assert.Equal(TimeSpan.FromHours(1), tz.GetUtcOffset(summerDate));
+        }
+
         public static bool SupportIanaNamesConversion => PlatformDetection.IsNotMobile && PlatformDetection.ICUVersion.Major >= 52;
         public static bool SupportIanaNamesConversionAndRemoteExecution => SupportIanaNamesConversion && RemoteExecutor.IsSupported;
         public static bool DoesNotSupportIanaNamesConversion => !SupportIanaNamesConversion;

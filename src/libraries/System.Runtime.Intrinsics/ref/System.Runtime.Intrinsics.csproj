@@ -4,6 +4,7 @@
     <!-- https://github.com/dotnet/dotnet/issues/5640 -->
     <NoWarn>$(NoWarn);CS9368</NoWarn>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Features>$(Features);updated-memory-safety-rules</Features>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.Intrinsics.cs" />

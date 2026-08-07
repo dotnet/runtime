@@ -99,12 +99,16 @@ schedules:
 pr:
   branches:
     include:
-    - main
+    - '*'
+    exclude:
+    - release/*
+    - internal/release/*
   paths:
     include:
     - eng/pipelines/**
     - src/native/managed/cdac/**
     - src/coreclr/debug/runtimeinfo/**
+    - src/coreclr/vm/cdacstress.cpp
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml

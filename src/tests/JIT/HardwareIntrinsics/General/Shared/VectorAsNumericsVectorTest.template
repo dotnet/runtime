@@ -42,9 +42,9 @@ namespace JIT.HardwareIntrinsics.General
     {
         private static readonly int LargestVectorSize = {LargestVectorSize};
 
-        private static readonly int VectorElementCount = Unsafe.SizeOf<{VectorType}<{BaseType}>>() / sizeof({BaseType});
+        private static readonly int VectorElementCount = sizeof({VectorType}<{BaseType}>) / sizeof({BaseType});
 
-        private static readonly int NumericsElementCount = Unsafe.SizeOf<{NumericsType}<{BaseType}>>() / sizeof({BaseType});
+        private static readonly int NumericsElementCount = sizeof({NumericsType}<{BaseType}>) / sizeof({BaseType});
 
         public bool Succeeded { get; set; } = true;
 

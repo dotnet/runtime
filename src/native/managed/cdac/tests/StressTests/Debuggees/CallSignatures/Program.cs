@@ -3,8 +3,10 @@
 
 using System;
 using System.IO;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 /// <summary>
 /// Exhaustive cdacstress ArgIterator debuggee. Covers a wide variety of
@@ -26,6 +28,8 @@ using System.Runtime.InteropServices;
 ///   - Generic value-type instance methods (interface dispatch)
 ///   - Enum arguments (Int32-, Int64-, byte-backed)
 ///   - Large-struct return (HasRetBuffArg)
+///   - HFA / HVA: float, double, Vector64<T>, Vector128<T>, System.Numerics.Vector<T>
+///     plus negative shapes (too many fields, mixed FP types)
 ///   - Mutually-recursive deep stack
 ///
 /// __arglist / vararg coverage lives in the dedicated VarArgs debuggee
@@ -90,6 +94,8 @@ internal static unsafe class Program
         GenericCategory();
         EnumCategory();
         ReturnCategory();
+        HfaCategory();
+        SysVCategory();
         DeepStackCategory();
     }
 
@@ -437,7 +443,200 @@ internal static unsafe class Program
     [MethodImpl(MethodImplOptions.NoInlining)] private static BigStruct ReturnLarge() { AllocBurst(); return new BigStruct { A = 1 }; }
     [MethodImpl(MethodImplOptions.NoInlining)] private static Span<byte> ReturnSpan(Span<byte> s) { AllocBurst(); return s; }
 
-    // ===== Category 12: deep stack =====
+    // ===== Category 12: HFA / HVA =====
+    // HFAs (Homogeneous Floating-point Aggregates) and HVAs (Homogeneous Vector
+    // Aggregates) are classified at MethodTable layout time on FEATURE_HFA
+    // targets (ARM / ARM64). The ArgIterator code path for HFA/HVA args is
+    // distinct from regular structs, so these debuggee methods exist primarily
+    // to exercise the cDAC's TryGetHFAElementSize walker on ARM/ARM64. On
+    // Windows x86/x64 the runtime does not classify these types as HFAs, so
+    // they go through the regular struct path -- the cDAC matches that, and
+    // the ARGITER stress assertion still passes.
+    //
+    // Negative shapes (Float5, MixedR4R8) are included so the walker correctly
+    // returns "not an HFA" -- the runtime never sets the IsHFA flag on these.
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void HfaCategory()
+    {
+        // Float HFAs of legal arity (1..4 elements).
+        PassFloat2(default);
+        PassFloat3(default);
+        PassFloat4(default);
+
+        // Double HFAs of legal arity.
+        PassDouble2(default);
+        PassDouble3(default);
+        PassDouble4(default);
+
+        // Nested HFAs: still classified as HFAs because the recursive
+        // first-field walker reaches R4/R8.
+        PassNestedFloat3(default);
+        PassNestedDouble4(default);
+
+        // Mixed-in args: HFA in register, refs elsewhere, ensures
+        // ArgIterator correctly accounts for FP register consumption
+        // when emitting GCRefMap tokens for the trailing INTEGER args.
+        HfaThenRef(default, "x");
+        RefThenHfa("x", default);
+        TwoFloatHfas(default, default);
+
+        // Returns: HFA returns use FP-register return paths on ARM/ARM64,
+        // not the integer-return path, so HasRetBuffArg should be false.
+        _ = ReturnFloat3();
+        _ = ReturnDouble2();
+
+        // HVAs (ARM64 only at the runtime level; classification falls
+        // through to "not HFA" on other targets). All passed as default.
+        Vec64FloatArg(default);
+        Vec128FloatArg(default);
+        VecNumericsFloatArg(default);
+
+        // Negative cases -- runtime does not flag these as HFAs.
+        PassFloat5(default);
+        PassMixedR4R8(default);
+    }
+
+    // --- HFA struct shapes ---
+    private struct Float2 { public float A, B; }
+    private struct Float3 { public float A, B, C; }
+    private struct Float4 { public float A, B, C, D; }
+    private struct Float5 { public float A, B, C, D, E; }       // >4 fields: not HFA
+    private struct Double2 { public double A, B; }
+    private struct Double3 { public double A, B, C; }
+    private struct Double4 { public double A, B, C, D; }
+    private struct MixedR4R8 { public float A; public double B; } // mixed FP: not HFA
+
+    // Nested HFA: first field is itself an HFA, total still <=4 R4/R8 elements.
+    private struct NestedFloat3 { public Float2 Inner; public float C; }
+    private struct NestedDouble4 { public Double2 First; public Double2 Second; }
+
+    // --- HFA arg / return helpers ---
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void PassFloat2(Float2 s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void PassFloat3(Float3 s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B + s.C)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void PassFloat4(Float4 s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B + s.C + s.D)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void PassFloat5(Float5 s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.E)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void PassDouble2(Double2 s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void PassDouble3(Double3 s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B + s.C)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void PassDouble4(Double4 s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B + s.C + s.D)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void PassMixedR4R8(MixedR4R8 s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void PassNestedFloat3(NestedFloat3 s) { AllocBurst(); GC.KeepAlive((object)(s.Inner.A + s.C)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void PassNestedDouble4(NestedDouble4 s) { AllocBurst(); GC.KeepAlive((object)(s.First.A + s.Second.B)); }
+
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void HfaThenRef(Float3 s, string r) { AllocBurst(); GC.KeepAlive((object)(s.A)); GC.KeepAlive(r); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void RefThenHfa(string r, Float3 s) { AllocBurst(); GC.KeepAlive(r); GC.KeepAlive((object)(s.A)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void TwoFloatHfas(Float2 a, Float2 b) { AllocBurst(); GC.KeepAlive((object)(a.A + b.A)); }
+
+    [MethodImpl(MethodImplOptions.NoInlining)] private static Float3 ReturnFloat3() { AllocBurst(); return default; }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static Double2 ReturnDouble2() { AllocBurst(); return default; }
+
+    // --- HVA shapes (intrinsic Vector types). On non-FEATURE_HFA targets
+    //     these go through the regular struct path; on ARM64 they hit the
+    //     GetVectorHFAElementSize TypeDef-name match (Vector64/128 in
+    //     System.Runtime.Intrinsics, Vector<T> in System.Numerics). ---
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void Vec64FloatArg(Vector64<float> v) { AllocBurst(); GC.KeepAlive((object)v.GetElement(0)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void Vec128FloatArg(Vector128<float> v) { AllocBurst(); GC.KeepAlive((object)v.GetElement(0)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void VecNumericsFloatArg(Vector<float> v) { AllocBurst(); GC.KeepAlive((object)v[0]); }
+
+    // ===== Category 13: SystemV-AMD64 struct-in-register shapes =====
+    // On non-Unix-x64 targets the cDAC's descriptor is absent so classification
+    // returns "not in registers" and the runtime path agrees trivially. Linux/
+    // macOS x64 read the cached SystemVEightByteRegistersInfo and produce
+    // different GCRefMap tokens per eightbyte classification.
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void SysVCategory()
+    {
+        // Single-eightbyte shapes.
+        SysVIntPair(default);           // Integer
+        SysVFloatPair(default);         // SSE
+        SysVIntFloat(default);          // mixed -> Integer (Integer wins)
+        SysVSingleRef(default);         // IntegerReference
+
+        // Two-eightbyte shapes.
+        SysVLongLong(default);          // Integer + Integer
+        SysVLongDouble(default);        // Integer + SSE
+        SysVDoubleDouble(default);      // SSE + SSE
+        SysVRefInt(default);            // IntegerReference + Integer
+
+        SysVNested(default);            // nested value type
+
+        // Span<byte>: IntegerByRef + Integer.
+        Span<byte> sp = stackalloc byte[8];
+        SysVSpanByte(sp);
+
+        SysVThreeRefs(default);         // 24 bytes -> stack
+        SysVVector128Arg(default);      // intrinsic Vector -> stack
+        SysVInt128Arg(default);         // 2 Integer eightbytes (runtime doesn't reject Int128 by name)
+        SysVEmpty(default);             // 1-byte empty -> 1 Integer eightbyte (NoClass normalized to Integer)
+        // SSE + IntegerReference: ref goes in RDI, not RSI -- SSE eightbytes
+        // don't advance the general-register cursor.
+        SysVDoubleRef(default);
+
+        // Unions (LayoutKind.Explicit) -- exercises the classifier's merge path.
+        SysVIntFloatUnion(default);     // int + float @ 0 -> Integer
+        SysVIntIntUnion(default);       // int + int @ 0 -> Integer
+
+        SysVSmall(default);             // { int a; byte b; } -> Integer (unaligned tail)
+        SysVWrapInt(default);           // { int a; } single-field wrapper
+    }
+
+    // ---- SystemV struct shapes ----
+    private struct IntPair { public int A, B; }
+    private struct FloatPair { public float A, B; }
+    private struct IntFloat { public int A; public float B; }
+    private struct SingleRef { public object? R; }
+    private struct LongLong { public long A, B; }
+    private struct LongDouble { public long A; public double B; }
+    private struct DoubleDouble { public double A, B; }
+    private struct RefInt { public object? R; public long Padding; }
+    private struct DoubleRef { public double D; public object? R; }
+    private struct SysVNestedStruct { public IntPair Inner; public int Trailing; }
+    private struct SysVThreeRefsStruct { public object? R1, R2, R3; }
+    private struct Int128Wrapper { public System.Int128 V; }
+    private struct EmptyStruct { }
+    private struct SmallUnaligned { public int A; public byte B; }
+    private struct WrapInt { public int A; }
+
+    // Union: int and float at the same offset. Classifier sees both as
+    // unique-offset fields and merges via ReClassifyField (Integer+SSE = Integer).
+    [StructLayout(LayoutKind.Explicit)]
+    private struct IntFloatUnion
+    {
+        [FieldOffset(0)] public int I;
+        [FieldOffset(0)] public float F;
+    }
+
+    // Union: two ints at the same offset. Merge collapses to Integer.
+    [StructLayout(LayoutKind.Explicit)]
+    private struct IntIntUnion
+    {
+        [FieldOffset(0)] public int A;
+        [FieldOffset(0)] public int B;
+    }
+
+    // ---- SystemV arg helpers ----
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVIntPair(IntPair s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVFloatPair(FloatPair s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVIntFloat(IntFloat s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVSingleRef(SingleRef s) { AllocBurst(); GC.KeepAlive(s.R); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVLongLong(LongLong s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVLongDouble(LongDouble s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVDoubleDouble(DoubleDouble s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVRefInt(RefInt s) { AllocBurst(); GC.KeepAlive(s.R); GC.KeepAlive((object)s.Padding); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVDoubleRef(DoubleRef s) { AllocBurst(); GC.KeepAlive(s.R); GC.KeepAlive((object)s.D); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVNested(SysVNestedStruct s) { AllocBurst(); GC.KeepAlive((object)(s.Inner.A + s.Trailing)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVSpanByte(Span<byte> s) { AllocBurst(); GC.KeepAlive((object)s.Length); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVThreeRefs(SysVThreeRefsStruct s) { AllocBurst(); GC.KeepAlive(s.R1); GC.KeepAlive(s.R2); GC.KeepAlive(s.R3); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVVector128Arg(Vector128<int> v) { AllocBurst(); GC.KeepAlive((object)v.GetElement(0)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVInt128Arg(Int128Wrapper s) { AllocBurst(); GC.KeepAlive((object)s.V.ToString()); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVEmpty(EmptyStruct s) { AllocBurst(); GC.KeepAlive((object)s); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVSmall(SmallUnaligned s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVWrapInt(WrapInt s) { AllocBurst(); GC.KeepAlive((object)s.A); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVIntFloatUnion(IntFloatUnion s) { AllocBurst(); GC.KeepAlive((object)s.I); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVIntIntUnion(IntIntUnion s) { AllocBurst(); GC.KeepAlive((object)s.A); }
+
+    // ===== Category 14: deep stack =====
     // Mutually-recursive chains of methods with mixed signatures. At any
     // given allocation trigger many frames are simultaneously live, so a
     // single stack-walk verification run touches multiple MDs across

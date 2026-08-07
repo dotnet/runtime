@@ -39,7 +39,9 @@ namespace System.IO.Compression.Tests
         protected override void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 _baseStream.Dispose();
+            }
             base.Dispose(disposing);
         }
     }
@@ -639,7 +641,10 @@ namespace System.IO.Compression.Tests
                 {
                     foreach (ZipArchiveEntry e in archive.Entries)
                     {
-                        if (e.Length == 0) continue; // Skip empty entries for this test
+                        if (e.Length == 0)
+                        {
+                            continue; // Skip empty entries for this test
+                        }
 
                         Stream s = await OpenEntryStream(async, e);
 
@@ -709,7 +714,10 @@ namespace System.IO.Compression.Tests
                 {
                     foreach (ZipArchiveEntry e in archive.Entries)
                     {
-                        if (e.Length == 0) continue; // Skip empty entries for this test
+                        if (e.Length == 0)
+                        {
+                            continue; // Skip empty entries for this test
+                        }
 
                         Stream s = await OpenEntryStream(async, e);
 
@@ -918,6 +926,182 @@ namespace System.IO.Compression.Tests
             Assert.Equal(14, readStream.Position);
 
             await DisposeStream(async, readStream);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task StrongEncryptionDetectedAsUnknown(bool async)
+        {
+            var ms = new MemoryStream();
+            ZipArchive createArchive = await CreateZipArchive(async, ms, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry newEntry = createArchive.CreateEntry("test.txt");
+            using (Stream entryStream = async ? await newEntry.OpenAsync() : newEntry.Open())
+            {
+                byte[] data = "hello"u8.ToArray();
+                if (async)
+                {
+                    await entryStream.WriteAsync(data);
+                }
+                else
+                {
+                    entryStream.Write(data, 0, data.Length);
+                }
+            }
+            await DisposeZipArchive(async, createArchive);
+
+            byte[] zipBytes = ms.ToArray();
+
+            // Set bit 0 (encrypted) and bit 6 (strong encryption) in both LH and CD general purpose bit flags
+            const ushort strongEncryptionFlags = 0x01 | 0x40;
+
+            // Local file header: signature at 0, version at 4, bit flags at offset 6
+            int lhBitFlagOffset = 6;
+            BinaryPrimitives.WriteUInt16LittleEndian(zipBytes.AsSpan(lhBitFlagOffset), strongEncryptionFlags);
+
+            // Find central directory (from EOCD at end of file)
+            // EOCD signature is 0x06054b50, CD offset is at EOCD + 16
+            int eocdOffset = zipBytes.Length - 22; // minimal EOCD is 22 bytes with no comment
+            int cdOffset = BinaryPrimitives.ReadInt32LittleEndian(zipBytes.AsSpan(eocdOffset + 16));
+            // CD header: signature at 0, version-made-by at 4 (2 bytes), version-needed at 6 (2 bytes), bit flags at offset 8
+            int cdBitFlagOffset = cdOffset + 8;
+            BinaryPrimitives.WriteUInt16LittleEndian(zipBytes.AsSpan(cdBitFlagOffset), strongEncryptionFlags);
+
+            using var archiveStream = new MemoryStream(zipBytes);
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+            ZipArchiveEntry entry = archive.Entries[0];
+
+            Assert.True(entry.IsEncrypted);
+            Assert.Equal(ZipEncryptionMethod.Unknown, entry.EncryptionMethod);
+
+            Assert.Throws<NotSupportedException>(() => entry.Open("password".AsSpan()));
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task DecryptEntries_SamePassword_7Zip(bool async)
+        {
+            string password = "S3cur3P@ssw0rd";
+            using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_7ZIP_SamePassword.zip"));
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+
+            Assert.Equal(2, archive.Entries.Count);
+
+            foreach (ZipArchiveEntry entry in archive.Entries)
+            {
+                Assert.True(entry.IsEncrypted);
+
+                using Stream entryStream = await OpenEntryStream(async, entry, password);
+                using StreamReader reader = new(entryStream);
+                string content = reader.ReadToEnd().TrimEnd();
+
+                if (entry.Name == "hello.txt")
+                {
+                    Assert.Equal("Hello", content);
+                }
+                else if (entry.Name == "goodbye.txt")
+                {
+                    Assert.Equal("Goodbye", content);
+                }
+                else
+                {
+                    Assert.Fail($"Unexpected entry: {entry.Name}");
+                }
+            }
+            await DisposeZipArchive(async, archive);
+        }
+
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+
+        public async Task DecryptEntries_MixedEncryptions(bool async)
+        {
+            string password = "S3cur3P@ssw0rd";
+            using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_MixedEncryptions.zip"));
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+
+            Assert.Equal(2, archive.Entries.Count);
+
+            ZipArchiveEntry helloEntry = archive.GetEntry("hello.txt");
+            Assert.NotNull(helloEntry);
+            Assert.True(helloEntry.IsEncrypted);
+            Assert.Equal(ZipEncryptionMethod.ZipCrypto, helloEntry.EncryptionMethod);
+
+            using (Stream helloStream = await OpenEntryStream(async, helloEntry, password))
+            using (StreamReader helloReader = new(helloStream))
+            {
+                Assert.Equal("Hello", helloReader.ReadToEnd().TrimEnd());
+            }
+
+            ZipArchiveEntry goodbyeEntry = archive.GetEntry("goodbye.txt");
+            Assert.NotNull(goodbyeEntry);
+            Assert.True(goodbyeEntry.IsEncrypted);
+            Assert.Equal(ZipEncryptionMethod.Aes256, goodbyeEntry.EncryptionMethod);
+
+            using (Stream goodbyeStream = await OpenEntryStream(async, goodbyeEntry, password))
+            using (StreamReader goodbyeReader = new(goodbyeStream))
+            {
+                Assert.Equal("Goodbye", goodbyeReader.ReadToEnd().TrimEnd());
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task DecryptEntries_DifferentPasswords(bool async)
+        {
+            using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtected_DifferentPasswords.zip"));
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Read);
+
+            Assert.Equal(2, archive.Entries.Count);
+
+            ZipArchiveEntry helloEntry = archive.GetEntry("hello.txt");
+            Assert.NotNull(helloEntry);
+            Assert.True(helloEntry.IsEncrypted);
+            Assert.Equal(ZipEncryptionMethod.Aes256, helloEntry.EncryptionMethod);
+
+            using (Stream helloStream = await OpenEntryStream(async, helloEntry, "S3cur3P@ssw0rd2"))
+            using (StreamReader helloReader = new(helloStream))
+            {
+                Assert.Equal("Hello", helloReader.ReadToEnd().TrimEnd());
+            }
+
+            ZipArchiveEntry goodbyeEntry = archive.GetEntry("goodbye.txt");
+            Assert.NotNull(goodbyeEntry);
+            Assert.True(goodbyeEntry.IsEncrypted);
+            Assert.Equal(ZipEncryptionMethod.Aes256, goodbyeEntry.EncryptionMethod);
+
+            using (Stream goodbyeStream = await OpenEntryStream(async, goodbyeEntry, "S3cur3P@ssw0rd1"))
+            using (StreamReader goodbyeReader = new(goodbyeStream))
+            {
+                Assert.Equal("Goodbye", goodbyeReader.ReadToEnd().TrimEnd());
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public async Task PasswordProtectedZip64_UpdateMode_Throws(bool async)
+        {
+            using Stream archiveStream = await StreamHelpers.CreateTempCopyStream(passwordProtected("PasswordProtectedZIP64.zip"));
+            ZipArchive archive = await CreateZipArchive(async, archiveStream, ZipArchiveMode.Update);
+
+            ZipArchiveEntry entry = archive.Entries[0];
+
+            // The entry reports an uncompressed size larger than Update mode can buffer in memory,
+            // so opening it for update must throw.
+            await Assert.ThrowsAsync<InvalidDataException>(async () => await OpenEntryStream(async, entry, "S3cur3P@ssw0rd"));
+
+            await DisposeZipArchive(async, archive);
         }
 
         [Fact]

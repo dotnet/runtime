@@ -1591,6 +1591,50 @@ namespace System.Text
 #endif
         }
 
+#if SYSTEM_PRIVATE_CORELIB
+        /// <summary>
+        /// Returns a copy of <paramref name="value"/> converted to uppercase using the casing rules used by
+        /// <see cref="StringComparison.OrdinalIgnoreCase"/> comparisons.
+        /// </summary>
+        /// <param name="value">The character to convert.</param>
+        /// <returns>The uppercase equivalent of <paramref name="value"/>.</returns>
+        public static Rune ToUpperOrdinal(Rune value)
+        {
+            if (value.IsAscii)
+            {
+                return UnsafeCreate(Utf16Utility.ConvertAllAsciiCharsInUInt32ToUppercase(value._value));
+            }
+
+            if (value.IsBmp)
+            {
+                return UnsafeCreate(TextInfo.ToUpperOrdinal((char)value._value));
+            }
+
+            // Supplementary characters use the same simple scalar mapping as OrdinalIgnoreCase comparisons.
+            return UnsafeCreate(CharUnicodeInfo.ToUpper(value._value));
+        }
+
+        /// <summary>
+        /// Returns a copy of <paramref name="value"/> converted to lowercase using ordinal (simple, one-to-one) casing rules.
+        /// </summary>
+        /// <param name="value">The character to convert.</param>
+        /// <returns>The lowercase equivalent of <paramref name="value"/>.</returns>
+        public static Rune ToLowerOrdinal(Rune value)
+        {
+            if (value.IsAscii)
+            {
+                return UnsafeCreate(Utf16Utility.ConvertAllAsciiCharsInUInt32ToLowercase(value._value));
+            }
+
+            if (value.IsBmp)
+            {
+                return UnsafeCreate(TextInfo.ToLowerOrdinal((char)value._value));
+            }
+
+            return UnsafeCreate(CharUnicodeInfo.ToLower(value._value));
+        }
+#endif
+
         /// <inheritdoc cref="IComparable.CompareTo" />
         int IComparable.CompareTo(object? obj)
         {

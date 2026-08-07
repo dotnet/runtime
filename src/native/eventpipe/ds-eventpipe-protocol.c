@@ -158,6 +158,12 @@ eventpipe_collect_tracing5_command_try_parse_payload (
 
 static
 uint8_t *
+eventpipe_collect_tracing6_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len);
+	
+static
+uint8_t *
 eventpipe_protocol_helper_stop_tracing_try_parse_payload (
 	uint8_t *buffer,
 	uint16_t buffer_len);
@@ -593,7 +599,12 @@ ep_on_error:
 EventPipeCollectTracingCommandPayload *
 ds_eventpipe_collect_tracing_command_payload_alloc (void)
 {
-	return ep_rt_object_alloc (EventPipeCollectTracingCommandPayload);
+	EventPipeCollectTracingCommandPayload *instance = ep_rt_object_alloc (EventPipeCollectTracingCommandPayload);
+
+	if (instance != NULL)
+		instance->buffering_mode = EP_BUFFERING_MODE_DROP;
+
+	return instance;
 }
 
 static
@@ -760,17 +771,19 @@ ep_on_error:
 }
 
 /*
- *  eventpipe_collect_tracing5_command_try_parse_payload
+ *  eventpipe_collect_tracing5_command_try_parse_payload_core
  *
- *  Implements the CollectTracing5 IPC Protocol deserialization.
+ *  Shared CollectTracing5/CollectTracing6 IPC Protocol deserialization. The two commands are identical
+ *  except that CollectTracing6 appends a trailing uint32 buffering mode (parse_buffering_mode == true).
  *
  *  Ownership of the EventPipeCollectTracingCommandPayload is transferred to the caller.
  */
 static
 uint8_t *
-eventpipe_collect_tracing5_command_try_parse_payload (
+eventpipe_collect_tracing5_command_try_parse_payload_core (
 	uint8_t *buffer,
-	uint16_t buffer_len)
+	uint16_t buffer_len,
+	bool parse_buffering_mode)
 {
 	EP_ASSERT (buffer != NULL);
 
@@ -807,6 +820,13 @@ eventpipe_collect_tracing5_command_try_parse_payload (
 
 	ep_raise_error_if_nok (eventpipe_collect_tracing_command_try_parse_provider_configs (&buffer_cursor, &buffer_cursor_len, optional_field_flags, &instance->provider_configs));
 
+	if (parse_buffering_mode && instance->session_type == EP_SESSION_TYPE_IPCSTREAM) {
+		uint32_t buffering_mode = 0;
+		ep_raise_error_if_nok (ds_ipc_message_try_parse_uint32_t (&buffer_cursor, &buffer_cursor_len, &buffering_mode));
+		ep_raise_error_if_nok (buffering_mode == EP_BUFFERING_MODE_DROP || buffering_mode == EP_BUFFERING_MODE_BLOCK);
+		instance->buffering_mode = (EventPipeBufferingMode)buffering_mode;
+	}
+
 	instance->rundown_requested = instance->rundown_keyword != 0;
 
 ep_on_exit:
@@ -816,6 +836,35 @@ ep_on_error:
 	ds_eventpipe_collect_tracing_command_payload_free (instance);
 	instance = NULL;
 	ep_exit_error_handler ();
+}
+
+/*
+ *  eventpipe_collect_tracing5_command_try_parse_payload
+ *
+ *  Implements the CollectTracing5 IPC Protocol deserialization.
+ */
+static
+uint8_t *
+eventpipe_collect_tracing5_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len)
+{
+	return eventpipe_collect_tracing5_command_try_parse_payload_core (buffer, buffer_len, false);
+}
+
+/*
+ *  eventpipe_collect_tracing6_command_try_parse_payload
+ *
+ *  Implements the CollectTracing6 IPC Protocol deserialization: identical to CollectTracing5 plus a trailing
+ *  uint32 buffering mode after the provider configs for streaming sessions.
+ */
+static
+uint8_t *
+eventpipe_collect_tracing6_command_try_parse_payload (
+	uint8_t *buffer,
+	uint16_t buffer_len)
+{
+	return eventpipe_collect_tracing5_command_try_parse_payload_core (buffer, buffer_len, true);
 }
 
 /*
@@ -953,18 +1002,19 @@ eventpipe_protocol_helper_collect_tracing (
 		ds_ipc_stream_get_stream_ref (stream),
 		NULL,
 		NULL,
-		user_events_data_fd);
+		user_events_data_fd,
+		payload->buffering_mode);
 
 	EventPipeSessionID session_id = 0;
 	bool result = false;
-	session_id = ep_enable_3 (&options);
+	session_id = ep_init_session_3 (&options);
 
 	if (session_id == 0) {
 		ds_ipc_message_send_error (stream, DS_IPC_E_FAIL);
 		ep_raise_error ();
 	} else {
 		eventpipe_protocol_helper_send_start_tracing_success (stream, session_id);
-		ep_start_streaming (session_id);
+		ep_start_session (session_id);
 	}
 
 	result = true;
@@ -1028,6 +1078,10 @@ ds_eventpipe_protocol_helper_handle_ipc_message (
 		break;
 	case EP_COMMANDID_COLLECT_TRACING_5:
 		payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing5_command_try_parse_payload);
+		result = eventpipe_protocol_helper_collect_tracing (payload, stream);
+		break;
+	case EP_COMMANDID_COLLECT_TRACING_6:
+		payload = (EventPipeCollectTracingCommandPayload *)ds_ipc_message_try_parse_payload (message, eventpipe_collect_tracing6_command_try_parse_payload);
 		result = eventpipe_protocol_helper_collect_tracing (payload, stream);
 		break;
 	case EP_COMMANDID_STOP_TRACING:

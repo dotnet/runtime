@@ -5,6 +5,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <PublishReadyToRunStripILBodies>false</PublishReadyToRunStripILBodies>
     <!-- EnC tests on targets without a remote executor need the environment variable set before launching the test -->
     <!-- Also ask Mono to use make sequence points even without a debugger attached to match "dotnet watch" behavior -->
     <WasmXHarnessMonoArgs>--setenv=DOTNET_MODIFIABLE_ASSEMBLIES=debug --setenv=MONO_DEBUG=gen-seq-points</WasmXHarnessMonoArgs>
@@ -127,5 +128,14 @@
     <Delete Files="$(OutDir)System.Runtime.Loader.Test.BindFailure.Missing.dll" />
     <Delete Files="$(OutDir)System.Runtime.Loader.Test.BindFailure.Locked.dll" />
     <Delete Files="$(OutDir)System.Runtime.Loader.Test.BindFailure.Corrupt.dll" />
+  </Target>
+
+  <Target Name="RemoveBindFailureTestAssembliesFromReadyToRunPublish"
+          Condition="'$(TestReadyToRun)' == 'true'"
+          AfterTargets="Publish"
+          BeforeTargets="ZipTestArchive">
+    <Delete Files="$(BundleDir)System.Runtime.Loader.Test.BindFailure.Missing.dll" />
+    <Delete Files="$(BundleDir)System.Runtime.Loader.Test.BindFailure.Locked.dll" />
+    <Delete Files="$(BundleDir)System.Runtime.Loader.Test.BindFailure.Corrupt.dll" />
   </Target>
 </Project>

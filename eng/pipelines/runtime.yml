@@ -33,9 +33,7 @@ schedules:
 pr:
   branches:
     include:
-    - main
-    - release/*.*
-    - copilot/*
+    - '*'
   paths:
     include:
     - '*'
@@ -66,6 +64,11 @@ extends:
 
     - stage: Build
       jobs:
+      - ${{ if eq(variables['enableHelixJobMonitor'], true) }}:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 540
 
       #
       # Build CoreCLR verticals where we don't run host tests
@@ -142,6 +145,39 @@ extends:
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasmbuildtests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
+      # Release build of wasi wasm for CoreCLR (build-only — the
+      # runtime tests run in a separate job dispatched to Helix from
+      # wasi-wasm-coreclr-runtime-tests.yml below).
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-build-only.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          publishArtifactsForWorkload: true
+          condition: >-
+            or(
+              eq(variables['wasmDarcDependenciesChanged'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+              eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
+              eq(variables['isRollingBuild'], true))
+
+      # CoreCLR src/tests subset run on wasmtime via Helix
+      # (wasi_wasm queue -> ubuntu-26.04-helix-webassembly-amd64 image).
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-runtime-tests.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          alwaysRun: ${{ variables.isRollingBuild }}
+
+      # CoreCLR library-test smoke leg run on wasmtime via Helix
+      # (wasi_wasm queue). Starts with a single-library smoke set; see
+      # https://github.com/dotnet/runtime/issues/130129.
+      - template: /eng/pipelines/common/templates/wasi-wasm-coreclr-library-tests.yml
+        parameters:
+          platforms:
+          - wasi_wasm
+          shouldRunSmokeOnly: true
+          alwaysRun: ${{ variables.isRollingBuild }}
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
@@ -163,7 +199,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -172,7 +208,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
               - template: /eng/pipelines/common/wasm-post-build-steps.yml
                 parameters:
                   publishArtifactsForWorkload: true
@@ -210,7 +246,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
                   displayName: Build Assets
               - template: /eng/pipelines/common/upload-artifact-step.yml
                 parameters:
@@ -219,7 +255,7 @@ extends:
                   archiveType: $(archiveType)
                   archiveExtension: $(archiveExtension)
                   tarCompression: $(tarCompression)
-                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+                  artifactName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
               - template: /eng/pipelines/common/wasm-post-build-steps.yml
                 parameters:
                   publishArtifactsForWorkload: true
@@ -244,6 +280,7 @@ extends:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       #
       # Build CoreCLR and Libraries with Libraries tests
@@ -658,6 +695,7 @@ extends:
           - freebsd_x64
           - linux_riscv64
           - linux_loongarch64
+          - openbsd_x64
           jobParameters:
             testScope: innerloop
             nameSuffix: CoreCLR_Bootstrapped
@@ -701,6 +739,7 @@ extends:
                   testBuildArgs: nativeaot tree nativeaot
                   liveLibrariesBuildConfig: Release
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -740,6 +779,7 @@ extends:
                   testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;async;" /p:BuildNativeAotFrameworkObjects=true'
                   liveLibrariesBuildConfig: Release
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -784,6 +824,7 @@ extends:
                   testBuildArgs: 'nativeaot tree ";nativeaot;tracing/eventpipe/providervalidation;"'
                   liveLibrariesBuildConfig: Release
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -821,6 +862,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -963,6 +1005,7 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           scenarios:
             - WasmTestOnChrome
             - WasmTestOnFirefox
@@ -973,6 +1016,20 @@ extends:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+          scenarios:
+            - WasmTestOnChrome
+
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
+        parameters:
+          platforms:
+            - browser_wasm_mac
+          alwaysRun: ${{ variables.isRollingBuild }}
+          runOnlyOnChromeVersionUpdate: true
+          shouldRunSmokeOnly: 'true'
+          nameSuffix: _SmokeMac
+          extraBuildArgs: /p:AotHostArchitecture=arm64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           scenarios:
             - WasmTestOnChrome
 
@@ -983,6 +1040,7 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           scenarios:
             - WasmTestOnChrome
 
@@ -995,10 +1053,10 @@ extends:
           shouldRunSmokeOnly: 'true'
           nameSuffix: _SmokeFirefoxV8
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
           scenarios:
             - WasmTestOnFirefox
-            # ActiveIssue https://github.com/dotnet/runtime/issues/129849
-            # - WasmTestOnV8
+            - WasmTestOnV8
 
       # EAT Library tests - only run on linux
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -1011,6 +1069,7 @@ extends:
           shouldRunSmokeOnly: false
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS) /maxcpucount:2
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # AOT Library tests
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -1024,6 +1083,7 @@ extends:
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # For Wasm.Build.Tests - runtime pack builds
       - template: /eng/pipelines/common/templates/wasm-build-only.yml
@@ -1056,6 +1116,10 @@ extends:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+          # This pipeline builds the CoreCLR browser-wasm runtime (nameSuffix: CoreCLR),
+          # so stage its runtime pack for the wasm-tools workload install.
+          includeCoreClrRuntimePack: true
 
       # Wasm runtime tests
       - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
@@ -1064,6 +1128,7 @@ extends:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
           extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # WASI/WASM
 
@@ -1114,17 +1179,23 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+                  # Don't send arm/arm64 tests to Helix on internal: there is no internal Android
+                  # device queue, so those APKs fail with DEVICE_NOT_FOUND on the x86_64 emulator
+                  # queue. Keep building them, and keep sending x64 (its emulator queue works).
                   condition: >-
+                    and(
                     or(
                     eq(variables['librariesContainsChange'], true),
                     eq(variables['coreclrContainsChange'], true),
-                    eq(variables['isRollingBuild'], true))
+                    eq(variables['isRollingBuild'], true)),
+                    or(
+                    eq(variables['System.TeamProject'], 'public'),
+                    eq(variables['_archParameter'], '-arch x64')))
 
       #
-      # iOS simulators
+      # iOS devices
       # Build the whole product using Native AOT and run libraries tests
-      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
-      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1133,7 +1204,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1158,6 +1229,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
                   condition: >-
                     or(
@@ -1166,10 +1238,8 @@ extends:
                     eq(variables['isRollingBuild'], true))
 
       #
-      # iOS simulators
+      # iOS devices
       # Build the whole product using CoreCLR and run libraries tests
-      # Temporarily switched from ios_arm64 (devices) to iossimulator_arm64 due to
-      # device queue infrastructure failure: https://github.com/dotnet/runtime/issues/125135
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -1178,7 +1248,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: coreclr
           platforms:
-            - iossimulator_arm64
+            - ios_arm64
           variables:
             # map dependencies variables to local variables
             - name: librariesContainsChange
@@ -1205,6 +1275,7 @@ extends:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
@@ -1249,6 +1320,7 @@ extends:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
@@ -1291,6 +1363,7 @@ extends:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                   extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   condition: >-
                     or(
                     eq(variables['librariesContainsChange'], true),
@@ -1413,6 +1486,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NET481_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   extraHelixArguments: /p:BuildTargetFramework=net481
             condition: >-
               or(
@@ -1469,6 +1543,7 @@ extends:
               - template: /eng/pipelines/installer/helix.yml
                 parameters:
                   creator: dotnet-bot
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
@@ -1481,6 +1556,7 @@ extends:
           platforms:
             - windows_x64
             - linux_x64
+            - linux_musl_x64
           helixQueuesTemplate: /eng/pipelines/installer/helix-queues-setup.yml
           jobParameters:
             nameSuffix: Installer_Build_And_Test
@@ -1500,6 +1576,7 @@ extends:
               - template: /eng/pipelines/installer/helix.yml
                 parameters:
                   creator: dotnet-bot
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
@@ -1531,6 +1608,7 @@ extends:
               - template: /eng/pipelines/installer/helix.yml
                 parameters:
                   creator: dotnet-bot
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition:
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1571,6 +1649,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Release
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -1607,6 +1686,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Release
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -1645,6 +1725,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Release
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
       #
@@ -1684,6 +1765,7 @@ extends:
                   creator: dotnet-bot
                   llvmAotStepContainer: linux_x64_llvmaot
                   testRunNamePrefixSuffix: Mono_Release
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -1724,6 +1806,7 @@ extends:
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1741,13 +1824,17 @@ extends:
           jobParameters:
             testGroup: innerloop
             liveLibrariesBuildConfig: Release
-            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            unifiedArtifactsName: CoreCLR_ReleaseLibraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_hostedOs)_$(_BuildConfig)
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraBuildArgs: -os browser -p:HostConfiguration=Release
             condition: >-
               or(
+                eq(variables['wasmDarcDependenciesChanged'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_wasm_coreclr_runtimetests.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1768,6 +1855,7 @@ extends:
             unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1792,6 +1880,7 @@ extends:
             unifiedArtifactsName: CoreCLR_Libraries_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             helixArtifactsName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             unifiedBuildNameSuffix: CoreCLR_Libraries
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1819,6 +1908,7 @@ extends:
             helixArtifactsName: CoreCLR_Libraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(debugOnPrReleaseOnRolling)
             unifiedBuildNameSuffix: CoreCLR_Libraries
             unifiedBuildConfigOverride: ${{ variables.debugOnPrReleaseOnRolling }}
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
@@ -1858,6 +1948,7 @@ extends:
             unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             helixArtifactsName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1885,6 +1976,7 @@ extends:
             helixArtifactsName: CoreCLR_ReleaseLibraries_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_Checked
             unifiedBuildNameSuffix: CoreCLR_ReleaseLibraries
             unifiedBuildConfigOverride: checked
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1904,6 +1996,7 @@ extends:
             unifiedArtifactsName: Libraries_CheckedCoreCLR_BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             helixArtifactsName: Libraries_CheckedCoreCLR_TestArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
             unifiedBuildNameSuffix: Libraries_CheckedCoreCLR
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -1935,6 +2028,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Interpreter_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   interpreter: true
             condition: >-
               or(
@@ -1967,6 +2061,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: Mono_Minijit_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition: >-
               or(
                 eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
