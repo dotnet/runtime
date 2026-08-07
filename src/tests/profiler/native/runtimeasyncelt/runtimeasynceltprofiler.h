@@ -22,12 +22,15 @@ public:
     static RuntimeAsyncELTProfiler* Instance() { return s_instance; }
 
 private:
+    static const int TargetCount = 3;
+
+    int GetTargetIndex(FunctionID functionId);
     ModuleID GetModuleId(FunctionID functionId);
 
     static RuntimeAsyncELTProfiler* s_instance;
-    std::atomic<FunctionID> _target;
-    std::atomic<int> _enters;
-    std::atomic<int> _leaves;
-    std::atomic<int> _depth;
+    std::atomic<FunctionID> _targets[TargetCount];
+    std::atomic<int> _enters[TargetCount];
+    std::atomic<int> _leaves[TargetCount];
+    std::atomic<int> _depth[TargetCount];
     std::atomic<int> _sequenceFailures;
 };

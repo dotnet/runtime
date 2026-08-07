@@ -5,6 +5,10 @@
 
 namespace
 {
+const WCHAR* const TargetNames[] = {WCHAR("Work"), WCHAR("WorkVoid"), WCHAR("WorkDouble")};
+const char* const TargetDisplayNames[] = {"Work", "WorkVoid", "WorkDouble"};
+const int ExpectedCallbackCounts[] = {25, 3, 3};
+
 void STDMETHODCALLTYPE EnterStub(FunctionIDOrClientID functionId, COR_PRF_ELT_INFO)
 {
     SHUTDOWNGUARD_RETVOID();
@@ -27,12 +31,19 @@ RuntimeAsyncELTProfiler* RuntimeAsyncELTProfiler::s_instance = nullptr;
 
 RuntimeAsyncELTProfiler::RuntimeAsyncELTProfiler()
     : Profiler(),
-      _target(0),
-      _enters(0),
-      _leaves(0),
-      _depth(0),
       _sequenceFailures(0)
 {
+    static_assert(sizeof(TargetNames) / sizeof(TargetNames[0]) == TargetCount);
+    static_assert(sizeof(TargetDisplayNames) / sizeof(TargetDisplayNames[0]) == TargetCount);
+    static_assert(sizeof(ExpectedCallbackCounts) / sizeof(ExpectedCallbackCounts[0]) == TargetCount);
+
+    for (int i = 0; i < TargetCount; i++)
+    {
+        _targets[i] = 0;
+        _enters[i] = 0;
+        _leaves[i] = 0;
+        _depth[i] = 0;
+    }
 }
 
 GUID RuntimeAsyncELTProfiler::GetClsid()
@@ -68,7 +79,22 @@ HRESULT RuntimeAsyncELTProfiler::JITCompilationFinished(
 {
     SHUTDOWNGUARD();
 
-    if (FAILED(hrStatus) || GetFunctionIDName(functionId) != WCHAR("Work"))
+    if (FAILED(hrStatus))
+    {
+        return S_OK;
+    }
+
+    String functionName = GetFunctionIDName(functionId);
+    int targetIndex = -1;
+    for (int i = 0; i < TargetCount; i++)
+    {
+        if (functionName == TargetNames[i])
+        {
+            targetIndex = i;
+            break;
+        }
+    }
+    if (targetIndex < 0)
     {
         return S_OK;
     }
@@ -77,7 +103,7 @@ HRESULT RuntimeAsyncELTProfiler::JITCompilationFinished(
     if (moduleName.find(L"runtimeasyncelt") != std::wstring::npos)
     {
         FunctionID expected = 0;
-        _target.compare_exchange_strong(expected, functionId);
+        _targets[targetIndex].compare_exchange_strong(expected, functionId);
     }
 
     return S_OK;
@@ -85,13 +111,14 @@ HRESULT RuntimeAsyncELTProfiler::JITCompilationFinished(
 
 void RuntimeAsyncELTProfiler::Enter(FunctionID functionId)
 {
-    if (functionId != _target.load())
+    int targetIndex = GetTargetIndex(functionId);
+    if (targetIndex < 0)
     {
         return;
     }
 
-    _enters++;
-    if (_depth.fetch_add(1) != 0)
+    _enters[targetIndex]++;
+    if (_depth[targetIndex].fetch_add(1) != 0)
     {
         _sequenceFailures++;
     }
@@ -99,13 +126,14 @@ void RuntimeAsyncELTProfiler::Enter(FunctionID functionId)
 
 void RuntimeAsyncELTProfiler::Leave(FunctionID functionId)
 {
-    if (functionId != _target.load())
+    int targetIndex = GetTargetIndex(functionId);
+    if (targetIndex < 0)
     {
         return;
     }
 
-    _leaves++;
-    if (_depth.fetch_sub(1) != 1)
+    _leaves[targetIndex]++;
+    if (_depth[targetIndex].fetch_sub(1) != 1)
     {
         _sequenceFailures++;
     }
@@ -116,21 +144,33 @@ HRESULT RuntimeAsyncELTProfiler::Shutdown()
     HRESULT hr = Profiler::Shutdown();
     s_instance = nullptr;
 
-    printf("RuntimeAsyncELTProfiler: enters=%d leaves=%d depth=%d sequenceFailures=%d\n",
-           _enters.load(), _leaves.load(), _depth.load(), _sequenceFailures.load());
-
-    if (SUCCEEDED(hr) && _target != 0 && _enters == 25 && _leaves == 25 &&
-        _depth == 0 && _sequenceFailures == 0)
+    bool passed = SUCCEEDED(hr) && _sequenceFailures == 0;
+    for (int i = 0; i < TargetCount; i++)
     {
-        printf("PROFILER TEST PASSES\n");
+        printf("RuntimeAsyncELTProfiler: %s enters=%d leaves=%d depth=%d\n",
+               TargetDisplayNames[i], _enters[i].load(), _leaves[i].load(), _depth[i].load());
+        passed &= _targets[i].load() != 0 &&
+                  _enters[i].load() == ExpectedCallbackCounts[i] &&
+                  _leaves[i].load() == ExpectedCallbackCounts[i] &&
+                  _depth[i].load() == 0;
     }
-    else
-    {
-        printf("PROFILER TEST FAILED\n");
-    }
+    printf("RuntimeAsyncELTProfiler: sequenceFailures=%d\n", _sequenceFailures.load());
+    printf(passed ? "PROFILER TEST PASSES\n" : "PROFILER TEST FAILED\n");
 
     fflush(stdout);
     return hr;
+}
+
+int RuntimeAsyncELTProfiler::GetTargetIndex(FunctionID functionId)
+{
+    for (int i = 0; i < TargetCount; i++)
+    {
+        if (_targets[i].load() == functionId)
+        {
+            return i;
+        }
+    }
+    return -1;
 }
 
 ModuleID RuntimeAsyncELTProfiler::GetModuleId(FunctionID functionId)
