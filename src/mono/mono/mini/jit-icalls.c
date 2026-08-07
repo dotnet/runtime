@@ -972,8 +972,10 @@ mono_fconv_i8 (double v)
 guint32
 mono_fconv_u4 (double v)
 {
-	/* MS.NET behaves like this for some reason */
-	if (mono_isinf (v) || mono_isnan (v))
+	/* Match the saturating behavior of the managed conversion. */
+	if (mono_isinf (v))
+		return v > 0 ? G_MAXUINT32 : 0;
+	if (mono_isnan (v))
 		return 0;
 	return (guint32)v;
 }
@@ -981,7 +983,9 @@ mono_fconv_u4 (double v)
 guint32
 mono_rconv_u4 (float v)
 {
-	if (mono_isinf (v) || mono_isnan (v))
+	if (mono_isinf (v))
+		return v > 0 ? G_MAXUINT32 : 0;
+	if (mono_isnan (v))
 		return 0;
 	return (guint32) v;
 }
