@@ -6070,13 +6070,13 @@ GenTree* Compiler::impRotateHelper(var_types baseType, genTreeOps rotateOper)
 
     if (!op2->IsIntegralConst())
     {
-#ifndef TARGET_64BIT
+#if LOWER_DECOMPOSE_LONGS
         if (varTypeIsLong(baseType))
         {
-            // TODO-X86-CQ: variable-sized long rotates need special handling on 32-bit.
+            // TODO-CQ: variable-sized long rotates need special handling on 32-bit.
             return nullptr;
         }
-#endif // !TARGET_64BIT
+#endif // LOWER_DECOMPOSE_LONGS
 
         // Import non-constant rotates as an explicitly masked ROL/ROR(op1, AND(op2, mask)) instead.
         // Lowering will remove this mask if the target's rotate implicitly masks its operand.
