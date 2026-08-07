@@ -723,28 +723,35 @@ PosRem:
                         // If remainder == 1/2 divisor, round up if odd or sticky bit set.
                         //
                         power >>= 1;  // power of 10 always even
-                        if (power <= remainder && (power < remainder || ((result[0] & 1) | sticky) != 0) && ++result[0] == 0)
+                        if (power <= remainder && (power < remainder || ((result[0] & 1) | sticky) != 0))
                         {
-                            int cur = 0;
-                            do
+                            result[0]++;
+                            if (result[0] == 0)
                             {
-                                Debug.Assert(cur + 1 < Buf24.Length);
-                            }
-                            while (++result[++cur] == 0);
+                                // Rounding up carried out of the low uint, propagate it.
+                                int cur = 0;
+                                do
+                                {
+                                    cur++;
+                                    Debug.Assert(cur < Buf24.Length);
+                                    result[cur]++;
+                                }
+                                while (result[cur] == 0);
 
-                            if (cur > 2)
-                            {
-                                // The rounding caused us to carry beyond 96 bits.
-                                // Scale by 10 more.
-                                //
-                                if (scale == 0)
-                                    Number.ThrowDecimalOverflowException();
-                                hiRes = cur;
-                                sticky = 0;    // no sticky bit
-                                remainder = 0; // or remainder
-                                newScale = 1;
-                                scale--;
-                                continue; // scale by 10
+                                if (cur > 2)
+                                {
+                                    // The rounding caused us to carry beyond 96 bits.
+                                    // Scale by 10 more.
+                                    //
+                                    if (scale == 0)
+                                        Number.ThrowDecimalOverflowException();
+                                    hiRes = cur;
+                                    sticky = 0;    // no sticky bit
+                                    remainder = 0; // or remainder
+                                    newScale = 1;
+                                    scale--;
+                                    continue; // scale by 10
+                                }
                             }
                         }
 
@@ -1115,8 +1122,13 @@ PosRem:
                         // Carry the subtraction into the higher bits.
                         //
                         int cur = 3;
-                        while (rgulNum[cur]-- == 0)
+                        while (rgulNum[cur] == 0)
+                        {
+                            // Borrowing from a zero uint wraps it and keeps the borrow going.
+                            rgulNum[cur] = uint.MaxValue;
                             cur++;
+                        }
+                        rgulNum[cur]--;
 
                         if (rgulNum[hiProd] == 0 && --hiProd <= 2)
                             goto ReturnResult;
@@ -1139,12 +1151,22 @@ PosRem:
                         else if (high >= tmpHigh)
                             goto NoCarry;
 
+                        // Carry the addition into the higher bits.
+                        //
                         int cur = 3;
-                        while (++rgulNum[cur] == 0)
+                        while (true)
                         {
+                            rgulNum[cur]++;
+                            if (rgulNum[cur] != 0)
+                                break; // no carry out of this uint
+
                             cur++;
                             if (hiProd < cur)
                             {
+                                // Carried past the end of the value. Scaling a 96-bit value by
+                                // 10^DEC_SCALE_MAX always leaves room, so this can only run out of
+                                // buffer when an operand carries an out of range scale factor,
+                                // which is reachable by reinterpreting arbitrary bits as a decimal.
                                 if ((uint)cur >= Buf24.Length)
                                     Number.ThrowDecimalOverflowException();
                                 rgulNum[cur] = 1;
@@ -1542,13 +1564,12 @@ ThrowOverflow:
                     hiProd--;
                 }
 
-                if ((uint)hiProd <= 2 && scale <= DEC_SCALE_MAX)
-                    goto NoScaling;
+SkipScan:
+                if (hiProd > 2 || scale > DEC_SCALE_MAX)
+                {
+                    scale = ScaleResult(ref bufProd, hiProd, scale);
+                }
 
-SkipScan:       // jumped to with hiProd == 3, which always needs scaling
-                scale = ScaleResult(ref bufProd, hiProd, scale);
-
-NoScaling:
                 d1.Low64 = bufProd.Low64;
                 d1.High = bufProd.U2;
                 d1.uflags = ((d2.uflags ^ d1.uflags) & SignMask) | ((uint)scale << ScaleShift);
@@ -2243,6 +2264,27 @@ RoundUp:
                 } while (scale < 0);
             }
 
+            /// <summary>
+            /// The dividend buffer used by <see cref="VarDecModFull"/>: 7 uints, enough for the
+            /// 221 significant bits the dividend can reach.
+            /// </summary>
+            private const int BufLength = 7;
+
+            /// <summary>
+            /// Returns a <typeparamref name="TWindow"/> (<see cref="Buf12"/> or <see cref="Buf16"/>)
+            /// aliasing <paramref name="buf"/> starting at uint <paramref name="index"/>, so the
+            /// division helpers can update the dividend in place instead of copying windows around.
+            /// </summary>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private static ref TWindow Window<TWindow>(Span<uint> buf, int index) where TWindow : struct
+            {
+                // Checked rather than asserted: this is what keeps the reinterpret below in bounds.
+                if ((uint)index + (uint)(Unsafe.SizeOf<TWindow>() / sizeof(uint)) > (uint)buf.Length)
+                    Number.ThrowDecimalOverflowException();
+
+                return ref Unsafe.As<uint, TWindow>(ref Unsafe.Add(ref MemoryMarshal.GetReference(buf), (uint)index));
+            }
+
             private static void VarDecModFull(ref DecCalc d1, ref DecCalc d2, int scale)
             {
                 // Divisor has bits set in the upper 64 bits.
@@ -2256,11 +2298,17 @@ RoundUp:
                     tmp = d2.Mid;
                 int shift = BitOperations.LeadingZeroCount(tmp);
 
-                Unsafe.SkipInit(out Buf28 b);
-                Span<uint> buf = b.AsSpan();
+                Unsafe.SkipInit(out InlineArray7<uint> bufNum);
+                Span<uint> buf = bufNum;
+                Debug.Assert(buf.Length == BufLength);
 
-                b.Buf24.Low64 = d1.Low64 << shift;
-                b.Buf24.Mid64 = (d1.Mid + ((ulong)d1.High << 32)) >> (32 - shift);
+                // The low 6 uints, so the dividend can be seeded and read back 64 bits at a time.
+                // Storing it as uints instead would make the 64-bit reads inside the division
+                // helpers overlap several narrower stores and lose store to load forwarding.
+                ref Buf24 head = ref Window<Buf24>(buf, 0);
+
+                head.Low64 = d1.Low64 << shift;
+                head.Mid64 = (d1.Mid + ((ulong)d1.High << 32)) >> (32 - shift);
 
                 // The dividend might need to be scaled up to 221 significant bits.
                 // Maximum scaling is required when the divisor is 2^64 with scale 28 and is left shifted 31 bits
@@ -2269,8 +2317,8 @@ RoundUp:
                 while (scale < 0)
                 {
                     uint power = scale <= -MaxInt32Scale ? TenToPowerNine : UInt32Powers10[-scale];
-                    ulong tmp64 = Math.BigMul(b.Buf24.U0, power);
-                    b.Buf24.U0 = (uint)tmp64;
+                    ulong tmp64 = Math.BigMul(head.U0, power);
+                    head.U0 = (uint)tmp64;
                     for (int i = 1; i <= high; i++)
                     {
                         tmp64 >>= 32;
@@ -2280,32 +2328,37 @@ RoundUp:
                     // The high bit of the dividend must not be set.
                     if (tmp64 > int.MaxValue)
                     {
-                        Debug.Assert(high + 1 < Buf28.Length);
+                        Debug.Assert(high + 1 < BufLength);
                         buf[++high] = (uint)(tmp64 >> 32);
                     }
 
                     scale += MaxInt32Scale;
                 }
 
+                // Long division from the top down: each step divides the window of buf ending at the
+                // highest uint still in play, leaving its remainder in place to become the upper part
+                // of the next window. The windows alias buf so the division updates it directly.
                 if (d2.High == 0)
                 {
                     ulong divisor = d2.Low64 << shift;
+
+                    // Constant window offsets, so the range checks in Window fold away.
                     switch (high)
                     {
                         case 6:
-                            Div96By64(ref b.U4To6, divisor);
+                            Div96By64(ref Window<Buf12>(buf, 4), divisor);
                             goto case 5;
                         case 5:
-                            Div96By64(ref b.U3To5, divisor);
+                            Div96By64(ref Window<Buf12>(buf, 3), divisor);
                             goto case 4;
                         case 4:
-                            Div96By64(ref b.U2To4, divisor);
+                            Div96By64(ref Window<Buf12>(buf, 2), divisor);
                             break;
                     }
-                    Div96By64(ref b.U1To3, divisor);
-                    Div96By64(ref b.U0To2, divisor);
+                    Div96By64(ref Window<Buf12>(buf, 1), divisor);
+                    Div96By64(ref Window<Buf12>(buf, 0), divisor);
 
-                    d1.Low64 = b.Buf24.Low64 >> shift;
+                    d1.Low64 = head.Low64 >> shift;
                     d1.High = 0;
                 }
                 else
@@ -2315,22 +2368,23 @@ RoundUp:
                     bufDivisor.Low64 = d2.Low64 << shift;
                     bufDivisor.U2 = (uint)((d2.Mid + ((ulong)d2.High << 32)) >> (32 - shift));
 
+                    // Constant window offsets, so the range checks in Window fold away.
                     switch (high)
                     {
                         case 6:
-                            Div128By96(ref b.U3To6, ref bufDivisor);
+                            Div128By96(ref Window<Buf16>(buf, 3), ref bufDivisor);
                             goto case 5;
                         case 5:
-                            Div128By96(ref b.U2To5, ref bufDivisor);
+                            Div128By96(ref Window<Buf16>(buf, 2), ref bufDivisor);
                             goto case 4;
                         case 4:
-                            Div128By96(ref b.U1To4, ref bufDivisor);
+                            Div128By96(ref Window<Buf16>(buf, 1), ref bufDivisor);
                             break;
                     }
-                    Div128By96(ref b.U0To3, ref bufDivisor);
+                    Div128By96(ref Window<Buf16>(buf, 0), ref bufDivisor);
 
-                    d1.Low64 = (b.Buf24.Low64 >> shift) + ((ulong)b.Buf24.U2 << (32 - shift) << 32);
-                    d1.High = b.Buf24.U2 >> shift;
+                    d1.Low64 = (head.Low64 >> shift) + ((ulong)head.U2 << (32 - shift) << 32);
+                    d1.High = head.U2 >> shift;
                 }
             }
 
@@ -2651,52 +2705,6 @@ done:
                 public Span<uint> AsSpan() => MemoryMarshal.CreateSpan(ref Unsafe.As<Buf24, uint>(ref this), Length);
             }
 
-            [StructLayout(LayoutKind.Explicit)]
-            private struct Buf28
-            {
-                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
-                [FieldOffset(0 * 4)]
-                public safe Buf24 Buf24;
-                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
-                [FieldOffset(6 * 4)]
-                public safe uint U6;
-
-                // Overlapping 96-bit and 128-bit windows over the buffer, named after the
-                // uints they span. VarDecModFull divides the buffer one uint at a time.
-                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
-                [FieldOffset(0 * 4)]
-                public safe Buf12 U0To2;
-                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
-                [FieldOffset(1 * 4)]
-                public safe Buf12 U1To3;
-                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
-                [FieldOffset(2 * 4)]
-                public safe Buf12 U2To4;
-                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
-                [FieldOffset(3 * 4)]
-                public safe Buf12 U3To5;
-                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
-                [FieldOffset(4 * 4)]
-                public safe Buf12 U4To6;
-
-                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
-                [FieldOffset(0 * 4)]
-                public safe Buf16 U0To3;
-                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
-                [FieldOffset(1 * 4)]
-                public safe Buf16 U1To4;
-                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
-                [FieldOffset(2 * 4)]
-                public safe Buf16 U2To5;
-                /// <safety>Doesn't expose undefined values, doesn't produce misaligned primitives.</safety>
-                [FieldOffset(3 * 4)]
-                public safe Buf16 U3To6;
-
-                public const int Length = 7;
-
-                [UnscopedRef]
-                public Span<uint> AsSpan() => MemoryMarshal.CreateSpan(ref Unsafe.As<Buf28, uint>(ref this), Length);
-            }
         }
     }
 }
