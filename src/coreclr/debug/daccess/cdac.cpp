@@ -166,9 +166,11 @@ CDAC::~CDAC()
     }
 
     if (m_module != NULL)
+    {
 #ifndef HOST_UNIX
         ::FreeLibrary(m_module);
 #endif // HOST_UNIX
+    }
 }
 
 void CDAC::CreateSosInterface(IUnknown** sos)
