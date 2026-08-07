@@ -21,6 +21,8 @@ namespace System.Net.NameResolution.Tests
         private const string TestNsHost = "microsoft.com";
         private const string NonExistentHost = "this-name-definitely-does-not-exist.dotnet-test.invalid";
 
+        public static bool IsWindowsOrOSX => PlatformDetection.IsWindows || PlatformDetection.IsOSX;
+
         // ---- Cross-platform argument-validation tests ----
 
         [Fact]
@@ -71,6 +73,19 @@ namespace System.Net.NameResolution.Tests
             Assert.Throws<ArgumentException>(() => r.ResolveAddresses(string.Empty));
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
+        [InlineData("\0")]
+        [InlineData("\0host")]
+        [InlineData("host\0")]
+        [InlineData("ho\0st")]
+        [InlineData("microsoft.com\0.invalid")]
+        public async Task DnsResolver_NameContainsNull_ThrowsArgumentException(string name)
+        {
+            using DnsResolver r = new DnsResolver();
+            await Assert.ThrowsAsync<ArgumentException>(() => r.ResolveAddressesAsync(name));
+            Assert.Throws<ArgumentException>(() => r.ResolveAddresses(name));
+        }
+
         [Fact]
         public async Task DnsResolver_Disposed_Throws()
         {
@@ -98,6 +113,9 @@ namespace System.Net.NameResolution.Tests
 
         private static async Task<DnsResult<AddressRecord>> ResolveAddresses(bool async, DnsResolver resolver, string name, AddressFamily addressFamily = AddressFamily.Unspecified)
             => async ? await resolver.ResolveAddressesAsync(name, addressFamily) : resolver.ResolveAddresses(name, addressFamily);
+
+        private static async Task<DnsResult<SrvRecord>> ResolveSrv(bool async, DnsResolver resolver, string name)
+            => async ? await resolver.ResolveSrvAsync(name) : resolver.ResolveSrv(name);
 
         private static async Task<DnsResult<MxRecord>> ResolveMx(bool async, DnsResolver resolver, string name)
             => async ? await resolver.ResolveMxAsync(name) : resolver.ResolveMx(name);
@@ -141,7 +159,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- Windows network tests (require outbound DNS) ----
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalFact(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
         public async Task DnsResolver_PreCanceledToken_ReturnsCanceled()
         {
             using DnsResolver r = new DnsResolver();
@@ -189,7 +207,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -206,7 +224,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -215,13 +233,30 @@ namespace System.Net.NameResolution.Tests
             using DnsResolver r = new DnsResolver();
             DnsResult<AddressRecord> result = await ResolveAddresses(async, r, TestHost, AddressFamily.InterNetwork);
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            Assert.NotEmpty(result.Records);
             foreach (AddressRecord rec in result.Records)
             {
                 Assert.Equal(AddressFamily.InterNetwork, rec.Address.AddressFamily);
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop]
+        public async Task ResolveAddresses_CNameChain_WaitsForAddressRecords(bool async)
+        {
+            using DnsResolver resolver = new();
+            DnsResult<AddressRecord> result =
+                await ResolveAddresses(async, resolver, TestCNameHost, AddressFamily.InterNetwork);
+
+            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            Assert.NotEmpty(result.Records);
+            Assert.All(result.Records, record =>
+                Assert.Equal(AddressFamily.InterNetwork, record.Address.AddressFamily));
+        }
+
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -229,11 +264,55 @@ namespace System.Net.NameResolution.Tests
         {
             using DnsResolver r = new DnsResolver();
             DnsResult<AddressRecord> result = await ResolveAddresses(async, r, NonExistentHost);
-            Assert.Equal(DnsResponseCode.NxDomain, result.ResponseCode);
+            // mDNSResponder can surface a negative answer as either NoSuchName (NxDomain) or
+            // NoSuchRecord (mapped to NoError with no records); accept either on macOS.
+            if (PlatformDetection.IsOSX)
+            {
+                Assert.Contains(result.ResponseCode, new[] { DnsResponseCode.NoError, DnsResponseCode.NxDomain });
+            }
+            else
+            {
+                Assert.Equal(DnsResponseCode.NxDomain, result.ResponseCode);
+            }
             Assert.Empty(result.Records);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop]
+        public async Task ResolveAddresses_NonExistent_CompletesPromptly(bool async)
+        {
+            using DnsResolver resolver = new();
+            string hostName = $"{Guid.NewGuid():N}.{NonExistentHost}";
+            Task<DnsResult<AddressRecord>> query = async
+                ? resolver.ResolveAddressesAsync(hostName)
+                : Task.Run(() => resolver.ResolveAddresses(hostName));
+
+            DnsResult<AddressRecord> result = await query.WaitAsync(TimeSpan.FromSeconds(10));
+
+            Assert.Contains(result.ResponseCode, new[] { DnsResponseCode.NoError, DnsResponseCode.NxDomain });
+            Assert.Empty(result.Records);
+        }
+
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
+        [InlineData(false)]
+        [InlineData(true)]
+        [OuterLoop]
+        public async Task ResolveSrv_KnownName_ReturnsRecords(bool async)
+        {
+            using DnsResolver r = new DnsResolver();
+            DnsResult<SrvRecord> result = await ResolveSrv(async, r, TestSrv);
+            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            Assert.NotEmpty(result.Records);
+            foreach (SrvRecord rec in result.Records)
+            {
+                Assert.False(string.IsNullOrEmpty(rec.Target));
+                Assert.NotEqual((ushort)0, rec.Port);
+            }
+        }
+
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -249,7 +328,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -265,7 +344,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -274,14 +353,14 @@ namespace System.Net.NameResolution.Tests
             using DnsResolver r = new DnsResolver();
             DnsResult<CNameRecord> result = await ResolveCName(async, r, TestCNameHost);
             Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
-            // CNAME may or may not exist for the target; at minimum the call should succeed.
-            if (result.Records.Count > 0)
+            Assert.NotEmpty(result.Records);
+            foreach (CNameRecord rec in result.Records)
             {
-                Assert.False(string.IsNullOrEmpty(result.Records[0].CanonicalName));
+                Assert.False(string.IsNullOrEmpty(rec.CanonicalName));
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -297,7 +376,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -310,7 +389,7 @@ namespace System.Net.NameResolution.Tests
             Assert.False(string.IsNullOrEmpty(result.Records[0].Name));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -377,7 +456,7 @@ namespace System.Net.NameResolution.Tests
 
         // ---- Reverse-arpa name building (covers both IPv4 and IPv6 paths used by ResolvePtr(IPAddress)) ----
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(DnsResolverTest), nameof(IsWindowsOrOSX))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
