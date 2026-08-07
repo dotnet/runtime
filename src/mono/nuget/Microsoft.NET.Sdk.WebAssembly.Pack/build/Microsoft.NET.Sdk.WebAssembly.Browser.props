@@ -40,6 +40,18 @@ Copyright (c) .NET Foundation. All rights reserved.
     <StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute Condition="'$(StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute)' == ''">true</StaticWebAssetMakeReferencedAssetOriginalItemSpecAbsolute>
   </PropertyGroup>
 
+  <!-- ReadyToRun for browser-wasm CoreCLR (UseMonoRuntime=false). Rides the mainline PublishReadyToRun
+       pipeline, emitting per-assembly R2R webcil-in-wasm; the crossgen2 host pack (which bundles the wasm
+       cross-JIT) is resolved by the SDK's own ResolveReadyToRunCompilers. The publish staging in
+       Microsoft.NET.Sdk.WebAssembly.Browser.targets consumes the R2R images. -->
+  <PropertyGroup Condition="'$(UseMonoRuntime)' == 'false' and '$(PublishReadyToRun)' == 'true'">
+    <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == ''">wasm</PublishReadyToRunContainerFormat>
+    <!-- Per-assembly (non-composite) for now; composite is a later phase. -->
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">false</PublishReadyToRunComposite>
+    <!-- crossgen2 wasm codegen cannot emit some NYI/SIMD sequences into R2R; fall back to the runtime JIT for those. -->
+    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectCapability Include="WebAssembly" />
   </ItemGroup>

@@ -26,7 +26,8 @@
     <PublishReadyToRun>true</PublishReadyToRun>
     <!-- Disable crossgen on NetBSD, illumos, Solaris and Haiku for now. This can be revisited when we have full support. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'netbsd' or '$(TargetOS)' == 'illumos' or '$(TargetOS)' == 'solaris' or '$(TargetOS)' == 'haiku'">false</PublishReadyToRun>
-    <!-- TODO-WASM: we will have WASM R2R after https://github.com/dotnet/runtime/issues/121257 -->
+    <!-- TODO-WASM: WASM framework R2R needs the CoreLib model (native/*.wasm webcil + kept lib/*.dll IL),
+         not the SDK's in-place R2R which replaces lib/*.dll and drops the IL. See dotnet/runtime#121257. -->
     <PublishReadyToRun Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">false</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(StageTwoBuild)'=='true'">false</PublishReadyToRun>
     <UsesMuxerHostModel Condition="'$(TargetsMobile)' != 'true'">true</UsesMuxerHostModel>
@@ -62,6 +63,70 @@
     <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true'">
       <PublishReadyToRunEmitSymbols>false</PublishReadyToRunEmitSymbols>
     </PropertyGroup>
+  </Target>
+
+  <!--
+    WASM framework R2R: crossgen each managed shared-framework assembly to a webcil-in-wasm R2R image
+    shipped in the pack native/ dir, keeping the IL .dll in lib/ (for trimming/reference). This is the
+    CoreLib model (crossgen-corelib.proj) generalized to the whole framework. The SDK's in-place R2R
+    can't be used because it replaces lib/*.dll and drops the IL. NYI methods fall back to the
+    interpreter at runtime. See dotnet/runtime#121257. Set WasmFrameworkR2RSubset (';'-delimited
+    assembly names) to crossgen only a subset (for bring-up/validation).
+  -->
+  <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
+    <WasmEnableFrameworkR2R Condition="'$(WasmEnableFrameworkR2R)' == ''">true</WasmEnableFrameworkR2R>
+    <_WasmFrameworkR2RDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'framework-r2r'))</_WasmFrameworkR2RDir>
+  </PropertyGroup>
+
+  <Target Name="_ComputeBrowserFrameworkR2RInputs"
+          Condition="'$(WasmEnableFrameworkR2R)' == 'true'"
+          DependsOnTargets="ResolveLibrariesFromLocalBuild;ResolveRuntimeFilesFromLocalBuild">
+    <ItemGroup>
+      <_WasmFrameworkR2RInput Include="$(LibrariesSharedFrameworkBinArtifactsPath)*.dll"
+                              Exclude="$(LibrariesSharedFrameworkBinArtifactsPath)*.resources.dll" />
+      <!-- Optional subset filter for bring-up: keep only assemblies named in WasmFrameworkR2RSubset. -->
+      <_WasmFrameworkR2RInput Remove="@(_WasmFrameworkR2RInput)"
+                              Condition="'$(WasmFrameworkR2RSubset)' != '' and !$([System.String]::Copy(';$(WasmFrameworkR2RSubset);').Contains(';%(FileName);'))" />
+      <_WasmFrameworkR2RInput>
+        <OutputWasm>$(_WasmFrameworkR2RDir)%(FileName).wasm</OutputWasm>
+      </_WasmFrameworkR2RInput>
+    </ItemGroup>
+    <PropertyGroup>
+      <_WasmCoreLibIL Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)System.Private.CoreLib.dll</_WasmCoreLibIL>
+      <_WasmCoreLibIL Condition="'$(_WasmCoreLibIL)' == '' and Exists('$(CoreCLRArtifactsPath)IL\System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)IL\System.Private.CoreLib.dll</_WasmCoreLibIL>
+      <_WasmCrossgen2Exe>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</_WasmCrossgen2Exe>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_CrossgenBrowserFrameworkR2R"
+          Condition="'$(WasmEnableFrameworkR2R)' == 'true'"
+          DependsOnTargets="_ComputeBrowserFrameworkR2RInputs"
+          Inputs="@(_WasmFrameworkR2RInput);$(_WasmCoreLibIL)"
+          Outputs="@(_WasmFrameworkR2RInput->'%(OutputWasm)')">
+    <MakeDir Directories="$(_WasmFrameworkR2RDir)" />
+    <Message Importance="High" Text="Crossgen R2R (wasm): %(_WasmFrameworkR2RInput.FileName)" />
+    <Exec Command="&quot;$(_WasmCrossgen2Exe)&quot; -o:&quot;%(_WasmFrameworkR2RInput.OutputWasm)&quot; -r:&quot;$(LibrariesSharedFrameworkBinArtifactsPath)*.dll&quot; -r:&quot;$(_WasmCoreLibIL)&quot; --targetarch:$(TargetArchitecture) --targetos:$(TargetOS) --obj-format:wasm --codegenopt:JitWasmNyiToR2RUnsupported=1 --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 -O &quot;%(_WasmFrameworkR2RInput.FullPath)&quot;" />
+  </Target>
+
+  <!-- Always runs (no Inputs/Outputs) so the produced images are packed even when crossgen was
+       incrementally skipped. Adds them as native pack files → runtimes/<rid>/native/, and registers
+       each in the templated platform manifest (required for RuntimePack file validation). -->
+  <Target Name="_AddBrowserFrameworkR2RToPackage"
+          Condition="'$(WasmEnableFrameworkR2R)' == 'true'"
+          DependsOnTargets="_CrossgenBrowserFrameworkR2R"
+          BeforeTargets="AddFrameworkFilesToPackage">
+    <ItemGroup>
+      <_WasmFrameworkR2ROutput Include="$(_WasmFrameworkR2RDir)*.wasm" />
+      <LibrariesRuntimeFiles Include="@(_WasmFrameworkR2ROutput)" IsNative="true" />
+      <PlatformManifestFileEntry Include="@(_WasmFrameworkR2ROutput->'%(FileName)%(Extension)')" IsNative="true" />
+    </ItemGroup>
+    <!-- Stage into the in-tree runtime-pack layout that local dev builds/tests consume. That layout
+         is assembled by binplace + libs.pretest (not from this pack's nupkg), so the images must be
+         copied in explicitly. The SDK finds pack R2R webcils by globbing this native dir. -->
+    <Copy Condition="'$(MicrosoftNetCoreAppRuntimePackNativeDir)' != '' and '@(_WasmFrameworkR2ROutput)' != ''"
+          SourceFiles="@(_WasmFrameworkR2ROutput)"
+          DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
+          SkipUnchangedFiles="true" />
   </Target>
 
   <!--
