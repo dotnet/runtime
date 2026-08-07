@@ -18,6 +18,21 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Enforces options validation check on start rather than at run time.
         /// </summary>
+        /// <remarks>
+        /// When the built-in <see cref="IOptionsFactory{TOptions}"/> implementation is used, asynchronous validation
+        /// runs during startup and seeds the built-in <see cref="IOptions{TOptions}"/> and
+        /// <see cref="IOptionsMonitor{TOptions}"/> instances for subsequent synchronous access. If an options value
+        /// was successfully created synchronously before startup, that instance retains the singleton slot and is
+        /// published to the monitor cache while asynchronous validation runs against a separate startup candidate.
+        /// A derived or replacement <see cref="IOptionsFactory{TOptions}"/> uses synchronous startup validation and
+        /// does not invoke <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/>.
+        /// Options that require asynchronous validation cannot be accessed synchronously before startup validation
+        /// completes. Default-name asynchronous validation requires the built-in <see cref="IOptions{TOptions}"/>
+        /// implementation so the validated value can be installed safely; startup fails when a custom implementation
+        /// is registered. The built-in <see cref="IOptionsSnapshot{TOptions}"/> implementation validates instances
+        /// synchronously in per-scope caches that startup validation does not populate. The built-in options monitor
+        /// also reloads synchronously and provides no asynchronous last-known-good guarantee.
+        /// </remarks>
         /// <typeparam name="TOptions">The type of options.</typeparam>
         /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure options instance.</param>
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>

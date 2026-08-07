@@ -15,16 +15,18 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Registers this options instance for validation of its DataAnnotations.
         /// </summary>
         /// <remarks>
-        /// Synchronous validation runs when the options instance is created or accessed. When targeting .NET 11 or later,
+        /// Synchronous validation runs when an options instance is created. When targeting .NET 11 or later,
         /// asynchronous validation (including <c>AsyncValidationAttribute</c>-derived attributes)
-        /// runs once at startup, and only when <c>ValidateOnStart()</c> is also called.
+        /// runs during startup when <c>ValidateOnStart()</c> is also called.
         /// If <c>ValidateOnStart()</c> is not called, attributes deriving from
         /// <c>AsyncValidationAttribute</c> are never evaluated asynchronously: runtime options access triggers only
         /// synchronous validation, which invokes the attribute's synchronous fallback instead.
-        /// When using <c>AsyncValidationAttribute</c>-derived attributes, ensure the synchronous
-        /// <c>IsValid</c> fallback does not throw: synchronous validation still runs on every
-        /// options access, so a throwing fallback surfaces as an exception on each access (for example
-        /// when resolving <c>IOptions{TOptions}.Value</c>), even if startup validation succeeded.
+        /// The built-in <see cref="IOptionsSnapshot{TOptions}"/> implementation always uses synchronous attribute
+        /// validation and never calls the asynchronous <c>IsValidAsync</c> method. Options created before startup
+        /// validation or recreated by the built-in <see cref="IOptionsMonitor{TOptions}"/> implementation after a
+        /// change also use synchronous validation. To support these paths, ensure an
+        /// <c>AsyncValidationAttribute</c>-derived attribute provides a synchronous <c>IsValid</c> fallback that
+        /// does not throw.
         /// </remarks>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="optionsBuilder">The options builder to add the services to.</param>
@@ -35,9 +37,6 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             var instance = new DataAnnotationValidateOptions<TOptions>(optionsBuilder.Name);
             optionsBuilder.Services.AddSingleton<IValidateOptions<TOptions>>(instance);
-#if NET11_0_OR_GREATER
-            optionsBuilder.Services.AddSingleton<IAsyncValidateOptions<TOptions>>(instance);
-#endif
             return optionsBuilder;
         }
     }

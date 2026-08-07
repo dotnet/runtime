@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.Options
 
         // True when at least one validator registered as IValidateOptions<TOptions> also implements
         // IAsyncValidateOptions<TOptions>, so a synchronous Create may fail for a genuinely-asynchronous validator.
-        // Used by the options managers to prefer a startup-validated value over re-running synchronous validation.
+        // Used by startup validation to avoid re-running asynchronous validators synchronously.
         internal bool HasAsyncValidators => _hasAsyncValidators;
 
         /// <summary>

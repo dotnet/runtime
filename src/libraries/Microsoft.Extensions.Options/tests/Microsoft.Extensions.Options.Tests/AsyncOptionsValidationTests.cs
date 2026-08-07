@@ -432,8 +432,9 @@ namespace Microsoft.Extensions.Options.Tests
 
             using (IServiceScope scope = sp.CreateScope())
             {
-                Assert.Throws<OptionsValidationException>(
+                OptionsValidationException beforeStartupError = Assert.Throws<OptionsValidationException>(
                     () => scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Value);
+                AssertAsyncOnlySnapshotFailure(beforeStartupError);
             }
 
             await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
@@ -443,8 +444,9 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Same(startupCandidate, monitor.CurrentValue);
 
             using IServiceScope newScope = sp.CreateScope();
-            Assert.Throws<OptionsValidationException>(
+            OptionsValidationException afterStartupError = Assert.Throws<OptionsValidationException>(
                 () => newScope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Value);
+            AssertAsyncOnlySnapshotFailure(afterStartupError);
         }
 
         [Fact]
@@ -487,11 +489,24 @@ namespace Microsoft.Extensions.Options.Tests
 
             await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
 
-            Assert.Equal(2, configureCalls);
-            Assert.Equal(1, validator.SyncCalls);
+            using (IServiceScope scope = sp.CreateScope())
+            {
+                _ = scope.ServiceProvider.GetRequiredService<IOptionsSnapshot<FakeOptions>>().Value;
+            }
+
+            Assert.Equal(3, configureCalls);
+            Assert.Equal(2, validator.SyncCalls);
             Assert.Equal(1, validator.AsyncCalls);
             Assert.Same(preStartWinner, options.Value);
             Assert.Same(preStartWinner, monitor.CurrentValue);
+        }
+
+        private static void AssertAsyncOnlySnapshotFailure(OptionsValidationException error)
+        {
+            string failure = Assert.Single(error.Failures);
+            Assert.Contains("IOptionsSnapshot<TOptions>", failure);
+            Assert.Contains("cannot execute or await ValidateAsync", failure);
+            Assert.Contains("not populated by startup validation", failure);
         }
 
         [Fact]
@@ -515,6 +530,23 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.False(asyncValidationCalled);
             Assert.Contains(typeof(FakeOptions).ToString(), error.Message);
             Assert.Contains(typeof(OptionsWrapper<FakeOptions>).ToString(), error.Message);
+        }
+
+        [Fact]
+        public async Task AsyncStartupValidation_DerivedFactoryUsesSynchronousFallback()
+        {
+            var validator = new CountingAsyncValidator();
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .ValidateOnStart();
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddSingleton<IOptionsFactory<FakeOptions>, DerivedOptionsFactory<FakeOptions>>();
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+
+            Assert.Equal(1, validator.SyncCalls);
+            Assert.Equal(0, validator.AsyncCalls);
         }
 
         [Fact]
@@ -559,22 +591,28 @@ namespace Microsoft.Extensions.Options.Tests
         [Fact]
         public async Task NamedAsyncOptions_StartupPublishesExactCandidate()
         {
-            FakeOptions? startupCandidate = null;
+            var startupCandidates = new Dictionary<string, FakeOptions>();
             var services = new ServiceCollection();
-            services.AddOptions<FakeOptions>("named")
-                .Configure(o => o.Message = "validated")
-                .Validate((FakeOptions o, CancellationToken ct) =>
-                {
-                    startupCandidate = o;
-                    return Task.FromResult(true);
-                }, "async fail")
-                .ValidateOnStart();
+            foreach (string name in new[] { "one", "two" })
+            {
+                services.AddOptions<FakeOptions>(name)
+                    .Configure(o => o.Message = name)
+                    .Validate((FakeOptions o, CancellationToken ct) =>
+                    {
+                        startupCandidates[name] = o;
+                        return Task.FromResult(true);
+                    }, "async fail")
+                    .ValidateOnStart();
+            }
+
             using ServiceProvider sp = services.BuildServiceProvider();
 
             await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
 
-            Assert.NotNull(startupCandidate);
-            Assert.Same(startupCandidate, sp.GetRequiredService<IOptionsMonitor<FakeOptions>>().Get("named"));
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+            Assert.Equal(2, startupCandidates.Count);
+            Assert.Same(startupCandidates["one"], monitor.Get("one"));
+            Assert.Same(startupCandidates["two"], monitor.Get("two"));
         }
 
         [Fact]
@@ -715,6 +753,17 @@ namespace Microsoft.Extensions.Options.Tests
             public bool TryRemove(string? name) => _cache.TryRemove(name ?? Options.DefaultName, out _);
 
             public void Clear() => _cache.Clear();
+        }
+
+        private sealed class DerivedOptionsFactory<T> : OptionsFactory<T> where T : class
+        {
+            public DerivedOptionsFactory(
+                IEnumerable<IConfigureOptions<T>> setups,
+                IEnumerable<IPostConfigureOptions<T>> postConfigures,
+                IEnumerable<IValidateOptions<T>> validations)
+                : base(setups, postConfigures, validations)
+            {
+            }
         }
 
         private sealed class TrackingAsyncStartupValidator : IAsyncStartupValidator

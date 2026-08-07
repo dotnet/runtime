@@ -10,6 +10,12 @@ namespace Microsoft.Extensions.Options
     /// Monitors changes on a <typeparamref name="TOptions"/> instance.
     /// </summary>
     /// <typeparam name="TOptions">The options type.</typeparam>
+    /// <remarks>
+    /// The default implementation, <see cref="OptionsMonitor{TOptions}"/>, recreates and validates options
+    /// synchronously after change notifications. It does not invoke
+    /// <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/> or provide an asynchronous last-known-good
+    /// guarantee.
+    /// </remarks>
     public interface IOptionsMonitor<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] out TOptions>
     {
         /// <summary>
