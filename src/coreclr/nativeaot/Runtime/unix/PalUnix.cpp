@@ -862,6 +862,7 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
         {
             // NativeAOT runtime state cannot be safely unloaded.
             // Keep the extra reference for the lifetime of the process.
+            // Unloading is disabled via `-z,nodelete` linker option on ELF platforms.
             dlopen(info.dli_fname, RTLD_LAZY | RTLD_NOLOAD);
         }
 #else
