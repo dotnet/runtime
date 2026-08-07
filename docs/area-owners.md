@@ -166,8 +166,8 @@ Note: Editing this file doesn't update the mapping used by `@dotnet-policy-servi
 | os-ios           | @vitek-karas  | @kotlarmilos                                       |                 |
 | os-tizen         | @gbalykov     | @dotnet/samsung                                    |                 |
 | os-tvos          | @vitek-karas  | @kotlarmilos                                       |                 |
-| os-wasi          | @lewing       | @pavelsavara                                       |                 |
-| os-browser       | @lewing       | @pavelsavara                                       |                 |
+| os-wasi          | @lewing @kotlarmilos | @pavelsavara                                |                 |
+| os-browser       | @lewing @kotlarmilos | @pavelsavara                                |                 |
 
 ## Architectures
 
@@ -181,7 +181,7 @@ Note: Editing this file doesn't update the mapping used by `@dotnet-policy-servi
 | arch-loongarch64 | @shushanhf    | @LuckyXu-HF                                        |                 |
 | arch-riscv       | @gbalykov     | @dotnet/samsung                                    |                 |
 | arch-s390x       | @uweigand     | @uweigand                                          |                 |
-| arch-wasm        | @lewing       | @lewing, @pavelsavara                              |                 |
+| arch-wasm        | @lewing @kotlarmilos | @lewing, @pavelsavara                       |                 |
 
 ## Community Triagers
 
