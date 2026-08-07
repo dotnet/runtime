@@ -1128,7 +1128,7 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
         }
 
         [Fact]
-        public async Task CodeFix_IL2075_NoCodeFixWhenAttributableMethodIsInAnotherFile()
+        public async Task CodeFix_IL2075_AttributableMethodInAnotherFile()
         {
             var source = """
             using System;
@@ -1152,22 +1152,35 @@ build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
                 }
             }
             """;
+            var fixedReferencedSource = """
+            using System;
+            using System.Diagnostics.CodeAnalysis;
+
+            public class Referenced
+            {
+                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
+                public static Type GetFoo()
+                {
+                    return typeof(Referenced);
+                }
+            }
+            """;
 
             var expected = VerifyCS.Diagnostic(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter)
                 .WithSpan("/0/Test0.cs", 7, 9, 7, 45)
+                .WithSpan("/0/Test1.cs", 5, 5, 8, 6)
                 .WithArguments("System.Type.GetMethod(String)", "Referenced.GetFoo()", "'DynamicallyAccessedMemberTypes.PublicMethods'");
 
             var test = new VerifyCS.Test();
             test.TestState.Sources.Add(source);
             test.TestState.Sources.Add(referencedSource);
             test.FixedState.Sources.Add(source);
-            test.FixedState.Sources.Add(referencedSource);
+            test.FixedState.Sources.Add(fixedReferencedSource);
             test.TestState.AnalyzerConfigFiles.Add(
                         ("/.editorconfig", SourceText.From(@$"
 is_global = true
 build_property.{MSBuildPropertyOptionNames.EnableTrimAnalyzer} = true")));
             test.ExpectedDiagnostics.Add(expected);
-            test.FixedState.ExpectedDiagnostics.Add(expected);
             await test.RunAsync();
         }
 

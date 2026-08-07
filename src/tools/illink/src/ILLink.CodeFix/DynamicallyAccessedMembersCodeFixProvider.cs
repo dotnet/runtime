@@ -100,20 +100,22 @@ namespace ILLink.CodeFix
                 || stringArgs is null
                 || stringArgs.Contains(","))
                 return;
-            if (await document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } root)
-                return;
-
             Location targetLocation = diagnostic.AdditionalLocations.Count > 0
                 ? diagnostic.AdditionalLocations[0]
                 : diagnostic.Location;
 
-            if (root.FindNode(targetLocation.SourceSpan, getInnermostNodeForTie: true) is not SyntaxNode targetNode)
+            if (targetLocation.SourceTree is not { } targetTree
+                || document.Project.Solution.GetDocument(targetTree) is not { } targetDocument)
+                return;
+            if (await targetDocument.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false) is not { } targetRoot)
+                return;
+            if (targetRoot.FindNode(targetLocation.SourceSpan, getInnermostNodeForTie: true) is not SyntaxNode targetNode)
                 return;
 
             context.RegisterCodeFix(CodeAction.Create(
                 title: CodeFixTitle.ToString(),
                 createChangedDocument: ct => AddAttributeAsync(
-                    document,
+                    targetDocument,
                     targetNode,
                     stringArgs,
                     addAsReturnAttribute: AttributeOnReturn.Contains(diagnostic.Id),
