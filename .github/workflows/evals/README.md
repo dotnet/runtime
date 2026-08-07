@@ -36,7 +36,7 @@ exist and scores workflow output against them, is deferred.
   signature, check for an existing KBE, and emit the create-issue safe-output at
   `out/kbe.md`. Graders check the static Known Build Error format, meaning the
   title, exactly `Known Build Error` plus one blocking label, the three sections,
-  a single json signature, the match-count marker, and no test-muting. They also
+  a single json signature, the visible positive match-count field, and no test-muting. They also
   check `tool-calls` evidence that it actually fetched a real build and searched
   existing KBEs.
 

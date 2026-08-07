@@ -285,6 +285,13 @@ single literal line is specific enough.
 
 ### KBE issue body - literal substring match
 
+Paste the full stack trace or exception output in `Error Details` so readers can
+understand the failure at a glance. That section is for humans; Build Analysis
+only parses `Error Message`. The JSON block is parsed by Build Analysis for
+automatic matching: `ErrorMessage` is a case-sensitive ordinal
+`String.Contains` substring. Set `BuildRetry` to `true` only for clear infra
+flakes; `ExcludeConsoleLog` skips Helix log scanning.
+
 Title:
 
 - `[ci-scan] Test failure: <fully.qualified.TestName>` for test failures
@@ -305,18 +312,11 @@ Pull request: <link to the PR if this is a PR build, otherwise omit this line>
 
 ## Error Details
 
-<!-- Paste the full stack trace or exception output below so readers can understand the failure at a glance.
-     This section is for humans — Build Analysis only parses the ## Error Message section. -->
-
 ```
 <full exception / stack trace excerpt; sanitize as needed>
 ```
 
 ## Error Message
-
-<!-- The JSON blob below is parsed by Build Analysis for automatic matching.
-     ErrorMessage is a literal String.Contains substring (case-sensitive, ordinal).
-     Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
 
 ```json
 {
@@ -326,6 +326,8 @@ Pull request: <link to the PR if this is a PR build, otherwise omit this line>
   "ExcludeConsoleLog": false
 }
 ```
+
+Verified match count: <N> hits in failure.log
 ````
 
 <a id="regex-kbe-template"></a>
@@ -334,6 +336,11 @@ Pull request: <link to the PR if this is a PR build, otherwise omit this line>
 
 Pick only when no single literal line is specific enough. Keep the regex
 anchored, prefer `[^\n]*` over `.*`, and avoid catastrophic backtracking.
+Include the same human-readable `Error Details` guidance as the literal
+template. The JSON block is parsed by Build Analysis using .NET options
+`Singleline | IgnoreCase | NonBacktracking` with a 50ms-per-line timeout. Set
+`BuildRetry` to `true` only for clear infra flakes; `ExcludeConsoleLog` skips
+Helix log scanning.
 
 ````markdown
 ## Build Information
@@ -343,17 +350,11 @@ Pull request: <link, omit if not a PR build>
 
 ## Error Details
 
-<!-- Same human-readable guidance as the literal template. -->
-
 ```
 <full exception / stack trace excerpt>
 ```
 
 ## Error Message
-
-<!-- The JSON blob below is parsed by Build Analysis for automatic matching.
-     ErrorPattern is a regex with .NET options Singleline | IgnoreCase | NonBacktracking and a 50ms-per-line timeout.
-     Set BuildRetry to `true` only for clear infra flakes. ExcludeConsoleLog skips helix log scanning. -->
 
 ```json
 {
@@ -363,6 +364,8 @@ Pull request: <link, omit if not a PR build>
   "ExcludeConsoleLog": false
 }
 ```
+
+Verified match count: <N> hits in failure.log
 ````
 
 <a id="kbe-array-form"></a>
@@ -425,16 +428,21 @@ Walk all nine checks before creating a new KBE:
    For array form, repeat the positive `grep -Fc` for every element. Swap
    `-F` for `-E` when verifying `ErrorPattern`.
 
-   The KBE body MUST embed
-   `<!-- ci-scan-match-count: <N> hits in failure.log -->` where `<N>` is the
-   positive count of the most-specific element. If you cannot produce this
-   marker — positive count is 0 for any element, OR the failure log is
-   unavailable (no log saved, log too large, redaction), OR the log you have
-   is a test-runner xunit log but the actual error is a JIT, runtime, or
-   build-level assert that does not appear there — do **not** emit the KBE.
-   Record `skipped: signature did not match failure.log (N=<count>)` and stop.
-   A KBE without a verified positive count is guaranteed Build Analysis
-   noise.
+   Immediately after the `Error Message` fenced JSON block, the KBE body MUST
+   include this visible field, where `<N>` is the positive count of the
+   most-specific element:
+
+   `Verified match count: <N> hits in failure.log`
+
+   If you cannot produce a positive count — the count is 0 for any element,
+   OR the failure log is unavailable (no log saved, log too large, redaction),
+   OR the log you have is a test-runner xunit log but the actual error is a
+   JIT, runtime, or build-level assert that does not appear there — do **not**
+   emit the KBE. Record
+   `skipped: signature did not match failure.log (N=<count>)` and stop. A KBE
+   without a verified positive count is guaranteed Build Analysis noise.
+   Keep this as plain text rather than `safe-outputs.data`: Build Analysis
+   requires the KBE body to contain exactly one fenced JSON block.
 
    JIT, runtime, and build-level asserts: the per-workitem xunit log Build
    Analysis indexes typically does NOT contain native assert output from
