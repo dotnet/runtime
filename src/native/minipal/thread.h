@@ -41,6 +41,14 @@
 extern "C" {
 #endif
 
+#if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)
+// GCC doesn't support _Thread_local in C++ mode. __thread provides the same
+// static TLS initialization semantics without C++ thread_local initialization checks.
+#define MINIPAL_THREAD_LOCAL __thread
+#else
+#define MINIPAL_THREAD_LOCAL _Thread_local
+#endif
+
 /**
  * Get the current thread ID without caching in a TLS variable.
  *
@@ -79,6 +87,10 @@ static inline size_t minipal_get_current_thread_id_no_cache(void)
     return tid;
 }
 
+#if !defined(__wasm) || defined(_REENTRANT)
+extern MINIPAL_THREAD_LOCAL size_t minipal_cached_thread_id;
+#endif
+
 /**
  * Get the current thread ID.
  *
@@ -90,20 +102,12 @@ static inline size_t minipal_get_current_thread_id(void)
     return minipal_get_current_thread_id_no_cache();
 
 #else // !__wasm || _REENTRANT
-#if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)
-    // gcc doesn't like _Thread_local when __cplusplus is defined.
-    // although thread_local is C2x, which other compilers don't allow with C11.
-    static thread_local size_t tid = 0;
-#else
-    static _Thread_local size_t tid = 0;
-#endif
-
-    if (!tid)
+    if (!minipal_cached_thread_id)
     {
-        tid = minipal_get_current_thread_id_no_cache();
+        minipal_cached_thread_id = minipal_get_current_thread_id_no_cache();
     }
 
-    return tid;
+    return minipal_cached_thread_id;
 #endif // __wasm && !_REENTRANT
 }
 
