@@ -136,7 +136,9 @@ CDAC CDAC::Create(uint64_t descriptorAddr, ICorDebugDataTarget* target, IUnknown
     intptr_t handle;
     if (init(descriptorAddr, &ReadFromTargetCallback, &WriteToTargetCallback, &ReadThreadContext, &WriteThreadContext, allocCallback, target, &handle) != 0)
     {
+#ifndef HOST_UNIX
         ::FreeLibrary(cdacLib);
+#endif // HOST_UNIX
         return {};
     }
 
@@ -164,7 +166,9 @@ CDAC::~CDAC()
     }
 
     if (m_module != NULL)
+#ifndef HOST_UNIX
         ::FreeLibrary(m_module);
+#endif // HOST_UNIX
 }
 
 void CDAC::CreateSosInterface(IUnknown** sos)
