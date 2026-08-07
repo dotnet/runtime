@@ -347,12 +347,23 @@ namespace Microsoft.Extensions.Options
         /// Validation is scoped to the options name associated with this builder.
         /// Dependencies required by <typeparamref name="TValidateOptions"/>
         /// are resolved from the service provider.
+        /// Validators that implement <see cref="IAsyncValidateOptions{TOptions}"/> must be registered
+        /// through this method or as <see cref="IValidateOptions{TOptions}"/>.
         /// </remarks>
         public virtual OptionsBuilder<TOptions> Validate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TValidateOptions>()
             where TValidateOptions : class, IValidateOptions<TOptions>
         {
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
-                new NamedValidateOptionsFilter<TOptions, TValidateOptions>(Name, ActivatorUtilities.GetServiceOrCreateInstance<TValidateOptions>(sp)));
+            {
+                TValidateOptions validator = ActivatorUtilities.GetServiceOrCreateInstance<TValidateOptions>(sp);
+
+                if (validator is IAsyncValidateOptions<TOptions> asyncValidator)
+                {
+                    return new NamedAsyncValidateOptionsFilter<TOptions>(Name, asyncValidator);
+                }
+
+                return new NamedValidateOptionsFilter<TOptions, TValidateOptions>(Name, validator);
+            });
             return this;
         }
 

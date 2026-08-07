@@ -326,6 +326,20 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
+        public async Task ValidateWithValidatorType_PreservesAsyncCapability()
+        {
+            var services = new ServiceCollection();
+
+            services.AddOptions<FakeOptions>()
+                .Validate<AsyncValidator>()
+                .ValidateOnStart();
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            await GetAsyncStartupValidator(sp).ValidateAsync();
+        }
+
+        [Fact]
         public async Task StartupValidator_ValidatorImplementingBoth_DispatchesToAsync()
         {
             var spy = new CapabilitySpyValidator();
@@ -530,6 +544,18 @@ namespace Microsoft.Extensions.Options.Tests
                 AsyncCalled = true;
                 return Task.FromResult(ValidateOptionsResult.Success);
             }
+        }
+
+        private sealed class AsyncValidator : IAsyncValidateOptions<FakeOptions>
+        {
+            public ValidateOptionsResult Validate(string? name, FakeOptions options) =>
+                throw new InvalidOperationException("Synchronous validation should not run.");
+
+            public Task<ValidateOptionsResult> ValidateAsync(
+                string? name,
+                FakeOptions options,
+                CancellationToken cancellationToken = default) =>
+                Task.FromResult(ValidateOptionsResult.Success);
         }
     }
 }

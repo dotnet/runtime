@@ -10,6 +10,10 @@ namespace Microsoft.Extensions.Options
     /// Asynchronously validates options.
     /// </summary>
     /// <typeparam name="TOptions">The options type to validate.</typeparam>
+    /// <remarks>
+    /// Implementations must be registered through <see cref="OptionsBuilder{TOptions}.Validate{TValidateOptions}()"/>
+    /// or as <see cref="IValidateOptions{TOptions}"/>, not directly as <see cref="IAsyncValidateOptions{TOptions}"/>.
+    /// </remarks>
     public interface IAsyncValidateOptions<TOptions> : IValidateOptions<TOptions> where TOptions : class
     {
         /// <summary>
