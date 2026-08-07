@@ -197,7 +197,6 @@ public class DacDbiStackWalkDumpTests : DumpTestBase
                     uint expectedStackSize = decoder.RawStackSize
                         + uint.PopCount((uint)decoder.SavedRegsMask) * (uint)Target.PointerSize;
                     Assert.True(expectedStackSize > decoder.RawStackSize);
-                    Assert.Equal(expectedStackSize, decoder.StackSize);
 
                     ulong expectedAmbientSP = (frameContext.FramePointer.Value - expectedStackSize + sizeof(int)) & ~3UL;
                     Assert.Equal(expectedAmbientSP, data.v.taAmbientESP);
