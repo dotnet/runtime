@@ -321,14 +321,10 @@ public:
     // Creation entry points
     // ------------------------------------------------------------
 
-    static PEAssembly* Open(
-        PEImage* pPEImageIL,
-        BINDER_SPACE::Assembly* pHostAssembly);
-
     // This opens the canonical System.Private.CoreLib.dll
     static PEAssembly* OpenSystem();
 
-    static PEAssembly* Open(BINDER_SPACE::Assembly* pBindResult);
+    static PEAssembly* Open(BINDER_SPACE::Assembly* pBoundAssembly);
 
     static PEAssembly* Create(IMetaDataAssemblyEmit* pEmit, AssemblyBinder* pDynamicAssemblyBinder);
 
@@ -356,12 +352,10 @@ private:
     PEAssembly() = default;
 #else
     PEAssembly(
-        BINDER_SPACE::Assembly* pBindResultInfo,
+        BINDER_SPACE::Assembly* pBoundAssembly,
         IMetaDataEmit* pEmit,
         BOOL isSystem,
-        AssemblyBinder* pDynamicAssemblyBinder = NULL,
-        PEImage* pPEImageIL = NULL,
-        BINDER_SPACE::Assembly* pHostAssembly = NULL
+        AssemblyBinder* pDynamicAssemblyBinder = NULL
     );
 
     ~PEAssembly();
