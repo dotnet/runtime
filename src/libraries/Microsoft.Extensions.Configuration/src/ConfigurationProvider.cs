@@ -29,6 +29,10 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         protected IDictionary<string, string?> Data { get; set; }
 
+        // Exposes this provider's key/value pairs so the reference engine can build its reference index by scanning the
+        // already-loaded backing dictionary directly, instead of going through the O(n^2) GetChildKeys reconstruction.
+        internal IEnumerable<KeyValuePair<string, string?>> GetEntriesForReferenceScan() => Data;
+
         /// <summary>
         /// Attempts to find a value with the given key.
         /// </summary>

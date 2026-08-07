@@ -129,4 +129,7 @@
   <data name="StreamConfigurationSourceStreamCannotBeNull" xml:space="preserve">
     <value>Source.Stream cannot be null.</value>
   </data>
+  <data name="Error_ReferenceCycle" xml:space="preserve">
+    <value>A configuration reference cycle was detected: {0}.</value>
+  </data>
 </root>
