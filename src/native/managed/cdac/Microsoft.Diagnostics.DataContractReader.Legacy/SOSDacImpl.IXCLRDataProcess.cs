@@ -250,31 +250,38 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
             IExecutionManager eman = _target.Contracts.ExecutionManager;
             string? resultName = null;
 
-            // Try stub classification
-            CodeKind codeKind = eman.GetCodeKind(codeAddr);
-            if (codeKind == CodeKind.StubPrecode || codeKind == CodeKind.FixupPrecode)
+            TargetCodePointer managedCodeAddr = _target.Contracts.PrecodeStubs.GetInterpreterCodeFromInterpreterPrecodeIfPresent(codeAddr);
+            if (eman.GetCodeBlockHandle(managedCodeAddr) is CodeBlockHandle codeBlock)
             {
-                IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
-                TargetPointer entryPoint = precodeStubs.GetPrecodeEntryPointFromInteriorAddress(codeAddr, codeKind == CodeKind.FixupPrecode);
-                TargetPointer methodDesc = eman.NonVirtualEntry2MethodDesc(new TargetCodePointer(entryPoint.Value));
-                if (methodDesc != TargetPointer.Null)
+                if (displacement is not null)
                 {
-                    if (displacement is not null)
-                        *displacement = codeAddr.ToAddress(_target).Value - entryPoint;
-                    IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
-                    MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
-                    StringBuilder sb = new StringBuilder();
-                    TypeNameBuilder.AppendMethodInternal(_target, sb, mdh, TypeNameFormat.FormatSignature
-                        | TypeNameFormat.FormatNamespace
-                        | TypeNameFormat.FormatFullInst);
-                    resultName = sb.ToString();
+                    *displacement = managedCodeAddr.ToAddress(_target).Value - eman.GetStartAddress(codeBlock).Value;
                 }
+                resultName = GetMethodName(eman.GetMethodDesc(codeBlock));
             }
+
             if (resultName is null)
             {
-                resultName = GetStubName(codeKind);
-                if (resultName is not null && displacement is not null)
-                    *displacement = 0;
+                // Try stub classification
+                CodeKind codeKind = eman.GetCodeKind(codeAddr);
+                if (codeKind == CodeKind.StubPrecode || codeKind == CodeKind.FixupPrecode)
+                {
+                    IPrecodeStubs precodeStubs = _target.Contracts.PrecodeStubs;
+                    TargetPointer entryPoint = precodeStubs.GetPrecodeEntryPointFromInteriorAddress(codeAddr, codeKind == CodeKind.FixupPrecode);
+                    TargetPointer methodDesc = eman.NonVirtualEntry2MethodDesc(new TargetCodePointer(entryPoint.Value));
+                    if (methodDesc != TargetPointer.Null)
+                    {
+                        if (displacement is not null)
+                            *displacement = codeAddr.ToAddress(_target).Value - entryPoint;
+                        resultName = GetMethodName(methodDesc);
+                    }
+                }
+                if (resultName is null)
+                {
+                    resultName = GetStubName(codeKind);
+                    if (resultName is not null && displacement is not null)
+                        *displacement = 0;
+                }
             }
 
             // try aux symbols
@@ -334,6 +341,17 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
 #endif
 
         return hr;
+    }
+
+    private string GetMethodName(TargetPointer methodDesc)
+    {
+        IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
+        MethodDescHandle mdh = rts.GetMethodDescHandle(methodDesc);
+        StringBuilder sb = new StringBuilder();
+        TypeNameBuilder.AppendMethodInternal(_target, sb, mdh, TypeNameFormat.FormatSignature
+            | TypeNameFormat.FormatNamespace
+            | TypeNameFormat.FormatFullInst);
+        return sb.ToString();
     }
 
     private static string? GetStubName(Contracts.CodeKind codeKind)
@@ -1011,28 +1029,7 @@ public sealed unsafe partial class SOSDacImpl : IXCLRDataProcess, IXCLRDataProce
         }
         catch (System.Exception ex)
         {
-            // The cDAC's IterateMethodInstances() implementation is incomplete compared
-            // to the native DAC's EnumMethodInstances::Next(). The native DAC uses a
-            // MethodIterator backed by AppDomain assembly iteration with EX_TRY/EX_CATCH
-            // error handling around each step. The cDAC re-implements this with
-            // IterateModules()/IterateMethodInstantiations()/IterateTypeParams() which
-            // call into IRuntimeTypeSystem and ILoader contracts. These contract calls
-            // (e.g. GetMethodTable, GetTypeHandle, GetMethodDescForSlot, GetModule,
-            // GetTypeDefToken) can throw when encountering method descs or type handles
-            // from assemblies/modules that the cDAC cannot fully process. This has been
-            // observed for generic method instantiations (cases 2-4 in
-            // IterateMethodInstances) in the SOS.WebApp3 integration test.
-            //
-            // Fall back to the legacy DAC result when available, otherwise propagate the error.
-            if (_legacyProcess is not null)
-            {
-                hr = hrLocal;
-                method.Interface = legacyMethod;
-            }
-            else
-            {
-                hr = ex.HResult;
-            }
+            hr = ex.HResult;
         }
 
 #if DEBUG

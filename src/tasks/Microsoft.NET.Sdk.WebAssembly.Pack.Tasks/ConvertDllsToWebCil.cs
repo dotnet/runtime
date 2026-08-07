@@ -125,13 +125,37 @@ public class ConvertDllsToWebcil : Task
     {
         var dllFilePath = candidate.ItemSpec;
         var webcilFileName = Path.GetFileNameWithoutExtension(dllFilePath) + Utils.WebcilInWasmExtension;
-        string candidatePath = candidate.GetMetadata("AssetTraitName") == "Culture"
-            ? Path.Combine(OutputPath, candidate.GetMetadata("AssetTraitValue"))
+        bool isCulture = candidate.GetMetadata("AssetTraitName") == "Culture";
+        string culture = isCulture ? candidate.GetMetadata("AssetTraitValue") : null;
+        string candidatePath = isCulture
+            ? Path.Combine(OutputPath, culture)
             : OutputPath;
 
         string finalWebcil = Path.Combine(candidatePath, webcilFileName);
 
-        if (Utils.IsNewerThan(dllFilePath, finalWebcil))
+        // A prebuilt R2R webcil-in-wasm image from the runtime pack replaces conversion of the .dll:
+        // stage (copy) it into the webcil output so it flows through the same downstream metadata as a
+        // converted assembly, but carries native code. The .dll is kept only as the metadata source.
+        string r2rWebcilPath = candidate.GetMetadata("R2RWebcilPath");
+        if (!string.IsNullOrEmpty(r2rWebcilPath))
+        {
+            if (Utils.IsNewerThan(r2rWebcilPath, finalWebcil))
+            {
+                if (!Directory.Exists(candidatePath))
+                    Directory.CreateDirectory(candidatePath);
+
+                // Copy (not move): the runtime pack's native/*.wasm is a shared source that must survive staging.
+                if (Utils.CopyIfDifferent(r2rWebcilPath, finalWebcil, useHash: false))
+                    Log.LogMessage(MessageImportance.Low, $"Staged prebuilt R2R webcil {finalWebcil} from {r2rWebcilPath} .");
+                else
+                    Log.LogMessage(MessageImportance.Low, $"Skipped staging {finalWebcil} as the contents are unchanged.");
+            }
+            else
+            {
+                Log.LogMessage(MessageImportance.Low, $"Skipping {r2rWebcilPath} as it is older than the output file {finalWebcil}");
+            }
+        }
+        else if (Utils.IsNewerThan(dllFilePath, finalWebcil))
         {
             var tmpWebcil = Path.Combine(tmpDir, webcilFileName);
             var logAdapter = new Microsoft.WebAssembly.Build.Tasks.LogAdapter(Log);
