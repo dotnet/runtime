@@ -310,6 +310,16 @@ Build: <link to the relevant dev.azure.com build>
 Build error leg or test failing: <AzDO leg name>-<assembly or test name>
 Pull request: <link to the PR if this is a PR build, otherwise omit this line>
 
+<details>
+<summary>KBE authoring guidance (ci-failure-scan)</summary>
+
+- `Error Details` is for readers. Paste the full exception, stack trace, or build error excerpt so the failure is understandable without opening the raw log.
+- Build Analysis parses only the single JSON block under `Error Message`.
+- `ErrorMessage` is a case-sensitive ordinal `String.Contains` substring copied verbatim from the failing log.
+- Set `BuildRetry` to `true` only for a clear infrastructure retry case. `ExcludeConsoleLog` disables Helix console-log scanning.
+
+</details>
+
 ## Error Details
 
 ```
@@ -327,7 +337,14 @@ Pull request: <link to the PR if this is a PR build, otherwise omit this line>
 }
 ```
 
+<details>
+<summary>Agentic workflow metadata (ci-failure-scan)</summary>
+
+Workflow artifact: ci-failure-scan
+Artifact kind: kbe-verification
 Verified match count: <N> hits in failure.log
+
+</details>
 ````
 
 <a id="regex-kbe-template"></a>
@@ -348,6 +365,17 @@ Build: <link>
 Build error leg or test failing: <AzDO leg name>-<assembly or test name>
 Pull request: <link, omit if not a PR build>
 
+<details>
+<summary>KBE authoring guidance (ci-failure-scan)</summary>
+
+- `Error Details` is for readers. Paste the full exception, stack trace, or build error excerpt so the failure is understandable without opening the raw log.
+- Build Analysis parses only the single JSON block under `Error Message`.
+- `ErrorPattern` uses .NET `Singleline | IgnoreCase | NonBacktracking` matching with a 50ms-per-line timeout.
+- Keep the regex anchored, prefer `[^\n]*` over `.*`, and avoid catastrophic backtracking.
+- Set `BuildRetry` to `true` only for a clear infrastructure retry case. `ExcludeConsoleLog` disables Helix console-log scanning.
+
+</details>
+
 ## Error Details
 
 ```
@@ -365,7 +393,14 @@ Pull request: <link, omit if not a PR build>
 }
 ```
 
+<details>
+<summary>Agentic workflow metadata (ci-failure-scan)</summary>
+
+Workflow artifact: ci-failure-scan
+Artifact kind: kbe-verification
 Verified match count: <N> hits in failure.log
+
+</details>
 ````
 
 <a id="kbe-array-form"></a>
@@ -374,7 +409,9 @@ Verified match count: <N> hits in failure.log
 
 Use array form when the failure is best described by multiple ordered log lines.
 Each element matches one line, in order, with arbitrary lines allowed between
-matched elements.
+matched elements. Use the literal-substring KBE body shell above, including its
+collapsed authoring-guidance and workflow-metadata blocks, and replace only its
+`Error Message` JSON with this array form:
 
 ```json
 {
@@ -429,10 +466,10 @@ Walk all nine checks before creating a new KBE:
    `-F` for `-E` when verifying `ErrorPattern`.
 
    Immediately after the `Error Message` fenced JSON block, the KBE body MUST
-   include this visible field, where `<N>` is the positive count of the
-   most-specific element:
-
-   `Verified match count: <N> hits in failure.log`
+   include the collapsed `Agentic workflow metadata (ci-failure-scan)` block
+   from the template. It identifies the workflow and artifact kind and contains
+   `Verified match count: <N> hits in failure.log`, where `<N>` is the positive
+   count of the most-specific element.
 
    If you cannot produce a positive count — the count is 0 for any element,
    OR the failure log is unavailable (no log saved, log too large, redaction),
@@ -441,8 +478,9 @@ Walk all nine checks before creating a new KBE:
    emit the KBE. Record
    `skipped: signature did not match failure.log (N=<count>)` and stop. A KBE
    without a verified positive count is guaranteed Build Analysis noise.
-   Keep this as plain text rather than `safe-outputs.data`: Build Analysis
-   requires the KBE body to contain exactly one fenced JSON block.
+   Keep this as plain text inside the collapsed block rather than
+   `safe-outputs.data`: Build Analysis requires the KBE body to contain exactly
+   one fenced JSON block.
 
    JIT, runtime, and build-level asserts: the per-workitem xunit log Build
    Analysis indexes typically does NOT contain native assert output from

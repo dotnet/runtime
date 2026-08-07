@@ -194,7 +194,7 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
      --json number,url | tee /tmp/gh-aw/agent/tracker.json
    ```
 
-   Compute the window. The window starts at the timestamp of the FIRST recorded run of `ci-failure-scan.lock.yml` (NOT the workflow file's creation time, which can predate any run by days when the file is added but its lock isn't yet checked in). For an existing tracker, first read the date from its visible `Window start (first recorded scanner run): **<date>**` line. For the current legacy tracker, which predates that field, recover the date from the latest tracker sentence `since <date>` and persist it in the next body replacement. Only when no persisted or visible value exists, derive the first-run timestamp from the runs list. This keeps the window stable even if old runs are deleted.
+   Compute the window. The window starts at the timestamp of the FIRST recorded run of `ci-failure-scan.lock.yml` (NOT the workflow file's creation time, which can predate any run by days when the file is added but its lock isn't yet checked in). For an existing tracker, first read the date from the `Window start (first recorded scanner run): **<date>**` field inside its collapsed workflow-metadata block in the raw body. For the current legacy tracker, which predates that field, recover the date from the latest tracker sentence `since <date>` and persist it in the next body replacement. Only when no persisted or visible value exists, derive the first-run timestamp from the runs list. This keeps the window stable even if old runs are deleted.
 
    ```bash
    gh api --paginate "/repos/dotnet/runtime/actions/workflows/ci-failure-scan.lock.yml/runs?per_page=100" \
@@ -263,9 +263,14 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
    Emit a body with this exact shape (regenerate every tick):
 
    ````markdown
+   <details>
+   <summary>Agentic workflow metadata (ci-failure-scan-feedback)</summary>
+
    Workflow artifact: ci-scan-feedback
    Artifact kind: kpi-tracker
    Window start (first recorded scanner run): **<window_start>**
+
+   </details>
 
    Tracking quality of `[ci-scan]` (detection) and `[ci-fix]` (mitigation) issues, PRs, and loop-in comments since <window_start>. Updated every tick of [ci-failure-scan-feedback.lock.yml](https://github.com/dotnet/runtime/blob/main/.github/workflows/ci-failure-scan-feedback.lock.yml). To raise a concern, comment here or on any `[ci-scan]`/`[ci-fix]` issue/PR; the next tick reads in-scope feedback and either opens a `[ci-scan-feedback]` PR with prompt edits or pushes to the existing one.
 
@@ -332,7 +337,7 @@ The two workflows are evaluated on separate axes; do NOT merge their quality num
    - Do NOT emit charts (mermaid or otherwise).
    - Do NOT emit historical weekly buckets. The body is a current snapshot.
 
-   If the tracker exists -> emit one `update_issue` with the new body as a full replacement, never an append. If not -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Preserve the three visible identity and window-start fields exactly on every rewrite; `update_issue` does not support `safe-outputs.data`, so these fields are the persisted state. This step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point). Emit this tracker output BEFORE the Step 6 PR safe-outputs (see the Step 6 "Emission order" note) so a PR-push failure cannot cancel the snapshot.
+   If the tracker exists -> emit one `update_issue` with `operation: "replace"` and the new body as a full replacement, never an append. Omitting `operation` is forbidden because gh-aw defaults `update_issue` to append. If the tracker does not exist -> emit one `create_issue` titled `[ci-scan-feedback] KPI Tracker`. Preserve the collapsed workflow-metadata block and its three visible identity and window-start fields exactly on every rewrite; `update_issue` does not support `safe-outputs.data`, so these fields are the persisted state. This step ALWAYS fires (never call `noop` for the tracker — a daily snapshot is the point). Emit this tracker output BEFORE the Step 6 PR safe-outputs (see the Step 6 "Emission order" note) so a PR-push failure cannot cancel the snapshot.
 
 ## Output to agent log
 
