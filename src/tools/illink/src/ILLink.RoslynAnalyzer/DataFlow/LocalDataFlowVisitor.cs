@@ -318,7 +318,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     VisitTargetSubExpression(fieldRef.Instance, state, savedTargetValues);
                     var current = state.Current;
                     TValue targetValue = GetFieldTargetValue(fieldRef, in current.Context);
-                    TValue value = GetAssignmentValue(valueOperation, precomputedValue, state);
+                    TValue value = GetAssignmentValue();
                     HandleAssignment(value, targetValue, assignmentOperation, in current.Context);
                     return value;
                 }
@@ -326,7 +326,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 {
                     var current = state.Current;
                     TValue targetValue = GetParameterTargetValue(parameterRef.Parameter);
-                    TValue value = GetAssignmentValue(valueOperation, precomputedValue, state);
+                    TValue value = GetAssignmentValue();
                     HandleAssignment(value, targetValue, assignmentOperation, in current.Context);
                     return value;
                 }
@@ -339,7 +339,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     // correctly detect whether it is used for reading or writing inside of VisitPropertyReference.
                     // https://github.com/dotnet/roslyn/issues/25057
                     TValue instanceValue = VisitTargetSubExpression(propertyRef.Instance, state, savedTargetValues);
-                    TValue value = GetAssignmentValue(valueOperation, precomputedValue, state);
+                    TValue value = GetAssignmentValue();
                     IMethodSymbol? setMethod = propertyRef.Property.GetSetMethod();
 
                     if (setMethod == null ||
@@ -389,14 +389,14 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     // not a call to an event accessor method. There is no Roslyn API to access the field,
                     // so just visit the instance and the value. https://github.com/dotnet/roslyn/issues/40103
                     VisitTargetSubExpression(eventRef.Instance, state, savedTargetValues);
-                    return GetAssignmentValue(valueOperation, precomputedValue, state);
+                    return GetAssignmentValue();
                 }
                 case IImplicitIndexerReferenceOperation indexerRef:
                 {
                     // An implicit reference to an indexer where the argument is a System.Index
                     TValue instanceValue = VisitTargetSubExpression(indexerRef.Instance, state, savedTargetValues);
                     TValue indexArgumentValue = VisitTargetSubExpression(indexerRef.Argument, state, savedTargetValues);
-                    TValue value = GetAssignmentValue(valueOperation, precomputedValue, state);
+                    TValue value = GetAssignmentValue();
 
                     var property = (IPropertySymbol)indexerRef.IndexerSymbol;
 
@@ -419,7 +419,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 // TODO: when setting a property in an attribute, target is an IPropertyReference.
                 case ILocalReferenceOperation localRef:
                 {
-                    TValue value = GetAssignmentValue(valueOperation, precomputedValue, state);
+                    TValue value = GetAssignmentValue();
                     SetLocal(localRef.Local, value, state, merge);
                     return value;
                 }
@@ -427,7 +427,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 {
                     if (declPattern.DeclaredSymbol is not ILocalSymbol declaredSymbol)
                         break;
-                    TValue value = GetAssignmentValue(valueOperation, precomputedValue, state);
+                    TValue value = GetAssignmentValue();
                     SetLocal(declaredSymbol, value, state, merge);
                     return value;
                 }
@@ -438,7 +438,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 
                     TValue arrayRef = VisitTargetSubExpression(arrayElementRef.ArrayReference, state, savedTargetValues);
                     TValue index = VisitTargetSubExpression(arrayElementRef.Indices[0], state, savedTargetValues);
-                    TValue value = GetAssignmentValue(valueOperation, precomputedValue, state);
+                    TValue value = GetAssignmentValue();
                     HandleArrayElementWrite(arrayRef, index, value, assignmentOperation, merge: merge);
                     return value;
                 }
@@ -446,7 +446,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                 {
                     TValue arrayRef = VisitTargetSubExpression(inlineArrayAccess.Instance, state, savedTargetValues);
                     TValue index = VisitTargetSubExpression(inlineArrayAccess.Argument, state, savedTargetValues);
-                    TValue value = GetAssignmentValue(valueOperation, precomputedValue, state);
+                    TValue value = GetAssignmentValue();
                     HandleArrayElementWrite(arrayRef, index, value, assignmentOperation, merge: merge);
                     return value;
                 }
@@ -478,19 +478,16 @@ namespace ILLink.RoslynAnalyzer.DataFlow
                     UnexpectedOperationHandler.Handle(targetOperation);
                     break;
             }
-            return GetAssignmentValue(valueOperation, precomputedValue, state);
-        }
+            return GetAssignmentValue();
 
-        private TValue GetAssignmentValue(
-            IOperation? valueOperation,
-            TValue? precomputedValue,
-            LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
-        {
-            if (precomputedValue.HasValue)
-                return precomputedValue.Value;
+            TValue GetAssignmentValue()
+            {
+                if (precomputedValue.HasValue)
+                    return precomputedValue.Value;
 
-            Debug.Assert(valueOperation is not null);
-            return valueOperation is null ? TopValue : Visit(valueOperation, state);
+                Debug.Assert(valueOperation is not null);
+                return valueOperation is null ? TopValue : Visit(valueOperation, state);
+            }
         }
 
         public override TValue VisitSimpleAssignment(ISimpleAssignmentOperation operation, LocalDataFlowState<TValue, TContext, TValueLattice, TContextLattice> state)
