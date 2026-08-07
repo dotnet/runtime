@@ -4,7 +4,9 @@
     <!-- Needed for IlasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
+    <!-- TODO: Restore browser R2R coverage once https://github.com/dotnet/runtime/issues/131924 is fixed. -->
+    <AlwaysUseCrossGen2 Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(TargetOS)' != 'browser'">true</AlwaysUseCrossGen2>
+    <CrossGenTest Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</CrossGenTest>
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
   </PropertyGroup>
   <ItemGroup>

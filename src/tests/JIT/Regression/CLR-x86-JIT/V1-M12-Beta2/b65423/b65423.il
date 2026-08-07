@@ -10,6 +10,8 @@
 {
 }
 .assembly extern xunit.core {}
+.assembly extern Microsoft.DotNet.XUnitExtensions { .publickeytoken = (31 BF 38 56 AD 36 4E 35 ) }
+.assembly extern TestLibrary { .ver 0:0:0:0 }
 .class public auto ansi b1904 extends ['mscorlib']System.Object
 {
   .field private static int32 Count
@@ -225,6 +227,7 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtime/issues/131321') type([TestLibrary]TestLibrary.PlatformDetection) string[2] ('IsBrowser' 'IsCoreCLR') }
     .entrypoint
     .maxstack  2
     .locals init (int32 V_0,
