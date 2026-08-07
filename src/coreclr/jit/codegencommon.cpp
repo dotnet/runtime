@@ -7515,7 +7515,62 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
     assert(op->TypeIs(TYP_REF));
 
     regNumber reg = genConsumeReg(op);
-    inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, reg, /* canSkip */ true);
+
+#ifdef PROFILING_SUPPORTED
+    if (m_compiler->compIsProfilerHookNeeded())
+    {
+#ifdef TARGET_ARM
+        // The ARM32 Leave helper preserves REG_PROFILER_RET_SCRATCH, which is also the dedicated
+        // Runtime Async continuation register. For integer/soft-float returns it preserves R0 by
+        // moving it through this scratch register; for void and hard-float returns R0 is overwritten
+        // and the scratch register itself is preserved.
+        static_assert(REG_ASYNC_CONTINUATION_RET == REG_PROFILER_RET_SCRATCH);
+        bool r0InUse;
+        if (m_compiler->info.compRetType == TYP_VOID)
+        {
+            r0InUse = false;
+        }
+        else if (varTypeIsFloating(m_compiler->info.compRetType) ||
+                 m_compiler->IsHfa(m_compiler->info.compMethodInfo->args.retTypeClass))
+        {
+            r0InUse = m_compiler->info.compIsVarArgs || m_compiler->opts.compUseSoftFP;
+        }
+        else
+        {
+            r0InUse = true;
+        }
+        if (r0InUse)
+        {
+            inst_Mov(TYP_REF, REG_INTRET, reg, /* canSkip */ true);
+            gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_REF);
+            genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
+            inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, REG_INTRET, /* canSkip */ true);
+            gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
+        }
+        else
+        {
+            inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, reg, /* canSkip */ true);
+            gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
+            genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
+        }
+#else
+        // The Leave helper preserves the normal return register, but may overwrite the dedicated
+        // Runtime Async continuation register because it is an argument register on supported
+        // ABIs. Temporarily use the normal return register to carry the continuation across the
+        // callback, then restore the dedicated register.
+        inst_Mov(TYP_REF, REG_INTRET, reg, /* canSkip */ true);
+        gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_REF);
+        genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
+        inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, REG_INTRET, /* canSkip */ true);
+        gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
+#endif
+    }
+    else
+#endif
+    {
+        inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, reg, /* canSkip */ true);
+    }
+
     gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
 
     ReturnTypeDesc retTypeDesc = m_compiler->compRetTypeDesc;
