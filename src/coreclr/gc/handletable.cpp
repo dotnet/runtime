@@ -989,50 +989,33 @@ uint32_t HndCountHandles(HHANDLETABLE hTable)
 uint32_t HndCountAllHandles(BOOL fUseLocks)
 {
     uint32_t uCount = 0;
-    int offset = 0;
 
     // get number of HandleTables per HandleTableBucket
     int n_slots = getNumberOfSlots();
 
-    // fetch the pointer to the head of the list
-    struct HandleTableMap * walk = &g_HandleTableMap;
+    HandleTableBucket* bucket = g_HandleTableMap.pBuckets != NULL ? g_HandleTableMap.pBuckets[0] : NULL;
+    if (bucket == NULL)
+        return 0;
 
-    // walk the list
-    while (walk)
+    // loop through the HandleTables inside the bucket and accumulate handle counts
+    HHANDLETABLE* pTable = bucket->pTable;
+    HHANDLETABLE* pLastTable = pTable + n_slots;
+
+    // if the 'fUseLocks' flag is set, acquire the lock for this handle table before
+    // calling HndCountHandles() - this will prevent dwCount from being modified and
+    // it will also prevent any of the main caches from being rebalanced
+    if (fUseLocks)
     {
-        int nextOffset = walk->dwMaxIndex;
-        int max = nextOffset - offset;
-        PTR_PTR_HandleTableBucket pBucket = walk->pBuckets;
-        PTR_PTR_HandleTableBucket pLastBucket = pBucket + max;
-
-        // loop through each slot in this node
-        for (; pBucket != pLastBucket; ++pBucket)
+        for (; pTable != pLastTable; ++pTable)
         {
-            // if there is a HandleTableBucket in this slot
-            if (*pBucket)
-            {
-                // loop through the HandleTables inside this HandleTableBucket,
-                // and accumulate the handle count of each HandleTable
-                HHANDLETABLE * pTable = (*pBucket)->pTable;
-                HHANDLETABLE * pLastTable = pTable + n_slots;
-
-                // if the 'fUseLocks' flag is set, acquire the lock for this handle table before
-                // calling HndCountHandles() - this will prevent dwCount from being modified and
-                // it will also prevent any of the main caches from being rebalanced
-                if (fUseLocks)
-                    for (; pTable != pLastTable; ++pTable)
-                    {
-                        CrstHolder ch(&(Table(*pTable)->Lock));
-                        uCount += HndCountHandles(*pTable);
-                    }
-                else
-                    for (; pTable != pLastTable; ++pTable)
-                        uCount += HndCountHandles(*pTable);
-            }
+            CrstHolder ch(&(Table(*pTable)->Lock));
+            uCount += HndCountHandles(*pTable);
         }
-
-        offset = nextOffset;
-        walk = walk->pNext;
+    }
+    else
+    {
+        for (; pTable != pLastTable; ++pTable)
+            uCount += HndCountHandles(*pTable);
     }
 
     //return the total number of handles in all HandleTables
