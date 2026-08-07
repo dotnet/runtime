@@ -69,6 +69,8 @@ extends:
           parameters:
             helixAccessToken: $(HelixApiAccessToken)
             timeoutInMinutes: 540
+            # Some path-filtered builds intentionally submit no Helix jobs.
+            allowNoHelixJobs: true
 
       #
       # Build CoreCLR verticals where we don't run host tests
