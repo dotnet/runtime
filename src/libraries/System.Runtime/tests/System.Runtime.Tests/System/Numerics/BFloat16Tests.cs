@@ -1480,6 +1480,43 @@ namespace System.Numerics.Tests
             AssertEqual((BFloat16)value, result);
         }
 
+        [Theory]
+        [InlineData(0x0001, "G", "1E-40")]
+        [InlineData(0x0001, "G9", "9.18354962E-41")]
+        [InlineData(0x8000, "R", "-0")]
+        [InlineData(0x007F, "G", "1.17E-38")]
+        [InlineData(0x007F, "G3", "1.17E-38")]
+        [InlineData(0x3EAB, "G", "0.334")]
+        [InlineData(0x3EAB, "G1", "0.3")]
+        [InlineData(0x3EAB, "G5", "0.33398")]
+        [InlineData(0x7F7F, "G", "3.39E+38")]
+        [InlineData(0x7F7F, "G3", "3.39E+38")]
+        public static void ToString_ExactDigits(ushort bits, string format, string expected)
+        {
+            BFloat16 value = BitConverter.UInt16BitsToBFloat16(bits);
+            Assert.Equal(expected, value.ToString(format, NumberFormatInfo.InvariantInfo));
+        }
+
+        [Fact]
+        public static void ToStringRoundtripsEveryValue()
+        {
+            for (int bits = 0; bits <= ushort.MaxValue; bits++)
+            {
+                BFloat16 value = BitConverter.UInt16BitsToBFloat16((ushort)bits);
+                string text = value.ToString("R", NumberFormatInfo.InvariantInfo);
+                BFloat16 result = BFloat16.Parse(text, NumberFormatInfo.InvariantInfo);
+
+                if (BFloat16.IsNaN(value))
+                {
+                    Assert.True(BFloat16.IsNaN(result));
+                }
+                else
+                {
+                    Assert.Equal((ushort)bits, BitConverter.BFloat16ToUInt16Bits(result));
+                }
+            }
+        }
+
         public static IEnumerable<object[]> RoundTripFloat_CornerCases()
         {
             // Magnitude smaller than 2^-133 maps to 0
