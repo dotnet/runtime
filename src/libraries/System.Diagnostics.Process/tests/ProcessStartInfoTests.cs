@@ -1238,6 +1238,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsNanoServer))]
         public void ShellExecute_Nano_Fails_Start()
         {
+            ProcessTestHangDiagnostics.Log("ShellExecute_Nano_Fails_Start started.");
             string tempFile = GetTestFilePath() + ".txt";
             File.Create(tempFile).Dispose();
 
@@ -1250,7 +1251,9 @@ namespace System.Diagnostics.Tests
             // Nano does not support either the STA apartment or ShellExecute.
             // Since we try to start an STA thread for ShellExecute, we hit a ThreadStartException
             // before we get to the PlatformNotSupportedException.
+            ProcessTestHangDiagnostics.Log("ShellExecute_Nano_Fails_Start calling Process.Start.");
             Assert.Throws<ThreadStartException>(() => Process.Start(info));
+            ProcessTestHangDiagnostics.Log("ShellExecute_Nano_Fails_Start completed Process.Start.");
         }
 
         public static TheoryData<bool> UseShellExecute
@@ -1294,8 +1297,39 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_BadExe(bool useShellExecute)
         {
+            const ushort DosSignature = 0x5A4D;
+            const int PeHeaderOffsetPosition = 0x3C;
+            const uint PeSignature = 0x00004550;
+            const int CoffHeaderSize = 20;
+            const int CoffHeaderCharacteristicsOffset = 18;
+            const ushort ImageFileDll = 0x2000;
+
             string tempFile = GetTestFilePath() + ".exe";
-            File.Create(tempFile).Dispose();
+            string? processPath = Environment.ProcessPath;
+            Assert.NotNull(processPath);
+            File.Copy(processPath, tempFile);
+
+            // Mark a copy of the current host as a DLL so it stays a valid PE but cannot be executed.
+            using (FileStream peStream = File.Open(tempFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            using (BinaryReader reader = new BinaryReader(peStream, Encoding.UTF8, leaveOpen: true))
+            using (BinaryWriter writer = new BinaryWriter(peStream, Encoding.UTF8, leaveOpen: true))
+            {
+                Assert.True(peStream.Length >= PeHeaderOffsetPosition + sizeof(int));
+                Assert.Equal(DosSignature, reader.ReadUInt16());
+
+                peStream.Position = PeHeaderOffsetPosition;
+                int peHeaderOffset = reader.ReadInt32();
+                Assert.InRange((long)peHeaderOffset, PeHeaderOffsetPosition + sizeof(int), peStream.Length - sizeof(uint) - CoffHeaderSize);
+
+                peStream.Position = peHeaderOffset;
+                Assert.Equal(PeSignature, reader.ReadUInt32());
+
+                peStream.Position = peHeaderOffset + sizeof(uint) + CoffHeaderCharacteristicsOffset;
+                ushort characteristics = reader.ReadUInt16();
+                Assert.Equal(0, characteristics & ImageFileDll);
+                peStream.Position -= sizeof(ushort);
+                writer.Write((ushort)(characteristics | ImageFileDll));
+            }
 
             ProcessStartInfo info = new ProcessStartInfo
             {
@@ -1359,6 +1393,7 @@ namespace System.Diagnostics.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestRuntimes.Mono)]
         public void StartInfo_NotepadWithContent_withArgumentList(bool useShellExecute)
         {
+            ProcessTestHangDiagnostics.Log($"StartInfo_NotepadWithContent_withArgumentList started; UseShellExecute={useShellExecute}.");
             string tempFile = GetTestFilePath() + ".txt";
             File.WriteAllText(tempFile, $"StartInfo_NotepadWithContent({useShellExecute})");
 
@@ -1372,8 +1407,10 @@ namespace System.Diagnostics.Tests
 
             info.ArgumentList.Add(tempFile);
 
+            ProcessTestHangDiagnostics.Log($"StartInfo_NotepadWithContent_withArgumentList calling Process.Start; UseShellExecute={useShellExecute}.");
             using (var process = Process.Start(info))
             {
+                ProcessTestHangDiagnostics.Log($"StartInfo_NotepadWithContent_withArgumentList completed Process.Start; UseShellExecute={useShellExecute}; ProcessId={process?.Id}.");
                 Assert.True(process != null, $"Could not start {info.FileName} {info.Arguments} UseShellExecute={info.UseShellExecute}");
 
                 try
