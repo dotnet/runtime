@@ -177,13 +177,33 @@ namespace LibraryImportGenerator.IntegrationTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/93423")]
         public void MultidimensionalArray_CheckInnerArraysAreCleared()
         {
             var arr = GetMultiDimensionalArray<BoolStruct>(10, 10);
             foreach (var throwOn in new int[] { 0, 1, 45, 99 })
             {
                 BoolStructInMarshallerAllowNull.Marshaller.MarshallingFailsIndex = throwOn;
+                // https://github.com/dotnet/runtime/issues/93431
+                // We currently only clean up inner arrays that were fully marshalled
+                // (i.e. all elements in the outer collection up to the last fully completed inner array).
+                BoolStructInMarshallerAllowNull.Marshaller.ExpectedFreeCount = throwOn - throwOn % 10;
+                Assert.Throws<ArgumentException>(() =>
+                {
+                    NativeExportsNE.MarshallingFails.MarshalMultidimensionalArray_CheckInnerArraysAreCleared(arr);
+                });
+                BoolStructInMarshallerAllowNull.Marshaller.AssertAllHaveBeenCleaned();
+            }
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/93431")]
+        public void MultidimensionalArray_CheckInnerArraysAreCleared_ProperCleanup()
+        {
+            var arr = GetMultiDimensionalArray<BoolStruct>(10, 10);
+            foreach (var throwOn in new int[] { 0, 1, 45, 99 })
+            {
+                BoolStructInMarshallerAllowNull.Marshaller.MarshallingFailsIndex = throwOn;
+                // Expected Behavior - Should free all elements of inner arrays that were partially marshalled
                 BoolStructInMarshallerAllowNull.Marshaller.ExpectedFreeCount = throwOn;
                 Assert.Throws<ArgumentException>(() =>
                 {
@@ -230,27 +250,20 @@ namespace LibraryImportGenerator.IntegrationTests
                 // Set up unmarshalling asserts
                 BoolStructOutMarshaller.Marshaller.UnmarshallingFailsIndex = throwOn;
                 BoolStructOutMarshaller.Marshaller.ExpectedFreedValues = Enumerable.Range(0, 100).Select(_ => new BoolStructNative() { b1 = 1, b2 = 1, b3 = 1 }).ToArray();
-                // https://github.com/dotnet/runtime/issues/93423
-                //NegateBoolStructInMarshaller.Marshaller.ExpectedFreedValues = Enumerable.Range(0, 100).Select(_ => new BoolStructNative() { b1 = 0, b2 = 0, b3 = 0 }).ToArray();
+                BoolStructInMarshaller.Marshaller.ExpectedFreedValues = Enumerable.Range(0, 100).Select(_ => new BoolStructNative() { b1 = 0, b2 = 0, b3 = 0 }).ToArray();
                 Assert.Throws<ArgumentException>(() =>
                 {
                     NativeExportsNE.MarshallingFails.NegateBoolsOut2D(arr, arr.Length, widths, out BoolStruct[][] boolsOut);
                 });
-                // https://github.com/dotnet/runtime/issues/93423
-                //NegateBoolStructInMarshaller.Marshaller.AssertAllHaveBeenCleaned();
-                BoolStructInMarshaller.Marshaller.Reset();
+                BoolStructInMarshaller.Marshaller.AssertAllHaveBeenCleaned();
                 BoolStructOutMarshaller.Marshaller.AssertAllHaveBeenCleaned();
             }
             // Run without throwing - this is okay only because the native code doesn't actually use the array, it creates a whole new one
             BoolStructOutMarshaller.Marshaller.UnmarshallingFailsIndex = -1;
             BoolStructOutMarshaller.Marshaller.ExpectedFreedValues = Enumerable.Range(0, 100).Select(_ => new BoolStructNative() { b1 = 1, b2 = 1, b3 = 1 }).ToArray();
-            // https://github.com/dotnet/runtime/issues/93423
-            //NegateBoolStructInMarshaller.Marshaller.UnmarshallingFailsIndex = -1;
-            //NegateBoolStructInMarshaller.Marshaller.ExpectedFreeCount = 100;
+            BoolStructInMarshaller.Marshaller.ExpectedFreedValues = Enumerable.Range(0, 100).Select(_ => new BoolStructNative() { b1 = 0, b2 = 0, b3 = 0 }).ToArray();
             NativeExportsNE.MarshallingFails.NegateBoolsOut2D(arr, arr.Length, widths, out BoolStruct[][] boolsOut);
-            // https://github.com/dotnet/runtime/issues/93423
-            //NegateBoolStructInMarshaller.Marshaller.AssertAllHaveBeenCleaned();
-            BoolStructInMarshaller.Marshaller.Reset();
+            BoolStructInMarshaller.Marshaller.AssertAllHaveBeenCleaned();
             BoolStructOutMarshaller.Marshaller.AssertAllHaveBeenCleaned();
         }
 
