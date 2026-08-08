@@ -5781,6 +5781,21 @@ void InterpCompiler::EmitCall(CORINFO_RESOLVED_TOKEN* pConstrainedToken, bool re
     m_pLastNewIns->info.pCallInfo = new (getAllocator(IMK_CallInfo)) InterpCallInfo();
     m_pLastNewIns->info.pCallInfo->pCallArgs = callArgs;
 
+    // Keep value type return buffers separate from call arguments. Compiled code can write to the
+    // return buffer at any time, trampling the method arguments if the return overlaps with the args.
+    //
+    // FIXME
+    // Setting noCallArgs for the return can result in one unnecessary mov.vt for nested calls. We should
+    // be able avoid this by tweaking the offset allocator to reserve separate space for the return value,
+    // not just for the call args. There is also the problem of the return value being used as the first
+    // loaded argument in the following call which exposes the bug where the previous call args were already
+    // processed but the return var offset will be allocated later, as part of the following call, no longer
+    // satisfying the constraints of the ended call.
+    if (m_pVars[dVar].interpType == InterpTypeVT)
+    {
+        m_pVars[dVar].noCallArgs = true;
+    }
+
     if (injectRet)
     {
         // Jmp to PInvoke was converted to normal pinvoke, so we need to inject a ret after the call
