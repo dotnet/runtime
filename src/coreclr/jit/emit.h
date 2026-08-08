@@ -3628,6 +3628,7 @@ public:
 
         dataSection*   dsNext;
         UNATIVE_OFFSET dsAlignment;
+        UNATIVE_OFFSET dsOffset;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
         var_types      dsDataType;

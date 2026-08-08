@@ -2447,9 +2447,6 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
             {
                 divTypeSize = EA_32BYTE;
             }
-            simd_t               negOneIntVec = simd_t::AllBitsSet();
-            CORINFO_FIELD_HANDLE negOneFld    = emit->emitSimdConst(&negOneIntVec, typeSize);
-
             // div-by-zero check
             emit->emitIns_SIMD_R_R_R(INS_xorpd, typeSize, tmpReg2, tmpReg2, tmpReg2, instOptions);
             emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, typeSize, tmpReg2, tmpReg2, op2Reg, instOptions);
@@ -2466,6 +2463,9 @@ void CodeGen::genBaseIntrinsic(GenTreeHWIntrinsic* node, insOpts instOptions)
                     minValueInt.i32[i] = INT_MIN;
                 }
                 CORINFO_FIELD_HANDLE minValueFld = emit->emitSimdConst(&minValueInt, typeSize);
+
+                simd_t               negOneIntVec = simd_t::AllBitsSet();
+                CORINFO_FIELD_HANDLE negOneFld    = emit->emitSimdConst(&negOneIntVec, typeSize);
 
                 emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg2, op1Reg, minValueFld, 0, instOptions);
                 emit->emitIns_SIMD_R_R_C(INS_pcmpeqd, typeSize, tmpReg3, op2Reg, negOneFld, 0, instOptions);
