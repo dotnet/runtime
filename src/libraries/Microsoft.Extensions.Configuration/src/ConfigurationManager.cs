@@ -37,6 +37,12 @@ namespace Microsoft.Extensions.Configuration
         private readonly List<IDisposable> _changeTokenRegistrations = new();
         private ConfigurationReloadToken _changeToken = new();
 
+        // Non-null when the builder opted into value expansions via AllowExpansions.
+        // Rebuilt on every source mutation (AddSource/ReloadSources) so it always reflects the
+        // current provider set. Reads are unsynchronized; in-flight reads that observe a stale
+        // engine still see a consistent (old) provider snapshot held by that engine.
+        private ReferenceResolutionEngine? _engine;
+
         /// <summary>
         /// Creates an empty mutable configuration object that is both an <see cref="IConfigurationBuilder"/> and an <see cref="IConfigurationRoot"/>.
         /// </summary>
@@ -55,6 +61,12 @@ namespace Microsoft.Extensions.Configuration
             get
             {
                 using ReferenceCountedProviders reference = _providerManager.GetReference();
+                ReferenceResolutionEngine? engine = _engine;
+                if (engine is not null)
+                {
+                    return engine.TryGet(key, out string? resolved) ? resolved : null;
+                }
+
                 return ConfigurationRoot.GetConfiguration(reference.Providers, key);
             }
             set
@@ -63,6 +75,8 @@ namespace Microsoft.Extensions.Configuration
                 ConfigurationRoot.SetConfiguration(reference.Providers, key, value);
             }
         }
+
+        internal ReferenceResolutionEngine? Engine => _engine;
 
         /// <inheritdoc/>
         public IConfigurationSection GetSection(string key) => new ConfigurationSection(this, key);
@@ -84,6 +98,7 @@ namespace Microsoft.Extensions.Configuration
         public void Dispose()
         {
             DisposeRegistrations();
+            Interlocked.Exchange(ref _engine, null)?.Dispose();
             _providerManager.Dispose();
         }
 
@@ -109,6 +124,7 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
+            _engine?.Invalidate();
             RaiseChanged();
         }
 
@@ -129,6 +145,7 @@ namespace Microsoft.Extensions.Configuration
             _changeTokenRegistrations.Add(ChangeToken.OnChange(provider.GetReloadToken, RaiseChanged));
 
             _providerManager.AddProvider(provider);
+            SwapEngine();
             RaiseChanged();
         }
 
@@ -153,7 +170,25 @@ namespace Microsoft.Extensions.Configuration
             }
 
             _providerManager.ReplaceProviders(newProvidersList);
+            SwapEngine();
             RaiseChanged();
+        }
+
+        // Rebuild the engine against the current provider set when resolution is enabled.
+        // The old engine's providers are the previous snapshot, and any in-flight read that
+        // already captured the old engine will complete against that snapshot; a subsequent
+        // read will pick up the new engine. The old engine is disposed to drop its reload-
+        // token subscription against the old providers.
+        private void SwapEngine()
+        {
+            ReferenceResolutionEngine? newEngine = null;
+            if (ConfigurationBuilderExtensions.IsAllowed(_properties))
+            {
+                newEngine = new ReferenceResolutionEngine(_providerManager.NonReferenceCountedProviders);
+            }
+
+            ReferenceResolutionEngine? previous = Interlocked.Exchange(ref _engine, newEngine);
+            previous?.Dispose();
         }
 
         private void DisposeRegistrations()
@@ -276,7 +311,14 @@ namespace Microsoft.Extensions.Configuration
                 set
                 {
                     _properties[key] = value;
-                    _config.ReloadSources();
+                    if (IsAllowExpansionsProperty(key))
+                    {
+                        _config.SwapEngine();
+                    }
+                    else
+                    {
+                        _config.ReloadSources();
+                    }
                 }
             }
 
@@ -291,13 +333,27 @@ namespace Microsoft.Extensions.Configuration
             public void Add(string key, object value)
             {
                 _properties.Add(key, value);
-                _config.ReloadSources();
+                if (IsAllowExpansionsProperty(key))
+                {
+                    _config.SwapEngine();
+                }
+                else
+                {
+                    _config.ReloadSources();
+                }
             }
 
             public void Add(KeyValuePair<string, object> item)
             {
                 ((IDictionary<string, object>)_properties).Add(item);
-                _config.ReloadSources();
+                if (IsAllowExpansionsProperty(item.Key))
+                {
+                    _config.SwapEngine();
+                }
+                else
+                {
+                    _config.ReloadSources();
+                }
             }
 
             public void Clear()
@@ -329,15 +385,41 @@ namespace Microsoft.Extensions.Configuration
             public bool Remove(string key)
             {
                 var wasRemoved = _properties.Remove(key);
-                _config.ReloadSources();
+                if (IsAllowExpansionsProperty(key))
+                {
+                    _config.SwapEngine();
+                }
+                else
+                {
+                    _config.ReloadSources();
+                }
+
                 return wasRemoved;
             }
 
             public bool Remove(KeyValuePair<string, object> item)
             {
                 var wasRemoved = ((IDictionary<string, object>)_properties).Remove(item);
-                _config.ReloadSources();
+                if (IsAllowExpansionsProperty(item.Key))
+                {
+                    _config.SwapEngine();
+                }
+                else
+                {
+                    _config.ReloadSources();
+                }
+
                 return wasRemoved;
+            }
+
+            // Reference-resolution property writes only affect how the root interprets the existing
+            // provider set; they never change which providers exist or what they hold. Handling them
+            // through SwapEngine avoids the O(n) provider rebuild/Load cost that a general property
+            // write triggers via ReloadSources, so enabling or reconfiguring resolution mid-setup
+            // does not penalize callers using slow-to-load sources (e.g. Azure App Configuration).
+            private static bool IsAllowExpansionsProperty(string key)
+            {
+                return key == ConfigurationBuilderExtensions.AllowExpansionsPropertyName;
             }
 
             public bool TryGetValue(string key, [NotNullWhen(true)] out object? value)
@@ -349,6 +431,11 @@ namespace Microsoft.Extensions.Configuration
             {
                 return _properties.GetEnumerator();
             }
+
+            // Direct accessor used by the ConfigurationManager build/reload loop to mutate
+            // well-known properties (e.g. PreviouslyBuiltProviders) without triggering another
+            // ReloadSources via the IDictionary interface this class exposes publicly.
+            internal IDictionary<string, object> Raw => _properties;
         }
     }
 }
