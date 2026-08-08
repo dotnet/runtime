@@ -186,7 +186,8 @@ namespace System.Runtime.InteropServices
                 ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero &&
-                    !RuntimeImports.RhIsPromoted(nativeObjectWrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) ? proxyTarget : null))
+                    nativeObjectWrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) &&
+                    !RuntimeImports.RhIsPromoted(proxyTarget))
                 {
                     // Notify the wrapper it was not promoted and is being collected.
                     BeforeWrapperFinalized(nativeObjectWrapper.TrackerObject);
