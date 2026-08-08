@@ -548,7 +548,7 @@ namespace System.Runtime.InteropServices
             private ComWrappers _comWrappers;
             private IntPtr _externalComObject;
             private IntPtr _inner;
-            private GCHandle _proxyHandle;
+            private WeakGCHandle<object> _proxyHandle;
             private WeakGCHandle<object> _proxyHandleTrackingResurrection;
             private readonly bool _aggregatedManagedObjectWrapper;
             private readonly bool _uniqueInstance;
@@ -594,7 +594,7 @@ namespace System.Runtime.InteropServices
                 _inner = inner;
                 _comWrappers = comWrappers;
                 _uniqueInstance = flags.HasFlag(CreateObjectFlags.UniqueInstance);
-                _proxyHandle = GCHandle.Alloc(comProxy, GCHandleType.Weak);
+                _proxyHandle = new WeakGCHandle<object>(comProxy);
 
                 // We have a separate handle tracking resurrection as we want to make sure
                 // we clean up the NativeObjectWrapper only after the RCW has been finalized
@@ -630,7 +630,7 @@ namespace System.Runtime.InteropServices
 
             internal IntPtr ExternalComObject => _externalComObject;
             internal ComWrappers ComWrappers => _comWrappers;
-            internal GCHandle ProxyHandle => _proxyHandle;
+            internal WeakGCHandle<object> ProxyHandle => _proxyHandle;
             internal bool IsUniqueInstance => _uniqueInstance;
             internal bool IsAggregatedWithManagedObjectWrapper => _aggregatedManagedObjectWrapper;
 
@@ -642,15 +642,8 @@ namespace System.Runtime.InteropServices
                     _comWrappers = null!;
                 }
 
-                if (_proxyHandle.IsAllocated)
-                {
-                    _proxyHandle.Free();
-                }
-
-                if (_proxyHandleTrackingResurrection.IsAllocated)
-                {
-                    _proxyHandleTrackingResurrection.Dispose();
-                }
+                _proxyHandle.Dispose();
+                _proxyHandleTrackingResurrection.Dispose();
 
                 // If the inner was supplied, we need to release our reference.
                 if (_inner != IntPtr.Zero)
@@ -1274,7 +1267,7 @@ namespace System.Runtime.InteropServices
             // for the same COM instance, but in that case we'll be passed the same NativeObjectWrapper instance
             // for both threads. In that case, it doesn't matter which thread adds the entry to the NativeObjectWrapper table
             // as the entry is always the same pair.
-            Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
+            Debug.Assert(wrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) && proxyTarget == comProxy);
             Debug.Assert(wrapper.IsUniqueInstance || _rcwCache.FindProxyForComInstance(wrapper.ExternalComObject) == comProxy);
 
             // Add the input wrapper bound to the COM proxy, if there isn't one already. If another thread raced
@@ -1436,7 +1429,7 @@ namespace System.Runtime.InteropServices
                     _lock.EnterWriteLock();
                     try
                     {
-                        Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
+                        Debug.Assert(wrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) && proxyTarget == comProxy);
                         ref WeakGCHandle<NativeObjectWrapper> rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
                         if (!exists)
                         {
@@ -1452,10 +1445,9 @@ namespace System.Runtime.InteropServices
                         }
                         else
                         {
-                            object? existingProxy = cachedWrapper.ProxyHandle.Target;
                             // The target NativeObjectWrapper was not collected, but we need to make sure
                             // that the proxy object is still alive.
-                            if (existingProxy is not null)
+                            if (cachedWrapper.ProxyHandle.TryGetTarget(out object? existingProxy))
                             {
                                 // The existing proxy object is still alive, we will use that.
                                 return (cachedWrapper, existingProxy);
@@ -1487,7 +1479,7 @@ namespace System.Runtime.InteropServices
                             return null;
                         }
                         if (existingHandle.TryGetTarget(out NativeObjectWrapper? cachedWrapper)
-                            && cachedWrapper.ProxyHandle.Target is object cachedProxy)
+                            && cachedWrapper.ProxyHandle.TryGetTarget(out object? cachedProxy))
                         {
                             // The target exists and is still alive. Return it.
                             return cachedProxy;

@@ -86,7 +86,7 @@ namespace System.Runtime.InteropServices
                         {
                             wrappersToRemove.Add(nativeObjectWrapper);
 
-                            object? target = nativeObjectWrapper.ProxyHandle.Target;
+                            object? target = nativeObjectWrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) ? proxyTarget : null;
                             if (target != null)
                             {
                                 objects.Add(target);
