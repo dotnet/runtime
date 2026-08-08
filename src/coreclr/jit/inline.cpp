@@ -346,6 +346,7 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Devirtualized(false)
     , m_Guarded(false)
     , m_Unboxed(false)
+    , m_IsAsyncCall(false)
     , m_ILInstsSet(nullptr)
 #endif
 {
@@ -415,27 +416,33 @@ void InlineContext::Dump(bool verbose, unsigned indent)
         const char* guarded       = m_Guarded ? " GUARDED" : "";
         const char* unboxed       = m_Unboxed ? " UNBOXED" : "";
 
+        const char* asyncness = "";
+        if (compiler->compIsAsync())
+        {
+            asyncness = m_IsAsyncCall ? " ASYNC" : " SYNC";
+        }
+
         IL_OFFSET offs = m_ActualCallOffset;
 
         if (verbose)
         {
             if (offs == BAD_IL_OFFSET)
             {
-                printf("%*s[" FMT_INL_CTX " IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal,
+                printf("%*s[" FMT_INL_CTX " IL=???? TR=%06u %08X] [%s%s: %s%s%s%s%s] %s\n", indent, "", m_Ordinal,
                        m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
-                       calleeName);
+                       asyncness, calleeName);
             }
             else
             {
-                printf("%*s[" FMT_INL_CTX " IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, offs,
+                printf("%*s[" FMT_INL_CTX " IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s%s] %s\n", indent, "", m_Ordinal, offs,
                        m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
-                       calleeName);
+                       asyncness, calleeName);
             }
         }
         else
         {
-            printf("%*s[%s%s%s%s%s] %s\n", indent, "", inlineResult, inlineReason, guarded, devirtualized, unboxed,
-                   calleeName);
+            printf("%*s[%s%s%s%s%s%s] %s\n", indent, "", inlineResult, inlineReason, guarded, devirtualized, unboxed,
+                   asyncness, calleeName);
         }
     }
 
@@ -655,6 +662,11 @@ InlineResult::InlineResult(
     const bool isPrejitRoot = false;
     m_Policy                = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
 
+    // Tell the policy whether the callee is async. This is noted here rather than at the
+    // observation sites because both the candidate screen and the later inline attempt
+    // create their own InlineResult, and both policies need to know.
+    m_Policy->NoteBool(InlineObservation::CALLEE_IS_ASYNC, call->IsAsync());
+
     // Pass along some optional information to the policy.
     if (stmt != nullptr)
     {
@@ -719,6 +731,11 @@ InlineResult::InlineResult(Compiler* compiler, CORINFO_METHOD_HANDLE method, con
     // Set the policy
     const bool isPrejitRoot = true;
     m_Policy                = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
+
+    // The prejit root is its own callee, so its async-ness is the compiler's. Without
+    // this an async method could be rejected here and marked a bad inlinee for every
+    // call site, which would defeat async inlining stress under AOT.
+    m_Policy->NoteBool(InlineObservation::CALLEE_IS_ASYNC, compiler->compIsAsync());
 
     if (!m_DoNotReport)
     {
@@ -1371,6 +1388,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     context->m_Devirtualized = call->IsDevirtualized();
     context->m_Guarded       = call->IsGuarded();
     context->m_Unboxed       = call->IsUnboxed();
+    context->m_IsAsyncCall   = call->IsAsync();
     context->m_TreeID        = call->gtTreeID;
 #endif
 

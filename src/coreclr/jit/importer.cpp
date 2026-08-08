@@ -12018,10 +12018,17 @@ bool Compiler::impWrapTopOfStackInAwait()
         JITDUMP("Inheriting continuation handling %d from caller [%06u]\n",
                 (unsigned)inlCall->GetAsyncInfo().ContinuationContextHandling, dspTreeID(inlCall));
         asyncInfo->ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+
+        // Mark the call async first: inheriting the contexts also inherits the inlined
+        // frame depth, which lives in the async call info.
+        awaitCall->SetIsAsync(asyncInfo);
         impInheritAsyncContextsFromInliner(awaitCall);
     }
 
-    awaitCall->SetIsAsync(asyncInfo);
+    if (!awaitCall->IsAsync())
+    {
+        awaitCall->SetIsAsync(asyncInfo);
+    }
 
     if (awaitCall->IsInlineCandidate())
     {

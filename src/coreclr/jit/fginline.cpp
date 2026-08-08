@@ -2,12 +2,141 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
+#include "async.h"
 
 #ifdef _MSC_VER
 #pragma hdrstop
 #endif
 
 // Flowgraph Inline Support
+
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// fgAsyncStressPrepare: pick the async inline candidates of one method body
+//   for async inlining stress.
+//
+// Arguments:
+//    firstBB - first block of the body
+//    lastBB  - last block of the body
+//    depth   - inline depth the body's candidates would be inlined at; the
+//              candidates of the root method are at depth 1
+//
+// Notes:
+//    Called once per body, before any of its candidates is inlined, so the IR
+//    holds the complete set and every call in it has its final async-ness. The
+//    candidates are shuffled and numbered here; fgAsyncStressShouldInline then
+//    turns the number into a probability.
+//
+//    Shuffling is what makes the choice vary between seeds. Without it the
+//    decay would always favor the first call site in a body.
+//
+//    Candidates created after this runs, such as the frame transition call or
+//    ones from late devirtualization, keep the default index and are left to
+//    the normal policy.
+//
+void Compiler::fgAsyncStressPrepare(BasicBlock* firstBB, BasicBlock* lastBB, unsigned depth)
+{
+    assert(compAsyncInliningStress());
+
+    ArrayStack<InlineCandidateInfo*> candidates(getAllocator(CMK_Inlining));
+
+    for (BasicBlock* block = firstBB;; block = block->Next())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            GenTree* const expr = stmt->GetRootNode();
+
+            // The importer makes every inline candidate its own statement.
+            //
+            if (expr->IsCall() && expr->AsCall()->IsAsync() && expr->AsCall()->IsInlineCandidate() &&
+                !expr->AsCall()->IsGuardedDevirtualizationCandidate())
+            {
+                candidates.Push(expr->AsCall()->GetSingleInlineCandidateInfo());
+            }
+        }
+
+        if (block == lastBB)
+        {
+            break;
+        }
+    }
+
+    if (candidates.Height() <= 0)
+    {
+        return;
+    }
+
+    CLRRandom* const random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
+
+    // Fisher-Yates.
+    for (int i = candidates.Height() - 1; i > 0; i--)
+    {
+        int j = random->Next(i + 1);
+        std::swap(candidates.BottomRef(i), candidates.BottomRef(j));
+    }
+
+    for (int i = 0; i < candidates.Height(); i++)
+    {
+        candidates.Bottom(i)->asyncStressIndex = (unsigned)i;
+    }
+
+    JITDUMP("Async inlining stress: %d async candidate(s) in this body, to be inlined at depth %u\n",
+            candidates.Height(), depth);
+}
+
+//------------------------------------------------------------------------
+// fgAsyncStressShouldInline: decide whether to inline an async candidate
+//   under async inlining stress.
+//
+// Arguments:
+//    call        - the async call being considered
+//    inlineDepth - depth this inline would be at; top level candidates are at
+//                  depth 1
+//
+// Return Value:
+//    True if the inline should be attempted.
+//
+// Notes:
+//    The n'th candidate (0 based) of a body, in the order fgAsyncStressPrepare
+//    shuffled them into, is inlined with probability pct^(depth + n). The decay
+//    keeps a body with many async calls from inlining all of them, which would
+//    make compile times explode and bury the interesting cases.
+//
+bool Compiler::fgAsyncStressShouldInline(GenTreeCall* call, unsigned inlineDepth)
+{
+    assert(compAsyncInliningStress() && call->IsAsync());
+
+    unsigned const index = call->GetSingleInlineCandidateInfo()->asyncStressIndex;
+
+    if (index == UINT_MAX)
+    {
+        // Not part of a group, so not something the stress mode picked.
+        return true;
+    }
+
+    if (inlineDepth > (unsigned)JitConfig.JitStressAsyncInliningMaxDepth())
+    {
+        JITDUMP("Async inlining stress: rejecting [%06u], depth %u is over the limit\n", dspTreeID(call), inlineDepth);
+        return false;
+    }
+
+    double probability = 1.0;
+    for (unsigned i = 0; i < inlineDepth + index; i++)
+    {
+        probability *= (double)JitConfig.JitStressAsyncInliningPct() / 100.0;
+    }
+
+    CLRRandom* const random   = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
+    bool const       inlineIt = random->NextDouble() < probability;
+
+    JITDUMP("Async inlining stress: [%06u] is candidate %u of its body at depth %u, probability %.4f: %s\n",
+            dspTreeID(call), index, inlineDepth, probability, inlineIt ? "inlining" : "rejecting");
+
+    return inlineIt;
+}
+
+#endif // DEBUG
 
 //------------------------------------------------------------------------
 // fgCheckInlineDepthAndRecursion: compute depth of the candidate, and
@@ -845,6 +974,13 @@ PhaseStatus Compiler::fgInline()
 
     noway_assert(fgFirstBB != nullptr);
 
+#ifdef DEBUG
+    if (compAsyncInliningStress())
+    {
+        fgAsyncStressPrepare(fgFirstBB, fgLastBB, 1);
+    }
+#endif // DEBUG
+
     BasicBlock*                                 block = fgFirstBB;
     SubstitutePlaceholdersAndDevirtualizeWalker walker(this);
     bool                                        madeChanges = false;
@@ -1352,6 +1488,14 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
         return;
     }
 
+#ifdef DEBUG
+    if (compAsyncInliningStress() && call->IsAsync() && !fgAsyncStressShouldInline(call, inlineDepth))
+    {
+        inlineResult->NoteFatal(InlineObservation::CALLSITE_RANDOM_REJECT);
+        return;
+    }
+#endif // DEBUG
+
     // Set the trap to catch all errors (including recoverable ones from the EE)
     struct Param
     {
@@ -1503,6 +1647,18 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
 
     // We've successfully obtained the list of inlinee's basic blocks.
     // Let's insert it to inliner's basic block list.
+
+#ifdef DEBUG
+    // The inlinee's own async candidates are all in its IR now, and this inline can no
+    // longer fail, so this is the point where its body's group is complete.
+    //
+    if (compAsyncInliningStress())
+    {
+        Compiler* const inlinee = InlineeCompiler;
+        fgAsyncStressPrepare(inlinee->fgFirstBB, inlinee->fgLastBB, inlineDepth + 1);
+    }
+#endif // DEBUG
+
     fgInsertInlineeBlocks(&inlineInfo);
 
 #ifdef DEBUG
@@ -1644,6 +1800,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
 
             // Append statements to null out gc ref locals, if necessary.
             fgInlineAppendStatements(pInlineInfo, iciBlock, stmtAfter);
+
+            // An inlinee that does async context handling always has multiple blocks: its
+            // SaveAsyncContexts creates a try/fault region and a merged return block.
+            assert(InlineeCompiler->lvaResumedIndicator == BAD_VAR_NUM);
             insertInlineeBlocks = false;
         }
         else
@@ -1890,6 +2050,10 @@ void Compiler::fgInsertInlineeBlocks(InlineInfo* pInlineInfo)
         // Append statements to null out gc ref locals, if necessary.
         fgInlineAppendStatements(pInlineInfo, bottomBlock, nullptr);
         JITDUMPEXEC(fgDispBasicBlocks(InlineeCompiler->fgFirstBB, InlineeCompiler->fgLastBB, true));
+
+        // Handle the inlined async frame logically returning to its caller.
+        fgAppendEnclosingAsyncFrameContextArgs(pInlineInfo);
+        fgInlineAppendAsyncFrameStatements(pInlineInfo, bottomBlock);
     }
 
     //
@@ -2420,6 +2584,446 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     }
 
     return afterStmt;
+}
+
+//------------------------------------------------------------------------
+// fgAppendEnclosingAsyncFrameContextArgs: Add the context values of the frames
+//   enclosing an inlined async frame to the async calls inside it.
+//
+// Arguments:
+//    inlineInfo - information about the inline
+//
+// Notes:
+//    When one of these calls suspends, every enclosing frame that has not yet resumed
+//    must have its contexts captured into the continuation and restored onto the thread,
+//    as if its physical frame had returned. The IR for that is created by the async
+//    transformation, long after the optimizer has run, so the values have to be kept
+//    live and GC reported at the call until then. That is what the existing per-frame
+//    context args do, so the enclosing frames simply add more of them.
+//
+//    The enclosing frames are exactly the ones the call being inlined already describes,
+//    so its context args are simply copied over. That composes for nested inlines: a
+//    frame picks up its immediate caller's chain when it is spliced in, and every call in
+//    it, including ones that came from its own inlinees, is extended again when that
+//    caller is itself inlined.
+//
+//    These are pseudo-args, so duplicates are fine: they take no registers and are
+//    expanded out by the async transformation. The innermost frame stays first, since
+//    the inlinee pushed its own args to the front.
+//
+void Compiler::fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo)
+{
+    if (!generalAsyncInliningEnabled())
+    {
+        return;
+    }
+
+    if ((InlineeCompiler->lvaResumedIndicator == BAD_VAR_NUM) || !InlineeCompiler->compAsyncBodyMaySuspend)
+    {
+        return;
+    }
+
+    // Context args of the inlining call. It carries one set for the frame it suspends in,
+    // which that frame's own handling consumes, followed by that frame's chain of frames
+    // out to the root.
+    ArrayStack<CallArg*> callerArgs(getAllocator(CMK_Async));
+    for (CallArg& arg : inlineInfo->iciCall->gtArgs.Args())
+    {
+        switch (arg.GetWellKnownArg())
+        {
+            case WellKnownArg::AsyncResumedUse:
+            case WellKnownArg::AsyncExecutionContext:
+            case WellKnownArg::AsyncSynchronizationContext:
+                callerArgs.Push(&arg);
+                break;
+            default:
+                break;
+        }
+    }
+
+    if (callerArgs.Height() == 0)
+    {
+        // The inlining call does no context handling, so no enclosing frame is a logical
+        // async frame. The inlinee's frame has nothing to hand back and there are no frame
+        // transitions to run on suspension.
+        JITDUMP("Inlining call [%06u] has no context args; inlinee has no enclosing async frame\n",
+                dspTreeID(inlineInfo->iciCall));
+        return;
+    }
+
+    assert((callerArgs.Height() % 3) == 0);
+
+    // The frames enclosing the inlinee are the inlining call's chain. When the call has
+    // only the one set it sits in the root frame, whose chain is never materialized
+    // because it has no transitions of its own; that frame is then the only enclosing one.
+    int const firstEnclosing = (callerArgs.Height() == 3) ? 0 : 3;
+
+    unsigned const inlineeResumed = InlineeCompiler->lvaResumedIndicator;
+    unsigned const inlineeExecCtx = InlineeCompiler->lvaAsyncExecutionContextVar;
+    unsigned const inlineeSyncCtx = InlineeCompiler->lvaAsyncSynchronizationContextVar;
+
+    struct Visitor : GenTreeVisitor<Visitor>
+    {
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        ArrayStack<CallArg*>& m_callerArgs;
+        int                   m_firstEnclosing;
+        unsigned              m_inlineeResumed;
+        unsigned              m_inlineeExecCtx;
+        unsigned              m_inlineeSyncCtx;
+
+        Visitor(Compiler*             comp,
+                ArrayStack<CallArg*>& callerArgs,
+                int                   firstEnclosing,
+                unsigned              inlineeResumed,
+                unsigned              inlineeExecCtx,
+                unsigned              inlineeSyncCtx)
+            : GenTreeVisitor(comp)
+            , m_callerArgs(callerArgs)
+            , m_firstEnclosing(firstEnclosing)
+            , m_inlineeResumed(inlineeResumed)
+            , m_inlineeExecCtx(inlineeExecCtx)
+            , m_inlineeSyncCtx(inlineeSyncCtx)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* tree = *use;
+            if ((tree->gtFlags & GTF_CALL) == 0)
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+
+            if (!tree->IsCall() || !tree->AsCall()->IsAsync())
+            {
+                return WALK_CONTINUE;
+            }
+
+            GenTreeCall* const call = tree->AsCall();
+
+            unsigned numOwn = 0;
+            for (CallArg& arg : call->gtArgs.Args())
+            {
+                if (arg.GetWellKnownArg() == WellKnownArg::AsyncResumedUse)
+                {
+                    numOwn++;
+                }
+            }
+
+            if (numOwn == 0)
+            {
+                // Call does no context handling, so it has no frame chain to extend.
+                return WALK_CONTINUE;
+            }
+
+            if (numOwn == 1)
+            {
+                // The call only has the set describing the frame it suspends in, so that
+                // frame is the inlinee's. The suspension needs the inlinee's resumed
+                // indicator again to decide whether to capture the contexts it hands to
+                // its caller, since the first set is consumed by the innermost handling.
+                call->gtArgs.PushBack(m_compiler,
+                                      NewCallArg::Primitive(m_compiler->gtNewLclVarNode(m_inlineeResumed, TYP_INT))
+                                          .WellKnown(WellKnownArg::AsyncResumedUse));
+                call->gtArgs.PushBack(m_compiler,
+                                      NewCallArg::Primitive(m_compiler->gtNewLclVarNode(m_inlineeExecCtx, TYP_REF))
+                                          .WellKnown(WellKnownArg::AsyncExecutionContext));
+                call->gtArgs.PushBack(m_compiler,
+                                      NewCallArg::Primitive(m_compiler->gtNewLclVarNode(m_inlineeSyncCtx, TYP_REF))
+                                          .WellKnown(WellKnownArg::AsyncSynchronizationContext));
+            }
+
+            // Then the frames enclosing the inlinee, taken from the inlining call. These
+            // are the values as they appear in the caller's IR, which is what the
+            // suspension has to store.
+            for (int i = m_firstEnclosing; i < m_callerArgs.Height(); i++)
+            {
+                CallArg* const arg = m_callerArgs.Bottom(i);
+                call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(arg->GetNode()))
+                                                      .WellKnown(arg->GetWellKnownArg()));
+            }
+
+            unsigned numFrames = 0;
+            for (CallArg& arg : call->gtArgs.Args())
+            {
+                if (arg.GetWellKnownArg() == WellKnownArg::AsyncResumedUse)
+                {
+                    numFrames++;
+                }
+            }
+
+            // One set is consumed by the handling of the frame the call suspends in, and
+            // the rest describe that frame and the ones enclosing it.
+            assert(numFrames >= 2);
+            call->GetAsyncInfo().InlineFrameDepth = numFrames - 2;
+
+            JITDUMP("Extended async call [%06u] to %u frames in chain\n", Compiler::dspTreeID(call), numFrames - 1);
+            return WALK_CONTINUE;
+        }
+    };
+
+    Visitor visitor(this, callerArgs, firstEnclosing, inlineeResumed, inlineeExecCtx, inlineeSyncCtx);
+    for (BasicBlock* block = InlineeCompiler->fgFirstBB; block != nullptr; block = block->Next())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
+        }
+
+        if (block == InlineeCompiler->fgLastBB)
+        {
+            break;
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// fgSetupAsyncFrameTransitionCall: Turn a call to AsyncHelpers.RestoreInlinedFrameContexts
+//   into a proper async call.
+//
+// Arguments:
+//    call - the call, with its user arguments already added
+//    di   - debug info to use
+//
+// Notes:
+//    The call is an await: it suspends when it has to switch continuation context.
+//
+//    Unlike normal awaits it gets no context pseudo-args. Those model what a frame
+//    captures and restores when a suspension unwinds through it, and none of that applies
+//    here: we only run at all because the frame we are returning out of was resumed, so
+//    every frame in the chain already has a continuation holding the values it captured
+//    when it first suspended, and a suspension here returns straight back to the
+//    dispatcher, which restores the thread's contexts itself.
+//
+void Compiler::fgSetupAsyncFrameTransitionCall(GenTreeCall* call, const DebugInfo& di)
+{
+    AsyncCallInfo asyncInfo;
+    // The helper resumes on the requested context, so no further handling is attached to
+    // this await.
+    asyncInfo.ContinuationContextHandling = ContinuationContextHandling::None;
+    asyncInfo.CallAsyncDebugInfo          = di;
+    call->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
+
+    if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
+    {
+        call->gtArgs.PushFront(this,
+                               NewCallArg::Primitive(gtNewNull(), TYP_REF).WellKnown(WellKnownArg::AsyncContinuation));
+    }
+    else
+    {
+        call->gtArgs.PushBack(this,
+                              NewCallArg::Primitive(gtNewNull(), TYP_REF).WellKnown(WellKnownArg::AsyncContinuation));
+    }
+}
+
+//------------------------------------------------------------------------
+// gtNewContinuationMemberIndir: Create a load of a continuation member from the
+//   continuation this method was resumed with.
+//
+// Arguments:
+//    member - the continuation member to load
+//    type   - type of the member
+//
+// Returns:
+//    A load of the member.
+//
+// Notes:
+//    The member offset is not known until the async transformation has laid out the
+//    continuation, so it is represented symbolically until then. The offset is relative
+//    to the instance data, hence the additional object header adjustment.
+//
+GenTree* Compiler::gtNewContinuationMemberIndir(const ContinuationMember& member, var_types type)
+{
+    size_t const memberIndex = GetContinuationMemberIndex(member);
+
+    GenTree* const memberOffset =
+        new (this, GT_CONTINUATION_MEMBER_OFFSET) GenTreeVal(GT_CONTINUATION_MEMBER_OFFSET, TYP_I_IMPL, memberIndex);
+    GenTree* const headerSize = gtNewIconNode(SIZEOF__CORINFO_Object, TYP_I_IMPL);
+    GenTree* const offset     = gtNewOperNode(GT_ADD, TYP_I_IMPL, memberOffset, headerSize);
+
+    GenTree* const continuation = gtNewLclvNode(lvaAsyncContinuationArg, TYP_REF);
+    GenTree* const addr         = gtNewOperNode(GT_ADD, TYP_BYREF, continuation, offset);
+
+    GenTree* const indir = gtNewIndir(type, addr, GTF_IND_NONFAULTING);
+    return indir;
+}
+
+//------------------------------------------------------------------------
+// fgInlineAppendAsyncFrameStatements: Emit the IR that handles an inlined async
+//   frame logically returning to its caller.
+//
+// Arguments:
+//    inlineInfo - information about the inline
+//    joinBlock  - the block all of the inlinee's returns converge on
+//
+// Notes:
+//    When an inlined async callee is resumed inside its own body, the async
+//    infrastructure only restored the context of the suspension point itself. The work
+//    it would otherwise have done when the callee's frame returned to its caller has to
+//    be performed here instead:
+//
+//      if (resumed_F)
+//      {
+//          await AsyncHelpers.RestoreInlinedFrameContexts(continuation.ExecutionContextFor<caller>,
+//                                                         continuation.ContinuationContextFor<caller>,
+//                                                         continuation.FlagsFor<caller>);
+//          resumed_caller = true;
+//      }
+//
+//    Only the check is expanded as IR; the restore itself is left as a single call. The
+//    synchronous case is the one worth optimizing, and by the time we get past the check
+//    we have already suspended and resumed at least once, so one more call is cheap. In
+//    particular the "are we already on the right context?" test, which is what actually
+//    decides whether we suspend, stays inside the helper.
+//
+//    The members are read off the continuation this method was resumed with. That is
+//    only valid when resumed_F is true, which is exactly the guard: resumed_F can only
+//    become true at a resumption point belonging to this inlinee's own async calls, and
+//    those belong to this method's continuation layout.
+//
+void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicBlock* joinBlock)
+{
+    if (!generalAsyncInliningEnabled())
+    {
+        return;
+    }
+
+    if (InlineeCompiler->lvaResumedIndicator == BAD_VAR_NUM)
+    {
+        // Inlinee does not do context handling, so it inherited everything from this
+        // call and there is no logical frame transition to handle.
+        return;
+    }
+
+    InlineContext* const inlineContext = inlineInfo->inlineContext;
+
+    if (!InlineeCompiler->compAsyncBodyMaySuspend)
+    {
+        // The inlinee has no suspension point, so its resumed indicator is provably
+        // always false and all of the below would be dead code.
+        JITDUMP("Inlinee cannot suspend; no async frame transition IR needed\n");
+        return;
+    }
+
+    // The resumed indicator of the frame we are logically returning into. The inlining
+    // call carries it as the definition of its own frame's indicator, which is a local
+    // address and so something we can store to.
+    CallArg* const resumedDefArg = inlineInfo->iciCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
+    if (resumedDefArg == nullptr)
+    {
+        // The inlining call does no context handling, so there is no enclosing logical
+        // async frame to hand anything back to.
+        JITDUMP("Inlining call does no context handling; no async frame transition IR needed\n");
+        return;
+    }
+
+    assert(resumedDefArg->GetNode()->OperIs(GT_LCL_ADDR));
+    unsigned const resumedCaller = resumedDefArg->GetNode()->AsLclVarCommon()->GetLclNum();
+
+    unsigned const resumedInlinee = InlineeCompiler->lvaResumedIndicator;
+    unsigned const inlineDepth    = inlineContext->GetAsyncFrameDepth();
+
+    JITDUMP("Adding async frame transition IR for async frame depth %u: resumed V%02u -> V%02u\n", inlineDepth,
+            resumedInlinee, resumedCaller);
+
+    const DebugInfo& di = inlineInfo->iciStmt->GetDebugInfo();
+
+    // An exception unwinding out of the inlinee never reaches the logical return below,
+    // so mark the caller as resumed from the inlinee's context restore handler instead.
+    // That handler is the fault half of the try-finally SaveAsyncContexts wrapped the
+    // inlinee's body in, and it survives inlining as its own clause in this method.
+    //
+    // Setting the indicator is all that is needed there: the enclosing frames' restores
+    // are no-ops once their frame has resumed, which is exactly what a normal logical
+    // return would have left behind. The rest of the transition cannot run in a handler
+    // anyway, since getting back onto the caller's continuation context may suspend and
+    // a funclet cannot return a continuation.
+    //
+    // Handlers run innermost first, so a chain of inlined frames propagates the
+    // indicator outwards one frame at a time as the exception unwinds through them.
+    if (InlineeCompiler->asyncContextRestoreEHID != USHRT_MAX)
+    {
+        EHblkDsc* const inlineeContextRestore = ehFindEHblkDscById(InlineeCompiler->asyncContextRestoreEHID);
+        assert((inlineeContextRestore != nullptr) && inlineeContextRestore->HasFaultHandler());
+
+        var_types const indicatorType    = lvaGetDesc(resumedCaller)->TypeGet();
+        GenTree* const  callerResumed    = gtNewLclvNode(resumedCaller, indicatorType);
+        GenTree* const  inlineeDidResume = gtNewLclvNode(resumedInlinee, indicatorType);
+        GenTree* const  merged           = gtNewOperNode(GT_OR, indicatorType, callerResumed, inlineeDidResume);
+        GenTree* const  store            = gtNewStoreLclVarNode(resumedCaller, merged);
+
+        fgInsertStmtAtBeg(inlineeContextRestore->ebdHndBeg, gtNewStmt(store));
+
+        JITDUMP("Marking V%02u as resumed from the inlinee's context restore handler " FMT_BB "\n", resumedCaller,
+                inlineeContextRestore->ebdHndBeg->bbNum);
+    }
+
+    // Split so that the transition IR precedes the remainder of the caller's code.
+    BasicBlock* const restBlock = fgSplitBlockAtBeginning(joinBlock);
+
+    // joinBlock is now empty and jumps to restBlock. Turn it into the "did we resume
+    // inside the inlinee?" test.
+    BasicBlock* const restoreBlock = fgNewBBafter(BBJ_ALWAYS, joinBlock, /* extendRegion */ true);
+    restoreBlock->inheritWeightPercentage(joinBlock, 0);
+
+    // joinBlock: if (resumed_F == 0) goto restBlock; else goto restoreBlock
+    {
+        GenTree* const resumed = gtNewLclvNode(resumedInlinee, TYP_INT);
+        GenTree* const isZero  = gtNewOperNode(GT_EQ, TYP_INT, resumed, gtNewIconNode(0));
+        GenTree* const jtrue   = gtNewOperNode(GT_JTRUE, TYP_VOID, isZero);
+        fgInsertStmtAtEnd(joinBlock, gtNewStmt(jtrue));
+
+        fgRemoveRefPred(joinBlock->GetTargetEdge());
+        FlowEdge* const toRest    = fgAddRefPred(restBlock, joinBlock);
+        FlowEdge* const toRestore = fgAddRefPred(restoreBlock, joinBlock);
+        joinBlock->SetCond(toRest, toRestore);
+        // Resuming inside the inlinee is the cold path.
+        toRest->setLikelihood(1.0);
+        toRestore->setLikelihood(0.0);
+    }
+
+    // restoreBlock: restore the contexts the caller's continuation captured, then record
+    // that the caller's frame has observed a resumption too.
+    {
+        CORINFO_ASYNC_INFO* const asyncInfo = eeGetAsyncInfo();
+
+        GenTreeCall* const restoreCall = gtNewUserCallNode(asyncInfo->restoreInlinedFrameContextsMethHnd, TYP_VOID);
+        restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(
+                                                gtNewContinuationMemberIndir(ContinuationMember::InlineFrameFlags(
+                                                                                 inlineDepth),
+                                                                             TYP_INT)));
+        restoreCall->gtArgs
+            .PushFront(this,
+                       NewCallArg::Primitive(
+                           gtNewContinuationMemberIndir(ContinuationMember::InlineFrameContinuationContext(inlineDepth),
+                                                        TYP_REF)));
+        restoreCall->gtArgs.PushFront(this,
+                                      NewCallArg::Primitive(
+                                          gtNewContinuationMemberIndir(ContinuationMember::InlineFrameExecutionContext(
+                                                                           inlineDepth),
+                                                                       TYP_REF)));
+        fgSetupAsyncFrameTransitionCall(restoreCall, di);
+
+        // The helper is small on the path that does not suspend, which is the one we care
+        // about, so let the inliner have a look at it.
+        CORINFO_CALL_INFO callInfo = {};
+        callInfo.hMethod           = restoreCall->gtCallMethHnd;
+        callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(callInfo.hMethod);
+        impMarkInlineCandidate(restoreCall, MAKE_METHODCONTEXT(callInfo.hMethod), &callInfo, compInlineContext);
+
+        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(restoreCall));
+
+        GenTree* const store = gtNewStoreLclVarNode(resumedCaller, gtNewIconNode(1, TYP_I_IMPL));
+        fgInsertStmtAtEnd(restoreBlock, gtNewStmt(store));
+
+        restoreBlock->SetKindAndTargetEdge(BBJ_ALWAYS, fgAddRefPred(restBlock, restoreBlock));
+    }
+
+    JITDUMPEXEC(fgDispBasicBlocks(joinBlock, restBlock, true));
 }
 
 //------------------------------------------------------------------------

@@ -7429,38 +7429,96 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
 
     if (compIsForInlining())
     {
-        if (!m_nextAwaitIsTail && !compIsAsyncVersion())
-        {
-            compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
-            return;
-        }
+        // Two cases are inlined cheaply: async versions of synchronous methods, where
+        // all async calls are in tail position, and explicit tail awaits. In both the
+        // inlinee's tail can run in the caller's context, so we can inherit all context
+        // handling from the inlining call and no logical frame transition is needed when
+        // the inlinee returns.
+        bool inheritsCallerContexts    = m_nextAwaitIsTail || compIsAsyncVersion();
+        m_nextAsyncCallUsesOwnContexts = false;
 
-        // We cannot inline if the callee returns valueTask.AsTask() in an
-        // async version. We need to preserve the continuation in this case to
-        // be able to mark it with CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK.
+        // We cannot inline if the callee returns valueTask.AsTask(). We need to preserve
+        // the continuation in this case to be able to mark it with
+        // CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK.
         if ((prefixFlags & PREFIX_IS_ADAPTED_FROM_VALUETASK) != 0)
         {
             compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
             return;
         }
 
-        // For async versions of synchronous methods all async calls are in
-        // tail position. Inlining is simple for these cases: we can just
-        // inherit all context handling from the inlining call.
-        assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
+        if (!inheritsCallerContexts)
+        {
+            if (!generalAsyncInliningEnabled())
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+                return;
+            }
 
-        GenTreeCall* inlCall = impInlineInfo->iciCall;
-        JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+            // Calls from non-async into async go through thunks that are passed the
+            // continuation explicitly, so they cannot be inlined.
+            if (!impInlineRoot()->compIsAsync())
+            {
+                JITDUMP("Cannot inline an await into a non-async root method\n");
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+                return;
+            }
 
-        assert(inlCall->IsAsync());
+            // General case: this is a real await inside the inlinee that may suspend. It
+            // gets its own context handling below, exactly like an await in a non-inlined
+            // method, and the inlinee's own contexts (created by its SaveAsyncContexts)
+            // are used rather than the caller's.
 
-        asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
-        // Validate that below code won't override the handling
-        assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+            // The inlined frame must not end up inside a protected region of the caller.
+            // An exception unwinding out of it skips the post-inline handling, and getting
+            // back onto the caller's continuation context cannot be recovered from a
+            // handler because it may suspend. A user 'catch' between the frame and the
+            // resumption would then run on the wrong continuation context. Doing this
+            // correctly needs the catch-and-rethrow expansion described in
+            // docs/design/coreclr/jit/runtime-async-inlining.md, which is not implemented
+            // yet.
+            //
+            // This covers nesting as well: a caller that is itself inlined into a
+            // protected region was rejected by this same check.
+            //
+            // Only user EH matters here. Every async frame has a context restore
+            // try-fault wrapped around its whole body by SaveAsyncContexts, which by
+            // this point has run both for the caller and for every frame it was inlined
+            // into, so those clauses must be ignored.
+            BasicBlock* const callSiteBlock = impInlineInfo->iciBlock;
+            if (impInlineInfo->InlinerCompiler->ehIsInsideNonAsyncContextRestoreRegion(callSiteBlock))
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT_IN_TRY);
+                return;
+            }
 
-        asyncInfo.IsTailAwait =
-            inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
-        m_nextAwaitIsTail = false;
+            // Suspending inside a protected region of the inlinee itself is not handled
+            // yet either.
+            if ((compCurBB != nullptr) && (compCurBB->hasTryIndex() || compCurBB->hasHndIndex()))
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT_IN_TRY);
+                return;
+            }
+
+            JITDUMP("Call [%06u] is an await in an inlinee that may suspend\n", dspTreeID(call));
+            m_nextAsyncCallUsesOwnContexts = true;
+        }
+        else
+        {
+            assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
+
+            GenTreeCall* inlCall = impInlineInfo->iciCall;
+            JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+
+            assert(inlCall->IsAsync());
+
+            asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+            // Validate that below code won't override the handling
+            assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+
+            asyncInfo.IsTailAwait =
+                inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
+            m_nextAwaitIsTail = false;
+        }
     }
     else
     {
@@ -7545,6 +7603,14 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
         return;
     }
 
+    if (m_nextAsyncCallUsesOwnContexts)
+    {
+        // General async inlining: this await may suspend, so it uses the inlinee's own
+        // contexts, which are added by the inlinee's SaveAsyncContexts phase.
+        m_nextAsyncCallUsesOwnContexts = false;
+        return;
+    }
+
     GenTreeCall* inlCall       = impInlineInfo->iciCall;
     CallArg*     resumedUseArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
     CallArg*     resumedDefArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
@@ -7579,6 +7645,41 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
     call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedUseNode).WellKnown(WellKnownArg::AsyncResumedUse));
+
+    // The inlining call may carry further sets describing the frames enclosing it, which
+    // this call inherits as well: it ends up in the same frame, so a suspension in it has
+    // to run the same chain of frame transitions. Dropping them would silently lose the
+    // handling for every frame outside the immediate one.
+    bool skippedFirst = false;
+    for (CallArg& arg : inlCall->gtArgs.Args())
+    {
+        WellKnownArg wka = arg.GetWellKnownArg();
+        if ((wka != WellKnownArg::AsyncResumedUse) && (wka != WellKnownArg::AsyncExecutionContext) &&
+            (wka != WellKnownArg::AsyncSynchronizationContext))
+        {
+            continue;
+        }
+
+        if ((wka == WellKnownArg::AsyncResumedUse) && !skippedFirst)
+        {
+            // Already inherited above, along with the resumed def that only the innermost
+            // frame has.
+            skippedFirst = true;
+            continue;
+        }
+
+        if (&arg == execArg || &arg == syncArg)
+        {
+            continue;
+        }
+
+        call->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(arg.GetNode())).WellKnown(wka));
+    }
+
+    if (call->IsAsync())
+    {
+        call->GetAsyncInfo().InlineFrameDepth = inlCall->GetAsyncInfo().InlineFrameDepth;
+    }
 }
 
 //------------------------------------------------------------------------

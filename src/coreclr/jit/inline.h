@@ -623,6 +623,13 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 
     CorInfoInitClassResult initClassResult;
     InlineContext*         inlinersContext;
+
+#ifdef DEBUG
+    // Position of this candidate in its enclosing body's shuffled group of async inline
+    // candidates, under async inlining stress. UINT_MAX means the candidate is not part
+    // of any group and so is left to the normal policy; see Compiler::fgAsyncStressPrepare.
+    unsigned asyncStressIndex = UINT_MAX;
+#endif // DEBUG
 };
 
 // LateDevirtualizationInfo
@@ -793,6 +800,28 @@ public:
         return m_Parent;
     }
 
+    // Depth of the inlined frame this context represents, counting only frames that do
+    // async context handling. The shallowest such frame is depth 1 when the root method
+    // does context handling itself, and depth 0 otherwise (for example when the root is
+    // the async version of a synchronous method).
+    //
+    // Continuation members holding the contexts captured at frame transitions are keyed
+    // by this, so frames at the same depth share storage. That is safe because their live
+    // ranges cannot overlap.
+    unsigned GetAsyncFrameDepth() const
+    {
+        unsigned depth = 0;
+        for (InlineContext* parent = m_Parent; parent != nullptr; parent = parent->m_Parent)
+        {
+            if (parent->IsAsyncFrame())
+            {
+                depth++;
+            }
+        }
+
+        return depth;
+    }
+
     // Get the sibling context.
     InlineContext* GetSibling() const
     {
@@ -862,6 +891,11 @@ public:
     {
         return m_Unboxed;
     }
+
+    bool IsAsyncCall() const
+    {
+        return m_IsAsyncCall;
+    }
 #endif
 
     unsigned GetImportedILSize() const
@@ -899,6 +933,19 @@ public:
         return (m_PgoInfo.PgoSchema != nullptr) && (m_PgoInfo.PgoSchemaCount > 0) && (m_PgoInfo.PgoData != nullptr);
     }
 
+    // Whether the frame this context represents does async context handling, i.e. whether
+    // it is a logical async frame. Set when the corresponding Compiler creates its context
+    // locals, so that it is already known while the frame's own inlinees are processed.
+    void SetIsAsyncFrame()
+    {
+        m_isAsyncFrame = true;
+    }
+
+    bool IsAsyncFrame() const
+    {
+        return m_isAsyncFrame;
+    }
+
 private:
     InlineContext(InlineStrategy* strategy);
 
@@ -919,6 +966,8 @@ private:
     unsigned               m_Ordinal;          // Ordinal number of this inline
     bool                   m_Success : 1;      // true if this was a successful inline
 
+    bool m_isAsyncFrame = false;
+
 #if defined(DEBUG)
 
     InlinePolicy* m_Policy;            // policy that evaluated this inline
@@ -926,6 +975,7 @@ private:
     bool          m_Devirtualized : 1; // true if this was a devirtualized call
     bool          m_Guarded       : 1; // true if this was a guarded call
     bool          m_Unboxed       : 1; // true if this call now invokes the unboxed entry
+    bool          m_IsAsyncCall   : 1; // true if the call being inlined was an async call
 
 #endif // defined(DEBUG)
 

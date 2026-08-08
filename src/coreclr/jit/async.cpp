@@ -45,17 +45,6 @@
 #include "jitstd/algorithm.h"
 #include "async.h"
 
-//------------------------------------------------------------------------
-// ContinuationMember::CustomAwaiterOfLayout:
-//   Create a continuation member that stores a custom awaiter with the
-//   specified layout.
-//
-// Parameters:
-//   layout - Layout of the custom awaiter.
-//
-// Returns:
-//   A continuation member describing the custom awaiter.
-//
 ContinuationMember ContinuationMember::CustomAwaiterOfLayout(ClassLayout* layout)
 {
     ContinuationMember member;
@@ -64,30 +53,66 @@ ContinuationMember ContinuationMember::CustomAwaiterOfLayout(ClassLayout* layout
     return member;
 }
 
-//------------------------------------------------------------------------
-// ContinuationMember::GetCustomAwaiterLayout:
-//   Get the layout of a custom awaiter continuation member.
-//
-// Returns:
-//   The custom awaiter's layout.
-//
+ContinuationMember ContinuationMember::InlineFrameExecutionContext(unsigned inlineDepth)
+{
+    ContinuationMember member;
+    member.Type          = ContinuationMemberType::InlineFrameExecutionContext;
+    member.m_inlineDepth = inlineDepth;
+    return member;
+}
+
+ContinuationMember ContinuationMember::InlineFrameContinuationContext(unsigned inlineDepth)
+{
+    ContinuationMember member;
+    member.Type          = ContinuationMemberType::InlineFrameContinuationContext;
+    member.m_inlineDepth = inlineDepth;
+    return member;
+}
+
+ContinuationMember ContinuationMember::InlineFrameFlags(unsigned inlineDepth)
+{
+    ContinuationMember member;
+    member.Type          = ContinuationMemberType::InlineFrameFlags;
+    member.m_inlineDepth = inlineDepth;
+    return member;
+}
+
 ClassLayout* ContinuationMember::GetCustomAwaiterLayout() const
 {
     assert(Type == ContinuationMemberType::CustomAwaiterOfLayout);
     return m_customAwaiterLayout;
 }
 
+unsigned ContinuationMember::GetInlineDepth() const
+{
+    assert(IsInlineFrameMember());
+    return m_inlineDepth;
+}
+
 //------------------------------------------------------------------------
-// ContinuationMember::AreCompatible:
-//   Check whether two continuation members can share the same storage.
-//
-// Parameters:
-//   a - First continuation member.
-//   b - Second continuation member.
+// ContinuationMember::GetStorageType:
+//   Get the type of the storage this member occupies in the continuation.
 //
 // Returns:
-//   True if the members are compatible; otherwise false.
+//   TYP_STRUCT for custom awaiters (described by GetCustomAwaiterLayout), otherwise
+//   the primitive type stored.
 //
+var_types ContinuationMember::GetStorageType() const
+{
+    switch (Type)
+    {
+        case ContinuationMemberType::CustomAwaiterOfLayout:
+            return TYP_STRUCT;
+        case ContinuationMemberType::InlineFrameExecutionContext:
+        case ContinuationMemberType::InlineFrameContinuationContext:
+            return TYP_REF;
+        case ContinuationMemberType::InlineFrameFlags:
+            return TYP_INT;
+        default:
+            unreached();
+    }
+}
+
 bool ContinuationMember::AreCompatible(const ContinuationMember& a, const ContinuationMember& b)
 {
     if (a.Type != b.Type)
@@ -99,22 +124,36 @@ bool ContinuationMember::AreCompatible(const ContinuationMember& a, const Contin
     {
         case ContinuationMemberType::CustomAwaiterOfLayout:
             return ClassLayout::AreCompatible(a.m_customAwaiterLayout, b.m_customAwaiterLayout);
+        case ContinuationMemberType::InlineFrameExecutionContext:
+        case ContinuationMemberType::InlineFrameContinuationContext:
+        case ContinuationMemberType::InlineFrameFlags:
+            // Keyed by inline depth rather than by individual inline frame. Two frames at
+            // the same depth can share storage because their live ranges cannot overlap:
+            // the value is written at a frame's first suspension and consumed by that same
+            // frame's post-inline IR, and one frame at a given depth must be left before
+            // another can be entered.
+            return a.m_inlineDepth == b.m_inlineDepth;
         default:
             unreached();
     }
 }
 
 #ifdef DEBUG
-//------------------------------------------------------------------------
-// ContinuationMember::Print:
-//   Print a description of this continuation member.
-//
 void ContinuationMember::Print() const
 {
     switch (Type)
     {
         case ContinuationMemberType::CustomAwaiterOfLayout:
             printf("CustomAwaiter<%s>", m_customAwaiterLayout->GetClassName());
+            break;
+        case ContinuationMemberType::InlineFrameExecutionContext:
+            printf("ExecutionContext for inline depth %u", m_inlineDepth);
+            break;
+        case ContinuationMemberType::InlineFrameContinuationContext:
+            printf("Continuation context for inline depth %u", m_inlineDepth);
+            break;
+        case ContinuationMemberType::InlineFrameFlags:
+            printf("Continuation flags for inline depth %u", m_inlineDepth);
             break;
         default:
             unreached();
@@ -123,26 +162,47 @@ void ContinuationMember::Print() const
 #endif
 
 //------------------------------------------------------------------------
-// Compiler::GetContinuationMemberIndex:
-//   Find or add a continuation member and return its index.
+// CollectWellKnownArgs:
+//   Collect the nodes of all arguments of a call with a specific well-known kind, in
+//   argument order.
 //
 // Parameters:
-//   member - Continuation member to find or add.
+//   call  - The call
+//   wka   - The well-known argument kind
+//   nodes - [out] Stack to push the argument nodes onto
 //
-// Returns:
-//   The member's index in m_asyncContinuationMembers.
+// Remarks:
+//   Async context pseudo-args can appear multiple times on a call: general async
+//   inlining adds one set per enclosing inlined frame.
 //
+static void CollectWellKnownArgs(GenTreeCall* call, WellKnownArg wka, ArrayStack<GenTree*>& nodes)
+{
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (arg.GetWellKnownArg() == wka)
+        {
+            nodes.Push(arg.GetNode());
+        }
+    }
+}
+
 size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
 {
-    if (m_asyncContinuationMembers == nullptr)
+    // Members describe the root method's continuation, so they are always registered
+    // there: an inlinee's IR ends up in the root and its member offset nodes are
+    // resolved against the root's layout.
+    Compiler* const root = impInlineRoot();
+
+    if (root->m_asyncContinuationMembers == nullptr)
     {
-        m_asyncContinuationMembers = new (this, CMK_Async) jitstd::vector<ContinuationMember>(getAllocator(CMK_Async));
+        root->m_asyncContinuationMembers =
+            new (root, CMK_Async) jitstd::vector<ContinuationMember>(root->getAllocator(CMK_Async));
     }
     else
     {
-        for (size_t i = 0; i < m_asyncContinuationMembers->size(); i++)
+        for (size_t i = 0; i < root->m_asyncContinuationMembers->size(); i++)
         {
-            const ContinuationMember& existingMember = m_asyncContinuationMembers->at(i);
+            const ContinuationMember& existingMember = root->m_asyncContinuationMembers->at(i);
 
             if (ContinuationMember::AreCompatible(member, existingMember))
             {
@@ -151,36 +211,132 @@ size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
         }
     }
 
-    m_asyncContinuationMembers->push_back(member);
-    return m_asyncContinuationMembers->size() - 1;
+    root->m_asyncContinuationMembers->push_back(member);
+    return root->m_asyncContinuationMembers->size() - 1;
 }
 
 //------------------------------------------------------------------------
-// Compiler::GetContinuationMemberCount:
-//   Get the number of continuation members registered by the compiler.
-//
-// Returns:
-//   The number of registered continuation members.
-//
-size_t Compiler::GetContinuationMemberCount() const
-{
-    return m_asyncContinuationMembers == nullptr ? 0 : m_asyncContinuationMembers->size();
-}
-
-//------------------------------------------------------------------------
-// Compiler::GetContinuationMember:
-//   Get a registered continuation member by index.
+// Compiler::TryGetContinuationMemberIndex:
+//   Look up the index of an already registered continuation member.
 //
 // Parameters:
-//   index - Index of the continuation member.
+//   member - The member
+//   index  - [out] Index of the member, if it is registered
 //
 // Returns:
-//   The continuation member at the specified index.
+//   True if the member is registered.
 //
+// Remarks:
+//   Unlike GetContinuationMemberIndex this does not register the member. Use it after
+//   the continuation layout has been created, where growing the member table would put
+//   the new member beyond the end of the layout.
+//
+bool Compiler::TryGetContinuationMemberIndex(const ContinuationMember& member, size_t* index)
+{
+    Compiler* const root = impInlineRoot();
+
+    if (root->m_asyncContinuationMembers != nullptr)
+    {
+        for (size_t i = 0; i < root->m_asyncContinuationMembers->size(); i++)
+        {
+            if (ContinuationMember::AreCompatible(member, root->m_asyncContinuationMembers->at(i)))
+            {
+                *index = i;
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+size_t Compiler::GetContinuationMemberCount()
+{
+    Compiler* const root = impInlineRoot();
+    return root->m_asyncContinuationMembers == nullptr ? 0 : root->m_asyncContinuationMembers->size();
+}
+
 const ContinuationMember& Compiler::GetContinuationMember(size_t index)
 {
-    assert(index < m_asyncContinuationMembers->size());
-    return m_asyncContinuationMembers->at(index);
+    Compiler* const root = impInlineRoot();
+    assert(index < root->m_asyncContinuationMembers->size());
+    return root->m_asyncContinuationMembers->at(index);
+}
+
+//------------------------------------------------------------------------
+// Compiler::ehIsAsyncContextRestore:
+//   Check whether an EH clause is one of the context restore clauses created by
+//   SaveAsyncContexts.
+//
+// Parameters:
+//   ehID - ID of the EH clause
+//
+// Returns:
+//   True if so.
+//
+bool Compiler::ehIsAsyncContextRestore(unsigned short ehID)
+{
+    Compiler* const root = impInlineRoot();
+
+    if (root->m_asyncContextRestoreEHIDs == nullptr)
+    {
+        return false;
+    }
+
+    for (unsigned short candidate : *root->m_asyncContextRestoreEHIDs)
+    {
+        if (candidate == ehID)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+//------------------------------------------------------------------------
+// Compiler::ehIsInsideNonAsyncContextRestoreRegion:
+//   Check whether a block is inside any protected region other than the context
+//   restore regions created by SaveAsyncContexts.
+//
+// Parameters:
+//   block - The block
+//
+// Returns:
+//   True if so.
+//
+// Remarks:
+//   Every async frame gets a context restore try-fault wrapped around its whole
+//   body, so a plain hasTryIndex() check cannot distinguish user EH from the EH
+//   the JIT itself introduced.
+//
+bool Compiler::ehIsInsideNonAsyncContextRestoreRegion(BasicBlock* block)
+{
+    if (block->hasTryIndex())
+    {
+        for (unsigned index = block->getTryIndex(); index != EHblkDsc::NO_ENCLOSING_INDEX;
+             index          = ehGetDsc(index)->ebdEnclosingTryIndex)
+        {
+            if (!ehIsAsyncContextRestore(ehGetDsc(index)->ebdID))
+            {
+                return true;
+            }
+        }
+    }
+
+    if (block->hasHndIndex())
+    {
+        for (unsigned index = block->getHndIndex(); index != EHblkDsc::NO_ENCLOSING_INDEX;
+             index          = ehGetDsc(index)->ebdEnclosingHndIndex)
+        {
+            if (!ehIsAsyncContextRestore(ehGetDsc(index)->ebdID))
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 //------------------------------------------------------------------------
@@ -204,6 +360,11 @@ PhaseStatus Compiler::SaveAsyncContexts()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
+    // Note the OSR handling below only ever applies to the root frame: JIT_FLAG_OSR is
+    // cleared for inlinees in compInitOptions. An inlinee inside an OSR method starts a
+    // fresh logical frame and so captures its own contexts, with a resumed indicator that
+    // starts out false however the OSR method was entered.
+
     // Create locals for indicator, Thread, ExecutionContext and SynchronizationContext
     lvaResumedIndicator               = lvaGrabTemp(false DEBUGARG("Async Resumed"));
     lvaAsyncThreadObjectVar           = lvaGrabTemp(false DEBUGARG("Async Thread"));
@@ -214,6 +375,11 @@ PhaseStatus Compiler::SaveAsyncContexts()
     lvaGetDesc(lvaAsyncThreadObjectVar)->lvType           = TYP_REF;
     lvaGetDesc(lvaAsyncExecutionContextVar)->lvType       = TYP_REF;
     lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
+
+    // Mark this frame as a logical async frame. This has to happen here rather than when
+    // an inlinee is spliced into its caller: the frame's own inlinees are processed while
+    // it is still being compiled, and they need to see it in the enclosing frame chain.
+    compInlineContext->SetIsAsyncFrame();
 
     if (opts.IsOSR())
     {
@@ -248,6 +414,17 @@ PhaseStatus Compiler::SaveAsyncContexts()
     asyncContextRestoreEHID  = impInlineRoot()->compEHID++;
     newEntry->ebdID          = asyncContextRestoreEHID;
     newEntry->ebdHandlerType = EH_HANDLER_FAULT;
+
+    {
+        Compiler* const root = impInlineRoot();
+        if (root->m_asyncContextRestoreEHIDs == nullptr)
+        {
+            root->m_asyncContextRestoreEHIDs =
+                new (root, CMK_Async) jitstd::vector<unsigned short>(root->getAllocator(CMK_Async));
+        }
+
+        root->m_asyncContextRestoreEHIDs->push_back(asyncContextRestoreEHID);
+    }
 
     newEntry->ebdTryBeg  = tryBegBB;
     newEntry->ebdTryLast = tryLastBB;
@@ -366,10 +543,7 @@ PhaseStatus Compiler::SaveAsyncContexts()
 
     for (BasicBlock* block : Blocks())
     {
-        if (!compIsForInlining())
-        {
-            AddContextArgsToAsyncCalls(block);
-        }
+        AddContextArgsToAsyncCalls(block);
 
         if (!block->KindIs(BBJ_RETURN) || (block == newReturnBB))
         {
@@ -461,11 +635,32 @@ void Compiler::AddContextArgsToAsyncCalls(BasicBlock* block)
                 return WALK_CONTINUE;
             }
 
-            GenTreeCall* call        = tree->AsCall();
-            GenTree*     resumed     = m_compiler->gtNewLclVarNode(m_compiler->lvaResumedIndicator, TYP_INT);
-            GenTree*     resumedAddr = m_compiler->gtNewLclAddrNode(m_compiler->lvaResumedIndicator, 0);
-            GenTree*     execCtx     = m_compiler->gtNewLclVarNode(m_compiler->lvaAsyncExecutionContextVar, TYP_REF);
-            GenTree*     syncCtx = m_compiler->gtNewLclVarNode(m_compiler->lvaAsyncSynchronizationContextVar, TYP_REF);
+            GenTreeCall* call = tree->AsCall();
+
+            // Record that this body has a suspension point. Inlinees without one keep the
+            // cheap shape: no post-inline IR and no capture chain is emitted for them.
+            m_compiler->compAsyncBodyMaySuspend = true;
+
+            if (call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse) != nullptr)
+            {
+                // Already has context args: this is an async call in an inlinee that
+                // inherited them from the inlining call (see
+                // impInheritAsyncContextsFromInliner).
+                assert(m_compiler->compIsForInlining());
+                return WALK_CONTINUE;
+            }
+
+            if (m_compiler->compIsForInlining() && !generalAsyncInliningEnabled())
+            {
+                // Only general async inlining introduces inlinee async calls that need
+                // their own contexts.
+                return WALK_CONTINUE;
+            }
+
+            GenTree* resumed     = m_compiler->gtNewLclVarNode(m_compiler->lvaResumedIndicator, TYP_INT);
+            GenTree* resumedAddr = m_compiler->gtNewLclAddrNode(m_compiler->lvaResumedIndicator, 0);
+            GenTree* execCtx     = m_compiler->gtNewLclVarNode(m_compiler->lvaAsyncExecutionContextVar, TYP_REF);
+            GenTree* syncCtx     = m_compiler->gtNewLclVarNode(m_compiler->lvaAsyncSynchronizationContextVar, TYP_REF);
             JITDUMP(
                 "Adding resumed use [%06u], resumed def [%06u] exec context [%06u], sync context [%06u] to async call [%06u]\n",
                 dspTreeID(resumed), dspTreeID(resumedAddr), dspTreeID(execCtx), dspTreeID(syncCtx), dspTreeID(call));
@@ -902,7 +1097,9 @@ PhaseStatus AsyncTransformation::Run()
         assert(continuationLayout->ContinuationMemberOffsets[memberIndex] != UINT_MAX);
         ssize_t offset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) +
                          continuationLayout->ContinuationMemberOffsets[memberIndex];
-        node->BashToConst(offset, TYP_INT);
+        // Preserve the node's type: offsets used in address arithmetic are TYP_I_IMPL,
+        // while those passed to helpers are TYP_INT.
+        node->BashToConst(offset, node->TypeGet());
     }
 
     m_compiler->fgInvalidateDfsTree();
@@ -1722,10 +1919,65 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
             continue;
         }
 
-        ClassLayout* memberLayout  = m_compiler->GetContinuationMember(memberIndex).GetCustomAwaiterLayout();
-        unsigned     alignment     = memberLayout->GetAlignmentRequirement(m_compiler);
-        unsigned     heapAlignment = std::min(alignment, (unsigned)TARGET_POINTER_SIZE);
-        layout->ContinuationMemberOffsets[memberIndex] = allocLayout(heapAlignment, memberLayout->GetSize());
+        const ContinuationMember& member = m_compiler->GetContinuationMember(memberIndex);
+
+        unsigned alignment;
+        unsigned size;
+        if (member.Type == ContinuationMemberType::CustomAwaiterOfLayout)
+        {
+            ClassLayout* memberLayout = member.GetCustomAwaiterLayout();
+            alignment                 = memberLayout->GetAlignmentRequirement(m_compiler);
+            size                      = memberLayout->GetSize();
+        }
+        else
+        {
+            var_types storageType = member.GetStorageType();
+            alignment             = genTypeAlignments[storageType];
+            size                  = genTypeSize(storageType);
+        }
+
+        layout->ContinuationMemberOffsets[memberIndex] =
+            allocLayout(std::min(alignment, (unsigned)TARGET_POINTER_SIZE), size);
+    }
+
+    // The suspension tail hands all three members of an inlined frame to
+    // CaptureInlinedFrameTransition together, so if any of them still has a read then the
+    // other two need storage as well. When none of them does the members are dead: the
+    // post-inline transition IR that reads them was optimized away (for example because a
+    // no-return call in the inlinee made it unreachable), and the tail skips the capture
+    // instead of storing values nothing can observe.
+    for (size_t i = 0; i < continuationMemberCount; i++)
+    {
+        if (layout->ContinuationMemberOffsets[i] == UINT_MAX)
+        {
+            continue;
+        }
+
+        const ContinuationMember& liveMember = m_compiler->GetContinuationMember(i);
+        if (!liveMember.IsInlineFrameMember())
+        {
+            continue;
+        }
+
+        unsigned const depth = liveMember.GetInlineDepth();
+        for (size_t j = 0; j < continuationMemberCount; j++)
+        {
+            if (layout->ContinuationMemberOffsets[j] != UINT_MAX)
+            {
+                continue;
+            }
+
+            const ContinuationMember& member = m_compiler->GetContinuationMember(j);
+            if (!member.IsInlineFrameMember() || (member.GetInlineDepth() != depth))
+            {
+                continue;
+            }
+
+            var_types const storageType = member.GetStorageType();
+            unsigned const  alignment   = genTypeAlignments[storageType];
+            layout->ContinuationMemberOffsets[j] =
+                allocLayout(std::min(alignment, (unsigned)TARGET_POINTER_SIZE), genTypeSize(storageType));
+        }
     }
 
     if (m_needsKeepAlive)
@@ -1780,8 +2032,11 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
     {
         if (layout->ContinuationMemberOffsets[i] != UINT_MAX)
         {
-            bitmapBuilder.SetType(layout->ContinuationMemberOffsets[i], TYP_STRUCT,
-                                  m_compiler->GetContinuationMember(i).GetCustomAwaiterLayout());
+            const ContinuationMember& member       = m_compiler->GetContinuationMember(i);
+            ClassLayout*              memberLayout = member.Type == ContinuationMemberType::CustomAwaiterOfLayout
+                                                         ? member.GetCustomAwaiterLayout()
+                                                         : nullptr;
+            bitmapBuilder.SetType(layout->ContinuationMemberOffsets[i], member.GetStorageType(), memberLayout);
         }
     }
 
@@ -2127,35 +2382,46 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
         }
     }
 
+    // These can be duplicated: general async inlining adds one set of context args per
+    // enclosing inlined frame, describing the chain of frames whose handling a suspension
+    // has to run. All of them must agree for a suspension to be reusable.
     static const WellKnownArg validateArgs[] = {WellKnownArg::AsyncAwaiter, WellKnownArg::AsyncResumedUse,
                                                 WellKnownArg::AsyncResumedDef, WellKnownArg::AsyncExecutionContext,
                                                 WellKnownArg::AsyncSynchronizationContext};
+    ArrayStack<GenTree*>      thisNodes(m_compiler->getAllocator(CMK_Async));
+    ArrayStack<GenTree*>      otherNodes(m_compiler->getAllocator(CMK_Async));
     for (WellKnownArg arg : validateArgs)
     {
-        CallArg* thisArg  = call->gtArgs.FindWellKnownArg(arg);
-        CallArg* otherArg = predAsyncCall->gtArgs.FindWellKnownArg(arg);
+        thisNodes.Reset();
+        otherNodes.Reset();
+        CollectWellKnownArgs(call, arg, thisNodes);
+        CollectWellKnownArgs(predAsyncCall, arg, otherNodes);
 
-        if ((thisArg == nullptr) != (otherArg == nullptr))
+        if (thisNodes.Height() != otherNodes.Height())
         {
-            JITDUMP("    No; disagreement on presence of %s argument\n", getWellKnownArgName(arg));
+            JITDUMP("    No; disagreement on number of %s arguments (%d vs %d)\n", getWellKnownArgName(arg),
+                    thisNodes.Height(), otherNodes.Height());
             return false;
         }
 
-        if (thisArg != nullptr)
+        for (int i = 0; i < thisNodes.Height(); i++)
         {
+            GenTree* thisNode  = thisNodes.Bottom(i);
+            GenTree* otherNode = otherNodes.Bottom(i);
+
             // The value may have been folded to a constant (e.g. when the
             // indicator is provably zero at this point), which is still fine to
             // compare and to remove from the call.
-            if (!thisArg->GetNode()->OperIsAnyLocal() && !thisArg->GetNode()->IsInvariant())
+            if (!thisNode->OperIsAnyLocal() && !thisNode->IsInvariant())
             {
                 JITDUMP("    No; %s argument is too complex\n", getWellKnownArgName(arg));
                 return false;
             }
 
-            if (!GenTree::Compare(thisArg->GetNode(), otherArg->GetNode()))
+            if (!GenTree::Compare(thisNode, otherNode))
             {
                 JITDUMP("    No; disagreement on value of %s argument ([%06u] vs [%06u])\n", getWellKnownArgName(arg),
-                        Compiler::dspTreeID(thisArg->GetNode()), Compiler::dspTreeID(otherArg->GetNode()));
+                        Compiler::dspTreeID(thisNode), Compiler::dspTreeID(otherNode));
                 return false;
             }
         }
@@ -2188,8 +2454,10 @@ void AsyncTransformation::HandleReusedSuspension(BasicBlock* callBlock, GenTreeC
                                                 WellKnownArg::AsyncSynchronizationContext};
     for (WellKnownArg wka : argsToRemove)
     {
-        CallArg* arg = call->gtArgs.FindWellKnownArg(wka);
-        if (arg != nullptr)
+        // These can be duplicated: general async inlining adds one set of context args
+        // per enclosing inlined frame. All of them must go.
+        for (CallArg* arg = call->gtArgs.FindWellKnownArg(wka); arg != nullptr;
+             arg          = call->gtArgs.FindWellKnownArg(wka))
         {
             assert(arg->GetNode()->OperIsAnyLocal() || arg->GetNode()->IsInvariant());
             LIR::AsRange(callBlock).Remove(arg->GetNode());
@@ -2819,7 +3087,12 @@ void AsyncTransformation::FinishContextHandlingAndSuspension(BasicBlock*        
 
     assert(suspendBB->KindIs(BBJ_RETURN));
 
-    if (m_sharedReturnBB != nullptr)
+    BasicBlock* const frameTail = CreateInlinedFrameSuspensionTail(callBlock, call, layout);
+    if (frameTail != nullptr)
+    {
+        suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(frameTail, suspendBB));
+    }
+    else if (m_sharedReturnBB != nullptr)
     {
         suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(m_sharedReturnBB, suspendBB));
     }
@@ -2904,7 +3177,12 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
     LIR::AsRange(callBlock).Remove(syncContext);
     call->gtArgs.RemoveUnsafe(syncContextArg);
 
-    if (sharedFinish != nullptr)
+    // A call inside an inlined async frame needs the enclosing frames' handling to run
+    // after this one, so it cannot use a finish block shared with suspensions in other
+    // frames.
+    BasicBlock* const frameTail = CreateInlinedFrameSuspensionTail(callBlock, call, layout);
+
+    if ((sharedFinish != nullptr) && (frameTail == nullptr))
     {
         // Store the vars to the shared locals that the shared finish block will take them from.
         if (m_sharedFinishContextHandlingResumedVar != BAD_VAR_NUM)
@@ -2935,8 +3213,13 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
         // Otherwise insert a new call
         InsertFinishContextHandlingCall(suspendBB, layout, helper, resumed, execContext, syncContext);
 
-        // And return either via a new GT_RETURN_SUSPEND or via the shared return BB.
-        if (m_sharedReturnBB != nullptr)
+        // And continue with the enclosing frames, or return either via a new
+        // GT_RETURN_SUSPEND or via the shared return BB.
+        if (frameTail != nullptr)
+        {
+            suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(frameTail, suspendBB));
+        }
+        else if (m_sharedReturnBB != nullptr)
         {
             suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(m_sharedReturnBB, suspendBB));
         }
@@ -2947,6 +3230,186 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
             LIR::AsRange(suspendBB).InsertAtEnd(newContinuation, ret);
         }
     }
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::CreateInlinedFrameSuspensionTail:
+//   Create the block that runs the context handling of the frames enclosing an inlined
+//   async frame on suspension.
+//
+// Parameters:
+//   callBlock - The block containing the async call
+//   call      - The async call
+//   layout    - Information about the continuation layout
+//
+// Returns:
+//   The block to continue suspension in, or nullptr if this call is not inside an
+//   inlined async frame.
+//
+// Remarks:
+//   Each frame that has not yet resumed must capture the contexts it would hand to its
+//   caller, and restore its caller's contexts onto the thread, as if its physical frame
+//   had returned. A frame having resumed implies its caller has too, so the frames can be
+//   walked outward as a straight line: once one frame has resumed, the helpers for it and
+//   every frame outside it no-op.
+//
+//   TODO-Async: suspensions in the same frame could share a tail when they agree on all
+//   of the values below, which would save some cold code.
+//
+BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*               callBlock,
+                                                                  GenTreeCall*              call,
+                                                                  const ContinuationLayout& layout)
+{
+    unsigned const numFrames = call->GetAsyncInfo().InlineFrameDepth + 1;
+    if (numFrames < 2)
+    {
+        // Not inside an inlined async frame, so there are no logical frame transitions to
+        // run and no context args beyond the ones the suspension itself consumed.
+        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse) == nullptr);
+        return nullptr;
+    }
+
+    JITDUMP("    Call [%06u] is inside an inlined async frame; %u frames in chain\n", Compiler::dspTreeID(call),
+            numFrames);
+
+    // Take the values of the enclosing frames off the call. These args are the source of
+    // truth for what to store: the optimizer may have rewritten them since they were
+    // added, for example folding a "resumed" indicator to a constant, and the stores must
+    // reflect that rather than re-reading the locals the args originally named.
+    ArrayStack<GenTree*> values(m_compiler->getAllocator(CMK_Async));
+
+    for (unsigned i = 0; i < numFrames; i++)
+    {
+        CallArg* frameArgs[3] = {call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse),
+                                 call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext),
+                                 call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext)};
+
+        for (unsigned j = 0; j < 3; j++)
+        {
+            CallArg* arg = frameArgs[j];
+            assert(arg != nullptr);
+
+            GenTree* node = arg->GetNode();
+            if (!node->IsInvariant() && !node->OperIs(GT_LCL_VAR))
+            {
+                // We are going to reference this from a different block, so spill it.
+                LIR::Use use(LIR::AsRange(callBlock), &arg->NodeRef(), call);
+                use.ReplaceWithLclVar(m_compiler);
+                node = use.Def();
+            }
+
+            LIR::AsRange(callBlock).Remove(node);
+            call->gtArgs.RemoveUnsafe(arg);
+            values.Push(node);
+        }
+    }
+
+    if (m_sharedReturnBB == nullptr)
+    {
+        CreateSharedReturnBB();
+    }
+
+    BasicBlock* tailBB = m_compiler->fgNewBBbefore(BBJ_ALWAYS, m_sharedReturnBB, false);
+    tailBB->bbSetRunRarely();
+    tailBB->clearTryIndex();
+    tailBB->clearHndIndex();
+    tailBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(m_sharedReturnBB, tailBB));
+
+    if (m_compiler->fgIsUsingProfileWeights())
+    {
+        tailBB->SetFlags(BBF_PROF_WEIGHT);
+    }
+
+    JITDUMP("    Created inlined frame suspension tail " FMT_BB " for %u frames\n", tailBB->bbNum, numFrames);
+
+    for (unsigned i = 0; i + 1 < numFrames; i++)
+    {
+        GenTree* const frameResumed = values.Bottom((int)(i * 3));
+        GenTree* const outerResumed = values.Bottom((int)((i + 1) * 3));
+        GenTree* const outerExec    = values.Bottom((int)((i + 1) * 3 + 1));
+        GenTree* const outerSync    = values.Bottom((int)((i + 1) * 3 + 2));
+        unsigned const depth        = numFrames - 1 - i;
+
+        // Capture what this frame hands to its caller. The members are only ever read by
+        // the post-inline frame transition IR, so if that IR was optimized away -- for
+        // example because a no-return call in the inlinee made it unreachable -- the
+        // members have no storage and there is nothing to capture. The layout gives all
+        // three members of a frame storage if any of them is read, so testing one is
+        // enough.
+        size_t flagsIndex = 0;
+        bool   membersAreLive =
+            m_compiler->TryGetContinuationMemberIndex(ContinuationMember::InlineFrameFlags(depth), &flagsIndex);
+        assert(membersAreLive && "suspension tail needs a frame whose members were never registered");
+        membersAreLive = membersAreLive && (layout.ContinuationMemberOffsets[flagsIndex] != UINT_MAX);
+
+        if (membersAreLive)
+        {
+            GenTreeCall* captureCall =
+                m_compiler->gtNewUserCallNode(m_asyncInfo->captureInlinedFrameTransitionMethHnd, TYP_VOID);
+            captureCall->gtArgs.PushFront(m_compiler,
+                                          NewCallArg::Primitive(
+                                              ContinuationMemberAddress(layout,
+                                                                        ContinuationMember::InlineFrameExecutionContext(
+                                                                            depth))));
+            captureCall->gtArgs.PushFront(m_compiler,
+                                          NewCallArg::Primitive(
+                                              ContinuationMemberAddress(layout,
+                                                                        ContinuationMember::InlineFrameFlags(depth))));
+            captureCall->gtArgs
+                .PushFront(m_compiler,
+                           NewCallArg::Primitive(
+                               ContinuationMemberAddress(layout,
+                                                         ContinuationMember::InlineFrameContinuationContext(depth))));
+            captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(frameResumed)));
+
+            m_compiler->compCurBB = tailBB;
+            m_compiler->fgMorphTree(captureCall);
+            LIR::AsRange(tailBB).InsertAtEnd(LIR::SeqTree(m_compiler, captureCall));
+        }
+        else
+        {
+            JITDUMP("    No reads of inline frame depth %u members survived; skipping its capture\n", depth);
+        }
+
+        // Then restore the caller's contexts, as its physical frame's return would have.
+        GenTreeCall* restoreCall =
+            m_compiler->gtNewUserCallNode(m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
+        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(outerSync)));
+        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(outerExec)));
+        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(outerResumed)));
+
+        m_compiler->compCurBB = tailBB;
+        m_compiler->fgMorphTree(restoreCall);
+        LIR::AsRange(tailBB).InsertAtEnd(LIR::SeqTree(m_compiler, restoreCall));
+    }
+
+    DISPRANGE(LIR::AsRange(tailBB));
+
+    return tailBB;
+}
+
+//------------------------------------------------------------------------
+// AsyncTransformation::ContinuationMemberAddress:
+//   Create the address of a continuation member in the newly created continuation.
+//
+// Parameters:
+//   layout - Information about the continuation layout
+//   member - The member
+//
+// Returns:
+//   IR node computing the address.
+//
+GenTree* AsyncTransformation::ContinuationMemberAddress(const ContinuationLayout& layout,
+                                                        const ContinuationMember& member)
+{
+    size_t const memberIndex = m_compiler->GetContinuationMemberIndex(member);
+    assert(memberIndex < layout.ContinuationMemberOffsets.size());
+    assert(layout.ContinuationMemberOffsets[memberIndex] != UINT_MAX);
+
+    unsigned const offset       = OFFSETOF__CORINFO_Continuation__data + layout.ContinuationMemberOffsets[memberIndex];
+    GenTree* const continuation = m_compiler->gtNewLclvNode(GetNewContinuationVar(), TYP_REF);
+    return m_compiler->gtNewOperNode(GT_ADD, TYP_BYREF, continuation,
+                                     m_compiler->gtNewIconNode((ssize_t)offset, TYP_I_IMPL));
 }
 
 //------------------------------------------------------------------------

@@ -20,6 +20,7 @@
 // RandomPolicy         - randomized inlining
 // FullPolicy           - inlines everything up to size and depth limits
 // SizePolicy           - tries not to increase method sizes
+// AsyncStressPolicy    - over-inlines async callees to stress async inlining
 //
 // The default policy in use is the DefaultPolicy.
 
@@ -499,9 +500,42 @@ public:
     }
 };
 
+// AsyncStressPolicy behaves like the ExtendedDefaultPolicy except that it
+// deliberately over-inlines async callees, to stress the general runtime async
+// inlining transformation. Async callees bypass the normal profitability and
+// budget heuristics; how many of them actually get inlined is decided later, by
+// the decaying random choice in Compiler::fgAsyncStressShouldInline.
+
+class AsyncStressPolicy : public ExtendedDefaultPolicy
+{
+public:
+    // Construct an AsyncStressPolicy
+    AsyncStressPolicy(Compiler* compiler, bool isPrejitRoot)
+        : ExtendedDefaultPolicy(compiler, isPrejitRoot)
+        , m_IsAsyncCall(false)
+    {
+    }
+
+    // Policy observations
+    void NoteBool(InlineObservation obs, bool value) override;
+    void NoteInt(InlineObservation obs, int value) override;
+
+    // Policy determinations
+    void DetermineProfitability(CORINFO_METHOD_INFO* methodInfo) override;
+    bool BudgetCheck() const override;
+
+    // Miscellaneous
+    const char* GetName() const override
+    {
+        return "AsyncStressPolicy";
+    }
+
+private:
+    bool m_IsAsyncCall;
+};
+
 // SizePolicy is an experimental policy that will inline as much
-// as possible without increasing the (estimated) method size.
-//
+// as possible without increasing the (estimated) method size.//
 // It may be useful down the road as a policy to use for methods
 // that are rarely executed (eg class constructors).
 

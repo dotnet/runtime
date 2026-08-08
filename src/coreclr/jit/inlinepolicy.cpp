@@ -27,6 +27,12 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 {
 #if defined(DEBUG)
 
+    // Optionally install the AsyncStressPolicy.
+    if (JitConfig.JitStressAsyncInlining() != 0)
+    {
+        return new (compiler, CMK_Inlining) AsyncStressPolicy(compiler, isPrejitRoot);
+    }
+
     const bool useRandomPolicyForStress = compiler->compRandomInlineStress();
     const bool useRandomPolicy          = (JitConfig.JitInlinePolicyRandom() != 0);
 
@@ -3317,6 +3323,136 @@ void FullPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     }
 
     return;
+}
+
+//------------------------------------------------------------------------
+// NoteBool: handle a boolean observation with non-fatal impact
+//
+// Arguments:
+//    obs      - the current observation
+//    value    - the value of the observation
+//
+void AsyncStressPolicy::NoteBool(InlineObservation obs, bool value)
+{
+    if (obs == InlineObservation::CALLEE_IS_ASYNC)
+    {
+        m_IsAsyncCall = value;
+        return;
+    }
+
+    ExtendedDefaultPolicy::NoteBool(obs, value);
+}
+
+//------------------------------------------------------------------------
+// NoteInt: handle an observed integer value
+//
+// Arguments:
+//    obs      - the current observation
+//    value    - the value being observed
+//
+// Notes:
+//    Async callees skip the size based rejections. Those are SetNever, which
+//    would also mark the callee NOINLINE for every other call site, so there is
+//    no point in letting the base policy see them first.
+//
+//    CALLEE_MAXSTACK is deliberately not among them: stack heavy callees are
+//    left on the normal policy rather than being forced in.
+//
+void AsyncStressPolicy::NoteInt(InlineObservation obs, int value)
+{
+    if (m_IsAsyncCall)
+    {
+        switch (obs)
+        {
+            case InlineObservation::CALLEE_IL_CODE_SIZE:
+            {
+                assert(value != 0);
+                m_CodeSize = static_cast<unsigned>(value);
+
+                if (m_CodeSize > InlineStrategy::IMPLEMENTATION_MAX_INLINE_SIZE)
+                {
+                    SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+                }
+                else if (m_IsForceInline)
+                {
+                    SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+                }
+                else
+                {
+                    SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+                }
+
+                return;
+            }
+
+            case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+            {
+                // Keep rejecting callees that do not return, but ignore the block count
+                // limit; async callees routinely have more blocks than it allows.
+                //
+                if (!m_IsForceInline && m_IsNoReturn && (value == 1))
+                {
+                    SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
+                }
+
+                return;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    ExtendedDefaultPolicy::NoteInt(obs, value);
+}
+
+//------------------------------------------------------------------------
+// BudgetCheck: see if this inline would exceed the current budget
+//
+// Returns:
+//   True if inline would exceed the budget.
+//
+bool AsyncStressPolicy::BudgetCheck() const
+{
+    // Async inlines are the point of this policy, so they ignore the budget. Everything
+    // else stays on the normal budget so that the stress mode does not turn into a
+    // general "inline everything" mode.
+    //
+    if (m_IsAsyncCall)
+    {
+        return false;
+    }
+
+    return ExtendedDefaultPolicy::BudgetCheck();
+}
+
+//------------------------------------------------------------------------
+// DetermineProfitability: determine if this inline is profitable
+//
+// Arguments:
+//    methodInfo -- method info for the callee
+//
+// Notes:
+//    Async callees are always considered profitable. The actual thinning out
+//    happens later in Compiler::fgAsyncStressShouldInline, which is where the
+//    inline depth and the set of candidates in the enclosing body are known.
+//
+void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
+{
+    if (!m_IsAsyncCall)
+    {
+        ExtendedDefaultPolicy::DetermineProfitability(methodInfo);
+        return;
+    }
+
+    if (m_IsPrejitRoot)
+    {
+        SetCandidate(InlineObservation::CALLEE_IS_PROFITABLE_INLINE);
+    }
+    else
+    {
+        SetCandidate(InlineObservation::CALLSITE_IS_PROFITABLE_INLINE);
+    }
 }
 
 //------------------------------------------------------------------------/

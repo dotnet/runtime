@@ -4554,6 +4554,15 @@ struct AsyncCallInfo
     // and suspend unconditionally.
     bool AlwaysSuspends = false;
 
+    // Depth of the inlined frame this call belongs to, counting only frames that have
+    // async context handling. 0 is the root method's frame.
+    //
+    // On suspension every enclosing frame that has not yet resumed must capture the
+    // contexts it would hand to its caller. Those live in continuation members keyed by
+    // this depth, and the enclosing frames' depths follow by decrementing while draining
+    // the call's chain of context args.
+    unsigned InlineFrameDepth = 0;
+
     bool NeedsToSaveAndRestoreExecutionContext() const
     {
         return true;
@@ -5268,6 +5277,12 @@ struct GenTreeCall final : public GenTree
     bool IsAsync() const;
 
     const AsyncCallInfo& GetAsyncInfo() const
+    {
+        assert(IsAsync());
+        return *asyncInfo;
+    }
+
+    AsyncCallInfo& GetAsyncInfo()
     {
         assert(IsAsync());
         return *asyncInfo;

@@ -412,6 +412,11 @@ public:
         CORINFO_LOOKUP* pResultLookup);
 
     void ComputeRuntimeLookupForAwaitCall(MethodDesc* pCallerMD, MethodDesc* pTypicalAwaitMD, CORINFO_LOOKUP* lookup);
+    void ComputeRuntimeLookupForAwaitAwaiterInContinuationCall(
+        MethodDesc* pCallerMD,
+        MethodDesc* pTypicalAwaitMD,
+        CORINFO_SIG_INFO* callSig,
+        CORINFO_LOOKUP* lookup);
 
 #if defined(FEATURE_GDBJIT)
     CalledMethod * GetCalledMethods() { return m_pCalledMethods; }

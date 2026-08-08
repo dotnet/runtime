@@ -4407,6 +4407,15 @@ public:
 
     unsigned short asyncContextRestoreEHID = USHRT_MAX;
 
+    // IDs of every EH clause created by SaveAsyncContexts, both for this method and for
+    // all frames inlined into it. Maintained on the inline root, since an inlinee's
+    // clause survives inlining as a clause of the root. EH IDs are stable across
+    // inlining, so this stays valid after the tables are merged.
+    jitstd::vector<unsigned short>* m_asyncContextRestoreEHIDs = nullptr;
+
+    bool ehIsAsyncContextRestore(unsigned short ehID);
+    bool ehIsInsideNonAsyncContextRestoreRegion(BasicBlock* block);
+
     unsigned lvaArg0Var = BAD_VAR_NUM; // The lclNum of arg0. Normally this will be info.compThisArg.
                          // However, if there is a "ldarga 0" or "starg 0" in the IL,
                          // we will redirect all "ldarg(a) 0" and "starg 0" to this temp.
@@ -4445,6 +4454,12 @@ public:
 
     // Variable representing async continuation argument passed.
     unsigned lvaAsyncContinuationArg = BAD_VAR_NUM;
+
+    // For async methods with CORINFO_ASYNC_SAVE_CONTEXTS: whether the body contains any
+    // async call, i.e. any point at which this method may suspend. Computed by
+    // SaveAsyncContexts. When false for an inlinee, its resumed indicator is provably
+    // always false and no post-inline async frame IR needs to be emitted for it.
+    bool compAsyncBodyMaySuspend = false;
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
@@ -5686,6 +5701,12 @@ private:
 
     bool m_nextAwaitIsTail = false;
 
+    // Set while importing an inlinee for an async call that gets its own context
+    // handling instead of inheriting it from the inlining call, i.e. an await that may
+    // suspend inside a generally-inlined async callee. Consumed by
+    // impInheritAsyncContextsFromInliner.
+    bool m_nextAsyncCallUsesOwnContexts = false;
+
     bool impSpillStackEntry(unsigned level,
                             unsigned varNum
 #ifdef DEBUG
@@ -6308,7 +6329,8 @@ public:
 
     jitstd::vector<ContinuationMember>* m_asyncContinuationMembers = nullptr;
     size_t GetContinuationMemberIndex(const ContinuationMember& member);
-    size_t GetContinuationMemberCount() const;
+    bool   TryGetContinuationMemberIndex(const ContinuationMember& member, size_t* index);
+    size_t GetContinuationMemberCount();
     const ContinuationMember& GetContinuationMember(size_t index);
 
     PhaseStatus SaveAsyncContexts();
@@ -7550,6 +7572,17 @@ private:
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
+#ifdef DEBUG
+    void fgAsyncStressPrepare(BasicBlock* firstBB, BasicBlock* lastBB, unsigned depth);
+    bool fgAsyncStressShouldInline(GenTreeCall* call, unsigned inlineDepth);
+
+    // Is general runtime async inlining being stressed, i.e. are async callees forcibly
+    // inlined with a decaying random probability? See AsyncStressPolicy.
+    static bool compAsyncInliningStress()
+    {
+        return JitConfig.JitStressAsyncInlining() != 0;
+    }
+#endif // DEBUG
     bool IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo);
     bool ContextComplexityExceeds(CORINFO_CONTEXT_HANDLE handle, int max);
     bool MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE handle, int& cur, int max);
@@ -7560,6 +7593,10 @@ private:
     void fgInsertInlineeArgument(const InlArgInfo& argInfo, BasicBlock* block, Statement** afterStmt, Statement** newStmt, const DebugInfo& callDI);
     Statement* fgInlinePrependStatements(InlineInfo* inlineInfo);
     void fgInlineAppendStatements(InlineInfo* inlineInfo, BasicBlock* block, Statement* stmt);
+    void fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicBlock* joinBlock);
+    void fgAppendEnclosingAsyncFrameContextArgs(InlineInfo* inlineInfo);
+    void fgSetupAsyncFrameTransitionCall(GenTreeCall* call, const DebugInfo& di);
+    GenTree* gtNewContinuationMemberIndir(const struct ContinuationMember& member, var_types type);
 
 #ifdef DEBUG
     static fgWalkPreFn fgDebugCheckInlineCandidates;
@@ -11979,6 +12016,14 @@ public:
     bool compIsAsyncVersion() const
     {
         return (info.compMethodInfo->options & CORINFO_ASYNC_VERSION) != 0;
+    }
+
+    // Is general inlining of runtime async calls enabled, i.e. inlining of async callees
+    // that may suspend? When disabled only the restricted cases are inlined: callees
+    // without any awaits, async versions of synchronous methods, and tail awaits.
+    static bool generalAsyncInliningEnabled()
+    {
+        return JitConfig.JitAsyncInlining() != 0;
     }
 
     //------------------------------------------------------------------------
