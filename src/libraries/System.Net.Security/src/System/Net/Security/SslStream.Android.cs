@@ -54,6 +54,22 @@ namespace System.Net.Security
                 : _sslAuthenticationOptions.CertificateContext?.Trust is null;
         }
 
+        private IntPtr SelectClientCertificateForHandshake(string[] acceptableIssuers)
+        {
+            X509Certificate2? selectedCertificate = SelectClientCertificate(acceptableIssuers);
+            if (selectedCertificate is null)
+            {
+                return IntPtr.Zero;
+            }
+
+            if (_sslAuthenticationOptions.CertificateContext is null)
+            {
+                _sslAuthenticationOptions.SetCertificateContextFromCert(selectedCertificate);
+            }
+
+            return AndroidKeyManager.Create(_sslAuthenticationOptions.CertificateContext!);
+        }
+
         private bool TryGetRemoteCertificateValidationResult(out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus, ref ProtocolToken alertToken, out bool isValid)
         {
             JavaProxy.RemoteCertificateValidationResult? validationResult = _securityContext?.SslStreamProxy.ValidationResult;
@@ -69,35 +85,37 @@ namespace System.Net.Security
             private static bool s_initialized;
 
             private readonly SslStream _sslStream;
-            private GCHandle? _handle;
+            private GCHandle<JavaProxy> _handle;
 
             public IntPtr Handle
-                => _handle is GCHandle handle
-                    ? GCHandle.ToIntPtr(handle)
+                => _handle.IsAllocated
+                    ? GCHandle<JavaProxy>.ToIntPtr(_handle)
                     : throw new ObjectDisposedException(nameof(JavaProxy));
 
             public Exception? ValidationException { get; private set; }
+            public Exception? CertificateSelectionException { get; private set; }
             public RemoteCertificateValidationResult? ValidationResult { get; private set; }
 
             public JavaProxy(SslStream sslStream)
             {
-                RegisterRemoteCertificateValidationCallback();
+                RegisterCallbacks();
 
                 _sslStream = sslStream;
-                _handle = GCHandle.Alloc(this);
+                _handle = new GCHandle<JavaProxy>(this);
             }
 
             public void Dispose()
             {
-                _handle?.Free();
-                _handle = null;
+                _handle.Dispose();
             }
 
-            private static unsafe void RegisterRemoteCertificateValidationCallback()
+            private static unsafe void RegisterCallbacks()
             {
                 if (!s_initialized)
                 {
-                    Interop.AndroidCrypto.RegisterRemoteCertificateValidationCallback(&VerifyRemoteCertificate);
+                    Interop.AndroidCrypto.RegisterSslStreamCallbacks(
+                        &VerifyRemoteCertificate,
+                        &SelectClientCertificate);
                     s_initialized = true;
                 }
             }
@@ -105,19 +123,46 @@ namespace System.Net.Security
             [UnmanagedCallersOnly]
             private static bool VerifyRemoteCertificate(IntPtr sslStreamProxyHandle, IntPtr platformValidationError)
             {
-                var proxy = (JavaProxy?)GCHandle.FromIntPtr(sslStreamProxyHandle).Target;
-                Debug.Assert(proxy is not null);
-                Debug.Assert(proxy.ValidationResult is null);
+                JavaProxy? proxy = null;
 
                 try
                 {
+                    proxy = GCHandle<JavaProxy>.FromIntPtr(sslStreamProxyHandle).Target;
+                    Debug.Assert(proxy.ValidationResult is null);
                     proxy.ValidationResult = proxy._sslStream.VerifyRemoteCertificate(platformValidationError);
                     return proxy.ValidationResult.IsValid;
                 }
                 catch (Exception exception)
                 {
-                    proxy.ValidationException = exception;
+                    proxy?.ValidationException = exception;
                     return false;
+                }
+            }
+
+            [UnmanagedCallersOnly]
+            private static unsafe IntPtr SelectClientCertificate(
+                IntPtr sslStreamProxyHandle,
+                int acceptableIssuerCount,
+                IntPtr* acceptableIssuers)
+            {
+                JavaProxy? proxy = null;
+
+                try
+                {
+                    proxy = GCHandle<JavaProxy>.FromIntPtr(sslStreamProxyHandle).Target;
+                    Debug.Assert(proxy.CertificateSelectionException is null);
+                    string[] issuers = new string[acceptableIssuerCount];
+                    for (int i = 0; i < issuers.Length; i++)
+                    {
+                        issuers[i] = Marshal.PtrToStringUni(acceptableIssuers[i])!;
+                    }
+
+                    return proxy._sslStream.SelectClientCertificateForHandshake(issuers);
+                }
+                catch (Exception exception)
+                {
+                    proxy?.CertificateSelectionException = exception;
+                    return IntPtr.Zero;
                 }
             }
 
