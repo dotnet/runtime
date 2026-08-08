@@ -11,7 +11,21 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
     {
         private const string _dotnetFolderName = ".dotnet";
 
+        // Set by the test run script to the testhost it was handed via --runtime-path: the locally built
+        // testhost for a local run, the Helix correlation payload in CI. See eng/testing/RunnerTemplate.sh
+        // and eng/testing/RunnerTemplate.cmd.
+        private const string RuntimePathVariableName = "RUNTIME_PATH";
+
         internal static string DotNetHome { get; } = GetDotNetHome();
+
+        /// <summary>
+        /// Gets the full path of the muxer that portable applications are launched with, or
+        /// <see langword="null"/> when the current test environment has not got one.
+        /// </summary>
+        public static string DotNetMuxerPath { get; } = FindDotNetMuxer();
+
+        public static string DotNetExecutableName
+            => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dotnet.exe" : "dotnet";
 
         // Compare to https://github.com/aspnet/BuildTools/blob/314c98e4533217a841ff9767bb38e144eb6c93e4/tools/KoreBuild.Console/Commands/CommandContext.cs#L76
         public static string GetDotNetHome()
@@ -55,23 +69,36 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
         }
 
         public static string GetDotNetExecutable(RuntimeArchitecture arch)
-        {
-            var dotnetDir = GetDotNetInstallDir(arch);
-
-            var dotnetFile = "dotnet";
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                dotnetFile += ".exe";
-            }
-
-            return Path.Combine(dotnetDir, dotnetFile);
-        }
+            => Path.Combine(GetDotNetInstallDir(arch), DotNetExecutableName);
 
         public static bool IsRunningX86OnX64(RuntimeArchitecture arch)
         {
             return (RuntimeInformation.OSArchitecture == Architecture.X64 || RuntimeInformation.OSArchitecture == Architecture.Arm64)
                 && arch == RuntimeArchitecture.x86;
+        }
+
+        private static string FindDotNetMuxer()
+        {
+            var runtimePath = Environment.GetEnvironmentVariable(RuntimePathVariableName);
+            if (!string.IsNullOrEmpty(runtimePath))
+            {
+                var fromRunScript = Path.Combine(runtimePath, DotNetExecutableName);
+                if (File.Exists(fromRunScript))
+                {
+                    return fromRunScript;
+                }
+            }
+
+#if NETFRAMEWORK
+            return null;
+#else
+            // Outside the run script the only host we can vouch for is the one running the tests, which is
+            // the muxer itself on every leg that does not publish the tests as a self-contained application.
+            var processPath = Environment.ProcessPath;
+            return string.Equals(Path.GetFileName(processPath), DotNetExecutableName, StringComparison.OrdinalIgnoreCase)
+                ? processPath
+                : null;
+#endif
         }
     }
 }
