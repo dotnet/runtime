@@ -184,8 +184,14 @@ namespace System.Net.Security
             _ownsSessionCertificateContext = _options.OwnsCertificateContext;
             _options.OwnsCertificateContext = false;
 
+            InitializePlatformSpecificSessionState();
+
             OnContextInitialized();
         }
+
+        partial void InitializePlatformSpecificSessionState();
+
+        partial void SeedPlatformValidationErrors(ref SslPolicyErrors sslPolicyErrors);
 
         internal virtual void OnContextInitialized()
         {
@@ -344,6 +350,7 @@ namespace System.Net.Security
 
             ProtocolToken alertToken = default;
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
+            SeedPlatformValidationErrors(ref sslPolicyErrors);
             bool ok;
             try
             {
