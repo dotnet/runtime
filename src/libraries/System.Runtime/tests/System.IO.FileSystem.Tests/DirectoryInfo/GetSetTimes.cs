@@ -36,18 +36,21 @@ namespace System.IO.Tests
                      ((testDir) => testDir.CreationTimeUtc),
                      DateTimeKind.Utc);
             }
-            yield return TimeFunction.Create(
-                ((testDir, time) => {testDir.LastAccessTime = time; }),
-                ((testDir) => testDir.LastAccessTime),
-                DateTimeKind.Local);
-            yield return TimeFunction.Create(
-                ((testDir, time) => {testDir.LastAccessTimeUtc = time; }),
-                ((testDir) => testDir.LastAccessTimeUtc),
-                DateTimeKind.Unspecified);
-            yield return TimeFunction.Create(
-                ((testDir, time) => { testDir.LastAccessTimeUtc = time; }),
-                ((testDir) => testDir.LastAccessTimeUtc),
-                DateTimeKind.Utc);
+            if (TempPathSupportsPreciseLastAccessTime)
+            {
+                yield return TimeFunction.Create(
+                    ((testDir, time) => {testDir.LastAccessTime = time; }),
+                    ((testDir) => testDir.LastAccessTime),
+                    DateTimeKind.Local);
+                yield return TimeFunction.Create(
+                    ((testDir, time) => {testDir.LastAccessTimeUtc = time; }),
+                    ((testDir) => testDir.LastAccessTimeUtc),
+                    DateTimeKind.Unspecified);
+                yield return TimeFunction.Create(
+                    ((testDir, time) => { testDir.LastAccessTimeUtc = time; }),
+                    ((testDir) => testDir.LastAccessTimeUtc),
+                    DateTimeKind.Utc);
+            }
             yield return TimeFunction.Create(
                 ((testDir, time) => {testDir.LastWriteTime = time; }),
                 ((testDir) => testDir.LastWriteTime),
