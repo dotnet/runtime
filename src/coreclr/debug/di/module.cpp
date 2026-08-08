@@ -4625,7 +4625,12 @@ HRESULT CordbNativeCode::GetCallSignature(ULONG32 ILoffset, mdToken *pClass, mdT
     return GetSigParserFromFunction(mdFunction, pClass, parser, generics);
 }
 
-HRESULT CordbNativeCode::GetReturnValueVariableHomes(Instantiation *currentInstantiation, ULONG32 ILoffset, ULONG32 bufferSize, ULONG32 *pFetched, const ICorDebugInfo::NativeVarInfo **ppVarInfos)
+HRESULT CordbNativeCode::GetReturnValueVariableHomes(Instantiation *currentInstantiation,
+                                                     ULONG32 ILoffset,
+                                                     ULONG32 bufferSize,
+                                                     ULONG32 *pFetched,
+                                                     const ICorDebugInfo::NativeVarInfo **ppVarInfos,
+                                                     bool includeAsyncContinuationMarker)
 {
     if (pFetched == NULL)
         return E_INVALIDARG;
@@ -4651,7 +4656,11 @@ HRESULT CordbNativeCode::GetReturnValueVariableHomes(Instantiation *currentInsta
             continue;
         }
 
-        if (pNativeVarInfo->callReturnValueILOffset != ILoffset)
+        bool isAsyncContinuationMarker =
+            (pNativeVarInfo->callReturnValueILOffset & ICorDebugInfo::CALL_RETURN_ASYNC_CONTINUATION_FLAG) != 0;
+        ULONG32 callILOffset =
+            pNativeVarInfo->callReturnValueILOffset & ~ICorDebugInfo::CALL_RETURN_ASYNC_CONTINUATION_FLAG;
+        if (callILOffset != ILoffset || (isAsyncContinuationMarker && !includeAsyncContinuationMarker))
         {
             continue;
         }

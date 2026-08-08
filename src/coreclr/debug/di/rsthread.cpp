@@ -8800,20 +8800,36 @@ HRESULT CordbJITILFrame::GetReturnValueForILOffsetImpl(ULONG32 ILoffset, ICorDeb
     pCode->LoadNativeInfo();
 
     ULONG32 count = 0;
-    IfFailRet(pCode->GetReturnValueVariableHomes(&m_genericArgs, ILoffset, 0, &count, NULL));
+    IfFailRet(pCode->GetReturnValueVariableHomes(
+        &m_genericArgs, ILoffset, 0, &count, NULL, /* includeAsyncContinuationMarker */ true));
 
     NewArrayHolder<const ICorDebugInfo::NativeVarInfo *> varInfos(new const ICorDebugInfo::NativeVarInfo *[count]);
-    IfFailRet(pCode->GetReturnValueVariableHomes(&m_genericArgs, ILoffset, count, &count, varInfos));
+    IfFailRet(pCode->GetReturnValueVariableHomes(
+        &m_genericArgs, ILoffset, count, &count, varInfos, /* includeAsyncContinuationMarker */ true));
 
     const ICorDebugInfo::NativeVarInfo *pReturnVarInfo = NULL;
+    const ICorDebugInfo::NativeVarInfo *pAsyncContinuationVarInfo = NULL;
     ULONG32 currentOffset = m_nativeFrame->GetIPOffset();
     for (ULONG32 i = 0; i < count; ++i)
     {
         if (currentOffset == varInfos[i]->startOffset)
         {
-            pReturnVarInfo = varInfos[i];
-            break;
+            if ((varInfos[i]->callReturnValueILOffset &
+                 ICorDebugInfo::CALL_RETURN_ASYNC_CONTINUATION_FLAG) != 0)
+            {
+                pAsyncContinuationVarInfo = varInfos[i];
+            }
+            else
+            {
+                pReturnVarInfo = varInfos[i];
+            }
         }
+    }
+
+    if ((pAsyncContinuationVarInfo != NULL) &&
+        (m_nativeFrame->GetRegisterOrStackValue(pAsyncContinuationVarInfo) != 0))
+    {
+        return CORDBG_E_IL_VAR_NOT_AVAILABLE;
     }
 
     if (pReturnVarInfo == NULL)
