@@ -641,28 +641,33 @@ ULONG PEAssembly::GetPEImageTimeDateStamp()
 PEAssembly::PEAssembly(
                 BINDER_SPACE::Assembly* pBoundAssembly,
                 IMetaDataEmit* pEmit,
-                BOOL isSystem,
+                bool isSystem,
                 AssemblyBinder* pDynamicAssemblyBinder /*= NULL*/)
+    :
+#ifdef LOGGING
+      m_pDebugName{NULL},
+#endif // LOGGING
+      m_PEImage{NULL}
+    , m_MDImportIsRW_Debugger_Use_Only{FALSE}
+    , m_pMDImport{NULL}
+    , m_pImporter{NULL}
+    , m_pEmitter{NULL}
+    , m_refCount{1}
+    , m_isSystem{isSystem}
+    , m_pHostAssembly{nullptr}
+    , m_pAssemblyBinder{nullptr}
 {
     CONTRACTL
     {
-        PRECONDITION(CheckPointer(pEmit, NULL_OK));
+        // A PEAssembly is either bound by an AssemblyBinder or dynamic (reflection emit)
+        PRECONDITION((pBoundAssembly == NULL) != (pEmit == NULL));
+        // Only a bound assembly can be System.Private.CoreLib.
+        PRECONDITION(pEmit == NULL || !isSystem);
+        // A bound assembly takes its binder from the bind result, not from a caller.
+        PRECONDITION(pBoundAssembly == NULL || pDynamicAssemblyBinder == NULL);
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
-
-#ifdef LOGGING
-    m_pDebugName = NULL;
-#endif // LOGGING
-    m_PEImage = NULL;
-    m_MDImportIsRW_Debugger_Use_Only = FALSE;
-    m_pMDImport = NULL;
-    m_pImporter = NULL;
-    m_pEmitter = NULL;
-    m_refCount = 1;
-    m_isSystem = isSystem;
-    m_pHostAssembly = nullptr;
-    m_pAssemblyBinder = nullptr;
 
     PEImage* pPEImage = pBoundAssembly ? pBoundAssembly->GetPEImage() : NULL;
     if (pPEImage != NULL)
@@ -795,7 +800,7 @@ PEAssembly *PEAssembly::DoOpenSystem()
     ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
     IfFailThrow(GetAppDomain()->GetDefaultBinder()->BindToSystem(&pBoundAssembly));
 
-    return new PEAssembly(pBoundAssembly, NULL, TRUE);
+    return new PEAssembly(pBoundAssembly, NULL, /*isSystem*/ true);
 }
 
 PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBoundAssembly)
@@ -817,7 +822,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBin
     // we have.)
     ReleaseHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    return new PEAssembly(NULL, pEmit, FALSE, pDynamicAssemblyBinder);
+    return new PEAssembly(NULL, pEmit, /*isSystem*/ false, pDynamicAssemblyBinder);
 }
 
 #endif // #ifndef DACCESS_COMPILE

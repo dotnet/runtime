@@ -50,9 +50,7 @@ typedef DPTR(PEAssembly) PTR_PEAssembly;
 // --------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------
-// A PEAssembly is an input to the CLR loader.  It is produced as a result of
-// binding, usually through fusion (although there are a few less common methods to
-// obtain one which do not go through fusion, e.g. IJW loads)
+// A PEAssembly is an input to the CLR loader. It is produced as a result of binding.
 //
 // Although a PEAssembly is usually a disk based PE file, it is not
 // always the case. Thus it is a conscious decision to not export access to the PE
@@ -151,7 +149,7 @@ public:
     // Classification
     // ------------------------------------------------------------
 
-    BOOL IsSystem() const;
+    bool IsSystem() const;
     BOOL IsReflectionEmit() const;
 
     // ------------------------------------------------------------
@@ -354,7 +352,7 @@ private:
     PEAssembly(
         BINDER_SPACE::Assembly* pBoundAssembly,
         IMetaDataEmit* pEmit,
-        BOOL isSystem,
+        bool isSystem,
         AssemblyBinder* pDynamicAssemblyBinder = NULL
     );
 

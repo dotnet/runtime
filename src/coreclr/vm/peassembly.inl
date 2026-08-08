@@ -221,7 +221,7 @@ inline LPCUTF8 PEAssembly::GetDebugName()
 // Classification
 // ------------------------------------------------------------
 
-inline BOOL PEAssembly::IsSystem() const
+inline bool PEAssembly::IsSystem() const
 {
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
