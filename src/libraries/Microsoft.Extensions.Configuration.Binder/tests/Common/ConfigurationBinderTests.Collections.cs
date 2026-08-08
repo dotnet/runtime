@@ -2479,5 +2479,25 @@ namespace Microsoft.Extensions
             Assert.Equal(2, users[1].Id);
             Assert.Null(users[1].Name);
         }
+
+        [Fact]
+        public void CanBindNestedTypeWhoseSoleMemberIsAReadOnlyCollectionConstructorParameter()
+        {
+            IConfiguration config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Class:Values:0", "a" },
+                    { "Struct:Values:0", "b" },
+                    { "NullableStruct:Values:0", "c" },
+                })
+                .Build();
+
+            var options = config.Get<SoleReadOnlyCollectionParamHolder>();
+
+            Assert.NotNull(options);
+            Assert.Equal(new[] { "a" }, options.Class?.Values);
+            Assert.Equal(new[] { "b" }, options.Struct.Values);
+            Assert.Equal(new[] { "c" }, options.NullableStruct?.Values);
+        }
     }
 }
