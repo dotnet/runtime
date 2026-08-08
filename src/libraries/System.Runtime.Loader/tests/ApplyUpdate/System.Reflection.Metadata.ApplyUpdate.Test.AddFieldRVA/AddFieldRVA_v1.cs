@@ -9,7 +9,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         public static int LocalReadOnlySpan()
         {
             ReadOnlySpan<int> s = [1, 2, 3];
-            return s.Length;
+            return s[2];
         }
 
         class InnerClass
@@ -17,7 +17,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
             byte[] _byteArray = { 1, 2, 3, 4 };
             public int MemberFieldArray()
             {
-                return _byteArray.Length;
+                return _byteArray[3];
             }
         }
 
@@ -29,7 +29,7 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         // public static int LocalStackAllocReadOnlySpan()
         // {
         //     ReadOnlySpan<byte> s = stackalloc byte[] { 1, 2, 3, 4, 5 };
-        //     return s.Length;
+        //     return s[4];
         // }
 
         public static ReadOnlySpan<byte> Utf8LiteralReadOnlySpan() => "123456"u8;
