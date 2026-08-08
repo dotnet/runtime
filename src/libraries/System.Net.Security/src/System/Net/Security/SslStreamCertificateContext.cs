@@ -3,13 +3,22 @@
 
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 
 namespace System.Net.Security
 {
     public partial class SslStreamCertificateContext
     {
         internal readonly SslCertificateTrust? Trust;
+        private CertificateHashCache? _targetCertificateHash;
+
+        private sealed class CertificateHashCache(IntPtr certificateHandle, byte[] certificateHash)
+        {
+            internal IntPtr CertificateHandle { get; } = certificateHandle;
+            internal byte[] CertificateHash { get; } = certificateHash;
+        }
 
         /// <summary>
         /// Gets the target (leaf) certificate of the built chain.
@@ -178,6 +187,24 @@ namespace System.Net.Security
             }
 
             return Create(new X509Certificate2(TargetCertificate), intermediates, trust: Trust);
+        }
+
+        internal byte[] GetCertificateHash()
+        {
+            IntPtr certificateHandle = TargetCertificate.Handle;
+            CertificateHashCache? cache = Volatile.Read(ref _targetCertificateHash);
+            if (cache is not null && certificateHandle == cache.CertificateHandle)
+            {
+                return cache.CertificateHash;
+            }
+
+            byte[] certificateHash = TargetCertificate.GetCertHash(HashAlgorithmName.SHA512);
+            if (certificateHandle == TargetCertificate.Handle)
+            {
+                Volatile.Write(ref _targetCertificateHash, new CertificateHashCache(certificateHandle, certificateHash));
+            }
+
+            return certificateHash;
         }
 
         internal void ReleaseResources()

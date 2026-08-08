@@ -566,7 +566,10 @@ namespace System.Net.Security
                 //
                 // SECURITY: selectedCert ref if not null is a safe object that does not depend on possible **user** inherited X509Certificate type.
                 //
-                byte[]? guessedThumbPrint = selectedCert?.GetCertHash(HashAlgorithmName.SHA512);
+                byte[]? guessedThumbPrint = selectedCert is null ? null :
+                    ReferenceEquals(selectedCert, _sslAuthenticationOptions.CertificateContext?.TargetCertificate) ?
+                        _sslAuthenticationOptions.CertificateContext.GetCertificateHash() :
+                        selectedCert.GetCertHash(HashAlgorithmName.SHA512);
                 SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(
                     guessedThumbPrint,
                     _sslAuthenticationOptions.EnabledSslProtocols,
@@ -713,7 +716,8 @@ namespace System.Net.Security
             //
             // Note selectedCert is a safe ref possibly cloned from the user passed Cert object
             //
-            byte[] guessedThumbPrint = selectedCert.GetCertHash(HashAlgorithmName.SHA512); bool sendTrustedList = _sslAuthenticationOptions.CertificateContext!.Trust?._sendTrustInHandshake ?? false;
+            byte[] guessedThumbPrint = _sslAuthenticationOptions.CertificateContext.GetCertificateHash();
+            bool sendTrustedList = _sslAuthenticationOptions.CertificateContext!.Trust?._sendTrustInHandshake ?? false;
             SafeFreeCredentials? cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint,
                                                                 _sslAuthenticationOptions.EnabledSslProtocols,
                                                                 _sslAuthenticationOptions.IsServer,
