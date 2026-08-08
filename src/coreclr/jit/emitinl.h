@@ -124,6 +124,21 @@ inline ssize_t emitter::emitGetInsAmd(instrDesc* id) const
     return id->idIsLargeDsp() ? ((instrDescAmd*)id)->idaAmdVal : id->idAddr()->iiaAddrMode.amDisp;
 }
 
+inline int32_t emitter::emitGetInsAmdRelocOffset(const instrDesc* id) const
+{
+    assert(id->idIsDspReloc());
+
+    if (!id->idIsLargeCns())
+    {
+        return 0;
+    }
+
+    assert(id->idIsLargeDsp());
+    ssize_t offset = ((instrDescCnsAmd*)id)->idacCnsVal;
+    assert(FitsIn<int32_t>(offset));
+    return static_cast<int32_t>(offset);
+}
+
 inline int emitter::emitGetInsCDinfo(instrDesc* id)
 {
     if (id->idIsLargeCall())

@@ -2575,6 +2575,7 @@ protected:
     ssize_t emitGetInsCns(instrDesc* id) const;
     ssize_t emitGetInsDsp(instrDesc* id) const;
     ssize_t emitGetInsAmd(instrDesc* id) const;
+    int32_t emitGetInsAmdRelocOffset(const instrDesc* id) const;
 
     ssize_t  emitGetInsCIdisp(instrDesc* id) const;
     unsigned emitGetInsCIargs(instrDesc* id) const;
