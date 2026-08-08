@@ -608,8 +608,8 @@ private:
                 }
 #endif // DEBUG
 
-                CORINFO_METHOD_HANDLE  method                 = call->gtLateDevirtualizationInfo->methodHnd;
-                CORINFO_CONTEXT_HANDLE context                = call->gtLateDevirtualizationInfo->exactContextHnd;
+                CORINFO_METHOD_HANDLE  method                 = call->gtExactContextInfo->methodHnd;
+                CORINFO_CONTEXT_HANDLE context                = call->gtExactContextInfo->exactContextHnd;
                 InlineContext*         inlinersContext        = call->gtInlineContext;
                 unsigned               methodFlags            = 0;
                 const bool             isLateDevirtualization = true;
@@ -624,6 +624,13 @@ private:
                 {
                     assert(context != nullptr);
                     assert(inlinersContext != nullptr);
+
+                    ExactContextInfo* const contextInfo = new (m_compiler, CMK_Inlining) ExactContextInfo;
+                    contextInfo->methodHnd              = method;
+                    contextInfo->exactContextHnd        = context;
+                    contextInfo->ilLocation             = call->gtExactContextInfo->ilLocation;
+                    call->gtExactContextInfo            = contextInfo;
+
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;
                     callInfo.methodFlags       = methodFlags;
@@ -645,7 +652,7 @@ private:
                         // we can inline it directly without creating a RET_EXPR.
                         if (parent != nullptr || call->gtReturnType != TYP_VOID)
                         {
-                            DebugInfo  di(call->gtInlineContext, call->gtLateDevirtualizationInfo->ilLocation);
+                            DebugInfo  di(call->gtInlineContext, call->gtExactContextInfo->ilLocation);
                             Statement* stmt = m_compiler->gtNewStmt(call, di);
                             m_compiler->fgInsertStmtBefore(m_compiler->compCurBB, m_curStmt, stmt);
                             if (m_firstNewStmt == nullptr)
