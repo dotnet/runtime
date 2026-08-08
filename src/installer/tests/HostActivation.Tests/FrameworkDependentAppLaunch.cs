@@ -29,19 +29,23 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             var dotnet = HostTestContext.BuiltDotNet;
             var appDll = sharedTestState.App.AppDll;
 
-            dotnet.Exec(appDll)
+            dotnet.Exec(appDll, "print_command_line_args")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World");
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining($"Environment.GetCommandLineArgs()[0] = {appDll}")
+                .And.HaveStdOutContaining("Environment.GetCommandLineArgs()[1] = print_command_line_args");
 
-            dotnet.Exec("exec", appDll)
+            dotnet.Exec("exec", appDll, "print_command_line_args")
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World");
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining($"Environment.GetCommandLineArgs()[0] = {appDll}")
+                .And.HaveStdOutContaining("Environment.GetCommandLineArgs()[1] = print_command_line_args");
         }
 
         [Fact]
