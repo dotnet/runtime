@@ -601,7 +601,20 @@ namespace System.Runtime.InteropServices
                 // due to it can access the native object in the finalizer. At the same time,
                 // we want other callers which are using ProxyHandle such as the reference tracker runtime
                 // to see the object as not alive once it is eligible for finalization.
-                _proxyHandleTrackingResurrection = GCHandle.Alloc(comProxy, GCHandleType.WeakTrackResurrection);
+                //
+                // If the RCW has no finalizer, it can never observe the native object past the point
+                // where it becomes unreachable, and it can never be resurrected. The extra handle would
+                // therefore always be cleared at the same time as the one above, so we skip allocating it.
+                // This matters because allocating, clearing and freeing GC handles is a substantial part
+                // of the cost of every RCW, and resurrection tracking handles are also more expensive for
+                // the GC to process than plain weak handles.
+                if (RuntimeHelpers.ObjectHasFinalizer(comProxy))
+                {
+                    _proxyHandleTrackingResurrection = GCHandle.Alloc(comProxy, GCHandleType.WeakTrackResurrection);
+                }
+
+                // 'ObjectHasFinalizer' reads the MethodTable, which requires the object to be kept alive
+                GC.KeepAlive(comProxy);
 
                 // If this is an aggregation scenario and the identity object
                 // is a managed object wrapper, we need to call Release() to
