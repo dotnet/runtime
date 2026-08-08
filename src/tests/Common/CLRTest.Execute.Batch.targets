@@ -349,14 +349,29 @@ IF NOT DEFINED RunWithNodeJS (
     
     set "CORE_ROOT=!__CoreRootUnix!"
     set "TestExclusionListPath=!__CoreRootUnix!/TestExclusionList.txt"
-    
+
+    REM WebAssembly cannot load native libraries at run time, so a test that calls into its own
+    REM native code gets a dedicated corerun with that code statically linked in, built next to
+    REM the test assemblies. Prefer it over the shared one from CORE_ROOT when it is present.
+    set "__CorerunJs=!__CoreRootWin!\corerun.js"
+    REM __TestNativeAssetsLinked tells PlatformDetection.PlatformDoesNotSupportNativeTestAssets that
+    REM this test's native assets are available, so the checks guarding them can run.
+    IF EXIST "!CD!\corerun.js" (
+        set "__CorerunJs=!CD!\corerun.js"
+        set "__TestNativeAssetsLinked=true"
+    ) ELSE (
+        REM Set explicitly so an ambient value can never be inherited.
+        set "__TestNativeAssetsLinked=false"
+    )
+
     ECHO Running with node
     ECHO CORE_ROOT: !CORE_ROOT!
+    ECHO corerun: !__CorerunJs!
     ECHO ExePath: !__ExePathUnix!
     ECHO CLRTestExecutionArguments: %CLRTestExecutionArguments%
     ECHO Timeout in ms: !__TestTimeout!
     
-    set "__RunCmd=node --experimental-wasm-exnref --stack-size=8192 "!__CoreRootWin!\corerun.js" -c "!__CoreRootUnix!" $(CoreRunArgs) "!__ExePathUnix!" %CLRTestExecutionArguments%"
+    set "__RunCmd=node --experimental-wasm-exnref --stack-size=8192 "!__CorerunJs!" -c "!__CoreRootUnix!" $(CoreRunArgs) "!__ExePathUnix!" %CLRTestExecutionArguments%"
     ECHO Running: !__RunCmd!
 
     IF EXIST "$(AssemblyName).HasOutOfProcessTests" (

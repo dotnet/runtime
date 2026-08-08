@@ -261,6 +261,9 @@
       <MergedWrapperReferenceFolders Remove="@(OutOfProcessTestFolders)" />
       <!-- For merged project wrappers, include native libraries in all project references -->
       <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" Condition="'@(MergedWrapperReferenceFolders)' != ''" />
+      <!-- On WebAssembly a test's native code is a static library that has to be linked into the
+           wrapper's corerun, so the wrapper needs those too. -->
+      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(StaticLibSuffix)" Condition="'@(MergedWrapperReferenceFolders)' != '' and '$(TargetOS)' == 'browser'" />
     </ItemGroup>
     <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
         DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')"
@@ -271,6 +274,11 @@
 
   <!-- Build shell or command scripts whenever we copy native binaries -->
   <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.Execute.targets" />
+
+  <!-- WebAssembly cannot load native libraries at run time, so tests that call into their own
+       native code need a corerun with that code linked in. -->
+  <Import Project="$(MSBuildThisFileDirectory)Common\CLRTest.WasmCorerun.targets"
+          Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'coreclr'" />
   <Target Name="CreateExecuteScript"
           BeforeTargets="Build;CopyAllNativeProjectReferenceBinaries"
           Condition="'$(CLRTestBuildAllTargets)' != 'allTargets' And '$(GenerateRunScript)' != 'false' And ('$(_WillCLRTestProjectBuild)' == 'true')"

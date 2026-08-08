@@ -1,0 +1,344 @@
+<!--
+***********************************************************************************************
+CLRTest.WasmCorerun.targets
+
+Builds a test-specific 'corerun' host for browser-wasm runtime tests whose managed code calls
+into native code supplied by the test itself.
+
+WebAssembly has no dynamic library loading, so a test's native library cannot be resolved at run
+time the way a .so/.dylib/.dll is elsewhere. It has to be linked into the host up front, together
+with a generated table mapping each [DllImport] to the address of its target. That is what this
+file does, once per test that has a CMakeProjectReference:
+
+  1. ManagedToNativeGenerator (src/tasks/WasmAppBuilder) scans the test's managed assemblies plus
+     the whole framework closure and emits callhelpers-{pinvoke,reverse,interp-to-managed}.cpp.
+  2. Those three sources are compiled with em++ using the response file exported by the CoreCLR
+     build (see src/coreclr/hosts/corerun/wasm/testkit.cmake).
+  3. They are linked, together with the test's own static libraries, against the same archives
+     that produce CORE_ROOT/corerun.js, minus libcoreclr_gen_static.a, which holds the
+     framework-only tables that this build replaces.
+
+The result is <test output dir>/corerun.js (+ .wasm), which the generated run script prefers over
+CORE_ROOT/corerun.js.
+
+This is deliberately independent of the WebAssembly *app* build
+(src/mono/browser/build/BrowserWasmApp.CoreCLR.targets): runtime tests are not apps, they run
+against CORE_ROOT, and no SDK is involved. Only the generator task assembly is shared.
+***********************************************************************************************
+-->
+<Project>
+
+  <PropertyGroup>
+    <!--
+      Engage implicitly for any browser CoreCLR test that brings its own native code. BuildOnly
+      projects are excluded: they never launch a host of their own, so a corerun built next to
+      them would only waste build time and disk. Set WasmBuildTestCorerun=false to opt out.
+
+      Whether the test actually has native code is decided from @(CMakeProjectReference) on the
+      hook targets below, because item references are not allowed in an evaluation-time condition.
+    -->
+    <WasmBuildTestCorerun Condition="'$(WasmBuildTestCorerun)' == '' and '$(CLRTestKind)' != 'BuildOnly'">true</WasmBuildTestCorerun>
+    <WasmBuildTestCorerun Condition="'$(WasmBuildTestCorerun)' == ''">false</WasmBuildTestCorerun>
+
+    <_WasmCorerunScriptExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.bat</_WasmCorerunScriptExt>
+  </PropertyGroup>
+
+  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator"
+             AssemblyFile="$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))"
+             TaskFactory="TaskHostFactory" />
+
+  <!--
+    Hook: the managed test build and the native test build are separate steps in the lab (see
+    src/tests/build.proj), and only one of them runs at a time.
+
+      * combined/local build (__CopyNativeTestBinaries != 1) - 'Build' is the entry point, and
+        CopyAllNativeProjectReferenceBinaries runs *before* it, so the managed assembly this
+        target has to scan does not exist yet at that point. Hook after 'Build'.
+      * lab 'copynativeonly' step (__CopyNativeTestBinaries == 1) - 'Build' never runs;
+        CopyAllNativeProjectReferenceBinaries is invoked directly on each project, and the managed
+        outputs are already on disk from the earlier managed test build. Hook after that.
+
+    Both delegate to the same implementation, and both carry the guards CreateExecuteScript uses
+    so that projects which are not actually being built are skipped.
+  -->
+  <Target Name="_WasmBuildTestCorerunAfterBuild"
+          AfterTargets="Build"
+          Condition="'$(WasmBuildTestCorerun)' == 'true' and
+                     '@(CMakeProjectReference)' != '' and
+                     '$(__CopyNativeTestBinaries)' != '1' and
+                     '$(CLRTestBuildAllTargets)' != 'allTargets' and
+                     '$(_WillCLRTestProjectBuild)' == 'true'"
+          DependsOnTargets="WasmBuildTestCorerun" />
+
+  <Target Name="_WasmBuildTestCorerunAfterCopyNative"
+          AfterTargets="CopyAllNativeProjectReferenceBinaries"
+          Condition="'$(WasmBuildTestCorerun)' == 'true' and
+                     '@(CMakeProjectReference)' != '' and
+                     '$(__CopyNativeTestBinaries)' == '1' and
+                     '$(CLRTestBuildAllTargets)' != 'allTargets' and
+                     '$(_WillCLRTestProjectBuild)' == 'true'"
+          DependsOnTargets="WasmBuildTestCorerun" />
+
+  <Target Name="WasmBuildTestCorerun"
+          DependsOnTargets="_WasmResolveTestCorerunInputs;
+                            _WasmWriteTestCorerunResponseFiles;
+                            _WasmGenerateTestCallHelpers;
+                            _WasmCompileTestCallHelpers;
+                            _WasmLinkTestCorerun" />
+
+  <!-- ======================== Resolve inputs ======================== -->
+
+  <Target Name="_WasmResolveTestCorerunInputs">
+    <PropertyGroup>
+      <!-- Produced by src/coreclr/hosts/corerun/wasm/testkit.cmake during the 'clr.hosts' build.
+           Resolved here rather than during evaluation because eng/liveBuilds.targets, which
+           defines CoreCLRArtifactsPath, is imported after this file. -->
+      <WasmCorerunKitDir Condition="'$(WasmCorerunKitDir)' == ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'corerun-link'))</WasmCorerunKitDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <!-- Native static libraries produced by the test's own CMake project(s), already staged into
+           $(OutDir) by CopyNativeProjectBinaries. -->
+      <_WasmCorerunTestLib Include="$(OutDir)*$(StaticLibSuffix)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <!-- The corerun has to sit in the directory the test actually runs from, which is the
+           project's own output directory only for out-of-process tests, standalone builds, and
+           merged runner assemblies (those are the wrapper). A test merged into a wrapper runs from
+           the wrapper's directory instead, and CopyAllNativeProjectReferenceBinaries copies its
+           static library into the wrapper's output directory, so the wrapper's corerun links it. -->
+      <_WasmCorerunRunsFromOutDir Condition="'$(RequiresProcessIsolation)' == 'true' or
+                                             '$(BuildAsStandalone)' == 'true' or
+                                             '$(IsMergedTestRunnerAssembly)' == 'true'">true</_WasmCorerunRunsFromOutDir>
+
+      <_WasmCorerunSkip Condition="'@(_WasmCorerunTestLib)' == ''">true</_WasmCorerunSkip>
+      <_WasmCorerunSkip Condition="'$(_WasmCorerunRunsFromOutDir)' != 'true' and '$(InMergedTestDirectory)' == 'true'">true</_WasmCorerunSkip>
+    </PropertyGroup>
+
+    <!-- The test declares a CMake project but it produced no static library for this platform;
+         leave the test on CORE_ROOT/corerun.js. -->
+    <Message Condition="'$(_WasmCorerunSkip)' == 'true'"
+             Importance="Normal"
+             Text="$(MSBuildProjectName): no native static libraries in $(OutDir), skipping the test-specific corerun." />
+
+    <!-- Anything else that produced a static library but does not run from its own output directory
+         would have corerun.js/.wasm dropped and silently fall back to CORE_ROOT. -->
+    <Error Condition="'$(_WasmCorerunSkip)' != 'true' and '$(_WasmCorerunRunsFromOutDir)' != 'true'"
+           Text="$(MSBuildProjectName) links native test code into a test-specific corerun on browser-wasm, so it must set &lt;RequiresProcessIsolation&gt;true&lt;/RequiresProcessIsolation&gt;; otherwise its output directory is not sent to Helix." />
+
+    <Error Condition="'$(_WasmCorerunSkip)' != 'true' and !Exists('$(WasmCorerunKitDir)corerun-link.rsp')"
+           Text="The corerun link kit is missing from '$(WasmCorerunKitDir)'. Build the 'clr.hosts' subset for browser-wasm first (the kit is produced by src/coreclr/hosts/corerun/wasm/testkit.cmake)." />
+
+    <!-- '%24' below is an escaped '$': these messages name the property literally and then show its
+         value, so they read as e.g. "$(TasksConfiguration)='Checked'". Writing a bare '$' would
+         expand the property and lose the name. -->
+    <Error Condition="'$(_WasmCorerunSkip)' != 'true' and !Exists('$(WasmAppBuilderDir)WasmAppBuilder.dll')"
+           Text="WasmAppBuilder.dll was not found at '$(WasmAppBuilderDir)'. It is built by the 'tasks' subset into %24(TasksConfiguration)='$(TasksConfiguration)'; build the repo in that configuration, or pass /p:TasksConfiguration=&lt;config&gt; to the test build." />
+
+    <PropertyGroup Condition="'$(_WasmCorerunSkip)' != 'true'">
+      <!-- The shared wasm tool cache (eng/wasm/WasmToolCache.props) is already populated by the
+           native CoreCLR build that produced the kit, so nothing needs provisioning here. -->
+      <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and Exists('$(EmscriptenSdkStampFile)')">$(EmscriptenSdkCacheDir)</EMSDK_PATH>
+      <_WasmCorerunEmxx Condition="'$(EMSDK_PATH)' != ''">$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'emscripten', 'em++$(_WasmCorerunScriptExt)'))</_WasmCorerunEmxx>
+    </PropertyGroup>
+
+    <Error Condition="'$(_WasmCorerunSkip)' != 'true' and ('$(_WasmCorerunEmxx)' == '' or !Exists('$(_WasmCorerunEmxx)'))"
+           Text="Could not find em++ for the test-specific corerun. Set %24(EMSDK_PATH), or build the browser-wasm runtime first so that the Emscripten SDK is provisioned into '$(EmscriptenSdkCacheDir)'." />
+
+    <!-- em++ finds its own toolchain through the self-relative .emscripten config next to it. Only
+         the Windows launcher needs help, because it shells out to a bundled python. -->
+    <ItemGroup Condition="'$(_WasmCorerunSkip)' != 'true' and $([MSBuild]::IsOSPlatform('windows'))">
+      <_WasmCorerunEmscriptenEnv Include="EMSDK_PYTHON=$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'python', 'python.exe'))"
+                                 Condition="Exists('$([MSBuild]::NormalizePath('$(EMSDK_PATH)', 'python', 'python.exe'))')" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(_WasmCorerunSkip)' != 'true'">
+      <_WasmCorerunDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'wasm-corerun'))</_WasmCorerunDir>
+      <_WasmCorerunCompileRsp>$(_WasmCorerunDir)corerun-compile.rsp</_WasmCorerunCompileRsp>
+      <_WasmCorerunLinkRsp>$(_WasmCorerunDir)corerun-link.rsp</_WasmCorerunLinkRsp>
+      <_WasmCorerunJs>$(OutDir)corerun.js</_WasmCorerunJs>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(_WasmCorerunSkip)' != 'true'">
+      <_WasmCorerunGeneratedSource Include="$(_WasmCorerunDir)callhelpers-pinvoke.cpp"
+                                   ObjectFile="$(_WasmCorerunDir)callhelpers-pinvoke.o" />
+      <_WasmCorerunGeneratedSource Include="$(_WasmCorerunDir)callhelpers-reverse.cpp"
+                                   ObjectFile="$(_WasmCorerunDir)callhelpers-reverse.o" />
+      <_WasmCorerunGeneratedSource Include="$(_WasmCorerunDir)callhelpers-interp-to-managed.cpp"
+                                   ObjectFile="$(_WasmCorerunDir)callhelpers-interp-to-managed.o" />
+
+      <!-- The response files only carry relocatable path tokens, so their contents do not change
+           when the runtime is rebuilt. Track the kit payload itself, or a coreclr native rebuild
+           would leave every test linked against the previous runtime with no diagnostic. -->
+      <_WasmCorerunKitInclude Include="$(WasmCorerunKitDir)include/**/*" />
+      <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*$(StaticLibSuffix)" />
+      <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*.js" />
+    </ItemGroup>
+  </Target>
+
+  <!-- ======================== Response files ======================== -->
+
+  <!--
+    The kit's response files carry the literal token !CORERUN_KIT_DIR! wherever a path into the kit
+    is needed, because CMake cannot know where the kit will be consumed from. Substitute it here.
+    ('@' is emcc's response-file include prefix and '%' collides with MSBuild metadata, hence '!'.)
+  -->
+  <Target Name="_WasmWriteTestCorerunResponseFiles"
+          DependsOnTargets="_WasmResolveTestCorerunInputs"
+          Condition="'$(_WasmCorerunSkip)' != 'true'"
+          Inputs="$(WasmCorerunKitDir)corerun-compile.rsp;$(WasmCorerunKitDir)corerun-link.rsp"
+          Outputs="$(_WasmCorerunCompileRsp);$(_WasmCorerunLinkRsp)">
+    <MakeDir Directories="$(_WasmCorerunDir)" />
+
+    <PropertyGroup>
+      <_WasmCorerunKitDirNoSlash>$(WasmCorerunKitDir.TrimEnd('\/').Replace('\', '/'))</_WasmCorerunKitDirNoSlash>
+      <_WasmCorerunCompileRspText>$([System.IO.File]::ReadAllText('$(WasmCorerunKitDir)corerun-compile.rsp'))</_WasmCorerunCompileRspText>
+      <_WasmCorerunLinkRspText>$([System.IO.File]::ReadAllText('$(WasmCorerunKitDir)corerun-link.rsp'))</_WasmCorerunLinkRspText>
+    </PropertyGroup>
+
+    <!-- The text round-trips through MSBuild properties and WriteLinesToFile, which would split on
+         ';' and reinterpret '%xx'. '%25' is an escaped '%', so the check below catches any percent
+         escape. testkit.cmake never emits either; fail loudly if that changes. -->
+    <Error Condition="$(_WasmCorerunCompileRspText.Contains(';')) or $(_WasmCorerunLinkRspText.Contains(';')) or
+                      $(_WasmCorerunCompileRspText.Contains('%25')) or $(_WasmCorerunLinkRspText.Contains('%25'))"
+           Text="The corerun link kit response files must not contain ';' or '%25' - see src/coreclr/hosts/corerun/wasm/testkit.cmake." />
+
+    <PropertyGroup>
+      <_WasmCorerunCompileRspText>$(_WasmCorerunCompileRspText.Replace('!CORERUN_KIT_DIR!', '$(_WasmCorerunKitDirNoSlash)'))</_WasmCorerunCompileRspText>
+      <_WasmCorerunLinkRspText>$(_WasmCorerunLinkRspText.Replace('!CORERUN_KIT_DIR!', '$(_WasmCorerunKitDirNoSlash)'))</_WasmCorerunLinkRspText>
+    </PropertyGroup>
+
+    <WriteLinesToFile File="$(_WasmCorerunCompileRsp)" Lines="$(_WasmCorerunCompileRspText)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(_WasmCorerunLinkRsp)" Lines="$(_WasmCorerunLinkRspText)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <FileWrites Include="$(_WasmCorerunCompileRsp);$(_WasmCorerunLinkRsp)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- ======================== Generate managed-to-native tables ======================== -->
+
+  <Target Name="_WasmResolveTestCorerunAssemblies"
+          DependsOnTargets="_WasmResolveTestCorerunInputs"
+          Condition="'$(_WasmCorerunSkip)' != 'true'">
+    <ItemGroup>
+      <!-- The generator needs the whole managed closure, not just the test's assemblies:
+           System.Private.CoreLib alone accounts for most of the framework P/Invokes, and the
+           reverse and interp-to-native tables are built from signatures found across the BCL. -->
+      <_WasmCorerunFrameworkAssembly Include="$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)*.dll" />
+      <!-- CoreCLR ships CoreLib in the native directory rather than alongside the other assemblies. -->
+      <_WasmCorerunFrameworkAssembly Include="$(MicrosoftNetCoreAppRuntimePackNativeDir)System.Private.CoreLib.dll"
+                                     Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)System.Private.CoreLib.dll')" />
+
+      <!-- Everything the test build staged next to the test: its own assembly, its project
+           references, and any assembly it launches as a child process. -->
+      <_WasmCorerunTestAssembly Include="$(OutDir)*.dll" />
+      <!-- Drop test outputs that merely shadow a framework assembly; scanning both copies would
+           emit duplicate table entries. -->
+      <_WasmCorerunTestAssembly Remove="@(_WasmCorerunFrameworkAssembly->'$(OutDir)%(FileName)%(Extension)')" />
+
+      <_WasmCorerunAssembly Include="@(_WasmCorerunFrameworkAssembly)" />
+      <_WasmCorerunAssembly Include="@(_WasmCorerunTestAssembly)" />
+    </ItemGroup>
+
+    <Error Condition="'@(_WasmCorerunFrameworkAssembly)' == ''"
+           Text="No framework assemblies found in '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)'. The 'libs' subset must be built for browser-wasm before building tests that need a test-specific corerun." />
+  </Target>
+
+  <Target Name="_WasmGenerateTestCallHelpers"
+          DependsOnTargets="_WasmResolveTestCorerunAssemblies"
+          Condition="'$(_WasmCorerunSkip)' != 'true'"
+          Inputs="@(_WasmCorerunAssembly)"
+          Outputs="@(_WasmCorerunGeneratedSource)">
+    <MakeDir Directories="$(_WasmCorerunDir)" />
+
+    <ItemGroup>
+      <!--
+        The framework modules that CORE_ROOT/corerun.js already resolves. This list has to match
+        the tables checked in at src/coreclr/vm/wasm/browser/callhelpers-pinvoke.cpp, because the
+        generated sources replace libcoreclr_gen_static.a wholesale. A module missing here turns
+        into a DllNotFoundException at run time; an extra one is harmless (it yields an empty
+        table), which is why an exact match with the product build is worth keeping.
+      -->
+      <_WasmCorerunPInvokeModule Include="libSystem.Globalization.Native" />
+      <_WasmCorerunPInvokeModule Include="libSystem.IO.Compression.Native" />
+      <_WasmCorerunPInvokeModule Include="libSystem.Native" />
+      <_WasmCorerunPInvokeModule Include="libSystem.Native.Browser" />
+      <_WasmCorerunPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
+
+      <!-- The test's own modules. Module matching is an exact string compare against the
+           [DllImport] name and tests spell it either way, so offer both the archive's file name
+           and that name without the 'lib' prefix. -->
+      <_WasmCorerunTestLibName Include="@(_WasmCorerunTestLib->'%(FileName)')" />
+      <_WasmCorerunPInvokeModule Include="@(_WasmCorerunTestLibName)" />
+      <_WasmCorerunPInvokeModule Include="$([System.String]::Copy('%(_WasmCorerunTestLibName.Identity)').Substring(3))"
+                                 Condition="$([System.String]::Copy('%(_WasmCorerunTestLibName.Identity)').StartsWith('lib'))" />
+    </ItemGroup>
+
+    <!--
+      WarnOnUnresolvedPInvokeModules is off on purpose: tests may P/Invoke into a module that is
+      deliberately absent (JIT/interpreter checks that DllNotFoundException is thrown), and the
+      framework assemblies reference modules that no wasm build links.
+    -->
+    <ManagedToNativeGenerator
+      Assemblies="@(_WasmCorerunAssembly->Distinct())"
+      PInvokeModules="@(_WasmCorerunPInvokeModule->Distinct())"
+      PInvokeOutputPath="$(_WasmCorerunDir)callhelpers-pinvoke.cpp"
+      ReversePInvokeOutputPath="$(_WasmCorerunDir)callhelpers-reverse.cpp"
+      InterpToNativeOutputPath="$(_WasmCorerunDir)callhelpers-interp-to-managed.cpp"
+      CacheFilePath="$(_WasmCorerunDir)m2n_cache.txt"
+      TargetOS="browser"
+      IsLibraryMode="false"
+      WarnOnUnresolvedPInvokeModules="false">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ManagedToNativeGenerator>
+  </Target>
+
+  <!-- ======================== Compile ======================== -->
+
+  <Target Name="_WasmCompileTestCallHelpers"
+          DependsOnTargets="_WasmResolveTestCorerunInputs"
+          Condition="'$(_WasmCorerunSkip)' != 'true'"
+          Inputs="@(_WasmCorerunGeneratedSource);@(_WasmCorerunKitInclude);$(_WasmCorerunCompileRsp)"
+          Outputs="@(_WasmCorerunGeneratedSource->'%(ObjectFile)')">
+    <Message Importance="High" Text="$(MSBuildProjectName) -> compiling managed-to-native tables for a test-specific corerun" />
+
+    <Exec Command="&quot;$(_WasmCorerunEmxx)&quot; &quot;@$(_WasmCorerunCompileRsp)&quot; -c &quot;%(_WasmCorerunGeneratedSource.Identity)&quot; -o &quot;%(_WasmCorerunGeneratedSource.ObjectFile)&quot;"
+          WorkingDirectory="$(_WasmCorerunDir)"
+          EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />
+
+    <ItemGroup>
+      <FileWrites Include="@(_WasmCorerunGeneratedSource->'%(ObjectFile)')" />
+    </ItemGroup>
+  </Target>
+
+  <!-- ======================== Link ======================== -->
+
+  <!--
+    The generated objects come first so that the archives behind them resolve normally, then the
+    test's own libraries, then the response file with the framework archives - the same ordering
+    the app build uses for its NativeFileReference inputs. No whole-archive linking is needed:
+    every native entry point is referenced by name from the generated tables.
+  -->
+  <Target Name="_WasmLinkTestCorerun"
+          DependsOnTargets="_WasmResolveTestCorerunInputs"
+          Condition="'$(_WasmCorerunSkip)' != 'true'"
+          Inputs="@(_WasmCorerunGeneratedSource->'%(ObjectFile)');@(_WasmCorerunTestLib);@(_WasmCorerunKitLinkInput);$(_WasmCorerunLinkRsp)"
+          Outputs="$(_WasmCorerunJs)">
+    <Message Importance="High" Text="$(MSBuildProjectName) -> $(_WasmCorerunJs)" />
+
+    <PropertyGroup>
+      <_WasmCorerunLinkInputs>@(_WasmCorerunGeneratedSource->'&quot;%(ObjectFile)&quot;', ' ') @(_WasmCorerunTestLib->'&quot;%(FullPath)&quot;', ' ')</_WasmCorerunLinkInputs>
+    </PropertyGroup>
+
+    <Exec Command="&quot;$(_WasmCorerunEmxx)&quot; $(_WasmCorerunLinkInputs) &quot;@$(_WasmCorerunLinkRsp)&quot; -o &quot;$(_WasmCorerunJs)&quot;"
+          WorkingDirectory="$(_WasmCorerunDir)"
+          EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />
+
+    <ItemGroup>
+      <FileWrites Include="$(_WasmCorerunJs);$(OutDir)corerun.wasm" />
+    </ItemGroup>
+  </Target>
+
+</Project>

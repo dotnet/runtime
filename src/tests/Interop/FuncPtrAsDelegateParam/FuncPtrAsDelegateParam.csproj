@@ -1,5 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <!-- No test-specific corerun on wasm: this test calls Marshal.GetFunctionPointerForDelegate,
+         which needs dynamic entrypoint allocation that wasm does not support. Native-dependent
+         tests skip instead. Tracked by https://github.com/dotnet/runtime/issues/131811 -->
+    <WasmBuildTestCorerun Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">false</WasmBuildTestCorerun>
     <!-- Needed for CMakeProjectReference -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
