@@ -102,6 +102,9 @@
 
     <!-- Don't build for NETFramework during source-build. -->
     <NetFrameworkMinimum Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
+    <!-- The minimum version of .NET Framework that has System.ValueTuple built in. -->
+    <NetFrameworkWithValueTuple>net471</NetFrameworkWithValueTuple>
+    <NetFrameworkWithValueTuple Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
     <NetFrameworkCurrent Condition="'$(DotNetBuildSourceOnly)' == 'true'" />
 
