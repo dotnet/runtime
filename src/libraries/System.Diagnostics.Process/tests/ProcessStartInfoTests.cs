@@ -280,6 +280,46 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData("not_null", true)]
+        [InlineData("not_null", false)]
+        [InlineData("null", false)]
+        [InlineData("null", true)]
+        public void SeesEnvironmentVariableSetBeforeStart(string value, bool modifyParent)
+        {
+            const string Name = "TestEnvironmentOfChildProcess_ParentSetBeforeStart";
+
+            // We run a dedicated process to ensure that each test has its own copy of the static shared state.
+            using Process isolation = CreateProcess((expectedValue, modifyParentStr) =>
+            {
+                using Process process = CreateProcess(static (value) =>
+                {
+                    Assert.Equal(value == "null" ? null : value, Environment.GetEnvironmentVariable(Name));
+
+                    return RemoteExecutor.SuccessExitCode;
+                }, expectedValue);
+
+                if (bool.Parse(modifyParentStr))
+                {
+                    Environment.SetEnvironmentVariable(Name, expectedValue == "null" ? null : expectedValue);
+                }
+                else
+                {
+                    process.StartInfo.Environment[Name] = expectedValue == "null" ? null : expectedValue;
+                }
+
+                process.Start();
+                Assert.True(process.WaitForExit(WaitInMS));
+                Assert.Equal(RemoteExecutor.SuccessExitCode, process.ExitCode);
+
+                return RemoteExecutor.SuccessExitCode;
+            }, value, modifyParent.ToString());
+
+            isolation.Start();
+            Assert.True(isolation.WaitForExit(WaitInMS));
+            Assert.Equal(RemoteExecutor.SuccessExitCode, isolation.ExitCode);
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EnvironmentNullValue()
         {
