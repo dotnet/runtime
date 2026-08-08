@@ -2912,10 +2912,17 @@ namespace Internal.JitInterface
 
         private CorInfoInitClassResult initClass(CORINFO_FIELD_STRUCT_* field, CORINFO_METHOD_STRUCT_* method, CORINFO_CONTEXT_STRUCT* context)
         {
-            FieldDesc fd = field == null ? null : HandleToObject(field);
+            return initClass(
+                field == null ? null : HandleToObject(field),
+                method == null ? null : HandleToObject(method),
+                context);
+        }
+
+        private CorInfoInitClassResult initClass(FieldDesc fd, MethodDesc method, CORINFO_CONTEXT_STRUCT* context)
+        {
             Debug.Assert(fd == null || fd.IsStatic);
 
-            MethodDesc md = method == null ? MethodBeingCompiled : HandleToObject(method);
+            MethodDesc md = method ?? MethodBeingCompiled;
             TypeDesc type = fd != null ? fd.OwningType : typeFromContext(context);
 
 #if !READYTORUN

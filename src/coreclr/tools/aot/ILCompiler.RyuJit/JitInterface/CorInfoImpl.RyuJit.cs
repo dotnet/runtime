@@ -2126,6 +2126,8 @@ namespace Internal.JitInterface
 
             if (field.IsStatic)
             {
+                CorInfoInitClassResult initResult = initClass(field, null, pResolvedToken.tokenContext);
+
                 fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_STATIC;
 
                 if (field.HasRva)
@@ -2140,7 +2142,7 @@ namespace Internal.JitInterface
                     pResult->fieldLookup.accessType = node.RepresentsIndirectionCell ? InfoAccessType.IAT_PVALUE : InfoAccessType.IAT_VALUE;
 
                     // We are not going through a helper. The constructor has to be triggered explicitly.
-                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                    if (initResult != CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED)
                     {
                         fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                     }
@@ -2213,7 +2215,7 @@ namespace Internal.JitInterface
                                 if (ti.IsInlined)
                                 {
                                     fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
-                                    if (_compilation.HasLazyStaticConstructor(field.OwningType))
+                                    if (initResult != CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED)
                                     {
                                         fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_INITCLASS;
                                     }
@@ -2224,7 +2226,7 @@ namespace Internal.JitInterface
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
-                    else if (!_compilation.HasLazyStaticConstructor(field.OwningType))
+                    else if (initResult == CorInfoInitClassResult.CORINFO_INITCLASS_NOT_REQUIRED)
                     {
                         fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_RELOCATABLE;
                         ISymbolNode baseAddr;
