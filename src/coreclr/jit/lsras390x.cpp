@@ -1715,6 +1715,17 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = BuildCast(tree->AsCast());
             break;
 
+        case GT_BITCAST:
+            srcCount = BuildSimple(tree);
+            GenTree* op1 = tree->gtGetOp1();
+            if (!op1->isContained() && varTypeUsesFloatReg(tree) && !varTypeUsesFloatReg(op1) &&
+                (genTypeSize(tree) == 4))
+            {
+                buildInternalIntRegisterDefForNode(tree);
+                buildInternalRegisterUses();
+            }
+            break;
+
         case GT_NEG:
         case GT_NOT:
             srcCount = BuildOperandUses(tree->gtGetOp1(), RBM_NONE);

@@ -641,11 +641,11 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
         case GT_CAST:
             genCodeForCast(treeNode->AsOp());
             break;
-//
-//        case GT_BITCAST:
-//            genCodeForBitCast(treeNode->AsOp());
-//            break;
-//
+
+        case GT_BITCAST:
+            genCodeForBitCast(treeNode->AsOp());
+            break;
+
         case GT_LCL_ADDR:
             genCodeForLclAddr(treeNode->AsLclFld());
             break;

@@ -2142,7 +2142,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         assert(!varTypeIsSIMD(dstType));
         return EA_SIZE(emitActualTypeSize(dstType)) == EA_4BYTE ? INS_fmv_x_w : INS_fmv_x_d;
 #elif defined(TARGET_S390X)
-        NYI("ins_Copy float-to-int");
+        return INS_lgdr;
 #else
         NYI("ins_Copy");
 #endif
@@ -2214,7 +2214,7 @@ instruction CodeGen::ins_Copy(regNumber srcReg, var_types dstType)
         return INS_fmv_w_x;
     }
 #elif defined(TARGET_S390X)
-    NYI("ins_Copy int-to-float");
+        return INS_ldgr;
 #else
     NYI("ins_Copy");
 #endif
