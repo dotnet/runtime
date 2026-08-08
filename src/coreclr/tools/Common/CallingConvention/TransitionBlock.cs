@@ -537,7 +537,7 @@ namespace Internal.CallingConvention
             public sealed override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + SizeOfArgumentRegisters;
             public sealed override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters;
             // D0..D7
-            public sealed override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double) + PointerSize;
+            public override int OffsetOfFloatArgumentRegisters => 8 * sizeof(double) + PointerSize;
             public sealed override int EnregisteredParamTypeMaxSize => 0;
             public sealed override int EnregisteredReturnTypeIntegerMaxSize => 4;
 
@@ -560,6 +560,10 @@ namespace Internal.CallingConvention
 
             public override bool IsArmhfABI => false;
             public override bool IsArmelABI => true;
+
+            // ARM soft-float ABI: no VFP/NEON registers are used for argument passing.
+            // Float arguments are passed via integer registers (r0-r3) and the stack.
+            public sealed override int OffsetOfFloatArgumentRegisters => 0;
         }
 
         private class Arm64TransitionBlock : TransitionBlock

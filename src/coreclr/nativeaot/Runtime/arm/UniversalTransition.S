@@ -18,9 +18,14 @@
 // Largest return block is 4 doubles
 #define RETURN_BLOCK_SIZE (32)
 
+#ifndef ARM_SOFTFP
 #define COUNT_FLOAT_ARG_REGISTERS (8)
 #define FLOAT_REGISTER_SIZE (8)
 #define FLOAT_ARG_REGISTERS_SIZE (COUNT_FLOAT_ARG_REGISTERS * FLOAT_REGISTER_SIZE)
+#else
+// ARM soft-float ABI: no floating point argument registers
+#define FLOAT_ARG_REGISTERS_SIZE (0)
+#endif
 
 #define PUSHED_LR_SIZE (4)
 #define PUSHED_R11_SIZE (4)
@@ -89,7 +94,9 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         str          r3, [sp, #12]          // Store remaining arg registers into the space used for the hidden args
         str          r2, [sp, #8]
         PROLOG_STACK_ALLOC RETURN_BLOCK_SIZE // Save space a buffer to be used to hold return buffer data.
+#ifndef ARM_SOFTFP
         PROLOG_VPUSH {d0-d7}                 // Capture the floating point argument registers
+#endif
         PROLOG_PUSH  "{r11,lr}"              // Save caller's frame chain pointer and PC
 
 #ifdef TRASH_SAVED_ARGUMENT_REGISTERS
@@ -99,6 +106,7 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         // frame, and the code at the call target is required to use only the transition frame
         // copies when dispatching this call to the eventual callee.
 
+#ifndef ARM_SOFTFP
         PREPARE_EXTERNAL_VAR RhpFpTrashValues, r3
         vldr        d0, [r3, #(0 * 8)]
         vldr        d1, [r3, #(1 * 8)]
@@ -108,6 +116,7 @@ NESTED_ENTRY Rhp\FunctionName, _TEXT, NoHandler
         vldr        d5, [r3, #(5 * 8)]
         vldr        d6, [r3, #(6 * 8)]
         vldr        d7, [r3, #(7 * 8)]
+#endif
 
         PREPARE_EXTERNAL_VAR RhpIntegerTrashValues, r3
         ldr         r2, [r3, #(2 * 4)]
@@ -130,7 +139,9 @@ GLOBAL_LABEL ReturnFrom\FunctionName
         EPILOG_POP   "{r11,lr}"
 
         // Restore the argument registers.
+#ifndef ARM_SOFTFP
         EPILOG_VPOP  {d0-d7}
+#endif
         EPILOG_STACK_FREE RETURN_BLOCK_SIZE        // pop return block conservatively reported area
         EPILOG_POP   "{r0-r3}"
 
