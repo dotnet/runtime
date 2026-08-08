@@ -392,9 +392,9 @@ namespace ILCompiler.ObjectWriter
             _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmCodeSection.Name)
                 .SetEntryCount(MethodCount);
 
-            Debug.Assert(_sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
-            Debug.Assert(_sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
-            Debug.Assert(_sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
+            Debug.Assert(GetOrCreateSection<WasmImportSection>(WasmObjectNodeSection.ImportSection, out _).EntryCount == _wasmSymbolManager.GetImportCount());
+            Debug.Assert(GetOrCreateSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection, out _).EntryCount == MethodCount);
+            Debug.Assert(GetOrCreateSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection, out _).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
         }
     }
 
