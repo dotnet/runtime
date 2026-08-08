@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
@@ -97,5 +98,29 @@ namespace System
         /// <summary>Gets the number of milliseconds elapsed since the system started.</summary>
         /// <value>A 64-bit signed integer containing the amount of time in milliseconds that has passed since the last time the computer was started.</value>
         public static long TickCount64 => Interop.Sys.GetLowResolutionTimestamp();
+
+        private static unsafe string[] GetCommandLineArgsNative()
+        {
+            byte** nativeArgv = Interop.Sys.GetCommandLine(out int argc);
+            if (nativeArgv == null || argc <= 0)
+            {
+                return [];
+            }
+
+            try
+            {
+                string[] args = new string[argc];
+                for (int i = 0; i < argc; i++)
+                {
+                    args[i] = Utf8StringMarshaller.ConvertToManaged(nativeArgv[i]) ?? string.Empty;
+                }
+
+                return args;
+            }
+            finally
+            {
+                Interop.Sys.FreeCommandLine(nativeArgv);
+            }
+        }
     }
 }
