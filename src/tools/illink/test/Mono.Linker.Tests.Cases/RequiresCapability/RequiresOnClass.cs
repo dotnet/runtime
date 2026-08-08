@@ -1351,6 +1351,14 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
             }
 
+            interface IRequiresAll<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] U>
+            {
+            }
+
+            interface IRequiresNew<T> where T : new()
+            {
+            }
+
             [RequiresUnreferencedCode("--ClassWithRequires--")]
             public class ClassWithRequires
             {
@@ -1393,6 +1401,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 }
             }
 
+            class ClassWithOtherCapabilityRequirements
+            {
+                [RequiresAssemblyFiles("--ClassWithOtherCapabilityRequirements--")]
+                [RequiresDynamicCode("--ClassWithOtherCapabilityRequirements--")]
+                public ClassWithOtherCapabilityRequirements()
+                {
+                }
+            }
+
             [RequiresUnreferencedCode("--GenericClassWithWarningWithRequires--")]
             public class GenericClassWithWarningWithRequires<U> : RequiresAll<U>
             {
@@ -1424,6 +1441,28 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
             }
 
+            [ExpectedWarning("IL2026", "ClassWithRequires()", "--ClassWithRequires--")]
+            class ClassImplementingInterfaceWithWarningOnGenericArgumentConstructor : IRequiresNew<ClassWithRequires>
+            {
+            }
+
+            [RequiresUnreferencedCode("--ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires--")]
+            class ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires : IRequiresNew<ClassWithRequires>
+            {
+            }
+
+            [RequiresUnreferencedCode("--ClassImplementingInterfaceWithWarningWithRequires--")]
+            public class ClassImplementingInterfaceWithWarningWithRequires : IRequiresAll<T>
+            {
+            }
+
+            [ExpectedWarning("IL3002", "ClassWithOtherCapabilityRequirements()", "--ClassWithOtherCapabilityRequirements--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3050", "ClassWithOtherCapabilityRequirements()", "--ClassWithOtherCapabilityRequirements--", Tool.NativeAot, "")]
+            [RequiresUnreferencedCode("--ClassImplementingInterfaceWithOtherCapabilityWarningsWithRequires--")]
+            class ClassImplementingInterfaceWithOtherCapabilityWarningsWithRequires : IRequiresNew<ClassWithOtherCapabilityRequirements>
+            {
+            }
+
             [RequiresUnreferencedCode("--GenericAnnotatedWithWarningWithRequires--")]
             public class GenericAnnotatedWithWarningWithRequires<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TFields> : RequiresAll<TFields>
             {
@@ -1436,6 +1475,9 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL2026", "--GenericClassWithWarningWithRequires--")]
             [ExpectedWarning("IL2026", "--ClassWithWarningWithRequires--")]
             [ExpectedWarning("IL2026", "--ClassWithWarningOnGenericArgumentConstructorWithRequires--")]
+            [ExpectedWarning("IL2026", "--ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires--")]
+            [ExpectedWarning("IL2026", "--ClassImplementingInterfaceWithWarningWithRequires--")]
+            [ExpectedWarning("IL2026", "--ClassImplementingInterfaceWithOtherCapabilityWarningsWithRequires--")]
             [ExpectedWarning("IL2026", "--GenericAnnotatedWithWarningWithRequires--")]
             public static void Test(ClassWithRequires inst = null)
             {
@@ -1455,6 +1497,15 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 var k = new ClassWithWarningOnGenericArgumentConstructor_NewAndAnnotation();
                 var l = new ClassWithWarningOnGenericArgumentConstructorWithRequires();
                 var m = new GenericAnnotatedWithWarningWithRequires<int>();
+                var n = new ClassImplementingInterfaceWithWarningOnGenericArgumentConstructor();
+                var o = new ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires();
+                var p = new ClassImplementingInterfaceWithWarningWithRequires();
+                var q = new ClassImplementingInterfaceWithOtherCapabilityWarningsWithRequires();
+
+                // Reference the interfaces, otherwise they could be trimmed
+                Type t;
+                t = typeof(IRequiresNew<>);
+                t = typeof(IRequiresAll<>);
             }
         }
 

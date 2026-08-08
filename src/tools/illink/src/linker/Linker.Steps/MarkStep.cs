@@ -71,6 +71,11 @@ namespace Mono.Linker.Steps
 
         readonly List<(TypeDefinition Type, MethodBody Body, Instruction Instr)> _pending_isinst_instr;
 
+        // Set while processing the generic instantiations in the interface list of a type which has
+        // RequiresUnreferencedCode. The members required by those instantiations still need to be marked,
+        // but the warnings which would be reported for them are silenced by the attribute on the type.
+        bool _suppressWarningsForInterfaceImplementationDataFlow;
+
         // Stores, for compiler-generated methods only, whether they require the reflection
         // method body scanner.
         readonly Dictionary<MethodBody, bool> _compilerGeneratedMethodRequiresScanner;
@@ -1749,6 +1754,9 @@ namespace Mono.Linker.Steps
 
         void ReportWarningsForReflectionAccess(in MessageOrigin origin, MethodDefinition method, DependencyKind dependencyKind)
         {
+            if (_suppressWarningsForInterfaceImplementationDataFlow)
+                return;
+
             if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(origin.Provider, out _))
                 return;
 
@@ -1942,6 +1950,9 @@ namespace Mono.Linker.Steps
                 default:
                     break;
             }
+
+            if (_suppressWarningsForInterfaceImplementationDataFlow)
+                return;
 
             if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(origin.Provider, out _))
                 return;
@@ -4108,7 +4119,22 @@ namespace Mono.Linker.Steps
             if (Annotations.IsMarked(iface))
                 return;
             Annotations.MarkProcessed(iface, reason ?? new DependencyInfo(DependencyKind.InterfaceImplementationOnType, origin.Provider));
-            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in origin, this, Context, iface.InterfaceType);
+            // The generic instantiation in the interface list is only reachable through the members of the
+            // type which implements the interface, which are all in the Requires scope of a type-level
+            // RequiresUnreferencedCode, so the attribute silences these warnings. Note that the data flow
+            // still needs to run to mark the members required by the instantiation.
+            bool suppressWarnings = origin.Provider is TypeDefinition implementingType &&
+                Annotations.TryGetLinkerAttribute<RequiresUnreferencedCodeAttribute>(implementingType, out _);
+            bool previousSuppressWarnings = _suppressWarningsForInterfaceImplementationDataFlow;
+            _suppressWarningsForInterfaceImplementationDataFlow = suppressWarnings;
+            try
+            {
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in origin, this, Context, iface.InterfaceType, suppressWarnings);
+            }
+            finally
+            {
+                _suppressWarningsForInterfaceImplementationDataFlow = previousSuppressWarnings;
+            }
 
             // Blame the type that has the interfaceimpl, expecting the type itself to get marked for other reasons.
             MarkCustomAttributes(iface, new DependencyInfo(DependencyKind.CustomAttribute, iface), origin);

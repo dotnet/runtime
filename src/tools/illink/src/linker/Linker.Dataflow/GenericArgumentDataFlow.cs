@@ -13,9 +13,9 @@ namespace Mono.Linker.Dataflow
 {
     internal static class GenericArgumentDataFlow
     {
-        public static void ProcessGenericArgumentDataFlow(in MessageOrigin origin, MarkStep markStep, LinkContext context, TypeReference type)
+        public static void ProcessGenericArgumentDataFlow(in MessageOrigin origin, MarkStep markStep, LinkContext context, TypeReference type, bool suppressWarnings = false)
         {
-            var diagnosticContext = new DiagnosticContext(origin, !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(origin.Provider, out _), context);
+            var diagnosticContext = new DiagnosticContext(origin, !suppressWarnings && !context.Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(origin.Provider, out _), context);
             var reflectionMarker = new ReflectionMarker(context, markStep, enabled: true);
             ProcessGenericArgumentDataFlow(in diagnosticContext, reflectionMarker, context, type);
         }
