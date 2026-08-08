@@ -1297,9 +1297,39 @@ namespace System.Diagnostics.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void StartInfo_BadExe(bool useShellExecute)
         {
+            const ushort DosSignature = 0x5A4D;
+            const int PeHeaderOffsetPosition = 0x3C;
+            const uint PeSignature = 0x00004550;
+            const int CoffHeaderSize = 20;
+            const int CoffHeaderCharacteristicsOffset = 18;
+            const ushort ImageFileDll = 0x2000;
+
             string tempFile = GetTestFilePath() + ".exe";
-            // A DLL is a valid PE that cannot be executed, avoiding malformed-image shell recovery paths.
-            File.Copy(Path.Combine(Environment.SystemDirectory, "kernel32.dll"), tempFile);
+            string? processPath = Environment.ProcessPath;
+            Assert.NotNull(processPath);
+            File.Copy(processPath, tempFile);
+
+            // Mark a copy of the current host as a DLL so it stays a valid PE but cannot be executed.
+            using (FileStream peStream = File.Open(tempFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+            using (BinaryReader reader = new BinaryReader(peStream, Encoding.UTF8, leaveOpen: true))
+            using (BinaryWriter writer = new BinaryWriter(peStream, Encoding.UTF8, leaveOpen: true))
+            {
+                Assert.True(peStream.Length >= PeHeaderOffsetPosition + sizeof(int));
+                Assert.Equal(DosSignature, reader.ReadUInt16());
+
+                peStream.Position = PeHeaderOffsetPosition;
+                int peHeaderOffset = reader.ReadInt32();
+                Assert.InRange((long)peHeaderOffset, PeHeaderOffsetPosition + sizeof(int), peStream.Length - sizeof(uint) - CoffHeaderSize);
+
+                peStream.Position = peHeaderOffset;
+                Assert.Equal(PeSignature, reader.ReadUInt32());
+
+                peStream.Position = peHeaderOffset + sizeof(uint) + CoffHeaderCharacteristicsOffset;
+                ushort characteristics = reader.ReadUInt16();
+                Assert.Equal(0, characteristics & ImageFileDll);
+                peStream.Position -= sizeof(ushort);
+                writer.Write((ushort)(characteristics | ImageFileDll));
+            }
 
             ProcessStartInfo info = new ProcessStartInfo
             {
