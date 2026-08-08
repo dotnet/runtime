@@ -289,8 +289,6 @@ DEFINE_FIELD(ENC_HELPER,            OBJECT_REFERENCE,       _objectReference)
 
 DEFINE_CLASS(ENCODING,              Text,                   Encoding)
 
-DEFINE_CLASS(RUNE,                  Text,                   Rune)
-
 DEFINE_CLASS(ENUM,                  System,                 Enum)
 
 DEFINE_CLASS(ENVIRONMENT,           System,                 Environment)
@@ -1305,6 +1303,7 @@ DEFINE_CLASS(ICOMPARABLEGENERIC,    System,                 IComparable`1)
 DEFINE_METHOD(ICOMPARABLEGENERIC,   COMPARE_TO,             CompareTo,                  NoSig)
 
 DEFINE_CLASS(IEQUATABLEGENERIC,     System,                 IEquatable`1)
+DEFINE_METHOD(IEQUATABLEGENERIC,    EQUALS,                 Equals,                     NoSig)
 
 DEFINE_CLASS_U(Reflection,             LoaderAllocator,          LoaderAllocatorObject)
 DEFINE_FIELD_U(m_slots,                  LoaderAllocatorObject,      m_pSlots)
@@ -1334,6 +1333,7 @@ DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_MANAGED, ConvertToManaged, NoSig)
 
 // Classes referenced in EqualityComparer<T>.Default optimization
 
+DEFINE_CLASS(EQUALITY_COMPARER, CollectionsGeneric, EqualityComparer`1)
 DEFINE_CLASS(STRING_EQUALITYCOMPARER, CollectionsGeneric, StringEqualityComparer)
 DEFINE_CLASS(ENUM_EQUALITYCOMPARER, CollectionsGeneric, EnumEqualityComparer`1)
 DEFINE_CLASS(NULLABLE_EQUALITYCOMPARER, CollectionsGeneric, NullableEqualityComparer`1)
