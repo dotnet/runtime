@@ -8,10 +8,12 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
     using RC2 = System.Security.Cryptography.RC2;
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static partial class RC2Tests
+    public abstract partial class RC2Tests
     {
+        protected abstract RC2Provider RC2Factory { get; }
+
         [Fact]
-        public static void RC2DefaultCtor()
+        public void RC2DefaultCtor()
         {
             using (RC2 rc2 = RC2Factory.Create())
             {
@@ -23,7 +25,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         }
 
         [Fact]
-        public static void RC2Blockize()
+        public void RC2Blockize()
         {
             using (RC2 rc2 = RC2Factory.Create())
             {
@@ -36,7 +38,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         }
 
         [Fact]
-        public static void RC2EffectiveKeySize()
+        public void RC2EffectiveKeySize()
         {
             using (RC2 rc2 = RC2Factory.Create())
             {

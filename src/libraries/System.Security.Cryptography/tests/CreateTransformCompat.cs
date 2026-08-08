@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.Csp.Tests
             yield return new object[] { typeof(DESCryptoServiceProvider), 9 };
             yield return new object[] { typeof(DESCryptoServiceProvider), 13 };
 
-            if (RC2Factory.IsSupported)
+            if (RC2Provider.IsSupported)
             {
                 yield return new object[] { typeof(RC2CryptoServiceProvider), 9 };
                 yield return new object[] { typeof(RC2CryptoServiceProvider), 17 };

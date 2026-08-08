@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-unix;$(NetCoreAppCurrent)-android;$(NetCoreAppCurrent)-browser;$(NetCoreAppCurrent)-osx;$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -288,8 +288,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesModeTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesProvider.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesProvider.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\KeyWrapTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\KeyWrapTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaCngTests.cs"
@@ -316,8 +316,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESCipherOneShotTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESContractTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESFactory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESFactory.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DESProvider.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DESProvider.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\DES\DesTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\DSA\DSAFactoryTests.cs"
@@ -426,8 +426,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2CipherOneShotTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2ContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2ContractTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Factory.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Provider.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Provider.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Tests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RC2\RC2Tests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\EncryptDecrypt.cs"
@@ -488,8 +488,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherOneShotTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs" />
-    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs"
-             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESProvider.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESProvider.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AsymmetricSignatureFormatter.cs"
@@ -536,7 +536,7 @@
   <ItemGroup>
     <Compile Include="AesCcmTests.cs" />
     <Compile Include="AesManagedTests.cs" />
-    <Compile Include="AesProvider.cs" />
+    <Compile Include="AesTestRegistration.Default.cs" />
     <Compile Include="AesTests.cs" />
     <Compile Include="AsnEncodedDataTests.cs" />
     <Compile Include="AsnEncodedDataCollectionTests.cs" />
@@ -551,13 +551,17 @@
     <Compile Include="CryptoConfigTests.cs" />
     <Compile Include="CryptographicException.cs" />
     <Compile Include="CryptoStream.cs" />
+    <Compile Include="DefaultAesProvider.cs" />
+    <Compile Include="DefaultDESProvider.cs" />
     <Compile Include="DefaultDSAProvider.cs" />
     <Compile Include="DefaultECDiffieHellmanProvider.cs" />
     <Compile Include="DefaultECDiffieHellmanTests.cs" />
     <Compile Include="DefaultECDsaProvider.cs" />
     <Compile Include="DefaultECDsaTests.cs" />
+    <Compile Include="DefaultRC2Provider.cs" />
     <Compile Include="DefaultRSAProvider.cs" />
-    <Compile Include="DESProvider.cs" />
+    <Compile Include="DefaultTripleDESProvider.cs" />
+    <Compile Include="DESTestRegistration.Default.cs" />
     <Compile Include="DESTests.cs" />
     <Compile Include="DSACreateTests.cs" />
     <Compile Include="DSASignatureFormatterTests.cs" />
@@ -601,7 +605,7 @@
     <Compile Include="PemEncodingFindTests.cs" />
     <Compile Include="PKCS1MaskGenerationMethodTest.cs" />
     <Compile Include="RandomNumberGeneratorTests.cs" />
-    <Compile Include="RC2Provider.cs" />
+    <Compile Include="RC2TestRegistration.Default.cs" />
     <Compile Include="RC2Tests.cs" />
     <Compile Include="ReusabilityTests.cs" />
     <Compile Include="Rfc2202HmacTests.cs" />
@@ -636,7 +640,7 @@
     <Compile Include="SymmetricAlgorithm\Minimal.cs" />
     <Compile Include="SymmetricAlgorithm\Trivial.cs" />
     <Compile Include="SymmetricAlgorithmTests.cs" />
-    <Compile Include="TripleDesProvider.cs" />
+    <Compile Include="TripleDESTestRegistration.Default.cs" />
     <Compile Include="TripleDesTests.cs" />
     <Compile Include="ZeroMemoryTests.cs" />
     <Compile Include="X509Certificates\Cert.cs" />
@@ -707,6 +711,9 @@
     <Compile Include="X509Certificates\RevocationTests\TimeoutTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="AesCngProvider.cs" />
+    <Compile Include="AesCngTests.cs" />
+    <Compile Include="AesTestRegistration.Cng.cs" />
     <Compile Include="CngHelpers.cs" />
     <Compile Include="DSACngProvider.Windows.cs" />
     <Compile Include="DSACngTests.Windows.cs" />
@@ -731,8 +738,11 @@
     <Compile Include="RSAImportExportCspBlobTests.cs" />
     <Compile Include="RSATestRegistration.Cng.cs" />
     <Compile Include="RSATestRegistration.Csp.cs" />
-    <Compile Include="ShimHelpers.cs" />
+    <Compile Include="SymmetricCngTestHelpers.cs" />
     <Compile Include="TestData.Cng.cs" />
+    <Compile Include="TripleDESCngProvider.cs" />
+    <Compile Include="TripleDESCngTests.cs" />
+    <Compile Include="TripleDESTestRegistration.Cng.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs"
              Link="CommonTest\System\Security\Cryptography\X509Certificates\X509CertificateLoaderPkcs12Tests.WindowsAttributes.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaTestHelpers.Cng.cs"
@@ -875,13 +885,24 @@
     <Compile Include="RSATestRegistration.Csp.cs" />
     <Compile Include="RSATestRegistration.OpenSsl.cs" />
     <Compile Include="RsaOpenSslTests.cs" />
-    <Compile Include="ShimHelpers.cs" />
     <Compile Include="SlhDsaOpenSslConstructionTests.Unix.cs" />
     <Compile Include="SlhDsaOpenSslTests.cs" />
     <Compile Include="X25519DiffieHellmanOpenSslTests.Unix.cs" />
     <Compile Include="X509Certificates\HostnameMatchTests.Unix.cs" />
     <Compile Include="X509Certificates\X509FilesystemTests.Unix.cs" />
     <Compile Include="X509Certificates\X509StoreTests.Unix.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'browser'">
+    <Compile Include="AesCryptoServiceProviderTests.cs" />
+    <Compile Include="CreateTransformCompat.cs" />
+    <Compile Include="DESCryptoServiceProviderProvider.cs" />
+    <Compile Include="DESCryptoServiceProviderTests.cs" />
+    <Compile Include="DESTestRegistration.Csp.cs" />
+    <Compile Include="RC2CryptoServiceProviderProvider.cs" />
+    <Compile Include="RC2CryptoServiceProviderTests.cs" />
+    <Compile Include="RC2TestRegistration.Csp.cs" />
+    <Compile Include="ShimHelpers.cs" />
+    <Compile Include="TripleDESCryptoServiceProviderTests.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\BCrypt\Interop.Blobs.cs"

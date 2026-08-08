@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     /// <summary>
     /// Since AesCryptoServiceProvider wraps Aes from Algorithms assembly, we only test minimally here.
     /// </summary>
-    public class AesCryptoServiceProviderTests
+    public static class AesCryptoServiceProviderTests
     {
         [Fact]
         public static void VerifyDefaults()

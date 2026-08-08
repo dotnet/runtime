@@ -12,8 +12,10 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
     using RC2 = System.Security.Cryptography.RC2;
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class RC2ContractTests
+    public abstract class RC2ContractTests
     {
+        protected abstract RC2Provider RC2Factory { get; }
+
         [Theory]
         [InlineData(0, true)]
         [InlineData(1, true)]
@@ -27,7 +29,7 @@ namespace System.Security.Cryptography.Encryption.RC2.Tests
         [InlineData(256, true)]
         [InlineData(128, true)]
         [InlineData(127, true)]
-        public static void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
+        public void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
         {
             using (RC2 rc2 = RC2Factory.Create())
             {
