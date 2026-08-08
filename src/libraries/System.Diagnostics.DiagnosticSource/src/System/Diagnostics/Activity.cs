@@ -1681,18 +1681,21 @@ namespace System.Diagnostics
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        internal sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
+        internal sealed class TagsLinkedList : DiagNode<KeyValuePair<string, object?>>, IEnumerable<KeyValuePair<string, object?>>
         {
-            private DiagNode<KeyValuePair<string, object?>>? _first;
             private DiagNode<KeyValuePair<string, object?>>? _last;
 
-            private StringBuilder? _stringBuilder;
-
-            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new DiagNode<KeyValuePair<string, object?>>(firstValue));
-
-            public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e)
+            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) : base(set && firstValue.Value is null ? default : firstValue)
             {
-                _last = _first = new DiagNode<KeyValuePair<string, object?>>(e.Current);
+                if (!set || firstValue.Value is not null)
+                {
+                    _last = this;
+                }
+            }
+
+            public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e) : base(e.Current)
+            {
+                _last = this;
 
                 while (e.MoveNext())
                 {
@@ -1701,22 +1704,23 @@ namespace System.Diagnostics
                 }
             }
 
-            public DiagNode<KeyValuePair<string, object?>>? First => _first;
+            public DiagNode<KeyValuePair<string, object?>>? First => _last is null ? null : this;
 
-            public TagsLinkedList(IEnumerable<KeyValuePair<string, object?>> list) => Add(list);
+            public TagsLinkedList(IEnumerable<KeyValuePair<string, object?>> list) : base(default!) => Add(list);
 
             // Add doesn't take the lock because it is called from the Activity creation before sharing the activity object to the caller.
             public void Add(IEnumerable<KeyValuePair<string, object?>> list)
             {
-                IEnumerator<KeyValuePair<string, object?>> e = list.GetEnumerator();
+                using IEnumerator<KeyValuePair<string, object?>> e = list.GetEnumerator();
                 if (!e.MoveNext())
                 {
                     return;
                 }
 
-                if (_first == null)
+                if (_last is null)
                 {
-                    _last = _first = new DiagNode<KeyValuePair<string, object?>>(e.Current);
+                    Value = e.Current;
+                    _last = this;
                 }
                 else
                 {
@@ -1733,18 +1737,18 @@ namespace System.Diagnostics
 
             public void Add(KeyValuePair<string, object?> value)
             {
-                DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
-
                 lock (this)
                 {
-                    if (_first == null)
+                    if (_last is null)
                     {
-                        _first = _last = newNode;
+                        Value = value;
+                        _last = this;
                         return;
                     }
 
                     Debug.Assert(_last != null);
 
+                    DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
                     _last!.Next = newNode;
                     _last = newNode;
                 }
@@ -1753,7 +1757,7 @@ namespace System.Diagnostics
             public object? Get(string key)
             {
                 // We don't take the lock here so it is possible the Add/Remove operations mutate the list during the Get operation.
-                DiagNode<KeyValuePair<string, object?>>? current = _first;
+                DiagNode<KeyValuePair<string, object?>>? current = First;
                 while (current != null)
                 {
                     if (current.Value.Key == key)
@@ -1771,21 +1775,32 @@ namespace System.Diagnostics
             {
                 lock (this)
                 {
-                    if (_first == null)
+                    if (_last is null)
                     {
                         return;
                     }
-                    if (_first.Value.Key == key)
+
+                    if (Value.Key == key)
                     {
-                        _first = _first.Next;
-                        if (_first is null)
+                        DiagNode<KeyValuePair<string, object?>>? next = Next;
+                        if (next is null)
                         {
                             _last = null;
+                            Value = default;
+                        }
+                        else
+                        {
+                            Value = next.Value;
+                            Next = next.Next;
+                            if (object.ReferenceEquals(_last, next))
+                            {
+                                _last = this;
+                            }
                         }
                         return;
                     }
 
-                    DiagNode<KeyValuePair<string, object?>> previous = _first;
+                    DiagNode<KeyValuePair<string, object?>> previous = this;
 
                     while (previous.Next != null)
                     {
@@ -1813,7 +1828,7 @@ namespace System.Diagnostics
 
                 lock (this)
                 {
-                    DiagNode<KeyValuePair<string, object?>>? current = _first;
+                    DiagNode<KeyValuePair<string, object?>>? current = First;
                     while (current != null)
                     {
                         if (current.Value.Key == value.Key)
@@ -1825,27 +1840,28 @@ namespace System.Diagnostics
                         current = current.Next;
                     }
 
-                    DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
-                    if (_first == null)
+                    if (_last is null)
                     {
-                        _first = _last = newNode;
+                        Value = value;
+                        _last = this;
                         return;
                     }
 
                     Debug.Assert(_last != null);
 
+                    DiagNode<KeyValuePair<string, object?>> newNode = new DiagNode<KeyValuePair<string, object?>>(value);
                     _last!.Next = newNode;
                     _last = newNode;
                 }
             }
 
-            public DiagEnumerator<KeyValuePair<string, object?>> GetEnumerator() => new DiagEnumerator<KeyValuePair<string, object?>>(_first);
+            public DiagEnumerator<KeyValuePair<string, object?>> GetEnumerator() => new DiagEnumerator<KeyValuePair<string, object?>>(First);
             IEnumerator<KeyValuePair<string, object?>> IEnumerable<KeyValuePair<string, object?>>.GetEnumerator() => GetEnumerator();
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
             public IEnumerable<KeyValuePair<string, string?>> EnumerateStringValues()
             {
-                DiagNode<KeyValuePair<string, object?>>? current = _first;
+                DiagNode<KeyValuePair<string, object?>>? current = First;
 
                 while (current != null)
                 {
@@ -1862,30 +1878,29 @@ namespace System.Diagnostics
             {
                 lock (this)
                 {
-                    if (_first == null)
+                    DiagNode<KeyValuePair<string, object?>>? first = First;
+                    if (first is null)
                     {
                         return string.Empty;
                     }
 
-                    _stringBuilder ??= new StringBuilder();
-                    _stringBuilder.Append(_first.Value.Key);
-                    _stringBuilder.Append(':');
-                    _stringBuilder.Append(_first.Value.Value);
+                    var stringBuilder = new ValueStringBuilder(stackalloc char[256]);
+                    stringBuilder.Append(first.Value.Key);
+                    stringBuilder.Append(':');
+                    stringBuilder.Append(first.Value.Value?.ToString());
 
-                    DiagNode<KeyValuePair<string, object?>>? current = _first.Next;
+                    DiagNode<KeyValuePair<string, object?>>? current = first.Next;
                     while (current != null)
                     {
-                        _stringBuilder.Append(", ");
-                        _stringBuilder.Append(current.Value.Key);
-                        _stringBuilder.Append(':');
-                        _stringBuilder.Append(current.Value.Value);
+                        stringBuilder.Append(", ");
+                        stringBuilder.Append(current.Value.Key);
+                        stringBuilder.Append(':');
+                        stringBuilder.Append(current.Value.Value?.ToString());
 
                         current = current.Next;
                     }
 
-                    string result = _stringBuilder.ToString();
-                    _stringBuilder.Clear();
-                    return result;
+                    return stringBuilder.ToString();
                 }
             }
         }
