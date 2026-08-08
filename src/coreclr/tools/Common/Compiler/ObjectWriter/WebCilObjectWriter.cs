@@ -52,10 +52,18 @@ namespace ILCompiler.ObjectWriter
         public static readonly ObjectNodeSection GlobalSection = new ObjectNodeSection("wasm.global", SectionType.ReadOnly, needsAlign: false);
     }
 
+    internal abstract partial class WasmObjectWriter : ObjectWriter
+    {
+        protected WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
+            : base(factory, options, outputInfoBuilder)
+        {
+        }
+    }
+
     /// <summary>
-    /// Wasm object file format writer.
+    /// WebCIL object file format writer.
     /// </summary>
-    internal sealed class WasmObjectWriter : ObjectWriter
+    internal sealed class WebCilObjectWriter : WasmObjectWriter
     {
         protected override CodeDataLayout LayoutMode => CodeDataLayout.Separate;
 
@@ -63,7 +71,7 @@ namespace ILCompiler.ObjectWriter
         // 1 for the payload size, and the second for the payload itself.
         const int NumDataSegments = 2;
 
-        public WasmObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
+        public WebCilObjectWriter(NodeFactory factory, ObjectWritingOptions options, OutputInfoBuilder outputInfoBuilder)
             : base(factory, options, outputInfoBuilder)
         {
         }
@@ -333,7 +341,7 @@ namespace ILCompiler.ObjectWriter
         WasmFunctionBody FillWebcilTable(int tableSize) => new WasmFunctionBody(
             new WasmFuncType(new([]), new([])), // (func)
                 [
-                    Global.Get(WasmObjectWriter.TableBaseGlobalIndex),
+                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex),
                     I32.Const(0),
                     I32.Const(tableSize),
                     Table.Init(0, 0)
@@ -352,7 +360,7 @@ namespace ILCompiler.ObjectWriter
                     I32.Ge_s,
                     Block.If(WasmBlockType.Empty),
                     Local.Get(0), // (local.get $d)
-                    Global.Get(WasmObjectWriter.TableBaseGlobalIndex), // (global.get $tableBase)
+                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex), // (global.get $tableBase)
                     I32.Store((ulong)WebcilEncoder.TableBaseOffset), // i32.store offset=TableBaseOffset
                     Block.End
                 ]
