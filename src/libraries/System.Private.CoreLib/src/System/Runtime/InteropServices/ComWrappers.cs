@@ -549,7 +549,7 @@ namespace System.Runtime.InteropServices
             private IntPtr _externalComObject;
             private IntPtr _inner;
             private GCHandle _proxyHandle;
-            private GCHandle _proxyHandleTrackingResurrection;
+            private WeakGCHandle<object> _proxyHandleTrackingResurrection;
             private readonly bool _aggregatedManagedObjectWrapper;
             private readonly bool _uniqueInstance;
 
@@ -610,7 +610,7 @@ namespace System.Runtime.InteropServices
                 // the GC to process than plain weak handles.
                 if (RuntimeHelpers.ObjectHasFinalizer(comProxy))
                 {
-                    _proxyHandleTrackingResurrection = GCHandle.Alloc(comProxy, GCHandleType.WeakTrackResurrection);
+                    _proxyHandleTrackingResurrection = new WeakGCHandle<object>(comProxy, trackResurrection: true);
                 }
 
                 // 'ObjectHasFinalizer' reads the MethodTable, which requires the object to be kept alive
@@ -649,7 +649,7 @@ namespace System.Runtime.InteropServices
 
                 if (_proxyHandleTrackingResurrection.IsAllocated)
                 {
-                    _proxyHandleTrackingResurrection.Free();
+                    _proxyHandleTrackingResurrection.Dispose();
                 }
 
                 // If the inner was supplied, we need to release our reference.
@@ -664,7 +664,7 @@ namespace System.Runtime.InteropServices
 
             ~NativeObjectWrapper()
             {
-                if (_proxyHandleTrackingResurrection.IsAllocated && _proxyHandleTrackingResurrection.Target != null)
+                if (_proxyHandleTrackingResurrection.IsAllocated && _proxyHandleTrackingResurrection.TryGetTarget(out _))
                 {
                     // The RCW object has not been fully collected, so it still
                     // can make calls on the native object in its finalizer.
