@@ -1105,6 +1105,7 @@ void LCGMethodResolver::DestroyResolver()
 
     if (m_managedResolver)
     {
+        GCX_COOP();
         ::DestroyLongWeakHandle(m_managedResolver);
         m_managedResolver = NULL;
     }
