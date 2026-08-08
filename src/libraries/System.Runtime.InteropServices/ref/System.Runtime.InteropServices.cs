@@ -783,6 +783,14 @@ namespace System.Runtime.InteropServices
         public static void RegisterForMarshalling(System.Runtime.InteropServices.ComWrappers instance) { }
         public static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+    public abstract partial class ComWrappersObject
+    {
+        protected ComWrappersObject() { }
+    }
     [System.FlagsAttribute]
     public enum CreateComInterfaceFlags
     {

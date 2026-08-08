@@ -75,7 +75,7 @@ namespace System.Runtime.InteropServices
         internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out ComWrappers? comWrappers)
         {
             if (obj == null
-                || !s_nativeObjectWrapperTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
+                || TryGetNativeObjectWrapper(obj) is not NativeObjectWrapper wrapper)
             {
                 unknown = IntPtr.Zero;
                 comWrappers = null;
@@ -90,12 +90,32 @@ namespace System.Runtime.InteropServices
         {
             unknown = IntPtr.Zero;
             if (obj == null
-                || !s_nativeObjectWrapperTable.TryGetValue(obj, out NativeObjectWrapper? wrapper))
+                || TryGetNativeObjectWrapper(obj) is not NativeObjectWrapper wrapper)
             {
                 return false;
             }
 
             return Marshal.QueryInterface(wrapper.ExternalComObject, IID_IUnknown, out unknown) == HResults.S_OK;
+        }
+
+        /// <summary>
+        /// Gets the <see cref="NativeObjectWrapper"/> tracking a given RCW, if it has one.
+        /// </summary>
+        /// <param name="obj">The RCW to get the wrapper for.</param>
+        /// <returns>The <see cref="NativeObjectWrapper"/> tracking <paramref name="obj"/>, if any.</returns>
+        private static NativeObjectWrapper? TryGetNativeObjectWrapper(object obj)
+        {
+            // RCWs deriving from 'ComWrappersObject' keep the wrapper in a field, so they never go through
+            // the table. Keying that table on the object requires a hash code for every object that is
+            // wrapped, and assigning one is a significant part of the cost of creating an RCW.
+            if (obj is ComWrappersObject comWrappersObject)
+            {
+                return comWrappersObject._nativeObjectWrapper;
+            }
+
+            s_nativeObjectWrapperTable.TryGetValue(obj, out NativeObjectWrapper? wrapper);
+
+            return wrapper;
         }
 
         public static unsafe bool TryGetObject(IntPtr unknown, [NotNullWhen(true)] out object? obj)
@@ -1320,7 +1340,7 @@ namespace System.Runtime.InteropServices
 
             // Add the input wrapper bound to the COM proxy, if there isn't one already. If another thread raced
             // against this one and this lost, we'd get the wrapper added from that thread instead.
-            NativeObjectWrapper registeredWrapper = s_nativeObjectWrapperTable.GetOrAdd(comProxy, wrapper);
+            NativeObjectWrapper registeredWrapper = GetOrAddNativeObjectWrapper(comProxy, wrapper);
 
             // We lost the race, so we cannot register the incoming wrapper with the target object
             if (registeredWrapper != wrapper)
@@ -1339,6 +1359,26 @@ namespace System.Runtime.InteropServices
 
             // The RCW can now be resolved back to its wrapper, so it is safe for the cache to hand it out.
             wrapper.MarkRegistered();
+        }
+
+        /// <summary>
+        /// Associates a <see cref="NativeObjectWrapper"/> with a given RCW, if it doesn't have one already.
+        /// </summary>
+        /// <param name="comProxy">The RCW to associate the wrapper with.</param>
+        /// <param name="wrapper">The wrapper to associate with <paramref name="comProxy"/>.</param>
+        /// <returns>The wrapper now tracking <paramref name="comProxy"/>, which may be one registered by another thread.</returns>
+        private static NativeObjectWrapper GetOrAddNativeObjectWrapper(object comProxy, NativeObjectWrapper wrapper)
+        {
+            // RCWs deriving from 'ComWrappersObject' keep the wrapper in a field, so they never go through
+            // the table. Keying that table on the object requires a hash code for every object that is
+            // wrapped, and assigning one is a significant part of the cost of creating an RCW.
+            if (comProxy is ComWrappersObject comWrappersObject)
+            {
+                // Same semantics as the table: the first registration wins, and every caller gets that winner back
+                return Interlocked.CompareExchange(ref comWrappersObject._nativeObjectWrapper, wrapper, null) ?? wrapper;
+            }
+
+            return s_nativeObjectWrapperTable.GetOrAdd(comProxy, wrapper);
         }
 
         private static void AddWrapperToReferenceTrackerHandleCache(NativeObjectWrapper wrapper)
@@ -1802,7 +1842,7 @@ namespace System.Runtime.InteropServices
             // If the RCW is an aggregated RCW, then the managed object cannot be recreated from the IUnknown
             // as the outer IUnknown wraps the managed object. In this case, don't create a weak reference backed
             // by a COM weak reference.
-            return s_nativeObjectWrapperTable.TryGetValue(target, out NativeObjectWrapper? wrapper) && !wrapper.IsAggregatedWithManagedObjectWrapper;
+            return TryGetNativeObjectWrapper(target) is NativeObjectWrapper wrapper && !wrapper.IsAggregatedWithManagedObjectWrapper;
         }
 
         private static IntPtr ObjectToComWeakRef(object target, out object? context)
