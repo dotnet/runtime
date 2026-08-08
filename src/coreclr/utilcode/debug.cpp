@@ -425,7 +425,7 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
         {
             FAULT_NOT_FATAL();
             szExprToDisplay = &g_szExprWithStack2[0];
-            strcpy(szExprToDisplay, szExpr);
+            memcpy(szExprToDisplay, szExpr, strlen(szExpr) + 1);
             strcat_s(szExprToDisplay, ARRAY_SIZE(g_szExprWithStack2), "\n\n");
             GetStringFromStackLevels(1, 10, szExprToDisplay + strlen(szExprToDisplay));
             fGotStackTrace = TRUE;
