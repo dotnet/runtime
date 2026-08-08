@@ -19,17 +19,8 @@
 #include "sstring.h"
 #include "peimage.h"
 #include "metadata.h"
-#include "corhlpr.h"
-#include "utilcode.h"
-#include "loaderheap.h"
-#include "sstring.h"
-#include "ex.h"
-#include "assemblyspecbase.h"
+#include "../binder/inc/assembly.hpp"
 #include "eecontract.h"
-#include "stackwalktypes.h"
-#include <specstrings.h>
-#include "slist.h"
-#include "eventtrace.h"
 
 #include "assemblybinderutil.h"
 
@@ -164,7 +155,6 @@ public:
     void GetMVID(GUID* pMvid);
     ULONG GetHashAlgId();
     HRESULT GetVersion(USHORT* pMajor, USHORT* pMinor, USHORT* pBuild, USHORT* pRevision);
-    BOOL IsStrongNamed();
     LPCUTF8 GetSimpleName();
     HRESULT GetScopeName(LPCUTF8 * pszName);
     const void *GetPublicKey(DWORD *pcbPK);

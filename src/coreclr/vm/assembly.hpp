@@ -211,12 +211,6 @@ public:
         return GetPEAssembly()->GetSimpleName();
     }
 
-    BOOL IsStrongNamed()
-    {
-        WRAPPER_NO_CONTRACT;
-        return GetPEAssembly()->IsStrongNamed();
-    }
-
     const void *GetPublicKey(DWORD *pcbPK)
     {
         WRAPPER_NO_CONTRACT;

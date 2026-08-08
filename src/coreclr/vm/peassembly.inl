@@ -751,22 +751,6 @@ inline LPCSTR PEAssembly::GetSimpleName()
     return name;
 }
 
-inline BOOL PEAssembly::IsStrongNamed()
-{
-    CONTRACTL
-    {
-        THROWS;
-        WRAPPER(GC_NOTRIGGER);
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    DWORD flags = 0;
-    IfFailThrow(GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, NULL, NULL, NULL, &flags));
-    return (flags & afPublicKey) != 0;
-}
-
-
 //---------------------------------------------------------------------------------------
 //
 // Check to see if this assembly has had its strong name signature verified yet.
