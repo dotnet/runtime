@@ -147,6 +147,10 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
             return;
         }
 
+#ifndef FEATURE_PORTABLE_HELPERS
+        ReportCopiedWriteBarriersToPerfMap();
+#endif // !FEATURE_PORTABLE_HELPERS
+
         AppDomain::AssemblyIterator assemblyIterator = GetAppDomain()->IterateAssembliesEx(
             (AssemblyIterationFlags)(kIncludeLoaded | kIncludeExecution));
         CollectibleAssemblyHolder<Assembly *> pAssembly;
@@ -183,6 +187,16 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 MethodDesc * pMethod = heapIterator.GetMethod();
                 if (pMethod == nullptr)
                 {
+                    StubCodeBlockKind stubCodeBlockKind = heapIterator.GetStubCodeBlockKind();
+                    if (stubCodeBlockKind != STUB_CODE_BLOCK_UNKNOWN)
+                    {
+                        PerfMap::LogStubs(
+                            "ReportStubBlock",
+                            GetStubCodeBlockKindString(stubCodeBlockKind),
+                            PINSTRToPCODE(heapIterator.GetMethodCode()),
+                            heapIterator.GetCodeSize(),
+                            PerfMapStubType::Block);
+                    }
                     continue;
                 }
 

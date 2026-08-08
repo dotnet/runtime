@@ -1041,21 +1041,65 @@ static void SetIlsIndex(DWORD tlsIndex)
 #pragma optimize("", on)
 #endif
 
-#if defined(FEATURE_EVENT_TRACE) && !defined(FEATURE_PORTABLE_HELPERS)
-static void ReportCopiedWriteBarrier(void* start, void* end, LPCWSTR name)
+#ifndef FEATURE_PORTABLE_HELPERS
+template <typename TAction>
+static void ReportCopiedWriteBarrier(TAction action, void* start, void* end, const char* name, LPCWSTR nameW)
 {
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE((BYTE*)start < (BYTE*)end);
     size_t size = (BYTE*)end - (BYTE*)start;
-    _ASSERTE(FitsInU4(size));
-    ETW::MethodLog::SendHelperEvent(
-        reinterpret_cast<ULONGLONG>(GetWriteBarrierCodeLocation(start)),
-        static_cast<ULONG>(size),
-        name,
-        ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
+    action(reinterpret_cast<PCODE>(GetWriteBarrierCodeLocation(start)), size, name, nameW);
 }
-#endif // FEATURE_EVENT_TRACE && !FEATURE_PORTABLE_HELPERS
+
+template <typename TAction>
+static void EnumerateCopiedWriteBarriers(TAction action)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (IsWriteBarrierCopyEnabled())
+    {
+#ifdef TARGET_X86
+        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierEAX, (void*)JIT_WriteBarrierEBX, "@WriteBarrierEAX", W("@WriteBarrierEAX"));
+        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierEBX, (void*)JIT_WriteBarrierECX, "@WriteBarrierEBX", W("@WriteBarrierEBX"));
+        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierECX, (void*)JIT_WriteBarrierESI, "@WriteBarrierECX", W("@WriteBarrierECX"));
+        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierESI, (void*)JIT_WriteBarrierEDI, "@WriteBarrierESI", W("@WriteBarrierESI"));
+        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierEDI, (void*)JIT_WriteBarrierEBP, "@WriteBarrierEDI", W("@WriteBarrierEDI"));
+        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierEBP, (void*)JIT_PatchedWriteBarrierGroup_End, "@WriteBarrierEBP", W("@WriteBarrierEBP"));
+#else
+        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrier, (void*)JIT_WriteBarrier_End, "@WriteBarrier", W("@WriteBarrier"));
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        ReportCopiedWriteBarrier(action, (void*)JIT_CheckedWriteBarrier, (void*)JIT_CheckedWriteBarrier_End, "@CheckedWriteBarrier", W("@CheckedWriteBarrier"));
+#endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
+#endif // TARGET_X86
+    }
+}
+
+void ReportCopiedWriteBarriersToPerfMap()
+{
+    WRAPPER_NO_CONTRACT;
+
+    EnumerateCopiedWriteBarriers([](PCODE address, size_t size, const char* name, LPCWSTR)
+    {
+        PerfMap::LogStubs("WriteBarrier", name, address, size, PerfMapStubType::Individual);
+    });
+}
+
+#ifdef FEATURE_EVENT_TRACE
+void ReportCopiedWriteBarriersToEtw(DWORD eventOptions)
+{
+    WRAPPER_NO_CONTRACT;
+
+    EnumerateCopiedWriteBarriers([eventOptions](PCODE address, size_t size, const char*, LPCWSTR name)
+    {
+        if (FitsInU4(size))
+        {
+            ETW::MethodLog::SendHelperEvent(address, static_cast<ULONG>(size), name, eventOptions);
+        }
+    });
+}
+#endif // FEATURE_EVENT_TRACE
+#endif // !FEATURE_PORTABLE_HELPERS
 
 void InitThreadManagerTracingData()
 {
@@ -1065,27 +1109,11 @@ void InitThreadManagerTracingData()
     }
     CONTRACTL_END;
 #ifndef FEATURE_PORTABLE_HELPERS
-    if (IsWriteBarrierCopyEnabled())
-    {
-        size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
-        PerfMap::LogStubs(__FUNCTION__, "JIT_CopiedWriteBarriers", (PCODE)s_barrierCopy, writeBarrierSize, PerfMapStubType::Individual);
+    ReportCopiedWriteBarriersToPerfMap();
 
 #ifdef FEATURE_EVENT_TRACE
-#ifdef TARGET_X86
-        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierEAX, (void*)JIT_WriteBarrierEBX, W("@WriteBarrierEAX"));
-        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierEBX, (void*)JIT_WriteBarrierECX, W("@WriteBarrierEBX"));
-        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierECX, (void*)JIT_WriteBarrierESI, W("@WriteBarrierECX"));
-        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierESI, (void*)JIT_WriteBarrierEDI, W("@WriteBarrierESI"));
-        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierEDI, (void*)JIT_WriteBarrierEBP, W("@WriteBarrierEDI"));
-        ReportCopiedWriteBarrier((void*)JIT_WriteBarrierEBP, (void*)JIT_PatchedWriteBarrierGroup_End, W("@WriteBarrierEBP"));
-#else
-        ReportCopiedWriteBarrier((void*)JIT_WriteBarrier, (void*)JIT_WriteBarrier_End, W("@WriteBarrier"));
-#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        ReportCopiedWriteBarrier((void*)JIT_CheckedWriteBarrier, (void*)JIT_CheckedWriteBarrier_End, W("@CheckedWriteBarrier"));
-#endif
-#endif // TARGET_X86
+    ReportCopiedWriteBarriersToEtw(ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
 #endif // FEATURE_EVENT_TRACE
-    }
 #endif // !FEATURE_PORTABLE_HELPERS
 }
 

@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -24,9 +25,10 @@ namespace Tracing.Tests.RundownValidation
     public class RundownValidation
     {
         [ActiveIssue("https://github.com/dotnet/runtime/issues/83051: not supported in net8", typeof(Utilities), nameof(Utilities.IsNativeAot))]
+        [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsRiscv64Process))]
         [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
         [SkipOnCoreClr("Tracing tests routinely time out with JIT stress and GC stress.", RuntimeTestModes.AnyGCStress)]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsCoreCLR))]
+        [Fact]
         public static int TestEntryPoint()
         {
             // This test validates that the rundown events are present
@@ -65,10 +67,11 @@ namespace Tracing.Tests.RundownValidation
             bool hasAppDomainDCStop = false;
             var liveStubBlocks = new List<HelperEvent>();
             var rundownStubBlocks = new List<HelperEvent>();
+            var rundownWriteBarriers = new List<HelperEvent>();
 
             ClrTraceEventParser runtimeParser = new ClrTraceEventParser(source);
             runtimeParser.MethodLoadVerbose += (eventData) =>
-                AddHelperEvent(eventData, liveStubBlocks);
+                AddHelperEvent(eventData, liveStubBlocks, IsStubBlockName);
 
             ClrRundownTraceEventParser rundownParser = new ClrRundownTraceEventParser(source);
             rundownParser.RuntimeStart += (eventData) => hasRuntimeStart = true;
@@ -80,7 +83,8 @@ namespace Tracing.Tests.RundownValidation
             rundownParser.MethodDCStopVerbose += (eventData) =>
             {
                 hasMethodDCStopVerbose = true;
-                AddHelperEvent(eventData, rundownStubBlocks);
+                AddHelperEvent(eventData, rundownStubBlocks, IsStubBlockName);
+                AddHelperEvent(eventData, rundownWriteBarriers, IsWriteBarrierName);
             };
             rundownParser.MethodILToNativeMapDCStop += (eventData) => hasMethodILToNativeMap = true;
             rundownParser.LoaderAppDomainDCStop += (eventData) => hasAppDomainDCStop = true;
@@ -97,20 +101,30 @@ namespace Tracing.Tests.RundownValidation
                 Logger.logger.Log("hasAppDomainDCStop: " + hasAppDomainDCStop);
                 Logger.logger.Log("liveStubBlocks: " + liveStubBlocks.Count);
                 Logger.logger.Log("rundownStubBlocks: " + rundownStubBlocks.Count);
+                Logger.logger.Log("rundownWriteBarriers: " + rundownWriteBarriers.Count);
+                bool hasValidCoreClrHelpers =
+                    !PlatformDetection.IsCoreCLR ||
+                    !RuntimeFeature.IsDynamicCodeCompiled ||
+                    (ValidateHelperEvents(liveStubBlocks) &&
+                        ValidateHelperEvents(rundownStubBlocks) &&
+                        ValidateHelperEvents(rundownWriteBarriers) &&
+                        HaveMatchingStubBlocks(liveStubBlocks, rundownStubBlocks));
                 return hasRuntimeStart && hasMethodDCStopInit && hasMethodDCStopComplete &&
                 hasLoaderModuleDCStop && hasLoaderDomainModuleDCStop && hasAssemblyModuleDCStop &&
                 hasMethodDCStopVerbose && hasMethodILToNativeMap && hasAppDomainDCStop &&
-                ValidateHelperEvents(liveStubBlocks) && ValidateHelperEvents(rundownStubBlocks) &&
-                HaveMatchingStubBlocks(liveStubBlocks, rundownStubBlocks) ? 100 : -1;
+                hasValidCoreClrHelpers ? 100 : -1;
             };
         };
 
-        private static void AddHelperEvent(MethodLoadUnloadVerboseTraceData eventData, List<HelperEvent> helperEvents)
+        private static void AddHelperEvent(
+            MethodLoadUnloadVerboseTraceData eventData,
+            List<HelperEvent> helperEvents,
+            Func<string, bool> isExpectedName)
         {
             const int JitHelperMethod = 0x10;
 
             if (((int)eventData.MethodFlags & JitHelperMethod) == 0 ||
-                !IsStubBlockName(eventData.MethodName))
+                !isExpectedName(eventData.MethodName))
             {
                 return;
             }
@@ -164,12 +178,18 @@ namespace Tracing.Tests.RundownValidation
 
         private static bool IsStubBlockName(string name)
         {
-            return name is "@JumpStub" or
-                "@DynamicHelper" or
-                "@VSD_DispatchStub" or
-                "@VSD_ResolveStub" or
-                "@VSD_LookupStub" or
-                "@VSD_VTableStub";
+            return name is "JumpStub" or
+                "MethodCallThunk" or
+                "VSD_DispatchStub" or
+                "VSD_ResolveStub" or
+                "VSD_LookupStub" or
+                "VSD_VTableStub";
+        }
+
+        private static bool IsWriteBarrierName(string name)
+        {
+            return name.StartsWith("@WriteBarrier", StringComparison.Ordinal) ||
+                name == "@CheckedWriteBarrier";
         }
 
         private static void GenerateVirtualStubDispatchActivity()

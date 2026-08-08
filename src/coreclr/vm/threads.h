@@ -330,6 +330,12 @@ DWORD GetRuntimeId();
 //---------------------------------------------------------------------------
 void InitThreadManager();
 void InitThreadManagerTracingData();
+#ifndef FEATURE_PORTABLE_HELPERS
+void ReportCopiedWriteBarriersToPerfMap();
+#ifdef FEATURE_EVENT_TRACE
+void ReportCopiedWriteBarriersToEtw(DWORD eventOptions);
+#endif // FEATURE_EVENT_TRACE
+#endif // !FEATURE_PORTABLE_HELPERS
 
 // When we want to take control of a thread at a safe point, the thread will
 // eventually come back to us in one of the following trip functions:

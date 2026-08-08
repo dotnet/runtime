@@ -5101,7 +5101,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
                 ETW::MethodLog::SendHelperEvent(
                     heapIterator.GetMethodCode(),
                     heapIterator.GetCodeSize(),
-                    GetStubCodeBlockKindEtwName(heapIterator.GetStubCodeBlockKind()),
+                    GetStubCodeBlockKindStringW(heapIterator.GetStubCodeBlockKind()),
                     dwEventOptions);
             }
             continue;
@@ -5273,6 +5273,13 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
                 fSendRichDebugInfoEvent,
                 FALSE);
         }
+
+#ifndef FEATURE_PORTABLE_HELPERS
+        if (pLoaderAllocatorFilter == nullptr && fSendMethodEvent)
+        {
+            ReportCopiedWriteBarriersToEtw(dwEventOptions);
+        }
+#endif // !FEATURE_PORTABLE_HELPERS
     } EX_CATCH{} EX_END_CATCH
 #endif // !DACCESS_COMPILE
 }

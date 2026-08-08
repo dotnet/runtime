@@ -456,6 +456,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     pHp->hpNext = NULL;
     pHp->pHeap = (PTR_CodeHeap)this;
+    pHp->pLoaderAllocator = m_pAllocator;
     // wire it back
     m_pHeapList = (PTR_HeapList)pHp;
 

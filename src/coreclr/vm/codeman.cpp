@@ -727,7 +727,7 @@ bool CodeHeapIterator::Next()
     }
     CONTRACTL_END;
 
-    if (m_pNextCode == NULL && !NextCode(&m_pNextCode, &m_pNextCodeHeap, &m_nextCodeHeapEnd))
+    if (m_pNextCode == NULL && !AdvanceIterator(&m_pNextCode, &m_pNextCodeHeap, &m_nextCodeHeapEnd))
     {
         return false;
     }
@@ -736,7 +736,7 @@ bool CodeHeapIterator::Next()
     HeapList* currentCodeHeap = m_pNextCodeHeap;
     TADDR currentCodeHeapEnd = m_nextCodeHeapEnd;
 
-    if (!NextCode(&m_pNextCode, &m_pNextCodeHeap, &m_nextCodeHeapEnd))
+    if (!AdvanceIterator(&m_pNextCode, &m_pNextCodeHeap, &m_nextCodeHeapEnd))
     {
         m_pNextCode = NULL;
         m_pNextCodeHeap = NULL;
@@ -770,6 +770,12 @@ bool CodeHeapIterator::Next()
             m_pCurrent = NULL;
             m_stubCodeBlockKind = pHdr->GetStubCodeBlockKind();
 
+            if (m_pNextCode != NULL && m_pNextCodeHeap == currentCodeHeap)
+            {
+                _ASSERTE(boundedCodeSize > sizeof(CodeHeader));
+                boundedCodeSize -= sizeof(CodeHeader);
+            }
+
             if (m_stubCodeBlockKind == STUB_CODE_BLOCK_JUMPSTUB)
             {
                 JumpStubBlockHeader* jumpStubBlock = (JumpStubBlockHeader*)m_pCurrentCode;
@@ -778,10 +784,6 @@ bool CodeHeapIterator::Next()
                     (size_t)jumpStubBlock->m_allocated * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
                 _ASSERTE(jumpStubBlockSize <= boundedCodeSize);
                 boundedCodeSize = jumpStubBlockSize;
-            }
-            else
-            {
-                boundedCodeSize = min(boundedCodeSize, CodeFragmentHeap::MinBlockSize);
             }
             _ASSERTE(FitsInU4(boundedCodeSize));
             m_codeSize = static_cast<DWORD>(boundedCodeSize);
@@ -795,7 +797,7 @@ bool CodeHeapIterator::Next()
     return true;
 }
 
-bool CodeHeapIterator::NextCode(BYTE** code, HeapList** heap, TADDR* heapEnd)
+bool CodeHeapIterator::AdvanceIterator(BYTE** code, HeapList** heap, TADDR* heapEnd)
 {
     CONTRACTL
     {
@@ -2319,19 +2321,19 @@ BOOL EEJitManager::LoadJIT()
 
 //**************************************************************************
 
-void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind, bool reportToEtw)
+void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 {
     WRAPPER_NO_CONTRACT;
 
     PerfMap::LogStubs(__FUNCTION__, GetStubCodeBlockKindString(kind), (PCODE)start, size, PerfMapStubType::Block);
 
 #ifdef FEATURE_EVENT_TRACE
-    if (reportToEtw && FitsInU4(size))
+    if (FitsInU4(size))
     {
         ETW::MethodLog::SendHelperEvent(
             reinterpret_cast<ULONGLONG>(start),
             static_cast<ULONG>(size),
-            GetStubCodeBlockKindEtwName(kind),
+            GetStubCodeBlockKindStringW(kind),
             ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
     }
 #endif // FEATURE_EVENT_TRACE
@@ -2418,7 +2420,7 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
         }
         else
         {
-            if (pFreeBlock->m_dwSize < MinBlockSize)
+            if (pFreeBlock->m_dwSize < SMALL_BLOCK_THRESHOLD)
                 nFreeSmallBlocks++;
         }
         ppFreeBlock = &(*ppFreeBlock)->m_pNext;
@@ -2436,10 +2438,10 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
     else
     {
         dwSize = dwRequestedSize;
-        if (dwSize < MinBlockSize)
-            dwSize = 4 * MinBlockSize;
+        if (dwSize < SMALL_BLOCK_THRESHOLD)
+            dwSize = 4 * SMALL_BLOCK_THRESHOLD;
         pMem = ExecutionManager::GetEEJitManager()->AllocCodeFragmentBlock(dwSize, dwAlignment, m_pAllocator, m_kind);
-        ReportStubBlock(pMem, dwSize, m_kind, true);
+        ReportStubBlock(pMem, dwSize, m_kind);
     }
 
     SIZE_T dwExtra = (BYTE *)ALIGN_UP(pMem, dwAlignment) - (BYTE *)pMem;
@@ -2447,7 +2449,7 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
     SIZE_T dwRemaining = dwSize - (dwExtra + dwRequestedSize);
 
     // Avoid accumulation of too many small blocks. The more small free blocks we have, the more picky we are going to be about adding new ones.
-    if ((dwRemaining >= max(sizeof(FreeBlock), sizeof(StubPrecode)) + (MinBlockSize / 0x10) * nFreeSmallBlocks) || (dwRemaining >= MinBlockSize))
+    if ((dwRemaining >= max(sizeof(FreeBlock), sizeof(StubPrecode)) + (SMALL_BLOCK_THRESHOLD / 0x10) * nFreeSmallBlocks) || (dwRemaining >= SMALL_BLOCK_THRESHOLD))
     {
         AddBlock((BYTE *)pMem + dwExtra + dwRequestedSize, dwRemaining);
         dwSize -= dwRemaining;
@@ -3559,6 +3561,8 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
     requestInfo.SetThrowOnOutOfMemoryWithinRange(throwOnOutOfMemoryWithinRange);
 
     TADDR                  mem;
+    ExecutableWriterHolderNoLog<JumpStubBlockHeader> blockWriterHolder;
+
     // Scope the lock
     {
         CrstHolder ch(&m_CodeHeapLock);
@@ -3572,31 +3576,25 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
 
         // CodeHeader comes immediately before the block
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
-        {
-            ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
-            codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(STUB_CODE_BLOCK_JUMPSTUB);
-        }
+        ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
+        codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(STUB_CODE_BLOCK_JUMPSTUB);
 
-        {
-            ExecutableWriterHolderNoLog<JumpStubBlockHeader> blockWriterHolder(
-                (JumpStubBlockHeader *)mem,
-                sizeof(JumpStubBlockHeader));
+        blockWriterHolder.AssignExecutableWriterHolder((JumpStubBlockHeader *)mem, sizeof(JumpStubBlockHeader));
 
-            _ASSERTE(IS_ALIGNED(blockWriterHolder.GetRW(), CODE_SIZE_ALIGN));
+        _ASSERTE(IS_ALIGNED(blockWriterHolder.GetRW(), CODE_SIZE_ALIGN));
 
-            blockWriterHolder.GetRW()->m_next = NULL;
-            blockWriterHolder.GetRW()->m_used = 0;
-            blockWriterHolder.GetRW()->m_allocated = numJumps;
-            if (pMD && pMD->IsLCGMethod())
-                blockWriterHolder.GetRW()->SetHostCodeHeap(static_cast<HostCodeHeap*>(pCodeHeap->pHeap));
-            else
-                blockWriterHolder.GetRW()->SetLoaderAllocator(pLoaderAllocator);
-        }
+        blockWriterHolder.GetRW()->m_next = NULL;
+        blockWriterHolder.GetRW()->m_used = 0;
+        blockWriterHolder.GetRW()->m_allocated = numJumps;
+        if (pMD && pMD->IsLCGMethod())
+            blockWriterHolder.GetRW()->SetHostCodeHeap(static_cast<HostCodeHeap*>(pCodeHeap->pHeap));
+        else
+            blockWriterHolder.GetRW()->SetLoaderAllocator(pLoaderAllocator);
 
         NibbleMapSetUnlocked(pCodeHeap, mem, blockSize);
     }
 
-    ReportStubBlock((void*)mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB, true);
+    ReportStubBlock((void*)mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB);
 
     LOG((LF_JIT, LL_INFO1000, "Allocated new JumpStubBlockHeader for %d stubs at" FMT_ADDR " in loader allocator " FMT_ADDR "\n",
          numJumps, DBG_ADDR(mem) , DBG_ADDR(pLoaderAllocator) ));
@@ -3633,10 +3631,8 @@ void * EEJitManager::AllocCodeFragmentBlock(size_t blockSize, unsigned alignment
 
         // CodeHeader comes immediately before the block
         CodeHeader * pCodeHdr = (CodeHeader *) (mem - sizeof(CodeHeader));
-        {
-            ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
-            codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(kind);
-        }
+        ExecutableWriterHolder<CodeHeader> codeHdrWriterHolder(pCodeHdr, sizeof(CodeHeader));
+        codeHdrWriterHolder.GetRW()->SetStubCodeBlockKind(kind);
 
         NibbleMapSetUnlocked(pCodeHeap, mem, blockSize);
 
