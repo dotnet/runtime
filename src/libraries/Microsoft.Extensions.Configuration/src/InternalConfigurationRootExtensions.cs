@@ -23,20 +23,92 @@ namespace Microsoft.Extensions.Configuration
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
 
-            IEnumerable<IConfigurationSection> children = providers
-                .Aggregate(Enumerable.Empty<string>(),
-                    (seed, source) => source.GetChildKeys(seed, path))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Select(key => root.GetSection(path == null ? key : path + ConfigurationPath.KeyDelimiter + key));
+            // The aggregated child keys, already ordered and de-duplicated, projected into sections below.
+            SortedChildKeys? keys = AggregateChildKeys(providers, path);
+            if (keys is null || keys.Count == 0)
+            {
+                return Array.Empty<IConfigurationSection>();
+            }
 
             if (reference is null)
             {
-                return children;
+                // Deferred projection via a static local iterator (no captured closure/delegate allocation).
+                return Project(root, path, keys);
+            }
+
+            // ConfigurationManager: eagerly materialize before releasing the reference so we don't iterate over
+            // disposed providers. The child count is known, so the list is sized exactly.
+            var children = new List<IConfigurationSection>(keys.Count);
+            foreach (string key in keys)
+            {
+                children.Add(CreateSection(root, path, key));
+            }
+            return children;
+
+            static IEnumerable<IConfigurationSection> Project(IConfigurationRoot root, string? path, IEnumerable<string> keys)
+            {
+                foreach (string key in keys)
+                {
+                    yield return CreateSection(root, path, key);
+                }
+            }
+        }
+
+        private static IConfigurationSection CreateSection(IConfigurationRoot root, string? path, string key)
+        {
+            string fullPath = path is null ? key : path + ConfigurationPath.KeyDelimiter + key;
+            return root.GetSection(fullPath);
+        }
+
+        /// <summary>
+        /// Gets the immediate child keys for a path, aggregated and de-duplicated across all providers, without
+        /// projecting them into <see cref="IConfigurationSection"/> instances. This lets a
+        /// <see cref="ChainedConfigurationProvider"/> read the keys of a chained <see cref="IConfigurationRoot"/>
+        /// without allocating a section per child.
+        /// </summary>
+        internal static IEnumerable<string> GetChildKeysImplementation(this IConfigurationRoot root, string? path)
+        {
+            using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
+            IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
+            return (IEnumerable<string>?)AggregateChildKeys(providers, path) ?? Array.Empty<string>();
+        }
+
+        private static SortedChildKeys? AggregateChildKeys(IEnumerable<IConfigurationProvider> providers, string? path)
+        {
+            if (providers is List<IConfigurationProvider> list)
+            {
+                int count = list.Count;
+                if (count == 0)
+                {
+                    return null;
+                }
+
+                SortedChildKeys accumulator = new SortedChildKeys();
+                for (int i = 0; i < count; i++)
+                {
+                    ProcessProvider(list[i], accumulator, path);
+                }
+
+                return accumulator;
             }
             else
             {
-                // Eagerly evaluate the IEnumerable before releasing the reference so we don't allow iteration over disposed providers.
-                return children.ToList();
+                SortedChildKeys accumulator = new SortedChildKeys();
+                foreach (IConfigurationProvider provider in providers)
+                {
+                    ProcessProvider(provider, accumulator, path);
+                }
+
+                return accumulator;
+            }
+        }
+
+        private static void ProcessProvider(IConfigurationProvider provider, SortedChildKeys accumulator, string? path)
+        {
+            IEnumerable<string> returned = provider.GetChildKeys(accumulator, path);
+            if (!ReferenceEquals(returned, accumulator))
+            {
+                accumulator.Overwrite(returned);
             }
         }
 

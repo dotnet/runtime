@@ -69,13 +69,10 @@ namespace Microsoft.Extensions.Configuration
 
             static int Compare(ReadOnlySpan<char> a, ReadOnlySpan<char> b)
             {
-#if NET
-                bool aIsInt = int.TryParse(a, out int value1);
-                bool bIsInt = int.TryParse(b, out int value2);
-#else
-                bool aIsInt = int.TryParse(a.ToString(), out int value1);
-                bool bIsInt = int.TryParse(b.ToString(), out int value2);
-#endif
+                int value1 = 0, value2 = 0;
+                bool aIsInt = CanBeInteger(a) && TryParseInt(a, out value1);
+                bool bIsInt = CanBeInteger(b) && TryParseInt(b, out value2);
+
                 int result;
 
                 if (!aIsInt && !bIsInt)
@@ -95,6 +92,29 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 return result;
+            }
+
+            // A necessary (not sufficient) precondition for int.TryParse to succeed: the first character must be a
+            // digit, a sign, or leading white space. Guarding with this skips the parse for the common textual keys
+            // and, on down-level frameworks, avoids the per-comparison ToString allocation.
+            static bool CanBeInteger(ReadOnlySpan<char> s)
+            {
+                if (s.IsEmpty)
+                {
+                    return false;
+                }
+
+                char c = s[0];
+                return (uint)(c - '0') <= 9 || c == '-' || c == '+' || char.IsWhiteSpace(c);
+            }
+
+            static bool TryParseInt(ReadOnlySpan<char> s, out int value)
+            {
+#if NET
+                return int.TryParse(s, out value);
+#else
+                return int.TryParse(s.ToString(), out value);
+#endif
             }
         }
     }
