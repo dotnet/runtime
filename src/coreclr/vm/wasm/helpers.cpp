@@ -801,7 +801,31 @@ extern "C" void STDCALL JIT_StackProbe()
 EXTERN_C FCDECL0(void, JIT_PollGC);
 FCIMPL0(void, JIT_PollGC)
 {
-    PORTABILITY_ASSERT("JIT_PollGC is not implemented on wasm");
+    // Fast path: nothing to do unless a GC (or ThreadAbort / debugger suspend) is pending.
+    if (!g_TrapReturningThreads)
+        return;
+
+    // Rare path. On other architectures JIT_PollGC's asm stub tail-calls the managed Thread.PollGC,
+    // whose only effect is a p/invoke round-trip through the empty ThreadNative_PollGC QCall: the GC
+    // transition parks the thread at a safe point and the pinvoke rare path performs the suspension.
+    // Reproduce that round-trip here with the inline-pinvoke helpers. JIT_PInvokeBeginImpl pushes an
+    // InlinedCallFrame seeded from the R2R caller's stack pointer and switches to preemptive mode, so a
+    // pending GC can suspend and walk this thread's R2R frames at this safe point. The end sequence then
+    // returns to cooperative mode; when a GC/abort is still pending JIT_PInvokeEndRarePath performs the
+    // actual suspension (RareDisablePreemptiveGC), services any ThreadAbort, and pops the frame.
+    InlinedCallFrame inlinedCallFrame;
+    JIT_PInvokeBeginImpl((void*)callersStackPointer, &inlinedCallFrame);
+
+    Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        inlinedCallFrame.Pop();
+    }
 }
 FCIMPLEND
 
