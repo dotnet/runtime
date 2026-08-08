@@ -169,5 +169,54 @@ namespace System.Net.Mime.Tests
             Assert.Equal("application/xml", ct.MediaType);
             Assert.Equal("us-ascii", ct.CharSet);
         }
+
+        [Theory]
+        // A valid RFC 2047 encoded-word followed by attacker-controlled junk: the prefix
+        // alone must not put the value on the pass-through-unquoted path.
+        [InlineData("=?utf-8?Q?foo?=?evil\"; filename=\"foo.txt")]
+        [InlineData("=?utf-8?B?Zm9v?=\"; filename=\"foo.txt")]
+        // A would-be encoded-word containing an unescaped quote in the data section.
+        [InlineData("=?utf-8?Q?foo\"; filename=\"foo.txt?=")]
+        // Trailing content after the closing "?=" with no folding whitespace.
+        [InlineData("=?utf-8?B?Zm9v?=trailing")]
+        public static void Name_Set_InjectionPayload_IsEscapedAndNotInjected(string injection)
+        {
+            var ct = new ContentType("application/octet-stream");
+            ct.Name = injection;
+
+            // The "name" parameter must round-trip exactly through the Parameters dictionary
+            // and no extra parameters may appear in the serialized header.
+            Assert.Equal(injection, ct.Parameters["name"]);
+            Assert.Equal(1, ct.Parameters.Count);
+
+            // Re-parsing the serialized form must recover the original name and produce
+            // exactly one parameter (i.e. no extra parameter was injected).
+            var reparsed = new ContentType(ct.ToString());
+            Assert.Equal(1, reparsed.Parameters.Count);
+            Assert.Equal(injection, reparsed.Parameters["name"]);
+        }
+
+        [Theory]
+        // Well-formed encoded-words must continue to be treated as already-encoded and pass
+        // through unchanged (the existing pre-encoded round-trip contract).
+        [InlineData("=?utf-8?B?SGVsbG8=?=")]
+        [InlineData("=?utf-8?Q?Hello=20world?=")]
+        [InlineData("=?utf-8?B?SGVsbG8=?=\r\n =?utf-8?B?d29ybGQ=?=")]
+        public static void Name_Set_EncodedWord_RoundTripsUnchanged(string encoded)
+        {
+            var ct = new ContentType("application/octet-stream");
+            ct.Name = encoded;
+
+            Assert.Equal(encoded, ct.Parameters["name"]);
+            Assert.Equal(1, ct.Parameters.Count);
+
+            // ToString wraps the encoded-word in quotes but must not escape its contents.
+            string serialized = ct.ToString();
+            Assert.Contains(encoded, serialized);
+
+            var reparsed = new ContentType(serialized);
+            Assert.Equal(1, reparsed.Parameters.Count);
+            Assert.Equal(encoded, reparsed.Parameters["name"]);
+        }
     }
 }
