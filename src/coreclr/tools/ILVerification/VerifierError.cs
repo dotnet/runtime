@@ -190,5 +190,7 @@ namespace ILVerify
         InterfaceImplHasDuplicate,            // InterfaceImpl has a duplicate
         InterfaceMethodNotImplemented,         // Class implements interface but not method
         LocallocStackNotEmpty, // localloc requires that stack must be empty, except for 'size' argument
+        InvalidBaseType, // Type has an invalid base type.
+        BadTypeSpec, // TypeSpec is not valid in this signature context.
     }
 }

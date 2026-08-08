@@ -9,7 +9,7 @@ using System.Collections.Generic;
 
 namespace Internal.TypeSystem.Ecma
 {
-    public struct EcmaSignatureParser
+    public partial struct EcmaSignatureParser
     {
         private TypeSystemContext _tsc;
         private Func<EntityHandle, NotFoundBehavior, TypeDesc> _typeResolver;
@@ -52,6 +52,8 @@ namespace Internal.TypeSystem.Ecma
         }
 
         public ResolutionFailure ResolutionFailure => _resolutionFailure;
+
+        partial void ReportInvalidTypeSpec(EntityHandle typeSpecHandle);
 
         private TypeDesc ResolveHandle(EntityHandle handle)
         {
@@ -273,13 +275,21 @@ namespace Internal.TypeSystem.Ecma
 
         private SignatureTypeCode ParseTypeCodeImpl(bool skipPinned = true)
         {
-            for (; ; )
-            {
-                SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
+            return ParseTypeCodeImpl(_reader.ReadSignatureTypeCode(), skipPinned);
+        }
 
+        private SignatureTypeCode ParseTypeCodeImpl(SignatureTypeCode typeCode, bool skipPinned = true)
+        {
+            for (; ; typeCode = _reader.ReadSignatureTypeCode())
+            {
                 if (typeCode == SignatureTypeCode.RequiredModifier)
                 {
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
+                    if (typeHandle.Kind == HandleKind.TypeSpecification)
+                    {
+                        ReportInvalidTypeSpec(typeHandle);
+                    }
+
                     _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = ResolveHandle(typeHandle) });
                     continue;
                 }
@@ -287,6 +297,11 @@ namespace Internal.TypeSystem.Ecma
                 if (typeCode == SignatureTypeCode.OptionalModifier)
                 {
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
+                    if (typeHandle.Kind == HandleKind.TypeSpecification)
+                    {
+                        ReportInvalidTypeSpec(typeHandle);
+                    }
+
                     _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = ResolveHandle(typeHandle) });
                     continue;
                 }
@@ -318,6 +333,24 @@ namespace Internal.TypeSystem.Ecma
         private TypeDesc ParseTypeImpl()
         {
             return ParseType(ParseTypeCode());
+        }
+
+        public TypeDesc ParseTypeSpec(TypeSpecificationHandle typeSpecHandle)
+        {
+            SignatureTypeCode typeCode = _reader.ReadSignatureTypeCode();
+            switch (typeCode)
+            {
+                case SignatureTypeCode.Pointer:
+                case SignatureTypeCode.FunctionPointer:
+                case SignatureTypeCode.Array:
+                case SignatureTypeCode.SZArray:
+                case SignatureTypeCode.GenericTypeInstance:
+                case SignatureTypeCode.GenericTypeParameter:
+                case SignatureTypeCode.GenericMethodParameter:
+                    return ParseType(ParseTypeCodeImpl(typeCode));
+            }
+            ReportInvalidTypeSpec(typeSpecHandle);
+            return ParseType(ParseTypeCodeImpl(typeCode));
         }
 
         public bool IsFieldSignature
