@@ -538,6 +538,12 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TieredPGO_ScalableCountThreshold, W("Tiered
 
 #endif
 
+// When set, JIT'd methods that are not optimization-disabled use a separate
+// per-LoaderAllocator code heap from non-optimized code (Tier0, MinOpts, etc.).
+// LCG and interpreter heaps are unaffected.
+RETAIL_CONFIG_DWORD_INFO(INTERNAL_SeparateOptimizedCodeHeaps, W("SeparateOptimizedCodeHeaps"), 1, "When non-zero, use a separate code heap for optimized JIT'd code")
+
+
 ///
 /// Entry point slot backpatch
 ///
