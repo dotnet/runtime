@@ -177,7 +177,6 @@ extern BOOL isMemoryReadable(const TADDR start, unsigned len);
 FORCEINLINE void* memcpyNoGCRefs(void * dest, const void * src, size_t len)
 {
     WRAPPER_NO_CONTRACT;
-    if (len == 0) return dest;
     return memcpy(dest, src, len);
 }
 
