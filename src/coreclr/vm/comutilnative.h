@@ -113,13 +113,8 @@ public:
 #ifndef UNIX_X86_ABI
     UINT8 padding[6];
 #endif
-    GCGenerationInfo generationInfo0;
-    GCGenerationInfo generationInfo1;
-    GCGenerationInfo generationInfo2;
-    GCGenerationInfo generationInfo3;
-    GCGenerationInfo generationInfo4;
-    UINT64 pauseDuration0;
-    UINT64 pauseDuration1;
+    GCGenerationInfo generationInfo[5];
+    UINT64 pauseDurations[2];
 };
 #include "poppack.h"
 

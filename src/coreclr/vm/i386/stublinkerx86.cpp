@@ -871,6 +871,7 @@ bool StubLinkerCPU::EmitUnboxMethodStub(MethodDesc* pUnboxMD)
     //
     X86EmitAddReg(THIS_kREG, sizeof(void*));
     EmitTailJumpToMethod(pUnboxMD);
+    SetTargetMethod(pUnboxMD);
     return true;
 }
 
@@ -944,6 +945,7 @@ bool StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
     }
 
     EmitTailJumpToMethod(pMD);
+    SetTargetMethod(pMD);
 
     return true;
 #endif // UNIX_X86_ABI
