@@ -38,6 +38,47 @@
 #define INTERP_WASM_SIMD_INTRINSIC_V_C3(name, arg1, c_function, wasm_opcode)
 #endif // defined(HOST_BROWSER) || defined(HOST_WASI)
 
+// Relaxed-SIMD macro family. The .def file uses INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_{V,VV,VVV}
+// for the relaxed-simd entries below. There are two flavors of the runtime SIMD library:
+//   * libmono-wasm-simd.a is built without -mrelaxed-simd / without HOST_WASM_RELAXED_SIMD,
+//     so the relaxed entries are routed to a per-arity stub function (asserts at runtime)
+//     and their wasm-opcode table slots are 0 (the jiterpreter uses the fallback path, which
+//     in turn calls the stub — guarded by RelaxedSimd.IsSupported reporting false).
+//   * libmono-wasm-relaxed-simd.a is built with -mrelaxed-simd and HOST_WASM_RELAXED_SIMD=1,
+//     so the relaxed entries expand to the regular INTERP_WASM_SIMD_INTRINSIC_V_* path
+//     producing real emscripten intrinsic wrappers and real wasm opcodes.
+// mono-ee-interp is always built with HOST_WASM_RELAXED_SIMD=1 so the MintSIMDOpsPP/PPP/PPPP
+// enums in mintops.h and the unsorted_packedsimd_intrinsic_infos[] lookup table in
+// transform-simd.c always include the relaxed entries at stable positions across both
+// library flavors.
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+#ifdef HOST_WASM_RELAXED_SIMD
+#ifndef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V INTERP_WASM_SIMD_INTRINSIC_V_V
+#endif
+#ifndef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV INTERP_WASM_SIMD_INTRINSIC_V_VV
+#endif
+#ifndef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV INTERP_WASM_SIMD_INTRINSIC_V_VVV
+#endif
+#else
+#ifndef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V(name, arg1, c_intrinsic, wasm_opcode) INTERP_SIMD_INTRINSIC_P_P(INTERP_SIMD_INTRINSIC_ ## name ## arg1, _mono_interp_simd_relaxed_unsupported_1, 0)
+#endif
+#ifndef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV(name, arg1, c_intrinsic, wasm_opcode) INTERP_SIMD_INTRINSIC_P_PP(INTERP_SIMD_INTRINSIC_ ## name ## arg1, _mono_interp_simd_relaxed_unsupported_2, 0)
+#endif
+#ifndef INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV(name, arg1, c_intrinsic, wasm_opcode) INTERP_SIMD_INTRINSIC_P_PPP(INTERP_SIMD_INTRINSIC_ ## name ## arg1, _mono_interp_simd_relaxed_unsupported_3, 0)
+#endif
+#endif // HOST_WASM_RELAXED_SIMD
+#else
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V(name, arg1, c_intrinsic, wasm_opcode)
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV(name, arg1, c_intrinsic, wasm_opcode)
+#define INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV(name, arg1, c_intrinsic, wasm_opcode)
+#endif // defined(HOST_BROWSER) || defined(HOST_WASI)
+
 // The third argument is the wasm opcode that corresponds to this simd intrinsic, if any.
 // Specify -1 if there is no exact 1:1 mapping (the opcode can still be implemented manually in the jiterpreter.)
 
@@ -391,3 +432,29 @@ INTERP_WASM_SIMD_INTRINSIC_V_C3 (StoreSelectedScalar, X1, interp_packedsimd_stor
 INTERP_WASM_SIMD_INTRINSIC_V_C3 (StoreSelectedScalar, X2, interp_packedsimd_store16_lane, 0x59)
 INTERP_WASM_SIMD_INTRINSIC_V_C3 (StoreSelectedScalar, X4, interp_packedsimd_store32_lane, 0x5a)
 INTERP_WASM_SIMD_INTRINSIC_V_C3 (StoreSelectedScalar, X8, interp_packedsimd_store64_lane, 0x5b)
+
+// Relaxed-SIMD (https://github.com/WebAssembly/relaxed-simd). The method names below are
+// prefixed with "Relaxed" to avoid name collisions with PackedSimd entries in the shared
+// PackedSimdIntrinsicInfo lookup table; emit_sri_relaxedsimd in transform-simd.c prepends
+// "Relaxed" before looking them up. See the macro definitions at the top of this file for
+// how the regular vs relaxed-simd library variants route these entries differently.
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV  (RelaxedSwizzle, D1, wasm_i8x16_relaxed_swizzle, 0x100)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V   (RelaxedConvertToInt32, R4, wasm_i32x4_relaxed_trunc_f32x4, 0x101)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V   (RelaxedConvertToUInt32, R4, wasm_u32x4_relaxed_trunc_f32x4, 0x102)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V   (RelaxedConvertToInt32, R8, wasm_i32x4_relaxed_trunc_f64x2_zero, 0x103)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_V   (RelaxedConvertToUInt32, R8, wasm_u32x4_relaxed_trunc_f64x2_zero, 0x104)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV (RelaxedMultiplyAddEstimate, R4, wasm_f32x4_relaxed_madd, 0x105)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV (RelaxedMultiplyAddNegatedEstimate, R4, wasm_f32x4_relaxed_nmadd, 0x106)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV (RelaxedMultiplyAddEstimate, R8, wasm_f64x2_relaxed_madd, 0x107)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV (RelaxedMultiplyAddNegatedEstimate, R8, wasm_f64x2_relaxed_nmadd, 0x108)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV (RelaxedLaneSelect, D1, wasm_i8x16_relaxed_laneselect, 0x109)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV (RelaxedLaneSelect, D2, wasm_i16x8_relaxed_laneselect, 0x10a)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV (RelaxedLaneSelect, D4, wasm_i32x4_relaxed_laneselect, 0x10b)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV (RelaxedLaneSelect, D8, wasm_i64x2_relaxed_laneselect, 0x10c)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV  (RelaxedMin, R4, wasm_f32x4_relaxed_min, 0x10d)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV  (RelaxedMax, R4, wasm_f32x4_relaxed_max, 0x10e)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV  (RelaxedMin, R8, wasm_f64x2_relaxed_min, 0x10f)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV  (RelaxedMax, R8, wasm_f64x2_relaxed_max, 0x110)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV  (RelaxedMultiplyRoundedQ15, I2, wasm_i16x8_relaxed_q15mulr, 0x111)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VV  (RelaxedDotProduct, U1, wasm_i16x8_relaxed_dot_i8x16_i7x16, 0x112)
+INTERP_WASM_RELAXED_SIMD_INTRINSIC_V_VVV (RelaxedDotProductAdd, U1, wasm_i32x4_relaxed_dot_i8x16_i7x16_add, 0x113)
