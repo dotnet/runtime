@@ -41,7 +41,7 @@ VOID: 'void';
 ENUM: 'enum';
 CUSTOM: 'custom';
 FIXED: 'fixed';
-SYSSTRING: 'systring';
+SYSSTRING: 'sysstring';
 ARRAY: 'array';
 VARIANT: 'variant';
 CURRENCY: 'currency';
@@ -123,6 +123,7 @@ MRESOURCE: '.mresource';
 // For example, "ldc.r8" must be recognized as INSTR_R token, not as DOTTEDNAME
 INSTR_NONE:
 	'nop'
+	| 'unused'
 	| 'break'
 	| 'ldarg.0'
 	| 'ldarg.1'
@@ -409,7 +410,7 @@ id:
 	| INSTANCE
 	| SQSTRING;
 dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart) | SQSTRING;
-dottedNamePart: ID | VALUE | INSTANCE;
+dottedNamePart: ID | VALUE | INSTANCE | SQSTRING | DOTTEDNAME | 'volatile';
 compQstring: (QSTRING PLUS)* QSTRING;
 
 
@@ -696,6 +697,7 @@ instr:
 	| instr_string 'bytearray' '(' bytes ')'
 	| instr_sig callConv type sigArgs
 	| instr_tok ownerType /* ownerType ::= memberRef | typeSpec */
+	| instr_tok int32
 	| instr_switch '(' labels ')'
 	| instr_switch '()';
 
@@ -788,6 +790,10 @@ nativeTypeElement:
 	| marshalType=SAFEARRAY variantType ',' compQstring
 	| marshalType=INT
 	| marshalType=UINT
+	| 'unsigned' unsignedMarshalType=INT8
+	| 'unsigned' unsignedMarshalType=INT16
+	| 'unsigned' unsignedMarshalType=INT32_
+	| 'unsigned' unsignedMarshalType=INT64_
 	| 'nested' marshalType=STRUCT
 	| marshalType=BYVALSTR
 	| ANSI marshalType=BSTR
@@ -916,6 +922,7 @@ secDecl:
 	| PERMISSION secAction typeSpec '=' '{' customBlobDescr '}'
 	| PERMISSION secAction typeSpec
 	| PERMISSIONSET secAction '=' 'bytearray'? '(' bytes ')'
+	| PERMISSIONSET secAction 'bytearray' '(' bytes ')'
 	| PERMISSIONSET secAction compQstring
 	| PERMISSIONSET secAction '=' '{' secAttrSetBlob '}';
 
@@ -1380,7 +1387,7 @@ customAttrDecl:
 
 /* Assembly References */
 asmOrRefDecl:
-	'.publicKey' '=' '(' bytes ')'
+	('.publickey' | '.publicKey') '=' '(' bytes ')'
 	| '.ver' intOrWildcard ':' intOrWildcard ':' intOrWildcard ':' intOrWildcard
 	| '.locale' compQstring
 	| '.locale' '=' '(' bytes ')'
@@ -1438,4 +1445,3 @@ manifestResDecl:
 	| '.assembly' 'extern' dottedName
 	| customAttrDecl
 	| compControl;
-

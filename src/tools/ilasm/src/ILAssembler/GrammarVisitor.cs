@@ -134,7 +134,7 @@ namespace ILAssembler
         private void ReportWarning(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Warning, id, message, context);
 
-        public (ImmutableArray<Diagnostic> Diagnostics, PEBuilder? Image) BuildImage()
+        public (ImmutableArray<Diagnostic> Diagnostics, CompilationResult? Image) BuildImage()
         {
             // Default module name to output filename if no .module directive was provided
             if (_entityRegistry.Module.Name is null && _options.OutputFileName is not null)
@@ -176,7 +176,7 @@ namespace ILAssembler
             }
 
             BlobBuilder ilStream = new();
-            _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames);
+            Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, _options.Deterministic);
             MetadataRootBuilder rootBuilder = new(_metadataBuilder, _options.MetadataVersion);
 
             // Compute metadata size from the MetadataSizes
@@ -207,6 +207,20 @@ namespace ILAssembler
                 dllCharacteristics &= ~DllCharacteristics.DynamicBase;
             }
 
+            Characteristics imageCharacteristics = Characteristics.ExecutableImage;
+            if (_options.Dll)
+            {
+                imageCharacteristics |= Characteristics.Dll;
+            }
+            if (machine is Machine.I386 or Machine.Arm)
+            {
+                imageCharacteristics |= Characteristics.Bit32Machine;
+            }
+            else if (machine is Machine.Amd64 or Machine.Arm64)
+            {
+                imageCharacteristics |= Characteristics.LargeAddressAware;
+            }
+
             // Compute stack reserve: command-line option overrides directive, which overrides default
             ulong sizeOfStackReserve = (ulong)(_options.StackReserve ?? (_stackReserve != 0 ? _stackReserve : 0x00100000));
 
@@ -218,6 +232,7 @@ namespace ILAssembler
                 majorSubsystemVersion: majorSubsystemVersion,
                 minorSubsystemVersion: minorSubsystemVersion,
                 dllCharacteristics: dllCharacteristics,
+                imageCharacteristics: imageCharacteristics,
                 sizeOfStackReserve: sizeOfStackReserve);
 
             MethodDefinitionHandle entryPoint = default;
@@ -257,7 +272,7 @@ namespace ILAssembler
                     metadataSize: metadataSize,
                     debugDataSize: debugDataSize);
 
-                return (_diagnostics.ToImmutable(), peBuilder);
+                return (_diagnostics.ToImmutable(), new CompilationResult(peBuilder, mvidFixup));
             }
 
             // Apply CorFlags from options or directive
@@ -269,15 +284,7 @@ namespace ILAssembler
 
             // Deterministic ID provider for reproducible builds
             Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = _options.Deterministic
-                ? content =>
-                {
-                    using var hash = IncrementalHash.CreateHash(System.Security.Cryptography.HashAlgorithmName.SHA256);
-                    foreach (var blob in content)
-                    {
-                        hash.AppendData(blob.GetBytes());
-                    }
-                    return BlobContentId.FromHash(hash.GetHashAndReset());
-                }
+                ? GetDeterministicContentId
                 : null;
 
             ManagedPEBuilder standardBuilder = new(
@@ -291,7 +298,18 @@ namespace ILAssembler
                 debugDirectoryBuilder: debugDirectoryBuilder,
                 deterministicIdProvider: deterministicIdProvider);
 
-            return (_diagnostics.ToImmutable(), standardBuilder);
+            return (_diagnostics.ToImmutable(), new CompilationResult(standardBuilder, mvidFixup));
+        }
+
+        private static BlobContentId GetDeterministicContentId(IEnumerable<Blob> content)
+        {
+            using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            foreach (Blob blob in content)
+            {
+                hash.AppendData(blob.GetBytes());
+            }
+
+            return BlobContentId.FromHash(hash.GetHashAndReset());
         }
 
         private ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos()
@@ -368,7 +386,7 @@ namespace ILAssembler
                 _pdbBuilder,
                 typeSystemRowCounts,
                 entryPoint,
-                idProvider: content => new BlobContentId(Guid.NewGuid(), 0x04030201));
+                idProvider: _options.Deterministic ? GetDeterministicContentId : null);
 
             var pdbBlob = new BlobBuilder();
             var pdbContentId = pdbBuilder.Serialize(pdbBlob);
@@ -527,8 +545,7 @@ namespace ILAssembler
                 or DiagnosticIds.ParameterIndexOutOfRange
                 or DiagnosticIds.GenericParameterNotFound
                 or DiagnosticIds.UnknownGenericParameter
-                or DiagnosticIds.MissingInstanceCallConv
-                or DiagnosticIds.TooManyGenericParameters;
+                or DiagnosticIds.MissingInstanceCallConv;
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
@@ -585,11 +602,18 @@ namespace ILAssembler
             }
 
             string decl = context.GetChild(0).GetText();
-            if (decl == ".publicKey")
+            if (decl is ".publickey" or ".publicKey")
             {
                 BlobBuilder blob = new();
                 blob.WriteBytes(VisitBytes(context.bytes()).Value);
-                _currentAssemblyOrRef!.PublicKeyOrToken = blob;
+                // COMPAT: Native ilasm gives a public key token precedence regardless of declaration order.
+                if (_currentAssemblyOrRef is not EntityRegistry.AssemblyReferenceEntity assemblyReference
+                    || assemblyReference.PublicKeyOrToken is null
+                    || assemblyReference.Flags.HasFlag(AssemblyFlags.PublicKey))
+                {
+                    _currentAssemblyOrRef!.PublicKeyOrToken = blob;
+                    _currentAssemblyOrRef.Flags |= AssemblyFlags.PublicKey;
+                }
             }
             else if (decl == ".ver")
             {
@@ -763,6 +787,7 @@ namespace ILAssembler
                 var blob = new BlobBuilder();
                 blob.WriteBytes(VisitBytes(context.bytes()).Value);
                 _currentAssemblyOrRef!.PublicKeyOrToken = blob;
+                _currentAssemblyOrRef.Flags &= ~AssemblyFlags.PublicKey;
             }
             return GrammarResult.SentinelValue.Result;
         }
@@ -1346,12 +1371,6 @@ namespace ILAssembler
                     // Two-pass generic parameter processing:
                     // Pass 1: Register all parameter names (without resolving constraints)
                     var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
-                    if (typarContexts.Length > ushort.MaxValue)
-                    {
-                        ReportError(DiagnosticIds.TooManyGenericParameters,
-                            string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
-                            context.typarsClause());
-                    }
                     for (int i = 0; i < typarContexts.Length; i++)
                     {
                         var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -1435,12 +1454,6 @@ namespace ILAssembler
                 {
                     // Two-pass generic parameter processing for forward-referenced types
                     var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
-                    if (typarContexts.Length > ushort.MaxValue)
-                    {
-                        ReportError(DiagnosticIds.TooManyGenericParameters,
-                            string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
-                            context.typarsClause());
-                    }
                     for (int i = 0; i < typarContexts.Length; i++)
                     {
                         var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -2197,6 +2210,26 @@ namespace ILAssembler
 
         public static GrammarResult.String VisitDottedName(CILParser.DottedNameContext context)
         {
+            CILParser.DottedNamePartContext[] parts = context.dottedNamePart();
+            if (parts.Length > 0)
+            {
+                StringBuilder builder = new();
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    if (i > 0)
+                    {
+                        builder.Append('.');
+                    }
+
+                    CILParser.DottedNamePartContext part = parts[i];
+                    builder.Append(part.SQSTRING() is { } quotedPart
+                        ? StringHelpers.ParseQuotedString(quotedPart.GetText())
+                        : part.GetText());
+                }
+
+                return new(builder.ToString());
+            }
+
             string text = context.GetText();
             if (context.SQSTRING() is not null && text.Length >= 2 && text[0] == '\'')
             {
@@ -2775,7 +2808,7 @@ namespace ILAssembler
             var fieldType = VisitType(context.type()).Value;
             var marshalBlobs = context.marshalBlob();
             var marshalBlob = marshalBlobs.Length > 0 ? VisitMarshalBlob(marshalBlobs[marshalBlobs.Length - 1]).Value : null;
-            var name = VisitDottedName(context.dottedName()).Value;
+            string name = VisitDottedName(context.dottedName()).Value;
             var rvaOffset = VisitAtOpt(context.atOpt()).Value;
             var fieldOffset = VisitRepeatOpt(context.repeatOpt()).Value;
             var constantValue = VisitInitOpt(context.initOpt()).Value;
@@ -2926,13 +2959,13 @@ namespace ILAssembler
             }
 
             var fieldTypeSig = VisitType(type).Value;
-            EntityRegistry.TypeEntity definingType = _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType;
+            EntityRegistry.TypeEntity definingType = _entityRegistry.ModuleType;
             if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
             {
                 definingType = VisitTypeSpec(typeSpec).Value;
             }
 
-            var name = VisitDottedName(context.dottedName()).Value;
+            string name = VisitDottedName(context.dottedName()).Value;
 
             var fieldSig = new BlobBuilder(fieldTypeSig.Count + 1);
             fieldSig.WriteByte((byte)SignatureKind.Field);
@@ -3439,6 +3472,7 @@ namespace ILAssembler
                     break;
                 case CILParser.RULE_instr_sig:
                     {
+                        Debug.Assert(opcode == ILOpCode.Calli);
                         BlobBuilder signature = new();
                         byte callConv = VisitCallConv(context.callConv()).Value;
                         signature.WriteByte(callConv);
@@ -3451,6 +3485,7 @@ namespace ILAssembler
                         {
                             arg.SignatureBlob.WriteContentTo(signature);
                         }
+                        _currentMethod!.Definition.MethodBody.OpCode(opcode);
                         _currentMethod!.Definition.MethodBody.Token(_entityRegistry.GetOrCreateStandaloneSignature(signature).Handle);
                     }
                     break;
@@ -3550,11 +3585,21 @@ namespace ILAssembler
                     }
                     break;
                 case CILParser.RULE_instr_tok:
-                    var tok = VisitOwnerType(context.ownerType()).Value;
                     _currentMethod!.Definition.MethodBody.OpCode(opcode);
+                    if (context.int32() is { } tokenValue)
+                    {
+                        _currentMethod.Definition.MethodBody.CodeBuilder.WriteInt32(VisitInt32(tokenValue).Value);
+                        break;
+                    }
+
+                    var tok = VisitOwnerType(context.ownerType()).Value;
                     if (tok is EntityRegistry.TypeReferenceEntity tokTypeRef)
                     {
                         tokTypeRef.RecordBlobToWriteResolvedToken(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
+                    }
+                    else if (tok is EntityRegistry.MemberReferenceEntity tokMemberRef)
+                    {
+                        tokMemberRef.RecordBlobToWriteResolvedHandle(_currentMethod.Definition.MethodBody.CodeBuilder.ReserveBytes(4));
                     }
                     else
                     {
@@ -3664,6 +3709,12 @@ namespace ILAssembler
         private static ILOpCode ParseOpCodeFromToken(IToken token)
         {
             string text = token.Text.TrimEnd('.');
+            if (text == "unused")
+            {
+                // Native ilasm's keyword index uses the last matching opcode.def entry, CEE_UNUSED70.
+                return ILOpCode.Unused;
+            }
+
             string normalized = text.Replace('.', '_');
 
             // Handle instruction aliases that don't directly map to ILOpCode enum names
@@ -4339,12 +4390,6 @@ namespace ILAssembler
             // Pass 1: Register all parameter names (without resolving constraints)
             _currentMethod = new(methodDefinition);
             var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
-            if (typarContexts.Length > ushort.MaxValue)
-            {
-                ReportError(DiagnosticIds.TooManyGenericParameters,
-                    string.Format(DiagnosticMessageTemplates.TooManyGenericParameters, typarContexts.Length, ushort.MaxValue),
-                    context.typarsClause());
-            }
             for (int i = 0; i < typarContexts.Length; i++)
             {
                 var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
@@ -4388,7 +4433,7 @@ namespace ILAssembler
                         pInvokeInfo);
                     continue;
                 }
-                pInvokeInformation = (_entityRegistry.GetOrCreateModuleReference(moduleName, _ => { }), entryPoint, attributes);
+                pInvokeInformation = (_entityRegistry.GetOrCreateModuleReference(moduleName, _ => { }), entryPoint ?? name, attributes);
             }
             methodDefinition.MethodImportInformation = pInvokeInformation;
 
@@ -4503,7 +4548,7 @@ namespace ILAssembler
                 return new(_entityRegistry.CreateLazilyRecordedMemberReference(_entityRegistry.ModuleType, "<error>", methodRefSignature));
             }
             byte callConv = VisitCallConv(callConvCtx).Value;
-            EntityRegistry.TypeEntity owner = _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType;
+            EntityRegistry.TypeEntity owner = _entityRegistry.ModuleType;
             if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
             {
                 owner = VisitTypeSpec(typeSpec).Value;
@@ -4594,12 +4639,18 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitNativeType(CILParser.NativeTypeContext context) => VisitNativeType(context);
         public GrammarResult.FormattedBlob VisitNativeType(CILParser.NativeTypeContext context)
         {
-            if (context.nativeTypeArrayPointerInfo() is not CILParser.NativeTypeArrayPointerInfoContext[] arrayPointerInfo)
+            if (context.nativeTypeElement() is not CILParser.NativeTypeElementContext element)
             {
-                return VisitNativeTypeElement(context.nativeTypeElement());
+                return new(new BlobBuilder());
+            }
+
+            CILParser.NativeTypeArrayPointerInfoContext[] arrayPointerInfo = context.nativeTypeArrayPointerInfo();
+            if (arrayPointerInfo.Length == 0)
+            {
+                return VisitNativeTypeElement(element);
             }
             var prefix = new BlobBuilder(arrayPointerInfo.Length);
-            var elementType = VisitNativeTypeElement(context.nativeTypeElement()).Value;
+            var elementType = VisitNativeTypeElement(element).Value;
             var suffix = new BlobBuilder();
 
             for (int i = arrayPointerInfo.Length - 1; i >= 0; i--)
@@ -4629,20 +4680,20 @@ namespace ILAssembler
             {
                 if (arrayPointerInfo[i] is CILParser.PointerArrayTypeSizeContext size)
                 {
+                    suffix.WriteCompressedInteger(0);
                     suffix.WriteCompressedInteger(VisitInt32(size.int32()).Value);
+                    suffix.WriteCompressedInteger(0);
                 }
                 else if (arrayPointerInfo[i] is CILParser.PointerArrayTypeSizeParamIndexContext sizeParamIndex)
                 {
                     var ints = sizeParamIndex.int32();
                     suffix.WriteCompressedInteger(VisitInt32(ints[1]).Value);
-                    suffix.WriteCompressedInteger(VisitInt32(ints[2]).Value);
+                    suffix.WriteCompressedInteger(VisitInt32(ints[0]).Value);
                     suffix.WriteCompressedInteger(1); // Write that the paramIndex parameter was specified
                 }
                 else if (arrayPointerInfo[i] is CILParser.PointerArrayTypeParamIndexContext paramIndex)
                 {
-                    suffix.WriteCompressedInteger(0);
                     suffix.WriteCompressedInteger(VisitInt32(paramIndex.int32()).Value);
-                    suffix.WriteCompressedInteger(0); // Write that the paramIndex parameter was not specified
                 }
             }
 
@@ -4666,6 +4717,21 @@ namespace ILAssembler
 
             if (context.marshalType is null)
             {
+                if (context.marshalBool is not null)
+                {
+                    blob.WriteByte((byte)UnmanagedType.VariantBool);
+                }
+                else if (context.unsignedMarshalType is not null)
+                {
+                    blob.WriteByte(context.unsignedMarshalType.Type switch
+                    {
+                        CILParser.INT8 => (byte)UnmanagedType.U1,
+                        CILParser.INT16 => (byte)UnmanagedType.U2,
+                        CILParser.INT32_ => (byte)UnmanagedType.U4,
+                        CILParser.INT64_ => (byte)UnmanagedType.U8,
+                        _ => throw new UnreachableException(),
+                    });
+                }
                 return new(blob);
             }
 
@@ -4731,15 +4797,7 @@ namespace ILAssembler
                     blob.WriteByte(NATIVE_TYPE_VOID);
                     break;
                 case CILParser.BOOL:
-                    // Distinguish 'variant bool' (VariantBool) from plain 'bool' (Bool)
-                    if (context.marshalBool is not null)
-                    {
-                        blob.WriteByte((byte)UnmanagedType.VariantBool);
-                    }
-                    else
-                    {
-                        blob.WriteByte((byte)UnmanagedType.Bool);
-                    }
+                    blob.WriteByte((byte)UnmanagedType.Bool);
                     break;
                 case CILParser.INT8:
                     blob.WriteByte((byte)UnmanagedType.I1);
@@ -5914,7 +5972,12 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitVariantType(CILParser.VariantTypeContext context) => VisitVariantType(context);
         public GrammarResult.Literal<VarEnum> VisitVariantType(CILParser.VariantTypeContext context)
         {
-            VarEnum variant = VisitVariantTypeElement(context.variantTypeElement()).Value;
+            if (context.variantTypeElement() is not CILParser.VariantTypeElementContext element)
+            {
+                return new(VarEnum.VT_EMPTY);
+            }
+
+            VarEnum variant = VisitVariantTypeElement(element).Value;
             // The 0th child is the variant element type.
             for (int i = 1; i < context.ChildCount; i++)
             {

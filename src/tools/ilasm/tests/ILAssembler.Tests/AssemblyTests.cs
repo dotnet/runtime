@@ -21,6 +21,50 @@ namespace ILAssembler.Tests
 {
     public class AssemblyTests
     {
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ImageCharacteristics_AreValid(bool dll)
+        {
+            string source = """
+                .assembly test { }
+                .method public static void Main() cil managed
+                {
+                    .entrypoint
+                    ret
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { Dll = dll });
+            Characteristics characteristics = pe.PEHeaders.CoffHeader.Characteristics;
+
+            Assert.True(characteristics.HasFlag(Characteristics.ExecutableImage));
+            Assert.True(characteristics.HasFlag(Characteristics.Bit32Machine));
+            Assert.Equal(dll, characteristics.HasFlag(Characteristics.Dll));
+        }
+
+        [Theory]
+        [InlineData(Machine.Amd64)]
+        [InlineData(Machine.Arm64)]
+        public void ImageCharacteristics_64BitImageIsLargeAddressAware(Machine machine)
+        {
+            string source = """
+                .assembly test { }
+                .method public static void Main() cil managed
+                {
+                    .entrypoint
+                    ret
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options { Machine = machine });
+            Characteristics characteristics = pe.PEHeaders.CoffHeader.Characteristics;
+
+            Assert.True(characteristics.HasFlag(Characteristics.ExecutableImage));
+            Assert.True(characteristics.HasFlag(Characteristics.LargeAddressAware));
+            Assert.False(characteristics.HasFlag(Characteristics.Bit32Machine));
+        }
+
         [Fact]
         public void Diagnostic_AssemblyNotFound()
         {
@@ -69,6 +113,85 @@ namespace ILAssembler.Tests
             var objectRef = typeRefs.Single(t => reader.GetString(t.Name) == "Object");
             Assert.Equal("System", reader.GetString(objectRef.Namespace));
             Assert.Equal(asmRefs[0].Name, reader.GetAssemblyReference((AssemblyReferenceHandle)objectRef.ResolutionScope).Name);
+        }
+
+        [Fact]
+        public void AssemblyReference_KeywordName_IsAccepted()
+        {
+            string source = """
+                .assembly extern volatile
+                {
+                    .ver 0:0:0:0
+                }
+                .assembly test { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assemblyReference = Assert.Single(reader.AssemblyReferences);
+
+            Assert.Equal("volatile", reader.GetString(reader.GetAssemblyReference(assemblyReference).Name));
+        }
+
+        [Theory]
+        [InlineData(".publickey")]
+        [InlineData(".publicKey")]
+        public void AssemblyReference_PublicKeySpellings_AreAccepted(string directive)
+        {
+            string source = $$"""
+                .assembly extern mscorlib
+                {
+                    {{directive}} = (01 02 03 04)
+                    .ver 2:0:0:0
+                }
+                .assembly test { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assemblyReference = reader.GetAssemblyReference(Assert.Single(reader.AssemblyReferences));
+
+            Assert.True(assemblyReference.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([1, 2, 3, 4], reader.GetBlobBytes(assemblyReference.PublicKeyOrToken));
+        }
+
+        [Fact]
+        public void AssemblyDefinition_PublicKeySetsFlag()
+        {
+            string source = """
+                .assembly test
+                {
+                    .publickey = (01 02 03 04)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assembly = reader.GetAssemblyDefinition();
+
+            Assert.True(assembly.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([1, 2, 3, 4], reader.GetBlobBytes(assembly.PublicKey));
+        }
+
+        [Theory]
+        [InlineData(".publickey = (01 02 03 04)\n.publickeytoken = (05 06 07 08)")]
+        [InlineData(".publickeytoken = (05 06 07 08)\n.publickey = (01 02 03 04)")]
+        public void AssemblyReference_PublicKeyTokenTakesPrecedence(string declarations)
+        {
+            string source = $$"""
+                .assembly extern External
+                {
+                    {{declarations}}
+                }
+                .assembly test { }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var assemblyReference = reader.GetAssemblyReference(Assert.Single(reader.AssemblyReferences));
+
+            Assert.False(assemblyReference.Flags.HasFlag(AssemblyFlags.PublicKey));
+            Assert.Equal([5, 6, 7, 8], reader.GetBlobBytes(assemblyReference.PublicKeyOrToken));
         }
 
 
@@ -255,6 +378,99 @@ namespace ILAssembler.Tests
             Assert.Equal(new Version(1, 2, 3, 4), asmDef.Version);
             var asmRef = reader.GetAssemblyReference(MetadataTokens.AssemblyReferenceHandle(1));
             Assert.Equal(new Version(8, 0, 0, 0), asmRef.Version);
+        }
+
+        [Theory]
+        [InlineData("Deterministic.dll", false)]
+        [InlineData("Deterministic.exe", true)]
+        public void ManagedIlasm_DeterministicOutput_IsByteIdentical(string outputFileName, bool executable)
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Deterministic
+                {
+                    .ver 1:2:3:4
+                }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        ENTRYPOINT
+                        ldstr "deterministic"
+                        pop
+                        ret
+                    }
+                }
+                """.Replace("ENTRYPOINT", executable ? ".entrypoint" : string.Empty);
+
+            var options = new Options
+            {
+                Deterministic = true,
+                OutputFileName = outputFileName,
+            };
+
+            ImmutableArray<byte> firstImage = DocumentCompilerTestHelpers.Compile(source, options);
+            ImmutableArray<byte> secondImage = DocumentCompilerTestHelpers.Compile(source, options);
+
+            Assert.Equal<byte>(firstImage, secondImage);
+        }
+
+        [Fact]
+        public void ManagedIlasm_DeterministicPdbOutput_IsByteIdentical()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Deterministic { }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        .line 1 "deterministic.il"
+                        ret
+                    }
+                }
+                """;
+
+            var options = new Options
+            {
+                Deterministic = true,
+                Pdb = true,
+            };
+
+            ImmutableArray<byte> firstPdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
+            ImmutableArray<byte> secondPdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
+
+            Assert.Equal<byte>(firstPdb, secondPdb);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ManagedIlasm_PdbIdGuid_IsNotEmpty(bool deterministic)
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly PdbId { }
+                .class public auto ansi beforefieldinit Program extends [mscorlib]System.Object
+                {
+                    .method public static void Main() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            var options = new Options
+            {
+                Deterministic = deterministic,
+                Pdb = true,
+            };
+
+            ImmutableArray<byte> pdb = DocumentCompilerTestHelpers.CompileAndGetEmbeddedPortablePdb(source, options);
+            using MetadataReaderProvider pdbProvider = MetadataReaderProvider.FromPortablePdbImage(pdb);
+            BlobContentId pdbId = new(pdbProvider.GetMetadataReader().DebugMetadataHeader!.Id);
+
+            Assert.NotEqual(Guid.Empty, pdbId.Guid);
         }
 
 
