@@ -67,6 +67,11 @@
         <target state="translated">형식의 속성에 대한 바인딩 논리를 생성하지 않았습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RequiredMemberWithNonPublicSetter">
+        <source>The type '{0}' has one or more required members with non-public setters, which the source generator cannot set.</source>
+        <target state="new">The type '{0}' has one or more required members with non-public setters, which the source generator cannot set.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="TypeNotSupported">
         <source>The type is not supported: '{0}'.</source>
         <target state="translated">지원되지 않는 유형: '{0}'.</target>

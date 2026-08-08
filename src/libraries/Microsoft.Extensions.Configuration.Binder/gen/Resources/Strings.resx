@@ -156,6 +156,9 @@
   <data name="PropertyNotSupportedTitle" xml:space="preserve">
     <value>Did not generate binding logic for a property on a type</value>
   </data>
+  <data name="RequiredMemberWithNonPublicSetter" xml:space="preserve">
+    <value>The type '{0}' has one or more required members with non-public setters, which the source generator cannot set.</value>
+  </data>
   <data name="TypeNotSupported" xml:space="preserve">
     <value>The type is not supported: '{0}'.</value>
   </data>

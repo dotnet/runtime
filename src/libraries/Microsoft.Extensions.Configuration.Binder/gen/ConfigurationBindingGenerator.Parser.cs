@@ -704,6 +704,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     initializationStrategy = ctor.Parameters.Length is 0 ? ObjectInstantiationStrategy.ParameterlessConstructor : ObjectInstantiationStrategy.ParameterizedConstructor;
                 }
 
+                // A constructor marked [SetsRequiredMembers] satisfies all required members, so the compiler does not
+                // require them to be set in an object initializer even when the generator omits them.
+                bool ctorSetsRequiredMembers = ctor is not null && _typeSymbols.SetsRequiredMembersAttribute is not null &&
+                    ctor.GetAttributes().Any(a => SymbolEqualityComparer.Default.Equals(a.AttributeClass, _typeSymbols.SetsRequiredMembersAttribute));
+
                 if (initDiagDescriptor is not null)
                 {
                     Debug.Assert(initExceptionMessage is not null);
@@ -712,6 +717,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 Dictionary<string, PropertySpec>? properties = null;
                 HashSet<string>? reportedUnsupportedProperties = null;
+                List<string>? requiredMembersWithNonPublicSetter = null;
 
                 INamedTypeSymbol? current = typeSymbol;
                 while (current is not null)
@@ -757,6 +763,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 ConfigurationKeyName = configKeyName,
                                 IsIgnored = isIgnored,
                             };
+
+                            // A required member with a non-public setter (SetOnInit is false for a required property
+                            // only when its setter is not public) cannot be assigned in the object initializer the
+                            // generator emits, which would produce CS9035 unless the constructor sets required members.
+                            if (property.IsRequired && !spec.SetOnInit && !ctorSetsRequiredMembers)
+                            {
+                                (requiredMembersWithNonPublicSetter ??= new()).Add(propertyName);
+                            }
 
                             (properties ??= new(StringComparer.OrdinalIgnoreCase))[propertyName] = spec;
                         }
@@ -813,6 +827,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
 
                     static string FormatParams(List<string> names) => string.Join(",", names);
+                }
+
+                // If the type has a required member the generator cannot set (non-public setter, constructor does not
+                // set required members), it cannot be constructed without producing CS9035. Emit a diagnostic and mark
+                // the type non-constructible so the callsite throws at run time instead of emitting uncompilable code.
+                if (requiredMembersWithNonPublicSetter is not null && initExceptionMessage is null)
+                {
+                    initExceptionMessage = string.Format(Emitter.ExceptionMessages.RequiredMemberWithNonPublicSetter, typeSymbol.GetFullName(), string.Join(",", requiredMembersWithNonPublicSetter));
+                    RecordTypeDiagnostic(typeParseInfo, DiagnosticDescriptors.RequiredMemberWithNonPublicSetter);
                 }
 
                 return new ObjectSpec(

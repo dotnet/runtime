@@ -472,6 +472,133 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("""
+            public record Settings
+            {
+                public required string Name { get; init; }
+                public required Nested Child { get; init; }
+            }
+
+            public record Nested
+            {
+                public required string Value { get; init; }
+            }
+            """)]
+        [InlineData("""
+            public class Settings
+            {
+                public required string Name { get; set; }
+                public required Nested Child { get; set; }
+            }
+
+            public class Nested
+            {
+                public required string Value { get; set; }
+            }
+            """)]
+        public async Task RequiredPropertyOnParameterlessConstructorType(string settingsType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        Settings settings = config.GetSection("Settings").Get<Settings>()!;
+                    }
+                }
+
+                {{settingsType}}
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("""
+            internal class Settings
+            {
+                public required string Name { get; internal set; }
+            }
+            """)]
+        [InlineData("""
+            internal class Settings
+            {
+                public required string Name { get; internal init; }
+            }
+            """)]
+        public async Task RequiredPropertyWithNonPublicSetter_ReportsDiagnostic(string settingsType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        var settings = config.GetSection("Settings").Get<Settings>()!;
+                    }
+                }
+
+                {{settingsType}}
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Contains(result.Diagnostics, diag => diag.Id == Diagnostics.TypeNotSupported.Id);
+
+            // The generator marks the type non-constructible instead of emitting uncompilable code (CS9035).
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task RequiredPropertyWithNonPublicSetter_SetsRequiredMembersConstructor_NoDiagnostic()
+        {
+            // The constructor is marked [SetsRequiredMembers], so the compiler does not require the member to be set in
+            // an object initializer; the generator must not report a diagnostic or mark the type non-constructible.
+            string source = """
+                using System.Diagnostics.CodeAnalysis;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        var settings = config.GetSection("Settings").Get<Settings>()!;
+                    }
+                }
+
+                internal class Settings
+                {
+                    [SetsRequiredMembers]
+                    public Settings() { Name = "default"; }
+
+                    public required string Name { get; internal set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
         public async Task ListOfTupleWithComplexElementInInternalPropertyTest()
         {

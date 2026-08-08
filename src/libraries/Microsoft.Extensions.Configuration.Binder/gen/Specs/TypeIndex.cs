@@ -37,6 +37,27 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _ => throw new InvalidOperationException(),
             };
 
+        /// <summary>
+        /// Whether an <c>Initialize</c> method is generated for <paramref name="type"/> to construct it. This is the
+        /// case for a parameterized-constructor type (whose parameters are bound and passed to the constructor) and for
+        /// a parameterless-constructor type that has a required or init-only property, which can only be assigned in an
+        /// object initializer at construction time. Both cases bind those members while the instance is created.
+        /// </summary>
+        public bool HasInitializeMethod(ObjectSpec type)
+        {
+            if (type.InitExceptionMessage is not null)
+            {
+                return false;
+            }
+
+            return type.InstantiationStrategy switch
+            {
+                ObjectInstantiationStrategy.ParameterizedConstructor => true,
+                ObjectInstantiationStrategy.ParameterlessConstructor => type.Properties?.Any(prop => prop.SetOnInit && ShouldBindTo(prop)) is true,
+                _ => false,
+            };
+        }
+
         public bool ShouldBindTo(PropertySpec property)
         {
             TypeSpec propTypeSpec = GetEffectiveTypeSpec(property.TypeRef);

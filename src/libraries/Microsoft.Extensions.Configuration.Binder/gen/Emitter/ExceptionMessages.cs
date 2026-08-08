@@ -18,6 +18,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string MissingPublicInstanceConstructor = "Cannot create instance of type '{0}' because it is missing a public instance constructor.";
                 public const string MultipleParameterizedConstructors = "Cannot create instance of type '{0}' because it has multiple public parameterized constructors.";
                 public const string ParameterHasNoMatchingConfig = "Cannot create instance of type '{0}' because parameter '{1}' has no matching config. Each parameter in the constructor that does not have a default value must have a corresponding config entry.";
+                public const string RequiredMemberWithNonPublicSetter = "Cannot create instance of type '{0}' because it has required members with non-public setters that the source generator cannot set. Members are: '{1}'";
                 public const string TypeNotDetectedAsInput = "Unable to bind to type '{0}': generator did not detect the type as input.";
             }
         }
