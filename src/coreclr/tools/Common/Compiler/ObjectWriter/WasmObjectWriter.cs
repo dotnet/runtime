@@ -152,7 +152,15 @@ namespace ILCompiler.ObjectWriter
                 flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
             }
             WriteSignatureIndexForFunction(node.Signature, flags, node);
-            RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
+            Utf8String functionName = GetMangledName(node);
+            RegisterFunctionSymbol(functionName);
+
+            Utf8String alternateName = _nodeFactory.GetSymbolAlternateName(node, out _);
+            if (!alternateName.IsNull)
+            {
+                _wasmSymbolManager.AddAlias(ExternCName(alternateName), functionName);
+            }
+
             if (node is INodeWithFunclets nodeWithFunclets)
             {
                 RecordFunclets(nodeWithFunclets);
