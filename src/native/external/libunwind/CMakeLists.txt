@@ -74,20 +74,6 @@ if ("${CMAKE_GENERATOR}" MATCHES "^Visual Studio.*$")
   set(HAVE_ELF_H 1)
   set(HAVE_ENDIAN_H 1)
 
-  # MSVC compiler is currently missing C11 stdalign.h header
-  # Fake it until support is added
-  check_include_files(stdalign.h HAVE_STDALIGN_H)
-  if (NOT HAVE_STDALIGN_H)
-    configure_file(include/remote/win/fakestdalign.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdalign.h)
-  endif (NOT HAVE_STDALIGN_H)
-
-  # MSVC compiler is currently missing C11 stdatomic.h header
-  # Fake it until support is added
-  check_include_files(stdatomic.h HAVE_STDATOMIC_H)
-  if (NOT HAVE_STDATOMIC_H)
-    configure_file(include/remote/win/fakestdatomic.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/stdatomic.h)
-  endif (NOT HAVE_STDATOMIC_H)
-
   # MSVC compiler is currently missing C11 _Thread_local
   check_c_source_compiles("void main() { _Thread_local int a; }"  HAVE_THREAD_LOCAL)
   if (NOT HAVE_THREAD_LOCAL)
