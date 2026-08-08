@@ -1072,6 +1072,45 @@ namespace System.Threading.RateLimiting.Test
         }
 
         [Fact]
+        public void SubMillisecondReplenishmentPeriodWithAutoReplenishmentDoesNotDisableTimer()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/109027
+            // The effective replenishment period is Window / SegmentsPerWindow, so it can be sub-millisecond
+            // even when Window is not. System.Threading.Timer truncates its period to whole milliseconds, so a
+            // sub-millisecond period previously produced a timer period of 0, which fires once and never again,
+            // silently stopping auto-replenishment. The timer period is now clamped to a 1ms floor.
+
+            // Case 1: Window itself is sub-millisecond.
+            var subMillisecondWindow = TimeSpan.FromTicks(TimeSpan.TicksPerMillisecond / 2); // 500 microseconds
+            using ReplenishingRateLimiter limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                Window = subMillisecondWindow,
+                SegmentsPerWindow = 1,
+                AutoReplenishment = true
+            });
+            Assert.True(limiter.IsAutoReplenishing);
+            Assert.Equal(subMillisecondWindow, limiter.ReplenishmentPeriod);
+
+            // Case 2: Window is >= 1ms, but Window / SegmentsPerWindow is sub-millisecond (5ms / 10 = 500us).
+            var window = TimeSpan.FromMilliseconds(5);
+            using ReplenishingRateLimiter limiter2 = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0,
+                Window = window,
+                SegmentsPerWindow = 10,
+                AutoReplenishment = true
+            });
+            Assert.True(limiter2.IsAutoReplenishing);
+            // The clamp affects only the internal timer; the observable derived ReplenishmentPeriod is unchanged.
+            Assert.Equal(new TimeSpan(window.Ticks / 10), limiter2.ReplenishmentPeriod);
+        }
+
+        [Fact]
         public override async Task CanFillQueueWithNewestFirstAfterCancelingQueuedRequestWithAnotherQueuedRequest()
         {
             var limiter = new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
