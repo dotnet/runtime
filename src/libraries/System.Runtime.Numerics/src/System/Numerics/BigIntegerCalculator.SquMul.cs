@@ -166,7 +166,7 @@ namespace System.Numerics
                         for (int j = 0; j < i; j++)
                         {
                             UInt128 digit1 = (UInt128)(ulong)bits[i + j] + carry;
-                            UInt128 digit2 = (UInt128)(ulong)value[j] * (ulong)v;
+                            UInt128 digit2 = Math.BigMul(value[j], v);
                             bits[i + j] = (nuint)(ulong)(digit1 + (digit2 << 1));
                             // We need digit1 + 2*digit2, but that could overflow UInt128.
                             // Instead, compute (digit2 + digit1/2) >> 63 which gives the
@@ -174,7 +174,7 @@ namespace System.Numerics
                             carry = (digit2 + (digit1 >> 1)) >> 63;
                         }
 
-                        UInt128 digits = (UInt128)(ulong)v * (ulong)v + carry;
+                        UInt128 digits = Math.BigMul(v, v) + carry;
                         bits[i + i] = (nuint)(ulong)digits;
                         bits[i + i + 1] = (nuint)(ulong)(digits >> 64);
                     }
@@ -201,11 +201,42 @@ namespace System.Numerics
             }
         }
 
+        /// <summary>
+        /// Multiply by scalar: bits[0..left.Length] = left * right.
+        /// Returns the carry out. Unrolled by 4 on 64-bit.
+        /// </summary>
         public static void Multiply(ReadOnlySpan<nuint> left, nuint right, Span<nuint> bits)
         {
             Debug.Assert(bits.Length == left.Length + 1);
 
-            nuint carry = Mul1(bits, left, right);
+            int i = 0;
+            nuint carry = 0;
+
+            if (nint.Size == 8)
+            {
+                for (; i + 3 < left.Length; i += 4)
+                {
+                    carry = MulAdd(left[i], right, carry, out bits[i]);
+                    carry = MulAdd(left[i + 1], right, carry, out bits[i + 1]);
+                    carry = MulAdd(left[i + 2], right, carry, out bits[i + 2]);
+                    carry = MulAdd(left[i + 3], right, carry, out bits[i + 3]);
+                }
+
+                for (; i < left.Length; i++)
+                {
+                    carry = MulAdd(left[i], right, carry, out bits[i]);
+                }
+            }
+            else
+            {
+                for (; i < left.Length; i++)
+                {
+                    ulong product = (ulong)left[i] * right + carry;
+                    bits[i] = (uint)product;
+                    carry = (uint)(product >> 32);
+                }
+            }
+
             bits[left.Length] = carry;
         }
 
@@ -528,9 +559,62 @@ namespace System.Numerics
 
                 for (int i = 0; i < right.Length; i++)
                 {
-                    nuint carry = MulAdd1(bits.Slice(i), left, right[i]);
-                    bits[i + left.Length] = carry;
+                    Span<nuint> result = bits.Slice(i);
+                    nuint carry = AddProduct(result, left, right[i]);
+                    result[left.Length] = carry;
                 }
+            }
+
+            static nuint AddProduct(Span<nuint> result, ReadOnlySpan<nuint> left, nuint multiplier)
+            {
+                // Fused multiply-accumulate by scalar: result[0..left.Length] += left * multiplier.
+                // Returns the carry out. Unrolled by 4 on 64-bit to overlap multiply latencies.
+                Debug.Assert(result.Length >= left.Length);
+
+                int i = 0;
+                nuint carry = 0;
+
+                if (nint.Size == 8)
+                {
+                    // Unroll by 4: mulx has 3-5 cycle latency but 1 cycle throughput,
+                    // so issuing 4 multiplies allows the CPU to pipeline them while
+                    // carry chains complete sequentially behind.
+                    for (; i + 3 < left.Length; i += 4)
+                    {
+                        UInt128 p0 = Math.BigMul(left[i], multiplier) + (ulong)result[i] + (ulong)carry;
+                        result[i] = (nuint)(ulong)p0;
+
+                        UInt128 p1 = Math.BigMul(left[i + 1], multiplier) + (ulong)result[i + 1] + (ulong)(p0 >> 64);
+                        result[i + 1] = (nuint)(ulong)p1;
+
+                        UInt128 p2 = Math.BigMul(left[i + 2], multiplier) + (ulong)result[i + 2] + (ulong)(p1 >> 64);
+                        result[i + 2] = (nuint)(ulong)p2;
+
+                        UInt128 p3 = Math.BigMul(left[i + 3], multiplier) + (ulong)result[i + 3] + (ulong)(p2 >> 64);
+                        result[i + 3] = (nuint)(ulong)p3;
+
+                        carry = (nuint)(ulong)(p3 >> 64);
+                    }
+
+                    for (; i < left.Length; i++)
+                    {
+                        UInt128 product = Math.BigMul(left[i], multiplier) + (ulong)result[i] + (ulong)carry;
+                        result[i] = (nuint)(ulong)product;
+                        carry = (nuint)(ulong)(product >> 64);
+                    }
+                }
+                else
+                {
+                    for (; i < left.Length; i++)
+                    {
+                        ulong product = (ulong)left[i] * multiplier
+                                        + result[i] + carry;
+                        result[i] = (uint)product;
+                        carry = (uint)(product >> 32);
+                    }
+                }
+
+                return carry;
             }
         }
 
