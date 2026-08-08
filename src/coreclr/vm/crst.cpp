@@ -24,6 +24,10 @@
 #ifndef DACCESS_COMPILE
 Volatile<LONG> g_ShutdownCrstUsageCount = 0;
 
+#ifdef _DEBUG
+thread_local int t_unsafeAnyModeHeldCount = 0;
+#endif
+
 //-----------------------------------------------------------------
 // Initialize critical section
 //-----------------------------------------------------------------
@@ -220,6 +224,18 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 
     _ASSERTE(IsCrstInitialized());
 
+#ifdef _DEBUG
+    // Detect attempts to take a default (GC_TRIGGERS) lock while holding a CRST_UNSAFE_ANYMODE lock.
+    // Taking a default lock can trigger a GC, which is illegal while a CRST_UNSAFE_ANYMODE lock is held.
+    if (!(m_dwFlags & (CRST_UNSAFE_ANYMODE | CRST_UNSAFE_COOPGC | CRST_GC_NOTRIGGER_WHEN_TAKEN)))
+    {
+        _ASSERTE_MSG(t_unsafeAnyModeHeldCount == 0,
+            "Taking a CRST_DEFAULT lock while a CRST_UNSAFE_ANYMODE lock or "
+            "SimpleRWLock COOPERATIVE_OR_PREEMPTIVE lock is held is illegal. "
+            "The default lock may trigger a GC, which is not allowed under ANYMODE locks.");
+    }
+#endif
+
     BOOL fIsCriticalSectionEnteredAfterFailingOnce = FALSE;
 
     Thread * pThread;
@@ -260,6 +276,11 @@ void CrstBase::Enter(INDEBUG(NoLevelCheckFlag noLevelCheckFlag/* = CRST_LEVEL_CH
 
 #ifdef _DEBUG
     PostEnter();
+
+    if (m_dwFlags & CRST_UNSAFE_ANYMODE)
+    {
+        t_unsafeAnyModeHeldCount++;
+    }
 #endif
 
     if (fToggle)
@@ -280,6 +301,11 @@ void CrstBase::Leave()
     _ASSERTE(IsCrstInitialized());
 
 #ifdef _DEBUG
+    if (m_dwFlags & CRST_UNSAFE_ANYMODE)
+    {
+        t_unsafeAnyModeHeldCount--;
+    }
+
     PreLeave ();
 #endif //_DEBUG
 
