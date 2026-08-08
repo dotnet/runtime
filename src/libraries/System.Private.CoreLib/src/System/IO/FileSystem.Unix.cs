@@ -697,26 +697,15 @@ namespace System.IO
             }
             else
             {
-                string? current = linkTarget;
-                int visitCount = 1;
-
-                while (current != null)
-                {
-                    if (visitCount > MaxFollowedLinks)
-                    {
-                        sb.Dispose();
-                        // We went over the limit and couldn't reach the final target
-                        throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, linkPath));
-                    }
-
-                    GetLinkTargetFullPath(ref sb, current);
-                    current = Interop.Sys.ReadLink(sb.AsSpan());
-                    visitCount++;
-                }
+                sb.Dispose();
+                linkTarget = ResolveFinalTarget(linkPath, linkTarget);
             }
 
-            Debug.Assert(sb.Length > 0);
-            linkTarget = sb.ToString(); // ToString disposes
+            if (!returnFinalTarget)
+            {
+                Debug.Assert(sb.Length > 0);
+                linkTarget = sb.ToString(); // ToString disposes
+            }
 
             return isDirectory ?
                     new DirectoryInfo(linkTarget) :
@@ -737,6 +726,82 @@ namespace System.IO
                     sb.Length = 0;
                 }
                 sb.Append(linkTarget);
+            }
+
+            static string ResolveFinalTarget(string linkPath, string linkTarget)
+            {
+                int visitCount = 1;
+                string currentPath = Path.GetFullPath(linkPath);
+                string[] pendingComponents = new string[8];
+                int pendingComponentCount = 0;
+
+                // Resolve relative targets one component at a time because an intermediate component may itself be a link.
+                FollowLinkTarget(linkTarget);
+
+                while (pendingComponentCount > 0)
+                {
+                    string component = pendingComponents[--pendingComponentCount];
+                    pendingComponents[pendingComponentCount] = null!;
+
+                    if (component == ".")
+                    {
+                        continue;
+                    }
+
+                    if (component == "..")
+                    {
+                        currentPath = Path.GetDirectoryName(currentPath) ?? currentPath;
+                        continue;
+                    }
+
+                    currentPath = Path.Join(currentPath, component);
+                    string? nestedTarget = Interop.Sys.ReadLink(currentPath);
+                    if (nestedTarget != null)
+                    {
+                        ThrowIfTooManyLinks();
+                        FollowLinkTarget(nestedTarget);
+                    }
+                }
+
+                return currentPath;
+
+                void FollowLinkTarget(string target)
+                {
+                    // Preserve the lexical path of absolute targets while following a link at that exact path.
+                    while (!PathInternal.IsPartiallyQualified(target))
+                    {
+                        currentPath = target;
+                        string? nextTarget = Interop.Sys.ReadLink(currentPath);
+                        if (nextTarget == null)
+                        {
+                            return;
+                        }
+
+                        ThrowIfTooManyLinks();
+                        target = nextTarget;
+                    }
+
+                    currentPath = Path.GetDirectoryName(currentPath)!;
+                    string[] components = target.Split(PathInternal.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries);
+                    if (pendingComponentCount + components.Length > pendingComponents.Length)
+                    {
+                        Array.Resize(ref pendingComponents, Math.Max(pendingComponentCount + components.Length, pendingComponents.Length * 2));
+                    }
+
+                    for (int i = components.Length - 1; i >= 0; i--)
+                    {
+                        pendingComponents[pendingComponentCount++] = components[i];
+                    }
+                }
+
+                void ThrowIfTooManyLinks()
+                {
+                    visitCount++;
+                    if (visitCount > MaxFollowedLinks)
+                    {
+                        throw new IOException(SR.Format(SR.IO_TooManySymbolicLinkLevels, linkPath));
+                    }
+                }
             }
         }
     }

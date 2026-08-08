@@ -263,6 +263,51 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void ResolveLinkTarget_ReturnFinalTarget_RelativeIntermediateDirectoryLink(bool targetExists)
+        {
+            string rootPath = GetRandomDirPath();
+            Directory.CreateDirectory(rootPath);
+
+            const string versionDirectoryName = "..2025_08_14_07_17_19.1395403829";
+            string versionDirectoryPath = Path.Join(rootPath, versionDirectoryName);
+            Directory.CreateDirectory(versionDirectoryPath);
+
+            string targetName = IsDirectoryTest ? "target-directory" : "target-file";
+            string targetPath = Path.Join(versionDirectoryPath, targetName);
+            if (targetExists)
+            {
+                CreateFileOrDirectory(targetPath);
+            }
+
+            Directory.CreateSymbolicLink(Path.Join(rootPath, "..data"), versionDirectoryName);
+
+            string linkPath = Path.Join(rootPath, "link");
+            CreateSymbolicLink(linkPath, Path.Join("..data", targetName));
+
+            FileSystemInfo targetInfo = ResolveLinkTarget(linkPath, returnFinalTarget: true);
+            Assert.Equal(targetPath, targetInfo.FullName);
+            Assert.Equal(targetExists, targetInfo.Exists);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
+        public void ResolveLinkTarget_ReturnFinalTarget_IntermediateDirectoryLinkCycle_Throws()
+        {
+            string rootPath = GetRandomDirPath();
+            Directory.CreateDirectory(rootPath);
+
+            Directory.CreateSymbolicLink(Path.Join(rootPath, "cycle"), "cycle");
+
+            string linkPath = Path.Join(rootPath, "link");
+            CreateSymbolicLink(linkPath, Path.Join("cycle", "target"));
+
+            Assert.Throws<IOException>(() => ResolveLinkTarget(linkPath, returnFinalTarget: true));
+        }
+
+        [Theory]
         [InlineData(1, false)]
         [InlineData(10, false)]
         [InlineData(20, false)]
