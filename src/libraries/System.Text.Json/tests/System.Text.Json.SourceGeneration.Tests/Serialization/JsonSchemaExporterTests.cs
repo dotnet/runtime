@@ -131,6 +131,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 #pragma warning disable CS0612 // Type or member is obsolete
         [JsonSerializable(typeof(MyObsoleteType))]
 #pragma warning restore CS0612 // Type or member is obsolete
+        [JsonSerializable(typeof(PocoWithObsoletePropertiesSharingType))]
         // Collection types
         [JsonSerializable(typeof(int[]))]
         [JsonSerializable(typeof(List<bool>))]
