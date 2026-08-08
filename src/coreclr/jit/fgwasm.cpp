@@ -2423,12 +2423,21 @@ PhaseStatus Compiler::fgWasmSpillRefs()
             //  them. If we can somehow guarantee that all callees will spill their ref parameters
             //  immediately, we could do this before the block above.
 
-            // Remove used nodes from defs list, they're no longer meaningfully 'live'.
-            tree->VisitOperands([&defs](GenTree* op) {
+            // Remove used nodes from defs list, they're no longer meaningfully 'live'. A contained operand is
+            //  not itself on the operand stack, so look through it to the operands that are.
+            auto removeUses = [&defs](GenTree* op, auto& recurse) -> void {
                 if (!op->IsValue())
-                    return GenTree::VisitResult::Continue;
+                    return;
+                if (op->isContained())
+                {
+                    op->VisitOperands([&recurse](GenTree* innerOp) {
+                        recurse(innerOp, recurse);
+                        return GenTree::VisitResult::Continue;
+                    });
+                    return;
+                }
                 if (!op->TypeIs(TYP_REF, TYP_BYREF))
-                    return GenTree::VisitResult::Continue;
+                    return;
 
                 for (size_t i = defs.size(); i > 0; i--)
                 {
@@ -2439,7 +2448,16 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                         break;
                     }
                 }
+            };
 
+            // A contained node is part of its parent, so it is visited as part of the parent instead.
+            if (tree->isContained())
+            {
+                continue;
+            }
+
+            tree->VisitOperands([&removeUses](GenTree* op) {
+                removeUses(op, removeUses);
                 return GenTree::VisitResult::Continue;
             });
 
