@@ -3,5 +3,4 @@
 
 #pragma once
 
-#cmakedefine01 HAVE_POLL
 #cmakedefine01 HAVE_UCONTEXT_H
