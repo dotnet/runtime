@@ -6,11 +6,9 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Xunit;
-using TestLibrary;
 
 public class Runtime_131713
 {
-    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static void Test()
     {
