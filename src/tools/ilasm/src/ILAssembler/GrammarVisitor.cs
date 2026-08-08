@@ -176,6 +176,7 @@ namespace ILAssembler
             }
 
             BlobBuilder ilStream = new();
+            PseudoCustomAttributes.Lower(_entityRegistry, _diagnostics);
             Blob mvidFixup = _entityRegistry.WriteContentTo(_metadataBuilder, ilStream, _mappedFieldDataNames, _options.Deterministic);
             MetadataRootBuilder rootBuilder = new(_metadataBuilder, _options.MetadataVersion);
 
@@ -1878,7 +1879,9 @@ namespace ILAssembler
                 var resolved = TryResolveTypedefAsCustomAttribute(alias);
                 if (resolved is not null)
                 {
-                    return new(_entityRegistry.CreateCustomAttribute(resolved.Value.Constructor, resolved.Value.Value));
+                    var typedefAttribute = _entityRegistry.CreateCustomAttribute(resolved.Value.Constructor, resolved.Value.Value);
+                    typedefAttribute.Location = Location.From(context.Start, _documents);
+                    return new(typedefAttribute);
                 }
                 // Typedef not found - could report diagnostic here
                 return new(null);
@@ -1995,10 +1998,13 @@ namespace ILAssembler
                 value.WriteUInt16(0);
             }
 
-            return new(_entityRegistry.CreateCustomAttribute(ctor, value));
+            var attribute = _entityRegistry.CreateCustomAttribute(ctor, value);
+            attribute.Location = Location.From(context.Start, _documents);
+            return new(attribute);
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitCustomDescrWithOwner(CILParser.CustomDescrWithOwnerContext context) => VisitCustomDescrWithOwner(context);
+
         public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity> VisitCustomDescrWithOwner(CILParser.CustomDescrWithOwnerContext context)
         {
             var ctor = VisitCustomType(context.customType()).Value;
@@ -2028,6 +2034,7 @@ namespace ILAssembler
 
             var attr = _entityRegistry.CreateCustomAttribute(ctor, value);
 
+            attr.Location = Location.From(context.Start, _documents);
             attr.Owner = VisitOwnerType(context.ownerType()).Value;
 
             return new(attr);
@@ -2937,7 +2944,7 @@ namespace ILAssembler
                     _ => throw new UnreachableException()
                 }));
             }
-            return new(builder.MoveToImmutable().SerializeSequence());
+            return new(builder.ToImmutable().SerializeSequence());
         }
         GrammarResult ICILVisitor<GrammarResult>.VisitF64seq(CILParser.F64seqContext context) => VisitF64seq(context);
         public GrammarResult.FormattedBlob VisitF64seq(CILParser.F64seqContext context)
@@ -2953,7 +2960,7 @@ namespace ILAssembler
                     _ => throw new UnreachableException()
                 }));
             }
-            return new(builder.MoveToImmutable().SerializeSequence());
+            return new(builder.ToImmutable().SerializeSequence());
         }
 
         public GrammarResult VisitFaultClause(CILParser.FaultClauseContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
