@@ -18,6 +18,9 @@ class RegRecord;
 template <class T>
 class ArrayStack;
 
+// Assign the given register to the given tree node (and register index, for multi-reg nodes).
+void lsraAssignRegToTree(GenTree* tree, regNumber reg, unsigned regIdx);
+
 // LsraLocation tracks the linearized order of the nodes.
 // Each node is assigned two LsraLocations - one for all the uses and all but the last
 // def, and a second location for the last def (if any)
@@ -650,10 +653,60 @@ public:
     void buildIntervals();
 
     void buildInitialParamDef(const LclVarDsc* varDsc, regNumber paramReg);
+    void computeCalleeRegArgMaskLiveIn();
 
     // This is where the actual assignment is done for scenarios where
     // no local var enregistration is done.
     void allocateRegistersMinimal();
+
+    //-----------------------------------------------------------------------
+    // The "MinOpts" register allocator.
+    //
+    // When optimizations are disabled no local variable lives in a register, so all
+    // register-allocated values are "tree temps" that are defined and consumed within
+    // a single basic block (LIR guarantees a single use for each def). This allows a
+    // much simpler and faster allocator that fuses the build, allocation and resolution
+    // passes into a single walk over the LIR.
+    //-----------------------------------------------------------------------
+
+    bool        canUseMinOptsRegAlloc();
+    PhaseStatus doRegisterAllocationMinOpts();
+    void        allocateBlockMinOpts(BasicBlock* block);
+    void        allocateNodeMinOpts(BasicBlock* block, GenTree* node);
+    void        allocateDefMinOpts(RefPosition* refPosition);
+    void        allocateUseMinOpts(BasicBlock* block, RefPosition* refPosition);
+    void        minOptsUseDone(RefPosition* refPosition, Interval* interval, regNumber reg);
+    void        minOptsProcessKill(regMaskTP killedRegs);
+    void        minOptsSpillGCRefs(RefPosition* refPosition);
+    void        minOptsSpillInterval(Interval* interval);
+    regNumber   minOptsSelectReg(RefPosition* refPosition, SingleTypeRegSet candidates, RegisterType regType);
+    void        minOptsVacateReg(regNumber reg);
+    void        minOptsMarkModified(regNumber reg);
+    bool        minOptsTryRetarget(Interval* interval, SingleTypeRegSet candidates, regMaskTP conflicting);
+    void        minOptsMoveInterval(Interval* interval, regNumber newReg);
+    void        minOptsAssignReg(Interval* interval, regNumber reg);
+    void        minOptsFreeReg(Interval* interval);
+    void        minOptsBuildRegOrder();
+    void        minOptsRecordNodeRefPosition(RefPosition* refPosition);
+
+    static int minOptsRegOrderIndex(RegisterType regType)
+    {
+        if (varTypeUsesIntReg(regType))
+        {
+            return 0;
+        }
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+        if (varTypeUsesMaskReg(regType))
+        {
+            return 2;
+        }
+#endif
+        return 1;
+    }
+
+    // True while the MinOpts allocator is running; used by the shared "Build" code to
+    // elide bookkeeping that only the general allocator needs.
+    bool minOptsRegAlloc;
 
 // This is where the actual assignment is done
 #ifdef TARGET_ARM64
@@ -2180,6 +2233,50 @@ private:
         assert((unsigned)rt < ArrLen(varTypeCalleeTrashRegs));
         return varTypeCalleeTrashRegs[rt].GetRegSetForType(rt);
     }
+
+private:
+    //-----------------------------------------------------------------------
+    // State for the fast MinOpts register allocator. This is placed at the end of the
+    // class so that it does not perturb the layout of the fields used by the general
+    // allocator's hot loops.
+    //-----------------------------------------------------------------------
+
+    // Registers holding a value that has been defined but not yet consumed.
+    regMaskTP minOptsLiveRegs;
+    // Registers referenced at the location currently being allocated; these may not be reused.
+    regMaskTP minOptsRegsInUse;
+    // Registers that will become free once we advance to the next location.
+    regMaskTP minOptsRegsToFree;
+    // Registers that will become free once the current node is fully processed.
+    regMaskTP minOptsDelayRegsToFree;
+    // Remaining single-register requirements of the node being allocated, by location.
+    regMaskTP minOptsFixedRegsThisLoc;
+    regMaskTP minOptsFixedRegsNextLoc;
+    // Registers killed by the node currently being allocated.
+    regMaskTP minOptsKilledRegs;
+
+    // True if any value was spilled; if not, the spill-temp accounting walk can be skipped.
+    bool minOptsAnySpill;
+
+    // The location currently being allocated (either the node's location, or the location
+    // of its definitions, which is one past it).
+    LsraLocation minOptsCurLoc;
+
+    // The interval occupying each register, if any.
+    Interval* minOptsRegToInterval[REG_COUNT];
+    // For each register, the location from which it has been free of any occupant other
+    // than the one currently in it (if any). This lets us tell, at the point of a use,
+    // whether the value could have lived in a different register all along.
+    LsraLocation minOptsRegFreeSince[REG_COUNT];
+
+    // Register allocation order, by register file, in preference order.
+    const regNumber* minOptsRegOrder[3];
+    unsigned         minOptsRegOrderSize[3];
+
+    // The RefPositions built for the node currently being processed.
+    RefPosition** minOptsNodeRefPositions;
+    unsigned      minOptsNodeRefPositionCount;
+    unsigned      minOptsNodeRefPositionCapacity;
 };
 
 using RegAllocImpl = LinearScan;

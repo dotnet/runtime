@@ -1033,6 +1033,12 @@ LinearScan::LinearScan(Compiler* theCompiler)
 
     pendingDelayFree = false;
     tgtPrefUse       = nullptr;
+
+    // MinOpts allocator state
+    minOptsRegAlloc                = false;
+    minOptsNodeRefPositions        = nullptr;
+    minOptsNodeRefPositionCount    = 0;
+    minOptsNodeRefPositionCapacity = 0;
 }
 
 //------------------------------------------------------------------------
@@ -1345,6 +1351,11 @@ PhaseStatus LinearScan::doRegisterAllocation()
     }
 
     splitBBNumToTargetBBNumMap = nullptr;
+
+    if (canUseMinOptsRegAlloc())
+    {
+        return doRegisterAllocationMinOpts();
+    }
 
     // This is complicated by the fact that physical registers have refs associated
     // with locations where they are killed (e.g. calls), but we don't want to

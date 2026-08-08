@@ -202,6 +202,7 @@ set( JIT_SOURCES
 set ( JIT_NATIVE_TARGET_SOURCES
   lsra.cpp
   lsrabuild.cpp
+  lsraminopts.cpp
   regMaskTPOps.cpp
   unwind.cpp
 )

@@ -193,6 +193,10 @@ RefPosition* LinearScan::newRefPositionRaw(LsraLocation nodeLocation, GenTree* t
                  (refType == RefTypeExpUse)));
     }
 #endif // DEBUG
+    if (minOptsRegAlloc)
+    {
+        minOptsRecordNodeRefPosition(newRP);
+    }
     return newRP;
 }
 
@@ -448,7 +452,12 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
         {
             Interval* theInterval = rp->getInterval();
 
-            applyCalleeSaveHeuristics(rp);
+            // The MinOpts allocator does not use register preferences, and reconciles
+            // conflicting def/use register requirements during allocation itself.
+            if (!minOptsRegAlloc)
+            {
+                applyCalleeSaveHeuristics(rp);
+            }
 
             if (theInterval->isLocalVar)
             {
@@ -466,7 +475,10 @@ void LinearScan::associateRefPosWithInterval(RefPosition* rp)
             }
             else if (rp->refType == RefTypeUse)
             {
-                checkConflictingDefUse(rp);
+                if (!minOptsRegAlloc)
+                {
+                    checkConflictingDefUse(rp);
+                }
                 rp->lastUse = true;
             }
         }
@@ -575,7 +587,7 @@ RefPosition* LinearScan::newRefPosition(Interval*        theInterval,
 
     bool isFixedRegister = isSingleRegister(mask);
     bool insertFixedRef  = false;
-    if (isFixedRegister)
+    if (isFixedRegister && !minOptsRegAlloc)
     {
         // Insert a RefTypeFixedReg for any normal def or use (not ParamDef or BB),
         // but not an internal use (it will already have a FixedRef for the def).
@@ -651,8 +663,11 @@ RefPosition* LinearScan::addKillForRegs(regMaskTP mask, LsraLocation currentLoc)
 
     pos->killedRegisters = mask;
 
-    *killTail = pos;
-    killTail  = &pos->nextRefPosition;
+    if (!minOptsRegAlloc)
+    {
+        *killTail = pos;
+        killTail  = &pos->nextRefPosition;
+    }
 
     return pos;
 }
@@ -1117,7 +1132,8 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
         }
 
         // Now update preferences of LIR edges to avoid the killed registers.
-        for (RefInfoListNode* cur = defList.Begin(); cur != defList.End(); cur = cur->Next())
+        // (The MinOpts allocator does not use preferences.)
+        for (RefInfoListNode* cur = defList.Begin(); !minOptsRegAlloc && (cur != defList.End()); cur = cur->Next())
         {
             Interval* interval = cur->ref->getInterval();
             if (interval->isLocalVar)
@@ -2152,58 +2168,10 @@ void LinearScan::buildIntervals()
     // Assign these RefPositions to the (nonexistent) BB0.
     curBBNum = 0;
 
-    regMaskTP* calleeRegArgMaskLiveIn = &m_compiler->codeGen->calleeRegArgMaskLiveIn;
-    *calleeRegArgMaskLiveIn           = RBM_NONE;
-    regsInUseThisLocation             = RBM_NONE;
-    regsInUseNextLocation             = RBM_NONE;
+    regsInUseThisLocation = RBM_NONE;
+    regsInUseNextLocation = RBM_NONE;
 
-    // Compute live incoming parameter registers. The liveness is based on the
-    // locals we are expecting to store the registers into in the prolog.
-    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
-    {
-        LclVarDsc*                   lcl     = m_compiler->lvaGetDesc(lclNum);
-        const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
-        for (const ABIPassingSegment& seg : abiInfo.Segments())
-        {
-            if (!seg.IsPassedInRegister())
-            {
-                continue;
-            }
-
-            const ParameterRegisterLocalMapping* mapping =
-                m_compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
-
-            bool isParameterLive = !lcl->lvTracked || m_compiler->compJmpOpUsed || (lcl->lvRefCnt() != 0);
-            bool isLive;
-            if (mapping != nullptr)
-            {
-                LclVarDsc* mappedLcl = m_compiler->lvaGetDesc(mapping->LclNum);
-                bool       isMappedLclLive =
-                    !mappedLcl->lvTracked || m_compiler->compJmpOpUsed || (mappedLcl->lvRefCnt() != 0);
-                if (mappedLcl->lvIsStructField)
-                {
-                    // Struct fields are not saved into their parameter local
-                    isLive = isMappedLclLive;
-                }
-                else
-                {
-                    isLive = isParameterLive || isMappedLclLive;
-                }
-            }
-            else
-            {
-                isLive = isParameterLive;
-            }
-
-            JITDUMP("Arg V%02u is %s in reg %s\n", mapping != nullptr ? mapping->LclNum : lclNum,
-                    isLive ? "live" : "dead", getRegName(seg.GetRegister()));
-
-            if (isLive)
-            {
-                *calleeRegArgMaskLiveIn |= seg.GetRegisterMask();
-            }
-        }
-    }
+    computeCalleeRegArgMaskLiveIn();
 
     // Now build initial definitions for all parameters, preferring their ABI
     // register if passed in one.
@@ -2277,11 +2245,10 @@ void LinearScan::buildIntervals()
         buildInitialParamDef(lclDsc, paramReg);
     }
 
-    // If there is a secret stub param, it is also live in
+    // The secret stub param, if any, was included in the live-in mask above; it may also
+    // need an initial definition.
     if (m_compiler->info.compPublishStubParam)
     {
-        calleeRegArgMaskLiveIn->AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
-
         LclVarDsc* stubParamDsc = m_compiler->lvaGetDesc(m_compiler->lvaStubArgumentVar);
         if (isCandidateVar(stubParamDsc))
         {
@@ -2784,6 +2751,71 @@ void LinearScan::buildIntervals()
     validateIntervals();
 
 #endif // DEBUG
+}
+
+//------------------------------------------------------------------------
+// computeCalleeRegArgMaskLiveIn: Compute the set of incoming parameter registers that
+//    are live into the method.
+//
+// Notes:
+//    The liveness is based on the locals we are expecting to store the registers into
+//    in the prolog.
+//
+void LinearScan::computeCalleeRegArgMaskLiveIn()
+{
+    regMaskTP* calleeRegArgMaskLiveIn = &m_compiler->codeGen->calleeRegArgMaskLiveIn;
+    *calleeRegArgMaskLiveIn           = RBM_NONE;
+
+    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
+    {
+        LclVarDsc*                   lcl     = m_compiler->lvaGetDesc(lclNum);
+        const ABIPassingInformation& abiInfo = m_compiler->lvaGetParameterABIInfo(lclNum);
+        for (const ABIPassingSegment& seg : abiInfo.Segments())
+        {
+            if (!seg.IsPassedInRegister())
+            {
+                continue;
+            }
+
+            const ParameterRegisterLocalMapping* mapping =
+                m_compiler->FindParameterRegisterLocalMappingByRegister(seg.GetRegister());
+
+            bool isParameterLive = !lcl->lvTracked || m_compiler->compJmpOpUsed || (lcl->lvRefCnt() != 0);
+            bool isLive;
+            if (mapping != nullptr)
+            {
+                LclVarDsc* mappedLcl = m_compiler->lvaGetDesc(mapping->LclNum);
+                bool       isMappedLclLive =
+                    !mappedLcl->lvTracked || m_compiler->compJmpOpUsed || (mappedLcl->lvRefCnt() != 0);
+                if (mappedLcl->lvIsStructField)
+                {
+                    // Struct fields are not saved into their parameter local
+                    isLive = isMappedLclLive;
+                }
+                else
+                {
+                    isLive = isParameterLive || isMappedLclLive;
+                }
+            }
+            else
+            {
+                isLive = isParameterLive;
+            }
+
+            JITDUMP("Arg V%02u is %s in reg %s\n", mapping != nullptr ? mapping->LclNum : lclNum,
+                    isLive ? "live" : "dead", getRegName(seg.GetRegister()));
+
+            if (isLive)
+            {
+                *calleeRegArgMaskLiveIn |= seg.GetRegisterMask();
+            }
+        }
+    }
+
+    if (m_compiler->info.compPublishStubParam)
+    {
+        calleeRegArgMaskLiveIn->AddGprRegs(RBM_SECRET_STUB_PARAM.GetIntRegSet() DEBUG_ARG(RBM_ALLINT));
+    }
 }
 
 //------------------------------------------------------------------------
@@ -4691,6 +4723,14 @@ void LinearScan::MarkSwiftErrorBusyForCall(GenTreeCall* call)
     // (LowerNonvirtPinvokeCall should have moved the GT_SWIFT_ERROR node.)
     assert(call->gtNext != nullptr);
     assert(call->gtNext->OperIs(GT_SWIFT_ERROR));
+
+    if (minOptsRegAlloc)
+    {
+        // The MinOpts allocator does not build RefTypeFixedReg RefPositions, so model this
+        // the same way as the async continuation register instead.
+        setDelayFree(addKillForRegs(RBM_SWIFT_ERROR, currentLoc + 1));
+        return;
+    }
 
     // Conveniently we model the zeroing of the register as a non-standard constant zero argument,
     // which will have created a RefPosition corresponding to the use of the error at the location
