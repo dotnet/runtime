@@ -1235,6 +1235,9 @@ namespace System
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
         static char IBinaryInteger<char>.PopCount(char value) => (char)BitOperations.PopCount(value);
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.ReverseBits(TSelf)"/>
+        static char IBinaryInteger<char>.ReverseBits(char value) => (char)ushort.ReverseBits(value);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
         static char IBinaryInteger<char>.RotateLeft(char value, int rotateAmount) => (char)((value << (rotateAmount & 15)) | (value >> ((16 - rotateAmount) & 15)));
 
