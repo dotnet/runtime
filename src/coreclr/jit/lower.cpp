@@ -556,11 +556,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return next;
             }
 
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
             LowerShift(node->AsOp());
-#else
-            ContainCheckShiftRotate(node->AsOp());
-#endif
             break;
         }
 
@@ -8842,13 +8838,19 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
 //    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
 //
 // Notes:
-//    Remove unnecessary shift count masking, xarch shift instructions
-//    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
+//    On targets where hardware masks the shift count to the operand width (XARCH, ARM64,
+//    LOONGARCH64, RISCV64), nothing to do -- gtFoldExprShiftCountMask strips the redundant
+//    AND earlier.
+//
+//    On ARM32 the hardware uses Rs[7:0] without masking mod 32, so counts >= 32 give 0
+//    rather than wrapping. Insert AND(count, 31) for variable-count shifts to restore the
+//    masking semantics that were stripped in gtFoldExprShiftCountMask.
 //
 void Lowering::LowerShift(GenTreeOp* shift)
 {
     assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     size_t mask = 0x1f;
 #ifdef TARGET_64BIT
     if (varTypeIsLong(shift->TypeGet()))
@@ -8876,9 +8878,44 @@ void Lowering::LowerShift(GenTreeOp* shift)
         shift->gtOp2 = andOp->gtGetOp1();
         BlockRange().Remove(andOp);
         BlockRange().Remove(maskOp);
-        // The parent was replaced, clear contain and regOpt flag.
         shift->gtOp2->ClearContained();
     }
+#elif defined(TARGET_ARM)
+    // ARM32 uses Rs[7:0] as the shift count; counts in [32, 255] give 0 (LSL/LSR) or
+    // replicated sign (ASR) rather than masking mod 32. Insert AND(count, 31) so the
+    // hardware sees a value in [0, 31]. Skip when the count is already provably in
+    // [0, 31]: a constant (handled above) or AND(x, C) where C fits in 5 bits.
+    {
+        assert(!varTypeIsLong(shift->TypeGet()));
+        constexpr ssize_t mask = 0x1f;
+
+        GenTree* shiftBy = shift->gtGetOp2();
+        if (!shiftBy->IsCnsIntOrI())
+        {
+            // Skip insertion when the count is already AND(x, C) where C <= 31,
+            // which guarantees the result is in [0, 31]. A bare GT_AND is not
+            // sufficient: user-written masks like (y & 0xFF) don't bound to [0, 31].
+            bool alreadyMasked = false;
+            if (shiftBy->OperIs(GT_AND))
+            {
+                GenTree* andOp2 = shiftBy->gtGetOp2();
+                if (andOp2->IsCnsIntOrI() && ((static_cast<size_t>(andOp2->AsIntCon()->IconValue()) & ~mask) == 0))
+                {
+                    alreadyMasked = true;
+                }
+            }
+
+            if (!alreadyMasked)
+            {
+                GenTree* maskCns = m_compiler->gtNewIconNode(mask);
+                GenTree* andNode = m_compiler->gtNewOperNode(GT_AND, TYP_INT, shiftBy, maskCns);
+                BlockRange().InsertBefore(shift, maskCns);
+                BlockRange().InsertBefore(shift, andNode);
+                shift->AsOp()->gtOp2 = andNode;
+            }
+        }
+    }
+#endif
 
     ContainCheckShiftRotate(shift);
 
