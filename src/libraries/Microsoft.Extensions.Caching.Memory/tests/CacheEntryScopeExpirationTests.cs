@@ -510,6 +510,46 @@ namespace Microsoft.Extensions.Caching.Memory
         }
 
         [Fact]
+        public async Task PropagatingTokensToTheParentIsSafeWhileTheParentIsRead()
+        {
+            const int Workers = 4;
+            const int ChildrenPerWorker = 250;
+
+            var cache = CreateCache(trackLinkedCacheEntries: true);
+            string parentKey = "parent";
+
+            ICacheEntry parent = cache.CreateEntry(parentKey);
+            parent.SetValue(new object());
+
+            // Started inside the parent's scope, so every task inherits it as the ambient entry and
+            // each child they create propagates its expiration token into the parent - from several
+            // threads at once, and long after the parent itself has been committed to the cache and
+            // become visible to readers.
+            Task[] workers = Enumerable.Range(0, Workers)
+                .Select(worker => Task.Run(() =>
+                {
+                    for (int i = 0; i < ChildrenPerWorker; i++)
+                    {
+                        using ICacheEntry child = cache.CreateEntry($"child {worker}.{i}");
+                        child.SetValue(i);
+                        child.AddExpirationToken(new TestExpirationToken());
+                    }
+                }))
+                .ToArray();
+
+            parent.Dispose();
+
+            Task allWorkers = Task.WhenAll(workers);
+            while (!allWorkers.IsCompleted)
+            {
+                Assert.True(cache.TryGetValue(parentKey, out _));
+            }
+
+            await allWorkers;
+            Assert.Equal(Workers * ChildrenPerWorker, parent.ExpirationTokens.Count);
+        }
+
+        [Fact]
         public async Task OnceExpiredIsSetToTrueItRemainsTrue()
         {
             var cache = CreateCache();
