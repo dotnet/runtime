@@ -185,5 +185,6 @@ namespace ILAssembler.Tests
             Assert.Contains("Method1", methodNames);
             Assert.Contains("Method2", methodNames);
         }
+
     }
 }
