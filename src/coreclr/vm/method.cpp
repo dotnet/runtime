@@ -275,6 +275,16 @@ void MethodDesc::SetMethodDescOptimizationTier(NativeCodeVersion::OptimizationTi
     VolatileStoreWithoutBarrier(&m_codeData->OptimizationTier, tier);
 }
 
+bool MethodDesc::SetDefaultFuncPtrStub(Precode* stub)
+{
+    STANDARD_VM_CONTRACT;
+
+    IfFailThrow(EnsureCodeDataExists(NULL));
+
+    _ASSERTE(m_codeData != NULL);
+    return InterlockedCompareExchangeT((void**)&m_codeData->DefaultFuncPtrStub, (void*)stub, (void*)NULL) == NULL;
+}
+
 #if defined(_DEBUG) && defined(ALLOW_SXS_JIT)
 HRESULT MethodDesc::SetMethodDescAltJitPatchpointInfo(PatchpointInfo* pInfo)
 {
@@ -342,6 +352,15 @@ NativeCodeVersion::OptimizationTier MethodDesc::GetMethodDescOptimizationTier()
     if (codeData == NULL)
         return NativeCodeVersion::OptimizationTierUnknown;
     return VolatileLoadWithoutBarrier(&codeData->OptimizationTier);
+}
+
+Precode* MethodDesc::GetDefaultFuncPtrStub()
+{
+    WRAPPER_NO_CONTRACT;
+    PTR_MethodDescCodeData codeData = VolatileLoadWithoutBarrier(&m_codeData);
+    if (codeData == NULL)
+        return NULL;
+    return VolatileLoadWithoutBarrier(&codeData->DefaultFuncPtrStub);
 }
 #endif // FEATURE_CODE_VERSIONING
 
