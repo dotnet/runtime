@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -13,9 +13,9 @@ namespace ILCompiler.DependencyAnalysis
 {
     internal sealed class ExternalTypeMapNode : SortableDependencyNode, IExternalTypeMapNode
     {
-        private readonly IEnumerable<KeyValuePair<string, (TypeDesc targetType, TypeDesc trimmingTargetType)>> _mapEntries;
+        private readonly IEnumerable<KeyValuePair<string, (TypeDesc targetType, List<TypeDesc> trimmingTargetTypes)>> _mapEntries;
 
-        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, (TypeDesc targetType, TypeDesc trimmingTargetType)>> mapEntries)
+        public ExternalTypeMapNode(TypeDesc typeMapGroup, IEnumerable<KeyValuePair<string, (TypeDesc targetType, List<TypeDesc> trimmingTargetTypes)>> mapEntries)
         {
             _mapEntries = mapEntries;
             TypeMapGroup = typeMapGroup;
@@ -37,8 +37,19 @@ namespace ILCompiler.DependencyAnalysis
 
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
-                if (trimmingTargetType is not null)
+                var (targetType, trimmingTargetTypes) = entry.Value;
+                bool unconditional = false;
+                foreach (var trimTarget in trimmingTargetTypes)
+                {
+                    if (trimTarget is null)
+                    {
+                        unconditional = true;
+                        break;
+                    }
+                }
+                if (unconditional)
+                    continue;
+                foreach (var trimmingTargetType in trimmingTargetTypes)
                 {
                     IEETypeNode effectiveTrimTargetType = GetEffectiveTrimTargetType(context, trimmingTargetType);
 
@@ -58,12 +69,16 @@ namespace ILCompiler.DependencyAnalysis
         {
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
-                if (trimmingTargetType is null)
+                var (targetType, trimmingTargetTypes) = entry.Value;
+                foreach (var trimTarget in trimmingTargetTypes)
                 {
-                    yield return new DependencyListEntry(
-                        context.MetadataTypeSymbol(targetType),
-                        "External type map entry target type");
+                    if (trimTarget is null)
+                    {
+                        yield return new DependencyListEntry(
+                            context.MetadataTypeSymbol(targetType),
+                            "External type map entry target type");
+                        break;
+                    }
                 }
             }
         }
@@ -83,14 +98,18 @@ namespace ILCompiler.DependencyAnalysis
         {
             foreach (var entry in _mapEntries)
             {
-                var (targetType, trimmingTargetType) = entry.Value;
+                var (targetType, trimmingTargetTypes) = entry.Value;
 
-                if (trimmingTargetType is null
-                    || GetEffectiveTrimTargetType(factory, trimmingTargetType).Marked)
+                foreach (var trimmingTargetType in trimmingTargetTypes)
                 {
-                    IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
-                    Debug.Assert(targetNode.Marked);
-                    yield return (entry.Key, targetNode);
+                    if (trimmingTargetType is null
+                        || GetEffectiveTrimTargetType(factory, trimmingTargetType).Marked)
+                    {
+                        IEETypeNode targetNode = factory.MetadataTypeSymbol(targetType);
+                        Debug.Assert(targetNode.Marked);
+                        yield return (entry.Key, targetNode);
+                        break;
+                    }
                 }
             }
         }
