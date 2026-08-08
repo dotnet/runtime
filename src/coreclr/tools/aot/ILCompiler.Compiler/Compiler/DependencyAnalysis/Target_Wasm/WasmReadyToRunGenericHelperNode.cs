@@ -11,12 +11,14 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitCode(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
-            throw new NotImplementedException();
+            throw new PlatformNotSupportedException(
+                "NativeAOT WebAssembly does not support runtime generic dictionary lookup helpers.");
         }
 
         protected virtual void EmitLoadGenericContext(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
-            throw new NotImplementedException();
+            throw new PlatformNotSupportedException(
+                "NativeAOT WebAssembly runtime generic dictionary context loading is not supported.");
         }
     }
 
@@ -24,7 +26,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         protected override void EmitLoadGenericContext(NodeFactory factory, ref WasmEmitter encoder, bool relocsOnly)
         {
-            throw new NotImplementedException();
+            throw new PlatformNotSupportedException(
+                "NativeAOT WebAssembly runtime generic dictionary context loading from a type is not supported.");
         }
     }
 }

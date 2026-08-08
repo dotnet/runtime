@@ -21,11 +21,6 @@ namespace ILCompiler.ObjectWriter
     /// </summary>
     internal abstract partial class WasmObjectWriter : ObjectWriter
     {
-        public const int StackPointerGlobalIndex = WasmGlobalImports.StackPointerGlobalIndex;
-        public const int ImageBaseGlobalIndex = WasmGlobalImports.ImageBaseGlobalIndex;
-        public const int TableBaseGlobalIndex = WasmGlobalImports.TableBaseGlobalIndex;
-        public const int AsyncContinuationGlobalIndex = WasmGlobalImports.AsyncContinuationGlobalIndex;
-
         private readonly Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
         {
             { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
@@ -74,13 +69,10 @@ namespace ILCompiler.ObjectWriter
         {
             get
             {
-                if (_sectionEmitOrder is null)
-                {
-                    _sectionEmitOrder = _sectionOrder
-                        .Where(name => _sections.Contains(name))
-                        .Select(name => _sections.GetSectionIndex(name))
-                        .ToArray();
-                }
+                _sectionEmitOrder ??= _sectionOrder
+                    .Where(_sections.Contains)
+                    .Select(_sections.GetSectionIndex)
+                    .ToArray();
 
                 return _sectionEmitOrder;
             }
@@ -160,7 +152,15 @@ namespace ILCompiler.ObjectWriter
                 flags |= WasmLowering.LoweringFlags.IsUnmanagedCallersOnly;
             }
             WriteSignatureIndexForFunction(node.Signature, flags, node);
-            RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
+            Utf8String functionName = GetMangledName(node);
+            RegisterFunctionSymbol(functionName);
+
+            Utf8String alternateName = _nodeFactory.GetSymbolAlternateName(node, out _);
+            if (!alternateName.IsNull)
+            {
+                _wasmSymbolManager.AddAlias(ExternCName(alternateName), functionName);
+            }
+
             if (node is INodeWithFunclets nodeWithFunclets)
             {
                 RecordFunclets(nodeWithFunclets);
@@ -400,9 +400,9 @@ namespace ILCompiler.ObjectWriter
             _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmCodeSection.Name)
                 .SetEntryCount(MethodCount);
 
-            Debug.Assert(_sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
-            Debug.Assert(_sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
-            Debug.Assert(_sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
+            Debug.Assert(GetOrCreateSection<WasmImportSection>(WasmObjectNodeSection.ImportSection, out _).EntryCount == _wasmSymbolManager.GetImportCount());
+            Debug.Assert(GetOrCreateSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection, out _).EntryCount == MethodCount);
+            Debug.Assert(GetOrCreateSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection, out _).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
         }
     }
 
