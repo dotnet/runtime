@@ -130,20 +130,55 @@ namespace System
             }
         }
 
+        [ThreadStatic]
+        private static bool t_deliveringFirstChanceNotification;
+
         private static void OnFirstChanceException(Exception e, object? sender)
         {
             if (FirstChanceException is EventHandler<FirstChanceExceptionEventArgs> handlers)
             {
-                FirstChanceExceptionEventArgs args = new(e);
-                foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                // Guard against reentrancy. Allocating the event args below or running a
+                // handler may itself throw (e.g. OutOfMemoryException in a low-memory
+                // situation). That exception would trigger another first-chance
+                // notification on this same thread, allocate again, throw again, and
+                // recurse until the stack overflows. Skip nested notifications to break
+                // the recursion.
+                if (t_deliveringFirstChanceNotification)
                 {
+                    return;
+                }
+
+                t_deliveringFirstChanceNotification = true;
+                try
+                {
+                    FirstChanceExceptionEventArgs args;
                     try
                     {
-                        handler(sender, args);
+                        args = new(e);
                     }
-                    catch
+                    catch (Exception allocationFailure)
                     {
+                        // Failing to allocate the event args (e.g. OutOfMemoryException in a
+                        // low-memory situation) leaves us unable to deliver the notification.
+                        // Fail fast rather than proceeding with invalid state.
+                        Environment.FailFast("Failed to allocate FirstChanceExceptionEventArgs.", allocationFailure);
+                        throw; // unreachable
                     }
+
+                    foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
+                    {
+                        try
+                        {
+                            handler(sender, args);
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+                finally
+                {
+                    t_deliveringFirstChanceNotification = false;
                 }
             }
         }
