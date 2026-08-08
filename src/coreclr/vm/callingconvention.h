@@ -1703,8 +1703,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
         else
         {
-            // Composite greater than 16bytes should be passed by reference
-            if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
+            if (IsArgPassedByRef())
             {
                 argSize = sizeof(TADDR);
             }
@@ -2066,6 +2065,9 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                 m_returnedFpFieldOffsets[1] = info.offset2nd;
                 break;
             }
+#elif defined(TARGET_ARM64)
+            if  (!IsArgPassedByRef(thValueType))
+                break;
 #else
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
                 break;
