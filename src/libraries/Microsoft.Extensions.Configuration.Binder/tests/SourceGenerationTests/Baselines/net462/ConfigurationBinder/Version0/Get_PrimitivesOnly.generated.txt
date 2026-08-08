@@ -71,10 +71,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value)
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    return ParseInt(value, section.Path);
+                    if (!string.IsNullOrEmpty(value) && TryParseInt(value, section.Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp0))
+                    {
+                        return temp0;
+                    }
                 }
+                return null;
             }
             else if (type == typeof(string))
             {
@@ -82,7 +86,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                return section.Value;
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
+                {
+                    return value;
+                }
             }
             else if (type == typeof(float))
             {
@@ -90,10 +97,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value)
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    return ParseFloat(value, section.Path);
+                    if (!string.IsNullOrEmpty(value) && TryParseFloat(value, section.Path, binderOptions?.ErrorOnUnknownConfiguration is true, out float temp1))
+                    {
+                        return temp1;
+                    }
                 }
+                return null;
             }
             else if (type == typeof(double))
             {
@@ -101,13 +112,29 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     throw new InvalidOperationException();
                 }
-                if (section.Value is string value)
+                if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    return ParseDouble(value, section.Path);
+                    if (!string.IsNullOrEmpty(value) && TryParseDouble(value, section.Path, binderOptions?.ErrorOnUnknownConfiguration is true, out double temp2))
+                    {
+                        return temp2;
+                    }
                 }
+                return null;
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
+        }
+
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                return section.TryGetValue(key, out value);
+            }
+        
+            value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
+            return value != null;
         }
 
         public static bool HasValueOrChildren(IConfiguration configuration)
@@ -146,39 +173,57 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return binderOptions;
         }
 
-        public static int ParseInt(string value, string? path)
+        public static bool TryParseInt(string value, string? path, bool errorOnFailedBinding, out int result)
         {
             try
             {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
 
-        public static float ParseFloat(string value, string? path)
+        public static bool TryParseFloat(string value, string? path, bool errorOnFailedBinding, out float result)
         {
             try
             {
-                return float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                result = float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(float)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(float)}'.", exception);
             }
         }
 
-        public static double ParseDouble(string value, string? path)
+        public static bool TryParseDouble(string value, string? path, bool errorOnFailedBinding, out double result)
         {
             try
             {
-                return double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                result = double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(double)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(double)}'.", exception);
             }
         }
         #endregion Core binding extensions.

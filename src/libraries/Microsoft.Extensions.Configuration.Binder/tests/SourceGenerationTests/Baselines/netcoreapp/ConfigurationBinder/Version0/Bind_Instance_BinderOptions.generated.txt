@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_Program__MyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList", "MyDictionary", "MyComplexDictionary" });
+        private readonly static Lazy<global::System.Collections.Generic.HashSet<string>> s_configKeys_Program__MyClass = new(() => new global::System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList", "MyDictionary", "MyComplexDictionary" });
 
         public static void BindCore(IConfiguration configuration, ref global::System.Collections.Generic.List<int> instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
@@ -59,9 +59,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (!string.IsNullOrEmpty(value) && TryParseInt(value, section.Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp0))
                     {
-                        instance.Add(ParseInt(value, section.Path));
+                        instance.Add(temp0);
                     }
                 }
             }
@@ -94,9 +94,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ValidateConfigurationKeys(typeof(global::Program.MyClass), s_configKeys_Program__MyClass, configuration, binderOptions);
 
-            if (TryGetConfigurationValue(configuration, key: "MyString", out string? value0))
+            if (TryGetConfigurationValue(configuration, key: "MyString", out string? value1))
             {
-                instance.MyString = value0;
+                instance.MyString = value1;
             }
             else if (defaultValueIfNotFound)
             {
@@ -107,11 +107,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (TryGetConfigurationValue(configuration, key: "MyInt", out string? value1))
+            if (TryGetConfigurationValue(configuration, key: "MyInt", out string? value2))
             {
-                if (!string.IsNullOrEmpty(value1))
+                if (!string.IsNullOrEmpty(value2) && TryParseInt(value2, configuration.GetSection("MyInt").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp3))
                 {
-                    instance.MyInt = ParseInt(value1, configuration.GetSection("MyInt").Path);
+                    instance.MyInt = temp3;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -119,39 +119,39 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.MyInt = instance.MyInt;
             }
 
-            var value2 = configuration.GetSection("MyList");
-            if (AsConfigWithChildren(value2) is IConfigurationSection section3)
+            var value4 = configuration.GetSection("MyList");
+            if (AsConfigWithChildren(value4) is IConfigurationSection section5)
             {
-                global::System.Collections.Generic.List<int>? temp5 = instance.MyList;
-                temp5 ??= new global::System.Collections.Generic.List<int>();
-                BindCore(section3, ref temp5, defaultValueIfNotFound: false, binderOptions);
-                instance.MyList = temp5;
+                global::System.Collections.Generic.List<int>? temp7 = instance.MyList;
+                temp7 ??= new global::System.Collections.Generic.List<int>();
+                BindCore(section5, ref temp7, defaultValueIfNotFound: false, binderOptions);
+                instance.MyList = temp7;
             }
             else
             {
                 instance.MyList = instance.MyList;
             }
 
-            var value6 = configuration.GetSection("MyDictionary");
-            if (AsConfigWithChildren(value6) is IConfigurationSection section7)
+            var value8 = configuration.GetSection("MyDictionary");
+            if (AsConfigWithChildren(value8) is IConfigurationSection section9)
             {
-                global::System.Collections.Generic.Dictionary<string, string>? temp9 = instance.MyDictionary;
-                temp9 ??= new global::System.Collections.Generic.Dictionary<string, string>();
-                BindCore(section7, ref temp9, defaultValueIfNotFound: false, binderOptions);
-                instance.MyDictionary = temp9;
+                global::System.Collections.Generic.Dictionary<string, string>? temp11 = instance.MyDictionary;
+                temp11 ??= new global::System.Collections.Generic.Dictionary<string, string>();
+                BindCore(section9, ref temp11, defaultValueIfNotFound: false, binderOptions);
+                instance.MyDictionary = temp11;
             }
             else
             {
                 instance.MyDictionary = instance.MyDictionary;
             }
 
-            var value10 = configuration.GetSection("MyComplexDictionary");
-            if (AsConfigWithChildren(value10) is IConfigurationSection section11)
+            var value12 = configuration.GetSection("MyComplexDictionary");
+            if (AsConfigWithChildren(value12) is IConfigurationSection section13)
             {
-                global::System.Collections.Generic.Dictionary<string, global::Program.MyClass2>? temp13 = instance.MyComplexDictionary;
-                temp13 ??= new global::System.Collections.Generic.Dictionary<string, global::Program.MyClass2>();
-                BindCore(section11, ref temp13, defaultValueIfNotFound: false, binderOptions);
-                instance.MyComplexDictionary = temp13;
+                global::System.Collections.Generic.Dictionary<string, global::Program.MyClass2>? temp15 = instance.MyComplexDictionary;
+                temp15 ??= new global::System.Collections.Generic.Dictionary<string, global::Program.MyClass2>();
+                BindCore(section13, ref temp15, defaultValueIfNotFound: false, binderOptions);
+                instance.MyComplexDictionary = temp15;
             }
             else
             {
@@ -173,17 +173,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
-        public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
+        public static void ValidateConfigurationKeys(Type type, Lazy<global::System.Collections.Generic.HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
         {
             if (binderOptions?.ErrorOnUnknownConfiguration is true)
             {
-                List<string>? temp = null;
+                global::System.Collections.Generic.List<string>? temp = null;
         
                 foreach (IConfigurationSection section in configuration.GetChildren())
                 {
                     if (!keys.Value.Contains(section.Key))
                     {
-                        (temp ??= new List<string>()).Add($"'{section.Key}'");
+                        (temp ??= new global::System.Collections.Generic.List<string>()).Add($"'{section.Key}'");
                     }
                 }
         
@@ -221,11 +221,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return binderOptions;
         }
 
-        public static int ParseInt(string value, string? path)
+        public static bool TryParseInt(string value, string? path, bool errorOnFailedBinding, out int result)
         {
             try
             {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {

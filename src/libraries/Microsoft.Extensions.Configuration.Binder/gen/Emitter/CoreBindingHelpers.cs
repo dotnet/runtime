@@ -123,8 +123,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     Identifier.value,
                                     Expression.sectionPath,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"return {parsedValueExpr};"),
-                                    checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
+                                    checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue,
+                                    Expression.errorOnFailedBinding);
                                 EmitEndBlock(); // End if-check for input type.
+
+                                if (stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue)
+                                {
+                                    // The value is absent or could not be converted, and the caller did not ask for that to be an error.
+                                    _writer.WriteLine("return null;");
+                                }
                             }
                             break;
                         case ConfigurationSectionSpec:
@@ -198,7 +205,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         Identifier.value,
                         Expression.sectionPath,
                         writeOnSuccess: (parsedValueExpr) => _writer.WriteLine($"return {parsedValueExpr};"),
-                        checkForNullSectionValue: false);
+                        checkForNullSectionValue: false,
+                        // GetValue has no BinderOptions overload, so an unconvertible value is always an error.
+                        errorOnFailedBindingExpr: "true");
 
                     EmitEndBlock();
                 }
@@ -599,11 +608,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 string parseEnumCall = _emitGenericParseEnum ? "Enum.Parse<T>(value, ignoreCase: true)" : "(T)Enum.Parse(typeof(T), value, ignoreCase: true)";
                 _writer.WriteLine($$"""
-                    public static T ParseEnum<T>(string value, string? path) where T : struct
+                    public static bool TryParseEnum<T>(string {{Identifier.value}}, string? {{Identifier.path}}, bool {{Identifier.errorOnFailedBinding}}, out T {{Identifier.result}}) where T : struct
                     {
                         try
                         {
-                            return {{parseEnumCall}};
+                            {{Identifier.result}} = {{parseEnumCall}};
+                            return true;
+                        }
+                        catch when (!{{Identifier.errorOnFailedBinding}})
+                        {
+                            {{Identifier.result}} = default;
+                            return false;
                         }
                         catch ({{Identifier.Exception}} {{Identifier.exception}})
                         {
@@ -667,11 +682,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.value} ?? \"null\"}}", $"{{{Identifier.path}}}", $"{{typeof({typeFQN})}}");
 
-                EmitStartBlock($"public static {typeFQN} {TypeIndex.GetParseMethodName(type)}(string {Identifier.value}, string? {Identifier.path})");
+                EmitStartBlock($"public static bool {TypeIndex.GetTryParseMethodName(type)}(string {Identifier.value}, string? {Identifier.path}, bool {Identifier.errorOnFailedBinding}, out {typeFQN} {Identifier.result})");
                 EmitEndBlock($$"""
                     try
                     {
-                        return {{parsedValueExpr}};
+                        {{Identifier.result}} = {{parsedValueExpr}};
+                        return true;
+                    }
+                    catch when (!{{Identifier.errorOnFailedBinding}})
+                    {
+                        {{Identifier.result}} = default;
+                        return false;
                     }
                     catch ({{Identifier.Exception}} {{Identifier.exception}})
                     {
@@ -724,7 +745,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 Identifier.value,
                                 Expression.sectionPath,
                                 (parsedValueExpr) => _writer.WriteLine($"{addExpr}({parsedValueExpr});"),
-                                checkForNullSectionValue: true);
+                                checkForNullSectionValue: true,
+                                Expression.errorOnFailedBinding);
                             EmitEndBlock(); // End if-check for input type.
                         }
                         break;
@@ -777,7 +799,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     Expression.sectionKey,
                     Expression.sectionPath,
                     Emit_BindAndAddLogic_ForElement,
-                    checkForNullSectionValue: false);
+                    checkForNullSectionValue: false,
+                    Expression.errorOnFailedBinding);
 
                 void Emit_BindAndAddLogic_ForElement(string parsedKeyExpr)
                 {
@@ -791,7 +814,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     Identifier.value,
                                     Expression.sectionPath,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{instanceIdentifier}[{parsedKeyExpr}] = {parsedValueExpr};"),
-                                    checkForNullSectionValue: true);
+                                    checkForNullSectionValue: true,
+                                    Expression.errorOnFailedBinding);
                                 EmitEndBlock(); // End if-check for input type.
                             }
                             break;
@@ -1000,15 +1024,34 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                                 // A non-nullable value type parameter cannot take null: without a declared default
                                 // that falls through to the caller's else-branch, which throws; with one it keeps the
-                                // default. An empty value still reaches the parse, which reports the conversion
-                                // failure as the reflection binder does.
+                                // default. An empty or otherwise unconvertible value is folded into the same condition
+                                // so that it is treated the same way.
                                 bool requireValue = bindingToLocal && !member.TypeRef.CanBeNull && member is ParameterSpec;
 
                                 // A parameter's declared default has to survive a null value.
                                 bool hasDeclaredDefault = bindingToLocal && member is ParameterSpec { ErrorOnFailedBinding: false };
 
-                                string valueCondition = requireValue ? $" && {valueIdentifier} is not null" : string.Empty;
-                                EmitStartBlock($"if ({Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true)}, out string? {valueIdentifier}){valueCondition})");
+                                string configValueExpr = $"{Identifier.TryGetConfigurationValue}({Identifier.configuration}, {Identifier.key}: {SymbolDisplay.FormatLiteral(member.ConfigurationKeyName, quote: true)}, out string? {valueIdentifier})";
+
+                                if (requireValue)
+                                {
+                                    Debug.Assert(stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
+
+                                    // Without a declared default the caller appends an else-branch that throws either
+                                    // way, so a value that is present but unconvertible reports the conversion failure
+                                    // rather than being described as missing configuration.
+                                    string errorOnFailedBindingExpr = hasDeclaredDefault ? Expression.errorOnFailedBinding : "true";
+
+                                    string tryParseExpr = GetTryParseExpression(stringParsableType, valueIdentifier, sectionPathExpr, errorOnFailedBindingExpr, out string parsedValueIdentifier);
+
+                                    EmitStartBlock($"if ({configValueExpr} && {valueIdentifier} is not null && {tryParseExpr})");
+                                    _writer.WriteLine($"{memberAccessExpr} = {parsedValueIdentifier};");
+                                    EmitEndBlock();
+
+                                    return true;
+                                }
+
+                                EmitStartBlock($"if ({configValueExpr})");
 
                                 // Decide to emit the null check block for nullable types (e.g. int?).
                                 // We don't emit this block for types that can be assigned directly from IConfigurationSection.Value as the valueIdentifier value can assigned
@@ -1040,7 +1083,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                     valueIdentifier,
                                     sectionPathExpr,
                                     writeOnSuccess: parsedValueExpr => _writer.WriteLine($"{memberAccessExpr} = {parsedValueExpr};"),
-                                    checkForNullSectionValue: !(emitNullCheck && treatEmptyValueAsNull) && !requireValue);
+                                    checkForNullSectionValue: !(emitNullCheck && treatEmptyValueAsNull),
+                                    Expression.errorOnFailedBinding);
 
                                 if (emitNullCheck)
                                 {
@@ -1350,41 +1394,67 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 string sectionValueExpr,
                 string sectionPathExpr,
                 Action<string>? writeOnSuccess,
-                bool checkForNullSectionValue)
+                bool checkForNullSectionValue,
+                string errorOnFailedBindingExpr)
             {
                 StringParsableTypeKind typeKind = type.StringParsableTypeKind;
                 Debug.Assert(typeKind is not StringParsableTypeKind.None);
 
-                string parsedValueExpr = typeKind switch
+                // Usually assigning the configuration value to string or object. There is nothing to parse, so nothing can fail.
+                if (typeKind is StringParsableTypeKind.AssignFromSectionValue)
                 {
-                    StringParsableTypeKind.AssignFromSectionValue => sectionValueExpr,
-                    StringParsableTypeKind.Enum => $"ParseEnum<{type.TypeRef.FullyQualifiedName}>({sectionValueExpr}, {sectionPathExpr})",
-                    _ => $"{TypeIndex.GetParseMethodName(type)}({sectionValueExpr}, {sectionPathExpr})",
-                };
-
-                // Usually assigning the configuration value to string or object
-                if (!checkForNullSectionValue || typeKind == StringParsableTypeKind.AssignFromSectionValue)
-                {
-                    writeOnSuccess?.Invoke(parsedValueExpr);
+                    writeOnSuccess?.Invoke(sectionValueExpr);
+                    return;
                 }
-                else
+
+                if (!checkForNullSectionValue)
                 {
-                    // call parsing methods
+                    EmitTryParseBlock(conditionPrefix: string.Empty, valueCondition: null);
+                    return;
+                }
 
-                    string conditionPrefix = string.Empty;
-                    // Special case ByteArray when having empty string configuration value as we need to assign empty byte array at that time.
-                    if (typeKind == StringParsableTypeKind.ByteArray)
-                    {
-                        EmitStartBlock($"if ({sectionValueExpr} == string.Empty)");
-                        writeOnSuccess?.Invoke(parsedValueExpr);
-                        EmitEndBlock();
-                        conditionPrefix = "else ";
-                    }
+                // Special case ByteArray when having empty string configuration value as we need to assign empty byte array at that time.
+                if (typeKind is StringParsableTypeKind.ByteArray)
+                {
+                    EmitTryParseBlock(conditionPrefix: string.Empty, valueCondition: $"{sectionValueExpr} == string.Empty");
+                    EmitTryParseBlock(conditionPrefix: "else ", valueCondition: $"!string.IsNullOrEmpty({sectionValueExpr})");
+                    return;
+                }
 
-                    EmitStartBlock($"{conditionPrefix}if (!string.IsNullOrEmpty({sectionValueExpr}))");
-                    writeOnSuccess?.Invoke(parsedValueExpr);
+                EmitTryParseBlock(conditionPrefix: string.Empty, valueCondition: $"!string.IsNullOrEmpty({sectionValueExpr})");
+
+                void EmitTryParseBlock(string conditionPrefix, string? valueCondition)
+                {
+                    string tryParseExpr = GetTryParseExpression(type, sectionValueExpr, sectionPathExpr, errorOnFailedBindingExpr, out string parsedValueIdentifier);
+                    string condition = valueCondition is null ? tryParseExpr : $"{valueCondition} && {tryParseExpr}";
+
+                    EmitStartBlock($"{conditionPrefix}if ({condition})");
+                    writeOnSuccess?.Invoke(parsedValueIdentifier);
                     EmitEndBlock();
                 }
+            }
+
+            /// <summary>
+            /// Builds a call to the generated try-parse helper for <paramref name="type"/>, declaring the local that
+            /// receives the parsed value. A failed conversion only throws when the binder options ask for it, so the
+            /// caller emits its binding logic under the returned condition.
+            /// </summary>
+            private string GetTryParseExpression(
+                ParsableFromStringSpec type,
+                string sectionValueExpr,
+                string sectionPathExpr,
+                string errorOnFailedBindingExpr,
+                out string parsedValueIdentifier)
+            {
+                Debug.Assert(type.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
+
+                string typeFQN = type.TypeRef.FullyQualifiedName;
+                string methodName = type.StringParsableTypeKind is StringParsableTypeKind.Enum
+                    ? $"TryParseEnum<{typeFQN}>"
+                    : TypeIndex.GetTryParseMethodName(type);
+
+                parsedValueIdentifier = GetIncrementalIdentifier(Identifier.temp);
+                return $"{methodName}({sectionValueExpr}, {sectionPathExpr}, {errorOnFailedBindingExpr}, out {typeFQN} {parsedValueIdentifier})";
             }
 
             private bool EmitObjectInit(ComplexTypeSpec type, string memberAccessExpr, InitializationKind initKind, string configArgExpr)

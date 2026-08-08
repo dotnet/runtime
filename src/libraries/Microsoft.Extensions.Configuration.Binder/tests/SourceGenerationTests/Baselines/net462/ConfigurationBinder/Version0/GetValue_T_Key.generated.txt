@@ -48,28 +48,47 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             IConfigurationSection section = configuration.GetSection(key);
 
-            if (section.Value is not string value)
+            if (TryGetConfigurationValue(section, key: null, out string? value) && !string.IsNullOrEmpty(value))
             {
-                return null;
-            }
-
-            if (type == typeof(int))
-            {
-                return ParseInt(value, section.Path);
+                if (type == typeof(int))
+                {
+                    if (TryParseInt(value, section.Path, true, out int temp0))
+                    {
+                        return temp0;
+                    }
+                }
             }
 
             return null;
         }
 
-        public static int ParseInt(string value, string? path)
+        /// <summary>Tries to get the configuration value for the specified key.</summary>
+        public static bool TryGetConfigurationValue(IConfiguration configuration, string key, out string? value)
+        {
+            if (configuration is ConfigurationSection section)
+            {
+                return section.TryGetValue(key, out value);
+            }
+        
+            value = key != null ? configuration[key] : configuration is IConfigurationSection sec ? sec.Value : null;
+            return value != null;
+        }
+
+        public static bool TryParseInt(string value, string? path, bool errorOnFailedBinding, out int result)
         {
             try
             {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{path}' to type '{typeof(int)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value '{value ?? "null"}' at '{path}' to type '{typeof(int)}'.", exception);
             }
         }
         #endregion Core binding extensions.

@@ -73,11 +73,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (!string.IsNullOrEmpty(value) && TryParseInt(value, section.Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp0))
                     {
-                        return ParseInt(value, section.Path);
+                        return temp0;
                     }
                 }
+                return null;
             }
             else if (type == typeof(string))
             {
@@ -98,11 +99,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (!string.IsNullOrEmpty(value) && TryParseFloat(value, section.Path, binderOptions?.ErrorOnUnknownConfiguration is true, out float temp1))
                     {
-                        return ParseFloat(value, section.Path);
+                        return temp1;
                     }
                 }
+                return null;
             }
             else if (type == typeof(double))
             {
@@ -112,11 +114,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 if (TryGetConfigurationValue(configuration, key: null, out string? value))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (!string.IsNullOrEmpty(value) && TryParseDouble(value, section.Path, binderOptions?.ErrorOnUnknownConfiguration is true, out double temp2))
                     {
-                        return ParseDouble(value, section.Path);
+                        return temp2;
                     }
                 }
+                return null;
             }
 
             throw new NotSupportedException($"Unable to bind to type '{type}': generator did not detect the type as input.");
@@ -170,11 +173,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return binderOptions;
         }
 
-        public static int ParseInt(string value, string? path)
+        public static bool TryParseInt(string value, string? path, bool errorOnFailedBinding, out int result)
         {
             try
             {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -182,11 +191,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static float ParseFloat(string value, string? path)
+        public static bool TryParseFloat(string value, string? path, bool errorOnFailedBinding, out float result)
         {
             try
             {
-                return float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                result = float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -194,11 +209,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static double ParseDouble(string value, string? path)
+        public static bool TryParseDouble(string value, string? path, bool errorOnFailedBinding, out double result)
         {
             try
             {
-                return double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                result = double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {

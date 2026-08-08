@@ -57,8 +57,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_Record___System__Action___ = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "x" });
-        private readonly static Lazy<HashSet<string>> s_configKeys_Options = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Name", "Age", "List", "Array", "Record" });
+        private readonly static Lazy<global::System.Collections.Generic.HashSet<string>> s_configKeys_Record___System__Action___ = new(() => new global::System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { "x" });
+        private readonly static Lazy<global::System.Collections.Generic.HashSet<string>> s_configKeys_Options = new(() => new global::System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Name", "Age", "List", "Array", "Record" });
 
         public static object? GetCore(this IConfiguration configuration, Type type, Action<BinderOptions>? configureOptions)
         {
@@ -139,9 +139,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Age", out string? value3))
             {
-                if (!string.IsNullOrEmpty(value3))
+                if (!string.IsNullOrEmpty(value3) && TryParseInt(value3, configuration.GetSection("Age").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp4))
                 {
-                    instance.Age = ParseInt(value3, configuration.GetSection("Age").Path);
+                    instance.Age = temp4;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -149,43 +149,43 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Age = instance.Age;
             }
 
-            var value4 = configuration.GetSection("List");
-            if (AsConfigWithChildren(value4) is IConfigurationSection section5)
+            var value5 = configuration.GetSection("List");
+            if (AsConfigWithChildren(value5) is IConfigurationSection section6)
             {
-                global::System.Collections.Generic.List<string>? temp7 = instance.List;
-                temp7 ??= new global::System.Collections.Generic.List<string>();
-                BindCore(section5, ref temp7, defaultValueIfNotFound: false, binderOptions);
-                instance.List = temp7;
+                global::System.Collections.Generic.List<string>? temp8 = instance.List;
+                temp8 ??= new global::System.Collections.Generic.List<string>();
+                BindCore(section6, ref temp8, defaultValueIfNotFound: false, binderOptions);
+                instance.List = temp8;
             }
             else
             {
                 instance.List = instance.List;
             }
 
-            var value8 = configuration.GetSection("Array");
-            if (AsConfigWithChildren(value8) is IConfigurationSection section9)
+            var value9 = configuration.GetSection("Array");
+            if (AsConfigWithChildren(value9) is IConfigurationSection section10)
             {
-                string[]? temp11 = instance.Array;
-                temp11 ??= new string[0];
-                BindCore(section9, ref temp11, defaultValueIfNotFound: false, binderOptions);
-                instance.Array = temp11;
+                string[]? temp12 = instance.Array;
+                temp12 ??= new string[0];
+                BindCore(section10, ref temp12, defaultValueIfNotFound: false, binderOptions);
+                instance.Array = temp12;
             }
             else
             {
                 instance.Array = instance.Array;
             }
-            if (instance.Array is null && TryGetConfigurationValue(value8, key: null, out string? value12) && value12 == string.Empty)
+            if (instance.Array is null && TryGetConfigurationValue(value9, key: null, out string? value13) && value13 == string.Empty)
             {
                 instance.Array = global::System.Array.Empty<string>();
             }
 
-            var value13 = configuration.GetSection("Record");
-            if (AsConfigWithChildren(value13) is IConfigurationSection section14)
+            var value14 = configuration.GetSection("Record");
+            if (AsConfigWithChildren(value14) is IConfigurationSection section15)
             {
-                global::Record<global::System.Action>? temp16 = instance.Record;
-                temp16 ??= InitializeRecord___System__Action___(section14, binderOptions);
-                BindCore(section14, ref temp16, defaultValueIfNotFound: false, binderOptions);
-                instance.Record = temp16;
+                global::Record<global::System.Action>? temp17 = instance.Record;
+                temp17 ??= InitializeRecord___System__Action___(section15, binderOptions);
+                BindCore(section15, ref temp17, defaultValueIfNotFound: false, binderOptions);
+                instance.Record = temp17;
             }
             else
             {
@@ -196,12 +196,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public static global::Record<global::System.Action> InitializeRecord___System__Action___(IConfiguration configuration, BinderOptions? binderOptions)
         {
             int x = (int)(10);
-            if (TryGetConfigurationValue(configuration, key: "x", out string? value17))
+            if (TryGetConfigurationValue(configuration, key: "x", out string? value18) && value18 is not null && TryParseInt(value18, configuration.GetSection("x").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp19))
             {
-                if (!string.IsNullOrEmpty(value17))
-                {
-                    x = ParseInt(value17, configuration.GetSection("x").Path);
-                }
+                x = temp19;
             }
 
             return new global::Record<global::System.Action>(x)
@@ -224,17 +221,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
-        public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
+        public static void ValidateConfigurationKeys(Type type, Lazy<global::System.Collections.Generic.HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
         {
             if (binderOptions?.ErrorOnUnknownConfiguration is true)
             {
-                List<string>? temp = null;
+                global::System.Collections.Generic.List<string>? temp = null;
         
                 foreach (IConfigurationSection section in configuration.GetChildren())
                 {
                     if (!keys.Value.Contains(section.Key))
                     {
-                        (temp ??= new List<string>()).Add($"'{section.Key}'");
+                        (temp ??= new global::System.Collections.Generic.List<string>()).Add($"'{section.Key}'");
                     }
                 }
         
@@ -281,11 +278,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return binderOptions;
         }
 
-        public static int ParseInt(string value, string? path)
+        public static bool TryParseInt(string value, string? path, bool errorOnFailedBinding, out int result)
         {
             try
             {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {

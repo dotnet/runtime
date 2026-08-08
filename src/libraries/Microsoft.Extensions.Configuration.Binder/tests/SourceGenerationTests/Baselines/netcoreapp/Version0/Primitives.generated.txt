@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_Program__MyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Prop0", "Prop1", "Prop2", "Prop3", "Prop4", "Prop5", "Prop6", "Prop8", "Prop9", "Prop10", "Prop13", "Prop14", "Prop15", "Prop16", "Prop17", "Prop19", "Prop20", "Prop21", "Prop23", "Prop24", "Prop25", "Prop26", "Prop27", "Prop7", "Prop11", "Prop12", "Prop18", "Prop22", "Prop28", "Prop29", "Prop30" });
+        private readonly static Lazy<global::System.Collections.Generic.HashSet<string>> s_configKeys_Program__MyClass = new(() => new global::System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Prop0", "Prop1", "Prop2", "Prop3", "Prop4", "Prop5", "Prop6", "Prop8", "Prop9", "Prop10", "Prop13", "Prop14", "Prop15", "Prop16", "Prop17", "Prop19", "Prop20", "Prop21", "Prop23", "Prop24", "Prop25", "Prop26", "Prop27", "Prop7", "Prop11", "Prop12", "Prop18", "Prop22", "Prop28", "Prop29", "Prop30" });
 
         public static void BindCore(IConfiguration configuration, ref global::Program.MyClass instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
@@ -59,9 +59,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (TryGetConfigurationValue(configuration, key: "Prop0", out string? value0))
             {
-                if (!string.IsNullOrEmpty(value0))
+                if (!string.IsNullOrEmpty(value0) && TryParseBool(value0, configuration.GetSection("Prop0").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out bool temp1))
                 {
-                    instance.Prop0 = ParseBool(value0, configuration.GetSection("Prop0").Path);
+                    instance.Prop0 = temp1;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -69,11 +69,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop0 = instance.Prop0;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop1", out string? value1))
+            if (TryGetConfigurationValue(configuration, key: "Prop1", out string? value2))
             {
-                if (!string.IsNullOrEmpty(value1))
+                if (!string.IsNullOrEmpty(value2) && TryParseByte(value2, configuration.GetSection("Prop1").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out byte temp3))
                 {
-                    instance.Prop1 = ParseByte(value1, configuration.GetSection("Prop1").Path);
+                    instance.Prop1 = temp3;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -81,11 +81,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop1 = instance.Prop1;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop2", out string? value2))
+            if (TryGetConfigurationValue(configuration, key: "Prop2", out string? value4))
             {
-                if (!string.IsNullOrEmpty(value2))
+                if (!string.IsNullOrEmpty(value4) && TryParseSbyte(value4, configuration.GetSection("Prop2").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out sbyte temp5))
                 {
-                    instance.Prop2 = ParseSbyte(value2, configuration.GetSection("Prop2").Path);
+                    instance.Prop2 = temp5;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -93,11 +93,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop2 = instance.Prop2;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop3", out string? value3))
+            if (TryGetConfigurationValue(configuration, key: "Prop3", out string? value6))
             {
-                if (!string.IsNullOrEmpty(value3))
+                if (!string.IsNullOrEmpty(value6) && TryParseChar(value6, configuration.GetSection("Prop3").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out char temp7))
                 {
-                    instance.Prop3 = ParseChar(value3, configuration.GetSection("Prop3").Path);
+                    instance.Prop3 = temp7;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -105,11 +105,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop3 = instance.Prop3;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop4", out string? value4))
+            if (TryGetConfigurationValue(configuration, key: "Prop4", out string? value8))
             {
-                if (!string.IsNullOrEmpty(value4))
+                if (!string.IsNullOrEmpty(value8) && TryParseDouble(value8, configuration.GetSection("Prop4").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out double temp9))
                 {
-                    instance.Prop4 = ParseDouble(value4, configuration.GetSection("Prop4").Path);
+                    instance.Prop4 = temp9;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -117,9 +117,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop4 = instance.Prop4;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop5", out string? value5))
+            if (TryGetConfigurationValue(configuration, key: "Prop5", out string? value10))
             {
-                instance.Prop5 = value5;
+                instance.Prop5 = value10;
             }
             else if (defaultValueIfNotFound)
             {
@@ -130,11 +130,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop6", out string? value6))
+            if (TryGetConfigurationValue(configuration, key: "Prop6", out string? value11))
             {
-                if (!string.IsNullOrEmpty(value6))
+                if (!string.IsNullOrEmpty(value11) && TryParseInt(value11, configuration.GetSection("Prop6").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp12))
                 {
-                    instance.Prop6 = ParseInt(value6, configuration.GetSection("Prop6").Path);
+                    instance.Prop6 = temp12;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -142,11 +142,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop6 = instance.Prop6;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop8", out string? value7))
+            if (TryGetConfigurationValue(configuration, key: "Prop8", out string? value13))
             {
-                if (!string.IsNullOrEmpty(value7))
+                if (!string.IsNullOrEmpty(value13) && TryParseShort(value13, configuration.GetSection("Prop8").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out short temp14))
                 {
-                    instance.Prop8 = ParseShort(value7, configuration.GetSection("Prop8").Path);
+                    instance.Prop8 = temp14;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -154,11 +154,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop8 = instance.Prop8;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop9", out string? value8))
+            if (TryGetConfigurationValue(configuration, key: "Prop9", out string? value15))
             {
-                if (!string.IsNullOrEmpty(value8))
+                if (!string.IsNullOrEmpty(value15) && TryParseLong(value15, configuration.GetSection("Prop9").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out long temp16))
                 {
-                    instance.Prop9 = ParseLong(value8, configuration.GetSection("Prop9").Path);
+                    instance.Prop9 = temp16;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -166,11 +166,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop9 = instance.Prop9;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop10", out string? value9))
+            if (TryGetConfigurationValue(configuration, key: "Prop10", out string? value17))
             {
-                if (!string.IsNullOrEmpty(value9))
+                if (!string.IsNullOrEmpty(value17) && TryParseFloat(value17, configuration.GetSection("Prop10").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out float temp18))
                 {
-                    instance.Prop10 = ParseFloat(value9, configuration.GetSection("Prop10").Path);
+                    instance.Prop10 = temp18;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -178,11 +178,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop10 = instance.Prop10;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop13", out string? value10))
+            if (TryGetConfigurationValue(configuration, key: "Prop13", out string? value19))
             {
-                if (!string.IsNullOrEmpty(value10))
+                if (!string.IsNullOrEmpty(value19) && TryParseUshort(value19, configuration.GetSection("Prop13").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out ushort temp20))
                 {
-                    instance.Prop13 = ParseUshort(value10, configuration.GetSection("Prop13").Path);
+                    instance.Prop13 = temp20;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -190,11 +190,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop13 = instance.Prop13;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop14", out string? value11))
+            if (TryGetConfigurationValue(configuration, key: "Prop14", out string? value21))
             {
-                if (!string.IsNullOrEmpty(value11))
+                if (!string.IsNullOrEmpty(value21) && TryParseUint(value21, configuration.GetSection("Prop14").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out uint temp22))
                 {
-                    instance.Prop14 = ParseUint(value11, configuration.GetSection("Prop14").Path);
+                    instance.Prop14 = temp22;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -202,11 +202,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop14 = instance.Prop14;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop15", out string? value12))
+            if (TryGetConfigurationValue(configuration, key: "Prop15", out string? value23))
             {
-                if (!string.IsNullOrEmpty(value12))
+                if (!string.IsNullOrEmpty(value23) && TryParseUlong(value23, configuration.GetSection("Prop15").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out ulong temp24))
                 {
-                    instance.Prop15 = ParseUlong(value12, configuration.GetSection("Prop15").Path);
+                    instance.Prop15 = temp24;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -214,9 +214,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop15 = instance.Prop15;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop16", out string? value13))
+            if (TryGetConfigurationValue(configuration, key: "Prop16", out string? value25))
             {
-                instance.Prop16 = value13;
+                instance.Prop16 = value25;
             }
             else if (defaultValueIfNotFound)
             {
@@ -227,17 +227,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop17", out string? value14))
+            if (TryGetConfigurationValue(configuration, key: "Prop17", out string? value26))
             {
-                if (value14 is null)
+                if (value26 is null)
                 {
                     instance.Prop17 = null;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value14))
+                    if (!string.IsNullOrEmpty(value26) && TryParseSystemGlobalizationCultureInfo(value26, configuration.GetSection("Prop17").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.Globalization.CultureInfo temp27))
                     {
-                        instance.Prop17 = ParseSystemGlobalizationCultureInfo(value14, configuration.GetSection("Prop17").Path);
+                        instance.Prop17 = temp27;
                     }
                 }
             }
@@ -250,11 +250,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop19", out string? value15))
+            if (TryGetConfigurationValue(configuration, key: "Prop19", out string? value28))
             {
-                if (!string.IsNullOrEmpty(value15))
+                if (!string.IsNullOrEmpty(value28) && TryParseSystemDateTime(value28, configuration.GetSection("Prop19").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.DateTime temp29))
                 {
-                    instance.Prop19 = ParseSystemDateTime(value15, configuration.GetSection("Prop19").Path);
+                    instance.Prop19 = temp29;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -262,11 +262,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop19 = instance.Prop19;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop20", out string? value16))
+            if (TryGetConfigurationValue(configuration, key: "Prop20", out string? value30))
             {
-                if (!string.IsNullOrEmpty(value16))
+                if (!string.IsNullOrEmpty(value30) && TryParseSystemDateTimeOffset(value30, configuration.GetSection("Prop20").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.DateTimeOffset temp31))
                 {
-                    instance.Prop20 = ParseSystemDateTimeOffset(value16, configuration.GetSection("Prop20").Path);
+                    instance.Prop20 = temp31;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -274,11 +274,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop20 = instance.Prop20;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop21", out string? value17))
+            if (TryGetConfigurationValue(configuration, key: "Prop21", out string? value32))
             {
-                if (!string.IsNullOrEmpty(value17))
+                if (!string.IsNullOrEmpty(value32) && TryParseDecimal(value32, configuration.GetSection("Prop21").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out decimal temp33))
                 {
-                    instance.Prop21 = ParseDecimal(value17, configuration.GetSection("Prop21").Path);
+                    instance.Prop21 = temp33;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -286,11 +286,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop21 = instance.Prop21;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop23", out string? value18))
+            if (TryGetConfigurationValue(configuration, key: "Prop23", out string? value34))
             {
-                if (!string.IsNullOrEmpty(value18))
+                if (!string.IsNullOrEmpty(value34) && TryParseSystemTimeSpan(value34, configuration.GetSection("Prop23").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.TimeSpan temp35))
                 {
-                    instance.Prop23 = ParseSystemTimeSpan(value18, configuration.GetSection("Prop23").Path);
+                    instance.Prop23 = temp35;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -298,11 +298,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop23 = instance.Prop23;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop24", out string? value19))
+            if (TryGetConfigurationValue(configuration, key: "Prop24", out string? value36))
             {
-                if (!string.IsNullOrEmpty(value19))
+                if (!string.IsNullOrEmpty(value36) && TryParseSystemGuid(value36, configuration.GetSection("Prop24").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.Guid temp37))
                 {
-                    instance.Prop24 = ParseSystemGuid(value19, configuration.GetSection("Prop24").Path);
+                    instance.Prop24 = temp37;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -310,17 +310,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop24 = instance.Prop24;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop25", out string? value20))
+            if (TryGetConfigurationValue(configuration, key: "Prop25", out string? value38))
             {
-                if (value20 is null)
+                if (value38 is null)
                 {
                     instance.Prop25 = null;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value20))
+                    if (!string.IsNullOrEmpty(value38) && TryParseSystemUri(value38, configuration.GetSection("Prop25").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.Uri temp39))
                     {
-                        instance.Prop25 = ParseSystemUri(value20, configuration.GetSection("Prop25").Path);
+                        instance.Prop25 = temp39;
                     }
                 }
             }
@@ -333,17 +333,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop26", out string? value21))
+            if (TryGetConfigurationValue(configuration, key: "Prop26", out string? value40))
             {
-                if (value21 is null)
+                if (value40 is null)
                 {
                     instance.Prop26 = null;
                 }
                 else
                 {
-                    if (!string.IsNullOrEmpty(value21))
+                    if (!string.IsNullOrEmpty(value40) && TryParseSystemVersion(value40, configuration.GetSection("Prop26").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.Version temp41))
                     {
-                        instance.Prop26 = ParseSystemVersion(value21, configuration.GetSection("Prop26").Path);
+                        instance.Prop26 = temp41;
                     }
                 }
             }
@@ -356,11 +356,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop27", out string? value22))
+            if (TryGetConfigurationValue(configuration, key: "Prop27", out string? value42))
             {
-                if (!string.IsNullOrEmpty(value22))
+                if (!string.IsNullOrEmpty(value42) && TryParseEnum<global::System.DayOfWeek>(value42, configuration.GetSection("Prop27").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.DayOfWeek temp43))
                 {
-                    instance.Prop27 = ParseEnum<global::System.DayOfWeek>(value22, configuration.GetSection("Prop27").Path);
+                    instance.Prop27 = temp43;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -368,11 +368,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop27 = instance.Prop27;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop7", out string? value23))
+            if (TryGetConfigurationValue(configuration, key: "Prop7", out string? value44))
             {
-                if (!string.IsNullOrEmpty(value23))
+                if (!string.IsNullOrEmpty(value44) && TryParseSystemInt128(value44, configuration.GetSection("Prop7").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.Int128 temp45))
                 {
-                    instance.Prop7 = ParseSystemInt128(value23, configuration.GetSection("Prop7").Path);
+                    instance.Prop7 = temp45;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -380,11 +380,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop7 = instance.Prop7;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop11", out string? value24))
+            if (TryGetConfigurationValue(configuration, key: "Prop11", out string? value46))
             {
-                if (!string.IsNullOrEmpty(value24))
+                if (!string.IsNullOrEmpty(value46) && TryParseSystemHalf(value46, configuration.GetSection("Prop11").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.Half temp47))
                 {
-                    instance.Prop11 = ParseSystemHalf(value24, configuration.GetSection("Prop11").Path);
+                    instance.Prop11 = temp47;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -392,11 +392,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop11 = instance.Prop11;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop12", out string? value25))
+            if (TryGetConfigurationValue(configuration, key: "Prop12", out string? value48))
             {
-                if (!string.IsNullOrEmpty(value25))
+                if (!string.IsNullOrEmpty(value48) && TryParseSystemUInt128(value48, configuration.GetSection("Prop12").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.UInt128 temp49))
                 {
-                    instance.Prop12 = ParseSystemUInt128(value25, configuration.GetSection("Prop12").Path);
+                    instance.Prop12 = temp49;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -404,11 +404,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop12 = instance.Prop12;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop18", out string? value26))
+            if (TryGetConfigurationValue(configuration, key: "Prop18", out string? value50))
             {
-                if (!string.IsNullOrEmpty(value26))
+                if (!string.IsNullOrEmpty(value50) && TryParseSystemDateOnly(value50, configuration.GetSection("Prop18").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.DateOnly temp51))
                 {
-                    instance.Prop18 = ParseSystemDateOnly(value26, configuration.GetSection("Prop18").Path);
+                    instance.Prop18 = temp51;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -416,11 +416,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop18 = instance.Prop18;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop22", out string? value27))
+            if (TryGetConfigurationValue(configuration, key: "Prop22", out string? value52))
             {
-                if (!string.IsNullOrEmpty(value27))
+                if (!string.IsNullOrEmpty(value52) && TryParseSystemTimeOnly(value52, configuration.GetSection("Prop22").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.TimeOnly temp53))
                 {
-                    instance.Prop22 = ParseSystemTimeOnly(value27, configuration.GetSection("Prop22").Path);
+                    instance.Prop22 = temp53;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -428,21 +428,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop22 = instance.Prop22;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop28", out string? value28))
+            if (TryGetConfigurationValue(configuration, key: "Prop28", out string? value54))
             {
-                if (value28 is null)
+                if (value54 is null)
                 {
                     instance.Prop28 = null;
                 }
                 else
                 {
-                    if (value28 == string.Empty)
+                    if (value54 == string.Empty && TryParseByteArray(value54, configuration.GetSection("Prop28").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out byte[] temp55))
                     {
-                        instance.Prop28 = ParseByteArray(value28, configuration.GetSection("Prop28").Path);
+                        instance.Prop28 = temp55;
                     }
-                    else if (!string.IsNullOrEmpty(value28))
+                    else if (!string.IsNullOrEmpty(value54) && TryParseByteArray(value54, configuration.GetSection("Prop28").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out byte[] temp56))
                     {
-                        instance.Prop28 = ParseByteArray(value28, configuration.GetSection("Prop28").Path);
+                        instance.Prop28 = temp56;
                     }
                 }
             }
@@ -455,11 +455,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop29", out string? value29))
+            if (TryGetConfigurationValue(configuration, key: "Prop29", out string? value57))
             {
-                if (!string.IsNullOrEmpty(value29))
+                if (!string.IsNullOrEmpty(value57) && TryParseInt(value57, configuration.GetSection("Prop29").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp58))
                 {
-                    instance.Prop29 = ParseInt(value29, configuration.GetSection("Prop29").Path);
+                    instance.Prop29 = temp58;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -467,11 +467,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop29 = instance.Prop29;
             }
 
-            if (TryGetConfigurationValue(configuration, key: "Prop30", out string? value30))
+            if (TryGetConfigurationValue(configuration, key: "Prop30", out string? value59))
             {
-                if (!string.IsNullOrEmpty(value30))
+                if (!string.IsNullOrEmpty(value59) && TryParseSystemDateTime(value59, configuration.GetSection("Prop30").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out global::System.DateTime temp60))
                 {
-                    instance.Prop30 = ParseSystemDateTime(value30, configuration.GetSection("Prop30").Path);
+                    instance.Prop30 = temp60;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -494,17 +494,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
-        public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
+        public static void ValidateConfigurationKeys(Type type, Lazy<global::System.Collections.Generic.HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
         {
             if (binderOptions?.ErrorOnUnknownConfiguration is true)
             {
-                List<string>? temp = null;
+                global::System.Collections.Generic.List<string>? temp = null;
         
                 foreach (IConfigurationSection section in configuration.GetChildren())
                 {
                     if (!keys.Value.Contains(section.Key))
                     {
-                        (temp ??= new List<string>()).Add($"'{section.Key}'");
+                        (temp ??= new global::System.Collections.Generic.List<string>()).Add($"'{section.Key}'");
                     }
                 }
         
@@ -515,11 +515,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static T ParseEnum<T>(string value, string? path) where T : struct
+        public static bool TryParseEnum<T>(string value, string? path, bool errorOnFailedBinding, out T result) where T : struct
         {
             try
             {
-                return Enum.Parse<T>(value, ignoreCase: true);
+                result = Enum.Parse<T>(value, ignoreCase: true);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -527,11 +533,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static bool ParseBool(string value, string? path)
+        public static bool TryParseBool(string value, string? path, bool errorOnFailedBinding, out bool result)
         {
             try
             {
-                return bool.Parse(value);
+                result = bool.Parse(value);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -539,11 +551,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static byte ParseByte(string value, string? path)
+        public static bool TryParseByte(string value, string? path, bool errorOnFailedBinding, out byte result)
         {
             try
             {
-                return byte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = byte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -551,11 +569,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static sbyte ParseSbyte(string value, string? path)
+        public static bool TryParseSbyte(string value, string? path, bool errorOnFailedBinding, out sbyte result)
         {
             try
             {
-                return sbyte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = sbyte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -563,11 +587,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static char ParseChar(string value, string? path)
+        public static bool TryParseChar(string value, string? path, bool errorOnFailedBinding, out char result)
         {
             try
             {
-                return char.Parse(value);
+                result = char.Parse(value);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -575,11 +605,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static double ParseDouble(string value, string? path)
+        public static bool TryParseDouble(string value, string? path, bool errorOnFailedBinding, out double result)
         {
             try
             {
-                return double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                result = double.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -587,11 +623,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static int ParseInt(string value, string? path)
+        public static bool TryParseInt(string value, string? path, bool errorOnFailedBinding, out int result)
         {
             try
             {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -599,11 +641,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static short ParseShort(string value, string? path)
+        public static bool TryParseShort(string value, string? path, bool errorOnFailedBinding, out short result)
         {
             try
             {
-                return short.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = short.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -611,11 +659,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static long ParseLong(string value, string? path)
+        public static bool TryParseLong(string value, string? path, bool errorOnFailedBinding, out long result)
         {
             try
             {
-                return long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -623,11 +677,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static float ParseFloat(string value, string? path)
+        public static bool TryParseFloat(string value, string? path, bool errorOnFailedBinding, out float result)
         {
             try
             {
-                return float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                result = float.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -635,11 +695,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static ushort ParseUshort(string value, string? path)
+        public static bool TryParseUshort(string value, string? path, bool errorOnFailedBinding, out ushort result)
         {
             try
             {
-                return ushort.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = ushort.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -647,11 +713,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static uint ParseUint(string value, string? path)
+        public static bool TryParseUint(string value, string? path, bool errorOnFailedBinding, out uint result)
         {
             try
             {
-                return uint.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = uint.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -659,11 +731,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static ulong ParseUlong(string value, string? path)
+        public static bool TryParseUlong(string value, string? path, bool errorOnFailedBinding, out ulong result)
         {
             try
             {
-                return ulong.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = ulong.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -671,11 +749,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.Globalization.CultureInfo ParseSystemGlobalizationCultureInfo(string value, string? path)
+        public static bool TryParseSystemGlobalizationCultureInfo(string value, string? path, bool errorOnFailedBinding, out global::System.Globalization.CultureInfo result)
         {
             try
             {
-                return CultureInfo.GetCultureInfo(value);
+                result = CultureInfo.GetCultureInfo(value);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -683,11 +767,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.DateTime ParseSystemDateTime(string value, string? path)
+        public static bool TryParseSystemDateTime(string value, string? path, bool errorOnFailedBinding, out global::System.DateTime result)
         {
             try
             {
-                return global::System.DateTime.Parse(value, CultureInfo.InvariantCulture);
+                result = global::System.DateTime.Parse(value, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -695,11 +785,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.DateTimeOffset ParseSystemDateTimeOffset(string value, string? path)
+        public static bool TryParseSystemDateTimeOffset(string value, string? path, bool errorOnFailedBinding, out global::System.DateTimeOffset result)
         {
             try
             {
-                return global::System.DateTimeOffset.Parse(value, CultureInfo.InvariantCulture);
+                result = global::System.DateTimeOffset.Parse(value, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -707,11 +803,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static decimal ParseDecimal(string value, string? path)
+        public static bool TryParseDecimal(string value, string? path, bool errorOnFailedBinding, out decimal result)
         {
             try
             {
-                return decimal.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                result = decimal.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -719,11 +821,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.TimeSpan ParseSystemTimeSpan(string value, string? path)
+        public static bool TryParseSystemTimeSpan(string value, string? path, bool errorOnFailedBinding, out global::System.TimeSpan result)
         {
             try
             {
-                return global::System.TimeSpan.Parse(value, CultureInfo.InvariantCulture);
+                result = global::System.TimeSpan.Parse(value, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -731,11 +839,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.Guid ParseSystemGuid(string value, string? path)
+        public static bool TryParseSystemGuid(string value, string? path, bool errorOnFailedBinding, out global::System.Guid result)
         {
             try
             {
-                return global::System.Guid.Parse(value);
+                result = global::System.Guid.Parse(value);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -743,11 +857,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.Uri ParseSystemUri(string value, string? path)
+        public static bool TryParseSystemUri(string value, string? path, bool errorOnFailedBinding, out global::System.Uri result)
         {
             try
             {
-                return new Uri(value, UriKind.RelativeOrAbsolute);
+                result = new Uri(value, UriKind.RelativeOrAbsolute);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -755,11 +875,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.Version ParseSystemVersion(string value, string? path)
+        public static bool TryParseSystemVersion(string value, string? path, bool errorOnFailedBinding, out global::System.Version result)
         {
             try
             {
-                return global::System.Version.Parse(value);
+                result = global::System.Version.Parse(value);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -767,11 +893,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.Int128 ParseSystemInt128(string value, string? path)
+        public static bool TryParseSystemInt128(string value, string? path, bool errorOnFailedBinding, out global::System.Int128 result)
         {
             try
             {
-                return global::System.Int128.Parse(value, CultureInfo.InvariantCulture);
+                result = global::System.Int128.Parse(value, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -779,11 +911,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.Half ParseSystemHalf(string value, string? path)
+        public static bool TryParseSystemHalf(string value, string? path, bool errorOnFailedBinding, out global::System.Half result)
         {
             try
             {
-                return global::System.Half.Parse(value, CultureInfo.InvariantCulture);
+                result = global::System.Half.Parse(value, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -791,11 +929,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.UInt128 ParseSystemUInt128(string value, string? path)
+        public static bool TryParseSystemUInt128(string value, string? path, bool errorOnFailedBinding, out global::System.UInt128 result)
         {
             try
             {
-                return global::System.UInt128.Parse(value, CultureInfo.InvariantCulture);
+                result = global::System.UInt128.Parse(value, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -803,11 +947,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.DateOnly ParseSystemDateOnly(string value, string? path)
+        public static bool TryParseSystemDateOnly(string value, string? path, bool errorOnFailedBinding, out global::System.DateOnly result)
         {
             try
             {
-                return global::System.DateOnly.Parse(value, CultureInfo.InvariantCulture);
+                result = global::System.DateOnly.Parse(value, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -815,11 +965,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static global::System.TimeOnly ParseSystemTimeOnly(string value, string? path)
+        public static bool TryParseSystemTimeOnly(string value, string? path, bool errorOnFailedBinding, out global::System.TimeOnly result)
         {
             try
             {
-                return global::System.TimeOnly.Parse(value, CultureInfo.InvariantCulture);
+                result = global::System.TimeOnly.Parse(value, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
@@ -827,11 +983,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static byte[] ParseByteArray(string value, string? path)
+        public static bool TryParseByteArray(string value, string? path, bool errorOnFailedBinding, out byte[] result)
         {
             try
             {
-                return Convert.FromBase64String(value);
+                result = Convert.FromBase64String(value);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {

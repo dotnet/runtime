@@ -35,23 +35,23 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     [GeneratedCode("Microsoft.Extensions.Configuration.Binder.SourceGeneration", "42.42.42.42")]
     file static class BindingExtensions
     {
-        #region OptionsBuilder<TOptions> extensions.
+        #region global::Microsoft.Extensions.Options.OptionsBuilder<TOptions> extensions.
         /// <summary>Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.</summary>
         [InterceptsLocation(@"src-0.cs", 15, 24)]
-        public static OptionsBuilder<TOptions> Bind<TOptions>(this OptionsBuilder<TOptions> optionsBuilder, IConfiguration config) where TOptions : class
+        public static global::Microsoft.Extensions.Options.OptionsBuilder<TOptions> Bind<TOptions>(this global::Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder, IConfiguration config) where TOptions : class
         {
             return Bind(optionsBuilder, config, configureBinder: null);
         }
 
         /// <summary>Registers a configuration instance which <typeparamref name="TOptions"/> will bind against.</summary>
-        public static OptionsBuilder<TOptions> Bind<TOptions>(this OptionsBuilder<TOptions> optionsBuilder, IConfiguration config, Action<BinderOptions>? configureBinder) where TOptions : class
+        public static global::Microsoft.Extensions.Options.OptionsBuilder<TOptions> Bind<TOptions>(this global::Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder, IConfiguration config, Action<BinderOptions>? configureBinder) where TOptions : class
         {
             ArgumentNullException.ThrowIfNull(optionsBuilder);
 
             Configure<TOptions>(optionsBuilder.Services, optionsBuilder.Name, config, configureBinder);
             return optionsBuilder;
         }
-        #endregion OptionsBuilder<TOptions> extensions.
+        #endregion global::Microsoft.Extensions.Options.OptionsBuilder<TOptions> extensions.
 
         #region IServiceCollection extensions.
         /// <summary>Registers a configuration instance which TOptions will bind against.</summary>
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IServiceCollection extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_Program__MyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList" });
+        private readonly static Lazy<global::System.Collections.Generic.HashSet<string>> s_configKeys_Program__MyClass = new(() => new global::System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase) { "MyString", "MyInt", "MyList" });
 
         public static void BindCoreMain(IConfiguration configuration, object instance, Type type, Action<BinderOptions>? configureOptions)
         {
@@ -100,9 +100,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 if (TryGetConfigurationValue(section, key: null, out string? value))
                 {
-                    if (!string.IsNullOrEmpty(value))
+                    if (!string.IsNullOrEmpty(value) && TryParseInt(value, section.Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp1))
                     {
-                        instance.Add(ParseInt(value, section.Path));
+                        instance.Add(temp1);
                     }
                 }
             }
@@ -112,9 +112,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         {
             ValidateConfigurationKeys(typeof(global::Program.MyClass), s_configKeys_Program__MyClass, configuration, binderOptions);
 
-            if (TryGetConfigurationValue(configuration, key: "MyString", out string? value1))
+            if (TryGetConfigurationValue(configuration, key: "MyString", out string? value2))
             {
-                instance.MyString = value1;
+                instance.MyString = value2;
             }
             else if (defaultValueIfNotFound)
             {
@@ -125,11 +125,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            if (TryGetConfigurationValue(configuration, key: "MyInt", out string? value2))
+            if (TryGetConfigurationValue(configuration, key: "MyInt", out string? value3))
             {
-                if (!string.IsNullOrEmpty(value2))
+                if (!string.IsNullOrEmpty(value3) && TryParseInt(value3, configuration.GetSection("MyInt").Path, binderOptions?.ErrorOnUnknownConfiguration is true, out int temp4))
                 {
-                    instance.MyInt = ParseInt(value2, configuration.GetSection("MyInt").Path);
+                    instance.MyInt = temp4;
                 }
             }
             else if (defaultValueIfNotFound)
@@ -137,13 +137,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.MyInt = instance.MyInt;
             }
 
-            var value3 = configuration.GetSection("MyList");
-            if (AsConfigWithChildren(value3) is IConfigurationSection section4)
+            var value5 = configuration.GetSection("MyList");
+            if (AsConfigWithChildren(value5) is IConfigurationSection section6)
             {
-                global::System.Collections.Generic.List<int>? temp6 = instance.MyList;
-                temp6 ??= new global::System.Collections.Generic.List<int>();
-                BindCore(section4, ref temp6, defaultValueIfNotFound: false, binderOptions);
-                instance.MyList = temp6;
+                global::System.Collections.Generic.List<int>? temp8 = instance.MyList;
+                temp8 ??= new global::System.Collections.Generic.List<int>();
+                BindCore(section6, ref temp8, defaultValueIfNotFound: false, binderOptions);
+                instance.MyList = temp8;
             }
             else
             {
@@ -165,17 +165,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
 
         /// <summary>If required by the binder options, validates that there are no unknown keys in the input configuration object.</summary>
-        public static void ValidateConfigurationKeys(Type type, Lazy<HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
+        public static void ValidateConfigurationKeys(Type type, Lazy<global::System.Collections.Generic.HashSet<string>> keys, IConfiguration configuration, BinderOptions? binderOptions)
         {
             if (binderOptions?.ErrorOnUnknownConfiguration is true)
             {
-                List<string>? temp = null;
+                global::System.Collections.Generic.List<string>? temp = null;
         
                 foreach (IConfigurationSection section in configuration.GetChildren())
                 {
                     if (!keys.Value.Contains(section.Key))
                     {
-                        (temp ??= new List<string>()).Add($"'{section.Key}'");
+                        (temp ??= new global::System.Collections.Generic.List<string>()).Add($"'{section.Key}'");
                     }
                 }
         
@@ -222,11 +222,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             return binderOptions;
         }
 
-        public static int ParseInt(string value, string? path)
+        public static bool TryParseInt(string value, string? path, bool errorOnFailedBinding, out int result)
         {
             try
             {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                result = int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return true;
+            }
+            catch when (!errorOnFailedBinding)
+            {
+                result = default;
+                return false;
             }
             catch (Exception exception)
             {
