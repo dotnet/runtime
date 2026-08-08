@@ -29,6 +29,7 @@ namespace System.Numerics.Tensors
         /// <summary>Returns the index of MathF.Max(x, y)</summary>
         internal readonly struct IndexOfMaxOperator<T> : IIndexOfMinMaxOperator<T> where T : INumber<T>
         {
+            public static bool ShouldEarlyExitOnNan => true;
             public static T Aggregate(Vector128<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
             public static T Aggregate(Vector256<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
             public static T Aggregate(Vector512<T> x) => HorizontalAggregate<T, MaxOperator<T>>(x);
