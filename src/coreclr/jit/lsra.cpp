@@ -1993,18 +1993,36 @@ void LinearScan::initVarRegMaps()
         // This VarToRegMap is used during the resolution of critical edges.
         sharedCriticalVarToRegMap = new (m_compiler, CMK_LSRA) regNumberSmall[regMapCount];
 
+        // The in and out maps of every block are allocated as a single block and initialized in
+        // one shot. They are only ever reached through inVarToRegMaps/outVarToRegMaps, which are
+        // not modified after this point.
+        ClrSafeInt<size_t> entryCountSafe(bbCount);
+        entryCountSafe *= (size_t)2;
+        entryCountSafe *= (size_t)regMapCount;
+        if (entryCountSafe.IsOverflow())
+        {
+            NOMEM();
+        }
+
+        size_t          entryCount = entryCountSafe.Value();
+        regNumberSmall* maps       = new (m_compiler, CMK_LSRA) regNumberSmall[entryCount];
+
+        if (sizeof(regNumberSmall) == 1)
+        {
+            memset(maps, REG_STK, entryCount * sizeof(regNumberSmall));
+        }
+        else
+        {
+            for (size_t j = 0; j < entryCount; j++)
+            {
+                maps[j] = REG_STK;
+            }
+        }
+
         for (unsigned int i = 0; i < bbCount; i++)
         {
-            VarToRegMap inVarToRegMap  = new (m_compiler, CMK_LSRA) regNumberSmall[regMapCount];
-            VarToRegMap outVarToRegMap = new (m_compiler, CMK_LSRA) regNumberSmall[regMapCount];
-
-            for (unsigned int j = 0; j < regMapCount; j++)
-            {
-                inVarToRegMap[j]  = REG_STK;
-                outVarToRegMap[j] = REG_STK;
-            }
-            inVarToRegMaps[i]  = inVarToRegMap;
-            outVarToRegMaps[i] = outVarToRegMap;
+            inVarToRegMaps[i]  = maps + ((size_t)i * 2 * regMapCount);
+            outVarToRegMaps[i] = inVarToRegMaps[i] + regMapCount;
         }
     }
     else
