@@ -37,17 +37,8 @@
 // Forward declared classes
 // --------------------------------------------------------------------------------
 
-class Module;
-class EditAndContinueModule;
-
 class PEAssembly;
-class SimpleRWLock;
-
 typedef DPTR(PEAssembly) PTR_PEAssembly;
-
-// --------------------------------------------------------------------------------
-// Types
-// --------------------------------------------------------------------------------
 
 // --------------------------------------------------------------------------------
 // A PEAssembly is an input to the CLR loader. It is produced as a result of binding.
@@ -57,23 +48,21 @@ typedef DPTR(PEAssembly) PTR_PEAssembly;
 // file directly; rather the specific information required should be provided via
 // individual query API.
 //
-// There are multiple "flavors" of PEAssemblies:
+// A PEAssembly is one of two kinds, distinguished by IsReflectionEmit():
 //
-// 1. HMODULE - these PE Files are loaded in response to "spontaneous" OS callbacks.
-//    These should only occur for .exe main modules and IJW dlls loaded via LoadLibrary
-//    or static imports in umnanaged code.
-//    These get their PEImage loaded directly in PEImage::CreateFromHMODULE(HMODULE hMod)
+// 1. Bound to a PE image - the result of an AssemblyBinder bind
+//    It holds the BINDER_SPACE::Assembly that the binder produced, and takes
+//    both its PEImage and its metadata from that bind result.
 //
-// 2. Assemblies loaded directly or indirectly by the managed code - these are the most
-//    common case.  A path is obtained from assembly binding and the result is loaded
-//    via PEImage:
-//      a. Display name loads - these are metadata-based binds
-//      b. Path loads - these are loaded from an explicit path
+//    The PEImage may come from:
+//      - File on disk - loaded via binding to an assembly name or an explicit path
+//      - Byte array - via an API such as AssemblyLoadContext.LoadFromStream
+//      - HMODULE - IJW module already loaded into memory by the OS (Windows)
+//    The source of the PEImage does not change the PEAssembly itself.
 //
-// 3. Byte arrays - loaded explicitly by user code.  These also go through PEImage.
-//
-// 4. Dynamic - these are not actual PE images at all, but are placeholders
-//    for reflection-based modules.
+// 2. Dynamic - a reflection emit assembly
+//    It has no PEImage. Its metadata comes from an IMetaDataEmit and it uses the binder
+//    of the assembly that created it.
 //
 // See also file:..\inc\corhdr.h#ManagedHeader for more on the format of managed images.
 // --------------------------------------------------------------------------------
