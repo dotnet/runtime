@@ -773,7 +773,7 @@ public class ExecutionManagerTests
         const ulong codeRangeStart = 0x0a0a_0000u;
         const uint codeRangeSize = 0x4000u;
         const ulong jitManagerAddress = 0x000b_ff00;
-        const int stubCodeBlockKindPrecode = 4; // STUB_CODE_BLOCK_STUBPRECODE
+        const int stubCodeBlockKindPrecode = 3; // STUB_CODE_BLOCK_STUBPRECODE
 
         IExecutionManager em = CreateExecutionManagerContract(
             version,
@@ -798,7 +798,14 @@ public class ExecutionManagerTests
         const uint stubSize = 0x20;
         const ulong jitManagerAddress = 0x000b_ff00;
         const int stubCodeBlockKindJumpStub = 1; // STUB_CODE_BLOCK_JUMPSTUB
-        ulong stubCodeAddress = 0;
+        const int stubCodeBlockKindWrapperStub = 10; // STUB_CODE_BLOCK_WRAPPER_STUB
+        const int stubCodeBlockKindShuffleThunk = 11; // STUB_CODE_BLOCK_SHUFFLE_THUNK
+        (int StubCodeBlockKind, CodeKind CodeKind, ulong CodeAddress)[] stubs =
+        [
+            (stubCodeBlockKindJumpStub, CodeKind.JumpStub, 0),
+            (stubCodeBlockKindWrapperStub, CodeKind.WrapperStub, 0),
+            (stubCodeBlockKindShuffleThunk, CodeKind.ShuffleThunk, 0),
+        ];
 
         IExecutionManager em = CreateExecutionManagerContract(
             version,
@@ -806,18 +813,25 @@ public class ExecutionManagerTests
             emBuilder =>
             {
                 var jittedCode = emBuilder.AllocateJittedCodeRange(codeRangeStart, codeRangeSize);
-                stubCodeAddress = emBuilder.AddStubCodeBlock(jittedCode, stubSize, stubCodeBlockKindJumpStub).CodeAddress;
 
                 NibbleMapTestBuilderBase nibBuilder = emBuilder.CreateNibbleMap(codeRangeStart, codeRangeSize);
-                nibBuilder.AllocateCodeChunk(new TargetCodePointer(stubCodeAddress), stubSize);
+                for (int i = 0; i < stubs.Length; i++)
+                {
+                    MockJittedMethod stub = emBuilder.AddStubCodeBlock(jittedCode, stubSize, stubs[i].StubCodeBlockKind);
+                    stubs[i].CodeAddress = stub.CodeAddress;
+                    nibBuilder.AllocateCodeChunk(new TargetCodePointer(stub.CodeAddress), stubSize);
+                }
 
                 MockCodeHeapListNode codeHeapListNode = emBuilder.AddCodeHeapListNode(0, codeRangeStart, codeRangeStart + codeRangeSize, codeRangeStart, nibBuilder.NibbleMapFragment.Address);
                 MockRangeSection rangeSection = emBuilder.AddRangeSection(jittedCode, jitManagerAddress, codeHeapListNode.Address);
                 _ = emBuilder.AddRangeSectionFragment(jittedCode, rangeSection.Address);
             });
 
-        CodeKind kind = em.GetCodeKind(new TargetCodePointer(stubCodeAddress));
-        Assert.Equal(CodeKind.JumpStub, kind);
+        foreach ((_, CodeKind expected, ulong codeAddress) in stubs)
+        {
+            CodeKind kind = em.GetCodeKind(new TargetCodePointer(codeAddress));
+            Assert.Equal(expected, kind);
+        }
     }
 
     [Theory]

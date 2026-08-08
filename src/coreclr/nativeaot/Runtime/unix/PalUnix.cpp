@@ -842,7 +842,7 @@ bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ vo
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
 {
     HANDLE moduleHandle = NULL;
 
@@ -853,6 +853,16 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
+#if defined(HOST_OSX)
+        if (pinModule && info.dli_fname != nullptr)
+        {
+            // NativeAOT runtime state cannot be safely unloaded.
+            // Keep the extra reference for the lifetime of the process.
+            // Unloading is disabled via `-z,nodelete` linker option on ELF platforms.
+            dlopen(info.dli_fname, RTLD_LAZY | RTLD_NOLOAD);
+        }
+#endif
+
         moduleHandle = info.dli_fbase;
     }
 #endif //!defined(HOST_WASM)

@@ -13465,6 +13465,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
             case GT_CATCH_ARG:
             case GT_ASYNC_CONTINUATION:
+            case GT_CONTINUATION_MEMBER_OFFSET:
             case GT_SWIFT_ERROR:
                 // We know nothing about the value of these.
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));

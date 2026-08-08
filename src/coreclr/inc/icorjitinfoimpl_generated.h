@@ -506,6 +506,13 @@ CORINFO_METHOD_HANDLE getAwaitReturnCall(
           CORINFO_CONTEXT_HANDLE* contextHandle,
           CORINFO_LOOKUP* instArg) override;
 
+CORINFO_METHOD_HANDLE getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg) override;
+
 mdMethodDef getMethodDefFromMethod(
           CORINFO_METHOD_HANDLE hMethod) override;
 
