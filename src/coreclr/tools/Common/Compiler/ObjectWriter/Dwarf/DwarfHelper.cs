@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.IO;
 using System.Numerics;
 
 namespace ILCompiler.ObjectWriter
@@ -119,6 +120,31 @@ namespace ILCompiler.ObjectWriter
             } while ((@byte & 0x80) != 0);
 
             bytesRead = pos;
+            return value;
+        }
+
+        public static ulong? ReadULEB128(Stream source, out int bytesRead)
+        {
+            ulong value = 0;
+            byte @byte;
+            int shift = 0;
+            long startPos = source.Position;
+
+            do
+            {
+                int b = source.ReadByte();
+                if (b < 0)
+                {
+                    bytesRead = (int)(source.Position - startPos);
+                    return null;
+                }
+
+                @byte = (byte)b;
+                value |= ((ulong)@byte & 0x7f) << shift;
+                shift += 7;
+            } while ((@byte & 0x80) != 0);
+
+            bytesRead = (int)(source.Position - startPos);
             return value;
         }
 
