@@ -8,7 +8,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
-using System.Threading;
 
 using Internal.Reflection.Augments;
 using Internal.Runtime;
@@ -19,6 +18,53 @@ namespace System
 {
     public abstract partial class Delegate : ICloneable, ISerializable
     {
+        // WARNING: These constants are also declared in System.Private.TypeLoader\Internal\Runtime\TypeLoader\CallConverterThunk.cs
+        // Do not change their values without updating the values in the calling convention converter component
+        private const int MulticastThunk = 0;
+        private const int ClosedStaticThunk = 1;
+        private const int OpenStaticThunk = 2;
+        private const int ClosedInstanceThunkOverGenericMethod = 3; // This may not exist
+        private const int OpenInstanceThunk = 4;        // This may not exist
+        private const int ObjectArrayThunk = 5;         // This may not exist
+
+        private object _helperObject;
+        private object _target; // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
+        private IntPtr _methodPtr;
+        private nint _extraFunctionPointerOrData;
+
+        public object? Target
+        {
+            get
+            {
+                // Multi-cast delegates return the Target of the last delegate in the list
+                if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
+                {
+                    return invocations[^1].Value!.Target;
+                }
+
+                // Closed static delegates place a value in _helperObject that they pass to the target method.
+                if (_methodPtr == GetThunk(ClosedStaticThunk) ||
+                    _methodPtr == GetThunk(ClosedInstanceThunkOverGenericMethod) ||
+                    _methodPtr == GetThunk(ObjectArrayThunk))
+                    return _helperObject;
+
+                // Other non-closed thunks can be identified as the _target field points at this.
+                if (ReferenceEquals(_target, this))
+                {
+                    return null;
+                }
+
+                // NativeFunctionPointerWrapper used by marshalled function pointers is not returned as a public target
+                if (_target is NativeFunctionPointerWrapper)
+                {
+                    return null;
+                }
+
+                // Closed instance delegates place a value in _target, and we've ruled out all other types of delegates
+                return _target;
+            }
+        }
+
         // V1 API: Create closed instance delegates. Method name matching is case sensitive.
         [RequiresUnreferencedCode("The target method might be removed")]
         protected Delegate(object target, string method)
@@ -40,28 +86,25 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
-        private object _helperObject;
-        private object _target; // Keep _target and _methodPtr next to each other for optimal delegate invoke performance
-        private IntPtr _methodPtr;
-        private nint _extraFunctionPointerOrData;
-
-        // _helperObject may point to an array of delegates if this is a multicast delegate. We use this wrapper to distinguish between
-        // our own array of delegates and user provided Wrapper[]. As a added benefit, this wrapper also eliminates array co-variance
-        // overhead for our own array of delegates.
-        private struct Wrapper
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryGetInvocations(out ReadOnlySpan<Wrapper> invocations)
         {
-            public Wrapper(Delegate value) => Value = value;
-            public Delegate Value;
-        }
+            if (HasSingleTarget)
+            {
+                invocations = default;
+                return false;
+            }
 
-        // WARNING: These constants are also declared in System.Private.TypeLoader\Internal\Runtime\TypeLoader\CallConverterThunk.cs
-        // Do not change their values without updating the values in the calling convention converter component
-        private protected const int MulticastThunk = 0;
-        private protected const int ClosedStaticThunk = 1;
-        private protected const int OpenStaticThunk = 2;
-        private protected const int ClosedInstanceThunkOverGenericMethod = 3; // This may not exist
-        private protected const int OpenInstanceThunk = 4;        // This may not exist
-        private protected const int ObjectArrayThunk = 5;         // This may not exist
+            Debug.Assert(_helperObject is Wrapper[]);
+            Wrapper[] invocationList = (Wrapper[])_helperObject;
+
+            Debug.Assert(invocationList.Length > 1);
+            Debug.Assert((uint)invocationList.Length >= (nuint)_extraFunctionPointerOrData);
+            Debug.Assert(invocationList[0].Value is not null);
+
+            invocations = new ReadOnlySpan<Wrapper>(invocationList, 0, (int)_extraFunctionPointerOrData);
+            return true;
+        }
 
         //
         // If the thunk does not exist, the function will return IntPtr.Zero.
@@ -84,25 +127,25 @@ namespace System
         /// </param>
         internal unsafe IntPtr GetDelegateLdFtnResult(out RuntimeTypeHandle typeOfFirstParameterIfInstanceDelegate, out bool isOpenResolver)
         {
-            typeOfFirstParameterIfInstanceDelegate = default(RuntimeTypeHandle);
+            typeOfFirstParameterIfInstanceDelegate = default;
             isOpenResolver = false;
 
             if (_extraFunctionPointerOrData != 0)
             {
-                if (GetThunk(OpenInstanceThunk) == _methodPtr)
+                if (GetThunk(OpenInstanceThunk) != _methodPtr)
                 {
-                    typeOfFirstParameterIfInstanceDelegate = ((OpenMethodResolver*)_extraFunctionPointerOrData)->DeclaringType;
-                    isOpenResolver = true;
+                    return _extraFunctionPointerOrData;
                 }
+
+                typeOfFirstParameterIfInstanceDelegate = ((OpenMethodResolver*)_extraFunctionPointerOrData)->DeclaringType;
+                isOpenResolver = true;
                 return _extraFunctionPointerOrData;
             }
-            else
-            {
-                if (_target != null)
-                    typeOfFirstParameterIfInstanceDelegate = new RuntimeTypeHandle(_target.GetMethodTable());
 
-                return _methodPtr;
-            }
+            if (_target != null)
+                typeOfFirstParameterIfInstanceDelegate = new RuntimeTypeHandle(_target.GetMethodTable());
+
+            return _methodPtr;
         }
 
         // This function is known to the compiler.
@@ -162,8 +205,6 @@ namespace System
                 _extraFunctionPointerOrData = functionResolution;
                 _helperObject = firstParameter;
             }
-
-            return;
         }
 
         // This function is known to the compiler.
@@ -228,7 +269,7 @@ namespace System
             return OpenMethodResolver.ResolveMethod(_extraFunctionPointerOrData, thisObject);
         }
 
-        [DebuggerGuidedStepThroughAttribute]
+        [DebuggerGuidedStepThrough]
         protected virtual object? DynamicInvokeImpl(object?[]? args)
         {
             DynamicInvokeInfo dynamicInvokeInfo = ReflectionAugments.GetDelegateDynamicInvokeInfo(GetType());
@@ -244,16 +285,15 @@ namespace System
             // NOTE: this implementation is mirrored in GetDiagnosticMethodInfo below
 
             // Multi-cast delegates return the Method of the last delegate in the list
-            if (_helperObject is Wrapper[] invocationList)
+            if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
-                int invocationCount = (int)_extraFunctionPointerOrData;
-                return invocationList[invocationCount - 1].Value.GetMethodImpl();
+                return invocations[^1].Value!.GetMethodImpl();
             }
 
             // Return the delegate Invoke method for marshalled function pointers and LINQ expressions
-            if ((_target is NativeFunctionPointerWrapper) || (_methodPtr == GetThunk(ObjectArrayThunk)))
+            if (_target is NativeFunctionPointerWrapper || _methodPtr == GetThunk(ObjectArrayThunk))
             {
-                return GetType().GetMethod("Invoke");
+                return GetInvokeMethod(GetType());
             }
 
             return ReflectionAugments.GetDelegateMethod(this);
@@ -264,14 +304,13 @@ namespace System
             // NOTE: this implementation is mirrored in GetMethodImpl above
 
             // Multi-cast delegates return the diagnostic method info of the last delegate in the list
-            if (_helperObject is Wrapper[] invocationList)
+            if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
-                int invocationCount = (int)_extraFunctionPointerOrData;
-                return invocationList[invocationCount - 1].Value.GetDiagnosticMethodInfo();
+                return invocations[^1].Value!.GetDiagnosticMethodInfo();
             }
 
             // Return the delegate Invoke method for marshalled function pointers and LINQ expressions
-            if ((_target is NativeFunctionPointerWrapper) || (_methodPtr == GetThunk(ObjectArrayThunk)))
+            if (_target is NativeFunctionPointerWrapper || _methodPtr == GetThunk(ObjectArrayThunk))
             {
                 Type t = GetType();
                 return new DiagnosticMethodInfo("Invoke", t.FullName, t.Module.Assembly.FullName);
@@ -286,84 +325,47 @@ namespace System
                     declaringType = declaringType.GetGenericTypeDefinition();
                 return new DiagnosticMethodInfo(mi.Name, declaringType.FullName, mi.Module.Assembly.FullName);
             }
+
+            IntPtr functionPointer;
+            if (FunctionPointerOps.IsGenericMethodPointer(ldftnResult))
+            {
+                unsafe
+                {
+                    GenericMethodDescriptor* realTargetData = FunctionPointerOps.ConvertToGenericDescriptor(ldftnResult);
+                    functionPointer = RuntimeAugments.GetCodeTarget(realTargetData->MethodFunctionPointer);
+                }
+            }
             else
             {
-                IntPtr functionPointer;
-                if (FunctionPointerOps.IsGenericMethodPointer(ldftnResult))
-                {
-                    unsafe
-                    {
-                        GenericMethodDescriptor* realTargetData = FunctionPointerOps.ConvertToGenericDescriptor(ldftnResult);
-                        functionPointer = RuntimeAugments.GetCodeTarget(realTargetData->MethodFunctionPointer);
-                    }
-                }
-                else
-                {
-                    nint unboxedPointer = RuntimeAugments.GetCodeTarget(ldftnResult);
-                    if (unboxedPointer == ldftnResult)
-                        unboxedPointer = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(ldftnResult);
+                nint unboxedPointer = RuntimeAugments.GetCodeTarget(ldftnResult);
+                if (unboxedPointer == ldftnResult)
+                    unboxedPointer = RuntimeAugments.GetTargetOfUnboxingAndInstantiatingStub(ldftnResult);
 
-                    functionPointer = unboxedPointer != 0 ? unboxedPointer : ldftnResult;
-                }
-                return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromStartAddress(functionPointer);
+                functionPointer = unboxedPointer != 0 ? unboxedPointer : ldftnResult;
             }
-        }
-
-        public object? Target
-        {
-            get
-            {
-                // Multi-cast delegates return the Target of the last delegate in the list
-                if (_helperObject is Wrapper[] invocationList)
-                {
-                    int invocationCount = (int)_extraFunctionPointerOrData;
-                    return invocationList[invocationCount - 1].Value.Target;
-                }
-
-                // Closed static delegates place a value in _helperObject that they pass to the target method.
-                if (_methodPtr == GetThunk(ClosedStaticThunk) ||
-                    _methodPtr == GetThunk(ClosedInstanceThunkOverGenericMethod) ||
-                    _methodPtr == GetThunk(ObjectArrayThunk))
-                    return _helperObject;
-
-                // Other non-closed thunks can be identified as the _target field points at this.
-                if (object.ReferenceEquals(_target, this))
-                {
-                    return null;
-                }
-
-                // NativeFunctionPointerWrapper used by marshalled function pointers is not returned as a public target
-                if (_target is NativeFunctionPointerWrapper)
-                {
-                    return null;
-                }
-
-                // Closed instance delegates place a value in _target, and we've ruled out all other types of delegates
-                return _target;
-            }
+            return RuntimeAugments.StackTraceCallbacksIfAvailable?.TryGetDiagnosticMethodInfoFromStartAddress(functionPointer);
         }
 
         // V2 api: Creates open or closed delegates to static or instance methods - relaxed signature checking allowed.
-        public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
+        public static Delegate CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure) =>
+            ReflectionAugments.CreateDelegate(type, firstArgument, method, throwOnBindFailure);
 
         // V1 api: Creates open delegates to static or instance methods - relaxed signature checking allowed.
-        public static Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, method, throwOnBindFailure);
+        public static Delegate CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure) =>
+            ReflectionAugments.CreateDelegate(type, method, throwOnBindFailure);
 
         // V1 api: Creates closed delegates to instance methods only, relaxed signature checking disallowed.
         [RequiresUnreferencedCode("The target method might be removed")]
-        public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
+        public static Delegate CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure) =>
+            ReflectionAugments.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
 
         // V1 api: Creates open delegates to static methods only, relaxed signature checking disallowed.
-        public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure) => ReflectionAugments.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
+        public static Delegate CreateDelegate(Type type, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllMethods)] Type target, string method, bool ignoreCase, bool throwOnBindFailure) =>
+            ReflectionAugments.CreateDelegate(type, target, method, ignoreCase, throwOnBindFailure);
 
-        internal IntPtr TryGetOpenStaticFunctionPointer() => (GetThunk(OpenStaticThunk) == _methodPtr) ? _extraFunctionPointerOrData : 0;
+        internal IntPtr TryGetOpenStaticFunctionPointer() => GetThunk(OpenStaticThunk) == _methodPtr ? _extraFunctionPointerOrData : 0;
 
         internal NativeFunctionPointerWrapper? TryGetNativeFunctionPointerWrapper() => _target as NativeFunctionPointerWrapper;
-
-        internal static unsafe bool InternalEqualTypes(object a, object b)
-        {
-            return a.GetMethodTable() == b.GetMethodTable();
-        }
 
         // Returns a new delegate of the specified type whose implementation is provided by the
         // provided delegate.
@@ -377,9 +379,9 @@ namespace System
 
             RuntimeAugments.EnsureMethodTableSafeToAllocate(delegateEEType);
 
-            Delegate del = (Delegate)(RuntimeImports.RhNewObject(delegateEEType));
+            Delegate del = (Delegate)RuntimeImports.RhNewObject(delegateEEType);
 
-            IntPtr objArrayThunk = del.GetThunk(Delegate.ObjectArrayThunk);
+            IntPtr objArrayThunk = del.GetThunk(ObjectArrayThunk);
             if (objArrayThunk == IntPtr.Zero)
             {
                 throw new InvalidOperationException();
@@ -410,12 +412,12 @@ namespace System
             {
                 if (isOpen)
                 {
-                    IntPtr thunk = del.GetThunk(Delegate.OpenStaticThunk);
+                    IntPtr thunk = del.GetThunk(OpenStaticThunk);
                     del.InitializeOpenStaticThunk(null, ldftnResult, thunk);
                 }
                 else
                 {
-                    IntPtr thunk = del.GetThunk(Delegate.ClosedStaticThunk);
+                    IntPtr thunk = del.GetThunk(ClosedStaticThunk);
                     del.InitializeClosedStaticThunk(thisObject, ldftnResult, thunk);
                 }
             }
@@ -423,7 +425,7 @@ namespace System
             {
                 if (isOpen)
                 {
-                    IntPtr thunk = del.GetThunk(Delegate.OpenInstanceThunk);
+                    IntPtr thunk = del.GetThunk(OpenInstanceThunk);
                     del.InitializeOpenInstanceThunkDynamic(ldftnResult, thunk);
                 }
                 else
@@ -444,329 +446,71 @@ namespace System
             result._methodPtr = thisIsMultiCastAlready ? _methodPtr : GetThunk(MulticastThunk);
             result._target = result;
             result._helperObject = invocationList;
-            result._extraFunctionPointerOrData = (IntPtr)invocationCount;
+            result._extraFunctionPointerOrData = invocationCount;
 
             return result;
         }
 
-        private static bool TrySetSlot(Wrapper[] a, int index, Delegate o)
+        private static bool SlotEquals(Delegate previous, Delegate o) =>
+            ReferenceEquals(previous._target, o._target) &&
+            ReferenceEquals(previous._helperObject, o._helperObject) &&
+            previous._extraFunctionPointerOrData == o._extraFunctionPointerOrData &&
+            previous._methodPtr == o._methodPtr;
+
+        private bool EqualsCore(Delegate other)
         {
-            if (a[index].Value == null && Interlocked.CompareExchange(ref a[index].Value, o, null) == null)
-                return true;
+            Debug.Assert(RuntimeHelpers.TypeEquivalent(this, other));
 
-            // The slot may be already set because we have added and removed the same method before.
-            // Optimize this case, because it's cheaper than copying the array.
-            if (a[index].Value is Delegate dd)
-            {
-                if (object.ReferenceEquals(dd._target, o._target) &&
-                    object.ReferenceEquals(dd._helperObject, o._helperObject) &&
-                    dd._extraFunctionPointerOrData == o._extraFunctionPointerOrData &&
-                    dd._methodPtr == o._methodPtr)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // This method will combine this delegate with the passed delegate
-        //  to form a new delegate.
-        protected Delegate CombineImpl(Delegate? d)
-        {
-            if (d is null)
-                return this;
-
-            // Verify that the types are the same...
-            if (!InternalEqualTypes(this, d))
-                throw new ArgumentException(SR.Arg_DlgtTypeMis);
-
-            int followCount = 1;
-            Wrapper[]? followList = d._helperObject as Wrapper[];
-            if (followList != null)
-                followCount = (int)d._extraFunctionPointerOrData;
-
-            int resultCount;
-            Wrapper[]? resultList;
-            if (_helperObject is not Wrapper[] invocationList)
-            {
-                resultCount = 1 + followCount;
-                resultList = new Wrapper[resultCount];
-                resultList[0] = new Wrapper(this);
-                if (followList == null)
-                {
-                    resultList[1] = new Wrapper(d);
-                }
-                else
-                {
-                    for (int i = 0; i < followCount; i++)
-                        resultList[1 + i] = followList[i];
-                }
-                return NewMulticastDelegate(resultList, resultCount);
-            }
-            else
-            {
-                int invocationCount = (int)_extraFunctionPointerOrData;
-                resultCount = invocationCount + followCount;
-                resultList = null;
-                if (resultCount <= invocationList.Length)
-                {
-                    resultList = invocationList;
-                    if (followList == null)
-                    {
-                        if (!TrySetSlot(resultList, invocationCount, d))
-                            resultList = null;
-                    }
-                    else
-                    {
-                        for (int i = 0; i < followCount; i++)
-                        {
-                            if (!TrySetSlot(resultList, invocationCount + i, followList[i].Value))
-                            {
-                                resultList = null;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (resultList == null)
-                {
-                    int allocCount = invocationList.Length;
-                    while (allocCount < resultCount)
-                        allocCount *= 2;
-
-                    resultList = new Wrapper[allocCount];
-
-                    for (int i = 0; i < invocationCount; i++)
-                        resultList[i] = invocationList[i];
-
-                    if (followList == null)
-                    {
-                        resultList[invocationCount] = new Wrapper(d);
-                    }
-                    else
-                    {
-                        for (int i = 0; i < followCount; i++)
-                            resultList[invocationCount + i] = followList[i];
-                    }
-                }
-                return NewMulticastDelegate(resultList, resultCount, true);
-            }
-        }
-
-        private static Wrapper[] DeleteFromInvocationList(Wrapper[] invocationList, int invocationCount, int deleteIndex, int deleteCount)
-        {
-            int allocCount = invocationList.Length;
-            while (allocCount / 2 >= invocationCount - deleteCount)
-                allocCount /= 2;
-
-            Wrapper[] newInvocationList = new Wrapper[allocCount];
-
-            for (int i = 0; i < deleteIndex; i++)
-                newInvocationList[i] = invocationList[i];
-
-            for (int i = deleteIndex + deleteCount; i < invocationCount; i++)
-                newInvocationList[i - deleteCount] = invocationList[i];
-
-            return newInvocationList;
-        }
-
-        private static bool EqualInvocationLists(Wrapper[] a, Wrapper[] b, int start, int count)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                if (!(a[start + i].Value.Equals(b[i].Value)))
-                    return false;
-            }
-            return true;
-        }
-
-        // This method currently looks backward on the invocation list
-        //  for an element that has Delegate based equality with value.  (Doesn't
-        //  look at the invocation list.)  If this is found we remove it from
-        //  this list and return a new delegate.  If its not found a copy of the
-        //  current list is returned.
-        protected Delegate? RemoveImpl(Delegate? d)
-        {
-            // There is a special case were we are removing using a delegate as
-            //    the value we need to check for this case
-            //
-            if (d is null)
-                return this;
-            if (d._helperObject is not Wrapper[] dInvocationList)
-            {
-                if (_helperObject is not Wrapper[] invocationList)
-                {
-                    // they are both not real Multicast
-                    if (this.Equals(d))
-                        return null;
-                }
-                else
-                {
-                    int invocationCount = (int)_extraFunctionPointerOrData;
-                    for (int i = invocationCount; --i >= 0;)
-                    {
-                        if (d.Equals(invocationList[i].Value))
-                        {
-                            if (invocationCount == 2)
-                            {
-                                // Special case - only one value left, either at the beginning or the end
-                                return invocationList[1 - i].Value;
-                            }
-                            else
-                            {
-                                Wrapper[] list = DeleteFromInvocationList(invocationList, invocationCount, i, 1);
-                                return NewMulticastDelegate(list, invocationCount - 1, true);
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                if (_helperObject is Wrapper[] invocationList)
-                {
-                    int invocationCount = (int)_extraFunctionPointerOrData;
-                    int dInvocationCount = (int)d._extraFunctionPointerOrData;
-                    for (int i = invocationCount - dInvocationCount; i >= 0; i--)
-                    {
-                        if (EqualInvocationLists(invocationList, dInvocationList, i, dInvocationCount))
-                        {
-                            if (invocationCount - dInvocationCount == 0)
-                            {
-                                // Special case - no values left
-                                return null;
-                            }
-                            else if (invocationCount - dInvocationCount == 1)
-                            {
-                                // Special case - only one value left, either at the beginning or the end
-                                return invocationList[i != 0 ? 0 : invocationCount - 1].Value;
-                            }
-                            else
-                            {
-                                Wrapper[] list = DeleteFromInvocationList(invocationList, invocationCount, i, dInvocationCount);
-                                return NewMulticastDelegate(list, invocationCount - dInvocationCount, true);
-                            }
-                        }
-                    }
-                }
-            }
-
-            return this;
-        }
-
-        public Delegate[] GetInvocationList()
-        {
-            if (_helperObject is Wrapper[] invocationList)
-            {
-                // Create an array of delegate copies and each
-                //    element into the array
-                int invocationCount = (int)_extraFunctionPointerOrData;
-
-                var del = new Delegate[invocationCount];
-                for (int i = 0; i < del.Length; i++)
-                    del[i] = invocationList[i].Value;
-                return del;
-            }
-
-            return new Delegate[] { this };
-        }
-
-        public sealed override bool Equals([NotNullWhen(true)] object? obj)
-        {
-            if (obj == null)
-                return false;
-            if (object.ReferenceEquals(this, obj))
-                return true;
-            if (!InternalEqualTypes(this, obj))
-                return false;
-
-            // Since this is a Delegate and we know the types are the same, obj should also be a Delegate
-            Debug.Assert(obj is Delegate, "Shouldn't have failed here since we already checked the types are the same!");
-            var d = Unsafe.As<Delegate>(obj);
-
-            if (_helperObject is Wrapper[] invocationList)
-            {
-                if (d._extraFunctionPointerOrData != _extraFunctionPointerOrData)
-                    return false;
-
-                if (d._helperObject is not Wrapper[] dInvocationList)
-                    return false;
-
-                int invocationCount = (int)_extraFunctionPointerOrData;
-                for (int i = 0; i < invocationCount; i++)
-                {
-                    if (!invocationList[i].Value.Equals(dInvocationList[i].Value))
-                        return false;
-                }
-                return true;
-            }
+            if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
+                return other.TryGetInvocations(out ReadOnlySpan<Wrapper> otherInvocations) && invocations.SequenceEqual(otherInvocations);
 
             if (_target is NativeFunctionPointerWrapper nativeFunctionPointerWrapper)
             {
-                if (d._target is not NativeFunctionPointerWrapper dnativeFunctionPointerWrapper)
+                if (other._target is not NativeFunctionPointerWrapper dnativeFunctionPointerWrapper)
                     return false;
 
                 return nativeFunctionPointerWrapper.NativeFunctionPointer == dnativeFunctionPointerWrapper.NativeFunctionPointer;
             }
 
-            if (!object.ReferenceEquals(_helperObject, d._helperObject) ||
-                (!FunctionPointerOps.Compare(_extraFunctionPointerOrData, d._extraFunctionPointerOrData)) ||
-                (!FunctionPointerOps.Compare(_methodPtr, d._methodPtr)))
+            if (!ReferenceEquals(_helperObject, other._helperObject) ||
+                !FunctionPointerOps.Compare(_extraFunctionPointerOrData, other._extraFunctionPointerOrData) ||
+                !FunctionPointerOps.Compare(_methodPtr, other._methodPtr))
             {
                 return false;
             }
 
             // Those delegate kinds with thunks put themselves into the _target, so we can't
             // blindly compare the _target fields for equality.
-            if (object.ReferenceEquals(_target, this))
-            {
-                return object.ReferenceEquals(d._target, d);
-            }
-
-            return object.ReferenceEquals(_target, d._target);
+            return ReferenceEquals(ReferenceEquals(_target, this) ? other : _target, other._target);
         }
 
-        public sealed override int GetHashCode()
+        public sealed override unsafe int GetHashCode()
         {
-            if (_helperObject is Wrapper[] invocationList)
+            if (TryGetInvocations(out ReadOnlySpan<Wrapper> invocations))
             {
-                int multiCastHash = 0;
-                for (int i = 0; i < (int)_extraFunctionPointerOrData; i++)
+                int hash = 0;
+                foreach (ref readonly Wrapper wrapper in invocations)
                 {
-                    multiCastHash = multiCastHash * 33 + invocationList[i].Value.GetHashCode();
+                    hash = hash * 33 + wrapper.GetHashCode();
                 }
-                return multiCastHash;
+                return hash;
             }
 
+            MethodTable* methodTable = this.GetMethodTable();
             if (_target is NativeFunctionPointerWrapper nativeFunctionPointerWrapper)
             {
-                return nativeFunctionPointerWrapper.NativeFunctionPointer.GetHashCode();
+                return HashCode.Combine((nuint)methodTable, nativeFunctionPointerWrapper.NativeFunctionPointer);
             }
 
-            int hash = RuntimeHelpers.GetHashCode(_helperObject) +
-                7 * FunctionPointerOps.GetHashCode(_extraFunctionPointerOrData) +
-                13 * FunctionPointerOps.GetHashCode(_methodPtr);
-
-            if (!object.ReferenceEquals(_target, this))
+            int hashCode = HashCode.Combine((nuint)methodTable,
+                RuntimeHelpers.GetHashCode(_helperObject),
+                FunctionPointerOps.GetHashCode(_extraFunctionPointerOrData),
+                FunctionPointerOps.GetHashCode(_methodPtr));
+            if (!ReferenceEquals(_target, this))
             {
-                hash += 17 * RuntimeHelpers.GetHashCode(_target);
+                hashCode += RuntimeHelpers.GetHashCode(_target) * 33;
             }
-
-            return hash;
-        }
-
-        public partial bool HasSingleTarget => _helperObject is not Wrapper[];
-
-        // Used by delegate invocation list enumerator
-        internal Delegate? TryGetAt(int index)
-        {
-            if (_helperObject is Wrapper[] invocationList)
-            {
-                return ((uint)index < (uint)_extraFunctionPointerOrData) ? invocationList[index].Value : null;
-            }
-
-            return (index == 0) ? this : null;
+            return hashCode;
         }
     }
 }
