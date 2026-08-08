@@ -186,7 +186,7 @@ namespace System.Runtime.InteropServices
                 ReferenceTrackerNativeObjectWrapper? nativeObjectWrapper = Unsafe.As<ReferenceTrackerNativeObjectWrapper>(weakNativeObjectWrapperHandle.Target);
                 if (nativeObjectWrapper != null &&
                     nativeObjectWrapper.TrackerObject != IntPtr.Zero &&
-                    !RuntimeImports.RhIsPromoted(nativeObjectWrapper.ProxyHandle.Target))
+                    !RuntimeImports.RhIsPromoted(nativeObjectWrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) ? proxyTarget : null))
                 {
                     // Notify the wrapper it was not promoted and is being collected.
                     BeforeWrapperFinalized(nativeObjectWrapper.TrackerObject);
@@ -205,9 +205,9 @@ namespace System.Runtime.InteropServices
         internal ref struct Instance
         {
             private readonly IntPtr _vtable; // First field is IUnknown based vtable.
-            public GCHandle RootObject;
+            public WeakGCHandle<object> RootObject;
 
-            public Instance(GCHandle handle)
+            public Instance(WeakGCHandle<object> handle)
             {
                 _vtable = (IntPtr)Unsafe.AsPointer(in FindReferenceTargetsCallback.Vftbl);
                 RootObject = handle;
@@ -240,7 +240,7 @@ namespace System.Runtime.InteropServices
                 return HResults.E_POINTER;
             }
 
-            object sourceObject = ((FindReferenceTargetsCallback.Instance*)pThis)->RootObject.Target!;
+            _ = ((FindReferenceTargetsCallback.Instance*)pThis)->RootObject.TryGetTarget(out object? sourceObject);
 
             if (!TryGetObject(referenceTrackerTarget, out object? targetObject))
             {
