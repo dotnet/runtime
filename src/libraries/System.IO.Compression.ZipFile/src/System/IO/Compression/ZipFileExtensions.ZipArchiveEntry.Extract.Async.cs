@@ -176,11 +176,11 @@ public static partial class ZipFileExtensions
         }
     }
 
-    internal static async Task ExtractRelativeToDirectoryAsync(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite, ReadOnlyMemory<char> password = default, CancellationToken cancellationToken = default)
+    internal static async Task ExtractRelativeToDirectoryAsync(this ZipArchiveEntry source, string destinationDirectoryFullPath, bool overwrite, ReadOnlyMemory<char> password = default, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (ExtractRelativeToDirectoryCheckIfFile(source, destinationDirectoryName, out string fileDestinationPath))
+        if (ExtractRelativeToDirectoryCheckIfFile(source, destinationDirectoryFullPath, out string fileDestinationPath))
         {
             // If it is a file:
             // Create containing directory:
