@@ -3,6 +3,8 @@
 //
 
 #define USE_STRUCT
+namespace JitTest_Directed_StructPromote_SP2;
+
 using System.Runtime.CompilerServices;
 using System;
 using Xunit;

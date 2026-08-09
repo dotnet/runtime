@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+    <HasMergedInTests>true</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <CLRTestEnvironmentVariable Include="DOTNET_JitEnablePhysicalPromotion" Value="1" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JitStressModeNames" Value="STRESS_NO_OLD_PROMOTION STRESS_PHYSICAL_PROMOTION_COST" />
+    <Compile Include="physicalpromotion\readbackbeforeqmark.cs" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using PrimitiveVT;
 using Xunit;
-namespace PrimitiveVT
+namespace JitTest_Directed_PREFIX_PrimitiveVT_callconv1
 {
 
     public unsafe class CallConv1
@@ -123,4 +124,3 @@ namespace PrimitiveVT
         }
     }
 }
-

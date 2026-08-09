@@ -4,6 +4,8 @@
 
 //testing plain double, array member, struct member or class member
 
+namespace JitTest_Directed_intrinsic_pow_pow2;
+
 using System;
 using Xunit;
 

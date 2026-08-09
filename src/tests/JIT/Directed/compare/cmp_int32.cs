@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_compare_cmp_int32;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 

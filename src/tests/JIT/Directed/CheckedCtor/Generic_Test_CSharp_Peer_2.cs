@@ -13,7 +13,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-namespace Test
+namespace JitTest_Directed_CheckedCtor_Generic_Test_CSharp_Peer_2
 {
     public static class App
     {
@@ -41,4 +41,3 @@ namespace Test
         private DerivedClass(string arg, int marker) : base(arg) { }
     }
 }
-

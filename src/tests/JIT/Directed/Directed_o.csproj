@@ -1,31 +1,29 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Optimize>True</Optimize>
+    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="aliasing_retbuf\aliasing_retbuf.csproj" />
     <MergedWrapperProjectReference Include="Convert\out_of_range_fp_to_int_conversions.csproj" />
-    <MergedWrapperProjectReference Include="gettypetypeof\gettypetypeofmatrix_gettypetypeof.csproj" />
     <MergedWrapperProjectReference Include="LoopAlignment\LoopsToProcess.csproj" />
-    <MergedWrapperProjectReference Include="physicalpromotion\addressinterference.csproj" />
-    <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn1.csproj" />
-    <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn2.csproj" />
-    <MergedWrapperProjectReference Include="physicalpromotion\mixedpromotion.csproj" />
-    <MergedWrapperProjectReference Include="physicalpromotion\physicalpromotion.csproj" />
-    <MergedWrapperProjectReference Include="physicalpromotion\readbackbeforeqmark.csproj" />
-    <MergedWrapperProjectReference Include="PREFIX\PrimitiveVT\callconv1_PREFIX_cs_ro.csproj" />
-    <MergedWrapperProjectReference Include="PREFIX\PrimitiveVT\callconv2_PREFIX_cs_ro.csproj" />
-    <MergedWrapperProjectReference Include="shift\int16_ro.csproj" />
-    <MergedWrapperProjectReference Include="shift\int32_ro.csproj" />
-    <MergedWrapperProjectReference Include="shift\int64_ro.csproj" />
-    <MergedWrapperProjectReference Include="shift\uint16_ro.csproj" />
-    <MergedWrapperProjectReference Include="shift\uint32_ro.csproj" />
-    <MergedWrapperProjectReference Include="shift\uint64Opt_ro.csproj" />
-    <MergedWrapperProjectReference Include="shift\uint64_ro.csproj" />
-    <MergedWrapperProjectReference Include="shift\uint8_ro.csproj" />
-    <MergedWrapperProjectReference Include="VectorABI\VectorMgdMgdArray_ro.csproj" />
-    <MergedWrapperProjectReference Include="VectorABI\VectorMgdMgdStatic_ro.csproj" />
-    <MergedWrapperProjectReference Include="VectorABI\VectorMgdMgd_ro.csproj" />
+    <ProjectReference Include="PREFIX\PrimitiveVT\helper.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="gettypetypeof\gettypetypeofmatrix.cs" />
+    <Compile Include="PREFIX\PrimitiveVT\callconv1.cs" />
+    <Compile Include="PREFIX\PrimitiveVT\callconv2.cs" />
+    <Compile Include="shift\int16.cs" />
+    <Compile Include="shift\int32.cs" />
+    <Compile Include="shift\int64.cs" />
+    <Compile Include="shift\uint16.cs" />
+    <Compile Include="shift\uint32.cs" />
+    <Compile Include="shift\uint64.cs" />
+    <Compile Include="shift\uint64Opt.cs" />
+    <Compile Include="shift\uint8.cs" />
+    <Compile Include="VectorABI\VectorMgdMgd.cs" />
+    <Compile Include="VectorABI\VectorMgdMgdArray.cs" />
+    <Compile Include="VectorABI\VectorMgdMgdStatic.cs" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

@@ -4,6 +4,8 @@
 
 //Testing the special values
 
+namespace JitTest_Directed_intrinsic_pow_pow1;
+
 using System;
 using System.Runtime.InteropServices;
 using Xunit;

@@ -2,16 +2,21 @@
   <PropertyGroup>
     <DebugType>Full</DebugType>
     <Optimize />
+    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="nullabletypes\constructor_d.csproj" />
-    <MergedWrapperProjectReference Include="nullabletypes\hashcode_d.csproj" />
-    <MergedWrapperProjectReference Include="nullabletypes\hasvalue_d.csproj" />
-    <MergedWrapperProjectReference Include="nullabletypes\invocation_d.csproj" />
-    <MergedWrapperProjectReference Include="nullabletypes\tostring_d.csproj" />
-    <MergedWrapperProjectReference Include="perffix\primitivevt\callconv1_perffix_cs_d.csproj" />
-    <MergedWrapperProjectReference Include="perffix\primitivevt\callconv2_perffix_cs_d.csproj" />
+    <ProjectReference Include="PREFIX\PrimitiveVT\helper.csproj" />
     <MergedWrapperProjectReference Include="UnrollLoop\loop2_cs_d.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="nullabletypes\constructor.cs" />
+    <Compile Include="nullabletypes\hashcode.cs" />
+    <Compile Include="nullabletypes\hasvalue.cs" />
+    <Compile Include="nullabletypes\invocation.cs" />
+    <Compile Include="nullabletypes\invokecommon.cs" />
+    <Compile Include="nullabletypes\tostring.cs" />
+    <Compile Include="perffix\primitivevt\callconv1.cs" />
+    <Compile Include="perffix\primitivevt\callconv2.cs" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

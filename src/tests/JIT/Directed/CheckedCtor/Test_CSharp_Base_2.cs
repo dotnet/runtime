@@ -13,7 +13,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-namespace Test
+namespace JitTest_Directed_CheckedCtor_Test_CSharp_Base_2
 {
     public static class App
     {
@@ -38,4 +38,3 @@ namespace Test
         public DerivedClass(string selector) : base(selector ?? "NeededToFallBack") { }
     }
 }
-

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_TypedReference_TypedReference;
+
 using System;
 using Xunit;
 
