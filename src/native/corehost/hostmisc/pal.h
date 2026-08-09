@@ -4,6 +4,307 @@
 #ifndef PAL_H
 #define PAL_H
 
+// ============================================================================
+// C-compatible section (usable from both C and C++ source files)
+// ============================================================================
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+#if defined(TARGET_SUNOS)
+  // Ensure character traits have been processed safely before we intercept the identifier
+  #if defined(__cplusplus)
+    #include <locale>
+    #include <cctype>
+  #else
+    #include <ctype.h>
+  #endif
+
+  // Undefine the system bitmask before defining this project _X macro
+  #undef _X
+#endif
+
+#if defined(_WIN32)
+typedef wchar_t pal_char_t;
+#ifdef __cplusplus
+// C++ mode: MSVC's default (non-conforming) preprocessor leaves L##__FUNCTION__
+// unexpanded so that it evaluates to MSVC's wide function-name literal. Using a
+// two-step helper here would force argument expansion and break that.
+#define _X(s) L ## s
+#else
+// C mode: MSVC's /std:c11 conforming preprocessor (and other conforming
+// compilers) suppress argument expansion before ##. A two-step helper forces
+// the argument to be expanded first so e.g. _X(HOST_VERSION) yields a wide
+// string literal rather than the identifier LHOST_VERSION.
+#define _X_HELPER(s) L ## s
+#define _X(s) _X_HELPER(s)
+#endif
+#else // !_WIN32
+typedef char pal_char_t;
+#define _X(s) s
+#endif // _WIN32
+
+// Max path buffer for apphost string operations
+#define APPHOST_PATH_MAX 4096
+
+// Thread-local storage qualifier for static/global variables
+#if defined(_WIN32)
+#define PAL_THREAD_LOCAL __declspec(thread)
+#else
+#define PAL_THREAD_LOCAL _Thread_local
+#endif
+
+#if defined(_WIN32)
+
+#define NOMINMAX
+#include <windows.h>
+#include <share.h>
+
+typedef HMODULE pal_dll_t;
+typedef FARPROC pal_proc_t;
+
+#define DIR_SEPARATOR L'\\'
+#define DIR_SEPARATOR_STR L"\\"
+#define PATH_SEPARATOR L';'
+#define PATH_MAX MAX_PATH
+
+// String operation macros (pal_char_t-based).
+#define pal_strlen(s) wcslen(s)
+#define pal_strchr(s, c) wcschr(s, c)
+#define pal_strrchr(s, c) wcsrchr(s, c)
+#define pal_strncmp(a, b, n) wcsncmp(a, b, n)
+#define pal_strncasecmp(a, b, n) _wcsnicmp(a, b, n)
+#define pal_strtoul(s, e, b) wcstoul(s, e, b)
+#define pal_str_vprintf(buf, count, fmt, args) _vsnwprintf_s(buf, count, _TRUNCATE, fmt, args)
+#define pal_strlen_vprintf(fmt, args) _vscwprintf(fmt, args)
+#define pal_str_printf(buf, count, fmt, ...) _snwprintf_s(buf, count, _TRUNCATE, fmt, ##__VA_ARGS__)
+#define pal_xtoi(s) _wtoi(s)
+#define pal_get_pid() ((int)GetCurrentProcessId())
+#define pal_file_open(path, mode) _wfsopen(path, mode, _SH_DENYNO)
+
+#else // !_WIN32
+
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <strings.h> // strncasecmp
+
+typedef void* pal_dll_t;
+typedef void* pal_proc_t;
+
+#define DIR_SEPARATOR '/'
+#define DIR_SEPARATOR_STR "/"
+#define PATH_SEPARATOR ':'
+
+#if !defined(PATH_MAX)
+#define PATH_MAX 4096
+#endif
+
+#define S_OK        0x00000000
+#define E_NOTIMPL   0x80004001
+#define E_FAIL      0x80004005
+
+#define SUCCEEDED(Status) ((Status) >= 0)
+
+// String operation macros (pal_char_t-based).
+#define pal_strlen(s) strlen(s)
+#define pal_strchr(s, c) strchr(s, c)
+#define pal_strrchr(s, c) strrchr(s, c)
+#define pal_strncmp(a, b, n) strncmp(a, b, n)
+#define pal_strncasecmp(a, b, n) strncasecmp(a, b, n)
+#define pal_strtoul(s, e, b) strtoul(s, e, b)
+#define pal_str_vprintf(buf, count, fmt, args) vsnprintf(buf, (size_t)(count), fmt, args)
+#define pal_strlen_vprintf(fmt, args) vsnprintf(NULL, 0, fmt, args)
+#define pal_str_printf(buf, count, fmt, ...) snprintf(buf, (size_t)(count), fmt, ##__VA_ARGS__)
+#define pal_xtoi(s) atoi(s)
+#define pal_get_pid() ((int)getpid())
+#define pal_file_open(path, mode) fopen(path, mode)
+
+#define __cdecl    /* nothing */
+#define __stdcall  /* nothing */
+#if !defined(TARGET_FREEBSD)
+#define __fastcall /* nothing */
+#endif
+
+#endif // _WIN32
+
+#include "configure.h"
+
+// Wide-stringify the value of a macro: _STRINGIFY(FOO) -> _X("<expanded value of FOO>").
+#define _STRINGIFY(s) _X(s)
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// pal_char_t-based C-callable APIs.
+
+// Returns a heap-allocated, null-terminated copy of the current process's
+// executable path, or NULL on failure. Caller must free() the returned pointer.
+pal_char_t* pal_get_own_executable_path(void);
+
+bool pal_directory_exists(const pal_char_t* path);
+
+// Returns true if the file or directory exists.
+bool pal_file_exists(const pal_char_t* path);
+
+// Returns a heap-allocated, null-terminated copy of the given string, or
+// NULL on allocation failure. Caller should free() the returned pointer.
+pal_char_t* pal_strdup(const pal_char_t* str);
+
+// Returns a heap-allocated, null-terminated copy of the named environment
+// variable's value, or NULL if the variable is unset or set to the empty
+// string. Caller must free() the returned pointer.
+pal_char_t* pal_getenv(const pal_char_t* name);
+
+// Duplicate the first `len` pal_char_t characters of `src` into a
+// heap-allocated, null-terminated buffer. Returns NULL on allocation failure.
+static inline pal_char_t* pal_strndup(const pal_char_t* src, size_t len)
+{
+    pal_char_t* buf = (pal_char_t*)malloc((len + 1) * sizeof(pal_char_t));
+    if (buf != NULL)
+    {
+        memcpy(buf, src, len * sizeof(pal_char_t));
+        buf[len] = _X('\0');
+    }
+    return buf;
+}
+
+// Canonicalize a path and verify it exists. Returns a heap-allocated,
+// null-terminated canonical path, or NULL on failure. Caller should free()
+// the returned pointer. When skip_error_logging is true, failure-path
+// trace messages are suppressed (used when probing for optional files).
+pal_char_t* pal_fullpath(const pal_char_t* path, bool skip_error_logging);
+
+// Describes whether the current process is running under an OS compatibility
+// layer rather than natively on the host architecture.
+typedef enum
+{
+    pal_process_emulation_none = 0,
+    // 32-bit (x86) process running on a 64-bit Windows OS (WOW64)
+    pal_process_emulation_wow64,
+    // x64 process running under emulation on a non-x64 host: Windows
+    // x64-on-arm64, or macOS x64-on-arm64 via Rosetta.
+    pal_process_emulation_x64,
+} pal_process_emulation_t;
+
+// Returns how the OS is emulating the current process, or
+// pal_process_emulation_none when it runs natively.
+pal_process_emulation_t pal_get_process_emulation(void);
+
+// Callback for pal_readdir_onlydirectories. Receives each directory entry
+// name (just the leaf name, not a full path) and the caller-supplied context.
+// Return true to continue enumeration, false to stop early.
+typedef bool (*pal_readdir_callback_t)(const pal_char_t* entry_name, void* ctx);
+
+// Enumerate immediate subdirectories of path, invoking callback for each.
+// Skips "." and "..". Returns true on full enumeration or callback-requested
+// stop; returns false if the directory could not be opened.
+bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t callback, void* ctx);
+
+// Returns the directory containing the globally-registered .NET install for
+// the current architecture, or NULL if no such registration exists. Caller
+// should free() the returned pointer.
+// Honors the test-only env var _DOTNET_TEST_GLOBALLY_REGISTERED_PATH and
+// (on Windows) _DOTNET_TEST_REGISTRY_PATH.
+pal_char_t* pal_get_dotnet_self_registered_dir(void);
+
+// Returns the default install directory of .NET for the current architecture,
+// or NULL on failure. Caller should free() the returned pointer.
+// Honors the test-only env var _DOTNET_TEST_DEFAULT_INSTALL_PATH.
+pal_char_t* pal_get_default_installation_dir(void);
+
+// Returns a display string identifying the location consulted to discover the
+// globally-registered install dir for the current architecture (registry path
+// on Windows, file path on Unix). Caller should free() the returned pointer.
+pal_char_t* pal_get_dotnet_self_registered_config_location(void);
+
+// Returns true if path is fully qualified (absolute).
+bool pal_is_path_fully_qualified(const pal_char_t* path);
+
+// Load the dynamic library at path. On success, stores the library handle in
+// *dll and returns true; returns false on failure.
+bool pal_load_library(const pal_char_t* path, pal_dll_t* dll);
+
+// Unload a library previously loaded with pal_load_library.
+void pal_unload_library(pal_dll_t library);
+
+// Resolve an exported symbol from a loaded library, or NULL if not found.
+pal_proc_t pal_get_symbol(pal_dll_t library, const char* name);
+
+// Convert a UTF-8 string into the platform character type
+bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len);
+
+// Write message followed by a newline to stderr.
+void pal_err_print_line(const pal_char_t* message);
+
+// Format and write to stdout followed by a newline.
+void pal_out_vprint_line(const pal_char_t* format, va_list vl);
+
+// Format and write to the file f followed by a newline.
+void pal_file_vprintf(FILE* f, const pal_char_t* format, va_list vl);
+
+// Find a library named library_name that is already loaded into the current
+// process (without loading it if it is not). symbol_name is used to obtain an
+// address inside the library so that its on-disk path can be resolved. On
+// success returns true, sets *dll to the library handle, and sets *out_path to
+// a heap-allocated path (caller must free()). Returns false if the library is
+// not already loaded.
+bool pal_get_loaded_library(const pal_char_t* library_name, const char* symbol_name, /*out*/ pal_dll_t* dll, /*out*/ pal_char_t** out_path);
+
+#ifdef __cplusplus
+}
+#endif
+
+#if defined(TARGET_WINDOWS)
+#define LIB_PREFIX ""
+#define LIB_FILE_EXT ".dll"
+#elif defined(TARGET_OSX)
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".dylib"
+#else
+#define LIB_PREFIX "lib"
+#define LIB_FILE_EXT ".so"
+#endif
+
+#define LIB_NAME(NAME) LIB_PREFIX NAME
+#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
+#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
+
+#define CORELIB_NAME _X("System.Private.CoreLib.dll")
+#define LIBCORECLR_NAME LIB_FILE_NAME_X("coreclr")
+#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
+#define LIBHOSTPOLICY_NAME LIB_FILE_NAME_X("hostpolicy")
+
+// When running on a platform that is not supported in RID fallback graph (because it was unknown
+// at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
+// consuming the native assets.
+//
+// For Windows and OSX, we will maintain the last highest RID-Platform we are known to support for them as the
+// degree of compat across their respective releases is usually high.
+//
+// We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
+#if defined(TARGET_WINDOWS)
+    #define HOST_RID_PLATFORM "win"
+#elif defined(TARGET_OSX)
+    #define HOST_RID_PLATFORM "osx"
+#elif defined(TARGET_ANDROID)
+    #define HOST_RID_PLATFORM "linux-bionic"
+#else
+    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
+#endif
+
+// ============================================================================
+// C++ section (the original pal:: namespace surface)
+// ============================================================================
+
+#ifdef __cplusplus
+
 #include <string>
 #include <vector>
 #include <sstream>
@@ -21,87 +322,23 @@
 
 #if defined(_WIN32)
 
-#define NOMINMAX
-#include <windows.h>
-
 #define xerr std::wcerr
 #define xout std::wcout
-#define DIR_SEPARATOR L'\\'
-#define DIR_SEPARATOR_STR L"\\"
-#define PATH_SEPARATOR L';'
-#define PATH_MAX MAX_PATH
-#define _X(s) L ## s
 
 #else
 
 #include <cstdlib>
-#include <unistd.h>
 #include <libgen.h>
 #include <mutex>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/mman.h>
 
 #define xerr std::cerr
 #define xout std::cout
-#define DIR_SEPARATOR '/'
-#define DIR_SEPARATOR_STR "/"
-#define PATH_SEPARATOR ':'
-#undef _X
-#define _X(s) s
-
-#define S_OK        0x00000000
-#define E_NOTIMPL   0x80004001
-#define E_FAIL      0x80004005
-
-#define SUCCEEDED(Status) ((Status) >= 0)
 
 #endif
-
-#include "configure.h"
-
-// When running on a platform that is not supported in RID fallback graph (because it was unknown
-// at the time the SharedFX in question was built), we need to use a reasonable fallback RID to allow
-// consuming the native assets.
-//
-// For Windows and OSX, we will maintain the last highest RID-Platform we are known to support for them as the
-// degree of compat across their respective releases is usually high.
-//
-// We cannot maintain the same (compat) invariant for linux and thus, we will fallback to using lowest RID-Platform.
-#if defined(TARGET_WINDOWS)
-#define LIB_PREFIX ""
-#define LIB_FILE_EXT ".dll"
-#elif defined(TARGET_OSX)
-#define LIB_PREFIX "lib"
-#define LIB_FILE_EXT ".dylib"
-#else
-#define LIB_PREFIX "lib"
-#define LIB_FILE_EXT ".so"
-#endif
-
-#define _STRINGIFY(s) _X(s)
-
-#define LIB_NAME(NAME) LIB_PREFIX NAME
-#define LIB_FILE_NAME(NAME) LIB_PREFIX NAME LIB_FILE_EXT
-#define LIB_FILE_NAME_X(NAME) _STRINGIFY(LIB_FILE_NAME(NAME))
-
-#define CORELIB_NAME _X("System.Private.CoreLib.dll")
-#define LIBCORECLR_NAME LIB_FILE_NAME_X("coreclr")
-#define LIBFXR_NAME LIB_FILE_NAME_X("hostfxr")
-#define LIBHOSTPOLICY_NAME LIB_FILE_NAME_X("hostpolicy")
 
 #if !defined(PATH_MAX) && !defined(_WIN32)
 #define PATH_MAX    4096
-#endif
-
-#if defined(TARGET_WINDOWS)
-    #define HOST_RID_PLATFORM "win"
-#elif defined(TARGET_OSX)
-    #define HOST_RID_PLATFORM "osx"
-#elif defined(TARGET_ANDROID)
-    #define HOST_RID_PLATFORM "linux-bionic"
-#else
-    #define HOST_RID_PLATFORM FALLBACK_HOST_OS
 #endif
 
 namespace pal
@@ -120,7 +357,6 @@ namespace pal
     typedef std::wstringstream stringstream_t;
     typedef HRESULT hresult_t;
     typedef HMODULE dll_t;
-    typedef FARPROC proc_t;
 
     // Lockable object backed by CRITICAL_SECTION such that it does not pull in ConcRT.
     class mutex_t
@@ -152,10 +388,6 @@ namespace pal
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
 
     inline FILE* file_open(const string_t& path, const char_t* mode) { return ::_wfsopen(path.c_str(), mode, _SH_DENYNO); }
-
-    void file_vprintf(FILE* f, const char_t* format, va_list vl);
-    void err_print_line(const char_t* message);
-    void out_vprint_line(const char_t* format, va_list vl);
 
     inline int str_vprintf(char_t* buffer, size_t count, const char_t* format, va_list vl) { return ::_vsnwprintf_s(buffer, count, _TRUNCATE, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::_vscwprintf(format, vl); }
@@ -204,11 +436,6 @@ namespace pal
 #define SHARED_API extern "C"
 #endif
 
-#define __cdecl    /* nothing */
-#define __stdcall  /* nothing */
-#if !defined(TARGET_FREEBSD)
-#define __fastcall /* nothing */
-#endif
 #define STDMETHODCALLTYPE __stdcall
 
     typedef char char_t;
@@ -216,7 +443,6 @@ namespace pal
     typedef std::stringstream stringstream_t;
     typedef int hresult_t;
     typedef void* dll_t;
-    typedef void* proc_t;
     typedef std::mutex mutex_t;
 
     inline const pal::char_t* exe_suffix() { return nullptr; }
@@ -231,9 +457,6 @@ namespace pal
 
     inline size_t strlen(const char_t* str) { return ::strlen(str); }
     inline FILE* file_open(const string_t& path, const char_t* mode) { return fopen(path.c_str(), mode); }
-    inline void file_vprintf(FILE* f, const char_t* format, va_list vl) { ::vfprintf(f, format, vl); ::fputc('\n', f); }
-    inline void err_print_line(const char_t* message) { ::fputs(message, stderr); ::fputc(_X('\n'), stderr); }
-    inline void out_vprint_line(const char_t* format, va_list vl) { ::vfprintf(stdout, format, vl); ::fputc('\n', stdout); }
     inline int str_vprintf(char_t* str, size_t size, const char_t* format, va_list vl) { return ::vsnprintf(str, size, format, vl); }
     inline int strlen_vprintf(const char_t* format, va_list vl) { return ::vsnprintf(nullptr, 0, format, vl); }
 
@@ -286,8 +509,6 @@ namespace pal
         return ret;
     }
 
-    string_t get_timestamp();
-
     bool getcwd(string_t* recv);
 
     string_t get_current_os_rid_platform();
@@ -305,7 +526,6 @@ namespace pal
     // Fullpath resolves a fully-qualified path to the target. It may resolve through symlinks, depending on platform.
     bool fullpath(string_t* path, bool skip_error_logging = false);
     bool file_exists(const string_t& path);
-    bool is_directory(const pal::string_t& path);
     inline bool directory_exists(const string_t& path) { return file_exists(path); }
     void readdir(const string_t& path, const string_t& pattern, std::vector<string_t>* list);
     void readdir(const string_t& path, std::vector<string_t>* list);
@@ -367,7 +587,7 @@ namespace pal
 
     bool get_loaded_library(const char_t* library_name, const char* symbol_name, /*out*/ dll_t* dll, /*out*/ string_t* path);
     bool load_library(const string_t* path, dll_t* dll);
-    proc_t get_symbol(dll_t library, const char* name);
+    pal_proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
 
     bool is_running_in_wow64();
@@ -375,5 +595,7 @@ namespace pal
 
     bool are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2);
 }
+
+#endif // __cplusplus
 
 #endif // PAL_H

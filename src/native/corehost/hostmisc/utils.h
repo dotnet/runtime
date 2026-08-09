@@ -6,9 +6,12 @@
 
 #include "pal.h"
 #include "trace.h"
-#include <type_traits>
 #include <runtime_version.h>
 #include <minipal/utils.h>
+
+#ifdef __cplusplus
+#include <type_traits>
+#endif
 
 #define DOTNET_CORE_DOWNLOAD_URL _X("https://aka.ms/dotnet/download")
 #define DOTNET_CORE_APPLAUNCH_URL _X("https://aka.ms/dotnet-core-applaunch")
@@ -39,6 +42,7 @@
     _X("%s&apphost_version=%s")
 
 #define DOTNET_ROOT_ENV_VAR _X("DOTNET_ROOT")
+#define DOTNET_ROOT_ARCH_ENV_VAR DOTNET_ROOT_ENV_VAR _X("_") _STRINGIFY(CURRENT_ARCH_NAME_UPPER)
 
 #define SDK_DOTNET_DLL _X("dotnet.dll")
 
@@ -46,6 +50,8 @@
 #define _QUOTE(x) _TEXT(x)
 
 #define HOST_VERSION _QUOTE(RuntimeProductVersion)
+
+#ifdef __cplusplus
 
 namespace utils
 {
@@ -109,9 +115,6 @@ bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv);
 size_t index_of_non_numeric(const pal::string_t& str, size_t i);
 bool try_stou(const pal::string_t& str, unsigned* num);
 
-pal::string_t get_dotnet_root_env_var_for_arch(pal::architecture arch);
-bool get_dotnet_root_from_env(pal::string_t* used_dotnet_root_env_var_name, pal::string_t* recv);
-
 pal::string_t get_deps_from_app_binary(const pal::string_t& app_base, const pal::string_t& app);
 pal::string_t get_runtime_config_path(const pal::string_t& path, const pal::string_t& name);
 pal::string_t get_runtime_config_dev_path(const pal::string_t& path, const pal::string_t& name);
@@ -125,7 +128,6 @@ pal::string_t get_download_url(const pal::char_t* framework_name = nullptr, cons
 pal::string_t get_host_version_description();
 
 pal::string_t to_lower(const pal::char_t* in);
-pal::string_t to_upper(const pal::char_t* in);
 
 // Retrieves environment variable which is only used for testing.
 // This will return the value of the variable only if the product binary is stamped
@@ -197,5 +199,56 @@ size_t to_size_t_dbgchecked(T value)
     assert(static_cast<T>(result) == value);
     return result;
 }
+
+#endif // __cplusplus
+
+// ============================================================================
+// C-compatible declarations
+// ============================================================================
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void utils_get_filename(const pal_char_t* path, pal_char_t* out_name, size_t out_name_len);
+
+bool utils_starts_with(const pal_char_t* value, size_t value_len, const pal_char_t* prefix, size_t prefix_len, bool match_case);
+bool utils_ends_with(const pal_char_t* value, size_t value_len, const pal_char_t* suffix, size_t suffix_len, bool match_case);
+
+void utils_append_path(pal_char_t* path_buffer, size_t path_buffer_len, const pal_char_t* component);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_append_path_alloc(const pal_char_t* path, const pal_char_t* component);
+
+// Return <dir>/<file_name> if the file exists, otherwise NULL.
+// Caller should free() the returned pointer.
+pal_char_t* utils_find_file_in_dir(const pal_char_t* dir, const pal_char_t* file_name);
+
+// Return the directory portion of `path`, always ending with DIR_SEPARATOR.
+// Caller should free() the returned pointer.
+pal_char_t* utils_get_directory(const pal_char_t* path);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_get_file_path_from_env(const pal_char_t* env_key);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_test_only_getenv(const pal_char_t* name);
+
+// Find the .NET install root from environment variables in priority order:
+//  - DOTNET_ROOT_<ARCH>
+//  - If running Windows WOW64 only, DOTNET_ROOT(x86)
+//  - DOTNET_ROOT
+// Caller should free() out_dotnet_root.
+bool utils_get_dotnet_root_from_env(const pal_char_t** out_env_var_name, pal_char_t** out_dotnet_root);
+
+// Caller should free() the returned pointer.
+pal_char_t* utils_get_runtime_id(void);
+
+#define MAX_DOWNLOAD_URL_LEN 512
+void utils_get_download_url(pal_char_t* out_url, size_t out_url_len, const pal_char_t* framework_name, const pal_char_t* framework_version);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

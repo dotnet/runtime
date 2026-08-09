@@ -1351,6 +1351,24 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CopySignTest()
+        {
+            Assert.Equal((long)0x0000000000000000, NumberHelper<long>.CopySign((long)0x0000000000000000, 1));
+            Assert.Equal((long)0x0000000000000001, NumberHelper<long>.CopySign((long)0x0000000000000001, 1));
+            Assert.Equal((long)0x7FFFFFFFFFFFFFFF, NumberHelper<long>.CopySign((long)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((long)0x0000000000000001, NumberHelper<long>.CopySign(unchecked((long)0xFFFFFFFFFFFFFFFF), 1));
+
+            Assert.Equal((long)0x0000000000000000, NumberHelper<long>.CopySign((long)0x0000000000000000, -1));
+            Assert.Equal(unchecked((long)0xFFFFFFFFFFFFFFFF), NumberHelper<long>.CopySign((long)0x0000000000000001, -1));
+            Assert.Equal(unchecked((long)0x8000000000000001), NumberHelper<long>.CopySign((long)0x7FFFFFFFFFFFFFFF, -1));
+            Assert.Equal(unchecked((long)0x8000000000000000), NumberHelper<long>.CopySign(unchecked((long)0x8000000000000000), -1));
+            Assert.Equal(unchecked((long)0xFFFFFFFFFFFFFFFF), NumberHelper<long>.CopySign(unchecked((long)0xFFFFFFFFFFFFFFFF), -1));
+
+            Assert.Throws<OverflowException>(() => NumberHelper<long>.CopySign(unchecked((long)0x8000000000000000), 0));
+            Assert.Throws<OverflowException>(() => NumberHelper<long>.CopySign(unchecked((long)0x8000000000000000), 1));
+        }
+
+        [Fact]
         public static void MaxTest()
         {
             Assert.Equal((long)0x0000000000000001, NumberHelper<long>.Max((long)0x0000000000000000, 1));

@@ -3,7 +3,7 @@
 
 using System;
 using System.Diagnostics;
-
+using Internal.Text;
 using Internal.TypeSystem;
 
 namespace Internal.IL.Stubs
@@ -22,7 +22,7 @@ namespace Internal.IL.Stubs
         {
             get
             {
-                ReadOnlySpan<byte> prefix = RuntimeMarshallingEnabled ? "CalliWithRuntimeMarshalling"u8 : "Calli"u8;
+                Utf8Span prefix = RuntimeMarshallingEnabled ? "CalliWithRuntimeMarshalling"u8 : "Calli"u8;
 
                 // The target signature is expected to be normalized as MethodSignatureFlags.UnmanagedCallingConvention
                 Debug.Assert((_targetSignature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) == MethodSignatureFlags.UnmanagedCallingConvention);
@@ -31,7 +31,7 @@ namespace Internal.IL.Stubs
                 if (_targetSignature.HasEmbeddedSignatureData)
                     prefix = prefix.Append(System.Text.Encoding.ASCII.GetBytes(_targetSignature.GetStandaloneMethodSignatureCallingConventions().ToString("x")));
 
-                return prefix;
+                return prefix.AsSpan();
             }
         }
     }

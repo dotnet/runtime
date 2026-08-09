@@ -1,0 +1,106 @@
+# cdac-helix-test-leg.yml -- wraps the matrix + per-platform job + artifact
+# download + prepare + send-to-helix + fail-on-error boilerplate shared by
+# the three cDAC dump-style legs in runtime-diagnostics.yml:
+#
+#   CdacDumpTests      (single-leg mode) -- runs DumpTests directly
+#   CdacXPlatDumpGen   -- generates dumps only (DumpOnly=true)
+#   CdacXPlatDumpTests -- runs DumpTests against dumps from all source platforms
+#
+# All three: download the shared CdacBuild artifact, prepare a Helix payload,
+# send to Helix, fail the job if Helix reports failures. They differ in:
+#   - which platform list they fan out over
+#   - which Helix .proj they send
+#   - extra prepare-cdac-helix-steps parameters (skipDebuggeeCopy, etc.)
+#   - extra postBuildSteps inserted between prepare and send (xplat-test needs
+#     to download all source platforms' dumps and extract the tars first)
+#   - whether to publish dump artifacts at the end, and on what condition
+#
+# Stress tests are not collapsed into this template -- they use a different
+# prepare template (prepare-cdac-stress-helix-steps.yml) and have unique
+# crash-dump-symbolication artifacts, so they stay inline.
+
+parameters:
+- name: nameSuffix
+  type: string
+- name: platforms
+  type: object
+- name: sendDisplayName
+  type: string
+- name: sendParams
+  type: string
+- name: prepareParameters
+  type: object
+  default: {}
+- name: dependsOnCdacBuild
+  type: boolean
+  default: true
+- name: extraStepsBeforeSend
+  type: stepList
+  default: []
+- name: failDisplayName
+  type: string
+  default: 'Fail on test errors'
+- name: failErrorMessage
+  type: string
+  default: 'One or more cDAC Helix failures were detected. Failing the job.'
+- name: publishDumpsArtifactName
+  type: string
+  default: ''   # if empty, no dump-artifact publish step is emitted
+- name: publishDumpsCondition
+  type: string
+  default: 'and(always(), ne(variables[''Agent.JobStatus''], ''Succeeded''))'
+- name: extraDependsOn
+  type: object
+  default: []   # explicit job names to add to dependsOn (combined with dependsOnGlobalBuilds)
+
+jobs:
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: true
+    jobParameters:
+      nameSuffix: ${{ parameters.nameSuffix }}
+      # Tiny rebuild that initializes .dotnet and links the test csproj
+      # against the downloaded CdacBuild artifact; coreclr + libs + tools.cdac
+      # are not rebuilt.
+      buildArgs: -s tools.cdacdumptests -c $(_BuildConfig) -rc checked -lc $(_BuildConfig) /p:SkipDumpVersions=net10.0
+      timeoutInMinutes: 180
+      ${{ if parameters.dependsOnCdacBuild }}:
+        dependsOnGlobalBuilds:
+        - nameSuffix: CdacBuild
+      ${{ if ne(length(parameters.extraDependsOn), 0) }}:
+        dependsOn: ${{ parameters.extraDependsOn }}
+      preBuildSteps:
+      - template: /eng/pipelines/cdac/download-cdac-build-artifact.yml
+      postBuildSteps:
+      - template: /eng/pipelines/cdac/prepare-cdac-helix-steps.yml
+        parameters: ${{ parameters.prepareParameters }}
+      - ${{ each step in parameters.extraStepsBeforeSend }}:
+        - ${{ step }}
+      - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
+        parameters:
+          displayName: ${{ parameters.sendDisplayName }}
+          sendParams: ${{ parameters.sendParams }}
+          environment:
+            _Creator: dotnet-bot
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            NUGET_PACKAGES: $(Build.SourcesDirectory)$(dir).packages
+            ${{ if eq(parameters.nameSuffix, 'CdacXPlatDumpTest') }}:
+              SourcePlatforms: ${{ join(';', parameters.platforms) }}
+      - ${{ if ne(parameters.publishDumpsArtifactName, '') }}:
+        - task: PublishPipelineArtifact@1
+          inputs:
+            targetPath: $(Build.SourcesDirectory)/artifacts/helixresults
+            artifactName: ${{ parameters.publishDumpsArtifactName }}
+          displayName: 'Publish Dump Artifacts'
+          condition: ${{ parameters.publishDumpsCondition }}
+          continueOnError: true
+      - pwsh: |
+          if ("$(Agent.JobStatus)" -ne "Succeeded") {
+            Write-Error "${{ parameters.failErrorMessage }}"
+            exit 1
+          }
+        displayName: ${{ parameters.failDisplayName }}
+        condition: always()

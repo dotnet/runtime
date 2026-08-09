@@ -92,6 +92,7 @@ class WasmRegAlloc : public RegAllocInterface
             , m_fpReg(REG_NA)
             , m_lastVirtualRegRefsCount(0)
             , m_virtualRegRefs(nullptr)
+            , m_imageBaseUses(0)
             , m_physicalRegAssignments(comp->lvaTrackedCount, REG_STK, comp->getAllocator(CMK_LSRA))
         {
         }
@@ -110,6 +111,10 @@ class WasmRegAlloc : public RegAllocInterface
         //
         unsigned              m_lastVirtualRegRefsCount;
         VirtualRegReferences* m_virtualRegRefs;
+
+        // Count of nodes in this funclet that will materialize the image base.
+        //
+        unsigned m_imageBaseUses;
 
         // Map from local tracked index to phys reg for that local, in this funclet.
         //
@@ -155,10 +160,11 @@ private:
     void      CollectReferencesForCall(GenTreeCall* callNode);
     void      CollectReferencesForCast(GenTreeOp* castNode);
     void      CollectReferencesForBinop(GenTreeOp* binOpNode);
-    void      CollectReferencesForStoreInd(GenTreeStoreInd* node);
+    void      CollectReferencesForIndir(GenTreeIndir* node);
     void      CollectReferencesForBlockStore(GenTreeBlk* node);
     void      CollectReferencesForLclVar(GenTreeLclVar* lclVar);
     void      CollectReferencesForIndexAddr(GenTreeIndexAddr* indexAddrNode);
+    void      CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node);
     void      RewriteLocalStackStore(GenTreeLclVarCommon* node);
     void      CollectReference(GenTree* node);
     void      RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);

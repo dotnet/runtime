@@ -912,12 +912,22 @@ void CodeGen::genArm64EmitterUnitTestsGeneral()
     theEmitter->emitIns_R_R(INS_rev, EA_8BYTE, REG_R4, REG_R15);
     theEmitter->emitIns_R_R(INS_rev16, EA_8BYTE, REG_R5, REG_R0);
     theEmitter->emitIns_R_R(INS_rev32, EA_8BYTE, REG_R6, REG_R1);
+    if (m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc))
+    {
+        theEmitter->emitIns_R_R(INS_cnt, EA_8BYTE, REG_R7, REG_R2); // FEAT_CSSC
+        theEmitter->emitIns_R_R(INS_ctz, EA_8BYTE, REG_R8, REG_R3); // FEAT_CSSC
+    }
 
-    theEmitter->emitIns_R_R(INS_cls, EA_4BYTE, REG_R7, REG_R2);
-    theEmitter->emitIns_R_R(INS_clz, EA_4BYTE, REG_R8, REG_R3);
-    theEmitter->emitIns_R_R(INS_rbit, EA_4BYTE, REG_R9, REG_R4);
-    theEmitter->emitIns_R_R(INS_rev, EA_4BYTE, REG_R10, REG_R5);
-    theEmitter->emitIns_R_R(INS_rev16, EA_4BYTE, REG_R11, REG_R6);
+    theEmitter->emitIns_R_R(INS_cls, EA_4BYTE, REG_R9, REG_R4);
+    theEmitter->emitIns_R_R(INS_clz, EA_4BYTE, REG_R10, REG_R5);
+    theEmitter->emitIns_R_R(INS_rbit, EA_4BYTE, REG_R11, REG_R6);
+    theEmitter->emitIns_R_R(INS_rev, EA_4BYTE, REG_R12, REG_R7);
+    theEmitter->emitIns_R_R(INS_rev16, EA_4BYTE, REG_R13, REG_R8);
+    if (m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc))
+    {
+        theEmitter->emitIns_R_R(INS_cnt, EA_4BYTE, REG_R14, REG_R9);  // FEAT_CSSC
+        theEmitter->emitIns_R_R(INS_ctz, EA_4BYTE, REG_R15, REG_R10); // FEAT_CSSC
+    }
 
     //
     // R_I

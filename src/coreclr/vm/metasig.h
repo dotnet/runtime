@@ -353,8 +353,6 @@ DEFINE_METASIG(IM(Obj_RetVoid, j, v))
 DEFINE_METASIG(IM(Obj_RetObj, j, j))
 DEFINE_METASIG(IM(Obj_IntPtr_RetVoid, j I, v))
 DEFINE_METASIG(IM(Obj_UIntPtr_RetVoid, j U, v))
-DEFINE_METASIG(IM(Obj_IntPtr_IntPtr_RetVoid, j I I, v))
-DEFINE_METASIG(IM(Obj_IntPtr_IntPtr_IntPtr_RetVoid, j I I I, v))
 #ifdef FEATURE_COMINTEROP
 DEFINE_METASIG_T(IM(Str_BindingFlags_Obj_ArrObj_ArrBool_ArrInt_ArrType_Type_RetObj, s g(BINDING_FLAGS) j a(j) a(F) a(i) a(C(TYPE)) C(TYPE), j))
 #endif // FEATURE_COMINTEROP
@@ -553,6 +551,11 @@ DEFINE_METASIG_T(SM(RefRuntimeAsyncAwaitState_RetTask, r(g(RUNTIME_ASYNC_AWAIT_S
 DEFINE_METASIG_T(SM(RefRuntimeAsyncAwaitState_RetValueTask, r(g(RUNTIME_ASYNC_AWAIT_STATE)), g(VALUETASK)))
 DEFINE_METASIG_T(GM(RefRuntimeAsyncAwaitState_RetTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(g(RUNTIME_ASYNC_AWAIT_STATE)), GI(C(TASK_1), 1, M(0))))
 DEFINE_METASIG_T(GM(RefRuntimeAsyncAwaitState_RetValueTaskOfT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, r(g(RUNTIME_ASYNC_AWAIT_STATE)), GI(g(VALUETASK_1), 1, M(0))))
+
+DEFINE_METASIG_T(SM(Task_RetVoid, C(TASK), v))
+DEFINE_METASIG_T(SM(ValueTask_RetVoid, g(VALUETASK), v))
+DEFINE_METASIG_T(GM(TaskOfT_RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, GI(C(TASK_1), 1, M(0)), M(0)))
+DEFINE_METASIG_T(GM(ValueTaskOfT_RetT, IMAGE_CEE_CS_CALLCONV_DEFAULT, 1, GI(g(VALUETASK_1), 1, M(0)), M(0)))
 
 // Undefine macros in case we include the file again in the compilation unit
 

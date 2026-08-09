@@ -608,8 +608,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<double>(+1.0));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<double>(-1.0));
 
-            Assert.Equal(+79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<double>(+79228162514264333195497439231.0));
-            Assert.Equal(-79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<double>(-79228162514264333195497439231.0));
+            Assert.Equal(+79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateChecked<double>(+79228162514264333195497439231.0));
+            Assert.Equal(-79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateChecked<double>(-79228162514264333195497439231.0));
 
             Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<double>(+79228162514264337593543950335.0));
             Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<double>(-79228162514264337593543950335.0));
@@ -629,8 +629,8 @@ namespace System.Tests
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.Zero));
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.NegativeZero));
 
-            Assert.Equal(+0.00000005960464m, NumberBaseHelper<decimal>.CreateChecked<Half>(+Half.Epsilon));
-            Assert.Equal(-0.00000005960464m, NumberBaseHelper<decimal>.CreateChecked<Half>(-Half.Epsilon));
+            Assert.Equal(+0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateChecked<Half>(+Half.Epsilon));
+            Assert.Equal(-0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateChecked<Half>(-Half.Epsilon));
 
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.One));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<Half>(Half.NegativeOne));
@@ -749,8 +749,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateChecked<float>(+1.0f));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateChecked<float>(-1.0f));
 
-            Assert.Equal(+79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<float>(+79228160000000000000000000000.0f));
-            Assert.Equal(-79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateChecked<float>(-79228160000000000000000000000.0f));
+            Assert.Equal(+79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateChecked<float>(+79228160000000000000000000000.0f));
+            Assert.Equal(-79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateChecked<float>(-79228160000000000000000000000.0f));
 
             Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<float>(+79228162514264337593543950335.0f));
             Assert.Throws<OverflowException>(() => NumberBaseHelper<decimal>.CreateChecked<float>(-79228162514264337593543950335.0f));
@@ -869,8 +869,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(+1.0));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(-1.0));
 
-            Assert.Equal(+79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(+79228162514264333195497439231.0));
-            Assert.Equal(-79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(-79228162514264333195497439231.0));
+            Assert.Equal(+79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(+79228162514264333195497439231.0));
+            Assert.Equal(-79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateSaturating<double>(-79228162514264333195497439231.0));
 
             Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateSaturating<double>(+79228162514264337593543950335.0));
             Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateSaturating<double>(-79228162514264337593543950335.0));
@@ -890,8 +890,8 @@ namespace System.Tests
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateSaturating<Half>(Half.Zero));
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateSaturating<Half>(Half.NegativeZero));
 
-            Assert.Equal(+0.00000005960464m, NumberBaseHelper<decimal>.CreateSaturating<Half>(+Half.Epsilon));
-            Assert.Equal(-0.00000005960464m, NumberBaseHelper<decimal>.CreateSaturating<Half>(-Half.Epsilon));
+            Assert.Equal(+0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateSaturating<Half>(+Half.Epsilon));
+            Assert.Equal(-0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateSaturating<Half>(-Half.Epsilon));
 
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateSaturating<Half>(Half.One));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateSaturating<Half>(Half.NegativeOne));
@@ -1011,8 +1011,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(+1.0f));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(-1.0f));
 
-            Assert.Equal(+79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(+79228160000000000000000000000.0f));
-            Assert.Equal(-79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(-79228160000000000000000000000.0f));
+            Assert.Equal(+79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(+79228160000000000000000000000.0f));
+            Assert.Equal(-79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateSaturating<float>(-79228160000000000000000000000.0f));
 
             Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateSaturating<float>(+79228162514264337593543950335.0f));
             Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateSaturating<float>(-79228162514264337593543950335.0f));
@@ -1132,8 +1132,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(+1.0));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(-1.0));
 
-            Assert.Equal(+79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(+79228162514264333195497439231.0));
-            Assert.Equal(-79228162514264300000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(-79228162514264333195497439231.0));
+            Assert.Equal(+79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(+79228162514264333195497439231.0));
+            Assert.Equal(-79228162514264328797450928128.0m, NumberBaseHelper<decimal>.CreateTruncating<double>(-79228162514264333195497439231.0));
 
             Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<double>(+79228162514264337593543950335.0));
             Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<double>(-79228162514264337593543950335.0));
@@ -1153,8 +1153,8 @@ namespace System.Tests
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.Zero));
             Assert.Equal(0.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.NegativeZero));
 
-            Assert.Equal(+0.00000005960464m, NumberBaseHelper<decimal>.CreateTruncating<Half>(+Half.Epsilon));
-            Assert.Equal(-0.00000005960464m, NumberBaseHelper<decimal>.CreateTruncating<Half>(-Half.Epsilon));
+            Assert.Equal(+0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateTruncating<Half>(+Half.Epsilon));
+            Assert.Equal(-0.000000059604644775390625m, NumberBaseHelper<decimal>.CreateTruncating<Half>(-Half.Epsilon));
 
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.One));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<Half>(Half.NegativeOne));
@@ -1274,8 +1274,8 @@ namespace System.Tests
             Assert.Equal(+1.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(+1.0f));
             Assert.Equal(-1.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(-1.0f));
 
-            Assert.Equal(+79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(+79228160000000000000000000000.0f));
-            Assert.Equal(-79228160000000000000000000000.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(-79228160000000000000000000000.0f));
+            Assert.Equal(+79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(+79228160000000000000000000000.0f));
+            Assert.Equal(-79228157791897854723898736640.0m, NumberBaseHelper<decimal>.CreateTruncating<float>(-79228160000000000000000000000.0f));
 
             Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.CreateTruncating<float>(+79228162514264337593543950335.0f));
             Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.CreateTruncating<float>(-79228162514264337593543950335.0f));

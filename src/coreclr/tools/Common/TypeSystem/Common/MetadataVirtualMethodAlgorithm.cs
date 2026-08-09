@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
+using Internal.Text;
+
 namespace Internal.TypeSystem
 {
     public class MetadataVirtualMethodAlgorithm : VirtualMethodAlgorithm
@@ -237,6 +239,7 @@ namespace Internal.TypeSystem
 
             // Step 2, convert targetMethod to method in type hierarchy of uninstantiated form
             targetMethod = targetMethod.GetMethodDefinition();
+            MethodDesc initialTargetMethodDefinition = targetMethod;
             if (uninstantiatedType != objectType)
             {
                 targetMethod = uninstantiatedType.FindMethodOnTypeWithMatchingTypicalMethod(targetMethod);
@@ -257,7 +260,7 @@ namespace Internal.TypeSystem
             {
                 resolutionTarget = objectType.FindMethodOnTypeWithMatchingTypicalMethod(resolutionTarget);
             }
-            if (initialTargetMethod.HasInstantiation)
+            if (initialTargetMethod != initialTargetMethodDefinition)
             {
                 resolutionTarget = resolutionTarget.MakeInstantiatedMethod(initialTargetMethod.Instantiation);
             }
@@ -377,14 +380,14 @@ namespace Internal.TypeSystem
         /// <returns></returns>
         private static MethodDesc FindMatchingVirtualMethodOnTypeByNameAndSig(MethodDesc targetMethod, DefType currentType, bool reverseMethodSearch, Func<MethodDesc, MethodDesc, bool> nameSigMatchMethodIsValidCandidate)
         {
-            ReadOnlySpan<byte> name = targetMethod.Name;
+            Utf8Span name = targetMethod.Name;
             MethodSignature sig = targetMethod.Signature;
 
             MethodDesc implMethod = null;
             MethodDesc implMethodEquivalent = null;
             foreach (MethodDesc candidate in currentType.GetAllVirtualMethods())
             {
-                if (candidate.Name.SequenceEqual(name))
+                if (candidate.Name == name)
                 {
                     if (candidate.Signature.EquivalentTo(sig))
                     {
@@ -438,6 +441,8 @@ namespace Internal.TypeSystem
         {
             if (method == null)
                 return method;
+
+            Debug.Assert(method.GetMethodDefinition() == method);
 
             DefType currentType = method.OwningType.BaseType;
 

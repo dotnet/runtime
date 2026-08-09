@@ -54,6 +54,10 @@
 #include <pthread_np.h>
 #endif
 
+#if defined(__OpenBSD__)
+#include <pthread_np.h>
+#endif
+
 #if HAVE_LWP_SELF
 #include <lwp.h>
 #endif
@@ -838,7 +842,7 @@ bool PalStartEventPipeHelperThread(_In_ BackgroundCallback callback, _In_opt_ vo
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
+HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer, bool pinModule)
 {
     HANDLE moduleHandle = NULL;
 
@@ -849,6 +853,16 @@ HANDLE PalGetModuleHandleFromPointer(_In_ void* pointer)
     int st = dladdr(pointer, &info);
     if (st != 0)
     {
+#if defined(HOST_OSX)
+        if (pinModule && info.dli_fname != nullptr)
+        {
+            // NativeAOT runtime state cannot be safely unloaded.
+            // Keep the extra reference for the lifetime of the process.
+            // Unloading is disabled via `-z,nodelete` linker option on ELF platforms.
+            dlopen(info.dli_fname, RTLD_LAZY | RTLD_NOLOAD);
+        }
+#endif
+
         moduleHandle = info.dli_fbase;
     }
 #endif //!defined(HOST_WASM)
@@ -1193,6 +1207,15 @@ bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHi
     // This is a Mac specific method
     pStackHighOut = pthread_get_stackaddr_np(pthread_self());
     pStackLowOut = ((uint8_t *)pStackHighOut - pthread_get_stacksize_np(pthread_self()));
+#elif defined(__OpenBSD__)
+    // OpenBSD provides the stack segment of the current thread via pthread_stackseg_np.
+    // ss_sp points to the top (highest address) of the stack.
+    stack_t stack;
+    int status = pthread_stackseg_np(pthread_self(), &stack);
+    ASSERT_MSG(status == 0, "pthread_stackseg_np call failed");
+
+    pStackHighOut = stack.ss_sp;
+    pStackLowOut = (uint8_t*)stack.ss_sp - stack.ss_size;
 #else // __APPLE__
     pthread_attr_t attr;
     size_t stackSize;

@@ -205,7 +205,7 @@ public static class TargetFieldExtensions
         where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
     {
         Debug.Assert(
-            field.TypeName is null or "" || IsCompatiblePrimitiveType<T>(field.TypeName),
+            TargetTypeHelpers.IsCompatiblePrimitiveType<T>(field.TypeName),
             $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', reading as {typeof(T).Name}");
     }
 
@@ -213,25 +213,7 @@ public static class TargetFieldExtensions
     private static void AssertPointerType(Target.FieldInfo field, string fieldName)
     {
         Debug.Assert(
-            field.TypeName is null or "" or "pointer",
+            TargetTypeHelpers.IsCompatiblePointerType(field.TypeName),
             $"Type mismatch reading field '{fieldName}': declared as '{field.TypeName}', expected pointer");
-    }
-
-    private static bool IsCompatiblePrimitiveType<T>(string typeName)
-        where T : unmanaged, IBinaryInteger<T>, IMinMaxValue<T>
-    {
-        return typeName switch
-        {
-            "uint8" => typeof(T) == typeof(byte),
-            "int8" => typeof(T) == typeof(sbyte),
-            "uint16" => typeof(T) == typeof(ushort),
-            "int16" => typeof(T) == typeof(short),
-            "uint32" => typeof(T) == typeof(uint),
-            "int32" => typeof(T) == typeof(int),
-            "uint64" => typeof(T) == typeof(ulong),
-            "int64" => typeof(T) == typeof(long),
-            "bool" => typeof(T) == typeof(byte),
-            _ => false,
-        };
     }
 }

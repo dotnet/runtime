@@ -42,8 +42,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(UserDefinedAttributeOnlyUnion))]
         [JsonSerializable(typeof(UserDefinedNullableAttributeOnlyUnion))]
         [JsonSerializable(typeof(UserDefinedCtorVsImplicitOpUnion))]
-        [JsonSerializable(typeof(UserDefinedUnconventionalUnion))]
-        [JsonSerializable(typeof(UserDefinedUnionWithoutValueProperty))]
         [JsonSerializable(typeof(UserDefinedJsonUnionOnPlainObject))]
         [JsonSerializable(typeof(UserDefinedUnionViaIUnion))]
         [JsonSerializable(typeof(UserDefinedValueTypeUnion))]
@@ -53,6 +51,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(CustomDiscriminatedFlora))]
         [JsonSerializable(typeof(NullableEnumUnion))]
         [JsonSerializable(typeof(RecursiveNat))]
+        [JsonSerializable(typeof(RecursiveNatReversed))]
         [JsonSerializable(typeof(SelfReferentialUnion))]
         internal sealed partial class UnionTestsContext_Metadata : JsonSerializerContext
         {
@@ -103,8 +102,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(UserDefinedAttributeOnlyUnion))]
         [JsonSerializable(typeof(UserDefinedNullableAttributeOnlyUnion))]
         [JsonSerializable(typeof(UserDefinedCtorVsImplicitOpUnion))]
-        [JsonSerializable(typeof(UserDefinedUnconventionalUnion))]
-        [JsonSerializable(typeof(UserDefinedUnionWithoutValueProperty))]
         [JsonSerializable(typeof(UserDefinedJsonUnionOnPlainObject))]
         [JsonSerializable(typeof(UserDefinedUnionViaIUnion))]
         [JsonSerializable(typeof(UserDefinedValueTypeUnion))]
@@ -114,6 +111,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(CustomDiscriminatedFlora))]
         [JsonSerializable(typeof(NullableEnumUnion))]
         [JsonSerializable(typeof(RecursiveNat))]
+        [JsonSerializable(typeof(RecursiveNatReversed))]
         [JsonSerializable(typeof(SelfReferentialUnion))]
         internal sealed partial class UnionTestsContext_Default : JsonSerializerContext
         {

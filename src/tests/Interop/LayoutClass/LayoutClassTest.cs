@@ -139,7 +139,6 @@ namespace LayoutClass
     }
 
     [SkipOnMono("needs triage")]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(TestLibrary.Utilities), nameof(TestLibrary.Utilities.IsNativeAot))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/91388", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public class LayoutClassTest
     {
@@ -190,7 +189,6 @@ namespace LayoutClass
         [DllImport("LayoutClassNative", EntryPoint = "Invalid")]
         private static extern void RecursiveNativeLayoutInvalid(RecursiveTestStruct str);
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void SequentialClass()
         {
@@ -201,7 +199,6 @@ namespace LayoutClass
             Assert.True(SimpleSeqLayoutClassByRef(p));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void SequentialClassNull()
         {
@@ -210,7 +207,6 @@ namespace LayoutClass
             Assert.True(SimpleSeqLayoutClassByRefNull(null));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void DerivedClassWithEmptyBase()
         {
@@ -221,7 +217,6 @@ namespace LayoutClass
             Assert.True(DerivedSeqLayoutClassByRef(new SeqDerivedClass2(42), 42));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void ExplicitClass()
         {
@@ -240,7 +235,6 @@ namespace LayoutClass
             Assert.Equal(expected, p.a);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void BlittableClass()
         {
@@ -249,7 +243,6 @@ namespace LayoutClass
             ValidateBlittableClassInOut(SimpleBlittableSeqLayoutClassByRef);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void BlittableClassNull()
         {
@@ -258,7 +251,6 @@ namespace LayoutClass
             Assert.True(SimpleBlittableSeqLayoutClass_Null(null));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void BlittableClassByInAttr()
         {
@@ -267,7 +259,6 @@ namespace LayoutClass
             ValidateBlittableClassInOut(SimpleBlittableSeqLayoutClassByInAttr);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void BlittableClassByOutAttr()
         {
@@ -285,7 +276,6 @@ namespace LayoutClass
             Assert.Equal(expected, p.a);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void SealedBlittableClass()
         {
@@ -294,7 +284,6 @@ namespace LayoutClass
             ValidateSealedBlittableClassInOut(SealedBlittableSeqLayoutClassByRef);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void SealedBlittableClassByInAttr()
         {
@@ -303,7 +292,6 @@ namespace LayoutClass
             ValidateSealedBlittableClassInOut(SealedBlittableSeqLayoutClassByInAttr);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void SealedBlittableClassByOutAttr()
         {
@@ -312,7 +300,6 @@ namespace LayoutClass
             ValidateSealedBlittableClassInOut(SealedBlittableSeqLayoutClassByOutAttr);
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void SealedBlittablePinned()
         {
@@ -321,7 +308,6 @@ namespace LayoutClass
             Assert.True(PointersEqual(blittable, ref blittable.a));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void BlittablePinned()
         {
@@ -330,7 +316,6 @@ namespace LayoutClass
             Assert.True(PointersEqual(blittable, ref blittable.a));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void NestedLayoutClass()
         {
@@ -345,7 +330,6 @@ namespace LayoutClass
             Assert.True(SimpleNestedLayoutClassByValue(target));
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/81673", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void RecursiveNativeLayout()
         {

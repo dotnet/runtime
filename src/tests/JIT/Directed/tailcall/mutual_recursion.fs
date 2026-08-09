@@ -556,10 +556,15 @@ type Driver() =
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-[<ActiveIssue("https://github.com/dotnet/runtime/issues/127437", typeof<PlatformDetection>, [| "IsBrowser" |])>]
 [<SkipOnCoreClr("Unstable under JIT stress", RuntimeTestModes.AnyJitStress ||| RuntimeTestModes.AnyGCStress)>]
 [<SkipOnMono("Not supported on Mono runtime")>]
 [<ConditionalFact(typeof<Utilities>, [| "IsNotNativeAot" |])>]
 let main () =
     let driver = Driver()
     driver.Start()
+
+[<EntryPoint>]
+let entryPoint _argv =
+    let driver = Driver()
+    driver.Start()
+    100

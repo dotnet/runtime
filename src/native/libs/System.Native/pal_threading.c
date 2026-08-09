@@ -259,10 +259,12 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
 }
 #else // defined(TARGET_LINUX)
 
-#ifdef DEBUG 
-#define DEBUGNOTRETURN __attribute__((noreturn)) 
-#else 
-#define DEBUGNOTRETURN 
+// On illumos/Solaris libc's assert is not annotated noreturn, so marking these stubs noreturn would
+// trigger -Winvalid-noreturn there. Only apply the attribute on other platforms.
+#if defined(DEBUG) && !defined(TARGET_SUNOS)
+#define DEBUGNOTRETURN __attribute__((noreturn))
+#else
+#define DEBUGNOTRETURN
 #endif
 
 DEBUGNOTRETURN
@@ -281,7 +283,7 @@ int32_t SystemNative_LowLevelFutex_WaitOnAddressTimeout(int32_t* address, int32_
     (void)comparand; // unused
     (void)timeoutMilliseconds; // unused
     assert_msg(false, "Futex is not supported on this platform", 0);
-#ifndef DEBUG
+#if !defined(DEBUG) || defined(TARGET_SUNOS)
     // trivial implementation of Wait always wakes spuriously.
     return 1;
 #endif
@@ -294,6 +296,8 @@ void SystemNative_LowLevelFutex_WakeByAddressSingle(int32_t* address)
     assert_msg(false, "Futex is not supported on this platform", 0);
     // trivial implementation of Wake does nothing.
 }
+
+#undef DEBUGNOTRETURN
 
 #endif  // defined(TARGET_LINUX)
 
