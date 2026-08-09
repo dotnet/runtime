@@ -44,6 +44,7 @@ public class SP2
 #endif
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

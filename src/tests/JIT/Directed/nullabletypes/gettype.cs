@@ -20,6 +20,7 @@ class C<T>
 
 public class P
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

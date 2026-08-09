@@ -637,6 +637,7 @@ public class Program
         }
     }  // end of test case 0003
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

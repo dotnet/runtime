@@ -11,6 +11,7 @@ using Xunit;
 
 public unsafe class ObjBlkLiveness
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -32,6 +32,7 @@ public class SP1d
         // outarg[0] <= inarg[8]; outarg[4] <= r3; outarg[8] <= r2
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

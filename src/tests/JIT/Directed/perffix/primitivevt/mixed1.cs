@@ -1694,6 +1694,7 @@ if ((((Convert.ToDouble(-4194304L*0.5))+(asgop1/(Convert.ToDouble(64UL*-0.015617
 	return retval_0;
 	}
 
+	[OuterLoop]
 	[Fact]
 	public static int TestEntryPoint()
 	{

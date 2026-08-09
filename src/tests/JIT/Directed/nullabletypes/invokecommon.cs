@@ -49,6 +49,7 @@ public static class Test_nullabletypes
             throw new TestException(counter, "Failure while Comparing {1} to {2}", obj1, obj2);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

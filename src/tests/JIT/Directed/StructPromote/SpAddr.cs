@@ -94,6 +94,7 @@ public class SpAddr
         return Consume(p);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

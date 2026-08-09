@@ -20,6 +20,7 @@ public class ConcatTest
 
     static int iReturn = 100;
 
+    [OuterLoop]
     [Fact]
     static public int TestEntryPoint()
     {

@@ -20307,6 +20307,7 @@ public class testout1
         if (ab_false[index] || ab_false[index] ? ab_false[index] : ab_false[index]) True_Sum++; else False_Sum++;
         return (True_Sum * 2) - False_Sum;
     }
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

@@ -10,6 +10,7 @@ public class ValueNumberingCheckedIntegerArithmeticWithConstants
     private static int _global = 0;
     private static int _counter = 100;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

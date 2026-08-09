@@ -9,6 +9,7 @@ using Xunit;
 
 public class Program
 {
+    [OuterLoop]
     [Fact]
     public static unsafe int TestEntryPoint()
     {

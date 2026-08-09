@@ -23,6 +23,7 @@ public class Complex2_Array_Test
     {
         Console.Write(Odd_Variable.Length);
     }
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

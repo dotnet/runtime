@@ -10,6 +10,7 @@ using Xunit;
 
 public class pow1
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

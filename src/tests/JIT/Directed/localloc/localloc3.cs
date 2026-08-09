@@ -27,6 +27,7 @@ public unsafe class test1
         char* p = stackalloc char[1000000];
     }
 
+    [OuterLoop]
     [Fact]
     unsafe public static int TestEntryPoint()
     {

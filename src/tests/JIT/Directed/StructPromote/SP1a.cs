@@ -31,6 +31,7 @@ public class SP1a
         return Foo(i0, s); // r0 <= r0; r1 <= r2; r2 <= r1
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

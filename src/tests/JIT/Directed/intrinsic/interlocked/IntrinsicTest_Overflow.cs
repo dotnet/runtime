@@ -130,6 +130,7 @@ public class IntrinsicTest
         return fail;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

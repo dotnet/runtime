@@ -13,6 +13,7 @@ public class BringUpTest_TypedReference
     const string Apple = "apple";
     const string Orange = "orange";
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

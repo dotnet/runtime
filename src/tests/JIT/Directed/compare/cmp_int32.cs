@@ -100,6 +100,7 @@ public static class CompareTestInt
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool NeMin((int, float) x) => (x.Item1 != int.MinValue);
 
+    [OuterLoop]
     [Fact]
     public static void Test()
     {
@@ -232,6 +233,7 @@ public static class CompareTestUint
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool NeMax((uint, float) x) => (x.Item1 != uint.MaxValue);
 
+    [OuterLoop]
     [Fact]
     public static void Test()
     {

@@ -12,6 +12,7 @@ public class ValueNumberingUnorderedComparisonsOfConstants
 
     private static int _counter = 100;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

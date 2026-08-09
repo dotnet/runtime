@@ -34,6 +34,7 @@ public class CMPXCHG
             }
         }
     }
+    [OuterLoop]
     [Fact]
     public static void TestEntryPoint()
     {

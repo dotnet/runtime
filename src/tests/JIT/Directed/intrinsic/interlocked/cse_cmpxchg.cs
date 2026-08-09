@@ -20,6 +20,7 @@ public class Foo
         }
         return _taskId;
     }
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

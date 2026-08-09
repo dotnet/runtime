@@ -36,6 +36,7 @@ namespace PrimitiveVT
         private uint f10(params VT2B[] args) { uint sum = 0; for (uint i = 0; i < args.Length; sum += args[i], i++) { }; return sum; }
 
 
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

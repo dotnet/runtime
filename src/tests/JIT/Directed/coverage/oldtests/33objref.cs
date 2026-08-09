@@ -83,6 +83,7 @@ public class Test33objref
             (a33 - a30) * (a31 + a32);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

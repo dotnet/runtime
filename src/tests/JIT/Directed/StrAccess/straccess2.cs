@@ -48,6 +48,7 @@ public unsafe class StrAccess2
     };
 
     public static Random rand = new Random(Seed);
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

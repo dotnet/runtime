@@ -249,6 +249,7 @@ public class lclfldadd
         public numHolder nHldr_vt_op2;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

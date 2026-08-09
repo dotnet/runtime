@@ -24,6 +24,7 @@ using Xunit;
 
 public class FldSeqsInPromotedCpBlk
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

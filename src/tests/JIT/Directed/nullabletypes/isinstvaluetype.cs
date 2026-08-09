@@ -19704,6 +19704,7 @@ public class Program
     }  // end of test case 0036
 
     [ActiveIssue(" needs triage ", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoLLVMAOT))]
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

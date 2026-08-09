@@ -83,6 +83,7 @@ public class Program
     static bool I8_BT_reg_min_1(long x) => (x & (1L << 62)) != 0;
 
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

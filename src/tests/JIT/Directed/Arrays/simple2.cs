@@ -7,6 +7,7 @@ using Xunit;
 
 public class Simple2_Array_Test
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

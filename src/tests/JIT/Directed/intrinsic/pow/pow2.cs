@@ -71,6 +71,7 @@ public class pow2
         return (a - b) / 2;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

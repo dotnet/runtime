@@ -176,6 +176,7 @@ public class loop6
             System.Console.WriteLine("f8 failed");
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

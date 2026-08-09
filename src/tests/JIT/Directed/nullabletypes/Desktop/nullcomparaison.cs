@@ -1556,6 +1556,7 @@ internal class NullableTest45
 
 public class Test_nullcomparaison
 {
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

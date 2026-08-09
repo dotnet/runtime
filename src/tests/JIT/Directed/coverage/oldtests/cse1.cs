@@ -105,6 +105,7 @@ public class CSE1
         return result;
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

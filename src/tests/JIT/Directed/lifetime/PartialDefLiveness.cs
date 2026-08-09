@@ -14,6 +14,7 @@ public class PartialDefLiveness
 {
     [SkipLocalsInit]
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [OuterLoop]
     [Fact]
     public static void Problem()
     {

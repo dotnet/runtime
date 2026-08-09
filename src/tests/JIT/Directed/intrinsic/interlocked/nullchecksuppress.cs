@@ -28,6 +28,7 @@ public class NCS
         return Interlocked.CompareExchange(ref value, newData, oldData);
     }
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

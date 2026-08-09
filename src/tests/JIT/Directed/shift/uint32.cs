@@ -28,6 +28,7 @@ namespace ShiftTest
             arg_data <<= 4;
             return arg_data;
         }
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {
