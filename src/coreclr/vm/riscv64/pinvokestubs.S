@@ -80,4 +80,3 @@ LOCAL_LABEL(RarePath):
     tail  JIT_PInvokeEndRarePath
 
 LEAF_END JIT_PInvokeEnd, _TEXT
-
