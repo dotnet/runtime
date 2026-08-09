@@ -61,7 +61,7 @@ parameters:
 - name: cdacDumpTestMode
   displayName: cDAC Dump Test Mode
   type: string
-  default: xplat
+  default: single-leg
   values:
     - single-leg
     - xplat
