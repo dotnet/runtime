@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="CheckedCtor\Generic_Test_CSharp_Base_1.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Generic_Test_CSharp_Base_2.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Generic_Test_CSharp_Base_3.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Generic_Test_CSharp_Base_4.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Generic_Test_CSharp_Base_6.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Generic_Test_CSharp_Peer_1.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Generic_Test_CSharp_Peer_2.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Generic_Test_CSharp_Peer_3.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Generic_Test_CSharp_Peer_4.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Generic_Test_CSharp_Peer_6.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Test_CSharp_Base_1.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Test_CSharp_Base_2.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Test_CSharp_Base_3.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Test_CSharp_Base_4.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Test_CSharp_Peer_1.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Test_CSharp_Peer_2.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Test_CSharp_Peer_3.csproj" />
+    <MergedWrapperProjectReference Include="CheckedCtor\Test_CSharp_Peer_4.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Bool_And_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Bool_No_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Bool_Or_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Bool_Xor_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Double_And_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Double_No_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Double_Or_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Double_Xor_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Float_And_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Float_No_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Float_Or_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Float_Xor_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Int_And_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Int_No_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Int_Or_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Int_Xor_Op_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="compare\cmp_int32_d.csproj" />
+    <MergedWrapperProjectReference Include="coverage\flowgraph\xaddmuly_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\badendfinally.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\badtailcall.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\byrefsubbyref1.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\calli2.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\ceeillegal.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\ldelemnullarr2.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\ldfldunboxedvt.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\ldvirtftnsideeffect.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\nullsdarr.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\refanytype1.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\volatilldind.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\importer\volatilstind.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\33objref_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\callipinvoke.ilproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\cse1_cs_d.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

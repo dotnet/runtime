@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="nullabletypes\hashcode_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\hasvalue_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\invocation_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinst2_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinstboxed_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinstenum_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinstgenerics_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinstinterface_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinstvaluetype_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinst_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\tostring_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\unboxnullable_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\value_ro.csproj" />
+    <MergedWrapperProjectReference Include="perffix\commutativecse\ccse_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="perffix\primitivevt\callconv1_perffix_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="perffix\primitivevt\callconv2_perffix_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="perffix\primitivevt\mixed1_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="perffix\primitivevt\mixed2_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\int16_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\int32_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint16_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint32_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint8_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="StrAccess\straccess1_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="StrAccess\straccess2_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="StrAccess\straccess3_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="StructABI\FieldListByteNodeTypeMismatchX86.csproj" />
+    <MergedWrapperProjectReference Include="StructABI\structfieldparam_ro.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\FldSeqsInPromotedCpBlk.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SP1.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SP1a.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SP1a2.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SP1b.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SP1c.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SP1d.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SP2.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SP2a.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SP2b.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SP2c.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SpAddr.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\SpAddrAT.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\Unsafe\AccessInvalidFieldOffset.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\Unsafe\ReadDoubleFromIntOffset.csproj" />
+    <MergedWrapperProjectReference Include="StructPromote\Unsafe\ReadStructAsAnotherType.csproj" />
+    <MergedWrapperProjectReference Include="UnrollLoop\loop1_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="UnrollLoop\loop2_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="UnrollLoop\loop4_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="UnrollLoop\loop6_cs_ro.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

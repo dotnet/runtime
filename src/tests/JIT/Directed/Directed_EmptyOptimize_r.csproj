@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="nullabletypes\constructor_r.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\hashcode_r.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\hasvalue_r.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\invocation_r.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\tostring_r.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\value_r.csproj" />
+    <MergedWrapperProjectReference Include="perffix\primitivevt\callconv1_perffix_cs_r.csproj" />
+    <MergedWrapperProjectReference Include="perffix\primitivevt\callconv2_perffix_cs_r.csproj" />
+    <MergedWrapperProjectReference Include="UnrollLoop\loop2_cs_r.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

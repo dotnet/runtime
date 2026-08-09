@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="BitTest\BitTest.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Bool_And_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Bool_No_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Bool_Or_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Bool_Xor_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Double_And_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Double_No_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Double_Or_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Double_Xor_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Float_And_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Float_No_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Float_Or_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Float_Xor_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Int_And_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Int_No_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Int_Or_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="cmov\Int_Xor_Op_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="compare\cmp_int32_ro.csproj" />
+    <MergedWrapperProjectReference Include="ConstantFolding\FloatNaNCompareFolding.csproj" />
+    <MergedWrapperProjectReference Include="ConstantFolding\folding_extends_int32_on_64_bit_hosts.csproj" />
+    <MergedWrapperProjectReference Include="ConstantFolding\value_numbering_checked_arithmetic_with_constants_ro.csproj" />
+    <MergedWrapperProjectReference Include="ConstantFolding\value_numbering_unordered_comparisons_of_constants_ro.csproj" />
+    <MergedWrapperProjectReference Include="Convert\ldind_conv.ilproj" />
+    <MergedWrapperProjectReference Include="Convert\value_numbering_checked_casts_of_constants.csproj" />
+    <MergedWrapperProjectReference Include="coverage\flowgraph\gcpoll.csproj" />
+    <MergedWrapperProjectReference Include="coverage\flowgraph\xaddmuly_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\33objref_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\cse1_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\cse2_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\lclfldadd_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\lclflddiv_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\lclfldmul_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\lclfldrem_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\lclfldsub_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\pow\pow0_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\pow\pow2_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\pow\pow3_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="lifetime\ObjBlkMemLiveness.csproj" />
+    <MergedWrapperProjectReference Include="lifetime\PartialDefLiveness.csproj" />
+    <MergedWrapperProjectReference Include="localloc\localloc3_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\boxunboxenum_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\boxunboxinterface_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\castclassenum_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\castclassinterface_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\castclassvaluetype_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\constructor_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\Desktop\boxunboxvaluetype_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\Desktop\nullcomparaison_ro.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\gettype_ro.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

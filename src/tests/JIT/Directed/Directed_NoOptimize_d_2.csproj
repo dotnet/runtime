@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="coverage\oldtests\cse2_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\lclfldadd_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\lclflddiv_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\lclfldmul_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\lclfldrem_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="coverage\oldtests\lclfldsub_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\interlocked\cmpxchg.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\pow\pow0_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\pow\pow1.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\pow\pow2_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\pow\pow3_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="lifetime\lifetime1.csproj" />
+    <MergedWrapperProjectReference Include="localloc\localloc3_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\boxunboxenum_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\boxunboxinterface_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\castclassenum_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\castclassinterface_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\castclassvaluetype_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\Desktop\nullcomparaison_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\gettype_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinst2_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinstboxed_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinstenum_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinstgenerics_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinstinterface_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinstvaluetype_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\isinst_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\unboxnullable_d.csproj" />
+    <MergedWrapperProjectReference Include="nullabletypes\value_d.csproj" />
+    <MergedWrapperProjectReference Include="perffix\commutativecse\ccse_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="perffix\primitivevt\mixed1_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="perffix\primitivevt\mixed2_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="PREFIX\PrimitiveVT\callconv1_PREFIX_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="PREFIX\PrimitiveVT\callconv2_PREFIX_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="PREFIX\volatile\1\add_volatile.ilproj" />
+    <MergedWrapperProjectReference Include="shift\int16_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="shift\int32_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="shift\int64_d.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint16_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint32_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint64Opt_d.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint64_d.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint8_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="StrAccess\straccess1_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="StrAccess\straccess2_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="StrAccess\straccess3_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="UnrollLoop\Dev10_846218.csproj" />
+    <MergedWrapperProjectReference Include="UnrollLoop\loop1_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="UnrollLoop\loop4_cs_d.csproj" />
+    <MergedWrapperProjectReference Include="UnrollLoop\loop6_cs_d.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

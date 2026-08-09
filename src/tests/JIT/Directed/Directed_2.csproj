@@ -1,10 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="cmov/**/*.??proj" />
-    <MergedWrapperProjectReference Include="perffix/**/*.??proj" />
-    <MergedWrapperProjectReference Include="PREFIX/**/*.??proj" />
-    <MergedWrapperProjectReference Include="shift/**/*.??proj" />
-    <MergedWrapperProjectReference Include="compare/**/*.??proj" />
+    <MergedWrapperProjectReference Include="debugging\debuginfo\attribute.csproj" />
+    <MergedWrapperProjectReference Include="PREFIX\PrimitiveVT\callconv1_PREFIX_cs_r.csproj" />
+    <MergedWrapperProjectReference Include="PREFIX\PrimitiveVT\callconv2_PREFIX_cs_r.csproj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

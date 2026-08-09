@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="shift\int16_r.csproj" />
+    <MergedWrapperProjectReference Include="shift\int32_r.csproj" />
+    <MergedWrapperProjectReference Include="shift\int64_r.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint16_r.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint32_r.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint64Opt_r.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint64_r.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint8_r.csproj" />
+    <MergedWrapperProjectReference Include="VectorABI\VectorMgdMgdArray_r.csproj" />
+    <MergedWrapperProjectReference Include="VectorABI\VectorMgdMgdStatic_r.csproj" />
+    <MergedWrapperProjectReference Include="VectorABI\VectorMgdMgd_r.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

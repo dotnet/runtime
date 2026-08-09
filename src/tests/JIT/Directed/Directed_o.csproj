@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="aliasing_retbuf\aliasing_retbuf.csproj" />
+    <MergedWrapperProjectReference Include="Convert\out_of_range_fp_to_int_conversions.csproj" />
+    <MergedWrapperProjectReference Include="gettypetypeof\gettypetypeofmatrix_gettypetypeof.csproj" />
+    <MergedWrapperProjectReference Include="LoopAlignment\LoopsToProcess.csproj" />
+    <MergedWrapperProjectReference Include="physicalpromotion\addressinterference.csproj" />
+    <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn1.csproj" />
+    <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn2.csproj" />
+    <MergedWrapperProjectReference Include="physicalpromotion\mixedpromotion.csproj" />
+    <MergedWrapperProjectReference Include="physicalpromotion\physicalpromotion.csproj" />
+    <MergedWrapperProjectReference Include="physicalpromotion\readbackbeforeqmark.csproj" />
+    <MergedWrapperProjectReference Include="PREFIX\PrimitiveVT\callconv1_PREFIX_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="PREFIX\PrimitiveVT\callconv2_PREFIX_cs_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\int16_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\int32_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\int64_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint16_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint32_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint64Opt_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint64_ro.csproj" />
+    <MergedWrapperProjectReference Include="shift\uint8_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorABI\VectorMgdMgdArray_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorABI\VectorMgdMgdStatic_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorABI\VectorMgdMgd_ro.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

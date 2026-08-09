@@ -1,0 +1,75 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="array-il\_Arrayscomplex3.ilproj" />
+    <MergedWrapperProjectReference Include="array-il\_Arrayssimple3.ilproj" />
+    <MergedWrapperProjectReference Include="ConstantFolding\HandlesInAddrModes.ilproj" />
+    <MergedWrapperProjectReference Include="Convert\FPZero.csproj" />
+    <MergedWrapperProjectReference Include="coverage\compiler\FilterToHandler.ilproj" />
+    <MergedWrapperProjectReference Include="debugging\debuginfo\tester.csproj" />
+    <MergedWrapperProjectReference Include="ExcepFilters\excepobj\excepobj.ilproj" />
+    <MergedWrapperProjectReference Include="ExcepFilters\fault\fault.ilproj" />
+    <MergedWrapperProjectReference Include="ExcepFilters\mixed3\mixed3.ilproj" />
+    <MergedWrapperProjectReference Include="ExcepFilters\mixed\mixed.ilproj" />
+    <MergedWrapperProjectReference Include="FaultHandlers\CallOrder\CallOrder.ilproj" />
+    <MergedWrapperProjectReference Include="FaultHandlers\Nesting\Nesting.ilproj" />
+    <MergedWrapperProjectReference Include="FaultHandlers\Simple\Simple.ilproj" />
+    <MergedWrapperProjectReference Include="IL\leave\leave1.ilproj" />
+    <MergedWrapperProjectReference Include="IL\mutualrecur-tailcall\MutualRecur-TailCall.ilproj" />
+    <MergedWrapperProjectReference Include="IL\PInvokeTail\PInvokeTail.ilproj" />
+    <MergedWrapperProjectReference Include="IL\PInvokeTail\TailWinApi.ilproj" />
+    <MergedWrapperProjectReference Include="IL\rethrow\Rethrow1.ilproj" />
+    <MergedWrapperProjectReference Include="IL\rethrow\Rethrow2.ilproj" />
+    <MergedWrapperProjectReference Include="IL\Tailcall\ExplicitTailCallNoSO.ilproj" />
+    <MergedWrapperProjectReference Include="IL\Tailcall\jitTailcall1.ilproj" />
+    <MergedWrapperProjectReference Include="IL\Tailcall\JitTailcall2.ilproj" />
+    <MergedWrapperProjectReference Include="intrinsic\interlocked\cse_cmpxchg.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\interlocked\IntrinsicTest_Overflow.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\interlocked\nullchecksuppress.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\interlocked\regalloc1.csproj" />
+    <MergedWrapperProjectReference Include="intrinsic\interlocked\regalloc2.csproj" />
+    <MergedWrapperProjectReference Include="Misc\function_pointer\funcptrtest.ilproj" />
+    <MergedWrapperProjectReference Include="Misc\SIDEEFFECTS\BadRegArgs.ilproj" />
+    <MergedWrapperProjectReference Include="Misc\SIDEEFFECTS\SideEffects.ilproj" />
+    <MergedWrapperProjectReference Include="pinning\object-pin\object-pin.ilproj" />
+    <MergedWrapperProjectReference Include="pinvoke\calli_excep.ilproj" />
+    <MergedWrapperProjectReference Include="pinvoke\jump.ilproj" />
+    <MergedWrapperProjectReference Include="pinvoke\sysinfo_il.ilproj" />
+    <MergedWrapperProjectReference Include="pinvoke\tail_pinvoke.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\array_tests_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\Box_Unbox_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\cpblk_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\cpobj_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\Desktop\add_Desktop_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\fielda_tests_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\field_tests_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\initblk_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\initobj_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\ldind_stind_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\ldloca_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\ldobj_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\1\localloc_unaligned_1.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\add_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\array_tests_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\Box_Unbox_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\cpblk_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\cpobj_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\fielda_tests_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\field_tests_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\initblk_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\initobj_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\ldind_stind_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\ldloca_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\ldobj_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\2\localloc_unaligned_2.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\4\array_tests_unaligned_4.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\4\Box_Unbox_unaligned_4.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\4\cpblk_unaligned_4.ilproj" />
+    <MergedWrapperProjectReference Include="PREFIX\unaligned\4\cpobj_unaligned_4.ilproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>
