@@ -305,6 +305,51 @@ namespace System.Formats.Tar.Tests
             }, f.ToString(), new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
         }
 
+        [ConditionalFact(typeof(TarWriter_WriteEntry_File_Tests), nameof(IsRemoteExecutorSupportedAndPrivilegedProcess))]
+        public void DeterministicMode_DoesNotCaptureSourceOwnership()
+        {
+            RemoteExecutor.Invoke(() =>
+            {
+                using TempDirectory root = new TempDirectory();
+                string filePath = Path.Join(root.Path, "file.txt");
+                File.WriteAllText(filePath, "content");
+
+                string groupName = Path.GetRandomFileName()[0..6];
+                string userName = Path.GetRandomFileName()[0..6];
+                _ = CreateGroup(groupName);
+                _ = CreateUser(userName);
+                try
+                {
+                    SetGroupAsOwnerOfFile(groupName, filePath);
+                    SetUserAsOwnerOfFile(userName, filePath);
+
+                    using MemoryStream archive = new MemoryStream();
+                    TarWriterOptions options = new TarWriterOptions
+                    {
+                        Format = TarEntryFormat.Pax,
+                        Deterministic = true
+                    };
+                    using (TarWriter writer = new TarWriter(archive, options, leaveOpen: true))
+                    {
+                        writer.WriteEntry(filePath, "file.txt");
+                    }
+
+                    archive.Position = 0;
+                    using TarReader reader = new TarReader(archive);
+                    PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+                    Assert.Equal(0, entry.Uid);
+                    Assert.Equal(0, entry.Gid);
+                    Assert.Equal(string.Empty, entry.UserName);
+                    Assert.Equal(string.Empty, entry.GroupName);
+                }
+                finally
+                {
+                    DeleteUser(userName);
+                    DeleteGroup(groupName);
+                }
+            }, new RemoteInvokeOptions { RunAsSudo = true }).Dispose();
+        }
+
         [Theory]
         [InlineData(TarEntryFormat.V7)]
         [InlineData(TarEntryFormat.Ustar)]

@@ -84,7 +84,7 @@ namespace System.Formats.Tar
                 entry._header._devMinor = (int)minor;
             }
 
-            entry._header._mTime = TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.MTime);
+            entry._header._mTime = GetModificationTime(TarHelpers.GetDateTimeOffsetFromSecondsSinceEpoch(status.MTime));
             // We do not set atime and ctime by default because many external tools are unable to read GNU entries
             // that have these fields set to non-zero values. This is because the GNU format writes atime and ctime in the same
             // location where other formats expect the prefix field to be written.
@@ -95,24 +95,43 @@ namespace System.Formats.Tar
             entry._header._mode = status.Mode & (int)TarHelpers.ValidUnixFileModes;
 
             // Uid and UName
-            entry._header._uid = (int)status.Uid;
-            if (!_userIdentifiers.TryGetValue(status.Uid, out string? uName))
+            entry._header._uid = _overrideUid ?? (_deterministic ? 0 : (int)status.Uid);
+            if (_overrideUName is string overrideUName)
             {
-                uName = Interop.Sys.GetUserNameFromPasswd(status.Uid);
-                _userIdentifiers.Add(status.Uid, uName);
+                entry._header._uName = overrideUName;
             }
-            entry._header._uName = uName;
+            else if (_deterministic)
+            {
+                entry._header._uName = string.Empty;
+            }
+            else
+            {
+                if (!_userIdentifiers.TryGetValue(status.Uid, out string? uName))
+                {
+                    uName = Interop.Sys.GetUserNameFromPasswd(status.Uid);
+                    _userIdentifiers.Add(status.Uid, uName);
+                }
+                entry._header._uName = uName;
+            }
 
             // Gid and GName
-            entry._header._gid = (int)status.Gid;
-            if (!_groupIdentifiers.TryGetValue(status.Gid, out string? gName))
+            entry._header._gid = _overrideGid ?? (_deterministic ? 0 : (int)status.Gid);
+            if (_overrideGName is string overrideGName)
             {
-                if (Interop.Sys.TryGetGroupName(status.Gid, out gName))
+                entry._header._gName = overrideGName;
+            }
+            else if (_deterministic)
+            {
+                entry._header._gName = string.Empty;
+            }
+            else
+            {
+                if (!_groupIdentifiers.TryGetValue(status.Gid, out string? gName) && Interop.Sys.TryGetGroupName(status.Gid, out gName))
                 {
                     _groupIdentifiers.Add(status.Gid, gName);
                 }
+                entry._header._gName = gName;
             }
-            entry._header._gName = gName;
 
             if (entry.EntryType == TarEntryType.SymbolicLink)
             {

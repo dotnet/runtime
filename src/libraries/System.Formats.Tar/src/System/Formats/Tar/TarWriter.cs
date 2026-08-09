@@ -19,6 +19,12 @@ namespace System.Formats.Tar
         private readonly bool _leaveOpen;
         private readonly Stream _archiveStream;
         private readonly TarHardLinkMode _hardLinkMode;
+        private readonly bool _deterministic;
+        private readonly DateTimeOffset? _overrideModificationTime;
+        private readonly int? _overrideUid;
+        private readonly int? _overrideGid;
+        private readonly string? _overrideUName;
+        private readonly string? _overrideGName;
         private int _nextGlobalExtendedAttributesEntryNumber;
 
         /// <summary>
@@ -98,6 +104,12 @@ namespace System.Formats.Tar
             _archiveStream = archiveStream;
             Format = options.Format;
             _hardLinkMode = options.HardLinkMode;
+            _deterministic = options.Deterministic;
+            _overrideModificationTime = options.OverrideModificationTime;
+            _overrideUid = options.OverrideUid;
+            _overrideGid = options.OverrideGid;
+            _overrideUName = options.OverrideUName;
+            _overrideGName = options.OverrideGName;
             _leaveOpen = leaveOpen;
             _isDisposed = false;
             _wroteEntries = false;
@@ -315,8 +327,8 @@ namespace System.Formats.Tar
                 {
                     TarEntryFormat.V7 => entry._header.WriteAsV7CoreAsync<TAdapter>(_archiveStream, buffer, cancellationToken),
                     TarEntryFormat.Ustar => entry._header.WriteAsUstarCoreAsync<TAdapter>(_archiveStream, buffer, cancellationToken),
-                    TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesCoreAsync<TAdapter>(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, cancellationToken),
-                    TarEntryFormat.Pax => entry._header.WriteAsPaxCoreAsync<TAdapter>(_archiveStream, buffer, cancellationToken),
+                    TarEntryFormat.Pax when entry._header._typeFlag is TarEntryType.GlobalExtendedAttributes => entry._header.WriteAsPaxGlobalExtendedAttributesCoreAsync<TAdapter>(_archiveStream, buffer, _nextGlobalExtendedAttributesEntryNumber++, _deterministic, cancellationToken),
+                    TarEntryFormat.Pax => entry._header.WriteAsPaxCoreAsync<TAdapter>(_archiveStream, buffer, _deterministic, cancellationToken),
                     TarEntryFormat.Gnu => entry._header.WriteAsGnuCoreAsync<TAdapter>(_archiveStream, buffer, cancellationToken),
                     _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
                 };
@@ -329,6 +341,9 @@ namespace System.Formats.Tar
                 ArrayPool<byte>.Shared.Return(rented);
             }
         }
+
+        private DateTimeOffset GetModificationTime(DateTimeOffset sourceModificationTime) =>
+            _overrideModificationTime ?? (_deterministic ? DateTimeOffset.UnixEpoch : sourceModificationTime);
 
         // The spec indicates that the end of the archive is indicated
         // by two records consisting entirely of zero bytes.

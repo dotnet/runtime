@@ -140,8 +140,14 @@ namespace System.Formats.Tar
     public sealed partial class TarWriterOptions
     {
         public TarWriterOptions() { }
+        public bool Deterministic { get { throw null; } set { } }
         public System.Formats.Tar.TarEntryFormat Format { get { throw null; } set { } }
         public System.Formats.Tar.TarHardLinkMode HardLinkMode { get { throw null; } set { } }
+        public int? OverrideGid { get { throw null; } set { } }
+        public string? OverrideGName { get { throw null; } set { } }
+        public System.DateTimeOffset? OverrideModificationTime { get { throw null; } set { } }
+        public int? OverrideUid { get { throw null; } set { } }
+        public string? OverrideUName { get { throw null; } set { } }
     }
     public sealed partial class UstarTarEntry : System.Formats.Tar.PosixTarEntry
     {

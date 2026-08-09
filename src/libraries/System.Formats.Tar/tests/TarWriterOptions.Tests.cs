@@ -13,6 +13,12 @@ namespace System.Formats.Tar.Tests
             TarWriterOptions options = new TarWriterOptions();
             Assert.Equal(TarEntryFormat.Pax, options.Format);
             Assert.Equal(TarHardLinkMode.PreserveLink, options.HardLinkMode);
+            Assert.False(options.Deterministic);
+            Assert.Null(options.OverrideModificationTime);
+            Assert.Null(options.OverrideUid);
+            Assert.Null(options.OverrideGid);
+            Assert.Null(options.OverrideUName);
+            Assert.Null(options.OverrideGName);
         }
 
         [Theory]
@@ -45,6 +51,28 @@ namespace System.Formats.Tar.Tests
         {
             TarWriterOptions options = new TarWriterOptions();
             Assert.Throws<ArgumentOutOfRangeException>("value", () => options.HardLinkMode = mode);
+        }
+
+        [Fact]
+        public void DeterministicMetadataOptions_AcceptValues()
+        {
+            DateTimeOffset timestamp = DateTimeOffset.FromUnixTimeSeconds(1_636_374_896);
+            TarWriterOptions options = new TarWriterOptions
+            {
+                Deterministic = true,
+                OverrideModificationTime = timestamp,
+                OverrideUid = 123,
+                OverrideGid = 456,
+                OverrideUName = "user",
+                OverrideGName = "group"
+            };
+
+            Assert.True(options.Deterministic);
+            Assert.Equal(timestamp, options.OverrideModificationTime);
+            Assert.Equal(123, options.OverrideUid);
+            Assert.Equal(456, options.OverrideGid);
+            Assert.Equal("user", options.OverrideUName);
+            Assert.Equal("group", options.OverrideGName);
         }
     }
 }

@@ -112,6 +112,100 @@ namespace System.Formats.Tar.Tests
             }
         }
 
+        [Fact]
+        public void DeterministicMode_NormalizesPathMetadata()
+        {
+            using TempDirectory root = new TempDirectory();
+            string filePath = Path.Join(root.Path, "file.txt");
+            File.WriteAllText(filePath, "content");
+            File.SetLastWriteTimeUtc(filePath, new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc));
+
+            using MemoryStream archive = new MemoryStream();
+            TarWriterOptions options = new TarWriterOptions
+            {
+                Format = TarEntryFormat.Pax,
+                Deterministic = true
+            };
+            using (TarWriter writer = new TarWriter(archive, options, leaveOpen: true))
+            {
+                writer.WriteEntry(filePath, "file.txt");
+            }
+
+            archive.Position = 0;
+            using TarReader reader = new TarReader(archive);
+            PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+            Assert.Equal(DateTimeOffset.UnixEpoch, entry.ModificationTime);
+            Assert.Equal(0, entry.Uid);
+            Assert.Equal(0, entry.Gid);
+            Assert.Equal(string.Empty, entry.UserName);
+            Assert.Equal(string.Empty, entry.GroupName);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void PathMetadataOverridesTakePrecedence(bool deterministic)
+        {
+            using TempDirectory root = new TempDirectory();
+            string filePath = Path.Join(root.Path, "file.txt");
+            File.WriteAllText(filePath, "content");
+            DateTimeOffset timestamp = DateTimeOffset.FromUnixTimeSeconds(1_636_374_896);
+
+            using MemoryStream archive = new MemoryStream();
+            TarWriterOptions options = new TarWriterOptions
+            {
+                Format = TarEntryFormat.Pax,
+                Deterministic = deterministic,
+                OverrideModificationTime = timestamp,
+                OverrideUid = 123,
+                OverrideGid = 456,
+                OverrideUName = "user",
+                OverrideGName = "group"
+            };
+            using (TarWriter writer = new TarWriter(archive, options, leaveOpen: true))
+            {
+                writer.WriteEntry(filePath, "file.txt");
+            }
+
+            archive.Position = 0;
+            using TarReader reader = new TarReader(archive);
+            PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+            Assert.Equal(timestamp, entry.ModificationTime);
+            Assert.Equal(123, entry.Uid);
+            Assert.Equal(456, entry.Gid);
+            Assert.Equal("user", entry.UserName);
+            Assert.Equal("group", entry.GroupName);
+        }
+
+        [Fact]
+        public void DeterministicMode_ProducesSameArchiveWhenSourceTimestampChanges()
+        {
+            using TempDirectory root = new TempDirectory();
+            string filePath = Path.Join(root.Path, "file.txt");
+            File.WriteAllText(filePath, "content");
+
+            byte[] first = WriteArchive(new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc));
+            byte[] second = WriteArchive(new DateTime(2025, 6, 7, 8, 9, 10, DateTimeKind.Utc));
+            Assert.Equal(first, second);
+
+            byte[] WriteArchive(DateTime lastWriteTimeUtc)
+            {
+                File.SetLastWriteTimeUtc(filePath, lastWriteTimeUtc);
+                using MemoryStream archive = new MemoryStream();
+                TarWriterOptions options = new TarWriterOptions
+                {
+                    Format = TarEntryFormat.Pax,
+                    Deterministic = true,
+                    OverrideModificationTime = DateTimeOffset.FromUnixTimeSeconds(1_636_374_896)
+                };
+                using (TarWriter writer = new TarWriter(archive, options, leaveOpen: true))
+                {
+                    writer.WriteEntry(filePath, "file.txt");
+                }
+                return archive.ToArray();
+            }
+        }
+
         [Theory]
         [InlineData(TarEntryFormat.V7, false)]
         [InlineData(TarEntryFormat.V7, true)]

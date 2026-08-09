@@ -116,7 +116,7 @@ namespace System.Formats.Tar
                 _ => throw new InvalidDataException(SR.Format(SR.TarInvalidFormat, Format)),
             };
 
-            entry._header._mTime = fileInfo.ftLastWriteTime.ToDateTimeUtc();
+            entry._header._mTime = GetModificationTime(fileInfo.ftLastWriteTime.ToDateTimeUtc());
             // We do not set atime and ctime by default because many external tools are unable to read GNU entries
             // that have these fields set to non-zero values. This is because the GNU format writes atime and ctime in the same
             // location where other formats expect the prefix field to be written.
@@ -124,6 +124,10 @@ namespace System.Formats.Tar
             // then setting the values.
 
             entry.Mode = DefaultWindowsMode;
+            entry._header._uid = _overrideUid ?? 0;
+            entry._header._gid = _overrideGid ?? 0;
+            entry._header._uName = _overrideUName ?? string.Empty;
+            entry._header._gName = _overrideGName ?? string.Empty;
 
             if (entry.EntryType == TarEntryType.SymbolicLink)
             {

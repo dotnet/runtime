@@ -127,11 +127,11 @@ namespace System.Formats.Tar
         }
 
         // Writes the current header as a PAX Global Extended Attributes entry into the archive stream.
-        internal ValueTask WriteAsPaxGlobalExtendedAttributesCoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
+        internal ValueTask WriteAsPaxGlobalExtendedAttributesCoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, int globalExtendedAttributesEntryNumber, bool deterministic, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
             VerifyGlobalExtendedAttributesDataIsValid(globalExtendedAttributesEntryNumber);
-            return WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(archiveStream, buffer, ExtendedAttributes, isGea: true, globalExtendedAttributesEntryNumber, cancellationToken);
+            return WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(archiveStream, buffer, ExtendedAttributes, isGea: true, globalExtendedAttributesEntryNumber, deterministic, cancellationToken);
         }
 
         // Verifies the data is valid for writing a Global Extended Attributes entry.
@@ -171,7 +171,7 @@ namespace System.Formats.Tar
 
         // Writes the current header as a PAX entry into the archive stream.
         // Makes sure to add the preceding extended attributes entry before the actual entry.
-        internal async ValueTask WriteAsPaxCoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, CancellationToken cancellationToken)
+        internal async ValueTask WriteAsPaxCoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, bool deterministic, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
             Debug.Assert(archiveStream.CanSeek || _dataStream == null || _dataStream.CanSeek);
@@ -193,7 +193,7 @@ namespace System.Formats.Tar
                 CollectExtendedAttributesFromStandardFieldsIfNeeded();
 
                 // Write the extended attributes entry into the archive first
-                await extendedAttributesHeader.WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
+                await extendedAttributesHeader.WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, deterministic, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear();
 
                 // And then write the stored entry into the archive
@@ -205,7 +205,7 @@ namespace System.Formats.Tar
                 // Fill the current header's dict
                 CollectExtendedAttributesFromStandardFieldsIfNeeded();
                 // And pass the attributes to the preceding extended attributes header for writing
-                await extendedAttributesHeader.WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, cancellationToken).ConfigureAwait(false);
+                await extendedAttributesHeader.WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(archiveStream, buffer, ExtendedAttributes, isGea: false, globalExtendedAttributesEntryNumber: -1, deterministic, cancellationToken).ConfigureAwait(false);
                 buffer.Span.Clear(); // Reset it to reuse it
 
                 // Second, we write this header as a normal one
@@ -310,23 +310,23 @@ namespace System.Formats.Tar
         }
 
         // Writes the current header as a PAX Extended Attributes entry into the archive stream.
-        private ValueTask WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber, CancellationToken cancellationToken)
+        private ValueTask WriteAsPaxExtendedAttributesCoreAsync<TAdapter>(Stream archiveStream, Memory<byte> buffer, Dictionary<string, string> extendedAttributes, bool isGea, int globalExtendedAttributesEntryNumber, bool deterministic, CancellationToken cancellationToken)
             where TAdapter : IReadWriteAdapter
         {
-            WriteAsPaxExtendedAttributesShared(isGea, globalExtendedAttributesEntryNumber, extendedAttributes);
+            WriteAsPaxExtendedAttributesShared(isGea, globalExtendedAttributesEntryNumber, extendedAttributes, deterministic);
             Debug.Assert(_dataStream == null || (extendedAttributes.Count > 0 && _dataStream.CanSeek)); // We generate the extended attributes data stream, should always be seekable
             return WriteWithSeekableDataStreamCoreAsync<TAdapter>(TarEntryFormat.Pax, archiveStream, buffer, cancellationToken);
         }
 
         // Initializes the name, mode and type flag of a PAX extended attributes entry.
-        private void WriteAsPaxExtendedAttributesShared(bool isGea, int globalExtendedAttributesEntryNumber, Dictionary<string, string> extendedAttributes)
+        private void WriteAsPaxExtendedAttributesShared(bool isGea, int globalExtendedAttributesEntryNumber, Dictionary<string, string> extendedAttributes, bool deterministic)
         {
             Debug.Assert(isGea && globalExtendedAttributesEntryNumber >= 0 || !isGea && globalExtendedAttributesEntryNumber < 0);
 
             _dataStream = GenerateExtendedAttributesDataStream(extendedAttributes);
             _name = isGea ?
-                GenerateGlobalExtendedAttributeName(globalExtendedAttributesEntryNumber) :
-                GenerateExtendedAttributeName();
+                GenerateGlobalExtendedAttributeName(globalExtendedAttributesEntryNumber, deterministic) :
+                GenerateExtendedAttributeName(deterministic);
 
             _mode = TarHelpers.GetDefaultMode(_typeFlag);
             _typeFlag = isGea ? TarEntryType.GlobalExtendedAttributes : TarEntryType.ExtendedAttributes;
@@ -946,7 +946,7 @@ namespace System.Formats.Tar
         // - %d: The directory name of the file, equivalent to the result of the dirname utility on the translated pathname.
         // - %p: The current process ID.
         // - %f: The filename of the file, equivalent to the result of the basename utility on the translated pathname.
-        private string GenerateExtendedAttributeName()
+        private string GenerateExtendedAttributeName(bool deterministic)
         {
             ReadOnlySpan<char> dirName = Path.GetDirectoryName(_name.AsSpan());
             dirName = dirName.IsEmpty ? "." : dirName;
@@ -954,9 +954,10 @@ namespace System.Formats.Tar
             ReadOnlySpan<char> fileName = Path.GetFileName(_name.AsSpan());
             fileName = fileName.IsEmpty ? "." : fileName;
 
+            int processId = deterministic ? 0 : Environment.ProcessId;
             return _typeFlag is TarEntryType.Directory or TarEntryType.DirectoryList ?
-                $"{dirName}/PaxHeaders.{Environment.ProcessId}/{fileName}{Path.DirectorySeparatorChar}" :
-                $"{dirName}/PaxHeaders.{Environment.ProcessId}/{fileName}";
+                $"{dirName}/PaxHeaders.{processId}/{fileName}{Path.DirectorySeparatorChar}" :
+                $"{dirName}/PaxHeaders.{processId}/{fileName}";
         }
 
         // Gets the special name for the 'name' field in a global extended attribute entry.
@@ -966,9 +967,14 @@ namespace System.Formats.Tar
         // - %n: The sequence number of the global extended header record of the archive, starting at 1.
         // If the path of $TMPDIR makes the final string too long to fit in the 'name' field,
         // then the TMPDIR='/tmp' is used.
-        private static string GenerateGlobalExtendedAttributeName(int globalExtendedAttributesEntryNumber)
+        private static string GenerateGlobalExtendedAttributeName(int globalExtendedAttributesEntryNumber, bool deterministic)
         {
             Debug.Assert(globalExtendedAttributesEntryNumber >= 1);
+
+            if (deterministic)
+            {
+                return $"/tmp/GlobalHead.0.{globalExtendedAttributesEntryNumber}";
+            }
 
             ReadOnlySpan<char> tmp = Path.TrimEndingDirectorySeparator(Path.GetTempPath());
 

@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Text;
 using Xunit;
 
 namespace System.Formats.Tar.Tests
@@ -33,6 +34,86 @@ namespace System.Formats.Tar.Tests
                 PaxTarEntry regularFile = reader.GetNextEntry() as PaxTarEntry;
                 VerifyRegularFile(regularFile, isWritable: false);
             }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ExtendedHeaderName_UsesConfiguredProcessIdBehavior(bool deterministic)
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+            TarWriterOptions options = new TarWriterOptions
+            {
+                Format = TarEntryFormat.Pax,
+                Deterministic = deterministic
+            };
+            using (TarWriter writer = new TarWriter(archiveStream, options, leaveOpen: true))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "file.txt")
+                {
+                    ModificationTime = DateTimeOffset.UnixEpoch
+                });
+            }
+
+            string headerName = ReadFirstHeaderName(archiveStream);
+            int expectedProcessId = deterministic ? 0 : Environment.ProcessId;
+            Assert.Equal($"./PaxHeaders.{expectedProcessId}/.", headerName);
+        }
+
+        [Fact]
+        public void GlobalExtendedHeaderName_IsProcessAndTempDirectoryIndependentInDeterministicMode()
+        {
+            using MemoryStream archiveStream = new MemoryStream();
+            TarWriterOptions options = new TarWriterOptions
+            {
+                Format = TarEntryFormat.Pax,
+                Deterministic = true
+            };
+            using (TarWriter writer = new TarWriter(archiveStream, options, leaveOpen: true))
+            {
+                writer.WriteEntry(new PaxGlobalExtendedAttributesTarEntry(
+                    new Dictionary<string, string> { ["key"] = "value" }));
+            }
+
+            Assert.Equal("/tmp/GlobalHead.0.1", ReadFirstHeaderName(archiveStream));
+        }
+
+        [Fact]
+        public void DeterministicMode_PreservesExplicitEntryMetadata()
+        {
+            DateTimeOffset timestamp = DateTimeOffset.FromUnixTimeSeconds(1_636_374_896);
+            using MemoryStream archiveStream = new MemoryStream();
+            TarWriterOptions options = new TarWriterOptions
+            {
+                Format = TarEntryFormat.Pax,
+                Deterministic = true
+            };
+            using (TarWriter writer = new TarWriter(archiveStream, options, leaveOpen: true))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "file.txt")
+                {
+                    ModificationTime = timestamp,
+                    Uid = 123,
+                    Gid = 456,
+                    UserName = "user",
+                    GroupName = "group"
+                });
+            }
+
+            archiveStream.Position = 0;
+            using TarReader reader = new TarReader(archiveStream);
+            PaxTarEntry entry = Assert.IsType<PaxTarEntry>(reader.GetNextEntry());
+            Assert.Equal(timestamp, entry.ModificationTime);
+            Assert.Equal(123, entry.Uid);
+            Assert.Equal(456, entry.Gid);
+            Assert.Equal("user", entry.UserName);
+            Assert.Equal("group", entry.GroupName);
+        }
+
+        private static string ReadFirstHeaderName(MemoryStream archiveStream)
+        {
+            byte[] archive = archiveStream.ToArray();
+            return Encoding.UTF8.GetString(archive.AsSpan(0, 100)).TrimEnd('\0');
         }
 
         [Fact]
