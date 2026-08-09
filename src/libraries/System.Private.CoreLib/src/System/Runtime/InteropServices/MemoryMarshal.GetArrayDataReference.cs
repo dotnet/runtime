@@ -4,8 +4,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Runtime.InteropServices
 {
     public static unsafe partial class MemoryMarshal
@@ -42,8 +40,8 @@ namespace System.Runtime.InteropServices
             // If needed, we can save one or two instructions per call by marking this method as intrinsic and asking the JIT
             // to special-case arrays of known type and dimension.
 
-            // See comment on RawArrayData (in RuntimeHelpers.CoreCLR.cs) for details
-            return ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)array.GetMethodTable()->BaseSize - (nuint)(2 * sizeof(IntPtr)));
+            // See comment on RawArrayData (in RuntimeHelpers.CoreCLR.cs / RuntimeHelpers.NativeAot.cs) for details
+            return ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)RuntimeHelpers.GetMethodTable(array)->BaseSize - (nuint)(2 * sizeof(IntPtr)));
         }
     }
 }
