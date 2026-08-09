@@ -2805,6 +2805,7 @@ namespace System.Tests
         }
 
         [Theory]
+        [SkipOnMono("https://github.com/dotnet/runtime/issues/100368")]
         [InlineData((ushort)0x7E00, 0, 0u, 0L, 0ul)] // NaN
         [InlineData((ushort)0xFE00, 0, 0u, 0L, 0ul)] // -NaN
         [InlineData((ushort)0x7C00, int.MaxValue, uint.MaxValue, long.MaxValue, ulong.MaxValue)] // +Infinity
