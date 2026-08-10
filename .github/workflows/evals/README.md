@@ -29,7 +29,7 @@ workflow prompts without allowing the PR to weaken its graders or toolchain.
 Each eval attaches a read-only GitHub MCP server with the `pull_requests`,
 `repos`, `issues`, and `search` toolsets. The `GITHUB_TOKEN` that the eval job
 supplies to that server has only the job's read permissions, allowing the
-scanner to use tools such as `github-mcp-server-search_issues`.
+scanner to use the `github` MCP server's `search_issues` tool.
 
 These are format and behavior gates, not full ground-truth measurements. The
 second stage, a collector that scrapes the real failures and KBEs that actually

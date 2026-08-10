@@ -25,7 +25,7 @@ environment:
         - GITHUB_READ_ONLY=1
         - --env
         - GITHUB_TOOLSETS=pull_requests,repos,issues,search
-        - ghcr.io/github/github-mcp-server:v1.0.3@sha256:2ac27ef03461ef2b877031b838a7d1fd7f12b12d4ace7796d8cad91446d55959
+        - ghcr.io/github/github-mcp-server:v1.5.0@sha256:e25564dccc9110a70a77b9df560cbde11aa392fcb5f08b9abe5c4ebc6d146ea4
 
 stimuli:
   - name: live-kbe-safe-output
