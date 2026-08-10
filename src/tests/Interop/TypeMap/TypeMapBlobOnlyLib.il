@@ -26,5 +26,13 @@
            = {type(class 'S1, TypeMapLib1')
               type(class 'C1, TypeMapLib1')}
 
+    .custom instance void class [System.Runtime.InteropServices]System.Runtime.InteropServices.TypeMapAttribute`1<class [TypeMapLib1]BlobOnlyAttributeTypeNames>::.ctor(string, class [System.Runtime]System.Type)
+           = {string('lib5_type1')
+              type(class 'Lib5Type1, TypeMapLib5')}
+
+    .custom instance void class [System.Runtime.InteropServices]System.Runtime.InteropServices.TypeMapAssociationAttribute`1<class [TypeMapLib1]BlobOnlyAttributeTypeNames>::.ctor(class [System.Runtime]System.Type, class [System.Runtime]System.Type)
+           = {type(class 'Lib5Type1, TypeMapLib5')
+              type(class 'Lib5Proxy1, TypeMapLib5')}
+
     .ver 0:0:0:0
 }

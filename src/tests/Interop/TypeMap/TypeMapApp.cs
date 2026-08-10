@@ -322,10 +322,12 @@ public class TypeMap
         IReadOnlyDictionary<string, Type> externalMap = TypeMapping.GetOrCreateExternalTypeMapping<BlobOnlyAttributeTypeNames>();
         Assert.Equal(typeof(C1), externalMap["blob_only_c1"]);
         Assert.Equal(typeof(S1), externalMap["blob_only_s1"]);
+        Assert.Equal(typeof(Lib5Type1), externalMap["lib5_type1"]);
 
         IReadOnlyDictionary<Type, Type> proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<BlobOnlyAttributeTypeNames>();
         Assert.Equal(typeof(S1), proxyMap[typeof(C1)]);
         Assert.Equal(typeof(C1), proxyMap[typeof(S1)]);
+        Assert.Equal(typeof(Lib5Type1), proxyMap[typeof(Lib5Proxy1)]);
     }
 
     [Fact]
