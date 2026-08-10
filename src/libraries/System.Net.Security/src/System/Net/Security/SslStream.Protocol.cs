@@ -30,6 +30,7 @@ namespace System.Net.Security
 
         private SslConnectionInfo _connectionInfo;
         private X509Certificate? _selectedClientCertificate;
+        private SslStreamCertificateContext? _clientCertificateContextToRestore;
         private X509Certificate2? _remoteCertificate;
         private bool _remoteCertificateExposed;
 
@@ -146,6 +147,7 @@ namespace System.Net.Security
             _securityContext?.Dispose();
             _credentialsHandle?.Dispose();
 
+            RestoreClientCertificateContext();
             _sslAuthenticationOptions.Dispose();
         }
 
@@ -547,6 +549,11 @@ namespace System.Net.Security
             // Acquire possible Client Certificate information and set it on the handle.
             bool cachedCred = false;                   // this is a return result from this method.
 
+            if (newCredentialsRequested)
+            {
+                RestoreClientCertificateContext();
+            }
+
             X509Certificate2? selectedCert = SelectClientCertificate();
 
             if (newCredentialsRequested)
@@ -601,6 +608,9 @@ namespace System.Net.Security
                     guessedThumbPrint = null;
                     selectedCert = null;
                     _selectedClientCertificate = null;
+                    Debug.Assert(_clientCertificateContextToRestore is null);
+                    _clientCertificateContextToRestore = _sslAuthenticationOptions.CertificateContext;
+                    _sslAuthenticationOptions.CertificateContext = null;
                 }
 
                 if (cachedCredentialHandle != null)
@@ -632,6 +642,16 @@ namespace System.Net.Security
                 {
                     _sslAuthenticationOptions.SetCertificateContextFromCert(cert);
                 }
+            }
+        }
+
+        private void RestoreClientCertificateContext()
+        {
+            if (_clientCertificateContextToRestore is not null)
+            {
+                Debug.Assert(_sslAuthenticationOptions.CertificateContext is null);
+                _sslAuthenticationOptions.CertificateContext = _clientCertificateContextToRestore;
+                _clientCertificateContextToRestore = null;
             }
         }
 
