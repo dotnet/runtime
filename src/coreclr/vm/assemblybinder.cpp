@@ -9,7 +9,8 @@
 #ifndef DACCESS_COMPILE
 
 HRESULT AssemblyBinder::BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
-    BINDER_SPACE::Assembly** ppAssembly)
+    BINDER_SPACE::Assembly** ppAssembly,
+    SString* pDiagnosticInfo)
 {
     _ASSERTE(pAssemblyNameData != nullptr && ppAssembly != nullptr);
 
@@ -20,7 +21,7 @@ HRESULT AssemblyBinder::BindAssemblyByName(AssemblyNameData* pAssemblyNameData,
     SAFE_NEW(pAssemblyName, BINDER_SPACE::AssemblyName);
     IF_FAIL_GO(pAssemblyName->Init(*pAssemblyNameData));
 
-    hr = BindUsingAssemblyName(pAssemblyName, ppAssembly);
+    hr = BindUsingAssemblyName(pAssemblyName, ppAssembly, pDiagnosticInfo);
 
 Exit:
     return hr;
@@ -210,10 +211,9 @@ void AssemblyBinder::GetNameForDiagnosticsFromSpec(AssemblySpec* spec, /*out*/ S
 {
     _ASSERTE(spec != nullptr);
 
-    AppDomain* domain = spec->GetAppDomain();
     AssemblyBinder* binder = spec->GetBinder();
     if (binder == nullptr)
-        binder = spec->GetBinderFromParentAssembly(domain);
+        binder = spec->GetInitialBinder();
 
     binder->GetNameForDiagnostics(alcName);
 }

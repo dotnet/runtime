@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -16,6 +17,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class RCWDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "RCW";
+    protected override string DumpType => "full";
 
     /// <summary>
     /// Walks all strong GC handles and returns all RCW pointers found,

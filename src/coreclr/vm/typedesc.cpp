@@ -401,7 +401,7 @@ BOOL TypeDesc::CanCastParam(TypeHandle fromParam, TypeHandle toParam, TypeHandle
         return TRUE;
 
         // Object parameters dont need an exact match but only inheritance, check for that
-    CorElementType fromParamCorType = fromParam.GetVerifierCorElementType();
+    CorElementType fromParamCorType = fromParam.GetInternalCorElementType();
     if (CorTypeInfo::IsObjRef(fromParamCorType))
     {
         return fromParam.CanCastTo(toParam, pVisited);
@@ -420,7 +420,7 @@ BOOL TypeDesc::CanCastParam(TypeHandle fromParam, TypeHandle toParam, TypeHandle
     }
     else if(CorTypeInfo::IsPrimitiveType(fromParamCorType))
     {
-        CorElementType toParamCorType = toParam.GetVerifierCorElementType();
+        CorElementType toParamCorType = toParam.GetInternalCorElementType();
         if(CorTypeInfo::IsPrimitiveType(toParamCorType))
         {
             if (GetNormalizedIntegralArrayElementType(toParamCorType) == GetNormalizedIntegralArrayElementType(fromParamCorType))

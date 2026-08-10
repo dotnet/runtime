@@ -5,8 +5,9 @@ using System;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
-using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
+using static Microsoft.Diagnostics.DataContractReader.TestInfrastructure.TestHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
@@ -43,7 +44,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
-        IXCLRDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+        IXCLRDataFrame frame = CreateFrame(dataFrame);
 
         byte[] contextBuf = new byte[4096];
         uint contextSize;
@@ -62,7 +63,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
-        IXCLRDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+        IXCLRDataFrame frame = CreateFrame(dataFrame);
 
         byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         byte[] contextBuf = new byte[rawContext.Length];
@@ -81,7 +82,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
-        IXCLRDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+        IXCLRDataFrame frame = CreateFrame(dataFrame);
 
         byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         Assert.True(rawContext.Length > 0, "Raw context should not be empty for this test.");
@@ -101,7 +102,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     {
         InitializeDumpTest(config);
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
-        IXCLRDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+        IXCLRDataFrame frame = CreateFrame(dataFrame);
 
         byte[] rawContext = Target.Contracts.StackWalk.GetRawContext(dataFrame);
         int oversized = rawContext.Length + 128;
@@ -185,7 +186,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -195,7 +196,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodA")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
             uint numArgs;
             int hr = xclrFrame.GetNumArguments(&numArgs);
@@ -221,7 +222,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -235,7 +236,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             MethodDescHandle mdh = rts.GetMethodDescHandle(md);
             Assert.True(rts.IsIL(mdh), "MethodB should be an IL method");
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
             uint numLocals;
             int hr = xclrFrame.GetNumLocalVariables(&numLocals);
@@ -260,13 +261,13 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             DacComNullableByRef<IXCLRDataMethodInstance> methodOut = new(isNullRef: false);
@@ -292,7 +293,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -302,7 +303,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodA")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // MethodA(int depth) is static with 1 argument
@@ -327,7 +328,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -337,7 +338,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodA")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // Get the name of the first (and only) argument: "depth"
@@ -365,7 +366,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -375,7 +376,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodA")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // MethodA has 1 argument, so index 1 should be out of range
@@ -401,7 +402,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -411,7 +412,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodB")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // MethodB has at least 1 local variable (localObj)
@@ -436,7 +437,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -446,7 +447,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodB")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // Get actual local count, then use an out-of-range index
@@ -474,7 +475,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md == TargetPointer.Null)
@@ -484,7 +485,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
             if (name is not "MethodB")
                 continue;
 
-            ClrDataFrame frame = new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+            ClrDataFrame frame = CreateFrame(dataFrame);
             IXCLRDataFrame xclrFrame = frame;
 
             // Local variable names are not available - name should be empty
@@ -509,7 +510,7 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
         IStackWalk stackWalk = Target.Contracts.StackWalk;
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md != TargetPointer.Null)
@@ -523,6 +524,12 @@ public unsafe class IXCLRDataFrameDumpTests : DumpTestBase
     private IXCLRDataFrame CreateFrameForFirstManagedFrame()
     {
         IStackDataFrameHandle dataFrame = GetFirstManagedFrame();
-        return new ClrDataFrame(Target, dataFrame, legacyImpl: null);
+        return CreateFrame(dataFrame);
+    }
+
+    private ClrDataFrame CreateFrame(IStackDataFrameHandle dataFrame)
+    {
+        ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
+        return new ClrDataFrame(Target, crashingThread.ThreadAddress, dataFrame, legacyImpl: null);
     }
 }

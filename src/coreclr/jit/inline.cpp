@@ -848,6 +848,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_InitialSizeEstimate(0)
     , m_CurrentSizeEstimate(0)
     , m_HasForceViaDiscretionary(false)
+    , m_HasHardwareIntrinsicCheck(false)
 #if defined(DEBUG)
     , m_MethodXmlFilePosition(0)
     , m_Random(nullptr)
@@ -1253,6 +1254,46 @@ bool InlineStrategy::BudgetCheck(unsigned ilSize)
     }
 
     return result;
+}
+
+//------------------------------------------------------------------------
+// NoteHardwareIntrinsicCheckObserved: record that the root method or an
+//   already-imported inlinee references a HW-intrinsic IsSupported /
+//   IsHardwareAccelerated capability check, and grow the inline time
+//   budget on the first such observation per root method.
+//
+// Notes:
+//   Methods with SIMD paths typically carry several ISA-specific fallbacks
+//   (e.g. Vector512/Vector256/Vector128/scalar variants), making them
+//   IL-heavy. Inlining one such callee can otherwise consume nearly the
+//   entire inline time budget for the root method, blocking subsequent
+//   inlines of trivial helpers (Span.Slice, property getters, etc.).
+//
+//   The boost is one-shot per root method and monotonic: it never lowers
+//   the current budget (preserving any prior growth from force inlines).
+//
+void InlineStrategy::NoteHardwareIntrinsicCheckObserved()
+{
+    if (m_HasHardwareIntrinsicCheck)
+    {
+        return;
+    }
+
+    m_HasHardwareIntrinsicCheck = true;
+
+    // Compute the boosted budget in 64-bit to avoid signed overflow when
+    // an unusually large JitInlineBudget is configured.
+    const int64_t boosted64 =
+        static_cast<int64_t>(m_InitialTimeBudget) * static_cast<int64_t>(SIMD_BUDGET_BOOST_MULTIPLIER);
+    const int boosted = (boosted64 > INT_MAX) ? INT_MAX : static_cast<int>(boosted64);
+
+    if (m_CurrentTimeBudget < boosted)
+    {
+        JITDUMP("\nBudget: HW intrinsic IsSupported/IsHardwareAccelerated check observed; "
+                "boosting inline time budget from %d to %d (initial=%d, multiplier=%d)\n",
+                m_CurrentTimeBudget, boosted, m_InitialTimeBudget, (int)SIMD_BUDGET_BOOST_MULTIPLIER);
+        m_CurrentTimeBudget = boosted;
+    }
 }
 
 //------------------------------------------------------------------------

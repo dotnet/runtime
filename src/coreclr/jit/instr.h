@@ -188,6 +188,10 @@ enum insFlags : uint64_t
     INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 27,
     INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction),
 
+    // The instruction is commutative for op1/op2 and so can have
+    // these operands swapped if it will result in a smaller encoding.
+    INS_Flags_IsAvxCommutative = 1ULL << 28,
+
     // w and s bits
     INS_FLAGS_Has_Wbit = 1ULL << 29,
     INS_FLAGS_Has_Sbit = 1ULL << 30,
@@ -221,7 +225,10 @@ enum insFlags : uint64_t
     KInstruction = 1ULL << 41,
     KInstructionWithLBit = 1ULL << 42,
 
-    // UNUSED = 1ULL << 43,
+    // APX: extended EVEX encoding for instruction IDs that only exist in the APX EVEX space
+    // (including *_apx variants such as crc32_apx/movbe_apx). Do not use this for existing instruction IDs
+    // that merely gain an APX encoding through NDD/NF; use INS_Flags_Has_NDD and/or INS_Flags_Has_NF instead.
+    Encoding_EVEX_APX_ONLY = 1ULL << 43,
 
     // APX: REX2 prefix:
     Encoding_REX2  = 1ULL << 44,
@@ -231,6 +238,12 @@ enum insFlags : uint64_t
 
     // APX: EVEX.NF:
     INS_Flags_Has_NF  = 1ULL << 46,
+
+    // Mask of all APX-EVEX related flags. An instruction matches this mask if it either only exists in the
+    // APX EVEX space (Encoding_EVEX_APX_ONLY, e.g. crc32_apx/movbe_apx) or gains an APX encoding through the
+    // NDD (INS_Flags_Has_NDD) or NF (INS_Flags_Has_NF) features. Use it to quickly test whether an instruction
+    // has any APX-EVEX capability.
+    INS_FLAGS_APX_EVEX_Mask = (Encoding_EVEX_APX_ONLY | INS_Flags_Has_NDD | INS_Flags_Has_NF),
 
     // base kmask size used for a 128-bit vector
     // used to determine if we can use embedded masking
@@ -295,8 +308,8 @@ enum insOpts: unsigned
     // One-bit:  0b1000_0000
     INS_OPTS_EVEX_nf_MASK = 0x80,   // mask for APX-EVEX.nf related features
 
-    INS_OPTS_EVEX_nf = 1 << 7,      // NDD form for legacy instructions
-    INS_OPTS_EVEX_dfv_byte_offset = 8, // save the bit offset for first dfv flag pos
+    INS_OPTS_EVEX_nf = 1 << 7,      // No-Flag for legacy instructions
+    INS_OPTS_EVEX_dfv_shift = 8, // bit shift for the first dfv flag position
 
     INS_OPTS_EVEX_dfv_cf = 1 << 8,
     INS_OPTS_EVEX_dfv_zf = 1 << 9,
@@ -398,11 +411,17 @@ enum insOpts : unsigned
     INS_OPTS_S_TO_8BYTE,  // Single to INT64
     INS_OPTS_D_TO_8BYTE,  // Double to INT64
 
+    INS_OPTS_H_TO_4BYTE,  // Half to INT32
+    INS_OPTS_H_TO_8BYTE,  // Half to INT64
+
     INS_OPTS_4BYTE_TO_S,  // INT32 to Single
     INS_OPTS_4BYTE_TO_D,  // INT32 to Double
 
     INS_OPTS_8BYTE_TO_S,  // INT64 to Single
     INS_OPTS_8BYTE_TO_D,  // INT64 to Double
+
+    INS_OPTS_4BYTE_TO_H,  // INT32 to Half
+    INS_OPTS_8BYTE_TO_H,  // INT64 to Half
 
     INS_OPTS_S_TO_D,      // Single to Double
     INS_OPTS_D_TO_S,      // Double to Single

@@ -31,6 +31,12 @@ bool MyICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return jitInstance->mc->repIsIntrinsic(ftn);
 }
 
+bool MyICJI::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
+{
+    jitInstance->mc->cr->AddCall("canValueClassInstancePointerEscape");
+    return jitInstance->mc->repCanValueClassInstancePointerEscape(ftn);
+}
+
 bool MyICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     jitInstance->mc->cr->AddCall("notifyMethodInfoUsage");
@@ -200,21 +206,6 @@ bool MyICJI::resolveVirtualMethod(CORINFO_DEVIRTUALIZATION_INFO * info)
 {
     jitInstance->mc->cr->AddCall("resolveVirtualMethod");
     bool result = jitInstance->mc->repResolveVirtualMethod(info);
-    return result;
-}
-
-// Get the unboxed entry point for a method, if possible.
-CORINFO_METHOD_HANDLE MyICJI::getUnboxedEntry(CORINFO_METHOD_HANDLE ftn, bool* requiresInstMethodTableArg)
-{
-    jitInstance->mc->cr->AddCall("getUnboxedEntry");
-    CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetUnboxedEntry(ftn, requiresInstMethodTableArg);
-    return result;
-}
-
-CORINFO_METHOD_HANDLE MyICJI::getInstantiatedEntry(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_HANDLE* methodHandle, CORINFO_CLASS_HANDLE* classHandle)
-{
-    jitInstance->mc->cr->AddCall("getInstantiatedEntry");
-    CORINFO_METHOD_HANDLE result = jitInstance->mc->repGetInstantiatedEntry(ftn, methodHandle, classHandle);
     return result;
 }
 
@@ -1212,6 +1203,29 @@ void MyICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     jitInstance->mc->repGetAsyncInfo(pAsyncInfo);
 }
 
+void MyICJI::getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    jitInstance->mc->cr->AddCall("getWasmWellKnownGlobals");
+    jitInstance->mc->repGetWasmWellKnownGlobals(pWellKnownGlobalsOut);
+}
+CORINFO_METHOD_HANDLE MyICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
+{
+    jitInstance->mc->cr->AddCall("getAwaitReturnCall");
+    return jitInstance->mc->repGetAwaitReturnCall(callerHandle, contextHandle, instArg);
+}
+
+CORINFO_METHOD_HANDLE MyICJI::getAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHandle,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    jitInstance->mc->cr->AddCall("getAwaitAwaiterInContinuationCall");
+    return jitInstance->mc->repGetAwaitAwaiterInContinuationCall(
+        callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+}
+
 /*********************************************************************************/
 //
 // Diagnostic methods
@@ -1827,6 +1841,12 @@ void MyICJI::recordCallSite(uint32_t              instrOffset, /* IN */
     jitInstance->mc->cr->repRecordCallSite(instrOffset, callSig, methodHandle);
 }
 
+void MyICJI::recordWasmManagedCallSig(CORINFO_SIG_INFO* callSig /* IN */)
+{
+    jitInstance->mc->cr->AddCall("recordWasmManagedCallSig");
+    // No-op for SuperPMI replay. Only meaningful for ReadyToRun Wasm compilation.
+}
+
 // A relocation is recorded if we are pre-jitting.
 // A jump thunk may be inserted if we are jitting
 void MyICJI::recordRelocation(void*        location,   /* IN  */
@@ -1844,6 +1864,13 @@ CorInfoReloc MyICJI::getRelocTypeHint(void* target)
 {
     jitInstance->mc->cr->AddCall("getRelocTypeHint");
     CorInfoReloc result = jitInstance->mc->repGetRelocTypeHint(target);
+    return result;
+}
+
+uint32_t MyICJI::getAddressAlignment(void* address)
+{
+    jitInstance->mc->cr->AddCall("getAddressAlignment");
+    uint32_t result = jitInstance->mc->repGetAddressAlignment(address);
     return result;
 }
 

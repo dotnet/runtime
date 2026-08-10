@@ -1988,32 +1988,6 @@ void ILCodeStream::EmitLoadNullPtr()
     EmitCONV_I();
 }
 
-void ILCodeStream::EmitArgIteratorCreateAndLoad()
-{
-    STANDARD_VM_CONTRACT;
-
-    //
-    // we insert the ArgIterator in the same spot that the VASigCookie will go for sanity
-    //
-    LocalDesc   aiLoc(CoreLibBinder::GetClass(CLASS__ARG_ITERATOR));
-    int         aiLocNum;
-
-    aiLocNum = NewLocal(aiLoc);
-
-    EmitLDLOCA(aiLocNum);
-    EmitDUP();
-    EmitARGLIST();
-    EmitLoadNullPtr();
-    EmitCALL(METHOD__ARG_ITERATOR__CTOR2, 2, 0);
-
-    aiLoc.ElementType[0]    = ELEMENT_TYPE_BYREF;
-    aiLoc.ElementType[1]    = ELEMENT_TYPE_INTERNAL;
-    aiLoc.cbType            = 2;
-    aiLoc.InternalToken     = CoreLibBinder::GetClass(CLASS__ARG_ITERATOR);
-
-    SetStubTargetArgType(&aiLoc, false);
-}
-
 DWORD ILStubLinker::NewLocal(CorElementType typ)
 {
     CONTRACTL

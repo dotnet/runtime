@@ -69,6 +69,7 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMap<UnusedTypeMap>("UnusedName", typeof(UnusedTargetType), typeof(TrimTarget))]
 [assembly: TypeMapAssociation<UsedTypeMap>(typeof(UnusedSourceClass), typeof(UnusedProxyType))]
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethod", typeof(TargetType4), typeof(ClassWithStaticMethod))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "ClassWithStaticMethod", typeof(TargetType4), typeof(ClassWithStaticMethod), By = Tool.Trimmer)]
 [assembly: TypeMap<UsedTypeMap>("ClassWithStaticMethodAndField", typeof(TargetType5), typeof(ClassWithStaticMethodAndField))]
 
 [assembly: TypeMap<UsedWithoutAssemblyTargetUniverse>("UnimportantString", typeof(PreservedTargetType))]
@@ -84,6 +85,19 @@ using Mono.Linker.Tests.Cases.Reflection.Dependencies.Library;
 [assembly: TypeMapAssemblyTarget<UsedExternalTypeMap>("library")]
 [assembly: TypeMapAssemblyTarget<UsedTypeMapUniverse>("library")]
 [assembly: TypeMapAssemblyTarget<UnusedTypeMap2>("library")] // Should be removed
+
+// Verify that a type can be kept if it's used for both TypeMap and TypeMapAssociation
+[assembly: TypeMap<UsedTypeMap>("BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxy))] // Kept
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))] // Kept
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "BothInExternalAndProxy", typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxy))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(BothInExternalAndProxy), typeof(BothInExternalAndProxyTarget))]
+
+// Verify that a TypeMap entry with trimTarget=X is kept when X is also the proxy target of a TypeMapAssociation,
+// even when the proxy association's source type is instantiated before the trim target type.
+[assembly: TypeMap<UsedTypeMap>("ProxyTargetIsAlsoTrimTarget", typeof(ProxyTargetIsAlsoTrimTargetTarget), typeof(ProxyTargetIsAlsoTrimTarget))] // Kept
+[assembly: TypeMapAssociation<UsedTypeMap>(typeof(ProxyTargetIsAlsoTrimTargetSource), typeof(ProxyTargetIsAlsoTrimTarget))] // Kept
+[assembly: KeptAttributeAttribute(typeof(TypeMapAttribute<UsedTypeMap>), "ProxyTargetIsAlsoTrimTarget", typeof(ProxyTargetIsAlsoTrimTargetTarget), typeof(ProxyTargetIsAlsoTrimTarget))]
+[assembly: KeptAttributeAttribute(typeof(TypeMapAssociationAttribute<UsedTypeMap>), typeof(ProxyTargetIsAlsoTrimTargetSource), typeof(ProxyTargetIsAlsoTrimTarget))]
 
 namespace Mono.Linker.Tests.Cases.Reflection
 {
@@ -234,6 +248,14 @@ namespace Mono.Linker.Tests.Cases.Reflection
             _ = new int();
             _ = TypeMapping.GetOrCreateExternalTypeMapping<string>();
             _ = TypeMapping.GetOrCreateProxyTypeMapping<string>();
+
+            // Use BothInExternalAndProxy in a way that preserves any corresponding typemap entries.
+            Console.WriteLine(new BothInExternalAndProxy());
+
+            // Source must be instantiated BEFORE the trim target, so that the proxy association
+            // is processed first via MarkTypeMapAttribute → MarkRequirementsForInstantiatedTypes.
+            _ = new ProxyTargetIsAlsoTrimTargetSource();
+            Console.WriteLine(new ProxyTargetIsAlsoTrimTarget());
         }
 
         [ExpectBodyModified]
@@ -399,6 +421,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
     [Kept(By = Tool.NativeAot)] // Kept by NativeAot by the scanner. It is not kept during codegen.
     class TypeCheckOnlyClass;
 
+    // Kept by Trimmer only: ILLink conservatively marks ldftn targets as reflection-visible
+    // (see https://github.com/dotnet/runtime/commit/33a30bc0b01), which cascades to the
+    // declaring type via MarkTypeVisibleToReflection, triggering TypeMap processing.
+    // NativeAOT handles ldftn more precisely and waits for `Delegate.get_Method` being called
+    // before declaring the method reflection visible.
+    [Kept(By = Tool.Trimmer)]
     class TargetType4;
 
     [Kept]
@@ -563,6 +591,12 @@ namespace Mono.Linker.Tests.Cases.Reflection
     class PreservedTargetType;
 
     [Kept]
+    [KeptMember(".ctor()")]
+    class BothInExternalAndProxy;
+    [Kept]
+    class BothInExternalAndProxyTarget;
+
+    [Kept]
     class ArrayTypeTrimTargetTarget;
 
     [Kept]
@@ -572,4 +606,13 @@ namespace Mono.Linker.Tests.Cases.Reflection
     class ArrayTypeTrimTargetUnusedTarget;
 
     class ArrayTypeTrimTargetUnusedClass;
+
+    [Kept]
+    [KeptMember(".ctor()")]
+    class ProxyTargetIsAlsoTrimTarget;
+    [Kept]
+    class ProxyTargetIsAlsoTrimTargetTarget;
+    [Kept]
+    [KeptMember(".ctor()")]
+    class ProxyTargetIsAlsoTrimTargetSource;
 }

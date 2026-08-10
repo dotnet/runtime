@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
@@ -15,6 +15,7 @@ namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 public class DacDbiAppDomainDumpTests : DumpTestBase
 {
     protected override string DebuggeeName => "BasicThreads";
+    protected override string DumpType => "full";
 
     private DacDbiImpl CreateDacDbi() => new DacDbiImpl(Target, legacyObj: null);
 
@@ -90,29 +91,5 @@ public class DacDbiAppDomainDumpTests : DumpTestBase
         int hr = dbi.GetTaskID(storeData.FirstThread, &taskId);
         Assert.Equal(System.HResults.S_OK, hr);
         Assert.Equal(0UL, taskId);
-    }
-
-    [ConditionalTheory]
-    [MemberData(nameof(TestConfigurations))]
-    public unsafe void IsWinRTModule_ReturnsFalse(TestConfiguration config)
-    {
-        InitializeDumpTest(config);
-        DacDbiImpl dbi = CreateDacDbi();
-
-        ILoader loader = Target.Contracts.Loader;
-        TargetPointer appDomainPtr = Target.ReadGlobalPointer(Constants.Globals.AppDomain);
-        ulong appDomain = Target.ReadPointer(appDomainPtr);
-        IEnumerable<ModuleHandle> modules = loader.GetModuleHandles(new TargetPointer(appDomain),
-            AssemblyIterationFlags.IncludeLoaded | AssemblyIterationFlags.IncludeExecution);
-
-        foreach (ModuleHandle module in modules)
-        {
-            TargetPointer moduleAddr = loader.GetModule(module);
-            Interop.BOOL isWinRT;
-            int hr = dbi.IsWinRTModule(moduleAddr, &isWinRT);
-            Assert.Equal(System.HResults.S_OK, hr);
-            Assert.Equal(Interop.BOOL.FALSE, isWinRT);
-            break;
-        }
     }
 }

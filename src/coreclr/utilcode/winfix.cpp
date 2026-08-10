@@ -1,14 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-//*****************************************************************************
-// WinWrap.cpp
-//
-//*****************************************************************************
 
 #include "stdafx.h"                     // Precompiled header key.
 #include "winwrap.h"                    // Header for macros and functions.
 #include "utilcode.h"
 #include "holder.h"
+
+#ifndef HOST_UNIX
 
 // The only purpose of this function is to make a local copy of lpCommandLine.
 // Because windows implementation of CreateProcessW can actually change lpCommandLine,
@@ -59,9 +57,6 @@ WszCreateProcess(
     SetLastError(err);
     return fResult;
 }
-
-#ifndef HOST_UNIX
-
 
 #include "psapi.h"
 #include "winnls.h"

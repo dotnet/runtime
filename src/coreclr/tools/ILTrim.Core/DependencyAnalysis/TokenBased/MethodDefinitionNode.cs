@@ -7,8 +7,11 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 
+using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
+
+using Mono.Linker;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -172,6 +175,8 @@ namespace ILCompiler.DependencyAnalysis
             EcmaType ecmaType = (EcmaType)_module.GetObject(methodDef.GetDeclaringType());
             MethodBodyNode bodyNode = writeContext.Factory.MethodBody(_module, Handle);
             int bodyOffset = bodyNode.Marked
+                || !writeContext.Factory.Settings.Optimizations.IsEnabled(CodeOptimizations.UnreachableBodies, _module.Assembly.GetName().Name)
+                || !IsWorthConvertingToThrow(methodDef)
                 ? bodyNode.Write(writeContext)
                 : writeContext.WriteUnreachableMethodBody(Handle, _module);
 
@@ -199,6 +204,31 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             return outputHandle;
+        }
+
+        private bool IsWorthConvertingToThrow(MethodDefinition methodDef)
+        {
+            // Some bodies are cheaper size-wise to preserve as-is than to convert to a throw.
+            const int EmptyBodyLength = 0; // No IL body.
+            const int RetOnlyBodyLength = 1; // ret
+            const int NopRetBodyLength = 2; // nop; ret
+
+            int rva = methodDef.RelativeVirtualAddress;
+            if (rva == 0)
+                return false;
+
+            BlobReader ilReader = _module.PEReader.GetMethodBody(rva).GetILReader();
+            int ilLength = ilReader.Length;
+            if (ilLength == EmptyBodyLength)
+                return false;
+
+            if (ilLength == RetOnlyBodyLength)
+                return ilReader.ReadByte() != (byte)ILOpcode.ret;
+
+            if (ilLength == NopRetBodyLength)
+                return ilReader.ReadByte() != (byte)ILOpcode.nop || ilReader.ReadByte() != (byte)ILOpcode.ret;
+
+            return true;
         }
 
         public override string ToString()

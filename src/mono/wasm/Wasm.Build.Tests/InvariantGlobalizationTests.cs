@@ -32,16 +32,39 @@ namespace Wasm.Build.Tests
         [Theory]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false })]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ true })]
-        [TestCategory("native")]
+        [TestCategory("native-mono")]
         public async Task AOT_InvariantGlobalization(Configuration config, bool aot, bool? invariantGlobalization)
             => await TestInvariantGlobalization(config, aot, invariantGlobalization);
 
         // TODO: What else should we use to verify a relinked build?
         [Theory]
         [MemberData(nameof(InvariantGlobalizationTestData), parameters: new object[] { /*aot*/ false })]
-        [TestCategory("native")]
+        [TestCategory("native-mono")]
         public async Task RelinkingWithoutAOT(Configuration config, bool aot, bool? invariantGlobalization)
             => await TestInvariantGlobalization(config, aot, invariantGlobalization, isNativeBuild: true);
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
+        [BuildAndRun(aot: false, config: Configuration.Release)]
+        [TestCategory("no-workload")]
+        public void CoreCLRInvariantGlobalizationDoesNotLinkGlobalizationNative(Configuration config, bool aot)
+        {
+            string extraProperties = "<InvariantGlobalization>true</InvariantGlobalization>";
+            ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, "invariant_coreclr", extraProperties: extraProperties);
+            ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantGlobalization.cs"));
+            ReplaceMainJsWithMinimalRunMain();
+
+            PublishProject(info, config, new PublishOptions(GlobalizationMode: GlobalizationMode.Invariant, AOT: aot), isNativeBuild: true);
+
+            string nativeBuildDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFramework, "wasm", "for-publish");
+            string pinvokeTable = File.ReadAllText(Path.Combine(nativeBuildDir, "callhelpers-pinvoke.cpp"));
+            Assert.DoesNotContain("GlobalizationNative_", pinvokeTable);
+
+            string linkRsp = File.ReadAllText(Path.Combine(nativeBuildDir, "emcc-link.rsp"));
+            Assert.DoesNotContain("libSystem.Globalization.Native.a", linkRsp);
+            Assert.DoesNotContain("libicuuc.a", linkRsp);
+            Assert.DoesNotContain("libicui18n.a", linkRsp);
+            Assert.DoesNotContain("libicudata.a", linkRsp);
+        }
 
         private async Task TestInvariantGlobalization(Configuration config, bool aot, bool? invariantGlobalization, bool? isNativeBuild = null)
         {
@@ -61,6 +84,10 @@ namespace Wasm.Build.Tests
             string prefix = $"invariant_{invariantGlobalization?.ToString() ?? "unset"}";
             ProjectInfo info = CopyTestAsset(config, aot, TestAsset.WasmBasicTestApp, prefix, extraProperties: extraProperties);
             ReplaceFile(Path.Combine("Common", "Program.cs"), Path.Combine(BuildEnvironment.TestAssetsPath, "EntryPoints", "InvariantGlobalization.cs"));
+            // The InvariantGlobalization test program does not use JS interop, so the JS interop
+            // assembly would be linked away by the trimmer (CoreCLR-Wasm) and the template main.js
+            // (which calls getAssemblyExports) would fail at startup.
+            ReplaceMainJsWithMinimalRunMain();
 
             var globalizationMode = invariantGlobalization == true ? GlobalizationMode.Invariant : GlobalizationMode.Sharded;
             PublishProject(info, config, new PublishOptions(GlobalizationMode: globalizationMode, AOT: aot), isNativeBuild: isNativeBuild);

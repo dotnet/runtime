@@ -24,6 +24,9 @@ namespace System.Formats.Tar
         private const string GnuMagic = "ustar ";
         private const string GnuVersion = " \0";
 
+        // Maximum allowed size for metadata sections (PAX extended attributes, GNU LongPath/LongLink).
+        private const int MaxMetadataBlockSize = 1024 * 1024;
+
         // Names of PAX extended attributes commonly found fields
         internal const string PaxEaName = "path";
         internal const string PaxEaLinkName = "linkpath";
@@ -142,19 +145,22 @@ namespace System.Formats.Tar
             {
                 KeyValuePair<string, string> kvp = enumerator.Current;
 
-                int index = kvp.Key.AsSpan().IndexOfAny('=', '\n');
-                if (index >= 0)
-                {
-                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, kvp.Key, kvp.Key[index] == '\n' ? "\\n" : kvp.Key[index]));
-                }
-                if (kvp.Value.Contains('\n'))
-                {
-                    throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedValueChar, kvp.Key, "\\n"));
-                }
-
+                ValidateExtendedAttribute(kvp);
                 _ea ??= new Dictionary<string, string>();
-
                 _ea.Add(kvp.Key, kvp.Value);
+            }
+        }
+
+        private static void ValidateExtendedAttribute(KeyValuePair<string, string> extendedAttribute)
+        {
+            int index = extendedAttribute.Key.AsSpan().IndexOfAny('=', '\n');
+            if (index >= 0)
+            {
+                throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedKeyChar, extendedAttribute.Key, extendedAttribute.Key[index] == '\n' ? "\\n" : extendedAttribute.Key[index]));
+            }
+            if (extendedAttribute.Value.Contains('\n'))
+            {
+                throw new ArgumentException(SR.Format(SR.TarExtAttrDisallowedValueChar, extendedAttribute.Key, "\\n"));
             }
         }
 

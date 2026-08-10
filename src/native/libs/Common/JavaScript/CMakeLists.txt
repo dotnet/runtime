@@ -183,4 +183,8 @@ add_custom_target(System.Native.Browser-NpmInstall
 if (NOT CORERUN_LIBS_ONLY)
     install(FILES ${ROLLUP_OUTPUTS} DESTINATION sharedFramework COMPONENT runtime)
     install(FILES "${CLR_SRC_NATIVE_DIR}/package.json" DESTINATION sharedFramework COMPONENT runtime)
+    # extpost.js is a hand-written passthrough file (not produced by rollup) that the
+    # per-app emcc relink consumes via --extern-post-js. Ship it in the runtime pack.
+    install(FILES "${CLR_SRC_NATIVE_DIR}/libs/System.Native.Browser/libSystem.Native.Browser.extpost.js"
+            DESTINATION sharedFramework COMPONENT runtime)
 endif()

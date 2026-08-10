@@ -975,7 +975,7 @@ namespace System.Linq.Expressions.Compiler
 
         private static void EmitDecimal(this ILGenerator il, decimal value)
         {
-            Span<int> bits = stackalloc int[4];
+            Span<int> bits = [0, 0, 0, 0];
             decimal.GetBits(value, bits);
 
             int scale = (bits[3] & int.MaxValue) >> 16;

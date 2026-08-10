@@ -76,5 +76,45 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>VPDPWSSDS ymm, ymm, ymm/m256</para>
         /// </summary>
         public static Vector256<int> MultiplyWideningAndAddSaturate(Vector256<int> addend, Vector256<short> left, Vector256<short> right) => MultiplyWideningAndAddSaturate(addend, left, right);
+
+        /// <summary>Provides access to the x86 AVX-512-VNNI hardware instructions, that operate on 512-bit vectors, via intrinsics.</summary>
+        [Intrinsic]
+        public abstract class V512
+        {
+            internal V512() { }
+
+            /// <summary>Gets a value that indicates whether the APIs in this class are supported.</summary>
+            /// <value><see langword="true" /> if the APIs are supported; otherwise, <see langword="false" />.</value>
+            /// <remarks>A value of <see langword="false" /> indicates that the APIs will throw <see cref="PlatformNotSupportedException" />.</remarks>
+            public static bool IsSupported { [Intrinsic] get => IsSupported; }
+
+            /// <summary>
+            ///   <para>__m512i _mm512_dpbusd_epi32 (__m512i src, __m512i a, __m512i b)</para>
+            ///   <para>VPDPBUSD zmm, zmm, zmm/m512</para>
+            /// </summary>
+            [Intrinsic]
+            public static Vector512<int> MultiplyWideningAndAdd(Vector512<int> addend, Vector512<byte> left, Vector512<sbyte> right) => MultiplyWideningAndAdd(addend, left, right);
+
+            /// <summary>
+            ///   <para>__m512i _mm512_dpwssd_epi32 (__m512i src, __m512i a, __m512i b)</para>
+            ///   <para>VPDPWSSD zmm, zmm, zmm/m512</para>
+            /// </summary>
+            [Intrinsic]
+            public static Vector512<int> MultiplyWideningAndAdd(Vector512<int> addend, Vector512<short> left, Vector512<short> right) => MultiplyWideningAndAdd(addend, left, right);
+
+            /// <summary>
+            ///   <para>__m512i _mm512_dpbusds_epi32 (__m512i src, __m512i a, __m512i b)</para>
+            ///   <para>VPDPBUSDS zmm, zmm, zmm/m512</para>
+            /// </summary>
+            [Intrinsic]
+            public static Vector512<int> MultiplyWideningAndAddSaturate(Vector512<int> addend, Vector512<byte> left, Vector512<sbyte> right) => MultiplyWideningAndAddSaturate(addend, left, right);
+
+            /// <summary>
+            ///   <para>__m512i _mm512_dpwssds_epi32 (__m512i src, __m512i a, __m512i b)</para>
+            ///   <para>VPDPWSSDS zmm, zmm, zmm/m512</para>
+            /// </summary>
+            [Intrinsic]
+            public static Vector512<int> MultiplyWideningAndAddSaturate(Vector512<int> addend, Vector512<short> left, Vector512<short> right) => MultiplyWideningAndAddSaturate(addend, left, right);
+        }
     }
 }

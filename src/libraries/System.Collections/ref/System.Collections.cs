@@ -565,6 +565,9 @@ namespace System.Collections
         public BitArray(int length) { }
         public BitArray(int length, bool defaultValue) { }
         public BitArray(int[] values) { }
+        public BitArray(System.ReadOnlySpan<bool> values) { }
+        public BitArray(System.ReadOnlySpan<byte> bytes) { }
+        public BitArray(System.ReadOnlySpan<int> values) { }
         public int Count { get { throw null; } }
         public bool IsReadOnly { get { throw null; } }
         public bool IsSynchronized { get { throw null; } }
@@ -756,6 +759,7 @@ namespace System.Collections.Generic
     {
         protected EqualityComparer() { }
         public static System.Collections.Generic.EqualityComparer<T> Create(System.Func<T?, T?, bool> equals, System.Func<T, int>? getHashCode = null) { throw null; }
+        public static System.Collections.Generic.EqualityComparer<T> Create<TKey>(System.Func<T?, TKey?> keySelector, System.Collections.Generic.IEqualityComparer<TKey>? keyComparer = null) { throw null; }
         public static System.Collections.Generic.EqualityComparer<T> Default { get { throw null; } }
         public abstract bool Equals(T? x, T? y);
         public abstract int GetHashCode([System.Diagnostics.CodeAnalysis.DisallowNullAttribute] T obj);

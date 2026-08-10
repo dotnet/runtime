@@ -7,6 +7,7 @@ namespace System.Security.Cryptography
     {
         private static CngAlgorithm? _mlDsaCngAlgorithm;
         private static CngAlgorithm? _mlKemCngAlgorithm;
+        private static CngAlgorithm? _compositeMldsaCngAlgorithm;
 
         extension(CngAlgorithm)
         {
@@ -15,6 +16,9 @@ namespace System.Security.Cryptography
 
             internal static CngAlgorithm MLKem =>
                 _mlKemCngAlgorithm ??= new CngAlgorithm("ML-KEM");  // BCRYPT_MLKEM_ALGORITHM
+
+            internal static CngAlgorithm CompositeMLDsa =>
+                _compositeMldsaCngAlgorithm ??= new CngAlgorithm("Composite-ML-DSA"); // BCRYPT_COMPOSITE_MLDSA_ALGORITHM
         }
     }
 
@@ -22,6 +26,7 @@ namespace System.Security.Cryptography
     {
         private static CngAlgorithmGroup? _mlDsaCngAlgorithmGroup;
         private static CngAlgorithmGroup? _mlKemCngAlgorithmGroup;
+        private static CngAlgorithmGroup? _compositeMLDsaCngAlgorithmGroup;
 
         extension(CngAlgorithmGroup)
         {
@@ -30,6 +35,9 @@ namespace System.Security.Cryptography
 
             internal static CngAlgorithmGroup MLKem =>
                 _mlKemCngAlgorithmGroup ??= new CngAlgorithmGroup("MLKEM"); // NCRYPT_MLKEM_ALGORITHM_GROUP
+
+            internal static CngAlgorithmGroup CompositeMLDsa =>
+                _compositeMLDsaCngAlgorithmGroup ??= new CngAlgorithmGroup("CompositeMLDSA"); // NCRYPT_COMPOSITE_MLDSA_ALGORITHM_GROUP
         }
     }
 

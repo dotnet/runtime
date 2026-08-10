@@ -182,6 +182,13 @@ private:
     SArray<TADDR> _starts;
     void* _id;
     bool _collectible;
+    friend struct ::cdac_data<CodeRangeMapRangeList>;
+};
+
+template<>
+struct cdac_data<CodeRangeMapRangeList>
+{
+    static constexpr size_t RangeListType = offsetof(CodeRangeMapRangeList, _rangeListType);
 };
 
 // Iterator over Assemblies in the same ALC
@@ -313,7 +320,6 @@ protected:
     BYTE *              m_InitialReservedMemForLoaderHeaps;
     BYTE                m_LowFreqHeapInstance[sizeof(LoaderHeap)];
     BYTE                m_HighFreqHeapInstance[sizeof(LoaderHeap)];
-    BYTE                m_StubHeapInstance[sizeof(LoaderHeap)];
 #ifdef HAS_FIXUP_PRECODE
     BYTE                m_FixupPrecodeHeapInstance[sizeof(InterleavedLoaderHeap)];
 #endif // HAS_FIXUP_PRECODE
@@ -329,7 +335,6 @@ protected:
     PTR_LoaderHeap      m_pLowFrequencyHeap;
     PTR_LoaderHeap      m_pHighFrequencyHeap;
     PTR_LoaderHeap      m_pStaticsHeap;
-    PTR_LoaderHeap      m_pStubHeap; // stubs for PInvoke, remoting, etc
     PTR_LoaderHeap      m_pExecutableHeap;
 #ifdef FEATURE_READYTORUN
 #ifdef FEATURE_STUBPRECODE_DYNAMIC_HELPERS
@@ -494,6 +499,15 @@ private:
 
     PTR_AsyncContinuationsManager m_asyncContinuationsManager;
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Methods whose PortableEntryPoint was initialized without an R2R-to-interpreter thunk
+    // because the thunk wasn't yet loaded. When a new R2R module injects string thunks,
+    // these methods are re-checked and resolved if a thunk is now available.
+    // Protected by s_pendingThunkResolutionLock (not m_crstLoaderAllocator).
+    SArray<MethodDesc*> m_pendingPortableEntryPointThunks;
+    bool m_registeredForPendingThunkResolution;
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 #ifndef DACCESS_COMPILE
 
 public:
@@ -639,12 +653,6 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         return m_pStaticsHeap;
-    }
-
-    PTR_LoaderHeap GetStubHeap()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_pStubHeap;
     }
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
@@ -906,6 +914,12 @@ public:
 
     PTR_AsyncContinuationsManager GetAsyncContinuationsManager();
 
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    // Add a MethodDesc to the pending list of methods waiting for an R2R-to-interpreter thunk.
+    // Takes s_pendingThunkResolutionLock internally.
+    void AddPendingPortableEntryPointThunk(MethodDesc* pMD);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
+
 #ifndef DACCESS_COMPILE
 public:
     virtual void RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle) {};
@@ -914,6 +928,11 @@ public:
 #endif
 
     friend struct ::cdac_data<LoaderAllocator>;
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+    friend void AddPendingPortableEntryPointThunkUnderLock(LoaderAllocator*, MethodDesc*);
+    friend void UnregisterLoaderAllocatorForPendingThunkResolution(LoaderAllocator*);
+    friend void ResolvePendingPortableEntryPointThunksGlobal();
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
 };  // class LoaderAllocator
 
 template<>
@@ -923,7 +942,6 @@ struct cdac_data<LoaderAllocator>
     static constexpr size_t HighFrequencyHeap = offsetof(LoaderAllocator, m_pHighFrequencyHeap);
     static constexpr size_t LowFrequencyHeap = offsetof(LoaderAllocator, m_pLowFrequencyHeap);
     static constexpr size_t StaticsHeap = offsetof(LoaderAllocator, m_pStaticsHeap);
-    static constexpr size_t StubHeap = offsetof(LoaderAllocator, m_pStubHeap);
     static constexpr size_t ExecutableHeap = offsetof(LoaderAllocator, m_pExecutableHeap);
 #ifdef HAS_FIXUP_PRECODE
     static constexpr size_t FixupPrecodeHeap = offsetof(LoaderAllocator, m_pFixupPrecodeHeap);
@@ -936,6 +954,8 @@ struct cdac_data<LoaderAllocator>
 #endif // defined(FEATURE_READYTORUN) && defined(FEATURE_STUBPRECODE_DYNAMIC_HELPERS)
     static constexpr size_t VirtualCallStubManager = offsetof(LoaderAllocator, m_pVirtualCallStubManager);
     static constexpr size_t ObjectHandle = offsetof(LoaderAllocator, m_hLoaderAllocatorObjectHandle);
+    static constexpr size_t IsCollectible = offsetof(LoaderAllocator, m_IsCollectible);
+    static constexpr size_t CreationNumber = offsetof(LoaderAllocator, m_nLoaderAllocator);
 };
 
 typedef VPTR(LoaderAllocator) PTR_LoaderAllocator;
@@ -1086,4 +1106,3 @@ public:
 #include "loaderallocator.inl"
 
 #endif //  __LoaderAllocator_h__
-

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Memory.Infrastructure;
@@ -487,11 +488,18 @@ namespace Microsoft.Extensions.Caching.Memory
 
         internal static void AssertCacheSize(long size, MemoryCache cache)
         {
-            // Size is only eventually consistent, so retry a few times
-            RetryHelper.Execute(() =>
-            {
-                Assert.Equal(size, cache.Size);
-            }, maxAttempts: 12, (iteration) => (int)Math.Pow(2, iteration)); // 2ms, 4ms.. 4096 ms. In practice, retries are rarely needed.
+            // Size is only eventually consistent, so retry a few times. Note that the expected size must
+            // be a constant. Reading it from the cache instead produces a stale snapshot that a
+            // concurrent overcapacity compaction can move away from, and no number of retries will then
+            // converge; use AssertEventually and re-read both sides inside the callback for that case.
+            AssertEventually(() => Assert.Equal(size, cache.Size));
         }
+
+        /// <summary>
+        /// Retries <paramref name="assert"/> until the cache state it inspects settles. Every value the
+        /// assertion depends on must be read inside the callback.
+        /// </summary>
+        internal static void AssertEventually(Action assert, [CallerMemberName] string? testName = null) =>
+            RetryHelper.Execute(assert, maxAttempts: 12, (iteration) => (int)Math.Pow(2, iteration), testName: testName); // 2ms, 4ms.. 2048ms. In practice, retries are rarely needed.
     }
 }

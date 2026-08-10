@@ -24,3 +24,7 @@ export async function onRuntimeReady({ getAssemblyExports, getConfig }) {
         exports.LibraryInitializerTest.Run();
     }
 }
+
+export function customHook() {
+    globalThis.__customHookCalled = true;
+}

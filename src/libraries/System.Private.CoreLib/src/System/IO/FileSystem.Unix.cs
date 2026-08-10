@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -314,7 +314,7 @@ namespace System.IO
             }
         }
 
-        private static void CreateParentsAndDirectory(string fullPath, UnixFileMode unixCreateMode)
+        private static unsafe void CreateParentsAndDirectory(string fullPath, UnixFileMode unixCreateMode)
         {
             // Try create parents bottom to top and track those that could not
             // be created due to missing parents. Then create them top to bottom.
@@ -672,7 +672,7 @@ namespace System.IO
             Interop.CheckIo(Interop.Sys.Link(pathToTarget, path), path);
         }
 
-        internal static FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
+        internal static unsafe FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget, bool isDirectory)
         {
             ValueStringBuilder sb = new(stackalloc char[Interop.DefaultPathBufferSize]);
             sb.Append(linkPath);

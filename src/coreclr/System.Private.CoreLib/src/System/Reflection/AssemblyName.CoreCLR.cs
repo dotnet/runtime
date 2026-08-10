@@ -14,9 +14,12 @@ namespace System.Reflection
     //
     internal unsafe struct NativeAssemblyNameParts
     {
+        /// <safety>Holds only a pointer value addressing a character buffer; reading or writing the field never dereferences it, so field access alone cannot read or write that buffer (any dereference requires an unsafe context).</safety>
         public char* _pName;
         public ushort _major, _minor, _build, _revision;
+        /// <safety>Holds only a pointer value addressing a character buffer; reading or writing the field never dereferences it, so field access alone cannot read or write that buffer (any dereference requires an unsafe context).</safety>
         public char* _pCultureName;
+        /// <safety>Holds only a pointer value addressing a public-key-or-token byte buffer; reading or writing the field never dereferences it, so field access alone cannot read or write that buffer (any dereference requires an unsafe context).</safety>
         public byte* _pPublicKeyOrToken;
         public int _cbPublicKeyOrToken;
         public AssemblyNameFlags _flags;
@@ -63,7 +66,6 @@ namespace System.Reflection
 
     public sealed partial class AssemblyName
     {
-        [RequiresUnsafe]
         internal unsafe AssemblyName(NativeAssemblyNameParts* pParts)
             : this()
         {
@@ -147,7 +149,6 @@ namespace System.Reflection
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void ParseAsAssemblySpec(char* pAssemblyName, void* pAssemblySpec, Exception* pException)
         {
             try
@@ -179,7 +180,6 @@ namespace System.Reflection
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void CreateAssemblyName(AssemblyName* pResult, NativeAssemblyNameParts* pParts, Exception* pException)
         {
             try
@@ -193,7 +193,6 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyName_InitializeAssemblySpec")]
-        [RequiresUnsafe]
         private static unsafe partial void InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, void* pAssemblySpec);
     }
 }

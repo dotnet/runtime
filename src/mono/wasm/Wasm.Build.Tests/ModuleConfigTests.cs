@@ -23,7 +23,7 @@ public class ModuleConfigTests : WasmTemplateTestsBase
 
     [Theory]
     [InlineData(false)]
-    // [InlineData(true)] // ActiveIssue: https://github.com/dotnet/runtime/issues/124946
+    [InlineData(true)]
     public async Task DownloadProgressFinishes(bool failAssemblyDownload)
     {
         Configuration config = Configuration.Debug;
@@ -50,10 +50,36 @@ public class ModuleConfigTests : WasmTemplateTestsBase
             "The download progress test did emit unexpected message about second download retry"
         );
         Assert.True(
-            result.TestOutput.Any(m => m.Contains("Throw error instead of downloading resource") == failAssemblyDownload),
+            result.TestOutput.Any(m => m.Contains("Throw error instead of downloading resource")) == failAssemblyDownload,
             failAssemblyDownload
                 ? "The download progress test didn't emit expected message about failing download"
                 : "The download progress test did emit unexpected message about failing download"
+        );
+    }
+
+    [Fact]
+    public async Task DownloadRetryRecoversFromFailure()
+    {
+        Configuration config = Configuration.Release;
+        ProjectInfo info = CopyTestAsset(config, false, TestAsset.WasmBasicTestApp, "ModuleConfigTests_DownloadRetryRecoversFromFailure");
+        PublishProject(info, config);
+
+        var result = await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "DownloadResourceProgressTest",
+            BrowserQueryString: new NameValueCollection { {"failAssemblyDownload", "true" } }
+        ));
+        Assert.True(
+            result.TestOutput.Any(m => m.Contains("DownloadResourceProgress: Finished")),
+            "Download progress didn't finish after retries"
+        );
+        Assert.True(
+            result.ConsoleOutput.Any(m => m.Contains("Retrying download")),
+            "Expected retry log message was not emitted"
+        );
+        Assert.False(
+            result.ConsoleOutput.Any(m => m.Contains("Retrying download (2)")),
+            "Second retry should not be needed since first retry succeeds"
         );
     }
 
@@ -95,10 +121,27 @@ public class ModuleConfigTests : WasmTemplateTestsBase
         );
     }
 
+    [Fact]
+    public async Task BufferedAssetsTest()
+    {
+        Configuration config = Configuration.Debug;
+        ProjectInfo info = CopyTestAsset(
+            config,
+            aot: false,
+            TestAsset.WasmBasicTestApp,
+            "ModuleConfigTests_BufferedAssetsTest",
+            extraProperties: "<WasmEmitSymbolMap>true</WasmEmitSymbolMap>");
+        PublishProject(info, config, new PublishOptions(AssertAppBundle: false));
+        await RunForPublishWithWebServer(new BrowserRunOptions(
+            Configuration: config,
+            TestScenario: "BufferedAssetsTest"
+        ));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    [TestCategory("native")]
+    [TestCategory("native-mono")]
     public void SymbolMapFileEmitted(bool isPublish)
         => SymbolMapFileEmittedCore(emitSymbolMap: true, isPublish);
 

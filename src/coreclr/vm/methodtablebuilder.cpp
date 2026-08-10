@@ -675,7 +675,7 @@ MethodTableBuilder::BuildMethodTableThrowException(
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -1174,6 +1174,10 @@ MethodTableBuilder::CopyParentVtable()
      }
 }
 
+#ifdef TARGET_ARM64
+extern "C" uint64_t GetSveLengthFromOS();
+#endif
+
 //*******************************************************************************
 // Determine if this is the special SIMD type System.Numerics.Vector<T>, whose
 // size is determined dynamically based on the hardware and the presence of JIT
@@ -1186,7 +1190,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (!bmtProp->fIsIntrinsicType)
         return false;
 
@@ -1205,6 +1209,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     CORJIT_FLAGS CPUCompileFlags       = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
     uint32_t     numInstanceFieldBytes = 16;
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
     {
         numInstanceFieldBytes = 64;
@@ -1213,13 +1218,19 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     {
         numInstanceFieldBytes = 32;
     }
+#elif defined(TARGET_ARM64)
+    if (CPUCompileFlags.IsSet(InstructionSet_VectorT))
+    {
+        numInstanceFieldBytes = (uint32_t) GetSveLengthFromOS();
+    }
+#endif
 
     if (numInstanceFieldBytes != 16)
     {
         bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
         return true;
     }
-#endif // TARGET_X86 || TARGET_AMD64
+#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
 
     return false;
 }
@@ -1238,15 +1249,8 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
 
     if (GetInterfaceType()->GetMethodTable()->HasVirtualStaticMethods())
     {
-        MethodTable::MethodIterator it(GetInterfaceType()->GetMethodTable());
-        for (; it.IsValid(); it.Next())
-        {
-            MethodDesc *pDeclMD = it.GetDeclMethodDesc();
-            if (pDeclMD->IsStatic() && pDeclMD->IsVirtual())
-            {
-                cSlotsTotal++;
-            }
-        }
+        // cSlotsTotal is an overestimate. Computing an exact value would require iterating all methods.
+        cSlotsTotal = GetInterfaceType()->GetMethodTable()->GetNumMethods();
     }
 
     bmtInterfaceSlotImpl * pST = new (pStackingAllocator) bmtInterfaceSlotImpl[cSlotsTotal];
@@ -1262,7 +1266,7 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
         }
 
         bmtRTMethod * pCurMethod = new (pStackingAllocator)
-            bmtRTMethod(GetInterfaceType(), it.GetDeclMethodDesc());
+            bmtRTMethod(GetInterfaceType(), pDeclMD);
 
         if (pDeclMD->IsStatic())
         {
@@ -1694,7 +1698,21 @@ MethodTableBuilder::BuildMethodTableThrowing(
         //
         ComputeInterfaceMapEquivalenceSet();
 
+#ifdef _DEBUG
+        // In debug builds always run PlaceInterfaceMethods so that the DispatchMap built for a
+        // specific instantiation can be validated against the reused typical instantiation map
+        // (see AllocateNewMT).
         PlaceInterfaceMethods();
+#else
+        // In release builds, skip the (potentially expensive) interface method placement when the
+        // typical instantiation's DispatchMap can be reused, or when the resulting DispatchMap is
+        // already known to be empty (see GetTypicalMethodTableForDispatchMapReuse).
+        MethodTable *pUnusedTypicalMTForDispatchMap = NULL;
+        if (GetTypicalMethodTableForDispatchMapReuse(&pUnusedTypicalMTForDispatchMap) == DispatchMapReuseKind::BuildNormally)
+        {
+            PlaceInterfaceMethods();
+        }
+#endif // _DEBUG
 
         ProcessMethodImpls();
         ProcessInexactMethodImpls();
@@ -4450,7 +4468,7 @@ IS_VALUETYPE:
                             SetHasFieldsWhichMustBeInited();
 
 #ifdef FEATURE_READYTORUN
-                        if (!(pByValueClass->IsTruePrimitive() || pByValueClass->IsEnum()))
+                        if (!pByValueClass->IsPrimitive())
                         {
                             CheckLayoutDependsOnOtherModules(pByValueClass);
                         }
@@ -4929,8 +4947,6 @@ VOID MethodTableBuilder::TestOverRide(bmtMethodHandle hParentMethod,
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_REDUCEACCESS, hChildMethod.GetMethodSignature().GetToken());
     }
-
-    return;
 }
 
 //*******************************************************************************
@@ -5040,8 +5056,6 @@ VOID MethodTableBuilder::TestMethodImpl(
             BuildMethodTableThrowException(IDS_CLASSLOAD_MI_SEALED_DECL);
         }
     }
-
-    return;
 }
 
 
@@ -6255,7 +6269,7 @@ MethodTableBuilder::InitMethodDesc(
     {
         THROWS;
         if (fEnC) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -8024,6 +8038,49 @@ MethodTableBuilder::PlaceInterfaceMethods()
 
 
 //*******************************************************************************
+// Determines how the DispatchMap for the type being built relates to its typical instantiation.
+// The encoded DispatchMap is instantiation-independent (it consists of type IDs and slot numbers
+// only), so a non-typical instantiation of a generic type can reuse its typical instantiation's
+// DispatchMap directly, avoiding a redundant - and potentially expensive - run of
+// PlaceInterfaceMethods for every instantiation.
+//
+//   - BuildNormally:  there is no typical instantiation to reuse from (interface or typical type
+//                     definition); PlaceInterfaceMethods must run and the map is built normally.
+//   - ReuseTypicalMap: the typical instantiation has its own DispatchMap; *ppTypicalMTForReuse is
+//                     set to it so its bytes can be reused.
+//   - KnownEmpty:     the typical instantiation has no DispatchMap, so this instantiation's map is
+//                     known to be empty; PlaceInterfaceMethods can be skipped entirely.
+MethodTableBuilder::DispatchMapReuseKind
+MethodTableBuilder::GetTypicalMethodTableForDispatchMapReuse(MethodTable **ppTypicalMTForReuse)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(ppTypicalMTForReuse != NULL);
+    *ppTypicalMTForReuse = NULL;
+
+    // DispatchMaps are not built for interfaces.
+    if (IsInterface())
+        return DispatchMapReuseKind::BuildNormally;
+
+    // Only non-typical instantiations of generic types have a distinct typical instantiation.
+    if (bmtGenerics->IsTypicalTypeDefinition())
+        return DispatchMapReuseKind::BuildNormally;
+
+    MethodTable *pTypicalMT = bmtGenerics->GetTypicalMethodTable();
+    _ASSERTE(pTypicalMT != NULL);
+
+    // If the typical instantiation has no DispatchMap of its own, then this non-typical
+    // instantiation would produce an (identical) empty DispatchMap. The result is therefore known
+    // to be empty and PlaceInterfaceMethods can be skipped.
+    if (!pTypicalMT->HasDispatchMapSlot())
+        return DispatchMapReuseKind::KnownEmpty;
+
+    *ppTypicalMTForReuse = pTypicalMT;
+    return DispatchMapReuseKind::ReuseTypicalMap;
+} // MethodTableBuilder::GetTypicalMethodTableForDispatchMapReuse
+
+
+//*******************************************************************************
 //
 // Used by BuildMethodTable
 //
@@ -8314,6 +8371,9 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     bool hasInt128Field = (pParentMT && pParentMT->IsInt128OrHasInt128Fields())
         || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Int128) == EEClassLayoutInfo::NestedFieldFlags::Int128);
 
+    bool hasDecimalField = (pParentMT && pParentMT->IsDecimalFloatingPointOrHasDecimalFloatingPointFields())
+        || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::DecimalFloatingPoint) == EEClassLayoutInfo::NestedFieldFlags::DecimalFloatingPoint);
+
     bool isAlign8 = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align8) == EEClassLayoutInfo::NestedFieldFlags::Align8)
 #if defined(FEATURE_64BIT_ALIGNMENT)
         || (pParentMT && pParentMT->RequiresAlign8())
@@ -8326,6 +8386,7 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     pLayoutInfo->SetIsBlittable(isBlittable ? TRUE : FALSE);
     pLayoutInfo->SetHasAutoLayoutField(isAutoLayoutOrHasAutoLayoutField ? TRUE : FALSE);
     pLayoutInfo->SetIsInt128OrHasInt128Fields(hasInt128Field ? TRUE : FALSE);
+    pLayoutInfo->SetIsDecimalFloatingPointOrHasDecimalFloatingPointFields(hasDecimalField ? TRUE : FALSE);
     pLayoutInfo->SetHasExplicitSize(bmtLayout->classSize);
 
     if (bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Sequential)
@@ -8952,7 +9013,7 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
 
     if (pFD->IsByValue())
         return (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass);
-    return (1 << (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass));
+    return 1 << (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass);
 }
 
 #ifdef UNIX_AMD64_ABI
@@ -10689,6 +10750,18 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 return;
             }
+
+#ifdef TARGET_WASM
+            // System.Numerics.Vector<T> is a v128 value on wasm, so it needs the same 16-byte
+            // alignment as System.Runtime.Intrinsics.Vector128<T> above. Its metadata layout is
+            // already 16 bytes (two UInt64 fields), but those only give it 8-byte alignment,
+            // which disagrees with crossgen2 and the interpreter.
+            if ((strcmp(nameSpace, g_NumericsNS) == 0) && (strcmp(name, "Vector`1") == 0))
+            {
+                pClass->GetLayoutInfo()->SetAlignmentRequirement(16); // sizeof(v128)
+                return;
+            }
+#endif // TARGET_WASM
         }
 
         if (g_pNullableClass != NULL)
@@ -10736,16 +10809,51 @@ void MethodTableBuilder::CheckForSystemTypes()
         // Value types
         //
 
+        // The IEEE 754 decimal floating-point types live in System.Numerics and require special ABI
+        // handling similar to Int128/UInt128 (Decimal128 shares __int128's 16-byte alignment).
+        if (strcmp(nameSpace, g_NumericsNS) == 0)
+        {
+            if ((strcmp(name, g_Decimal32Name) == 0)
+                || (strcmp(name, g_Decimal64Name) == 0)
+                || (strcmp(name, g_Decimal128Name) == 0))
+            {
+                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
+                pLayout->SetIsDecimalFloatingPointOrHasDecimalFloatingPointFields(TRUE);
+
+                if (strcmp(name, g_Decimal128Name) == 0)
+                {
+                    // Decimal32/Decimal64 map onto uint/ulong and keep their natural alignment.
+                    // Decimal128 corresponds to the _Decimal128 ABI primitive, which mirrors the
+                    // 16-byte alignment applied to Int128/UInt128.
+#ifdef TARGET_ARM
+                    // No _Decimal128 type exists for the Procedure Call Standard for ARM. We default
+                    // to the same alignment as __m128, matching the Int128/UInt128 treatment.
+                    pLayout->SetAlignmentRequirement(8);
+#elif defined(TARGET_64BIT) || defined(TARGET_X86)
+                    pLayout->SetAlignmentRequirement(16); // sizeof(_Decimal128)
+#elif defined(TARGET_WASM)
+                    // The Wasm Basic C ABI does not define a decimal type; it tracks what the
+                    // clang/LLVM Wasm backend implements, and clang has no _Decimal128. Match
+                    // __int128_t, the only other 16 byte scalar it does define, which is 16 byte
+                    // aligned (including under Emscripten, which only reduces long double to 8).
+                    pLayout->SetAlignmentRequirement(16);
+#else
+#error Unknown architecture
+#endif // TARGET_ARM
+                }
+            }
+            return;
+        }
+
         // All special value types are in the system namespace
         if (strcmp(nameSpace, g_SystemNS) != 0)
             return;
 
         // Check if it is a primitive type
         CorElementType type = CorTypeInfo::FindPrimitiveType(name);
-        if (type != ELEMENT_TYPE_END)
+        if (type != ELEMENT_TYPE_END && CorTypeInfo::IsPrimitiveType(type))
         {
-            pMT->SetInternalCorElementType(type);
-            pMT->SetIsTruePrimitive();
+            pMT->SetInternalCorElementType(type, true);
 
 #if defined(TARGET_X86) && defined(UNIX_X86_ABI)
             switch (type)
@@ -10777,18 +10885,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         else if (strcmp(name, g_NullableName) == 0)
         {
             pMT->SetIsNullable();
-        }
-        else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeMethodHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeFieldHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
         }
         else if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
         {
@@ -10889,14 +10985,13 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         , AllocMemTracker *pamTracker
     )
 {
-    CONTRACT (MethodTable*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DWORD dwNonVirtualSlots = dwVtableSlots - dwVirtuals;
 
@@ -10912,7 +11007,22 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     BYTE *pbDispatchMapTemp = NULL;
     UINT32 cbDispatchMapTemp = 0;
     size_t dispatchMapAllocationSize = 0;
-    if (bmtVT->pDispatchMapBuilder->Count() > 0)
+
+    // Determine whether this (non-typical) generic instantiation can reuse its typical
+    // instantiation's DispatchMap, or whether its DispatchMap is already known to be empty.
+    // The encoded map is instantiation-independent.
+    MethodTable *pTypicalMTForDispatchMap = NULL;
+    DispatchMapReuseKind dispatchMapReuseKind = GetTypicalMethodTableForDispatchMapReuse(&pTypicalMTForDispatchMap);
+
+    if (bmtVT->pDispatchMapBuilder->Count() > 0
+#ifndef _DEBUG
+        // In release builds, when reusing the typical instantiation's map, PlaceInterfaceMethods
+        // was skipped, so the builder only holds a partial (method-impl-only) map. Don't bother
+        // encoding it; it would just be discarded below. When the map is known to be empty the
+        // builder is empty as well, so nothing needs to be encoded.
+        && dispatchMapReuseKind == DispatchMapReuseKind::BuildNormally
+#endif // !_DEBUG
+        )
     {
         DispatchMapBuilder          *pDispatchMapBuilder = bmtVT->pDispatchMapBuilder;
         CONSISTENCY_CHECK(CheckPointer(pDispatchMapBuilder));
@@ -10926,6 +11036,40 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
         // Now determine the size of the dispatch map, so that we can allocate it in the MethodTableAuxiliaryData
         dispatchMapAllocationSize = (size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp);
+    }
+
+    if (dispatchMapReuseKind == DispatchMapReuseKind::ReuseTypicalMap)
+    {
+        _ASSERTE(pTypicalMTForDispatchMap != NULL);
+        DispatchMap *pTypicalDispatchMap = pTypicalMTForDispatchMap->GetDispatchMap();
+        // The reuse helper only returns a MethodTable that has its own DispatchMap slot.
+        CONSISTENCY_CHECK(CheckPointer(pTypicalDispatchMap));
+        BYTE  *pbTypicalMap = pTypicalDispatchMap->GetEncodedMapData();
+        UINT32 cbTypicalMap = pTypicalDispatchMap->GetMapSize();
+
+        // Validate that the DispatchMap we just built for this specific instantiation is
+        // byte-for-byte identical to the typical instantiation's DispatchMap. If this fires,
+        // the DispatchMap is not actually instantiation-independent and cannot be reused.
+        _ASSERTE_MSG(cbTypicalMap == cbDispatchMapTemp,
+            "Typical instantiation DispatchMap size differs from the specific instantiation's DispatchMap");
+        _ASSERTE_MSG((cbTypicalMap == 0) || (memcmp(pbTypicalMap, pbDispatchMapTemp, cbTypicalMap) == 0),
+            "Typical instantiation DispatchMap contents differ from the specific instantiation's DispatchMap");
+
+#ifndef _DEBUG
+        // Reuse the typical instantiation's encoded DispatchMap directly. It is fully constructed
+        // and immutable; the DispatchMap constructor below copies the bytes into this type's map.
+        pbDispatchMapTemp = pbTypicalMap;
+        cbDispatchMapTemp = cbTypicalMap;
+        dispatchMapAllocationSize = (size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp);
+#endif // _DEBUG
+    }
+    else if (dispatchMapReuseKind == DispatchMapReuseKind::KnownEmpty)
+    {
+        // The typical instantiation has no DispatchMap, so this instantiation's DispatchMap must be
+        // empty too. In debug builds PlaceInterfaceMethods always runs, so validate that it indeed
+        // produced nothing.
+        _ASSERTE_MSG(bmtVT->pDispatchMapBuilder->Count() == 0,
+            "Non-typical instantiation produced DispatchMap entries even though its typical instantiation has no DispatchMap");
     }
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
@@ -11001,7 +11145,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
-    if (bmtVT->pDispatchMapBuilder->Count() > 0)
+    if (dispatchMapAllocationSize > 0)
     {
         pMT->SetFlag(MethodTable::enum_flag_HasDispatchMapSlot);
 
@@ -11115,7 +11259,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     pMT->m_pAuxiliaryData->m_dwLastVerifedGCCnt = (DWORD)-1;
 #endif // _DEBUG
 
-    RETURN(pMT);
+    return pMT;
 }
 
 
@@ -12031,7 +12175,7 @@ VOID MethodTableBuilder::CheckLayoutDependsOnOtherModules(MethodTable * pDepende
     STANDARD_VM_CONTRACT;
 
     // These cases are expected to be handled by the caller
-    _ASSERTE(!(pDependencyMT == g_pObjectClass || pDependencyMT->IsTruePrimitive() || ((g_pEnumClass != NULL) && pDependencyMT->IsEnum())));
+    _ASSERTE(!(pDependencyMT == g_pObjectClass || pDependencyMT->IsPrimitive()));
 
     //
     // WARNING: Changes in this algorithm are potential ReadyToRun breaking changes !!!
@@ -12643,15 +12787,13 @@ MethodTableBuilder::GatherGenericsInfo(
             bmtGenericsInfo->fSharedByGenericInstantiations = TypeHandle::IsCanonicalSubtypeInstantiation(inst);
             _ASSERTE(bmtGenericsInfo->fSharedByGenericInstantiations == ClassLoader::IsSharableInstantiation(inst));
 
-#ifdef _DEBUG
             // Set typical instantiation MethodTable
             {
                 MethodTable * pTypicalInstantiationMT = pModule->LookupTypeDef(cl).AsMethodTable();
                 // Typical instantiation was already loaded by code:ClassLoader::LoadApproxTypeThrowing
                 _ASSERTE(pTypicalInstantiationMT != NULL);
-                bmtGenericsInfo->dbg_pTypicalInstantiationMT = pTypicalInstantiationMT;
+                bmtGenericsInfo->pTypicalInstantiationMT = pTypicalInstantiationMT;
             }
-#endif //_DEBUG
         }
 
         TypeHandle * pDestInst = (TypeHandle *)inst.GetRawArgs();
@@ -12879,15 +13021,13 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     Instantiation     inst,
     AllocMemTracker * pamTracker)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(!RETVAL.IsNull());
-        POSTCONDITION(CheckPointer(RETVAL.GetMethodTable()));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable * pMT = NULL;
 
@@ -13165,5 +13305,5 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         parentInst,
         (WORD)cInterfaces);
 
-    RETURN(TypeHandle(pMT));
+    return TypeHandle(pMT);
 } // ClassLoader::CreateTypeHandleForTypeDefThrowing

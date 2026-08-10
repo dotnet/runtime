@@ -3,14 +3,14 @@
 
 import type { DiagnosticCommandOptions } from "../types";
 
-import { commandStopTracing, commandSampleProfiler } from "./client-commands";
+import { commandResumeRuntime, commandStopTracing, commandSampleProfiler } from "./client-commands";
 import { dotnetApi, dotnetLoaderExports, Module } from "./cross-module";
 import { serverSession, setupJsClient } from "./diagnostic-server-js";
 import { IDiagnosticSession } from "./types";
 
-export function collectCpuSamples(options?: DiagnosticCommandOptions): Promise<Uint8Array[]> {
+export function collectCpuSamples(options?: DiagnosticCommandOptions, startup?: boolean): Promise<Uint8Array[]> {
     if (!options) options = {};
-    if (!serverSession) {
+    if (!startup && !serverSession) {
         throw new Error("No active JS diagnostic session");
     }
     if (!dotnetApi.getConfig().environmentVariables!["DOTNET_WasmPerformanceInstrumentation"]) {
@@ -19,6 +19,7 @@ export function collectCpuSamples(options?: DiagnosticCommandOptions): Promise<U
 
     const onClosePromise = dotnetLoaderExports.createPromiseCompletionSource<Uint8Array[]>();
     function onSessionStart(session: IDiagnosticSession): void {
+        session.sendCommand(commandResumeRuntime());
         // stop tracing after period of monitoring
         Module.safeSetTimeout(() => {
             session.sendCommand(commandStopTracing(session.sessionId));
@@ -30,6 +31,6 @@ export function collectCpuSamples(options?: DiagnosticCommandOptions): Promise<U
         skipDownload: options.skipDownload,
         commandOnAdvertise: () => commandSampleProfiler(options),
         onSessionStart,
-    });
+    }, startup);
     return onClosePromise.promise;
 }

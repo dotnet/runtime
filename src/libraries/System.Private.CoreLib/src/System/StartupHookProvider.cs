@@ -71,7 +71,6 @@ namespace System
         // and call the hook.
         [UnconditionalSuppressMessageAttribute("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "An ILLink warning when trimming an app with System.StartupHookProvider.IsSupported=true already exists for ProcessStartupHooks.")]
-        [RequiresUnsafe]
         private static unsafe void CallStartupHook(char* pStartupHookPart)
         {
             if (!IsSupported)
@@ -88,7 +87,6 @@ namespace System
 
 #if CORECLR
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void CallStartupHook(char* pStartupHookPart, Exception* pException)
         {
             try

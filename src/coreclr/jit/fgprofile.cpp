@@ -2361,7 +2361,7 @@ void HandleHistogramProbeInstrumentor::Prepare(bool isPreImport)
     //
     for (BasicBlock* const block : m_compiler->Blocks())
     {
-        block->bbHistogramSchemaIndex = -1;
+        block->bbHandleHistogramSchemaIndex = -1;
     }
 #endif
 }
@@ -2382,7 +2382,7 @@ void HandleHistogramProbeInstrumentor::BuildSchemaElements(BasicBlock* block, Sc
 
     // Remember the schema index for this block.
     //
-    block->bbHistogramSchemaIndex = (int)schema.size();
+    block->bbHandleHistogramSchemaIndex = (int)schema.size();
 
     // Scan the statements and identify the class probes
     //
@@ -2416,7 +2416,7 @@ void HandleHistogramProbeInstrumentor::Instrument(BasicBlock* block, Schema& sch
 
     // Scan the statements and add class probes
     //
-    int histogramSchemaIndex = block->bbHistogramSchemaIndex;
+    int histogramSchemaIndex = block->bbHandleHistogramSchemaIndex;
     assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
 
     HandleHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
@@ -2445,7 +2445,7 @@ void ValueInstrumentor::Prepare(bool isPreImport)
     //
     for (BasicBlock* const block : m_compiler->Blocks())
     {
-        block->bbCountSchemaIndex = -1;
+        block->bbValueHistogramSchemaIndex = -1;
     }
 #endif
 }
@@ -2465,7 +2465,7 @@ void ValueInstrumentor::BuildSchemaElements(BasicBlock* block, Schema& schema)
         return;
     }
 
-    block->bbHistogramSchemaIndex = (int)schema.size();
+    block->bbValueHistogramSchemaIndex = (int)schema.size();
 
     BuildValueHistogramProbeSchemaGen                             schemaGen(schema, m_schemaCount);
     ValueHistogramProbeVisitor<BuildValueHistogramProbeSchemaGen> visitor(m_compiler, schemaGen);
@@ -2491,7 +2491,7 @@ void ValueInstrumentor::Instrument(BasicBlock* block, Schema& schema, uint8_t* p
         return;
     }
 
-    int histogramSchemaIndex = block->bbHistogramSchemaIndex;
+    int histogramSchemaIndex = block->bbValueHistogramSchemaIndex;
     assert((histogramSchemaIndex >= 0) && (histogramSchemaIndex < (int)schema.size()));
 
     ValueHistogramProbeInserter insertProbes(schema, profileMemory, &histogramSchemaIndex, m_instrCount);
@@ -4595,6 +4595,8 @@ void Compiler::fgDebugCheckProfile(PhaseChecks checks)
 //
 // Arguments:
 //   checks - checker options
+//   dump   - if true, report inconsistencies via JITDUMP without asserting (used by the
+//            re-run below to log details before the initial pass asserts)
 //
 // Returns:
 //   True if all enabled checks pass
@@ -4610,7 +4612,7 @@ void Compiler::fgDebugCheckProfile(PhaseChecks checks)
 //   There's no point checking until we've built pred lists, as
 //   we can't easily reason about consistency without them.
 //
-bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
+bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks, bool dump)
 {
     // We can check classic (min/max, late computed) weights
     //   and/or
@@ -4845,13 +4847,20 @@ bool Compiler::fgDebugCheckProfileWeights(ProfileChecks checks)
 
         // Note we only assert when we think the profile data should be consistent.
         //
-        if (assertOnFailure)
+        if (assertOnFailure && !dump)
         {
+            // Re-run with dumping forced on so the offending blocks are logged before we assert.
+            //
+            const bool wasVerbose = verbose;
+            verbose               = true;
+            fgDebugCheckProfileWeights(checks, /* dump */ true);
+            verbose = wasVerbose;
+
             assert(!"Inconsistent profile data");
         }
     }
 
-    if (unflaggedBlocks > 0)
+    if ((unflaggedBlocks > 0) && !dump)
     {
         JITDUMP("%d blocks are missing BBF_PROF_WEIGHT flag.\n", unflaggedBlocks);
         assert(!"Missing BBF_PROF_WEIGHT flag");

@@ -20,6 +20,7 @@ namespace System.Runtime.CompilerServices
         /// Returns a pointer to the given by-ref parameter.
         /// </summary>
         /// <typeparam name="T">The type referenced by the byref parameter.</typeparam>
+        /// <safety>Converts a managed pointer (byref) into an unmanaged one without dereferencing it; the danger is deferred to whoever dereferences the pointer, which the GC neither tracks nor updates.</safety>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__AS_POINTER
         // AOT:AsPointer
@@ -153,6 +154,7 @@ namespace System.Runtime.CompilerServices
         /// Adds an element offset to the given pointer.
         /// </summary>
         /// <typeparam name="T">The element type referenced by the pointer.</typeparam>
+        /// <safety>Computes a new pointer by adding elementOffset scaled by sizeof(T); it performs only pointer arithmetic and never dereferences the pointer.</safety>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_ADD
         // AOT:Add
@@ -281,7 +283,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void Copy<T>(void* destination, ref readonly T source)
             where T : allows ref struct
         {
@@ -302,7 +303,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void Copy<T>(ref T destination, void* source)
             where T : allows ref struct
         {
@@ -323,7 +323,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void CopyBlock(void* destination, void* source, uint byteCount)
         {
             throw new PlatformNotSupportedException();
@@ -362,7 +361,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void CopyBlockUnaligned(void* destination, void* source, uint byteCount)
         {
             throw new PlatformNotSupportedException();
@@ -483,7 +481,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void InitBlock(void* startAddress, byte value, uint byteCount)
         {
             throw new PlatformNotSupportedException();
@@ -523,7 +520,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void InitBlockUnaligned(void* startAddress, byte value, uint byteCount)
         {
             throw new PlatformNotSupportedException();
@@ -572,7 +568,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static T ReadUnaligned<T>(void* source)
             where T : allows ref struct
         {
@@ -624,7 +619,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void WriteUnaligned<T>(void* destination, T value)
             where T : allows ref struct
         {
@@ -697,7 +691,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static T Read<T>(void* source)
             where T : allows ref struct
         {
@@ -711,7 +704,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static void Write<T>(void* destination, T value)
             where T : allows ref struct
         {
@@ -725,7 +717,6 @@ namespace System.Runtime.CompilerServices
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [RequiresUnsafe]
         public static ref T AsRef<T>(void* source)
             where T : allows ref struct
         {
@@ -860,6 +851,7 @@ namespace System.Runtime.CompilerServices
         /// Subtracts an element offset from the given void pointer.
         /// </summary>
         /// <typeparam name="T">The element type referenced by the pointer.</typeparam>
+        /// <safety>Computes a new pointer by subtracting elementOffset scaled by sizeof(T); it performs only pointer arithmetic and never dereferences the pointer.</safety>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_INT_SUBTRACT
         [NonVersionable]

@@ -4,7 +4,9 @@
 #if DEBUG
 using System;
 using System.Threading.Tasks;
+using ILLink.CodeFix;
 using ILLink.Shared;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
@@ -17,6 +19,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 {
     public class RequiresUnsafeCodeFixTests
     {
+        static Solution SetOptions(Solution solution, ProjectId projectId)
+        {
+            var project = solution.GetProject(projectId)!;
+            var parseOptions = (CSharpParseOptions)project.ParseOptions!;
+            parseOptions = parseOptions.WithLanguageVersion(LanguageVersion.Preview)
+                .WithFeatures([.. parseOptions.Features, new("updated-memory-safety-rules", "")]);
+            var compilationOptions = (CSharpCompilationOptions)project.CompilationOptions!;
+            compilationOptions = compilationOptions.WithAllowUnsafe(true);
+            return solution.WithProjectParseOptions(projectId, parseOptions)
+                .WithProjectCompilationOptions(projectId, compilationOptions);
+        }
+
         static Task VerifyRequiresUnsafeCodeFix(
             string source,
             string fixedSource,
@@ -32,18 +46,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 CodeActionIndex = codeActionIndex
             };
             test.ExpectedDiagnostics.AddRange(baselineExpected);
-            test.TestState.AnalyzerConfigFiles.Add(
-                ("/.editorconfig", SourceText.From(@$"
-is_global = true
-build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
-            // Enable unsafe code compilation
-            test.SolutionTransforms.Add((solution, projectId) =>
-            {
-                var project = solution.GetProject(projectId)!;
-                var compilationOptions = (CSharpCompilationOptions)project.CompilationOptions!;
-                compilationOptions = compilationOptions.WithAllowUnsafe(true);
-                return solution.WithProjectCompilationOptions(projectId, compilationOptions);
-            });
+            test.SolutionTransforms.Add(SetOptions);
             if (numberOfIterations != null)
             {
                 test.NumberOfIncrementalIterations = numberOfIterations;
@@ -61,19 +64,12 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
                         int x = M1();
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -82,8 +78,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
@@ -95,21 +90,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(10, 17, 10, 19)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 17, 9, 21)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -122,19 +111,12 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static void M1() { }
+                    public static unsafe void M1() { }
 
                     public void M2()
                     {
                         M1();
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -143,8 +125,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static void M1() { }
+                    public static unsafe void M1() { }
 
                     public void M2()
                     {
@@ -155,21 +136,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(10, 9, 10, 11)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 9, 9, 13)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -182,19 +157,12 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2()
                     {
                         return M1();
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -203,8 +171,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2()
                     {
@@ -215,21 +182,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(10, 16, 10, 18)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 16, 9, 20)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -242,8 +203,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static bool M1() => true;
+                    public static unsafe bool M1() => true;
 
                     public void M2()
                     {
@@ -253,12 +213,6 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             var fixedSource = """
@@ -266,8 +220,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static bool M1() => true;
+                    public static unsafe bool M1() => true;
 
                     public void M2()
                     {
@@ -281,21 +234,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(10, 13, 10, 15)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 13, 9, 17)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -308,8 +255,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
@@ -318,12 +264,6 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                             int x = M1();
                         }
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -336,132 +276,210 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
         }
 
         [Fact]
-        public async Task NoWarning_InsideUnsafeMethod()
+        public async Task CodeFix_InsideUnsafeMethod()
         {
             var test = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public unsafe void M2()
                     {
                         int x = M1();
                     }
                 }
+                """;
 
-                namespace System.Diagnostics.CodeAnalysis
+            var fixedSource = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C
                 {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
+                    public static unsafe int M1() => 0;
+
+                    public unsafe void M2()
+                    {
+                        int x;
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            x = M1();
+                        }
+                    }
                 }
                 """;
 
-            // No diagnostics expected - method has unsafe modifier
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
-                fixedSource: test, // No change expected
-                baselineExpected: Array.Empty<DiagnosticResult>(),
-                fixedExpected: Array.Empty<DiagnosticResult>());
+                fixedSource: fixedSource,
+                baselineExpected: new[] {
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 17, 9, 21)
+                        .WithArguments("C.M1()")
+                },
+                fixedExpected: Array.Empty<DiagnosticResult>(),
+                codeActionIndex: 0);
         }
 
         [Fact]
-        public async Task NoWarning_InsideUnsafeClass()
+        public async Task CodeFix_InsideUnsafeClass()
         {
             var test = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public unsafe class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
                         int x = M1();
                     }
                 }
+                """;
 
-                namespace System.Diagnostics.CodeAnalysis
+            var fixedSource = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public unsafe class C
                 {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
+                    public static unsafe int M1() => 0;
+
+                    public void M2()
+                    {
+                        int x;
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            x = M1();
+                        }
+                    }
                 }
                 """;
 
-            // No diagnostics expected - class has unsafe modifier
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
-                fixedSource: test, // No change expected
-                baselineExpected: Array.Empty<DiagnosticResult>(),
+                fixedSource: fixedSource,
+                baselineExpected: new[] {
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 17, 9, 21)
+                        .WithArguments("C.M1()")
+                },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
 
         [Fact]
-        public async Task NoWarning_InsideUnsafeProperty()
+        public async Task CodeFix_InsideUnsafeProperty()
         {
             var test = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public unsafe int P
                     {
                         get => M1();
                     }
                 }
+                """;
 
-                namespace System.Diagnostics.CodeAnalysis
+            var fixedSource = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C
                 {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
+                    public static unsafe int M1() => 0;
+
+                    public unsafe int P
+                    {
+                        get
+                        {
+                            // TODO(unsafe): Baselining unsafe usage
+                            unsafe
+                            {
+                                return M1();
+                            }
+                        }
+                    }
                 }
                 """;
 
-            // No diagnostics expected - property has unsafe modifier
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
-                fixedSource: test, // No change expected
-                baselineExpected: Array.Empty<DiagnosticResult>(),
-                fixedExpected: Array.Empty<DiagnosticResult>());
+                fixedSource: fixedSource,
+                baselineExpected: new[] {
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 16, 9, 20)
+                        .WithArguments("C.M1()")
+                },
+                fixedExpected: Array.Empty<DiagnosticResult>(),
+                codeActionIndex: 1);
         }
 
         [Fact]
-        public async Task NoWarning_InsideUnsafeLocalFunction()
+        public async Task CodeFix_InsideUnsafeLocalFunction()
         {
             var test = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
                         unsafe int Local() => M1();
+
                         _ = Local();
                     }
                 }
+                """;
 
-                namespace System.Diagnostics.CodeAnalysis
+            var fixedSource = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C
                 {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
+                    public static unsafe int M1() => 0;
+
+                    public unsafe void M2()
+                    {
+                        unsafe int Local()
+                        {
+                            // TODO(unsafe): Baselining unsafe usage
+                            unsafe
+                            {
+                                return M1();
+                            }
+                        }
+                        // TODO(unsafe): Baselining unsafe usage
+
+                        unsafe
+                        {
+                            _ = Local();
+                        }
+                    }
                 }
                 """;
 
-            // No diagnostics expected - local function has unsafe modifier
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
-                fixedSource: test, // No change expected
-                baselineExpected: Array.Empty<DiagnosticResult>(),
-                fixedExpected: Array.Empty<DiagnosticResult>());
+                fixedSource: fixedSource,
+                baselineExpected: new[] {
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 31, 9, 35)
+                        .WithArguments("C.M1()"),
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(11, 13, 11, 20)
+                        .WithArguments("Local()")
+                },
+                fixedExpected: Array.Empty<DiagnosticResult>(),
+                numberOfIterations: 3,
+                codeActionIndex: 0);
         }
 
         [Fact]
@@ -472,16 +490,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2() => M1();
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -490,8 +501,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2()
                     {
@@ -502,21 +512,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(8, 24, 8, 26)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(7, 24, 7, 28)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -529,16 +533,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static void M1() { }
+                    public static unsafe void M1() { }
 
                     public void M2() => M1();
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -547,8 +544,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static void M1() { }
+                    public static unsafe void M1() { }
 
                     public void M2()
                     {
@@ -559,21 +555,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(8, 25, 8, 27)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(7, 25, 7, 29)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -586,16 +576,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static void M1() { }
+                    public static unsafe void M1() { }
 
                     ~C() => M1();
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -604,8 +587,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static void M1() { }
+                    public static unsafe void M1() { }
 
                     ~C()
                     {
@@ -616,21 +598,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(8, 13, 8, 15)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(7, 13, 7, 17)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -643,16 +619,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int P => M1();
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -661,8 +630,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int P
                     {
@@ -676,24 +644,18 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(8, 21, 8, 23)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(7, 21, 7, 25)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>(),
-                codeActionIndex: 0);
+                codeActionIndex: 1);
         }
 
         [Fact]
@@ -704,19 +666,12 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int P
                     {
                         get => M1();
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -725,20 +680,19 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int P
                     {
-                        [RequiresUnsafe()]
-                        get => M1();
+                        get
+                        {
+                            // TODO(unsafe): Baselining unsafe usage
+                            unsafe
+                            {
+                                return M1();
+                            }
+                        }
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -746,12 +700,12 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(10, 16, 10, 18)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 16, 9, 20)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>(),
-                codeActionIndex: 0);
+                codeActionIndex: 1);
         }
 
         [Fact]
@@ -764,20 +718,13 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
                         int Local() => M1();
                         _ = Local();
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -786,8 +733,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
@@ -803,21 +749,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         _ = Local();
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(10, 24, 10, 26)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 24, 9, 28)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -832,8 +772,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
@@ -842,12 +781,6 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         System.Console.WriteLine(y);
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             var fixedSource = """
@@ -855,8 +788,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
@@ -870,21 +802,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         System.Console.WriteLine(y);
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(10, 17, 10, 19)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 17, 9, 21)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -899,8 +825,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
@@ -909,12 +834,6 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         System.Console.WriteLine(y);
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             var fixedSource = """
@@ -922,8 +841,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
@@ -937,21 +855,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         System.Console.WriteLine(y);
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(10, 17, 10, 19)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 17, 9, 21)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -965,20 +877,13 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
                         var x = M1();
                         System.Console.WriteLine(x);
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -987,8 +892,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
@@ -1001,21 +905,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         System.Console.WriteLine(x);
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(10, 17, 10, 19)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 17, 9, 21)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -1034,19 +932,12 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 {
                     private int _field;
 
-                    [RequiresUnsafe]
-                    public static ref int M1(ref int x) => ref x;
+                    public static unsafe ref int M1(ref int x) => ref x;
 
                     public void M2()
                     {
                         ref int x = ref M1(ref _field);
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -1058,8 +949,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 {
                     private int _field;
 
-                    [RequiresUnsafe]
-                    public static ref int M1(ref int x) => ref x;
+                    public static unsafe ref int M1(ref int x) => ref x;
 
                     public void M2()
                     {
@@ -1070,21 +960,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(12, 25, 12, 27)
-                        .WithArguments("C.M1(ref Int32)", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(11, 25, 11, 39)
+                        .WithArguments("C.M1(ref int)")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -1093,7 +977,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
         public async Task CodeFix_WrapInUnsafeBlock_RefLocalFromUnsafeAs_NoForwardDeclaration()
         {
             // Pattern matching real-world usage: ref byte x = ref Unsafe.As<T, byte>(ref source)
-            // The Unsafe.As call has [RequiresUnsafe], and the result is assigned to a ref local.
+            // The Unsafe.As call is unsafe, and the result is assigned to a ref local.
             // When the ref local is used after the declaration, those statements must be included
             // in the unsafe block since ref locals can't be forward-declared.
             var test = """
@@ -1110,18 +994,11 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     }
                 }
 
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
-
                 namespace System.Runtime.CompilerServices
                 {
                     public static class Unsafe
                     {
-                        [RequiresUnsafe]
-                        public static ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
+                        public static unsafe ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
                     }
                 }
                 """;
@@ -1145,18 +1022,11 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     }
                 }
 
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
-
                 namespace System.Runtime.CompilerServices
                 {
                     public static class Unsafe
                     {
-                        [RequiresUnsafe]
-                        public static ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
+                        public static unsafe ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
                     }
                 }
                 """;
@@ -1165,9 +1035,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(9, 26, 9, 47)
-                        .WithArguments("System.Runtime.CompilerServices.Unsafe.As<TFrom, TTo>(ref TFrom)", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 26, 9, 54)
+                        .WithArguments("System.Runtime.CompilerServices.Unsafe.As<char, byte>(ref char)")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -1193,18 +1063,11 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     }
                 }
 
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
-
                 namespace System.Runtime.CompilerServices
                 {
                     public static class Unsafe
                     {
-                        [RequiresUnsafe]
-                        public static ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
+                        public static unsafe ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
                         public static ref T Add<T>(ref T source, int elementOffset) => throw null!;
                     }
                 }
@@ -1230,18 +1093,11 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     }
                 }
 
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
-
                 namespace System.Runtime.CompilerServices
                 {
                     public static class Unsafe
                     {
-                        [RequiresUnsafe]
-                        public static ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
+                        public static unsafe ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
                         public static ref T Add<T>(ref T source, int elementOffset) => throw null!;
                     }
                 }
@@ -1251,9 +1107,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(9, 34, 9, 57)
-                        .WithArguments("System.Runtime.CompilerServices.Unsafe.As<TFrom, TTo>(ref TFrom)", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 34, 9, 64)
+                        .WithArguments("System.Runtime.CompilerServices.Unsafe.As<byte, ushort>(ref byte)")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -1280,18 +1136,11 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     }
                 }
 
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
-
                 namespace System.Runtime.CompilerServices
                 {
                     public static class Unsafe
                     {
-                        [RequiresUnsafe]
-                        public static ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
+                        public static unsafe ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
                         public static ref T Add<T>(ref T source, int elementOffset) => throw null!;
                     }
                 }
@@ -1318,18 +1167,11 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                     }
                 }
 
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
-
                 namespace System.Runtime.CompilerServices
                 {
                     public static class Unsafe
                     {
-                        [RequiresUnsafe]
-                        public static ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
+                        public static unsafe ref TTo As<TFrom, TTo>(ref TFrom source) => throw null!;
                         public static ref T Add<T>(ref T source, int elementOffset) => throw null!;
                     }
                 }
@@ -1339,9 +1181,9 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(9, 34, 9, 57)
-                        .WithArguments("System.Runtime.CompilerServices.Unsafe.As<TFrom, TTo>(ref TFrom)", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 34, 9, 64)
+                        .WithArguments("System.Runtime.CompilerServices.Unsafe.As<byte, ushort>(ref byte)")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -1355,20 +1197,13 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static ref readonly int M1(in int x) => ref x;
+                    public static unsafe ref readonly int M1(in int x) => ref x;
 
                     public void M2()
                     {
                         int value = 42;
                         ref readonly int x = ref M1(in value);
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -1377,8 +1212,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static ref readonly int M1(in int x) => ref x;
+                    public static unsafe ref readonly int M1(in int x) => ref x;
 
                     public void M2()
                     {
@@ -1390,21 +1224,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(11, 34, 11, 36)
-                        .WithArguments("C.M1(in Int32)", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(10, 34, 10, 46)
+                        .WithArguments("C.M1(in int)")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -1412,16 +1240,14 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
         [Fact]
         public async Task CodeFix_WrapInUnsafeBlock_NotOfferedForStatementsWithPragmaDirectives()
         {
-            // When statements to wrap have #pragma directives in their leading trivia,
-            // the "Wrap in unsafe block" fix should NOT be offered because it would
-            // destroy the directive structure. Only the "Add attribute" fix should be available.
+            // When statements to wrap have #pragma directives after the diagnostic statement,
+            // the unsafe block should not include the directive trivia.
             var test = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public void M2()
                     {
@@ -1433,27 +1259,23 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
-            // The fix adds [RequiresUnsafe] attribute to the method instead of wrapping in unsafe block
             var fixedSource = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
-                    [RequiresUnsafe()]
-                    public void M2()
+                    public unsafe void M2()
                     {
-                        int x = M1();
+                        int x;
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            x = M1();
+                        }
                 #pragma warning disable CS0168
                         if (x > 0)
                 #pragma warning restore CS0168
@@ -1461,48 +1283,35 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
-            // Use codeActionIndex: 0 since only "Add attribute" is offered (not "Wrap in unsafe block")
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(10, 17, 10, 19)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(9, 17, 9, 21)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>(),
+                numberOfIterations: 2,
                 codeActionIndex: 0);
         }
 
         [Fact]
-        public async Task CodeFix_AddRequiresUnsafeAttribute_Method()
+        public async Task CodeFix_AddUnsafeModifier_Method()
         {
             var test = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2()
                     {
                         return M1();
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -1511,20 +1320,67 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
-                    [RequiresUnsafe()]
+                    public unsafe int M2()
+                    {
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            return M1();
+                        }
+                    }
+                }
+                """;
+
+            var addUnsafeTest = new VerifyCS.Test
+            {
+                TestCode = test,
+                FixedCode = fixedSource,
+                CodeActionIndex = 0,
+                NumberOfIncrementalIterations = 2,
+                NumberOfFixAllIterations = 2
+            };
+            addUnsafeTest.ExpectedDiagnostics.Add(
+                DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                    .WithSpan(9, 16, 9, 20)
+                    .WithArguments("C.M1()"));
+            addUnsafeTest.SolutionTransforms.Add(SetOptions);
+            await addUnsafeTest.RunAsync();
+        }
+
+        [Fact]
+        public async Task CodeFix_WrapInUnsafeBlock_Method()
+        {
+            var test = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C
+                {
+                    public static unsafe int M1() => 0;
+
                     public int M2()
                     {
                         return M1();
                     }
                 }
+                """;
 
-                namespace System.Diagnostics.CodeAnalysis
+            var fixedSource = """
+                using System.Diagnostics.CodeAnalysis;
+
+                public class C
                 {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
+                    public static unsafe int M1() => 0;
+
+                    public int M2()
+                    {
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            return M1();
+                        }
+                    }
                 }
                 """;
 
@@ -1532,47 +1388,30 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
             {
                 TestCode = test,
                 FixedCode = fixedSource,
-                CodeActionIndex = 0
+                CodeActionIndex = 1
             };
             addAttributeTest.ExpectedDiagnostics.Add(
-                VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                    .WithSpan(10, 16, 10, 18)
-                    .WithArguments("C.M1()", "", ""));
-            addAttributeTest.TestState.AnalyzerConfigFiles.Add(
-                ("/.editorconfig", SourceText.From(@$"
-is_global = true
-build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
-            addAttributeTest.SolutionTransforms.Add((solution, projectId) =>
-            {
-                var project = solution.GetProject(projectId)!;
-                var compilationOptions = (CSharpCompilationOptions)project.CompilationOptions!;
-                compilationOptions = compilationOptions.WithAllowUnsafe(true);
-                return solution.WithProjectCompilationOptions(projectId, compilationOptions);
-            });
+                DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                    .WithSpan(9, 16, 9, 20)
+                    .WithArguments("C.M1()"));
+            addAttributeTest.SolutionTransforms.Add(SetOptions);
             await addAttributeTest.RunAsync();
         }
 
         [Fact]
-        public async Task CodeFix_AddRequiresUnsafeAttribute_Constructor()
+        public async Task CodeFix_WrapInUnsafeBlock_Constructor()
         {
             var test = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static void M1() { }
+                    public static unsafe void M1() { }
 
                     public C()
                     {
                         M1();
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -1581,20 +1420,16 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static void M1() { }
+                    public static unsafe void M1() { }
 
-                    [RequiresUnsafe()]
                     public C()
                     {
-                        M1();
+                        // TODO(unsafe): Baselining unsafe usage
+                        unsafe
+                        {
+                            M1();
+                        }
                     }
-                }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
                 }
                 """;
 
@@ -1602,23 +1437,13 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
             {
                 TestCode = test,
                 FixedCode = fixedSource,
-                CodeActionIndex = 0
+                CodeActionIndex = 1
             };
             addAttributeTest.ExpectedDiagnostics.Add(
-                VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                    .WithSpan(10, 9, 10, 11)
-                    .WithArguments("C.M1()", "", ""));
-            addAttributeTest.TestState.AnalyzerConfigFiles.Add(
-                ("/.editorconfig", SourceText.From(@$"
-is_global = true
-build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
-            addAttributeTest.SolutionTransforms.Add((solution, projectId) =>
-            {
-                var project = solution.GetProject(projectId)!;
-                var compilationOptions = (CSharpCompilationOptions)project.CompilationOptions!;
-                compilationOptions = compilationOptions.WithAllowUnsafe(true);
-                return solution.WithProjectCompilationOptions(projectId, compilationOptions);
-            });
+                DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                    .WithSpan(9, 9, 9, 13)
+                    .WithArguments("C.M1()"));
+            addAttributeTest.SolutionTransforms.Add(SetOptions);
             await addAttributeTest.RunAsync();
         }
 
@@ -1627,14 +1452,13 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
         {
             // When an expression-bodied member has preprocessor directives (#if/#else/#endif),
             // the "Wrap in unsafe block" fix should NOT be offered because it would destroy
-            // the conditional compilation structure. Only the "Add attribute" fix should be available.
+            // the conditional compilation structure.
             var test = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2()
                 #if SOME_DEFINE
@@ -1643,39 +1467,25 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         => M1();
                 #endif
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
-            // The fix should add [RequiresUnsafe] attribute (CodeActionIndex = 0)
-            // The "Wrap in unsafe block" fix (CodeActionIndex = 1) should NOT be available
             var fixedSource = """
                 using System.Diagnostics.CodeAnalysis;
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
-                    [RequiresUnsafe()]
-                    public int M2()
+                    public unsafe int M2()
                 #if SOME_DEFINE
                         => 42;
                 #else
                         => M1();
                 #endif
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
+
+            // The "Wrap in unsafe block" fix should NOT be available.
 
             var addAttributeTest = new VerifyCS.Test
             {
@@ -1686,20 +1496,14 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                 NumberOfFixAllIterations = 1
             };
             addAttributeTest.ExpectedDiagnostics.Add(
-                VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                    .WithSpan(12, 12, 12, 14)
-                    .WithArguments("C.M1()", "", ""));
-            addAttributeTest.TestState.AnalyzerConfigFiles.Add(
-                ("/.editorconfig", SourceText.From(@$"
-is_global = true
-build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
-            addAttributeTest.SolutionTransforms.Add((solution, projectId) =>
-            {
-                var project = solution.GetProject(projectId)!;
-                var compilationOptions = (CSharpCompilationOptions)project.CompilationOptions!;
-                compilationOptions = compilationOptions.WithAllowUnsafe(true);
-                return solution.WithProjectCompilationOptions(projectId, compilationOptions);
-            });
+                DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                    .WithSpan(11, 12, 11, 16)
+                    .WithArguments("C.M1()"));
+            addAttributeTest.FixedState.ExpectedDiagnostics.Add(
+                DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                    .WithSpan(11, 12, 11, 16)
+                    .WithArguments("C.M1()"));
+            addAttributeTest.SolutionTransforms.Add(SetOptions);
             await addAttributeTest.RunAsync();
         }
 
@@ -1711,8 +1515,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2(int x)
                     {
@@ -1725,12 +1528,6 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             var fixedSource = """
@@ -1738,8 +1535,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2(int x)
                     {
@@ -1756,21 +1552,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         }
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(13, 24, 13, 26)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(12, 24, 12, 28)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -1783,8 +1573,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2(bool condition)
                     {
@@ -1793,12 +1582,6 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         return 0;
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             var fixedSource = """
@@ -1806,8 +1589,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2(bool condition)
                     {
@@ -1822,21 +1604,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         return 0;
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(11, 20, 11, 22)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(10, 20, 10, 24)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }
@@ -1849,8 +1625,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2()
                     {
@@ -1859,12 +1634,6 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         return LocalFunc() + x;
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             var fixedSource = """
@@ -1872,8 +1641,7 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
 
                 public class C
                 {
-                    [RequiresUnsafe]
-                    public static int M1() => 0;
+                    public static unsafe int M1() => 0;
 
                     public int M2()
                     {
@@ -1890,21 +1658,15 @@ build_property.{MSBuildPropertyOptionNames.EnableUnsafeAnalyzer} = true")));
                         return LocalFunc() + x;
                     }
                 }
-
-                namespace System.Diagnostics.CodeAnalysis
-                {
-                    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property, Inherited = false)]
-                    public sealed class RequiresUnsafeAttribute : Attribute { }
-                }
                 """;
 
             await VerifyRequiresUnsafeCodeFix(
                 source: test,
                 fixedSource: fixedSource,
                 baselineExpected: new[] {
-                    VerifyCS.Diagnostic(DiagnosticId.RequiresUnsafe)
-                        .WithSpan(11, 35, 11, 37)
-                        .WithArguments("C.M1()", "", "")
+                    DiagnosticResult.CompilerError(RequiresUnsafeCodeFixProvider.UnsafeMemberOperationDiagnosticId)
+                        .WithSpan(10, 35, 10, 39)
+                        .WithArguments("C.M1()")
                 },
                 fixedExpected: Array.Empty<DiagnosticResult>());
         }

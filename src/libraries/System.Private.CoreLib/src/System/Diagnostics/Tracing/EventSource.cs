@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
@@ -1272,7 +1272,6 @@ namespace System.Diagnostics.Tracing
             /// <param name="pointer">Pinned tracelogging-compatible metadata blob.</param>
             /// <param name="size">The size of the metadata blob.</param>
             /// <param name="reserved">Value for reserved: 2 for per-provider metadata, 1 for per-event metadata</param>
-            [RequiresUnsafe]
             internal unsafe void SetMetadata(byte* pointer, int size, int reserved)
             {
                 this.m_Ptr = (ulong)pointer;
@@ -1321,7 +1320,6 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         protected unsafe void WriteEventCore(int eventId, int eventDataCount, EventData* data)
         {
             WriteEventWithRelatedActivityIdCore(eventId, null, eventDataCount, data);
@@ -1357,7 +1355,6 @@ namespace System.Diagnostics.Tracing
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         protected unsafe void WriteEventWithRelatedActivityIdCore(int eventId, Guid* relatedActivityId, int eventDataCount, EventData* data)
         {
             if (IsEnabled())
@@ -1573,7 +1570,6 @@ namespace System.Diagnostics.Tracing
 
         #region private
 
-        [RequiresUnsafe]
         private unsafe void WriteEventRaw(
             string? eventName,
             ref EventDescriptor eventDescriptor,
@@ -1769,7 +1765,7 @@ namespace System.Diagnostics.Tracing
             return eventSourceType.Name;
         }
 
-        private static Guid GenerateGuidFromName(string name)
+        private static unsafe Guid GenerateGuidFromName(string name)
         {
             ReadOnlySpan<byte> namespaceBytes =
             [
@@ -1791,7 +1787,6 @@ namespace System.Diagnostics.Tracing
             return new Guid(bytes.Slice(0, 16));
         }
 
-        [RequiresUnsafe]
         private static unsafe void DecodeObjects(object?[] decodedObjects, Type[] parameterTypes, EventData* data)
         {
             for (int i = 0; i < decodedObjects.Length; i++, data++)
@@ -1960,7 +1955,6 @@ namespace System.Diagnostics.Tracing
         }
 
         [Conditional("DEBUG")]
-        [RequiresUnsafe]
         private static unsafe void AssertValidString(EventData* data)
         {
             Debug.Assert(data->Size >= 0 && data->Size % 2 == 0, "String size should be even");
@@ -1991,7 +1985,6 @@ namespace System.Diagnostics.Tracing
                     Justification = "EnsureDescriptorsInitialized's use of GetType preserves this method which " +
                                     "requires unreferenced code, but EnsureDescriptorsInitialized does not access this member and is safe to call.")]
         [RequiresUnreferencedCode(EventSourceRequiresUnreferenceMessage)]
-        [RequiresUnsafe]
         private unsafe void WriteEventVarargs(int eventId, Guid* childActivityID, object?[] args)
         {
             if (IsEnabled())
@@ -2043,33 +2036,30 @@ namespace System.Diagnostics.Tracing
                             childActivityID = &relatedActivityId;
                     }
 
-                    if (metadata.EnabledForETW
+                    if (!SelfDescribingEvents)
+                    {
+                        if (metadata.EnabledForETW && !m_etwProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, childActivityID, args))
+                            ThrowEventSourceException(metadata.Name);
+#if FEATURE_PERFTRACING
+                        if (metadata.EnabledForEventPipe && !m_eventPipeProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, childActivityID, args))
+                            ThrowEventSourceException(metadata.Name);
+#endif // FEATURE_PERFTRACING
+                    }
+                    else if (metadata.EnabledForETW
 #if FEATURE_PERFTRACING
                             || metadata.EnabledForEventPipe
 #endif // FEATURE_PERFTRACING
                         )
                     {
-                        if (!SelfDescribingEvents)
+                        // TODO: activity ID support
+                        EventSourceOptions opt = new EventSourceOptions
                         {
-                            if (!m_etwProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, childActivityID, args))
-                                ThrowEventSourceException(metadata.Name);
-#if FEATURE_PERFTRACING
-                            if (!m_eventPipeProvider.WriteEvent(ref metadata.Descriptor, metadata.EventHandle, pActivityId, childActivityID, args))
-                                ThrowEventSourceException(metadata.Name);
-#endif // FEATURE_PERFTRACING
-                        }
-                        else
-                        {
-                            // TODO: activity ID support
-                            EventSourceOptions opt = new EventSourceOptions
-                            {
-                                Keywords = (EventKeywords)metadata.Descriptor.Keywords,
-                                Level = (EventLevel)metadata.Descriptor.Level,
-                                Opcode = (EventOpcode)metadata.Descriptor.Opcode
-                            };
+                            Keywords = (EventKeywords)metadata.Descriptor.Keywords,
+                            Level = (EventLevel)metadata.Descriptor.Level,
+                            Opcode = (EventOpcode)metadata.Descriptor.Opcode
+                        };
 
-                            WriteMultiMerge(metadata.Name, ref opt, metadata.TraceLoggingEventTypes, pActivityId, childActivityID, args);
-                        }
+                        WriteMultiMerge(metadata.Name, ref opt, metadata.TraceLoggingEventTypes, pActivityId, childActivityID, args);
                     }
 
                     if (m_Dispatchers != null && metadata.EnabledForAnyListener)
@@ -2155,7 +2145,6 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        [RequiresUnsafe]
         private unsafe void WriteToAllListeners(EventWrittenEventArgs eventCallbackArgs, int eventDataCount, EventData* data)
         {
             Debug.Assert(m_eventData != null);
@@ -3904,6 +3893,12 @@ namespace System.Diagnostics.Tracing
             // the FrameworkEventSource is being used, creating it on-demand will acquire the EventListener lock which can deadlock.
             // See https://github.com/dotnet/runtime/issues/126591. We avoid that by pre-creating the FrameworkEventSource here.
             _ = FrameworkEventSource.Log;
+            // MetricsEventSource.ParseSpecs uses string interpolation which calls SharedArrayPool<char>.Rent(), which accesses
+            // ArrayPoolEventSource.Log and can require ArrayPoolEventSource type initialization. ParseSpecs runs while holding
+            // EventListener.EventListenersLock (inside DoCommand), so if another thread is currently running ArrayPoolEventSource's
+            // type initializer (holding the type-init lock) and then tries to take EventListenersLock, a deadlock can occur.
+            // See https://github.com/dotnet/runtime/issues/119014. We avoid that by pre-creating ArrayPoolEventSource here.
+            _ = System.Buffers.ArrayPoolEventSource.Log;
 #if !TARGET_BROWSER
             _ = RuntimeEventSource.Log;
 #endif
@@ -3926,7 +3921,6 @@ namespace System.Diagnostics.Tracing
 
 #if CORECLR
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void InitializeDefaultEventSources(Exception* pException)
         {
             try
@@ -4330,7 +4324,6 @@ namespace System.Diagnostics.Tracing
             TimeStamp = DateTime.UtcNow;
         }
 
-        [RequiresUnsafe]
         internal unsafe EventWrittenEventArgs(EventSource eventSource, int eventId, Guid* pActivityID, Guid* pChildActivityID)
             : this(eventSource, eventId)
         {

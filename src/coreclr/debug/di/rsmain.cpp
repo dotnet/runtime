@@ -1499,17 +1499,6 @@ HRESULT Cordb::SetUnmanagedHandler(ICorDebugUnmanagedCallback *pCallback)
     return S_OK;
 }
 
-// CreateProcess() isn't supported on Windows CoreCLR.
-// It is currently supported on Mac CoreCLR, but that may change.
-bool Cordb::IsCreateProcessSupported()
-{
-#if !defined(FEATURE_DBGIPC_TRANSPORT_DI)
-    return false;
-#else
-    return true;
-#endif
-}
-
 // Given everything we know about our configuration, can we support interop-debugging
 bool Cordb::IsInteropDebuggingSupported()
 {
@@ -1562,152 +1551,22 @@ HRESULT Cordb::CreateProcess(LPCWSTR lpApplicationName,
                              CorDebugCreateProcessFlags debuggingFlags,
                              ICorDebugProcess **ppProcess)
 {
-    return CreateProcessCommon(NULL,
-                               lpApplicationName,
-                               lpCommandLine,
-                               lpProcessAttributes,
-                               lpThreadAttributes,
-                               bInheritHandles,
-                               dwCreationFlags,
-                               lpEnvironment,
-                               lpCurrentDirectory,
-                               lpStartupInfo,
-                               lpProcessInformation,
-                               debuggingFlags,
-                               ppProcess);
-}
-
-HRESULT Cordb::CreateProcessCommon(ICorDebugRemoteTarget * pRemoteTarget,
-                                   LPCWSTR lpApplicationName,
-                                   _In_z_ LPWSTR lpCommandLine,
-                                   LPSECURITY_ATTRIBUTES lpProcessAttributes,
-                                   LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                                   BOOL bInheritHandles,
-                                   DWORD dwCreationFlags,
-                                   PVOID lpEnvironment,
-                                   LPCWSTR lpCurrentDirectory,
-                                   LPSTARTUPINFOW lpStartupInfo,
-                                   LPPROCESS_INFORMATION lpProcessInformation,
-                                   CorDebugCreateProcessFlags debuggingFlags,
-                                   ICorDebugProcess ** ppProcess)
-{
-    // If you hit this assert, it means that you are attempting to create a process without specifying the version
-    // number.
-    _ASSERTE(CorDebugInvalidVersion != m_debuggerSpecifiedVersion);
-
     PUBLIC_API_ENTRY(this);
     FAIL_IF_NEUTERED(this);
-    VALIDATE_POINTER_TO_OBJECT(ppProcess, ICorDebugProcess**);
+    (void)lpApplicationName;
+    (void)lpCommandLine;
+    (void)lpProcessAttributes;
+    (void)lpThreadAttributes;
+    (void)bInheritHandles;
+    (void)dwCreationFlags;
+    (void)lpEnvironment;
+    (void)lpCurrentDirectory;
+    (void)lpStartupInfo;
+    (void)lpProcessInformation;
+    (void)debuggingFlags;
+    (void)ppProcess;
 
-    HRESULT hr = S_OK;
-
-    EX_TRY
-    {
-        if (!m_initialized)
-        {
-            ThrowHR(E_FAIL);
-        }
-
-        // Check that we support the debugger version
-        CheckCompatibility();
-
-    #ifdef FEATURE_INTEROP_DEBUGGING
-        // DEBUG_PROCESS (=0x1) means debug this process & all future children.
-        // DEBUG_ONLY_THIS_PROCESS =(0x2) means just debug the immediate process.
-        // If we want to support DEBUG_PROCESS, then we need to have the RS sniff for new CREATE_PROCESS
-        // events and spawn new CordbProcess for them.
-        switch(dwCreationFlags & (DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS))
-        {
-            // 1) managed-only debugging
-            case 0:
-                break;
-
-            // 2) failure - returns E_NOTIMPL. (as this would involve debugging all of our children processes).
-            case DEBUG_PROCESS:
-                ThrowHR(E_NOTIMPL);
-
-            // 3) Interop-debugging.
-            // Note that MSDN (at least as of Jan 2003) is wrong about this flag. MSDN claims
-            // DEBUG_ONLY_THIS_PROCESS w/o DEBUG_PROCESS should be ignored.
-            // But it really should do launch as a debuggee (but not auto-attach to child processes).
-            case DEBUG_ONLY_THIS_PROCESS:
-                // Emprically, this is the common case for native / interop-debugging.
-                break;
-
-            // 4) Interop.
-            // The spec for ICorDebug::CreateProcess says this is the one to use for interop-debugging.
-            case DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS:
-                // Win2k does not honor these flags properly. So we just use
-                // It treats (DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS) as if it were DEBUG_PROCESS.
-                // We'll just always touch up the flags, even though WinXP and above is fine here.
-                // Per win2k issue, strip off DEBUG_PROCESS, so that we're just left w/ DEBUG_ONLY_THIS_PROCESS.
-                dwCreationFlags &= ~(DEBUG_PROCESS);
-                break;
-
-            default:
-                UNREACHABLE();
-        }
-
-    #endif // FEATURE_INTEROP_DEBUGGING
-
-        // Must have a managed-callback by now.
-        if ((m_managedCallback == NULL) || (m_managedCallback2 == NULL) || (m_managedCallback3 == NULL) || (m_managedCallback4 == NULL))
-        {
-            ThrowHR(E_FAIL);
-        }
-
-        if (!IsCreateProcessSupported())
-        {
-            ThrowHR(E_NOTIMPL);
-        }
-
-        if (!IsInteropDebuggingSupported() &&
-            ((dwCreationFlags & (DEBUG_PROCESS | DEBUG_ONLY_THIS_PROCESS)) != 0))
-        {
-            ThrowHR(CORDBG_E_INTEROP_NOT_SUPPORTED);
-        }
-
-        // Check that we can even accept another debuggee before trying anything.
-        EnsureAllowAnotherProcess();
-
-    } EX_CATCH_HRESULT(hr);
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    hr = ShimProcess::CreateProcess(this,
-                                    pRemoteTarget,
-                                    lpApplicationName,
-                                    lpCommandLine,
-                                    lpProcessAttributes,
-                                    lpThreadAttributes,
-                                    bInheritHandles,
-                                    dwCreationFlags,
-                                    lpEnvironment,
-                                    lpCurrentDirectory,
-                                    lpStartupInfo,
-                                    lpProcessInformation,
-                                    debuggingFlags
-                                   );
-
-    LOG((LF_CORDB, LL_EVERYTHING, "Handle in Cordb::CreateProcess is: %.I64x\n", lpProcessInformation->hProcess));
-
-    if (SUCCEEDED(hr))
-    {
-        LockProcessList();
-
-        CordbProcess * pProcess = GetProcessList()->GetBase(lpProcessInformation->dwProcessId);
-
-        UnlockProcessList();
-
-        _ASSERTE(pProcess != NULL);
-
-        pProcess->ExternalAddRef();
-        *ppProcess = (ICorDebugProcess *)pProcess;
-    }
-
-    return hr;
+    return E_NOTIMPL;
 }
 
 
@@ -1730,19 +1589,22 @@ HRESULT Cordb::CreateProcessEx(ICorDebugRemoteTarget * pRemoteTarget,
         return E_INVALIDARG;
     }
 
-    return CreateProcessCommon(pRemoteTarget,
-                               lpApplicationName,
-                               lpCommandLine,
-                               lpProcessAttributes,
-                               lpThreadAttributes,
-                               bInheritHandles,
-                               dwCreationFlags,
-                               lpEnvironment,
-                               lpCurrentDirectory,
-                               lpStartupInfo,
-                               lpProcessInformation,
-                               debuggingFlags,
-                               ppProcess);
+    PUBLIC_API_ENTRY(this);
+    FAIL_IF_NEUTERED(this);
+    (void)lpApplicationName;
+    (void)lpCommandLine;
+    (void)lpProcessAttributes;
+    (void)lpThreadAttributes;
+    (void)bInheritHandles;
+    (void)dwCreationFlags;
+    (void)lpEnvironment;
+    (void)lpCurrentDirectory;
+    (void)lpStartupInfo;
+    (void)lpProcessInformation;
+    (void)debuggingFlags;
+    (void)ppProcess;
+
+    return E_NOTIMPL;
 }
 
 

@@ -19,7 +19,7 @@ namespace System.IO.Compression
         protected virtual bool SupportsDictionaries => false;
         protected virtual bool SupportsReset => false;
 
-        protected virtual string WindowLogParamName => "windowLog";
+        protected virtual string WindowLogParamName => "windowLog2";
         protected virtual string InputLengthParamName => "inputLength";
 
         protected abstract int ValidQuality { get; }
@@ -100,8 +100,8 @@ namespace System.IO.Compression
         protected abstract DictionaryAdapter CreateDictionary(ReadOnlySpan<byte> data, int quality);
 
         protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten);
-        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog);
-        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int windowLog);
+        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, int quality, int windowLog2);
+        protected abstract bool TryCompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary, int windowLog2);
         protected abstract bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten);
         protected abstract bool TryDecompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten, DictionaryAdapter dictionary);
 
@@ -117,7 +117,7 @@ namespace System.IO.Compression
             foreach (int quality in InvalidQualitiesTestData)
             {
                 Assert.Throws<ArgumentOutOfRangeException>("quality", () => CreateEncoder(quality, ValidWindowLog));
-                Assert.Throws<ArgumentOutOfRangeException>("quality", () => TryCompress(input, output, out _, quality: quality, windowLog: ValidWindowLog));
+                Assert.Throws<ArgumentOutOfRangeException>("quality", () => TryCompress(input, output, out _, quality: quality, windowLog2: ValidWindowLog));
             }
         }
 
@@ -130,7 +130,7 @@ namespace System.IO.Compression
             foreach (int windowLog in InvalidWindowLogsTestData)
             {
                 Assert.Throws<ArgumentOutOfRangeException>(WindowLogParamName, () => CreateEncoder(ValidQuality, windowLog));
-                Assert.Throws<ArgumentOutOfRangeException>(WindowLogParamName, () => TryCompress(input, output, out _, quality: ValidQuality, windowLog: windowLog));
+                Assert.Throws<ArgumentOutOfRangeException>(WindowLogParamName, () => TryCompress(input, output, out _, quality: ValidQuality, windowLog2: windowLog));
             }
         }
 
@@ -166,7 +166,7 @@ namespace System.IO.Compression
             byte[] input = CreateTestData();
             byte[] output = new byte[GetMaxCompressedLength(input.Length)];
 
-            bool result = TryCompress(input, output, out int bytesWritten, quality: ValidQuality, windowLog: ValidWindowLog);
+            bool result = TryCompress(input, output, out int bytesWritten, quality: ValidQuality, windowLog2: ValidWindowLog);
 
             Assert.True(result);
             Assert.True(bytesWritten > 0);
@@ -182,7 +182,7 @@ namespace System.IO.Compression
             byte[] output = new byte[GetMaxCompressedLength(input.Length)];
             using DictionaryAdapter dictionary = CreateDictionary(CreateSampleDictionary(), ValidQuality);
 
-            bool result = TryCompress(input, output, out int bytesWritten, dictionary: dictionary, windowLog: ValidWindowLog);
+            bool result = TryCompress(input, output, out int bytesWritten, dictionary: dictionary, windowLog2: ValidWindowLog);
 
             Assert.True(result);
             Assert.True(bytesWritten > 0);
@@ -557,6 +557,94 @@ namespace System.IO.Compression
             }
         }
 
+        [Fact]
+        public void Reset_OnFreshInstance_IsNoOp()
+        {
+            if (!SupportsReset)
+                return;
+
+            byte[] input = CreateTestData();
+
+            using EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindowLog);
+            encoder.Reset();
+            encoder.Reset();
+
+            byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
+            OperationStatus compressStatus = encoder.Compress(input, compressed, out int consumed, out int compressedLength, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, compressStatus);
+            Assert.Equal(input.Length, consumed);
+
+            using DecoderAdapter decoder = CreateDecoder();
+            decoder.Reset();
+            decoder.Reset();
+
+            byte[] output = new byte[input.Length];
+            OperationStatus decompressStatus = decoder.Decompress(compressed.AsSpan(0, compressedLength), output, out _, out int written);
+            Assert.Equal(OperationStatus.Done, decompressStatus);
+            Assert.Equal(input.Length, written);
+            Assert.Equal(input, output);
+        }
+
+        [Fact]
+        public void Reset_AfterUnfinishedCompression_ProducesIndependentStream()
+        {
+            if (!SupportsReset)
+                return;
+
+            byte[] input = CreateTestData();
+
+            using EncoderAdapter encoder = CreateEncoder(ValidQuality, ValidWindowLog);
+
+            // Start compressing without finalizing, leaving the encoder mid-operation.
+            byte[] scratch = new byte[GetMaxCompressedLength(input.Length)];
+            encoder.Compress(input, scratch, out _, out _, isFinalBlock: false);
+
+            // Reset must discard the in-progress state so the next operation is independent.
+            encoder.Reset();
+
+            byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
+            OperationStatus status = encoder.Compress(input, compressed, out int consumed, out int compressedLength, isFinalBlock: true);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(input.Length, consumed);
+
+            // The produced stream must be a valid, complete stream that round-trips.
+            byte[] output = new byte[input.Length];
+            using DecoderAdapter decoder = CreateDecoder();
+            OperationStatus decompressStatus = decoder.Decompress(compressed.AsSpan(0, compressedLength), output, out _, out int written);
+            Assert.Equal(OperationStatus.Done, decompressStatus);
+            Assert.Equal(input.Length, written);
+            Assert.Equal(input, output);
+        }
+
+        [Fact]
+        public void Reset_AfterPartialDecompression_ProducesIndependentResult()
+        {
+            if (!SupportsReset)
+                return;
+
+            byte[] input = CreateTestData();
+            byte[] compressed = new byte[GetMaxCompressedLength(input.Length)];
+            Assert.True(TryCompress(input, compressed, out int compressedLength));
+            compressed = compressed.AsSpan(0, compressedLength).ToArray();
+
+            using DecoderAdapter decoder = CreateDecoder();
+
+            // Decompress into a buffer too small to hold the full result, leaving the decoder mid-stream.
+            byte[] tooSmall = new byte[input.Length / 2];
+            OperationStatus partialStatus = decoder.Decompress(compressed, tooSmall, out _, out _);
+            Assert.Equal(OperationStatus.DestinationTooSmall, partialStatus);
+
+            // Reset must discard the partial state so the same stream can be decoded from scratch.
+            decoder.Reset();
+
+            byte[] output = new byte[input.Length];
+            OperationStatus status = decoder.Decompress(compressed, output, out int consumed, out int written);
+            Assert.Equal(OperationStatus.Done, status);
+            Assert.Equal(compressed.Length, consumed);
+            Assert.Equal(input.Length, written);
+            Assert.Equal(input, output);
+        }
+
         [Theory]
         [MemberData(nameof(GetRoundTripTestData))]
         public void RoundTrip_SuccessfullyCompressesAndDecompresses(int quality, bool useDictionary, bool staticEncode, bool staticDecode)
@@ -688,6 +776,7 @@ namespace System.IO.Compression
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/127563", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst | TestPlatforms.Android)]
         public void RoundTrip_AllWindowLogs()
         {
             byte[] input = CreateTestData();

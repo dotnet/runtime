@@ -40,6 +40,19 @@ static bool AllowR2RForImage(PEImage* pOwner)
 #ifndef DACCESS_COMPILE
 extern BOOL g_useDefaultBaseAddr;
 
+#ifdef TARGET_WASM
+// Guards s_relocatedWebcilBases in ApplyBaseRelocations so concurrent loads of the same shared
+// host-probed webcil buffer cannot relocate it more than once. Initialized by PEImageLayout::Startup.
+static CrstStatic s_webcilRelocationCrst;
+
+/*static*/
+void PEImageLayout::Startup()
+{
+    WRAPPER_NO_CONTRACT;
+    s_webcilRelocationCrst.Init(CrstWebcilImageRelocation);
+}
+#endif // TARGET_WASM
+
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
     STANDARD_VM_CONTRACT;
@@ -100,14 +113,12 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     if (pFlat == NULL || !pFlat->CheckILOnlyFormat())
         EEFileLoadException::Throw(pOwner->GetPathForErrorMessages(), COR_E_BADIMAGEFORMAT);
 
-// TODO: enable on OSX eventually
-//       right now we have binaries that will trigger this in a singlefile bundle.
-#ifdef TARGET_LINUX
-    // we should not see R2R files here on Unix.
+#if defined(TARGET_UNIX)
+    // We should not see R2R files here on Unix when R2R is expected/allowed for the image.
     // ConvertedImageLayout may be able to handle them, but the fact that we were unable to
     // load directly implies that MAPMapPEFile could not consume what crossgen produced.
-    // that is suspicious, one or another might have a bug.
-    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || disableMapping);
+    // That is suspicious; one or another might have a bug.
+    _ASSERTE(!pOwner->IsFile() || !pFlat->HasReadyToRunHeader() || !AllowR2RForImage(pOwner) || pOwner->IsCompressed() || disableMapping);
 #endif
 
     // If the image is R2R with native code (that is, not a component assembly of composite R2R) or has writeable sections,
@@ -119,7 +130,7 @@ PEImageLayout* PEImageLayout::LoadConverted(PEImage* pOwner, bool disableMapping
     }
 
     // we can use flat layout for this
-    return pFlat.Extract();
+    return pFlat.Detach();
 }
 
 PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
@@ -143,7 +154,7 @@ PEImageLayout* PEImageLayout::Load(PEImage* pOwner, HRESULT* loadFailure)
 
                 PEImageLayoutHolder pAlloc(new LoadedImageLayout(pOwner, loadFailure));
                 if (pAlloc->GetBase() != NULL)
-                    return pAlloc.Extract();
+                    return pAlloc.Detach();
 
 #if TARGET_WINDOWS
                 // For regular PE files always use OS loader on Windows.
@@ -250,6 +261,34 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
     SSIZE_T tableBaseDelta = GetTableBaseOffset();
 #endif // FEATURE_WEBCIL
 
+#ifdef TARGET_WASM
+    // Host-probed webcil R2R images share one in-memory buffer, so the binder can open the same
+    // image twice (identity probe + load). WASM table-index relocations are additive
+    // (index += tableBase), so relocating the shared buffer twice doubles tableBase and corrupts
+    // indirect calls. Track the buffers already relocated and skip re-relocation.
+    //
+    // The lock is taken before the Contains check and held for the rest of the method so that, when
+    // WASM is built with threads (FEATURE_MULTITHREADING), two concurrent loads of the same shared
+    // buffer cannot both pass the check and relocate it twice.
+    //
+    // INTERIM: the intended production fix is to relocate the host-probed buffer once at the point the
+    // host hands it to the runtime and skip webcil relocation here entirely, removing this set.
+    typedef SetSHash< TADDR,
+                      NoRemoveSHashTraits< NonDacAwareSHashTraits< SetSHashTraits<TADDR> > > > RelocatedWebcilSet;
+    static RelocatedWebcilSet s_relocatedWebcilBases;
+    CrstHolder relocationGuard(&s_webcilRelocationCrst);
+    if (IsWebcilFormat())
+    {
+        const TADDR webcilBase = (TADDR)GetBase();
+        if (s_relocatedWebcilBases.Contains(webcilBase))
+            return;
+        // Record before applying: once we commit to relocating this shared buffer, no other load may
+        // additively relocate it again. A failure partway through relocation is unrecoverable for the
+        // additive model and fails the load regardless, so there is no "safe" point to record instead.
+        s_relocatedWebcilBases.Add(webcilBase);
+    }
+#endif // TARGET_WASM
+
     // Nothing to do - image is loaded at preferred base and no table base offset
     if (delta == 0
 #ifdef FEATURE_WEBCIL
@@ -308,6 +347,8 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
         DWORD rva = VAL32(r->VirtualAddress);
 
+        // For webcil (wasm-only) this relies on the flat-mapped invariant PointerToRawData ==
+        // VirtualAddress, so GetBase() + rva is the correct address (equivalent to GetRvaData(rva)).
         BYTE * pageAddress = (BYTE *)GetBase() + rva;
 
         // Check whether the page is outside the unprotected region.
@@ -506,7 +547,6 @@ ConvertedImageLayout::ConvertedImageLayout(FlatImageLayout* source, bool disable
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
@@ -597,7 +637,6 @@ LoadedImageLayout::LoadedImageLayout(PEImage* pOwner, HRESULT* loadFailure)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pOwner));
     }
@@ -695,7 +734,6 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pOwner));
     }
@@ -748,7 +786,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             mapAccess = PAGE_EXECUTE_READ;
         }
 #endif
-        m_FileMap.Assign(CreateFileMapping(hFile, NULL, mapAccess, 0, 0, NULL));
+        m_FileMap = CreateFileMapping(hFile, NULL, mapAccess, 0, 0, NULL);
         if (m_FileMap == NULL)
             ThrowLastError();
 
@@ -766,7 +804,7 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
         if (view == NULL)
             ThrowLastError();
 
-        m_FileView.Assign(view);
+        m_FileView = view;
         addr = (LPVOID)((size_t)view + offset - mapBegin);
 
         if (isCompressed)
@@ -776,11 +814,11 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             // We will create another anonymous memory-only mapping and uncompress file there.
             // The flat image will refer to the anonymous mapping instead and we will release the original mapping.
 
-            HandleHolder anonMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL);
+            HandleHolder anonMap{ CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, uncompressedSize >> 32, (DWORD)uncompressedSize, NULL) };
             if (anonMap == NULL)
                 ThrowLastError();
 
-            CLRMapViewHolder anonView = CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
+            CLRMapViewHolder anonView{ CLRMapViewOfFile(anonMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0) };
             if (anonView == NULL)
                 ThrowLastError();
 
@@ -813,8 +851,8 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner)
             addr = anonView;
             size = uncompressedSize;
             // Replace file handles with the handles to anonymous map. This will release the handles to the original view and map.
-            m_FileView.Assign(anonView.Extract());
-            m_FileMap.Assign(anonMap.Extract());
+            m_FileView = std::move(anonView);
+            m_FileMap = std::move(anonMap);
 #else
             _ASSERTE(!"Failure extracting contents of the application bundle. Compressed files used with a standalone (not singlefile) apphost.");
             ThrowHR(E_FAIL); // we don't have any indication of what kind of failure. Possibly a corrupt image.
@@ -829,7 +867,6 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
@@ -861,11 +898,11 @@ FlatImageLayout::FlatImageLayout(PEImage* pOwner, const BYTE* array, COUNT_T siz
 
 #endif // defined(TARGET_WINDOWS)
 
-        m_FileMap.Assign(CreateFileMapping(INVALID_HANDLE_VALUE, NULL, mapAccess, 0, size, NULL));
+        m_FileMap = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, mapAccess, 0, size, NULL);
         if (m_FileMap == NULL)
             ThrowLastError();
 
-        m_FileView.Assign(CLRMapViewOfFile(m_FileMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0));
+        m_FileView = CLRMapViewOfFile(m_FileMap, FILE_MAP_READ | FILE_MAP_WRITE, 0, 0, 0);
         if (m_FileView == NULL)
             ThrowLastError();
 
@@ -893,17 +930,29 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
 #endif // FEATURE_ENABLE_NO_ADDRESS_SPACE_RANDOMIZATION
 
     DWORD allocationType = MEM_RESERVE | MEM_COMMIT;
+    DWORD initialProtection = PAGE_READWRITE;
 #if defined(HOST_UNIX) && defined(FEATURE_DYNAMIC_CODE_COMPILED)
     // Tell PAL to use the executable memory allocator to satisfy this request for virtual memory.
     // This is required on MacOS and otherwise will allow us to place native R2R code close to the
     // coreclr library and thus improve performance by avoiding jump stubs in managed code.
     allocationType |= MEM_RESERVE_EXECUTABLE;
 #endif
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    // On Apple Silicon, allocating the image region as plain PAGE_READWRITE and then promoting
+    // executable sections to PAGE_EXECUTE_READ via mprotect has been observed to
+    // intermittently leave pages non-executable at the kernel level. This manifests as sporadic
+    // AccessViolationException crashes.
+    //
+    // Avoid the unreliable transition - reserve the whole region as PAGE_NOACCESS first, then
+    // commit each section directly with its final protection.
+    allocationType &= ~MEM_COMMIT;
+    initialProtection = PAGE_NOACCESS;
+#endif
 
     COUNT_T allocSize = ALIGN_UP(this->GetVirtualSize(), g_SystemInfo.dwAllocationGranularity);
-    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, allocationType, PAGE_READWRITE);
+    LPVOID base = ClrVirtualAlloc(preferredBase, allocSize, allocationType, initialProtection);
     if (base == NULL && preferredBase != NULL)
-        base = ClrVirtualAlloc(NULL, allocSize, allocationType, PAGE_READWRITE);
+        base = ClrVirtualAlloc(NULL, allocSize, allocationType, initialProtection);
 
     if (base == NULL)
         ThrowLastError();
@@ -911,15 +960,62 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     // when loading by copying we have only one part to free.
     m_imageParts[0] = AllocatedPart(base);
 
+    IMAGE_SECTION_HEADER* sectionStart = IMAGE_FIRST_SECTION(FindNTHeaders());
+    IMAGE_SECTION_HEADER* sectionEnd = sectionStart + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
+
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    _ASSERTE((allocationType & MEM_COMMIT) == 0);
+    _ASSERTE(initialProtection != PAGE_READWRITE);
+
+    DWORD sizeOfHeaders = VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders);
+
+    // Commit and copy headers, then apply read-only protection.
+    if (ClrVirtualAlloc(base, sizeOfHeaders, MEM_COMMIT, PAGE_READWRITE) == NULL)
+        ThrowLastError();
+
+    CopyMemory(base, (void*)GetBase(), sizeOfHeaders);
+
+    DWORD oldProtection; // PAL layer doesn't properly set the previous protection, so we don't try to validate it here.
+    if (!ClrVirtualProtect((void*)base, sizeOfHeaders, PAGE_READONLY, &oldProtection))
+        ThrowLastError();
+
+    // Commit and copy each section with its desired protection.
+    for (IMAGE_SECTION_HEADER* section = sectionStart; section < sectionEnd; section++)
+    {
+        DWORD virtualSize = VAL32(section->Misc.VirtualSize);
+        if (virtualSize == 0)
+            continue;
+
+        bool isExec = (section->Characteristics & IMAGE_SCN_MEM_EXECUTE) != 0;
+        BYTE* sectionBase = (BYTE*)base + VAL32(section->VirtualAddress);
+        DWORD copySize = min(VAL32(section->SizeOfRawData), virtualSize);
+
+        if (ClrVirtualAlloc(sectionBase, virtualSize, MEM_COMMIT, isExec ? PAGE_EXECUTE_READWRITE : PAGE_READWRITE) == NULL)
+            ThrowLastError();
+
+        if (isExec)
+            PAL_JitWriteProtect(true);
+
+        CopyMemory(sectionBase, (BYTE*)GetBase() + VAL32(section->PointerToRawData), copySize);
+
+        if (isExec)
+        {
+            PAL_JitWriteProtect(false);
+        }
+        else if ((section->Characteristics & IMAGE_SCN_MEM_WRITE) == 0)
+        {
+            DWORD oldProt;
+            if (!ClrVirtualProtect(sectionBase, virtualSize, PAGE_READONLY, &oldProt))
+                ThrowLastError();
+        }
+    }
+#else
     // We're going to copy everything first, and write protect what we need to later.
 
     // First, copy headers
     CopyMemory(base, (void*)GetBase(), VAL32(FindNTHeaders()->OptionalHeader.SizeOfHeaders));
 
     // Now, copy all sections to appropriate virtual address
-
-    IMAGE_SECTION_HEADER* sectionStart = IMAGE_FIRST_SECTION(FindNTHeaders());
-    IMAGE_SECTION_HEADER* sectionEnd = sectionStart + VAL16(FindNTHeaders()->FileHeader.NumberOfSections);
 
     IMAGE_SECTION_HEADER* section = sectionStart;
     while (section < sectionEnd)
@@ -944,13 +1040,9 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
     // Finally, apply proper protection to copied sections
     for (section = sectionStart; section < sectionEnd; section++)
     {
-        DWORD executableProtection = PAGE_EXECUTE_READ;
-#if defined(HOST_OSX) && defined(HOST_ARM64)
-        executableProtection = PAGE_EXECUTE_READWRITE;
-#endif
         // Add appropriate page protection.
         DWORD newProtection = section->Characteristics & IMAGE_SCN_MEM_EXECUTE ?
-            executableProtection :
+            PAGE_EXECUTE_READ :
             section->Characteristics & IMAGE_SCN_MEM_WRITE ?
             PAGE_READWRITE :
             PAGE_READONLY;
@@ -962,6 +1054,7 @@ void* FlatImageLayout::LoadImageByCopyingParts(SIZE_T* m_imageParts) const
             ThrowLastError();
         }
     }
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
 
     return base;
 }
@@ -1079,7 +1172,7 @@ static PVOID SplitPlaceholder(
 
 static SIZE_T OffsetWithinPage(SIZE_T addr)
 {
-    return addr & (GetOsPageSize() - 1);
+    return addr & (minipal_getpagesize() - 1);
 }
 
 static SIZE_T RoundToPage(SIZE_T size, SIZE_T offset)
@@ -1113,13 +1206,13 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
     PVOID reservedEnd = NULL;
     IMAGE_NT_HEADERS* ntHeader = FindNTHeaders();
 
-    if  ((ntHeader->OptionalHeader.FileAlignment < GetOsPageSize()) &&
+    if  ((ntHeader->OptionalHeader.FileAlignment < minipal_getpagesize()) &&
          (ntHeader->OptionalHeader.FileAlignment != ntHeader->OptionalHeader.SectionAlignment))
     {
         goto UNSUPPORTED;
     }
 
-    if (this->GetSize() < GetOsPageSize() * 2)
+    if (this->GetSize() < minipal_getpagesize() * 2)
     {
         goto UNSUPPORTED;
     }
@@ -1222,7 +1315,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
         // then map only the aligned chunk that fits, the rest we will copy.
         while (mapEnd > offset + this->GetSize())
         {
-            mapEnd -= GetOsPageSize();
+            mapEnd -= minipal_getpagesize();
         }
 
         // if we have something to map at page granularity, map it

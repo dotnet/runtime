@@ -336,60 +336,6 @@ BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::DeleteValue(KeyType p
     return FALSE;
 }
 
-
-template <class KeyType, class Helper, BOOL bDefaultCopyIsDeep>
-BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ReplaceValue(KeyType pKey, HashDatum Data)
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    _ASSERTE (OwnLock());
-
-    EEHashEntry_t *pItem = FindItem(pKey);
-
-    if (pItem != NULL)
-    {
-        // Required to be atomic
-        pItem->Data = Data;
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-}
-
-
-template <class KeyType, class Helper, BOOL bDefaultCopyIsDeep>
-BOOL EEHashTableBase<KeyType, Helper, bDefaultCopyIsDeep>::ReplaceKey(KeyType pOldKey, KeyType pNewKey)
-{
-    CONTRACTL
-    {
-        WRAPPER(THROWS);
-        WRAPPER(GC_NOTRIGGER);
-        FORBID_FAULT;
-    }
-    CONTRACTL_END
-
-    _ASSERTE (OwnLock());
-
-    EEHashEntry_t *pItem = FindItem(pOldKey);
-
-    if (pItem != NULL)
-    {
-        Helper::ReplaceKey (pItem, pNewKey);
-        return TRUE;
-    }
-    else
-    {
-        return FALSE;
-    }
-}
 #endif // !DACCESS_COMPILE
 
 template <class KeyType, class Helper, BOOL bDefaultCopyIsDeep>

@@ -116,7 +116,7 @@ namespace ILCompiler.DependencyAnalysis
                 );
             });
 
-            _interfaceDispatchCells = new NodeCache<MethodAndCallSite, Import>(cellKey =>
+            _dispatchCells = new NodeCache<MethodAndCallSite, Import>(cellKey =>
             {
                 return new DelayLoadHelperMethodImport(
                     _codegenNodeFactory,
@@ -470,12 +470,12 @@ namespace ILCompiler.DependencyAnalysis
             return _rvaFieldAddressCache.GetOrAdd(fieldWithToken);
         }
 
-        private NodeCache<MethodAndCallSite, Import> _interfaceDispatchCells = new NodeCache<MethodAndCallSite, Import>();
+        private NodeCache<MethodAndCallSite, Import> _dispatchCells = new NodeCache<MethodAndCallSite, Import>();
 
-        public Import InterfaceDispatchCell(MethodWithToken method, MethodDesc callingMethod)
+        public Import DispatchCell(MethodWithToken method, MethodDesc callingMethod)
         {
             MethodAndCallSite cellKey = new MethodAndCallSite(method, null);
-            return _interfaceDispatchCells.GetOrAdd(cellKey);
+            return _dispatchCells.GetOrAdd(cellKey);
         }
 
         private NodeCache<TypeAndMethod, Import> _delegateCtors = new NodeCache<TypeAndMethod, Import>();
@@ -500,11 +500,12 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<VirtualResolutionFixupSignature, Import> _virtualFunctionOverrideCache;
 
-        public Import CheckVirtualFunctionOverride(MethodWithToken declMethod, TypeDesc implType, MethodWithToken implMethod)
+        public Import CheckVirtualFunctionOverride(MethodWithToken declMethod, TypeDesc implType, MethodWithToken implMethod, bool checkOnly = false)
         {
-            return _virtualFunctionOverrideCache.GetOrAdd(_codegenNodeFactory.VirtualResolutionFixupSignature(
-                _verifyTypeAndFieldLayout ? ReadyToRunFixupKind.Verify_VirtualFunctionOverride : ReadyToRunFixupKind.Check_VirtualFunctionOverride,
-                declMethod, implType, implMethod));
+            ReadyToRunFixupKind fixupKind = (checkOnly || !_verifyTypeAndFieldLayout) ?
+                ReadyToRunFixupKind.Check_VirtualFunctionOverride :
+                ReadyToRunFixupKind.Verify_VirtualFunctionOverride;
+            return _virtualFunctionOverrideCache.GetOrAdd(_codegenNodeFactory.VirtualResolutionFixupSignature(fixupKind, declMethod, implType, implMethod));
         }
 
         private NodeCache<ILBodyFixupSignature, Import> _ilBodyFixupsCache;
@@ -630,20 +631,6 @@ namespace ILCompiler.DependencyAnalysis
                         runtimeLookupKind,
                         ReadyToRunFixupKind.MethodEntry,
                         (MethodWithToken)helperArgument,
-                        methodContext);
-
-                case ReadyToRunHelperId.MethodDictionary:
-                    return GenericLookupMethodHelper(
-                        runtimeLookupKind,
-                        ReadyToRunFixupKind.MethodHandle,
-                        (MethodWithToken)helperArgument,
-                        methodContext);
-
-                case ReadyToRunHelperId.TypeDictionary:
-                    return GenericLookupTypeHelper(
-                        runtimeLookupKind,
-                        ReadyToRunFixupKind.TypeDictionary,
-                        (TypeDesc)helperArgument,
                         methodContext);
 
                 case ReadyToRunHelperId.VirtualDispatchCell:

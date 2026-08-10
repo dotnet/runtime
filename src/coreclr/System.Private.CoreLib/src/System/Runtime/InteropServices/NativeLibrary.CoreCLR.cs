@@ -27,7 +27,6 @@ namespace System.Runtime.InteropServices
                                                  [MarshalAs(UnmanagedType.Bool)] bool throwOnError);
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe IntPtr LoadLibraryCallbackStub(char* pLibraryName, Assembly* pAssembly, bool hasDllImportSearchPathFlags, uint dllImportSearchPathFlags, Exception* pException)
         {
             try

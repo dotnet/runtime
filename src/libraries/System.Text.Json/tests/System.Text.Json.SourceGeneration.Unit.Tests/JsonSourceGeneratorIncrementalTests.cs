@@ -32,7 +32,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 ContextGenerationSpec ctx2 = result2.ContextGenerationSpecs[i];
 
                 Assert.NotSame(ctx1, ctx2);
+#pragma warning disable IL2026 // https://github.com/dotnet/runtime/issues/126862
                 GeneratorTestHelpers.AssertStructurallyEqual(ctx1, ctx2);
+#pragma warning restore IL2026
 
                 Assert.Equal(ctx1, ctx2);
                 Assert.Equal(ctx1.GetHashCode(), ctx2.GetHashCode());
@@ -89,7 +91,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             ContextGenerationSpec ctx2 = result2.ContextGenerationSpecs[0];
 
             Assert.NotSame(ctx1, ctx2);
+#pragma warning disable IL2026 // https://github.com/dotnet/runtime/issues/126862
             GeneratorTestHelpers.AssertStructurallyEqual(ctx1, ctx2);
+#pragma warning restore IL2026
 
             Assert.Equal(ctx1, ctx2);
             Assert.Equal(ctx1.GetHashCode(), ctx2.GetHashCode());
@@ -176,7 +180,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         return;
                     }
 
+#pragma warning disable IL2075 // https://github.com/dotnet/runtime/issues/126862
                     foreach (FieldInfo field in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
+#pragma warning restore IL2075
                     {
                         object? fieldValue = field.GetValue(node);
                         Visit(fieldValue);

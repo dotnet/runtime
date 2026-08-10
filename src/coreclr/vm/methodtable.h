@@ -45,7 +45,6 @@ class    MethodDescChunk;
 class    MethodTable;
 class    Module;
 class    Object;
-class    Stub;
 class    Substitution;
 class    TypeHandle;
 class   Dictionary;
@@ -214,7 +213,7 @@ struct InteropMethodTableSlotData
     }
 
     BOOL IsDuplicate() {
-        return ((BOOL)(wFlags & e_DUPLICATE));
+        return (BOOL)(wFlags & e_DUPLICATE);
     }
 
     WORD GetSlot() {
@@ -408,7 +407,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return (m_dwFlagsDebug & enum_flagDebug_ParentMethodTablePointerValid);
+        return m_dwFlagsDebug & enum_flagDebug_ParentMethodTablePointerValid;
     }
     inline void SetParentMethodTablePointerValid()
     {
@@ -421,7 +420,7 @@ public:
     inline BOOL IsInitError() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (VolatileLoad(&m_dwFlags) & enum_flag_IsInitError);
+        return VolatileLoad(&m_dwFlags) & enum_flag_IsInitError;
     }
 
 #ifndef DACCESS_COMPILE
@@ -435,7 +434,7 @@ public:
     inline BOOL IsTlsIndexAllocated() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (VolatileLoad(&m_dwFlags) & enum_flag_IsTlsIndexAllocated);
+        return VolatileLoad(&m_dwFlags) & enum_flag_IsTlsIndexAllocated;
     }
 
 #ifndef DACCESS_COMPILE
@@ -491,7 +490,7 @@ public:
     inline BOOL IsStaticDataAllocated() const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (VolatileLoad(&m_dwFlags) & enum_flag_IsStaticDataAllocated);
+        return VolatileLoad(&m_dwFlags) & enum_flag_IsStaticDataAllocated;
     }
 
 #ifndef DACCESS_COMPILE
@@ -550,7 +549,7 @@ public:
     bool IsPublished() const
     {
         LIMITED_METHOD_CONTRACT;
-        return (VolatileLoad(&m_dwFlagsDebug) & enum_flagDebug_IsPublished);
+        return VolatileLoad(&m_dwFlagsDebug) & enum_flagDebug_IsPublished;
     }
 #endif // _DEBUG
 
@@ -921,6 +920,18 @@ public:
         _ASSERTE(index < NumEightBytes);
         return EightByteSizes[index];
     }
+
+    friend struct ::cdac_data<SystemVEightByteRegistersInfo>;
+};
+
+template<> struct cdac_data<SystemVEightByteRegistersInfo>
+{
+    static constexpr size_t NumEightBytes = offsetof(SystemVEightByteRegistersInfo, NumEightBytes);
+    static constexpr size_t EightByteClassification0 = offsetof(SystemVEightByteRegistersInfo, EightByteClassifications) + 0 * sizeof(SystemVClassificationType);
+    static constexpr size_t EightByteClassification1 = offsetof(SystemVEightByteRegistersInfo, EightByteClassifications) + 1 * sizeof(SystemVClassificationType);
+    static constexpr size_t EightByteSize0 = offsetof(SystemVEightByteRegistersInfo, EightByteSizes) + 0;
+    static constexpr size_t EightByteSize1 = offsetof(SystemVEightByteRegistersInfo, EightByteSizes) + 1;
+    static_assert(CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS == 2, "cdac descriptor exposes exactly two eightbyte slots");
 };
 #endif
 
@@ -985,7 +996,7 @@ public:
     PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;
-        _ASSERTE(!IsContinuation());
+        _ASSERTE(!IsContinuationWithoutMetadata());
         return m_pModule;
     }
 
@@ -1249,7 +1260,7 @@ public:
     inline BOOL IsGlobalClass()
     {
         WRAPPER_NO_CONTRACT;
-        return (GetTypeDefRid() == RidFromToken(COR_GLOBAL_PARENT_TOKEN));
+        return GetTypeDefRid() == RidFromToken(COR_GLOBAL_PARENT_TOKEN);
     }
 
 private:
@@ -1319,7 +1330,7 @@ public:
     inline BOOL CanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+        return GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_CanCompareBitsOrUseFastGetHashCode;
     }
 
     // If canCompare is true, this method ensure an atomic operation for setting
@@ -1342,7 +1353,7 @@ public:
     inline BOOL HasCheckedCanCompareBitsOrUseFastGetHashCode()
     {
         LIMITED_METHOD_CONTRACT;
-        return (GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+        return GetAuxiliaryData()->m_dwFlags & MethodTableAuxiliaryData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode;
     }
 
     inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
@@ -1590,6 +1601,17 @@ public:
 
         return *GetSlotPtrRaw(slotNumber);
     }
+
+#ifndef DACCESS_COMPILE
+    PCODE GetSlotForVirtualVolatileLoadWithoutBarrier(UINT32 slotNum)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        CONSISTENCY_CHECK(slotNum < GetNumVirtuals());
+        // Virtual slots live in chunks pointed to by vtable indirections
+        return VolatileLoadWithoutBarrier(GetVtableIndirections()[GetIndexOfVtableIndirection(slotNum)] + GetIndexAfterVtableIndirection(slotNum));
+    }
+#endif // DACCESS_COMPILE
 
     // Special-case for when we know that the slot number corresponds
     // to a virtual method.
@@ -1851,12 +1873,15 @@ public:
     // Only accurate on types which are not auto layout
     inline BOOL IsInt128OrHasInt128Fields();
 
+    // Only accurate on types which are not auto layout
+    inline BOOL IsDecimalFloatingPointOrHasDecimalFloatingPointFields();
+
     UINT32 GetNativeSize();
 
     DWORD           GetBaseSize()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return(m_BaseSize);
+        return m_BaseSize;
     }
 
     void            SetBaseSize(DWORD baseSize)
@@ -2046,8 +2071,10 @@ public:
     bool IsHFA();
 #endif // FEATURE_HFA
 
-    // Returns the size in bytes of this type if it is a HW vector type; 0 otherwise.
-    int GetVectorSize();
+    // Returns the HFA type for this type, if it is a valid HW vector type.
+    // Floating point HFA types will return CORINFO_HFA_ELEM_NONE.
+    // Vector classes with invalid generic parameters return CORINFO_HFA_ELEM_NONE.
+    CorInfoHFAElemType GetVectorHFA();
 
     // Get the HFA type. This is supported both with FEATURE_HFA, in which case it
     // depends on the cached bit on the class, or without, in which case it is recomputed
@@ -2243,7 +2270,7 @@ public:
     inline int HasInterfaceMap()
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (m_wNumInterfaces != 0);
+        return m_wNumInterfaces != 0;
     }
 
     // Where possible, use this iterator over the interface map instead of accessing the map directly
@@ -2289,13 +2316,13 @@ public:
             PRECONDITION(!Finished());
             if (m_i != (DWORD) -1)
                 m_pMap++;
-            return (++m_i < m_count);
+            return ++m_i < m_count;
         }
 
         // Have we iterated over all of the items?
         BOOL Finished()
         {
-            return (m_i == m_count);
+            return m_i == m_count;
         }
 
 #ifndef DACCESS_COMPILE
@@ -2309,29 +2336,28 @@ public:
         // Get the interface at the current position, with whatever its normal load level is
         inline PTR_MethodTable GetInterfaceApprox()
         {
-            CONTRACT(PTR_MethodTable)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
-                POSTCONDITION(CheckPointer(RETVAL));
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
-            RETURN (m_pMap->GetMethodTable());
+            return m_pMap->GetMethodTable();
         }
 
         inline bool CurrentInterfaceMatches(MethodTable* pMTOwner, MethodTable* pMT)
         {
-            CONTRACT(bool)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
             MethodTable *pCurrentMethodTable = m_pMap->GetMethodTable();
 
@@ -2355,23 +2381,23 @@ public:
                 }
             }
 
-            RETURN (exactMatch);
+            return exactMatch;
         }
 
         bool CurrentInterfaceEquivalentTo(MethodTable* pMTOwner, MethodTable* pMT);
 
         inline bool HasSameTypeDefAs(MethodTable* pMT)
         {
-            CONTRACT(bool)
+            CONTRACTL
             {
                 GC_NOTRIGGER;
                 NOTHROW;
                 SUPPORTS_DAC;
                 PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
             }
-            CONTRACT_END;
+            CONTRACTL_END;
 
-            RETURN (m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT));
+            return m_pMap->GetMethodTable()->HasSameTypeDefAs(pMT);
         }
 
 #ifndef DACCESS_COMPILE
@@ -2457,7 +2483,7 @@ public:
     //
 
     // get the method desc given the interface method desc
-    static MethodDesc *GetMethodDescForInterfaceMethodAndServer(TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer);
+    static MethodDesc *GetMethodDescForInterfaceMethodAndServer(TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer, MethodTable* pServerMT);
 
 #ifdef FEATURE_COMINTEROP
     // get the method desc given the interface method desc on a COM implemented server
@@ -2569,11 +2595,6 @@ public:
     // exact result.
     MethodTable *LookupDispatchMapType(DispatchMapTypeID typeID);
     bool DispatchMapTypeMatchesMethodTable(DispatchMapTypeID typeID, MethodTable* pMT);
-
-    // Determines whether all methods in the given interface have their final implementing
-    // slot in a parent class. I.e. if this returns TRUE, it is trivial (no VSD lookup) to
-    // dispatch pItfMT methods on this class if one knows how to dispatch them on pParentMT.
-    BOOL ImplementsInterfaceWithSameSlotsAsParent(MethodTable *pItfMT, MethodTable *pParentMT);
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
@@ -2769,30 +2790,26 @@ public:
     //
     // #KindsOfElementTypes
     // GetInternalCorElementType() retrieves the internal representation of the type. It's not always
-    // appropriate to use this. For example, we treat enums as their underlying type or some structs are
-    // optimized to be ints. To get the signature type or the verifier type (same as signature except for
-    // enums are normalized to the primitive type that underlies them), use the APIs in Typehandle.h
+    // appropriate to use this. It treats enums as their underlying type. To get the signature
+    // type, use the APIs in Typehandle.h.
     //
     //   * code:TypeHandle.GetSignatureCorElementType()
-    //   * code:TypeHandle.GetVerifierCorElementType()
     //   * code:TypeHandle.GetInternalCorElementType()
     CorElementType GetInternalCorElementType();
-    void SetInternalCorElementType(CorElementType _NormType);
-
-    // See code:TypeHandle::GetVerifierCorElementType for description
-    CorElementType GetVerifierCorElementType();
+    void SetInternalCorElementType(CorElementType elemType, bool isTruePrimitive = false);
 
     // See code:TypeHandle::GetSignatureCorElementType for description
     CorElementType GetSignatureCorElementType();
 
-    // A true primitive is one who's GetVerifierCorElementType() ==
+    // A true primitive is one whose GetInternalCorElementType() ==
     //      ELEMENT_TYPE_I,
     //      ELEMENT_TYPE_I4,
-    //      ELEMENT_TYPE_TYPEDBYREF etc.
-    // Note that GetIntenalCorElementType might return these same values for some additional
-    // types such as Enums and some structs.
-    BOOL IsTruePrimitive();
-    void SetIsTruePrimitive();
+    //      ELEMENT_TYPE_R8, etc.
+    //  Note that IsTruePrimitive returns false for enum types.
+    bool IsTruePrimitive();
+
+    // Like IsTruePrimitive but also returns true for enum types.
+    bool IsPrimitive();
 
     // Is this delegate? Returns false for System.Delegate and System.MulticastDelegate.
     inline BOOL IsDelegate()
@@ -2808,7 +2825,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(g_pObjectClass);
-        return (this == g_pObjectClass);
+        return this == g_pObjectClass;
     }
 
     // Is this System.ValueType?
@@ -2816,7 +2833,7 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         _ASSERTE(g_pValueTypeClass);
-        return (this == g_pValueTypeClass);
+        return this == g_pValueTypeClass;
     }
 
     // Is this value type? Returns false for System.ValueType and System.Enum.
@@ -2852,7 +2869,7 @@ public:
         SetFlag(enum_flag_Category_Nullable);
     }
 
-    inline BOOL IsContinuation();
+    BOOL IsContinuationWithoutMetadata();
 
     // The following methods are only valid for the method tables for array types.
     CorElementType GetArrayElementType()
@@ -3411,6 +3428,7 @@ protected:
             { LIMITED_METHOD_CONTRACT; CONSISTENCY_CHECK(i < GetNumMethods()); return GetEntryData() + i; }
 
         void FillEntryDataForAncestor(MethodTable *pMT);
+        void SetEntryDataForSlotIfNotYetSet(UINT32 i, MethodDesc *pMD);
 
         //
         // At the end of this object is an array
@@ -3708,7 +3726,7 @@ private:
         // AS YOU ADD NEW FLAGS PLEASE CONSIDER WHETHER Generics::NewInstantiation NEEDS
         // TO BE UPDATED IN ORDER TO ENSURE THAT METHODTABLES DUPLICATED FOR GENERIC INSTANTIATIONS
         // CARRY THE CORECT FLAGS.
-        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of enum_flag_GenericsMask, enum_flag_GenericsMask_NonGeneric, and enum_flag_GenericsMask_TypicalInst.
+        // [cDAC] [RuntimeTypeSystem]: Contract depends on the values of enum_flag_GenericsMask, enum_flag_GenericsMask_NonGeneric, enum_flag_GenericsMask_SharedInst, and enum_flag_GenericsMask_TypicalInst.
 
         // We are overloading the low 2 bytes of m_dwFlags to be a component size for Strings
         // and Arrays and some set of flags which we can be assured are of a specified state
@@ -3793,8 +3811,8 @@ private:
         enum_flag_Category_ValueType        = 0x00040000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_Category_ValueType_Mask   = 0x000C0000,
         enum_flag_Category_Nullable         = 0x00050000, // sub-category of ValueType. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
-        enum_flag_Category_PrimitiveValueType=0x00060000, // sub-category of ValueType, Enum or primitive value type. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
-        enum_flag_Category_TruePrimitive    = 0x00070000, // sub-category of ValueType, Primitive (ELEMENT_TYPE_I, etc.). [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+        enum_flag_Category_Primitive        = 0x00060000, // sub-category of ValueType; used for enum types. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
+        enum_flag_Category_TruePrimitive    = 0x00070000, // sub-category of ValueType. (Int32, etc.). [cDAC] [RuntimeTypeSystem]: Contract depends on this value
 
         enum_flag_Category_Array            = 0x00080000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_Category_Array_Mask       = 0x000C0000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
@@ -3818,7 +3836,7 @@ private:
 
         enum_flag_ContainsGCPointers          = 0x01000000, // Contains object references. [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         enum_flag_HasTypeEquivalence          = 0x02000000, // can be equivalent to another type
-        enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000,
+        enum_flag_IsTrackedReferenceWithFinalizer = 0x04000000, // [cDAC] [RuntimeTypeSystem]: Contract depends on this value
         // unused                             = 0x08000000,
 
         enum_flag_IDynamicInterfaceCastable   = 0x10000000, // class implements IDynamicInterfaceCastable interface
@@ -3875,7 +3893,7 @@ private:
     FORCEINLINE DWORD GetFlag(WFLAGS_LOW_ENUM flag) const
     {
         SUPPORTS_DAC;
-        return (IsStringOrArray() ? (enum_flag_StringArrayValues & flag) : (m_dwFlags & flag));
+        return IsStringOrArray() ? (enum_flag_StringArrayValues & flag) : (m_dwFlags & flag);
     }
     FORCEINLINE BOOL TestFlagWithMask(WFLAGS_LOW_ENUM mask, WFLAGS_LOW_ENUM flag) const
     {
@@ -3900,7 +3918,7 @@ private:
     FORCEINLINE BOOL TestFlagWithMask(WFLAGS_HIGH_ENUM mask, WFLAGS_HIGH_ENUM flag) const
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return ((m_dwFlags & (DWORD)mask) == (DWORD)flag);
+        return (m_dwFlags & (DWORD)mask) == (DWORD)flag;
     }
 
     FORCEINLINE void ClearFlag(WFLAGS2_ENUM flag)
@@ -3994,7 +4012,7 @@ private:
     FORCEINLINE static TADDR   union_getPointer(TADDR pCanonMT)
     {
         LIMITED_METHOD_DAC_CONTRACT;
-        return (pCanonMT & ~UNION_MASK);
+        return pCanonMT & ~UNION_MASK;
     }
 
     // m_pPerInstInfo and m_pInterfaceMap have to be at fixed offsets because of performance sensitive

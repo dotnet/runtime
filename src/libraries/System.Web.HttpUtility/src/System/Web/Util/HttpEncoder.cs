@@ -457,7 +457,7 @@ namespace System.Web.Util
             return true;
         }
 
-        internal static byte[] UrlEncode(string str, Encoding e)
+        internal static unsafe byte[] UrlEncode(string str, Encoding e)
         {
             if (e.GetMaxByteCount(str.Length) <= StackallocThreshold)
             {

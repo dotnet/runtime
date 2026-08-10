@@ -2,13 +2,13 @@
 
 This document covers building .NET for WebAssembly in the browser. For WebAssembly documentation including testing, debugging, and deployment, see [WebAssembly Documentation](../../../docs/workflow/wasm-documentation.md).
 
-If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](../../../docs/workflow/building/libraries/webassembly-instructions.md). Emscripten that is needed to build the project will be provisioned automatically, unless `EMSDK_PATH` variable is set or emscripten is already present in `src\mono\browser\emsdk` directory.
+If you haven't already done so, please read [this document](../../../docs/workflow/README.md#Build_Requirements) to understand the build requirements for your operating system. If you are specifically interested in building libraries for WebAssembly, read [Libraries WebAssembly](../../../docs/workflow/building/libraries/webassembly-instructions.md). Emscripten that is needed to build the project will be provisioned automatically into a shared cache under the repository's main checkout (see [wasm tool provisioning](../../../docs/workflow/building/libraries/webassembly-instructions.md#wasm-tool-provisioning)), unless the `EMSDK_PATH` variable is set. (The separate `make provision-wasm` target in this directory is a manual workflow that installs a *hackable* upstream emsdk clone into `src/mono/browser/emsdk`; it is independent of the shared cache and is only needed when patching emscripten itself.)
 
 ### Windows
 
 Windows build [requirements](../../../docs/workflow/requirements/windows-requirements.md)
 
-**Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the `$reporoot/src/mono/browser/emsdk` directory should be manually deleted and then a rebuild attempted.
+**Note:** The EMSDK has an implicit dependency on Python for it to be initialized. A consequence of this is that if the system doesn't have Python installed prior to attempting a build, the automatic provisioning will fail and be in an invalid state. Therefore, if Python needs to be installed after a build attempt the provisioned emscripten cache entry (see [wasm tool provisioning](../../../docs/workflow/building/libraries/webassembly-instructions.md#wasm-tool-provisioning); by default under `<main checkout>/.dotnet/wasm-tools/emscripten/`) should be manually deleted and then a rebuild attempted.
 
 ## Building
 
@@ -189,22 +189,11 @@ Also check [bench](../sample/wasm/browser-bench/README.md) sample to measure mon
 
 ## Templates
 
-The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-experimental` workload. We have 2 templates, `wasmbrowser` and `wasmconsole`, for browser and console WebAssembly applications.
+The wasm templates, located in the `templates` directory, are templates for `dotnet new`, VS and VS for Mac. They are packaged and distributed as part of the `wasm-experimental` workload. The remaining template is `wasmbrowser` for browser WebAssembly applications.
 
 For details about using `dotnet new` see the dotnet tool [documentation](https://learn.microsoft.com/dotnet/core/tools/dotnet-new).
 
-To test changes in the templates, use `dotnet new install --force src/mono/wasm/templates/templates/browser`.
-
-Example use of the `wasmconsole` template:
-
-```console
-> dotnet new wasmconsole
-> dotnet publish
-> cd bin/Debug/net9.0/browser-wasm/AppBundle
-> node main.mjs
-Hello World!
-Args:
-```
+To test changes in the template, use `dotnet new install --force src/mono/wasm/templates/templates/browser`.
 
 ## ES6 modules
 
@@ -396,6 +385,9 @@ Tests are run with V8, Chrome, node, and wasmtime for the various jobs.
 - Chrome: Same as V8.
 - Node: fixed version from emsdk
 - wasmtime - fixed version in `src/mono/wasi/wasmtime-version.txt`.
+- wasi-sdk - fixed version in `eng/wasm/wasi-sdk-version.txt`.
+
+All of these are downloaded into the shared wasm tool cache described in [webassembly-instructions.md](../../../docs/workflow/building/libraries/webassembly-instructions.md#wasm-tool-provisioning).
 
 ### `eng/testing/BrowserVersions.props`
 

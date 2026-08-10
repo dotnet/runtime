@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -841,7 +841,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static int Pbes1Decrypt(
+        private static unsafe int Pbes1Decrypt(
             OptionalReadOnlySpan<byte> algorithmParameters,
             ReadOnlySpan<byte> password,
             IncrementalHash hasher,
@@ -1015,7 +1015,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static void Pbkdf1(
+        private static unsafe void Pbkdf1(
             IncrementalHash hasher,
             ReadOnlySpan<byte> password,
             ReadOnlySpan<byte> salt,

@@ -627,7 +627,7 @@ private:
                     CORINFO_CALL_INFO callInfo = {};
                     callInfo.hMethod           = method;
                     callInfo.methodFlags       = methodFlags;
-                    m_compiler->impMarkInlineCandidate(call, context, false, &callInfo, inlinersContext);
+                    m_compiler->impMarkInlineCandidate(call, context, &callInfo, inlinersContext);
 
                     if (call->IsInlineCandidate())
                     {
@@ -1399,7 +1399,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
                 pParam->inlineInfo->InlineRoot->m_inlineStrategy
                     ->NewContext(pParam->inlineInfo->inlineCandidateInfo->inlinersContext, pParam->inlineInfo->iciStmt,
                                               pParam->inlineInfo->iciCall);
-            pParam->inlineInfo->argCnt                   = pParam->inlineCandidateInfo->methInfo.args.totalILArgs();
             pParam->inlineInfo->tokenLookupContextHandle = pParam->inlineCandidateInfo->exactContextHandle;
 
             JITLOG_THIS(pParam->pThis,
@@ -2151,8 +2150,16 @@ void Compiler::fgInsertInlineeArgument(
             {
                 // Don't put GT_BLK node under a GT_COMMA.
                 // Codegen can't deal with it.
-                // Just hang the address here in case there are side-effect.
-                *newStmt = gtNewStmt(gtUnusedValNode(argNode->AsOp()->gtOp1), callDI);
+                // If the indirection may fault, preserve the null check.
+                GenTree* addr = argNode->AsOp()->gtOp1;
+                if (argNode->IndirMayFault(this))
+                {
+                    *newStmt = gtNewStmt(gtNewNullCheck(addr), callDI);
+                }
+                else
+                {
+                    *newStmt = gtNewStmt(gtUnusedValNode(addr), callDI);
+                }
             }
             else
             {
@@ -2313,26 +2320,26 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
     unsigned ilArgNum = 0;
     for (CallArg& arg : call->gtArgs.Args())
     {
-        InlArgInfo* argInfo = nullptr;
-        switch (arg.GetWellKnownArg())
+        InlArgInfo* argInfo;
+        if (arg.IsUserArg())
         {
-            case WellKnownArg::RetBuffer:
-            case WellKnownArg::AsyncContinuation:
-            case WellKnownArg::AsyncExecutionContext:
-            case WellKnownArg::AsyncSynchronizationContext:
-                continue;
-            case WellKnownArg::InstParam:
-                argInfo = inlineInfo->inlInstParamArgInfo;
-                break;
-            default:
-                assert(ilArgNum < inlineInfo->argCnt);
-                argInfo = &inlineInfo->inlArgInfo[ilArgNum++];
-                break;
+            assert(ilArgNum < inlineInfo->argCnt);
+            argInfo = &inlArgInfo[ilArgNum++];
+        }
+        else if (arg.GetWellKnownArg() == WellKnownArg::InstParam)
+        {
+            argInfo = inlineInfo->inlInstParamArgInfo;
+        }
+        else
+        {
+            continue;
         }
 
         assert(argInfo != nullptr);
         fgInsertInlineeArgument(*argInfo, block, &afterStmt, &newStmt, callDI);
     }
+
+    assert(ilArgNum == inlineInfo->argCnt);
 
     // Add the CCTOR check if asked for.
     // Note: We no longer do the optimization that is done before by staticAccessedFirstUsingHelper in the old inliner.
@@ -2531,4 +2538,141 @@ bool Compiler::fgNeedReturnSpillTemp()
 {
     assert(compIsForInlining());
     return (lvaInlineeReturnSpillTemp != BAD_VAR_NUM);
+}
+
+//------------------------------------------------------------------------
+// fgPostInlineNoReturnCleanup: Trim dead code that follows no-return calls
+//   exposed by inlining.
+//
+// Returns:
+//    PhaseStatus indicating whether anything was modified.
+//
+// Notes:
+//   For each block, find the first no-return call in execution order, drop
+//   the statements that follow, and convert the block to BBJ_THROW. Calls
+//   under a GT_QMARK are conditional and ignored.
+//
+//   When the no-return call is not the root of its statement we use
+//   gtSplitTree to hoist the preceding side effects. gtSplitTree asserts on
+//   any GT_QMARK it encounters while walking the statement, and qmarks can
+//   still be present here (this phase runs before morph expands them), so
+//   blocks whose trimmed statement contains a qmark are left unmodified.
+//
+PhaseStatus Compiler::fgPostInlineNoReturnCleanup()
+{
+    if (!doesMethodHaveNoReturnCalls())
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    class NoReturnCallFinder final : public GenTreeVisitor<NoReturnCallFinder>
+    {
+    public:
+        enum
+        {
+            DoPreOrder        = true,
+            UseExecutionOrder = true,
+        };
+
+        GenTreeCall* m_result = nullptr;
+
+        NoReturnCallFinder(Compiler* comp)
+            : GenTreeVisitor<NoReturnCallFinder>(comp)
+        {
+        }
+
+        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            GenTree* const tree = *use;
+            if (tree->OperIs(GT_QMARK))
+            {
+                return WALK_SKIP_SUBTREES;
+            }
+            if (tree->IsCall() && tree->AsCall()->IsNoReturn())
+            {
+                m_result = tree->AsCall();
+                return WALK_ABORT;
+            }
+            return WALK_CONTINUE;
+        }
+    };
+
+    bool modified = false;
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if (block->KindIs(BBJ_THROW))
+        {
+            continue;
+        }
+
+        Statement*   trimStmt  = nullptr;
+        GenTreeCall* noRetCall = nullptr;
+
+        for (Statement* const stmt : block->Statements())
+        {
+            // Skip any statement that has no calls.
+            //
+            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
+            {
+                continue;
+            }
+
+            NoReturnCallFinder finder(this);
+            finder.WalkTree(stmt->GetRootNodePointer(), nullptr);
+            if (finder.m_result != nullptr)
+            {
+                trimStmt  = stmt;
+                noRetCall = finder.m_result;
+                break;
+            }
+        }
+
+        if (trimStmt == nullptr)
+        {
+            continue;
+        }
+
+        // When the no-return call is not the statement root we must split the
+        // tree, but gtSplitTree asserts on any GT_QMARK it walks over. Qmarks
+        // can still be present here (this phase runs before morph expands
+        // them), so conservatively skip any statement that contains one.
+        //
+        if ((trimStmt->GetRootNode() != noRetCall) && gtTreeContainsOper(trimStmt->GetRootNode(), GT_QMARK))
+        {
+            JITDUMP("\nfgPostInlineNoReturnCleanup: " FMT_BB
+                    " statement with no-return call [%06u] contains a qmark; skipping\n",
+                    block->bbNum, dspTreeID(noRetCall));
+            continue;
+        }
+
+        JITDUMP("\nfgPostInlineNoReturnCleanup: " FMT_BB " contains no-return call [%06u]; trimming\n", block->bbNum,
+                dspTreeID(noRetCall));
+
+        // Split off any side effects that precede the call, then remove
+        // statements in the block after the throw.
+        //
+        if (trimStmt->GetRootNode() != noRetCall)
+        {
+            Statement* firstNewStmt = nullptr;
+            GenTree**  callUse      = nullptr;
+            gtSplitTree(block, trimStmt, noRetCall, &firstNewStmt, &callUse, /* early */ true);
+
+            trimStmt->SetRootNode(noRetCall);
+            gtUpdateStmtSideEffects(trimStmt);
+        }
+
+        while (block->lastStmt() != trimStmt)
+        {
+            fgRemoveStmt(block, block->lastStmt());
+        }
+
+        // fgConvertBBToThrowBB updates preds, profile weights, and consistency.
+        //
+        fgConvertBBToThrowBB(block);
+
+        modified = true;
+    }
+
+    return modified ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
 }

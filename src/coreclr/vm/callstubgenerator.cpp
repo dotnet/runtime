@@ -1734,7 +1734,7 @@ CallStubHeader *CallStubGenerator::GenerateCallStubForSig(MetaSig &sig, MethodDe
     totalStackSize = ALIGN_UP(totalStackSize, CALL_STACK_ALIGN_SIZE);
 #endif // TARGET_ARM
 
-    xxHash hashState;
+    xxHash<xxHashDefaultTraits> hashState;
     for (int i = 0; i < m_routineIndex; i++)
     {
         hashState.AddPointer((void*)pRoutines[i]);
@@ -1904,7 +1904,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
         PInvoke::GetCallingConvention_IgnoreErrors(pMD, &unmanagedCallConv, NULL);
         hasUnmanagedCallConv = true;
     }
-    else if (pMD != NULL && pMD->IsILStub())
+    else if (pMD != NULL && pMD->IsILStub() && !pMD->AsDynamicMethodDesc()->IsReversePInvokeStub())
     {
         MethodDesc* pTargetMD = pMD->AsDynamicMethodDesc()->GetILStubResolver()->GetStubTargetMethodDesc();
         if (pTargetMD != NULL && pTargetMD->IsPInvoke())
@@ -1919,7 +1919,7 @@ void CallStubGenerator::ComputeCallStub(MetaSig &sig, PCODE *pRoutines, MethodDe
 #endif
         }
     }
-    else if (pMD != NULL && pMD->HasUnmanagedCallersOnlyAttribute())
+    else if (pMD != NULL && !pMD->IsILStub() && pMD->HasUnmanagedCallersOnlyAttribute())
     {
         if (CallConv::TryGetCallingConventionFromUnmanagedCallersOnly(pMD, &unmanagedCallConv))
         {
@@ -2682,7 +2682,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             case ELEMENT_TYPE_STRING:
             case ELEMENT_TYPE_PTR:
             case ELEMENT_TYPE_BYREF:
-            case ELEMENT_TYPE_TYPEDBYREF:
             case ELEMENT_TYPE_ARRAY:
             case ELEMENT_TYPE_SZARRAY:
             case ELEMENT_TYPE_FNPTR:
@@ -2704,6 +2703,15 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
             case ELEMENT_TYPE_VOID:
                 return ReturnTypeVoid;
                 break;
+            case ELEMENT_TYPE_TYPEDBYREF:
+#if defined(UNIX_AMD64_ABI)
+                return ReturnTypeI8I8;
+#elif defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
+                return ReturnType2I8;
+#else
+                _ASSERTE(!"Implement TypedByRef return support for this platform");
+                break;
+#endif
             case ELEMENT_TYPE_VALUETYPE:
 #ifdef TARGET_AMD64
 #ifdef TARGET_WINDOWS
@@ -2880,7 +2888,6 @@ CallStubGenerator::ReturnType CallStubGenerator::GetReturnType(ArgIteratorType *
                     else
                     {
                         _ASSERTE(info.flags == FpStruct::UseIntCallConv);
-                        _ASSERTE(thReturnValueType.AsMethodTable()->IsRegPassedStruct());
                         unsigned size = thReturnValueType.GetSize();
                         if (size <= 8)
                         {

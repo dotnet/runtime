@@ -652,7 +652,7 @@ namespace System.Reflection.Emit
 
             // We can never ever have two active destroy scouts for the same method. We need to initialize the scout
             // outside the try/reregister block to avoid possibility of reregistration for finalization with active scout.
-            scout.m_methodHandle = method._methodHandle.Value;
+            scout.m_methodHandle = IRuntimeMethodInfo.GetValue(method._methodHandle);
         }
 
         private sealed class DestroyScout
@@ -757,7 +757,6 @@ namespace System.Reflection.Emit
             return m_exceptionHeader;
         }
 
-        [RequiresUnsafe]
         internal override unsafe void GetEHInfo(int excNumber, void* exc)
         {
             Debug.Assert(m_exceptions != null);
@@ -906,7 +905,6 @@ namespace System.Reflection.Emit
         }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe void SetCode(byte* code, int codeSize, int maxStackSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(codeSize);
@@ -923,7 +921,6 @@ namespace System.Reflection.Emit
         }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe void SetExceptions(byte* exceptions, int exceptionsSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(exceptionsSize);
@@ -940,7 +937,6 @@ namespace System.Reflection.Emit
         }
 
         [CLSCompliant(false)]
-        [RequiresUnsafe]
         public unsafe void SetLocalSignature(byte* localSignature, int signatureSize)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(signatureSize);
@@ -1032,7 +1028,7 @@ namespace System.Reflection.Emit
             IRuntimeMethodInfo methodReal = method.GetMethodInfo();
             if (methodReal != null)
             {
-                RuntimeMethodHandleInternal rmhi = methodReal.Value;
+                RuntimeMethodHandleInternal rmhi = IRuntimeMethodInfo.GetValue(methodReal);
                 if (!RuntimeMethodHandle.IsDynamicMethod(rmhi))
                 {
                     RuntimeType type = RuntimeMethodHandle.GetDeclaringType(rmhi);

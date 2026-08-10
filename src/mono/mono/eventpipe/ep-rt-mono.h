@@ -594,6 +594,21 @@ ep_rt_config_value_get_circular_mb (void)
 
 static
 inline
+uint32_t
+ep_rt_config_value_get_buffering_mode (void)
+{
+	uint32_t buffering_mode = 0;
+	gchar *value = g_getenv ("DOTNET_EventPipeBufferingMode");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeBufferingMode");
+	if (value)
+		buffering_mode = strtoul (value, NULL, 10);
+	g_free (value);
+	return buffering_mode;
+}
+
+static
+inline
 bool
 ep_rt_config_value_get_output_streaming (void)
 {
@@ -635,6 +650,25 @@ ep_rt_config_value_get_enable_stackwalk (void)
 		value_uint32_t = (uint32_t)atoi (value);
 	g_free (value);
 	return value_uint32_t != 0;
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_sampling_rate (void)
+{
+	uint32_t value_uint32_t = 0;
+	gchar *value = g_getenv ("DOTNET_EventPipeThreadSamplingRate");
+	if (!value)
+		value = g_getenv ("COMPlus_EventPipeThreadSamplingRate");
+	if (value) {
+		gchar *endptr = NULL;
+		guint64 parsed = strtoull (value, &endptr, 10);
+		if (endptr != value && *endptr == '\0' && value [0] != '-' && parsed <= G_MAXUINT32)
+			value_uint32_t = (uint32_t)parsed;
+	}
+	g_free (value);
+	return value_uint32_t;
 }
 
 /*
@@ -936,12 +970,36 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_mono_start_func)
 {
 	rt_mono_thread_params_internal_t *thread_params = (rt_mono_thread_params_internal_t *)data;
 
-	ep_rt_mono_thread_setup_2 (thread_params->background_thread, thread_params->thread_params.thread_type);
+	const EventPipeThreadType thread_type = thread_params->thread_params.thread_type;
+
+	if (thread_type == EP_THREAD_TYPE_SERVER) {
+		// The diagnostics server thread dispatches managed IPC command callbacks, so it takes a full managed attach.
+		ep_rt_mono_thread_setup_2 (thread_params->background_thread, thread_type);
+	} else if (thread_type == EP_THREAD_TYPE_SESSION) {
+		// The session drain thread runs only the native drain loop; it never runs managed code (managed provider
+		// callbacks auto-attach through the native->managed wrapper, and no managed provider can be registered
+		// before the runtime finishes starting up). Attach it at the thread-info level only - a MonoThreadInfo is
+		// all the drain loop's cooperative-GC primitives (sleep/wait/lock) need. A full managed attach's teardown
+		// runs mono_thread_internal_detach -> mono_gc_finalize_notify, which aborts when a session is started and
+		// stopped during diagnostic-port startup suspension, before the finalizer thread exists.
+		mono_thread_info_attach ();
+		// Flag it NO_GC (never scanned or suspended for GC) and NO_SAMPLE (never sampled by the profiler),
+		// matching mono_threads_attach_tools_thread: the drain loop touches no managed heap and must not be probed.
+		mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+	} else if (thread_type == EP_THREAD_TYPE_SAMPLING) {
+		// The sample profiler thread walks managed stacks, so it takes a full managed attach.
+		ep_rt_mono_thread_setup_2 (thread_params->background_thread, thread_type);
+	}
 
 	thread_params->thread_params.thread = ep_rt_thread_get_handle ();
 	mono_thread_start_return_t result = thread_params->thread_params.thread_func (thread_params);
 
-	ep_rt_mono_thread_teardown ();
+	// Tear down symmetrically: only the SESSION thread's thread-info attach avoids the managed detach path
+	// (mono_thread_internal_detach -> mono_gc_finalize_notify).
+	if (thread_type == EP_THREAD_TYPE_SESSION)
+		mono_thread_info_detach ();
+	else
+		ep_rt_mono_thread_teardown ();
 
 	g_free (thread_params);
 
@@ -1005,7 +1063,7 @@ ep_rt_queue_job (
 	// it's called from browser event loop
 	ds_job_cb cb = (ds_job_cb)job_func;
 
-	// invoke the callback inline for the fist time
+	// invoke the callback inline for the first time
 	gsize done = cb (params);
 
 	// see if it's done or needs to be scheduled again

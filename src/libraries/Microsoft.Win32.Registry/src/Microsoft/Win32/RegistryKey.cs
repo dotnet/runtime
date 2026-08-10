@@ -755,7 +755,7 @@ namespace Microsoft.Win32
 
         /// <summary>Retrieves an array of strings containing all the subkey names.</summary>
         /// <returns>All subkey names.</returns>
-        public string[] GetSubKeyNames()
+        public unsafe string[] GetSubKeyNames()
         {
             int subkeys = SubKeyCount;
 

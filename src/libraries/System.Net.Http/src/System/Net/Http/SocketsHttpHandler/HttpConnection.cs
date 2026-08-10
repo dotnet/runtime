@@ -74,8 +74,9 @@ namespace System.Net.Http
             Stream stream,
             TransportContext? transportContext,
             Activity? connectionSetupActivity,
-            IPEndPoint? remoteEndPoint)
-            : base(pool, connectionSetupActivity, remoteEndPoint)
+            IPEndPoint? remoteEndPoint,
+            long connectionId)
+            : base(pool, connectionId, connectionSetupActivity, remoteEndPoint)
         {
             Debug.Assert(stream != null);
 
@@ -531,6 +532,8 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            request.ConnectionId = Id;
+
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             Debug.Assert(_readBuffer.ActiveLength == 0, "Unexpected data in read buffer");
             Debug.Assert(_readAheadTaskStatus != ReadAheadTask_Started,
@@ -1517,7 +1520,7 @@ namespace System.Net.Http
             await WriteToStreamAsync(source, async).ConfigureAwait(false);
         }
 
-        private ValueTask WriteHexInt32Async(int value, bool async)
+        private unsafe ValueTask WriteHexInt32Async(int value, bool async)
         {
             // Try to format into our output buffer directly.
             if (value.TryFormat(_writeBuffer.AvailableSpan, out int bytesWritten, "X"))
@@ -1590,33 +1593,55 @@ namespace System.Net.Http
         {
             ReadOnlySpan<byte> buffer = _readBuffer.ActiveReadOnlySpan;
 
-            int lineFeedIndex = buffer.IndexOf((byte)'\n');
-            if (lineFeedIndex < 0)
+            // Unlike the status line and headers, the chunked encoding grammar (RFC 9112 7.1)
+            // requires that each line be terminated by a CRLF. Interpreting a lone LF as a line
+            // terminator, or allowing a bare CR within the line, is not permitted here.
+            int index = buffer.IndexOfAny((byte)'\r', (byte)'\n');
+            if ((uint)index >= (uint)buffer.Length)
             {
+                // We haven't found a CR or LF yet, so we don't have a complete line.
                 if (buffer.Length < MaxChunkBytesAllowed)
                 {
                     line = default;
                     return false;
                 }
             }
+            else if (buffer[index] == '\n')
+            {
+                // We found an LF that is not preceded by a CR.
+                throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_chunk_line_ending);
+            }
             else
             {
-                int bytesConsumed = lineFeedIndex + 1;
-                if (bytesConsumed <= MaxChunkBytesAllowed)
+                // We found a CR. It must be immediately followed by an LF.
+                int lineFeedIndex = index + 1;
+                if ((uint)lineFeedIndex < (uint)buffer.Length)
                 {
-                    _readBuffer.Discard(bytesConsumed);
+                    if (buffer[lineFeedIndex] != '\n')
+                    {
+                        // We found a bare CR that is not part of a CRLF sequence.
+                        throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_chunk_line_ending);
+                    }
 
-                    int carriageReturnIndex = lineFeedIndex - 1;
+                    int bytesConsumed = lineFeedIndex + 1;
+                    if (bytesConsumed <= MaxChunkBytesAllowed)
+                    {
+                        _readBuffer.Discard(bytesConsumed);
 
-                    int length = (uint)carriageReturnIndex < (uint)buffer.Length && buffer[carriageReturnIndex] == '\r'
-                        ? carriageReturnIndex
-                        : lineFeedIndex;
-
-                    line = buffer.Slice(0, length);
-                    return true;
+                        line = buffer.Slice(0, index);
+                        return true;
+                    }
+                }
+                else if (buffer.Length < MaxChunkBytesAllowed)
+                {
+                    // We have the CR but haven't received the following byte yet.
+                    line = default;
+                    return false;
                 }
             }
 
+            // We either didn't find a line terminator within the allowed number of bytes, or the
+            // line (including its CRLF) is longer than we're willing to buffer.
             throw new HttpRequestException(SR.net_http_chunk_too_large);
         }
 
@@ -1836,6 +1861,7 @@ namespace System.Net.Http
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> ReadBufferedAsyncCore(Memory<byte> destination)
         {
             // This is called when reading the response body.

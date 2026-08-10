@@ -197,6 +197,10 @@ FORCEINLINE bool OptimizeLdrStr(instruction ins,
 
 bool OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, emitAttr regAttr);
 
+// Try to fold the page offset of a preceding relocatable "add Rd,Rd,#:lo12:sym" (PAGEOFFSET_12A)
+// into a "ldr Rd,[Rd]" to form "ldr Rd,[Rd,#:lo12:sym]" (PAGEOFFSET_12L), removing the add.
+bool TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2);
+
 emitLclVarAddr* emitGetLclVarPairLclVar2(instrDesc* id)
 {
     assert(id->idIsLclVarPair());
@@ -804,22 +808,6 @@ static bool isValidUimm_MultipleOf(ssize_t value)
     return isValidUimm<bits>(value / mod) && (value % mod == 0);
 }
 
-// Returns true if 'value' is a legal signed immediate with 'bits' number of bits.
-template <const size_t bits>
-static bool isValidSimm(ssize_t value)
-{
-    constexpr ssize_t max = 1 << (bits - 1);
-    return (-max <= value) && (value < max);
-}
-
-// Returns true if 'value' is a legal signed multiple of 'mod' immediate with 'bits' number of bits.
-template <const size_t bits, const ssize_t mod>
-static bool isValidSimm_MultipleOf(ssize_t value)
-{
-    static_assert(mod != 0);
-    return isValidSimm<bits>(value / mod) && (value % mod == 0);
-}
-
 // Returns true if 'imm' is a valid broadcast immediate for some SVE DUP variants
 static bool isValidBroadcastImm(ssize_t imm, emitAttr laneSize)
 {
@@ -1058,9 +1046,6 @@ static bool emitIns_valid_imm_for_ldst_offset(INT64 imm, emitAttr size);
 // true if this 'imm' can be encoded as the offset in an unscaled ldr/str instruction
 static bool emitIns_valid_imm_for_unscaled_ldst_offset(INT64 imm);
 
-// true if this 'imm' can be encoded as the offset in an scaled SVE ldr/str instruction
-static bool emitIns_valid_imm_for_scaled_sve_ldst_offset(INT64 imm);
-
 // true if this 'imm' can be encoded as a input operand to a ccmp instruction
 static bool emitIns_valid_imm_for_ccmp(INT64 imm);
 
@@ -1084,6 +1069,32 @@ static bool canEncodeByteShiftedImm(INT64 imm, emitAttr size, bool allow_MSL, em
 
 // true if 'immDbl' can be encoded using a 'float immediate', also returns the encoding if wbFPI is non-null
 static bool canEncodeFloatImm8(double immDbl, emitter::floatImm8* wbFPI = nullptr);
+
+// Returns true if 'value' is a legal signed immediate with 'bits' number of bits.
+template <const size_t bits>
+static bool isValidSimm(ssize_t value)
+{
+    constexpr size_t ssize_t_bits = sizeof(ssize_t) * BITS_PER_BYTE;
+    static_assert(bits > 0);
+    static_assert(bits <= ssize_t_bits);
+    if constexpr (bits == ssize_t_bits)
+    {
+        return true;
+    }
+    else
+    {
+        constexpr size_t max = size_t{1} << (bits - 1);
+        return (-static_cast<ssize_t>(max) <= value) && (value < static_cast<ssize_t>(max));
+    }
+}
+
+// Returns true if 'value' is a legal signed multiple of 'mod' immediate with 'bits' number of bits.
+template <const size_t bits, const ssize_t mod>
+static bool isValidSimm_MultipleOf(ssize_t value)
+{
+    static_assert(mod != 0);
+    return isValidSimm<bits>(value / mod) && (value % mod == 0);
+}
 
 // Returns the number of bits used by the given 'size'.
 inline static unsigned getBitWidth(emitAttr size)
@@ -1112,7 +1123,7 @@ inline static bool isValidGeneralDatasize(emitAttr size)
 
 inline static bool isValidScalarDatasize(emitAttr size)
 {
-    return (size == EA_8BYTE) || (size == EA_4BYTE);
+    return (size == EA_8BYTE) || (size == EA_4BYTE) || (size == EA_2BYTE);
 }
 
 inline static bool isValidScalableDatasize(emitAttr size)
@@ -1330,12 +1341,12 @@ inline static bool insOptsConvertFloatToFloat(insOpts opt)
 
 inline static bool insOptsConvertFloatToInt(insOpts opt)
 {
-    return ((opt >= INS_OPTS_S_TO_4BYTE) && (opt <= INS_OPTS_D_TO_8BYTE));
+    return ((opt >= INS_OPTS_S_TO_4BYTE) && (opt <= INS_OPTS_H_TO_8BYTE));
 }
 
 inline static bool insOptsConvertIntToFloat(insOpts opt)
 {
-    return ((opt >= INS_OPTS_4BYTE_TO_S) && (opt <= INS_OPTS_8BYTE_TO_D));
+    return ((opt >= INS_OPTS_4BYTE_TO_S) && (opt <= INS_OPTS_8BYTE_TO_H));
 }
 
 inline static bool insOptsScalable(insOpts opt)
@@ -1461,7 +1472,7 @@ inline static ssize_t computeRelPageAddr(size_t dstAddr, size_t srcAddr)
 /*                   Output target-independent instructions             */
 /************************************************************************/
 
-void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
+void emitIns_J(instruction ins, BasicBlock* dst, bool keepShort = false);
 
 /************************************************************************/
 /*           The public entry points to output instructions             */

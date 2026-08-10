@@ -424,6 +424,12 @@ public:
             CORINFO_METHOD_HANDLE   methodHandle  /* IN */
             ) = 0;
 
+    // Records the signature of a managed call site for Wasm R2R thunk generation.
+    // This is a no-op on all targets except ReadyToRun Wasm compilation.
+    virtual void recordWasmManagedCallSig(
+            CORINFO_SIG_INFO *      callSig       /* IN */
+            ) = 0;
+
     // A relocation is recorded if we are pre-jitting.
     // A jump thunk may be inserted if we are jitting
     virtual void recordRelocation(

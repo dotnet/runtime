@@ -264,7 +264,7 @@ def main():
     # Mark pipelines with 0 test results as inconclusive
     for name in zero_result_pipelines:
         conn.execute(
-            "UPDATE pipelines SET result = 'inconclusive', skip_reason = 'Build failed but no test failures detected via Test Results API' WHERE name = ?",
+            "UPDATE pipelines SET result = 'inconclusive', skip_reason = 'Build failed but no test failures detected via Test Results API, e.g., due to a cancelled leg' WHERE name = ?",
             (name,)
         )
     if zero_result_pipelines:

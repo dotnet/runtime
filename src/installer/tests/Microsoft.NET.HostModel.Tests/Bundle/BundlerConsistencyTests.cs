@@ -315,6 +315,113 @@ namespace Microsoft.NET.HostModel.Bundle.Tests
             bundler.BundleManifest.Contains(otherContentName).Should().Be(options.HasFlag(BundleOptions.BundleOtherFiles));
         }
 
+        [InlineData(BundleOptions.None)]
+        [InlineData(BundleOptions.BundleNativeBinaries)]
+        [InlineData(BundleOptions.BundleOtherFiles)]
+        [InlineData(BundleOptions.BundleAllContent)]
+        [InlineData(BundleOptions.BundleSymbolFiles)]
+        [Theory]
+        public void ComputeBundleContents(BundleOptions options)
+        {
+            TestApp app = sharedTestState.App;
+            string devJsonName = Path.GetFileName(app.RuntimeDevConfigJson);
+            string appSymbolName = $"{app.Name}.pdb";
+            string otherContentName = "other.txt";
+            FileSpec[] fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(app.AppDll, Path.GetRelativePath(app.Location, app.AppDll)),
+                new FileSpec(app.DepsJson, Path.GetRelativePath(app.Location, app.DepsJson)),
+                new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
+                new FileSpec(app.RuntimeConfigJson, devJsonName),
+                new FileSpec(Path.Combine(app.Location, appSymbolName), appSymbolName),
+                new FileSpec(Binaries.CoreClr.FilePath, Binaries.CoreClr.FileName),
+                new FileSpec(app.RuntimeConfigJson, otherContentName),
+            };
+
+            Bundler bundler = CreateBundlerInstance(options);
+            BundleContents contents = bundler.ComputeBundleContents(fileSpecs);
+
+            // App's dll, .deps.json, and .runtimeconfig.json should always be included
+            Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == Path.GetFileName(app.AppDll));
+            Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == Path.GetFileName(app.DepsJson));
+            Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == Path.GetFileName(app.RuntimeConfigJson));
+
+            // Host should be identified separately
+            Assert.Equal(BundlerHostName, contents.Host.BundleRelativePath);
+            Assert.DoesNotContain(contents.IncludedFiles, f => f.BundleRelativePath == BundlerHostName);
+            Assert.DoesNotContain(contents.ExcludedFiles, f => f.BundleRelativePath == BundlerHostName);
+
+            // App's .runtimeconfig.dev.json is ignored (not in either list)
+            Assert.DoesNotContain(contents.IncludedFiles, f => f.BundleRelativePath == devJsonName);
+            Assert.DoesNotContain(contents.ExcludedFiles, f => f.BundleRelativePath == devJsonName);
+
+            // Symbols
+            if (options.HasFlag(BundleOptions.BundleSymbolFiles))
+            {
+                Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == appSymbolName);
+                Assert.DoesNotContain(contents.ExcludedFiles, f => f.BundleRelativePath == appSymbolName);
+            }
+            else
+            {
+                Assert.Contains(contents.ExcludedFiles, f => f.BundleRelativePath == appSymbolName);
+                Assert.DoesNotContain(contents.IncludedFiles, f => f.BundleRelativePath == appSymbolName);
+            }
+
+            // Native libraries
+            if (options.HasFlag(BundleOptions.BundleNativeBinaries))
+            {
+                Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == Binaries.CoreClr.FileName);
+                Assert.DoesNotContain(contents.ExcludedFiles, f => f.BundleRelativePath == Binaries.CoreClr.FileName);
+            }
+            else
+            {
+                Assert.Contains(contents.ExcludedFiles, f => f.BundleRelativePath == Binaries.CoreClr.FileName);
+                Assert.DoesNotContain(contents.IncludedFiles, f => f.BundleRelativePath == Binaries.CoreClr.FileName);
+            }
+
+            // Other files
+            if (options.HasFlag(BundleOptions.BundleOtherFiles))
+            {
+                Assert.Contains(contents.IncludedFiles, f => f.BundleRelativePath == otherContentName);
+                Assert.DoesNotContain(contents.ExcludedFiles, f => f.BundleRelativePath == otherContentName);
+            }
+            else
+            {
+                Assert.Contains(contents.ExcludedFiles, f => f.BundleRelativePath == otherContentName);
+                Assert.DoesNotContain(contents.IncludedFiles, f => f.BundleRelativePath == otherContentName);
+            }
+
+        }
+
+        [Fact]
+        public void ComputeBundleContents_GenerateBundle()
+        {
+            TestApp app = sharedTestState.App;
+            FileSpec[] fileSpecs = new FileSpec[]
+            {
+                new FileSpec(Binaries.AppHost.FilePath, BundlerHostName),
+                new FileSpec(app.AppDll, Path.GetRelativePath(app.Location, app.AppDll)),
+                new FileSpec(app.DepsJson, Path.GetRelativePath(app.Location, app.DepsJson)),
+                new FileSpec(app.RuntimeConfigJson, Path.GetRelativePath(app.Location, app.RuntimeConfigJson)),
+                new FileSpec(Binaries.CoreClr.FilePath, Binaries.CoreClr.FileName),
+            };
+
+            // Generate bundle directly from file specs
+            Bundler directBundler = CreateBundlerInstance();
+            directBundler.GenerateBundle(fileSpecs);
+
+            // Generate bundle via ComputeBundleContents + GenerateBundle(BundleContents)
+            Bundler computedBundler = CreateBundlerInstance();
+            BundleContents contents = computedBundler.ComputeBundleContents(fileSpecs);
+            computedBundler.GenerateBundle(contents);
+
+            // Both paths should produce bundles with the same manifest entries
+            var directEntries = directBundler.BundleManifest.Files.Select(f => (f.RelativePath, f.Size, f.CompressedSize, f.Type)).OrderBy(e => e.RelativePath);
+            var computedEntries = computedBundler.BundleManifest.Files.Select(f => (f.RelativePath, f.Size, f.CompressedSize, f.Type)).OrderBy(e => e.RelativePath);
+            Assert.Equal(directEntries, computedEntries);
+        }
+
         [Fact]
         public void FileSizes()
         {

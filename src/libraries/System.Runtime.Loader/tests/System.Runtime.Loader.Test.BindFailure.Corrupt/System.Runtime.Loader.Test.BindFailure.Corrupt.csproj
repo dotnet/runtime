@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <IsTestSupportProject>true</IsTestSupportProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="TestClass.cs" />
+  </ItemGroup>
+</Project>

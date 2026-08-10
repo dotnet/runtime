@@ -84,20 +84,6 @@ namespace ILCompiler.ObjectWriter
         private protected SectionWriter GetOrCreateSection(ObjectNodeSection section)
             => GetOrCreateSection(section, default, default);
 
-        private readonly SectionWriter.Params _defaultParams = new SectionWriter.Params
-        {
-            LengthEncodeFormat = LengthEncodeFormat.None
-        };
-
-        /// <summary>
-        /// Some architectures may require section-specific params for the writer. For example, on Wasm,
-        /// certain sections require length prefixes before each object entry which the section writer does support,
-        /// but this has to be indicated by a particular implementation.
-        /// </summary>
-        /// <param name="section"></param>
-        /// <returns></returns>
-        private protected virtual SectionWriter.Params WriterParams(ObjectNodeSection section) => _defaultParams;
-
         /// <summary>
         /// Get or creates an object file section.
         /// </summary>
@@ -139,8 +125,7 @@ namespace ILCompiler.ObjectWriter
             return new SectionWriter(
                 this,
                 sectionIndex,
-                sectionData,
-                WriterParams(section));
+                sectionData);
         }
 
         private protected bool ShouldShareSymbol(ObjectNode node)
@@ -192,7 +177,6 @@ namespace ILCompiler.ObjectWriter
                     // Method symbols should be defined with the thumb bit (+1) set per the AAELF ABI
                     // convention. For BRANCH24, the encoding cannot represent the thumb bit
                     // (per AAELF formula ((S + A) | T) – P), so strip it from the symbol value.
-                    // NOTE: R2R doesn't currently add the thumb bit to the symbol value, so this is a NOP.
                     long symbolValue = relocType is IMAGE_REL_BASED_THUMB_BRANCH24
                         ? definedSymbol.Value & ~1L
                         : definedSymbol.Value;
@@ -225,7 +209,8 @@ namespace ILCompiler.ObjectWriter
             {
                 fixed (byte* pData = data)
                 {
-                    Relocation.WriteValue(relocType, (void*)pData, definedSymbol.Size);
+                    long adjustedAddend = addend + Relocation.ReadValue(relocType, (void*)pData);
+                    Relocation.WriteValue(relocType, (void*)pData, definedSymbol.Size + adjustedAddend);
                 }
             }
             else
@@ -423,13 +408,9 @@ namespace ILCompiler.ObjectWriter
                     sectionWriter.EmitAlignment(nodeContents.Alignment);
                 }
 
-                bool isMethod = node is IMethodBodyNode or AssemblyStubNode;
-#if !READYTORUN
+                bool isMethod = node is IPCodeSymbolNode;
                 long thumbBit = _nodeFactory.Target.Architecture == TargetArchitecture.ARM && isMethod ? 1 : 0;
-#else
-                // R2R records the thumb bit in the addend when needed, so we don't have to do it here.
-                long thumbBit = 0;
-#endif
+
                 if (node is WasmTypeNode signature)
                 {
                     RecordMethodSignature(signature);
@@ -448,6 +429,7 @@ namespace ILCompiler.ObjectWriter
                 foreach (ISymbolDefinitionNode n in nodeContents.DefinedSymbols)
                 {
                     Utf8String mangledName = n == node ? currentSymbolName : GetMangledName(n);
+                    Debug.Assert(((ulong)thumbBit & (ulong)(uint)n.Offset) == 0);
                     sectionWriter.EmitSymbolDefinition(
                         mangledName,
                         n.Offset + thumbBit,
@@ -482,13 +464,9 @@ namespace ILCompiler.ObjectWriter
 
                 if (nodeContents.Relocs is not null)
                 {
-                    // For platforms such as Wasm where we must prepend the length before writing blocks,
-                    // we need to adjust the offset of the relocation by the length prefix
-                    uint additionalOffset = sectionWriter.HasLengthPrefix ? sectionWriter.LengthPrefixSize(nodeContents.Data.Length) : 0;
-
                     blocksToRelocate.Add(new BlockToRelocate(
                         sectionWriter.SectionIndex,
-                        sectionWriter.Position + additionalOffset,
+                        sectionWriter.Position,
                         nodeContents.Data,
                         nodeContents.Relocs));
 
@@ -690,15 +668,20 @@ namespace ILCompiler.ObjectWriter
 
         private void EmitChecksums(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations)
         {
-            MemoryStream originalOutputStream = new();
-            outputFileStream.Seek(0, SeekOrigin.Begin);
-            outputFileStream.CopyTo(originalOutputStream);
-            byte[] originalOutput = originalOutputStream.ToArray();
-            EmitChecksumsForObject(outputFileStream, checksumRelocations, originalOutput);
+            // Defer writing the computed values until all checksums are computed so each one is
+            // calculated over the original image and not a value written by an earlier checksum.
+            List<(long Offset, byte[] Value)> pendingWrites = ComputeChecksums(outputFileStream, checksumRelocations);
+
+            foreach ((long offset, byte[] value) in pendingWrites)
+            {
+                outputFileStream.Seek(offset, SeekOrigin.Begin);
+                outputFileStream.Write(value);
+            }
         }
 
-        private protected virtual void EmitChecksumsForObject(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations, ReadOnlySpan<byte> originalOutput)
+        private protected virtual List<(long Offset, byte[] Value)> ComputeChecksums(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations)
         {
+            List<(long Offset, byte[] Value)> pendingWrites = [];
             foreach (var block in checksumRelocations)
             {
                 foreach (var reloc in block.ChecksumRelocations)
@@ -706,13 +689,15 @@ namespace ILCompiler.ObjectWriter
                     IChecksumNode checksum = (IChecksumNode)reloc.Target;
 
                     byte[] checksumValue = new byte[checksum.ChecksumSize];
-                    checksum.EmitChecksum(originalOutput, checksumValue);
+                    outputFileStream.Seek(0, SeekOrigin.Begin);
+                    checksum.EmitChecksum(outputFileStream, checksumValue);
 
                     var checksumOffset = (long)_outputSectionLayout[block.SectionIndex].FilePosition + block.Offset + reloc.Offset;
-                    outputFileStream.Seek(checksumOffset, SeekOrigin.Begin);
-                    outputFileStream.Write(checksumValue);
+                    pendingWrites.Add((checksumOffset, checksumValue));
                 }
             }
+
+            return pendingWrites;
         }
 
         partial void HandleControlFlowForRelocation(ISymbolNode relocTarget, Utf8String relocSymbolName);

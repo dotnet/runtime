@@ -56,7 +56,6 @@ namespace System.Reflection
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void Create(object* pResult, Exception* pException)
         {
             try

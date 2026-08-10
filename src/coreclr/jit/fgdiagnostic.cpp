@@ -341,7 +341,7 @@ void Compiler::fgDumpTree(FILE* fgxFile, GenTree* const tree)
     }
     else if (tree->IsCnsIntOrI())
     {
-        fprintf(fgxFile, "%d", tree->AsIntCon()->gtIconVal);
+        fprintf(fgxFile, "%d", tree->AsIntCon()->IconValue());
     }
     else if (tree->IsCnsFltOrDbl())
     {
@@ -2787,8 +2787,15 @@ bool BBPredsChecker::CheckEhTryDsc(BasicBlock* block, BasicBlock* blockPred, EHb
 //
 bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHblkDsc* ehHndlDsc)
 {
-    // You can do a BBJ_EHFINALLYRET or BBJ_EHFILTERRET into a handler region
-    if (blockPred->KindIs(BBJ_EHFINALLYRET, BBJ_EHFILTERRET))
+    // You can do a BBJ_EHFINALLYRET into a handler region
+    if (blockPred->KindIs(BBJ_EHFINALLYRET))
+    {
+        return true;
+    }
+
+    // A filter can jump to the start of the filter handler
+    if (ehHndlDsc->HasFilter() && (ehHndlDsc->ebdHndBeg == block) && blockPred->KindIs(BBJ_EHFILTERRET) &&
+        ehHndlDsc->InFilterRegionBBRange(blockPred))
     {
         return true;
     }
@@ -2803,13 +2810,22 @@ bool BBPredsChecker::CheckEhHndDsc(BasicBlock* block, BasicBlock* blockPred, EHb
     // You can jump within the same handler region
     if (m_compiler->bbInHandlerRegions(block->getHndIndex(), blockPred))
     {
-        return true;
-    }
+        if (!ehHndlDsc->HasFilter())
+        {
+            return true;
+        }
 
-    // A filter can jump to the start of the filter handler
-    if (ehHndlDsc->HasFilter())
-    {
-        return true;
+        const bool blockInFilter     = ehHndlDsc->InFilterRegionBBRange(block);
+        const bool blockPredInFilter = ehHndlDsc->InFilterRegionBBRange(blockPred);
+        if (blockInFilter == blockPredInFilter)
+        {
+            return true;
+        }
+
+        JITDUMP("Jump between filter and filter handler regions: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
+                block->bbNum);
+        assert(!"Jump between filter and filter handler regions");
+        return false;
     }
 
     JITDUMP("Jump into the middle of handler region: " FMT_BB " branches to " FMT_BB "\n", blockPred->bbNum,
@@ -3478,6 +3494,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
         {
             GenTreeHWIntrinsic* hwintrinsic = tree->AsHWIntrinsic();
             NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
+            unsigned            simdSize    = hwintrinsic->GetSimdSize();
 
             if (hwintrinsic->OperIsMemoryLoad())
             {
@@ -3516,9 +3533,9 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
                         break;
                     }
 
-                    case NI_Vector128_op_Division:
-                    case NI_Vector256_op_Division:
+                    case NI_Vector_op_Division:
                     {
+                        assert((simdSize == 16) || (simdSize == 32));
                         break;
                     }
 #endif // TARGET_XARCH
@@ -3626,9 +3643,16 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
     }
     else if (actualFlags & ~expectedFlags)
     {
-        // We can't/don't consider these flags (GTF_GLOB_REF or GTF_ORDER_SIDEEFF) as being "extra" flags
+        // We can't/don't consider GTF_GLOB_REF as being "extra" flags
         //
-        GenTreeFlags flagsToCheck = ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF;
+        GenTreeFlags flagsToCheck = ~GTF_GLOB_REF;
+
+        // GTF_ORDER_SIDEEFF is stale if set on a node whose oper does not support it,
+        // and whose children do not have it set
+        if (tree->OperSupportsOrderingSideEffect())
+        {
+            flagsToCheck &= ~GTF_ORDER_SIDEEFF;
+        }
 
         if (tree->isIndir() && tree->AsIndir()->Addr()->IsIconHandle(GTF_ICON_FTN_ADDR))
         {
@@ -3814,11 +3838,7 @@ void Compiler::fgDebugCheckLinkedLocals()
             GenTree* node = *use;
             if (ShouldLink(node))
             {
-                if ((user != nullptr) && user->IsCall() &&
-                    (node == m_compiler->gtCallGetDefinedRetBufLclAddr(user->AsCall())))
-                {
-                }
-                else
+                if ((user == nullptr) || !user->IsCall() || !IsDefinedByCall(user->AsCall(), node))
                 {
                     m_locals.Push(node);
                 }
@@ -3826,15 +3846,24 @@ void Compiler::fgDebugCheckLinkedLocals()
 
             if (node->IsCall())
             {
-                GenTree* defined = m_compiler->gtCallGetDefinedRetBufLclAddr(node->AsCall());
-                if (defined != nullptr)
-                {
-                    assert(ShouldLink(defined));
-                    m_locals.Push(defined);
-                }
+                auto linkDefs = [&](GenTree* def) {
+                    assert(ShouldLink(def));
+                    m_locals.Push(def);
+                    return GenTree::VisitResult::Continue;
+                };
+
+                node->VisitLocalDefNodes(m_compiler, linkDefs);
             }
 
             return WALK_CONTINUE;
+        }
+
+        bool IsDefinedByCall(GenTreeCall* call, GenTree* node)
+        {
+            auto defIsNode = [=](GenTree* def) {
+                return node == def ? GenTree::VisitResult::Abort : GenTree::VisitResult::Continue;
+            };
+            return call->VisitLocalDefNodes(m_compiler, defIsNode) == GenTree::VisitResult::Abort;
         }
     };
 
@@ -3940,6 +3969,7 @@ void Compiler::fgDebugCheckLinks(bool morphTrees)
 //    - all statements in the block are linked correctly
 //    - check statements flags
 //    - check nodes gtNext and gtPrev values, if the node list is threaded
+//    - no invalid statements given the block kind
 //
 // Arguments:
 //    block  - the block to check statements in
@@ -3977,11 +4007,25 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
         }
 
         // For each statement check that the exception flags are properly set
-
         noway_assert(stmt->GetRootNode());
-
         fgDebugCheckFlags(stmt->GetRootNode(), block);
         fgDebugCheckTypes(stmt->GetRootNode());
+
+        // Block that isn't BBJ_RETURN should not contain GT_RETURN node.
+        if (!block->KindIs(BBJ_RETURN))
+        {
+            GenTree* tree = stmt->GetRootNode();
+            assert(!tree->OperIs(GT_RETURN) && "GT_RETURN node found in a block that isn't BBJ_RETURN");
+        }
+
+        // If the block contains a GT_RETURN node it should be last.
+        if (block->KindIs(BBJ_RETURN))
+        {
+            GenTree* tree          = stmt->GetRootNode();
+            bool     isReturn      = tree->OperIs(GT_RETURN);
+            bool     isNotLastStmt = stmt->GetNextStmt() != nullptr;
+            assert(!(isReturn && isNotLastStmt) && "GT_RETURN node found that is not the last statement in the block");
+        }
 
         // Not only will this stress fgMorphBlockStmt(), but we also get all the checks
         // done by fgMorphTree()
@@ -4807,6 +4851,10 @@ void Compiler::fgDebugCheckLoops()
             assert(loop->EntryEdges().size() == 1);
             assert(loop->EntryEdge(0)->getSourceBlock()->KindIs(BBJ_ALWAYS));
             assert(!bbIsTryBeg(loop->GetHeader()));
+
+            // After canonicalization a natural loop has a single backedge.
+            //
+            assert(loop->BackEdges().size() == 1);
 
             loop->VisitRegularExitBlocks([=](BasicBlock* exit) {
                 for (BasicBlock* pred : exit->PredBlocks())

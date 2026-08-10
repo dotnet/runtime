@@ -106,5 +106,16 @@ NESTED_ENTRY JIT_InterfaceLookupForSlot, _TEXT
 
 NESTED_END JIT_InterfaceLookupForSlot, _TEXT
 
+;; On Input:
+;;    rcx                    contains object 'this' pointer
+;;    argument registers     populated as needed by the called method
+;;    r11                    contains the address of the indirection cell (with the flags in the low bits)
+;;
+LEAF_ENTRY JIT_InterfaceDispatchForSlot, _TEXT
+
+        jmp     QWORD PTR [r11]
+
+LEAF_END JIT_InterfaceDispatchForSlot, _TEXT
+
 endif ;; FEATURE_VIRTUAL_STUB_DISPATCH 
         end

@@ -72,14 +72,15 @@ namespace System.Runtime.InteropServices
         // See assemblynative.hpp for native version.
         public unsafe struct ProcessAttributesCallbackArg
         {
+            /// <safety>Holds only a pointer value addressing a native UTF-8 string; reading or writing the field never dereferences it, so field access alone cannot read or write that memory (any dereference requires an unsafe context).</safety>
             public void* Utf8String1;
+            /// <safety>Holds only a pointer value addressing a native UTF-8 string; reading or writing the field never dereferences it, so field access alone cannot read or write that memory (any dereference requires an unsafe context).</safety>
             public void* Utf8String2;
             public int StringLen1;
             public int StringLen2;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_ProcessAttributes")]
-        [RequiresUnsafe]
         private static unsafe partial void ProcessAttributes(
             QCallAssembly assembly,
             QCallTypeHandle groupType,
@@ -134,7 +135,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewPrecachedExternalTypeMap(CallbackContext* context)
         {
             Debug.Assert(context != null);
@@ -153,7 +153,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewPrecachedProxyTypeMap(CallbackContext* context)
         {
             Debug.Assert(context != null);
@@ -172,7 +171,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewExternalTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
         {
             Debug.Assert(context != null);
@@ -200,7 +198,6 @@ namespace System.Runtime.InteropServices
         }
 
         [UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe Interop.BOOL NewProxyTypeEntry(CallbackContext* context, ProcessAttributesCallbackArg* arg)
         {
             Debug.Assert(context != null);
@@ -239,7 +236,6 @@ namespace System.Runtime.InteropServices
             return Interop.BOOL.TRUE; // Continue processing.
         }
 
-        [RequiresUnsafe]
         private static unsafe CallbackContext CreateMaps(
             RuntimeType groupType,
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newExternalTypeEntry,
@@ -363,7 +359,7 @@ namespace System.Runtime.InteropServices
 
         private unsafe struct TypeNameUtf8
         {
-            [RequiresUnsafe]
+            /// <safety>Reads or stores only a pointer value addressing a native UTF-8 type name; it never dereferences the pointed-to memory, so accessing the property cannot itself read or write that memory (any dereference requires an unsafe context).</safety>
             public required void* Utf8TypeName { get; init; }
             public required int Utf8TypeNameLen { get; init; }
         }

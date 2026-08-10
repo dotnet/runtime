@@ -58,6 +58,7 @@ set(SHARED_CLR_DESTINATION
 # CoreCLR runtime .a libraries
 LIST(APPEND NATIVE_LIBS
     ${SHARED_CLR_DESTINATION}/libcoreclr_static.a
+    ${SHARED_CLR_DESTINATION}/libcoreclr_gen_static.a
     ${SHARED_CLR_DESTINATION}/libnativeresourcestring.a
     ${SHARED_CLR_DESTINATION}/libgcinfo_unix_wasm.a
     ${SHARED_CLR_DESTINATION}/libcoreclrminipal.a
@@ -107,10 +108,11 @@ if (UPPERCASE_CMAKE_BUILD_TYPE STREQUAL DEBUG)
 endif ()
 
 target_link_options(browserhost PRIVATE
-    -sINITIAL_MEMORY=134217728
+    -sINITIAL_MEMORY=33554432
     -sMAXIMUM_MEMORY=2147483648
     -sALLOW_MEMORY_GROWTH=1
-    -sSTACK_SIZE=5MB
+    -sGROWABLE_ARRAYBUFFERS=0
+    -sSTACK_SIZE=2MB
     -sWASM_BIGINT=1
     -sMODULARIZE=1
     -sEXPORT_ES6=1
@@ -121,6 +123,7 @@ target_link_options(browserhost PRIVATE
     -sEXPORT_NAME=createDotnetRuntime
     -sENVIRONMENT=web,webview,worker,node,shell
     --emit-symbol-map
+    -lexports.js
     -Wl,--error-limit=0)
 
 target_link_libraries(browserhost PRIVATE
@@ -137,6 +140,11 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION corehos
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION sharedFramework COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.js.symbols DESTINATION corehost COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.js.symbols DESTINATION sharedFramework COMPONENT runtime)
+
+# Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets).
+install(FILES ${CLR_REPO_ROOT_DIR}/src/coreclr/vm/wasm/callhelpers.hpp DESTINATION sharedFramework/include COMPONENT runtime)
+install(FILES ${CLR_SRC_NATIVE_DIR}/minipal/entrypoints.h DESTINATION sharedFramework/include/minipal COMPONENT runtime)
+install(FILES ${CLR_SRC_NATIVE_DIR}/minipal/utils.h DESTINATION sharedFramework/include/minipal COMPONENT runtime)
 
 set_source_files_properties(${BROWSERHOST_SOURCES} PROPERTIES OBJECT_DEPENDS
     "${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE};${JS_BROWSER_HOST};${JS_SYSTEM_NATIVE_BROWSER_EXPOST}")

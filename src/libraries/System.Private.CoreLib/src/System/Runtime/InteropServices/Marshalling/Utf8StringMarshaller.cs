@@ -20,7 +20,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="managed">The managed string to convert.</param>
         /// <returns>An unmanaged string.</returns>
-        [RequiresUnsafe]
         public static byte* ConvertToUnmanaged(string? managed)
         {
             if (managed is null)
@@ -40,7 +39,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="unmanaged">The unmanaged string to convert.</param>
         /// <returns>A managed string.</returns>
-        [RequiresUnsafe]
         public static string? ConvertToManaged(byte* unmanaged)
             => Marshal.PtrToStringUTF8((IntPtr)unmanaged);
 
@@ -48,7 +46,6 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Free the memory for a specified unmanaged string.
         /// </summary>
         /// <param name="unmanaged">The memory allocated for the unmanaged string.</param>
-        [RequiresUnsafe]
         public static void Free(byte* unmanaged)
             => Marshal.FreeCoTaskMem((IntPtr)unmanaged);
 
@@ -106,7 +103,6 @@ namespace System.Runtime.InteropServices.Marshalling
             /// Converts the current managed string to an unmanaged string.
             /// </summary>
             /// <returns>An unmanaged string.</returns>
-            [RequiresUnsafe]
             public byte* ToUnmanaged() => _unmanagedValue;
 
             /// <summary>

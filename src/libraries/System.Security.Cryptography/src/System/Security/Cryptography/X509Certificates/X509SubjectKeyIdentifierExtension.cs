@@ -160,7 +160,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is required by RFC3280")]
-        private static byte[] GenerateSubjectKeyIdentifierFromPublicKey(PublicKey key, X509SubjectKeyIdentifierHashAlgorithm algorithm)
+        private static unsafe byte[] GenerateSubjectKeyIdentifierFromPublicKey(PublicKey key, X509SubjectKeyIdentifierHashAlgorithm algorithm)
         {
             switch (algorithm)
             {
@@ -203,7 +203,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private static byte[] HashSubjectPublicKeyLeft160Bits(PublicKey key, HashAlgorithmName hashAlgorithmName)
+        private static unsafe byte[] HashSubjectPublicKeyLeft160Bits(PublicKey key, HashAlgorithmName hashAlgorithmName)
         {
             const int TruncateSize = 160 / 8;
             Span<byte> hash = stackalloc byte[512 / 8]; // Largest known hash is 512-bits.

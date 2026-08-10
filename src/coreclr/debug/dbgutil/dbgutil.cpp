@@ -446,8 +446,22 @@ HRESULT ReadFromDataTarget(ICorDebugDataTarget* pDataTarget,
 extern "C" bool
 TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* symbolName, uint64_t* symbolAddress)
 {
+    if (symbolAddress == nullptr)
+    {
+        return false;
+    }
+
+    *symbolAddress = 0;
+
     DWORD exportTableRva;
     if (FAILED(GetMachineAndDirectoryAddress(dataTarget, baseAddress, IMAGE_DIRECTORY_ENTRY_EXPORT, nullptr, &exportTableRva)))
+    {
+        return false;
+    }
+
+    // A module with no export directory reports a zero RVA here; there is nothing to search and
+    // reading at baseAddress would parse the PE headers as an IMAGE_EXPORT_DIRECTORY.
+    if (exportTableRva == 0)
     {
         return false;
     }
@@ -460,6 +474,7 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
     }
 
     uint32_t namePointerCount = VAL32(exportDir.NumberOfNames);
+    uint32_t exportAddressCount = VAL32(exportDir.NumberOfFunctions);
     uint32_t addressTableRVA = VAL32(exportDir.AddressOfFunctions);
     uint32_t ordinalTableRVA = VAL32(exportDir.AddressOfNameOrdinals);
     uint32_t nameTableRVA = VAL32(exportDir.AddressOfNames);
@@ -481,7 +496,7 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
             }
             // Allocate a buffer for the memory that we'll read out of the target image.
             // We can allocate as much space as the target symbol name as we gracefully handle reading
-            // inaccessable memory.
+            // inaccessible memory.
             std::unique_ptr<char[]> namePointer(new char[symbolNameLength + 1]);
             // If we fail to read the memory or the name doesn't match, then we don't have the right export.
             if (SUCCEEDED(ReadFromDataTarget(dataTarget, baseAddress + namePointerRVA, (BYTE*)namePointer.get(), (UINT32)symbolNameLength + 1))
@@ -490,6 +505,12 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
                 // If the name matches, we should be able to get the ordinal
                 uint16_t ordinalForNamedExport = 0;
                 if (FAILED(ReadFromDataTarget(dataTarget, baseAddress + ordinalTableRVA + sizeof(uint16_t) * nameIndex, (BYTE*)&ordinalForNamedExport, sizeof(ordinalForNamedExport))))
+                {
+                    return false;
+                }
+                // The ordinal indexes the export address table; reject an out-of-range value from
+                // untrusted image data before using it to compute a read offset.
+                if (ordinalForNamedExport >= exportAddressCount)
                 {
                     return false;
                 }
@@ -505,7 +526,6 @@ TryGetSymbol(ICorDebugDataTarget* dataTarget, uint64_t baseAddress, const char* 
         }
     }
 
-    *symbolAddress = 0;
     return false;
 }
 #endif

@@ -26,8 +26,9 @@ namespace ILCompiler.DependencyAnalysis.Wasm
         {
 #if READYTORUN
             byte[] encodedThunk = new byte[FunctionBody.EncodeSize()];
+            FunctionBody.Encode(encodedThunk);
+
             Relocation[] relocs = new Relocation[FunctionBody.EncodeRelocationCount()];
-            FunctionBody.Encode(encodedThunk.AsSpan());
             FunctionBody.EncodeRelocations(relocs.AsSpan());
     
             return new ObjectNode.ObjectData(encodedThunk, relocs, 1, new ISymbolDefinitionNode[] { symbolDefinitionNode });

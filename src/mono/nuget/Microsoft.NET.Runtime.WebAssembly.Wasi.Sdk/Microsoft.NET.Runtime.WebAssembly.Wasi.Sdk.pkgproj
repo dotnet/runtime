@@ -15,10 +15,13 @@
     <PackageFile Include="$(WasiProjectRoot)build\WasiApp.props" TargetPath="Sdk" />
     <PackageFile Include="$(WasiProjectRoot)build\WasiApp.targets" TargetPath="Sdk" />
 
+    <PackageFile Include="$(BrowserProjectRoot)build\ILLink.Substitutions.WasmIntrinsics.xml" TargetPath="Sdk" />
+    <PackageFile Include="$(BrowserProjectRoot)build\ILLink.Substitutions.NoWasmIntrinsics.xml" TargetPath="Sdk" />
+
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.props" TargetPath="Sdk" />
     <PackageFile Include="$(WasmProjectRoot)build\WasmApp.Common.targets" TargetPath="Sdk" />
 
-    <PackageFile Include="$(WasiProjectRoot)build\wasiconsole.runtimeconfig.template.json" TargetPath="Sdk" />
+    <PackageFile Include="$(WasiProjectRoot)build\wasi.runtimeconfig.template.json" TargetPath="Sdk" />
   </ItemGroup>
 
   <Target Name="_PrepareForPack" BeforeTargets="GetPackageFiles">

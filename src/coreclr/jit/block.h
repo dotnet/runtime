@@ -1436,9 +1436,13 @@ public:
 
     union
     {
-        unsigned bbStkTempsOut;          // base# for output stack temps
-        int      bbHistogramSchemaIndex; // schema index for histogram instrumentation
+        unsigned bbStkTempsOut;                // base# for output stack temps
+        int      bbHandleHistogramSchemaIndex; // schema index for handle (class/method) histogram instrumentation
     };
+
+    int bbValueHistogramSchemaIndex; // schema index for value histogram instrumentation
+                                     // Placed here so it consumes the existing tail padding before
+                                     // bbTryIndex/bbHndIndex without growing BasicBlock.
 
 #define MAX_XCPTN_INDEX (USHRT_MAX - 1)
 

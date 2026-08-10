@@ -25,6 +25,8 @@ parameters:
   CollectionType: ''
   CollectionName: ''
   ProjectFile: ''
+  targetOS: ''                           # optional -- override target OS for cross-target collections (e.g. browser/wasm). Defaults to osGroup.
+  targetArch: ''                         # optional -- override target architecture. Defaults to archType.
 
 steps:
 - template: /eng/pipelines/common/templates/runtimes/send-to-helix-inner-step.yml
@@ -36,8 +38,14 @@ steps:
     shouldContinueOnError: ${{ parameters.continueOnError }}
     environment:
       _Creator: ${{ parameters.Creator }}
-      TargetOS: ${{ parameters.osGroup }}
-      TargetArchitecture: ${{ parameters.archType }}
+      ${{ if ne(parameters.targetOS, '') }}:
+        TargetOS: ${{ parameters.targetOS }}
+      ${{ if eq(parameters.targetOS, '') }}:
+        TargetOS: ${{ parameters.osGroup }}
+      ${{ if ne(parameters.targetArch, '') }}:
+        TargetArchitecture: ${{ parameters.targetArch }}
+      ${{ if eq(parameters.targetArch, '') }}:
+        TargetArchitecture: ${{ parameters.archType }}
       MchFileTag: $(MchFileTag)
       BuildConfig:  ${{ parameters.BuildConfig }}
       InputArtifacts: ${{ parameters.InputArtifacts }}

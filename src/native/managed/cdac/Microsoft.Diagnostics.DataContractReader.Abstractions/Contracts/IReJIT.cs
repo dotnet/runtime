@@ -20,6 +20,8 @@ public interface IReJIT : IContract
 
     RejitState GetRejitState(ILCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 
+    bool IsDeoptimized(ILCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
+
     TargetNUInt GetRejitId(ILCodeVersionHandle codeVersionHandle) => throw new NotImplementedException();
 }
 

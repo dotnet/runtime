@@ -22,8 +22,8 @@ elseif (CLR_CMAKE_TARGET_FREEBSD)
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
 elseif (CLR_CMAKE_TARGET_OPENBSD)
-    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/heimdal/include)
-    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/heimdal/include)
+    include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/usr/local/heimdal/include ${CROSS_ROOTFS}/usr/local/include/inotify)
+    set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include ${CROSS_ROOTFS}/usr/local/heimdal/include ${CROSS_ROOTFS}/usr/local/include/inotify)
 elseif (CLR_CMAKE_TARGET_SUNOS)
     # requires /opt/tools when building in Global Zone (GZ)
     include_directories(SYSTEM /opt/local/include /opt/tools/include)
@@ -195,6 +195,11 @@ check_symbol_exists(
     vfork
     unistd.h
     HAVE_VFORK)
+
+check_symbol_exists(
+    PR_SET_PDEATHSIG
+    "sys/prctl.h"
+    HAVE_PR_SET_PDEATHSIG)
 
 check_symbol_exists(
     pipe
@@ -588,6 +593,7 @@ elseif(CLR_CMAKE_TARGET_ANDROID)
 elseif(CLR_CMAKE_TARGET_WASI)
     set(HAVE_FORK 0)
     unset(HAVE_GETNAMEINFO) # WASIp2 libc has empty function with TODO and abort()
+    unset(HAVE_GETHOSTNAME) # WASI sysroot declares gethostname in unistd.h but libc.a has no definition
 elseif(CLR_CMAKE_TARGET_BROWSER)
     set(HAVE_FORK 0)
 else()
@@ -1046,8 +1052,10 @@ endif()
 set (CMAKE_REQUIRED_LIBRARIES ${PREVIOUS_CMAKE_REQUIRED_LIBRARIES})
 
 set (PREVIOUS_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
-if (HAVE_SYS_INOTIFY_H AND (CLR_CMAKE_TARGET_FREEBSD OR CLR_CMAKE_TARGET_OPENBSD))
+if (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_FREEBSD)
     set (CMAKE_REQUIRED_LIBRARIES "-linotify -L${CROSS_ROOTFS}/usr/local/lib")
+elseif (HAVE_SYS_INOTIFY_H AND CLR_CMAKE_TARGET_OPENBSD)
+    set (CMAKE_REQUIRED_LIBRARIES "-linotify -lpthread -L${CROSS_ROOTFS}/usr/local/lib/inotify")
 endif()
 
 check_symbol_exists(

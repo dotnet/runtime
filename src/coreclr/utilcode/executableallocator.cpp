@@ -190,7 +190,7 @@ void ExecutableAllocator::InitLazyPreferredRange(size_t base, size_t size, int r
     }
 
     // Randomize the address space
-    pStart += GetOsPageSize() * randomPageOffset;
+    pStart += minipal_getpagesize() * randomPageOffset;
 
     g_lazyPreferredRangeStart = pStart;
     g_lazyPreferredRangeHint = pStart;

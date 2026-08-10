@@ -54,7 +54,6 @@ namespace System.Threading
 
 #if CORECLR
         [System.Runtime.InteropServices.UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void CreateAutoreleasePool(Exception* pException)
         {
             try
@@ -68,7 +67,6 @@ namespace System.Threading
         }
 
         [System.Runtime.InteropServices.UnmanagedCallersOnly]
-        [RequiresUnsafe]
         private static unsafe void DrainAutoreleasePool(Exception* pException)
         {
             try

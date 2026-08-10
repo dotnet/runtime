@@ -312,6 +312,7 @@ public class WindowAndCursorProps
 
     [Fact]
     [OuterLoop] // clears the screen, not very inner-loop friendly
+    [SkipOnPlatform(TestPlatforms.Browser, "Console.Clear is not supported on Browser")]
     public static void Clear_Invoke_Success()
     {
         if (!OperatingSystem.IsWindows() || (!Console.IsInputRedirected && !Console.IsOutputRedirected))

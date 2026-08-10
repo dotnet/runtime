@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using ILCompiler.DependencyAnalysis;
+using Internal.Text;
 using Internal.IL;
 using Internal.IL.Stubs;
 using Internal.TypeSystem;
@@ -26,13 +27,13 @@ namespace ILCompiler
         private static TypeMapAttributeKind LookupTypeMapType(TypeDesc attrType)
         {
             var typeDef = attrType.GetTypeDefinition() as MetadataType;
-            if (typeDef != null && typeDef.Namespace.SequenceEqual("System.Runtime.InteropServices"u8))
+            if (typeDef != null && typeDef.Namespace == "System.Runtime.InteropServices"u8)
             {
-                if (typeDef.Name.SequenceEqual("TypeMapAssemblyTargetAttribute`1"u8))
+                if (typeDef.Name == "TypeMapAssemblyTargetAttribute`1"u8)
                     return TypeMapAttributeKind.TypeMapAssemblyTarget;
-                else if (typeDef.Name.SequenceEqual("TypeMapAttribute`1"u8))
+                else if (typeDef.Name == "TypeMapAttribute`1"u8)
                     return TypeMapAttributeKind.TypeMap;
-                else if (typeDef.Name.SequenceEqual("TypeMapAssociationAttribute`1"u8))
+                else if (typeDef.Name == "TypeMapAssociationAttribute`1"u8)
                     return TypeMapAttributeKind.TypeMapAssociation;
             }
             return TypeMapAttributeKind.None;
@@ -66,7 +67,7 @@ namespace ILCompiler
                 }
 
                 public TypeSystemException Exception { get; }
-                public override ReadOnlySpan<byte> Name => _name;
+                public override Utf8Span Name => _name;
                 public override MethodIL EmitIL()
                 {
 #if READYTORUN
@@ -78,7 +79,7 @@ namespace ILCompiler
 
                 protected override int CompareToImpl(MethodDesc other, TypeSystemComparer comparer)
                 {
-                    return Name.SequenceCompareTo(other.Name);
+                    return Name.AsSpan().SequenceCompareTo(other.Name.AsSpan());
                 }
 
                 public override bool IsPInvoke => false;

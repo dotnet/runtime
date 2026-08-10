@@ -8,16 +8,16 @@
 #ifndef PATCHEDCODECONSTANTS_H
 #define PATCHEDCODECONSTANTS_H
 
-// These are fixed constants becuase MacOS doesn't allow label arithmetic in
+// These are fixed constants because MacOS doesn't allow label arithmetic in
 // LDR instructions. Asserts in writebarriermanager CALC_TABLE_LOCATION ensure
 // the values are correct.
 
 #define JIT_WriteBarrier_Size					   0x3a0
 
 #ifdef TARGET_WINDOWS
-#define JIT_WriteBarrier_Table_Offset              (0x30 + JIT_WriteBarrier_Size)
+#define JIT_WriteBarrier_Table_Offset              (0x3c + JIT_WriteBarrier_Size)
 #else
-#define JIT_WriteBarrier_Table_Offset              (0x2c + JIT_WriteBarrier_Size)
+#define JIT_WriteBarrier_Table_Offset              (0x38 + JIT_WriteBarrier_Size)
 #endif
 
 #define JIT_WriteBarrier_Offset_CardTable          (0x0  + JIT_WriteBarrier_Table_Offset)

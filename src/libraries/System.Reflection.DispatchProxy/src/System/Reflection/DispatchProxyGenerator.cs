@@ -246,6 +246,17 @@ namespace System.Reflection
                         GenerateInstanceOfIgnoresAccessChecksToAttribute(assemblyName);
                     }
                 }
+
+                if (type.IsGenericType)
+                {
+                    foreach (Type genericArg in type.GetGenericArguments())
+                    {
+                        if (!genericArg.IsGenericParameter)
+                        {
+                            EnsureTypeIsVisible(genericArg);
+                        }
+                    }
+                }
             }
         }
 

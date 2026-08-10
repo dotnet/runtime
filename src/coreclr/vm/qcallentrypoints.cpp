@@ -78,6 +78,10 @@
 #include "entrypoints.h"
 #endif // TARGET_BROWSER
 
+#ifdef TARGET_WASI
+#include "wasm/entrypoints.h"
+#endif // TARGET_WASI
+
 #ifdef FEATURE_INTERPRETER
 #include "interpexec.h"
 #endif // FEATURE_INTERPRETER
@@ -107,8 +111,8 @@ static const Entry s_QCall[] =
     DllImportEntry(Delegate_GetMulticastInvokeSlow)
     DllImportEntry(Delegate_AdjustTarget)
     DllImportEntry(Delegate_Construct)
-    DllImportEntry(Delegate_FindMethodHandle)
-    DllImportEntry(Delegate_InternalEqualMethodHandles)
+    DllImportEntry(Delegate_CreateMethodInfo)
+    DllImportEntry(Delegate_GetMethodDesc)
     DllImportEntry(Environment_Exit)
     DllImportEntry(Environment_FailFast)
     DllImportEntry(Environment_GetProcessorCount)
@@ -176,6 +180,7 @@ static const Entry s_QCall[] =
     DllImportEntry(RuntimeMethodHandle_IsCAVisibleFromDecoratedType)
     DllImportEntry(RuntimeMethodHandle_Destroy)
     DllImportEntry(RuntimeMethodHandle_GetStubIfNeededSlow)
+    DllImportEntry(RuntimeMethodHandle_GetNativeCode)
     DllImportEntry(RuntimeMethodHandle_GetMethodBody)
     DllImportEntry(RuntimeModule_GetScopeName)
     DllImportEntry(RuntimeModule_GetFullyQualifiedName)
@@ -291,6 +296,7 @@ static const Entry s_QCall[] =
     DllImportEntry(String_IsInterned)
     DllImportEntry(AppDomain_CreateDynamicAssembly)
     DllImportEntry(AppContext_SetFirstChanceExceptionHandler)
+    DllImportEntry(AppContext_TryGetHostPropertyValue)
     DllImportEntry(ThreadNative_Start)
     DllImportEntry(ThreadNative_SetPriority)
     DllImportEntry(ThreadNative_GetCurrentThread)
@@ -320,7 +326,7 @@ static const Entry s_QCall[] =
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(ThreadNative_DisableComObjectEagerCleanup)
 #endif // FEATURE_COMINTEROP
-    DllImportEntry(Monitor_GetOrCreateLockObject)
+    DllImportEntry(ObjectHeader_GetOrCreateLockObject)
     DllImportEntry(ClrConfig_GetConfigBoolValue)
 #ifdef TARGET_SUNOS
     // Work around illumos.org/issues/17832
@@ -344,10 +350,8 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_WaitForPendingFinalizers)
     DllImportEntry(GCInterface_AddMemoryPressure)
     DllImportEntry(GCInterface_RemoveMemoryPressure)
-#ifdef FEATURE_BASICFREEZE
     DllImportEntry(GCInterface_RegisterFrozenSegment)
     DllImportEntry(GCInterface_UnregisterFrozenSegment)
-#endif
     DllImportEntry(GCInterface_EnumerateConfigurationValues)
     DllImportEntry(GCInterface_RefreshMemoryLimit)
     DllImportEntry(GCInterface_EnableNoGCRegionCallback)
@@ -394,15 +398,6 @@ static const Entry s_QCall[] =
     DllImportEntry(MarshalNative_GetEndComSlot)
     DllImportEntry(MarshalNative_ChangeWrapperHandleStrength)
 #endif
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertSpaceToNative)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertContentsToNative)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertSpaceToManaged)
-    DllImportEntry(MngdNativeArrayMarshaler_ConvertContentsToManaged)
-    DllImportEntry(MngdNativeArrayMarshaler_ClearNativeContents)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToNative)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertSpaceToManaged)
-    DllImportEntry(MngdFixedArrayMarshaler_ConvertContentsToManaged)
-    DllImportEntry(MngdFixedArrayMarshaler_ClearNativeContents)
 #ifdef FEATURE_COMINTEROP
     DllImportEntry(MngdSafeArrayMarshaler_CreateMarshaler)
     DllImportEntry(MngdSafeArrayMarshaler_ConvertSpaceToNative)
@@ -449,7 +444,7 @@ static const Entry s_QCall[] =
 #if defined(FEATURE_OBJCMARSHAL)
     DllImportEntry(ObjCMarshal_TrySetGlobalMessageSendCallback)
     DllImportEntry(ObjCMarshal_TryInitializeReferenceTracker)
-    DllImportEntry(ObjCMarshal_CreateReferenceTrackingHandle)
+    DllImportEntry(ObjCMarshal_AllocateReferenceTrackingHandle)
 #endif
 #if defined(FEATURE_JAVAMARSHAL)
     DllImportEntry(JavaMarshal_Initialize)
@@ -549,6 +544,10 @@ static const Entry s_QCall[] =
     DllImportEntry(SystemJS_ScheduleTimer)
     DllImportEntry(SystemJS_ScheduleBackgroundJob)
 #endif // TARGET_BROWSER
+#ifdef TARGET_WASI
+    DllImportEntry(WasiFinalizer_RunWorker)
+    DllImportEntry(WasiFinalizer_TryClearPending)
+#endif // TARGET_WASI
 };
 
 const void* QCallResolveDllImport(const char* name)

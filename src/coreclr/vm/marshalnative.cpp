@@ -105,6 +105,14 @@ extern "C" BOOL QCALLTYPE MarshalNative_HasLayout(QCall::TypeHandle t, BOOL* pIs
     BEGIN_QCALL;
 
     TypeHandle th = t.AsTypeHandle();
+
+    if (th.IsEnum())
+    {
+        // Enums don't have native layout info, but they marshal identically
+        // to their underlying primitive type.
+        th = CoreLibBinder::GetElementType(th.GetInternalCorElementType());
+    }
+
     if (th.HasLayout())
     {
         *pIsBlittable = th.IsBlittable();
@@ -757,7 +765,7 @@ extern "C" IUnknown* QCALLTYPE MarshalNative_CreateAggregatedObject(IUnknown* pO
         COMPlusThrowArgumentException(W("o"), W("Argument_AlreadyACCW"));
 
     //get wrapper for the object, this could enable GC
-    CCWHolder pWrap =  ComCallWrapper::InlineGetWrapper(&oref);
+    CCWHolder pWrap{ ComCallWrapper::InlineGetWrapper(&oref) };
 
     // Aggregation support,
     pWrap->InitializeOuter(pOuter);
@@ -1169,7 +1177,7 @@ extern "C" VOID QCALLTYPE MarshalNative_ChangeWrapperHandleStrength(QCall::Objec
         OBJECTREF oref = otp.Get();
         GCPROTECT_BEGIN(oref);
 
-        CCWHolder pWrap = ComCallWrapper::InlineGetWrapper(&oref);
+        CCWHolder pWrap{ ComCallWrapper::InlineGetWrapper(&oref) };
 
         if (fIsWeak)
             pWrap->MarkHandleWeak();
