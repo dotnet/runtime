@@ -71,13 +71,21 @@ namespace ILCompiler.DependencyAnalysis
             {
                 // The generic instantiation in the interface list is only reachable through the members of
                 // the type which implements the interface, which are all in the Requires scope of a
-                // type-level RequiresUnreferencedCode, so the attribute silences these warnings. Note that
-                // the data flow still needs to run to mark the members required by the instantiation.
-                bool suppressWarnings = _typeDefinition.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _);
+                // type-level Requires attribute, so the matching attribute silences these warnings. Note
+                // that the data flow still needs to run to mark the members required by the instantiation.
+                bool suppressTrimAnalysisWarnings = _typeDefinition.DoesTypeRequire(DiagnosticUtilities.RequiresUnreferencedCodeAttribute, out _);
+                bool suppressAotAnalysisWarnings = _typeDefinition.DoesTypeRequire(DiagnosticUtilities.RequiresDynamicCodeAttribute, out _);
 
                 foreach (var interfaceType in metadataType.ExplicitlyImplementedInterfaces)
                 {
-                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_typeDefinition), interfaceType, _typeDefinition, suppressWarnings);
+                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(
+                        ref dependencies,
+                        factory,
+                        new MessageOrigin(_typeDefinition),
+                        interfaceType,
+                        _typeDefinition,
+                        suppressTrimAnalysisWarnings,
+                        suppressAotAnalysisWarnings);
                 }
             }
 

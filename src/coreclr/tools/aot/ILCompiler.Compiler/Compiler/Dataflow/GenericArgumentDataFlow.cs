@@ -20,17 +20,40 @@ namespace ILCompiler.Dataflow
 {
     internal static class GenericArgumentDataFlow
     {
-        public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, TypeDesc contextType, bool suppressWarnings = false)
+        public static void ProcessGenericArgumentDataFlow(
+            ref DependencyList dependencies,
+            NodeFactory factory,
+            in MessageOrigin origin,
+            TypeDesc type,
+            TypeDesc contextType,
+            bool suppressTrimAnalysisWarnings = false,
+            bool suppressAotAnalysisWarnings = false)
         {
-            ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, type, contextType.Instantiation, Instantiation.Empty, suppressWarnings);
+            ProcessGenericArgumentDataFlow(
+                ref dependencies,
+                factory,
+                origin,
+                type,
+                contextType.Instantiation,
+                Instantiation.Empty,
+                suppressTrimAnalysisWarnings,
+                suppressAotAnalysisWarnings);
         }
 
         public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, MethodDesc contextMethod)
         {
-            ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, type, contextMethod.OwningType.Instantiation, contextMethod.Instantiation, suppressWarnings: false);
+            ProcessGenericArgumentDataFlow(ref dependencies, factory, origin, type, contextMethod.OwningType.Instantiation, contextMethod.Instantiation);
         }
 
-        public static void ProcessGenericArgumentDataFlow(ref DependencyList dependencies, NodeFactory factory, in MessageOrigin origin, TypeDesc type, Instantiation typeContext, Instantiation methodContext, bool suppressWarnings = false)
+        public static void ProcessGenericArgumentDataFlow(
+            ref DependencyList dependencies,
+            NodeFactory factory,
+            in MessageOrigin origin,
+            TypeDesc type,
+            Instantiation typeContext,
+            Instantiation methodContext,
+            bool suppressTrimAnalysisWarnings = false,
+            bool suppressAotAnalysisWarnings = false)
         {
             if (!type.HasInstantiation)
                 return;
@@ -48,11 +71,18 @@ namespace ILCompiler.Dataflow
 
             var diagnosticContext = new DiagnosticContext(
                 origin,
-                suppressTrimmerDiagnostics: suppressWarnings || logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
-                suppressAotDiagnostics: logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
+                suppressTrimmerDiagnostics: suppressTrimAnalysisWarnings || logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresUnreferencedCodeAttribute),
+                suppressAotDiagnostics: suppressAotAnalysisWarnings || logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresDynamicCodeAttribute),
                 suppressSingleFileDiagnostics: logger.ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, DiagnosticUtilities.RequiresAssemblyFilesAttribute),
                 logger: logger);
-            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, typeHierarchyDataFlowOrigin: null, enabled: true, suppressTrimAnalysisWarnings: suppressWarnings);
+            var reflectionMarker = new ReflectionMarker(
+                logger,
+                factory,
+                flowAnnotations,
+                typeHierarchyDataFlowOrigin: null,
+                enabled: true,
+                suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings,
+                suppressAotAnalysisWarnings: suppressAotAnalysisWarnings);
 
             ProcessGenericArgumentDataFlow(diagnosticContext, reflectionMarker, instantiatedType);
 

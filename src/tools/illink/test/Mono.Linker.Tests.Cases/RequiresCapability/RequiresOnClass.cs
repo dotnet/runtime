@@ -1483,7 +1483,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             }
 
             [ExpectedWarning("IL3002", "ClassWithOtherCapabilityRequirements()", "--ClassWithOtherCapabilityRequirements--", Tool.NativeAot, "")]
-            [ExpectedWarning("IL3050", "ClassWithOtherCapabilityRequirements()", "--ClassWithOtherCapabilityRequirements--", Tool.NativeAot, "")]
             [RequiresDynamicCode("--ClassImplementingInterfaceWithOtherCapabilityWarningsWithRdc--")]
             class ClassImplementingInterfaceWithOtherCapabilityWarningsWithRdc : IRequiresNew<ClassWithOtherCapabilityRequirements>
             {

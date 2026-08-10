@@ -27,6 +27,7 @@ namespace ILCompiler.Dataflow
         private readonly MetadataType? _typeHierarchyDataFlowOrigin;
         private readonly bool _enabled;
         private readonly bool _suppressTrimAnalysisWarnings;
+        private readonly bool _suppressAotAnalysisWarnings;
 
         public NodeFactory Factory { get; }
         public FlowAnnotations Annotations { get; }
@@ -40,7 +41,14 @@ namespace ILCompiler.Dataflow
             TokenAccess
         }
 
-        public ReflectionMarker(Logger logger, NodeFactory factory, FlowAnnotations annotations, MetadataType? typeHierarchyDataFlowOrigin, bool enabled, bool suppressTrimAnalysisWarnings = false)
+        public ReflectionMarker(
+            Logger logger,
+            NodeFactory factory,
+            FlowAnnotations annotations,
+            MetadataType? typeHierarchyDataFlowOrigin,
+            bool enabled,
+            bool suppressTrimAnalysisWarnings = false,
+            bool suppressAotAnalysisWarnings = false)
         {
             _logger = logger;
             Factory = factory;
@@ -48,6 +56,7 @@ namespace ILCompiler.Dataflow
             _typeHierarchyDataFlowOrigin = typeHierarchyDataFlowOrigin;
             _enabled = enabled;
             _suppressTrimAnalysisWarnings = suppressTrimAnalysisWarnings;
+            _suppressAotAnalysisWarnings = suppressAotAnalysisWarnings;
         }
 
         internal void MarkTypeForDynamicallyAccessedMembers(in MessageOrigin origin, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, TypeSystemEntity reason, bool declaredOnly = false)
@@ -309,7 +318,8 @@ namespace ILCompiler.Dataflow
                 ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresAssemblyFilesAttribute, requiresAttribute.Value);
 
-            if (_logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute) &&
+            if (!_suppressAotAnalysisWarnings &&
+                _logger.ShouldSuppressAnalysisWarningsForRequires(entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, out requiresAttribute) &&
                 ShouldProduceRequiresWarningForReflectionAccess(entity, accessKind))
                     ReportRequires(origin, entity, DiagnosticUtilities.RequiresDynamicCodeAttribute, requiresAttribute.Value);
 
