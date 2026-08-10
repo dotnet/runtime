@@ -9756,7 +9756,7 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(HRESULT hr, UINT resID, LPCWSTR wszArg
 // Throw a decorated runtime exception with a localized message.
 // Queries the ResourceManager for a corresponding resource value.
 //==========================================================================
-VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName, Exception * pInnerException)
+VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wszResourceName)
 {
     CONTRACTL
     {
@@ -9769,20 +9769,8 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wsz
 
     _ASSERTE((reKind != kExecutionEngineException) ||
              !"ExecutionEngineException shouldn't be thrown. Use EEPolicy to failfast or a better exception. The caller of this function should modify their code.");
-    //
-    // For some reason, the compiler complains about unreachable code if
-    // we don't split the new from the throw.  So we're left with this
-    // unnecessarily verbose syntax.
-    //
 
-    if (pInnerException == NULL)
-    {
-        EX_THROW(EEResourceException, (reKind, wszResourceName));
-    }
-    else
-    {
-        EX_THROW_WITH_INNER(EEResourceException, (reKind, wszResourceName), pInnerException);
-    }
+    EX_THROW(EEResourceException, (reKind, wszResourceName));
 }
 
 //==========================================================================

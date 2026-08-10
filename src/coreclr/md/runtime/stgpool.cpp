@@ -1060,6 +1060,7 @@ StgStringPool::RehashStrings()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -1337,6 +1338,7 @@ StgGuidPool::RehashGuids()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -1719,6 +1721,7 @@ StgBlobPool::RehashBlobs()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END

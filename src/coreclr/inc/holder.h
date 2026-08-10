@@ -1010,12 +1010,12 @@ struct ReleaseHolderTraits final
     static constexpr Type Default() { return NULL; }
     static void Free(Type value)
     {
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_MODE_PREEMPTIVE;
+        STATIC_CONTRACT_NOTHROW;
+        STATIC_CONTRACT_GC_TRIGGERS;
+        STATIC_CONTRACT_MODE_PREEMPTIVE;
 
 #ifdef ENABLE_CONTRACTS_IMPL
-    ContractReleaseValidate();
+        ContractReleaseValidate();
 #endif // ENABLE_CONTRACTS_IMPL
 
         if (value != NULL)

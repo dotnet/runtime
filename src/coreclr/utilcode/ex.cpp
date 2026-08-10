@@ -1088,7 +1088,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner)
     CONTRACTL
     {
         THROWS;
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
     }
     CONTRACTL_END;
 
@@ -1105,10 +1105,7 @@ Exception *ExThrowWithInnerHelper(Exception *inner)
         PAL_CPP_THROW(Exception*, inner);
     }
 
-    {
-        CONTRACT_VIOLATION(GCViolation);  // We are cloning an exception, which is a GC violation.
-        inner = inner->DomainBoundClone();
-    }
+    inner = inner->DomainBoundClone();
 
     // It isn't useful to wrap OOMs and StackOverflows in other exceptions. Just throw them now.
     //
