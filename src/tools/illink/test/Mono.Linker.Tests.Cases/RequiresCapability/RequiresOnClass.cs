@@ -1463,6 +1463,25 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
             }
 
+            [RequiresUnreferencedCode("--ClassWithOtherCapabilityWarningsInBaseWithRequires--")]
+            class ClassWithOtherCapabilityWarningsInBaseWithRequires : RequiresNew<ClassWithOtherCapabilityRequirements>
+            {
+                [ExpectedWarning("IL3002", "ClassWithOtherCapabilityRequirements()", "--ClassWithOtherCapabilityRequirements--", Tool.Analyzer | Tool.NativeAot, "")]
+                [ExpectedWarning("IL3050", "ClassWithOtherCapabilityRequirements()", "--ClassWithOtherCapabilityRequirements--", Tool.Analyzer | Tool.NativeAot, "")]
+                public ClassWithOtherCapabilityWarningsInBaseWithRequires()
+                {
+                }
+            }
+
+            [RequiresDynamicCode("--ClassWithOtherCapabilityWarningsInBaseWithRdc--")]
+            class ClassWithOtherCapabilityWarningsInBaseWithRdc : RequiresNew<ClassWithOtherCapabilityRequirements>
+            {
+                [ExpectedWarning("IL3002", "ClassWithOtherCapabilityRequirements()", "--ClassWithOtherCapabilityRequirements--", Tool.Analyzer | Tool.NativeAot, "")]
+                public ClassWithOtherCapabilityWarningsInBaseWithRdc()
+                {
+                }
+            }
+
             [ExpectedWarning("IL3002", "ClassWithOtherCapabilityRequirements()", "--ClassWithOtherCapabilityRequirements--", Tool.NativeAot, "")]
             [ExpectedWarning("IL3050", "ClassWithOtherCapabilityRequirements()", "--ClassWithOtherCapabilityRequirements--", Tool.NativeAot, "")]
             [RequiresDynamicCode("--ClassImplementingInterfaceWithOtherCapabilityWarningsWithRdc--")]
@@ -1485,6 +1504,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL2026", "--ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires--")]
             [ExpectedWarning("IL2026", "--ClassImplementingInterfaceWithWarningWithRequires--")]
             [ExpectedWarning("IL2026", "--ClassImplementingInterfaceWithOtherCapabilityWarningsWithRequires--")]
+            [ExpectedWarning("IL2026", "--ClassWithOtherCapabilityWarningsInBaseWithRequires--")]
+            [ExpectedWarning("IL3050", "--ClassWithOtherCapabilityWarningsInBaseWithRdc--", Tool.Analyzer | Tool.NativeAot, "")]
             [ExpectedWarning("IL3050", "--ClassImplementingInterfaceWithOtherCapabilityWarningsWithRdc--", Tool.Analyzer | Tool.NativeAot, "")]
             [ExpectedWarning("IL2026", "--GenericAnnotatedWithWarningWithRequires--")]
             public static void Test(ClassWithRequires inst = null)
@@ -1510,11 +1531,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 var p = new ClassImplementingInterfaceWithWarningWithRequires();
                 var q = new ClassImplementingInterfaceWithOtherCapabilityWarningsWithRequires();
                 var r = new ClassImplementingInterfaceWithOtherCapabilityWarningsWithRdc();
+                var s = new ClassWithOtherCapabilityWarningsInBaseWithRequires();
+                var t = new ClassWithOtherCapabilityWarningsInBaseWithRdc();
 
                 // Reference the interfaces, otherwise they could be trimmed
-                Type t;
-                t = typeof(IRequiresNew<>);
-                t = typeof(IRequiresAll<>);
+                Type interfaceType;
+                interfaceType = typeof(IRequiresNew<>);
+                interfaceType = typeof(IRequiresAll<>);
             }
         }
 
