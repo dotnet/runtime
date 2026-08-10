@@ -21,6 +21,72 @@ namespace ILAssembler.Tests
 {
     public class FieldTests
     {
+        [Fact]
+        public void TrailingCustomAttribute_AttachesToField()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .field public static int32 Value
+                    .custom instance void [mscorlib]System.ThreadStaticAttribute::.ctor() = (01 00 00 00)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var type = reader.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(2));
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+
+            Assert.Empty(type.GetCustomAttributes());
+            Assert.Single(field.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void TrailingFieldCustomAttribute_DoesNotLeakAcrossClasses()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi A
+                {
+                    .field public static int32 Value
+                }
+                .class public auto ansi B
+                {
+                    .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            var typeB = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "B");
+
+            Assert.Empty(field.GetCustomAttributes());
+            Assert.Single(typeB.GetCustomAttributes());
+        }
+
+        [Fact]
+        public void GlobalFieldTrailingCustomAttribute_AttachesToField()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .field public static int32 Value
+                .custom instance void [mscorlib]System.ThreadStaticAttribute::.ctor() = (01 00 00 00)
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+
+            Assert.Empty(reader.GetModuleDefinition().GetCustomAttributes());
+            Assert.Single(field.GetCustomAttributes());
+        }
 
         [Fact]
         public void FieldLayout_ExplicitOffset()

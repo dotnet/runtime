@@ -386,13 +386,24 @@ namespace ILAssembler
                     StandaloneSignatureHandle localsSigHandle = methodDef.LocalsSignature is not null
                         ? (StandaloneSignatureHandle)methodDef.LocalsSignature.Handle
                         : default;
+                    bool forceFatHeader = (methodDef.MaxStack < 8 || methodDef.BodyAttributes.HasFlag(MethodBodyAttributes.InitLocals))
+                        && methodDef.MethodBody.CodeBuilder.Count < 64
+                        && localsSigHandle.IsNil
+                        && methodDef.ExceptionRegions.Count == 0;
                     try
                     {
+                        MethodBodyAttributes encodingAttributes = methodDef.BodyAttributes;
+                        if (forceFatHeader)
+                        {
+                            encodingAttributes |= MethodBodyAttributes.InitLocals;
+                        }
+
                         bodyOffset = bodyStreamEncoder.AddMethodBody(
                             methodDef.MethodBody,
                             methodDef.MaxStack,
                             localsSigHandle,
-                            methodDef.BodyAttributes);
+                            encodingAttributes,
+                            methodDef.HasDynamicStackAllocation || forceFatHeader);
                     }
                     catch (InvalidOperationException)
                     {
@@ -405,7 +416,8 @@ namespace ILAssembler
                             exceptionRegionCount: 0,
                             hasSmallExceptionRegions: true,
                             localsSigHandle,
-                            methodDef.BodyAttributes);
+                            forceFatHeader ? methodDef.BodyAttributes | MethodBodyAttributes.InitLocals : methodDef.BodyAttributes,
+                            hasDynamicStackAllocation: methodDef.HasDynamicStackAllocation || forceFatHeader);
                         bodyOffset = fallbackBody.Offset;
                         var writer1 = new BlobWriter(fallbackBody.Instructions);
                         methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer1);
@@ -421,7 +433,8 @@ namespace ILAssembler
                             exceptionRegionCount: 0,
                             hasSmallExceptionRegions: true,
                             localsSigHandle,
-                            methodDef.BodyAttributes);
+                            forceFatHeader ? methodDef.BodyAttributes | MethodBodyAttributes.InitLocals : methodDef.BodyAttributes,
+                            hasDynamicStackAllocation: methodDef.HasDynamicStackAllocation || forceFatHeader);
                         bodyOffset = fallbackBody.Offset;
                         var writer2 = new BlobWriter(fallbackBody.Instructions);
                         methodDef.MethodBody.CodeBuilder.WriteContentTo(ref writer2);
@@ -490,7 +503,7 @@ namespace ILAssembler
             foreach (MethodImplementationEntity impl in GetSeenEntities(TableIndex.MethodImpl))
             {
                 builder.AddMethodImplementation(
-                    (TypeDefinitionHandle)impl.MethodBody.ContainingType.Handle,
+                    (TypeDefinitionHandle)impl.Type.Handle,
                     impl.MethodBody.Handle,
                     impl.MethodDeclaration.Handle);
             }
@@ -917,7 +930,17 @@ namespace ILAssembler
             // COMPAT: When the resolution scope is a corelib assembly ref (mscorlib, System.Runtime, etc.),
             // redirect to the preferred corelib assembly ref to match native ilasm behavior.
             // Native ilasm always uses the preferred corelib for well-known types.
-            if (resolutionContext is AssemblyReferenceEntity asmRefScope && IsCoreLibAssemblyName(asmRefScope.Name))
+            bool isWellKnownCoreLibType = false;
+            if (name.ContainingTypeName is null)
+            {
+                var (typeNamespace, typeName) = NameHelpers.SplitDottedNameToNamespaceAndName(name.DottedName);
+                isWellKnownCoreLibType = typeNamespace == "System"
+                    && typeName is "String" or "Object" or "ValueType" or "Enum";
+            }
+
+            if (isWellKnownCoreLibType
+                && resolutionContext is AssemblyReferenceEntity asmRefScope
+                && IsCoreLibAssemblyName(asmRefScope.Name))
             {
                 var preferredCoreLib = GetCoreLibAssemblyReference();
                 if (preferredCoreLib != asmRefScope)
@@ -1649,7 +1672,12 @@ namespace ILAssembler
 
         public static MethodImplementationEntity CreateUnrecordedMethodImplementation(MethodDefinitionEntity methodBody, MemberReferenceEntity methodDeclaration)
         {
-            return new MethodImplementationEntity(methodBody, methodDeclaration);
+            return new MethodImplementationEntity(methodBody.ContainingType, methodBody, methodDeclaration);
+        }
+
+        public static MethodImplementationEntity CreateUnrecordedMethodImplementation(TypeDefinitionEntity type, MemberReferenceEntity methodBody, MemberReferenceEntity methodDeclaration)
+        {
+            return new MethodImplementationEntity(type, methodBody, methodDeclaration);
         }
 
         public FileEntity GetOrCreateFile(string name, bool hasMetadata, BlobBuilder? hash)
@@ -1946,6 +1974,8 @@ namespace ILAssembler
 
             public MethodBodyAttributes BodyAttributes { get; set; }
 
+            public bool HasDynamicStackAllocation { get; set; }
+
             /// <summary>
             /// Deferred exception regions. Registered during parsing but added to
             /// <see cref="InstructionEncoder.ControlFlowBuilder"/> during emission
@@ -1954,7 +1984,7 @@ namespace ILAssembler
             /// </summary>
             public List<ExceptionRegion> ExceptionRegions { get; } = new();
 
-            public int MaxStack { get; set; }
+            public int MaxStack { get; set; } = 8;
 
             public (ModuleReferenceEntity ModuleName, string? EntryPointName, MethodImportAttributes Attributes)? MethodImportInformation { get; set; }
             public MethodImplAttributes ImplementationAttributes { get; set; }
@@ -2054,9 +2084,10 @@ namespace ILAssembler
             public BlobBuilder Value { get; } = value;
         }
 
-        public sealed class MethodImplementationEntity(MethodDefinitionEntity methodBody, MemberReferenceEntity methodDeclaration) : EntityBase
+        public sealed class MethodImplementationEntity(TypeDefinitionEntity type, EntityBase methodBody, MemberReferenceEntity methodDeclaration) : EntityBase
         {
-            public MethodDefinitionEntity MethodBody { get; } = methodBody;
+            public TypeDefinitionEntity Type { get; } = type;
+            public EntityBase MethodBody { get; } = methodBody;
             public MemberReferenceEntity MethodDeclaration { get; } = methodDeclaration;
         }
 
