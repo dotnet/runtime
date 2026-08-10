@@ -62,6 +62,7 @@ Copyright (c) .NET Foundation. All rights reserved.
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmBuildAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ComputeWasmPublishAssets" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
   <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.ConvertDllsToWebcil" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
+  <UsingTask TaskName="Microsoft.NET.Sdk.WebAssembly.AttachWebcilSizes" AssemblyFile="$(_WebAssemblySdkTasksAssembly)" TaskFactory="TaskHostFactory" />
 
   <PropertyGroup>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
@@ -681,6 +682,19 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ResolveFingerprintedStaticWebAssetEndpointsForAssets>
   </Target>
 
+  <!-- Attach PayloadSize/TableSize metadata onto webcil-in-wasm resources by reading the already-
+       produced webcil files, so GenerateWasmBootJson can emit them into the boot config without
+       opening the files itself. Runs every build (cheap: only the small size header of each webcil
+       is read), so the metadata is present even when ConvertDllsToWebcil was skipped for unchanged
+       assemblies. Non-webcil resources pass through unchanged, so the output is a drop-in
+       replacement for @(WasmStaticWebAsset) even when webcil is disabled. -->
+  <Target Name="_AttachBuildWebcilSizes"
+    DependsOnTargets="_ResolveBuildWasmBootJsonEndpoints">
+    <AttachWebcilSizes Candidates="@(WasmStaticWebAsset)">
+      <Output TaskParameter="CandidatesWithSizes" ItemName="_WasmStaticWebAssetWithSizes" />
+    </AttachWebcilSizes>
+  </Target>
+
   <!-- Write a property stamp file that captures non-file parameters passed to GenerateWasmBootJson.
        This ensures property-only changes (e.g., WasmDebugLevel, environment name) invalidate the
        incremental boot JSON target. WriteOnlyWhenDifferent preserves the timestamp when unchanged. -->
@@ -707,7 +721,7 @@ Copyright (c) .NET Foundation. All rights reserved.
        it here, the outer build's Inputs/Outputs check would find the stale output and skip
        regeneration, leaving the final boot JSON without VFS content files. -->
   <Target Name="_WriteBuildWasmBootJsonFile"
-    DependsOnTargets="_WriteWasmBootJsonBuildPropertyStamp"
+    DependsOnTargets="_WriteWasmBootJsonBuildPropertyStamp;_AttachBuildWebcilSizes"
     Condition="'$(WasmBuildingForNestedPublish)' != 'true'"
     Inputs="@(IntermediateAssembly);@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset);@(_WasmJsConfigStaticWebAsset);@(_WasmDotnetJsForBuild);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(ProjectRuntimeConfigDevFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-build.stamp"
     Outputs="$(IntermediateOutputPath)wasm-bootjson-build.complete.stamp">
@@ -715,7 +729,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
       ApplicationEnvironment="$(_WasmBuildApplicationEnvironmentName)"
-      Resources="@(WasmStaticWebAsset);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
+      Resources="@(_WasmStaticWebAssetWithSizes);@(_WasmJsModuleCandidatesForBuild);@(_WasmFilesToIncludeInFileSystemStaticWebAsset)"
       Endpoints="@(_WasmResolvedEndpoints)"
       DebugBuild="true"
       DebugLevel="$(WasmDebugLevel)"
@@ -1176,6 +1190,15 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ResolveFingerprintedStaticWebAssetEndpointsForAssets>
   </Target>
 
+  <!-- Attach PayloadSize/TableSize metadata onto webcil-in-wasm publish resources (see the build-
+       side _AttachBuildWebcilSizes for details). Non-webcil resources pass through unchanged. -->
+  <Target Name="_AttachPublishWebcilSizes"
+    DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
+    <AttachWebcilSizes Candidates="@(_WasmPublishAsset)">
+      <Output TaskParameter="CandidatesWithSizes" ItemName="_WasmPublishAssetWithSizes" />
+    </AttachWebcilSizes>
+  </Target>
+
   <!-- Write a property stamp for publish boot JSON incrementalism. Same approach as build stamp. -->
   <Target Name="_WriteWasmPublishBootJsonPropertyStamp"
     DependsOnTargets="_ResolvePublishWasmBootJsonInputs">
@@ -1196,14 +1219,14 @@ Copyright (c) .NET Foundation. All rights reserved.
        This target is incremental: when all inputs (assemblies, publish assets, config files,
        extensions, property stamp) are older than the output, the target is skipped. -->
   <Target Name="GeneratePublishWasmBootJson"
-    DependsOnTargets="_WriteWasmPublishBootJsonPropertyStamp"
+    DependsOnTargets="_WriteWasmPublishBootJsonPropertyStamp;_AttachPublishWebcilSizes"
     Inputs="@(IntermediateAssembly);@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish);@(_WasmPublishConfigFile);@(_WasmDotnetJsForPublish);@(WasmBootConfigExtension);$(ProjectRuntimeConfigFilePath);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly);$(IntermediateOutputPath)wasm-bootjson-publish.stamp"
     Outputs="$(IntermediateOutputPath)wasm-bootjson-publish.complete.stamp">
 
     <GenerateWasmBootJson
       AssemblyPath="@(IntermediateAssembly)"
       ApplicationEnvironment="$(_WasmPublishApplicationEnvironmentName)"
-      Resources="@(_WasmPublishAsset);@(_WasmJsModuleCandidatesForPublish)"
+      Resources="@(_WasmPublishAssetWithSizes);@(_WasmJsModuleCandidatesForPublish)"
       Endpoints="@(_WasmResolvedEndpointsForPublish)"
       DebugBuild="false"
       DebugLevel="$(WasmDebugLevel)"

@@ -60,7 +60,16 @@ namespace System.Net.Sockets
         internal bool PreferInlineCompletions
         {
             get => (_flags & Flags.PreferInlineCompletions) != 0;
-            set => SetFlag(Flags.PreferInlineCompletions, value);
+            set
+            {
+                SetFlag(Flags.PreferInlineCompletions, value);
+
+                if (value != SocketAsyncEngine.InlineSocketCompletionsEnabled)
+                {
+                    // Tell the event loop that it can no longer assume the process-wide default.
+                    SocketAsyncEngine.OnInlineCompletionsOverride();
+                }
+            }
         }
 
         // (ab)use Socket class for performing async I/O on non-socket fds.
