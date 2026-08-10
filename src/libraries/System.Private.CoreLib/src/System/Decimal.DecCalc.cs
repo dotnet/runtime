@@ -2271,25 +2271,18 @@ RoundUp:
             private const int BufLength = 7;
 
             /// <summary>
-            /// Returns a <typeparamref name="TWindow"/> (<see cref="Buf12"/> or <see cref="Buf16"/>)
-            /// aliasing <paramref name="buf"/> starting at uint <paramref name="index"/>, so the
-            /// division helpers can update the dividend in place. The long division needs overlapping
-            /// views of the dividend and gets the shift between steps for free by moving the window,
-            /// so the alternatives are copying the window in and out, which is measurably slower, or
-            /// an explicit layout union.
+            /// Returns the <typeparamref name="TWindow"/> starting at uint <paramref name="index"/> of
+            /// <paramref name="buf"/>. The long division below needs overlapping views of the dividend
+            /// and gets the shift between steps for free by moving the window, so the window has to
+            /// alias the buffer rather than be copied in and out.
             /// </summary>
             /// <remarks>
-            /// <see cref="MemoryMarshal.Cast{TFrom, TTo}(Span{TFrom})"/> derives the destination
-            /// length from the source length, so it cannot address outside <paramref name="buf"/>,
-            /// and it rejects types holding managed references. Both windows are plain uints.
+            /// <see cref="MemoryMarshal.Cast{TFrom, TTo}(Span{TFrom})"/> derives the destination length
+            /// from the source length, so this cannot address outside <paramref name="buf"/>.
             /// </remarks>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private static ref TWindow Window<TWindow>(Span<uint> buf, int index, int uintCount)
-                where TWindow : struct
-            {
-                Debug.Assert(Unsafe.SizeOf<TWindow>() == uintCount * sizeof(uint));
-                return ref MemoryMarshal.Cast<uint, TWindow>(buf.Slice(index, uintCount))[0];
-            }
+            private static ref TWindow Window<TWindow>(Span<uint> buf, int index) where TWindow : struct
+                => ref MemoryMarshal.Cast<uint, TWindow>(buf.Slice(index))[0];
 
             private static void VarDecModFull(ref DecCalc d1, ref DecCalc d2, int scale)
             {
@@ -2311,7 +2304,7 @@ RoundUp:
                 // The low 6 uints, so the dividend can be seeded and read back 64 bits at a time.
                 // Storing it as uints instead would make the 64-bit reads inside the division
                 // helpers overlap several narrower stores and lose store to load forwarding.
-                ref Buf24 head = ref Window<Buf24>(buf, 0, 6);
+                ref Buf24 head = ref Window<Buf24>(buf, 0);
 
                 head.Low64 = d1.Low64 << shift;
                 head.Mid64 = (d1.Mid + ((ulong)d1.High << 32)) >> (32 - shift);
@@ -2352,17 +2345,17 @@ RoundUp:
                     switch (high)
                     {
                         case 6:
-                            Div96By64(ref Window<Buf12>(buf, 4, 3), divisor);
+                            Div96By64(ref Window<Buf12>(buf, 4), divisor);
                             goto case 5;
                         case 5:
-                            Div96By64(ref Window<Buf12>(buf, 3, 3), divisor);
+                            Div96By64(ref Window<Buf12>(buf, 3), divisor);
                             goto case 4;
                         case 4:
-                            Div96By64(ref Window<Buf12>(buf, 2, 3), divisor);
+                            Div96By64(ref Window<Buf12>(buf, 2), divisor);
                             break;
                     }
-                    Div96By64(ref Window<Buf12>(buf, 1, 3), divisor);
-                    Div96By64(ref Window<Buf12>(buf, 0, 3), divisor);
+                    Div96By64(ref Window<Buf12>(buf, 1), divisor);
+                    Div96By64(ref Window<Buf12>(buf, 0), divisor);
 
                     d1.Low64 = head.Low64 >> shift;
                     d1.High = 0;
@@ -2378,16 +2371,16 @@ RoundUp:
                     switch (high)
                     {
                         case 6:
-                            Div128By96(ref Window<Buf16>(buf, 3, 4), ref bufDivisor);
+                            Div128By96(ref Window<Buf16>(buf, 3), ref bufDivisor);
                             goto case 5;
                         case 5:
-                            Div128By96(ref Window<Buf16>(buf, 2, 4), ref bufDivisor);
+                            Div128By96(ref Window<Buf16>(buf, 2), ref bufDivisor);
                             goto case 4;
                         case 4:
-                            Div128By96(ref Window<Buf16>(buf, 1, 4), ref bufDivisor);
+                            Div128By96(ref Window<Buf16>(buf, 1), ref bufDivisor);
                             break;
                     }
-                    Div128By96(ref Window<Buf16>(buf, 0, 4), ref bufDivisor);
+                    Div128By96(ref Window<Buf16>(buf, 0), ref bufDivisor);
 
                     d1.Low64 = (head.Low64 >> shift) + ((ulong)head.U2 << (32 - shift) << 32);
                     d1.High = head.U2 >> shift;
