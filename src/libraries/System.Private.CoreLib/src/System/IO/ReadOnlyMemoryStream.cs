@@ -215,21 +215,33 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Sets the length of the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void SetLength(long value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void Write(ReadOnlySpan<byte> buffer) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Writes a byte to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override void WriteByte(byte value) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream. This method is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
+        /// <exception cref="NotSupportedException">In all cases.</exception>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default) => throw new NotSupportedException(SR.NotSupported_UnwritableStream);
 
         /// <inheritdoc/>

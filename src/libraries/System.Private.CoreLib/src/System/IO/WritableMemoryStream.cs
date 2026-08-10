@@ -217,6 +217,8 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Writes a byte to the stream.</summary>
+        /// <exception cref="NotSupportedException">Writing the byte would exceed the fixed capacity of the stream.</exception>
         public override void WriteByte(byte value)
         {
             EnsureNotClosed();
@@ -236,6 +238,8 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Writes a sequence of bytes to the stream.</summary>
+        /// <exception cref="NotSupportedException">Writing the bytes would exceed the fixed capacity of the stream.</exception>
         public override void Write(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -243,6 +247,8 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Writes a sequence of bytes to the stream.</summary>
+        /// <exception cref="NotSupportedException">Writing the bytes would exceed the fixed capacity of the stream.</exception>
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             EnsureNotClosed();
@@ -269,6 +275,8 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream.</summary>
+        /// <exception cref="NotSupportedException">Writing the bytes would exceed the fixed capacity of the stream.</exception>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -284,6 +292,8 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Asynchronously writes a sequence of bytes to the stream.</summary>
+        /// <exception cref="NotSupportedException">Writing the bytes would exceed the fixed capacity of the stream.</exception>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             EnsureNotClosed();
@@ -298,6 +308,10 @@ namespace System.IO
         }
 
         /// <inheritdoc/>
+        /// <summary>Sets the length of the current stream to the specified value.</summary>
+        /// <param name="value">The length to set.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="value"/> is negative.</exception>
+        /// <exception cref="NotSupportedException">The current stream is not resizable and <paramref name="value"/> is larger than the current capacity.</exception>
         public override void SetLength(long value)
         {
             ArgumentOutOfRangeException.ThrowIfNegative(value);
