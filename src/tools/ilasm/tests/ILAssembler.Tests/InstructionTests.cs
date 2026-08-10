@@ -338,6 +338,198 @@ namespace ILAssembler.Tests
             Assert.Empty(signature.ParameterTypes);
         }
 
+        [Fact]
+        public void Calli_VarArgSignature_DoesNotCountSentinelAsParameter()
+        {
+            string source = """
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        calli vararg void(int32, ..., string, int64)
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            MethodSignature<PrimitiveTypeCode> signature = DecodeCalliSignature(reader, MetadataTokens.StandaloneSignatureHandle(1));
+
+            Assert.Equal(SignatureCallingConvention.VarArgs, signature.Header.CallingConvention);
+            Assert.Equal(1, signature.RequiredParameterCount);
+            Assert.Equal([PrimitiveTypeCode.Int32, PrimitiveTypeCode.String, PrimitiveTypeCode.Int64], signature.ParameterTypes.ToArray());
+        }
+
+        [Fact]
+        public void MaxStackDirective_IsPreserved()
+        {
+            string source = """
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        .maxstack 3
+                        ldc.i4.1
+                        localloc
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "F");
+
+            MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
+            Assert.Equal(3, body.MaxStack);
+            Assert.True(body.LocalVariablesInitialized);
+        }
+
+        [Fact]
+        public void MaxStackDirective_DoesNotInitializeExistingLocals()
+        {
+            string source = """
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        .maxstack 3
+                        .locals (int32 V_0)
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "F");
+            MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
+
+            Assert.Equal(3, body.MaxStack);
+            Assert.False(body.LocalVariablesInitialized);
+        }
+
+        [Fact]
+        public void MethodWithoutMaxStack_UsesNativeDefault()
+        {
+            string source = """
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        ldc.i4.0
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "F");
+            MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
+
+            Assert.Equal(8, body.MaxStack);
+            Assert.False(body.LocalVariablesInitialized);
+        }
+
+        [Fact]
+        public void ZeroInitWithoutLocals_ForcesFatHeader()
+        {
+            string source = """
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        .zeroinit
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "F");
+            MethodBodyBlock body = pe.GetMethodBody(method.RelativeVirtualAddress);
+
+            Assert.Equal(8, body.MaxStack);
+            Assert.True(body.LocalVariablesInitialized);
+        }
+
+        [Theory]
+        [InlineData("4294967295", 4294967295d)]
+        [InlineData("4503599627370496", 4503599627370496d)]
+        [InlineData("-4294967295", -4294967295d)]
+        [InlineData("0xFFFFFFFF", 4294967295d)]
+        [InlineData("4294967295.", 4294967295d)]
+        public void LdcR8_IntegerLiteral_PreservesValue(string literal, double expected)
+        {
+            string source = $$"""
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        ldc.r8 {{literal}}
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "F");
+            byte[] il = pe.GetMethodBody(method.RelativeVirtualAddress).GetILBytes()!;
+
+            Assert.Equal(0x23, il[0]);
+            Assert.Equal(expected, BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(il.AsSpan(1))));
+        }
+
+        [Fact]
+        public void LdcR4_IntegerLiteral_PreservesValue()
+        {
+            string source = """
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        ldc.r4 4294967295
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .Single(method => reader.GetString(method.Name) == "F");
+            byte[] il = pe.GetMethodBody(method.RelativeVirtualAddress).GetILBytes()!;
+
+            Assert.Equal(0x22, il[0]);
+            Assert.Equal(4294967295f, BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(il.AsSpan(1))));
+        }
+
         private static MethodSignature<PrimitiveTypeCode> DecodeCalliSignature(MetadataReader reader, StandaloneSignatureHandle handle)
         {
             BlobReader blobReader = reader.GetBlobReader(reader.GetStandaloneSignature(handle).Signature);

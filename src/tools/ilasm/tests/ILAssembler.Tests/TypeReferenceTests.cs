@@ -144,6 +144,35 @@ namespace ILAssembler.Tests
             Assert.Equal("netstandard", reader.GetString(assemblyReference.Name));
         }
 
+        [Theory]
+        [InlineData("Console")]
+        [InlineData("Exception")]
+        public void ExplicitMscorlibNonCoreTypeRef_PreservesResolutionScope(string typeName)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly extern System.Runtime { }
+                .assembly test { }
+                .class public auto ansi Test extends [System.Runtime]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        ldtoken [mscorlib]System.{{typeName}}
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            TypeReferenceHandle typeHandle = DocumentCompilerTestHelpers.FindTypeRef(reader, typeName);
+            var type = reader.GetTypeReference(typeHandle);
+            var assemblyReference = reader.GetAssemblyReference((AssemblyReferenceHandle)type.ResolutionScope);
+
+            Assert.Equal("mscorlib", reader.GetString(assemblyReference.Name));
+        }
+
 
         [Fact]
         public void ResolvedTypeRefs_StillEmittedAsRows_InPseudoHandleOrder()
