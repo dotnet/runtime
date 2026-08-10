@@ -1010,4 +1010,3 @@ namespace System.Formats.Tar.Tests
     }
 }
 
-
