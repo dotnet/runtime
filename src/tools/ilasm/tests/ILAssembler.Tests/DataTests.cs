@@ -42,5 +42,25 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticIds.InvalidMetadataToken, error.Id);
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
+
+        [Fact]
+        public void Float64Data_IntegerLiteral_PreservesValue()
+        {
+            string source = """
+                .assembly test { }
+                .data D = float64(4503599627370496.)
+                .class public auto ansi Test
+                {
+                    .field public static float64 Value at D
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+            ReadOnlySpan<byte> data = pe.GetSectionData(field.GetRelativeVirtualAddress()).GetContent().AsSpan(0, sizeof(double));
+
+            Assert.Equal(4503599627370496d, BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(data)));
+        }
     }
 }
