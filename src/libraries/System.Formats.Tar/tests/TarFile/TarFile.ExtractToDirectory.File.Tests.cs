@@ -638,6 +638,34 @@ namespace System.Formats.Tar.Tests
         }
 
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        public void ExtractToDirectory_DefersSymlinkWithDotDot_UnderSymlinkedParent()
+        {
+            using TempDirectory root = new TempDirectory();
+            string realRoot = Path.Combine(root.Path, "real");
+            Directory.CreateDirectory(realRoot);
+
+            string linkedRoot = Path.Combine(root.Path, "link");
+            Directory.CreateSymbolicLink(linkedRoot, realRoot);
+
+            string destDir = Path.Combine(linkedRoot, "dest");
+            Directory.CreateDirectory(destDir);
+
+            string tarPath = Path.Combine(root.Path, "deferred_symlink.tar");
+            using (FileStream stream = new FileStream(tarPath, FileMode.Create, FileAccess.Write))
+            using (TarWriter writer = new TarWriter(stream, leaveOpen: false))
+            {
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "a/"));
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "a/link") { LinkName = NormalizePathSeparators("../b") });
+                writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "b/"));
+            }
+
+            TarFile.ExtractToDirectory(tarPath, destDir, overwriteFiles: true);
+
+            string linkPath = Path.Combine(destDir, "a", "link");
+            Assert.Equal(NormalizePathSeparators("../b"), new FileInfo(linkPath).LinkTarget);
+        }
+
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void ExtractToDirectory_DeferredSymlinkBlocksTraversal()
         {
             // A file entry after a deferred symlink cannot follow the symlink to write
@@ -1040,4 +1068,3 @@ namespace System.Formats.Tar.Tests
         }
     }
 }
-

@@ -608,7 +608,7 @@ namespace System.Formats.Tar
             {
                 // Each top-level link starts a fresh resolution walk.
                 _symlinkDepth = _destinationSymlinkDepth;
-                AddPendingLink(_destination, fileId, symlinkPath, linkTarget, visitedLinks: null, out _);
+                AddPendingLink(_resolvedDestination, fileId, symlinkPath, linkTarget, visitedLinks: null, out _);
             }
 
             private void AddPendingLink(string rootPath, FileId fileId, string symlinkPath, string linkTarget, HashSet<FileId>? visitedLinks, out string resolvedFullPath)
@@ -747,7 +747,7 @@ namespace System.Formats.Tar
                             containmentRootPath = _resolvedDestination;
                         }
                         // If no rootPath was set yet, limit the pending link to the destination dir.
-                        AddPendingLink(containmentRootPath ?? _destination, fileId, pendingLink.SymlinkPath!, pendingLink.LinkTarget!, visitedLinks, out resolvedFullPath);
+                        AddPendingLink(containmentRootPath ?? _resolvedDestination, fileId, pendingLink.SymlinkPath!, pendingLink.LinkTarget!, visitedLinks, out resolvedFullPath);
                     }
 
                     if (!visitedLinks.Remove(fileId))
@@ -794,7 +794,7 @@ namespace System.Formats.Tar
 
             private bool IsInRootOrDestination(string rootPath, string resolvedPath)
                 => FullPathIsEqualOrNested(rootPath, resolvedPath)
-                || (!ReferenceEquals(rootPath, _destination) && FullPathIsEqualOrNested(_destination, resolvedPath));
+                || (!ReferenceEquals(rootPath, _resolvedDestination) && FullPathIsEqualOrNested(_resolvedDestination, resolvedPath));
         }
     }
 }
