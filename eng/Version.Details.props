@@ -6,7 +6,7 @@ This file should be imported by eng/Versions.props
 <Project>
   <PropertyGroup>
     <!-- dotnet-arcade dependencies -->
-    <MicrosoftDotNetHelixJobMonitorPackageVersion>11.0.0-beta.26404.8</MicrosoftDotNetHelixJobMonitorPackageVersion>
+    <MicrosoftDotNetHelixJobMonitorPackageVersion>11.0.0-beta.26407.8</MicrosoftDotNetHelixJobMonitorPackageVersion>
     <MicrosoftDotNetHelixSdkPackageVersion>11.0.0-beta.26381.1</MicrosoftDotNetHelixSdkPackageVersion>
     <!-- dotnet-dotnet dependencies -->
     <MicrosoftCodeAnalysisPackageVersion>5.10.0-1.26379.102</MicrosoftCodeAnalysisPackageVersion>
