@@ -861,9 +861,6 @@ namespace ILCompiler.ObjectWriter
             return rva >= section.Header.VirtualAddress && rva < section.Header.VirtualAddress + section.Header.VirtualSize;
         }
 
-
-        // TODO-WASM: Currently, all Wasm relocs are resolved to 5 byte values unconditionally (the same size as the original placeholder padding), which is wasteful.
-        // We should remove the padding and shrink the resolved values to their minimal size so we don't bloat the binary size.
 #nullable enable
         static void CopyOnly(MemoryStream src, long srcPos, MemoryStream dest, long destPos, long count)
         {
@@ -889,13 +886,21 @@ namespace ILCompiler.ObjectWriter
             return blobs;
         }
 
+        /// <summary>
+        /// Resolve relocations in the code section, shrinking the size of all ULEB relocations to their minimal size.
+        /// This requires code blobs to be pre-split so that we can shrink the size of relocs in each blob independently, and then re-encode the blob with its new size.
+        /// </summary>
+        // We use an in-place copying strategy here with a read cursor (sectionStream.Position) and a separate write cursor where (write <= read),
+        // since the resolved blobs will always be equal to or smaller in size than the original blobs.
+        // Within the blobs, we split on relocations and copy the data between them, resolving each relocation to its minimal size.
         private void ResolveCodeRelocations(int sectionIndex, MemoryStream sectionStream, List<CodeBlob> blobs, List<SymbolicRelocation> relocs, bool shrink = false)
         {
+            if (blobs.Count == 0 && relocs.Count > 0)
+            {
+                throw new InvalidDataException();
+            }
+
             long maxBlobSize = blobs.Max(blob => blob.End - blob.Start);
-            // for each blob:
-            //  select relocations that are in the blob's range
-            //  copy over the blob's contents to the temporary stream, resolving relocations in sorted order 
-            //  write the temporary stream to the destination stream with the new size
             MemoryStream tempStream = new MemoryStream((int)maxBlobSize);
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
             int[] blobShrink = new int[blobs.Count];
@@ -906,7 +911,6 @@ namespace ILCompiler.ObjectWriter
             long writeCursor = 0;
             int relocCursor = 0;
 
-            // No relocations in this blob, just copy it over, but shrink the size ULEB down to the minimum
             byte[] countBuffer = new byte[5];
 
             // Invariant: writeCursor is where we are writing to in the sectionStream. Further, writeCursor is always less than or equal to the start of the current blob we are processing.
@@ -920,7 +924,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     tempStream.Position = 0;
                     tempStream.SetLength(blob.Size);
-                    sectionStream.Position = blob.Start;
+                    sectionStream.Position = blob.Start; // sectionStream.Position is now our read cursor
                     SymbolicRelocation firstReloc = relocs[relocCursor];
 
                     if (firstReloc.Offset > 0)
@@ -974,6 +978,7 @@ namespace ILCompiler.ObjectWriter
                 }
                 else
                 {
+                    // No relocations in this blob. Copy the blob as-is but shrink the length prefix if possible.
                     DwarfHelper.WriteULEB128(countBuffer, (ulong)blob.Size);
                     sectionStream.Position = writeCursor;
                     sectionStream.Write(countBuffer, 0, (int)DwarfHelper.SizeOfULEB128((ulong)blob.Size));
@@ -986,13 +991,16 @@ namespace ILCompiler.ObjectWriter
             sectionStream.SetLength(writeCursor);
 
             sectionStream.Position = 0;
+
+#if DEBUG
+            // The number of code blobs should not have changed.    
             List<CodeBlob> newBlobs = ParseCodeBlobs(sectionStream);
             Debug.Assert(newBlobs.Count == blobs.Count);
-
             for (int i = 0; i < newBlobs.Count; i++)
             {
                 Debug.Assert(newBlobs[i].Size + blobShrink[i] == blobs[i].Size);
             }
+#endif
         }
 
         private unsafe int ResolveReloc(int sectionIndex, MemoryStream sourceStream, long srcPos, MemoryStream destStream, long destPos, SymbolicRelocation reloc,  byte[] relocScratchBuffer, bool shrink = false)
