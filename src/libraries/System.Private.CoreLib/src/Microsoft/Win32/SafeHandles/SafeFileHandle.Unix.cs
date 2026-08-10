@@ -37,8 +37,6 @@ namespace Microsoft.Win32.SafeHandles
         internal static bool DisableFileLocking { get; } = OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()// #40065: Emscripten does not support file locking
             || AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
 
-        // not using bool? as it's not thread safe
-        private NullableBool _canSeek /* = NullableBool.Undefined */;
         private NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
         private NullableBool _isAsync /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
@@ -73,8 +71,6 @@ namespace Microsoft.Win32.SafeHandles
             }
             private set => _isAsync = value ? NullableBool.True : NullableBool.False;
         }
-
-        internal bool CanSeek => !IsClosed && GetCanSeek();
 
         internal bool SupportsRandomAccess
         {

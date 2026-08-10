@@ -108,8 +108,6 @@ namespace Microsoft.Win32.SafeHandles
 
         internal bool IsNoBuffering => (GetFileOptions() & FileStreamHelpers.NoBuffering) != 0;
 
-        internal bool CanSeek => !IsClosed && Type == FileHandleType.RegularFile;
-
         internal ThreadPoolBoundHandle? ThreadPoolBinding { get; set; }
 
         internal bool TryGetCachedLength(out long cachedLength)
@@ -327,6 +325,20 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             return _fileOptions = result;
+        }
+
+        private bool GetCanSeek()
+        {
+            Debug.Assert(!IsClosed);
+            Debug.Assert(!IsInvalid);
+
+            NullableBool canSeek = _canSeek;
+            if (canSeek == NullableBool.Undefined)
+            {
+                _canSeek = canSeek = Interop.Kernel32.SetFilePointerEx(this, 0, out _, (uint)SeekOrigin.Current) ? NullableBool.True : NullableBool.False;
+            }
+
+            return canSeek == NullableBool.True;
         }
 
         internal FileHandleType GetFileTypeCore()
