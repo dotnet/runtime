@@ -65,11 +65,15 @@ ContinuationMember ContinuationMember::CustomAwaiterOfLayout(ClassLayout* layout
 }
 
 //------------------------------------------------------------------------
-// ContinuationMember::GetCustomAwaiterLayout:
-//   Get the layout of a custom awaiter continuation member.
+// ContinuationMember::InlineFrameExecutionContext:
+//   Create a continuation member that stores the ExecutionContext an inlined async
+//   frame captured when it logically returned to its caller.
+//
+// Parameters:
+//   inlineDepth - Depth of the inlined frame.
 //
 // Returns:
-//   The custom awaiter's layout.
+//   A continuation member describing the ExecutionContext.
 //
 ContinuationMember ContinuationMember::InlineFrameExecutionContext(unsigned inlineDepth)
 {
@@ -79,6 +83,17 @@ ContinuationMember ContinuationMember::InlineFrameExecutionContext(unsigned inli
     return member;
 }
 
+//------------------------------------------------------------------------
+// ContinuationMember::InlineFrameContinuationContext:
+//   Create a continuation member that stores the continuation context an inlined
+//   async frame captured when it logically returned to its caller.
+//
+// Parameters:
+//   inlineDepth - Depth of the inlined frame.
+//
+// Returns:
+//   A continuation member describing the continuation context.
+//
 ContinuationMember ContinuationMember::InlineFrameContinuationContext(unsigned inlineDepth)
 {
     ContinuationMember member;
@@ -87,6 +102,17 @@ ContinuationMember ContinuationMember::InlineFrameContinuationContext(unsigned i
     return member;
 }
 
+//------------------------------------------------------------------------
+// ContinuationMember::InlineFrameFlags:
+//   Create a continuation member that stores the ContinuationFlags describing the
+//   continuation context of an inlined async frame.
+//
+// Parameters:
+//   inlineDepth - Depth of the inlined frame.
+//
+// Returns:
+//   A continuation member describing the flags.
+//
 ContinuationMember ContinuationMember::InlineFrameFlags(unsigned inlineDepth)
 {
     ContinuationMember member;
@@ -95,12 +121,26 @@ ContinuationMember ContinuationMember::InlineFrameFlags(unsigned inlineDepth)
     return member;
 }
 
+//------------------------------------------------------------------------
+// ContinuationMember::GetCustomAwaiterLayout:
+//   Get the layout of a custom awaiter continuation member.
+//
+// Returns:
+//   The custom awaiter's layout.
+//
 ClassLayout* ContinuationMember::GetCustomAwaiterLayout() const
 {
     assert(Type == ContinuationMemberType::CustomAwaiterOfLayout);
     return m_customAwaiterLayout;
 }
 
+//------------------------------------------------------------------------
+// ContinuationMember::GetInlineDepth:
+//   Get the inline depth of the frame an inlined frame member belongs to.
+//
+// Returns:
+//   The inline depth.
+//
 unsigned ContinuationMember::GetInlineDepth() const
 {
     assert(IsInlineFrameMember());
@@ -111,15 +151,21 @@ unsigned ContinuationMember::GetInlineDepth() const
 // ContinuationMember::GetStorageType:
 //   Get the type of the storage this member occupies in the continuation.
 //
-// Returns:
-//   TYP_STRUCT for custom awaiters (described by GetCustomAwaiterLayout), otherwise
-//   the primitive type stored.
+// Parameters:
+//   layout - [out] Layout of the storage when the returned type is TYP_STRUCT,
+//            nullptr otherwise.
 //
-var_types ContinuationMember::GetStorageType() const
+// Returns:
+//   Type of the storage.
+//
+var_types ContinuationMember::GetStorageType(ClassLayout** layout) const
 {
+    *layout = nullptr;
+
     switch (Type)
     {
         case ContinuationMemberType::CustomAwaiterOfLayout:
+            *layout = m_customAwaiterLayout;
             return TYP_STRUCT;
         case ContinuationMemberType::InlineFrameExecutionContext:
         case ContinuationMemberType::InlineFrameContinuationContext:
@@ -131,6 +177,17 @@ var_types ContinuationMember::GetStorageType() const
     }
 }
 
+//------------------------------------------------------------------------
+// ContinuationMember::AreCompatible:
+//   Check whether two continuation members can share the same storage.
+//
+// Parameters:
+//   a - The first member
+//   b - The second member
+//
+// Returns:
+//   True if the members are compatible; otherwise false.
+//
 bool ContinuationMember::AreCompatible(const ContinuationMember& a, const ContinuationMember& b)
 {
     if (a.Type != b.Type)
@@ -295,21 +352,7 @@ const ContinuationMember& Compiler::GetContinuationMember(size_t index)
 bool Compiler::ehIsAsyncContextRestore(unsigned short ehID)
 {
     Compiler* const root = impInlineRoot();
-
-    if (root->m_asyncContextRestoreEHIDs == nullptr)
-    {
-        return false;
-    }
-
-    for (unsigned short candidate : *root->m_asyncContextRestoreEHIDs)
-    {
-        if (candidate == ehID)
-        {
-            return true;
-        }
-    }
-
-    return false;
+    return (root->m_asyncContextRestoreEHIDs != nullptr) && root->m_asyncContextRestoreEHIDs->Lookup(ehID);
 }
 
 //------------------------------------------------------------------------
@@ -378,11 +421,6 @@ PhaseStatus Compiler::SaveAsyncContexts()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Note the OSR handling below only ever applies to the root frame: JIT_FLAG_OSR is
-    // cleared for inlinees in compInitOptions. An inlinee inside an OSR method starts a
-    // fresh logical frame and so captures its own contexts, with a resumed indicator that
-    // starts out false however the OSR method was entered.
-
     // Create locals for indicator, Thread, ExecutionContext and SynchronizationContext
     lvaResumedIndicator               = lvaGrabTemp(false DEBUGARG("Async Resumed"));
     lvaAsyncThreadObjectVar           = lvaGrabTemp(false DEBUGARG("Async Thread"));
@@ -438,10 +476,10 @@ PhaseStatus Compiler::SaveAsyncContexts()
         if (root->m_asyncContextRestoreEHIDs == nullptr)
         {
             root->m_asyncContextRestoreEHIDs =
-                new (root, CMK_Async) jitstd::vector<unsigned short>(root->getAllocator(CMK_Async));
+                new (root, CMK_Async) AsyncContextRestoreEHIDSet(root->getAllocator(CMK_Async));
         }
 
-        root->m_asyncContextRestoreEHIDs->push_back(asyncContextRestoreEHID);
+        root->m_asyncContextRestoreEHIDs->Set(asyncContextRestoreEHID, true);
     }
 
     newEntry->ebdTryBeg  = tryBegBB;
@@ -1939,19 +1977,20 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
 
         const ContinuationMember& member = m_compiler->GetContinuationMember(memberIndex);
 
+        ClassLayout*    memberLayout;
+        var_types const storageType = member.GetStorageType(&memberLayout);
+
         unsigned alignment;
         unsigned size;
-        if (member.Type == ContinuationMemberType::CustomAwaiterOfLayout)
+        if (memberLayout != nullptr)
         {
-            ClassLayout* memberLayout = member.GetCustomAwaiterLayout();
-            alignment                 = memberLayout->GetAlignmentRequirement(m_compiler);
-            size                      = memberLayout->GetSize();
+            alignment = memberLayout->GetAlignmentRequirement(m_compiler);
+            size      = memberLayout->GetSize();
         }
         else
         {
-            var_types storageType = member.GetStorageType();
-            alignment             = genTypeAlignments[storageType];
-            size                  = genTypeSize(storageType);
+            alignment = genTypeAlignments[storageType];
+            size      = genTypeSize(storageType);
         }
 
         layout->ContinuationMemberOffsets[memberIndex] =
@@ -1991,8 +2030,10 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
                 continue;
             }
 
-            var_types const storageType = member.GetStorageType();
-            unsigned const  alignment   = genTypeAlignments[storageType];
+            ClassLayout*    memberLayout;
+            var_types const storageType = member.GetStorageType(&memberLayout);
+            assert(memberLayout == nullptr);
+            unsigned const alignment             = genTypeAlignments[storageType];
             layout->ContinuationMemberOffsets[j] =
                 allocLayout(std::min(alignment, (unsigned)TARGET_POINTER_SIZE), genTypeSize(storageType));
         }
@@ -2050,11 +2091,10 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
     {
         if (layout->ContinuationMemberOffsets[i] != UINT_MAX)
         {
-            const ContinuationMember& member       = m_compiler->GetContinuationMember(i);
-            ClassLayout*              memberLayout = member.Type == ContinuationMemberType::CustomAwaiterOfLayout
-                                                         ? member.GetCustomAwaiterLayout()
-                                                         : nullptr;
-            bitmapBuilder.SetType(layout->ContinuationMemberOffsets[i], member.GetStorageType(), memberLayout);
+            const ContinuationMember& member = m_compiler->GetContinuationMember(i);
+            ClassLayout*              memberLayout;
+            var_types const           storageType = member.GetStorageType(&memberLayout);
+            bitmapBuilder.SetType(layout->ContinuationMemberOffsets[i], storageType, memberLayout);
         }
     }
 

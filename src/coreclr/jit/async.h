@@ -41,7 +41,7 @@ public:
     }
 
     // The type of the storage this member requires in the continuation.
-    var_types GetStorageType() const;
+    var_types GetStorageType(ClassLayout** layout) const;
 
     static ContinuationMember CustomAwaiterOfLayout(ClassLayout* layout);
     static ContinuationMember InlineFrameExecutionContext(unsigned inlineDepth);

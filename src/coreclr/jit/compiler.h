@@ -4411,7 +4411,8 @@ public:
     // all frames inlined into it. Maintained on the inline root, since an inlinee's
     // clause survives inlining as a clause of the root. EH IDs are stable across
     // inlining, so this stays valid after the tables are merged.
-    jitstd::vector<unsigned short>* m_asyncContextRestoreEHIDs = nullptr;
+    typedef JitHashTable<unsigned short, JitSmallPrimitiveKeyFuncs<unsigned short>, bool> AsyncContextRestoreEHIDSet;
+    AsyncContextRestoreEHIDSet* m_asyncContextRestoreEHIDs = nullptr;
 
     bool ehIsAsyncContextRestore(unsigned short ehID);
     bool ehIsInsideNonAsyncContextRestoreRegion(BasicBlock* block);
