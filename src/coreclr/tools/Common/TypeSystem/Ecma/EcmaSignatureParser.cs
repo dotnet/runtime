@@ -53,7 +53,13 @@ namespace Internal.TypeSystem.Ecma
 
         public ResolutionFailure ResolutionFailure => _resolutionFailure;
 
-        partial void ReportInvalidTypeSpec(EntityHandle typeSpecHandle);
+        private enum InvalidTypeSpecReason
+        {
+            InvalidEncoding,
+            UsedAsCustomModifierType,
+        }
+
+        partial void ReportInvalidTypeSpec(EntityHandle typeSpecHandle, InvalidTypeSpecReason reason);
 
         private TypeDesc ResolveHandle(EntityHandle handle)
         {
@@ -287,7 +293,7 @@ namespace Internal.TypeSystem.Ecma
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
                     if (typeHandle.Kind == HandleKind.TypeSpecification)
                     {
-                        ReportInvalidTypeSpec(typeHandle);
+                        ReportInvalidTypeSpec(typeHandle, InvalidTypeSpecReason.UsedAsCustomModifierType);
                     }
 
                     _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.RequiredCustomModifier, type = ResolveHandle(typeHandle) });
@@ -299,7 +305,7 @@ namespace Internal.TypeSystem.Ecma
                     EntityHandle typeHandle = _reader.ReadTypeHandle();
                     if (typeHandle.Kind == HandleKind.TypeSpecification)
                     {
-                        ReportInvalidTypeSpec(typeHandle);
+                        ReportInvalidTypeSpec(typeHandle, InvalidTypeSpecReason.UsedAsCustomModifierType);
                     }
 
                     _embeddedSignatureDataList?.Add(new EmbeddedSignatureData { index = string.Join(".", _indexStack), kind = EmbeddedSignatureDataKind.OptionalCustomModifier, type = ResolveHandle(typeHandle) });
@@ -349,7 +355,7 @@ namespace Internal.TypeSystem.Ecma
                 case SignatureTypeCode.GenericMethodParameter:
                     return ParseType(ParseTypeCodeImpl(typeCode));
             }
-            ReportInvalidTypeSpec(typeSpecHandle);
+            ReportInvalidTypeSpec(typeSpecHandle, InvalidTypeSpecReason.InvalidEncoding);
             return ParseType(ParseTypeCodeImpl(typeCode));
         }
 
