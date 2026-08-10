@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for CLRTestEnvironmentVariable -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+
+    <!-- These behaviors only differ once the calls are optimized, and in particular once
+         they are inlined, so make sure the test does not run at tier 0. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+    <CLRTestEnvironmentVariable Include="DOTNET_JITMinOpts" Value="0" />
+  </ItemGroup>
+</Project>
