@@ -299,6 +299,7 @@ jobs:
               secrets.COPILOT_GITHUB_TOKEN
             }}
           GH_TOKEN: ${{ github.token }}
+          GITHUB_PERSONAL_ACCESS_TOKEN: ${{ github.token }}
           SPECS: ${{ steps.sel.outputs.specs }}
         run: |
           workdir="$RUNNER_TEMP/vally"
