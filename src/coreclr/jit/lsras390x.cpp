@@ -1716,13 +1716,15 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 
         case GT_BITCAST:
-            srcCount = BuildSimple(tree);
-            GenTree* op1 = tree->gtGetOp1();
-            if (!op1->isContained() && varTypeUsesFloatReg(tree) && !varTypeUsesFloatReg(op1) &&
-                (genTypeSize(tree) == 4))
             {
-                buildInternalIntRegisterDefForNode(tree);
-                buildInternalRegisterUses();
+                srcCount = BuildSimple(tree);
+                GenTree* op1 = tree->gtGetOp1();
+                if (!op1->isContained() && varTypeUsesFloatReg(tree) && !varTypeUsesFloatReg(op1) &&
+                (genTypeSize(tree) == 4))
+                {
+                    buildInternalIntRegisterDefForNode(tree);
+                    buildInternalRegisterUses();
+                }
             }
             break;
 
