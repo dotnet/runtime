@@ -3413,9 +3413,10 @@ PhaseStatus Compiler::fgWasmVirtualIP()
     // In the main method we update the VirtualIP local
     // (which will end up at $fp[4]).
     //
-    auto updateVirtualIPOnFrame = [&](FuncInfoDsc* func, BasicBlock* block, GenTree* beforeNode = nullptr) {
+    auto updateVirtualIPOnFrame = [&](FuncInfoDsc* func, BasicBlock* block, unsigned vipValue,
+                                      GenTree* beforeNode = nullptr) {
         const unsigned virtualIPlclNum = getVirtualIPLclNum();
-        GenTree* const virtualIPValue  = gtNewIconNode(virtualIP);
+        GenTree* const virtualIPValue  = gtNewIconNode(vipValue);
         GenTree*       setVirtualIP    = nullptr;
 
         if (func->IsFunclet())
@@ -3452,9 +3453,33 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         updatesAdded++;
     };
 
+    // Elide redundant Virtual IP stores: a store is redundant when the required value is
+    // already on the frame on every path into the block.
+    //
+    struct PerBlockData
+    {
+        enum : unsigned
+        {
+            VIP_UNSET = UINT_MAX,     // no value yet (meet identity)
+            VIP_MANY  = UINT_MAX - 1, // conflicting or unknown value
+        };
+
+        unsigned requiredVip  = 0;         // virtual IP this block requires on the frame
+        unsigned funcIndex    = 0;         // owning func index
+        unsigned availableIn  = VIP_UNSET; // virtual IP available on entry
+        unsigned availableOut = VIP_UNSET; // virtual IP available on exit
+        bool     isRequired   = false;     // block needs a correct value on the frame
+        bool     isFuncEntry  = false;     // first block of its func
+    };
+
+    const unsigned      numBlocks  = fgBBNumMax + 1;
+    PerBlockData* const blockData  = new (this, CMK_WasmEH) PerBlockData[numBlocks];
+    unsigned            vipFuncIdx = 0;
+
     for (FuncInfoDsc* const func : Funcs())
     {
         func->startVirtualIP = virtualIP;
+        bool vipFirstInFunc  = true;
 
         if (func->IsMethod())
         {
@@ -3514,18 +3539,16 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 clauses[clauseIndex].clause.ClassToken = virtualIP;
             }
 
-            // For now, just refresh the stack Virtual IP at the start of each non-empty
-            // block (later we can refine this to something like: blocks that have calls
-            // or will inspire calls during codegen).
+            // Record the required Virtual IP and store-site/entry flags for each block.
             //
-            // Also refresh BBJ_CALLFINALLY blocks: the implicit call_indirect to the
-            // finally funclet is emitted at codegen time and the runtime EH walker
-            // would otherwise see the stale try-region virtualIP and re-dispatch the
-            // same finally during unwind.
-            //
-            if (!block->isEmpty() || block->KindIs(BBJ_CALLFINALLY))
+            PerBlockData& data = blockData[block->bbNum];
+            data.requiredVip   = virtualIP;
+            data.funcIndex     = vipFuncIdx;
+            data.isRequired    = !block->isEmpty() || block->KindIs(BBJ_CALLFINALLY);
+            if (vipFirstInFunc)
             {
-                updateVirtualIPOnFrame(func, block);
+                data.isFuncEntry = true;
+                vipFirstInFunc   = false;
             }
 
             // If this is the end of the region, update its extent.
@@ -3578,6 +3601,98 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         }
 
         func->endVirtualIP = virtualIP;
+        vipFuncIdx++;
+    }
+
+    // Solve the available-Virtual-IP dataflow: a block's incoming value is the meet of its
+    // in-func predecessors' outgoing values (cross-func edges and function entries are unknown).
+    //
+    class VirtualIPMerge
+    {
+        PerBlockData* const m_data;
+        unsigned            m_merge;
+
+        void MeetInto(unsigned value)
+        {
+            if (value == PerBlockData::VIP_UNSET)
+            {
+                return;
+            }
+            if (m_merge == PerBlockData::VIP_UNSET)
+            {
+                m_merge = value;
+            }
+            else if ((m_merge == PerBlockData::VIP_MANY) || (value == PerBlockData::VIP_MANY) || (m_merge != value))
+            {
+                m_merge = PerBlockData::VIP_MANY;
+            }
+        }
+
+    public:
+        VirtualIPMerge(PerBlockData* data)
+            : m_data(data)
+            , m_merge(PerBlockData::VIP_UNSET)
+        {
+        }
+
+        void StartMerge(BasicBlock* block)
+        {
+            m_merge = m_data[block->bbNum].isFuncEntry ? PerBlockData::VIP_MANY : PerBlockData::VIP_UNSET;
+        }
+
+        void Merge(BasicBlock* block, BasicBlock* pred, unsigned dupCount)
+        {
+            const bool crossFunc = m_data[pred->bbNum].funcIndex != m_data[block->bbNum].funcIndex;
+            MeetInto(crossFunc ? PerBlockData::VIP_MANY : m_data[pred->bbNum].availableOut);
+        }
+
+        void MergeHandler(BasicBlock* block, BasicBlock* tryBeg, BasicBlock* tryLast)
+        {
+            // Handler funclets have a fresh frame; nothing is available on entry.
+            //
+            MeetInto(PerBlockData::VIP_MANY);
+        }
+
+        bool EndMerge(BasicBlock* block)
+        {
+            PerBlockData& data = m_data[block->bbNum];
+            data.availableIn   = m_merge;
+            const unsigned out = data.isRequired ? data.requiredVip : m_merge;
+            if (out != data.availableOut)
+            {
+                data.availableOut = out;
+                return true;
+            }
+            return false;
+        }
+    };
+
+    VirtualIPMerge vipMerge(blockData);
+    DataFlow       vipFlow(this);
+    vipFlow.ForwardAnalysis(vipMerge);
+
+    // ForwardAnalysis builds the generic DFS tree; drop it so later wasm phases recompute theirs.
+    fgInvalidateDfsTree();
+
+    // Emit a store only where a required block's value is not already available on every path in.
+    //
+    for (FuncInfoDsc* const func : Funcs())
+    {
+        for (BasicBlock* const block : func->Blocks(this))
+        {
+            const PerBlockData& data = blockData[block->bbNum];
+
+            // A required block reached by the dataflow leaves its required value on the frame.
+            // Unreachable blocks are never visited, so their availableOut keeps its default.
+            //
+            assert(!data.isRequired || (data.availableOut == data.requiredVip) ||
+                   (data.availableOut == PerBlockData::VIP_UNSET));
+
+            if (data.isRequired && (data.availableIn != data.requiredVip))
+            {
+                updateVirtualIPOnFrame(func, block, data.requiredVip);
+            }
+        }
     }
 
 #ifdef DEBUG

@@ -141,6 +141,7 @@ bool             IsApxNddEncodableInstruction(instruction ins) const;
 bool             IsApxNfEncodableInstruction(instruction ins) const;
 bool             IsApxExtendedEvexInstruction(instruction ins) const;
 bool             IsShiftInstruction(instruction ins) const;
+static bool      IsBitTestInstruction(instruction ins);
 bool             IsLegacyMap1(code_t code) const;
 bool             IsSimdVexOrEvexEncodableInstruction(instruction ins) const;
 bool             DoJitUseApxNDD(instruction ins) const;

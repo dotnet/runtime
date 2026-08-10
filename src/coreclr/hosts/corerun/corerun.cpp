@@ -385,6 +385,10 @@ static bool HOST_CONTRACT_CALLTYPE external_assembly_probe(
         std::string full_path = dir;
         assert(full_path.back() == pal::dir_delim);
         full_path.append(name);
+#ifdef TARGET_BROWSER
+        if (BrowserHost_ExternalAssemblyProbe(full_path.c_str(), data_start, size))
+            return true;
+#endif // TARGET_BROWSER
         if (pal::try_map_file_readonly(full_path.c_str(), data_start, size))
             return true;
     }
