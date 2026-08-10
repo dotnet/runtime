@@ -195,6 +195,67 @@ namespace ILAssembler.Tests
             Assert.Equal(1, methodImplCount);
         }
 
+        [Theory]
+        [InlineData(".override method instance int32 [External]IFoo::M(string) with method instance int32 Bar::Impl(string)")]
+        [InlineData(".override [External]IFoo::M with instance int32 Bar::Impl(string)")]
+        public void ClassScopeOverride_EmitsMethodImpl(string overrideDirective)
+        {
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly extern External { }
+                .assembly TestOverride { }
+                .class public auto ansi beforefieldinit Bar extends [mscorlib]System.Object implements [External]IFoo
+                {
+                    {{overrideDirective}}
+                    .method public hidebysig newslot virtual final instance int32 Impl(string value) cil managed
+                    {
+                        ldc.i4.s 42
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var bar = reader.TypeDefinitions
+                .Select(handle => (Handle: handle, Definition: reader.GetTypeDefinition(handle)))
+                .Single(type => reader.GetString(type.Definition.Name) == "Bar");
+            var implementation = reader.GetMethodImplementation(Assert.Single(bar.Definition.GetMethodImplementations()));
+
+            Assert.Equal(HandleKind.MethodDefinition, implementation.MethodBody.Kind);
+            Assert.Equal("Impl", reader.GetString(reader.GetMethodDefinition((MethodDefinitionHandle)implementation.MethodBody).Name));
+            Assert.Equal("M", reader.GetString(reader.GetMemberReference((MemberReferenceHandle)implementation.MethodDeclaration).Name));
+        }
+
+        [Fact]
+        public void ClassScopeShortOverride_EmitsDeclarationMemberRefFirst()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly extern External { }
+                .assembly TestOverride { }
+                .class public auto ansi Bar extends [mscorlib]System.Object
+                {
+                    .override [External]IFoo::M with instance int32 [External]Body::Impl(string)
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var bar = reader.TypeDefinitions
+                .Select(handle => reader.GetTypeDefinition(handle))
+                .Single(type => reader.GetString(type.Name) == "Bar");
+            var implementation = reader.GetMethodImplementation(Assert.Single(bar.GetMethodImplementations()));
+
+            Assert.Equal(HandleKind.MemberReference, implementation.MethodDeclaration.Kind);
+            Assert.Equal(HandleKind.MemberReference, implementation.MethodBody.Kind);
+            Assert.True(
+                MetadataTokens.GetRowNumber((MemberReferenceHandle)implementation.MethodDeclaration)
+                < MetadataTokens.GetRowNumber((MemberReferenceHandle)implementation.MethodBody));
+            Assert.Equal("M", reader.GetString(reader.GetMemberReference((MemberReferenceHandle)implementation.MethodDeclaration).Name));
+            Assert.Equal("Impl", reader.GetString(reader.GetMemberReference((MemberReferenceHandle)implementation.MethodBody).Name));
+        }
+
 
         [Fact]
         public void MultipleOverrides_EmitsAllMethodImpls()
