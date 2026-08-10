@@ -4447,15 +4447,6 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                 GenTree* op2 = intrin.op2;
                 GenTree* op3 = intrin.op3;
 
-                // Handle op1
-                if (op1->IsMaskZero())
-                {
-                    // When we are merging with zero, we can specialize
-                    // and avoid instantiating the vector constant.
-                    MakeSrcContained(node, op1);
-                    LABELEDDISPTREERANGE("Contained false mask op1 in ConditionalSelect", BlockRange(), op1);
-                }
-
                 // Handle op2
                 if (op2->OperIsHWIntrinsic() && !op2->IsEmbMaskOp())
                 {
