@@ -37,6 +37,7 @@ namespace Microsoft.Win32.SafeHandles
         internal static bool DisableFileLocking { get; } = OperatingSystem.IsBrowser() || OperatingSystem.IsWasi()// #40065: Emscripten does not support file locking
             || AppContextConfigHelper.GetBooleanConfig("System.IO.DisableFileLocking", "DOTNET_SYSTEM_IO_DISABLEFILELOCKING", defaultValue: false);
 
+        // not using bool? as it's not thread safe
         private NullableBool _supportsRandomAccess /* = NullableBool.Undefined */;
         private NullableBool _isAsync /* = NullableBool.Undefined */;
         private bool _deleteOnClose;
@@ -79,7 +80,7 @@ namespace Microsoft.Win32.SafeHandles
                 NullableBool supportsRandomAccess = _supportsRandomAccess;
                 if (supportsRandomAccess == NullableBool.Undefined)
                 {
-                    _supportsRandomAccess = supportsRandomAccess = GetCanSeek() ? NullableBool.True : NullableBool.False;
+                    _supportsRandomAccess = supportsRandomAccess = CanSeek ? NullableBool.True : NullableBool.False;
                 }
 
                 return supportsRandomAccess == NullableBool.True;
@@ -541,19 +542,7 @@ namespace Microsoft.Win32.SafeHandles
             }
         }
 
-        private bool GetCanSeek()
-        {
-            Debug.Assert(!IsClosed);
-            Debug.Assert(!IsInvalid);
-
-            NullableBool canSeek = _canSeek;
-            if (canSeek == NullableBool.Undefined)
-            {
-                _canSeek = canSeek = Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0 ? NullableBool.True : NullableBool.False;
-            }
-
-            return canSeek == NullableBool.True;
-        }
+        private bool GetCanSeekCore() => Interop.Sys.LSeek(this, 0, Interop.Sys.SeekWhence.SEEK_CUR) >= 0;
 
         internal FileHandleType GetFileTypeCore()
         {

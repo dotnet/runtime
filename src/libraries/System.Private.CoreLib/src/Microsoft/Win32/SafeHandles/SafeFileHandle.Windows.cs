@@ -327,19 +327,7 @@ namespace Microsoft.Win32.SafeHandles
             return _fileOptions = result;
         }
 
-        private bool GetCanSeek()
-        {
-            Debug.Assert(!IsClosed);
-            Debug.Assert(!IsInvalid);
-
-            NullableBool canSeek = _canSeek;
-            if (canSeek == NullableBool.Undefined)
-            {
-                _canSeek = canSeek = Interop.Kernel32.SetFilePointerEx(this, 0, out _, (uint)SeekOrigin.Current) ? NullableBool.True : NullableBool.False;
-            }
-
-            return canSeek == NullableBool.True;
-        }
+        private bool GetCanSeekCore() => Interop.Kernel32.SetFilePointerEx(this, 0, out _, (uint)SeekOrigin.Current);
 
         internal FileHandleType GetFileTypeCore()
         {

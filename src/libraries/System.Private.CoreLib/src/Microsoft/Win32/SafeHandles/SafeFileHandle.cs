@@ -42,7 +42,24 @@ namespace Microsoft.Win32.SafeHandles
 
         internal string? Path => _path;
 
-        internal bool CanSeek => !IsClosed && GetCanSeek();
+        internal bool CanSeek
+        {
+            get
+            {
+                if (IsClosed)
+                {
+                    return false;
+                }
+
+                NullableBool canSeek = _canSeek;
+                if (canSeek == NullableBool.Undefined)
+                {
+                    _canSeek = canSeek = GetCanSeekCore() ? NullableBool.True : NullableBool.False;
+                }
+
+                return canSeek == NullableBool.True;
+            }
+        }
 
         /// <summary>
         /// Gets the type of the file that this handle represents.
