@@ -86,6 +86,7 @@ StgPool::InitOnMem(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -123,6 +124,7 @@ StgPool::TakeOwnershipOfInitMem()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -805,6 +807,7 @@ StgStringPool::InitOnMem(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END
@@ -1160,6 +1163,7 @@ StgGuidPool::InitOnMem(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -1457,6 +1461,7 @@ StgBlobPool::InitOnMem(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
