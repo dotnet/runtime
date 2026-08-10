@@ -1852,6 +1852,7 @@ CDAC_GLOBAL(RCWInterfaceCacheSize, T_UINT32, INTERFACE_ENTRY_CACHE_SIZE)
 // When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
+// Contract versions for .NET 11 are frozen and must not be changed in any .NET 11 release branch.
 CDAC_GLOBAL_CONTRACT(AuxiliarySymbols, c1)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(BuiltInCOM, c1)
