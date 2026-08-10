@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
@@ -14,6 +15,85 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class StackWalkTests
 {
+    [Fact]
+    public void GenericContextStorage_PreservesRegisterRepresentation()
+    {
+        Assert.Equal(string.Empty, default(GenericContextStorage).RegisterName);
+
+        GenericContextStorage named = new(GenericContextStorageKind.RegisterRelative, "ebp", -4);
+        Assert.Equal("ebp", named.RegisterName);
+        Assert.Equal(0u, named.RegisterNumber);
+
+        GenericContextStorage numbered = new(GenericContextStorageKind.Register, 5u, 0);
+        Assert.Equal(string.Empty, numbered.RegisterName);
+        Assert.Equal(5u, numbered.RegisterNumber);
+    }
+
+    [Theory]
+    [InlineData(0u, false)]
+    [InlineData(0x08000000u, true)]
+    [InlineData(0x08000001u, true)]
+    public void HasFaultedContext_UsesExceptionActiveFlag(uint contextFlags, bool expected)
+    {
+        var context = new Mock<IPlatformAgnosticContext>();
+        context.SetupGet(c => c.RawContextFlags).Returns(contextFlags);
+
+        Assert.Equal(expected, StackWalk_1.HasFaultedContext(context.Object));
+    }
+
+    [Fact]
+    public void GetStackSizeSkipped_ReturnsBytesSkippedByFiltering()
+    {
+        IXCLRDataStackWalk stackWalk = CreateClrDataStackWalk(
+            new TestStackDataFrameHandle(StackWalkState.Frameless, 0x1000),
+            new TestStackDataFrameHandle(StackWalkState.InitialNativeContext, 0x1100),
+            new TestStackDataFrameHandle(StackWalkState.NativeMarker, 0x1200),
+            new TestStackDataFrameHandle(StackWalkState.Frameless, 0x1500));
+
+        ulong stackSizeSkipped = ulong.MaxValue;
+        Assert.Equal(HResults.S_OK, stackWalk.GetStackSizeSkipped(&stackSizeSkipped));
+        Assert.Equal(0ul, stackSizeSkipped);
+
+        Assert.Equal(HResults.S_OK, stackWalk.Next());
+        Assert.Equal(HResults.S_OK, stackWalk.GetStackSizeSkipped(&stackSizeSkipped));
+        Assert.Equal(0x400ul, stackSizeSkipped);
+    }
+
+    private static IXCLRDataStackWalk CreateClrDataStackWalk(params TestStackDataFrameHandle[] frames)
+    {
+        TargetPointer threadAddress = new(0x1000);
+        ThreadData threadData = new()
+        {
+            ThreadAddress = threadAddress,
+        };
+
+        var thread = new Mock<IThread>();
+        thread.Setup(t => t.GetThreadData(threadAddress)).Returns(threadData);
+
+        var stackWalk = new Mock<IStackWalk>();
+        stackWalk.Setup(s => s.CreateStackWalk(threadData)).Returns(frames);
+        stackWalk
+            .Setup(s => s.GetStackPointer(It.IsAny<IStackDataFrameHandle>()))
+            .Returns((IStackDataFrameHandle frame) => ((TestStackDataFrameHandle)frame).StackPointer);
+
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(thread)
+            .AddMockContract(stackWalk)
+            .Build();
+
+        return new ClrDataStackWalk(threadAddress, CLRDataStackWalkFlag.CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE, target, legacyImpl: null);
+    }
+
+    private sealed record TestStackDataFrameHandle(StackWalkState State, ulong StackPointerValue) : IStackDataFrameHandle
+    {
+        public TargetPointer StackPointer => new(StackPointerValue);
+        public bool IsInterrupted => false;
+        public bool HasFaulted => false;
+        public bool IsExceptionFrame => false;
+        public bool IsActiveFrame => false;
+    }
+
     private static TestPlaceholderTarget CreateTarget(
         MockTarget.Architecture arch,
         Action<MockThreadBuilder> configure,
@@ -59,6 +139,8 @@ public unsafe class StackWalkTests
         // consult IRuntimeInfo for the target architecture. Register a mock when the test needs it.
         if (runtimeArchitecture is RuntimeInfoArchitecture rtArch)
         {
+            targetBuilder.AddGlobalStrings((Constants.Globals.Architecture, rtArch.ToString().ToLowerInvariant()));
+
             Mock<IRuntimeInfo> runtimeInfo = new();
             runtimeInfo.Setup(r => r.GetTargetArchitecture()).Returns(rtArch);
             targetBuilder.AddMockContract(runtimeInfo.Object);
@@ -201,9 +283,8 @@ public unsafe class StackWalkTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void IsExceptionHandlingHelperInlinedCallFrame_DetectsMarkedActiveIcf(MockTarget.Architecture arch)
     {
-        // Match enum class InlinedCallFrameMarker in src/coreclr/vm/exceptionhandling.h:
-        // ExceptionHandlingHelper == 2 on 64-bit, 1 on 32-bit. The Mask is the same value.
-        ulong ehMarker = arch.Is64Bit ? 2u : 1u;
+        // Match enum class InlinedCallFrameMarker in src/coreclr/vm/exceptionhandling.h.
+        const ulong ehMarker = 1;
         ulong activeReturnAddr = 0xCAFE_BABE;
 
         ulong ehHelperAddr = 0;
@@ -242,7 +323,7 @@ public unsafe class StackWalkTests
     [ClassData(typeof(MockTarget.StdArch))]
     public void IsExceptionHandlingHelperInlinedCallFrame_ReturnsFalseForInactiveIcf(MockTarget.Architecture arch)
     {
-        ulong ehMarker = arch.Is64Bit ? 2u : 1u;
+        const ulong ehMarker = 1;
 
         ulong inactiveAddr = 0;
         TestPlaceholderTarget target = CreateTarget(
@@ -273,6 +354,27 @@ public unsafe class StackWalkTests
 
         IStackWalk contract = target.Contracts.StackWalk;
         Assert.False(contract.IsExceptionHandlingHelperInlinedCallFrame(new TargetPointer(framedAddr)));
+    }
+
+    [Theory]
+    [InlineData(RuntimeInfoArchitecture.X86, 0ul)]
+    [InlineData(RuntimeInfoArchitecture.Arm, 0x1000ul)]
+    public void GetMethodDescPtr_InlinedCallFrame_UsesX86StackSizeSentinel(RuntimeInfoArchitecture runtimeArchitecture, ulong expectedMethodDesc)
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
+
+        ulong inlinedCallFrameAddr = 0;
+        TestPlaceholderTarget target = CreateTarget(
+            arch,
+            threadBuilder => threadBuilder.AddThread(1, 1234),
+            frameBuilder =>
+            {
+                inlinedCallFrameAddr = frameBuilder.AddInlinedCallFrame(callerReturnAddress: 0xCAFE_BABE, datum: 0x1000).Address;
+            },
+            runtimeArchitecture: runtimeArchitecture);
+
+        IStackWalk contract = target.Contracts.StackWalk;
+        Assert.Equal(expectedMethodDesc, contract.GetMethodDescPtr(new TargetPointer(inlinedCallFrameAddr)).Value);
     }
 
     [Theory]

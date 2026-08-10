@@ -106,6 +106,7 @@
       <EmccExportedFunction Include="stackSave" />
       <EmccExportedFunction Include="___stack_pointer" />
       <EmccExportedFunction Include="___coreclr_wasm_rtlrestorecontext_tag" />
+      <EmccExportedFunction Include="___async_continuation" />
     </ItemGroup>
     <PropertyGroup>
       <_EmccExportedRuntimeMethods>@(EmccExportedRuntimeMethod -> '%(Identity)',',')</_EmccExportedRuntimeMethods>

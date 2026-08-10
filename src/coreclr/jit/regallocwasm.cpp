@@ -431,14 +431,18 @@ void WasmRegAlloc::CollectReferencesForBlock(BasicBlock* block)
 //
 void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 {
+    // Track how many times this funclet will materialize the image base, so we can
+    // decide below whether to cache it in a wasm local.
+    //
+    if (node->IsCnsIntOrI() && node->IsIconHandle() && node->AsIntConCommon()->ImmedValNeedsReloc(m_compiler))
+    {
+        m_perFuncletData[m_currentFunclet]->m_imageBaseUses++;
+    }
+
     switch (node->OperGet())
     {
         case GT_NULLCHECK:
-            if (node->gtGetOp1()->gtLIRFlags & LIR::Flags::MultiplyUsed)
-            {
-                ConsumeTemporaryRegForOperand(node->gtGetOp1()
-                                                  DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
-            }
+            CollectReferencesForNullCheck(node->AsIndir());
             break;
 
         case GT_LCL_VAR:
@@ -653,6 +657,24 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
 }
 
 //------------------------------------------------------------------------
+// CollectReferencesForNullCheck: Collect virtual register references for a null check.
+//
+// Arguments:
+//    node - The GT_NULLCHECK node.
+//
+void WasmRegAlloc::CollectReferencesForNullCheck(GenTreeIndir* node)
+{
+    // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+    //
+    GenTree* const base = node->Base();
+
+    if (base->gtLIRFlags & LIR::Flags::MultiplyUsed)
+    {
+        ConsumeTemporaryRegForOperand(base DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
+    }
+}
+
+//------------------------------------------------------------------------
 // CollectReferencesForIndir: Collect virtual register references for an indirection.
 //
 // Arguments:
@@ -660,8 +682,9 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
 //
 void WasmRegAlloc::CollectReferencesForIndir(GenTreeIndir* node)
 {
-    GenTree* const addr = node->Addr();
-    ConsumeTemporaryRegForOperand(addr DEBUGARG("indirection address"));
+    // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+    //
+    ConsumeTemporaryRegForOperand(node->Base() DEBUGARG("indirection address"));
 
     if (node->OperIs(GT_STOREIND) && node->TypeIs(TYP_SIMD12))
     {
@@ -1089,12 +1112,35 @@ void WasmRegAlloc::ResolveReferences()
                 unreached();
         }
 
+        // Decide up front whether to cache the image base in a wasm local, so the local can be
+        // declared as part of an existing group rather than one of its own.
+        //
+        // Each use costs 6 bytes as a `global.get` (the global index is a padded relocation) and
+        // 2 bytes as a `local.get`, against 8 bytes to initialize the local in the prolog. So
+        // three uses is the first count that wins.
+        //
+        PhysicalRegBank& imageBaseBank  = virtToPhysRegMap[static_cast<unsigned>(TypeToWasmValueType(TYP_I_IMPL))];
+        const bool       cacheImageBase = data->m_imageBaseUses >= 3;
+
+        if (cacheImageBase)
+        {
+            imageBaseBank.DeclaredCount++;
+        }
+
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
             PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
             physRegs.IndexBase        = indexBase;
             physRegs.Index            = indexBase;
             indexBase += physRegs.DeclaredCount;
+        }
+
+        // Reserve the last slot of the bank for the image base. The allocator below only ever
+        // hands out the slots the virtual registers need, so it never reaches this one.
+        //
+        if (cacheImageBase)
+        {
+            funcInfo->funWasmImageBaseLocalIndex = imageBaseBank.IndexBase + imageBaseBank.DeclaredCount - 1;
         }
 
         // Allocate all our virtual registers to physical ones.

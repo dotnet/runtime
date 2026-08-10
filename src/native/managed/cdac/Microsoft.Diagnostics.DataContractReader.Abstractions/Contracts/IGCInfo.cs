@@ -71,6 +71,43 @@ public readonly record struct InterruptibleRange(uint StartOffset, uint EndOffse
 /// <param name="GcFlags">GC slot flags: 0x1 = interior pointer, 0x2 = pinned.</param>
 public readonly record struct LiveSlot(bool IsRegister, uint RegisterNumber, int SpOffset, uint SpBase, uint GcFlags);
 
+public enum GenericContextStorageKind
+{
+    Register,
+    StackPointerRelative,
+    RegisterRelative,
+    InterpreterArgumentRelative,
+}
+
+public readonly record struct GenericContextStorage
+{
+    private readonly string? _registerName;
+
+    public GenericContextStorage(GenericContextStorageKind kind, uint registerNumber, int offset)
+    {
+        Kind = kind;
+        _registerName = null;
+        RegisterNumber = registerNumber;
+        Offset = offset;
+    }
+
+    public GenericContextStorage(GenericContextStorageKind kind, string registerName, int offset)
+    {
+        Kind = kind;
+        _registerName = registerName;
+        RegisterNumber = 0;
+        Offset = offset;
+    }
+
+    public GenericContextStorageKind Kind { get; }
+
+    public string RegisterName => _registerName ?? string.Empty;
+
+    public uint RegisterNumber { get; }
+
+    public int Offset { get; }
+}
+
 /// <summary>
 /// Options controlling which GC slots are reported by <see cref="IGCInfo.EnumerateLiveSlots"/>.
 /// </summary>
@@ -106,6 +143,8 @@ public interface IGCInfo : IContract
 
     IReadOnlyList<LiveSlot> EnumerateLiveSlots(IGCInfoHandle handle, uint instructionOffset, GcSlotEnumerationOptions options) => throw new NotImplementedException();
     bool IsGcSafe(IGCInfoHandle handle, uint instructionOffset) => throw new NotImplementedException();
+    bool TryGetGenericContextStorage(IGCInfoHandle handle, GenericContextLoc contextKind, uint instructionOffset, out GenericContextStorage storage) => throw new NotImplementedException();
+    TargetPointer GetAmbientSP(IGCInfoHandle handle, uint codeOffset, TargetPointer fp, TargetPointer sp) => throw new NotImplementedException();
 }
 
 public readonly struct GCInfo : IGCInfo

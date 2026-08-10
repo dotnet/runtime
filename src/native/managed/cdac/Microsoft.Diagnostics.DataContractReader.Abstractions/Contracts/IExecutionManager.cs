@@ -58,7 +58,9 @@ public enum CodeKind : uint
     Jitted = 11,
     ReadyToRun = 12,
     Interpreter = 13,
-    ThePreStub = 14
+    ThePreStub = 14,
+    WrapperStub = 15,
+    ShuffleThunk = 16
 }
 
 public interface ICodeHeapInfo
@@ -114,6 +116,7 @@ public interface IExecutionManager : IContract
     uint GetStackParameterSize(CodeBlockHandle codeInfoHandle) => throw new NotImplementedException();
     JitManagerInfo GetEEJitManagerInfo() => throw new NotImplementedException();
     IEnumerable<ICodeHeapInfo> GetCodeHeapInfos() => throw new NotImplementedException();
+    IReadOnlyList<TargetPointer> GetDynamicFunctionTableEntries(TargetPointer tableAddress) => throw new NotImplementedException();
     // Classify a code address as a known stub kind (precode, jump stub, VSD stub, etc.)
     // or as managed code. Returns Unknown if the address is not recognized.
     CodeKind GetCodeKind(TargetCodePointer codeAddress) => throw new NotImplementedException();

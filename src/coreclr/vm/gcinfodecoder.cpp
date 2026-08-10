@@ -2152,9 +2152,9 @@ template <> OBJECTREF* TGcInfoDecoder<InterpreterGcInfoEncoding>::GetStackSlot(
         _ASSERTE(fp);
         pObjRef = (OBJECTREF*)(fp + spOffset);
     }
-    InterpMethodContextFrame* pFrame = (InterpMethodContextFrame*)GetSP(pRD->pCurrentContext);
+    PTR_InterpMethodContextFrame pFrame = dac_cast<PTR_InterpMethodContextFrame>(GetSP(pRD->pCurrentContext));
     _ASSERTE(pFrame->pStack == (int8_t *)GetFP(pRD->pCurrentContext));
-    InterpMethodContextFrame* pFrameCallee = pFrame->pNext;
+    PTR_InterpMethodContextFrame pFrameCallee = pFrame->pNext;
 
     // If the stack slot is in a callee's frame, then we do not actually need to report it. This should ONLY happen if the
     // stack slot is in the argument area of the caller. As a double check, we validate in the caller of this function that

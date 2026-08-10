@@ -249,8 +249,6 @@ public:
 
     PTR_LoaderHeap GetLowFrequencyHeap();
     PTR_LoaderHeap GetHighFrequencyHeap();
-    PTR_LoaderHeap GetStubHeap();
-
     PTR_Module GetModule()
     {
         LIMITED_METHOD_CONTRACT;

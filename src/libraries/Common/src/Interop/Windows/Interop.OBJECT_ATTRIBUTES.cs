@@ -25,6 +25,7 @@ internal static partial class Interop
         /// Name of the object. Must be fully qualified if RootDirectory isn't set.
         /// Otherwise is relative to RootDirectory.
         /// </summary>
+        /// <safety>Stores or loads a pointer to a native UNICODE_STRING; the field access never dereferences the pointed-to memory.</safety>
         public UNICODE_STRING* ObjectName;
 
         public ObjectAttributes Attributes;
@@ -32,17 +33,20 @@ internal static partial class Interop
         /// <summary>
         /// If null, object will receive default security settings.
         /// </summary>
+        /// <safety>Stores or loads an opaque native pointer; the field access never dereferences the pointed-to memory.</safety>
         public void* SecurityDescriptor;
 
         /// <summary>
         /// Optional quality of service to be applied to the object. Used to indicate
         /// security impersonation level and context tracking mode (dynamic or static).
         /// </summary>
+        /// <safety>Stores or loads a pointer to a native SECURITY_QUALITY_OF_SERVICE; the field access never dereferences the pointed-to memory.</safety>
         public SECURITY_QUALITY_OF_SERVICE* SecurityQualityOfService;
 
         /// <summary>
         /// Equivalent of InitializeObjectAttributes macro with the exception that you can directly set SQOS.
         /// </summary>
+        /// <safety>Only stores the supplied pointers into fields and records the struct size via sizeof; it never dereferences any pointer.</safety>
         public OBJECT_ATTRIBUTES(UNICODE_STRING* objectName, ObjectAttributes attributes, IntPtr rootDirectory, SECURITY_QUALITY_OF_SERVICE* securityQualityOfService = null)
         {
             Length = (uint)sizeof(OBJECT_ATTRIBUTES);

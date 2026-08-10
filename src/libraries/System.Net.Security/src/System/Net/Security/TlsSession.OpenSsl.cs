@@ -229,7 +229,7 @@ namespace System.Net.Security
                 result = TlsOperationStatus.Complete;
                 return;
             }
-            result = MapSslError(err, SR.net_ssl_handshake_failed_error);
+            result = MapSslError(err, ret, SR.net_ssl_handshake_failed_error);
         }
 
         partial void TryFastRead(Span<byte> buffer, ref int bytesRead, ref TlsOperationStatus? result)
@@ -253,7 +253,7 @@ namespace System.Net.Security
                 result = TlsOperationStatus.Complete;
                 return;
             }
-            result = MapSslError(err, SR.net_ssl_decrypt_failed);
+            result = MapSslError(err, ret, SR.net_ssl_decrypt_failed);
         }
 
         partial void TryFastWrite(ReadOnlySpan<byte> buffer, ref int bytesWritten, ref TlsOperationStatus? result)
@@ -277,7 +277,7 @@ namespace System.Net.Security
                 result = TlsOperationStatus.Complete;
                 return;
             }
-            result = MapSslError(err, SR.net_ssl_encrypt_failed);
+            result = MapSslError(err, ret, SR.net_ssl_encrypt_failed);
         }
 
         private SafeSslHandle EnsureFdSslHandle()
@@ -293,19 +293,29 @@ namespace System.Net.Security
 
         // Translates a non-progress SslErrorCode into either a status the caller
         // can act on (NeedMoreData / DestinationTooSmall / Closed) or, for a real
-        // failure, an AuthenticationException whose inner SslException carries the
-        // OpenSSL error-queue reason (formatted via SR-backed template). The template
-        // is picked per operation so exceptions surface consistently with SslStream's
-        // OpenSSL error handling.
-        private static TlsOperationStatus MapSslError(Interop.Ssl.SslErrorCode error, string sslErrorTemplate)
+        // failure, an AuthenticationException whose inner SslException names the
+        // SslErrorCode and carries the most specific diagnostic available as its own
+        // inner exception. The template is picked per operation so exceptions surface
+        // consistently with SslStream's OpenSSL error handling.
+        //
+        // 'result' is the raw SSL_* return value; it is required to tell a protocol
+        // violating EOF (0) from an I/O error (-1) when the code is SSL_ERROR_SYSCALL.
+        private static TlsOperationStatus MapSslError(Interop.Ssl.SslErrorCode error, int result, string sslErrorTemplate)
         {
             return error switch
             {
                 Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_READ => TlsOperationStatus.NeedMoreData,
                 Interop.Ssl.SslErrorCode.SSL_ERROR_WANT_WRITE => TlsOperationStatus.DestinationTooSmall,
                 Interop.Ssl.SslErrorCode.SSL_ERROR_ZERO_RETURN => TlsOperationStatus.Closed,
-                _ => throw new AuthenticationException(SR.net_auth_SSPI, Interop.OpenSsl.CreateSslException(sslErrorTemplate)),
+                _ => throw new AuthenticationException(SR.net_auth_SSPI, CreateDiagnosticSslException(error, result, sslErrorTemplate)),
             };
+        }
+
+        private static Interop.OpenSsl.SslException CreateDiagnosticSslException(Interop.Ssl.SslErrorCode error, int result, string sslErrorTemplate)
+        {
+            Exception? detail = Interop.OpenSsl.GetSslError(result, error);
+            Interop.Crypto.ErrClearError();
+            return new Interop.OpenSsl.SslException(SR.Format(sslErrorTemplate, error), detail);
         }
     }
 }
