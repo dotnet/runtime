@@ -77,7 +77,7 @@ public:
     // eventually it should just be pure legality and
     // the derived classes handle the profitability.
     //
-    bool CanConsiderTree(GenTree* tree, bool isReturn, bool skipCostChecks = false);
+    bool CanConsiderTree(GenTree* tree, bool isReturn);
 
     virtual bool ConsiderTree(GenTree* tree, bool isReturn)
     {
