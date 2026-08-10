@@ -929,6 +929,7 @@ namespace System.Runtime.CompilerServices
 #pragma warning restore CA1822
 
             [StackTraceHidden]
+            // Diagnostic tooling depends on this name when classifying async callstack frames.
             // NOTE, any changes done to this method need to be replicated in InstrumentedDispatchContinuations as well.
             private unsafe void DispatchContinuations()
             {
@@ -1057,6 +1058,7 @@ namespace System.Runtime.CompilerServices
             }
 
             [StackTraceHidden]
+            // Diagnostic tooling depends on this name when classifying async callstack frames.
             private unsafe void InstrumentedDispatchContinuations(AsyncInstrumentation.Flags flags)
             {
                 // Intentionally skip initialization for this state; the Push

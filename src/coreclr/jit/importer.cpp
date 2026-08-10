@@ -2788,6 +2788,11 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 // Returns:
 //    The Vector128.CreateScalar node that contains op1
 //
+// Notes:
+//    This may append a temp store, which spills the import stack. Callers with multiple
+//    operands must therefore materialize the last operand first and leave the preceding
+//    ones on the import stack until then, so that IL evaluation order is preserved.
+//
 GenTree* Compiler::impSimdCreateScalarHalf(GenTree* op1)
 {
     unsigned op1Tmp;
