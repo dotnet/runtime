@@ -85,6 +85,12 @@
       - $(WasmAllowUndefinedSymbols)        - Controls whether undefined symbols are allowed or not,
                                               if true, appends 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=0' as arguments for wasm-ld,
                                               if false (default), removes 'allow-undefined' and sets 'ERROR_ON_UNDEFINED_SYMBOLS=1'.
+      - $(WasmRuntimeAssetsLocation)        - Allows to override a location for build generated files.
+                                              Defaults to '_framework', if you want to put framework files in the same directory as user files, use './' value.
+                                              Output structure
+                                              - AppBundle directly contains user files
+                                              - AppBundle/_framework contains generated files (dlls, runtime scripts, icu)
+                                              - AppBundle/_content contains web files from nuget packages (css, js, etc)
       - $(WasmStripILAfterAOT)              - Set to true to enable trimming away AOT compiled methods body (IL code)
                                               Defaults to true.
       - $(WasmEmitTypeScriptDefinitions)    - Controls whether TypeScript definitions (dotnet.d.ts) should be copied to the project's `wwwroot`. 
@@ -185,6 +191,7 @@
     <WasmStripAOTAssemblies>false</WasmStripAOTAssemblies>
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmStripILAfterAOT Condition="'$(WasmStripILAfterAOT)' == ''">true</WasmStripILAfterAOT>
+    <WasmRuntimeAssetsLocation Condition="'$(WasmRuntimeAssetsLocation)' == ''">_framework</WasmRuntimeAssetsLocation>
     <MetricsSupport Condition="'$(MetricsSupport)' == ''">false</MetricsSupport>
 
     <!-- semicolon is a msbuild property separator. It is also the path separator on windows.
