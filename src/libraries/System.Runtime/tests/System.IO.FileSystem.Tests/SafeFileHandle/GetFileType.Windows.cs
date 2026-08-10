@@ -70,7 +70,7 @@ namespace System.IO.Tests
                 openMode |= Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED;
             }
 
-            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = Interop.Kernel32.SECURITY_ATTRIBUTES.Create();
             using SafeFileHandle handle = Interop.Kernel32.CreateNamedPipeFileHandle(
                 $@"\\.\pipe\{Guid.NewGuid():N}",
                 openMode,
