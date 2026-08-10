@@ -2,15 +2,28 @@
   <PropertyGroup>
     <Optimize>True</Optimize>
     <HasMergedInTests>true</HasMergedInTests>
+    <_UseOutOfProcessPhysicalPromotionTests Condition="'$(TargetsMobile)' != 'true' or ('$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'coreclr')">true</_UseOutOfProcessPhysicalPromotionTests>
   </PropertyGroup>
   <ItemGroup>
     <MergedWrapperProjectReference Include="aliasing_retbuf\aliasing_retbuf.csproj" />
     <MergedWrapperProjectReference Include="Convert\out_of_range_fp_to_int_conversions.csproj" />
     <MergedWrapperProjectReference Include="LoopAlignment\LoopsToProcess.csproj" />
+    <MergedWrapperProjectReference Include="physicalpromotion\addressinterference.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn1.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\fuzzlyn2.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\mixedpromotion.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\physicalpromotion.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
+    <MergedWrapperProjectReference Include="physicalpromotion\readbackbeforeqmark.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <ProjectReference Include="PREFIX\PrimitiveVT\helper.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="gettypetypeof\gettypetypeofmatrix.cs" />
+    <Compile Include="physicalpromotion\addressinterference.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="physicalpromotion\fuzzlyn1.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="physicalpromotion\fuzzlyn2.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="physicalpromotion\mixedpromotion.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="physicalpromotion\physicalpromotion.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
+    <Compile Include="physicalpromotion\readbackbeforeqmark.cs" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' != 'true'" />
     <Compile Include="PREFIX\PrimitiveVT\callconv1.cs" />
     <Compile Include="PREFIX\PrimitiveVT\callconv2.cs" />
     <Compile Include="shift\int16.cs" />
