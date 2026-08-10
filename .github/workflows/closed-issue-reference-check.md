@@ -154,8 +154,6 @@ steps:
       # before safe-outputs.data was available, require both this workflow's framework
       # provenance and the advisory heading. Return 2 on a REST failure so the run
       # aborts rather than treating the error as "no advice" and posting a duplicate.
-      data_workflow='"workflow_artifact": "closed-issue-reference-check"'
-      data_kind='"artifact_kind": "advice"'
       legacy_call_id='gh-aw-workflow-call-id: dotnet/runtime/closed-issue-reference-check'
       legacy_workflow_id='gh-aw-workflow-id: closed-issue-reference-check'
       legacy_agentic_id='workflow_id: closed-issue-reference-check'
@@ -164,14 +162,24 @@ steps:
         local num="$1" pages
         pages="$(gh api --paginate --slurp "repos/${REPO}/issues/${num}/comments?per_page=100" 2>/dev/null)" || return 2
         jq -e \
-          --arg data_workflow "$data_workflow" \
-          --arg data_kind "$data_kind" \
+          --argjson target_issue "$num" \
           --arg legacy_call_id "$legacy_call_id" \
           --arg legacy_workflow_id "$legacy_workflow_id" \
           --arg legacy_agentic_id "$legacy_agentic_id" \
           --arg legacy_advice "$legacy_advice" '
+            def has_structured_advice($body):
+              any(
+                ($body
+                  | split("Structured data:")[1:][]
+                  | split("```json")[1:][]
+                  | split("```")[0]
+                  | fromjson?);
+                .workflow_artifact == "closed-issue-reference-check"
+                  and .artifact_kind == "advice"
+                  and .target_issue == $target_issue
+              );
             any(.[][]; (.body // "") as $body
-              | (($body | contains($data_workflow)) and ($body | contains($data_kind)))
+              | has_structured_advice($body)
                 or
                 ((($body | contains($legacy_call_id))
                   or ($body | contains($legacy_workflow_id))
