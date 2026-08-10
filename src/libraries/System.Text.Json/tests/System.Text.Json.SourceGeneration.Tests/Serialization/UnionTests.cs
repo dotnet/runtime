@@ -51,6 +51,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(CustomDiscriminatedFlora))]
         [JsonSerializable(typeof(NullableEnumUnion))]
         [JsonSerializable(typeof(RecursiveNat))]
+        [JsonSerializable(typeof(RecursiveNatReversed))]
         [JsonSerializable(typeof(SelfReferentialUnion))]
         internal sealed partial class UnionTestsContext_Metadata : JsonSerializerContext
         {
@@ -110,6 +111,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(CustomDiscriminatedFlora))]
         [JsonSerializable(typeof(NullableEnumUnion))]
         [JsonSerializable(typeof(RecursiveNat))]
+        [JsonSerializable(typeof(RecursiveNatReversed))]
         [JsonSerializable(typeof(SelfReferentialUnion))]
         internal sealed partial class UnionTestsContext_Default : JsonSerializerContext
         {

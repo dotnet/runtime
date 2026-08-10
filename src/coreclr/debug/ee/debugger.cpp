@@ -829,7 +829,6 @@ Debugger::Debugger()
     m_sendExceptionsOutsideOfJMC(TRUE),
     m_forceNonInterceptable(FALSE),
     m_pLazyData(NULL),
-    m_defines(_defines),
     m_isSuspendedForGarbageCollection(FALSE),
     m_isBlockedOnGarbageCollectionEvent(FALSE),
     m_willBlockOnGarbageCollectionEvent(FALSE),
@@ -856,14 +855,6 @@ Debugger::Debugger()
     m_pForceCatchHandlerFoundEventsTable = new ForceCatchHandlerFoundTable();
     m_pCustomNotificationTable = new CustomNotificationTable();
 
-    //------------------------------------------------------------------------------
-    // Metadata data structure version numbers
-    //
-    // 1 - initial state of the layouts ( .NET Framework 4.5.2 )
-    //
-    // as data structure layouts change, add a new version number
-    // and comment the changes
-    m_mdDataStructureVersion = 1;
     m_fOutOfProcessSetContextEnabled =
 #if defined(OUT_OF_PROCESS_SETTHREADCONTEXT) && !defined(DACCESS_COMPILE)
         Thread::AreShadowStacksEnabled() || CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_OutOfProcessSetContext) != 0;
@@ -3026,7 +3017,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
         (void)pModule; //prevent "unused variable" error from GCC
         _ASSERTE(pModule != NULL);
 
-        ComHolderPreemp<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
+        ReleaseHolder<ISymUnmanagedReader> pReader(pModule->GetISymUnmanagedReader());
 
         // If we got a reader, use it.
         if (pReader != NULL)
@@ -8842,6 +8833,14 @@ void Debugger::ThreadStarted(Thread* pRuntimeThread)
     if (CORDBUnrecoverableError(this))
         return;
 
+    if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
+    {
+        LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach already sent, skipping : ID=%#x\n",
+             GetThreadIdHelper(pRuntimeThread)));
+        return;
+    }
+    pRuntimeThread->SetThreadStateNC(Thread::TSNC_DebuggerThreadStartSent);
+
     LOG((LF_CORDB, LL_INFO100, "D::TS: thread attach : ID=%#x AD:%#x\n",
          GetThreadIdHelper(pRuntimeThread), AppDomain::GetCurrentDomain()));
 
@@ -8888,6 +8887,9 @@ void Debugger::SendCreateThreadAtInterpreterEntry(Thread *pRuntimeThread)
         return;
 
     if (!CORDebuggerAttached())
+        return;
+
+    if (pRuntimeThread->HasThreadStateNC(Thread::TSNC_DebuggerThreadStartSent))
         return;
 
     {

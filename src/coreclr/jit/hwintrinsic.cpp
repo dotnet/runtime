@@ -2769,7 +2769,23 @@ GenTree* Compiler::impHWIntrinsic(NamedIntrinsic        intrinsic,
 
     if (setMethodHandle && (retNode != nullptr))
     {
-        retNode->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
+        GenTree* userCall = retNode;
+
+#if defined(TARGET_XARCH)
+        if (userCall->OperIsConvertMaskToVector())
+        {
+            // A mask-producing intrinsic was wrapped in a mask-to-vector conversion, but the user call
+            // replaces the inner node, so attach the handle there to keep its operands. ConvertMaskToVector
+            // is always unary, so its sole operand is the mask node being tagged.
+            GenTreeHWIntrinsic* cvtMaskToVector = userCall->AsHWIntrinsic();
+            assert(cvtMaskToVector->GetOperandCount() == 1);
+
+            userCall = cvtMaskToVector->Op(1);
+            assert(userCall->TypeIs(TYP_MASK));
+        }
+#endif // TARGET_XARCH
+
+        userCall->AsHWIntrinsic()->SetMethodHandle(this, method R2RARG(*entryPoint));
     }
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS) && defined(TARGET_ARM64)
@@ -4064,6 +4080,26 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
         {
             assert(sig->numArgs == 2);
 
+#if defined(TARGET_WASM)
+            {
+                // An out-of-range constant lane index cannot be encoded by extract_lane, so
+                // fall back to the throwing software implementation. A non-constant index is
+                // handled by the jump-table expansion during lowering.
+                GenTree* indexOp = impStackTop(0).val;
+
+                if (indexOp->OperIsConst())
+                {
+                    ssize_t imm8  = indexOp->AsIntCon()->IconValue();
+                    ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+                    if ((imm8 < 0) || (imm8 >= count))
+                    {
+                        return nullptr;
+                    }
+                }
+            }
+#endif // TARGET_WASM
+
             op2 = impPopStack().val;
             op1 = impSIMDPopStack();
 
@@ -5264,6 +5300,24 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
                 {
                     // Using software fallback if index is out of range (throw exception)
                     return nullptr;
+                }
+            }
+#elif defined(TARGET_WASM)
+            {
+                // An out-of-range constant lane index cannot be encoded by replace_lane, so
+                // fall back to the throwing software implementation. A non-constant index is
+                // handled by the jump-table expansion during lowering.
+                GenTree* indexOp = impStackTop(1).val;
+
+                if (indexOp->OperIsConst())
+                {
+                    ssize_t imm8  = indexOp->AsIntCon()->IconValue();
+                    ssize_t count = simdSize / genTypeSize(simdBaseType);
+
+                    if ((imm8 < 0) || (imm8 >= count))
+                    {
+                        return nullptr;
+                    }
                 }
             }
 #endif

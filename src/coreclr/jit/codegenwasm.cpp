@@ -301,7 +301,11 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         // Skip homing parameters that are dead at method entry (not live into the first block).
-        if (varDsc->lvTracked && !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
+        // Exception: on wasm all on-frame GC locals are reported to the GC stack walk as untracked
+        // (i.e. live for the whole method), so a GC parameter's frame slot must still be homed
+        if (varDsc->lvTracked &&
+            !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
+            !(varDsc->lvOnFrame && varDsc->HasGCPtr()))
         {
             return;
         }
@@ -1253,8 +1257,7 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
                 emit->emitIns_I(INS_f64_const, EA_8BYTE, 0);
                 break;
             default:
-                NYI_WASM("genReturnSuspend: unhandled return type");
-                break;
+                unreached();
         }
     }
 }
@@ -1714,9 +1717,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForBinary");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
@@ -2144,9 +2145,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             break;
 
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForShift");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
@@ -3303,10 +3302,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
-
         default:
             JITDUMP("Helper '%s' has no hard-coded signature\n", m_compiler->eeGetMethodFullName(params.methHnd));
-            NYI_WASM("Missing signature for helper in genEmitHelperCall");
             unreached();
     }
 

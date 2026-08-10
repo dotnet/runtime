@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "jitpch.h"
+#include "async.h"
 
 //------------------------------------------------------------------------
 // impGetInstParamArg: compute the hidden instantiation / generic-context argument
@@ -125,6 +126,114 @@ GenTree* Compiler::impGetInstParamArg(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     }
 
     return instParam;
+}
+
+//------------------------------------------------------------------------
+// impTryOptimizeAwaitAwaiter:
+//   Rewrite a struct AwaitAwaiter or UnsafeAwaitAwaiter call to use the
+//   corresponding helper that reads the awaiter from the continuation.
+//
+// Arguments:
+//   call            - The call to the awaiter helper
+//   pResolvedToken  - Resolved token of the call
+//   callInfo        - EE supplied info for the call; updated on success
+//   methHnd         - [in, out] Method handle of the call; updated on success
+//   exactContextHnd - [in, out] Exact context of the call; updated on success
+//   instParam       - [in, out] Instantiation argument of the call; updated on success
+//   ni              - Named intrinsic of the call, used to determine whether
+//                     this is the unsafe variant
+//
+void Compiler::impTryOptimizeAwaitAwaiter(GenTreeCall*            call,
+                                          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+                                          CORINFO_CALL_INFO*      callInfo,
+                                          CORINFO_METHOD_HANDLE*  methHnd,
+                                          CORINFO_CONTEXT_HANDLE* exactContextHnd,
+                                          GenTree**               instParam,
+                                          NamedIntrinsic          ni)
+{
+    CallArg* awaiterArg = call->gtArgs.GetUserArgByIndex(0);
+    if (!varTypeIsStruct(awaiterArg->GetSignatureType()))
+    {
+        return;
+    }
+
+    if (info.compCompHnd->isIntrinsicType(awaiterArg->GetSignatureClassHandle()))
+    {
+        // Note: no namespace check here. YieldAwaiter is a nested type, and
+        // some hosts report an empty namespace for those. Being an intrinsic
+        // type is enough to know this is the well known type from CoreLib.
+        const char* className =
+            info.compCompHnd->getClassNameFromMetadata(awaiterArg->GetSignatureClassHandle(), nullptr);
+        if (strcmp(className, "YieldAwaiter") == 0)
+        {
+            // YieldAwaiter is specially recognized by
+            // AsyncHelpers.UnsafeAwaitAwaiter and accomplishes more than just
+            // avoiding a box.
+            JITDUMP("Skipping custom awaiter optimization for YieldAwaiter\n");
+            return;
+        }
+    }
+
+    JITDUMP("Optimizing awaiter call [%06u] to read its struct awaiter from the continuation\n", dspTreeID(call));
+
+    CORINFO_LOOKUP         newInstArgLookup;
+    bool                   isUnsafe = ni == NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter;
+    CORINFO_CONTEXT_HANDLE newExactContextHnd;
+    CORINFO_METHOD_HANDLE  newMethod =
+        info.compCompHnd->getAwaitAwaiterInContinuationCall(info.compMethodHnd, pResolvedToken, isUnsafe,
+                                                            &newExactContextHnd, &newInstArgLookup);
+
+    if (newMethod == NO_METHOD_HANDLE)
+    {
+        JITDUMP("EE returned no method to call; bailing on optimization\n");
+        return;
+    }
+
+    CORINFO_SIG_INFO newSig;
+    info.compCompHnd->getMethodSig(newMethod, &newSig);
+
+    GenTree* newInstParam = nullptr;
+    if (newSig.hasTypeArg())
+    {
+        newInstParam = impLookupToTree(&newInstArgLookup, GTF_ICON_METHOD_HDL, newMethod);
+        if (newInstParam == nullptr)
+        {
+            JITDUMP("Failed to optimize awaiter call [%06u] because its replacement lookup could not be created\n",
+                    dspTreeID(call));
+            return;
+        }
+    }
+
+#ifdef FEATURE_READYTORUN
+    if (IsAot())
+    {
+        // The entry point was computed for the original method, so recompute it
+        // for the replacement.
+        CORINFO_CONST_LOOKUP newEntryPoint;
+        info.compCompHnd->getFunctionEntryPoint(newMethod, &newEntryPoint);
+        call->setEntryPoint(newEntryPoint);
+    }
+#endif
+
+    *methHnd              = newMethod;
+    *exactContextHnd      = newExactContextHnd;
+    call->gtCallMethHnd   = newMethod;
+    callInfo->hMethod     = newMethod;
+    callInfo->methodFlags = info.compCompHnd->getMethodAttribs(newMethod);
+    callInfo->sig         = newSig;
+    *instParam            = newInstParam;
+
+    GenTree*     awaiter       = awaiterArg->GetNode();
+    var_types    awaiterType   = awaiterArg->GetSignatureType();
+    ClassLayout* awaiterLayout = awaiterArg->GetSignatureLayout();
+    call->gtArgs.Remove(awaiterArg);
+    call->gtArgs
+        .PushFront(this, NewCallArg::Struct(awaiter, awaiterType, awaiterLayout).WellKnown(WellKnownArg::AsyncAwaiter));
+
+    size_t   memberIndex = GetContinuationMemberIndex(ContinuationMember::CustomAwaiterOfLayout(awaiterLayout));
+    GenTree* offset =
+        new (this, GT_CONTINUATION_MEMBER_OFFSET) GenTreeVal(GT_CONTINUATION_MEMBER_OFFSET, TYP_INT, memberIndex);
+    call->gtArgs.PushBack(this, NewCallArg::Primitive(offset));
 }
 
 //------------------------------------------------------------------------
@@ -951,6 +1060,13 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     }
 
     impPopCallArgs(sig, call->AsCall());
+
+    if (opts.OptimizationEnabled() && ((ni == NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter) ||
+                                       (ni == NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter)))
+    {
+        impTryOptimizeAwaitAwaiter(call->AsCall(), pResolvedToken, callInfo, &methHnd, &exactContextHnd, &instParam,
+                                   ni);
+    }
 
     // Extra args
     if ((instParam != nullptr) || (asyncContinuation != nullptr) || (varArgsCookie != nullptr))
@@ -7467,11 +7583,15 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
         return;
     }
 
-    GenTreeCall* inlCall = impInlineInfo->iciCall;
-    CallArg*     execArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
-    CallArg*     syncArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    GenTreeCall* inlCall       = impInlineInfo->iciCall;
+    CallArg*     resumedUseArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
+    CallArg*     resumedDefArg = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
+    CallArg*     execArg       = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
+    CallArg*     syncArg       = inlCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncSynchronizationContext);
+    assert((resumedUseArg == nullptr) == (resumedDefArg == nullptr));
+    assert((resumedDefArg == nullptr) == (execArg == nullptr));
     assert((execArg == nullptr) == (syncArg == nullptr));
-    if ((execArg == nullptr) || (syncArg == nullptr))
+    if (resumedUseArg == nullptr)
     {
         // Caller also has no async contexts handling
         return;
@@ -7483,14 +7603,20 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
     // caller's context here. It means we do not need to worry about switching
     // into the caller's context when the inlinee is returning to the caller
     // after the await.
-    assert(execArg->GetNode()->OperIs(GT_LCL_VAR) && syncArg->GetNode()->OperIs(GT_LCL_VAR));
-    JITDUMP("Inheriting contexts [%06u] and [%06u] from caller node\n", dspTreeID(execArg->GetNode()),
+    assert(resumedUseArg->GetNode()->OperIs(GT_LCL_VAR) && resumedDefArg->GetNode()->OperIs(GT_LCL_ADDR) &&
+           execArg->GetNode()->OperIs(GT_LCL_VAR) && syncArg->GetNode()->OperIs(GT_LCL_VAR));
+    JITDUMP("Inheriting resumed use [%06u], resumed def [%06u], and contexts [%06u] and [%06u] from caller node\n",
+            dspTreeID(resumedUseArg->GetNode()), dspTreeID(resumedDefArg->GetNode()), dspTreeID(execArg->GetNode()),
             dspTreeID(syncArg->GetNode()));
 
-    GenTree* execNode = gtCloneExpr(execArg->GetNode());
-    GenTree* syncNode = gtCloneExpr(syncArg->GetNode());
+    GenTree* resumedUseNode = gtCloneExpr(resumedUseArg->GetNode());
+    GenTree* resumedDefNode = gtCloneExpr(resumedDefArg->GetNode());
+    GenTree* execNode       = gtCloneExpr(execArg->GetNode());
+    GenTree* syncNode       = gtCloneExpr(syncArg->GetNode());
     call->gtArgs.PushFront(this, NewCallArg::Primitive(syncNode).WellKnown(WellKnownArg::AsyncSynchronizationContext));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedUseNode).WellKnown(WellKnownArg::AsyncResumedUse));
 }
 
 //------------------------------------------------------------------------
@@ -12680,28 +12806,10 @@ GenTree* Compiler::impArrayAccessIntrinsic(
 
     unsigned arrayElemSize = (elemType == TYP_STRUCT) ? elemLayout->GetSize() : genTypeSize(elemType);
 
-    if (!FitsIn<unsigned char>(arrayElemSize))
-    {
-        // arrayElemSize would be truncated as an unsigned char.
-        // This means the array element is too large. Don't do the optimization.
-        JITDUMP("impArrayAccessIntrinsic: rejecting array intrinsic because arrayElemSize (%d) is too large\n",
-                arrayElemSize);
-        return nullptr;
-    }
-
     GenTree* val = nullptr;
 
     if (intrinsicName == NI_Array_Set)
     {
-        // Stores of structs require more work, and there are more gets than sets.
-        // TODO-CQ: support SET (`a[i,j,k] = s`) for struct element arrays.
-        if (varTypeIsStruct(elemType))
-        {
-            JITDUMP("impArrayAccessIntrinsic: rejecting SET array intrinsic because elemType is TYP_STRUCT"
-                    " (implementation limitation)\n");
-            return nullptr;
-        }
-
         val = impPopStack().val;
         assert((genActualType(elemType) == genActualType(val->gtType)) ||
                (elemType == TYP_FLOAT && val->TypeIs(TYP_DOUBLE)) || (elemType == TYP_INT && val->TypeIs(TYP_BYREF)) ||
@@ -12726,13 +12834,20 @@ GenTree* Compiler::impArrayAccessIntrinsic(
     GenTree* arr = impPopStack().val;
     assert(arr->TypeIs(TYP_REF));
 
-    GenTree* arrElem = new (this, GT_ARR_ELEM) GenTreeArrElem(TYP_BYREF, arr, static_cast<unsigned char>(rank),
-                                                              static_cast<unsigned char>(arrayElemSize), &inds[0]);
+    GenTree* arrElem = new (this, GT_ARR_ELEM)
+        GenTreeArrElem(TYP_BYREF, arr, static_cast<unsigned char>(rank), arrayElemSize, &inds[0]);
     switch (intrinsicName)
     {
         case NI_Array_Set:
-            assert(!varTypeIsStruct(elemType));
-            arrElem = gtNewStoreIndNode(elemType, arrElem, val);
+            if (varTypeIsStruct(elemType))
+            {
+                arrElem = gtNewStoreValueNode(elemLayout, arrElem, val);
+                arrElem = impStoreStruct(arrElem, CHECK_SPILL_ALL);
+            }
+            else
+            {
+                arrElem = gtNewStoreIndNode(elemType, arrElem, val);
+            }
             break;
 
         case NI_Array_Get:

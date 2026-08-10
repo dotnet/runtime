@@ -1993,6 +1993,62 @@ CEEInfo::getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num)
     return result;
 }
 
+//------------------------------------------------------------------------
+// IsSimdIntrinsicType: Check whether a type is one of the SIMD types that the
+// JIT considers to be a primitive.
+//
+// Arguments:
+//   pMT - The type to check.
+//
+// Return Value:
+//   True if the type is a SIMD type; otherwise false.
+//
+// Remarks:
+//   This is an explicit allow list mirroring the types recognized by
+//   Compiler::getBaseTypeAndSizeOfSIMDType. The other intrinsic types in these
+//   namespaces (Decimal32/Decimal64/Decimal128, Matrix3x2/Matrix4x4) are laid
+//   out like any other struct, so the JIT needs their fields reported.
+//
+static bool IsSimdIntrinsicType(MethodTable* pMT)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        FORBID_FAULT;
+    }
+    CONTRACTL_END;
+
+    if (!pMT->IsIntrinsicType())
+    {
+        return false;
+    }
+
+    LPCUTF8 nsName;
+    LPCUTF8 className = pMT->GetFullyQualifiedNameInfo(&nsName);
+
+    // GetFullyQualifiedNameInfo returns NULL on failure and can legitimately report a NULL namespace.
+    if ((className == NULL) || (nsName == NULL))
+    {
+        return false;
+    }
+
+    if (strcmp(nsName, "System.Runtime.Intrinsics") == 0)
+    {
+        return (strcmp(className, "Vector128`1") == 0) || (strcmp(className, "Vector64`1") == 0) ||
+               (strcmp(className, "Vector256`1") == 0) || (strcmp(className, "Vector512`1") == 0);
+    }
+
+    if (strcmp(nsName, "System.Numerics") == 0)
+    {
+        return (strcmp(className, "Vector`1") == 0) || (strcmp(className, "Vector2") == 0) ||
+               (strcmp(className, "Vector3") == 0) || (strcmp(className, "Vector4") == 0) ||
+               (strcmp(className, "Quaternion") == 0) || (strcmp(className, "Plane") == 0);
+    }
+
+    return false;
+}
+
 static GetTypeLayoutResult GetTypeLayoutHelper(
     MethodTable* pMT,
     unsigned parentIndex,
@@ -2023,22 +2079,13 @@ static GetTypeLayoutResult GetTypeLayoutHelper(
     parNode.hasSignificantPadding = pClass->HasExplicitFieldOffsetLayout() || pClass->HasExplicitSize();
 
     // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
-    // not care about since they are considered primitives by the JIT. The IEEE 754
-    // decimal floating-point types are the System.Numerics intrinsics that are not
-    // SIMD, so the JIT lays them out like any other struct and needs their fields.
-    if (pMT->IsIntrinsicType() && !pMT->IsDecimalFloatingPointOrHasDecimalFloatingPointFields())
+    // not care about since they are considered primitives by the JIT.
+    if (IsSimdIntrinsicType(pMT))
     {
-        const char* nsName;
-        pMT->GetFullyQualifiedNameInfo(&nsName);
-
-        if ((strcmp(nsName, "System.Runtime.Intrinsics") == 0) ||
-            (strcmp(nsName, "System.Numerics") == 0))
+        parNode.simdTypeHnd = CORINFO_CLASS_HANDLE(pMT);
+        if (parentIndex != UINT32_MAX)
         {
-            parNode.simdTypeHnd = CORINFO_CLASS_HANDLE(pMT);
-            if (parentIndex != UINT32_MAX)
-            {
-                return GetTypeLayoutResult::Success;
-            }
+            return GetTypeLayoutResult::Success;
         }
     }
 
@@ -10470,6 +10517,71 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHa
             MethodDesc* pContext = MethodDesc::FindOrCreateAssociatedMethodDesc(pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&retType, 1), FALSE);
             instArg->lookupKind.needsRuntimeLookup = false;
             instArg->constLookup.accessType = IAT_VALUE;
+            instArg->constLookup.addr = pContext;
+            // The exact instantiation is known, so use it as the inlining context.
+            pInliningContext = pContext;
+        }
+    }
+
+    *contextHandle = MAKE_METHODCONTEXT(pInliningContext);
+
+    EE_TO_JIT_TRANSITION();
+
+    return CORINFO_METHOD_HANDLE(pMD);
+}
+
+CORINFO_METHOD_HANDLE CEEInfo::getAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHandle,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    MethodDesc* pMD = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* pAwaitAwaiterMD = GetMethod(pResolvedToken->hMethod);
+    _ASSERTE(pAwaitAwaiterMD->GetNumGenericMethodArgs() == 1);
+    TypeHandle awaiterType = pAwaitAwaiterMD->GetMethodInstantiation()[0];
+
+    instArg->lookupKind.needsRuntimeLookup = false;
+    instArg->constLookup.accessType = IAT_VALUE;
+    instArg->constLookup.addr = NULL;
+
+    MethodDesc* pCallerMD = GetMethod(callerHandle);
+    MethodDesc* pTypicalAwaitMD = CoreLibBinder::GetMethod(
+        isUnsafe ? METHOD__ASYNC_HELPERS__UNSAFE_AWAIT_AWAITER_IN_CONTINUATION
+                 : METHOD__ASYNC_HELPERS__AWAIT_AWAITER_IN_CONTINUATION);
+    pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE,
+                                                       Instantiation(&awaiterType, 1), TRUE);
+
+    MethodDesc* pInliningContext = pMD;
+    if (pMD->RequiresInstArg())
+    {
+        MethodDesc* pContext = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&awaiterType, 1), FALSE);
+
+        if (awaiterType.IsCanonicalSubtype())
+        {
+            // The exact instantiation is only known at runtime, so it requires a generic
+            // dictionary lookup. pResolvedToken is for the AsyncHelpers.AwaitAwaiter or
+            // UnsafeAwaitAwaiter call that we are replacing; it has the same owning type and
+            // the same instantiation as the replacement, so it encodes the right lookup as
+            // long as we pass the replacement as the template method.
+            _ASSERTE(pResolvedToken->pMethodSpec != NULL);
+            ComputeRuntimeLookupForSharedGenericToken(MethodDescSlot, pResolvedToken,
+                                                      NULL /* pConstrainedResolvedToken */, pContext, pCallerMD,
+                                                      instArg);
+        }
+        else
+        {
             instArg->constLookup.addr = pContext;
             // The exact instantiation is known, so use it as the inlining context.
             pInliningContext = pContext;

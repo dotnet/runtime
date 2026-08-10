@@ -95,6 +95,7 @@ enum class WasmValueType : unsigned;
 #ifdef DEBUG
 struct IndentStack;
 #endif
+struct ContinuationMember;
 
 class Lowering; // defined in lower.h
 
@@ -668,6 +669,9 @@ private:
 
     unsigned char lvIsSpan : 1; // The local is a Span<T>
 
+    unsigned char lvIsVectorPerElementMask           : 1; // The local is known to be a per-element mask
+    unsigned char lvVectorPerElementMaskElemSizeLog2 : 2; // Maximum log2(element size) for the local mask
+
 public:
     union
     {
@@ -868,6 +872,58 @@ public:
     {
         lvIsSpan = value;
     }
+
+#ifdef FEATURE_HW_INTRINSICS
+    // Is this local a per-element mask compatible with the given base type?
+    bool IsVectorPerElementMask(var_types simdBaseType) const
+    {
+        return lvIsVectorPerElementMask &&
+               (GetVectorPerElementMaskElemSizeLog2(simdBaseType) <= lvVectorPerElementMaskElemSizeLog2);
+    }
+
+    // Mark this local as a per-element mask with the given base type.
+    void SetIsVectorPerElementMask(var_types simdBaseType)
+    {
+        unsigned elemSizeLog2 = GetVectorPerElementMaskElemSizeLog2(simdBaseType);
+
+        if (!lvIsVectorPerElementMask || (elemSizeLog2 > lvVectorPerElementMaskElemSizeLog2))
+        {
+            lvVectorPerElementMaskElemSizeLog2 = static_cast<unsigned char>(elemSizeLog2);
+        }
+
+        lvIsVectorPerElementMask = true;
+    }
+
+private:
+    static unsigned GetVectorPerElementMaskElemSizeLog2(var_types simdBaseType)
+    {
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                return 0;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                return 1;
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                return 2;
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                return 3;
+
+            default:
+                unreached();
+        }
+    }
+
+public:
+#endif // FEATURE_HW_INTRINSICS
 
     /////////////////////
 
@@ -2361,18 +2417,12 @@ class FlowGraphTryRegion
     jitstd::vector<BasicBlock*> m_unreachableBlocks;
 
     bool m_requiresRuntimeResumption;
-    bool m_hasSideEntry;
 
     FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions);
 
     void SetRequiresRuntimeResumption()
     {
         m_requiresRuntimeResumption = true;
-    }
-
-    void SetHasSideEntry()
-    {
-        m_hasSideEntry = true;
     }
 
     bool IsMutualProtectWith(FlowGraphTryRegion* other) const
@@ -2415,13 +2465,6 @@ public:
         return m_requiresRuntimeResumption;
     }
 
-    // True if control can enter the try via some block other than the header block.
-    //
-    bool HasSideEntry() const
-    {
-        return m_hasSideEntry;
-    }
-
     FlowGraphTryRegion* EnclosingRegion() const;
 
     BasicBlock* GetHeaderBlock() const
@@ -2450,12 +2493,12 @@ private:
     unsigned m_numRegions;
     unsigned m_numTryCatchRegions;
     bool m_tryRegionsIncludeHandlerBlocks;
-    bool m_hasMultipleEntryTryRegions;
+    bool m_hasSideEntry;
     BitVecTraits m_traits;
 
-    void SetHasMultipleEntryTryRegions()
+    void SetHasSideEntry()
     {
-        m_hasMultipleEntryTryRegions = true;
+        m_hasSideEntry = true;
     }
 
 public:
@@ -2493,11 +2536,10 @@ public:
 
     bool TryRegionsIncludeHandlerBlocks() const { return m_tryRegionsIncludeHandlerBlocks; }
 
-    bool HasMultipleEntryTryRegions() const { return m_hasMultipleEntryTryRegions; }
-
-    void AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
-
-    void RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
+    // True if some try region is entered at a block other than its header.
+    // fgWasmRepairTryEntries should have removed all of these.
+    //
+    bool HasSideEntry() const { return m_hasSideEntry; }
 
 #ifdef DEBUG
     static void Dump(FlowGraphTryRegions* regions);
@@ -4124,6 +4166,7 @@ public:
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
     GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
+    GenTreeLclVarCommon* gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall* call);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
@@ -4357,6 +4400,7 @@ public:
     unsigned lvaMonAcquired = BAD_VAR_NUM; // boolean variable introduced into in synchronized methods
                              // that tracks whether the lock has been taken
 
+    unsigned lvaResumedIndicator = BAD_VAR_NUM;               // Variable representing "have we resumed?" for async methods
     unsigned lvaAsyncThreadObjectVar = BAD_VAR_NUM;           // Thread local for async methods
     unsigned lvaAsyncExecutionContextVar = BAD_VAR_NUM;       // ExecutionContext local for async methods
     unsigned lvaAsyncSynchronizationContextVar = BAD_VAR_NUM; // SynchronizationContext local for async methods
@@ -5262,6 +5306,14 @@ protected:
                                 bool                    exactContextNeedsRuntimeLookup,
                                 unsigned                clsFlags,
                                 bool                    isReadonlyCall);
+
+    void impTryOptimizeAwaitAwaiter(GenTreeCall*              call,
+                                    CORINFO_RESOLVED_TOKEN*   pResolvedToken,
+                                    CORINFO_CALL_INFO*        callInfo,
+                                    CORINFO_METHOD_HANDLE*    methHnd,
+                                    CORINFO_CONTEXT_HANDLE*   exactContextHnd,
+                                    GenTree**                 instParam,
+                                    NamedIntrinsic            ni);
 
     void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, NamedIntrinsic ni, const DebugInfo& callDI);
 
@@ -6254,6 +6306,11 @@ public:
     PhaseStatus placeLoopAlignInstructions();
 #endif
 
+    jitstd::vector<ContinuationMember>* m_asyncContinuationMembers = nullptr;
+    size_t GetContinuationMemberIndex(const ContinuationMember& member);
+    size_t GetContinuationMemberCount() const;
+    const ContinuationMember& GetContinuationMember(size_t index);
+
     PhaseStatus SaveAsyncContexts();
     void AddContextArgsToAsyncCalls(BasicBlock* block);
     BasicBlock* CreateReturnBB(unsigned* mergedReturnLcl);
@@ -6887,6 +6944,7 @@ public:
     void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
+    PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
     PhaseStatus fgWasmSpillRefs();
 #ifdef DEBUG
@@ -10470,7 +10528,7 @@ public:
         return simdType;
     }
 
-    static var_types getIndexTypeForShuffle(var_types simdBaseType)
+    static var_types getUnsignedSimdBaseType(var_types simdBaseType)
     {
         switch (simdBaseType)
         {
@@ -11775,7 +11833,7 @@ public:
         bool compIsVarArgs             : 1; // Does the method have varargs parameters?
         bool compInitMem               : 1; // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback      : 1; // JIT inserted a profiler Enter callback
-        bool compPublishStubParam      : 1; // EAX captured in prolog will be available through an intrinsic
+        bool compPublishStubParam      : 1; // Hidden argument captured in prolog will be available through an intrinsic
         bool compHasNextCallRetAddr    : 1; // The NextCallReturnAddress intrinsic is used.
         bool compUsesAsyncContinuation : 1; // The AsyncCallContinuation intrinsic is used.
 
