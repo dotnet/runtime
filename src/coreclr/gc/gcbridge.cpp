@@ -1065,9 +1065,6 @@ static void ResetXRefs(ColorData* color)
 static uint64_t g_startTime;
 static uint64_t g_afterTarjanTime;
 
-// Timestamp, in microseconds, of the last set of cross references handed to the client.
-static uint64_t g_lastBridgeRequestTime;
-
 static void BridgeFinish()
 {
 #if DUMP_GRAPH
@@ -1114,26 +1111,11 @@ uint8_t** GetRegisteredBridges(size_t* pNumBridges)
     return (uint8_t**)g_registeredBridges.data;
 }
 
-bool ShouldProcessBridgeObjects(uint32_t condemned)
+bool ShouldProcessBridgeObjects()
 {
     // The client discards any set of cross references handed to it while it is still
     // processing a previous one, so computing it would be pure waste.
-    if (GCToEEInterface::IsClientBridgeProcessingActive())
-        return false;
-
-    // Requests are only throttled for gen0 collections. Bridge objects that are not handed to
-    // the client are still promoted, so a deferred object cannot be registered again by a later
-    // gen0 collection; keeping gen1 and gen2 unthrottled bounds how long a dead peer can go
-    // unreported to the next gen1 collection.
-    if (condemned > 0)
-        return true;
-
-    int64_t minIntervalMs = GCConfig::GetGCBridgeMinIntervalMs();
-    if (minIntervalMs <= 0)
-        return true;
-
-    uint64_t now = GetHighPrecisionTimeStamp();
-    return (now - g_lastBridgeRequestTime) >= ((uint64_t)minIntervalMs * 1000);
+    return !GCToEEInterface::IsClientBridgeProcessingActive();
 }
 
 static bool TarjanSccAlgorithm()
@@ -1317,8 +1299,6 @@ MarkCrossReferencesArgs* ProcessBridgeObjects()
     ResetObjectsHeader();
 
     BridgeFinish();
-
-    g_lastBridgeRequestTime = GetHighPrecisionTimeStamp();
 
     return args;
 }

@@ -1535,7 +1535,7 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
     }
 
     // The callee here will free the allocated memory.
-    if (ShouldProcessBridgeObjects(condemned))
+    if (ShouldProcessBridgeObjects())
     {
         MarkCrossReferencesArgs *args = ProcessBridgeObjects();
 
@@ -1545,8 +1545,9 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
         }
     }
 
-    // Every registered bridge object is promoted whether or not it was handed to the client,
-    // so skipping the request above only delays reporting it, it never collects it early.
+    // Every registered bridge object is promoted whether or not the cross references were
+    // computed above, so skipping the work while the client is busy only delays reporting a
+    // dead peer, it never collects one early.
     return GetRegisteredBridges(numObjs);
 }
 #endif // FEATURE_JAVAMARSHAL
