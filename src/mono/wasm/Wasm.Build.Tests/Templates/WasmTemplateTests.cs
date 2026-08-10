@@ -124,42 +124,34 @@ namespace Wasm.Build.Tests
 
         public static IEnumerable<object?[]> BrowserBuildAndRunTestData()
         {
-            yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
-            yield return new object?[] { $"-f {DefaultTargetFramework}", DefaultTargetFramework, DefaultRuntimeAssetsRelativePath };
+            yield return new object?[] { "", BuildTestBase.DefaultTargetFramework };
+            yield return new object?[] { $"-f {DefaultTargetFramework}", DefaultTargetFramework };
 
             if (EnvironmentVariables.WorkloadsTestPreviousVersions)
             {
-                yield return new object?[] { $"-f {PreviousTargetFramework}", PreviousTargetFramework, DefaultRuntimeAssetsRelativePath };
-                yield return new object?[] { $"-f {Previous2TargetFramework}", Previous2TargetFramework, DefaultRuntimeAssetsRelativePath };
+                yield return new object?[] { $"-f {PreviousTargetFramework}", PreviousTargetFramework };
+                yield return new object?[] { $"-f {Previous2TargetFramework}", Previous2TargetFramework };
             }
-
-            // ActiveIssue("https://github.com/dotnet/runtime/issues/90979")
-            // yield return new object?[] { "", BuildTestBase.DefaultTargetFramework, "./" };
-            // yield return new object?[] { "-f net8.0", "net8.0", "./" };
         }
 
         [Theory]
         [MemberData(nameof(BrowserBuildAndRunTestData))]
         [TestCategory("workload")]
-        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework, string runtimeAssetsRelativePath)
+        public async Task BrowserBuildAndRun(string extraNewArgs, string targetFramework)
         {
             Configuration config = Configuration.Debug;
-            string extraProperties = runtimeAssetsRelativePath == DefaultRuntimeAssetsRelativePath ?
-                "" :
-                $"<WasmRuntimeAssetsLocation>{runtimeAssetsRelativePath}</WasmRuntimeAssetsLocation>";
             ProjectInfo info = CreateWasmTemplateProject(
                 Template.WasmBrowser,
                 config,
                 aot: false,
                 "browser",
-                extraProperties: extraProperties,
                 extraArgs: extraNewArgs,
                 addFrameworkArg: extraNewArgs.Length == 0
             );
 
             if (new Version(targetFramework.Replace("net", "")).Major > 8)
                 UpdateBrowserProgramFile();
-            UpdateBrowserMainJs(targetFramework, runtimeAssetsRelativePath);
+            UpdateBrowserMainJs(targetFramework);
 
             PublishProject(info, config, new PublishOptions(UseCache: false));
 
