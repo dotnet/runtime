@@ -4106,6 +4106,7 @@ public:
     GenTree* gtFoldExprUnaryConstDbl(GenTreeUnOp* tree, GenTreeDblCon* dblCon);
 
     GenTree* gtFoldExprBinary(GenTreeOp* tree);
+    GenTree* gtFoldExprShiftCountMask(GenTreeOp* shift);
     GenTree* gtFoldExprBinaryConst(GenTreeOp* tree);
     GenTree* gtFoldExprBinaryConstInt(GenTreeOp* tree, GenTreeIntCon* intCon1, GenTreeIntCon* intCon2);
     GenTree* gtFoldExprBinaryConstLng(GenTreeOp* tree, GenTreeIntConCommon* intConCommon1, GenTreeIntConCommon* intConCommon2);

@@ -12361,9 +12361,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     //                      /      \                   / \.
     //                    LSH      RSZ      ->        x   y
     //                    / \      / \.
-    //                   x  AND   x  AND
-    //                      / \      / \.
-    //                     y  31   ADD  31
+    //                   x   y    x  ADD
     //                             / \.
     //                            NEG 32
     //                             |
@@ -12373,7 +12371,7 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
     // (x >>> ((-y + N) & M)) op (x << (y & M))
     //
     // (x << y) op (x >>> (-y + N))
-    // (x >> > (-y + N)) op (x << y)
+    // (x >>> (-y + N)) op (x << y)
     //
     // (x >>> (y & M)) op (x << ((-y + N) & M))
     // (x << ((-y + N) & M)) op (x >>> (y & M))
@@ -12435,46 +12433,69 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         GenTree* rightShiftIndex = rightShiftTree->gtGetOp2();
 
         // The shift index may be masked. At least (rotatedValueBitSize - 1) lower bits
-        // shouldn't be masked for the transformation to be valid. If additional
-        // higher bits are not masked, the transformation is still valid since the result
-        // of MSIL shift instructions is unspecified if the shift amount is greater or equal
-        // than the width of the value being shifted.
+        // must be unmasked for the transformation to be valid.
         ssize_t minimalMask    = rotatedValueBitSize - 1;
         ssize_t leftShiftMask  = -1;
         ssize_t rightShiftMask = -1;
 
         if (leftShiftIndex->OperIs(GT_AND))
         {
-            if (leftShiftIndex->gtGetOp2()->IsCnsIntOrI())
+            GenTree* andOp1 = leftShiftIndex->gtGetOp1();
+            GenTree* andOp2 = leftShiftIndex->gtGetOp2();
+
+            GenTree* maskOp  = nullptr;
+            GenTree* indexOp = nullptr;
+
+            if (andOp2->IsCnsIntOrI())
             {
-                leftShiftMask  = leftShiftIndex->gtGetOp2()->AsIntCon()->IconValue();
-                leftShiftIndex = leftShiftIndex->gtGetOp1();
+                maskOp  = andOp2;
+                indexOp = andOp1;
             }
-            else
+            else if (andOp1->IsCnsIntOrI())
+            {
+                maskOp  = andOp1;
+                indexOp = andOp2;
+            }
+
+            if (maskOp == nullptr)
             {
                 return nullptr;
             }
+
+            leftShiftMask  = maskOp->AsIntCon()->IconValue();
+            leftShiftIndex = indexOp;
         }
 
         if (rightShiftIndex->OperIs(GT_AND))
         {
-            if (rightShiftIndex->gtGetOp2()->IsCnsIntOrI())
+            GenTree* andOp1 = rightShiftIndex->gtGetOp1();
+            GenTree* andOp2 = rightShiftIndex->gtGetOp2();
+
+            GenTree* maskOp  = nullptr;
+            GenTree* indexOp = nullptr;
+
+            if (andOp2->IsCnsIntOrI())
             {
-                rightShiftMask  = rightShiftIndex->gtGetOp2()->AsIntCon()->IconValue();
-                rightShiftIndex = rightShiftIndex->gtGetOp1();
+                maskOp  = andOp2;
+                indexOp = andOp1;
             }
-            else
+            else if (andOp1->IsCnsIntOrI())
+            {
+                maskOp  = andOp1;
+                indexOp = andOp2;
+            }
+
+            if (maskOp == nullptr)
             {
                 return nullptr;
             }
+
+            rightShiftMask  = maskOp->AsIntCon()->IconValue();
+            rightShiftIndex = indexOp;
         }
 
         if (((minimalMask & leftShiftMask) != minimalMask) || ((minimalMask & rightShiftMask) != minimalMask))
         {
-            // The shift index is overmasked, e.g., we have
-            // something like (x << y & 15) or
-            // (x >> (32 - y) & 15 with 32 bit x.
-            // The transformation is not valid.
             return nullptr;
         }
 
@@ -12507,12 +12528,9 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
                         if (GenTree::Compare(shiftIndexWithAdd->gtGetOp1()->gtGetOp1(), shiftIndexWithoutAdd))
                         {
                             // We found one of these patterns:
-                            // (x << (y & M)) | (x >>> ((-y + N) & M))
                             // (x << y) | (x >>> (-y + N))
-                            // (x >>> (y & M)) | (x << ((-y + N) & M))
                             // (x >>> y) | (x << (-y + N))
-                            // where N == bitsize(x), M is const, and
-                            // M & (N - 1) == N - 1
+                            // where N == bitsize(x)
 
 #ifndef TARGET_64BIT
                             if (!shiftIndexWithoutAdd->IsCnsIntOrI() && (rotatedValueBitSize == 64))
