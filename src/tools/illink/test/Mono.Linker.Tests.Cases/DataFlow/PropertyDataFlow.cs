@@ -783,9 +783,9 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             // Tuple-swapping elements accessed through an implicit indexer (using the
-            // System.Index '^' operator) used to crash the analyzer, because the
-            // implicit indexer reference is a deconstruction assignment target, which
-            // is a write that is not a byref.
+            // System.Index '^' operator) used to crash the analyzer, because Roslyn
+            // marks an implicit indexer reference that is a deconstruction assignment
+            // target as a write without also marking it as a reference.
             static void TestTupleSwap()
             {
                 Span<int> span = stackalloc int[4];
