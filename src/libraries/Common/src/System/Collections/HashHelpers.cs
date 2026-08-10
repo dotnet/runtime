@@ -145,7 +145,7 @@ namespace System.Collections
             return min;
         }
 
-        // Returns size of hashtable to grow to.
+        // Returns the size of the hashtable to grow to.
         public static int ExpandPrime(int oldSize)
         {
             int newSize = 2 * oldSize;
