@@ -340,6 +340,27 @@ namespace ILAssembler.Tests
             Assert.Equal(0x15, sigBytes[0]); // ELEMENT_TYPE_GENERICINST
         }
 
+        [Fact]
+        public void RepeatedSelfReferentialConstraint_IsNotDuplicated()
+        {
+            string source = """
+                .assembly test { }
+                .class interface public abstract auto ansi I`1<(class I`1<!TSelf>) TSelf>
+                {
+                    .param constraint TSelf, class I`1<!TSelf>
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var type = reader.TypeDefinitions
+                .Select(reader.GetTypeDefinition)
+                .Single(type => reader.GetString(type.Name) == "I`1");
+            var parameter = reader.GetGenericParameter(Assert.Single(type.GetGenericParameters()));
+
+            Assert.Single(parameter.GetConstraints());
+        }
+
 
         [Fact]
         public void GenericConstraint_MethodGenParamConstrainedByTypeGenParam_ResolvesToCorrectType()
