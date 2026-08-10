@@ -346,7 +346,11 @@ intptr_t SystemNative_Open(const char* path, int32_t flags, int32_t mode)
     }
 
     // Prevent terminal devices from becoming the controlling terminal of this process.
+    // WASM (browser/WASI) has no controlling terminals, and WASMFS's doOpen rejects any
+    // flag outside its known set (O_NOCTTY is not among them), so skip it there.
+#ifndef TARGET_WASM
     flags |= O_NOCTTY;
+#endif
 
     int result;
     while ((result = open(path, flags, (mode_t)mode)) < 0 && errno == EINTR);

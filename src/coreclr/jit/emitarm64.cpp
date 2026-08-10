@@ -429,7 +429,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_DR_2A: // DR_2A   X..........mmmmm ......nnnnn.....         Rn Rm
             assert(isValidGeneralDatasize(id->idOpSize()));
-            assert(isGeneralRegister(id->idReg1()));
+            assert(isGeneralRegisterOrZR(id->idReg1()));
             assert(isGeneralRegister(id->idReg2()));
             break;
 
@@ -725,7 +725,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov, fcvtXX - register)
         case IF_DV_2K: // DV_2K   .........X.mmmmm ......nnnnn.....      Vn Vm      (fcmp)
             assert(insOptsNone(id->idInsOpt()));
-            assert(isValidVectorElemsizeFloat(id->idOpSize()));
+            assert(isValidVectorElemsizeFloat(id->idOpSize()) || (id->idOpSize() == EA_2BYTE));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -735,7 +735,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             dstsize = optGetDstsize(id->idInsOpt());
             srcsize = optGetSrcsize(id->idInsOpt());
             assert(isValidGeneralDatasize(dstsize));
-            assert(isValidVectorElemsizeFloat(srcsize));
+            assert(isValidVectorElemsizeFloat(srcsize) || (srcsize == EA_2BYTE));
             assert(dstsize == id->idOpSize());
             assert(isGeneralRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
@@ -746,7 +746,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             dstsize = optGetDstsize(id->idInsOpt());
             srcsize = optGetSrcsize(id->idInsOpt());
             assert(isValidGeneralDatasize(srcsize));
-            assert(isValidVectorElemsizeFloat(dstsize));
+            assert(isValidVectorElemsizeFloat(dstsize) || (dstsize == EA_2BYTE));
             assert(dstsize == id->idOpSize());
             assert(isVectorRegister(id->idReg1()));
             assert(isGeneralRegister(id->idReg2()));
@@ -958,7 +958,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_4A: // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Rd Rn Rm Ra (scalar)
-            assert(isValidGeneralDatasize(id->idOpSize()));
+            assert(isValidScalarDatasize(id->idOpSize()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
@@ -3613,6 +3613,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case INS_OPTS_8BYTE_TO_D:
         case INS_OPTS_S_TO_D:
         case INS_OPTS_H_TO_D:
+        case INS_OPTS_H_TO_8BYTE:
 
             return EA_8BYTE;
 
@@ -3622,11 +3623,14 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case INS_OPTS_8BYTE_TO_S:
         case INS_OPTS_D_TO_S:
         case INS_OPTS_H_TO_S:
+        case INS_OPTS_H_TO_4BYTE:
 
             return EA_4BYTE;
 
         case INS_OPTS_S_TO_H:
         case INS_OPTS_D_TO_H:
+        case INS_OPTS_4BYTE_TO_H:
+        case INS_OPTS_8BYTE_TO_H:
 
             return EA_2BYTE;
 
@@ -3647,6 +3651,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case INS_OPTS_8BYTE_TO_S:
         case INS_OPTS_D_TO_S:
         case INS_OPTS_D_TO_H:
+        case INS_OPTS_8BYTE_TO_H:
 
             return EA_8BYTE;
 
@@ -3656,11 +3661,14 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case INS_OPTS_4BYTE_TO_D:
         case INS_OPTS_S_TO_D:
         case INS_OPTS_S_TO_H:
+        case INS_OPTS_4BYTE_TO_H:
 
             return EA_4BYTE;
 
         case INS_OPTS_H_TO_S:
         case INS_OPTS_H_TO_D:
+        case INS_OPTS_H_TO_4BYTE:
+        case INS_OPTS_H_TO_8BYTE:
 
             return EA_2BYTE;
 
@@ -4750,7 +4758,7 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_fcmp:
         case INS_fcmpe:
             assert(insOptsNone(opt));
-            assert(isValidVectorElemsizeFloat(size));
+            assert(isValidVectorElemsizeFloat(size) || (size == EA_2BYTE));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             fmt = IF_DV_2K;
@@ -4872,7 +4880,7 @@ void emitter::emitIns_R_R(instruction     ins,
                 {
                     assert(isGeneralRegister(reg2));
                     assert(insOptsConvertIntToFloat(opt));
-                    assert(isValidVectorElemsizeFloat(size));
+                    assert(isValidVectorElemsizeFloat(size) || (size == EA_2BYTE));
                     fmt = IF_DV_2I;
                 }
             }
@@ -4904,7 +4912,7 @@ void emitter::emitIns_R_R(instruction     ins,
             {
                 // Scalar operation
                 assert(insOptsNone(opt));
-                assert(isValidVectorElemsizeFloat(size));
+                assert(isValidVectorElemsizeFloat(size) || (size == EA_2BYTE));
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 fmt = IF_DV_2G;
@@ -6100,6 +6108,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             FALLTHROUGH;
 
         case INS_sadalp:
+        case INS_sm4e:
         case INS_suqadd:
         case INS_uadalp:
         case INS_usqadd:
@@ -8251,22 +8260,43 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         isSimple = false;
         reg2     = REG_UNKBASE;
 
+        var_types localType = TYP_UNDEF;
+
         if (varx >= 0)
         {
-            imm = m_compiler->unkSizeFrame.GetAddressingOffset(m_compiler->lvaGetDesc(varx));
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc(varx);
+            imm               = m_compiler->unkSizeFrame.GetAddressingOffset(varDsc);
+            localType         = varDsc->TypeGet();
         }
         else
         {
-            imm = m_compiler->unkSizeFrame.GetAddressingOffset(codeGen->regSet.tmpGetNum(varx));
+            TempDsc* tmpDsc = codeGen->regSet.tmpGetNum(varx);
+            imm             = m_compiler->unkSizeFrame.GetAddressingOffset(tmpDsc);
+            localType       = tmpDsc->tdTempType();
         }
 
         switch (ins)
         {
             case INS_lea:
-                // We shouldn't be materializing the address of a mask.
-                assert(m_compiler->lvaGetActualType(varx) != TYP_MASK);
-                // addvl reg1, x19, #imm
-                emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                // TODO-SVE: Support materializing address of a mask local / temp.
+                assert(localType != TYP_MASK);
+                if (isValidSimm<6>(imm))
+                {
+                    // addvl reg1, x19, #imm
+                    emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                }
+                else
+                {
+                    // Cannot encode immediate, generate `addr = fp + imm * VL`.
+                    //
+                    // set reg1 = imm
+                    // rdvl rsvd, #1
+                    // madd reg1, reg1, rsvd, x19
+                    regNumber rsvd = codeGen->rsGetRsvdReg();
+                    codeGen->instGen_Set_Reg_To_Imm(EA_8BYTE, reg1, imm);
+                    emitIns_R_I(INS_sve_rdvl, EA_8BYTE, rsvd, 1);
+                    emitIns_R_R_R_R(INS_madd, EA_8BYTE, reg1, reg1, rsvd, REG_UNKBASE);
+                }
                 return;
 
             case INS_sve_ldr:
@@ -10117,6 +10147,10 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     {
         return 0x00400000; // set the bit at location 22
     }
+    else if (size == EA_2BYTE)
+    {
+        return 0x00C00000; // set the bits at location 23 and 22 (ftype=11, half-precision)
+    }
     assert(size == EA_4BYTE);
     return 0x00000000;
 }
@@ -10326,6 +10360,16 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             result = 0x80400000; // sf=1, type=01
             break;
 
+        case INS_OPTS_H_TO_4BYTE: // Half to INT32
+            assert(fmt == IF_DV_2H);
+            result = 0x00C00000; // sf=0, type=11
+            break;
+
+        case INS_OPTS_H_TO_8BYTE: // Half to INT64
+            assert(fmt == IF_DV_2H);
+            result = 0x80C00000; // sf=1, type=11
+            break;
+
         case INS_OPTS_4BYTE_TO_S: // INT32 to Single
             assert(fmt == IF_DV_2I);
             result = 0x00000000; // sf=0, type=00
@@ -10344,6 +10388,16 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         case INS_OPTS_8BYTE_TO_D: // INT64 to Double
             assert(fmt == IF_DV_2I);
             result = 0x80400000; // sf=1, type=01
+            break;
+
+        case INS_OPTS_4BYTE_TO_H: // INT32 to Half
+            assert(fmt == IF_DV_2I);
+            result = 0x00C00000; // sf=0, type=11
+            break;
+
+        case INS_OPTS_8BYTE_TO_H: // INT64 to Half
+            assert(fmt == IF_DV_2I);
+            result = 0x80C00000; // sf=1, type=11
             break;
 
         default:
@@ -12274,9 +12328,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov, fcvtXX - register)
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
-            code |= insEncodeFloatElemsize(elemsize); // X
-            code |= insEncodeReg_Vd(id->idReg1());    // ddddd
-            code |= insEncodeReg_Vn(id->idReg2());    // nnnnn
+            if ((elemsize == EA_2BYTE) && ((ins == INS_frecpe) || (ins == INS_frsqrte)))
+            {
+                // FRECPE/FRSQRTE are "Advanced SIMD scalar two-register miscellaneous" ops. Unlike the
+                // ftype-selected scalar ops in this format (fsqrt, frintX, fcvtXX, ...), their half-precision
+                // forms live in the dedicated FP16 sub-encoding, so setting ftype=11 would emit the Dd,Dn form.
+                // Set the FP16 sz/opcode bits explicitly so we emit e.g. FRECPE Hd,Hn (0x5EF9D800) rather than
+                // FRECPE Dd,Dn (0x5EE1D800).
+                code |= 0x00580000;
+            }
+            else
+            {
+                code |= insEncodeFloatElemsize(elemsize); // X
+            }
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -16471,8 +16537,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     }
                     else
                     {
-                        // S-form
-                        assert(id->idOpSize() == EA_4BYTE);
+                        // S-form or H-form
+                        assert((id->idOpSize() == EA_4BYTE) || (id->idOpSize() == EA_2BYTE));
                         result.insThroughput = PERFSCORE_THROUGHPUT_9C;
                         result.insLatency    = PERFSCORE_LATENCY_12C;
                     }
@@ -16632,8 +16698,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     }
                     else
                     {
-                        // S-form
-                        assert(id->idOpSize() == EA_4BYTE);
+                        // S-form or H-form
+                        assert((id->idOpSize() == EA_4BYTE) || (id->idOpSize() == EA_2BYTE));
                         result.insThroughput = PERFSCORE_THROUGHPUT_3C;
                         result.insLatency    = PERFSCORE_LATENCY_10C;
                     }

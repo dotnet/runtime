@@ -6,6 +6,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -15,6 +16,8 @@ namespace System.Text.Json.SourceGeneration
 {
     internal static class RoslynExtensions
     {
+        private static readonly Func<ITypeSymbol, bool>? s_isClosedTypeAccessor = CreateIsClosedTypeAccessor();
+
         public static LanguageVersion? GetLanguageVersion(this Compilation compilation)
             => compilation is CSharpCompilation csc ? csc.LanguageVersion : null;
 
@@ -786,6 +789,386 @@ namespace System.Text.Json.SourceGeneration
             return symbol.GetAttributes().Any(attr =>
                 attr.AttributeClass?.Name == attributeName &&
                 attr.AttributeClass.ContainingNamespace.ToDisplayString() == "System.Diagnostics.CodeAnalysis");
+        }
+
+        // Polyfill for the closed-type reflection APIs added to Roslyn in dotnet/roslyn#84045
+        // (ITypeSymbol.IsClosed and ITypeSymbol.GetClosedDerivedTypeInfo, available from Roslyn 5.10).
+        // The generator compiles against Roslyn 4.4, so it cannot reference those APIs directly. These
+        // reconstruct the same information from APIs available in 4.4 so that closed-type polymorphism
+        // inference works on any compiler that understands the 'closed' modifier, without depending on
+        // whether Roslyn surfaces the reserved closed-type metadata to the symbol API (it currently
+        // filters the compiler-emitted [IsClosedType] attribute out of ITypeSymbol.GetAttributes()).
+        // The generator targets older Roslyn APIs, so the built-in APIs are accessed through light-up
+        // until the generator's Roslyn floor is raised past 5.10.
+        //
+        // Roslyn implementation at dotnet/roslyn @ 18bf2c8709264bac6615856e507eb44ba2a026e2:
+        //   Public ITypeSymbol implementation:
+        //     https://github.com/dotnet/roslyn/blob/18bf2c8709264bac6615856e507eb44ba2a026e2/src/Compilers/CSharp/Portable/Symbols/PublicModel/TypeSymbol.cs#L207-L220
+        //   Source-symbol candidate enumeration mirrored by these polyfills:
+        //     https://github.com/dotnet/roslyn/blob/18bf2c8709264bac6615856e507eb44ba2a026e2/src/Compilers/CSharp/Portable/Symbols/Source/SourceMemberContainerSymbol.cs#L903-L961
+
+        /// <summary>
+        /// Polyfill for <c>ITypeSymbol.IsClosed</c>: returns <see langword="true"/> when
+        /// <paramref name="type"/> is an abstract class declared with the <c>closed</c> modifier, whose
+        /// hierarchy the language restricts to its declaring module. Detection is syntactic because the
+        /// compiler-emitted <c>[IsClosedType]</c> attribute is filtered out of the symbol API. When
+        /// available, the built-in API is used through light-up so metadata-only symbols are supported;
+        /// otherwise source declarations fall back to syntax inspection.
+        /// </summary>
+        public static bool IsClosedType(this INamedTypeSymbol type)
+        {
+            if (type is not { TypeKind: TypeKind.Class, IsAbstract: true })
+            {
+                return false;
+            }
+
+            if (s_isClosedTypeAccessor is not null)
+            {
+                return s_isClosedTypeAccessor(type);
+            }
+
+            foreach (SyntaxReference syntaxReference in type.DeclaringSyntaxReferences)
+            {
+                if (syntaxReference.GetSyntax() is BaseTypeDeclarationSyntax declaration)
+                {
+                    foreach (SyntaxToken modifier in declaration.Modifiers)
+                    {
+                        // The 'closed' contextual keyword is tokenized as a dedicated SyntaxKind by
+                        // closed-aware compilers, but that enum member does not exist in the Roslyn
+                        // version the generator compiles against. Compare the token text instead, which
+                        // is stable across compiler versions.
+                        if (modifier.Text is "closed")
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static Func<ITypeSymbol, bool>? CreateIsClosedTypeAccessor()
+        {
+            // IsClosed is unavailable in the Roslyn reference assemblies used to compile the generator.
+            MethodInfo? getter = typeof(ITypeSymbol).GetProperty("IsClosed")?.GetMethod;
+            return getter is null
+                ? null
+                : (Func<ITypeSymbol, bool>)getter.CreateDelegate(typeof(Func<ITypeSymbol, bool>));
+        }
+
+        /// <summary>
+        /// Polyfill for <c>ITypeSymbol.GetClosedDerivedTypeInfo().ClosedDerivedTypes</c>: reconstructs the
+        /// immediate derived types of a closed hierarchy. The <c>closed</c> modifier constrains subtyping
+        /// to the base type's declaring module, so the immediate derived types are exactly the same-module
+        /// named types whose direct base type shares <paramref name="closedType"/>'s original definition —
+        /// the set Roslyn records internally as <c>CandidateClosedSubtypeDefinitions</c>. Generic derived
+        /// types are returned in unbound form so callers can unify them against the constructed base.
+        /// Returns <see langword="null"/> when none are found. Derived types are yielded in module-scan
+        /// order; callers that require a canonical ordering (for example, for deterministic generator
+        /// output) order them by discriminator, where uniqueness is established.
+        /// </summary>
+        public static List<ITypeSymbol>? GetClosedDerivedTypes(this INamedTypeSymbol closedType)
+        {
+            INamedTypeSymbol baseDefinition = closedType.OriginalDefinition;
+            List<ITypeSymbol>? derivedTypes = null;
+
+            foreach (INamedTypeSymbol candidate in EnumerateNamedTypes(closedType.ContainingModule.GlobalNamespace))
+            {
+                if (candidate.BaseType is { } candidateBase &&
+                    SymbolEqualityComparer.Default.Equals(candidateBase.OriginalDefinition, baseDefinition))
+                {
+                    ITypeSymbol derivedType = candidate.IsGenericType
+                        ? candidate.ConstructUnboundGenericType()
+                        : candidate;
+
+                    (derivedTypes ??= new()).Add(derivedType);
+                }
+            }
+
+            return derivedTypes;
+
+            static IEnumerable<INamedTypeSymbol> EnumerateNamedTypes(INamespaceSymbol namespaceSymbol)
+            {
+                foreach (INamespaceOrTypeSymbol member in namespaceSymbol.GetMembers())
+                {
+                    if (member is INamespaceSymbol childNamespace)
+                    {
+                        foreach (INamedTypeSymbol nestedType in EnumerateNamedTypes(childNamespace))
+                        {
+                            yield return nestedType;
+                        }
+                    }
+                    else if (member is INamedTypeSymbol namedType)
+                    {
+                        yield return namedType;
+
+                        foreach (INamedTypeSymbol nestedType in EnumerateNestedTypes(namedType))
+                        {
+                            yield return nestedType;
+                        }
+                    }
+                }
+            }
+
+            static IEnumerable<INamedTypeSymbol> EnumerateNestedTypes(INamedTypeSymbol type)
+            {
+                foreach (INamedTypeSymbol nestedType in type.GetTypeMembers())
+                {
+                    yield return nestedType;
+
+                    foreach (INamedTypeSymbol deeperType in EnumerateNestedTypes(nestedType))
+                    {
+                        yield return deeperType;
+                    }
+                }
+            }
+        }
+
+        // The following is a faithful port of the Roslyn C# compiler's own accessibility comparison — the
+        // logic it runs to report the "inconsistent accessibility" diagnostics (CS0050/CS0060 and friends).
+        // Callers use it to decide whether one type is at least as visible as another — for example, whether
+        // an inferred closed-hierarchy derived type is at least as visible as the base it is registered under,
+        // so that every location that can reference the base can also reference the derived type. Rather than
+        // invent an accessibility metric (which would risk drifting from the language as new modifiers are
+        // added), we reproduce the compiler's algorithm verbatim, using its terminology, so it tracks C#
+        // accessibility as it evolves. The reflection resolver in DefaultJsonTypeInfoResolver.Helpers.cs
+        // mirrors this over System.Type.
+        //
+        // Ported from dotnet/roslyn @ 121e7dc868d26be12b9c3fb52b7b9d2ae41a1ac2:
+        //   IsAtLeastAsVisibleAs / FindTypeLessVisibleThan / IsAsRestrictive:
+        //     https://github.com/dotnet/roslyn/blob/121e7dc868d26be12b9c3fb52b7b9d2ae41a1ac2/src/Compilers/CSharp/Portable/Symbols/TypeSymbolExtensions.cs#L1048
+        //   IsAccessibleViaInheritance:
+        //     https://github.com/dotnet/roslyn/blob/121e7dc868d26be12b9c3fb52b7b9d2ae41a1ac2/src/Compilers/CSharp/Portable/Symbols/SymbolExtensions.cs#L48
+        //   HasInternalAccessTo:
+        //     https://github.com/dotnet/roslyn/blob/121e7dc868d26be12b9c3fb52b7b9d2ae41a1ac2/src/Compilers/CSharp/Portable/Binder/Semantics/AccessCheck.cs#L676
+
+        /// <summary>
+        /// Determines whether <paramref name="type"/> is at least as visible as <paramref name="sym"/>. Port
+        /// of Roslyn's <c>TypeSymbolExtensions.IsAtLeastAsVisibleAs</c>; because a closed hierarchy relates
+        /// two named types, the compound-type traversal (<c>FindTypeLessVisibleThan</c>/<c>Symbol.VisitType</c>)
+        /// reduces to the single <c>IsAsRestrictive</c> check.
+        /// </summary>
+        public static bool IsAtLeastAsVisibleAs(this ITypeSymbol type, ITypeSymbol sym)
+        {
+            return IsAsRestrictive(type, sym);
+
+            static bool IsAsRestrictive(ISymbol s1, ISymbol sym2)
+            {
+                Accessibility acc1 = s1.DeclaredAccessibility;
+
+                if (acc1 == Accessibility.Public)
+                {
+                    return true;
+                }
+
+                for (ISymbol s2 = sym2; s2.Kind != SymbolKind.Namespace; s2 = s2.ContainingSymbol!)
+                {
+                    Accessibility acc2 = s2.DeclaredAccessibility;
+
+                    switch (acc1)
+                    {
+                        case Accessibility.Internal:
+                            // If s2 is private or internal, and is in an assembly that gives s1's assembly
+                            // internal access, then this is at least as restrictive as s1's internal.
+                            if (acc2 is Accessibility.Private or Accessibility.Internal or Accessibility.ProtectedAndInternal &&
+                                HasInternalAccessTo(s2.ContainingAssembly, s1.ContainingAssembly))
+                            {
+                                return true;
+                            }
+
+                            break;
+
+                        case Accessibility.ProtectedAndInternal:
+                            // Since s1 is private protected, s2 must be more restrictive than both internal and
+                            // protected. Do the "internal" test first (as above); if it passes, fall through to
+                            // the "protected" test.
+                            if (acc2 is Accessibility.Private or Accessibility.Internal or Accessibility.ProtectedAndInternal &&
+                                HasInternalAccessTo(s2.ContainingAssembly, s1.ContainingAssembly))
+                            {
+                                goto case Accessibility.Protected;
+                            }
+
+                            break;
+
+                        case Accessibility.Protected:
+                        {
+                            INamedTypeSymbol? parent1 = s1.ContainingType;
+
+                            if (parent1 is null)
+                            {
+                                // not helpful
+                            }
+                            else if (acc2 == Accessibility.Private)
+                            {
+                                // if s2 is private and within s1's parent or within a subclass of s1's
+                                // parent, then this is at least as restrictive as s1's protected.
+                                for (INamedTypeSymbol? parent2 = s2.ContainingType; parent2 is not null; parent2 = parent2.ContainingType)
+                                {
+                                    if (IsAccessibleViaInheritance(parent1, parent2))
+                                    {
+                                        return true;
+                                    }
+                                }
+                            }
+                            else if (acc2 is Accessibility.Protected or Accessibility.ProtectedAndInternal)
+                            {
+                                // if s2 is protected, and its parent is a subclass of (or the same as) s1's
+                                // parent, then this is at least as restrictive as s1's protected.
+                                INamedTypeSymbol? parent2 = s2.ContainingType;
+                                if (parent2 is not null && IsAccessibleViaInheritance(parent1, parent2))
+                                {
+                                    return true;
+                                }
+                            }
+
+                            break;
+                        }
+
+                        case Accessibility.ProtectedOrInternal:
+                        {
+                            INamedTypeSymbol? parent1 = s1.ContainingType;
+
+                            if (parent1 is null)
+                            {
+                                break;
+                            }
+
+                            switch (acc2)
+                            {
+                                case Accessibility.Private:
+                                    // if s2 is private and within a subclass of s1's parent, or within the
+                                    // same assembly as s1, then this is at least as restrictive as s1's
+                                    // protected internal.
+                                    if (HasInternalAccessTo(s2.ContainingAssembly, s1.ContainingAssembly))
+                                    {
+                                        return true;
+                                    }
+
+                                    for (INamedTypeSymbol? parent2 = s2.ContainingType; parent2 is not null; parent2 = parent2.ContainingType)
+                                    {
+                                        if (IsAccessibleViaInheritance(parent1, parent2))
+                                        {
+                                            return true;
+                                        }
+                                    }
+
+                                    break;
+
+                                case Accessibility.Internal:
+                                    // If s2 is in an assembly that gives s1's assembly internal access, then
+                                    // this is more restrictive than s1's protected internal.
+                                    if (HasInternalAccessTo(s2.ContainingAssembly, s1.ContainingAssembly))
+                                    {
+                                        return true;
+                                    }
+
+                                    break;
+
+                                case Accessibility.Protected:
+                                    // if s2 is protected, and its parent is a subclass of (or the same as)
+                                    // s1's parent, then this is at least as restrictive as s1's protected internal.
+                                    if (s2.ContainingType is INamedTypeSymbol protectedParent2 &&
+                                        IsAccessibleViaInheritance(parent1, protectedParent2))
+                                    {
+                                        return true;
+                                    }
+
+                                    break;
+
+                                case Accessibility.ProtectedAndInternal:
+                                    // if s2 is private protected, and its parent is a subclass of (or the same
+                                    // as) s1's parent, or it is in the same assembly as s1, then this is at
+                                    // least as restrictive as s1's protected internal.
+                                    if (HasInternalAccessTo(s2.ContainingAssembly, s1.ContainingAssembly) ||
+                                        (s2.ContainingType is INamedTypeSymbol privateProtectedParent2 &&
+                                         IsAccessibleViaInheritance(parent1, privateProtectedParent2)))
+                                    {
+                                        return true;
+                                    }
+
+                                    break;
+
+                                case Accessibility.ProtectedOrInternal:
+                                    // if s2 is protected internal, and its parent is a subclass of (or the same
+                                    // as) s1's parent, and it is in the same assembly as s1, then this is at
+                                    // least as restrictive as s1's protected internal.
+                                    if (HasInternalAccessTo(s2.ContainingAssembly, s1.ContainingAssembly) &&
+                                        s2.ContainingType is INamedTypeSymbol protectedOrInternalParent2 &&
+                                        IsAccessibleViaInheritance(parent1, protectedOrInternalParent2))
+                                    {
+                                        return true;
+                                    }
+
+                                    break;
+                            }
+
+                            break;
+                        }
+
+                        case Accessibility.Private:
+                            if (acc2 == Accessibility.Private)
+                            {
+                                // if s2 is private, and it is within s1's parent, then this is at least as
+                                // restrictive as s1's private.
+                                INamedTypeSymbol? parent1 = s1.ContainingType;
+
+                                if (parent1 is null)
+                                {
+                                    break;
+                                }
+
+                                INamedTypeSymbol parent1OriginalDefinition = parent1.OriginalDefinition;
+                                for (INamedTypeSymbol? parent2 = s2.ContainingType; parent2 is not null; parent2 = parent2.ContainingType)
+                                {
+                                    if (SymbolEqualityComparer.Default.Equals(parent2.OriginalDefinition, parent1OriginalDefinition))
+                                    {
+                                        return true;
+                                    }
+                                }
+                            }
+
+                            break;
+                    }
+                }
+
+                return false;
+            }
+
+            static bool IsAccessibleViaInheritance(INamedTypeSymbol superType, INamedTypeSymbol subType)
+            {
+                INamedTypeSymbol originalSuperType = superType.OriginalDefinition;
+                for (INamedTypeSymbol? current = subType; current is not null; current = current.BaseType)
+                {
+                    if (SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, originalSuperType))
+                    {
+                        return true;
+                    }
+                }
+
+                if (originalSuperType.TypeKind == TypeKind.Interface)
+                {
+                    foreach (INamedTypeSymbol current in subType.AllInterfaces)
+                    {
+                        if (SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, originalSuperType))
+                        {
+                            return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            static bool HasInternalAccessTo(IAssemblySymbol fromAssembly, IAssemblySymbol toAssembly)
+            {
+                if (SymbolEqualityComparer.Default.Equals(fromAssembly, toAssembly))
+                {
+                    return true;
+                }
+
+                return toAssembly.GivesAccessTo(fromAssembly);
+            }
         }
     }
 }

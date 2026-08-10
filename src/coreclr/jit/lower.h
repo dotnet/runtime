@@ -252,21 +252,10 @@ private:
         return m_compiler->gtNewPhysRegNode(reg, type);
     }
 
-    GenTree* ThisReg(GenTreeCall* call)
-    {
-        return PhysReg(m_compiler->codeGen->genGetThisArgReg(call), TYP_REF);
-    }
-
     GenTree* Offset(GenTree* base, unsigned offset)
     {
         var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
         return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, nullptr, 0, offset);
-    }
-
-    GenTree* OffsetByIndex(GenTree* base, GenTree* index)
-    {
-        var_types resultType = base->TypeIs(TYP_REF) ? TYP_BYREF : base->TypeGet();
-        return new (m_compiler, GT_LEA) GenTreeAddrMode(resultType, base, index, 0, 0);
     }
 
     GenTree* OffsetByIndexWithScale(GenTree* base, GenTree* index, unsigned scale)
@@ -453,6 +442,10 @@ private:
     bool TryRemoveCast(GenTreeCast* node);
     bool TryRemoveBitCast(GenTreeUnOp* node);
 
+#if defined(TARGET_XARCH) || defined(TARGET_RISCV64)
+    GenTree* TryLowerBitwiseOpToBitOp(GenTreeOp* binOp);
+#endif // TARGET_XARCH || TARGET_RISCV64
+
 #ifdef TARGET_XARCH
     GenTree* TryLowerMulWithConstant(GenTreeOp* node);
 #endif // TARGET_XARCH
@@ -492,6 +485,7 @@ private:
     GenTree* LowerStoreLoc(GenTreeLclVarCommon* tree);
     void     LowerRotate(GenTree* tree);
     void     LowerShift(GenTreeOp* shift);
+    void     TryRemoveShiftRotateMask(GenTreeOp* op);
     bool     TryFoldBinop(GenTreeOp* node);
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* LowerHWIntrinsic(GenTreeHWIntrinsic* node);
@@ -510,6 +504,7 @@ private:
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
+    GenTree* TryLowerAndOpToZeroHighBits(GenTreeOp* andNode);
     GenTree* TryLowerXorOpToGetMaskUpToLowestSetBit(GenTreeOp* xorNode);
     void     LowerBswapOp(GenTreeOp* node);
     GenTree* LowerHWIntrinsicDotInnerMulSum(GenTreeHWIntrinsic* node);
@@ -523,6 +518,8 @@ private:
 #elif defined(TARGET_WASM)
     GenTree* LowerHWIntrinsicCompareUnsignedLong(GenTreeHWIntrinsic* node);
     GenTree* LowerHWIntrinsicWithImm(GenTreeHWIntrinsic* node);
+    GenTree* LowerHWIntrinsicNativeShuffle(GenTreeHWIntrinsic* node);
+    void     LowerHWIntrinsicSwizzle(GenTreeHWIntrinsic* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
     GenTree* InsertNewSimdCreateScalarUnsafeNode(var_types type,
                                                  GenTree*  op1,

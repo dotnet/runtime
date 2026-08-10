@@ -52,7 +52,7 @@ void sdk_info::enumerate_sdk_paths(
     {
         // Make sure we filter out any non-version folders.
         fx_ver_t version;
-        if (!fx_ver_t::parse(version_str, &version, false))
+        if (!fx_ver_t::parse(version_str, &version))
         {
             trace::verbose(_X("Ignoring invalid version [%s]"), version_str.c_str());
             continue;

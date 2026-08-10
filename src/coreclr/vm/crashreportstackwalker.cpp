@@ -260,7 +260,8 @@ FrameCallbackAdapter(
 
     Module* pModule = pMD->GetModule();
 
-    uint32_t nativeOffset = pCF->HasFaulted() ? 0 : pCF->GetRelOffset();
+    bool canResolveOffsets = pCF->IsFrameless();
+    uint32_t nativeOffset = canResolveOffsets ? pCF->GetRelOffset() : 0;
     uint32_t ilOffset = 0;
     PCODE ip = (PCODE)0;
     TADDR stackPointer = (TADDR)0;
@@ -276,7 +277,7 @@ FrameCallbackAdapter(
         return SWA_CONTINUE;
     }
 
-    if (g_pDebugInterface != nullptr && pMD != nullptr)
+    if (g_pDebugInterface != nullptr && canResolveOffsets)
     {
         DWORD resolvedILOffset = 0;
         BOOL haveILOffset = FALSE;
@@ -522,7 +523,7 @@ static
 void
 CrashReportResumeThreads()
 {
-    ThreadSuspend::RestartEE(FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 }
 
 static
@@ -683,9 +684,44 @@ GetCrashReportTimeoutSeconds()
     return timeoutSeconds;
 }
 
+static InProcCrashReporterSettings
+GetDefaultInProcCrashReporterSettings()
+{
+    InProcCrashReporterSettings settings = {};
+    settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
+    settings.walkStackCallback = CrashReportWalkStack;
+    settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
+    settings.moduleInfoCallback = CrashReportGetModuleInfo;
+    settings.frameLimitPerThread = GetCrashReportFrameLimitPerThread();
+    return settings;
+}
+
+void
+CrashReportInitialize()
+{
+    if (!EnsureCrashReportStackWalkerState())
+    {
+        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate stack walker storage");
+        return;
+    }
+
+    InProcCrashReporterSettings settings = GetDefaultInProcCrashReporterSettings();
+    InProcCrashReportInitialize(settings);
+}
+
 void
 CrashReportConfigure()
 {
+#if !defined(TARGET_ANDROID) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+    // Preserve createdump's existing ownership of EnableCrashReport* when it is enabled.
+    CLRConfigNoCache enabledMiniDumpCfg = CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
+    DWORD miniDumpEnabled = 0;
+    if (enabledMiniDumpCfg.IsSet() && enabledMiniDumpCfg.TryAsInteger(10, miniDumpEnabled) && miniDumpEnabled != 0)
+    {
+        return;
+    }
+#endif // !defined(TARGET_ANDROID) && !defined(TARGET_IOS) && !defined(TARGET_TVOS) && !defined(TARGET_MACCATALYST)
+
     // Read crash report configuration here rather than in PROCAbortInitialize
     // because on Android the DOTNET_* environment variables are set via JNI
     // after PAL_Initialize has already run.
@@ -702,33 +738,26 @@ CrashReportConfigure()
         return;
     }
 
-    if (!EnsureCrashReportStackWalkerState())
-    {
-        InProcCrashReportLogInitializationFailure(".NET crash report disabled: failed to allocate stack walker storage");
-        return;
-    }
+    CrashReportInitialize();
 
     CLRConfigNoCache crashReportRootPathCfg = CLRConfigNoCache::Get("CrashReportRootPath", /*noprefix*/ false, &getenv);
     const char* crashReportRootPath = crashReportRootPathCfg.IsSet() ? crashReportRootPathCfg.AsString() : nullptr;
-    bool rootConfigured = crashReportRootPath != nullptr && crashReportRootPath[0] != '\0';
 
-    InProcCrashReporterSettings settings = {};
-    if (rootConfigured)
+    InProcCrashReporterServicesSettings settings = {};
+    settings.enableCreateCrashDump = true;
+    if (crashReportRootPath != nullptr && crashReportRootPath[0] != '\0')
     {
+        settings.enableLifecycle = true;
         settings.reportRootPath = crashReportRootPath;
         settings.maxFileCount = GetCrashReportMaxFileCount();
     }
 
+    settings.enableWatchdog = true;
     settings.timeoutSeconds = GetCrashReportTimeoutSeconds();
-    settings.isManagedThreadCallback = CrashReportIsCurrentThreadManaged;
-    settings.walkStackCallback = CrashReportWalkStack;
-    settings.enumerateThreadsCallback = CrashReportEnumerateThreads;
-    settings.moduleInfoCallback = CrashReportGetModuleInfo;
-    settings.frameLimitPerThread = GetCrashReportFrameLimitPerThread();
 
-    // Initialize the reporter and register the PAL signal-path callback last
+    // Start the crash-dump services and register the PAL signal-path callback last
     // so PAL only observes the reporter after all VM callbacks are wired in.
-    InProcCrashReportInitialize(settings);
+    InProcCrashReportInitializeServices(settings);
 }
 
 #endif // FEATURE_INPROC_CRASHREPORT

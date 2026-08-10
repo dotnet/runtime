@@ -23,6 +23,34 @@ namespace System.Text.Json.Serialization
         public JsonUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get; set; }
 
         /// <summary>
+        /// Gets or sets a value that indicates whether derived type registrations should be inferred
+        /// from compiler-provided metadata for a closed type hierarchy.
+        /// </summary>
+        /// <value>
+        /// <see langword="true"/> to infer derived type registrations; otherwise, <see langword="false"/>.
+        /// The default is <see langword="false"/>.
+        /// </value>
+        /// <remarks>
+        /// Setting this property overrides <see cref="JsonSerializerOptions.InferClosedTypePolymorphism"/>
+        /// for the annotated type, so an explicit <see langword="false"/> suppresses inference even when it is
+        /// enabled globally. When the property is left unset the globally configured value is used.
+        /// Inference is skipped when explicit <see cref="JsonDerivedTypeAttribute"/> registrations are declared.
+        /// </remarks>
+        public bool InferClosedTypePolymorphism
+        {
+            get => _inferClosedTypePolymorphism ?? false;
+            set => _inferClosedTypePolymorphism = value;
+        }
+
+        /// <summary>
+        /// Gets the explicitly configured <see cref="InferClosedTypePolymorphism"/> value,
+        /// or <see langword="null"/> if the property has not been set.
+        /// </summary>
+        internal bool? InferClosedTypePolymorphismOrNull => _inferClosedTypePolymorphism;
+
+        private bool? _inferClosedTypePolymorphism;
+
+        /// <summary>
         /// When set to <see langword="true"/>, instructs the deserializer to ignore any
         /// unrecognized type discriminator id's and reverts to the contract of the base type.
         /// Otherwise, it will fail the deserialization.

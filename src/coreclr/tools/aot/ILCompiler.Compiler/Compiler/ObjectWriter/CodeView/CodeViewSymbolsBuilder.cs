@@ -100,10 +100,16 @@ namespace ILCompiler.ObjectWriter
                     };
 
                 case TargetArchitecture.ARM64:
-                    // X0-X28, FP, LR, SP have same order
-                    if (regNum <= 32)
+                    // X0-X28, FP, LR, SP have the same order.
+                    if (regNum <= 31)
                         return (CodeViewRegister)(regNum + (uint)CV_ARM64_X0);
-                    // TODO: Floating point
+
+                    if (regNum == 32)
+                        return CV_ARM64_PC;
+
+                    if (regNum <= 64)
+                        return (CodeViewRegister)(regNum - 33 + (uint)CV_ARM64_Q0);
+
                     return CV_REG_NONE;
 
                 default:

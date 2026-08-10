@@ -602,7 +602,7 @@ namespace Microsoft.Extensions.Options.Generators
                 sb.Append(first ? $"if " : $"{padding}else if ");
                 sb.AppendLine($"(validationContext.ObjectInstance is {type} && OtherProperty == \"{property}\")");
                 sb.AppendLine($"{padding}{{");
-                sb.AppendLine($"{padding}    result = Equals(value, (({type})validationContext.ObjectInstance).{property});");
+                sb.AppendLine($"{padding}    result = Equals(value, (({type})validationContext.ObjectInstance).{EscapeIdentifier(property)});");
                 sb.AppendLine($"{padding}}}");
                 first = false;
             }
@@ -751,7 +751,7 @@ namespace Microsoft.Extensions.Options.Generators
                 OutLn($"validationAttributes.Add({_staticValidationAttributeHolderClassFQN}.{staticValidationAttributeInstance.FieldName});");
             }
 
-            OutLn($"if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.{vm.Name}{_TryGetValueNullableAnnotation}, context, validationResults, validationAttributes))");
+            OutLn($"if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.{EscapeIdentifier(vm.Name)}{_TryGetValueNullableAnnotation}, context, validationResults, validationAttributes))");
             OutOpenBrace();
             OutLn($"(builder ??= new()).AddResults(validationResults);");
             OutCloseBrace();
@@ -834,17 +834,18 @@ namespace Microsoft.Extensions.Options.Generators
             var valueAccess = (vm.IsNullable && vm.IsValueType) ? ".Value" : string.Empty;
 
             var baseName = $"string.IsNullOrEmpty(name) ? \"{vm.Name}\" : $\"{{name}}.{vm.Name}\"";
+            var memberAccess = $"options.{EscapeIdentifier(vm.Name)}";
 
             if (vm.IsNullable)
             {
-                OutLn($"if (options.{vm.Name} is not null)");
+                OutLn($"if ({memberAccess} is not null)");
                 OutOpenBrace();
-                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess}));");
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, {memberAccess}{valueAccess}));");
                 OutCloseBrace();
             }
             else
             {
-                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess}));");
+                OutLn($"(builder ??= new()).AddResult({callSequence}.Validate({baseName}, {memberAccess}{valueAccess}));");
             }
         }
 
@@ -864,15 +865,17 @@ namespace Microsoft.Extensions.Options.Generators
                 callSequence = $"{_staticValidatorHolderClassFQN}.{staticValidatorInstance.FieldName}";
             }
 
+            var memberAccess = $"options.{EscapeIdentifier(vm.Name)}";
+
             if (vm.IsNullable)
             {
-                OutLn($"if (options.{vm.Name} is not null)");
+                OutLn($"if ({memberAccess} is not null)");
             }
 
             OutOpenBrace();
 
             OutLn($"var count = 0;");
-            OutLn($"foreach (var o in options.{vm.Name}{valueAccess})");
+            OutLn($"foreach (var o in {memberAccess}{valueAccess})");
             OutOpenBrace();
 
             if (vm.EnumeratedIsNullable)
@@ -903,6 +906,14 @@ namespace Microsoft.Extensions.Options.Generators
             OutCloseBrace();
             OutCloseBrace();
         }
+
+        /// <summary>
+        /// Prefixes an identifier with "@" when it would otherwise be parsed as a keyword (e.g. a member declared as <c>@class</c>).
+        /// </summary>
+        private static string EscapeIdentifier(string identifier)
+            => SyntaxFacts.GetKeywordKind(identifier) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(identifier) != SyntaxKind.None
+                ? "@" + identifier
+                : identifier;
 
     #pragma warning disable CA1822 // Mark members as static: static should come before non-static, but we want the method to be here
         private StaticFieldInfo GetOrAddStaticValidator(ref Dictionary<string, StaticFieldInfo> staticValidatorsDict, string validatorTypeFQN)

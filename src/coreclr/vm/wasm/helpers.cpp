@@ -491,13 +491,22 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         return;
     }
 
-    pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
-
     pRD->IsCallerContextValid = FALSE;
 
-    pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
-    pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
-    
+    if (m_pCallerReturnAddress == INLINED_PINVOKE_FROM_R2R)
+    {
+        pRD->pCurrentContext->InterpreterSP = (TADDR)m_pCallSiteSP;
+        pRD->pCurrentContext->InterpreterIP = GetWasmVirtualIPFromStackPointer((TADDR)m_pCallSiteSP);
+        _ASSERTE(pRD->pCurrentContext->InterpreterIP != 0); // We should be in RyuJit compiled code here
+        pRD->pCurrentContext->InterpreterFP = GetWasmFramePointerFromStackPointer((TADDR)m_pCallSiteSP, (PCODE)pRD->pCurrentContext->InterpreterIP);
+    }
+    else
+    {
+        pRD->pCurrentContext->InterpreterIP = *(DWORD *)&m_pCallerReturnAddress;
+        pRD->pCurrentContext->InterpreterSP = *(DWORD *)&m_pCallSiteSP;
+        pRD->pCurrentContext->InterpreterFP = *(DWORD *)&m_pCalleeSavedFP;
+    }
+
     SyncRegDisplayToCurrentContext(pRD);
 
 #ifdef FEATURE_INTERPRETER
@@ -552,6 +561,26 @@ __attribute__((naked)) void ThrowRtlRestoreContextTag()
 {
     asm("throw __coreclr_wasm_rtlrestorecontext_tag\n"
         "unreachable\n" ::);
+}
+
+// Runtime-owned WebAssembly global carrying the runtime-async continuation return
+// value. Exported so every R2R webcil imports this same global (see libCorerun.js).
+// Single-threaded today; like __stack_pointer it becomes per-thread once wasm threads land.
+asm(".globl __async_continuation\n"
+    ".globaltype __async_continuation, i32\n"
+    "__async_continuation:\n");
+
+extern "C" __attribute__((naked)) uint32_t RuntimeAsync_LoadAsyncContinuation()
+{
+    asm("global.get __async_continuation\n"
+        "return\n" ::);
+}
+
+extern "C" __attribute__((naked)) void RuntimeAsync_StoreAsyncContinuation(uint32_t value)
+{
+    asm("local.get 0\n"
+        "global.set __async_continuation\n"
+        "return\n" ::);
 }
 
 VOID PALAPI RtlRestoreContext(IN PCONTEXT ContextRecord, IN PEXCEPTION_RECORD ExceptionRecord)
@@ -681,27 +710,131 @@ extern "C" void STDCALL GenericPInvokeCalliHelper(void)
     PORTABILITY_ASSERT("GenericPInvokeCalliHelper is not implemented on wasm");
 }
 
-EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame)
+// Does the pinvoke frame transition; the naked wrappers below have already set the wasm
+// __stack_pointer global to callersStackPointer so it is safe to run native code here.
+EXTERN_C void JIT_PInvokeBeginImpl(uintptr_t callersStackPointer, InlinedCallFrame* pFrame)
 {
-    PORTABILITY_ASSERT("JIT_PInvokeBegin is not implemented on wasm");
+    Thread* pThread = GetThread();
+
+    // Initialize the JIT-provided frame storage, deriving its state from callersStackPointer since wasm
+    // has no machine registers to read the caller SP / return address from.
+    ::new ((void*)pFrame) InlinedCallFrame();
+    pFrame->m_pCallSiteSP          = (void*)callersStackPointer;
+    pFrame->m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R; // When this is true, UpdateRegDisplay_Impl derives state from m_pCallSiteSP.
+    pFrame->m_pCalleeSavedFP       = 0;
+    pFrame->m_pThread              = pThread;
+
+    // Link the frame and transition to preemptive GC mode for the native call.
+    pFrame->Push();
+    pThread->EnablePreemptiveGC();
 }
 
-EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame)
+// R2R keeps its shadow SP in a local and leaves the __stack_pointer global stale, so publish
+// the incoming sp to __stack_pointer before any native code runs and leave it there so the
+// subsequent native pinvoke target is also safe.
+extern "C" __attribute__((naked)) void JIT_PInvokeBegin(void* sp, InlinedCallFrame* pFrame, PCODE pep)
 {
-    PORTABILITY_ASSERT("JIT_PInvokeEnd is not implemented on wasm");
+    asm("local.get 0\n"                /* sp */
+        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs */
+        "local.get 0\n"                /* sp */
+        "local.get 1\n"                /* pFrame */
+        "call %0\n"
+        "return" ::"i"(JIT_PInvokeBeginImpl));
 }
+
+extern "C" VOID JIT_PInvokeEndRarePath();
+
+#ifdef DEBUG
+// Debug variant of these apis tests that sp and __stack_pointer are in sync
+EXTERN_C void JIT_PInvokeEndImpl(TADDR sp, TADDR stack_pointer_global_value, InlinedCallFrame* pFrame)
+{
+    _ASSERTE(sp == stack_pointer_global_value);
+    Thread* pThread = (Thread*)pFrame->m_pThread;
+
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        pFrame->Pop();
+    }
+}
+
+extern "C" __attribute__((naked)) void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
+{
+    asm(
+        "local.get 0\n"                /* sp */
+        "global.get __stack_pointer\n" /* __stack_pointer */
+        "local.get 1\n"                /* pFrame */
+        "local.get 0\n"                /* sp */
+        "global.set __stack_pointer\n" /* __stack_pointer = sp before any native code runs, set this here, so that if the assumption around sp == __stack_pointer is wrong the assert logic will work correctly. */
+        "call %0\n"
+        "return" ::"i"(JIT_PInvokeEndImpl));
+}
+#else
+extern "C" void JIT_PInvokeEnd(void* sp, InlinedCallFrame* pFrame, PCODE pep)
+{
+    UNREFERENCED_PARAMETER(sp);
+    UNREFERENCED_PARAMETER(pep);
+
+    Thread* pThread = (Thread*)pFrame->m_pThread;
+
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        pFrame->Pop();
+    }
+}
+#endif
 
 extern "C" void STDCALL JIT_StackProbe()
 {
     PORTABILITY_ASSERT("JIT_StackProbe is not implemented on wasm");
 }
 
-EXTERN_C FCDECL0(void, JIT_PollGC);
-FCIMPL0(void, JIT_PollGC)
+EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
 {
-    PORTABILITY_ASSERT("JIT_PollGC is not implemented on wasm");
+    InlinedCallFrame inlinedCallFrame;
+    JIT_PInvokeBeginImpl(callersStackPointer, &inlinedCallFrame);
+
+    Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        inlinedCallFrame.Pop();
+    }
 }
-FCIMPLEND
+
+EXTERN_C FCDECL0(void, JIT_PollGC);
+EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
+{
+    asm(
+        "i32.const 0\n"
+        "i32.load %[g_TrapReturningThreads]\n"
+        "if\n"
+        "  global.get __stack_pointer\n"
+        "  local.set 1\n"                 /* save previous __stack_pointer into the unused pep local */
+        "  local.get 0\n"                 /* callersStackPointer */
+        "  global.set __stack_pointer\n"
+        "  local.get 0\n"                 /* sp argument for the rare-path helper */
+        "  call %[JIT_PollGCRarePath]\n"
+        "  local.get 1\n"                 /* restore previous __stack_pointer */
+        "  global.set __stack_pointer\n"
+        "end_if\n"
+        "return\n"
+        :: [g_TrapReturningThreads] "i" (&g_TrapReturningThreads),
+           [JIT_PollGCRarePath] "i" (JIT_PollGCRarePath));
+}
 
 void InitJITHelpers1()
 {
@@ -883,6 +1016,13 @@ void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, in
     _ASSERTE(cookie != NULL);
 
     (cookie)(ftn, pArgs, pRet);
+
+    // Async callees write their continuation to the shared global; hand it back to the caller.
+    //
+    if (pContinuationRet != nullptr)
+    {
+        *pContinuationRet = (Object*)(uintptr_t)RuntimeAsync_LoadAsyncContinuation();
+    }
 }
 
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet)
@@ -906,6 +1046,7 @@ namespace
         ToI64,
         ToF32,
         ToF64,
+        ToV128,
         ToStruct,   // S<N> — multi-field struct passed by pointer, structSize holds the size
         ToEmpty,    // e — empty struct, takes no wasm argument
     };
@@ -949,6 +1090,23 @@ namespace
         }
 
         MethodTable* pMT = th.AsMethodTable();
+
+        bool isSupportedVectorBaseType =
+            pMT->IsIntrinsicType() &&
+            (pMT->GetNumGenericArgs() == 1) &&
+            CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType());
+        if (isSupportedVectorBaseType)
+        {
+            PTR_MethodTable pVector128MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR128T);
+            PTR_MethodTable pVectorTMT = CoreLibBinder::GetClassIfExist(CLASS__VECTORT);
+
+            if ((pVector128MT != nullptr && pMT->HasSameTypeDefAs(pVector128MT)) ||
+                ((size == 16) && (pVectorTMT != nullptr) && pMT->HasSameTypeDefAs(pVectorTMT)))
+            {
+                return { ConvertType::ToV128, 0 };
+            }
+        }
+
         uint32_t numInstanceFields = pMT->GetNumInstanceFields();
 
         // WASM-TODO: Empty structs should return ToEmpty once .NET
@@ -1024,6 +1182,7 @@ namespace
             case ConvertType::ToI64:       c = 'l'; break;
             case ConvertType::ToF32:       c = 'f'; break;
             case ConvertType::ToF64:       c = 'd'; break;
+            case ConvertType::ToV128:      c = 'V'; break;
             case ConvertType::ToEmpty:     c = 'e'; break;
             case ConvertType::ToStruct:
             {
@@ -1096,6 +1255,13 @@ namespace
         {
             if (pos < maxSize)
                 keyBuffer[pos] = 'i';
+            pos++;
+        }
+
+        if (sig.HasAsyncContinuation())
+        {
+            if (pos < maxSize)
+                keyBuffer[pos] = 'a';
             pos++;
         }
 
@@ -1372,6 +1538,55 @@ InterpreterCalliCookie GetCookieForCalliSig(MetaSig metaSig, MethodDesc *pContex
 {
     STANDARD_VM_CONTRACT;
 
+    // String constructors use a special calling convention: they are compiled (both the R2R body and
+    // the caller-side thunks in crossgen2, see WasmLowering.GetStringCtorActualSignature) as static
+    // factory methods that allocate and return the string, i.e. "String Ctor(args)" rather than the
+    // declared "void .ctor(this, args)". The interpreter->R2R thunk selected here must therefore match
+    // that factory shape. This mirrors the R2R->interpreter direction in
+    // GetPortableEntryPointToInterpreterThunk (which uses the 'I'-prefixed keys).
+    if (pContextMD != NULL && pContextMD->IsCtor() && pContextMD->GetMethodTable()->IsString())
+    {
+        const char *thunkKey = nullptr;
+
+        if (metaSig.NumFixedArgs() == 1)
+        {
+            MetaSig ctorSig = metaSig;
+            if (ctorSig.NextArg() == ELEMENT_TYPE_VALUETYPE)
+            {
+                thunkKey = "MiS8p"; // String constructor with a single argument of type System.ReadOnlySpan<char>
+            }
+        }
+
+        if (thunkKey == nullptr)
+        {
+            switch (metaSig.NumFixedArgs())
+            {
+                case 1:
+                    thunkKey = "Miip";
+                    break;
+                case 2:
+                    thunkKey = "Miiip";
+                    break;
+                case 3:
+                    thunkKey = "Miiiip";
+                    break;
+                case 4:
+                    thunkKey = "Miiiiip";
+                    break;
+                default:
+                    PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk for string constructor");
+                    return nullptr;
+            }
+        }
+
+        InterpreterCalliCookie stringCtorThunk = LookupThunk(thunkKey);
+        if (stringCtorThunk == NULL)
+        {
+            PORTABILITY_ASSERT("GetCookieForCalliSig: unknown thunk signature");
+        }
+        return stringCtorThunk;
+    }
+
     InterpreterCalliCookie thunk = ComputeCalliSigThunk(metaSig);
     if (thunk == NULL)
     {
@@ -1512,7 +1727,10 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
         cookie = pMD->GetCalliCookie();
     }
 
-    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pContinuationRet);
+    // Only pass the continuation arg to async callees.
+    //
+    Object** pCalleeContinuationRet = pMD->IsAsyncMethod() ? pContinuationRet : nullptr;
+    InvokeCalliStub(target == NULL ? pMD->GetMultiCallableAddrOfCode(CORINFO_ACCESS_ANY) : target, cookie, pArgs, pRet, pCalleeContinuationRet);
 }
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
@@ -1574,7 +1792,7 @@ TADDR GetWasmVirtualIPFromStackPointer(TADDR sp)
     }
 }
 
-static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase, PRUNTIME_FUNCTION FunctionEntry)
+static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase, PRUNTIME_FUNCTION FunctionEntry, bool callerIsNative = false)
 {
     TADDR sp = *pSP;
     TADDR fp = GetWasmFramePointerFromStackPointer_Internal(sp);
@@ -1587,7 +1805,9 @@ static void WasmUnwindStackFrameCore(TADDR* pSP, TADDR* pIP, UINT_PTR ImageBase,
     {
         PTR_BYTE pUnwindData = dac_cast<PTR_BYTE>(FunctionEntry->UnwindData + ImageBase);
         *pSP = fp + DecodeULEB128AsU32(&pUnwindData); // Unwind the frame pointer to the callers stack pointer
-        *pIP = GetWasmVirtualIPFromStackPointer(*pSP);
+        // A reverse-pinvoke frame's caller is native, not an R2R shadow frame; leave the IP unset so the walk
+        // continues via the Frame chain instead of reading the native caller SP as a shadow frame.
+        *pIP = callerIsNative ? 0 : GetWasmVirtualIPFromStackPointer(*pSP);
     }
 }
 
@@ -1659,7 +1879,23 @@ RtlVirtualUnwind (
     *HandlerData = 0;
     *EstablisherFrame = 0;
 
-    WasmUnwindStackFrameCore((TADDR*)&ContextRecord->InterpreterSP, (TADDR*)&ContextRecord->InterpreterIP, ImageBase, FunctionEntry);
+    // Reverse-pinvoke frames (UnmanagedCallersOnly methods and reverse P/Invoke IL stubs) are called from
+    // native code, so terminate the R2R walk at this boundary. Funclets share their parent method's GC info,
+    // so exclude them: a funclet is entered either from managed code (a non-exceptional finally) or from the
+    // VM's CallFunclet helpers, never directly across the reverse-pinvoke boundary.
+    bool callerIsNative = false;
+    {
+        EECodeInfo codeInfo;
+        codeInfo.Init(static_cast<PCODE>(ControlPc));
+        if (codeInfo.IsValid())
+        {
+            GcInfoDecoder gcInfoDecoder(codeInfo.GetGCInfoToken(), DECODE_REVERSE_PINVOKE_VAR);
+            callerIsNative = (gcInfoDecoder.GetReversePInvokeFrameStackSlot() != NO_REVERSE_PINVOKE_FRAME) &&
+                             !codeInfo.IsFunclet();
+        }
+    }
+
+    WasmUnwindStackFrameCore((TADDR*)&ContextRecord->InterpreterSP, (TADDR*)&ContextRecord->InterpreterIP, ImageBase, FunctionEntry, callerIsNative);
 
     if (ContextRecord->InterpreterSP != 0)
     {

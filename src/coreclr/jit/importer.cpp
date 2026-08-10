@@ -2715,10 +2715,9 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
     // NativeAOT generic virtual method
     if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
-        GenTree* runtimeMethodHandle =
-            impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
+        GenTree* dispatchCell = impLookupToTree(&pCallInfo->codePointerLookup, GTF_ICON_FTN_ADDR, pCallInfo->hMethod);
         call = gtNewVirtualFunctionLookupHelperCallNode(CORINFO_HELP_GVMLOOKUP_FOR_SLOT, TYP_I_IMPL, thisPtr,
-                                                        runtimeMethodHandle);
+                                                        dispatchCell);
     }
 
     // Wasm R2R cannot use the CORINFO_HELP_READYTORUN_VIRTUAL_FUNC_PTR fast path because it
@@ -2788,6 +2787,11 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 //
 // Returns:
 //    The Vector128.CreateScalar node that contains op1
+//
+// Notes:
+//    This may append a temp store, which spills the import stack. Callers with multiple
+//    operands must therefore materialize the last operand first and leave the preceding
+//    ones on the import stack until then, so that IL evaluation order is preserved.
 //
 GenTree* Compiler::impSimdCreateScalarHalf(GenTree* op1)
 {
@@ -3910,7 +3914,7 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
     if (runtimeLookup)
     {
-        node = gtNewHelperCallNode(CORINFO_HELP_INITCLASS, TYP_VOID, node);
+        node = gtNewHelperCallNode(CORINFO_HELP_INITCLASS, HelperInitClassRetType, node);
     }
     else
     {
@@ -9474,12 +9478,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP("\nHave extra IL stack entry after tail await\n");
                         GenTree* val = impPopStack().val;
-                        if (varTypeIsStruct(val))
+                        if ((val->gtFlags & GTF_SIDE_EFFECT) != 0)
                         {
-                            val = impNormStructVal(val, CHECK_SPILL_ALL);
-                        }
+                            if (varTypeIsStruct(val))
+                            {
+                                val = impNormStructVal(val, CHECK_SPILL_ALL);
+                            }
 
-                        impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+                            impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+                        }
                     }
 
                     prefixFlags &= ~PREFIX_TAILCALL;
@@ -10701,7 +10708,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     { // compDonotInline()
                         return;
                     }
-                    op1 = gtNewHelperCallNode(helper, TYP_VOID, op2, op1);
+                    // The byref is formed from clone + TARGET_POINTER_SIZE below, so discard the
+                    // helper result to keep the enclosing COLON/QMARK void.
+                    op1 = gtUnusedValNode(gtNewHelperCallNode(helper, HelperUnboxDiscardedRetType, op2, op1));
 
                     op1 = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), op1);
                     op1 = gtNewQmarkNode(TYP_VOID, condBox, op1->AsColon());
@@ -11911,8 +11920,10 @@ bool Compiler::impWrapTopOfStackInAwait()
         return true;
     }
 
-    CORINFO_LOOKUP        instArgLookup;
-    CORINFO_METHOD_HANDLE awaitMethod = info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &instArgLookup);
+    CORINFO_LOOKUP         instArgLookup;
+    CORINFO_CONTEXT_HANDLE contextHandle;
+    CORINFO_METHOD_HANDLE  awaitMethod =
+        info.compCompHnd->getAwaitReturnCall(info.compMethodHnd, &contextHandle, &instArgLookup);
 
     CORINFO_SIG_INFO awaitSig;
     info.compCompHnd->getMethodSig(awaitMethod, &awaitSig);
@@ -11975,6 +11986,11 @@ bool Compiler::impWrapTopOfStackInAwait()
         }
     }
 
+    CORINFO_CALL_INFO callInfo = {};
+    callInfo.hMethod           = awaitMethod;
+    callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(awaitMethod);
+    impMarkInlineCandidate(awaitCall, contextHandle, &callInfo, compInlineContext);
+
     GenTree* toPush = awaitCall;
     if (varTypeIsStruct(callRetType))
     {
@@ -12011,6 +12027,27 @@ bool Compiler::impWrapTopOfStackInAwait()
     }
 
     awaitCall->SetIsAsync(asyncInfo);
+
+    if (awaitCall->IsInlineCandidate())
+    {
+        // The struct return fixup does not create a new node for inline
+        // candidates, so 'toPush' is still the call itself.
+        assert(toPush == awaitCall);
+
+        // Make the call its own statement and hand back a GT_RET_EXPR (or
+        // nothing for void) as the placeholder for the inliner.
+        impAppendTree(awaitCall, CHECK_SPILL_ALL, impCurStmtDI, /* checkConsumedDebugInfo */ false);
+
+        if (callRetType == TYP_VOID)
+        {
+            assert(info.compRetType == TYP_VOID);
+            return true;
+        }
+
+        GenTreeRetExpr* retExpr = gtNewInlineCandidateReturnExpr(awaitCall, genActualType(awaitCall->TypeGet()));
+        awaitCall->GetSingleInlineCandidateInfo()->retExpr = retExpr;
+        toPush                                             = retExpr;
+    }
 
     if (info.compRetType == TYP_VOID)
     {
