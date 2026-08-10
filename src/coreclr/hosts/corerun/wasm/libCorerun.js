@@ -32,6 +32,20 @@ function libCoreRunFactory() {
                 }
 
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
+
+                // Explicit exits (e.g. Environment.Exit) reach _proc_exit from deep inside managed code; letting
+                // Emscripten throw ExitStatus and unwind back through the live CLR interpreter frames runs native
+                // code after the runtime/FS teardown and aborts with the wrong exit code (https://github.com/dotnet/runtime/issues/131937).
+                // Under Node, end the process immediately with the requested code; stdio was already flushed by exitRuntime().
+                if (ENVIRONMENT_IS_NODE) {
+                    const original_proc_exit = _proc_exit;
+                    _proc_exit = (code) => {
+                        if (!keepRuntimeAlive()) {
+                            process.exit(code);
+                        }
+                        return original_proc_exit(code);
+                    };
+                }
             },
         },
         $CORERUN__postset: "CORERUN.selfInitialize()",
