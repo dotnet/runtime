@@ -4,6 +4,7 @@
 using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.Win32.SafeHandles;
 using System.IO.Pipes;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -12,6 +13,10 @@ namespace System.IO.Tests
     [PlatformSpecific(TestPlatforms.Windows)]
     public class SafeFileHandle_GetFileType_Windows : FileSystemTest
     {
+        private const int PipeAccessOutbound = 0x2;
+        private const int FileFlagFirstPipeInstance = 0x00080000;
+        private const int FileFlagOverlapped = 0x40000000;
+
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -64,29 +69,38 @@ namespace System.IO.Tests
         [InlineData(true)]
         public void FileStream_WriteOnlyNamedPipe_CanSeek_IsAsync(bool isAsync)
         {
-            int openMode = (int)Interop.Kernel32.PipeOptions.PIPE_ACCESS_OUTBOUND |
-                Interop.Kernel32.FileOperations.FILE_FLAG_FIRST_PIPE_INSTANCE;
+            int openMode = PipeAccessOutbound | FileFlagFirstPipeInstance;
             if (isAsync)
             {
-                openMode |= Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED;
+                openMode |= FileFlagOverlapped;
             }
 
-            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = default;
-            using SafeFileHandle handle = Interop.Kernel32.CreateNamedPipeFileHandle(
+            using SafeFileHandle handle = CreateNamedPipe(
                 $@"\\.\pipe\{Guid.NewGuid():N}",
                 openMode,
-                pipeMode: (int)Interop.Kernel32.PipeOptions.PIPE_TYPE_BYTE,
+                pipeMode: 0,
                 maxInstances: 1,
                 outBufferSize: 0,
                 inBufferSize: 0,
                 defaultTimeout: 0,
-                ref securityAttributes);
+                securityAttributes: IntPtr.Zero);
             Assert.False(handle.IsInvalid);
 
             using FileStream stream = new(handle, FileAccess.Write, bufferSize: 4096, isAsync);
             Assert.False(stream.CanSeek);
             Assert.Equal(isAsync, stream.IsAsync);
         }
+
+        [DllImport("kernel32.dll", EntryPoint = "CreateNamedPipeW", CharSet = CharSet.Unicode, SetLastError = true)]
+        private static extern SafeFileHandle CreateNamedPipe(
+            string pipeName,
+            int openMode,
+            int pipeMode,
+            int maxInstances,
+            int outBufferSize,
+            int inBufferSize,
+            int defaultTimeout,
+            IntPtr securityAttributes);
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetFileType_ConsoleInput()
