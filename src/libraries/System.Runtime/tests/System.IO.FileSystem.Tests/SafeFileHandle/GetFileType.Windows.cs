@@ -64,8 +64,7 @@ namespace System.IO.Tests
         [InlineData(true)]
         public void FileStream_WriteOnlyNamedPipe_CanSeek_IsAsync(bool isAsync)
         {
-            int openMode = (int)Interop.Kernel32.PipeOptions.PIPE_ACCESS_OUTBOUND |
-                Interop.Kernel32.FileOperations.FILE_FLAG_FIRST_PIPE_INSTANCE;
+            int openMode = (int)Interop.Kernel32.PipeOptions.PIPE_ACCESS_OUTBOUND;
             if (isAsync)
             {
                 openMode |= Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED;
