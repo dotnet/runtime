@@ -1463,6 +1463,13 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             {
             }
 
+            [ExpectedWarning("IL3002", "ClassWithOtherCapabilityRequirements()", "--ClassWithOtherCapabilityRequirements--", Tool.NativeAot, "")]
+            [ExpectedWarning("IL3050", "ClassWithOtherCapabilityRequirements()", "--ClassWithOtherCapabilityRequirements--", Tool.NativeAot, "")]
+            [RequiresDynamicCode("--ClassImplementingInterfaceWithOtherCapabilityWarningsWithRdc--")]
+            class ClassImplementingInterfaceWithOtherCapabilityWarningsWithRdc : IRequiresNew<ClassWithOtherCapabilityRequirements>
+            {
+            }
+
             [RequiresUnreferencedCode("--GenericAnnotatedWithWarningWithRequires--")]
             public class GenericAnnotatedWithWarningWithRequires<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)] TFields> : RequiresAll<TFields>
             {
@@ -1478,6 +1485,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
             [ExpectedWarning("IL2026", "--ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires--")]
             [ExpectedWarning("IL2026", "--ClassImplementingInterfaceWithWarningWithRequires--")]
             [ExpectedWarning("IL2026", "--ClassImplementingInterfaceWithOtherCapabilityWarningsWithRequires--")]
+            [ExpectedWarning("IL3050", "--ClassImplementingInterfaceWithOtherCapabilityWarningsWithRdc--", Tool.Analyzer | Tool.NativeAot, "")]
             [ExpectedWarning("IL2026", "--GenericAnnotatedWithWarningWithRequires--")]
             public static void Test(ClassWithRequires inst = null)
             {
@@ -1501,6 +1509,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
                 var o = new ClassImplementingInterfaceWithWarningOnGenericArgumentConstructorWithRequires();
                 var p = new ClassImplementingInterfaceWithWarningWithRequires();
                 var q = new ClassImplementingInterfaceWithOtherCapabilityWarningsWithRequires();
+                var r = new ClassImplementingInterfaceWithOtherCapabilityWarningsWithRdc();
 
                 // Reference the interfaces, otherwise they could be trimmed
                 Type t;
