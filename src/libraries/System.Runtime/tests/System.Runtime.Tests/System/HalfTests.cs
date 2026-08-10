@@ -2598,6 +2598,33 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, Half.RadiansToDegrees(+value), allowedVariance);
         }
 
+        // Both conversions are correctly rounded, so these compare bits rather than allowing a
+        // variance. The inputs are the ones the bulk data cannot reach: zero, the subnormal range
+        // on either side of the conversion, and an overflow.
+        [Theory]
+        [InlineData(0x0000, 0x0000, 0x0000)] // 0
+        [InlineData(0x0001, 0x0000, 0x0039)] // Epsilon
+        [InlineData(0x0200, 0x0009, 0x1729)] // 0x1p-15
+        [InlineData(0x0400, 0x0012, 0x1B29)] // MinNormal
+        [InlineData(0x3C00, 0x2478, 0x5329)] // One
+        [InlineData(0x7BFF, 0x6477, 0x7C00)] // MaxValue, overflows for RadiansToDegrees
+        [InlineData(0x7C00, 0x7C00, 0x7C00)] // PositiveInfinity
+        public static void DegreesToRadiansRadiansToDegreesEdgeTest(ushort valueBits, ushort degreesToRadiansBits, ushort radiansToDegreesBits)
+        {
+            const ushort SignMask = 0x8000;
+
+            Half value = BitConverter.UInt16BitsToHalf(valueBits);
+
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf(degreesToRadiansBits), Half.DegreesToRadians(value));
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf(radiansToDegreesBits), Half.RadiansToDegrees(value));
+
+            // Negating flips only the sign bit, which pins the sign of a zero result
+            Half negativeValue = BitConverter.UInt16BitsToHalf((ushort)(valueBits ^ SignMask));
+
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf((ushort)(degreesToRadiansBits ^ SignMask)), Half.DegreesToRadians(negativeValue));
+            AssertExtensions.Equal(BitConverter.UInt16BitsToHalf((ushort)(radiansToDegreesBits ^ SignMask)), Half.RadiansToDegrees(negativeValue));
+        }
+
         [Theory]
         [InlineData(float.PositiveInfinity, int.MaxValue)]
         [InlineData(float.NaN, int.MaxValue)]
