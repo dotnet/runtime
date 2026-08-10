@@ -410,7 +410,7 @@ namespace Microsoft.Extensions.Options.Tests
         }
 
         [Fact]
-        public async Task AsyncOnlyValidation_FailedPreStartAccessorsDoNotWin_StartupSeedsBuiltInAccessors()
+        public async Task AsyncOnlyValidation_PoisonedPreStartCacheIsReplacedByStartupSeed()
         {
             FakeOptions? startupCandidate = null;
             var services = new ServiceCollection();
@@ -428,7 +428,24 @@ namespace Microsoft.Extensions.Options.Tests
             IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
 
             Assert.Throws<OptionsValidationException>(() => options.Value);
-            Assert.Throws<OptionsValidationException>(() => monitor.CurrentValue);
+            Assert.Throws<OptionsValidationException>(() => monitor.Get(Options.DefaultName));
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+
+            Assert.NotNull(startupCandidate);
+            Assert.Same(startupCandidate, options.Value);
+            Assert.Same(startupCandidate, monitor.Get(Options.DefaultName));
+        }
+
+        [Fact]
+        public async Task AsyncOnlyValidation_IOptionsSnapshotRemainsUnsupportedAfterStartup()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<FakeOptions>()
+                .Configure(o => o.Message = "validated")
+                .Validate((FakeOptions o, CancellationToken ct) => Task.FromResult(true), "async fail")
+                .ValidateOnStart();
+            using ServiceProvider sp = services.BuildServiceProvider();
 
             using (IServiceScope scope = sp.CreateScope())
             {
@@ -438,10 +455,6 @@ namespace Microsoft.Extensions.Options.Tests
             }
 
             await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
-
-            Assert.NotNull(startupCandidate);
-            Assert.Same(startupCandidate, options.Value);
-            Assert.Same(startupCandidate, monitor.CurrentValue);
 
             using IServiceScope newScope = sp.CreateScope();
             OptionsValidationException afterStartupError = Assert.Throws<OptionsValidationException>(
@@ -655,9 +668,9 @@ namespace Microsoft.Extensions.Options.Tests
 
             await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
 
-            // Seeding a derived cache emulates an atomic replace with TryRemove + TryAdd. The cache injects a
-            // concurrent insert into the gap on the first attempt so TryAdd is a no-op; the bounded retry must run
-            // again and let the validated value win rather than dropping it for the competing (unvalidated) value.
+            // The public cache contract has no atomic replace. This cache injects a concurrent insert into the first
+            // TryRemove + TryAdd gap, making TryAdd a no-op; the bounded fallback must retry and publish the validated
+            // value rather than leave the competing (unvalidated) value behind.
             Assert.True(raceCache.RaceInjected);
             Assert.Equal("validated", sp.GetRequiredService<IOptionsMonitor<FakeOptions>>().CurrentValue.Message);
         }

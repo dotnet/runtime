@@ -495,6 +495,37 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        public async Task ValidateOnStart_EmptyAggregateException_IsNotSwallowed()
+        {
+            var hostBuilder = CreateHostBuilder(services =>
+                services.AddSingleton<IAsyncStartupValidator>(new ThrowingEmptyAggregateAsyncStartupValidator()));
+
+            using var host = hostBuilder.Build();
+
+            AggregateException error = await Assert.ThrowsAsync<AggregateException>(async () => await host.StartAsync());
+            Assert.Empty(error.InnerExceptions);
+        }
+
+        [Fact]
+        public async Task ValidateOnStart_AggregatedValidationFailures_AreFlattenedAndValidationContinues()
+        {
+            var following = new CountingThrowingAsyncStartupValidator("third failed");
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddSingleton<IAsyncStartupValidator>(new ThrowingAggregateAsyncStartupValidator());
+                services.AddSingleton<IAsyncStartupValidator>(following);
+            });
+
+            using var host = hostBuilder.Build();
+
+            AggregateException error = await Assert.ThrowsAsync<AggregateException>(async () => await host.StartAsync());
+
+            Assert.Equal(3, error.InnerExceptions.Count);
+            Assert.All(error.InnerExceptions, e => Assert.IsType<OptionsValidationException>(e));
+            Assert.True(following.Validated);
+        }
+
+        [Fact]
         public async Task ValidateOnStart_AsyncSuccessSeedsBuiltInOptionsAndMonitor()
         {
             ComplexOptions startupCandidate = null;
@@ -695,6 +726,20 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             public Task ValidateAsync(CancellationToken cancellationToken = default) =>
                 throw new OptionsValidationException("name", typeof(object), new[] { "async startup validation failed" });
+        }
+
+        private sealed class ThrowingEmptyAggregateAsyncStartupValidator : IAsyncStartupValidator
+        {
+            public Task ValidateAsync(CancellationToken cancellationToken = default) =>
+                throw new AggregateException();
+        }
+
+        private sealed class ThrowingAggregateAsyncStartupValidator : IAsyncStartupValidator
+        {
+            public Task ValidateAsync(CancellationToken cancellationToken = default) =>
+                throw new AggregateException(
+                    new OptionsValidationException("first", typeof(object), new[] { "first failed" }),
+                    new OptionsValidationException("second", typeof(object), new[] { "second failed" }));
         }
 
         private sealed class ThrowingUnexpectedAsyncStartupValidator : IAsyncStartupValidator

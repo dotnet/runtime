@@ -139,7 +139,9 @@ namespace Microsoft.Extensions.Hosting.Internal
                             {
                                 (validationFailures ??= new()).Add(ex);
                             }
-                            catch (AggregateException ex) when (ex.InnerExceptions.All(static e => e is OptionsValidationException))
+                            catch (AggregateException ex) when (
+                                ex.InnerExceptions.Count > 0 &&
+                                ex.InnerExceptions.All(static e => e is OptionsValidationException))
                             {
                                 // A validator (e.g. the built-in one) may itself aggregate multiple failing
                                 // option instances; flatten so every failure is reported together.

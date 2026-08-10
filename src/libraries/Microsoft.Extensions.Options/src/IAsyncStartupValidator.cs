@@ -12,14 +12,16 @@ namespace Microsoft.Extensions.Options
     public interface IAsyncStartupValidator
     {
         /// <summary>
-        /// Calls all registered <see cref="IAsyncValidateOptions{TOptions}"/> validators.
+        /// Asynchronously validates each options type and name configured for startup validation. When the built-in
+        /// options factory creates a value, it invokes each registered <see cref="IValidateOptions{TOptions}"/> once,
+        /// preferring <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/> when available.
         /// </summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <exception cref="OptionsValidationException">
         /// A single validator returns a failed <see cref="ValidateOptionsResult"/> when validating.
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// Multiple option instances fail async validation, each producing an
+        /// Multiple option instances fail validation, each producing an
         /// <see cref="OptionsValidationException"/>.
         /// </exception>
         Task ValidateAsync(CancellationToken cancellationToken = default);

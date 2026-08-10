@@ -31,7 +31,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// implementation so the validated value can be installed safely; startup fails when a custom implementation
         /// is registered. The built-in <see cref="IOptionsSnapshot{TOptions}"/> implementation validates instances
         /// synchronously in per-scope caches that startup validation does not populate. The built-in options monitor
-        /// also reloads synchronously and provides no asynchronous last-known-good guarantee.
+        /// also reloads synchronously and provides no asynchronous last-known-good guarantee. Publication to the
+        /// built-in monitor cache is atomic. The <see cref="IOptionsMonitorCache{TOptions}"/> contract has no atomic
+        /// replacement operation, so applications using a custom or derived cache must avoid concurrent cache access
+        /// during startup validation if atomic publication is required. Startup validation throws
+        /// <see cref="InvalidOperationException"/> if publication to a custom or derived cache does not succeed.
         /// </remarks>
         /// <typeparam name="TOptions">The type of options.</typeparam>
         /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure options instance.</param>
