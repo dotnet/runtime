@@ -190,7 +190,7 @@ namespace System.Formats.Tar
                 _mode = mode;
             }
 
-            // The 'size' header field only fits 12 bytes, so the data section length that surpases that limit needs to be retrieved
+            // The 'size' header field only fits 12 bytes, so the data section length that surpasses that limit needs to be retrieved
             if (TarHelpers.TryGetStringAsBaseTenLong(values.Size, out long size))
             {
                 if (size < 0)

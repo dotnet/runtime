@@ -154,7 +154,7 @@ namespace System.Formats.Tar
             return secondsSinceEpoch.ToString("G", CultureInfo.InvariantCulture);
         }
 
-        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenInteger'.
+        // If the specified fieldName has a non-empty value, parses it as a base-10 integer and returns true. Parsing exceptions propagate.
         internal static bool TryGetStringAsBaseTenInteger(IReadOnlyDictionary<string, string> dict, string fieldName, out int baseTenInteger)
         {
             return TryGetStringAsBaseTenInteger(
@@ -174,7 +174,7 @@ namespace System.Formats.Tar
             return false;
         }
 
-        // If the specified fieldName is found in the provided dictionary and is a valid string representation of a number, returns true and sets the value in 'baseTenLong'.
+        // If the specified fieldName has a non-empty value, parses it as a base-10 long and returns true. Parsing exceptions propagate.
         internal static bool TryGetStringAsBaseTenLong(IReadOnlyDictionary<string, string> dict, string fieldName, out long baseTenLong)
         {
             return TryGetStringAsBaseTenLong(
