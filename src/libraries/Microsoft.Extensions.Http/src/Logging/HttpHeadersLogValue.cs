@@ -121,8 +121,7 @@ namespace Microsoft.Extensions.Http.Logging
                     KeyValuePair<string, object> kvp = Values[i];
                     builder.Append(kvp.Key);
                     builder.Append(": ");
-                    builder.Append((string)kvp.Value);
-                    builder.AppendLine();
+                    builder.AppendLine((string)kvp.Value);
                 }
 
                 _formatted = builder.ToString();
