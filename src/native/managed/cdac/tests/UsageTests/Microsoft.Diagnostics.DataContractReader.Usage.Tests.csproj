@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsTestProject>true</IsTestProject>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+    <AssemblyName>Microsoft.Diagnostics.DataContractReader.Usage.Tests</AssemblyName>
+  </PropertyGroup>
+
+  <Import Project="..\..\..\subproject.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Microsoft.Diagnostics.DataContractReader.Contracts\Microsoft.Diagnostics.DataContractReader.Contracts.csproj" />
+    <ProjectReference Include="..\..\tools\CdacUsageGraph\src\CdacUsageGraph\CdacUsageGraph.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
+  </ItemGroup>
+</Project>

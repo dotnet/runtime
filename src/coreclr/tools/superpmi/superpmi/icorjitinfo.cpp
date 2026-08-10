@@ -31,6 +31,12 @@ bool MyICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return jitInstance->mc->repIsIntrinsic(ftn);
 }
 
+bool MyICJI::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
+{
+    jitInstance->mc->cr->AddCall("canValueClassInstancePointerEscape");
+    return jitInstance->mc->repCanValueClassInstancePointerEscape(ftn);
+}
+
 bool MyICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     jitInstance->mc->cr->AddCall("notifyMethodInfoUsage");
@@ -1197,10 +1203,27 @@ void MyICJI::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfo)
     jitInstance->mc->repGetAsyncInfo(pAsyncInfo);
 }
 
-CORINFO_METHOD_HANDLE MyICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_LOOKUP* instArg)
+void MyICJI::getWasmWellKnownGlobals(CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    jitInstance->mc->cr->AddCall("getWasmWellKnownGlobals");
+    jitInstance->mc->repGetWasmWellKnownGlobals(pWellKnownGlobalsOut);
+}
+CORINFO_METHOD_HANDLE MyICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHandle, CORINFO_CONTEXT_HANDLE* contextHandle, CORINFO_LOOKUP* instArg)
 {
     jitInstance->mc->cr->AddCall("getAwaitReturnCall");
-    return jitInstance->mc->repGetAwaitReturnCall(callerHandle, instArg);
+    return jitInstance->mc->repGetAwaitReturnCall(callerHandle, contextHandle, instArg);
+}
+
+CORINFO_METHOD_HANDLE MyICJI::getAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHandle,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    jitInstance->mc->cr->AddCall("getAwaitAwaiterInContinuationCall");
+    return jitInstance->mc->repGetAwaitAwaiterInContinuationCall(
+        callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
 }
 
 /*********************************************************************************/

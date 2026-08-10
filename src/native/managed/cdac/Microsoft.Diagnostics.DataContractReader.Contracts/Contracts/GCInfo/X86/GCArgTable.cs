@@ -232,13 +232,15 @@ public class GCArgTable
                         else
                         {
                             // "This pointer liveness encoding" (val & 0x80 == 0 && val & 0x0F == 0):
-                            // metadata for which callee-saved register holds the 'this' pointer
-                            // at the next call site. Native (gc_unwind_x86.inl ~line 970) does NOT
-                            // record a call entry here -- it only sets thisPtrReg. Adding a spurious
-                            // GcTransitionCall at the current curOffs would overwrite the real
-                            // call site's CallRegisters during EnumerateLiveSlots (since the
-                            // partial-EBP decoder may emit the this-ptr tag at the same curOffs
-                            // as a real call site), so we just consume the byte and continue.
+                            // metadata for the last known callee-saved register holding 'this'.
+                            RegMask thisRegister = ((val & 0x70) >> 4) switch
+                            {
+                                0x1 => RegMask.EDI,
+                                0x2 => RegMask.ESI,
+                                0x4 => RegMask.EBX,
+                                _ => throw new BadImageFormatException("Invalid this-pointer register encoding"),
+                            };
+                            AddNewTransition(new ThisPointerRegister((int)curOffs, thisRegister));
                             continue;
                         }
                     }
@@ -479,7 +481,7 @@ public class GCArgTable
                                 break;
 
                             case 0x04:
-                                AddNewTransition(new CalleeSavedRegister((int)curOffs, TwoBitEncodingToRegMask((byte)(val & 0x3))));
+                                AddNewTransition(new ThisPointerRegister((int)curOffs, TwoBitEncodingToRegMask((byte)(val & 0x3))));
                                 break;
 
                             case 0x08:

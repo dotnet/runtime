@@ -2364,9 +2364,8 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
 
     if (haveProfileWeights)
     {
-        // Reduce flow into the new loop entry/exit blocks
+        // Reduce flow into the new loop entry block
         newPreheader->setBBProfileWeight(newCondToNewPreheader->getLikelyWeight());
-        exit->decreaseBBProfileWeight(newCondToNewExit->getLikelyWeight());
 
         // Update the duplicated blocks' weights
 
@@ -2377,6 +2376,12 @@ bool Compiler::optTryInvertWhileLoop(FlowGraphNaturalLoop* loop)
         }
 
         condBlock->setBBProfileWeight(condBlock->computeIncomingWeight());
+
+        // Recompute exit's weight from its (now updated) incoming edges.
+        // Using computeIncomingWeight here (rather than decreasing by the newly
+        // introduced preheader-to-exit edge weight) avoids amplifying small
+        // pre-existing inconsistencies once the loop-exit flow is scaled down.
+        exit->setBBProfileWeight(exit->computeIncomingWeight());
     }
 
     // Finally compact the condition with its pred if that is possible now.
@@ -6187,7 +6192,7 @@ PhaseStatus Compiler::optVNBasedDeadStoreRemoval()
                     // the implicit "live-in" one, which is not guaranteed, but very likely.
                     if ((defIndex == 1) && !varDsc->TypeIs(TYP_STRUCT))
                     {
-                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n", lclNum);
+                        JITDUMP(" -- no; first explicit def of a non-STRUCT local\n");
                         continue;
                     }
 

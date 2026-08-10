@@ -33,7 +33,7 @@ public class Program
     private struct Oper3<T> {}
     private struct Oper4<T> {}
     private struct Oper5<T> {}
-    
+
     [ActiveIssue("These tests are not supposed to be run with mono.", TestRuntimes.Mono)]
     [Fact]
     public static void BreadthTest()

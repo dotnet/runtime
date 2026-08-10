@@ -700,6 +700,14 @@ namespace Internal.IL
                     {
                         return;
                     }
+
+                    if (IsAsyncHelpersAwaitAwaiter(method, out bool isUnsafeAwaitAwaiter))
+                    {
+                        // Not an early out: the call itself is still emitted, the JIT just may
+                        // rewrite it to the corresponding "in continuation" helper.
+                        RegisterDependenciesOnAwaitAwaiterInContinuation(runtimeDeterminedMethod, isUnsafeAwaitAwaiter,
+                            reason);
+                    }
                 }
             }
 
@@ -996,11 +1004,11 @@ namespace Internal.IL
 
                 if (exactContextNeedsRuntimeLookup)
                 {
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodHandle, methodToLookup), reason);
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DispatchCell, methodToLookup), reason);
                 }
                 else
                 {
-                    _dependencies.Add(_factory.RuntimeMethodHandle(methodToLookup), reason);
+                    _dependencies.Add(_factory.DispatchCell(methodToLookup), reason);
                 }
 
                 _dependencies.Add(GetHelperEntrypoint(ReadyToRunHelper.GVMLookupForSlot), reason);
@@ -1009,11 +1017,11 @@ namespace Internal.IL
             {
                 if (exactContextNeedsRuntimeLookup)
                 {
-                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.VirtualDispatchCell, runtimeDeterminedMethod), reason);
+                    _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.DispatchCell, runtimeDeterminedMethod), reason);
                 }
                 else
                 {
-                    _dependencies.Add(_factory.InterfaceDispatchCell(method), reason);
+                    _dependencies.Add(_factory.DispatchCell(method), reason);
                 }
             }
             else if (_compilation.NeedsSlotUseTracking(method.OwningType))
@@ -1071,6 +1079,57 @@ namespace Internal.IL
             _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null)), asyncReason);
             _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null)), asyncReason);
             _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null)), asyncReason);
+        }
+
+        // The JIT rewrites calls to AsyncHelpers.AwaitAwaiter/UnsafeAwaitAwaiter with a struct
+        // awaiter into calls to AsyncHelpers.AwaitAwaiterInContinuation/UnsafeAwaitAwaiterInContinuation
+        // to avoid boxing the awaiter. Report the dependencies for that rewrite here since scanning
+        // does not otherwise see those calls.
+        private void RegisterDependenciesOnAwaitAwaiterInContinuation(MethodDesc runtimeDeterminedMethod, bool isUnsafe, string reason)
+        {
+            TypeDesc awaiterType = runtimeDeterminedMethod.Instantiation[0];
+            if (!awaiterType.IsValueType)
+            {
+                return;
+            }
+
+            // YieldAwaiter is specially recognized by AsyncHelpers.UnsafeAwaitAwaiter, so the JIT
+            // does not rewrite it. Note: no namespace check here, mirroring the JIT; being an
+            // intrinsic type is enough to know this is the well known type from CoreLib.
+            if (awaiterType.IsIntrinsic
+                && awaiterType is MetadataType awaiterMetadataType
+                && awaiterMetadataType.Name == "YieldAwaiter"u8)
+            {
+                return;
+            }
+
+            CompilerTypeSystemContext context = _compilation.TypeSystemContext;
+            DefType asyncHelpers = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            MethodSignature signature = new MethodSignature(
+                MethodSignatureFlags.Static,
+                1,
+                context.GetWellKnownType(WellKnownType.Void),
+                [context.GetWellKnownType(WellKnownType.Int32)]);
+            MethodDesc runtimeDeterminedResult = asyncHelpers
+                .GetKnownMethod(isUnsafe ? "UnsafeAwaitAwaiterInContinuation"u8 : "AwaitAwaiterInContinuation"u8, signature)
+                .MakeInstantiatedMethod(awaiterType);
+
+            MethodDesc targetMethod = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
+            {
+                _dependencies.Add(GetGenericLookupHelper(ReadyToRunHelperId.MethodDictionary, runtimeDeterminedResult), reason);
+                _dependencies.Add(_factory.CanonicalEntrypoint(targetMethod), reason);
+            }
+            else
+            {
+                if (targetMethod.RequiresInstArg())
+                {
+                    _dependencies.Add(_factory.MethodGenericDictionary(runtimeDeterminedResult), reason);
+                }
+
+                _dependencies.Add(GetMethodEntrypoint(targetMethod), reason);
+            }
         }
 
         private void ImportLdFtn(int token, ILOpcode opCode)
@@ -1842,6 +1901,30 @@ namespace Internal.IL
                     return owningType.Module == method.Context.SystemModule
                         && owningType.Name == "AsyncHelpers"u8
                         && owningType.Namespace == "System.Runtime.CompilerServices"u8;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsAsyncHelpersAwaitAwaiter(MethodDesc method, out bool isUnsafe)
+        {
+            isUnsafe = false;
+
+            if (method.IsIntrinsic && method.Instantiation.Length == 1)
+            {
+                Utf8Span methodName = method.Name;
+                bool isAwaitAwaiter = methodName == "AwaitAwaiter"u8;
+                if (isAwaitAwaiter || methodName == "UnsafeAwaitAwaiter"u8)
+                {
+                    MetadataType owningType = method.OwningType as MetadataType;
+                    if (owningType != null)
+                    {
+                        isUnsafe = !isAwaitAwaiter;
+                        return owningType.Module == method.Context.SystemModule
+                            && owningType.Name == "AsyncHelpers"u8
+                            && owningType.Namespace == "System.Runtime.CompilerServices"u8;
+                    }
                 }
             }
 

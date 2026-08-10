@@ -321,6 +321,11 @@ INST(bclri,         "bclri",          0,   0x48001013)
 INST(bexti,         "bexti",          0,   0x48005013)
 INST(binvi,         "binvi",          0,   0x68001013)
 
+// Zicond (RV32 + RV64)
+//// R_R_R
+INST(czero_eqz,     "czero.eqz",      0,   0x0e005033)
+INST(czero_nez,     "czero.nez",      0,   0x0e007033)
+
 // RVC
 INST(c_mv,          "c.mv",          0,   0x00008002)
 INST(c_add,         "c.add",         0,   0x00009002)

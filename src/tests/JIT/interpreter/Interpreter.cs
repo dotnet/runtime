@@ -1696,7 +1696,8 @@ public class InterpreterTest
 
     public static bool TestConvBoundaries(double inRangeShort, double outOfRangeShort, double inRangeInt, double outOfRangeInt)
     {
-        // In unchecked mode, the interpreter saturates on float->int conversions if the value is out of range
+        // In unchecked mode, the expected behavior is to saturate on floating-point -> integral conversions
+        // if the value is out of range.
         unchecked
         {
             short a = (short)inRangeShort,
@@ -1704,9 +1705,7 @@ public class InterpreterTest
             int c = (int)inRangeInt,
                 d = (int)outOfRangeInt;
 
-            // See https://github.com/dotnet/runtime/issues/116823 - they should *not* currently match if target size is smaller than int32
-            // if (a != b)
-            if (a == b)
+            if (a != b)
                 return false;
 
             if (c != d)

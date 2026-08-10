@@ -18,6 +18,7 @@
 #elif defined(__OpenBSD__)
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/sysctl.h>
 #elif defined(_WIN32)
 #include <windows.h>
@@ -65,14 +66,56 @@ static inline char* minipal_getexepath(void)
     return strdup(path);
 #elif defined(__OpenBSD__)
     const int name[] = { CTL_KERN, KERN_PROC_ARGS, getpid(), KERN_PROC_ARGV };
-    void *argv[PATH_MAX];
-    size_t len = sizeof(argv);
-    if (sysctl(name, 4, argv, &len, NULL, 0) != 0)
+    size_t len = 0;
+    if (sysctl(name, 4, NULL, &len, NULL, 0) != 0 || len == 0)
     {
         return NULL;
     }
 
-    return realpath((char *)argv[0], NULL);
+    char *buf = (char *)malloc(len);
+    if (buf == NULL)
+    {
+        return NULL;
+    }
+
+    if (sysctl(name, 4, buf, &len, NULL, 0) != 0)
+    {
+        free(buf);
+        return NULL;
+    }
+
+    // Cast the start of the buffer to access the char * layout safely
+    char **argv = (char **)buf;
+    const char *exe = argv[0];
+
+    if (strchr(exe, '/') == NULL)
+    {
+        const char *p = getenv("PATH");
+        while (p != NULL && *p != '\0')
+        {
+            size_t seg = strcspn(p, ":");
+            char path[PATH_MAX];
+            
+            if (snprintf(path, sizeof(path), "%.*s/%s", (int)seg, p, exe) < (int)sizeof(path))
+            {
+                struct stat sb;
+                if (stat(path, &sb) == 0 && S_ISREG(sb.st_mode))
+                {
+                    char *resolved = realpath(path, NULL);
+                    free(buf);
+                    return resolved;
+                }
+            }
+
+            p += seg;
+            if (*p == ':')
+                p++;
+        }
+    }
+
+    char *resolved = realpath(exe, NULL);
+    free(buf);
+    return resolved;
 #elif defined(__sun)
     const char* path = getexecname();
     if (path == NULL)
