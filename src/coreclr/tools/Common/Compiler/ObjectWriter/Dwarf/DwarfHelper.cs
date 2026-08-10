@@ -3,6 +3,7 @@
 
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.Numerics;
 
@@ -123,29 +124,38 @@ namespace ILCompiler.ObjectWriter
             return value;
         }
 
-        public static ulong? ReadULEB128(Stream source, out int bytesRead)
+        internal static ulong? ReadULEB128(Stream source, out int bytesRead)
         {
-            ulong value = 0;
-            byte @byte;
-            int shift = 0;
-            long startPos = source.Position;
+            Debug.Assert(source.CanSeek);
+            Debug.Assert(source.Length >= 0);
 
-            do
+            ulong value = 0;
+            int shift = 0;
+            bytesRead = 0;
+
+            while (true)
             {
                 int b = source.ReadByte();
                 if (b < 0)
                 {
-                    bytesRead = (int)(source.Position - startPos);
-                    return null;
+                    if (bytesRead == 0)
+                    {
+                        return null;
+                    }
+
+                    throw new InvalidDataException("Unexpected end of stream while reading a ULEB128 value.");
                 }
 
-                @byte = (byte)b;
+                byte @byte = (byte)b;
+                bytesRead++;
                 value |= ((ulong)@byte & 0x7f) << shift;
-                shift += 7;
-            } while ((@byte & 0x80) != 0);
+                if ((@byte & 0x80) == 0)
+                {
+                    return value;
+                }
 
-            bytesRead = (int)(source.Position - startPos);
-            return value;
+                shift += 7;
+            }
         }
 
         public static long ReadSLEB128(ReadOnlySpan<byte> buffer) => ReadSLEB128(buffer, out _);

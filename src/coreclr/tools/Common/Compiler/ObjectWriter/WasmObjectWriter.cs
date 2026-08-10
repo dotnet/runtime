@@ -3,7 +3,6 @@
 
 using System;
 using System.Buffers.Binary;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -731,7 +730,6 @@ namespace ILCompiler.ObjectWriter
 
                 if (_resolvableRelocations.TryGetValue(section.Index, out List<SymbolicRelocation> relocations))
                 {
-                    MemoryStream sectionStream = new MemoryStream((int)section.Stream.Length);
                     // We emit all Webcil sections into one stream, and copy data / resolve relocations directly into this combined stream.
                     // As a result, the real offsets that relocs in our list have need to be calculated based on the section's
                     // position within the Webcil segment
@@ -873,14 +871,14 @@ namespace ILCompiler.ObjectWriter
             src.GetBuffer().AsSpan((int)srcPos, (int)count).CopyTo(dest.GetBuffer().AsSpan((int)destPos, (int)count));
         }
 
-        private record CodeBlob(long Size, long Start, long End);
+        private readonly record struct CodeBlob(long Size, long Start, long End);
 
         private List<CodeBlob> ParseCodeBlobs(Stream sectionStream)
         {
             List<CodeBlob> blobs = new();
             while (true)
             {
-                ulong? decoded = DwarfHelper.ReadULEB128(sectionStream, out int actualLength);
+                ulong? decoded = DwarfHelper.ReadULEB128(sectionStream, out _);
                 if (decoded is null) break; // end of stream
 
                 Debug.Assert(sectionStream.Position + (long)decoded <= sectionStream.Length);
@@ -1186,6 +1184,9 @@ namespace ILCompiler.ObjectWriter
 
         private void ResolveRelocations(int sectionIndex, Stream sectionStream, MemoryStream dstStream, List<SymbolicRelocation> relocs, long sectionStart = 0, bool shrink = false)
         {
+            Debug.Assert(sectionStream.CanSeek);
+            Debug.Assert(sectionStream.Length >= 0);
+
             if (relocs.Count == 0)
             {
                 sectionStream.CopyTo(dstStream);
