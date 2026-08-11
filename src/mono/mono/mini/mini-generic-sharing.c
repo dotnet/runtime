@@ -1237,6 +1237,24 @@ get_wrapper_shared_vtype (MonoType *t)
 		if (m_class_is_byreflike (mono_class_from_mono_type_internal (ftype)))
 			/* Cannot inflate generic params with byreflike types */
 			return NULL;
+#ifdef TARGET_WASM
+		/*
+		 * Map unsigned integer fields to their signed counterparts, matching what the
+		 * size-based block below does to every slot. The two must agree because this
+		 * function's output is fed back into it: gsharedvt in/out sig wrappers store their
+		 * already-underlying signature, and the AOT method-ref decode path underlies it
+		 * again - so slot-type selection has to be idempotent, or the emitted wrapper's
+		 * signature differs from the one looked up at runtime and llvmonly fails at the
+		 * first interp->AOT call. An [InlineArray] field can otherwise flip the size gate
+		 * between the two applications, since such a class has one field but N times its
+		 * size. Signedness carries no ABI meaning here: these tuple instantiations exist
+		 * only to describe layout. See https://github.com/dotnet/runtime/issues/130592.
+		 */
+		if (ftype->type == MONO_TYPE_U4)
+			ftype = m_class_get_byval_arg (mono_get_int32_class ());
+		else if (ftype->type == MONO_TYPE_U8)
+			ftype = m_class_get_byval_arg (mono_get_int64_class ());
+#endif
 		if (!has_explicit_size) {
 			args [findex ++] = ftype;
 			if (findex >= 16)
