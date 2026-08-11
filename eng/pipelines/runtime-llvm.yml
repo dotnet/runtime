@@ -55,6 +55,8 @@ pr:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -69,6 +71,12 @@ extends:
 
     - stage: Build
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
+
       #
       # Build Mono and Installer on LLVMAOT mode
       #
@@ -142,6 +150,7 @@ extends:
                   creator: dotnet-bot
                   llvmAotStepContainer: linux_x64_llvmaot
                   testRunNamePrefixSuffix: Mono_Release
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -183,6 +192,7 @@ extends:
                   creator: dotnet-bot
                   llvmAotStepContainer: linux_x64_llvmaot
                   testRunNamePrefixSuffix: Mono_Release
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   testBuildArgs: >-
                     -tree:CoreMangLib -tree:Exceptions -tree:GC -tree:Interop -tree:Loader -tree:Regressions -tree:baseservices
                     -tree:ilverify -tree:managed -tree:profiler -tree:reflection -tree:tracing
@@ -230,6 +240,7 @@ extends:
                   creator: dotnet-bot
                   llvmAotStepContainer: linux_x64_llvmaot
                   testRunNamePrefixSuffix: Mono_Release
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   testBuildArgs: -tree:JIT/Intrinsics -tree:JIT/HardwareIntrinsics -tree:JIT/SIMD
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
