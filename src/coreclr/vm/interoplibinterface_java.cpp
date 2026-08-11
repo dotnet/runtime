@@ -9,7 +9,6 @@
 // Interop library header
 #include <interoplibimports.h>
 
-#include "../gc/gcbridge.h"
 #include "interoplibinterface.h"
 
 using CrossreferenceHandleCallback = void(STDMETHODCALLTYPE *)(MarkCrossReferencesArgs*);
@@ -116,7 +115,7 @@ void Interop::TriggerClientBridgeProcessing(
     CONTRACTL_END;
 
     size_t pendingBridgeHandleCount;
-    uintptr_t* pendingBridgeHandles = GetPendingBridgeHandles(&pendingBridgeHandleCount);
+    uintptr_t* pendingBridgeHandles = GCHeapUtilities::GetGCHeap()->GetPendingBridgeHandles(&pendingBridgeHandleCount);
 
     _ASSERTE(!g_GCBridgeActive);
 
@@ -156,7 +155,7 @@ void Interop::FinishCrossReferenceProcessing(
 
         GCHeapUtilities::GetGCHeap()->NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
         size_t pendingBridgeHandleCount;
-        uintptr_t* pendingBridgeHandles = GetPendingBridgeHandles(&pendingBridgeHandleCount);
+        uintptr_t* pendingBridgeHandles = GCHeapUtilities::GetGCHeap()->GetPendingBridgeHandles(&pendingBridgeHandleCount);
         ClearPendingBridgeBits(pendingBridgeHandles, pendingBridgeHandleCount);
 
         IGCHandleManager* pHandleManager = GCHandleUtilities::GetGCHandleManager();
