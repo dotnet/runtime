@@ -698,7 +698,35 @@ namespace System.IO
             else
             {
                 sb.Dispose();
-                linkTarget = ResolveFinalTarget(linkPath, linkTarget);
+                string? resolvedPath = Interop.Sys.RealPath(linkPath);
+                if (resolvedPath != null)
+                {
+                    linkTarget = resolvedPath;
+                }
+                else
+                {
+                    Interop.Error error = Interop.Sys.GetLastError();
+                    if (error is not (Interop.Error.ENOENT or Interop.Error.ENOTDIR or Interop.Error.ELOOP))
+                    {
+                        throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(error), linkPath, isDirectory);
+                    }
+
+                    // realpath requires the target to be reachable and may enforce a lower
+                    // platform-specific symlink limit. Fall back to manual traversal to preserve
+                    // dangling targets and the managed symlink limit.
+                    linkTarget = ResolveFinalTarget(linkPath, linkTarget);
+
+                    if (error == Interop.Error.ELOOP)
+                    {
+                        // ResolveFinalTarget validated the chain against the managed limit and
+                        // returned a path without the links that exceeded the platform limit.
+                        resolvedPath = Interop.Sys.RealPath(linkTarget);
+                        if (resolvedPath != null)
+                        {
+                            linkTarget = resolvedPath;
+                        }
+                    }
+                }
             }
 
             if (!returnFinalTarget)
