@@ -2515,6 +2515,7 @@ void Liveness<TLiveness>::ComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VAR
             case GT_PUTARG_STK:
             case GT_IL_OFFSET:
             case GT_RECORD_ASYNC_RESUME:
+            case GT_RECORD_ASYNC_RETURN_VALUE:
             case GT_KEEPALIVE:
             case GT_SWIFT_ERROR_RET:
             case GT_GCPOLL:

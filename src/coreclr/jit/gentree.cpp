@@ -323,6 +323,7 @@ void GenTree::InitNodeSize()
     static_assert(sizeof(GenTreeBlk)          <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeRetExpr)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert(sizeof(GenTreeILOffset)     <= TREE_NODE_SZ_SMALL);
+    static_assert(sizeof(GenTreeRecordAsyncReturnValue) <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreePhiArg)       <= TREE_NODE_SZ_SMALL);
     static_assert(sizeof(GenTreeAllocObj)     <= TREE_NODE_SZ_LARGE); // *** large node
     // TODO-Throughput: This should not need to be a large node. The object info should be
@@ -9157,6 +9158,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_CATCH_ARG:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
+        case GT_RECORD_ASYNC_RETURN_VALUE:
         case GT_PATCHPOINT:
         case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
@@ -10402,7 +10404,7 @@ GenTreeCall* Compiler::gtNewCallNode(gtCallTypes           callType,
     // Implementation note: if not generating MRV info genCallSite2ILOffsetMap will be NULL and
     // codegen will pass DebugInfo() to emitter, which will cause emitter
     // not to emit IP mapping entry.
-    if (opts.compDbgCode && opts.compDbgInfo && di.IsValid())
+    if (ShouldReportManagedReturnValues() && di.IsValid())
     {
         // Managed Retval - IL offset of the call.  This offset is used to emit a
         // CALL_INSTRUCTION type sequence point while emitting corresponding native call.
@@ -12373,6 +12375,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_INC_SATURATE:
         case GT_RETURNTRAP:
         case GT_RETURN_SUSPEND:
+        case GT_RECORD_ASYNC_RETURN_VALUE:
         case GT_PATCHPOINT_FORCED:
         case GT_NONLOCAL_JMP:
             m_edge = &m_node->AsUnOp()->gtOp1;

@@ -392,6 +392,8 @@ GTNODE(COPY             , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)          
 GTNODE(RELOAD           , GenTreeCopyOrReload,0,0,GTK_UNOP|DBK_NOTHIR)              // code generation constraints. The operand is the actual lclVar node.
 GTNODE(IL_OFFSET        , GenTreeILOffset    ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // marks an IL offset for debugging purposes
 GTNODE(RECORD_ASYNC_RESUME, GenTreeVal       ,0,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTHIR)  // record native offset for async resumption info
+// Record the location of an async call's return value for debug info purposes
+GTNODE(RECORD_ASYNC_RETURN_VALUE, GenTreeRecordAsyncReturnValue,0,0,GTK_UNOP|GTK_NOVALUE|DBK_NOTHIR)
 
 /*****************************************************************************/
 #undef  GTNODE

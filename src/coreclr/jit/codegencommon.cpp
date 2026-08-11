@@ -1775,9 +1775,19 @@ void CodeGen::genEmitCallWithCurrentGC(EmitCallParams& params)
 
     // Emit an entry for managed return value reporting, if needed.
     GenTreeCall* call = params.returnValueCall;
-    if ((call == nullptr) || !m_compiler->opts.compDbgInfo || !m_compiler->opts.compScopeInfo ||
+    if ((call == nullptr) || !m_compiler->ShouldReportManagedReturnValues() ||
         (m_compiler->genCallSite2DebugInfoMap == nullptr) || params.isJump)
     {
+        return;
+    }
+
+    if (call->IsAsync())
+    {
+        // The return value of an async call is not necessarily available in
+        // the return registers after the call: the callee may have suspended,
+        // in which case the value is only available after we resume. The async
+        // transformation inserts GT_RECORD_ASYNC_RETURN_VALUE nodes in the
+        // join path of these calls to report the location instead.
         return;
     }
 

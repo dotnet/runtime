@@ -8486,6 +8486,30 @@ struct GenTreeILOffset : public GenTree
 #endif
 };
 
+// Records the location of the return value of an async call for the purposes
+// of managed return value debug info. The async transformation inserts these
+// nodes in the join path after an async call, where the return value is
+// available both when the callee returned synchronously and when it suspended
+// and we resumed. The operand is the value returned by the async call.
+struct GenTreeRecordAsyncReturnValue : public GenTreeUnOp
+{
+    // Debug info of the async call whose return value is being recorded.
+    DebugInfo gtCallDI;
+
+    GenTreeRecordAsyncReturnValue(GenTree* returnValue, const DebugInfo& callDI)
+        : GenTreeUnOp(GT_RECORD_ASYNC_RETURN_VALUE, TYP_VOID, returnValue)
+        , gtCallDI(callDI)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeRecordAsyncReturnValue()
+        : GenTreeUnOp()
+    {
+    }
+#endif
+};
+
 // GenTreeList: adapter class for forward iteration of the execution order GenTree linked list
 // using range-based `for`, normally used via Statement::TreeList(), e.g.:
 //    for (GenTree* const tree : stmt->TreeList()) ...

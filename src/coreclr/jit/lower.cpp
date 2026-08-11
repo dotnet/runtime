@@ -693,6 +693,10 @@ GenTree* Lowering::LowerNode(GenTree* node)
         case GT_ASYNC_CONTINUATION:
             return LowerAsyncContinuation(node);
 
+        case GT_RECORD_ASYNC_RETURN_VALUE:
+            LowerRecordAsyncReturnValue(node->AsUnOp());
+            break;
+
         case GT_RETURN_SUSPEND:
             LowerReturnSuspend(node);
             break;
@@ -6092,6 +6096,32 @@ GenTree* Lowering::LowerAsyncContinuation(GenTree* asyncCont)
     }
 
     return next;
+}
+
+//----------------------------------------------------------------------------------------------
+// LowerRecordAsyncReturnValue:
+//   Lower a GT_RECORD_ASYNC_RETURN_VALUE node.
+//
+// Arguments:
+//   node - The node
+//
+// Remarks:
+//   The node does not generate any code; codegen only uses the operand to
+//   figure out where the return value of the async call lives. Thus we can
+//   always contain the operand when it is a local read.
+//
+void Lowering::LowerRecordAsyncReturnValue(GenTreeUnOp* node)
+{
+    assert(node->OperIs(GT_RECORD_ASYNC_RETURN_VALUE));
+
+    GenTree* value = node->gtGetOp1();
+    if (value->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    {
+        // These nodes are only created for debuggable code, where no locals
+        // are enregistered, so containment is always ok here.
+        assert(!m_compiler->compEnregLocals());
+        MakeSrcContained(node, value);
+    }
 }
 
 //----------------------------------------------------------------------------------------------
