@@ -11,7 +11,7 @@ using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal enum WasmDataSegmentType : byte
+    internal enum WasmDataSectionType : byte
     {
         Active = 0,  // (data list(byte) (active offset-expr))
         Passive = 1, // (data list(byte) passive)

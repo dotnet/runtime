@@ -199,11 +199,11 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    // Represents a group of Wasm instructions (expressions) which
+    // Represents a group of Wasm instructions (expressions) which 
     // form a complete expression ending with the 'end' opcode.
     public class WasmInstructionGroup : IWasmEncodable
     {
-        private readonly WasmExpr[] _wasmExprs;
+        readonly WasmExpr[] _wasmExprs;
         public WasmInstructionGroup(WasmExpr[] wasmExprs)
         {
             _wasmExprs = wasmExprs;
@@ -266,7 +266,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
     public abstract class WasmExpr : IWasmEncodable
     {
-        private WasmExprKind _kind;
+        WasmExprKind _kind;
         public WasmExpr(WasmExprKind kind)
         {
             _kind = kind;
@@ -303,7 +303,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    internal readonly struct WasmEncodableULong : IWasmEncodable
+    readonly struct WasmEncodableULong : IWasmEncodable
     {
         private readonly ulong _value;
         public WasmEncodableULong(ulong value)
@@ -322,7 +322,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         public int EncodeRelocations(Span<Relocation> buffer) => 0;
     }
 
-    internal readonly struct WasmEncodableSymbol : IWasmEncodable
+    readonly struct WasmEncodableSymbol : IWasmEncodable
     {
         private readonly ISymbolNode _symbol;
         private readonly RelocType _relocType;
@@ -374,10 +374,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    internal sealed class WasmMemoryArgInstruction<TOffset> : WasmExpr where TOffset : IWasmEncodable
+    class WasmMemoryArgInstruction<TOffset> : WasmExpr where TOffset : IWasmEncodable
     {
-        private readonly uint _align;
-        private readonly TOffset _offset;
+        readonly uint _align;
+        readonly TOffset _offset;
 
         public WasmMemoryArgInstruction(WasmExprKind kind, uint align, TOffset offset) : base(kind)
         {
@@ -418,9 +418,9 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
 
     // Represents a constant expression (e.g., (i32.const <value>))
-    internal sealed class WasmConstExpr : WasmExpr
+    class WasmConstExpr : WasmExpr
     {
-        private readonly long ConstValue;
+        readonly long ConstValue;
 
         public WasmConstExpr(WasmExprKind kind, long value) : base(kind)
         {
@@ -448,10 +448,10 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    internal sealed class WasmIndirectCallInstruction : WasmExpr
+    sealed class WasmIndirectCallInstruction : WasmExpr
     {
-        private ISymbolNode _type;
-        private uint _tableIndex;
+        ISymbolNode _type;
+        uint _tableIndex;
 
         public WasmIndirectCallInstruction(WasmExprKind kind, ISymbolNode type, uint tableIndex) : base(kind)
         {
@@ -484,9 +484,9 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    internal sealed class WasmLEBConstantReloc : WasmExpr
+    sealed class WasmLEBConstantReloc : WasmExpr
     {
-        private readonly WasmEncodableSymbol _symbol;
+        readonly WasmEncodableSymbol _symbol;
 
         public WasmLEBConstantReloc(WasmExprKind kind, ISymbolNode symbol, RelocType relocType) : base(kind)
         {
@@ -511,7 +511,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
 
     // Represents a local variable expression (e.g., (local.get <index>))
-    internal sealed class WasmLocalVarExpr : WasmExpr
+    class WasmLocalVarExpr : WasmExpr
     {
         public readonly int LocalIndex;
         public WasmLocalVarExpr(WasmExprKind kind, int localIndex) : base(kind)
@@ -536,7 +536,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
 
     // Represents a global variable expression (e.g., (global.get <index))
-    internal sealed class WasmGlobalVarExpr : WasmExpr
+    class WasmGlobalVarExpr : WasmExpr
     {
         public readonly int GlobalIndex;
         public WasmGlobalVarExpr(WasmExprKind kind, int globalIndex) : base(kind)
@@ -560,7 +560,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
 
     // Represents a binary expression (e.g., i32.add)
-    internal sealed class WasmBinaryExpr : WasmExpr
+    class WasmBinaryExpr : WasmExpr
     {
         public WasmBinaryExpr(WasmExprKind kind) : base(kind)
         {
@@ -570,7 +570,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         // base class defaults are sufficient as the base class encodes just the opcode
     }
 
-    internal sealed class WasmUnaryExpr : WasmExpr
+    class WasmUnaryExpr : WasmExpr
     {
         public WasmUnaryExpr(WasmExprKind kind) : base(kind)
         {
@@ -581,7 +581,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     // Represents a memory.copy expression.
     // Binary encoding: 0xFC prefix + u32(10) sub-opcode + u32(dstMemoryIndex) + u32(srcMemoryIndex)
     // Stack operands: (dst: i32, src: i32, len: i32) -> ()
-    internal sealed class WasmMemoryCopyExpr : WasmExpr
+    class WasmMemoryCopyExpr : WasmExpr
     {
         public readonly int DstMemoryIndex;
         public readonly int SrcMemoryIndex;
@@ -614,7 +614,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     // Represents a memory.fill expression.
     // Binary encoding: 0xFC prefix + u32(11) sub-opcode + u32(memoryIndex)
     // Stack operands: (dst: i32, val: i32, len: i32) -> ()
-    internal sealed class WasmMemoryFillExpr : WasmExpr
+    class WasmMemoryFillExpr : WasmExpr
     {
         public readonly int MemoryIndex;
 
@@ -640,7 +640,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
 
     // Represents a memory.init expression.
-    internal sealed class WasmMemoryInitExpr : WasmExpr
+    class WasmMemoryInitExpr : WasmExpr
     {
         public readonly int DataSegmentIndex;
         public readonly int MemoryIndex;
@@ -672,7 +672,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
     // Represents a table.init expression.
     // Binary encoding: 0xFC prefix + u32(12) sub-opcode + u32(elemidx) + u32(tableidx)
-    internal sealed class WasmTableInitExpr : WasmExpr
+    class WasmTableInitExpr : WasmExpr
     {
         public readonly int ElemIndex;
         public readonly int TableIndex;
@@ -702,7 +702,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    internal sealed class WasmTableGrowExpr : WasmExpr
+    class WasmTableGrowExpr : WasmExpr
     {
         public readonly uint TableIndex;
 
@@ -723,14 +723,14 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    internal enum WasmAbsHeapType : byte
+    enum WasmAbsHeapType : byte
     {
         Func = 0x70,
     }
 
-    internal sealed class WasmRefNullExpr : WasmExpr
+    class WasmRefNullExpr : WasmExpr
     {
-        private WasmAbsHeapType absheaptype;
+        WasmAbsHeapType absheaptype;
 
         public WasmRefNullExpr(WasmAbsHeapType heapType) : base(WasmExprKind.RefNull)
         {
@@ -749,7 +749,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    internal enum WasmBlockType : byte
+    enum WasmBlockType : byte
     {
         Empty = 0x40,
         I32 = 0x7F,
@@ -758,9 +758,9 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         F64 = 0x7C,
         V128 = 0x7B,
     }
-    internal sealed class WasmBlockStartExpr : WasmExpr
+    class WasmBlockStartExpr : WasmExpr
     {
-        private WasmBlockType BlockType;
+        WasmBlockType BlockType;
         public WasmBlockStartExpr(WasmExprKind kind, WasmBlockType blockType) : base(kind)
         {
             BlockType = blockType;
@@ -780,7 +780,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     // ************************************************
     // Simple DSL wrapper for creating Wasm expressions
     // ************************************************
-    internal static class Local
+    static class Local
     {
         public static WasmExpr Get(int index)
         {
@@ -796,7 +796,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    internal static class Global
+    static class Global
     {
         public static WasmExpr Get(int index)
         {
@@ -808,7 +808,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         }
     }
 
-    internal static class I32
+    static class I32
     {
         public static WasmExpr Const(long value)
         {
@@ -827,7 +827,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I32Store, 4, new WasmEncodableULong(offset));
     }
 
-    internal static class I64
+    static class I64
     {
         public static WasmExpr Const(long value)
         {
@@ -837,25 +837,25 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
         public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.I64Store, 8, new WasmEncodableULong(offset));
     }
 
-    internal static class F32
+    static class F32
     {
         public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.F32Load, 4, new WasmEncodableULong(offset));
         public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.F32Store, 4, new WasmEncodableULong(offset));
     }
 
-    internal static class F64
+    static class F64
     {
         public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.F64Load, 8, new WasmEncodableULong(offset));
         public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.F64Store, 8, new WasmEncodableULong(offset));
     }
 
-    internal static class V128
+    static class V128
     {
         public static WasmExpr Load(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.V128Load, 16, new WasmEncodableULong(offset));
         public static WasmExpr Store(ulong offset) => new WasmMemoryArgInstruction<WasmEncodableULong>(WasmExprKind.V128Store, 16, new WasmEncodableULong(offset));
     }
 
-    internal static class Memory
+    static class Memory
     {
         public static WasmExpr Copy(int dstMemoryIndex = 0, int srcMemoryIndex = 0)
         {
@@ -872,20 +872,20 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
             return new WasmMemoryInitExpr(dataSegmentIndex, memoryIndex);
         }
     }
-    internal static class ControlFlow
+    static class ControlFlow
     {
         public static WasmExpr CallIndirect(ISymbolNode funcType, uint tableIndex) => new WasmIndirectCallInstruction(WasmExprKind.CallIndirect, funcType, tableIndex);
     }
-    internal static class Table
+    static class Table
     {
         public static WasmExpr Grow(uint tableIndex) => new WasmTableGrowExpr(tableIndex);
         public static WasmExpr Init(int elemSegmentIndex, int tableIndex = 0) => new WasmTableInitExpr(elemSegmentIndex, tableIndex);
     }
-    internal static class Ref
+    static class Ref
     {
         public static WasmExpr NullFuncRef => new WasmRefNullExpr(WasmAbsHeapType.Func);
     }
-    internal static class Block
+    static class Block
     {
         public static WasmExpr If(WasmBlockType blockType) => new WasmBlockStartExpr(WasmExprKind.If, blockType);
         public static WasmExpr End => new WasmUnaryExpr(WasmExprKind.End);

@@ -58,12 +58,9 @@ namespace ILCompiler.ObjectWriter
             return 1 + (int)encodeLength;
         }
 
-        public int EncodeSize()
-        {
-            return HeaderSize + ContentSize;
-        }
+        public override int HeaderSize => 1 + Relocation.WASM_PADDED_RELOC_SIZE_32;
 
-        public int EmitToStream(Stream outputFileStream)
+        public override int Emit(Stream outputFileStream)
         {
             int size = 0;
             int headerPosition = (int)outputFileStream.Position;
