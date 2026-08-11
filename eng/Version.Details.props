@@ -36,7 +36,7 @@ This file should be imported by eng/Versions.props
     <MicrosoftDotNetXUnitExtensionsPackageVersion>11.0.0-beta.26379.102</MicrosoftDotNetXUnitExtensionsPackageVersion>
     <MicrosoftNetCompilersToolsetPackageVersion>5.10.0-1.26379.102</MicrosoftNetCompilersToolsetPackageVersion>
     <MicrosoftNETSdkILPackageVersion>11.0.0-rc.1.26379.102</MicrosoftNETSdkILPackageVersion>
-    <MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportPackageVersion>11.0.100-rc.1.26379.102</MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportPackageVersion>
+    <MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportPackageVersion>11.0.100-rc.1.26410.102</MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportPackageVersion>
     <MicrosoftNETCoreAppRefPackageVersion>11.0.0-rc.1.26379.102</MicrosoftNETCoreAppRefPackageVersion>
     <MicrosoftNETCoreILAsmPackageVersion>11.0.0-rc.1.26379.102</MicrosoftNETCoreILAsmPackageVersion>
     <NuGetFrameworksPackageVersion>7.10.0-rc.38002</NuGetFrameworksPackageVersion>
