@@ -161,6 +161,7 @@ private:
     void      CollectReferencesForCast(GenTreeOp* castNode);
     void      CollectReferencesForBinop(GenTreeOp* binOpNode);
     void      CollectReferencesForIndir(GenTreeIndir* node);
+    void      CollectReferencesForNullCheck(GenTreeIndir* node);
     void      CollectReferencesForBlockStore(GenTreeBlk* node);
     void      CollectReferencesForLclVar(GenTreeLclVar* lclVar);
     void      CollectReferencesForIndexAddr(GenTreeIndexAddr* indexAddrNode);

@@ -54,6 +54,11 @@ namespace standalone
             return ::GCToEEInterface::TriggerClientBridgeProcessing(args);
         }
 
+        bool IsClientBridgeProcessingActive()
+        {
+            return ::GCToEEInterface::IsClientBridgeProcessingActive();
+        }
+
         void SyncBlockCacheWeakPtrScan(HANDLESCANPROC scanProc, uintptr_t lp1, uintptr_t lp2)
         {
             ::GCToEEInterface::SyncBlockCacheWeakPtrScan(scanProc, lp1, lp2);

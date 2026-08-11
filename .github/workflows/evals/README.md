@@ -26,6 +26,10 @@ for conformance, behavior, and constructiveness. Every grader must pass.
 The workflow preserves the eval specs and installs Vally from the trusted base
 branch before it checks out the PR head. This lets it evaluate PR changes to the
 workflow prompts without allowing the PR to weaken its graders or toolchain.
+Each eval attaches a read-only GitHub MCP server with the `pull_requests`,
+`repos`, `issues`, and `search` toolsets. The `GITHUB_TOKEN` that the eval job
+supplies to that server has only the job's read permissions, allowing the
+scanner to use the `github` MCP server's `search_issues` tool.
 
 These are format and behavior gates, not full ground-truth measurements. The
 second stage, a collector that scrapes the real failures and KBEs that actually
@@ -63,12 +67,13 @@ is failing at eval time.
 
 ## Run locally
 
-You need Node 22, a Copilot token for the agent and judges, and a GitHub token
-for the agent's `gh` calls.
+You need Node 22, Docker, a Copilot token for the agent and judges, and a
+GitHub token for the agent's `gh` calls and the GitHub MCP server.
 
 ```bash
 export COPILOT_GITHUB_TOKEN="$(gh auth token)"
 export GH_TOKEN="$(gh auth token)"
+export GITHUB_PERSONAL_ACCESS_TOKEN="$(gh auth token)"
 vally lint --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml --strict
 vally eval --eval-spec .github/workflows/evals/ci-failure-scan.eval.yaml \
   --skill-dir .github/workflows --workspace /tmp/ws --output-dir /tmp/out
