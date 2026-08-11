@@ -42,7 +42,7 @@ namespace System.Collections
         {
             Debug.Assert(candidate >= MinPrime);
 
-            if ((candidate & 1) == 0 || candidate % MinPrime == 0)
+            if ((candidate & 1) == 0 || (uint)candidate % MinPrime == 0)
             {
                 return candidate == MinPrime;
             }
@@ -116,13 +116,16 @@ namespace System.Collections
 
         private static int GetPrimeAtLeastCore(int min)
         {
+            Debug.Assert(min > MinPrime);
+
             int candidate = min | 1;
-            if (candidate % 3 == 0)
+            uint remainder = (uint)candidate % 6;
+            if (remainder == 3)
             {
                 candidate += 2;
             }
 
-            int increment = candidate % 6 == 5 ? 2 : 4;
+            int increment = remainder == 1 ? 4 : 2;
             int limit = (int)Math.Sqrt(candidate);
             long nextLimitSquared = (long)(limit + 1) * (limit + 1);
             while (candidate < int.MaxValue)
@@ -133,7 +136,7 @@ namespace System.Collections
                     nextLimitSquared = (long)(limit + 1) * (limit + 1);
                 }
 
-                if ((candidate - 1) % HashPrime != 0 && HasNoPrimeDivisors(candidate, limit))
+                if ((uint)(candidate - 1) % HashPrime != 0 && HasNoPrimeDivisors(candidate, limit))
                 {
                     return candidate;
                 }
