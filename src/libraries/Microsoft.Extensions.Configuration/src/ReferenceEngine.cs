@@ -90,7 +90,6 @@ namespace Microsoft.Extensions.Configuration
             {
                 text.Append(body);
 
-                int start = 0;
                 int read = 0;
                 int write = 0;
 
@@ -138,14 +137,14 @@ namespace Microsoft.Extensions.Configuration
                     {
                         TakeQuoted(ref text, baseKey, ref read, ref write);
                     }
-                    else if (c == ReferenceSyntax.SelfMarker && ReferenceSyntax.MoveLength(text.AsSpan(), read, start) is int dots && dots > 0)
+                    else if (c == ReferenceSyntax.SelfMarker && ReferenceSyntax.MoveLength(text.AsSpan(), read, write) is int dots && dots > 0)
                     {
                         // A move that opens the expression has nothing written in front of it, so it is not joined onto
                         // anything and the key it moves from is the whole of the key the reference was found at.
                         bool joined = read > 0;
                         if (!joined)
                         {
-                            Anchor(ref text, baseKey, ref start, ref read, ref write);
+                            Anchor(ref text, baseKey, ref read, ref write);
                         }
 
                         TakeMove(ref text, dots, joined, ref read, ref write, ref unresolved);
@@ -169,12 +168,11 @@ namespace Microsoft.Extensions.Configuration
         // Puts the key the reference was found at in front of the expression, so a move that opens it has somewhere to
         // move from. Nothing has been consumed or emitted when a move opens one, which is as true of a move a
         // substitution brought in as of one that was written there.
-        private static void Anchor(ref ValueStringBuilder text, string baseKey, ref int start, ref int read, ref int write)
+        private static void Anchor(ref ValueStringBuilder text, string baseKey, ref int read, ref int write)
         {
             text.Insert(0, baseKey);
-            start = baseKey.Length;
-            read = start;
-            write = start;
+            read = baseKey.Length;
+            write = baseKey.Length;
         }
 
         private static void TakeQuoted(ref ValueStringBuilder text, string baseKey, ref int read, ref int write)

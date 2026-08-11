@@ -128,10 +128,12 @@ namespace Microsoft.Extensions.Configuration
         }
 
         // The length of the move at <paramref name="i"/>, or 0 when the dots there are part of a name rather than a
-        // move. A move has to fill a whole segment, so it starts one and ends one.
-        internal static int MoveLength(ReadOnlySpan<char> s, int i, int start)
+        // move. A move has to fill a whole segment, so it starts one and ends one. What it starts from is the key built
+        // so far, of which <paramref name="written"/> characters stand at the head of <paramref name="s"/>, rather than
+        // the text they were read from, which may have held quotes that were dropped on the way.
+        internal static int MoveLength(ReadOnlySpan<char> s, int i, int written)
         {
-            if (s[i] != SelfMarker || (i > start && s[i - 1] != KeyDelimiter))
+            if (s[i] != SelfMarker || (written > 0 && s[written - 1] != KeyDelimiter))
             {
                 return 0;
             }

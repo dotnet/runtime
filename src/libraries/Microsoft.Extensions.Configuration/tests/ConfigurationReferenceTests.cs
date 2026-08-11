@@ -1077,6 +1077,15 @@ namespace Microsoft.Extensions.Configuration.Test
                 // Quoting makes a dot ordinary text, which is how a segment that really is "." is named.
                 ("$ref(..:'.')", "dot-key"),
                 ("$ref('..:Sibling')", null),
+                // Quoting cannot make a separator ordinary, since a key is one flat string and has no other way to
+                // spell one. So a dot after a quoted run starts a segment exactly when the key built so far ends at
+                // one, whichever side of the closing quote the separator happens to be written on.
+                ("$ref('A:B':..:Uncle)", "uncle"),
+                ("$ref('A:B:'..:Uncle)", "uncle"),
+                ("$ref('A:B':.:Cousin)", "cousin"),
+                ("$ref('A:B:'.:Cousin)", "cousin"),
+                // A quoted run that leaves off mid-segment does not, so there the dots are part of a name.
+                ("$ref('A:B'..:Uncle)", null),
                 // A reference reached through another one is relative to where it is written, not where the read began.
                 ("$ref(Relay)", "uncle"),
             };
