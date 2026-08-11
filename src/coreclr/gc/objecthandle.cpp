@@ -1505,7 +1505,8 @@ void CALLBACK GetBridgeObjectsForProcessing(_UNCHECKED_OBJECTREF* pObjRef, uintp
     if (!g_theGCHeap->IsPromoted(*ppRef))
     {
         RegisterBridgeObject(*ppRef, *pExtraInfo);
-        RegisterPendingBridgeHandle((uintptr_t)pObjRef);
+        if (lp2 != 0)
+            RegisterPendingBridgeHandle((uintptr_t)pObjRef);
     }
 }
 
@@ -1516,10 +1517,9 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
     LOG((LF_GC | LF_CORPROF, LL_INFO10000, "Building bridge object graphs.\n"));
     uint32_t flags = HNDGCF_NORMAL;
     uint32_t type = HNDTYPE_CROSSREFERENCE;
+    bool shouldProcessBridgeObjects = ShouldProcessBridgeObjects();
 
-    // FIXME: Skip rebuilding bridge data while client bridge processing from a previous GC is active.
-    // The pending bridge handle array is borrowed by the interop layer until that processing completes.
-    BridgeResetData();
+    BridgeResetData(shouldProcessBridgeObjects);
 
     HandleTableMap* walk = &g_HandleTableMap;
     while (walk) {
@@ -1531,14 +1531,14 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
                     HHANDLETABLE hTable = walk->pBuckets[i]->pTable[uCPUindex];
                     if (hTable)
                         // or have a local var for bridgeObjectsToPromote/size (instead of NULL) that's passed in as lp2
-                        HndScanHandlesForGC(hTable, GetBridgeObjectsForProcessing, uintptr_t(sc), 0, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
+                        HndScanHandlesForGC(hTable, GetBridgeObjectsForProcessing, uintptr_t(sc), shouldProcessBridgeObjects, &type, 1, condemned, maxgen, HNDGCF_EXTRAINFO | flags);
                 }
             }
         walk = walk->pNext;
     }
 
     // The callee here will free the allocated memory.
-    if (ShouldProcessBridgeObjects())
+    if (shouldProcessBridgeObjects)
     {
         MarkCrossReferencesArgs *args = ProcessBridgeObjects();
 

@@ -1087,11 +1087,12 @@ static void BridgeFinish()
 #endif
 }
 
-void BridgeResetData()
+void BridgeResetData(bool resetPendingBridgeHandles)
 {
     DynPtrArrayEmpty(&g_registeredBridges);
     DynPtrArrayEmpty(&g_registeredBridgesContexts);
-    DynPtrArrayEmpty(&g_registeredBridgeHandles);
+    if (resetPendingBridgeHandles)
+        DynPtrArrayEmpty(&g_registeredBridgeHandles);
     DynPtrArrayEmpty(&g_scanStack);
     DynPtrArrayEmpty(&g_loopStack);
     EmptyObjectBuckets();

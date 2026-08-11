@@ -118,14 +118,7 @@ void Interop::TriggerClientBridgeProcessing(
     size_t pendingBridgeHandleCount;
     uintptr_t* pendingBridgeHandles = GetPendingBridgeHandles(&pendingBridgeHandleCount);
 
-    if (g_GCBridgeActive)
-    {
-        // FIXME: This should become unreachable once bridge graph recomputation is skipped while active.
-        // Release the memory allocated since the GCBridge
-        // is already running and we're not passing them to it.
-        ReleaseGCBridgeArgumentsWorker(args);
-        return;
-    }
+    _ASSERTE(!g_GCBridgeActive);
 
     bool gcBridgeTriggered = JavaNative::TriggerClientBridgeProcessing(args);
 
