@@ -1290,7 +1290,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <!-- Prevent the wwwroot glob from treating the generated declaration as app content. -->
+  <!-- Prevent the wwwroot glob from picking up dotnet.d.ts copied by _EnsureDotnetTypeScriptDefinitions (https://github.com/dotnet/runtime/issues/124729) -->
   <ItemGroup Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
     <Content Remove="wwwroot\_framework\dotnet.d.ts" />
   </ItemGroup>
