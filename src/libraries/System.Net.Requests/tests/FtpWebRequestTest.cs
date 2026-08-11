@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Test.Common;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -90,6 +91,36 @@ namespace System.Net.Tests
             FtpWebRequest request = (FtpWebRequest)WebRequest.Create(serverUrl);
             WebException ex = Assert.Throws<WebException>(() => request.GetResponse());
             Assert.Equal(WebExceptionStatus.ConnectFailure, ex.Status);
+        }
+
+        [Fact]
+        public async Task GetResponseAsync_ResponseExceedsMaximumLength_ThrowsProtocolViolation()
+        {
+            const int MaxResponseLength = 4 * 1024;
+
+            await LoopbackServer.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    var uriBuilder = new UriBuilder(uri) { Scheme = "ftp", Path = "/file" };
+                    FtpWebRequest request = (FtpWebRequest)WebRequest.Create(uriBuilder.Uri);
+
+                    try
+                    {
+                        WebException exception = await Assert.ThrowsAsync<WebException>(
+                            () => request.GetResponseAsync().WaitAsync(TimeSpan.FromSeconds(30)));
+                        Assert.Equal(WebExceptionStatus.ServerProtocolViolation, exception.Status);
+                    }
+                    finally
+                    {
+                        request.Abort();
+                    }
+                },
+                server => server.AcceptConnectionAsync(async connection =>
+                {
+                    byte[] response = Encoding.ASCII.GetBytes("220-" + new string('a', MaxResponseLength - 3));
+                    await connection.Stream.WriteAsync(response);
+                    await connection.Stream.ReadAsync(new byte[1]);
+                }));
         }
 
         private static bool LocalServerAvailable => (Environment.GetEnvironmentVariable("USE_LOCAL_FTP_SERVER") != null);
