@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -233,7 +234,8 @@ namespace Microsoft.Extensions.Options.Tests
 
             ServiceProvider sp = services.BuildServiceProvider();
 
-            Assert.Single(sp.GetServices<IAsyncStartupValidator>());
+            IAsyncStartupValidator asyncValidator = Assert.Single(sp.GetServices<IAsyncStartupValidator>());
+            Assert.Same(sp.GetRequiredService<IStartupValidator>(), asyncValidator);
         }
 
         [Fact]
@@ -248,6 +250,60 @@ namespace Microsoft.Extensions.Options.Tests
 
             // A custom async startup validator (a different implementation type) coexists with the built-in one.
             Assert.Equal(2, sp.GetServices<IAsyncStartupValidator>().Count());
+        }
+
+        [Fact]
+        public async Task AddOptionsWithValidateOnStart_AsyncValidatorRegistrationIsIdempotentPerName()
+        {
+            var validator = new CountingAsyncValidator();
+            var services = new ServiceCollection();
+            services.AddSingleton(validator);
+
+            services.AddOptionsWithValidateOnStart<FakeOptions, CountingAsyncValidator>("one");
+            services.AddOptionsWithValidateOnStart<FakeOptions, CountingAsyncValidator>("one");
+            services.AddOptionsWithValidateOnStart<FakeOptions, CountingAsyncValidator>("two");
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+
+            Assert.Equal(0, validator.SyncCalls);
+            Assert.Equal(2, validator.AsyncCalls);
+        }
+
+        [Fact]
+        public async Task AddOptionsWithValidateOnStart_DoesNotDuplicateExistingAsyncValidatorRegistration()
+        {
+            var validator = new CountingAsyncValidator();
+            var services = new ServiceCollection();
+            services.AddSingleton<IValidateOptions<FakeOptions>>(validator);
+            services.AddOptionsWithValidateOnStart<FakeOptions, CountingAsyncValidator>("named");
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            Assert.Same(validator, Assert.Single(sp.GetServices<IValidateOptions<FakeOptions>>()));
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+
+            Assert.Equal(0, validator.SyncCalls);
+            Assert.Equal(1, validator.AsyncCalls);
+        }
+
+        [Fact]
+        public async Task AddOptionsWithValidateOnStart_PreRegisteredAsyncValidatorRemainsConservative()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IValidateOptions<FakeOptions>>(new CountingAsyncValidator());
+            services.AddOptionsWithValidateOnStart<FakeOptions, CountingAsyncValidator>("named");
+            services.AddOptions<FakeOptions>().ValidateOnStart();
+            services.AddSingleton<IOptions<FakeOptions>>(Options.Create(new FakeOptions()));
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+                () => GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None));
+
+            Assert.Contains(typeof(FakeOptions).ToString(), error.Message);
+            Assert.Contains(typeof(OptionsWrapper<FakeOptions>).ToString(), error.Message);
         }
 
         [Fact]
@@ -545,6 +601,42 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Contains(typeof(OptionsWrapper<FakeOptions>).ToString(), error.Message);
         }
 
+        [Theory]
+        [InlineData(NamedAsyncRegistration.Delegate)]
+        [InlineData(NamedAsyncRegistration.ValidatorType)]
+        [InlineData(NamedAsyncRegistration.DataAnnotations)]
+        [InlineData(NamedAsyncRegistration.ValidateOnStartHelper)]
+        public async Task NamedAsyncValidation_DoesNotRequireBuiltInDefaultOptions(NamedAsyncRegistration registration)
+        {
+            const string NamedOptions = "named";
+            var services = new ServiceCollection();
+            services.Configure<FakeOptions>(_ => { });
+
+            OptionsBuilder<FakeOptions> namedBuilder = services.AddOptions<FakeOptions>(NamedOptions);
+            switch (registration)
+            {
+                case NamedAsyncRegistration.Delegate:
+                    namedBuilder.Validate((_, _) => Task.FromResult(true));
+                    break;
+                case NamedAsyncRegistration.ValidatorType:
+                    namedBuilder.Validate<AsyncValidator>();
+                    break;
+                case NamedAsyncRegistration.DataAnnotations:
+                    namedBuilder.ValidateDataAnnotations();
+                    break;
+                case NamedAsyncRegistration.ValidateOnStartHelper:
+                    services.AddOptionsWithValidateOnStart<FakeOptions, AsyncValidator>(NamedOptions);
+                    break;
+            }
+
+            services.AddOptions<FakeOptions>().ValidateOnStart();
+            services.AddSingleton<IOptions<FakeOptions>>(Options.Create(new FakeOptions()));
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+        }
+
         [Fact]
         public async Task AsyncStartupValidation_DerivedFactoryUsesSynchronousFallback()
         {
@@ -599,6 +691,42 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.True(sharedCache.TryRemove(Options.DefaultName));
             Assert.Same(winner, options.Value);
             Assert.Throws<OptionsValidationException>(() => monitor.CurrentValue);
+        }
+
+        [Fact]
+        public async Task ConfigurationReload_WhenAsyncValidatorRequiresAsyncValidation_ThrowsAndLeavesFaultedCache()
+        {
+            IConfigurationRoot configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    [nameof(FakeOptions.Message)] = "startup",
+                })
+                .Build();
+            using IDisposable configurationDisposable = (IDisposable)configuration;
+
+            var services = new ServiceCollection();
+            services.Configure<FakeOptions>(configuration);
+            services.AddOptions<FakeOptions>()
+                .Validate((_, _) => Task.FromResult(true))
+                .ValidateOnStart();
+
+            using ServiceProvider sp = services.BuildServiceProvider();
+            IOptionsMonitor<FakeOptions> monitor = sp.GetRequiredService<IOptionsMonitor<FakeOptions>>();
+            IOptionsMonitorCache<FakeOptions> cache = sp.GetRequiredService<IOptionsMonitorCache<FakeOptions>>();
+            int notifications = 0;
+            using IDisposable subscription = monitor.OnChange(_ => notifications++);
+
+            await GetAsyncStartupValidator(sp).ValidateAsync(CancellationToken.None);
+            Assert.Equal("startup", monitor.CurrentValue.Message);
+
+            configuration[nameof(FakeOptions.Message)] = "reload";
+            AggregateException exception = Assert.Throws<AggregateException>(() => configuration.Reload());
+            OptionsValidationException validationException =
+                Assert.IsType<OptionsValidationException>(Assert.Single(exception.InnerExceptions));
+
+            Assert.Equal(0, notifications);
+            Assert.Same(validationException, Assert.Throws<OptionsValidationException>(() => monitor.CurrentValue));
+            Assert.False(cache.TryAdd(Options.DefaultName, new FakeOptions()));
         }
 
         [Fact]
@@ -703,6 +831,14 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.Equal(3, rejectingCache.TryAddCalls);
             Assert.Same(startupCandidate, options.Value);
             Assert.Throws<OptionsValidationException>(() => monitor.CurrentValue);
+        }
+
+        public enum NamedAsyncRegistration
+        {
+            Delegate,
+            ValidatorType,
+            DataAnnotations,
+            ValidateOnStartHelper,
         }
 
         private class CustomSyncOnlyValidator : IStartupValidator

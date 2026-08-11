@@ -7,7 +7,14 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.Options
 {
-    internal sealed class NamedAsyncValidateOptionsFilter<TOptions> : IAsyncValidateOptions<TOptions>
+    internal interface IOptionsValidatorNameMetadata
+    {
+        string? Name { get; }
+    }
+
+    internal sealed class NamedAsyncValidateOptionsFilter<TOptions> :
+        IAsyncValidateOptions<TOptions>,
+        IOptionsValidatorNameMetadata
         where TOptions : class
     {
         private readonly string _name;
@@ -20,6 +27,8 @@ namespace Microsoft.Extensions.Options
             _name = name;
             _inner = inner;
         }
+
+        string? IOptionsValidatorNameMetadata.Name => _name;
 
         public ValidateOptionsResult Validate(string? name, TOptions options) =>
             name is null || name == _name

@@ -36,6 +36,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// replacement operation, so applications using a custom or derived cache must avoid concurrent cache access
         /// during startup validation if atomic publication is required. Startup validation throws
         /// <see cref="InvalidOperationException"/> if publication to a custom or derived cache does not succeed.
+        /// A custom validator that implements both <see cref="IStartupValidator"/> and
+        /// <see cref="IAsyncStartupValidator"/> should register one instance under both service contracts. A custom
+        /// <see cref="IStartupValidator"/> that is not also registered by identity as
+        /// <see cref="IAsyncStartupValidator"/> takes precedence and suppresses asynchronous startup validators.
         /// </remarks>
         /// <typeparam name="TOptions">The type of options.</typeparam>
         /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure options instance.</param>
@@ -47,10 +51,14 @@ namespace Microsoft.Extensions.DependencyInjection
 
             string name = optionsBuilder.Name;
 
-            // Register the built-in validator as a single IStartupValidator (for back-compatibility)
-            // and as an enumerable IAsyncStartupValidator so the host can run it alongside any custom async validators.
-            optionsBuilder.Services.TryAddTransient<IStartupValidator, StartupValidator>();
-            optionsBuilder.Services.TryAddEnumerable(ServiceDescriptor.Transient<IAsyncStartupValidator, StartupValidator>());
+            // Both contracts alias one instance so the host can distinguish the built-in dual registration from
+            // independent custom validators of the same runtime type.
+            optionsBuilder.Services.TryAddSingleton<StartupValidator>();
+            optionsBuilder.Services.TryAddSingleton<IStartupValidator>(
+                static sp => sp.GetRequiredService<StartupValidator>());
+            optionsBuilder.Services.TryAddEnumerable(
+                ServiceDescriptor.Singleton<IAsyncStartupValidator, StartupValidator>(
+                    static sp => sp.GetRequiredService<StartupValidator>()));
             optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
                 .Configure<IOptions<TOptions>, IOptionsMonitor<TOptions>, IOptionsFactory<TOptions>, IOptionsMonitorCache<TOptions>>((vo, options, monitor, factory, sharedCache) =>
                 {
@@ -65,7 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     {
                         if (factory is OptionsFactory<TOptions> asyncFactory &&
                             asyncFactory.GetType() == typeof(OptionsFactory<TOptions>) &&
-                            asyncFactory.HasAsyncValidators)
+                            asyncFactory.HasAsyncValidators(name))
                         {
                             UnnamedOptionsManager<TOptions>? optionsManager = null;
 

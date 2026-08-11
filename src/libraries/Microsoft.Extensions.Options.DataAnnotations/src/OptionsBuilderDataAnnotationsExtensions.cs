@@ -1,7 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -35,9 +39,82 @@ namespace Microsoft.Extensions.DependencyInjection
             " members may be trimmed.")]
         public static OptionsBuilder<TOptions> ValidateDataAnnotations<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOptions>(this OptionsBuilder<TOptions> optionsBuilder) where TOptions : class
         {
+#if NET11_0_OR_GREATER
+            foreach (ServiceDescriptor descriptor in optionsBuilder.Services)
+            {
+                if (descriptor.ImplementationInstance is DataAnnotationValidateOptionsRegistration<TOptions> registration &&
+                    registration.Name == optionsBuilder.Name)
+                {
+                    return optionsBuilder;
+                }
+            }
+
+            optionsBuilder.Services.AddSingleton(new DataAnnotationValidateOptionsRegistration<TOptions>(optionsBuilder.Name));
+            optionsBuilder.Services.TryAddSingleton<DataAnnotationValidateOptionsAdapter<TOptions>>();
+            return optionsBuilder.Validate<DataAnnotationValidateOptionsAdapter<TOptions>>();
+#else
             var instance = new DataAnnotationValidateOptions<TOptions>(optionsBuilder.Name);
             optionsBuilder.Services.AddSingleton<IValidateOptions<TOptions>>(instance);
             return optionsBuilder;
+#endif
         }
     }
+
+#if NET11_0_OR_GREATER
+    internal sealed class DataAnnotationValidateOptionsAdapter<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOptions> :
+        IAsyncValidateOptions<TOptions>
+        where TOptions : class
+    {
+        private readonly IEnumerable<DataAnnotationValidateOptionsRegistration<TOptions>> _registrations;
+
+        public DataAnnotationValidateOptionsAdapter(IEnumerable<DataAnnotationValidateOptionsRegistration<TOptions>> registrations) =>
+            _registrations = registrations;
+
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            foreach (DataAnnotationValidateOptionsRegistration<TOptions> registration in _registrations)
+            {
+                if (registration.Name == name)
+                {
+                    return registration.Validator.Validate(name, options);
+                }
+            }
+
+            return ValidateOptionsResult.Skip;
+        }
+
+        public Task<ValidateOptionsResult> ValidateAsync(
+            string? name,
+            TOptions options,
+            CancellationToken cancellationToken = default)
+        {
+            foreach (DataAnnotationValidateOptionsRegistration<TOptions> registration in _registrations)
+            {
+                if (registration.Name == name)
+                {
+                    return registration.Validator.ValidateAsync(name, options, cancellationToken);
+                }
+            }
+
+            return Task.FromResult(ValidateOptionsResult.Skip);
+        }
+    }
+
+    internal sealed class DataAnnotationValidateOptionsRegistration<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)] TOptions>
+        where TOptions : class
+    {
+        [RequiresUnreferencedCode("Uses DataAnnotationValidateOptions which is unsafe given that the options type cannot be statically analyzed so its members may be trimmed.")]
+        public DataAnnotationValidateOptionsRegistration(string name)
+        {
+            Name = name;
+            Validator = new DataAnnotationValidateOptions<TOptions>(name);
+        }
+
+        public string Name { get; }
+
+        public DataAnnotationValidateOptions<TOptions> Validator { get; }
+    }
+#endif
 }

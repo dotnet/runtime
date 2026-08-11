@@ -113,11 +113,11 @@ namespace Microsoft.Extensions.Hosting.Internal
                         asyncValidators = Services.GetServices<IAsyncStartupValidator>().ToArray();
 
                         // A validator implementing both interfaces but registered only as IStartupValidator is absent
-                        // from the async collection, so it also takes precedence. Match by runtime type rather than
-                        // reference: the built-in validator is registered transient under both interfaces, so the
-                        // resolved IStartupValidator and the async enumerable are distinct instances of one type.
+                        // from the async collection, so it also takes precedence. The built-in validator aliases both
+                        // service contracts to one instance, allowing identity matching without conflating distinct
+                        // custom validator registrations that happen to have the same runtime type.
                         runSyncValidator = startupValidator is not null &&
-                            !asyncValidators.Any(asyncValidator => asyncValidator.GetType() == startupValidator.GetType());
+                            !asyncValidators.Any(asyncValidator => ReferenceEquals(asyncValidator, startupValidator));
                     }
 
                     if (runSyncValidator)

@@ -591,6 +591,50 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
+        public async Task ValidateOnStart_DoesNotConflateDistinctValidatorsOfTheSameType()
+        {
+            var syncValidator = new TrackingDualStartupValidator();
+            var asyncValidator = new TrackingDualStartupValidator();
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddSingleton<IStartupValidator>(syncValidator);
+                services.AddSingleton<IAsyncStartupValidator>(asyncValidator);
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                await host.StartAsync();
+            }
+
+            Assert.True(syncValidator.SyncValidated);
+            Assert.False(syncValidator.AsyncValidated);
+            Assert.False(asyncValidator.SyncValidated);
+            Assert.False(asyncValidator.AsyncValidated);
+        }
+
+        [Fact]
+        public async Task ValidateOnStart_DualInterfaceValidatorAliasedUnderBothContracts_RunsAsyncValidate()
+        {
+            var custom = new TrackingDualStartupValidator();
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddSingleton(custom);
+                services.AddSingleton<IStartupValidator>(
+                    sp => sp.GetRequiredService<TrackingDualStartupValidator>());
+                services.AddSingleton<IAsyncStartupValidator>(
+                    sp => sp.GetRequiredService<TrackingDualStartupValidator>());
+            });
+
+            using (var host = hostBuilder.Build())
+            {
+                await host.StartAsync();
+            }
+
+            Assert.False(custom.SyncValidated);
+            Assert.True(custom.AsyncValidated);
+        }
+
+        [Fact]
         public async Task ValidateOnStart_DualInterfaceValidatorRegisteredOnlyAsSync_TakesPrecedenceOverBuiltInAsync()
         {
             var custom = new TrackingDualStartupValidator();
@@ -605,9 +649,8 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             using (var host = hostBuilder.Build())
             {
-                // The custom validator is matched by type (not reference) against the async collection, which holds
-                // only the built-in transient validator. It is not present, so its synchronous Validate() takes
-                // precedence and the failing ValidateOnStart (async) validation never runs and the host starts.
+                // The custom validator is absent from the async collection, so its synchronous Validate() takes
+                // precedence and the failing ValidateOnStart validation never runs.
                 await host.StartAsync();
             }
 

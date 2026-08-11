@@ -57,10 +57,27 @@ namespace Microsoft.Extensions.Options
             }
         }
 
-        // True when at least one validator registered as IValidateOptions<TOptions> also implements
-        // IAsyncValidateOptions<TOptions>, so a synchronous Create may fail for a genuinely-asynchronous validator.
-        // Used by startup validation to avoid re-running asynchronous validators synchronously.
-        internal bool HasAsyncValidators => _hasAsyncValidators;
+        // Validators without registration metadata remain conservative and are treated as applicable to every name.
+        internal bool HasAsyncValidators(string name)
+        {
+            if (!_hasAsyncValidators)
+            {
+                return false;
+            }
+
+            foreach (IValidateOptions<TOptions> validation in _validations)
+            {
+                if (validation is IAsyncValidateOptions<TOptions> &&
+                    (validation is not IOptionsValidatorNameMetadata metadata ||
+                     metadata.Name is null ||
+                     metadata.Name == name))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
