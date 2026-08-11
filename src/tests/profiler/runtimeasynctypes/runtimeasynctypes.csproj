@@ -3,7 +3,7 @@
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <OutputType>exe</OutputType>
     <Optimize>true</Optimize>
-    <Features>runtime-async=on</Features>
+    <Features>$(Features);runtime-async=on</Features>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
   </PropertyGroup>
   <ItemGroup>

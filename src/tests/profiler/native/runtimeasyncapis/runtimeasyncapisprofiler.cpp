@@ -50,6 +50,8 @@ bool RuntimeAsyncApisProfiler::IsTarget(FunctionID functionId)
 
 HRESULT RuntimeAsyncApisProfiler::JITCompilationStarted(FunctionID functionId, BOOL fIsSafeToBlock)
 {
+    SHUTDOWNGUARD();
+
     if (IsTarget(functionId))
     {
         _jitStarts++;
@@ -60,6 +62,8 @@ HRESULT RuntimeAsyncApisProfiler::JITCompilationStarted(FunctionID functionId, B
 HRESULT RuntimeAsyncApisProfiler::JITCompilationFinished(
     FunctionID functionId, HRESULT hrStatus, BOOL fIsSafeToBlock)
 {
+    SHUTDOWNGUARD();
+
     if (!IsTarget(functionId))
     {
         return S_OK;
@@ -117,12 +121,16 @@ HRESULT RuntimeAsyncApisProfiler::JITCompilationFinished(
 
 HRESULT RuntimeAsyncApisProfiler::ExceptionThrown(ObjectID thrownObjectId)
 {
+    SHUTDOWNGUARD();
+
     _exceptionsThrown++;
     return S_OK;
 }
 
 HRESULT RuntimeAsyncApisProfiler::ExceptionSearchFunctionEnter(FunctionID functionId)
 {
+    SHUTDOWNGUARD();
+
     if (functionId == _target.load())
     {
         _targetSearches++;
@@ -132,6 +140,8 @@ HRESULT RuntimeAsyncApisProfiler::ExceptionSearchFunctionEnter(FunctionID functi
 
 HRESULT RuntimeAsyncApisProfiler::ExceptionUnwindFunctionEnter(FunctionID functionId)
 {
+    SHUTDOWNGUARD();
+
     if (functionId == _target.load())
     {
         _targetUnwinds++;
@@ -141,6 +151,8 @@ HRESULT RuntimeAsyncApisProfiler::ExceptionUnwindFunctionEnter(FunctionID functi
 
 HRESULT RuntimeAsyncApisProfiler::ExceptionCatcherEnter(FunctionID functionId, ObjectID objectId)
 {
+    SHUTDOWNGUARD();
+
     _catchers++;
     return S_OK;
 }

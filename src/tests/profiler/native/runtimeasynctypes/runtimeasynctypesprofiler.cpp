@@ -42,6 +42,8 @@ HRESULT RuntimeAsyncTypesProfiler::Initialize(IUnknown* pCorProfilerInfoUnk)
 
 HRESULT RuntimeAsyncTypesProfiler::ClassLoadStarted(ClassID classId)
 {
+    SHUTDOWNGUARD();
+
     _classLoadStarts++;
     std::lock_guard<std::mutex> lock(_stateLock);
     _classLoadsInProgress.insert(classId);
@@ -50,6 +52,8 @@ HRESULT RuntimeAsyncTypesProfiler::ClassLoadStarted(ClassID classId)
 
 HRESULT RuntimeAsyncTypesProfiler::ClassLoadFinished(ClassID classId, HRESULT hrStatus)
 {
+    SHUTDOWNGUARD();
+
     _classLoadFinishes++;
 
     {
@@ -154,6 +158,8 @@ bool RuntimeAsyncTypesProfiler::CheckContinuationApis(ClassID classId)
 HRESULT RuntimeAsyncTypesProfiler::GarbageCollectionStarted(
     int cGenerations, BOOL generationCollected[], COR_PRF_GC_REASON reason)
 {
+    SHUTDOWNGUARD();
+
     _gcStarts++;
     std::lock_guard<std::mutex> lock(_stateLock);
     _objectClasses.clear();
@@ -164,6 +170,8 @@ HRESULT RuntimeAsyncTypesProfiler::GarbageCollectionStarted(
 HRESULT RuntimeAsyncTypesProfiler::ObjectReferences(
     ObjectID objectId, ClassID classId, ULONG cObjectRefs, ObjectID objectRefIds[])
 {
+    SHUTDOWNGUARD();
+
     bool metadataLess = CheckContinuationApis(classId);
 
     std::lock_guard<std::mutex> lock(_stateLock);
@@ -211,6 +219,8 @@ void RuntimeAsyncTypesProfiler::AnalyzeObjectGraph()
 
 HRESULT RuntimeAsyncTypesProfiler::GarbageCollectionFinished()
 {
+    SHUTDOWNGUARD();
+
     AnalyzeObjectGraph();
     return S_OK;
 }
