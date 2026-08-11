@@ -33,6 +33,7 @@ namespace System
             public bool HasNonZeroTail;
             public NumberBufferKind Kind;
             public Span<byte> Digits;
+            /// <safety>Converts the ref to Digits into a pointer value via Unsafe.AsPointer and returns it without dereferencing; the result is not GC-tracked, so any use must be in an unsafe context that establishes Digits still refers to unmovable memory.</safety>
             public readonly byte* DigitsPtr => (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(Digits)); // safe since constructor expects Digits to refer to unmovable memory
 
             public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength) : this(kind, new Span<byte>(digits, digitsLength))

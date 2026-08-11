@@ -125,7 +125,6 @@ public sealed unsafe partial class SOSDacImpl
             TargetPointer globalLoaderAllocator = loader.GetGlobalLoaderAllocator();
             data->pHighFrequencyHeap = loader.GetHighFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->pLowFrequencyHeap = loader.GetLowFrequencyHeap(globalLoaderAllocator).ToClrDataAddress(_target);
-            data->pStubHeap = loader.GetStubHeap(globalLoaderAllocator).ToClrDataAddress(_target);
             data->appDomainStage = DacpAppDomainDataStage.STAGE_OPEN;
 
             data->dwId = DefaultAppDomainId;
@@ -3355,7 +3354,7 @@ public sealed unsafe partial class SOSDacImpl
                 data->ObjectType = DacpObjectType.OBJ_ARRAY;
                 data->dwRank = rank;
 
-                TargetPointer arrayData = objectContract.GetArrayData(objPtr, out uint numComponents, out TargetPointer boundsStart, out TargetPointer lowerBounds);
+                TargetPointer arrayData = objectContract.GetArrayData(objPtr, out uint numComponents, out TargetPointer boundsStart, out TargetPointer lowerBounds, out _, out _);
                 data->ArrayDataPtr = arrayData.ToClrDataAddress(_target);
                 data->dwNumComponents = numComponents;
                 data->ArrayBoundsPtr = boundsStart.ToClrDataAddress(_target);
@@ -6483,7 +6482,6 @@ public sealed unsafe partial class SOSDacImpl
             LoaderAllocatorHeapType.LowFrequencyHeap,
             LoaderAllocatorHeapType.HighFrequencyHeap,
             LoaderAllocatorHeapType.StaticsHeap,
-            LoaderAllocatorHeapType.StubHeap,
             LoaderAllocatorHeapType.ExecutableHeap,
             LoaderAllocatorHeapType.FixupPrecodeHeap,
             LoaderAllocatorHeapType.NewStubPrecodeHeap,

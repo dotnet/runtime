@@ -530,7 +530,7 @@ Replace it with this (note that for a `blazor` project, `Blazor.start` needs an 
 
 ## References
 
-- [Testing Libraries on WebAssembly](../testing/libraries/testing-wasm.md)
+- [Testing Libraries on WebAssembly](../../testing/libraries/testing-wasm.md)
 - [Debugging WebAssembly Libraries](../testing/libraries/debugging-wasm.md)
-- [WASI Support](../../src/mono/wasi/README.md)
-- [VS Code Debugging Guide](debugging/libraries/debugging-vscode.md)
+- [WASI Support](../../../../src/mono/wasi/README.md)
+- [VS Code Debugging Guide](../libraries/debugging-vscode.md)

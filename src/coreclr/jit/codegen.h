@@ -640,6 +640,7 @@ protected:
 #if defined(TARGET_ARM64)
     void genArm64EmitterUnitTestsGeneral();
     void genArm64EmitterUnitTestsAdvSimd();
+    void genArm64EmitterUnitTestsFp16();
     void genArm64EmitterUnitTestsSve();
     void genArm64EmitterUnitTestsPac();
 #endif
@@ -816,6 +817,7 @@ protected:
 
     void genCodeForDivMod(GenTreeOp* treeNode);
     void genCodeForMul(GenTreeOp* treeNode);
+    void genCodeForBitOp(GenTreeOp* treeNode);
     void genCodeForIncSaturate(GenTree* treeNode);
     void genCodeForMulHi(GenTreeOp* treeNode);
     void genLeaInstruction(GenTreeAddrMode* lea);
