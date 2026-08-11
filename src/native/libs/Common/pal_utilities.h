@@ -80,6 +80,7 @@ inline static int ToFileDescriptor(intptr_t fd)
 {
 #ifndef TARGET_WASI // the valid range of file descriptors is probably INT32_MIN <= fd && fd <= INT32_MAX, the negative handles are valid for console.
     assert(0 <= fd);
+    assert(fd < INT_MAX);
 #endif
 
     return ToFileDescriptorUnchecked(fd);
