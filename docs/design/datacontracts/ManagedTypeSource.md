@@ -43,13 +43,26 @@ TargetPointer GetThreadStaticFieldAddress(string fullyQualifiedName, string fiel
 
 ## Version 1
 
+<!-- BEGIN GENERATED: usage contract=ManagedTypeSource version=c1 -->
 ### Data descriptors used
 
-Data descriptors used: none
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `Object` | *(type size)* | `uint32` | Size in bytes of the fixed Object portion through its MethodTable pointer |
 
 ### Global variables used
 
-Global variables used: none
+_None._
+
+### Contracts used
+
+| Contract Name |
+| --- |
+| `EcmaMetadata` |
+| `Loader` |
+| `RuntimeTypeSystem` |
+<!-- END GENERATED: usage contract=ManagedTypeSource version=c1 -->
+
 
 ### Managed types used
 
@@ -57,13 +70,6 @@ The contract does not itself enumerate a fixed set of managed types — the
 caller supplies the FQN. Consumers should document the specific managed types
 they read in their own `### Managed types used` section.
 
-### Contracts used
-
-| Contract Name |
-| --- |
-| `Loader` |
-| `EcmaMetadata` |
-| `RuntimeTypeSystem` |
 
 ``` csharp
 // Type resolution: parse the fully-qualified name, walk System.Private.CoreLib's
@@ -90,8 +96,11 @@ bool TryResolveType(
 
     // Resolve the TypeDef token via the module's TypeDef -> MethodTable map.
     int token = MetadataTokens.GetToken(typeDefHandle);
-    TargetPointer typeDefToMT = loader.GetLookupTables(moduleHandle).TypeDefToMethodTable;
-    TargetPointer mt = loader.GetModuleLookupMapElement(typeDefToMT, (uint)token, out _);
+    TargetPointer mt = loader.GetModuleLookupMapElement(
+        moduleHandle,
+        ModuleLookupMapKind.TypeDefToMethodTable,
+        (uint)token,
+        out _);
     if (mt == TargetPointer.Null)
         return false;
 

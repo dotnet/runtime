@@ -12,13 +12,14 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 {
-    private const uint DefaultAppDomainId = 1;
+    internal const uint DefaultAppDomainId = 1;
 
     private readonly Target _target;
     private readonly TargetPointer _appDomain;
     private readonly IXCLRDataAppDomain? _legacyImpl;
 
     public TargetPointer Address => _appDomain;
+    internal IXCLRDataAppDomain? LegacyImpl => _legacyImpl;
 
     public ClrDataAppDomain(Target target, TargetPointer appDomain, IXCLRDataAppDomain? legacyImpl)
     {
