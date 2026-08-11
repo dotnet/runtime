@@ -664,6 +664,12 @@ public:
 
     unsigned char lvIsEnumerator : 1; // Local is assigned exact class where : IEnumerable<T> via GDV
 
+    // The local is only ever read on the synchronous path of an async method, i.e. before
+    // the frame it belongs to has resumed. Suspension does not need to capture it: on
+    // resumption its value is either re-established (the resumed indicator is stored by
+    // the resumption path) or dead (the contexts are only read when not resumed).
+    unsigned char lvOnlyUsedOnSynchronousPath : 1;
+
 private:
     unsigned char lvIsNeverNegative : 1; // The local is known to be never negative
 

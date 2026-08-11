@@ -427,22 +427,29 @@ PhaseStatus Compiler::SaveAsyncContexts()
     lvaAsyncExecutionContextVar       = lvaGrabTemp(false DEBUGARG("Async ExecutionContext"));
     lvaAsyncSynchronizationContextVar = lvaGrabTemp(false DEBUGARG("Async SynchronizationContext"));
 
-    lvaGetDesc(lvaResumedIndicator)->lvType               = TYP_I_IMPL;
-    lvaGetDesc(lvaAsyncThreadObjectVar)->lvType           = TYP_REF;
-    lvaGetDesc(lvaAsyncExecutionContextVar)->lvType       = TYP_REF;
-    lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvType = TYP_REF;
+    LclVarDsc* const resumedDsc = lvaGetDesc(lvaResumedIndicator);
+    LclVarDsc* const threadDsc  = lvaGetDesc(lvaAsyncThreadObjectVar);
+    LclVarDsc* const execCtxDsc = lvaGetDesc(lvaAsyncExecutionContextVar);
+    LclVarDsc* const syncCtxDsc = lvaGetDesc(lvaAsyncSynchronizationContextVar);
 
-    // Mark this frame as a logical async frame. This has to happen here rather than when
-    // an inlinee is spliced into its caller: the frame's own inlinees are processed while
-    // it is still being compiled, and they need to see it in the enclosing frame chain.
-    compInlineContext->SetIsAsyncFrame();
+    resumedDsc->lvType = TYP_I_IMPL;
+    threadDsc->lvType  = TYP_REF;
+    execCtxDsc->lvType = TYP_REF;
+    syncCtxDsc->lvType = TYP_REF;
+
+    // None of these are read once this frame has resumed, so a suspension does not need to
+    // capture them. That holds for inlined frames too, which get their own set of these.
+    resumedDsc->lvOnlyUsedOnSynchronousPath = true;
+    threadDsc->lvOnlyUsedOnSynchronousPath  = true;
+    execCtxDsc->lvOnlyUsedOnSynchronousPath = true;
+    syncCtxDsc->lvOnlyUsedOnSynchronousPath = true;
 
     if (opts.IsOSR())
     {
-        lvaGetDesc(lvaResumedIndicator)->lvIsOSRLocal               = true;
-        lvaGetDesc(lvaAsyncThreadObjectVar)->lvIsOSRLocal           = true;
-        lvaGetDesc(lvaAsyncExecutionContextVar)->lvIsOSRLocal       = true;
-        lvaGetDesc(lvaAsyncSynchronizationContextVar)->lvIsOSRLocal = true;
+        resumedDsc->lvIsOSRLocal = true;
+        threadDsc->lvIsOSRLocal  = true;
+        execCtxDsc->lvIsOSRLocal = true;
+        syncCtxDsc->lvIsOSRLocal = true;
     }
 
     // Create try-fault structure. This is actually a try-finally, but we
@@ -1542,24 +1549,6 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
 
     call->VisitLocalDefs(m_compiler, visitDef);
 
-    // Exclude method-level context locals (only live on synchronous path)
-    if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
-    {
-        excludedLocals.AddOrUpdate(m_compiler->lvaAsyncThreadObjectVar, true);
-    }
-    if (m_compiler->lvaAsyncSynchronizationContextVar != BAD_VAR_NUM)
-    {
-        excludedLocals.AddOrUpdate(m_compiler->lvaAsyncSynchronizationContextVar, true);
-    }
-    if (m_compiler->lvaAsyncExecutionContextVar != BAD_VAR_NUM)
-    {
-        excludedLocals.AddOrUpdate(m_compiler->lvaAsyncExecutionContextVar, true);
-    }
-    if (m_compiler->lvaResumedIndicator != BAD_VAR_NUM)
-    {
-        excludedLocals.AddOrUpdate(m_compiler->lvaResumedIndicator, true);
-    }
-
 #ifdef TARGET_WASM
     // The Wasm shadow stack pointer is a Wasm local set by the caller, not
     // continuation state, so exclude it from the save/restore set.
@@ -1570,6 +1559,13 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
 #endif // TARGET_WASM
 
     analyses.GetLiveLocals(layoutBuilder, [&](unsigned lclNum) {
+        // Some locals like async contexts are not read if we resumed, so they never need
+        // to be captured.
+        if (m_compiler->lvaGetDesc(lclNum)->lvOnlyUsedOnSynchronousPath)
+        {
+            return false;
+        }
+
         return !excludedLocals.Contains(lclNum);
     });
     LiftLIREdges(block, defs, layoutBuilder);
@@ -3459,12 +3455,28 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
 
     JITDUMP("    Created inlined frame suspension tail " FMT_BB " for %u frames\n", tailBB->bbNum, numFrames);
 
+    // A frame's handling below runs only the first time the physical frame suspends
+    // underneath it. Once any frame at or inside it has resumed, its continuation already
+    // exists and holds what it captured then, so redoing the capture would overwrite it
+    // and redoing the restore would put the wrong contexts back on the thread.
+    //
+    // A frame's own indicator is not enough to see that: it is only set when the frame
+    // logically returns, which has not happened yet at a suspension. So accumulate the
+    // indicators of the frames walked so far and gate on that instead.
+    unsigned const anyResumedLcl = m_compiler->lvaGrabTemp(false DEBUGARG("Async any inlined frame resumed"));
+    LclVarDsc* const anyResumedDsc            = m_compiler->lvaGetDesc(anyResumedLcl);
+    anyResumedDsc->lvType                     = TYP_INT;
+    anyResumedDsc->lvOnlyUsedOnSynchronousPath = true;
+
+    GenTree* const initAnyResumed =
+        m_compiler->gtNewStoreLclVarNode(anyResumedLcl, m_compiler->gtCloneExpr(frameResumed));
+    LIR::AsRange(tailBB).InsertAtEnd(LIR::SeqTree(m_compiler, initAnyResumed));
+
     for (unsigned i = 0; i + 1 < numFrames; i++)
     {
-        GenTree* const frameResumed = values.Bottom((int)(i * 3));
-        GenTree* const outerResumed = values.Bottom((int)((i + 1) * 3));
-        GenTree* const outerExec    = values.Bottom((int)((i + 1) * 3 + 1));
-        GenTree* const outerSync    = values.Bottom((int)((i + 1) * 3 + 2));
+        GenTree* const outerResumed = values.Bottom((int)(i * 3));
+        GenTree* const outerExec    = values.Bottom((int)(i * 3 + 1));
+        GenTree* const outerSync    = values.Bottom((int)(i * 3 + 2));
         unsigned const depth        = numFrames - 1 - i;
 
         // Capture what this frame hands to its caller. The members are only ever read by
@@ -3497,7 +3509,8 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
                            NewCallArg::Primitive(
                                ContinuationMemberAddress(layout,
                                                          ContinuationMember::InlineFrameContinuationContext(depth))));
-            captureCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(frameResumed)));
+            captureCall->gtArgs.PushFront(m_compiler,
+                                          NewCallArg::Primitive(m_compiler->gtNewLclvNode(anyResumedLcl, TYP_INT)));
 
             m_compiler->compCurBB = tailBB;
             m_compiler->fgMorphTree(captureCall);
@@ -3508,12 +3521,21 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
             JITDUMP("    No reads of inline frame depth %u members survived; skipping its capture\n", depth);
         }
 
+        // Fold in the frame we are about to hand off to: from here on out its handling,
+        // and that of every frame outside it, is likewise only needed the first time.
+        GenTree* const merged  = m_compiler->gtNewOperNode(GT_OR, TYP_INT,
+                                                           m_compiler->gtNewLclvNode(anyResumedLcl, TYP_INT),
+                                                           m_compiler->gtCloneExpr(outerResumed));
+        GenTree* const orStore = m_compiler->gtNewStoreLclVarNode(anyResumedLcl, merged);
+        LIR::AsRange(tailBB).InsertAtEnd(LIR::SeqTree(m_compiler, orStore));
+
         // Then restore the caller's contexts, as its physical frame's return would have.
         GenTreeCall* restoreCall =
             m_compiler->gtNewUserCallNode(m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
         restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(outerSync)));
         restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(outerExec)));
-        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(outerResumed)));
+        restoreCall->gtArgs.PushFront(m_compiler,
+                                      NewCallArg::Primitive(m_compiler->gtNewLclvNode(anyResumedLcl, TYP_INT)));
 
         m_compiler->compCurBB = tailBB;
         m_compiler->fgMorphTree(restoreCall);
