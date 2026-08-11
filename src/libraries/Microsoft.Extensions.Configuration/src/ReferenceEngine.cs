@@ -130,12 +130,15 @@ namespace Microsoft.Extensions.Configuration
                     }
                     else if (c == ReferenceSyntax.SelfMarker && ReferenceSyntax.MoveLength(text.AsSpan(), read, start) is int dots && dots > 0)
                     {
-                        if (read == 0)
+                        // A move that opens the expression has nothing written in front of it, so it is not joined onto
+                        // anything and the key it moves from is the whole of the key the reference was found at.
+                        bool joined = read > 0;
+                        if (!joined)
                         {
                             Anchor(ref text, baseKey, ref start, ref read, ref write);
                         }
 
-                        TakeMove(ref text, dots, ref read, ref write, ref unresolved);
+                        TakeMove(ref text, dots, joined, ref read, ref write, ref unresolved);
                     }
                     else
                     {
@@ -176,13 +179,16 @@ namespace Microsoft.Extensions.Configuration
             read = pastEnd;
         }
 
-        private static void TakeMove(ref ValueStringBuilder text, int dots, ref int read, ref int write, ref bool unresolved)
+        private static void TakeMove(ref ValueStringBuilder text, int dots, bool joined, ref int read, ref int write, ref bool unresolved)
         {
-            if (dots == 1)
+            if (joined)
             {
+                // Drop the separator that joined this move onto what was written before it, so a move of no distance
+                // leaves the key exactly as it was and one of a level starts from a segment boundary.
                 write = EndSegment(ref text, write);
             }
-            else
+
+            if (dots == 2)
             {
                 int parent = MoveToParent(ref text, write);
                 if (parent < 0)
@@ -296,11 +302,10 @@ namespace Microsoft.Extensions.Configuration
             return write;
         }
 
-        // Drops the last segment of the key built so far: "A:B:C" and "A:B:C:" both become "A:B", "A" becomes the root,
-        // and the root has no parent. Returns where the key now ends, or -1 when there was no parent to move to.
+        // Drops the last segment of the key built so far: "A:B:C" becomes "A:B", "A" becomes the root, and the root has
+        // no parent. Returns where the key now ends, or -1 when there was no parent to move to.
         private static int MoveToParent(ref ValueStringBuilder text, int write)
         {
-            write = EndSegment(ref text, write);
             if (write == 0)
             {
                 return -1;

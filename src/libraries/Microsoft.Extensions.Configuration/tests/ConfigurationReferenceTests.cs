@@ -1104,17 +1104,42 @@ namespace Microsoft.Extensions.Configuration.Test
         }
 
         [Theory]
-        [InlineData("$ref(..:Probe)")]
-        [InlineData("$ref(.)")]
-        public void RelativeTarget_PointingAtItself_IsACycle(string value)
+        [InlineData("A:B:Probe", "$ref(..:Probe)")]
+        [InlineData("A:B:Probe", "$ref(.)")]
+        // A key ending in a separator ends in an empty segment, so staying put stays on that key rather than stepping
+        // out of it.
+        [InlineData("A:B:", "$ref(.)")]
+        public void RelativeTarget_PointingAtItself_IsACycle(string key, string value)
         {
             IConfigurationRoot root = BuildRoot(RootKind.Builder, Source(new Dictionary<string, string?>
             {
-                ["A:B:Probe"] = value,
+                [key] = value,
             }));
 
-            InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => root["A:B:Probe"]);
-            Assert.Contains("A:B:Probe", error.Message);
+            InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => root[key]);
+            Assert.Contains(key, error.Message);
+        }
+
+        [Theory]
+        [MemberData(nameof(RootKinds))]
+        public void RelativeTarget_MovesFromTheWholeKey_EmptyLastSegmentAndAll(RootKind kind)
+        {
+            // "One:" names two segments, the last of them empty, which is what ConfigurationPath.GetParentPath says of
+            // it too. The separator it ends with is where that empty segment begins rather than a join onto the move,
+            // so one move lands on "One" and two land on the root.
+            IConfigurationRoot root = BuildRoot(kind, Source(new Dictionary<string, string?>
+            {
+                ["One:Sibling"] = "sibling",
+                ["One:"] = "$ref(..:Sibling)",
+                ["Two"] = "two-value",
+                ["Two:"] = "$ref(..)",
+                ["Three:Uncle"] = "uncle",
+                ["Three:Sub:"] = "$ref(..:..:Uncle)",
+            }));
+
+            Assert.Equal("sibling", root["One:"]);
+            Assert.Equal("two-value", root["Two:"]);
+            Assert.Equal("uncle", root["Three:Sub:"]);
         }
 
         [Theory]
@@ -1153,20 +1178,40 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal("hit", root["Probe"]);
         }
 
-        [Theory]
-        [MemberData(nameof(RootKinds))]
-        public void ValuePutIn_CanQuoteAMoveToKeepItAsText(RootKind kind)
+        public static IEnumerable<object[]> QuotedInValueCases()
         {
-            // Quoting is what makes a dot ordinary wherever it is written, which is the only way a value that really
-            // does name a segment of ".." keeps it.
+            (string Pointer, string Key)[] cases = new[]
+            {
+                // A dot is a move wherever it lands, so a value that really does name a segment of ".." keeps it by
+                // quoting it.
+                ("Odd:'..':Key", "Odd:..:Key"),
+                // A brace is no different. What a sub-reference brings in is meant to form a key, so a value carrying
+                // braces of its own - a registry-shaped GUID, a format string - says so the same way.
+                ("'{6B29FC40-CA47-1067-B31D-00DD010662DA}'", "{6B29FC40-CA47-1067-B31D-00DD010662DA}"),
+                ("'Data{':Suffix", "Data{:Suffix"),
+            };
+
+            foreach (RootKind kind in new[] { RootKind.Builder, RootKind.Manager })
+            {
+                foreach ((string pointer, string key) in cases)
+                {
+                    yield return new object[] { kind, pointer, key };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(QuotedInValueCases))]
+        public void ValuePutIn_CanQuoteSyntaxToKeepItAsText(RootKind kind, string pointer, string key)
+        {
             IConfigurationRoot root = BuildRoot(kind, Source(new Dictionary<string, string?>
             {
-                ["Odd:..:Key"] = "odd",
-                ["Pointer"] = "Odd:'..':Key",
+                [key] = "found",
+                ["Pointer"] = pointer,
                 ["Probe"] = "$ref({Pointer})",
             }));
 
-            Assert.Equal("odd", root["Probe"]);
+            Assert.Equal("found", root["Probe"]);
         }
 
         [Fact]
