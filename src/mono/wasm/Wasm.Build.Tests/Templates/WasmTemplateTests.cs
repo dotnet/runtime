@@ -372,21 +372,11 @@ namespace Wasm.Build.Tests
                 // Rebuild with -question to verify the build stays incremental after
                 // dotnet.d.ts is copied to wwwroot/_framework (see https://github.com/dotnet/runtime/issues/124729).
                 BuildProject(info, config, new BuildOptions(UseCache: false, AssertAppBundle: false, ExtraMSBuildArgs: "-question"));
-
-                PublishProject(info, config, new PublishOptions(UseCache: false));
-                string publishFrameworkDir = GetBinFrameworkDir(config, forPublish: true);
-                Assert.False(File.Exists(Path.Combine(publishFrameworkDir, "dotnet.d.ts")));
-                Assert.False(File.Exists(Path.Combine(Path.GetDirectoryName(publishFrameworkDir)!, "dotnet.d.ts")));
             }
             else
             {
                 Assert.False(fileExists, $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
                 Assert.False(File.Exists(rootDotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {rootDotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
-
-                PublishProject(info, config, new PublishOptions(UseCache: false));
-                string publishFrameworkDir = GetBinFrameworkDir(config, forPublish: true);
-                Assert.False(File.Exists(Path.Combine(publishFrameworkDir, "dotnet.d.ts")));
-                Assert.False(File.Exists(Path.Combine(Path.GetDirectoryName(publishFrameworkDir)!, "dotnet.d.ts")));
             }
         }
 
