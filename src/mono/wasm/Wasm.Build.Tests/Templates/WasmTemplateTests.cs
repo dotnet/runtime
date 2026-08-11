@@ -355,7 +355,7 @@ namespace Wasm.Build.Tests
             string dotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "_framework", "dotnet.d.ts");
             string rootDotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "dotnet.d.ts");
 
-            // Verify dotnet.d.ts is not in wwwroot after creation
+            // Verify dotnet.d.ts is absent from the project after creation
             Assert.False(File.Exists(dotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after creation of the project");
             Assert.False(File.Exists(rootDotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {rootDotnetDtsWwwrootPath} after creation of the project");
 
