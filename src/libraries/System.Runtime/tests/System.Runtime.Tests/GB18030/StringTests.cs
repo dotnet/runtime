@@ -46,7 +46,6 @@ public class StringTests
         TestHelper.NonOrdinalStringComparisons.Select(comparison => new object[] { testData, comparison  }));
 
     [Theory]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
     [MemberData(nameof(Contains_MemberData))]
     public void Contains(string decoded, StringComparison comparison)
     {
