@@ -131,7 +131,6 @@ NESTED_END RhpGcProbeHijack
 
 .global C_FUNC(RhpThrowHwEx)
 
-// Wait for GC function
 NESTED_ENTRY RhpWaitForGC, _TEXT, NoHandler
     PUSH_PROBE_FRAME $a4, $a3, $t3
 
@@ -144,14 +143,12 @@ NESTED_END RhpWaitForGC
 
 .global C_FUNC(RhpGcPoll2)
 
-// GC Poll function
 LEAF_ENTRY RhpGcPoll
     PREPARE_EXTERNAL_VAR_INDIRECT_W RhpTrapThreads, $a0
     bnez  $a0, C_FUNC(RhpGcPollRare)
     jirl  $r0, $ra, 0
 LEAF_END RhpGcPoll
 
-// Rare GC Poll function
 NESTED_ENTRY RhpGcPollRare, _TEXT, NoHandler
     PUSH_COOP_PINVOKE_FRAME  $a0
     bl  RhpGcPoll2
