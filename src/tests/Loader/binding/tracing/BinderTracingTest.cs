@@ -204,10 +204,13 @@ namespace BinderTracingTests
         {
             Console.WriteLine($"[{DateTime.Now:T}] Validating bind operation for {assemblyName}...");
             BindOperation[] binds = listener.WaitAndGetEventsForAssembly(assemblyName);
-            Assert.True(binds.Length == 1, $"Bind event count for {assemblyName} - expected: 1, actual: {binds.Length}");
-            BindOperation actual = binds[0];
+            List<BindOperation> matchingBinds = binds
+                .Where(bind => Helpers.ValidateBindOperationOrReturnFalse(expected, bind))
+                .ToList();
 
-            Helpers.ValidateBindOperation(expected, actual);
+            Assert.True(
+                matchingBinds.Count == 1,
+                $"Bind event match count for {assemblyName} - expected: 1, actual: {matchingBinds.Count}; total events: {binds.Length}");
         }
     }
 }

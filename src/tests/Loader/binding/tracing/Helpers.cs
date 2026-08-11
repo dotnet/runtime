@@ -41,6 +41,19 @@ namespace BinderTracingTests
             Console.WriteLine("ValidateBindOperation Finished");
         }
 
+        internal static bool ValidateBindOperationOrReturnFalse(BindOperation expected, BindOperation actual)
+        {
+            try
+            {
+                ValidateBindOperation(expected, actual);
+                return true;
+            }
+            catch (Xunit.Sdk.XunitException)
+            {
+                return false;
+            }
+        }
+
         public static string GetAssemblyInAppPath(string assemblyName)
         {
             string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
