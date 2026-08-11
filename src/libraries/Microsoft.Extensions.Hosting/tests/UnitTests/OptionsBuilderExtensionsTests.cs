@@ -411,7 +411,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             var custom = new TrackingStartupValidator();
             var hostBuilder = CreateHostBuilder(services =>
             {
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
                 services.AddSingleton<IStartupValidator>(custom);
+#pragma warning restore SYSLIB0066
                 services.AddOptions<ComplexOptions>()
                     .Configure(o => o.Boolean = false)
                     .Validate(o => o.Boolean, "should not run")
@@ -432,7 +434,9 @@ namespace Microsoft.Extensions.Hosting.Tests
         public async Task ValidateOnStart_CustomSyncStartupValidatorThatFails_ThrowsOnStart()
         {
             var hostBuilder = CreateHostBuilder(services =>
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
                 services.AddSingleton<IStartupValidator>(new ThrowingStartupValidator()));
+#pragma warning restore SYSLIB0066
 
             using (var host = hostBuilder.Build())
             {
@@ -576,7 +580,9 @@ namespace Microsoft.Extensions.Hosting.Tests
         public async Task ValidateOnStart_DualInterfaceValidatorRegisteredOnlyAsSync_RunsSyncValidate()
         {
             var custom = new TrackingDualStartupValidator();
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
             var hostBuilder = CreateHostBuilder(services => services.AddSingleton<IStartupValidator>(custom));
+#pragma warning restore SYSLIB0066
 
             using (var host = hostBuilder.Build())
             {
@@ -597,7 +603,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             var asyncValidator = new TrackingDualStartupValidator();
             var hostBuilder = CreateHostBuilder(services =>
             {
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
                 services.AddSingleton<IStartupValidator>(syncValidator);
+#pragma warning restore SYSLIB0066
                 services.AddSingleton<IAsyncStartupValidator>(asyncValidator);
             });
 
@@ -619,8 +627,10 @@ namespace Microsoft.Extensions.Hosting.Tests
             var hostBuilder = CreateHostBuilder(services =>
             {
                 services.AddSingleton(custom);
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
                 services.AddSingleton<IStartupValidator>(
                     sp => sp.GetRequiredService<TrackingDualStartupValidator>());
+#pragma warning restore SYSLIB0066
                 services.AddSingleton<IAsyncStartupValidator>(
                     sp => sp.GetRequiredService<TrackingDualStartupValidator>());
             });
@@ -640,7 +650,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             var custom = new TrackingDualStartupValidator();
             var hostBuilder = CreateHostBuilder(services =>
             {
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
                 services.AddSingleton<IStartupValidator>(custom);
+#pragma warning restore SYSLIB0066
                 services.AddOptions<ComplexOptions>()
                     .Configure(o => o.Boolean = false)
                     .Validate(o => o.Boolean, "should not run")
@@ -665,7 +677,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             var custom = new TrackingStartupValidator();
             var hostBuilder = CreateHostBuilder(services =>
             {
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
                 services.AddSingleton<IStartupValidator>(custom);
+#pragma warning restore SYSLIB0066
                 services.AddSingleton<IAsyncStartupValidator>(_ =>
                 {
                     asyncResolved = true;
@@ -727,7 +741,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.False(third.Validated);
         }
 
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
         private sealed class TrackingStartupValidator : IStartupValidator
+#pragma warning restore SYSLIB0066
         {
             public bool Validated { get; private set; }
 
@@ -745,7 +761,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             }
         }
 
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
         private sealed class TrackingDualStartupValidator : IStartupValidator, IAsyncStartupValidator
+#pragma warning restore SYSLIB0066
         {
             public bool SyncValidated { get; private set; }
             public bool AsyncValidated { get; private set; }
@@ -759,7 +777,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             }
         }
 
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
         private sealed class ThrowingStartupValidator : IStartupValidator
+#pragma warning restore SYSLIB0066
         {
             public void Validate() =>
                 throw new OptionsValidationException("name", typeof(object), new[] { "sync startup validation failed" });

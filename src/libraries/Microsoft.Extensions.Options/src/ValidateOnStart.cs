@@ -10,7 +10,9 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Options
 {
+#pragma warning disable SYSLIB0066 // IStartupValidator is obsolete but retained for compatibility.
     internal sealed class StartupValidator : IStartupValidator, IAsyncStartupValidator
+#pragma warning restore SYSLIB0066
     {
         private readonly StartupValidatorOptions _validatorOptions;
 

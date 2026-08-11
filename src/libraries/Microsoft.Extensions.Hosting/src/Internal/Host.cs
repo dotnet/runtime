@@ -96,7 +96,9 @@ namespace Microsoft.Extensions.Hosting.Internal
                     // Run startup validation before resolving hosted services so that invalid configuration
                     // fails fast and a hosted service reading validated options in its constructor observes
                     // the startup-validated instance.
+#pragma warning disable SYSLIB0066 // IStartupValidator is obsolete but retained for compatibility.
                     IStartupValidator? startupValidator = Services.GetService<IStartupValidator>();
+#pragma warning restore SYSLIB0066
                     IAsyncStartupValidator[] asyncValidators = Array.Empty<IAsyncStartupValidator>();
                     bool runSyncValidator;
 

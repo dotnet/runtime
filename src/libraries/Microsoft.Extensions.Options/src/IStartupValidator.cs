@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
@@ -9,6 +11,7 @@ namespace Microsoft.Extensions.Options
     /// <remarks>
     /// Options are enabled to be validated during startup by calling <see cref="DependencyInjection.OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>.
     /// </remarks>
+    [Obsolete(Obsoletions.IStartupValidatorMessage, DiagnosticId = Obsoletions.IStartupValidatorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public interface IStartupValidator
     {
         /// <summary>

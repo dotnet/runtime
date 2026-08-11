@@ -54,8 +54,10 @@ namespace Microsoft.Extensions.DependencyInjection
             // Both contracts alias one instance so the host can distinguish the built-in dual registration from
             // independent custom validators of the same runtime type.
             optionsBuilder.Services.TryAddSingleton<StartupValidator>();
+#pragma warning disable SYSLIB0066 // IStartupValidator is obsolete but retained for compatibility.
             optionsBuilder.Services.TryAddSingleton<IStartupValidator>(
                 static sp => sp.GetRequiredService<StartupValidator>());
+#pragma warning restore SYSLIB0066
             optionsBuilder.Services.TryAddEnumerable(
                 ServiceDescriptor.Singleton<IAsyncStartupValidator, StartupValidator>(
                     static sp => sp.GetRequiredService<StartupValidator>()));

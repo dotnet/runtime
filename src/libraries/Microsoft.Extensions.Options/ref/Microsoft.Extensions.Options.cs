@@ -141,6 +141,7 @@ namespace Microsoft.Extensions.Options
     {
         void PostConfigure(string? name, TOptions options);
     }
+    [System.ObsoleteAttribute("Implement IAsyncStartupValidator instead.", DiagnosticId = "SYSLIB0066", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public partial interface IStartupValidator
     {
         void Validate();

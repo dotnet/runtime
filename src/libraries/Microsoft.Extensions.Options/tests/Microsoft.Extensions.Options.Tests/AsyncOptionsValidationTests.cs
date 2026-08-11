@@ -15,8 +15,10 @@ namespace Microsoft.Extensions.Options.Tests
 {
     public class AsyncOptionsValidationTests
     {
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
         private static IAsyncStartupValidator GetAsyncStartupValidator(IServiceProvider sp) =>
             Assert.IsAssignableFrom<IAsyncStartupValidator>(sp.GetRequiredService<IStartupValidator>());
+#pragma warning restore SYSLIB0066
 
         [Fact]
         public async Task AsyncValidateOptions_SkipsWhenNameDoesNotMatch()
@@ -186,6 +188,7 @@ namespace Microsoft.Extensions.Options.Tests
         [Fact]
         public void ValidateOnStart_CustomSyncOnlyValidator_UsesSyncPath()
         {
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
             var services = new ServiceCollection();
 
             // A custom sync-only IStartupValidator registered before ValidateOnStart wins the
@@ -205,11 +208,13 @@ namespace Microsoft.Extensions.Options.Tests
             Assert.IsType<CustomSyncOnlyValidator>(validator);
             Assert.False(validator is IAsyncStartupValidator);
             validator.Validate();
+#pragma warning restore SYSLIB0066
         }
 
         [Fact]
         public void ValidateOnStart_RegistersBuiltInValidatorAsBothInterfaces()
         {
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
             var services = new ServiceCollection();
 
             services.AddOptions<FakeOptions>()
@@ -222,11 +227,13 @@ namespace Microsoft.Extensions.Options.Tests
             IStartupValidator sync = sp.GetRequiredService<IStartupValidator>();
             Assert.IsType<IAsyncStartupValidator>(sync, exactMatch: false);
             Assert.Single(sp.GetServices<IAsyncStartupValidator>());
+#pragma warning restore SYSLIB0066
         }
 
         [Fact]
         public void ValidateOnStart_CalledMultipleTimes_RegistersSingleAsyncStartupValidator()
         {
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
             var services = new ServiceCollection();
 
             services.AddOptions<FakeOptions>("a").Configure(o => o.Message = "a").Validate(o => true).ValidateOnStart();
@@ -236,6 +243,7 @@ namespace Microsoft.Extensions.Options.Tests
 
             IAsyncStartupValidator asyncValidator = Assert.Single(sp.GetServices<IAsyncStartupValidator>());
             Assert.Same(sp.GetRequiredService<IStartupValidator>(), asyncValidator);
+#pragma warning restore SYSLIB0066
         }
 
         [Fact]
@@ -841,7 +849,9 @@ namespace Microsoft.Extensions.Options.Tests
             ValidateOnStartHelper,
         }
 
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
         private class CustomSyncOnlyValidator : IStartupValidator
+#pragma warning restore SYSLIB0066
         {
             public void Validate() { }
         }

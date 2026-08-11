@@ -43,7 +43,9 @@ namespace Microsoft.Extensions.Options.Tests
 
             var sp = services.BuildServiceProvider();
 
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
             var validator = sp.GetService<IStartupValidator>();
+#pragma warning restore SYSLIB0066
             Assert.Null(validator);
         }
 
@@ -57,7 +59,9 @@ namespace Microsoft.Extensions.Options.Tests
 
             var sp = services.BuildServiceProvider();
 
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
             var validator = sp.GetService<IStartupValidator>();
+#pragma warning restore SYSLIB0066
             Assert.NotNull(validator);
             OptionsValidationException ex = Assert.Throws<OptionsValidationException>(validator.Validate);
             Assert.Equal(1, ex.Failures.Count());
@@ -74,7 +78,9 @@ namespace Microsoft.Extensions.Options.Tests
 
             var sp = services.BuildServiceProvider();
 
+#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
             var validator = sp.GetService<IStartupValidator>();
+#pragma warning restore SYSLIB0066
             Assert.NotNull(validator);
             OptionsValidationException ex = Assert.Throws<OptionsValidationException>(validator.Validate);
             Assert.Equal(2, ex.Failures.Count());
