@@ -653,7 +653,7 @@ namespace System.Reflection.Emit
             }
 
             // The remaining case is whether the type is an enum, which means that it inherits from System.ValueType indirectly.
-            // If the base type is a signature type (whihch can happen on constructed generic types), we cannot call BaseType on
+            // If the base type is a signature type (which can happen on constructed generic types), we cannot call BaseType on
             // it. But it wouldn't be possible for System.Enum to be a signature type, so we can bail out early in that case.
             if (baseType.IsSignatureType)
             {
