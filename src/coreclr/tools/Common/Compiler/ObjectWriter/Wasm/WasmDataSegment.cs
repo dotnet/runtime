@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Numerics;
@@ -11,7 +12,7 @@ using Internal.Text;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal enum WasmDataSectionType : byte
+    internal enum WasmDataSegmentType : byte
     {
         Active = 0,  // (data list(byte) (active offset-expr))
         Passive = 1, // (data list(byte) passive)
