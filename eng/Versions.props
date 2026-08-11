@@ -169,6 +169,7 @@
     <!-- emscripten workload package when testing workloads -->
     <!-- we're using MicrosoftDotNetApiCompatTaskPackageVersion since the emscripten workload package ID contains a changing version. This one uses sdk-style feature band version numbers. -->
     <MicrosoftNETRuntimeEmscriptenVersion>$(MicrosoftDotNetApiCompatTaskPackageVersion)</MicrosoftNETRuntimeEmscriptenVersion>
+    <MicrosoftNETRuntimeEmscriptenVersion Condition="'$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion)' == '11.0.100-rc.1.26410.102'">$(MicrosoftNETWorkloadEmscriptenCurrentManifest110100TransportVersion)</MicrosoftNETRuntimeEmscriptenVersion>
     <!-- we're using MicrosoftNETCoreAppRefPackageVersion since the emsdk package ID contains a changing version. This one uses runtime version numbers.  -->
     <EmsdkPackageVersion>$(MicrosoftNETCoreAppRefPackageVersion)</EmsdkPackageVersion>
     <NodePackageVersion>$(runtimewinx64MicrosoftNETCoreRuntimeWasmNodeTransportPackageVersion)</NodePackageVersion>
