@@ -11,7 +11,7 @@ using Xunit;
 namespace System.IO.Tests
 {
     [PlatformSpecific(TestPlatforms.AnyUnix)]
-    public class SafeFileHandle_GetFileType_Unix : FileSystemTest
+    public partial class SafeFileHandle_GetFileType_Unix : FileSystemTest
     {
         [Fact]
         public void GetFileType_Directory()
@@ -118,7 +118,7 @@ namespace System.IO.Tests
                 {
                     using (SafeFileHandle fileHandle = File.OpenHandle(filePath, FileMode.Open, FileAccess.ReadWrite))
                     {
-                        Assert.Equal(maxAllowedFileDescriptor, NativeMethods.dup2((int)fileHandle.DangerousGetHandle(), maxAllowedFileDescriptor));
+                        Assert.Equal(maxAllowedFileDescriptor, dup2((int)fileHandle.DangerousGetHandle(), maxAllowedFileDescriptor));
 
                         limits.CurrentLimit--;
                         Assert.Equal(0, Interop.Sys.SetRLimit(Interop.Sys.RlimitResources.RLIMIT_NOFILE, ref limits));
@@ -142,10 +142,7 @@ namespace System.IO.Tests
             }).Dispose();
         }
 
-        private static class NativeMethods
-        {
-            [DllImport("libc", SetLastError = true)]
-            internal static extern int dup2(int oldFileDescriptor, int newFileDescriptor);
-        }
+        [LibraryImport("libc", SetLastError = true)]
+        private static partial int dup2(int oldFileDescriptor, int newFileDescriptor);
     }
 }
