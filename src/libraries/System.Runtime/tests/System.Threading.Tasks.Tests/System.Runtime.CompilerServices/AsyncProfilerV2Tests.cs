@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -2628,6 +2629,64 @@ namespace System.Threading.Tasks.Tests
                 "Expected a single ResetAsyncThreadContext window containing both a ResumeStateMachineAsyncContextKeyword " +
                 "(StateMachine) and a ResumeRuntimeAsyncContext (Runtime), proving the reset-replay merge walker traversed " +
                 "a mixed StateMachine+Runtime chain and exercised both branches of its address-ordered recursion.");
+        }
+
+        [ConditionalFact(nameof(IsRuntimeAsyncSupported), nameof(IsCoreClrJitRuntime))]
+        public void V2ContinuationWrapper_NameContract_IsStable()
+        {
+            // Pin the name/count the CPU stitcher hardcodes, rather than reflecting the runtime's
+            // NameTemplate/COUNT (which would let a drift in either value pass silently): assert every
+            // expected wrapper method exists, and that there is no wrapper one past the expected count.
+            const string WrapperNamePrefix = "Continuation_Wrapper_";
+            const int WrapperCount = 32;
+
+            Type wrapper = ContinuationWrapperType;
+
+            for (int i = 0; i < WrapperCount; i++)
+            {
+                string name = WrapperNamePrefix + i;
+                Assert.True(wrapper.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static) is not null,
+                    $"Missing continuation wrapper method '{name}'; the CPU stitcher recognizes wrapper frames by this name.");
+            }
+
+            string oneBeyond = WrapperNamePrefix + WrapperCount;
+            Assert.True(wrapper.GetMethod(oneBeyond, BindingFlags.NonPublic | BindingFlags.Static) is null,
+                $"Unexpected continuation wrapper method '{oneBeyond}'; the wrapper count changed and the CPU stitcher must be updated to match.");
+        }
+
+        [ConditionalTheory(nameof(IsRuntimeAsyncSupported), nameof(IsCoreClrJitRuntime))]
+        [InlineData("V2.DispatchContinuations")]
+        [InlineData("V2.InstrumentedDispatchContinuations")]
+        public void V2AsyncDispatchMethod_NameContract_IsStable(string key) =>
+            AssertAsyncDispatchMethodExists(key);
+
+        [RuntimeAsyncMethodGeneration(true)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task RuntimeAsync_ResumeDispatchStack_ContainsExpectedBoundaryFrames(StrongBox<List<string>> capture)
+        {
+            await Task.Yield();
+            capture.Value = CaptureAsyncBoundarySequence();
+        }
+
+        [ConditionalFact(nameof(IsRuntimeAsyncAndThreadingSupported))]
+        public void RuntimeAsync_ResumeDispatchStack()
+        {
+            var capture = new StrongBox<List<string>>();
+
+            var events = CollectEvents(AllRuntimeAsyncKeywords, () =>
+            {
+                RunScenario(() => RuntimeAsync_ResumeDispatchStack_ContainsExpectedBoundaryFrames(capture));
+            });
+
+            // DumpAllEvents(events);
+
+            Assert.True(capture.Value is not null,
+                "The runtime-async continuation did not run (no boundary sequence was captured).");
+
+            AssertBoundarySubsequence(capture.Value!,
+                "Wrapper",
+                "V2.InstrumentedDispatchContinuations",
+                "V2.DispatchContinuations");
         }
     }
 }

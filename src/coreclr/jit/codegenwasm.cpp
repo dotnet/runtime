@@ -301,7 +301,11 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         // Skip homing parameters that are dead at method entry (not live into the first block).
-        if (varDsc->lvTracked && !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
+        // Exception: on wasm all on-frame GC locals are reported to the GC stack walk as untracked
+        // (i.e. live for the whole method), so a GC parameter's frame slot must still be homed
+        if (varDsc->lvTracked &&
+            !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
+            !(varDsc->lvOnFrame && varDsc->HasGCPtr()))
         {
             return;
         }
@@ -1253,8 +1257,7 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
                 emit->emitIns_I(INS_f64_const, EA_8BYTE, 0);
                 break;
             default:
-                NYI_WASM("genReturnSuspend: unhandled return type");
-                break;
+                unreached();
         }
     }
 }
@@ -1714,9 +1717,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForBinary");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
@@ -2144,9 +2145,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             break;
 
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForShift");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
@@ -2953,13 +2952,20 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
     {
-        regNumber addrReg = GetMultiUseOperandReg(addr);
-        genEmitNullCheck(addrReg);
+        // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+        //
+        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()));
     }
 
     // TODO-WASM: Memory barriers
 
-    if (addr->isContained())
+    if (addr->isContained() && addr->OperIs(GT_LEA))
+    {
+        // The contained address mode's offset folds into the memarg; its base is already pushed.
+        //
+        GetEmitter()->emitIns_I(ins_Load(type), emitActualTypeSize(type), addr->AsAddrMode()->Offset());
+    }
+    else if (addr->isContained())
     {
         // A contained address constant folds into the memarg offset, so emit just the image base here.
         //
@@ -2992,7 +2998,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree* data = tree->Data();
     GenTree* addr = tree->Addr();
 
-    assert(!addr->isContained());
+    // Only a contained address mode is expected; its offset folds into the memarg below.
+    //
+    assert(!addr->isContained() || addr->OperIs(GT_LEA));
+    const cnsval_ssize_t offset = addr->isContained() ? addr->AsAddrMode()->Offset() : 0;
 
     // We must consume the operands in the proper execution order,
     // so that liveness is updated appropriately.
@@ -3001,8 +3010,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
     if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
     {
-        regNumber addrReg = GetMultiUseOperandReg(addr);
-        genEmitNullCheck(addrReg);
+        // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+        //
+        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()));
     }
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
@@ -3019,7 +3029,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         if (type == TYP_SIMD8)
         {
             // stack: [addr, value] -> store the low 8 bytes.
-            GetEmitter()->emitIns_MemargLane(INS_v128_store64_lane, EA_8BYTE, 0, 0);
+            GetEmitter()->emitIns_MemargLane(INS_v128_store64_lane, EA_8BYTE, offset, 0);
         }
         else if (type == TYP_SIMD12)
         {
@@ -3027,7 +3037,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
         else
         {
-            GetEmitter()->emitIns_I(ins_Store(type), emitActualTypeSize(type), 0);
+            GetEmitter()->emitIns_I(ins_Store(type), emitActualTypeSize(type), offset);
         }
     }
 
@@ -3309,10 +3319,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
-
         default:
             JITDUMP("Helper '%s' has no hard-coded signature\n", m_compiler->eeGetMethodFullName(params.methHnd));
-            NYI_WASM("Missing signature for helper in genEmitHelperCall");
             unreached();
     }
 
