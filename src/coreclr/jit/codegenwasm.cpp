@@ -1522,10 +1522,9 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 //
 void CodeGen::genFloatToIntCast(GenTree* tree)
 {
-    if (tree->gtOverflow())
-    {
-        NYI_WASM("Overflow checks");
-    }
+    // Overflow checks for floating->integral should be handled on import
+    // by converting to helper calls like CORINFO_HELP_DBL2*_OVF (see fgCastRequiresHelper).
+    assert(!tree->gtOverflow());
 
     var_types   toType     = tree->TypeGet();
     var_types   fromType   = tree->AsCast()->CastOp()->TypeGet();
@@ -4039,11 +4038,6 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 }
 #endif
 
-void CodeGen::genSpillVar(GenTree* tree)
-{
-    NYI_WASM("Put all spillng to memory under '#if HAS_FIXED_REGISTER_SET'");
-}
-
 //------------------------------------------------------------------------
 // genLoadLocalIntoReg: set the register to "load(local on stack)".
 //
@@ -4494,11 +4488,6 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
     NYI_WASM("genCallerSPtoInitialSPdelta");
     return 0;
-}
-
-void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
-{
-    NYI_WASM("Move genUpdateVarReg from codegenlinear.cpp to codegencommon.cpp shared code");
 }
 
 void RegSet::verifyRegUsed(regNumber reg)

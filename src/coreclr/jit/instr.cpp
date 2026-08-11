@@ -2078,8 +2078,7 @@ instruction CodeGenInterface::ins_Load(var_types srcType, bool aligned /*=false*
             return INS_v128_load;
 #endif
         default:
-            NYI_WASM("ins_Load");
-            return INS_none;
+            unreached();
     }
 #endif // defined(TARGET_WASM)
 
@@ -2491,8 +2490,7 @@ instruction CodeGenInterface::ins_Store(var_types dstType, bool aligned /*=false
             return INS_v128_store;
 #endif
         default:
-            NYI_WASM("ins_Store");
-            return INS_none;
+            unreached();
     }
 #endif // defined(TARGET_WASM)
 
@@ -2931,6 +2929,7 @@ void CodeGen::instGen_Return(unsigned stkArgSize)
 #endif
 }
 
+#if HAS_FIXED_REGISTER_SET
 /*****************************************************************************
  *
  *  Machine independent way to move a Zero value into a register
@@ -2949,14 +2948,13 @@ void CodeGen::instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags fla
     GetEmitter()->emitIns_R_R_I(INS_ori, size, reg, REG_R0, 0);
 #elif defined(TARGET_RISCV64)
     GetEmitter()->emitIns_R_R_I(INS_addi, size, reg, REG_R0, 0);
-#elif defined(TARGET_WASM)
-    NYI_WASM("instGen_Set_Reg_To_Zero");
 #else
 #error "Unknown TARGET"
 #endif
 
     regSet.verifyRegUsed(reg);
 }
+#endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_AMD64)
 //------------------------------------------------------------------------
