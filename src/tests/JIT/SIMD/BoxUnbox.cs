@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using System.Numerics;
 using Xunit;
 
-namespace VectorMathTests
+namespace SIMDTests.BoxUnboxTests
 {
     public class Program
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

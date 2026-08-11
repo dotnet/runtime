@@ -6,11 +6,14 @@ using System;
 using System.Numerics;
 using Xunit;
 
-public partial class VectorTest
+namespace SIMDTests.VectorCeilFloorTests;
+
+public partial class VectorTest : VectorTestBase
 {
     private const int Pass = 100;
     private const int Fail = -1;
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

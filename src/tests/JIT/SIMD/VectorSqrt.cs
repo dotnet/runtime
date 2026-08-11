@@ -6,7 +6,9 @@ using System;
 using System.Numerics;
 using Xunit;
 
-public partial class VectorTest
+namespace SIMDTests.VectorSqrtTests;
+
+public partial class VectorTest : VectorTestBase
 {
     private const int Pass = 100;
     private const int Fail = -1;
@@ -33,6 +35,7 @@ public partial class VectorTest
     }
 
 
+    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

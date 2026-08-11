@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using Point = System.Numerics.Vector<int>;
 using Xunit;
 
-namespace VectorTests
+namespace SIMDTests.StoreElementTests
 {
     public class Program
     {
+        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

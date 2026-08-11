@@ -2,66 +2,11 @@
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize />
+    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="AbsGeneric_r.csproj" />
-    <MergedWrapperProjectReference Include="AbsSqrt_r.csproj" />
-    <MergedWrapperProjectReference Include="AddingSequence_r.csproj" />
-    <MergedWrapperProjectReference Include="BitwiseOperations_r.csproj" />
-    <MergedWrapperProjectReference Include="BoxUnbox_r.csproj" />
-    <MergedWrapperProjectReference Include="BugWithAVX_r.csproj" />
-    <MergedWrapperProjectReference Include="CircleInConvex_r.csproj" />
-    <MergedWrapperProjectReference Include="CreateGeneric_r.csproj" />
-    <MergedWrapperProjectReference Include="CtorFromArray_r.csproj" />
-    <MergedWrapperProjectReference Include="Ctors_r.csproj" />
-    <MergedWrapperProjectReference Include="DivSignedUnsignedTest_r.csproj" />
-    <MergedWrapperProjectReference Include="Dup_r.csproj" />
-    <MergedWrapperProjectReference Include="Haar-likeFeaturesGeneric_r.csproj" />
-    <MergedWrapperProjectReference Include="Ldfld_r.csproj" />
-    <MergedWrapperProjectReference Include="LdfldGeneric_r.csproj" />
-    <MergedWrapperProjectReference Include="Ldind_r.csproj" />
-    <MergedWrapperProjectReference Include="Matrix4x4_r.csproj" />
-    <MergedWrapperProjectReference Include="MinMax_r.csproj" />
-    <MergedWrapperProjectReference Include="Mul_r.csproj" />
-    <MergedWrapperProjectReference Include="Plane_r.csproj" />
-    <MergedWrapperProjectReference Include="SimpleSIMDProgram.csproj" />
-    <MergedWrapperProjectReference Include="SqrtGeneric_r.csproj" />
-    <MergedWrapperProjectReference Include="StoreElement_r.csproj" />
-    <MergedWrapperProjectReference Include="Sums_r.csproj" />
-    <MergedWrapperProjectReference Include="Vector3_r.csproj" />
-    <MergedWrapperProjectReference Include="Vector3GetHash_r.csproj" />
-    <MergedWrapperProjectReference Include="Vector3Interop_r.csproj" />
-    <MergedWrapperProjectReference Include="Vector4_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorAbs_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorAdd_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorArgs_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorArray_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorArrayInit_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorCast_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorCeilFloor_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorConvert_r_Target_32Bit.csproj" />
-    <MergedWrapperProjectReference Include="VectorConvert_r_Target_64Bit.csproj" />
-    <MergedWrapperProjectReference Include="VectorCopyToArray_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorDiv_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorDot_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorExp_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorGet_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorHWAccel_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorHWAccel2_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorInit_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorInitN_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorIntEquals_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorMatrix_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorMax_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorMin_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorMul_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorRelOp_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorReturn_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorSet_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorSqrt_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorSub_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorSum_r.csproj" />
-    <MergedWrapperProjectReference Include="VectorUnused_r.csproj" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
+    <Compile Include="*.cs" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
