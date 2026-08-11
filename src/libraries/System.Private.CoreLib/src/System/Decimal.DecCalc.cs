@@ -2631,77 +2631,65 @@ done:
                 }
             }
 
-            [StructLayout(LayoutKind.Explicit)]
+            // An inline array rather than an explicit layout union, so the length is statically known
+            // and the 64-bit views are bounds derived casts over the uint span instead of overlapping
+            // fields. AsSpan still reinterprets by hand; see the comment on it.
+            [InlineArray(Length)]
             private struct Buf24
             {
-                /// <safety>Non-reference uint overlapping the low half of the ulo64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
-                [FieldOffset(0 * 4)]
-                public safe uint U0;
-                /// <safety>Non-reference uint overlapping the high half of the ulo64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
-                [FieldOffset(1 * 4)]
-                public safe uint U1;
-                /// <safety>Non-reference uint overlapping the low half of the umid64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
-                [FieldOffset(2 * 4)]
-                public safe uint U2;
-                /// <safety>Non-reference uint overlapping the high half of the umid64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
-                [FieldOffset(3 * 4)]
-                public safe uint U3;
-                /// <safety>Non-reference uint overlapping the low half of the uhigh64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
-                [FieldOffset(4 * 4)]
-                public safe uint U4;
-                /// <safety>Non-reference uint overlapping the high half of the uhigh64LE integer view; every field of this buffer is a non-reference integer, so the union cannot forge a managed reference.</safety>
-                [FieldOffset(5 * 4)]
-                public safe uint U5;
+                public const int Length = 6;
 
-                /// <safety>64-bit integer view over the U0/U1 uints; every overlapping field is a non-reference integer, so the union cannot forge a managed reference.</safety>
-                [FieldOffset(0 * 8)]
-                private safe ulong ulo64LE;
-                /// <safety>64-bit integer view over the U2/U3 uints; every overlapping field is a non-reference integer, so the union cannot forge a managed reference.</safety>
-                [FieldOffset(1 * 8)]
-                private safe ulong umid64LE;
-                /// <safety>64-bit integer view over the U4/U5 uints; every overlapping field is a non-reference integer, so the union cannot forge a managed reference.</safety>
-                [FieldOffset(2 * 8)]
-                private safe ulong uhigh64LE;
+                private uint _e0;
 
                 public ulong Low64
                 {
 #if BIGENDIAN
-                    get => ((ulong)U1 << 32) | U0;
-                    set { U1 = (uint)(value >> 32); U0 = (uint)value; }
+                    get => ((ulong)this[1] << 32) | this[0];
+                    set { this[1] = (uint)(value >> 32); this[0] = (uint)value; }
 #else
-                    get => ulo64LE;
-                    set => ulo64LE = value;
+                    get => AsUInt64()[0];
+                    set => AsUInt64()[0] = value;
 #endif
                 }
 
                 public ulong Mid64
                 {
 #if BIGENDIAN
-                    get => ((ulong)U3 << 32) | U2;
-                    set { U3 = (uint)(value >> 32); U2 = (uint)value; }
+                    get => ((ulong)this[3] << 32) | this[2];
+                    set { this[3] = (uint)(value >> 32); this[2] = (uint)value; }
 #else
-                    get => umid64LE;
-                    set => umid64LE = value;
+                    get => AsUInt64()[1];
+                    set => AsUInt64()[1] = value;
 #endif
                 }
 
                 public ulong High64
                 {
 #if BIGENDIAN
-                    get => ((ulong)U5 << 32) | U4;
-                    set { U5 = (uint)(value >> 32); U4 = (uint)value; }
+                    get => ((ulong)this[5] << 32) | this[4];
+                    set { this[5] = (uint)(value >> 32); this[4] = (uint)value; }
 #else
-                    get => uhigh64LE;
-                    set => uhigh64LE = value;
+                    get => AsUInt64()[2];
+                    set => AsUInt64()[2] = value;
 #endif
                 }
 
-                public const int Length = 6;
+                public uint U0 { get => this[0]; set => this[0] = value; }
+                public uint U1 { get => this[1]; set => this[1] = value; }
+                public uint U2 { get => this[2]; set => this[2] = value; }
+                public uint U3 { get => this[3]; set => this[3] = value; }
+                public uint U4 { get => this[4]; set => this[4] = value; }
+                public uint U5 { get => this[5]; set => this[5] = value; }
 
-                // Unsafe.As instead of "ref U0" keeps the JIT from null checking the byref when this
-                // is called on a ScaleResult style "ref Buf24" parameter; U0 is at offset 0.
+                // The compiler's inline array to span conversion ("=> this") null checks the byref when
+                // this runs on a ScaleResult style "ref Buf24" parameter, which costs ~9% on decimal
+                // multiply because the extra code also pushes loops out of alignment. Reinterpreting
+                // by hand avoids that; the element type and offset 0 match what the conversion does.
                 [UnscopedRef]
                 public Span<uint> AsSpan() => MemoryMarshal.CreateSpan(ref Unsafe.As<Buf24, uint>(ref this), Length);
+
+                [UnscopedRef]
+                private Span<ulong> AsUInt64() => MemoryMarshal.Cast<uint, ulong>(AsSpan());
             }
 
         }
