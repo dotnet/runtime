@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Optimize />
+  </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="*/**/*.??proj" />
+    <MergedWrapperProjectReference Include="Constraints\Call_instance01_r.csproj" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
