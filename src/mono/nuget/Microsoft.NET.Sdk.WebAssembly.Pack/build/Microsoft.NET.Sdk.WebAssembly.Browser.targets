@@ -1300,11 +1300,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     <_DotnetTypesDestPath>$([MSBuild]::NormalizePath($([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), 'wwwroot', '_framework')), 'dotnet.d.ts'))</_DotnetTypesDestPath>
   </PropertyGroup>
 
-  <Target Name="_EnsureDotnetTypeScriptDefinitions" 
-          DependsOnTargets="ResolveRuntimePackAssets"
-          AfterTargets="PrepareForBuild"
-          Outputs="$(_DotnetTypesDestPath)"
-          Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true' and !Exists('$(_DotnetTypesDestPath)')">
+  <Target Name="_ResolveDotnetTypeScriptDefinitionPaths"
+          DependsOnTargets="ResolveRuntimePackAssets">
     <PropertyGroup>
       <_RuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_RuntimePackDir>
       <_RuntimePackDir Condition="'$(_RuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_RuntimePackDir>
@@ -1313,6 +1310,14 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_DotnetTypesDestDir>$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), 'wwwroot', '_framework'))</_DotnetTypesDestDir>
       <_DotnetTypesDestPath>$([MSBuild]::NormalizePath($(_DotnetTypesDestDir), 'dotnet.d.ts'))</_DotnetTypesDestPath>
     </PropertyGroup>
+  </Target>
+
+  <Target Name="_EnsureDotnetTypeScriptDefinitions"
+          DependsOnTargets="_ResolveDotnetTypeScriptDefinitionPaths"
+          AfterTargets="PrepareForBuild"
+          Inputs="$(_DotnetTypesSourcePath)"
+          Outputs="$(_DotnetTypesDestPath)"
+          Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
 
     <MakeDir Directories="$(_DotnetTypesDestDir)"
              Condition="Exists('$(_DotnetTypesSourcePath)')" />
