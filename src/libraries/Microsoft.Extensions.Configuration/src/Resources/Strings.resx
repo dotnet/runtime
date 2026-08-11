@@ -138,6 +138,9 @@
   <data name="Error_ReferenceNestingLimit" xml:space="preserve">
     <value>The value of configuration key '{0}' nests configuration references more than {1} levels deep: {2}.</value>
   </data>
+  <data name="Error_ReferenceExpansionLimit" xml:space="preserve">
+    <value>The value of configuration key '{0}' expands more than {1} configuration sub-references, which usually means a value brings back the sub-reference that read it: {2}.</value>
+  </data>
   <data name="Error_MalformedReference" xml:space="preserve">
     <value>The value of configuration key '{0}' is a malformed configuration reference.</value>
   </data>

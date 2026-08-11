@@ -499,6 +499,7 @@ namespace Microsoft.Extensions.Configuration.Test
 
             InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => root["Probe"]);
             Assert.Contains("Probe -> Step0 -> Step1", error.Message, StringComparison.Ordinal);
+            Assert.Contains("nests", error.Message, StringComparison.Ordinal);
         }
 
         [Fact]
@@ -1218,13 +1219,43 @@ namespace Microsoft.Extensions.Configuration.Test
         public void ValuePutIn_ThatBringsBackThePlaceholder_Throws()
         {
             // A value carrying the placeholder that brought it in costs neither a hop nor a level, so counting what
-            // goes in is the only thing that stops it going round.
+            // goes in is the only thing that stops it going round - and is why it is reported as expansion rather than
+            // as either of those.
             IConfigurationRoot root = BuildRoot(RootKind.Builder, Source(
                 ("Loop", "{Loop}"),
                 ("Probe", "$ref({Loop})")));
 
             InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => root["Probe"]);
             Assert.Contains("Probe", error.Message);
+            Assert.Contains("expands more than 32", error.Message);
+            Assert.DoesNotContain("nests", error.Message);
+        }
+
+        [Theory]
+        [InlineData(32, false)]
+        [InlineData(33, true)]
+        public void ValuesPutIn_AreBoundedPerExpression_WithoutBeingCalledNesting(int count, bool throws)
+        {
+            // Placeholders written side by side are not nested in one another, so the bound they run into has to say so
+            // rather than send the reader looking for depth that is not there.
+            var data = new Dictionary<string, string?>
+            {
+                ["Bit"] = "x",
+                [new string('x', count)] = "found",
+                ["Probe"] = "$ref(" + string.Concat(Enumerable.Repeat("{Bit}", count)) + ")",
+            };
+
+            IConfigurationRoot root = BuildRoot(RootKind.Builder, Source(data));
+
+            if (!throws)
+            {
+                Assert.Equal("found", root["Probe"]);
+                return;
+            }
+
+            InvalidOperationException error = Assert.Throws<InvalidOperationException>(() => root["Probe"]);
+            Assert.Contains("expands more than 32", error.Message);
+            Assert.DoesNotContain("nests", error.Message);
         }
 
         // === Helpers ===

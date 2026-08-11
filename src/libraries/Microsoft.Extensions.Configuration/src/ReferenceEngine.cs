@@ -15,8 +15,11 @@ namespace Microsoft.Extensions.Configuration
     internal sealed class ReferenceEngine : ConfigurationEngine
     {
         private const string SwitchName = "Microsoft.Extensions.Configuration.DisableConfigurationReferences";
-        private const int MaxNesting = 32;
+        // The three ways one read can grow, each bounded on its own: steps from one reference to the next, levels of
+        // sub-reference, and values put into any single key expression.
         private const int MaxChain = 64;
+        private const int MaxNesting = 32;
+        private const int MaxExpansion = 32;
         private const int StackKeyLength = 128;
 
         [FeatureSwitchDefinition(SwitchName)]
@@ -38,6 +41,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 Trail.Stop.Cycle => SR.Format(SR.Error_ReferenceCycle, key, trail.Path()),
                 Trail.Stop.Nesting => SR.Format(SR.Error_ReferenceNestingLimit, key, MaxNesting, trail.Path()),
+                Trail.Stop.Expansion => SR.Format(SR.Error_ReferenceExpansionLimit, key, MaxExpansion, trail.Path()),
                 _ => SR.Format(SR.Error_ReferenceChainLimit, key, MaxChain, trail.Path()),
             });
         }
@@ -91,7 +95,7 @@ namespace Microsoft.Extensions.Configuration
                 int write = 0;
 
                 bool unresolved = false;
-                int puts = 0;
+                int expansions = 0;
 
                 while (read < text.Length)
                 {
@@ -100,9 +104,15 @@ namespace Microsoft.Extensions.Configuration
                     if (c == ReferenceSyntax.BraceOpen)
                     {
                         int close = ReferenceSyntax.FindMatchingBrace(text.AsSpan(), read, baseKey);
-                        if (nesting >= MaxNesting || ++puts > MaxNesting)
+                        if (nesting >= MaxNesting)
                         {
                             trail.Open(Trail.Stop.Nesting);
+                            return null;
+                        }
+
+                        if (++expansions > MaxExpansion)
+                        {
+                            trail.Open(Trail.Stop.Expansion);
                             return null;
                         }
 
@@ -286,6 +296,7 @@ namespace Microsoft.Extensions.Configuration
             {
                 Chain,
                 Nesting,
+                Expansion,
                 Cycle,
             }
         }
