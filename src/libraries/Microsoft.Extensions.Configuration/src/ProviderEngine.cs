@@ -58,16 +58,14 @@ namespace Microsoft.Extensions.Configuration
         /// Each provider is handed the keys gathered so far, which is how a provider that stores keys in a shape of its
         /// own gets to reconcile them with the rest, so this accumulates rather than concatenates.
         /// <para>
-        /// The result is a fresh <see cref="List{T}"/> rather than a lazy sequence, so a stage may cast it and add or
-        /// remove keys in place. Reading eagerly also keeps every provider access inside the read: a
-        /// <see cref="ConfigurationManager"/> pins its provider list only for the duration of the call, and a lazy
-        /// result would be walked after it had let go.
+        /// The providers are all consulted before this returns, since the fold is eager, but a provider is free to hand
+        /// back a sequence of its own that is not. So a caller that has borrowed its provider list has to gather the
+        /// result before letting go of it.
         /// </para>
         /// </remarks>
         internal override IEnumerable<string> GetChildKeys(IList<IConfigurationProvider> providers, string? parentPath) =>
             providers
                 .Aggregate(Enumerable.Empty<string>(), (seed, source) => source.GetChildKeys(seed, parentPath))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+                .Distinct(StringComparer.OrdinalIgnoreCase);
     }
 }

@@ -22,11 +22,13 @@ namespace Microsoft.Extensions.Configuration
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IList<IConfigurationProvider> providers = AsList(reference?.Providers ?? root.Providers);
 
-            // The keys are gathered before this returns, so nothing that follows touches a provider: building a section
-            // reads nothing. That is what lets the result stay lazy without outliving the reference held here.
-            return ConfigurationEngine.Default
-                .GetChildKeys(providers, path)
-                .Select(key => root.GetSection(path == null ? key : path + ConfigurationPath.KeyDelimiter + key));
+            IEnumerable<string> keys = ConfigurationEngine.Default.GetChildKeys(providers, path);
+            if (reference is not null)
+            {
+                keys = keys.ToList();
+            }
+
+            return keys.Select(key => root.GetSection(path == null ? key : path + ConfigurationPath.KeyDelimiter + key));
         }
 
         internal static bool TryGetConfiguration(this IConfigurationRoot root, string key, out string? value)
