@@ -13,6 +13,7 @@ using Xunit;
 using System.IO;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 
 namespace ILLink.RoslynAnalyzer.Tests
 {
@@ -50,6 +51,35 @@ namespace ILLink.RoslynAnalyzer.Tests
                 referencedImage.Position = 0;
                 return MetadataReference.CreateFromStream(referencedImage);
             }
+        }
+
+        public static CSharpCodeFixVerifier<TAnalyzer, TCodeFix>.Test CreateTestWithCompilationReference<TAnalyzer, TCodeFix>(string mainSource, string referenceSource)
+            where TAnalyzer : DiagnosticAnalyzer, new()
+            where TCodeFix : Microsoft.CodeAnalysis.CodeFixes.CodeFixProvider, new()
+        {
+            var test = new CSharpCodeFixVerifier<TAnalyzer, TCodeFix>.Test
+            {
+                TestCode = mainSource
+            };
+            test.SolutionTransforms.Add((solution, projectId) =>
+            {
+                ProjectId referencedProjectId = ProjectId.CreateNewId();
+                solution = solution
+                    .AddProject(referencedProjectId, "ReferencedAssembly", "ReferencedAssembly", LanguageNames.CSharp)
+                    .WithProjectParseOptions(referencedProjectId, new CSharpParseOptions(languageVersion: LanguageVersion.Preview))
+                    .WithProjectCompilationOptions(referencedProjectId, new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+                Project referencedProject = solution.GetProject(referencedProjectId)!;
+                solution = referencedProject
+                    .AddMetadataReferences(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences())
+                    .AddDocument("ReferencedAssembly.cs", SourceText.From(referenceSource))
+                    .Project
+                    .Solution;
+
+                Project project = solution.GetProject(projectId)!;
+                return project.AddProjectReference(new ProjectReference(referencedProjectId)).Solution;
+            });
+            return test;
         }
     }
 }
