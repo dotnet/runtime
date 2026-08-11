@@ -188,28 +188,14 @@ FORCEINLINE  void PinnedHeapHandleBlockHolder__StaticFree(PinnedHeapHandleBlockH
     pHolder->FreeData();
 };
 
-//--------------------------------------------------------------------------------------
-// Base class for domains. It provides an abstract way of finding the first assembly and
-// for creating assemblies in the domain. The system domain only has one assembly, it
-// contains the classes that are logically shared between domains. All other domains can
-// have multiple assemblies. Iteration is done be getting the first assembly and then
-// calling the Next() method on the assembly.
-//
-// The system domain should be as small as possible, it includes object, exceptions, etc.
-// which are the basic classes required to load other assemblies. All other classes
-// should be loaded into the domain. Of coarse there is a trade off between loading the
-// same classes multiple times, requiring all domains to load certain assemblies (working
-// set) and being able to specify specific versions.
-//
-
 #define LOW_FREQUENCY_HEAP_RESERVE_SIZE        (3 * minipal_getpagesize())
 #define LOW_FREQUENCY_HEAP_COMMIT_SIZE         (1 * minipal_getpagesize())
 
 #define HIGH_FREQUENCY_HEAP_RESERVE_SIZE       (8 * minipal_getpagesize())
 #define HIGH_FREQUENCY_HEAP_COMMIT_SIZE        (1 * minipal_getpagesize())
 
-#define STUB_HEAP_RESERVE_SIZE                 (3 * minipal_getpagesize())
-#define STUB_HEAP_COMMIT_SIZE                  (1 * minipal_getpagesize())
+#define EXECUTABLE_HEAP_RESERVE_SIZE           (3 * minipal_getpagesize())
+#define EXECUTABLE_HEAP_COMMIT_SIZE            (1 * minipal_getpagesize())
 
 #define STATIC_FIELD_HEAP_RESERVE_SIZE         (2 * minipal_getpagesize())
 #define STATIC_FIELD_HEAP_COMMIT_SIZE          (1 * minipal_getpagesize())
@@ -1297,7 +1283,6 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
-    PTR_LoaderHeap GetStubHeap();
     PTR_LoaderHeap GetLowFrequencyHeap();
     PTR_LoaderHeap GetHighFrequencyHeap();
 

@@ -246,8 +246,7 @@ namespace ILCompiler.ObjectWriter
             _numElements++;
         }
 
-        private List<WasmSection> _sections = new();
-        private Dictionary<string, int> _sectionNameToIndex = new();
+        private WasmSections _sections = new();
         private Dictionary<ObjectNodeSection, WasmSectionType> _sectionToType = new()
         {
             { WasmObjectNodeSection.MemorySection, WasmSectionType.Memory },
@@ -445,7 +444,7 @@ namespace ILCompiler.ObjectWriter
 
         private WebcilSegment BuildWebcilDataSegment()
         {
-            WebcilSection[] webcilSections = _sections.OfType<WebcilSection>().ToArray();
+            WebcilSection[] webcilSections = _sections.Sections.OfType<WebcilSection>().ToArray();
 
             AssignWebcilSectionVirtualAddresses(webcilSections);
 
@@ -518,10 +517,8 @@ namespace ILCompiler.ObjectWriter
                 wasmSection = new WasmSection(sectionType, sectionStream, new Utf8String(section.Name));
             }
 
-
-            Debug.Assert(_sections.Count == sectionIndex);
-            _sections.Add(wasmSection);
-            _sectionNameToIndex.Add(section.Name, sectionIndex);
+            Debug.Assert(_sections.Sections.Count == sectionIndex);
+            _sections.Add(section.Name, sectionIndex, wasmSection);
         }
 
         private void WriteDataCountSection()
@@ -541,7 +538,7 @@ namespace ILCompiler.ObjectWriter
 
             WriteDataCountSection();
 
-            PrependCount(SectionByName(ObjectNodeSection.WasmCodeSection.Name), MethodCount);
+            PrependCount(_sections[ObjectNodeSection.WasmCodeSection.Name], MethodCount);
         }
 
         private Dictionary<string, WasmGlobal> _definedGlobals = new();
@@ -584,12 +581,6 @@ namespace ILCompiler.ObjectWriter
             section.PrependCount = count;
         }
 
-        private WasmSection SectionByName(string name)
-        {
-            int index = _sectionNameToIndex[name];
-            return _sections[index];
-        }
-
         // Sections excluding Webcil Data segment
         readonly string[] SectionOrder =
         [
@@ -611,8 +602,8 @@ namespace ILCompiler.ObjectWriter
                 if (_sectionEmitOrder == null)
                 {
                     _sectionEmitOrder = SectionOrder
-                        .Where(name => _sectionNameToIndex.ContainsKey(name))
-                        .Select(name => _sectionNameToIndex[name])
+                        .Where(name => _sections.Contains(name))
+                        .Select(name => _sections.GetSectionIndex(name))
                         .ToArray();
                 }
 
@@ -661,7 +652,7 @@ namespace ILCompiler.ObjectWriter
                 GetOrCreateSection(WebcilRelocSection);
             }
 
-            WebcilSection[] webcilSections = _sections.OfType<WebcilSection>().ToArray();
+            WebcilSection[] webcilSections = _sections.Sections.OfType<WebcilSection>().ToArray();
             // At this point, our count of sections is final since we've determined if we have base relocs.
             // This allows us to do an initial assignment of virtual addresses to our webcil sections,
             // which is required for resolving file-level relocations whose RVA depends on the section VAs.
@@ -1139,352 +1130,17 @@ namespace ILCompiler.ObjectWriter
 
         private void EmitSectionElementCounts()
         {
-            int funcIdx = _sectionNameToIndex[WasmObjectNodeSection.FunctionSection.Name];
-            PrependCount(_sections[funcIdx], MethodCount);
+            PrependCount(_sections[WasmObjectNodeSection.FunctionSection.Name], MethodCount);
+            PrependCount(_sections[ObjectNodeSection.WasmTypeSection.Name], _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Type));
+            PrependCount(_sections[WasmObjectNodeSection.ExportSection.Name], _numExports);
 
-            int typeIdx = _sectionNameToIndex[ObjectNodeSection.WasmTypeSection.Name];
-            PrependCount(_sections[typeIdx], _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Type));
-
-            int exportIdx = _sectionNameToIndex[WasmObjectNodeSection.ExportSection.Name];
-            PrependCount(_sections[exportIdx], _numExports);
-
-            if (_sectionNameToIndex.TryGetValue(WasmObjectNodeSection.ElementSection.Name, out int elementIdx))
+            if (_sections.Contains(WasmObjectNodeSection.ElementSection.Name))
             {
-                PrependCount(_sections[elementIdx], _numElements);
+                PrependCount(_sections[WasmObjectNodeSection.ElementSection.Name], _numElements);
             }
 
-            PrependCount(SectionByName(WasmObjectNodeSection.ImportSection.Name), _wasmSymbolManager.GetImportCount());
-
-            PrependCount(SectionByName(WasmObjectNodeSection.GlobalSection.Name), _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
+            PrependCount(_sections[WasmObjectNodeSection.ImportSection.Name], _wasmSymbolManager.GetImportCount());
+            PrependCount(_sections[WasmObjectNodeSection.GlobalSection.Name], _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
         }
     }
-
-
-    internal class WasmSection
-    {
-        public WasmSectionType Type { get; }
-        public Utf8String Name { get; }
-
-        public int? PrependCount = null;
-        public int PrependCountSize => PrependCount.HasValue ? (int)DwarfHelper.SizeOfULEB128((ulong)PrependCount.Value) : 0;
-
-        private int EncodePrependCount(Span<byte> dest)
-        {
-            if (PrependCount.HasValue)
-            {
-                return DwarfHelper.WriteULEB128(dest, (ulong)PrependCount.Value);
-            }
-
-            return 0;
-        }
-
-        public Stream Stream
-        {
-            get
-            {
-                Debug.Assert(_dataStream != null, $"{this.Name} has null data stream");
-                return _dataStream;
-            }
-
-            set
-            {
-                Debug.Assert(value != null);
-                _dataStream = value;
-            }
-        }
-
-        Stream _dataStream;
-
-        public virtual int HeaderSize
-        {
-            get
-            {
-                uint sizeEncodeLength = DwarfHelper.SizeOfULEB128((ulong)ContentSize);
-                return 1 + (int)sizeEncodeLength;
-            }
-        }
-
-        public virtual int ContentSize => (int)_dataStream.Length + PrependCountSize;
-
-        public virtual int EncodeSize()
-        {
-            return HeaderSize + ContentSize;
-        }
-
-        public virtual int EncodeHeader(Span<byte> headerBuffer)
-        {
-            ulong contentSize = (ulong)ContentSize;
-            uint encodeLength = DwarfHelper.SizeOfULEB128(contentSize);
-
-            // Section header consists of:
-            // 1 byte: section type
-            // ULEB128: size of section
-            headerBuffer[0] = (byte)Type;
-            DwarfHelper.WriteULEB128(headerBuffer.Slice(1), contentSize);
-
-            return 1 + (int)encodeLength;
-        }
-
-        public virtual int Emit(Stream outputFileStream)
-        {
-            Span<byte> headerBuffer = stackalloc byte[HeaderSize];
-            EncodeHeader(headerBuffer);
-
-            outputFileStream.Write(headerBuffer);
-
-            if (PrependCount.HasValue)
-            {
-                Span<byte> prependCount = stackalloc byte[PrependCountSize];
-                int encoded = EncodePrependCount(prependCount);
-                outputFileStream.Write(prependCount);
-            }
-
-            Stream.Position = 0;
-            Stream.CopyTo(outputFileStream);
-
-            return HeaderSize + (int)(PrependCountSize + Stream.Length);
-        }
-
-        public WasmSection(WasmSectionType type, Stream stream, Utf8String name, int? prependCount = null)
-        {
-            Type = type;
-            Name = name;
-            _dataStream = stream;
-            PrependCount = prependCount;
-        }
-    }
-
-    internal class WasmDataSection : WasmSection
-    {
-        private List<WasmDataSegment> _segments;
-        public List<WasmDataSegment> Segments => _segments;
-        private int _contentAlign = 1;
-        public WasmDataSection(List<WasmDataSegment> segments, Utf8String name, int contentAlign = 1)
-            : base(WasmSectionType.Data, null, name)
-        {
-            _segments = segments;
-            _contentAlign = contentAlign;
-        }
-
-        public override int ContentSize
-        {
-            get
-            {
-                int size = 0;
-                size += (int)DwarfHelper.SizeOfULEB128((ulong)_segments.Count);
-                foreach (WasmDataSegment segment in _segments)
-                {
-                    size += segment.EncodeSize();
-                }
-
-                return size;
-            }
-        }
-
-        public override int EncodeHeader(Span<byte> headerBuffer)
-        {
-            uint encodeLength = Relocation.WASM_PADDED_RELOC_SIZE_32;
-
-            headerBuffer[0] = (byte)Type;
-            DwarfHelper.WritePaddedULEB128(headerBuffer.Slice(1), (ulong)ContentSize);
-            Debug.Assert(headerBuffer.Slice(1).Length == Relocation.WASM_PADDED_RELOC_SIZE_32);
-            ulong readCheck = DwarfHelper.ReadULEB128(headerBuffer.Slice(1));
-            Debug.Assert((int)readCheck == ContentSize);
-
-            return 1 + (int)encodeLength;
-        }
-
-        public override int HeaderSize => 1 + Relocation.WASM_PADDED_RELOC_SIZE_32;
-
-        public override int Emit(Stream outputFileStream)
-        {
-            int size = 0;
-            int headerPosition = (int)outputFileStream.Position;
-
-            // seek forward past pre-allocated header portion
-            outputFileStream.Position += (int)HeaderSize;
-            size += (int)HeaderSize;
-
-            Span<byte> countBuffer = stackalloc byte[(int)DwarfHelper.SizeOfULEB128((ulong)_segments.Count)];
-            int countSize = DwarfHelper.WriteULEB128(countBuffer, (ulong)_segments.Count);
-            outputFileStream.Write(countBuffer.Slice(0, countSize));
-            size += countSize;
-
-            for (int i = 0; i < _segments.Count; i++)
-            {
-                WasmDataSegment segment = _segments[i];
-                // Do we have a next segment?
-                if ((i + 1) < _segments.Count)
-                {
-                    // Calculate end padding to insert after end of this segment's contents, before the wasm header for the next section
-                    // to ensure that the next section's content is aligned at the file level
-                    int position = (int)outputFileStream.Position + segment.HeaderSize + (int)segment.RawContentSize + _segments[i + 1].HeaderSize;
-                    int padding = AlignmentHelper.AlignUp(position, _contentAlign) - position;
-                    segment.Padding = padding;
-                }
-                else
-                {
-                    segment.Padding = 0;
-                }
-                size += segment.Emit(outputFileStream);
-            }
-
-            // Write the header (this must be done second because we first need to determine inter-segment padding based on file placement)
-            outputFileStream.Position = headerPosition;
-            Span<byte> headerBuffer = stackalloc byte[HeaderSize];
-            int wroteHeaderSize = EncodeHeader(headerBuffer);
-            Debug.Assert(wroteHeaderSize == HeaderSize);
-            outputFileStream.Write(headerBuffer);
-
-            outputFileStream.Seek(0, SeekOrigin.End);
-
-            return size;
-        }
-    }
-
-    internal enum WasmDataSectionType : byte
-    {
-        Active = 0,  // (data list(byte) (active offset-expr))
-        Passive = 1, // (data list(byte) passive)
-        ActiveMemorySpecified = 2 // (data list(byte) (active memidx offset-expr))
-    }
-
-    internal class WasmDataSegment
-    {
-        // The segments are not sections per se, but they represent data segments within the data section.
-        Stream _stream;
-        WasmDataSectionType _type;
-        WasmInstructionGroup _initExpr;
-        private PaddingHelper _paddingHelper;
-
-        public WasmDataSegment(Stream contents, Utf8String name, WasmDataSectionType type, WasmInstructionGroup initExpr)
-        {
-            _stream = contents;
-            _type = type;
-            _initExpr = initExpr;
-            _paddingHelper = new PaddingHelper(4);
-        }
-
-        public int HeaderSize
-        {
-            get
-            {
-                return _type switch
-                {
-                    WasmDataSectionType.Active =>
-                        (int)DwarfHelper.SizeOfULEB128((ulong)_type) + // type indicator
-                        _initExpr.EncodeSize() + // init expr encodeSize
-                        Relocation.WASM_PADDED_RELOC_SIZE_32, // encode size of data length
-                    WasmDataSectionType.Passive =>
-                        (int)DwarfHelper.SizeOfULEB128((ulong)_type) +
-                        Relocation.WASM_PADDED_RELOC_SIZE_32, // encode size of data length
-                    _ =>
-                        throw new NotImplementedException()
-                };
-            }
-        }
-
-        public int EncodeSize()
-        {
-            return HeaderSize + ContentSize;
-        }
-
-        private bool _paddingSet = false;
-        int _padding = 0;
-        public int Padding
-        {
-            set
-            {
-                _paddingSet = true;
-                _padding = value;
-            }
-            get
-            {
-                Debug.Assert(_paddingSet);
-                return _padding;
-            }
-        }
-
-        public int ContentSize => (int)_stream.Length + Padding;
-        public int RawContentSize => (int)_stream.Length;
-
-        public int EncodeHeader(Span<byte> headerBuffer)
-        {
-            switch (_type)
-            {
-                case WasmDataSectionType.Active:
-                {
-                    int len = 0;
-                    len = DwarfHelper.WriteULEB128(headerBuffer, (ulong)_type);
-                    len += _initExpr.Encode(headerBuffer.Slice(len));
-                    Debug.Assert(headerBuffer.Slice(len).Length == Relocation.WASM_PADDED_RELOC_SIZE_32);
-                    DwarfHelper.WritePaddedULEB128(headerBuffer.Slice(len), (ulong)ContentSize);
-                    len += headerBuffer.Slice(len).Length;
-                    return len;
-                }
-                case WasmDataSectionType.Passive:
-                {
-                    int len = 0;
-                    len = DwarfHelper.WriteULEB128(headerBuffer, (ulong)_type);
-                    Debug.Assert(headerBuffer.Slice(len).Length == Relocation.WASM_PADDED_RELOC_SIZE_32, $"{headerBuffer.Slice(len).Length} != {Relocation.WASM_PADDED_RELOC_SIZE_32}");
-                    DwarfHelper.WritePaddedULEB128(headerBuffer.Slice(len), (ulong)ContentSize);
-                    len += headerBuffer.Slice(len).Length;
-                    return len;
-                }
-                default:
-                    throw new NotSupportedException();
-            }
-        }
-
-        public int Emit(Stream outputFileStream)
-        {
-            Span<byte> headerBuffer = stackalloc byte[HeaderSize];
-            int headerSize = EncodeHeader(headerBuffer);
-            Debug.Assert(headerSize == HeaderSize);
-            outputFileStream.Write(headerBuffer);
-
-            _stream.Position = 0;
-            _stream.CopyTo(outputFileStream);
-            _paddingHelper.PadStream(outputFileStream, (int)Padding);
-
-            return headerSize + (int)_stream.Length + Padding;
-        }
-    }
-
-#if READYTORUN
-    class WebcilSection : WasmSection
-    {
-        public readonly int Index;
-        public WebcilSectionHeader Header;
-        public readonly Stream _stream;
-        private PaddingHelper _paddingHelper;
-        public int MinAlignment = 1;
-
-        public uint Padding => Header.SizeOfRawData - (uint)_stream.Length;
-
-        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int index)
-            : base(WasmSectionType.Data, stream, name)
-        {
-            Header = header;
-            _stream = stream;
-            Index = index;
-            _paddingHelper = new PaddingHelper(WasmObjectWriter.WebcilSectionAlignment);
-        }
-
-        public override int EncodeSize()
-        {
-            return (int)_stream.Length;
-        }
-
-        public override int Emit(Stream outputFileStream)
-        {
-            // Emit the raw contents of this Webcil section followed by any required padding.
-            _stream.Position = 0;
-            _stream.CopyTo(outputFileStream);
-            _paddingHelper.PadStream(outputFileStream, (int)Padding);
-
-            return (int)_stream.Length + (int)Padding;
-        }
-    }
-#endif
 }

@@ -10,6 +10,7 @@
 #include "pal_x509.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -402,6 +403,10 @@ int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num, int32_t* e
 
     int32_t result = SSL_write(ssl, buf, num);
 
+    // Capture errno before SSL_get_error so a failing send() inside the BIO stays
+    // diagnosable; on SSL_ERROR_SYSCALL errno is the caller's primary diagnostic.
+    int savedErrno = errno;
+
     if (result > 0)
     {
         *error = SSL_ERROR_NONE;
@@ -411,6 +416,7 @@ int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num, int32_t* e
         *error = CryptoNative_SslGetError(ssl, result);
     }
 
+    errno = savedErrno;
     return result;
 }
 
@@ -420,6 +426,9 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
 
     int32_t result = SSL_read(ssl, buf, num);
 
+    // See CryptoNative_SslWrite: preserve errno across SSL_get_error.
+    int savedErrno = errno;
+
     if (result > 0)
     {
         *error = SSL_ERROR_NONE;
@@ -429,6 +438,7 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
         *error = CryptoNative_SslGetError(ssl, result);
     }
 
+    errno = savedErrno;
     return result;
 }
 
@@ -508,7 +518,10 @@ int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode)
 {
     ERR_clear_error();
     int32_t ret = SSL_do_handshake(ssl);
+    // See CryptoNative_SslWrite: preserve errno across SSL_get_error.
+    int savedErrno = errno;
     *errorCode = (ret <= 0) ? SSL_get_error(ssl, ret) : 0;
+    errno = savedErrno;
     return ret;
 }
 

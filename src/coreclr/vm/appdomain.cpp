@@ -3138,7 +3138,6 @@ PEAssembly * AppDomain::BindAssemblySpec(
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     PRECONDITION(CheckPointer(pSpec));
-    PRECONDITION(pSpec->GetAppDomain() == this);
     PRECONDITION(this==::GetAppDomain());
 
     GCX_PREEMP();
@@ -3161,7 +3160,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
             PEAssembly* result = NULL;
             {
                 ReleaseHolder<BINDER_SPACE::Assembly> boundAssembly;
-                hrBindResult = pSpec->Bind(this, &boundAssembly, &bindDiagnosticInfo);
+                hrBindResult = pSpec->Bind(&boundAssembly, &bindDiagnosticInfo);
 
                 if (boundAssembly)
                 {
@@ -3196,7 +3195,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     if (!pSpec->IsCoreLibSatellite())
                     {
                         // Trigger the resolve event also for non-throw situation.
-                        AssemblySpec NewSpec(this);
+                        AssemblySpec NewSpec;
                         AssemblySpec *pFailedSpec = NULL;
 
                         fForceReThrow = TRUE; // Managed resolve event handler can throw
@@ -3216,7 +3215,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
     {
         Exception *ex = GET_EXCEPTION();
 
-        AssemblySpec NewSpec(this);
+        AssemblySpec NewSpec;
         AssemblySpec *pFailedSpec = NULL;
 
         // Let transient exceptions or managed resolve event handler exceptions propagate

@@ -125,7 +125,8 @@ multiple times, later definitions take precedence.
 
 ### Version
 
-This is version 0 of the physical descriptor.
+This is version 2 of the physical descriptor. Diagnostic tooling must reject physical descriptors
+whose version is not 2.
 
 ### Summary
 
@@ -135,7 +136,7 @@ compact.  The in-memory descriptor will typically be compact.
 
 The toplevel dictionary will contain:
 
-* `"version": 0`
+* `"version": 2`
 * optional `"baseline": "BASELINE_ID"` see below
 * `"types": TYPES_DESCRIPTOR` see below
 * `"globals": GLOBALS_DESCRIPTOR` see below
@@ -308,7 +309,7 @@ The baseline is given in the "regular" format.
 
 ```jsonc
 {
-  "version": 0,
+  "version": 2,
   "types": [
     {
       "name": "ObjectHandle",
@@ -345,7 +346,7 @@ The following is an example of an in-memory descriptor that references the above
 
 ```jsonc
 {
-  "version": "0",
+  "version": 2,
   "baseline": "example-64",
   "types":
   {
