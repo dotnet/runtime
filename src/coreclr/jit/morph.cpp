@@ -2222,6 +2222,19 @@ bool Compiler::fgTryMorphStructArg(CallArg* arg)
     GenTree*  argNode = *use;
     assert(varTypeIsStruct(argNode));
 
+    if (arg->AbiInfo.NumSegments == 0)
+    {
+        // Pseudo arg. One case is WellKnownArg::AsyncAwaiter. We just handle
+        // these as arbitrary struct operands that can be expanded into
+        // FIELD_LIST. The async transformation will later store the value into
+        // the continuation, so FIELD_LIST allows using decomposed stores.
+        if (fgTryReplaceStructLocalWithFields(&arg->NodeRef()))
+        {
+            arg->GetNode()->SetMorphed(this, true);
+        }
+        return true;
+    }
+
     bool isSplit = arg->AbiInfo.IsSplitAcrossRegistersAndStack();
 #ifdef TARGET_ARM
     if ((isSplit && (arg->AbiInfo.CountRegsAndStackSlots() > 4)) || (!isSplit && arg->AbiInfo.HasAnyStackSegment()))
@@ -11715,7 +11728,7 @@ GenTree* Compiler::fgMorphHWIntrinsicRequired(GenTreeHWIntrinsic* tree)
 
         if ((oper == GT_EQ) || (oper == GT_NE))
         {
-            if (op2->IsCnsVec() && op1->IsVectorPerElementMask(simdBaseType, simdSize))
+            if (op2->IsCnsVec() && op1->IsVectorPerElementMask(this, simdBaseType, simdSize))
             {
                 bool reverseCond = false;
 
@@ -12533,6 +12546,26 @@ GenTree* Compiler::fgRecognizeAndMorphBitwiseRotation(GenTree* tree)
         if (rotateIndex != nullptr)
         {
             noway_assert(GenTree::OperIsRotate(rotateOp));
+
+            // Explicitly mask the rotate amount to the range [0, bitsize-1]. Otherwise, a later
+            // transform can stick an out of range constant here and trip up lowering.  If the
+            // target's rotate or shift instructions mask their operand implicitly, those targets
+            // remove this mask again during lowering.
+            if (rotateIndex->IsCnsIntOrI())
+            {
+                ssize_t rotateAmount = rotateIndex->AsIntCon()->IconValue();
+
+                if ((rotateAmount < 0) || (rotateAmount > minimalMask))
+                {
+                    rotateIndex->AsIntCon()->SetIconValue(rotateAmount & minimalMask);
+                }
+            }
+            else
+            {
+                rotateIndex =
+                    gtNewOperNode(GT_AND, genActualType(rotateIndex), rotateIndex, gtNewIconNode(minimalMask));
+                rotateIndex->SetMorphed(this, /* doChildren */ true);
+            }
 
             GenTreeFlags inputTreeEffects = tree->gtFlags & GTF_ALL_EFFECT;
 

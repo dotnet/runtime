@@ -10,6 +10,23 @@ defaults:
 scoring:
   threshold: 1.0
 
+environment:
+  mcpServers:
+    github:
+      type: stdio
+      command: docker
+      args:
+        - run
+        - --interactive
+        - --rm
+        - --env
+        - GITHUB_PERSONAL_ACCESS_TOKEN
+        - --env
+        - GITHUB_READ_ONLY=1
+        - --env
+        - GITHUB_TOOLSETS=pull_requests,repos,issues,search
+        - ghcr.io/github/github-mcp-server:v1.5.0@sha256:e25564dccc9110a70a77b9df560cbde11aa392fcb5f08b9abe5c4ebc6d146ea4
+
 stimuli:
   - name: live-kbe-safe-output
     environment:

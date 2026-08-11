@@ -147,9 +147,10 @@ namespace System.IO
                 buffer = buffer.Slice(totalBytesWritten);
             }
 
-            if (_charPosition < _text.Length)
+            while (_charPosition < _text.Length)
             {
                 ReadOnlySpan<char> remaining = _text.Span.Slice(_charPosition);
+                int charsUsed;
 
                 // If the caller's buffer may be too small for even one encoded scalar,
                 // encode into the spillover buffer first, then copy what fits.
@@ -159,7 +160,7 @@ namespace System.IO
                 {
                     _pendingBytes ??= new byte[_encoding.GetMaxByteCount(2)];
                     int charsToEncode = Math.Min(2, remaining.Length);
-                    GetEncoder().Convert(remaining.Slice(0, charsToEncode), _pendingBytes, flush: false, out int charsUsed, out int bytesUsed, out _);
+                    GetEncoder().Convert(remaining.Slice(0, charsToEncode), _pendingBytes, flush: false, out charsUsed, out int bytesUsed, out _);
                     _charPosition += charsUsed;
 
                     int toCopy = Math.Min(bytesUsed, buffer.Length);
@@ -175,10 +176,15 @@ namespace System.IO
                     // Encode directly into the caller's buffer.
                     // Only flush on the final block to preserve encoder state
                     // for stateful encodings.
-                    GetEncoder().Convert(remaining, buffer, flush: false, out int charsUsed, out int bytesUsed, out _);
+                    GetEncoder().Convert(remaining, buffer, flush: false, out charsUsed, out int bytesUsed, out _);
                     _charPosition += charsUsed;
                     totalBytesWritten += bytesUsed;
                     bufferBytesWritten += bytesUsed;
+                }
+
+                if (totalBytesWritten > 0 || charsUsed == 0)
+                {
+                    break;
                 }
             }
 

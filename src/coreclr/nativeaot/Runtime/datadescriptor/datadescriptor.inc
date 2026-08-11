@@ -240,6 +240,8 @@ CDAC_GLOBAL_STRING(Architecture, wasm)
 
 CDAC_GLOBAL_STRING(RuntimeFlavor, NativeAot)
 
+CDAC_GLOBAL_STRING(RuntimeProductVersionString, RuntimeProductVersion)
+
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL(RecommendedReaderVersion, T_UINT32, CDAC_RECOMMENDED_READER_VERSION)
