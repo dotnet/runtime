@@ -38,7 +38,6 @@ public class StrAccess1
     };
 
     public static Random rand = new Random(Seed);
-    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {
@@ -222,7 +221,6 @@ public class StrAccess1
         }
     }
 }
-
 
 
 

@@ -126,6 +126,11 @@
     <MergedWrapperProjectReference Include="zeroinit\tail_zeroinit.ilproj" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Arrays\complex1.cs" />
+    <Compile Include="Arrays\complex2.cs" />
+    <Compile Include="Arrays\LoopCloning.cs" />
+    <Compile Include="Arrays\simple1.cs" />
+    <Compile Include="Arrays\simple2.cs" />
     <Compile Include="BitTest\BitTest.cs" />
     <Compile Include="cmov\Bool_And_Op.cs" />
     <Compile Include="cmov\Bool_No_Op.cs" />
@@ -165,6 +170,9 @@
     <Compile Include="coverage\oldtests\lclfldmul.cs" />
     <Compile Include="coverage\oldtests\lclfldrem.cs" />
     <Compile Include="coverage\oldtests\lclfldsub.cs" />
+    <Compile Include="forceinlining\LargeNumberOfArgs.cs" />
+    <Compile Include="forceinlining\NoMetaData.cs" />
+    <Compile Include="forceinlining\Recursion.cs" />
     <Compile Include="intrinsic\interlocked\cse_cmpxchg.cs" />
     <Compile Include="intrinsic\interlocked\IntrinsicTest_Overflow.cs" />
     <Compile Include="intrinsic\interlocked\nullchecksuppress.cs" />
@@ -176,6 +184,9 @@
     <Compile Include="lifetime\ObjBlkMemLiveness.cs" />
     <Compile Include="lifetime\PartialDefLiveness.cs" />
     <Compile Include="localloc\localloc3.cs" />
+    <Compile Include="Misc\Concat\ConcatTest.cs" />
+    <Compile Include="Misc\gettype\gettypetypeofmatrix.cs" />
+    <Compile Include="newarr\newarr.cs" />
     <Compile Include="nullabletypes\boxunboxenum.cs" />
     <Compile Include="nullabletypes\boxunboxinterface.cs" />
     <Compile Include="nullabletypes\castclassenum.cs" />

@@ -16,6 +16,7 @@
     <MergedWrapperProjectReference Include="physicalpromotion\physicalpromotion.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <MergedWrapperProjectReference Include="physicalpromotion\readbackbeforeqmark.csproj" Condition="'$(_UseOutOfProcessPhysicalPromotionTests)' == 'true'" />
     <ProjectReference Include="PREFIX\PrimitiveVT\helper.csproj" />
+    <MergedWrapperProjectReference Include="tailcall\mutual_recursion.fsproj" />
     <MergedWrapperProjectReference Include="UnrollLoop\loop2_cs_do.csproj" />
   </ItemGroup>
   <ItemGroup>

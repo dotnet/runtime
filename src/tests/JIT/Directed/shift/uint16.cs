@@ -28,7 +28,6 @@ namespace JitTest_Directed_shift_uint16
             arg_data <<= 4;
             return arg_data;
         }
-        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

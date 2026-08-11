@@ -21692,7 +21692,6 @@ public class testout1
         Sum += (ab_false[index] ^ ab_false[index] ? ab[index - 1] : ab[index - 1]);
         return Sum;
     }
-    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {
