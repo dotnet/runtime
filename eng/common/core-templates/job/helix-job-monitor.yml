@@ -197,7 +197,6 @@ jobs:
         --fail-on-failed-tests        '${{ parameters.failWorkItemsWithFailedTests }}'
         --allow-no-helix-jobs         '${{ parameters.allowNoHelixJobs }}'
         --use-fully-qualified-test-name '${{ parameters.useFullyQualifiedTestName }}'
-        --verbose
         --max-wait-minutes            "$((${{ parameters.timeoutInMinutes }} - 5))" # Set the tool's timeout slightly lower than the Azure DevOps job timeout to allow it to exit gracefully.
         --stage-name                  '$(System.StageName)'
         --stage-attempt               '$(System.StageAttempt)'
