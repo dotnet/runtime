@@ -661,8 +661,10 @@ namespace Microsoft.Extensions.Configuration.Test
 
         // === Root kinds and providers ===
 
-        [Fact]
-        public void ThirdPartyRoot_ResolvesReferences()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void ThirdPartyRoot_ResolvesReferences(bool lazyProviders)
         {
             IConfigurationRoot inner = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string?>
@@ -672,9 +674,12 @@ namespace Microsoft.Extensions.Configuration.Test
                 })
                 .Build();
 
-            var root = new ThirdPartyRoot(inner);
+            var root = new ThirdPartyRoot(inner, lazyProviders);
 
-            Assert.Equal("hit", new ConfigurationSection(root, "Probe").Value);
+            // Reading through the section is the path a third-party root reaches us on. Its own indexer is its own
+            // business, and this one forwards to a root that would resolve the reference by itself anyway.
+            Assert.True(TryGetViaSection(root, "Probe", out string? value));
+            Assert.Equal("hit", value);
             Assert.Equal(new[] { "Probe", "Target" }, root.GetChildren().Select(c => c.Key).OrderBy(k => k).ToArray());
         }
 
@@ -1452,8 +1457,13 @@ namespace Microsoft.Extensions.Configuration.Test
         private sealed class ThirdPartyRoot : IConfigurationRoot
         {
             private readonly IConfigurationRoot _inner;
+            private readonly bool _lazyProviders;
 
-            public ThirdPartyRoot(IConfigurationRoot inner) => _inner = inner;
+            public ThirdPartyRoot(IConfigurationRoot inner, bool lazyProviders)
+            {
+                _inner = inner;
+                _lazyProviders = lazyProviders;
+            }
 
             public string? this[string key]
             {
@@ -1461,7 +1471,10 @@ namespace Microsoft.Extensions.Configuration.Test
                 set => _inner[key] = value;
             }
 
-            public IEnumerable<IConfigurationProvider> Providers => _inner.Providers;
+            // A root that filters or projects its sources hands out something that is not a list, so we have to copy it
+            // before reading. Both shapes are exercised.
+            public IEnumerable<IConfigurationProvider> Providers =>
+                _lazyProviders ? _inner.Providers.Select(p => p) : _inner.Providers;
 
             public IEnumerable<IConfigurationSection> GetChildren() => this.GetChildrenImplementation(null);
 
