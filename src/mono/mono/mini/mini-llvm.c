@@ -12752,7 +12752,24 @@ MONO_RESTORE_WARNING
 				emit_volatile_store (ctx, ins->dreg);
 #ifdef TARGET_WASM
 			//if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
-			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE && ins->opcode != OP_AOTCONST)
+			/*
+			 * OP_MOVE is deliberately NOT excluded. A MOVE emits no LLVM instruction — the dest is an
+			 * SSA alias of the source — so it used to rely on the SOURCE's gc_pin slot. That is sound
+			 * only while the source vreg is defined ONCE. When the source is redefined, as a loop
+			 * does, the source's slot is overwritten with the new object and the alias still holding
+			 * the old one has no slot written anywhere; the old object is then live in a wasm
+			 * value-stack local across the next safepoint, where the conservative stack scan cannot
+			 * reach it. It is therefore neither pinned (so the collector may move it) nor updated
+			 * when it does. See dotnet/runtime#130592.
+			 *
+			 * emit_entry_bb already allocates a pin slot for EVERY vreg_is_ref vreg regardless of how
+			 * it is defined, so this writes a slot that was reserved and left empty and cannot collide
+			 * with the source's. Cost: one volatile store per ref MOVE.
+			 *
+			 * OP_AOTCONST keeps its exclusion — those dests are GOT loads of ldstr literals and
+			 * type/method handles, rooted for the process by the loader's interned tables.
+			 */
+			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_AOTCONST)
 				emit_gc_pin (ctx, builder, ins->dreg);
 #endif
 		}
