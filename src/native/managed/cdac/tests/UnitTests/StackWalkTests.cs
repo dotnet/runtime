@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
@@ -38,6 +39,59 @@ public unsafe class StackWalkTests
         context.SetupGet(c => c.RawContextFlags).Returns(contextFlags);
 
         Assert.Equal(expected, StackWalk_1.HasFaultedContext(context.Object));
+    }
+
+    [Fact]
+    public void GetStackSizeSkipped_ReturnsBytesSkippedByFiltering()
+    {
+        IXCLRDataStackWalk stackWalk = CreateClrDataStackWalk(
+            new TestStackDataFrameHandle(StackWalkState.Frameless, 0x1000),
+            new TestStackDataFrameHandle(StackWalkState.InitialNativeContext, 0x1100),
+            new TestStackDataFrameHandle(StackWalkState.NativeMarker, 0x1200),
+            new TestStackDataFrameHandle(StackWalkState.Frameless, 0x1500));
+
+        ulong stackSizeSkipped = ulong.MaxValue;
+        Assert.Equal(HResults.S_OK, stackWalk.GetStackSizeSkipped(&stackSizeSkipped));
+        Assert.Equal(0ul, stackSizeSkipped);
+
+        Assert.Equal(HResults.S_OK, stackWalk.Next());
+        Assert.Equal(HResults.S_OK, stackWalk.GetStackSizeSkipped(&stackSizeSkipped));
+        Assert.Equal(0x400ul, stackSizeSkipped);
+    }
+
+    private static IXCLRDataStackWalk CreateClrDataStackWalk(params TestStackDataFrameHandle[] frames)
+    {
+        TargetPointer threadAddress = new(0x1000);
+        ThreadData threadData = new()
+        {
+            ThreadAddress = threadAddress,
+        };
+
+        var thread = new Mock<IThread>();
+        thread.Setup(t => t.GetThreadData(threadAddress)).Returns(threadData);
+
+        var stackWalk = new Mock<IStackWalk>();
+        stackWalk.Setup(s => s.CreateStackWalk(threadData)).Returns(frames);
+        stackWalk
+            .Setup(s => s.GetStackPointer(It.IsAny<IStackDataFrameHandle>()))
+            .Returns((IStackDataFrameHandle frame) => ((TestStackDataFrameHandle)frame).StackPointer);
+
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(thread)
+            .AddMockContract(stackWalk)
+            .Build();
+
+        return new ClrDataStackWalk(threadAddress, CLRDataStackWalkFlag.CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE, target, legacyImpl: null);
+    }
+
+    private sealed record TestStackDataFrameHandle(StackWalkState State, ulong StackPointerValue) : IStackDataFrameHandle
+    {
+        public TargetPointer StackPointer => new(StackPointerValue);
+        public bool IsInterrupted => false;
+        public bool HasFaulted => false;
+        public bool IsExceptionFrame => false;
+        public bool IsActiveFrame => false;
     }
 
     private static TestPlaceholderTarget CreateTarget(

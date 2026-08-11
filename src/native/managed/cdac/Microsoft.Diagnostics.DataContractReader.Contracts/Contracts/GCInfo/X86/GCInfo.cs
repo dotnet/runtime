@@ -37,6 +37,7 @@ public record X86GCInfo : IGCInfoDecoder
     private readonly TargetPointer _gcInfoAddress;
     private readonly uint _infoHdrSize;
     private readonly uint _gcInfoVersion;
+    private readonly uint _stackSize;
 
     public uint RelativeOffset { get; set; }
     public uint MethodSize { get; set; }
@@ -166,6 +167,7 @@ public record X86GCInfo : IGCInfoDecoder
 
         SavedRegsCountExclFP = savedRegsCount;
         SavedRegsMask = savedRegs;
+        _stackSize = RawStackSize + savedRegsCount * (uint)target.PointerSize;
         if (Header.EbpFrame || Header.DoubleAlign)
         {
             Debug.Assert(Header.EbpSaved);
@@ -577,7 +579,7 @@ public record X86GCInfo : IGCInfoDecoder
             return _target.ReadPointer(pLocalloc);
         }
 
-        return new TargetPointer(ebp.Value - RawStackSize + (uint)sizeof(int));
+        return new TargetPointer(ebp.Value - _stackSize + (uint)sizeof(int));
     }
 
     private ulong GetLocallocSPOffset()
