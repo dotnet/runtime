@@ -12762,9 +12762,9 @@ MONO_RESTORE_WARNING
 			 * reach it. It is therefore neither pinned (so the collector may move it) nor updated
 			 * when it does. See dotnet/runtime#130592.
 			 *
-			 * emit_entry_bb already allocates a pin slot for EVERY vreg_is_ref vreg regardless of how
-			 * it is defined, so this writes a slot that was reserved and left empty and cannot collide
-			 * with the source's. Cost: one volatile store per ref MOVE.
+			 * emit_entry_bb already allocates a pin slot for every non-volatile, non-dead ref vreg
+			 * regardless of how it is defined, so this writes a slot that was reserved and left empty
+			 * and cannot collide with the source's. Cost: one volatile store per ref MOVE.
 			 *
 			 * OP_AOTCONST keeps its exclusion — those dests are GOT loads of ldstr literals and
 			 * type/method handles, rooted for the process by the loader's interned tables.
