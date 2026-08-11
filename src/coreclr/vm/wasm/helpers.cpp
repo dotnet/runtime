@@ -711,15 +711,15 @@ extern "C" void STDCALL GenericPInvokeCalliHelper(void)
 }
 
 // Does the pinvoke frame transition; the naked wrappers below have already set the wasm
-// __stack_pointer global to sp so it is safe to run native code here.
-EXTERN_C void JIT_PInvokeBeginImpl(void* sp, InlinedCallFrame* pFrame)
+// __stack_pointer global to callersStackPointer so it is safe to run native code here.
+EXTERN_C void JIT_PInvokeBeginImpl(uintptr_t callersStackPointer, InlinedCallFrame* pFrame)
 {
     Thread* pThread = GetThread();
 
-    // Initialize the JIT-provided frame storage, deriving its state from sp/pep since wasm
+    // Initialize the JIT-provided frame storage, deriving its state from callersStackPointer since wasm
     // has no machine registers to read the caller SP / return address from.
     ::new ((void*)pFrame) InlinedCallFrame();
-    pFrame->m_pCallSiteSP          = sp;
+    pFrame->m_pCallSiteSP          = (void*)callersStackPointer;
     pFrame->m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R; // When this is true, UpdateRegDisplay_Impl derives state from m_pCallSiteSP.
     pFrame->m_pCalleeSavedFP       = 0;
     pFrame->m_pThread              = pThread;
@@ -798,12 +798,43 @@ extern "C" void STDCALL JIT_StackProbe()
     PORTABILITY_ASSERT("JIT_StackProbe is not implemented on wasm");
 }
 
-EXTERN_C FCDECL0(void, JIT_PollGC);
-FCIMPL0(void, JIT_PollGC)
+EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
 {
-    PORTABILITY_ASSERT("JIT_PollGC is not implemented on wasm");
+    InlinedCallFrame inlinedCallFrame;
+    JIT_PInvokeBeginImpl(callersStackPointer, &inlinedCallFrame);
+
+    Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        inlinedCallFrame.Pop();
+    }
 }
-FCIMPLEND
+
+EXTERN_C FCDECL0(void, JIT_PollGC);
+EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
+{
+    asm(
+        "i32.const 0\n"
+        "i32.load %[g_TrapReturningThreads]\n"
+        "if\n"
+        "  global.get __stack_pointer\n"
+        "  local.set 1\n"                 /* save previous __stack_pointer into the unused pep local */
+        "  local.get 0\n"                 /* callersStackPointer */
+        "  global.set __stack_pointer\n"
+        "  local.get 0\n"                 /* sp argument for the rare-path helper */
+        "  call %[JIT_PollGCRarePath]\n"
+        "  local.get 1\n"                 /* restore previous __stack_pointer */
+        "  global.set __stack_pointer\n"
+        "end_if\n"
+        "return\n"
+        :: [g_TrapReturningThreads] "i" (&g_TrapReturningThreads),
+           [JIT_PollGCRarePath] "i" (JIT_PollGCRarePath));
+}
 
 void InitJITHelpers1()
 {

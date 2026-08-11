@@ -367,7 +367,7 @@ extern "C" bool RhInitialize(bool isDll)
     g_safeToShutdownTracing = !isDll;
 #endif
 
-    if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize)))
+    if (!InitDLL(PalGetModuleHandleFromPointer((void*)&RhInitialize, isDll)))
         return false;
 
     return true;

@@ -154,6 +154,52 @@ GenTree* Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
 }
 
 //------------------------------------------------------------------------
+// GetFoldableAddrMode: Get the address mode of an indirection whose offset can fold into the memarg.
+//
+// Arguments:
+//    indirNode - The indirection node of interest
+//
+// Return Value:
+//    The address node, or nullptr if its offset cannot be folded.
+//
+// Notes:
+//    The memarg offset is added in infinite precision, while "i32.add" wraps, so the two only differ when
+//    "base + offset" would exceed the address space. Require a GC-typed base and a non-negative offset: a
+//    GC-typed base points into a live object, so an address that far out of range is already invalid, and
+//    morph keeps such addresses with their base (see the "varTypeIsGC" guards in "fgOptimizeAddition" and
+//    "fgMorphSmpOp"). Where they differ we now trap instead of reading wrapped low memory. Note the offset
+//    must be checked here rather than on the original constant, because "SetOffset" truncates it to "int".
+//
+//    SIMD12 indirections re-materialize the address for the trailing lane access, and write barriers pass the
+//    whole address to a helper, so neither can fold.
+//
+GenTreeAddrMode* Lowering::GetFoldableAddrMode(GenTreeIndir* indirNode)
+{
+    GenTree* const addr = indirNode->Addr();
+
+    if (!addr->OperIs(GT_LEA) || indirNode->TypeIs(TYP_SIMD12) ||
+        ((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) != LIR::Flags::None))
+    {
+        return nullptr;
+    }
+
+    GenTreeAddrMode* const lea = addr->AsAddrMode();
+
+    if (!lea->HasBase() || lea->HasIndex() || !varTypeIsGC(lea->Base()) || (lea->Offset() < 0))
+    {
+        return nullptr;
+    }
+
+    if (indirNode->OperIs(GT_STOREIND) &&
+        m_compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(indirNode->AsStoreInd()))
+    {
+        return nullptr;
+    }
+
+    return lea;
+}
+
+//------------------------------------------------------------------------
 // LowerStoreIndir: Determine addressing mode for an indirection, and whether operands are contained.
 //
 // Arguments:
@@ -171,7 +217,11 @@ GenTree* Lowering::LowerStoreIndir(GenTreeStoreInd* node)
         // SIMD12 stores also re-materialize the address for the trailing lane store, so force it there as well -
         // unless the address is a re-materializable LCL_ADDR (the local-to-stack store rewrite), which codegen
         // re-emits directly.
-        SetMultiplyUsed(node->Addr() DEBUGARG("LowerStoreIndir Addr (null check or simd12 lane store)"));
+        // A foldable address is never materialized, so the base is what gets re-used.
+        //
+        GenTreeAddrMode* const foldable = GetFoldableAddrMode(node);
+        SetMultiplyUsed((foldable != nullptr ? foldable->Base() : node->Addr())
+                            DEBUGARG("LowerStoreIndir Addr (null check or simd12 lane store)"));
     }
 
     ContainCheckStoreIndir(node);
@@ -463,15 +513,22 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         return;
     }
 
+    GenTreeAddrMode* const foldable = GetFoldableAddrMode(indirNode);
+
     if (indirNode->OperIs(GT_IND) &&
         (((indirNode->gtFlags & GTF_IND_NONFAULTING) == 0) || indirNode->TypeIs(TYP_SIMD12)))
     {
         // SIMD12 loads re-materialize the address for the trailing lane load, so force it there regardless.
-        SetMultiplyUsed(indirNode->Addr() DEBUGARG("ContainCheckIndir load Addr (null check or simd12 lane load)"));
+        // A foldable address is never materialized, so the base is what gets re-used.
+        //
+        SetMultiplyUsed((foldable != nullptr ? foldable->Base() : indirNode->Addr())
+                            DEBUGARG("ContainCheckIndir load Addr (null check or simd12 lane load)"));
     }
 
-    // TODO-WASM-CQ: contain suitable LEAs here. Take note of the fact that for this to be correct we must prove the
-    // LEA doesn't overflow. It will involve creating a new frontend node to represent "nuw" (offset) addition.
+    if (foldable != nullptr)
+    {
+        MakeSrcContained(indirNode, foldable);
+    }
 
     // Contain a relocatable address constant so it folds into the load's memarg offset.
     //
