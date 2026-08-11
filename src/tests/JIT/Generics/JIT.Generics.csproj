@@ -1,9 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Optimize />
+    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="Constraints\Call_instance01_r.csproj" />
+    <Compile Include="Constraints\Call_instance01.cs" />
+    <Compile Include="Fields\getclassfrommethodparam.cs" />
+    <Compile Include="pinvoke\instance01.cs" />
+    <Compile Include="pinvoke\instance02.cs" />
+    <Compile Include="pinvoke\instance03.cs" />
+    <Compile Include="pinvoke\static01.cs" />
+    <Compile Include="pinvoke\static02.cs" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

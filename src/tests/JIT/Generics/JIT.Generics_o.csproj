@@ -1,11 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Optimize>True</Optimize>
+    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="Constraints\Call_instance01_ro.csproj" />
-    <MergedWrapperProjectReference Include="Conversions\Boxing\box_isinst_br_nullable.csproj" />
     <MergedWrapperProjectReference Include="Exceptions\GenericCatchInterfaceProgram.ilproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Constraints\Call_instance01.cs" />
+    <Compile Include="Conversions\Boxing\box_isinst_br_nullable.cs" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

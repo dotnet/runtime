@@ -2,25 +2,28 @@
   <PropertyGroup>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
+    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="ConstrainedCall\class1_cs_ro.csproj" />
-    <MergedWrapperProjectReference Include="ConstrainedCall\class2_cs_ro.csproj" />
-    <MergedWrapperProjectReference Include="ConstrainedCall\vt1_cs_ro.csproj" />
-    <MergedWrapperProjectReference Include="ConstrainedCall\vt2_cs_ro.csproj" />
-    <MergedWrapperProjectReference Include="ConstrainedCall\vt3_cs_ro.csproj" />
-    <MergedWrapperProjectReference Include="ConstrainedCall\vt4_cs_ro.csproj" />
-    <MergedWrapperProjectReference Include="Conversions\Boxing\box_isinst_unbox.csproj" />
-    <MergedWrapperProjectReference Include="Coverage\chaos55915408cs_o.csproj" />
-    <MergedWrapperProjectReference Include="Coverage\chaos56200037cs_o.csproj" />
-    <MergedWrapperProjectReference Include="Coverage\chaos65204782cs_o.csproj" />
     <MergedWrapperProjectReference Include="regression\DDB148379\ddb148379.ilproj" />
-    <MergedWrapperProjectReference Include="Typeof\dynamicTypes.csproj" />
-    <MergedWrapperProjectReference Include="Typeof\objectBoxing.csproj" />
-    <MergedWrapperProjectReference Include="Typeof\refTypesdynamic.csproj" />
-    <MergedWrapperProjectReference Include="Typeof\valueTypeBoxing.csproj" />
-    <MergedWrapperProjectReference Include="Variance\variance_generic_virtual_o.csproj" />
-    <MergedWrapperProjectReference Include="VirtualMethods\generic_virtual_methods_o.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ConstrainedCall\class1.cs" />
+    <Compile Include="ConstrainedCall\class2.cs" />
+    <Compile Include="ConstrainedCall\vt1.cs" />
+    <Compile Include="ConstrainedCall\vt2.cs" />
+    <Compile Include="ConstrainedCall\vt3.cs" />
+    <Compile Include="ConstrainedCall\vt4.cs" />
+    <Compile Include="Conversions\Boxing\box_isinst_unbox.cs" />
+    <Compile Include="Coverage\chaos55915408cs.cs" />
+    <Compile Include="Coverage\chaos56200037cs.cs" />
+    <Compile Include="Coverage\chaos65204782cs.cs" />
+    <Compile Include="Typeof\dynamicTypes.cs" />
+    <Compile Include="Typeof\objectBoxing.cs" />
+    <Compile Include="Typeof\refTypesdynamic.cs" />
+    <Compile Include="Typeof\valueTypeBoxing.cs" />
+    <Compile Include="Variance\variance_generic_virtual.cs" />
+    <Compile Include="VirtualMethods\generic_virtual_methods.cs" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />

@@ -2,15 +2,16 @@
   <PropertyGroup>
     <DebugType>Full</DebugType>
     <Optimize>True</Optimize>
+    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
-    <MergedWrapperProjectReference Include="ConstrainedCall\class1_cs_do.csproj" />
-    <MergedWrapperProjectReference Include="ConstrainedCall\class2_cs_do.csproj" />
-    <MergedWrapperProjectReference Include="ConstrainedCall\vt1_cs_do.csproj" />
-    <MergedWrapperProjectReference Include="ConstrainedCall\vt2_cs_do.csproj" />
-    <MergedWrapperProjectReference Include="ConstrainedCall\vt3_cs_do.csproj" />
-    <MergedWrapperProjectReference Include="ConstrainedCall\vt4_cs_do.csproj" />
-    <MergedWrapperProjectReference Include="Constraints\Call_instance01_do.csproj" />
+    <Compile Include="ConstrainedCall\class1.cs" />
+    <Compile Include="ConstrainedCall\class2.cs" />
+    <Compile Include="ConstrainedCall\vt1.cs" />
+    <Compile Include="ConstrainedCall\vt2.cs" />
+    <Compile Include="ConstrainedCall\vt3.cs" />
+    <Compile Include="ConstrainedCall\vt4.cs" />
+    <Compile Include="Constraints\Call_instance01.cs" />
   </ItemGroup>
 
   <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
