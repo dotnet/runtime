@@ -292,10 +292,10 @@ bool StgPool::Grow(         // true if successful.
     if ((m_pCurSeg->m_cbSegNext + m_cbCurSegOffset) / m_ulGrowInc >= 3)
         m_ulGrowInc *= 2;
 
-    // NOTE: MD\DataSource\RemoteMDInternalRWSource has taken a dependency that there
+    // NOTE: DacDbiInterfaceImpl::ReadStoragePool has taken a dependency that there
     // won't be more than 1000 segments. Given the current exponential growth algorithm
     // we'll never get anywhere close to that, but if the algorithm changes to allow for
-    // many segments, please update that source as well.
+    // many segments, please update that implementation as well.
 
     // If first time, handle specially.
     if (m_pSegData == m_zeros)
@@ -1792,5 +1792,4 @@ StgBlobPool::RehashBlobs()
     }
     return (S_OK);
 } // StgBlobPool::RehashBlobs
-
 

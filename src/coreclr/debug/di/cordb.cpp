@@ -65,6 +65,32 @@
 
 //********** Locals. **********************************************************
 
+#if defined(MSCORDBI_LINKS_PRIVATE_PAL) && defined(HOST_UNIX)
+
+#include <pthread.h>
+
+// Defined later in this file. The DLL_PROCESS_ATTACH path stands up this binary's private PAL.
+BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved);
+
+static BOOL s_universalDbiInitSucceeded = FALSE;
+
+static void UniversalDbiInitOnce()
+{
+    s_universalDbiInitSucceeded = DbgDllMain(NULL, DLL_PROCESS_ATTACH, NULL);
+}
+
+// The universal DBI does not export DllMain, so the Unix PAL loader never runs the
+// DLL_PROCESS_ATTACH path that stands up this binary's private PAL. Each public export
+// initializes it on first use through this helper instead.
+// PAL_InitializeDLL is itself idempotent, but the same attach path also performs one-time
+// transport setup.
+HRESULT EnsureUniversalDbiInitialized()
+{
+    static pthread_once_t s_initOnce = PTHREAD_ONCE_INIT;
+    pthread_once(&s_initOnce, UniversalDbiInitOnce);
+    return s_universalDbiInitSucceeded ? S_OK : E_FAIL;
+}
+#endif // MSCORDBI_LINKS_PRIVATE_PAL && HOST_UNIX
 
 //********** Code. ************************************************************
 
@@ -114,6 +140,13 @@ STDAPI CreateCordbObject(int iDebuggerVersion, IUnknown ** ppCordb)
 //    Callers will need to call *ppCordb->DebugActiveProcess(pid).
 STDAPI DLLEXPORT CoreCLRCreateCordbObject3(int iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, LPCWSTR dacModulePath, HMODULE hmodTargetCLR, IUnknown** ppCordb)
 {
+#if defined(MSCORDBI_LINKS_PRIVATE_PAL) && defined(HOST_UNIX)
+    HRESULT hrInit = EnsureUniversalDbiInitialized();
+    if (FAILED(hrInit))
+    {
+        return hrInit;
+    }
+#endif
     if (ppCordb == NULL)
     {
         return E_INVALIDARG;

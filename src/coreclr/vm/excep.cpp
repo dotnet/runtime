@@ -3407,7 +3407,7 @@ CreateCrashDumpIfEnabled(bool stackoverflow)
         if (stackoverflow)
         {
             HandleHolder createDumpThreadHandle{ Thread::CreateUtilityThread(Thread::StackSize_Small, (LPTHREAD_START_ROUTINE)LaunchCreateDump, (void*)createDumpCommandLine, W(".NET SO Dumper")) };
-            if (createDumpThreadHandle != INVALID_HANDLE_VALUE)
+            if (createDumpThreadHandle != NULL)
             {
                 // Wait for the dump to be generated
                 DWORD res = WaitForSingleObject(createDumpThreadHandle, INFINITE);
@@ -3488,14 +3488,14 @@ bool GenerateDump(
 void CrashDumpAndTerminateProcess(UINT exitCode)
 {
 #ifdef FEATURE_INPROC_CRASHREPORT
-    if (exitCode == COR_E_STACKOVERFLOW)
+    if (exitCode == static_cast<UINT>(COR_E_STACKOVERFLOW))
     {
         InProcCrashReportSetCrashKind(InProcCrashReportCrashKind::StackOverflow);
     }
 #endif
 
 #ifdef HOST_WINDOWS
-    CreateCrashDumpIfEnabled(exitCode == COR_E_STACKOVERFLOW);
+    CreateCrashDumpIfEnabled(exitCode == static_cast<UINT>(COR_E_STACKOVERFLOW));
 #endif
     TerminateProcess(GetCurrentProcess(), exitCode);
 }

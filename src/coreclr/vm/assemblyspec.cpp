@@ -263,58 +263,39 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     spec.AssemblyNameInit(assemblyNameRef);
 }
 
-AssemblyBinder* AssemblySpec::GetBinderFromParentAssembly(AppDomain *pDomain)
+AssemblyBinder* AssemblySpec::GetInitialBinder()
 {
     CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
-        PRECONDITION(pDomain != NULL);
     }
     CONTRACTL_END;
+
+    // If the caller explicitly named the load context to bind against, it wins over the parent's context.
+    if (GetExplicitBinder() != NULL)
+        return GetExplicitBinder();
 
     AssemblyBinder *pParentAssemblyBinder = NULL;
     Assembly *pParentAssembly = GetParentAssembly();
 
-    if(pParentAssembly != NULL)
+    if (pParentAssembly != NULL)
     {
-        // Get the PEAssembly associated with the parent's assembly
+        // Get the PEAssembly associated with the parent's assembly. For a dynamic parent this is the
+        // binder of the assembly that created it, which was captured at Assembly::CreateDynamic time.
         PEAssembly *pParentPEAssembly = pParentAssembly->GetPEAssembly();
         pParentAssemblyBinder = pParentPEAssembly->GetAssemblyBinder();
     }
 
-    if (GetPreferFallbackBinder())
-    {
-        // If we have been asked to use the fallback load context binder (currently only supported for AssemblyLoadContext.LoadFromAssemblyName),
-        // then pretend we do not have any binder yet available.
-        _ASSERTE(GetFallbackBinderForRequestingAssembly() != NULL);
-        pParentAssemblyBinder = NULL;
-    }
-
     if (pParentAssemblyBinder == NULL)
     {
-        // If the parent assembly binder is not available, then we maybe dealing with one of the following
-        // assembly scenarios:
+        // We can be here when there is no parent assembly, i.e. the entrypoint assembly, or when loading
+        // assemblies via the host (e.g. ICLRRuntimeHost2::ExecuteAssembly).
         //
-        // 1) Entrypoint assembly
-        // 2) AssemblyLoadContext.LoadFromAssemblyName
-        //
-        // For (2), we will need to bind against the DefaultContext binder (aka TPA Binder). This happens
-        // below if we do not find the parent assembly binder.
-        //
-        // For (3), fetch the fallback load context binder reference.
-
-        pParentAssemblyBinder = GetFallbackBinderForRequestingAssembly();
-    }
-
-    if (!pParentAssemblyBinder)
-    {
-        // We can be here when loading assemblies via the host (e.g. ICLRRuntimeHost2::ExecuteAssembly) (see comment above for details).
-        //
-        // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding context should be
-        // used as the parent assembly binder.
-        pParentAssemblyBinder = static_cast<AssemblyBinder*>(pDomain->GetDefaultBinder());
+        // In such a case, the parent assembly (semantically) is CoreLibrary and thus, the default binding
+        // context should be used as the parent assembly binder.
+        pParentAssemblyBinder = AppDomain::GetCurrentDomain()->GetDefaultBinder();
     }
 
     return pParentAssemblyBinder;
@@ -334,7 +315,7 @@ Assembly *AssemblySpec::LoadAssembly(FileLoadLevel targetLevel,
     CONTRACTL_END;
 
     ETWOnStartup (LoaderCatchCall_V1, LoaderCatchCallEnd_V1);
-    AppDomain* pDomain = GetAppDomain();
+    AppDomain* pDomain = AppDomain::GetCurrentDomain();
 
     Assembly* assembly = pDomain->FindCachedAssembly(this);
     if (assembly)
@@ -581,23 +562,18 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
     UPTR key = (UPTR)pSpec->Hash();
 
     AssemblyBinder *pBinderForLookup = NULL;
-    bool fGetBindingContextFromParent = true;
+    bool fUsedInitialBinder = false;
 
     // Check if the AssemblySpec already has specified its binding context. This will be set for assemblies that are
     // attempted to be explicitly bound using AssemblyLoadContext LoadFrom* methods.
     pBinderForLookup = pSpec->GetBinder();
 
-    if (pBinderForLookup != NULL)
+    if (pBinderForLookup == NULL)
     {
-        // We are working with the actual binding context in which the assembly was expected to be loaded.
-        // Thus, we don't need to get it from the parent assembly.
-        fGetBindingContextFromParent = false;
-    }
-
-    if (fGetBindingContextFromParent)
-    {
-        pBinderForLookup = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
+        // No binder is associated with the spec yet, so use the one the bind would start against.
+        pBinderForLookup = pSpec->GetInitialBinder();
         pSpec->SetBinder(pBinderForLookup);
+        fUsedInitialBinder = true;
     }
 
     if (pBinderForLookup)
@@ -607,9 +583,9 @@ AssemblySpecBindingCache::AssemblyBinding* AssemblySpecBindingCache::LookupInter
 
     AssemblyBinding* pEntry = (AssemblyBinding *)m_map.LookupValue(key, pSpec);
 
-    // Reset the binding context if one was originally never present in the AssemblySpec and we didnt find any entry
+    // Reset the binder if one was originally never present in the AssemblySpec and we didn't find any entry
     // in the cache.
-    if (fGetBindingContextFromParent)
+    if (fUsedInitialBinder)
     {
         if (pEntry == (AssemblyBinding *) INVALIDENTRY)
         {
@@ -1009,7 +985,7 @@ BOOL AssemblySpecBindingCache::StoreException(AssemblySpec *pSpec, Exception* pE
         pBinderToSaveException = pSpec->GetBinder();
         if (pBinderToSaveException == NULL)
         {
-            pBinderToSaveException = pSpec->GetBinderFromParentAssembly(pSpec->GetAppDomain());
+            pBinderToSaveException = pSpec->GetInitialBinder();
             key = key ^ (UPTR)pBinderToSaveException;
         }
     }

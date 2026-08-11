@@ -81,29 +81,6 @@ void EEClass::Destruct()
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
 
-
-    if (IsDelegate())
-    {
-        DelegateEEClass* pDelegateEEClass = (DelegateEEClass*)this;
-        for (Stub* pThunk : {pDelegateEEClass->m_pStaticCallStub, pDelegateEEClass->m_pInstRetBuffCallStub})
-        {
-            if (pThunk == nullptr)
-                continue;
-
-            _ASSERTE(pThunk->IsShuffleThunk());
-
-            if (pThunk->HasExternalEntryPoint()) // IL thunk
-            {
-                pThunk->DecRef();
-            }
-            else
-            {
-                ExecutableWriterHolder<Stub> stubWriterHolder(pThunk, sizeof(Stub));
-                stubWriterHolder.GetRW()->DecRef();
-            }
-        }
-    }
-
 #ifdef FEATURE_COMINTEROP
     if (GetSparseCOMInteropVTableMap() != NULL)
         delete GetSparseCOMInteropVTableMap();
@@ -2863,11 +2840,6 @@ CorClassIfaceAttr MethodTable::GetComClassInterfaceType()
     // Classes that either have generic instantiations (G<int>) or derive from classes
     // with generic instantiations (D : B<int>) are always considered ClassInterfaceType.None.
     if (HasGenericClassInstantiationInHierarchy())
-        return clsIfNone;
-
-    // If the class does not support IClassX,
-    // then it is considered ClassInterfaceType.None unless explicitly overridden by the CA
-    if (!ClassSupportsIClassX(this))
         return clsIfNone;
 
     return ReadClassInterfaceTypeCustomAttribute(TypeHandle(this));

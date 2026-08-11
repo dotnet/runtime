@@ -138,14 +138,18 @@ namespace
             // Composite r2r PE image is not a part of anyone's identity.
             // We only need it to obtain the native image, which will be cached at AppDomain level.
             PEImageHolder pImage(PEImage::OpenImage(fullPath, MDInternalImport_NoCache, probeExtensionResult));
+#ifdef PEIMAGE_FLAT_LAYOUT_ONLY
+            PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_FLAT);
+#else
             PEImageLayout* loaded = pImage->GetOrCreateLayout(PEImageLayout::LAYOUT_LOADED);
+#endif // PEIMAGE_FLAT_LAYOUT_ONLY
             // We will let pImage instance be freed after exiting this scope, but we will keep the layout,
             // thus the layout needs an AddRef, or it will be gone together with pImage.
             loaded->AddRef();
             peLoadedImage = loaded;
         }
 
-        if (peLoadedImage.IsNull())
+        if (peLoadedImage == NULL)
         {
             EX_TRY
             {
@@ -192,7 +196,7 @@ namespace
             }
             EX_END_CATCH
 
-            if (peLoadedImage.IsNull())
+            if (peLoadedImage == NULL)
             {
                 // Failed to locate the native composite R2R image
 #ifdef LOGGING
@@ -221,11 +225,13 @@ namespace
             COMPlusThrowHR(COR_E_BADIMAGEFORMAT);
         }
 
-        return new ReadyToRunLoadedImage(
+        ReadyToRunLoadedImage* r2rImg = new ReadyToRunLoadedImage(
             (TADDR)peLoadedImage->GetBase(),
             peLoadedImage->GetVirtualSize(),
-            peLoadedImage.Extract(),
+            peLoadedImage,
             [](void* img) { delete (PEImageLayout*)img; });
+        peLoadedImage.Detach();
+        return r2rImg;
     }
 }
 
