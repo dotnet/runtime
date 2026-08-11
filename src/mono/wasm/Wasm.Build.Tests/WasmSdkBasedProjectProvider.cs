@@ -61,6 +61,9 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             { "dotnet.diagnostics.js.map", false },
         };
 
+        if (assertOptions.BuildOptions.ExpectTypeScriptDefinitions)
+            result["dotnet.d.ts"] = false;
+
         if (assertOptions.ExpectDotnetJsFingerprinting == false)
             result["dotnet.js"] = false;
 
@@ -92,6 +95,9 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
             if (!assertOptions.BuildOptions.IsPublish)
                 res.Add("dotnet.diagnostics.js.map");
         }
+
+        if (assertOptions.BuildOptions.ExpectTypeScriptDefinitions)
+            res.Add("dotnet.d.ts");
 
         return res;
     }
