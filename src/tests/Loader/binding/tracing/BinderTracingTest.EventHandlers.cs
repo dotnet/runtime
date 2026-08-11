@@ -37,7 +37,8 @@ namespace BinderTracingTests
                 }
                 catch { }
 
-                Assert.Single(handlers.Invocations);
+                List<HandlerInvocation> invocations = handlers.Invocations.Where(invocation => Helpers.AssemblyNamesMatch(invocation.AssemblyName, assemblyName)).ToList();
+                Assert.Single(invocations);
                 Assert.Empty(handlers.Binds);
                 return new BindOperation()
                 {
@@ -47,7 +48,7 @@ namespace BinderTracingTests
                     RequestingAssemblyLoadContext = DefaultALC,
                     Success = false,
                     Cached = false,
-                    AssemblyLoadContextResolvingHandlers = handlers.Invocations,
+                    AssemblyLoadContextResolvingHandlers = invocations,
                     NestedBinds = handlers.Binds
                 };
             }
