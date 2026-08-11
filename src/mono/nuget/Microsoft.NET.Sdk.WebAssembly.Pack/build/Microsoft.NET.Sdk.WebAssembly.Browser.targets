@@ -1298,7 +1298,8 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Ensure dotnet.d.ts is beside dotnet.js in wwwroot/_framework for TypeScript development experience when enabled -->
   <PropertyGroup>
-    <_DotnetTypesDestPath>$([MSBuild]::NormalizePath($([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), 'wwwroot', '_framework')), 'dotnet.d.ts'))</_DotnetTypesDestPath>
+    <_DotnetTypesDestDir>$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), 'wwwroot', '_framework'))</_DotnetTypesDestDir>
+    <_DotnetTypesDestPath>$([MSBuild]::NormalizePath($(_DotnetTypesDestDir), 'dotnet.d.ts'))</_DotnetTypesDestPath>
   </PropertyGroup>
 
   <Target Name="_ResolveDotnetTypeScriptDefinitionPaths"
@@ -1308,8 +1309,6 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_RuntimePackDir Condition="'$(_RuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_RuntimePackDir>
       <_RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(_RuntimePackDir), 'runtimes', 'browser-wasm', 'native'))</_RuntimePackNativeDir>
       <_DotnetTypesSourcePath>$([MSBuild]::NormalizePath($(_RuntimePackNativeDir), 'dotnet.d.ts'))</_DotnetTypesSourcePath>
-      <_DotnetTypesDestDir>$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), 'wwwroot', '_framework'))</_DotnetTypesDestDir>
-      <_DotnetTypesDestPath>$([MSBuild]::NormalizePath($(_DotnetTypesDestDir), 'dotnet.d.ts'))</_DotnetTypesDestPath>
     </PropertyGroup>
   </Target>
 
