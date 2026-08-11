@@ -4720,7 +4720,7 @@ CordbNativeCode * CordbModule::LookupOrCreateNativeCode(mdMethodDef methodToken,
         LOG((LF_CORDB,
              LL_INFO10000,
              "R:CT::RSCreating code w/ ver:0x%zx, md:0x%zx, nativeStart=0x%08zx, nativeSize=0x%08x\n",
-             codeInfo.encVersion,
+             static_cast<size_t>(codeInfo.encVersion),
              (size_t)VmPtrToCookie(codeInfo.vmNativeCodeMethodDescToken),
              (size_t)codeInfo.m_rgCodeRegions[kHot].pAddress,
              codeInfo.m_rgCodeRegions[kHot].cbSize));
