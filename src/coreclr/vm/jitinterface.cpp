@@ -15494,8 +15494,8 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 //
 // Arguments:
 //    pResolvedToken - the token of the calli call site. Only token, tokenScope and
-//                     tokenContext are valid on entry. On success, hMethod is filled in
-//                     with the IL stub.
+//                     tokenContext are valid on entry. On success, hMethod and hClass
+//                     are filled in with the IL stub and its owning class.
 //    fMustConvert   - true if the JIT cannot emit an inline P/Invoke at this call site and
 //                     therefore requires the conversion.
 //
@@ -15564,6 +15564,8 @@ bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
         if (pStubMD != NULL)
         {
+            TypeHandle stubType(pStubMD->GetMethodTable());
+            pResolvedToken->hClass = CORINFO_CLASS_HANDLE(stubType.AsPtr());
             pResolvedToken->hMethod = (CORINFO_METHOD_HANDLE)pStubMD;
             result = true;
         }
