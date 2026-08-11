@@ -603,7 +603,7 @@ namespace System.Net
 
                     if ((szResponse.Length + state.Resp.StatusBuffer.Length) > MaxResponseLength)
                     {
-                        throw GenerateException(SR.net_ftp_protocolerror, WebExceptionStatus.ServerProtocolViolation, null);
+                        throw GenerateException(SR.Format(SR.net_ftp_response_too_large, MaxResponseLength), WebExceptionStatus.ServerProtocolViolation, null);
                     }
 
                     state.Resp.StatusBuffer.Append(szResponse);
