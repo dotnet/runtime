@@ -251,6 +251,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/trusted-evals-tooling"
           cp .github/workflows/evals/package.json .github/workflows/evals/package-lock.json \
             "$RUNNER_TEMP/trusted-evals-tooling/"
+          npm install --global npm@11.11.1 \
+            --registry=https://registry.npmjs.org --replace-registry-host=never
           npm ci --prefix "$RUNNER_TEMP/trusted-evals-tooling" \
             --registry=https://registry.npmjs.org --replace-registry-host=never
           echo "$RUNNER_TEMP/trusted-evals-tooling/node_modules/.bin" >> "$GITHUB_PATH"
