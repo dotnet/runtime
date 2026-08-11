@@ -342,8 +342,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     {
         if (info.compCompHnd->convertPInvokeCalliToCall(pResolvedToken, !impCanPInvokeInlineCallSite(compCurBB)))
         {
-            // The VM only fills in hMethod; derive the rest of the token from it.
-            pResolvedToken->hClass = info.compCompHnd->getMethodClass(pResolvedToken->hMethod);
             eeGetCallInfo(pResolvedToken, nullptr, CORINFO_CALLINFO_ALLOWINSTPARAM, callInfo);
             return impImportCall(CEE_CALL, pResolvedToken, nullptr, nullptr, prefixFlags, callInfo, rawILOffset);
         }

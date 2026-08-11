@@ -2020,6 +2020,7 @@ namespace Internal.JitInterface
             if (!mustConvert && !IsPInvokeStubRequired(stub))
                 return false;
 
+            pResolvedToken.hClass = ObjectToHandle(stub.OwningType);
             pResolvedToken.hMethod = ObjectToHandle(stub);
             return true;
         }
