@@ -11,16 +11,18 @@ using Microsoft.NET.WebAssembly.Webcil;
 
 namespace ILCompiler.ObjectWriter
 {
-    internal class WebcilSection : WasmSection
+    /// <summary>
+    /// A WebCIL section is a subsection of the "webcilPayload" data segment in the WebAssembly module.
+    /// </summary>
+    internal class WebcilSection : SectionDataEmitter
     {
-        public readonly int Index;
         public WebcilSectionHeader Header;
         public int Alignment { get; private set; } = WebCilObjectWriter.WebcilSectionAlignment;
 
-        public uint Padding => Header.SizeOfRawData - (uint)_stream.Length;
+        public uint Padding => Header.SizeOfRawData - (uint)ContentReadStream.Length;
 
-        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int index)
-            : base(WasmSectionType.Data, stream, name)
+        public WebcilSection(Utf8String name, WebcilSectionHeader header, Stream stream, int sectionIndex)
+            : base(stream, name, sectionIndex)
         {
             Header = header;
         }
@@ -31,19 +33,19 @@ namespace ILCompiler.ObjectWriter
             Alignment = Math.Max(Alignment, alignment);
         }
 
-        public override int EncodeSize()
+        public override int EncodedSize()
         {
-            return (int)_stream.Length;
+            return (int)ContentReadStream.Length;
         }
 
-        public override int Emit(Stream outputFileStream)
+        public override int EmitToStream(Stream outputFileStream)
         {
             // Emit the raw contents of this Webcil section followed by any required padding.
             ContentReadStream.Position = 0;
             ContentReadStream.CopyTo(outputFileStream);
             WasmDataSegmentEncoding.EmitPadding(outputFileStream, (int)Padding);
 
-            return (int)_stream.Length + (int)Padding;
+            return (int)ContentReadStream.Length + (int)Padding;
         }
     }
 }

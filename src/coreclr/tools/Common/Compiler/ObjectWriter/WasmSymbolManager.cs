@@ -56,6 +56,7 @@ internal sealed class WasmSymbolManager
     }
 
     private readonly Dictionary<Utf8String, Entry> _entries = new();
+    private readonly Dictionary<Utf8String, Entry> _aliases = new();
     private IndexSpaceArray<int> _importCounts = new IndexSpaceArray<int>();
     private IndexSpaceArray<int> _definitionCounts = new IndexSpaceArray<int>();
     private IndexSpaceArray<bool> _importsFrozen = new IndexSpaceArray<bool>();
@@ -76,14 +77,21 @@ internal sealed class WasmSymbolManager
         _definitionCounts[indexSpace]++;
     }
 
+    public void AddAlias(Utf8String alias, Utf8String target)
+    {
+        Entry entry = _entries[target];
+        _aliases.Add(alias, entry with { Name = alias });
+    }
+
     public WasmSymbol GetSymbol(Utf8String name)
     {
-        return ResolveAndFreeze(_entries[name]);
+        return ResolveAndFreeze(GetEntry(name));
     }
 
     public bool TryGetSymbol(Utf8String name, out WasmSymbol symbol)
     {
-        if (!_entries.TryGetValue(name, out Entry entry))
+        if (!_entries.TryGetValue(name, out Entry entry) &&
+            !_aliases.TryGetValue(name, out entry))
         {
             symbol = default;
             return false;
@@ -92,6 +100,9 @@ internal sealed class WasmSymbolManager
         symbol = ResolveAndFreeze(entry);
         return true;
     }
+
+    private Entry GetEntry(Utf8String name) =>
+        _entries.TryGetValue(name, out Entry entry) ? entry : _aliases[name];
 
     public int GetImportCount() => _importCounts.Values.Sum();
 
