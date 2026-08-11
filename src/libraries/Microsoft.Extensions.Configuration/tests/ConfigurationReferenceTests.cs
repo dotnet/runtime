@@ -96,6 +96,22 @@ namespace Microsoft.Extensions.Configuration.Test
             // all - rather than a reference.
             ("$ref(Target) ", "$ref(Target) "),
             (" $ref(Target)", " $ref(Target)"),
+
+            // The syntax is written by writing it twice over: one sigil comes off and the rest is text, so a value says
+            // "$ref(Target)" by writing "$$ref(Target)", and says "$$ref(Target)" by writing "$$$ref(Target)".
+            ("$$ref(Target)", "$ref(Target)"),
+            ("$$$ref(Target)", "$$ref(Target)"),
+            ("$$$$ref(Target)", "$$$ref(Target)"),
+            ("$$REF(Target)", "$REF(Target)"),
+            // What is left is text and nothing more, so a target that is not there is no longer lost, and a body that
+            // is not writable as a key is no longer reported.
+            ("$$ref(Missing)", "$ref(Missing)"),
+            ("$$ref(Deep:'Target)", "$ref(Deep:'Target)"),
+            // Only text that would otherwise have been read as a reference is escaped, so text that never was reference
+            // syntax keeps every sigil it was written with.
+            ("$$ref(Target", "$$ref(Target"),
+            ("$$refx(Target)", "$$refx(Target)"),
+            ("$$(Target)", "$$(Target)"),
         };
 
         // Written as a reference but not writable as one. These are reported rather than handed back as literals: the
@@ -339,6 +355,40 @@ namespace Microsoft.Extensions.Configuration.Test
                 .Build();
 
             Assert.Equal("$ref(Target)", outer["Probe"]);
+        }
+
+        [Theory]
+        [MemberData(nameof(RootKinds))]
+        public void Escaped_TextIsNotReadAgain(RootKind kind)
+        {
+            // Taking a sigil off is the one thing that can turn text into reference syntax, so the result is handed
+            // back as it stands rather than fed to the next reader. A reference that lands on it stops there too.
+            IConfigurationRoot root = BuildRoot(kind, Source(
+                ("Probe", "$ref(Escaped)"),
+                ("Escaped", "$$ref(Target)"),
+                ("Target", "hit")));
+
+            Assert.Equal("$ref(Target)", root["Escaped"]);
+            Assert.Equal("$ref(Target)", root["Probe"]);
+        }
+
+        [Fact]
+        public void ChainedValue_IsFinal_SoAnEscapeIsNotUndoneTwice()
+        {
+            // The inner configuration takes its own sigil off, so what arrives is already the text its author meant. A
+            // second unescape here would take another off, and unescaping "$$$ref(Target)" twice would hand the outer
+            // root a live reference built out of text that never was one.
+            IConfigurationRoot inner = new ConfigurationBuilder()
+                .Add(Source(("Once", "$$ref(Target)"), ("Twice", "$$$ref(Target)")))
+                .Build();
+
+            IConfigurationRoot outer = new ConfigurationBuilder()
+                .AddConfiguration(inner)
+                .Add(Source(("Target", "hit")))
+                .Build();
+
+            Assert.Equal("$ref(Target)", outer["Once"]);
+            Assert.Equal("$$ref(Target)", outer["Twice"]);
         }
 
         [Theory]

@@ -53,11 +53,22 @@ namespace Microsoft.Extensions.Configuration
                 return null;
             }
 
-            string? raw = declaration.Value;
-
-            if (!ReferenceSyntax.TryGetBody(raw, out int bodyStart, out int bodyLength) || providers[declaration.ProviderIndex] is ChainedConfigurationProvider)
+            if (declaration.Value is not string raw)
             {
                 return declaration;
+            }
+
+            ReferenceSyntax.Shape shape = ReferenceSyntax.Classify(raw, out int bodyStart, out int bodyLength);
+
+            // A chained configuration has already read its own values, escapes and all, so what it serves is text.
+            if (shape == ReferenceSyntax.Shape.Text || providers[declaration.ProviderIndex] is ChainedConfigurationProvider)
+            {
+                return declaration;
+            }
+
+            if (shape == ReferenceSyntax.Shape.Escaped)
+            {
+                return declaration.WithValue(raw.Substring(1));
             }
 
             ConfigurationValue? followed = null;
