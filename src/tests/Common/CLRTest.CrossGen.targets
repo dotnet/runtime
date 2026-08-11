@@ -75,8 +75,10 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
       rm IL-CG2/composite-r2r.* 2>/dev/null
 
       if [ ! -z ${CompositeBuildMode+x} ]%3B then
-        # HACK: copy native shared shim libraries. Not needed on Windows.
-        cp "$CORE_ROOT"/lib*.so "$CORE_ROOT"/lib*.dylib $(scriptPath)
+        if [ "$(CrossGen2OutputFormat)" != "wasm" ]; then
+          # HACK: copy native shared shim libraries. Not needed on Windows.
+          cp "$CORE_ROOT"/lib*.so "$CORE_ROOT"/lib*.dylib $(scriptPath)
+        fi
 
         ExtraCrossGen2Args+=" --composite"
         ExtraCrossGen2Args+=" $(CompositeCrossGen2TestExtraArguments)"
@@ -109,7 +111,6 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
             __R2RDumpCommand+=" dotnet"
         fi
         __R2RDumpCommand+=" $CORE_ROOT/R2RDump/R2RDump.dll"
-        __R2RDumpCommand+=" --header --sc --in $__OutputFileFinal --out $__OutputFileFinal.r2rdump --val --rp $CORE_ROOT"
 
         __Command="$_DebuggerFullPath $CORE_ROOT/crossgen2/crossgen2"
         __Command+=" @$__ResponseFile"
@@ -174,9 +175,26 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
             __linkExitCode=$?
         fi
 
-        echo "Running R2RDump: $__R2RDumpCommand"
-        $__R2RDumpCommand
-        __r2rDumpExitCode=$?
+        if [ $__cg2ExitCode -eq 0 ]; then
+          if [ "$(CrossGen2OutputFormat)" == "wasm" ] && [ ! -z ${CompositeBuildMode+x} ]; then
+            # The composite WASM output is a manifest, so validate each emitted R2R component.
+            for dllFile in "${__InputFiles[@]}"; do
+              __R2RDumpInput="$PWD/${dllFile##*/}"
+              __R2RDumpInput="${__R2RDumpInput%.dll}.wasm"
+              __R2RDumpOutput="${__R2RDumpInput}.r2rdump"
+              echo "Running R2RDump: $__R2RDumpCommand --header --sc --in $__R2RDumpInput --out $__R2RDumpOutput --val --rp $CORE_ROOT"
+              $__R2RDumpCommand --header --sc --in "$__R2RDumpInput" --out "$__R2RDumpOutput" --val --rp "$CORE_ROOT"
+              __r2rDumpExitCode=$?
+              if [ $__r2rDumpExitCode -ne 0 ]; then
+                break
+              fi
+            done
+          else
+            echo "Running R2RDump: $__R2RDumpCommand --header --sc --in $__OutputFileFinal --out $__OutputFileFinal.r2rdump --val --rp $CORE_ROOT"
+            $__R2RDumpCommand --header --sc --in "$__OutputFileFinal" --out "$__OutputFileFinal.r2rdump" --val --rp "$CORE_ROOT"
+            __r2rDumpExitCode=$?
+          fi
+        fi
 
         export DOTNET_GCName DOTNET_GCStress DOTNET_HeapVerify DOTNET_ReadyToRun DOTNET_GCHeapAffinitizeRanges
         export DOTNET_TC_OnStackReplacement DOTNET_TC_PartialCompilation
@@ -329,7 +347,6 @@ if defined RunCrossGen2 (
         set __DotNet="dotnet"
     )
     set __R2RDumpCommand=!_DebuggerFullPath! !__DotNet! "!CORE_ROOT!\r2rdump\r2rdump.dll"
-    set __R2RDumpCommand=!__R2RDumpCommand! --header --sc --in !__OutputFile! --out !__OutputFile!.r2rdump --val --rp "!CORE_ROOT!"
 
     set __Command=!_DebuggerFullPath! "!CORE_ROOT!\crossgen2\crossgen2.exe"
     set __Command=!__Command! @"!__ResponseFile!"
@@ -388,10 +405,27 @@ if defined RunCrossGen2 (
 
     IF NOT !CrossGen2Status!==0 goto :DoneR2RDumpOperations
 
-    echo "Running R2RDump: !__R2RDumpCommand!"
-    call !__R2RDumpCommand!
+    set __R2RDumpInput=!__OutputFile!
+    if "$(CrossGen2OutputFormat)"=="wasm" (
+        REM The composite WASM output is a manifest, so validate each emitted R2R component.
+        if defined CompositeBuildMode set __R2RDumpInput=
+    )
 
-    set R2RDumpStatus=!ERRORLEVEL!
+    if defined __R2RDumpInput (
+        set __R2RDumpArguments=--header --sc --in "!__R2RDumpInput!" --out "!__R2RDumpInput!.r2rdump" --val --rp "!CORE_ROOT!"
+        echo "Running R2RDump: !__R2RDumpCommand! !__R2RDumpArguments!"
+        call !__R2RDumpCommand! !__R2RDumpArguments!
+        set R2RDumpStatus=!ERRORLEVEL!
+    ) else (
+        for %%I in (!scriptPath!IL-CG2\*.dll) do (
+            set __R2RDumpInput=!scriptPath!%%~nI.wasm
+            set __R2RDumpArguments=--header --sc --in "!__R2RDumpInput!" --out "!__R2RDumpInput!.r2rdump" --val --rp "!CORE_ROOT!"
+            echo "Running R2RDump: !__R2RDumpCommand! !__R2RDumpArguments!"
+            call !__R2RDumpCommand! !__R2RDumpArguments!
+            set R2RDumpStatus=!ERRORLEVEL!
+            if not !R2RDumpStatus!==0 goto :DoneR2RDumpOperations
+        )
+    )
 
 :DoneR2RDumpOperations
     endlocal & set "R2RDumpStatus=%R2RDumpStatus%" &set "CrossGen2Status=%CrossGen2Status%"

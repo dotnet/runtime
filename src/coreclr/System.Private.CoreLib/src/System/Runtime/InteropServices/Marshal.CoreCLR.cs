@@ -200,15 +200,17 @@ namespace System.Runtime.InteropServices
         /// The last platform invoke error corresponds to the error set by either the most recent platform
         /// invoke that was configured to set the last error or a call to <see cref="SetLastPInvokeError(int)" />.
         /// </remarks>
+        /// <safety>Reads the current thread's last platform-invoke error code and returns it by value; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetLastPInvokeError();
+        public static safe extern int GetLastPInvokeError();
 
         /// <summary>
         /// Set the last platform invoke error on the current thread
         /// </summary>
         /// <param name="error">Error to set</param>
+        /// <safety>Stores the supplied error code into the current thread's platform-invoke error state; it takes only an integer value and dereferences no memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern void SetLastPInvokeError(int error);
+        public static safe extern void SetLastPInvokeError(int error);
 
         private static void PrelinkCore(MethodInfo m)
         {
@@ -227,10 +229,11 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern /* struct _EXCEPTION_POINTERS* */ IntPtr GetExceptionPointers();
 
+        /// <safety>Returns the current structured-exception code as an integer computed by the runtime; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("GetExceptionCode() may be unavailable in future releases.")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern int GetExceptionCode();
+        public static safe extern int GetExceptionCode();
 
         internal sealed class LayoutTypeMarshalerMethods : RuntimeType.IGenericCacheEntry<LayoutTypeMarshalerMethods>
         {
@@ -640,8 +643,9 @@ namespace System.Runtime.InteropServices
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_CleanupUnusedObjectsInCurrentContext")]
         private static partial void InternalCleanupUnusedObjectsInCurrentContext();
 
+        /// <safety>Returns a Boolean computed from runtime COM-cleanup state; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static extern bool AreComObjectsAvailableForCleanup();
+        public static safe extern bool AreComObjectsAvailableForCleanup();
 
         /// <summary>
         /// Checks if the object is classic COM component.

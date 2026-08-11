@@ -3928,6 +3928,13 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned            codeSize,
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
         }
 
+        if (m_compiler->lvaResumedIndicator != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaResumedIndicator) == -preservedAreaSize);
+        }
+
         if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
         {
             preservedAreaSize += TARGET_POINTER_SIZE;
