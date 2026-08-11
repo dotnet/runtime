@@ -66,7 +66,7 @@ TType GetInternalType(TargetPointer typeHandlePointer);
 TType GetInternalModifiedType(TargetPointer typeHandlePointer, TType unmodifiedType, bool isRequired);
 ```
 
-The contract's provider resolves these pointers through `RuntimeTypeSystem.GetTypeHandle`. Standard ECMA-335 element types resolve through `RuntimeTypeSystem.GetPrimitiveType` and `RuntimeTypeSystem.GetConstructedType`. Generic type parameters (`VAR`) and generic method parameters (`MVAR`) resolve via `RuntimeTypeSystem.GetInstantiation` and `RuntimeTypeSystem.GetGenericMethodInstantiation` respectively, using an `ITypeHandle` (for generic types) or `MethodDescHandle` (for generic methods) generic context. `GetTypeFromDefinition` and `GetTypeFromReference` resolve tokens via the module's `TypeDefToMethodTableMap` / `TypeRefToMethodTableMap`; cross-module references and `GetTypeFromSpecification` are not currently implemented.
+The contract's provider resolves these pointers through `RuntimeTypeSystem.GetTypeHandle`. Standard ECMA-335 element types resolve through `RuntimeTypeSystem.GetPrimitiveType` and `RuntimeTypeSystem.GetConstructedType`. Generic type parameters (`VAR`) and generic method parameters (`MVAR`) resolve via `RuntimeTypeSystem.GetInstantiation` and `RuntimeTypeSystem.GetGenericMethodInstantiation` respectively, using an `ITypeHandle` (for generic types) or `MethodDescHandle` (for generic methods) generic context. `GetTypeFromDefinition` and `GetTypeFromReference` resolve tokens with `Loader.GetModuleLookupMapElement` using the `TypeDefToMethodTable` and `TypeRefToMethodTable` lookup-map kinds; cross-module references and `GetTypeFromSpecification` are not currently implemented.
 
 ```csharp
 ITypeHandle? ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle? ctx)
@@ -82,6 +82,8 @@ ITypeHandle? ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle
 ### Other consumers
 
 `RuntimeSignatureDecoder` is shared infrastructure. Other contracts construct their own decoder and provider directly when they need to decode method or local signatures rather than going through this contract.
+
+The [CallingConvention](./CallingConvention.md) contract uses the same decoder with a provider that keeps signature classification and generic shape separate from an optional exact loaded `ITypeHandle`.
 
 ### Vararg call cookies
 

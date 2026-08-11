@@ -5335,6 +5335,18 @@ ClrDataAccess::RawGetMethodName(
     PTR_StubManager pStubManager;
     MethodDesc* methodDesc = NULL;
 
+    EECodeInfo codeInfo(GetInterpreterCodeFromEntryPointIfPresent(taddr));
+    if (codeInfo.IsValid())
+    {
+        if (displacement)
+        {
+            *displacement = codeInfo.GetRelOffset();
+        }
+
+        methodDesc = codeInfo.GetMethodDesc();
+        return GetFullMethodName(methodDesc, bufLen, symbolLen, symbolBuf);
+    }
+
     pStubManager = StubManager::FindStubManager(TO_TADDR(address));
     if (pStubManager != NULL)
     {

@@ -95,5 +95,69 @@ namespace System.IO.Tests
                 () => stream.CopyToAsync(destination, bufferSize: 81920, cts.Token));
         }
 
+        [Theory]
+        [InlineData(2, false)]
+        [InlineData(4, false)]
+        [InlineData(2, true)]
+        [InlineData(4, true)]
+        public void Read_EmptyEncoderReplacementFallback_ReturnsRemainingOutput(int invalidCharCount, bool useFastPath)
+        {
+            string input = new string('\uD800', invalidCharCount) + "X";
+            Encoding encoding = CreateUtf8EncodingWithEmptyFallback();
+            using var stream = new StringStream(input, encoding);
+            // The one-byte cases force the streaming spillover path instead of the single-shot fast path.
+            byte[] buffer = new byte[useFastPath ? encoding.GetMaxByteCount(input.Length) : 1];
+
+            Assert.Equal(1, stream.Read(buffer));
+            Assert.Equal((byte)'X', buffer[0]);
+            Assert.Equal(0, stream.Read(buffer));
+        }
+
+        [Theory]
+        [InlineData(2, false)]
+        [InlineData(4, false)]
+        [InlineData(2, true)]
+        [InlineData(4, true)]
+        public async Task ReadAsync_EmptyEncoderReplacementFallback_ReturnsRemainingOutput(int invalidCharCount, bool useFastPath)
+        {
+            string input = new string('\uD800', invalidCharCount) + "X";
+            Encoding encoding = CreateUtf8EncodingWithEmptyFallback();
+            using var stream = new StringStream(input, encoding);
+            // The one-byte cases force the streaming spillover path instead of the single-shot fast path.
+            byte[] buffer = new byte[useFastPath ? encoding.GetMaxByteCount(input.Length) : 1];
+
+            Assert.Equal(1, await stream.ReadAsync(buffer.AsMemory()));
+            Assert.Equal((byte)'X', buffer[0]);
+            Assert.Equal(0, await stream.ReadAsync(buffer.AsMemory()));
+        }
+
+        [Fact]
+        public void ReadByte_EmptyEncoderReplacementFallback_DoesNotReturnEofBeforeOutput()
+        {
+            using var stream = new StringStream("\uD800\uD800X", CreateUtf8EncodingWithEmptyFallback());
+
+            Assert.Equal('X', stream.ReadByte());
+            Assert.Equal(-1, stream.ReadByte());
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Read_EmptyEncoderReplacementFallback_AllInputSkippedReturnsEof(bool useFastPath)
+        {
+            const string Input = "\uD800\uD800";
+            Encoding encoding = CreateUtf8EncodingWithEmptyFallback();
+            using var stream = new StringStream(Input, encoding);
+            byte[] buffer = new byte[useFastPath ? encoding.GetMaxByteCount(Input.Length) : 1];
+
+            Assert.Equal(0, stream.Read(buffer));
+            Assert.Equal(0, stream.Read(buffer));
+        }
+
+        private static Encoding CreateUtf8EncodingWithEmptyFallback() =>
+            Encoding.GetEncoding(
+                "utf-8",
+                new EncoderReplacementFallback(string.Empty),
+                new DecoderReplacementFallback(string.Empty));
     }
 }

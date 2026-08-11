@@ -22,7 +22,7 @@
 //
 // * Thread suspend/resume:
 //      static void SuspendEE(SUSPEND_REASON reason);
-//      static void RestartEE(bool bFinishedGC); //resume threads.
+//      static void RestartEE(bool bUnused); //resume threads.
 //
 // * Enumeration of thread-local allocators:
 //      static void GcEnumAllocContexts (enum_alloc_context_func* fn, void* param);
