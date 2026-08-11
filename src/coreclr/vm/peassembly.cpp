@@ -641,7 +641,6 @@ ULONG PEAssembly::GetPEImageTimeDateStamp()
 PEAssembly::PEAssembly(
                 BINDER_SPACE::Assembly* pBoundAssembly,
                 IMetaDataEmit* pEmit,
-                bool isSystem,
                 AssemblyBinder* pDynamicAssemblyBinder /*= NULL*/)
     :
 #ifdef LOGGING
@@ -653,7 +652,6 @@ PEAssembly::PEAssembly(
     , m_pImporter{NULL}
     , m_pEmitter{NULL}
     , m_refCount{1}
-    , m_isSystem{isSystem}
     , m_pHostAssembly{nullptr}
     , m_pAssemblyBinder{nullptr}
 {
@@ -661,8 +659,6 @@ PEAssembly::PEAssembly(
     {
         // A PEAssembly is either bound by an AssemblyBinder or dynamic (reflection emit)
         PRECONDITION((pBoundAssembly == NULL) != (pEmit == NULL));
-        // Only a bound assembly can be System.Private.CoreLib.
-        PRECONDITION(pEmit == NULL || !isSystem);
         // A bound assembly takes its binder from the bind result, not from a caller.
         PRECONDITION(pBoundAssembly == NULL || pDynamicAssemblyBinder == NULL);
         STANDARD_VM_CHECK;
@@ -800,12 +796,12 @@ PEAssembly *PEAssembly::DoOpenSystem()
     ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
     IfFailThrow(GetAppDomain()->GetDefaultBinder()->BindToSystem(&pBoundAssembly));
 
-    return new PEAssembly(pBoundAssembly, NULL, /*isSystem*/ true);
+    return new PEAssembly(pBoundAssembly, NULL);
 }
 
 PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBoundAssembly)
 {
-    return new PEAssembly(pBoundAssembly, NULL, /*isSystem*/ false);
+    return new PEAssembly(pBoundAssembly, NULL);
 };
 
 /* static */
@@ -822,7 +818,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBin
     // we have.)
     ReleaseHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    return new PEAssembly(NULL, pEmit, /*isSystem*/ false, pDynamicAssemblyBinder);
+    return new PEAssembly(NULL, pEmit, pDynamicAssemblyBinder);
 }
 
 #endif // #ifndef DACCESS_COMPILE

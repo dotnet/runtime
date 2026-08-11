@@ -331,7 +331,6 @@ private:
     PEAssembly(
         BINDER_SPACE::Assembly* pBoundAssembly,
         IMetaDataEmit* pEmit,
-        bool isSystem,
         AssemblyBinder* pDynamicAssemblyBinder = NULL
     );
 
@@ -381,7 +380,6 @@ private:
     IMetaDataEmit* m_pEmitter;
 
     Volatile<LONG>           m_refCount;
-    bool                     m_isSystem;
 
     PTR_BINDER_SPACE_Assembly m_pHostAssembly;
     PTR_AssemblyBinder m_pAssemblyBinder;

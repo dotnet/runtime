@@ -226,7 +226,7 @@ inline bool PEAssembly::IsSystem() const
     LIMITED_METHOD_CONTRACT;
     SUPPORTS_DAC;
 
-    return m_isSystem;
+    return this == SystemDomain::SystemPEAssembly();
 }
 
 inline BOOL PEAssembly::IsReflectionEmit() const
