@@ -103,15 +103,27 @@ void Compiler::fgAsyncStressPrepare(BasicBlock* firstBB, BasicBlock* lastBB, uns
 //    keeps a body with many async calls from inlining all of them, which would
 //    make compile times explode and bury the interesting cases.
 //
+//    The roll only ever adds inlines. A callee the normal policy would have inlined
+//    anyway is always inlined, so that turning the stress mode on cannot take away
+//    coverage or make a test that relies on an inline happening flaky.
+//
 bool Compiler::fgAsyncStressShouldInline(GenTreeCall* call, unsigned inlineDepth)
 {
     assert(compAsyncInliningStress() && call->IsAsync());
 
-    unsigned const index = call->GetSingleInlineCandidateInfo()->asyncStressIndex;
+    InlineCandidateInfo* const candidateInfo = call->GetSingleInlineCandidateInfo();
+
+    unsigned const index = candidateInfo->asyncStressIndex;
 
     if (index == UINT_MAX)
     {
         // Not part of a group, so not something the stress mode picked.
+        return true;
+    }
+
+    if ((candidateInfo->methAttr & CORINFO_FLG_FORCEINLINE) != 0)
+    {
+        // The normal policy inlines this regardless, so leave it alone.
         return true;
     }
 
