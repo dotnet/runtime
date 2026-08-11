@@ -535,6 +535,13 @@ GenTree* Lowering::LowerNode(GenTree* node)
                 return next;
             }
 
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) ||        \
+    defined(TARGET_WASM)
+            // These targets mask the rotate amount implicitly, so strip a redundant
+            // AND(amount, mask) before lowering the rotate.
+            TryRemoveShiftRotateMask(node->AsOp());
+#endif
+
             LowerRotate(node);
             break;
         }
@@ -8836,30 +8843,30 @@ bool Lowering::TryFoldBinop(GenTreeOp* node)
 }
 
 //------------------------------------------------------------------------
-// LowerShift: Lower shift nodes
+// TryRemoveShiftRotateMask: Remove a redundant mask on a shift or rotate count.
 //
 // Arguments:
-//    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
+//    op - the shift or rotate node (GT_LSH, GT_RSH, GT_RSZ, GT_ROL or GT_ROR)
 //
 // Notes:
-//    Remove unnecessary shift count masking, xarch shift instructions
-//    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
+//    Some targets' shift/rotate instructions mask their count to bitsize.
+//    Remove the explicit AND(count, mask) that keeps at least those low bits.
 //
-void Lowering::LowerShift(GenTreeOp* shift)
+void Lowering::TryRemoveShiftRotateMask(GenTreeOp* op)
 {
-    assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
+    assert(op->OperIs(GT_LSH, GT_RSH, GT_RSZ, GT_ROL, GT_ROR));
 
     size_t mask = 0x1f;
-#ifdef TARGET_64BIT
-    if (varTypeIsLong(shift->TypeGet()))
+#if !LOWER_DECOMPOSE_LONGS
+    if (varTypeIsLong(op->TypeGet()))
     {
         mask = 0x3f;
     }
 #else
-    assert(!varTypeIsLong(shift->TypeGet()));
+    assert(!varTypeIsLong(op->TypeGet()));
 #endif
 
-    for (GenTree* andOp = shift->gtGetOp2(); andOp->OperIs(GT_AND); andOp = andOp->gtGetOp1())
+    for (GenTree* andOp = op->gtGetOp2(); andOp->OperIs(GT_AND); andOp = andOp->gtGetOp1())
     {
         GenTree* maskOp = andOp->gtGetOp2();
 
@@ -8873,12 +8880,29 @@ void Lowering::LowerShift(GenTreeOp* shift)
             break;
         }
 
-        shift->gtOp2 = andOp->gtGetOp1();
+        op->gtOp2 = andOp->gtGetOp1();
         BlockRange().Remove(andOp);
         BlockRange().Remove(maskOp);
         // The parent was replaced, clear contain and regOpt flag.
-        shift->gtOp2->ClearContained();
+        op->gtOp2->ClearContained();
     }
+}
+
+//------------------------------------------------------------------------
+// LowerShift: Lower shift nodes
+//
+// Arguments:
+//    shift - the shift node (GT_LSH, GT_RSH or GT_RSZ)
+//
+// Notes:
+//    Remove unnecessary shift count masking, xarch shift instructions
+//    mask the shift count to 5 bits (or 6 bits for 64 bit operations).
+//
+void Lowering::LowerShift(GenTreeOp* shift)
+{
+    assert(shift->OperIs(GT_LSH, GT_RSH, GT_RSZ));
+
+    TryRemoveShiftRotateMask(shift);
 
     ContainCheckShiftRotate(shift);
 
