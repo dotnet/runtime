@@ -84,16 +84,11 @@ namespace Microsoft.Extensions.Configuration
             ValueStringBuilder text = new ValueStringBuilder(stackalloc char[StackKeyLength]);
             try
             {
-                int write = 0;
-                if (ReferenceSyntax.IsRelative(body))
-                {
-                    text.Append(baseKey);
-                    write = text.Length;
-                }
-
-                int start = write;
-                int read = write;
                 text.Append(body);
+
+                int start = 0;
+                int read = 0;
+                int write = 0;
 
                 bool unresolved = false;
                 int puts = 0;
@@ -135,6 +130,11 @@ namespace Microsoft.Extensions.Configuration
                     }
                     else if (c == ReferenceSyntax.SelfMarker && ReferenceSyntax.MoveLength(text.AsSpan(), read, start) is int dots && dots > 0)
                     {
+                        if (read == 0)
+                        {
+                            Anchor(ref text, baseKey, ref start, ref read, ref write);
+                        }
+
                         TakeMove(ref text, dots, ref read, ref write, ref unresolved);
                     }
                     else
@@ -151,6 +151,17 @@ namespace Microsoft.Extensions.Configuration
             {
                 text.Dispose();
             }
+        }
+
+        // Puts the key the reference was found at in front of the expression, so a move that opens it has somewhere to
+        // move from. Nothing has been consumed or emitted when a move opens one, which is as true of a move a
+        // substitution brought in as of one that was written there.
+        private static void Anchor(ref ValueStringBuilder text, string baseKey, ref int start, ref int read, ref int write)
+        {
+            text.Insert(0, baseKey);
+            start = baseKey.Length;
+            read = start;
+            write = start;
         }
 
         private static void TakeQuoted(ref ValueStringBuilder text, string baseKey, ref int read, ref int write)

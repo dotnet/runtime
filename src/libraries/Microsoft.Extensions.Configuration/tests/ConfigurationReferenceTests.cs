@@ -1014,6 +1014,8 @@ namespace Microsoft.Extensions.Configuration.Test
             [".NET:Version"] = "net-version",
             ["A:B:C:Probe:Own"] = "own",
             ["Pointer"] = "A:B:C:Sibling",
+            ["Up"] = "..",
+            ["Down"] = ".:Own",
             ["Relay"] = "$ref(..:A:Uncle)",
         };
 
@@ -1054,6 +1056,14 @@ namespace Microsoft.Extensions.Configuration.Test
                 ("$ref({Pointer}:..:..:Cousin)", "cousin"),
                 // A sub-reference is written at the same key, so it is relative to the same place.
                 ("$ref(..:{..:Leaf})", "sibling"),
+                // A move a sub-reference brings in opens the expression just as a written one does, so it moves from
+                // the key the reference was found at rather than from the root. "Up" holds "..".
+                ("$ref({Up}:Sibling)", "sibling"),
+                ("$ref({Up}:{Up}:Cousin)", "cousin"),
+                ("$ref({Up})", "c-value"),
+                ("$ref({Down})", "own"),
+                // "Pointer" holds an absolute key, so bringing that in leaves the expression absolute.
+                ("$ref({Pointer})", "sibling"),
                 // A dot is a move only when it is a whole segment: it has to start one, so a segment that merely ends
                 // in a dot is a key as written, and it has to fill one, so a segment that begins with a dot is too.
                 ("$ref(..:Acme Corp.)", "abbreviated"),

@@ -145,7 +145,5 @@ namespace Microsoft.Extensions.Configuration
             int dots = past - i;
             return dots <= 2 && (past == s.Length || s[past] == KeyDelimiter) ? dots : 0;
         }
-
-        internal static bool IsRelative(ReadOnlySpan<char> s) => !s.IsEmpty && MoveLength(s, 0, 0) > 0;
     }
 }
