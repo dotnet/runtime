@@ -4,6 +4,11 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DebugType>None</DebugType>
     <Optimize>True</Optimize>
+    <!-- These platforms do not support native test assets: https://github.com/dotnet/runtime/issues/123946 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWasm)' == 'true' or '$(TargetsMobile)' == 'true'">true</CLRTestTargetUnsupported>
+    <!-- The JIT only normalizes small primitive pinvoke arguments where the ABI requires it, but the
+         clang-compiled callee assumes normalization on x64 Unix: https://github.com/dotnet/runtime/issues/131997 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetsUnix)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
