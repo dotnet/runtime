@@ -833,6 +833,35 @@ namespace System.Text.Json.Schema.Tests
                     }
                     """);
 
+            yield return new TestData<PocoWithReadOnlyMembers>(
+                Value: new() { Name = "name" },
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object","null"],
+                    "properties": {
+                        "Name": { "type": ["string", "null"] },
+                        "ReadOnlyProperty": { "type": "integer" },
+                        "ReadOnlyField": { "type": "integer" },
+                        "ReadOnlyCollectionProperty": { "type": ["array", "null"], "items": { "type": "integer" } }
+                    }
+                }
+                """,
+                SerializerOptions: new() { IncludeFields = true });
+
+            // Read-only members are omitted when IgnoreReadOnlyProperties/IgnoreReadOnlyFields are enabled.
+            yield return new TestData<PocoWithReadOnlyMembers>(
+                Value: new() { Name = "name" },
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object","null"],
+                    "properties": {
+                        "Name": { "type": ["string", "null"] },
+                        "ReadOnlyCollectionProperty": { "type": ["array", "null"], "items": { "type": "integer" } }
+                    }
+                }
+                """,
+                SerializerOptions: new() { IncludeFields = true, IgnoreReadOnlyProperties = true, IgnoreReadOnlyFields = true });
+
             yield return new TestData<PocoDisallowingUnmappedMembers>(
                 Value: new() { Name = "name", Age = 42 },
                 ExpectedJsonSchema: """
@@ -1533,6 +1562,15 @@ namespace System.Text.Json.Schema.Tests
 
             [JsonExtensionData]
             public Dictionary<string, object>? ExtensionData { get; set; }
+        }
+
+        public class PocoWithReadOnlyMembers
+        {
+            public string? Name { get; set; }
+            public int ReadOnlyProperty => 42;
+            [JsonInclude]
+            public readonly int ReadOnlyField = 42;
+            public List<int> ReadOnlyCollectionProperty { get; } = new();
         }
 
         [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
