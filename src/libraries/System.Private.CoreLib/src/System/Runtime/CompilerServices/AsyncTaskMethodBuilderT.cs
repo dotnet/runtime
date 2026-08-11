@@ -325,6 +325,7 @@ namespace System.Runtime.CompilerServices
                 return (ulong)_dispatcherId;
             }
 
+            [StackTraceHidden]
             private protected override void InstrumentedMoveNext(Thread? threadPoolThread, AsyncInstrumentation.Flags flags)
             {
                 if (_isLeaf)
@@ -336,6 +337,8 @@ namespace System.Runtime.CompilerServices
                 base.InstrumentedMoveNext(threadPoolThread, flags);
             }
 
+            [StackTraceHidden]
+            // Diagnostic tooling depends on this name when classifying async callstack frames.
             private unsafe void MoveNextAsDispatcher(Thread? threadPoolThread, AsyncInstrumentation.Flags flags)
             {
                 AsyncStateMachineDispatcherInfo info;
@@ -496,6 +499,7 @@ namespace System.Runtime.CompilerServices
                 MoveNext(threadPoolThread, flags);
             }
 
+            [StackTraceHidden]
             private protected virtual void InstrumentedMoveNext(Thread? threadPoolThread, AsyncInstrumentation.Flags flags)
             {
                 AsyncStateMachineDispatcherInfo.ResumeAsyncMethod(this, flags);

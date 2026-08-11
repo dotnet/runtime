@@ -3381,5 +3381,125 @@ namespace System.Threading.Tasks.Tests
                 }
             }
         }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_ResumeDispatchStack_ContainsExpectedBoundaryFrames(StrongBox<List<string>> capture)
+        {
+            await Task.Yield();
+            capture.Value = CaptureAsyncBoundarySequence();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_ResumeDispatchStack()
+        {
+            var capture = new StrongBox<List<string>>();
+
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenario(() => StateMachineAsync_ResumeDispatchStack_ContainsExpectedBoundaryFrames(capture));
+            });
+
+            // DumpAllEvents(events);
+
+            Assert.True(capture.Value is not null,
+                "The state-machine continuation did not run (no boundary sequence was captured).");
+
+            // A V1 leaf resume runs through MoveNextAsDispatcher.
+            AssertBoundarySubsequence(capture.Value!, "V1.MoveNextAsDispatcher");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
+        private static async ValueTask StateMachineAsync_PoolingResumeDispatchStack_ContainsExpectedBoundaryFrames(StrongBox<List<string>> capture)
+        {
+            await Task.Yield();
+            capture.Value = CaptureAsyncBoundarySequence();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_PoolingResumeDispatchStack()
+        {
+            var capture = new StrongBox<List<string>>();
+
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenario(() => StateMachineAsync_PoolingResumeDispatchStack_ContainsExpectedBoundaryFrames(capture).AsTask());
+            });
+
+            // DumpAllEvents(events);
+
+            Assert.True(capture.Value is not null,
+                "The pooling state-machine continuation did not run (no boundary sequence was captured).");
+
+            AssertBoundarySubsequence(capture.Value!, "V1.AsyncStateMachineDispatcher.MoveNext");
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_InlineCompletionClimb_Child(Task childGate)
+        {
+            await childGate;
+        }
+
+        [RuntimeAsyncMethodGeneration(false)]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task StateMachineAsync_InlineCompletionClimb_ContainsExpectedBoundaryFrames(
+            Task childTask, StrongBox<(List<string> Boundaries, List<string> Types)> capture)
+        {
+            // This continuation is resumed inline as the child's continuation while the child is still
+            // completing, so the child's frames (its dispatch boundary + state-machine MoveNext) remain on the
+            // physical stack beneath this capture point -- the inline-completion layout the CPU stitcher must
+            // account for via completed-frame trimming.
+            await childTask;
+            capture.Value = CaptureAsyncStack();
+        }
+
+        [ConditionalFact(typeof(AsyncProfilerTests), nameof(IsStateMachineAsyncAndThreadingSupported))]
+        public void StateMachineAsync_InlineCompletionClimb()
+        {
+            var capture = new StrongBox<(List<string> Boundaries, List<string> Types)>();
+
+            var events = CollectEvents(ResumeStateMachineAsyncCallstackKeyword | StateMachineAsyncCoreKeywords, () =>
+            {
+                RunScenarioAndFlush(async () =>
+                {
+                    var childGate = new TaskCompletionSource();
+
+                    // Child suspends on childGate; parent suspends awaiting child.
+                    Task child = StateMachineAsync_InlineCompletionClimb_Child(childGate.Task);
+                    Task parent = StateMachineAsync_InlineCompletionClimb_ContainsExpectedBoundaryFrames(child, capture);
+
+                    // Completing the child inline resumes the parent inline (the climb under test): the child's
+                    // still-completing frames stay on the physical stack beneath the parent's resume.
+                    childGate.SetResult();
+
+                    await parent;
+                    await child;
+                });
+            });
+
+            // DumpAllEvents(events);
+
+            Assert.True(capture.Value.Boundaries is not null,
+                "The inline completion climb did not run (no stack was captured).");
+
+            // The still-completing child's state-machine frame remains on the stack below the resuming parent
+            // (leaf->root: parent above child), so a CPU sample here sees the completed child leaf frame.
+            AssertFrameOrder(capture.Value.Types,
+                nameof(StateMachineAsync_InlineCompletionClimb_ContainsExpectedBoundaryFrames),
+                nameof(StateMachineAsync_InlineCompletionClimb_Child));
+
+            // The child was resumed as a leaf through MoveNextAsDispatcher, and that boundary is still on the
+            // stack beneath the parent, so the completed leaf frame is paired with its dispatch boundary.
+            Assert.Contains("V1.MoveNextAsDispatcher", capture.Value.Boundaries);
+        }
+
+        [ConditionalTheory(nameof(IsStateMachineAsyncSupported))]
+        [InlineData("V1.MoveNextAsDispatcher")]
+        [InlineData("V1.AsyncStateMachineDispatcher.MoveNext")]
+        public void V1AsyncDispatchMethod_NameContract_IsStable(string key) =>
+            AssertAsyncDispatchMethodExists(key);
     }
 }
