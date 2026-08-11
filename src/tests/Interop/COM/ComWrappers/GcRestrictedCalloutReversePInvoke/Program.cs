@@ -11,7 +11,9 @@ using Xunit;
 
 public class Program
 {
-    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/131989", typeof(TestLibrary.CoreClrConfigurationDetection), nameof(TestLibrary.CoreClrConfigurationDetection.IsGCStress))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/131989", typeof(TestLibrary.CoreClrConfigurationDetection), nameof(TestLibrary.CoreClrConfigurationDetection.IsAnyJitStress))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static void TestEntryPoint()
     {
         ComWrappers.RegisterForTrackerSupport(TrackerComWrappers.Instance);
