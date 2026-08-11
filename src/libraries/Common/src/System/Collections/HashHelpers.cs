@@ -40,6 +40,7 @@ namespace System.Collections
 
         public static bool IsPrime(int candidate)
         {
+            // Hash table capacities are never smaller than MinPrime.
             Debug.Assert(candidate >= MinPrime);
 
             if ((candidate & 1) == 0 || (uint)candidate % MinPrime == 0)
