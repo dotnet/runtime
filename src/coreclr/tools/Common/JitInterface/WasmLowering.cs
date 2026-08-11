@@ -130,17 +130,11 @@ namespace Internal.JitInterface
         /// for every other type. These types are still returned via a hidden buffer.
         /// </summary>
         /// <remarks>
-        /// Classified by shape rather than by name, so a type the wasm ABI treats this way is
-        /// picked up without listing it. Three conditions, all load-bearing: the type must be
-        /// intrinsic, because the wasm C ABI passes an ordinary aggregate indirectly and only a
-        /// type the runtime models as a scalar or vector is split -- <c>struct { long a, b; }</c>
-        /// decomposes exactly like <see cref="System.Int128"/> and must stay indirect; its
-        /// alignment must equal its size, which excludes <c>Vector2/3/4</c> despite those also
-        /// being intrinsic, and alignment alone would not do since <c>StructLayout(Pack)</c> can
-        /// manufacture it; and it must be wider than one slot, which excludes a <c>v128</c> and
-        /// <c>Vector64&lt;T&gt;</c> without naming them. The last test uses the slot's own width
-        /// rather than a fixed threshold, since <see cref="System.Int128"/> needs two slots at the
-        /// same 16 bytes a <c>v128</c> fills with one.
+        /// The special behavior is limited to the known CoreLib types <see cref="System.Int128"/>,
+        /// <see cref="System.UInt128"/>, <see cref="System.Numerics.Decimal128"/>,
+        /// <c>Vector256&lt;T&gt;</c>, and <c>Vector512&lt;T&gt;</c>. Ordinary aggregates remain
+        /// indirect even if their fields have the same shape. The size and alignment checks also
+        /// verify that the selected type has the layout required by its multi-slot ABI.
         /// </remarks>
         public static bool TryGetMultiSegmentLayout(TypeDesc type, out WasmValueType slotType, out int slotCount)
         {
@@ -173,7 +167,7 @@ namespace Internal.JitInterface
         /// </summary>
         private static bool IsMultiSegmentType(TypeDesc type)
         {
-            if (type is not DefType defType || !type.IsIntrinsic)
+            if (type is not DefType defType || !IsKnownMultiSegmentType(defType))
             {
                 return false;
             }
@@ -189,12 +183,46 @@ namespace Internal.JitInterface
         }
 
         /// <summary>
-        /// Walks a multi-slot type's fields down to the wasm value type its slots are. Vectors
-        /// nest, so a 512-bit vector reaches a <c>v128</c> through its 256-bit halves.
+        /// Determines whether a type is one of the CoreLib types with special multi-slot Wasm ABI
+        /// behavior. This check must remain in sync with <c>IsWasmMultiSlotTypeHandle</c> in
+        /// <c>vm/wasm/helpers.cpp</c>.
+        /// </summary>
+        private static bool IsKnownMultiSegmentType(DefType type)
+        {
+            if (type.GetTypeDefinition() is not MetadataType typeDefinition ||
+                typeDefinition.Module != type.Context.SystemModule)
+            {
+                return false;
+            }
+
+            if (Int128FieldLayoutAlgorithm.IsIntegerType(type))
+            {
+                return true;
+            }
+
+            if (DecimalFieldLayoutAlgorithm.IsDecimalFloatingPointType(type))
+            {
+                return type.Name == "Decimal128"u8;
+            }
+
+            return VectorFieldLayoutAlgorithm.IsVectorType(type) &&
+                (type.Name == "Vector256`1"u8 || type.Name == "Vector512`1"u8) &&
+                VectorFieldLayoutAlgorithm.IsSupportedVectorBaseType(type.Instantiation[0]);
+        }
+
+        /// <summary>
+        /// Walks a known multi-slot CoreLib type's first fields down to the wasm value type its slots
+        /// use. This is safe only after <see cref="IsKnownMultiSegmentType"/> succeeds: the known
+        /// integer and decimal types have homogeneous <c>ulong</c> fields, and the known vectors
+        /// have homogeneous vector fields. It is not valid for an arbitrary aggregate.
         /// </summary>
         private static WasmValueType? GetSlotType(TypeDesc type)
         {
-            for (int depth = 0; depth < 8; depth++)
+            Debug.Assert(type is DefType defType && IsKnownMultiSegmentType(defType));
+
+            // Three iterations cover the deepest supported chain:
+            // Vector512<T> -> Vector256<T> -> Vector128<T>.
+            for (int depth = 0; depth < 3; depth++)
             {
                 if (IsWasmV128Type(type))
                 {

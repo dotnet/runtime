@@ -340,10 +340,9 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
-    /// The classification is structural, so a type that did not exist when it was written is picked
-    /// up without changing it. <see cref="System.Numerics.Decimal128"/> is intrinsic, 16 bytes and
-    /// 16-byte aligned to match <c>__int128_t</c>, so it splits into two i64 slots exactly as
-    /// <see cref="System.Int128"/> does. Its narrower siblings and the legacy 8-aligned
+    /// <see cref="System.Numerics.Decimal128"/> is one of the known CoreLib multi-slot types. It is
+    /// 16 bytes and 16-byte aligned to match <c>__int128_t</c>, so it splits into two i64 slots
+    /// exactly as <see cref="System.Int128"/> does. Its narrower siblings and the legacy 8-aligned
     /// <see cref="decimal"/> keep the ordinary struct ABI.
     /// </summary>
     [Theory]

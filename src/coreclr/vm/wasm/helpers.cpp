@@ -1083,12 +1083,49 @@ namespace
                ((th.GetSize() == 16) && (pVectorTMT != nullptr) && pMT->HasSameTypeDefAs(pVectorTMT));
     }
 
-    // Walks a candidate multi-slot type's fields down to the wasm value type its slots are, and
-    // reports that slot's width. Vectors nest, so a 512-bit vector reaches a v128 through its
-    // 256-bit halves. The width comes from the wasm value type, never from a managed type.
+    // Returns true for the CoreLib types with special multi-slot Wasm ABI behavior. This check must
+    // remain in sync with IsKnownMultiSegmentType in WasmLowering.cs.
+    bool IsWasmMultiSlotTypeHandle(TypeHandle th)
+    {
+        if (th.IsTypeDesc() || (th.GetSignatureCorElementType() != ELEMENT_TYPE_VALUETYPE))
+        {
+            return false;
+        }
+
+        MethodTable* pMT = th.AsMethodTable();
+        PTR_MethodTable pInt128MT     = CoreLibBinder::GetClassIfExist(CLASS__INT128);
+        PTR_MethodTable pUInt128MT    = CoreLibBinder::GetClassIfExist(CLASS__UINT128);
+        PTR_MethodTable pDecimal128MT = CoreLibBinder::GetClassIfExist(CLASS__DECIMAL128);
+        if (((pInt128MT != nullptr) && pMT->HasSameTypeDefAs(pInt128MT)) ||
+            ((pUInt128MT != nullptr) && pMT->HasSameTypeDefAs(pUInt128MT)) ||
+            ((pDecimal128MT != nullptr) && pMT->HasSameTypeDefAs(pDecimal128MT)))
+        {
+            return true;
+        }
+
+        if (!pMT->IsIntrinsicType() || (pMT->GetNumGenericArgs() != 1) ||
+            !CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType()))
+        {
+            return false;
+        }
+
+        PTR_MethodTable pVector256MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR256T);
+        PTR_MethodTable pVector512MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR512T);
+        return ((pVector256MT != nullptr) && pMT->HasSameTypeDefAs(pVector256MT)) ||
+               ((pVector512MT != nullptr) && pMT->HasSameTypeDefAs(pVector512MT));
+    }
+
+    // Walks a known multi-slot CoreLib type's first fields down to the wasm value type its slots use,
+    // and reports that slot's width. This is safe only after IsWasmMultiSlotTypeHandle succeeds: the
+    // known integer and decimal types have homogeneous uint64 fields, and the known vectors have
+    // homogeneous vector fields. It is not valid for an arbitrary aggregate.
     bool GetWasmSlotSize(TypeHandle th, uint32_t* pSlotSize)
     {
-        for (int depth = 0; depth < 8; depth++)
+        _ASSERTE(IsWasmMultiSlotTypeHandle(th));
+
+        // Three iterations cover the deepest supported chain:
+        // Vector512<T> -> Vector256<T> -> Vector128<T>.
+        for (int depth = 0; depth < 3; depth++)
         {
             if (IsWasmV128TypeHandle(th))
             {
@@ -1170,12 +1207,10 @@ namespace
             return { ConvertType::ToV128, 0 };
         }
 
-        // Types with no single wasm value type wide enough to hold them are split across several
-        // by-value slots. Classified by shape, matching TryGetMultiSegmentLayout in crossgen2:
-        // intrinsic, because the wasm C ABI passes an ordinary aggregate indirectly; aligned to
-        // their size, which is what excludes Vector2/3/4; and wider than one slot, which excludes
-        // a v128 and Vector64 without needing to name them.
-        if (pMT->IsIntrinsicType() && ((uint32_t)pMT->GetFieldAlignmentRequirement() == size))
+        // The known CoreLib multi-slot types are passed by value across several slots. Ordinary
+        // aggregates remain indirect even if their fields have the same shape. The size and
+        // alignment checks verify that each known type has the layout required by its ABI.
+        if (IsWasmMultiSlotTypeHandle(th) && ((uint32_t)pMT->GetFieldAlignmentRequirement() == size))
         {
             uint32_t slotSize = 0;
             if (GetWasmSlotSize(TypeHandle(pMT), &slotSize) && (size > slotSize))
