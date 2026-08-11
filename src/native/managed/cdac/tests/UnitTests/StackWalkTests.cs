@@ -16,6 +16,89 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 public unsafe class StackWalkTests
 {
     [Fact]
+    public void X86Unwind_EbpProlog_RestoresCallerContext()
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+
+        const uint MethodStart = 0x1000;
+        const uint GcInfoAddress = 0x1800;
+        const uint CurrentEbp = 0x2100;
+        const uint CallerEbp = 0x3100;
+        const uint ReturnAddress = 0x1234_5678;
+        const uint SavedEdi = 0x1111_1111;
+        const uint SavedEsi = 0x2222_2222;
+        const uint CurrentEbx = 0x3333_3333;
+
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = MethodStart,
+            Data = [0x55, 0x8b, 0xec, 0x57, 0x56, 0x53],
+            Name = "Method code",
+        });
+
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = GcInfoAddress,
+            Data = [0x20, 0x4f],
+            Name = "GC info",
+        });
+
+        byte[] stack = new byte[0x20];
+        helpers.Write(stack.AsSpan(0x04, sizeof(uint)), CurrentEbx);
+        helpers.Write(stack.AsSpan(0x08, sizeof(uint)), SavedEsi);
+        helpers.Write(stack.AsSpan(0x0c, sizeof(uint)), SavedEdi);
+        helpers.Write(stack.AsSpan(0x10, sizeof(uint)), CallerEbp);
+        helpers.Write(stack.AsSpan(0x14, sizeof(uint)), ReturnAddress);
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = CurrentEbp - 0x10,
+            Data = stack,
+            Name = "Stack",
+        });
+
+        CodeBlockHandle codeBlock = new(new TargetPointer(MethodStart));
+        TargetPointer gcInfo = new(GcInfoAddress);
+        uint gcInfoVersion = 4;
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(MethodStart + 5))).Returns(codeBlock);
+        executionManager.Setup(e => e.GetGCInfo(codeBlock, out gcInfo, out gcInfoVersion));
+        executionManager.Setup(e => e.GetRelativeOffset(codeBlock)).Returns(new TargetNUInt(5));
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(new TargetPointer(MethodStart));
+        executionManager.Setup(e => e.GetFuncletStartAddress(codeBlock)).Returns(new TargetPointer(MethodStart));
+        executionManager.Setup(e => e.IsFunclet(codeBlock)).Returns(false);
+
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetOperatingSystem()).Returns(RuntimeInfoOperatingSystem.Windows);
+
+        TestPlaceholderTarget target = targetBuilder
+            .AddMockContract(executionManager.Object)
+            .AddMockContract(runtimeInfo.Object)
+            .Build();
+
+        X86Context context = new()
+        {
+            ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL,
+            Eip = MethodStart + 5,
+            Esp = CurrentEbp - 8,
+            Ebp = CurrentEbp,
+            Edi = uint.MaxValue,
+            Esi = uint.MaxValue,
+            Ebx = CurrentEbx,
+        };
+
+        Assert.True(new Contracts.StackWalkHelpers.X86.X86Unwinder(target).Unwind(ref context));
+        Assert.Equal(SavedEdi, context.Edi);
+        Assert.Equal(SavedEsi, context.Esi);
+        Assert.Equal(CurrentEbx, context.Ebx);
+        Assert.Equal(CallerEbp, context.Ebp);
+        Assert.Equal(CurrentEbp + (2 * sizeof(uint)), context.Esp);
+        Assert.Equal(ReturnAddress, context.Eip);
+        Assert.NotEqual(0u, context.ContextFlags & (uint)X86Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
+    }
+
+    [Fact]
     public void GenericContextStorage_PreservesRegisterRepresentation()
     {
         Assert.Equal(string.Empty, default(GenericContextStorage).RegisterName);
