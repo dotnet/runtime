@@ -506,7 +506,7 @@ class AsyncTransformation
                                                                          const ContinuationLayout&        layout,
                                                                          const ContinuationLayoutBuilder& subLayout,
                                                                          SuspensionContextHelper          helper);
-    void                    RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
+    GenTree*                RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* insertionBB);
     void                    StoreAsyncAwaiter(BasicBlock*               callBlock,
                                               GenTreeCall*              call,
                                               BasicBlock*               suspendBB,
@@ -571,7 +571,8 @@ class AsyncTransformation
 
     BasicBlock* CreateInlinedFrameSuspensionTail(BasicBlock*               callBlock,
                                                  GenTreeCall*              call,
-                                                 const ContinuationLayout& layout);
+                                                 const ContinuationLayout& layout,
+                                                 GenTree*                  frameResumed);
     GenTree*    ContinuationMemberAddress(const ContinuationLayout& layout, const ContinuationMember& member);
 
 public:

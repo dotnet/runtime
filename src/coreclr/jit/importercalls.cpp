@@ -8009,8 +8009,8 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
     GenTree* syncNode       = gtCloneExpr(syncArg->GetNode());
     call->gtArgs.PushFront(this, NewCallArg::Primitive(syncNode).WellKnown(WellKnownArg::AsyncSynchronizationContext));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
-    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedUseNode).WellKnown(WellKnownArg::AsyncResumedUse));
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
 
     // The inlining call may carry further sets describing the frames enclosing it, which
     // this call inherits as well: it ends up in the same frame, so a suspension in it has
@@ -8040,11 +8040,6 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
         }
 
         call->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(arg.GetNode())).WellKnown(wka));
-    }
-
-    if (call->IsAsync())
-    {
-        call->GetAsyncInfo().InlineFrameDepth = inlCall->GetAsyncInfo().InlineFrameDepth;
     }
 }
 

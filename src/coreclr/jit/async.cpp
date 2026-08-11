@@ -720,15 +720,79 @@ void Compiler::AddContextArgsToAsyncCalls(BasicBlock* block)
             JITDUMP(
                 "Adding resumed use [%06u], resumed def [%06u] exec context [%06u], sync context [%06u] to async call [%06u]\n",
                 dspTreeID(resumed), dspTreeID(resumedAddr), dspTreeID(execCtx), dspTreeID(syncCtx), dspTreeID(call));
-            call->gtArgs.PushFront(m_compiler,
-                                   NewCallArg::Primitive(syncCtx).WellKnown(WellKnownArg::AsyncSynchronizationContext));
-            call->gtArgs.PushFront(m_compiler,
-                                   NewCallArg::Primitive(execCtx).WellKnown(WellKnownArg::AsyncExecutionContext));
-            call->gtArgs.PushFront(m_compiler,
-                                   NewCallArg::Primitive(resumedAddr).WellKnown(WellKnownArg::AsyncResumedDef));
-            call->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(resumed).WellKnown(WellKnownArg::AsyncResumedUse));
+
+            NewCallArg resumedDefArg = NewCallArg::Primitive(resumedAddr).WellKnown(WellKnownArg::AsyncResumedDef);
+            NewCallArg resumedUseArg = NewCallArg::Primitive(resumed).WellKnown(WellKnownArg::AsyncResumedUse);
+            NewCallArg execCtxArg    = NewCallArg::Primitive(execCtx).WellKnown(WellKnownArg::AsyncExecutionContext);
+            NewCallArg syncCtxArg =
+                NewCallArg::Primitive(syncCtx).WellKnown(WellKnownArg::AsyncSynchronizationContext);
+
+            // The def is only ever present once, so keeping it outside leaves the rest as
+            // a clean run of (resumed, exec context, sync context) triples, one per frame.
+            CallArg* insertAfter = call->gtArgs.PushFront(m_compiler, resumedDefArg);
+            insertAfter          = call->gtArgs.InsertAfter(m_compiler, insertAfter, resumedUseArg);
+            insertAfter          = call->gtArgs.InsertAfter(m_compiler, insertAfter, execCtxArg);
+            insertAfter          = call->gtArgs.InsertAfter(m_compiler, insertAfter, syncCtxArg);
 
             m_compiler->lvaGetDesc(m_compiler->lvaResumedIndicator)->lvHasLdAddrOp = true;
+
+            if (!m_compiler->compIsForInlining())
+            {
+                return WALK_CONTINUE;
+            }
+
+            // Add the context values of the frames enclosing this inlined async frame.
+            // When the call suspends, every enclosing frame that has not yet resumed must
+            // capture the contexts it hands to its caller and restore its caller's
+            // contexts onto the thread, as if its physical frame had returned. The IR for
+            // that is created by the async transformation, long after the optimizer has
+            // run, so we model it by adding pseudo-args for the values it will use.
+            //
+            // The enclosing frames are exactly the ones the inlining call already
+            // describes, so its chain is simply copied over: the frame it sits in followed
+            // by that frame's own chain out to the root. These are the values as they
+            // appear in the caller's IR, which is what the suspension has to store. That
+            // composes for nested inlines: the inlining call lives in IR that was itself
+            // extended this way if its method was inlined, so by the time we get here the
+            // chain out to the root is complete.
+            GenTreeCall* const inlCall   = m_compiler->impInlineInfo->iciCall;
+            unsigned           numCopied = 0;
+
+            for (CallArg& arg : inlCall->gtArgs.Args())
+            {
+                switch (arg.GetWellKnownArg())
+                {
+                    case WellKnownArg::AsyncResumedUse:
+                    case WellKnownArg::AsyncExecutionContext:
+                    case WellKnownArg::AsyncSynchronizationContext:
+                        break;
+                    default:
+                        continue;
+                }
+
+                NewCallArg newArg =
+                    NewCallArg::Primitive(m_compiler->gtCloneExpr(arg.GetNode())).WellKnown(arg.GetWellKnownArg());
+                insertAfter = call->gtArgs.InsertAfter(m_compiler, insertAfter, newArg);
+                numCopied++;
+            }
+
+            assert((numCopied % 3) == 0);
+
+            if (numCopied == 0)
+            {
+                // The inlining call does no context handling, so no enclosing frame is a
+                // logical async frame. This frame has nothing to hand back and there are
+                // no frame transitions to run on suspension.
+                JITDUMP("Inlining call [%06u] has no context args; inlinee has no enclosing async frame\n",
+                        dspTreeID(inlCall));
+            }
+            else
+            {
+                // This frame and the ones enclosing it. The first set doubles as the one
+                // the handling of the suspension itself consumes.
+                JITDUMP("Extended async call [%06u] to %u frames in chain\n", dspTreeID(call), (numCopied / 3) + 1);
+            }
+
             return WALK_CONTINUE;
         }
     };
@@ -3141,11 +3205,11 @@ void AsyncTransformation::FinishContextHandlingAndSuspension(BasicBlock*        
         LIR::AsRange(suspendBB).InsertAtEnd(LIR::SeqTree(m_compiler, store));
     }
 
-    RestoreContexts(callBlock, call, suspendBB);
+    GenTree* const frameResumed = RestoreContexts(callBlock, call, suspendBB);
 
     assert(suspendBB->KindIs(BBJ_RETURN));
 
-    BasicBlock* const frameTail = CreateInlinedFrameSuspensionTail(callBlock, call, layout);
+    BasicBlock* const frameTail = CreateInlinedFrameSuspensionTail(callBlock, call, layout, frameResumed);
     if (frameTail != nullptr)
     {
         suspendBB->SetKindAndTargetEdge(BBJ_ALWAYS, m_compiler->fgAddRefPred(frameTail, suspendBB));
@@ -3238,7 +3302,7 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
     // A call inside an inlined async frame needs the enclosing frames' handling to run
     // after this one, so it cannot use a finish block shared with suspensions in other
     // frames.
-    BasicBlock* const frameTail = CreateInlinedFrameSuspensionTail(callBlock, call, layout);
+    BasicBlock* const frameTail = CreateInlinedFrameSuspensionTail(callBlock, call, layout, resumed);
 
     if ((sharedFinish != nullptr) && (frameTail == nullptr))
     {
@@ -3316,16 +3380,31 @@ void AsyncTransformation::FinishContextHandlingAndSuspensionWithHelper(BasicBloc
 //
 BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*               callBlock,
                                                                   GenTreeCall*              call,
-                                                                  const ContinuationLayout& layout)
+                                                                  const ContinuationLayout& layout,
+                                                                  GenTree*                  frameResumed)
 {
-    unsigned const numFrames = call->GetAsyncInfo().InlineFrameDepth + 1;
-    if (numFrames < 2)
+    // The frames enclosing the one this call sits in. The frame's own set was consumed by
+    // the handling of the suspension itself, so what is left on the call is one set per
+    // enclosing frame.
+    unsigned numEnclosing = 0;
+    for (CallArg& arg : call->gtArgs.Args())
+    {
+        if (arg.GetWellKnownArg() == WellKnownArg::AsyncResumedUse)
+        {
+            numEnclosing++;
+        }
+    }
+
+    if (numEnclosing == 0)
     {
         // Not inside an inlined async frame, so there are no logical frame transitions to
         // run and no context args beyond the ones the suspension itself consumed.
-        assert(call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse) == nullptr);
         return nullptr;
     }
+
+    unsigned const numFrames = numEnclosing + 1;
+
+    assert(frameResumed != nullptr);
 
     JITDUMP("    Call [%06u] is inside an inlined async frame; %u frames in chain\n", Compiler::dspTreeID(call),
             numFrames);
@@ -3336,7 +3415,7 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
     // reflect that rather than re-reading the locals the args originally named.
     ArrayStack<GenTree*> values(m_compiler->getAllocator(CMK_Async));
 
-    for (unsigned i = 0; i < numFrames; i++)
+    for (unsigned i = 0; i + 1 < numFrames; i++)
     {
         CallArg* frameArgs[3] = {call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse),
                                  call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext),
@@ -3479,7 +3558,11 @@ GenTree* AsyncTransformation::ContinuationMemberAddress(const ContinuationLayout
 //   call      - The async call
 //   suspendBB - The basic block to add IR to.
 //
-void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* suspendBB)
+// Returns:
+//   The node holding the frame's resumed indicator, or nullptr if the call has no
+//   contexts. The suspension tail needs it to gate this frame's own transition.
+//
+GenTree* AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, BasicBlock* suspendBB)
 {
     CallArg* resumedArg     = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
     CallArg* execContextArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncExecutionContext);
@@ -3490,7 +3573,7 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
     {
         JITDUMP("    Call [%06u] does not have async contexts; skipping restore on suspension\n",
                 Compiler::dspTreeID(call));
-        return;
+        return nullptr;
     }
 
     JITDUMP("    Call [%06u] has async contexts; will restore on suspension\n", Compiler::dspTreeID(call));
@@ -3575,6 +3658,8 @@ void AsyncTransformation::RestoreContexts(BasicBlock* block, GenTreeCall* call, 
 
     JITDUMP("    Created RestoreContexts call on suspension:\n");
     DISPTREERANGE(LIR::AsRange(suspendBB), restoreCall);
+
+    return resumed;
 }
 
 //------------------------------------------------------------------------
