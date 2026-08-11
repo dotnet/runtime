@@ -15,6 +15,7 @@
 #include "gcheapenumerationprofiler/gcheapenumerationprofiler.h"
 #include "gcprofiler/gcprofiler.h"
 #include "handlesprofiler/handlesprofiler.h"
+#include "ijw/ijwprofiler.h"
 #include "metadatagetdispenser/metadatagetdispenser.h"
 #include "nullprofiler/nullprofiler.h"
 #include "rejitprofiler/rejitprofiler.h"
@@ -173,6 +174,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == GCSkipObjectsAllocatedByClassCallbackProfiler::GetClsid())
     {
         profiler = new GCSkipObjectsAllocatedByClassCallbackProfiler();
+    }
+    else if (clsid == IjwProfiler::GetClsid())
+    {
+        profiler = new IjwProfiler();
     }
     else
     {

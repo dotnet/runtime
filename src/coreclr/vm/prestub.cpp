@@ -29,6 +29,10 @@
 #include "interpexec.h"
 #endif
 
+#ifdef TARGET_WASM
+#include "wasmasynccontinuation.h"
+#endif
+
 #ifdef FEATURE_COMINTEROP
 #include "clrtocomcall.h"
 #endif
@@ -1513,7 +1517,7 @@ void MethodDesc::CreateDerivedTargetSig(MetaSig& msig, SigBuilder *stubSigBuilde
     }
 }
 
-Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
+PCODE CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
 {
 
     CONTRACTL
@@ -1599,11 +1603,11 @@ Stub * CreateUnboxingILStubForValueTypeMethods(MethodDesc* pTargetMD)
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
     pResolver->SetStubTargetMethodDesc(pTargetMD);
 
-    return Stub::NewStub(JitILStub(pStubMD));
+    return JitILStub(pStubMD);
 
 }
 
-Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
+PCODE CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
 {
 
     CONTRACTL
@@ -1692,19 +1696,17 @@ Stub * CreateInstantiatingILStub(MethodDesc* pTargetMD, void* pHiddenArg)
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
     pResolver->SetStubTargetMethodDesc(pTargetMD);
 
-    return Stub::NewStub(JitILStub(pStubMD));
+    return JitILStub(pStubMD);
 }
 
 /* Make a stub that for a value class method that expects a BOXed this pointer */
-Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
+PCODE MakeUnboxingStubWorker(MethodDesc *pMD)
 {
     CONTRACTL
     {
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
-
-    Stub *pstub = NULL;
 
     _ASSERTE (pMD->GetMethodTable()->IsValueType());
     _ASSERTE(!pMD->ContainsGenericVariables());
@@ -1739,13 +1741,13 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 
         sl.EmitComputedInstantiatingMethodStub(pUnboxedMD, &portableShuffle[0], NULL);
 
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "UnboxingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), STUB_CODE_BLOCK_WRAPPER_STUB, "UnboxingStub");
     }
 #elif defined(TARGET_X86)
     CPUSTUBLINKER sl;
     if (sl.EmitUnboxMethodStub(pUnboxedMD))
     {
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "UnboxingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), STUB_CODE_BLOCK_WRAPPER_STUB, "UnboxingStub");
     }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
@@ -1753,7 +1755,7 @@ Stub * MakeUnboxingStubWorker(MethodDesc *pMD)
 }
 
 #if defined(FEATURE_SHARE_GENERIC_CODE)
-Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
+PCODE MakeInstantiatingStubWorker(MethodDesc *pMD)
 {
     CONTRACTL
     {
@@ -1794,13 +1796,13 @@ Stub * MakeInstantiatingStubWorker(MethodDesc *pMD)
         _ASSERTE(pSharedMD != NULL && pSharedMD != pMD);
         sl.EmitComputedInstantiatingMethodStub(pSharedMD, &portableShuffle[0], extraArg);
 
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_INSTANTIATING_METHOD, "InstantiatingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), STUB_CODE_BLOCK_WRAPPER_STUB, "InstantiatingStub");
     }
 #elif defined(TARGET_X86)
     CPUSTUBLINKER sl;
     if (sl.EmitInstantiatingMethodStub(pSharedMD, extraArg))
     {
-        return sl.Link(pMD->GetLoaderAllocator()->GetStubHeap(), NEWSTUB_FL_NONE, "InstantiatingStub");
+        return sl.Link(pMD->GetLoaderAllocator(), STUB_CODE_BLOCK_WRAPPER_STUB, "InstantiatingStub");
     }
 #endif // FEATURE_PORTABLE_SHUFFLE_THUNKS || TARGET_X86
 
@@ -2050,8 +2052,14 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
             ProfilerUnmanagedToManagedTransitionMD(methodDescToReportAsTransition, COR_PRF_TRANSITION_CALL);
         }
 #endif
+    }
+
+    void* retVal;
+    {
+        GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
+
 #ifdef DEBUGGING_SUPPORTED
-        if (g_TrapReturningThreads && CORDebuggerTraceCall())
+        if (pInterpreterCode->Method->unmanagedCallersOnly && g_TrapReturningThreads && CORDebuggerTraceCall())
         {
             void* thunkDataMaybe = nullptr;
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
@@ -2061,11 +2069,6 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
             DebuggerTraceCall((void*)pInterpreterCode->GetByteCodes(), thunkDataMaybe);
         }
 #endif // DEBUGGING_SUPPORTED
-    }
-
-    void* retVal;
-    {
-        GCX_MAYBE_COOP(pInterpreterCode->Method->unmanagedCallersOnly);
 
         // This construct ensures that the InterpreterFrame is always stored at a higher address than the
         // InterpMethodContextFrame. This is important for the stack walking code.
@@ -2099,9 +2102,13 @@ extern "C" void* STDCALL ExecuteInterpretedMethod(TransitionBlock* pTransitionBl
         pArgumentRegisters->r[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
 #elif defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
         pArgumentRegisters->a[2] = (INT64)*frames.interpreterFrame.GetContinuationPtr();
-#elif defined(TARGET_WASM)
-        // We do not yet have an ABI for WebAssembly native code to handle here.
-#else
+    #elif defined(TARGET_WASM)
+        // Wasm has no async-continuation-return register; write the value to the
+        // shared `asyncContinuation` global (see wasmasynccontinuation.h) that the
+        // R2R caller reads after the call. The transition-block register area is
+        // unused on wasm.
+        RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)*frames.interpreterFrame.GetContinuationPtr());
+    #else
         #error Unsupported architecture
 #endif
 
@@ -2189,7 +2196,23 @@ void ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex(PCODE portableE
             if (targetIp == NULL)
             {
                 _ASSERTE(!PortableEntryPoint::PrefersInterpreterEntryPoint(portableEntrypoint));
-                InvokeManagedMethod(pMethod, args, retBuff, (PCODE)targetIp, nullptr /* WASM-TODO, handle RuntimeAsync */);
+                Object* continuationRet = nullptr;
+                Object** pContinuationRet = nullptr;
+#ifdef TARGET_WASM
+                // Gate on IsAsyncMethod to match InvokeManagedMethod/InvokeCalliStub; don't preload
+                // the global, InvokeCalliStub publishes the callee's continuation into continuationRet.
+                if (pMethod->IsAsyncMethod())
+                {
+                    pContinuationRet = &continuationRet;
+                }
+#endif // TARGET_WASM
+                InvokeManagedMethod(pMethod, args, retBuff, (PCODE)targetIp, pContinuationRet);
+#ifdef TARGET_WASM
+                if (pContinuationRet != nullptr)
+                {
+                    RuntimeAsync_StoreAsyncContinuation((uint32_t)(uintptr_t)continuationRet);
+                }
+#endif // TARGET_WASM
             }
 
             UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -2337,7 +2360,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     }
     CONTRACTL_END;
 
-    Stub *pStub = NULL;
+    PCODE pStub = (PCODE)NULL;
     PCODE pCode = (PCODE)NULL;
 
     Thread *pThread = GetThread();
@@ -2551,7 +2574,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
     // At this point we must have either a pointer to managed code or to a stub. All of the above code
     // should have thrown an exception if it couldn't make a stub.
-    _ASSERTE((pStub != NULL) ^ (pCode != (PCODE)NULL));
+    _ASSERTE((pStub != (PCODE)NULL) ^ (pCode != (PCODE)NULL));
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     //
@@ -2575,8 +2598,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
     else
     {
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
-        pCode = pStub->GetEntryPoint();
-        pStub->DecRef();
+        pCode = pStub;
 
         void* ilStubInterpData = PortableEntryPoint::GetInterpreterData(pCode);
         _ASSERTE(ilStubInterpData != NULL);
@@ -2588,25 +2610,7 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
         PortableEntryPoint::SetInterpreterData(pCode, (PCODE)(TADDR)ilStubInterpData);
         SetCodeEntryPoint(pCode);
 #else // !FEATURE_PORTABLE_ENTRYPOINTS
-        if (!GetOrCreatePrecode()->SetTargetInterlocked(pStub->GetEntryPoint()))
-        {
-            if (pStub->HasExternalEntryPoint())
-            {
-                // Stubs with external entry point are allocated from regular heap and so they are always writeable
-                pStub->DecRef();
-            }
-            else
-            {
-                ExecutableWriterHolder<Stub> stubWriterHolder(pStub, sizeof(Stub));
-                stubWriterHolder.GetRW()->DecRef();
-            }
-        }
-        else if (pStub->HasExternalEntryPoint())
-        {
-            // If the Stub wraps code that is outside of the Stub allocation, then we
-            // need to free the Stub allocation now.
-            pStub->DecRef();
-        }
+        GetOrCreatePrecode()->SetTargetInterlocked(pStub);
 #if defined(FEATURE_INTERPRETER) && defined(HAS_FIXUP_PRECODE)
         if (GetOrCreatePrecode()->GetType() == PRECODE_FIXUP)
         {

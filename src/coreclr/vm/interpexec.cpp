@@ -3319,6 +3319,7 @@ SWITCH_OPCODE:
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
                     else
                     {
+                        Object** pCalliContinuationRet = pInterpreterFrame->GetContinuationPtr();
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
                         // On portable entry point platforms, managed calli targets are portable
                         // entry points and always have a MethodDesc.
@@ -3339,9 +3340,14 @@ SWITCH_OPCODE:
                             targetMethod->SetCalliCookie(cookie);
                             cookie = targetMethod->GetCalliCookie();
                         }
+
+                        // Only async callees take the continuation arg.
+                        //
+                        if (!targetMethod->IsAsyncMethod())
+                            pCalliContinuationRet = nullptr;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
                         frameNeedsTailcallUpdate = false;
-                        InvokeCalliStub(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pInterpreterFrame->GetContinuationPtr());
+                        InvokeCalliStub(calliFunctionPointer, cookie, callArgsAddress, returnValueAddress, pCalliContinuationRet);
                     }
 
                     INTOP_NEXT;
@@ -3403,8 +3409,8 @@ SWITCH_OPCODE:
                     NULL_CHECK(*delegateObj);
                     PCODE targetAddress = (*delegateObj)->GetMethodPtr();
                     DelegateEEClass *pDelClass = (DelegateEEClass*)(*delegateObj)->GetMethodTable()->GetClass();
-                    if ((pDelClass->m_pInstRetBuffCallStub != NULL && pDelClass->m_pInstRetBuffCallStub->GetEntryPoint() == targetAddress) ||
-                        (pDelClass->m_pStaticCallStub != NULL && pDelClass->m_pStaticCallStub->GetEntryPoint() == targetAddress))
+                    if (pDelClass->m_pInstRetBuffCallStub == targetAddress ||
+                        pDelClass->m_pStaticCallStub == targetAddress)
                     {
                         // This implies that we're using a delegate shuffle thunk to strip off the first parameter to the method
                         // and call the actual underlying method. We allow for tail-calls to work and for greater efficiency in the

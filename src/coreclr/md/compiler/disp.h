@@ -20,9 +20,6 @@ class Disp :
 #else
     public IMetaDataDispenserEx2
 #endif
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    , IMetaDataDispenserCustom
-#endif
 {
 public:
     Disp();
@@ -100,15 +97,6 @@ public:
         IUnknown** ppIUnk);                 // [out] Return interface on success.
 #endif
 
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    // *** IMetaDataDispenserCustom methods ***
-    STDMETHODIMP OpenScopeOnCustomDataSource(  // S_OK or error
-        IMDCustomDataSource  *pCustomSource, // [in] The scope to open.
-        DWORD                dwOpenFlags,    // [in] Open mode flags.
-        REFIID               riid,           // [in] The interface desired.
-        IUnknown             **ppIUnk);      // [out] Return interface on success.
-#endif
-
     // Class factory hook-up.
     static HRESULT CreateObject(REFIID riid, void **ppUnk);
 
@@ -125,15 +113,6 @@ private:
         DWORD       dwOpenFlags,            // [in] Open mode flags.
         REFIID      riid,                   // [in] The interface desired.
         IUnknown    **ppIUnk);              // [out] Return interface on success.
-
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    HRESULT OpenRawScopeOnCustomDataSource( // Return code.
-        IMDCustomDataSource*  pDataSource,  // [in] scope data.
-        DWORD       dwOpenFlags,            // [in] Open mode flags.
-        REFIID      riid,                   // [in] The interface desired.
-        IUnknown    **ppIUnk);              // [out] Return interface on success.
-#endif
-
 
 private:
     LONG        m_cRef;                 // Ref count

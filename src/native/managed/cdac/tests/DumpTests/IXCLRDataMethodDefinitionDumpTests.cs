@@ -247,12 +247,14 @@ public unsafe class IXCLRDataMethodDefinitionDumpTests : DumpTestBase
         TypeDefinitionHandle tdh = MetadataTokens.TypeDefinitionHandle(rowId);
         TypeDefinition td = reader.GetTypeDefinition(tdh);
 
-        ModuleLookupTables tables = loader.GetLookupTables(coreLibModule);
         foreach (MethodDefinitionHandle mdh in td.GetMethods())
         {
             uint token = (uint)MetadataTokens.GetToken(mdh);
             TargetPointer mdAddr = loader.GetModuleLookupMapElement(
-                tables.MethodDefToDesc, token, out _);
+                coreLibModule,
+                ModuleLookupMapKind.MethodDefToDesc,
+                token,
+                out _);
             if (mdAddr == TargetPointer.Null)
                 continue;
 

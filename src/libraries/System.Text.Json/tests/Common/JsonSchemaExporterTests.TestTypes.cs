@@ -7,6 +7,7 @@ using System.Collections.Immutable;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Nodes;
@@ -51,6 +52,12 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<UInt128>(42, ExpectedJsonSchema: """{"type":"integer"}""");
             yield return new TestData<Int128>(42, ExpectedJsonSchema: """{"type":"integer"}""");
             yield return new TestData<Half>((Half)3.141, ExpectedJsonSchema: """{"type":"number"}""");
+#endif
+#if NET11_0_OR_GREATER
+            yield return new TestData<System.Numerics.BFloat16>((System.Numerics.BFloat16)3.141f, ExpectedJsonSchema: """{"type":"number"}""");
+            yield return new TestData<System.Numerics.Decimal32>(System.Numerics.Decimal32.Parse("3.14159", CultureInfo.InvariantCulture), ExpectedJsonSchema: """{"type":"number"}""");
+            yield return new TestData<System.Numerics.Decimal64>(System.Numerics.Decimal64.Parse("3.14159", CultureInfo.InvariantCulture), ExpectedJsonSchema: """{"type":"number"}""");
+            yield return new TestData<System.Numerics.Decimal128>(System.Numerics.Decimal128.Parse("3.14159", CultureInfo.InvariantCulture), ExpectedJsonSchema: """{"type":"number"}""");
 #endif
             yield return new TestData<string>("I am a string", ExpectedJsonSchema: """{"type":["string","null"]}""");
             yield return new TestData<char>('c', ExpectedJsonSchema: """{"type":"string", "minLength":1, "maxLength":1 }""");
@@ -317,6 +324,33 @@ namespace System.Text.Json.Schema.Tests
             yield return new TestData<Half?>(
                 Value: (Half)1.5,
                 AdditionalValues: [null, Half.NaN, Half.PositiveInfinity, Half.NegativeInfinity],
+                ExpectedJsonSchema: """
+                    {
+                        "anyOf": [
+                            { "type": ["number", "null"] },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                        ]
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+#endif
+#if NET11_0_OR_GREATER
+            yield return new TestData<System.Numerics.BFloat16?>(
+                Value: (System.Numerics.BFloat16)1.5f,
+                AdditionalValues: [null, System.Numerics.BFloat16.NaN, System.Numerics.BFloat16.PositiveInfinity, System.Numerics.BFloat16.NegativeInfinity],
+                ExpectedJsonSchema: """
+                    {
+                        "anyOf": [
+                            { "type": ["number", "null"] },
+                            { "enum": ["NaN", "Infinity", "-Infinity"] }
+                        ]
+                    }
+                    """,
+                SerializerOptions: new() { NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals });
+
+            yield return new TestData<System.Numerics.Decimal64?>(
+                Value: System.Numerics.Decimal64.Parse("1.5", CultureInfo.InvariantCulture),
+                AdditionalValues: [null, System.Numerics.Decimal64.NaN, System.Numerics.Decimal64.PositiveInfinity, System.Numerics.Decimal64.NegativeInfinity],
                 ExpectedJsonSchema: """
                     {
                         "anyOf": [

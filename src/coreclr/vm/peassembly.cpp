@@ -642,7 +642,7 @@ PEAssembly::PEAssembly(
                 BINDER_SPACE::Assembly* pBindResultInfo,
                 IMetaDataEmit* pEmit,
                 BOOL isSystem,
-                AssemblyBinder* pFallbackBinder /*= NULL*/,
+                AssemblyBinder* pDynamicAssemblyBinder /*= NULL*/,
                 PEImage * pPEImage /*= NULL*/,
                 BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
 {
@@ -723,7 +723,7 @@ PEAssembly::PEAssembly(
     }
     else
     {
-        m_pAssemblyBinder = pFallbackBinder;
+        m_pAssemblyBinder = pDynamicAssemblyBinder;
     }
 
 #ifdef LOGGING
@@ -744,7 +744,7 @@ PEAssembly *PEAssembly::Open(
         nullptr,        // BindResult
         nullptr,        // IMetaDataEmit
         FALSE,          // isSystem
-        nullptr,        // FallbackBinder
+        nullptr,        // DynamicAssemblyBinder
         pPEImageIL,
         pHostAssembly);
 
@@ -837,7 +837,7 @@ PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult)
 };
 
 /* static */
-PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBinder *pFallbackBinder)
+PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBinder *pDynamicAssemblyBinder)
 {
     CONTRACTL
     {
@@ -848,9 +848,9 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBin
 
     // Set up the metadata pointers in the PEAssembly. (This is the only identity
     // we have.)
-    ComHolderPreemp<IMetaDataEmit> pEmit;
+    ReleaseHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    return new PEAssembly(NULL, pEmit, FALSE, pFallbackBinder);
+    return new PEAssembly(NULL, pEmit, FALSE, pDynamicAssemblyBinder);
 }
 
 #endif // #ifndef DACCESS_COMPILE

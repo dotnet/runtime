@@ -328,6 +328,46 @@ public class MethodDescTests
 
     [Theory]
     [ClassData(typeof(MockTarget.StdArch))]
+    public void GetAsyncVariant_ReturnsLoadedVariant(MockTarget.Architecture arch)
+    {
+        TargetPointer thunkMethod = TargetPointer.Null;
+        TargetPointer asyncVariantMethod = TargetPointer.Null;
+
+        IRuntimeTypeSystem rts = CreateRuntimeTypeSystemContract(arch, methodDescBuilder =>
+        {
+            TargetTestHelpers helpers = methodDescBuilder.TargetTestHelpers;
+            MockMethodTable methodTable = methodDescBuilder.RTSBuilder.SystemObjectMethodTable;
+            uint methodDescSize = (uint)methodDescBuilder.MethodDescLayout.Size + methodDescBuilder.AsyncMethodDataSize;
+            uint methodDescSizeByAlignment = methodDescSize / methodDescBuilder.MethodDescAlignment;
+            byte chunkSize = (byte)(2 * methodDescSizeByAlignment);
+            MockMethodDescChunk chunk = methodDescBuilder.AddMethodDescChunk("asyncVariants", chunkSize);
+            chunk.MethodTable = methodTable.Address;
+            chunk.Size = chunkSize;
+            chunk.Count = 1;
+            methodDescBuilder.RTSBuilder.SystemObjectEEClass.MethodDescChunk = chunk.Address;
+
+            MockMethodDesc thunk = chunk.GetMethodDescAtChunkIndex(0, methodDescBuilder.MethodDescLayout);
+            thunk.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
+            thunk.Slot = 1;
+            thunkMethod = new TargetPointer(thunk.Address);
+            int thunkDataOffset = (int)(thunk.Address - chunk.Address) + methodDescBuilder.MethodDescLayout.Size;
+            helpers.Write(chunk.Memory.Span.Slice(thunkDataOffset, sizeof(uint)), (uint)(RuntimeTypeSystem_1.AsyncMethodFlags_1.Thunk));
+
+            MockMethodDesc asyncVariant = chunk.GetMethodDescAtChunkIndex((int)methodDescSizeByAlignment, methodDescBuilder.MethodDescLayout);
+            asyncVariant.ChunkIndex = (byte)methodDescSizeByAlignment;
+            asyncVariant.Flags = (ushort)((ushort)MethodClassification.IL | (ushort)MethodDescFlags_1.MethodDescFlags.HasAsyncMethodData);
+            asyncVariant.Slot = 1;
+            asyncVariantMethod = new TargetPointer(asyncVariant.Address);
+            int asyncVariantDataOffset = (int)(asyncVariant.Address - chunk.Address) + methodDescBuilder.MethodDescLayout.Size;
+            helpers.Write(chunk.Memory.Span.Slice(asyncVariantDataOffset, sizeof(uint)), (uint)(RuntimeTypeSystem_1.AsyncMethodFlags_1.IsAsyncVariant));
+        });
+
+        MethodDescHandle thunkHandle = rts.GetMethodDescHandle(thunkMethod);
+        Assert.Equal(asyncVariantMethod, rts.GetAsyncVariant(thunkHandle));
+    }
+
+    [Theory]
+    [ClassData(typeof(MockTarget.StdArch))]
     public void TryGetMethodSignature_NilToken_ReturnsFalse(MockTarget.Architecture arch)
     {
         TargetPointer ilMethod = TargetPointer.Null;

@@ -2405,6 +2405,25 @@ namespace SerializationTypes
         }
     }
 
+    public class TypeWithXmlAttributeOnArray
+    {
+        [XmlAttribute("values")]
+        public string[] Values;
+    }
+
+    public class TypeWithMixedTextAndElementArray
+    {
+        [XmlText(typeof(string))]
+        [XmlElement("num", typeof(int))]
+        public object[] Items;
+    }
+
+    public class TypeWithXmlTextOnListOfString
+    {
+        [XmlText]
+        public List<string> Text = new List<string>();
+    }
+
     // XmlSerializer test types: derived class overriding virtual [XmlText] property from base.
     public class CustomerWithGroupIdRef
     {
@@ -3141,6 +3160,27 @@ class PersonV2 : IExtensibleDataObject
             extensionDataObject_value = value;
         }
     }
+}
+
+[DataContract(Name = "CdataVersioned", Namespace = "http://example.com/cdata")]
+class CdataVersionedV1 : IExtensibleDataObject
+{
+    [DataMember(Order = 0)]
+    public string Prop1 { get; set; }
+
+    public ExtensionDataObject ExtensionData { get; set; }
+}
+
+[DataContract(Name = "CdataVersioned", Namespace = "http://example.com/cdata")]
+class CdataVersionedV2 : IExtensibleDataObject
+{
+    [DataMember(Order = 0)]
+    public string Prop1 { get; set; }
+
+    [DataMember(Order = 1)]
+    public string Prop2 { get; set; }
+
+    public ExtensionDataObject ExtensionData { get; set; }
 }
 
 [DataContract]
