@@ -74,7 +74,7 @@ namespace ILCompiler.ObjectWriter
             return HeaderSize + ContentSize;
         }
 
-        public override int Emit(Stream outputFileStream)
+        public int EmitToStream(Stream outputFileStream)
         {
             AssignSegmentLayout();
             int size = 0;
