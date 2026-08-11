@@ -10,12 +10,12 @@ using Internal.Text;
 namespace ILCompiler.ObjectWriter
 {
     /// <summary>
-    /// Interface for types that can be emitted to an object stream.
+    /// Interface for section-like objects that can be emitted to a wasm module stream.
     /// </summary>
     interface IWasmEmittable
     {
         int EmitToStream(Stream outputFileStream);
-        int EncodedSize();
+        int EncodeSize();
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ namespace ILCompiler.ObjectWriter
         public Stream ContentReadStream { get; set; }
 
         public abstract int EmitToStream(Stream outputFileStream);
-        public abstract int EncodedSize();
+        public abstract int EncodeSize();
     }
 
     /// <summary>
@@ -70,7 +70,7 @@ namespace ILCompiler.ObjectWriter
 
         public virtual int ContentSize => (int)ContentReadStream.Length + ContentPrefixSize;
 
-        public override int EncodedSize()
+        public override int EncodeSize()
         {
             return HeaderSize + ContentSize;
         }

@@ -25,7 +25,7 @@ namespace ILCompiler.ObjectWriter
             _paddingHelper = new PaddingHelper(WasmObjectWriter.WebcilSectionAlignment);
         }
 
-        public override int EncodedSize()
+        public override int EncodeSize()
         {
             return (int)ContentReadStream.Length;
         }

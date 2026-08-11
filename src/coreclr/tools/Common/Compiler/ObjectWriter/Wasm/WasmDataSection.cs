@@ -54,7 +54,7 @@ namespace ILCompiler.ObjectWriter
             return 1 + (int)encodeLength;
         }
 
-        public int EncodedSize()
+        public int EncodeSize()
         {
             return HeaderSize + ContentSize;
         }
