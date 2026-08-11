@@ -9,7 +9,7 @@
 #include "common.h"
 #include "gcinterface.h"
 
-void BridgeResetData();
+void BridgeResetData(bool resetPendingBridgeHandles);
 MarkCrossReferencesArgs* ProcessBridgeObjects();
 
 // Decides whether this collection should hand a fresh set of cross references to the client.

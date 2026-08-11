@@ -72,14 +72,7 @@ void JavaMarshalNative::TriggerClientBridgeProcessing(
     size_t pendingBridgeHandleCount;
     uintptr_t* pendingBridgeHandles = GetPendingBridgeHandles(&pendingBridgeHandleCount);
 
-    if (g_GCBridgeActive)
-    {
-        // FIXME: This should become unreachable once bridge graph recomputation is skipped while active.
-        // Release the memory allocated since the GCBridge
-        // is already running and we're not passing them to it.
-        ReleaseGCBridgeArgumentsWorker(args);
-        return;
-    }
+    _ASSERTE(!g_GCBridgeActive);
 
     // Not initialized
     if (g_MarkCrossReferences == NULL)
@@ -167,7 +160,7 @@ FCIMPL2(FC_BOOL_RET, GCHandle_InternalTryGetBridgeWait, OBJECTHANDLE handle, OBJ
         FC_RETURN_BOOL(false);
     }
 
-    *pObjResult = ObjectFromHandle(handle);
+    *pObjResult = object;
     FC_RETURN_BOOL(true);
 }
 FCIMPLEND
