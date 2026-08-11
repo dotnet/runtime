@@ -82,6 +82,13 @@ namespace System.Net.Tests
 
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "NoValue" }, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { ":" }, null, "Bad Request" };
+            if (Helpers.IsManagedImplementation)
+            {
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { " Header: value" }, null, "Bad Request" };
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "\tHeader: value" }, null, "Bad Request" };
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Header : value" }, null, "Bad Request" };
+                yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "Header\t: value" }, null, "Bad Request" };
+            }
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "\0:value" }, null, "Bad Request" };
             yield return new object[] { "GET {path} HTTP/1.1", null, new string[] { "value:\0" }, null, "Bad Request" };
 
