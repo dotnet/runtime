@@ -269,9 +269,9 @@ public class StringTests
             string replaced = decoded.Replace(textElement, Dummy, ignoreCase: false, culture);
 
             // '0' (U+0030) and '〇' (U+3007) collate as equal under most cultures. zh-CN normally keeps
-            // them distinct, but the browser's ICU collation shard treats them as equal there too, so
+            // them distinct, but the WebAssembly ICU collation shard treats them as equal there too, so
             // tolerate the resulting count mismatch wherever that equivalence applies.
-            bool zeroIdeographicZeroEquivalence = culture.Name != "zh-CN" || PlatformDetection.IsBrowser;
+            bool zeroIdeographicZeroEquivalence = culture.Name != "zh-CN" || PlatformDetection.IsWasm;
             Assert.True(expected == SplitHelper(replaced, Dummy).Length ||
                 (zeroIdeographicZeroEquivalence && textElement == "\u3007" && decoded.Contains('0')) ||
                 (zeroIdeographicZeroEquivalence && textElement == "0" && decoded.Contains('\u3007')),
