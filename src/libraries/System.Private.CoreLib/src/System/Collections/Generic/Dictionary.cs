@@ -1290,27 +1290,6 @@ namespace System.Collections.Generic
             _entries = entries;
         }
 
-        private void ResizeCompacted(int newSize)
-        {
-            Debug.Assert(_entries is not null);
-            Debug.Assert(HashHelpers.IsPrime(newSize));
-            Debug.Assert(newSize >= Count);
-
-            Entry[] oldEntries = _entries;
-            int[] buckets = new int[newSize];
-            Entry[] entries = new Entry[newSize];
-
-            // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
-            _freeList = -1;
-#if TARGET_64BIT
-            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
-#endif
-            _buckets = buckets;
-            _entries = entries;
-
-            CopyEntries(oldEntries, _count);
-        }
-
         public bool Remove(TKey key)
         {
             // The overload Remove(TKey key, out TValue value) is a copy of this method with one additional
@@ -1720,14 +1699,28 @@ namespace System.Collections.Generic
 
             int newSize = HashHelpers.GetPrimeAtLeast(capacity);
             Entry[]? oldEntries = _entries;
-            int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
-            if (newSize >= currentCapacity)
+            if (oldEntries is null || newSize >= oldEntries.Length)
             {
                 return;
             }
 
             _version++;
-            ResizeCompacted(newSize);
+
+            Debug.Assert(HashHelpers.IsPrime(newSize));
+            Debug.Assert(newSize >= Count);
+
+            int[] buckets = new int[newSize];
+            Entry[] entries = new Entry[newSize];
+
+            // Assign member variables after both arrays allocated to guard against corruption from OOM if second fails
+            _freeList = -1;
+#if TARGET_64BIT
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
+#endif
+            _buckets = buckets;
+            _entries = entries;
+
+            CopyEntries(oldEntries, _count);
         }
 
         private void CopyEntries(Entry[] entries, int count)

@@ -1329,27 +1329,6 @@ namespace System.Collections.Generic
             _entries = entries;
         }
 
-        private void ResizeCompacted(int newSize)
-        {
-            Debug.Assert(_entries is not null);
-            Debug.Assert(HashHelpers.IsPrime(newSize));
-            Debug.Assert(newSize >= Count);
-
-            Entry[] oldEntries = _entries;
-            var buckets = new int[newSize];
-            var entries = new Entry[newSize];
-
-            // Assign member variables after both arrays are allocated to guard against corruption from OOM if second fails.
-            _freeList = -1;
-            _buckets = buckets;
-            _entries = entries;
-#if TARGET_64BIT
-            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
-#endif
-
-            CopyEntries(oldEntries, _count);
-        }
-
         private void CopyEntries(Entry[] entries, int count)
         {
             Debug.Assert(_entries is not null);
@@ -1392,14 +1371,28 @@ namespace System.Collections.Generic
 
             int newSize = HashHelpers.GetPrimeAtLeast(capacity);
             Entry[]? oldEntries = _entries;
-            int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
-            if (newSize >= currentCapacity)
+            if (oldEntries is null || newSize >= oldEntries.Length)
             {
                 return;
             }
 
             _version++;
-            ResizeCompacted(newSize);
+
+            Debug.Assert(HashHelpers.IsPrime(newSize));
+            Debug.Assert(newSize >= Count);
+
+            var buckets = new int[newSize];
+            var entries = new Entry[newSize];
+
+            // Assign member variables after both arrays are allocated to guard against corruption from OOM if second fails.
+            _freeList = -1;
+            _buckets = buckets;
+            _entries = entries;
+#if TARGET_64BIT
+            _fastModMultiplier = HashHelpers.GetFastModMultiplier((uint)newSize);
+#endif
+
+            CopyEntries(oldEntries, _count);
         }
 
         #endregion
