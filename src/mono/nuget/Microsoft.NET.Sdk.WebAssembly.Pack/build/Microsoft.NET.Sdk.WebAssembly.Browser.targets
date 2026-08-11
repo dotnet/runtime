@@ -1328,7 +1328,6 @@ Copyright (c) .NET Foundation. All rights reserved.
           DestinationFiles="$(_DotnetTypesDestPath)"
           Condition="Exists('$(_DotnetTypesSourcePath)')"
           SkipUnchangedFiles="true" />
-
   </Target>
 
   <!-- Hook WASM publish telemetry into the workload telemetry pipeline -->
