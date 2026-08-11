@@ -11138,8 +11138,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
                 switch (cnsVal.gtSimdScalableKind)
                 {
                     case SimdScalableRepeated:
-                        printf("0x%016llx, 0x%016llx, 0x%016llx...]",
-                               (unsigned long long)cnsVal.gtSimdScalableIndex,
+                        printf("0x%016llx, 0x%016llx, 0x%016llx...]", (unsigned long long)cnsVal.gtSimdScalableIndex,
                                (unsigned long long)cnsVal.gtSimdScalableIndex,
                                (unsigned long long)cnsVal.gtSimdScalableIndex);
                         break;
