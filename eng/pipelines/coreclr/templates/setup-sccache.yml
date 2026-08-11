@@ -42,22 +42,30 @@ steps:
 
     # Download sccache and configure the environment.
     #
-    # All supported platforms build on x64 hosts, including macOS arm64
-    # cross-builds. The unsuffixed package contains the linux-musl-x64 binary;
-    # macOS uses the osx-x64 package.
+    # The unsuffixed package contains the linux-musl-x64 binary. On macOS,
+    # select the package matching the agent host architecture.
     - script: |
         set -euo pipefail
         sccacheVersion="${{ parameters.sccacheVersion }}"
         osGroup="${{ parameters.osGroup }}"
         sccachePackage="sccache"
-        sccacheSource=()
 
         if [[ "$osGroup" == "osx" ]]; then
-            sccachePackage="sccache.osx-x64"
-            sccacheSource=(--source https://api.nuget.org/v3/index.json)
+            case "$(uname -m)" in
+                arm64)
+                    sccachePackage="sccache.osx-arm64"
+                    ;;
+                x86_64)
+                    sccachePackage="sccache.osx-x64"
+                    ;;
+                *)
+                    echo "Unsupported macOS host architecture: $(uname -m)" >&2
+                    exit 1
+                    ;;
+            esac
         fi
 
-        "$(Build.SourcesDirectory)/eng/common/dotnet.sh" package download "${sccachePackage}@${sccacheVersion}" -o "$(Build.SourcesDirectory)/.packages" -v quiet ${sccacheSource[@]+"${sccacheSource[@]}"}
+        "$(Build.SourcesDirectory)/eng/common/dotnet.sh" package download "${sccachePackage}@${sccacheVersion}" -o "$(Build.SourcesDirectory)/.packages" -v quiet
         sccacheDir="$(Build.SourcesDirectory)/.packages/${sccachePackage}/${sccacheVersion}/tools"
 
         chmod +x "$sccacheDir/sccache"
