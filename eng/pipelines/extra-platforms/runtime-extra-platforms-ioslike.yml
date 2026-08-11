@@ -11,7 +11,7 @@ parameters:
 jobs:
 
 #
-# tvOS
+# iOS
 # Build the whole product using Native AOT and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -23,7 +23,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      - tvos_arm64
+      - ios_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -44,7 +44,7 @@ jobs:
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
-# tvOS
+# iOS
 # Build the whole product using CoreCLR and run libraries tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -56,7 +56,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      - tvos_arm64
+      - ios_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
@@ -79,7 +79,7 @@ jobs:
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
-# tvOS
+# iOS
 # Build the whole product using CoreCLR and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -91,7 +91,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      - tvos_arm64
+      - ios_arm64
     variables:
       - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
         - name: _HelixSource
@@ -122,7 +122,7 @@ jobs:
             extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
-# tvOS
+# iOS
 # Build the whole product using CoreCLR and run libraries smoke tests (Checked)
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -134,7 +134,7 @@ jobs:
     isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
     isiOSLikeOnlyBuild: ${{ parameters.isiOSLikeOnlyBuild }}
     platforms:
-      - tvos_arm64
+      - ios_arm64
     variables:
       # map dependencies variables to local variables
       - name: librariesContainsChange
