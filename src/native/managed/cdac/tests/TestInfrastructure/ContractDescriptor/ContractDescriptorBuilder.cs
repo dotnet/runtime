@@ -29,6 +29,7 @@ public class ContractDescriptorBuilder : MockMemorySpace.Builder
         private bool _created;
         private readonly ContractDescriptorBuilder _parent = parent;
 
+        private int? _version = 2;
         private IReadOnlyDictionary<string, string>? _contracts;
         private IDictionary<DataType, Target.TypeInfo>? _types;
         private IReadOnlyCollection<(string Name, ulong? Value, uint? IndirectIndex, string? StringValue, string? TypeName)>? _globals;
@@ -37,6 +38,12 @@ public class ContractDescriptorBuilder : MockMemorySpace.Builder
 
         public DescriptorBuilder SetContracts(IReadOnlyCollection<string> contracts)
             => SetContracts(contracts.ToDictionary(static c => c, static _ => "c1"));
+
+        public DescriptorBuilder SetVersion(int? version)
+        {
+            _version = version;
+            return this;
+        }
 
         public DescriptorBuilder SetContracts(IReadOnlyDictionary<string, string> contracts)
         {
@@ -157,9 +164,10 @@ public class ContractDescriptorBuilder : MockMemorySpace.Builder
             string metadataGlobalsJson = _globals is not null ? ContractDescriptorHelpers.MakeGlobalsJson(_globals) : string.Empty;
             string metadataSubDescriptorJson = _subDescriptors is not null ? ContractDescriptorHelpers.MakeGlobalsJson(_subDescriptors) : string.Empty;
             string interpolatedContracts = _contracts is not null ? MakeContractsJson() : string.Empty;
+            string interpolatedVersion = _version is int version ? $"\"version\": {version}," : string.Empty;
             byte[] jsonBytes = Encoding.UTF8.GetBytes($$"""
             {
-                "version": 0,
+                {{interpolatedVersion}}
                 "baseline": "empty",
                 "contracts": { {{interpolatedContracts}} },
                 "types": { {{metadataTypesJson}} },
