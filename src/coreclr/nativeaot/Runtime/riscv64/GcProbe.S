@@ -39,8 +39,10 @@
     sd  a2, 0x90(sp)
 
     # Save the FP return registers
+#if __riscv_flen >= 64
     fsd  fa0, 0x98(sp)
     fsd  fa1, 0xa0(sp)
+#endif
     # Slot at sp+0xa8 is alignment padding
 
     # Perform the rest of the PInvokeTransitionFrame initialization.
@@ -64,8 +66,10 @@
     ld  a2, 0x90(sp)
 
     // Restore the FP return registers
+#if __riscv_flen >= 64
     fld  fa0, 0x98(sp)
     fld  fa1, 0xa0(sp)
+#endif
 
     // Restore callee saved registers
     EPILOG_RESTORE_REG_PAIR s1, s2,  0x20

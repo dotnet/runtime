@@ -31,6 +31,7 @@
     .endif
 
     // Safely using available registers for floating-point saves
+#if __riscv_flen >= 64
     fsd  fs0, 0x10(sp)
     fsd  fs1, 0x18(sp)
     fsd  fs2, 0x20(sp)
@@ -43,6 +44,7 @@
     fsd  fs9, 0x58(sp)
     fsd  fs10, 0x60(sp)
     fsd  fs11, 0x68(sp)
+#endif
 
     PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0x78
 
@@ -140,6 +142,7 @@
         // Load FP preserved registers
         //
         addi t3, \regdisplayReg, OFFSETOF__REGDISPLAY__F   // Base address of floating-point registers
+#if __riscv_flen >= 64
         fld  fs0,  0x40(t3)                                // Load fs0
         fld  fs1,  0x48(t3)                                // Load fs1
         fld  fs2,  0x90(t3)                                // Load fs2
@@ -152,6 +155,7 @@
         fld  fs9,  0xc8(t3)                                // Load fs9
         fld  fs10, 0xd0(t3)                                // Load fs10
         fld  fs11, 0xd8(t3)                                // Load fs11
+#endif
 
     .endm
 
@@ -188,6 +192,7 @@
 
         // Save floating-point registers
         addi  t3, \regdisplayReg, OFFSETOF__REGDISPLAY__F
+#if __riscv_flen >= 64
         fsd  fs0,  0x40(t3)
         fsd  fs1,  0x48(t3)
         fsd  fs2,  0x90(t3)
@@ -200,6 +205,7 @@
         fsd  fs9,  0xc8(t3)
         fsd  fs10, 0xd0(t3)
         fsd  fs11, 0xd8(t3)
+#endif
 
 .endm
 
@@ -474,6 +480,7 @@ LOCAL_LABEL(NotHijacked):
         ALLOC_CALL_FUNCLET_FRAME 0x90
 
         // Save floating-point registers
+#if __riscv_flen >= 64
         fsd  fs0,  0x00(sp)
         fsd  fs1,  0x08(sp)
         fsd  fs2,  0x10(sp)
@@ -486,6 +493,7 @@ LOCAL_LABEL(NotHijacked):
         fsd  fs9,  0x48(sp)
         fsd  fs10, 0x50(sp)
         fsd  fs11, 0x58(sp)
+#endif
 
         // Save integer registers
         sd  a0, 0x60(sp)    // Save a0 to a3
@@ -593,6 +601,7 @@ LOCAL_LABEL(DonePopping):
         ALLOC_CALL_FUNCLET_FRAME 0x80
 
         // Save floating-point registers
+#if __riscv_flen >= 64
         fsd  fs0,  0x00(sp)
         fsd  fs1,  0x08(sp)
         fsd  fs2,  0x10(sp)
@@ -605,6 +614,7 @@ LOCAL_LABEL(DonePopping):
         fsd  fs9,  0x48(sp)
         fsd  fs10, 0x50(sp)
         fsd  fs11, 0x58(sp)
+#endif
 
         // Save integer registers
         sd a0, 0x60(sp)  // Save a0 to 0x60
@@ -649,6 +659,7 @@ LOCAL_LABEL(DonePopping):
         amoor.w  a1, a3, (t3)
 
         // Restore floating-point registers
+#if __riscv_flen >= 64
         fld  fs0,  0x00(sp)
         fld  fs1,  0x08(sp)
         fld  fs2,  0x10(sp)
@@ -661,6 +672,7 @@ LOCAL_LABEL(DonePopping):
         fld  fs9,  0x48(sp)
         fld  fs10, 0x50(sp)
         fld  fs11, 0x58(sp)
+#endif
 
         // Free call funclet frame
         FREE_CALL_FUNCLET_FRAME 0x80
@@ -685,6 +697,7 @@ LOCAL_LABEL(DonePopping):
 
     NESTED_ENTRY RhpCallFilterFunclet, _TEXT, NoHandler
         ALLOC_CALL_FUNCLET_FRAME 0x60
+#if __riscv_flen >= 64
         fsd  fs0,  0x00(sp)
         fsd  fs1,  0x08(sp)
         fsd  fs2,  0x10(sp)
@@ -697,6 +710,7 @@ LOCAL_LABEL(DonePopping):
         fsd  fs9,  0x48(sp)
         fsd  fs10, 0x50(sp)
         fsd  fs11, 0x58(sp)
+#endif
 
         ld  t3, OFFSETOF__REGDISPLAY__pFP(a2)
         ld  fp, 0(t3)
@@ -709,6 +723,7 @@ LOCAL_LABEL(DonePopping):
 
     ALTERNATE_ENTRY RhpCallFilterFunclet2
 
+#if __riscv_flen >= 64
         fld  fs0,  0x00(sp)
         fld  fs1,  0x08(sp)
         fld  fs2,  0x10(sp)
@@ -721,6 +736,7 @@ LOCAL_LABEL(DonePopping):
         fld  fs9,  0x48(sp)
         fld  fs10, 0x50(sp)
         fld  fs11, 0x58(sp)
+#endif
 
         FREE_CALL_FUNCLET_FRAME 0x60
         EPILOG_RETURN
