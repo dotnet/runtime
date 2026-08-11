@@ -49,7 +49,10 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration value.</returns>
         public string? this[string key]
         {
-            get => GetConfiguration(_providers, key);
+            get
+            {
+                return ConfigurationEngine.Default.Get(_providers, key)?.Value;
+            }
             set => SetConfiguration(_providers, key, value);
         }
 
@@ -109,21 +112,6 @@ namespace Microsoft.Extensions.Configuration
             {
                 (provider as IDisposable)?.Dispose();
             }
-        }
-
-        internal static string? GetConfiguration(IList<IConfigurationProvider> providers, string key)
-        {
-            for (int i = providers.Count - 1; i >= 0; i--)
-            {
-                IConfigurationProvider provider = providers[i];
-
-                if (provider.TryGet(key, out string? value))
-                {
-                    return value;
-                }
-            }
-
-            return null;
         }
 
         internal static void SetConfiguration(IList<IConfigurationProvider> providers, string key, string? value)
