@@ -88,9 +88,10 @@ public static partial class TestHelper
             if (s_gb18030Encoding is null)
             {
 #if !NETFRAMEWORK
-                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-#endif
+                s_gb18030Encoding = CodePagesEncodingProvider.Instance.GetEncoding("gb18030");
+#else
                 s_gb18030Encoding = Encoding.GetEncoding("gb18030");
+#endif
             }
 
             return s_gb18030Encoding;
