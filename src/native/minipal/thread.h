@@ -47,7 +47,7 @@ extern "C" {
  *
  * @return The current thread ID as a size_t value.
  */
-static inline size_t minipal_get_current_thread_id_no_cache(void)
+inline size_t minipal_get_current_thread_id_no_cache(void)
 {
     size_t tid;
 #if defined(__wasm) && !defined(_REENTRANT)
@@ -89,7 +89,7 @@ extern PLATFORM_THREAD_LOCAL size_t minipal_cached_thread_id;
  *
  * @return The current thread ID as a size_t value.
  */
-static inline size_t minipal_get_current_thread_id(void)
+inline size_t minipal_get_current_thread_id(void)
 {
 #if defined(__wasm) && !defined(_REENTRANT)
     return minipal_get_current_thread_id_no_cache();
@@ -111,7 +111,7 @@ static inline size_t minipal_get_current_thread_id(void)
  * @param name The desired name for the thread.
  * @return 0 on success, or an error code if the operation fails.
  */
-static inline int minipal_set_thread_name(pthread_t thread, const char* name)
+inline int minipal_set_thread_name(pthread_t thread, const char* name)
 {
 #ifdef __wasm
     // WASM does not support pthread_setname_np yet: https://github.com/emscripten-core/emscripten/pull/18751
