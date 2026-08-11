@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Test.Common;
-using System.Text;
 using System.Threading.Tasks;
 
 using Xunit;
@@ -117,9 +116,10 @@ namespace System.Net.Tests
                 },
                 server => server.AcceptConnectionAsync(async connection =>
                 {
-                    byte[] response = Encoding.ASCII.GetBytes("220-" + new string('a', MaxResponseLength - 3));
-                    await connection.Stream.WriteAsync(response);
-                    await connection.Stream.ReadAsync(new byte[1]);
+                    const string ResponsePrefix = "220 ";
+                    const string ResponseTerminator = "\r\n";
+                    string response = ResponsePrefix + new string('a', MaxResponseLength) + ResponseTerminator;
+                    await connection.WriteStringAsync(response);
                 }));
         }
 
