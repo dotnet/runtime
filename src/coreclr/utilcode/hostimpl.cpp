@@ -78,3 +78,14 @@ void CreateCrashDumpIfEnabled(bool stackoverflow)
 {
 }
 #endif
+
+#if defined(ENABLE_CONTRACTS_IMPL) && defined(SELF_NO_HOST)
+// Hostless counterpart to the other stubs in this file: with no EE there is nothing to
+// enforce, so the ReleaseHolder release-path contract hook (declared in holder.h) is a
+// no-op here.
+// See definition in holder.h for more details.
+void ContractReleaseValidate()
+{
+    LIMITED_METHOD_CONTRACT;
+}
+#endif // ENABLE_CONTRACTS_IMPL && SELF_NO_HOST

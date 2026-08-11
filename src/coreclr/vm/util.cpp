@@ -1111,6 +1111,22 @@ lDone: ;
     return param.fRet;
 }
 
+#ifdef ENABLE_CONTRACTS_IMPL
+// Enforcing (hosted) definition of the ReleaseHolder release-path contract hook declared
+// in holder.h. This is the coreclr.dll / static-host side of the pair.
+// See definition in holder.h for more details.
+void ContractReleaseValidate()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+}
+#endif // ENABLE_CONTRACTS_IMPL
+
 namespace GcNotifications
 {
     VOID SetNotification(GcEvtArgs ev)
