@@ -15,7 +15,6 @@
 #include "event.h"
 #include "thread.inl"
 
-#include "gcbridge.h"
 #include "interoplibinterface.h"
 
 using CrossreferenceHandleCallback = void(__stdcall *)(MarkCrossReferencesArgs*);
@@ -70,7 +69,7 @@ void JavaMarshalNative::TriggerClientBridgeProcessing(
     _ASSERTE(GCHeapUtilities::IsGCInProgress());
 
     size_t pendingBridgeHandleCount;
-    uintptr_t* pendingBridgeHandles = GetPendingBridgeHandles(&pendingBridgeHandleCount);
+    uintptr_t* pendingBridgeHandles = GCHeapUtilities::GetGCHeap()->GetPendingBridgeHandles(&pendingBridgeHandleCount);
 
     _ASSERTE(!g_GCBridgeActive);
 
@@ -135,7 +134,7 @@ extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
 
         GCHeapUtilities::GetGCHeap()->NullBridgeObjectsWeakRefs(length, unreachableObjectHandles);
         size_t pendingBridgeHandleCount;
-        uintptr_t* pendingBridgeHandles = GetPendingBridgeHandles(&pendingBridgeHandleCount);
+        uintptr_t* pendingBridgeHandles = GCHeapUtilities::GetGCHeap()->GetPendingBridgeHandles(&pendingBridgeHandleCount);
         ClearPendingBridgeBits(pendingBridgeHandles, pendingBridgeHandleCount);
 
         IGCHandleManager* pHandleManager = GCHandleUtilities::GetGCHandleManager();
