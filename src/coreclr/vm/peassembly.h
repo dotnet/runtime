@@ -325,7 +325,7 @@ private:
 
 #ifdef DACCESS_COMPILE
     // just to make the DAC and GCC happy.
-    ~PEAssembly() {};
+    ~PEAssembly() = default;
     PEAssembly() = default;
 #else
     PEAssembly(
