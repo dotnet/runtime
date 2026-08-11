@@ -29,22 +29,22 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
     {
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: RA: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->Ra, pSrc->Ra, static_cast<DWORD>(DT_CONTEXT_CONTROL)));
+             pDst->Ra, pSrc->Ra, static_cast<unsigned int>(DT_CONTEXT_CONTROL)));
         pDst->Ra = pSrc->Ra;
 
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: SP: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->Sp, pSrc->Sp, static_cast<DWORD>(DT_CONTEXT_CONTROL)));
+             pDst->Sp, pSrc->Sp, static_cast<unsigned int>(DT_CONTEXT_CONTROL)));
         pDst->Sp = pSrc->Sp;
 
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: FP: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->Fp, pSrc->Fp, static_cast<DWORD>(DT_CONTEXT_CONTROL)));
+             pDst->Fp, pSrc->Fp, static_cast<unsigned int>(DT_CONTEXT_CONTROL)));
         pDst->Fp = pSrc->Fp;
 
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: PC: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->Pc, pSrc->Pc, static_cast<DWORD>(DT_CONTEXT_CONTROL)));
+             pDst->Pc, pSrc->Pc, static_cast<unsigned int>(DT_CONTEXT_CONTROL)));
         pDst->Pc = pSrc->Pc;
     }
 
