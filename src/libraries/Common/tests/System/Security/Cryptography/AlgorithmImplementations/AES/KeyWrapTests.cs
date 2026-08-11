@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Linq;
 using Test.Cryptography;
 using Xunit;
 
@@ -37,10 +38,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         [Fact]
         public static void NotValidForAesCsp()
         {
-            byte[] input = new byte[16];
+            byte[] input = new byte[24];
 
             using (Aes aes = new AesCryptoServiceProvider())
             {
+                Assert.Throws<NotSupportedException>(() => aes.EncryptKeyWrap(input));
+                Assert.Throws<NotSupportedException>(() => aes.DecryptKeyWrap(input));
                 Assert.Throws<NotSupportedException>(() => aes.EncryptKeyWrapPadded(input));
                 Assert.Throws<NotSupportedException>(() => aes.DecryptKeyWrapPadded(input));
             }
@@ -905,6 +908,535 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 Plaintext = plaintext;
                 Ciphertext = ciphertext;
             }
+
+            public override string ToString()
+            {
+                return Name;
+            }
+        }
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    public sealed class KeyWrapRfc3394Tests_AesCreate_KeyProp : KeyWrapRfc3394Tests
+    {
+        protected override Aes CreateKey(byte[] key)
+        {
+            Aes aes = Aes.Create();
+            aes.Key = key;
+            return aes;
+        }
+    }
+
+    [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    public sealed class KeyWrapRfc3394Tests_AesCreate_SetKey : KeyWrapRfc3394Tests
+    {
+        protected override Aes CreateKey(byte[] key)
+        {
+            Aes aes = Aes.Create();
+            aes.SetKey(key);
+            return aes;
+        }
+    }
+
+    [PlatformSpecific(TestPlatforms.Windows)]
+    public sealed class KeyWrapRfc3394Tests_AesCng : KeyWrapRfc3394Tests
+    {
+        protected override Aes CreateKey(byte[] key)
+        {
+            Aes aes = new AesCng();
+            aes.Key = key;
+            return aes;
+        }
+    }
+
+    public static class KeyWrapRfc3394ContractTests
+    {
+        [Theory]
+        [InlineData(16, 24)]
+        [InlineData(24, 32)]
+        [InlineData(32, 40)]
+        [InlineData(0x7FFF_FFF0, 0x7FFF_FFF8)]
+        public static void GetKeyWrapLength(int plaintextLength, int expectedLength)
+        {
+            Assert.Equal(expectedLength, Aes.GetKeyWrapLength(plaintextLength));
+        }
+
+        [Theory]
+        [InlineData(int.MinValue)]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(8)]
+        [InlineData(15)]
+        [InlineData(17)]
+        [InlineData(0x7FFF_FFF8)]
+        [InlineData(int.MaxValue)]
+        public static void GetKeyWrapLength_Invalid(int plaintextLength)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>(
+                "plaintextLengthInBytes",
+                () => Aes.GetKeyWrapLength(plaintextLength));
+        }
+
+        [Fact]
+        public static void InvalidPlaintextNeverCallsCore()
+        {
+            using (TestAes key = new TestAes())
+            {
+                byte[] destination = new byte[32];
+
+                AssertExtensions.Throws<ArgumentNullException>("plaintext", () => key.EncryptKeyWrap(null));
+
+                foreach (int length in new[] { 0, 1, 8, 15, 17, 23, 25 })
+                {
+                    byte[] plaintext = new byte[length];
+
+                    AssertExtensions.Throws<ArgumentException>("plaintext", () => key.EncryptKeyWrap(plaintext));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "plaintext",
+                        () => key.EncryptKeyWrap(new ReadOnlySpan<byte>(plaintext)));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "plaintext",
+                        () => key.EncryptKeyWrap(plaintext, destination));
+                }
+
+                Assert.Equal(0, key.EncryptCallCount);
+            }
+        }
+
+        [Fact]
+        public static void InvalidCiphertextNeverCallsCore()
+        {
+            using (TestAes key = new TestAes())
+            {
+                byte[] destination = new byte[32];
+
+                AssertExtensions.Throws<ArgumentNullException>("ciphertext", () => key.DecryptKeyWrap(null));
+
+                foreach (int length in new[] { 0, 8, 16, 23, 25, 31 })
+                {
+                    byte[] ciphertext = new byte[length];
+
+                    AssertExtensions.Throws<ArgumentException>("ciphertext", () => key.DecryptKeyWrap(ciphertext));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "ciphertext",
+                        () => key.DecryptKeyWrap(new ReadOnlySpan<byte>(ciphertext)));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "ciphertext",
+                        () => key.DecryptKeyWrap(ciphertext, destination));
+                    AssertExtensions.Throws<ArgumentException>(
+                        "ciphertext",
+                        () => key.TryDecryptKeyWrap(ciphertext, destination, out _));
+                }
+
+                Assert.Equal(0, key.DecryptCallCount);
+            }
+        }
+
+        [Fact]
+        public static void EncryptCoreReceivesExactBuffers()
+        {
+            using (TestAes key = new TestAes())
+            {
+                byte[] plaintext = new byte[16];
+                byte[] destination = new byte[24];
+
+                key.EncryptOverride =
+                    (source, output) =>
+                    {
+                        AssertExtensions.TrueExpression(source.Overlaps(plaintext));
+                        AssertExtensions.TrueExpression(output.Overlaps(destination));
+                        Assert.Equal(source.Length + 8, output.Length);
+                    };
+
+                key.EncryptKeyWrap(plaintext, destination);
+                Assert.Equal(1, key.EncryptCallCount);
+
+                for (int length = 0; length <= destination.Length + 1; length++)
+                {
+                    if (length == destination.Length)
+                    {
+                        continue;
+                    }
+
+                    AssertExtensions.Throws<ArgumentException>(
+                        "destination",
+                        () => key.EncryptKeyWrap(plaintext, new byte[length]));
+                }
+
+                Assert.Equal(1, key.EncryptCallCount);
+            }
+        }
+
+        [Fact]
+        public static void DecryptCoreReceivesExactBuffers()
+        {
+            using (TestAes key = new TestAes())
+            {
+                byte[] ciphertext = new byte[24];
+                byte[] destination = new byte[24];
+
+                key.DecryptOverride =
+                    (source, output) =>
+                    {
+                        AssertExtensions.TrueExpression(source.Overlaps(ciphertext));
+                        AssertExtensions.TrueExpression(output.Overlaps(destination));
+                        Assert.Equal(source.Length - 8, output.Length);
+                        output.Fill(0x5A);
+                        return output.Length;
+                    };
+
+                int written = key.DecryptKeyWrap(ciphertext, destination);
+                Assert.Equal(16, written);
+                Assert.Equal(1, key.DecryptCallCount);
+                AssertExtensions.TrueExpression(destination.AsSpan(0, written).IndexOfAnyExcept((byte)0x5A) == -1);
+                AssertExtensions.TrueExpression(destination.AsSpan(written).IndexOfAnyExcept((byte)0) == -1);
+
+                destination.AsSpan().Clear();
+                AssertExtensions.TrueExpression(key.TryDecryptKeyWrap(ciphertext, destination, out written));
+                Assert.Equal(16, written);
+                Assert.Equal(2, key.DecryptCallCount);
+
+                for (int length = 0; length < 16; length++)
+                {
+                    byte[] tooShort = new byte[length];
+
+                    AssertExtensions.Throws<ArgumentException>(
+                        "destination",
+                        () => key.DecryptKeyWrap(ciphertext, tooShort));
+                    AssertExtensions.FalseExpression(key.TryDecryptKeyWrap(ciphertext, tooShort, out written));
+                    Assert.Equal(0, written);
+                }
+
+                Assert.Equal(2, key.DecryptCallCount);
+            }
+        }
+
+        [Theory]
+        [InlineData(15)]
+        [InlineData(17)]
+        public static void DecryptCoreMustReportExactLength(int reportedLength)
+        {
+            using (TestAes key = new TestAes())
+            {
+                byte[] destination = new byte[16];
+                destination.AsSpan().Fill(0xCC);
+
+                key.DecryptOverride =
+                    (source, output) =>
+                    {
+                        output.Fill(0x5A);
+                        return reportedLength;
+                    };
+
+                Assert.Throws<CryptographicException>(() => key.DecryptKeyWrap(new byte[24], destination));
+                AssertExtensions.TrueExpression(destination.AsSpan().IndexOfAnyExcept((byte)0) == -1);
+            }
+        }
+
+        [Fact]
+        public static void BuffersMustNotOverlap()
+        {
+            using (TestAes key = new TestAes())
+            {
+                byte[] buffer = new byte[48];
+
+                AssertExtensions.Throws<CryptographicException>(
+                    () => key.EncryptKeyWrap(buffer.AsSpan(16, 16), buffer.AsSpan(8, 24)));
+                AssertExtensions.Throws<CryptographicException>(
+                    () => key.DecryptKeyWrap(buffer.AsSpan(0, 24), buffer.AsSpan(16, 16)));
+                AssertExtensions.Throws<CryptographicException>(
+                    () => key.TryDecryptKeyWrap(buffer.AsSpan(0, 24), buffer.AsSpan(16, 16), out _));
+
+                Assert.Equal(0, key.EncryptCallCount);
+                Assert.Equal(0, key.DecryptCallCount);
+
+                key.EncryptOverride = (source, destination) => { };
+                key.DecryptOverride = (source, destination) => destination.Length;
+
+                key.EncryptKeyWrap(buffer.AsSpan(24, 16), buffer.AsSpan(0, 24));
+                key.DecryptKeyWrap(buffer.AsSpan(0, 24), buffer.AsSpan(24, 16));
+
+                Assert.Equal(1, key.EncryptCallCount);
+                Assert.Equal(1, key.DecryptCallCount);
+            }
+        }
+
+        private sealed class TestAes : Aes
+        {
+            internal delegate void EncryptCallback(ReadOnlySpan<byte> source, Span<byte> destination);
+            internal delegate int DecryptCallback(ReadOnlySpan<byte> source, Span<byte> destination);
+
+            internal int EncryptCallCount { get; private set; }
+            internal int DecryptCallCount { get; private set; }
+            internal EncryptCallback EncryptOverride { get; set; }
+            internal DecryptCallback DecryptOverride { get; set; }
+
+            public override void GenerateIV()
+            {
+            }
+
+            public override void GenerateKey()
+            {
+            }
+
+            public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
+            {
+                Assert.Fail("CreateDecryptor should never be called");
+                return null;
+            }
+
+            public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
+            {
+                Assert.Fail("CreateEncryptor should never be called");
+                return null;
+            }
+
+            protected override void EncryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                EncryptCallCount++;
+
+                if (EncryptOverride is not null)
+                {
+                    EncryptOverride(source, destination);
+                    return;
+                }
+
+                Assert.Fail("Unexpected call to EncryptKeyWrapCore");
+            }
+
+            protected override int DecryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                DecryptCallCount++;
+
+                if (DecryptOverride is not null)
+                {
+                    return DecryptOverride(source, destination);
+                }
+
+                Assert.Fail("Unexpected call to DecryptKeyWrapCore");
+                return -1;
+            }
+        }
+    }
+
+    public abstract class KeyWrapRfc3394Tests
+    {
+        protected abstract Aes CreateKey(byte[] key);
+
+        [Theory]
+        [MemberData(nameof(KnownAnswerTests))]
+        public void VerifyKnownAnswer(KnownAnswerTest kat)
+        {
+            using (Aes key = CreateKey(kat.Key))
+            {
+                VerifyWrap(key, kat.Plaintext, kat.Ciphertext);
+                VerifyUnwrap(key, kat.Ciphertext, kat.Plaintext);
+            }
+        }
+
+        [Theory]
+        [InlineData(128)]
+        [InlineData(192)]
+        [InlineData(256)]
+        public void VerifyRoundtrip(int kekSize)
+        {
+            byte[] kek = new byte[kekSize / 8];
+            RandomNumberGenerator.Fill(kek);
+
+            using (Aes key = CreateKey(kek))
+            {
+                for (int plaintextLength = 16; plaintextLength <= 96; plaintextLength += 8)
+                {
+                    byte[] plaintext = new byte[plaintextLength];
+                    RandomNumberGenerator.Fill(plaintext);
+
+                    byte[] ciphertext = key.EncryptKeyWrap(plaintext);
+                    Assert.Equal(plaintextLength + 8, ciphertext.Length);
+                    VerifyWrap(key, plaintext, ciphertext);
+                    VerifyUnwrap(key, ciphertext, plaintext);
+                }
+            }
+        }
+
+        [Fact]
+        public void CorruptedCiphertextFailsToUnwrap()
+        {
+            KnownAnswerTest kat = KnownAnswerTests.Select(data => (KnownAnswerTest)data[0]).First();
+
+            using (Aes key = CreateKey(kat.Key))
+            {
+                for (int i = 0; i < kat.Ciphertext.Length; i++)
+                {
+                    byte[] corrupted = kat.Ciphertext.ToArray();
+                    corrupted[i] ^= 0x01;
+                    VerifyUnwrapFails(key, corrupted);
+                }
+            }
+        }
+
+        [Fact]
+        public void WrongKeyFailsToUnwrap()
+        {
+            KnownAnswerTest kat = KnownAnswerTests.Select(data => (KnownAnswerTest)data[0]).First();
+            byte[] wrongKey = kat.Key.ToArray();
+            wrongKey[0] ^= 0x01;
+
+            using (Aes key = CreateKey(wrongKey))
+            {
+                VerifyUnwrapFails(key, kat.Ciphertext);
+            }
+        }
+
+        [Theory]
+        [InlineData("715FBC69210B823F7DFEFAB3B887E4C1162B29C304609004")] // A6A6A6A6 A6A6A6A7
+        [InlineData("374DCD513393163C165BAAEB5887E05FFD05F0B792983C3B")] // A6A6A6A7 A6A6A6A6
+        public void InvalidAivHalfFailsToUnwrap(string ciphertextHex)
+        {
+            byte[] kek = "000102030405060708090A0B0C0D0E0F".HexToByteArray();
+            byte[] ciphertext = ciphertextHex.HexToByteArray();
+
+            using (Aes key = CreateKey(kek))
+            {
+                VerifyUnwrapFails(key, ciphertext);
+            }
+        }
+
+        private static void VerifyWrap(Aes key, byte[] plaintext, byte[] ciphertext)
+        {
+            byte[] wrapped = key.EncryptKeyWrap(plaintext);
+            AssertExtensions.SequenceEqual(ciphertext, wrapped);
+
+            wrapped = key.EncryptKeyWrap(new ReadOnlySpan<byte>(plaintext));
+            AssertExtensions.SequenceEqual(ciphertext, wrapped);
+
+            wrapped.AsSpan().Clear();
+            key.EncryptKeyWrap(plaintext, wrapped);
+            AssertExtensions.SequenceEqual(ciphertext, wrapped);
+        }
+
+        private static void VerifyUnwrap(Aes key, byte[] ciphertext, byte[] plaintext)
+        {
+            byte[] unwrapped = key.DecryptKeyWrap(ciphertext);
+            AssertExtensions.SequenceEqual(plaintext, unwrapped);
+
+            unwrapped = key.DecryptKeyWrap(new ReadOnlySpan<byte>(ciphertext));
+            AssertExtensions.SequenceEqual(plaintext, unwrapped);
+
+            byte[] destination = new byte[plaintext.Length + 8];
+            destination.AsSpan().Fill(0xCC);
+
+            int written = key.DecryptKeyWrap(ciphertext, destination);
+            Assert.Equal(plaintext.Length, written);
+            AssertExtensions.SequenceEqual(
+                new ReadOnlySpan<byte>(plaintext),
+                destination.AsSpan(0, written));
+            AssertExtensions.TrueExpression(destination.AsSpan(written).IndexOfAnyExcept((byte)0xCC) == -1);
+
+            destination.AsSpan().Fill(0xCC);
+            AssertExtensions.TrueExpression(key.TryDecryptKeyWrap(ciphertext, destination, out written));
+            Assert.Equal(plaintext.Length, written);
+            AssertExtensions.SequenceEqual(
+                new ReadOnlySpan<byte>(plaintext),
+                destination.AsSpan(0, written));
+            AssertExtensions.TrueExpression(destination.AsSpan(written).IndexOfAnyExcept((byte)0xCC) == -1);
+
+            byte[] tooShort = new byte[plaintext.Length - 1];
+            tooShort.AsSpan().Fill(0xCC);
+
+            AssertExtensions.Throws<ArgumentException>(
+                "destination",
+                () => key.DecryptKeyWrap(ciphertext, tooShort));
+            AssertExtensions.TrueExpression(tooShort.AsSpan().IndexOfAnyExcept((byte)0xCC) == -1);
+
+            AssertExtensions.FalseExpression(key.TryDecryptKeyWrap(ciphertext, tooShort, out written));
+            Assert.Equal(0, written);
+            AssertExtensions.TrueExpression(tooShort.AsSpan().IndexOfAnyExcept((byte)0xCC) == -1);
+        }
+
+        private static void VerifyUnwrapFails(Aes key, byte[] ciphertext)
+        {
+            byte[] destination = new byte[ciphertext.Length - 8];
+
+            Assert.ThrowsAny<CryptographicException>(() => key.DecryptKeyWrap(ciphertext));
+            Assert.ThrowsAny<CryptographicException>(
+                () => key.DecryptKeyWrap(new ReadOnlySpan<byte>(ciphertext)));
+
+            destination.AsSpan().Fill(0xCC);
+            Assert.ThrowsAny<CryptographicException>(() => key.DecryptKeyWrap(ciphertext, destination));
+            AssertExtensions.TrueExpression(destination.AsSpan().IndexOfAnyExcept((byte)0) == -1);
+
+            destination.AsSpan().Fill(0xCC);
+            Assert.ThrowsAny<CryptographicException>(
+                () => key.TryDecryptKeyWrap(ciphertext, destination, out _));
+            AssertExtensions.TrueExpression(destination.AsSpan().IndexOfAnyExcept((byte)0) == -1);
+        }
+
+        public static IEnumerable<object[]> KnownAnswerTests { get; } =
+            [
+                new object[]
+                {
+                    new KnownAnswerTest(
+                        "RFC 3394 Section 4.1",
+                        "000102030405060708090A0B0C0D0E0F".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF".HexToByteArray(),
+                        "1FA68B0A8112B447AEF34BD8FB5A7B829D3E862371D2CFE5".HexToByteArray())
+                },
+                new object[]
+                {
+                    new KnownAnswerTest(
+                        "RFC 3394 Section 4.2",
+                        "000102030405060708090A0B0C0D0E0F1011121314151617".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF".HexToByteArray(),
+                        "96778B25AE6CA435F92B5B97C050AED2468AB8A17AD84E5D".HexToByteArray())
+                },
+                new object[]
+                {
+                    new KnownAnswerTest(
+                        "RFC 3394 Section 4.3",
+                        "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF".HexToByteArray(),
+                        "64E8C3F9CE0F5BA263E9777905818A2A93C8191E7D6E8AE7".HexToByteArray())
+                },
+                new object[]
+                {
+                    new KnownAnswerTest(
+                        "RFC 3394 Section 4.4",
+                        "000102030405060708090A0B0C0D0E0F1011121314151617".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF0001020304050607".HexToByteArray(),
+                        "031D33264E15D33268F24EC260743EDCE1C6C7DDEE725A936BA814915C6762D2".HexToByteArray())
+                },
+                new object[]
+                {
+                    new KnownAnswerTest(
+                        "RFC 3394 Section 4.5",
+                        "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF0001020304050607".HexToByteArray(),
+                        "A8F9BC1612C68B3FF6E6F4FBE30E71E4769C8B80A32CB8958CD5D17D6B254DA1".HexToByteArray())
+                },
+                new object[]
+                {
+                    new KnownAnswerTest(
+                        "RFC 3394 Section 4.6",
+                        "000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".HexToByteArray(),
+                        "00112233445566778899AABBCCDDEEFF000102030405060708090A0B0C0D0E0F".HexToByteArray(),
+                        "28C9F404C4B810F4CBCCB35CFB87F8263F5786E2D80ED326CBC7F0E71A99F43BFB988B9B7A02DD21".HexToByteArray())
+                },
+            ];
+
+        public readonly struct KnownAnswerTest
+        {
+            public KnownAnswerTest(string name, byte[] key, byte[] plaintext, byte[] ciphertext)
+            {
+                Name = name;
+                Key = key;
+                Plaintext = plaintext;
+                Ciphertext = ciphertext;
+            }
+
+            public string Name { get; }
+            public byte[] Key { get; }
+            public byte[] Plaintext { get; }
+            public byte[] Ciphertext { get; }
 
             public override string ToString()
             {

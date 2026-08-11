@@ -11,6 +11,8 @@ namespace System.Security.Cryptography
 {
     public abstract class Aes : SymmetricAlgorithm
     {
+        private const uint Rfc3394DefaultAIV = 0xA6A6A6A6;
+
         protected Aes()
         {
             LegalBlockSizesValue = s_legalBlockSizes.CloneKeySizesArray();
@@ -33,6 +35,346 @@ namespace System.Security.Cryptography
         public static new Aes? Create(string algorithmName)
         {
             return (Aes?)CryptoConfig.CreateFromName(algorithmName);
+        }
+
+        /// <summary>
+        ///   Computes the output length of the IETF RFC 3394 AES Key Wrap algorithm
+        ///   for the specified plaintext length.
+        /// </summary>
+        /// <param name="plaintextLengthInBytes">
+        ///   The length of the plaintext to be wrapped, in bytes.
+        /// </param>
+        /// <returns>
+        ///   The length of the key wrap for the specified plaintext.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///   <para>
+        ///     <paramref name="plaintextLengthInBytes"/> is less than 16 or is not a multiple of 8.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     <paramref name="plaintextLengthInBytes"/> represents a plaintext length
+        ///     that, when wrapped, has a length that cannot be represented as a signed
+        ///     32-bit integer.
+        ///   </para>
+        /// </exception>
+        public static int GetKeyWrapLength(int plaintextLengthInBytes)
+        {
+            if (plaintextLengthInBytes < 16 || plaintextLengthInBytes % 8 != 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(plaintextLengthInBytes),
+                    SR.Cryptography_KeyWrap_InvalidPlaintextLength);
+            }
+
+            const int MaxSupportedValue = 0x7FFF_FFF0;
+
+            if (plaintextLengthInBytes > MaxSupportedValue)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(plaintextLengthInBytes),
+                    SR.Cryptography_PlaintextTooLarge);
+            }
+
+            return plaintextLengthInBytes + 8;
+        }
+
+        /// <summary>
+        ///   Wraps a key using the IETF RFC 3394 AES Key Wrap algorithm.
+        /// </summary>
+        /// <param name="plaintext">The data to wrap.</param>
+        /// <returns>The wrapped data.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="plaintext"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="plaintext"/> is shorter than 16 bytes or has a length that is not a multiple of 8 bytes.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error occurred during the cryptographic operation.</exception>
+        public byte[] EncryptKeyWrap(byte[] plaintext)
+        {
+            ArgumentNullException.ThrowIfNull(plaintext);
+
+            return EncryptKeyWrap(new ReadOnlySpan<byte>(plaintext));
+        }
+
+        /// <summary>
+        ///   Wraps a key using the IETF RFC 3394 AES Key Wrap algorithm.
+        /// </summary>
+        /// <param name="plaintext">The data to wrap.</param>
+        /// <returns>The wrapped data.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="plaintext"/> is shorter than 16 bytes or has a length that is not a multiple of 8 bytes.
+        /// </exception>
+        /// <exception cref="CryptographicException">An error occurred during the cryptographic operation.</exception>
+        public byte[] EncryptKeyWrap(ReadOnlySpan<byte> plaintext)
+        {
+            if (plaintext.Length < 16 || plaintext.Length % 8 != 0)
+            {
+                throw new ArgumentException(SR.Cryptography_KeyWrap_InvalidPlaintextLength, nameof(plaintext));
+            }
+
+            byte[] output = new byte[GetKeyWrapLength(plaintext.Length)];
+            EncryptKeyWrapCore(plaintext, output);
+            return output;
+        }
+
+        /// <summary>
+        ///   Wraps a key using the IETF RFC 3394 AES Key Wrap algorithm,
+        ///   writing the result to a specified buffer.
+        /// </summary>
+        /// <param name="plaintext">The data to wrap.</param>
+        /// <param name="destination">The buffer to receive the wrapped data.</param>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="plaintext"/> is shorter than 16 bytes or has a length that is not a multiple of 8 bytes.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="destination"/> is not precisely sized.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="plaintext"/> and <paramref name="destination"/> overlap.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred during the cryptographic operation.</para>
+        /// </exception>
+        /// <seealso cref="GetKeyWrapLength"/>
+        public void EncryptKeyWrap(ReadOnlySpan<byte> plaintext, Span<byte> destination)
+        {
+            if (plaintext.Length < 16 || plaintext.Length % 8 != 0)
+            {
+                throw new ArgumentException(SR.Cryptography_KeyWrap_InvalidPlaintextLength, nameof(plaintext));
+            }
+
+            int requiredLength = GetKeyWrapLength(plaintext.Length);
+
+            if (destination.Length != requiredLength)
+            {
+                throw new ArgumentException(
+                    SR.Format(SR.Argument_DestinationImprecise, requiredLength),
+                    nameof(destination));
+            }
+
+            if (plaintext.Overlaps(destination))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
+            }
+
+            EncryptKeyWrapCore(plaintext, destination);
+        }
+
+        /// <summary>
+        ///   Unwraps a key that was wrapped using the IETF RFC 3394 AES Key Wrap algorithm.
+        /// </summary>
+        /// <param name="ciphertext">The data to unwrap.</param>
+        /// <returns>The unwrapped key.</returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="ciphertext"/> is <see langword="null"/>.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="ciphertext"/> is shorter than 24 bytes or has a length that is not a multiple of 8 bytes.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The unwrap algorithm failed to unwrap the ciphertext, or an error occurred during the cryptographic operation.
+        /// </exception>
+        public byte[] DecryptKeyWrap(byte[] ciphertext)
+        {
+            ArgumentNullException.ThrowIfNull(ciphertext);
+
+            return DecryptKeyWrap(new ReadOnlySpan<byte>(ciphertext));
+        }
+
+        /// <summary>
+        ///   Unwraps a key that was wrapped using the IETF RFC 3394 AES Key Wrap algorithm.
+        /// </summary>
+        /// <param name="ciphertext">The data to unwrap.</param>
+        /// <returns>The unwrapped key.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="ciphertext"/> is shorter than 24 bytes or has a length that is not a multiple of 8 bytes.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   The unwrap algorithm failed to unwrap the ciphertext, or an error occurred during the cryptographic operation.
+        /// </exception>
+        public byte[] DecryptKeyWrap(ReadOnlySpan<byte> ciphertext)
+        {
+            if (ciphertext.Length < 24 || ciphertext.Length % 8 != 0)
+            {
+                throw new ArgumentException(SR.Cryptography_KeyWrap_InvalidCiphertextLength, nameof(ciphertext));
+            }
+
+            byte[] output = new byte[ciphertext.Length - 8];
+            int written = DecryptKeyWrap(ciphertext, output);
+            Debug.Assert(written == output.Length);
+            return output;
+        }
+
+        /// <summary>
+        ///   Unwraps a key that was wrapped using the IETF RFC 3394 AES Key Wrap algorithm.
+        /// </summary>
+        /// <param name="ciphertext">The data to unwrap.</param>
+        /// <param name="destination">The buffer to receive the unwrapped key.</param>
+        /// <returns>The number of bytes in the unwrapped key.</returns>
+        /// <exception cref="ArgumentException">
+        ///   <para>
+        ///     <paramref name="ciphertext"/> is shorter than 24 bytes or has a length that is not a multiple of 8 bytes.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="destination"/> is too short to hold the unwrapped key.</para>
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="ciphertext"/> and <paramref name="destination"/> overlap.</para>
+        ///   <para>-or-</para>
+        ///   <para>The unwrap algorithm failed to unwrap the ciphertext.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred during the cryptographic operation.</para>
+        /// </exception>
+        public int DecryptKeyWrap(ReadOnlySpan<byte> ciphertext, Span<byte> destination)
+        {
+            if (ciphertext.Length < 24 || ciphertext.Length % 8 != 0)
+            {
+                throw new ArgumentException(SR.Cryptography_KeyWrap_InvalidCiphertextLength, nameof(ciphertext));
+            }
+
+            if (TryDecryptKeyWrap(ciphertext, destination, out int bytesWritten))
+            {
+                return bytesWritten;
+            }
+
+            throw new ArgumentException(SR.Argument_DestinationTooShort, nameof(destination));
+        }
+
+        /// <summary>
+        ///   Attempts to unwrap a key that was wrapped using the IETF RFC 3394 AES Key Wrap algorithm.
+        /// </summary>
+        /// <param name="ciphertext">The data to unwrap.</param>
+        /// <param name="destination">The buffer to receive the unwrapped key.</param>
+        /// <param name="bytesWritten">
+        ///   When this method returns, contains the number of bytes written to <paramref name="destination"/>.
+        ///   This parameter is treated as uninitialized.
+        /// </param>
+        /// <returns>
+        ///   <see langword="true"/> if <paramref name="destination"/> is long enough to receive the unwrapped key;
+        ///   otherwise, <see langword="false"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="ciphertext"/> is shorter than 24 bytes or has a length that is not a multiple of 8 bytes.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   <para><paramref name="ciphertext"/> and <paramref name="destination"/> overlap.</para>
+        ///   <para>-or-</para>
+        ///   <para>The unwrap algorithm failed to unwrap the ciphertext.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred during the cryptographic operation.</para>
+        /// </exception>
+        public bool TryDecryptKeyWrap(ReadOnlySpan<byte> ciphertext, Span<byte> destination, out int bytesWritten)
+        {
+            if (ciphertext.Length < 24 || ciphertext.Length % 8 != 0)
+            {
+                throw new ArgumentException(SR.Cryptography_KeyWrap_InvalidCiphertextLength, nameof(ciphertext));
+            }
+
+            int requiredLength = ciphertext.Length - 8;
+
+            if (destination.Length < requiredLength)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            destination = destination.Slice(0, requiredLength);
+
+            if (ciphertext.Overlaps(destination))
+            {
+                throw new CryptographicException(SR.Cryptography_OverlappingBuffers);
+            }
+
+            try
+            {
+                int written = DecryptKeyWrapCore(ciphertext, destination);
+
+                if (written != requiredLength)
+                {
+                    // The override has violated the rules of the algorithm.
+                    throw new CryptographicException();
+                }
+
+                bytesWritten = written;
+                return true;
+            }
+            catch
+            {
+                CryptographicOperations.ZeroMemory(destination);
+                throw;
+            }
+        }
+
+        /// <summary>
+        ///   Unwraps a key that was wrapped using the IETF RFC 3394 AES Key Wrap algorithm.
+        /// </summary>
+        /// <param name="source">The data to unwrap.</param>
+        /// <param name="destination">The buffer to receive the unwrapped key.</param>
+        /// <returns>The number of bytes in the unwrapped key.</returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>The unwrap algorithm failed to unwrap the ciphertext.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred during the cryptographic operation.</para>
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     When called by the base class, <paramref name="source"/> is pre-validated to be at least 24 bytes long
+        ///     and a multiple of 8 bytes.
+        ///   </para>
+        ///   <para>
+        ///     When called by the base class, <paramref name="destination"/> will always be exactly 8 bytes shorter
+        ///     than <paramref name="source"/>.
+        ///   </para>
+        /// </remarks>
+        protected virtual int DecryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            int plaintextLength = source.Length - 8;
+
+            ulong iv = Rfc3394Unwrap(
+                source,
+                destination,
+                this,
+                static (instance, source, destination) => instance.DecryptEcb(source, destination, PaddingMode.None));
+
+            uint aivMismatch =
+                ((uint)(iv >> 32) ^ Rfc3394DefaultAIV) |
+                ((uint)iv ^ Rfc3394DefaultAIV);
+
+            if (aivMismatch != 0)
+            {
+                throw new CryptographicException(SR.Cryptography_KeyWrap_DecryptFailed);
+            }
+
+            return plaintextLength;
+        }
+
+        /// <summary>
+        ///   Wraps a key using the IETF RFC 3394 AES Key Wrap algorithm,
+        ///   writing the result to a specified buffer.
+        /// </summary>
+        /// <param name="source">The data to wrap.</param>
+        /// <param name="destination">The buffer to receive the wrapped data.</param>
+        /// <exception cref="CryptographicException">An error occurred during the cryptographic operation.</exception>
+        /// <remarks>
+        ///   <para>
+        ///     When called by the base class, <paramref name="source"/> is pre-validated to be at least 16 bytes long
+        ///     and a multiple of 8 bytes.
+        ///   </para>
+        ///   <para>
+        ///     When called by the base class, <paramref name="destination"/> is pre-validated to be exactly the length
+        ///     returned by <see cref="GetKeyWrapLength"/> for the given input.
+        ///   </para>
+        /// </remarks>
+        protected virtual void EncryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
+        {
+            Rfc3394Wrap(
+                ((ulong)Rfc3394DefaultAIV << 32) | Rfc3394DefaultAIV,
+                source,
+                destination,
+                this,
+                static (instance, source, destination) => instance.EncryptEcb(source, destination, PaddingMode.None));
         }
 
         /// <summary>
@@ -489,7 +831,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(source.Length % 8 == 0);
             Debug.Assert(source.Length >= 16);
-            Debug.Assert(destination.Length == GetKeyWrapPaddedLength(source.Length));
+            Debug.Assert(destination.Length == source.Length + 8);
 
             Span<byte> B = stackalloc byte[16];
             Span<byte> A = B.Slice(0, 8);
