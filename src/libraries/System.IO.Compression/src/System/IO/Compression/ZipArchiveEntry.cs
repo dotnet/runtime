@@ -620,7 +620,7 @@ namespace System.IO.Compression
         /// </summary>
         internal void ReadEncryptionSaltIfNeeded()
         {
-            if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser())
+            if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
             {
                 return;
             }

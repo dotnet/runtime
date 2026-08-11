@@ -172,7 +172,7 @@ public partial class ZipArchiveEntry
     /// </summary>
     internal async Task ReadEncryptionSaltIfNeededAsync(CancellationToken cancellationToken)
     {
-        if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser())
+        if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
         {
             return;
         }
@@ -224,9 +224,9 @@ public partial class ZipArchiveEntry
 
             if (IsAesEncrypted)
             {
-                if (OperatingSystem.IsBrowser())
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                 {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                 }
 
                 if (_aesSalt is null)
@@ -507,9 +507,9 @@ public partial class ZipArchiveEntry
         {
             if (IsAesEncrypted)
             {
-                if (OperatingSystem.IsBrowser())
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                 {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                 }
 
                 if (_aesSalt is null)
@@ -551,9 +551,9 @@ public partial class ZipArchiveEntry
 
     private async Task<Stream> DecryptAndStoreForUpdateWithAesAsync(WinZipAesKeyMaterial aesKeys, CancellationToken cancellationToken)
     {
-        if (OperatingSystem.IsBrowser())
+        if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
         {
-            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
         }
 
         await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
@@ -761,9 +761,9 @@ public partial class ZipArchiveEntry
                 else if (UseAesEncryption && _derivedAesKeyMaterial != null)
                 {
 
-                    if (OperatingSystem.IsBrowser())
+                    if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                     {
-                        throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                        throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                     }
                     // For AES, we need to:
                     // 1. Write header with CompressionMethod = Aes (99)
