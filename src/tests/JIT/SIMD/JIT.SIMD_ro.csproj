@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <MergedWrapperProjectReference Include="AbsGeneric_ro.csproj" />
+    <MergedWrapperProjectReference Include="AbsSqrt_ro.csproj" />
+    <MergedWrapperProjectReference Include="AddingSequence_ro.csproj" />
+    <MergedWrapperProjectReference Include="BitwiseOperations_ro.csproj" />
+    <MergedWrapperProjectReference Include="BoxUnbox_ro.csproj" />
+    <MergedWrapperProjectReference Include="BugWithAVX_ro.csproj" />
+    <MergedWrapperProjectReference Include="CircleInConvex_ro.csproj" />
+    <MergedWrapperProjectReference Include="CreateGeneric_ro.csproj" />
+    <MergedWrapperProjectReference Include="CtorFromArray_ro.csproj" />
+    <MergedWrapperProjectReference Include="Ctors_ro.csproj" />
+    <MergedWrapperProjectReference Include="DivSignedUnsignedTest_ro.csproj" />
+    <MergedWrapperProjectReference Include="Dup_ro.csproj" />
+    <MergedWrapperProjectReference Include="Haar-likeFeaturesGeneric_ro.csproj" />
+    <MergedWrapperProjectReference Include="Ldfld_ro.csproj" />
+    <MergedWrapperProjectReference Include="LdfldGeneric_ro.csproj" />
+    <MergedWrapperProjectReference Include="Ldind_ro.csproj" />
+    <MergedWrapperProjectReference Include="Matrix4x4_ro.csproj" />
+    <MergedWrapperProjectReference Include="MinMax_ro.csproj" />
+    <MergedWrapperProjectReference Include="Mul_ro.csproj" />
+    <MergedWrapperProjectReference Include="Plane_ro.csproj" />
+    <MergedWrapperProjectReference Include="ShiftOperations.csproj" />
+    <MergedWrapperProjectReference Include="SqrtGeneric_ro.csproj" />
+    <MergedWrapperProjectReference Include="StoreElement_ro.csproj" />
+    <MergedWrapperProjectReference Include="Sums_ro.csproj" />
+    <MergedWrapperProjectReference Include="Vector3_ro.csproj" />
+    <MergedWrapperProjectReference Include="Vector3GetHash_ro.csproj" />
+    <MergedWrapperProjectReference Include="Vector3Interop_ro.csproj" />
+    <MergedWrapperProjectReference Include="Vector4_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorAbs_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorAdd_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorArgs_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorArray_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorArrayInit_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorCast_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorCeilFloor_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorConvert_ro_Target_32Bit.csproj" />
+    <MergedWrapperProjectReference Include="VectorConvert_ro_Target_64Bit.csproj" />
+    <MergedWrapperProjectReference Include="VectorCopyToArray_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorDiv_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorDot_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorExp_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorGet_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorHWAccel_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorHWAccel2_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorInit_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorInitN_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorIntEquals_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorMatrix_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorMax_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorMin_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorMul_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorRelOp_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorReturn_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorSet_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorSqrt_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorSub_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorSum_ro.csproj" />
+    <MergedWrapperProjectReference Include="VectorUnused_ro.csproj" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>
