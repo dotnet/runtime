@@ -98,24 +98,9 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
             }
         }
 
-        protected string GetDotNetExeForArchitecture()
-        {
-            // We have to go searching for the x86 version, everything else runs on the muxer the tests
-            // themselves were launched with.
-            if (DotNetCommands.IsRunningX86OnX64(DeploymentParameters.RuntimeArchitecture))
-            {
-                var executableName = DotNetCommands.GetDotNetExecutable(DeploymentParameters.RuntimeArchitecture);
-                if (!File.Exists(executableName))
-                {
-                    throw new Exception($"Unable to find '{executableName}'.");
-                }
-
-                return executableName;
-            }
-
-            return DotNetCommands.DotNetMuxerPath
+        protected static string GetDotNetMuxerPath()
+            => DotNetCommands.DotNetMuxerPath
                 ?? throw new Exception($"Unable to find '{DotNetCommands.DotNetExecutableName}'.");
-        }
 
         protected void ShutDownIfAnyHostProcess(Process hostProcess)
         {

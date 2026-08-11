@@ -96,7 +96,7 @@ namespace Microsoft.Extensions.Hosting.IntegrationTesting
 
                 if (DeploymentParameters.RuntimeFlavor == RuntimeFlavor.CoreClr && DeploymentParameters.ApplicationType == ApplicationType.Portable)
                 {
-                    executableName = GetDotNetExeForArchitecture();
+                    executableName = GetDotNetMuxerPath();
                     executableArgs = executable;
                 }
                 else
