@@ -35,7 +35,6 @@ public partial class VectorTest : VectorTestBase
     }
 
 
-    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {

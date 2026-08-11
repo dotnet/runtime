@@ -9,7 +9,6 @@ namespace SIMDTests.BoxUnboxTests
 {
     public class Program
     {
-        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

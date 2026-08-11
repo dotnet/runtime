@@ -9,7 +9,6 @@ namespace SIMDTests.StoreElementTests
 {
     public class Program
     {
-        [OuterLoop]
         [Fact]
         public static int TestEntryPoint()
         {

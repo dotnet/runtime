@@ -84,7 +84,6 @@ public partial class VectorTest : VectorTestBase
         return Pass;
     }
 
-    [OuterLoop]
     [Fact]
     public static int TestEntryPoint()
     {
