@@ -373,11 +373,10 @@ namespace Wasm.Build.Tests
                 // dotnet.d.ts is copied to wwwroot/_framework (see https://github.com/dotnet/runtime/issues/124729).
                 BuildProject(info, config, new BuildOptions(UseCache: false, AssertAppBundle: false, ExtraMSBuildArgs: "-question"));
 
-                PublishProject(info, config, new PublishOptions(UseCache: false) { ExpectTypeScriptDefinitions = true });
+                PublishProject(info, config, new PublishOptions(UseCache: false));
                 string publishFrameworkDir = GetBinFrameworkDir(config, forPublish: true);
-                Assert.True(File.Exists(Path.Combine(publishFrameworkDir, "dotnet.d.ts")), $"dotnet.d.ts should be published beside dotnet.js in {publishFrameworkDir}");
-                Assert.True(File.Exists(Path.Combine(publishFrameworkDir, "dotnet.js")), $"dotnet.js should be published beside dotnet.d.ts in {publishFrameworkDir}");
-                Assert.False(File.Exists(Path.Combine(Path.GetDirectoryName(publishFrameworkDir)!, "dotnet.d.ts")), "dotnet.d.ts should not be published at the root of the app bundle");
+                Assert.False(File.Exists(Path.Combine(publishFrameworkDir, "dotnet.d.ts")));
+                Assert.False(File.Exists(Path.Combine(Path.GetDirectoryName(publishFrameworkDir)!, "dotnet.d.ts")));
             }
             else
             {
@@ -386,7 +385,8 @@ namespace Wasm.Build.Tests
 
                 PublishProject(info, config, new PublishOptions(UseCache: false));
                 string publishFrameworkDir = GetBinFrameworkDir(config, forPublish: true);
-                Assert.False(File.Exists(Path.Combine(publishFrameworkDir, "dotnet.d.ts")), $"dotnet.d.ts should not be published at {publishFrameworkDir} with WasmEmitTypeScriptDefinitions={shouldEmit}");
+                Assert.False(File.Exists(Path.Combine(publishFrameworkDir, "dotnet.d.ts")));
+                Assert.False(File.Exists(Path.Combine(Path.GetDirectoryName(publishFrameworkDir)!, "dotnet.d.ts")));
             }
         }
 
