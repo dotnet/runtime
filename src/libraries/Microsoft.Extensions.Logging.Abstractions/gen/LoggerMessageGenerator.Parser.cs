@@ -342,7 +342,6 @@ namespace Microsoft.Extensions.Logging.Generators
                                         Diag(DiagnosticDescriptors.RedundantQualifierInMessage, ma.GetLocation(), method.Identifier.ToString());
                                     }
 
-
                                     bool hasMessage = !string.IsNullOrEmpty(msg);
                                     bool foundLogger = false;
                                     bool foundException = false;

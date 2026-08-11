@@ -189,6 +189,7 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.ArgumentHasNoCorrespondingTemplate.Id, diagnostics[0].Id);
+            Assert.Contains("foo", diagnostics[0].GetMessage(), StringComparison.InvariantCulture);
         }
 
         [Fact]
