@@ -72,21 +72,10 @@ namespace ILCompiler.ObjectWriter
         Count = 0x05 // Not actually part of the spec; used for counting kinds
     }
 
-    /// <summary>
-    /// WebAssembly export descriptor kinds per the specification.
-    /// </summary>
-    internal enum WasmExportKind : byte
-    {
-        Function = 0x00,
-        Table = 0x01,
-        Memory = 0x02,
-        Global = 0x03,
-    }
-
     public class WasmGlobalImportType : WasmImportType
     {
-        private readonly WasmValueType _valueType;
-        private readonly WasmMutabilityType _mutability;
+        WasmValueType _valueType;
+        WasmMutabilityType _mutability;
 
         public WasmGlobalImportType(WasmValueType valueType, WasmMutabilityType mutability) : base (WasmExternalKind.Global)
         {
@@ -115,7 +104,7 @@ namespace ILCompiler.ObjectWriter
         public override int Encode(Span<byte> buffer)
         {
             int pos = 0;
-            buffer[pos++] = (byte)0x70; // element type: funcref
+            buffer[pos++] = (byte)0x70; // element type: funcref 
             buffer[pos++] = (byte)0; // table limits: flags (0 = min-only, 1 = min+max)
             pos += DwarfHelper.WriteULEB128(buffer.Slice(pos), 1); // Requires 1 table entry
             return pos;
@@ -131,12 +120,12 @@ namespace ILCompiler.ObjectWriter
         HasMin = 0x00,
         HasMinAndMax = 0x01
     }
-
+  
     public class WasmMemoryImportType : WasmImportType
     {
-        private readonly WasmLimitType _limitType;
-        private readonly uint _min;
-        private readonly uint? _max;
+        WasmLimitType _limitType;
+        uint _min;
+        uint? _max;
 
         public WasmMemoryImportType(WasmLimitType limitType, uint min, uint? max = null) : base(WasmExternalKind.Memory)
         {
