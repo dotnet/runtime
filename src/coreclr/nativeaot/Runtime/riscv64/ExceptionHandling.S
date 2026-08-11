@@ -519,7 +519,14 @@ LOCAL_LABEL(NotHijacked):
         addi  t3, a5, OFFSETOF__Thread__m_ThreadStateFlags
 
         addiw  a6, zero, -17  // Mask value (0xFFFFFFEF)
+#ifdef __riscv_atomic
         amoand.w  a4, a6, (t3)
+#else
+        // No A extension: non-atomic read-modify-write.
+        lw   a4, (t3)
+        and  a4, a4, a6
+        sw   a4, (t3)
+#endif
 
         // Set preserved regs to the values expected by the funclet
         RESTORE_PRESERVED_REGISTERS a2
@@ -633,7 +640,14 @@ LOCAL_LABEL(DonePopping):
         // Set the DoNotTriggerGc flag
         addi  t3, a2, OFFSETOF__Thread__m_ThreadStateFlags
         addiw  a3, zero, -17  // Mask value (0xFFFFFFEF)
+#ifdef __riscv_atomic
         amoand.w  a4, a3, (t3)
+#else
+        // No A extension: non-atomic read-modify-write.
+        lw   a4, (t3)
+        and  a4, a4, a3
+        sw   a4, (t3)
+#endif
 
         // Restore preserved registers
         RESTORE_PRESERVED_REGISTERS a1
@@ -656,7 +670,14 @@ LOCAL_LABEL(DonePopping):
 
         addi  t3, a2, OFFSETOF__Thread__m_ThreadStateFlags
         addiw  a3, zero, 16  // Mask value (0x10)
+#ifdef __riscv_atomic
         amoor.w  a1, a3, (t3)
+#else
+        // No A extension: non-atomic read-modify-write.
+        lw   a1, (t3)
+        or   a1, a1, a3
+        sw   a1, (t3)
+#endif
 
         // Restore floating-point registers
 #if __riscv_flen >= 64
@@ -790,7 +811,14 @@ LOCAL_LABEL(DonePopping):
         addi  t3, a5, OFFSETOF__Thread__m_ThreadStateFlags
 
         addiw  a6, zero, -17  // Mask value (0xFFFFFFEF)
+#ifdef __riscv_atomic
         amoand.w  a4, t3, a6
+#else
+        // No A extension: non-atomic read-modify-write.
+        lw   a4, (t3)
+        and  a4, a4, a6
+        sw   a4, (t3)
+#endif
 
         // set preserved regs to the values expected by the funclet
         RESTORE_PRESERVED_REGISTERS a2
