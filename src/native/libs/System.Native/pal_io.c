@@ -99,7 +99,28 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 #   error Unknown architecture
 #  endif
 # endif
+// statx() was added in Linux 4.11 and provides the file creation (birth) time, which stat() doesn't.
+// It is invoked as a syscall because the C libraries the runtime is built against may predate it.
+# if !defined(__NR_statx)
+#  if defined(__amd64__)
+#   define __NR_statx 332
+#  elif defined(__i386__)
+#   define __NR_statx 383
+#  elif defined(__arm__)
+#   define __NR_statx 397
+#  elif defined(__aarch64__) || defined(__riscv) || defined(__loongarch__)
+#   define __NR_statx 291
+#  elif defined(__s390x__)
+#   define __NR_statx 379
+#  elif defined(__powerpc__) || defined(__powerpc64__)
+#   define __NR_statx 383
+#  endif
+# endif
 #pragma clang diagnostic pop
+
+#ifdef __NR_statx
+#define HAVE_STATX_SYSCALL 1
+#endif
 
 #endif
 
@@ -208,6 +229,138 @@ c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 c_static_assert(PAL_UF_HIDDEN == UF_HIDDEN);
 #endif
 
+#if defined(HAVE_STATX_SYSCALL)
+
+// Fields of 'struct statx' that are requested from the kernel.
+#define PAL_STATX_BASIC_STATS 0x000007ffU // all of the fields also returned by stat()
+#define PAL_STATX_BTIME 0x00000800U       // the creation (birth) time
+
+#define PAL_AT_STATX_SYNC_AS_STAT 0x0000 // behave like stat() with regards to synchronization
+
+#ifndef AT_EMPTY_PATH
+#define AT_EMPTY_PATH 0x1000
+#endif
+
+// Layout of the buffer filled in by the statx syscall. It is declared here (rather than using the
+// definition from the headers) because the runtime is built against C libraries that predate statx.
+struct pal_statx_timestamp
+{
+    int64_t tv_sec;
+    uint32_t tv_nsec;
+    int32_t __reserved;
+};
+
+struct pal_statx
+{
+    uint32_t stx_mask;
+    uint32_t stx_blksize;
+    uint64_t stx_attributes;
+    uint32_t stx_nlink;
+    uint32_t stx_uid;
+    uint32_t stx_gid;
+    uint16_t stx_mode;
+    uint16_t __spare0[1];
+    uint64_t stx_ino;
+    uint64_t stx_size;
+    uint64_t stx_blocks;
+    uint64_t stx_attributes_mask;
+    struct pal_statx_timestamp stx_atime;
+    struct pal_statx_timestamp stx_btime;
+    struct pal_statx_timestamp stx_ctime;
+    struct pal_statx_timestamp stx_mtime;
+    uint32_t stx_rdev_major;
+    uint32_t stx_rdev_minor;
+    uint32_t stx_dev_major;
+    uint32_t stx_dev_minor;
+    uint64_t __spare2[14];
+};
+
+c_static_assert(sizeof(struct pal_statx) == 256);
+
+// Set once we know the statx syscall is not usable, so that we don't keep paying for failing calls.
+static volatile int32_t g_statxUnsupported = 0;
+
+static bool ConvertStatxFileStatus(const struct pal_statx* src, FileStatus* dst)
+{
+    // The kernel is allowed to not return fields that were requested. If any of the fields that
+    // stat() would have provided is missing, the caller falls back to stat().
+    if ((src->stx_mask & PAL_STATX_BASIC_STATS) != PAL_STATX_BASIC_STATS)
+    {
+        return false;
+    }
+
+    dst->Dev = (int64_t)makedev(src->stx_dev_major, src->stx_dev_minor);
+    dst->RDev = (int64_t)makedev(src->stx_rdev_major, src->stx_rdev_minor);
+    dst->Ino = (int64_t)src->stx_ino;
+    dst->Flags = FILESTATUS_FLAGS_NONE;
+    dst->Mode = (int32_t)src->stx_mode;
+    dst->Uid = src->stx_uid;
+    dst->Gid = src->stx_gid;
+    dst->Size = (int64_t)src->stx_size;
+
+    dst->ATime = src->stx_atime.tv_sec;
+    dst->MTime = src->stx_mtime.tv_sec;
+    dst->CTime = src->stx_ctime.tv_sec;
+
+    dst->ATimeNsec = src->stx_atime.tv_nsec;
+    dst->MTimeNsec = src->stx_mtime.tv_nsec;
+    dst->CTimeNsec = src->stx_ctime.tv_nsec;
+
+    // Not every file system stores the creation time.
+    if ((src->stx_mask & PAL_STATX_BTIME) != 0)
+    {
+        dst->BirthTime = src->stx_btime.tv_sec;
+        dst->BirthTimeNsec = src->stx_btime.tv_nsec;
+        dst->Flags |= FILESTATUS_FLAGS_HAS_BIRTHTIME;
+    }
+    else
+    {
+        dst->BirthTime = 0;
+        dst->BirthTimeNsec = 0;
+    }
+
+    dst->UserFlags = 0;
+    dst->HardLinkCount = src->stx_nlink;
+
+    return true;
+}
+
+// Returns 1 when 'output' was filled in, 0 when the caller should fall back to stat(),
+// and -1 when the call failed with errno set.
+static int32_t TryStatxFileStatus(int fd, const char* path, int32_t flags, FileStatus* output)
+{
+    if (g_statxUnsupported)
+    {
+        return 0;
+    }
+
+    struct pal_statx result;
+    long ret;
+    while ((ret = syscall(__NR_statx,
+                          fd,
+                          path,
+                          flags | PAL_AT_STATX_SYNC_AS_STAT,
+                          PAL_STATX_BASIC_STATS | PAL_STATX_BTIME,
+                          &result)) < 0 && errno == EINTR);
+
+    if (ret == 0)
+    {
+        return ConvertStatxFileStatus(&result, output) ? 1 : 0;
+    }
+
+    // The syscall doesn't exist (kernel older than 4.11) or it is blocked (for example, by a
+    // seccomp filter). Fall back to stat() from now on; it reports the real error, if any.
+    if (errno == ENOSYS || errno == EPERM || errno == EINVAL || errno == EOPNOTSUPP)
+    {
+        g_statxUnsupported = 1;
+        return 0;
+    }
+
+    return -1;
+}
+
+#endif // HAVE_STATX_SYSCALL
+
 static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
     dst->Dev = (int64_t)src->st_dev;
@@ -232,7 +385,7 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
     dst->BirthTimeNsec = src->st_birthtimespec.tv_nsec;
     dst->Flags |= FILESTATUS_FLAGS_HAS_BIRTHTIME;
 #else
-    // Linux path: until we use statx() instead
+    // Linux path: the birth time is retrieved using the statx syscall, when it is available.
     dst->BirthTime = 0;
     dst->BirthTimeNsec = 0;
 #endif
@@ -248,6 +401,14 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 
 int32_t SystemNative_Stat(const char* path, FileStatus* output)
 {
+#if defined(HAVE_STATX_SYSCALL)
+    int32_t statxResult = TryStatxFileStatus(AT_FDCWD, path, 0, output);
+    if (statxResult != 0)
+    {
+        return statxResult > 0 ? 0 : -1;
+    }
+#endif
+
     struct stat_ result;
     int ret;
     while ((ret = stat_(path, &result)) < 0 && errno == EINTR);
@@ -262,6 +423,14 @@ int32_t SystemNative_Stat(const char* path, FileStatus* output)
 
 int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
 {
+#if defined(HAVE_STATX_SYSCALL)
+    int32_t statxResult = TryStatxFileStatus(ToFileDescriptor(fd), "", AT_EMPTY_PATH, output);
+    if (statxResult != 0)
+    {
+        return statxResult > 0 ? 0 : -1;
+    }
+#endif
+
     struct stat_ result;
     int ret;
     while ((ret = fstat_(ToFileDescriptor(fd), &result)) < 0 && errno == EINTR);
@@ -276,6 +445,14 @@ int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
 
 int32_t SystemNative_LStat(const char* path, FileStatus* output)
 {
+#if defined(HAVE_STATX_SYSCALL)
+    int32_t statxResult = TryStatxFileStatus(AT_FDCWD, path, AT_SYMLINK_NOFOLLOW, output);
+    if (statxResult != 0)
+    {
+        return statxResult > 0 ? 0 : -1;
+    }
+#endif
+
     struct stat_ result;
     int ret = lstat_(path, &result);
 
