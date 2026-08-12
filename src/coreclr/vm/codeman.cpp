@@ -2326,14 +2326,13 @@ BOOL EEJitManager::LoadJIT()
 
 //**************************************************************************
 
-#ifndef DACCESS_COMPILE
-void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
+static void ReportCodeHeapStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 {
     WRAPPER_NO_CONTRACT;
 
-    PerfMap::LogStubs(__FUNCTION__, GetStubCodeBlockKindString(kind), (PCODE)start, size, PerfMapStubType::Block);
+    ReportStubBlock(start, size, kind);
 
-#ifdef FEATURE_EVENT_TRACE
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
     if (FitsInU4(size))
     {
         ETW::MethodLog::SendHelperEvent(
@@ -2342,9 +2341,8 @@ void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
             GetStubCodeBlockKindStringW(kind),
             ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
     }
-#endif // FEATURE_EVENT_TRACE
+#endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE
 }
-#endif // DACCESS_COMPILE
 
 CodeFragmentHeap::CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKind kind)
     : m_pAllocator(pAllocator), m_pFreeBlocks(NULL), m_kind(kind),
@@ -2448,7 +2446,7 @@ TaggedMemAllocPtr CodeFragmentHeap::RealAllocAlignedMem(size_t  dwRequestedSize
         if (dwSize < SMALL_BLOCK_THRESHOLD)
             dwSize = 4 * SMALL_BLOCK_THRESHOLD;
         pMem = ExecutionManager::GetEEJitManager()->AllocCodeFragmentBlock(dwSize, dwAlignment, m_pAllocator, m_kind);
-        ReportStubBlock(pMem, dwSize, m_kind);
+        ReportCodeHeapStubBlock(pMem, dwSize, m_kind);
     }
 
     SIZE_T dwExtra = (BYTE *)ALIGN_UP(pMem, dwAlignment) - (BYTE *)pMem;
@@ -3601,7 +3599,7 @@ JumpStubBlockHeader *  EEJitManager::AllocJumpStubBlock(MethodDesc* pMD, DWORD n
         NibbleMapSetUnlocked(pCodeHeap, mem, blockSize);
     }
 
-    ReportStubBlock((void*)mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB);
+    ReportCodeHeapStubBlock((void*)mem, blockSize, STUB_CODE_BLOCK_JUMPSTUB);
 
     LOG((LF_JIT, LL_INFO1000, "Allocated new JumpStubBlockHeader for %d stubs at" FMT_ADDR " in loader allocator " FMT_ADDR "\n",
          numJumps, DBG_ADDR(mem) , DBG_ADDR(pLoaderAllocator) ));

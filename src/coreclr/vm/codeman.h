@@ -188,9 +188,8 @@ inline LPCWSTR GetStubCodeBlockKindStringW(StubCodeBlockKind kind)
     }
 }
 
-#ifndef DACCESS_COMPILE
 void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind);
-#else
+#ifndef FEATURE_PERFMAP
 inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 {
     CONTRACTL
@@ -200,7 +199,7 @@ inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
     }
     CONTRACTL_END;
 }
-#endif // DACCESS_COMPILE
+#endif // FEATURE_PERFMAP
 
 //-----------------------------------------------------------------------------
 // Method header which exists just before the code.
