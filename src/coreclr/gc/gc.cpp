@@ -298,7 +298,7 @@ static unsigned int         gc_count_during_log;
  // In ms. This is how often we print out stats.
 static const unsigned int   log_interval = 5000;
 // Time (in ms) when we start a new log interval.
-static uint64_t             log_start_tick;
+static int64_t              log_start_tick;
 static unsigned int         gc_lock_contended;
 static int64_t              log_start_hires;
 // Cycles accumulated in SuspendEE during log_interval.
@@ -314,7 +314,7 @@ process_sync_log_stats()
 {
 #ifdef SYNCHRONIZATION_STATS
 
-    uint64_t log_elapsed = (uint64_t)minipal_lowres_ticks() - log_start_tick;
+    int64_t log_elapsed = minipal_lowres_ticks() - log_start_tick;
 
     if (log_elapsed > log_interval)
     {
@@ -1004,7 +1004,7 @@ uint64_t    gc_heap::total_alloc_bytes_uoh = 0;
 
 int         gc_heap::gc_policy = 0;
 
-uint64_t    gc_heap::allocation_running_time;
+int64_t     gc_heap::allocation_running_time;
 
 size_t      gc_heap::allocation_running_amount;
 

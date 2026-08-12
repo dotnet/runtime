@@ -1314,7 +1314,7 @@ bool gc_heap::new_allocation_allowed (int gen_number)
         if ((allocation_running_amount - dd_new_allocation (dd0)) >
             dd_min_size (dd0))
         {
-            uint64_t ctime = (uint64_t)minipal_lowres_ticks();
+            int64_t ctime = minipal_lowres_ticks();
             if ((ctime - allocation_running_time) > 1000)
             {
                 dprintf (2, (">1s since last gen0 gc"));

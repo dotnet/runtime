@@ -3940,7 +3940,7 @@ private:
 #ifdef MULTIPLE_HEAPS
 #else //MULTIPLE_HEAPS
     // Used in the allocator code paths to decide if we should trigger GCs
-    PER_HEAP_FIELD_ALLOC uint64_t allocation_running_time;
+    PER_HEAP_FIELD_ALLOC int64_t allocation_running_time;
     PER_HEAP_FIELD_ALLOC size_t allocation_running_amount;
 #endif //MULTIPLE_HEAPS
 

@@ -81,7 +81,7 @@ init_sync_log_stats()
         gc_during_log = 0;
         gc_lock_contended = 0;
 
-        log_start_tick = (uint64_t)minipal_lowres_ticks();
+        log_start_tick = minipal_lowres_ticks();
         log_start_hires = minipal_hires_ticks();
     }
     gc_count_during_log++;
