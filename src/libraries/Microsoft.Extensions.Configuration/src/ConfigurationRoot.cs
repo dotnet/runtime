@@ -51,7 +51,8 @@ namespace Microsoft.Extensions.Configuration
         {
             get
             {
-                return ConfigurationEngine.Default.Get(_providers, key)?.Value;
+                ConfigurationEngine.Default.Get(_providers, key, out string? value, out _);
+                return value;
             }
             set => SetConfiguration(_providers, key, value);
         }

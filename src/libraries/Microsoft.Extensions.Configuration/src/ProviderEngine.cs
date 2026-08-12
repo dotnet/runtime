@@ -28,15 +28,16 @@ namespace Microsoft.Extensions.Configuration
         /// <summary>
         /// Reads a key from the providers, highest precedence first, and takes the first answer.
         /// </summary>
-        internal override ConfigurationValue? Get(IList<IConfigurationProvider> providers, string key)
+        internal override bool Get(IList<IConfigurationProvider> providers, string key, out string? value, out int providerIndex)
         {
             for (int i = providers.Count - 1; i >= 0; i--)
             {
                 try
                 {
-                    if (providers[i].TryGet(key, out string? text))
+                    if (providers[i].TryGet(key, out value))
                     {
-                        return ConfigurationValue.FromProvider(text, i);
+                        providerIndex = i;
+                        return true;
                     }
                 }
                 catch (ObjectDisposedException)
@@ -48,7 +49,9 @@ namespace Microsoft.Extensions.Configuration
                 }
             }
 
-            return null;
+            value = null;
+            providerIndex = -1;
+            return false;
         }
 
         /// <summary>

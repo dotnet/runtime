@@ -6,36 +6,6 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// A value a read produced, and where it came from.
-    /// </summary>
-    /// <remarks>
-    /// A read that produced nothing has no <see cref="ConfigurationValue"/> at all, so one that exists always names
-    /// the provider that declared it. A stage that rewrites a value keeps the index of the text it started from,
-    /// since that is where the key was declared, which is the question worth answering: a value built from several
-    /// keys has no single provider of its own.
-    /// </remarks>
-    internal readonly struct ConfigurationValue
-    {
-        private ConfigurationValue(string? value, int providerIndex)
-        {
-            Value = value;
-            ProviderIndex = providerIndex;
-        }
-
-        /// <summary>The text produced, which may be <see langword="null"/> for a key a provider holds as null.</summary>
-        internal string? Value { get; }
-
-        /// <summary>The position in the provider list of the provider that declared this value.</summary>
-        internal int ProviderIndex { get; }
-
-        /// <summary>A value the provider at <paramref name="providerIndex"/> holds.</summary>
-        internal static ConfigurationValue FromProvider(string? value, int providerIndex) => new(value, providerIndex);
-
-        /// <summary>The same declaration, holding <paramref name="value"/> in place of what was read there.</summary>
-        internal ConfigurationValue WithValue(string? value) => new(value, ProviderIndex);
-    }
-
-    /// <summary>
     /// One stage of the pipeline a configuration root reads through. The stage at the end of the pipeline reads the
     /// providers; every stage before it interprets what those providers hold.
     /// </summary>
@@ -75,13 +45,23 @@ namespace Microsoft.Extensions.Configuration
         protected ConfigurationEngine Next { get; }
 
         /// <summary>
-        /// Produces the value of <paramref name="key"/>, or <see langword="null"/> when there is none.
+        /// Reads <paramref name="key"/>, and reports whether anything declared it.
         /// </summary>
         /// <param name="providers">The providers to read.</param>
         /// <param name="key">The key to read.</param>
-        internal virtual ConfigurationValue? Get(IList<IConfigurationProvider> providers, string key)
+        /// <param name="value">
+        /// The text produced, which may be <see langword="null"/> for a key a provider holds as null. A read that
+        /// produced nothing leaves this <see langword="null"/> as well, so the two are told apart by the result.
+        /// </param>
+        /// <param name="providerIndex">
+        /// The position in <paramref name="providers"/> of the provider that declared the key, or -1 when none did.
+        /// A stage that rewrites a value reports the provider of the text it started from, since that is where the
+        /// key was declared, which is the question worth answering: a value built from several keys has no single
+        /// provider of its own.
+        /// </param>
+        internal virtual bool Get(IList<IConfigurationProvider> providers, string key, out string? value, out int providerIndex)
         {
-            return Next.Get(providers, key);
+            return Next.Get(providers, key, out value, out providerIndex);
         }
 
         /// <summary>

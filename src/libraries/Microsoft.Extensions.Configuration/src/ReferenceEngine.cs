@@ -27,10 +27,10 @@ namespace Microsoft.Extensions.Configuration
 
         internal ReferenceEngine(ConfigurationEngine next) : base(next) { }
 
-        internal override ConfigurationValue? Get(IList<IConfigurationProvider> providers, string key)
+        internal override bool Get(IList<IConfigurationProvider> providers, string key, out string? value, out int providerIndex)
         {
             Trail trail = default;
-            ConfigurationValue? read = Read(providers, key, nesting: 0, hops: 0, ref trail);
+            bool read = Read(providers, key, nesting: 0, hops: 0, ref trail, out value, out providerIndex);
 
             if (!trail.Recording)
             {
@@ -46,44 +46,51 @@ namespace Microsoft.Extensions.Configuration
             });
         }
 
-        private ConfigurationValue? Read(IList<IConfigurationProvider> providers, string key, int nesting, int hops, ref Trail trail)
+        private bool Read(IList<IConfigurationProvider> providers, string key, int nesting, int hops, ref Trail trail, out string? value, out int providerIndex)
         {
-            if (Next.Get(providers, key) is not { } declaration)
+            if (!Next.Get(providers, key, out value, out providerIndex))
             {
-                return null;
+                return false;
             }
 
-            if (declaration.Value is not string raw)
+            if (value is not string raw)
             {
-                return declaration;
+                return true;
             }
 
             ReferenceSyntax.Shape shape = ReferenceSyntax.Classify(raw, out int bodyStart, out int bodyLength);
 
             // A chained configuration has already read its own values, escapes and all, so what it serves is text.
-            if (shape == ReferenceSyntax.Shape.Text || providers[declaration.ProviderIndex] is ChainedConfigurationProvider)
+            if (shape == ReferenceSyntax.Shape.Text || providers[providerIndex] is ChainedConfigurationProvider)
             {
-                return declaration;
+                return true;
             }
 
             if (shape == ReferenceSyntax.Shape.Escaped)
             {
-                return declaration.WithValue(raw.Substring(1));
+                value = raw.Substring(1);
+                return true;
             }
 
-            ConfigurationValue? followed = null;
+            bool followed = false;
 
             if (hops >= MaxChain)
             {
                 trail.Open(Trail.Stop.Chain);
             }
-            else if (BuildKey(providers, raw.AsSpan(bodyStart, bodyLength), key, nesting, hops, ref trail) is { } target
-                && Read(providers, target, nesting, hops + 1, ref trail) is { } next)
+            else if (BuildKey(providers, raw.AsSpan(bodyStart, bodyLength), key, nesting, hops, ref trail) is { } target)
             {
-                followed = declaration.WithValue(next.Value);
+                // The key was declared here whatever it turned out to name, so the target's provider is not the answer.
+                followed = Read(providers, target, nesting, hops + 1, ref trail, out value, out _);
             }
 
             trail.Record(key);
+
+            if (!followed)
+            {
+                value = null;
+                providerIndex = -1;
+            }
 
             return followed;
         }
@@ -132,8 +139,8 @@ namespace Microsoft.Extensions.Configuration
                             return null;
                         }
 
-                        string? value = Read(providers, inner, nesting + 1, hops, ref trail)?.Value;
-                        if (value is null)
+                        // Neither an absent key nor one held as null has any text to put in.
+                        if (!Read(providers, inner, nesting + 1, hops, ref trail, out string? value, out _) || value is null)
                         {
                             return null;
                         }

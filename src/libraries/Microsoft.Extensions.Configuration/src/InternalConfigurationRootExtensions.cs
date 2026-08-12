@@ -38,14 +38,10 @@ namespace Microsoft.Extensions.Configuration
                 // Hold the reference for the whole read: resolving a reference reads several keys, and they all have to
                 // come from the same provider generation.
                 using ReferenceCountedProviders reference = manager.GetProvidersReference();
-                ConfigurationValue? pinned = ConfigurationEngine.Default.Get(reference.Providers, key);
-                value = pinned?.Value;
-                return pinned.HasValue;
+                return ConfigurationEngine.Default.Get(reference.Providers, key, out value, out _);
             }
 
-            ConfigurationValue? read = ConfigurationEngine.Default.Get(AsList(root.Providers), key);
-            value = read?.Value;
-            return read.HasValue;
+            return ConfigurationEngine.Default.Get(AsList(root.Providers), key, out value, out _);
         }
 
         // Providers is IList<IConfigurationProvider> for both of the roots in this library, and for the pinned

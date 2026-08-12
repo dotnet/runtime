@@ -908,11 +908,9 @@ namespace Microsoft.Extensions.Configuration.Test
                     ("Combined", "$ref({Pointer}:Target)")),
             ];
 
-            ConfigurationValue? read = ConfigurationEngine.Default.Get(providers, key);
-
-            Assert.True(read.HasValue);
-            Assert.Equal(expected, read.GetValueOrDefault().Value);
-            Assert.Equal(expectedProvider, read.GetValueOrDefault().ProviderIndex);
+            Assert.True(ConfigurationEngine.Default.Get(providers, key, out string? value, out int providerIndex));
+            Assert.Equal(expected, value);
+            Assert.Equal(expectedProvider, providerIndex);
         }
 
         [Theory]
@@ -920,24 +918,13 @@ namespace Microsoft.Extensions.Configuration.Test
         [InlineData("Dangling")]
         public void ReadThatFindsNothingNamesNoProvider(string key)
         {
-            // Nothing was read, so nothing can be attributed: a read that produced nothing has no value at all.
+            // Nothing was read, so nothing can be attributed: a read that produced nothing has no value at all. That
+            // holds for a key nothing declared and for one declared as a reference that led nowhere.
             IList<IConfigurationProvider> providers = [Provider(("Dangling", "$ref(Missing)"))];
 
-            Assert.Null(ConfigurationEngine.Default.Get(providers, key));
-        }
-
-        [Fact]
-        public void AValueKeepsWhereItWasDeclaredWhenItIsRewritten()
-        {
-            // Rewriting a value keeps where it was declared, which is how a resolved reference stays attributed to the
-            // key that pointed elsewhere rather than to whichever key it ended up reading.
-            ConfigurationValue read = ConfigurationValue.FromProvider("read", 2);
-            Assert.Equal("read", read.Value);
-            Assert.Equal(2, read.ProviderIndex);
-
-            ConfigurationValue rewritten = read.WithValue("other");
-            Assert.Equal("other", rewritten.Value);
-            Assert.Equal(2, rewritten.ProviderIndex);
+            Assert.False(ConfigurationEngine.Default.Get(providers, key, out string? value, out int providerIndex));
+            Assert.Null(value);
+            Assert.Equal(-1, providerIndex);
         }
 
         private static IConfigurationProvider Provider(params (string Key, string? Value)[] values)
