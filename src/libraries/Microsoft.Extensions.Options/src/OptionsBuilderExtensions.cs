@@ -36,10 +36,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// replacement operation, so applications using a custom or derived cache must avoid concurrent cache access
         /// during startup validation if atomic publication is required. Startup validation throws
         /// <see cref="InvalidOperationException"/> if publication to a custom or derived cache does not succeed.
-        /// A custom validator that implements both <see cref="IStartupValidator"/> and
-        /// <see cref="IAsyncStartupValidator"/> should register one instance under both service contracts. A custom
-        /// <see cref="IStartupValidator"/> that is not also registered by identity as
-        /// <see cref="IAsyncStartupValidator"/> takes precedence and suppresses asynchronous startup validators.
+        /// For compatibility, this method exposes the built-in startup validator through
+        /// <see cref="IStartupValidator"/> and <see cref="IAsyncStartupValidator"/> as the same singleton instance.
+        /// A custom startup validator registered only as <see cref="IStartupValidator"/> takes precedence and
+        /// suppresses asynchronous startup validators. New custom startup validators should therefore register only
+        /// <see cref="IAsyncStartupValidator"/>, not both startup contracts.
         /// </remarks>
         /// <typeparam name="TOptions">The type of options.</typeparam>
         /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure options instance.</param>
@@ -51,8 +52,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             string name = optionsBuilder.Name;
 
-            // Both contracts alias one instance so the host can distinguish the built-in dual registration from
-            // independent custom validators of the same runtime type.
+            // Both contracts alias one instance so the host can distinguish the built-in compatibility registration
+            // from independent custom validators without inferring registration identity from implementation type.
             optionsBuilder.Services.TryAddSingleton<StartupValidator>();
 #pragma warning disable SYSLIB0066 // IStartupValidator is obsolete but retained for compatibility.
             optionsBuilder.Services.TryAddSingleton<IStartupValidator>(

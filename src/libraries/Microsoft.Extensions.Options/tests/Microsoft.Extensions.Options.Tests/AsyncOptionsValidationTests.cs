@@ -15,10 +15,8 @@ namespace Microsoft.Extensions.Options.Tests
 {
     public class AsyncOptionsValidationTests
     {
-#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
         private static IAsyncStartupValidator GetAsyncStartupValidator(IServiceProvider sp) =>
-            Assert.IsAssignableFrom<IAsyncStartupValidator>(sp.GetRequiredService<IStartupValidator>());
-#pragma warning restore SYSLIB0066
+            sp.GetRequiredService<IAsyncStartupValidator>();
 
         [Fact]
         public async Task AsyncValidateOptions_SkipsWhenNameDoesNotMatch()
@@ -191,8 +189,8 @@ namespace Microsoft.Extensions.Options.Tests
 #pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
             var services = new ServiceCollection();
 
-            // A custom sync-only IStartupValidator registered before ValidateOnStart wins the
-            // TryAddTransient, so it is the resolved IStartupValidator.
+            // A custom sync-only IStartupValidator registered before ValidateOnStart wins the compatibility
+            // registration, so it remains the resolved IStartupValidator.
             services.AddSingleton<IStartupValidator>(new CustomSyncOnlyValidator());
 
             services.AddOptions<FakeOptions>()
@@ -202,8 +200,7 @@ namespace Microsoft.Extensions.Options.Tests
 
             ServiceProvider sp = services.BuildServiceProvider();
 
-            // The custom validator is not async-capable, so the host falls back to the sync path (validator.Validate())
-            // This means no InvalidCastException and no async validation.
+            // The custom validator is not async-capable, so the host uses the legacy synchronous path.
             IStartupValidator validator = sp.GetRequiredService<IStartupValidator>();
             Assert.IsType<CustomSyncOnlyValidator>(validator);
             Assert.False(validator is IAsyncStartupValidator);
@@ -224,9 +221,9 @@ namespace Microsoft.Extensions.Options.Tests
 
             ServiceProvider sp = services.BuildServiceProvider();
 
-            IStartupValidator sync = sp.GetRequiredService<IStartupValidator>();
-            Assert.IsType<IAsyncStartupValidator>(sync, exactMatch: false);
-            Assert.Single(sp.GetServices<IAsyncStartupValidator>());
+            IStartupValidator syncValidator = sp.GetRequiredService<IStartupValidator>();
+            IAsyncStartupValidator asyncValidator = Assert.Single(sp.GetServices<IAsyncStartupValidator>());
+            Assert.Same(syncValidator, asyncValidator);
 #pragma warning restore SYSLIB0066
         }
 

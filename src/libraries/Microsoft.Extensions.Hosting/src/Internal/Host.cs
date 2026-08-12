@@ -102,10 +102,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                     IAsyncStartupValidator[] asyncValidators = Array.Empty<IAsyncStartupValidator>();
                     bool runSyncValidator;
 
-                    // A custom IStartupValidator that is not even async-capable takes precedence and fully controls
-                    // startup validation (back-compat). Because it cannot appear in the IAsyncStartupValidator
-                    // collection, run it without resolving that collection at all, avoiding instantiation (and any
-                    // constructor/DI side effects) of async validators that would never run.
+                    // A sync-only IStartupValidator takes precedence without resolving async validators that will
+                    // not run. This preserves the legacy replacement behavior and avoids their activation side effects.
                     if (startupValidator is not null and not IAsyncStartupValidator)
                     {
                         runSyncValidator = true;
@@ -114,12 +112,17 @@ namespace Microsoft.Extensions.Hosting.Internal
                     {
                         asyncValidators = Services.GetServices<IAsyncStartupValidator>().ToArray();
 
-                        // A validator implementing both interfaces but registered only as IStartupValidator is absent
-                        // from the async collection, so it also takes precedence. The built-in validator aliases both
-                        // service contracts to one instance, allowing identity matching without conflating distinct
-                        // custom validator registrations that happen to have the same runtime type.
-                        runSyncValidator = startupValidator is not null &&
-                            !asyncValidators.Any(asyncValidator => ReferenceEquals(asyncValidator, startupValidator));
+                        // The built-in validator is intentionally exposed through both contracts as one shared
+                        // instance. A legacy service that is also the exact object in the async collection follows the
+                        // async path, recognizing that compatibility alias. Otherwise preserve legacy replacement
+                        // behavior. Object identity avoids conflating independent registrations of the same type.
+                        bool legacyInstanceIsAlsoResolvedAsAsync =
+                            startupValidator is not null &&
+                            asyncValidators.Any(asyncValidator => ReferenceEquals(asyncValidator, startupValidator));
+
+                        runSyncValidator =
+                            startupValidator is not null &&
+                            !legacyInstanceIsAlsoResolvedAsAsync;
                     }
 
                     if (runSyncValidator)

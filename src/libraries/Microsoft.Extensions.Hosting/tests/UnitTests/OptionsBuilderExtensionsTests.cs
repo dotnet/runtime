@@ -530,10 +530,12 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Fact]
-        public async Task ValidateOnStart_AsyncSuccessSeedsBuiltInOptionsAndMonitor()
+        public async Task ValidateOnStart_AsyncSuccessSeedsOptionsBeforeHostedServiceConstruction()
         {
             ComplexOptions startupCandidate = null;
+            OptionsReadingHostedService hostedService = null;
             var hostBuilder = CreateHostBuilder(services =>
+            {
                 services.AddOptions<ComplexOptions>()
                     .Configure(o => o.Boolean = true)
                     .Validate((ComplexOptions o, CancellationToken ct) =>
@@ -541,13 +543,20 @@ namespace Microsoft.Extensions.Hosting.Tests
                         startupCandidate = o;
                         return Task.FromResult(true);
                     })
-                    .ValidateOnStart());
+                    .ValidateOnStart();
+
+                services.AddSingleton<IHostedService>(sp =>
+                    hostedService = new OptionsReadingHostedService(
+                        sp.GetRequiredService<IOptions<ComplexOptions>>()));
+            });
 
             using IHost host = hostBuilder.Build();
 
             await host.StartAsync();
 
             Assert.NotNull(startupCandidate);
+            Assert.NotNull(hostedService);
+            Assert.Same(startupCandidate, hostedService.Options);
             Assert.Same(startupCandidate, host.Services.GetRequiredService<IOptions<ComplexOptions>>().Value);
             Assert.Same(startupCandidate, host.Services.GetRequiredService<IOptionsMonitor<ComplexOptions>>().CurrentValue);
         }
@@ -589,11 +598,26 @@ namespace Microsoft.Extensions.Hosting.Tests
                 await host.StartAsync();
             }
 
-            // A validator that implements both interfaces but is registered only as IStartupValidator must not be
-            // silently skipped: it is absent from the IAsyncStartupValidator collection, so its synchronous
-            // Validate() runs instead of the async branch finding nothing to do.
+            // Registration under IStartupValidator selects the synchronous path even though the implementation
+            // also supports asynchronous validation.
             Assert.True(custom.SyncValidated);
             Assert.False(custom.AsyncValidated);
+        }
+
+        [Fact]
+        public async Task ValidateOnStart_DualInterfaceValidatorRegisteredOnlyAsAsync_RunsAsyncValidate()
+        {
+            var custom = new TrackingDualStartupValidator();
+            var hostBuilder = CreateHostBuilder(services =>
+                services.AddSingleton<IAsyncStartupValidator>(custom));
+
+            using (var host = hostBuilder.Build())
+            {
+                await host.StartAsync();
+            }
+
+            Assert.False(custom.SyncValidated);
+            Assert.True(custom.AsyncValidated);
         }
 
         [Fact]
@@ -661,8 +685,8 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             using (var host = hostBuilder.Build())
             {
-                // The custom validator is absent from the async collection, so its synchronous Validate() takes
-                // precedence and the failing ValidateOnStart validation never runs.
+                // Registration under the obsolete contract takes precedence, so the failing asynchronous
+                // ValidateOnStart validation never runs.
                 await host.StartAsync();
             }
 
@@ -739,6 +763,20 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.True(first.Validated);
             Assert.True(second.Validated);
             Assert.False(third.Validated);
+        }
+
+        private sealed class OptionsReadingHostedService : IHostedService
+        {
+            public OptionsReadingHostedService(IOptions<ComplexOptions> options)
+            {
+                Options = options.Value;
+            }
+
+            public ComplexOptions Options { get; }
+
+            public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
         }
 
 #pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.

@@ -23,9 +23,7 @@ namespace Microsoft.Extensions.Diagnostics.Tests
             var serviceProvider = serviceCollection.BuildServiceProvider();
 
             // Make sure the subscription manager is started.
-#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
-            serviceProvider.GetRequiredService<IStartupValidator>().Validate();
-#pragma warning restore SYSLIB0066
+            serviceProvider.GetRequiredService<IAsyncStartupValidator>().ValidateAsync().GetAwaiter().GetResult();
 
             var listeners = serviceProvider.GetRequiredService<IEnumerable<IMetricsListener>>();
 

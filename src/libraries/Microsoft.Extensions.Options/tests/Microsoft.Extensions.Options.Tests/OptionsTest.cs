@@ -195,6 +195,7 @@ namespace Microsoft.Extensions.Options.Tests
 #pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility registration.
             Assert.Equal(1, sc.Count(sd => sd.ServiceType == typeof(IStartupValidator)));
 #pragma warning restore SYSLIB0066
+            Assert.Equal(1, sc.Count(sd => sd.ServiceType == typeof(IAsyncStartupValidator)));
         }
 
         public static TheoryData<IDictionary<string, string>, IDictionary<string, object>> Configure_GetsNullableOptionsFromConfiguration_Data

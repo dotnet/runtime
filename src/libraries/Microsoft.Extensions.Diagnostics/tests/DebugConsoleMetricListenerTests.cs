@@ -26,9 +26,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
                 });
                 using var sp = services.BuildServiceProvider();
                 // Make sure the subscription manager is started.
-#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
-                sp.GetRequiredService<IStartupValidator>().Validate();
-#pragma warning restore SYSLIB0066
+                sp.GetRequiredService<IAsyncStartupValidator>().ValidateAsync().GetAwaiter().GetResult();
 
                 var listener = sp.GetRequiredService<IMetricsListener>();
                 var consoleListener = Assert.IsType<DebugConsoleMetricListener>(listener);
@@ -69,9 +67,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics.Tests
                 });
                 using var sp = services.BuildServiceProvider();
                 // Make sure the subscription manager is started.
-#pragma warning disable SYSLIB0066 // Tests the legacy IStartupValidator compatibility contract.
-                sp.GetRequiredService<IStartupValidator>().Validate();
-#pragma warning restore SYSLIB0066
+                sp.GetRequiredService<IAsyncStartupValidator>().ValidateAsync().GetAwaiter().GetResult();
 
                 var listener = sp.GetRequiredService<IMetricsListener>();
                 var consoleListener = Assert.IsType<DebugConsoleMetricListener>(listener);

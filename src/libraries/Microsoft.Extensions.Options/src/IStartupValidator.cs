@@ -10,6 +10,9 @@ namespace Microsoft.Extensions.Options
     /// </summary>
     /// <remarks>
     /// Options are enabled to be validated during startup by calling <see cref="DependencyInjection.OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/>.
+    /// This interface is retained for compatibility. New startup validators should implement and register
+    /// <see cref="IAsyncStartupValidator"/> instead. When migrating, replace the obsolete registration rather than
+    /// registering a custom validator under both startup contracts.
     /// </remarks>
     [Obsolete(Obsoletions.IStartupValidatorMessage, DiagnosticId = Obsoletions.IStartupValidatorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public interface IStartupValidator

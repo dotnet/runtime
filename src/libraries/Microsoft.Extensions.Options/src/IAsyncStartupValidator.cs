@@ -9,6 +9,11 @@ namespace Microsoft.Extensions.Options
     /// <summary>
     /// Used by hosts to asynchronously validate options during startup.
     /// </summary>
+    /// <remarks>
+    /// New implementations should be registered only as <see cref="IAsyncStartupValidator"/>. Do not additionally
+    /// register a custom implementation as <see cref="IStartupValidator"/>; that interface is retained for
+    /// compatibility with existing synchronous startup validators.
+    /// </remarks>
     public interface IAsyncStartupValidator
     {
         /// <summary>
