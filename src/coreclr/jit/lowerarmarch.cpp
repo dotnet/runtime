@@ -1862,16 +1862,12 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
 #ifdef TARGET_ARM64
-    // Enforce invariant HW_Flag_ReturnPerElementMask <==> node->TypeIs(TYP_MASK), except for vector
-    // ConditionalSelect nodes that wrap embedded operations returning a mask.
+    // Enforce invariant HW_Flag_ReturnPerElementMask <==> node->TypeIs(TYP_MASK)
     // This should happen at all stages of the compiler, but it's especially important to check here,
     // as some Lowering analyses (such as embedded masks) will depend on this consistency.
     if (node->TypeIs(TYP_MASK) || HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId()))
     {
-        bool isEmbeddedMaskWrapper =
-            node->OperIsHWIntrinsic(NI_Sve_ConditionalSelect) && node->Op(2)->OperIsHWIntrinsic() &&
-            HWIntrinsicInfo::IsEmbeddedMaskedOperation(node->Op(2)->AsHWIntrinsic()->GetHWIntrinsicId());
-        assert(HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId()) || isEmbeddedMaskWrapper);
+        assert(HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId()));
         assert(node->TypeIs(TYP_MASK));
     }
 #endif
@@ -2422,19 +2418,21 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
 
         if (foundUse)
         {
-            // Embedded operations are represented by a vector ConditionalSelect, including operations that return a
-            // mask. Codegen uses this wrapper to supply the operation's governing predicate and zero inactive lanes.
-            var_types simdType = Compiler::getSIMDTypeForSize(node->GetSimdSize());
-            var_types selectType =
-                HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId()) ? TYP_MASK : simdType;
+            // For vector operations: ConditionalSelect<T>(CreateTrueMask<T>(), Op<T>(...), Vector<T>.Zero)
+            // For mask operations: ConditionalSelect<T>(CreateTrueMask<T>(), Op<T>(...), CreateFalseMask<T>())
+            bool isMaskOp = HWIntrinsicInfo::ReturnsPerElementMask(node->GetHWIntrinsicId());
+
+            var_types      selectType =
+                isMaskOp ? TYP_MASK : Compiler::getSIMDTypeForSize(node->GetSimdSize());
+            NamedIntrinsic selectIntrin = isMaskOp ? NI_Sve_ConditionalSelect_Predicates : NI_Sve_ConditionalSelect;
 
             GenTree* trueMask = m_compiler->gtNewSimdTrueMaskNode(node->GetSimdBaseType());
-            GenTree* falseVal = m_compiler->gtNewZeroConNode(simdType);
+            GenTree* falseVal = m_compiler->gtNewZeroConNode(selectType);
             BlockRange().InsertBefore(node, trueMask);
             BlockRange().InsertBefore(node, falseVal);
 
             GenTreeHWIntrinsic* condSelNode =
-                m_compiler->gtNewSimdHWIntrinsicNode(selectType, trueMask, node, falseVal, NI_Sve_ConditionalSelect,
+                m_compiler->gtNewSimdHWIntrinsicNode(selectType, trueMask, node, falseVal, selectIntrin,
                                                      node->GetSimdBaseType(), node->GetSimdSize());
             BlockRange().InsertAfter(node, condSelNode);
 
