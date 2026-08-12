@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Serialization.Metadata;
@@ -37,7 +38,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithParameterizedCtor))]
         [InlineData(typeof(ClassWithMultipleConstructors))]
         [InlineData(typeof(DerivedClassWithShadowingProperties))]
-        public void TypeWithConstructor_TypeInfoReportsExpectedCtorProvider(Type typeWithCtor)
+        public void TypeWithConstructor_TypeInfoReportsExpectedCtorProvider([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type typeWithCtor)
         {
             ConstructorInfo? expectedCtor = typeWithCtor.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
                 .OrderByDescending(ctor => ctor.GetCustomAttribute<JsonConstructorAttribute>() is not null)
@@ -56,7 +57,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithParameterizedCtor))]
         [InlineData(typeof(ClassWithMultipleConstructors))]
         [InlineData(typeof(DerivedClassWithShadowingProperties))]
-        public void TypeWithConstructor_SettingCtorDelegate_ResetsCtorAttributeProvider(Type typeWithCtor)
+        public void TypeWithConstructor_SettingCtorDelegate_ResetsCtorAttributeProvider([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type typeWithCtor)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeWithCtor, mutable: true);
             Assert.NotNull(typeInfo.ConstructorAttributeProvider);
@@ -97,6 +98,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithMultipleConstructors))]
         [InlineData(typeof(DerivedClassWithShadowingProperties))]
         [InlineData(typeof(IDerivedInterface))]
+        [RequiresUnreferencedCode("Uses reflection to resolve the member backing each JsonPropertyInfo.")]
         public void JsonPropertyInfo_AttributeProvider_HasExpectedValue(Type typeWithProperties)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeWithProperties);
@@ -129,7 +131,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(StructWithParameterizedCtor))]
         [InlineData(typeof(ClassWithMultipleConstructors))]
         [InlineData(typeof(DerivedClassWithShadowingProperties))]
-        public void TypeWithConstructor_JsonPropertyInfo_AssociatedParameter_MatchesCtorParams(Type typeWithCtor)
+        public void TypeWithConstructor_JsonPropertyInfo_AssociatedParameter_MatchesCtorParams([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type typeWithCtor)
         {
             ConstructorInfo? expectedCtor = typeWithCtor.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
                 .OrderByDescending(ctor => ctor.GetCustomAttribute<JsonConstructorAttribute>() is not null)
@@ -243,7 +245,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithInitOnlyProperty))]
         [InlineData(typeof(ClassWithMultipleConstructors))]
         [InlineData(typeof(DerivedClassWithShadowingProperties))]
-        public void TypeWithConstructor_SettingCtorDelegate_ResetsAssociatedParameters(Type typeWithCtor)
+        public void TypeWithConstructor_SettingCtorDelegate_ResetsAssociatedParameters([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type typeWithCtor)
         {
             JsonTypeInfo typeInfo = Serializer.GetTypeInfo(typeWithCtor, mutable: true);
             Assert.NotEmpty(typeInfo.Properties);
@@ -424,6 +426,7 @@ namespace System.Text.Json.Serialization.Tests
             return defaultValue;
         }
 
+        [RequiresUnreferencedCode("Uses Type.GetMember/Type.GetInterfaces reflection to resolve the member backing a JsonPropertyInfo.")]
         private static MemberInfo? ResolveMember(Type type, string name)
         {
             MemberInfo? result = type.GetMember(name, BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();

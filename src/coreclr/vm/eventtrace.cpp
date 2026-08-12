@@ -2856,7 +2856,12 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         // This check has been copied from StackTraceInfo::AppendElement
         if (!(pCf->HasFaulted() || pCf->IsIPadjusted()) && exceptionEIP != 0)
         {
-            exceptionEIP = (PVOID)((UINT_PTR)exceptionEIP - 1);
+#ifdef TARGET_WASM
+            if (!ExecutionManager::IsVirtualIP((PCODE)exceptionEIP))
+#endif
+            {
+                exceptionEIP = (PVOID)((UINT_PTR)exceptionEIP - 1);
+            }
         }
 
         gc.exceptionMessageRef =  ((EXCEPTIONREF)gc.exceptionObj)->GetMessage();
@@ -3538,6 +3543,20 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
 
     EX_TRY
     {
+        // Only ReJIT versions are reported with a non-zero IL code version id; EnC (and the
+        // default version) report 0. This retains compatibility with how EnC updates were
+        // reported before EnC edits were modeled as IL code versions - historically they were
+        // not given unique IL code version IDs in these events. We aren't aware of
+        // any specific scenario that relies on the ENC ids reporting zero or a design
+        // goal that it needs to remain this way.
+        ReJITID ilCodeVersionId = 0;
+#ifdef FEATURE_CODE_VERSIONING
+        if (pConfig->GetCodeVersion().GetILCodeVersion().GetSource() == CodeVersionSource::kReJIT)
+        {
+            ilCodeVersionId = pConfig->GetCodeVersion().GetILCodeVersionId();
+        }
+#endif // FEATURE_CODE_VERSIONING
+
         if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_JIT_KEYWORD))
@@ -3553,12 +3572,12 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
                                                          ETW::EnumerationLog::EnumerationStructs::JitMethodILToNativeMap,
                                                          pNativeCodeStartAddress,
                                                          pConfig->GetCodeVersion().GetVersionId(),
-                                                         pConfig->GetCodeVersion().GetILCodeVersionId());
+                                                         ilCodeVersionId);
         }
 
         if (ETW_EVENT_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_DOTNET_Context, JittedMethodRichDebugInfo))
         {
-            ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), pConfig->GetCodeVersion().GetILCodeVersionId(), NULL);
+            ETW::MethodLog::SendMethodRichDebugInfo(pMethodDesc, pNativeCodeStartAddress, pConfig->GetCodeVersion().GetVersionId(), ilCodeVersionId, NULL);
         }
 
     } EX_CATCH { } EX_END_CATCH
@@ -3590,12 +3609,13 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER
 /**********************************************************************/
 /* This is called by the runtime when a single jit helper method with stub is initialized */
 /**********************************************************************/
-VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName)
+VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
 {
     CONTRACTL {
         NOTHROW;
         GC_TRIGGERS;
         PRECONDITION(ullHelperStartAddress != 0);
+        PRECONDITION(ulHelperSize != 0);
     } CONTRACTL_END;
 
     EX_TRY
@@ -3604,9 +3624,7 @@ VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_JIT_KEYWORD))
         {
-            DWORD dwHelperSize=0;
-            Stub::RecoverStubAndSize((TADDR)ullHelperStartAddress, &dwHelperSize);
-            ETW::MethodLog::SendHelperEvent(ullHelperStartAddress, dwHelperSize, pHelperName);
+            ETW::MethodLog::SendHelperEvent(ullHelperStartAddress, ulHelperSize, pHelperName);
         }
     } EX_CATCH { } EX_END_CATCH
 }
@@ -5048,7 +5066,7 @@ VOID ETW::MethodLog::SendEventsForJitMethodsHelper2(
             else
             {
                 nativeCodeVersionId = nativeCodeVersion.GetVersionId();
-                ilCodeId = nativeCodeVersion.GetILCodeVersionId();
+                ilCodeId = nativeCodeVersion.GetILCodeVersion().GetSource() == CodeVersionSource::kReJIT ? nativeCodeVersion.GetILCodeVersionId() : 0;
             }
         }
         else

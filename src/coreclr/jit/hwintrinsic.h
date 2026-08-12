@@ -69,6 +69,28 @@ enum HWIntrinsicCategory : uint8_t
     // - have to be addressed specially
     HW_Category_Special
 };
+#elif defined(TARGET_WASM)
+enum HWIntrinsicCategory : uint8_t
+{
+    // Operations which operate on one or more SIMD values
+    HW_Category_SIMD,
+
+    // Intrinsics which take an immediate value, generally a lane index
+    HW_Category_IMM,
+
+    // Never used on Wasm, but defined for consistency with other platforms
+    HW_Category_Scalar,
+
+    // SIMD memory access intrinsics
+    HW_Category_MemoryLoad,
+    HW_Category_MemoryStore,
+
+    // Helper intrinsics which do not directly correspond to a instruction
+    HW_Category_Helper,
+
+    // Intrinsics which need special handling
+    HW_Category_Special
+};
 #else
 #error Unsupported platform
 #endif
@@ -238,6 +260,12 @@ enum HWIntrinsicFlag : uint64_t
     // operations into mask operations when the intrinsic is operating on mask vectors (mainly bitwise operations).
     HW_Flag_HasAllMaskVariant = 0x4000000,
 
+#elif defined(TARGET_WASM)
+    // The intrinsic supports some sort of containment analysis
+    HW_Flag_SupportsContainment   = 0x400,
+    HW_Flag_ReturnsPerElementMask = 0x800,
+    // The intrinsic has a required immediate operand
+    HW_Flag_HasImmediateOperand = 0x1000,
 #else
 #error Unsupported platform
 #endif
@@ -548,6 +576,8 @@ struct HWIntrinsicInfo
 #elif defined(TARGET_ARM64)
     static void lookupImmBounds(
         NamedIntrinsic intrinsic, int simdSize, var_types baseType, int immNumber, int* lowerBound, int* upperBound);
+#elif defined(TARGET_WASM)
+    static int lookupImmUpperBound(NamedIntrinsic intrinsic, unsigned int simdSize, var_types baseType);
 #else
 #error Unsupported platform
 #endif
@@ -690,7 +720,7 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
 #if defined(TARGET_XARCH)
         return (flags & HW_Flag_MaybeCommutative) != 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         return false;
 #else
 #error Unsupported platform
@@ -708,7 +738,7 @@ struct HWIntrinsicInfo
         HWIntrinsicFlag flags = lookupFlags(id);
 #if defined(TARGET_XARCH)
         return (flags & HW_Flag_NoContainment) == 0;
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_WASM)
         return (flags & HW_Flag_SupportsContainment) != 0;
 #else
 #error Unsupported platform
@@ -718,7 +748,7 @@ struct HWIntrinsicInfo
     static bool ReturnsPerElementMask(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_WASM)
         return (flags & HW_Flag_ReturnsPerElementMask) != 0;
 #else
 #error Unsupported platform
@@ -828,6 +858,9 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_NoRMWSemantics) == 0;
 #elif defined(TARGET_ARM64)
         return (flags & HW_Flag_HasRMWSemantics) != 0;
+#elif defined(TARGET_WASM)
+        // WASM doesn't have Read/Modify/Write semantics
+        return false;
 #else
 #error Unsupported platform
 #endif
@@ -947,97 +980,32 @@ struct HWIntrinsicInfo
 
     static bool IsVectorCreate(NamedIntrinsic id)
     {
-        switch (id)
-        {
-#if defined(TARGET_ARM64)
-            case NI_Vector64_Create:
-#endif // TARGET_ARM64
-            case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_Create:
-            case NI_Vector512_Create:
-#endif // TARGET_XARCH
-                return true;
-            default:
-                return false;
-        }
+        return id == NI_Vector_Create;
     }
 
     static bool IsVectorCreateScalar(NamedIntrinsic id)
     {
-        switch (id)
-        {
-#if defined(TARGET_ARM64)
-            case NI_Vector64_CreateScalar:
-#endif // TARGET_ARM64
-            case NI_Vector128_CreateScalar:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_CreateScalar:
-            case NI_Vector512_CreateScalar:
-#endif // TARGET_XARCH
-                return true;
-            default:
-                return false;
-        }
+        return id == NI_Vector_CreateScalar;
     }
 
     static bool IsVectorCreateScalarUnsafe(NamedIntrinsic id)
     {
-        switch (id)
-        {
-#if defined(TARGET_ARM64)
-            case NI_Vector64_CreateScalarUnsafe:
-#endif // TARGET_ARM64
-            case NI_Vector128_CreateScalarUnsafe:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_CreateScalarUnsafe:
-            case NI_Vector512_CreateScalarUnsafe:
-#endif // TARGET_XARCH
-                return true;
-            default:
-                return false;
-        }
+        return id == NI_Vector_CreateScalarUnsafe;
     }
 
     static bool IsVectorGetElement(NamedIntrinsic id)
     {
-        switch (id)
-        {
-#if defined(TARGET_ARM64)
-            case NI_Vector64_GetElement:
-#endif // TARGET_ARM64
-            case NI_Vector128_GetElement:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_GetElement:
-            case NI_Vector512_GetElement:
-#endif // TARGET_XARCH
-                return true;
-            default:
-                return false;
-        }
+        return id == NI_Vector_GetElement;
     }
 
     static bool IsVectorToScalar(NamedIntrinsic id)
     {
-        switch (id)
-        {
-#if defined(TARGET_ARM64)
-            case NI_Vector64_ToScalar:
-#endif // TARGET_ARM64
-            case NI_Vector128_ToScalar:
-#if defined(TARGET_XARCH)
-            case NI_Vector256_ToScalar:
-            case NI_Vector512_ToScalar:
-#endif // TARGET_XARCH
-                return true;
-            default:
-                return false;
-        }
+        return id == NI_Vector_ToScalar;
     }
 
     static bool HasImmediateOperand(NamedIntrinsic id)
     {
-#if defined(TARGET_ARM64)
+#if defined(TARGET_ARM64) || defined(TARGET_WASM)
         const HWIntrinsicFlag flags = lookupFlags(id);
         return ((flags & HW_Flag_HasImmediateOperand) != 0);
 #elif defined(TARGET_XARCH)
@@ -1216,6 +1184,20 @@ struct HWIntrinsicInfo
     }
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
+    // IsSveConditionalSelect: Is this intrinsic a ConditionalSelect intrinsic?
+    //
+    // Arguments:
+    //     id       -- Intrinsic ID to test
+    //
+    // Return value:
+    //     Returns true if the ID is either of the vector or mask variant of
+    //     ConditionalSelect.
+    //
+    static bool IsSveConditionalSelect(NamedIntrinsic id)
+    {
+        return (id == NI_Sve_ConditionalSelect) || (id == NI_Sve_ConditionalSelect_Predicates);
+    }
+
 #endif // TARGET_ARM64
 
     static bool HasSpecialSideEffect(NamedIntrinsic id)
@@ -1325,7 +1307,51 @@ struct HWIntrinsicInfo
             }
         }
     }
-#endif // TARGET_ARM64
+#elif defined(TARGET_WASM)
+    //------------------------------------------------------------------------------------------------
+    // GetImmOpPositions: Get the positions of the immediate operands in the signature of an intrinsic
+    // with an immediate.
+    //
+    // Arguments:
+    //   id - The intrinsic ID
+    //   imm1Pos - The position of the first immediate operand
+    //   imm2Pos - The position of the second immediate operand
+    //
+    // Notes:
+    //   imm1Pos and imm2Pos are initialized to -1.
+    static void GetImmOpsPositions(NamedIntrinsic id, int* imm1Pos, int* imm2Pos)
+    {
+        *imm1Pos = -1;
+        *imm2Pos = -1;
+
+        switch (id)
+        {
+            case NI_PackedSimd_ExtractScalar:
+            {
+                // (v128, lane_imm)
+                *imm1Pos = 2;
+                break;
+            }
+            case NI_PackedSimd_ReplaceScalar:
+            {
+                // (v128, lane_imm, value)
+                *imm1Pos = 2;
+                break;
+            }
+            case NI_PackedSimd_StoreSelectedScalar:
+            case NI_PackedSimd_LoadScalarAndInsert:
+            {
+                // (scalar_addr, v128, lane_imm)
+                *imm1Pos = 3;
+                break;
+            }
+            default:
+            {
+                unreached();
+            }
+        }
+    }
+#endif // TARGET_ARM64 || TARGET_WASM
 };
 
 #ifdef TARGET_ARM64
@@ -1431,8 +1457,124 @@ private:
         }
     }
 };
+#elif defined(TARGET_WASM)
+struct HWIntrinsic final
+{
+    HWIntrinsic(const GenTreeHWIntrinsic* node)
+        : op1(nullptr)
+        , op2(nullptr)
+        , op3(nullptr)
+        , numOperands(0)
+        , baseType(TYP_UNDEF)
+        , m_node(node)
+    {
+        assert(node != nullptr);
 
-#endif // TARGET_ARM64
+        id       = node->GetHWIntrinsicId();
+        category = HWIntrinsicInfo::lookupCategory(id);
+        assert(HWIntrinsicInfo::RequiresCodegen(id));
+
+        InitializeOperands(node);
+        InitializeBaseType(node);
+    }
+
+    bool codeGenIsTableDriven() const
+    {
+        bool isTableDrivenCategory = category != HW_Category_Helper;
+        bool isTableDrivenFlag     = !HWIntrinsicInfo::HasSpecialCodegen(id);
+
+        return isTableDrivenCategory && isTableDrivenFlag;
+    }
+
+    inline bool needsJumpTableFallback() const
+    {
+        if (HWIntrinsicInfo::HasImmediateOperand(id))
+        {
+            return !m_node->GetImmOp()->IsCnsIntOrI();
+        }
+
+        return false;
+    }
+
+    uint8_t GetImmediateLaneOperand() const
+    {
+        assert(category == HW_Category_IMM || category == HW_Category_MemoryLoad ||
+               category == HW_Category_MemoryStore);
+
+        GenTree* immOp = m_node->GetImmOp();
+        assert(immOp->IsCnsIntOrI());
+        ssize_t lane = immOp->AsIntCon()->IconValue();
+        assert(FitsIn<uint8_t>(lane));
+
+        return static_cast<uint8_t>(lane);
+    }
+
+    NamedIntrinsic      id;
+    HWIntrinsicCategory category;
+    GenTree*            op1;
+    GenTree*            op2;
+    GenTree*            op3;
+    size_t              numOperands;
+    var_types           baseType;
+
+private:
+    const GenTreeHWIntrinsic* m_node;
+    void                      InitializeOperands(const GenTreeHWIntrinsic* node)
+    {
+        numOperands = node->GetOperandCount();
+
+        switch (numOperands)
+        {
+            case 3:
+                op3 = node->Op(3);
+                FALLTHROUGH;
+            case 2:
+                op2 = node->Op(2);
+                FALLTHROUGH;
+            case 1:
+                op1 = node->Op(1);
+                FALLTHROUGH;
+            case 0:
+                break;
+
+            default:
+                unreached();
+        }
+    }
+
+    void InitializeBaseType(const GenTreeHWIntrinsic* node)
+    {
+        baseType = node->GetSimdBaseType();
+
+        if (baseType == TYP_UNKNOWN)
+        {
+            assert((category == HW_Category_Scalar) || (category == HW_Category_Special));
+
+            if (HWIntrinsicInfo::BaseTypeFromFirstArg(id))
+            {
+                assert(op1 != nullptr);
+                baseType = op1->TypeGet();
+            }
+            else if (HWIntrinsicInfo::BaseTypeFromSecondArg(id))
+            {
+                // TODO-WASM: This case can likely be dropped
+                assert(op2 != nullptr);
+                baseType = op2->TypeGet();
+            }
+            else
+            {
+                baseType = node->TypeGet();
+            }
+
+            if (category == HW_Category_Scalar)
+            {
+                baseType = genActualType(baseType);
+            }
+        }
+    }
+};
+
+#endif // TARGET_WASM
 
 #endif // FEATURE_HW_INTRINSICS
 

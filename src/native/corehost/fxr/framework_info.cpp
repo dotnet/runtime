@@ -83,7 +83,7 @@ bool compare_by_name_and_version(const framework_info &a, const framework_info &
             {
                 // Make sure we filter out any non-version folders.
                 fx_ver_t parsed;
-                if (!fx_ver_t::parse(ver, &parsed, false))
+                if (!fx_ver_t::parse(ver, &parsed))
                     continue;
 
                 // Check that the framework's .deps.json exists.

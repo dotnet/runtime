@@ -204,6 +204,7 @@ function set_exit_code_and_quit_now (exit_code: number, reason?: any): void {
 }
 
 async function flush_node_streams () {
+    if (!ENVIRONMENT_IS_NODE) return;
     try {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore:

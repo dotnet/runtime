@@ -71,6 +71,7 @@ namespace System.Security.Cryptography
         public AesCcm(byte[] key) { }
         public AesCcm(System.ReadOnlySpan<byte> key) { }
         public static bool IsSupported { get { throw null; } }
+        public int KeySizeInBytes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null) { }
@@ -144,6 +145,7 @@ namespace System.Security.Cryptography
         public AesGcm(System.ReadOnlySpan<byte> key) { }
         public AesGcm(System.ReadOnlySpan<byte> key, int tagSizeInBytes) { }
         public static bool IsSupported { get { throw null; } }
+        public int KeySizeInBytes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes NonceByteSizes { get { throw null; } }
         public static System.Security.Cryptography.KeySizes TagByteSizes { get { throw null; } }
         public int? TagSizeInBytes { get { throw null; } }
@@ -187,7 +189,7 @@ namespace System.Security.Cryptography
         public AsnEncodedData(string oid, byte[] rawData) { }
         public AsnEncodedData(string oid, System.ReadOnlySpan<byte> rawData) { }
         public System.Security.Cryptography.Oid? Oid { get { throw null; } set { } }
-        public byte[] RawData { get { throw null; } set { } }
+        public byte[] RawData { get { throw null; } [System.ObsoleteAttribute("Setting AsnEncodedData.RawData is obsolete. Use CopyFrom instead.", DiagnosticId="SYSLIB0065", UrlFormat="https://aka.ms/dotnet-warnings/{0}")] set { } }
         public virtual void CopyFrom(System.Security.Cryptography.AsnEncodedData asnEncodedData) { }
         public virtual string Format(bool multiLine) { throw null; }
     }
@@ -987,7 +989,7 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
-        public DSAOpenSsl(System.IntPtr handle) { }
+        public unsafe DSAOpenSsl(System.IntPtr handle) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
@@ -1227,7 +1229,7 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
-        public ECDiffieHellmanOpenSsl(System.IntPtr handle) { }
+        public unsafe ECDiffieHellmanOpenSsl(System.IntPtr handle) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
@@ -1385,7 +1387,7 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
-        public ECDsaOpenSsl(System.IntPtr handle) { }
+        public unsafe ECDsaOpenSsl(System.IntPtr handle) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
@@ -2752,7 +2754,7 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
-        public RSAOpenSsl(System.IntPtr handle) { }
+        public unsafe RSAOpenSsl(System.IntPtr handle) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
@@ -2863,6 +2865,12 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
         public static System.Security.Cryptography.SafeEvpPKeyHandle OpenKeyFromProvider(string providerName, string keyUri) { throw null; }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
+        public static System.Security.Cryptography.SafeEvpPKeyHandle OpenKeyFromProvider(System.Collections.Generic.IEnumerable<string> providerNames, string keyUri, string? propertyQuery = null) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
@@ -3834,7 +3842,7 @@ namespace System.Security.Cryptography.X509Certificates
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public X509Certificate(System.IntPtr handle) { }
+        public unsafe X509Certificate(System.IntPtr handle) { }
         [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public X509Certificate(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -3943,7 +3951,7 @@ namespace System.Security.Cryptography.X509Certificates
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(byte[] rawData, string? password, System.Security.Cryptography.X509Certificates.X509KeyStorageFlags keyStorageFlags) { }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public X509Certificate2(System.IntPtr handle) { }
+        public unsafe X509Certificate2(System.IntPtr handle) { }
         [System.ObsoleteAttribute("Loading certificate data through the constructor or Import is obsolete. Use X509CertificateLoader instead to load certificates.", DiagnosticId="SYSLIB0057", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public X509Certificate2(System.ReadOnlySpan<byte> rawData) { }
@@ -4163,7 +4171,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Chain() { }
         public X509Chain(bool useMachineContext) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
-        public X509Chain(System.IntPtr chainContext) { }
+        public unsafe X509Chain(System.IntPtr chainContext) { }
         public System.IntPtr ChainContext { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509ChainElementCollection ChainElements { get { throw null; } }
         public System.Security.Cryptography.X509Certificates.X509ChainPolicy ChainPolicy { get { throw null; } set { } }
@@ -4432,7 +4440,7 @@ namespace System.Security.Cryptography.X509Certificates
     public sealed partial class X509Store : System.IDisposable
     {
         public X509Store() { }
-        public X509Store(System.IntPtr storeHandle) { }
+        public unsafe X509Store(System.IntPtr storeHandle) { }
         public X509Store(System.Security.Cryptography.X509Certificates.StoreLocation storeLocation) { }
         public X509Store(System.Security.Cryptography.X509Certificates.StoreName storeName) { }
         public X509Store(System.Security.Cryptography.X509Certificates.StoreName storeName, System.Security.Cryptography.X509Certificates.StoreLocation storeLocation) { }

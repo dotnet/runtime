@@ -19,6 +19,64 @@ namespace JIT.HardwareIntrinsics.Arm
 {
     static class Helpers
     {
+        private static T AllBitsSet<T>() where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return (T)(object)BitConverter.Int32BitsToSingle(-1);
+            }
+
+            if (typeof(T) == typeof(double))
+            {
+                return (T)(object)BitConverter.Int64BitsToDouble(-1);
+            }
+
+            return T.CreateTruncating(-1);
+        }
+
+        public static bool BitwiseEqual<T>(T left, T right) where T : INumberBase<T>
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return BitConverter.SingleToInt32Bits((float)(object)left) == BitConverter.SingleToInt32Bits((float)(object)right);
+            }
+
+            if (typeof(T) == typeof(double))
+            {
+                return BitConverter.DoubleToInt64Bits((double)(object)left) == BitConverter.DoubleToInt64Bits((double)(object)right);
+            }
+
+            return left == right;
+        }
+
+        public static bool IsMaskActive<T>(T value) where T : INumberBase<T>
+        {
+            return !BitwiseEqual(value, T.Zero);
+        }
+
+        public static bool IsMaskInactive<T>(T value) where T : INumberBase<T>
+        {
+            return BitwiseEqual(value, T.Zero);
+        }
+
+        public static bool BitwiseEqual<T>(T[] left, T[] right) where T : INumberBase<T>
+        {
+            if (left.Length != right.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < left.Length; i++)
+            {
+                if (!BitwiseEqual(left[i], right[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public static Vector<T> InitVector<T>(Func<int, T> f)
         {
             var count = Vector<T>.Count;
@@ -30,71 +88,29 @@ namespace JIT.HardwareIntrinsics.Arm
             return new Vector<T>(arr);
         }
 
-        public static T[] ConvertVectorToMask<T>(T[] vector) where T : IBinaryInteger<T>
+        public static T[] ConvertVectorToMask<T>(T[] vector) where T : INumberBase<T>
         {
             T[] result = new T[vector.Length];
             for (int i = 0; i < vector.Length; i++)
             {
-                result[i] = vector[i] == T.Zero ? T.Zero : T.One;
+                result[i] = vector[i] == T.Zero ? T.Zero : AllBitsSet<T>();
             }
             return result;
         }
 
         public static T[] CreateMaskForFirstActiveElement<T>(T[] mask, T[] srcMask)
-            where T : unmanaged, IBinaryInteger<T>
+            where T : INumberBase<T>
         {
             int count = srcMask.Length;
             T[] result = ConvertVectorToMask(srcMask);
 
             for (int i = 0; i < count; i++)
             {
-                if (mask[i] != T.Zero)
+                if (IsMaskActive(mask[i]))
                 {
-                    result[i] = T.One;
+                    result[i] = AllBitsSet<T>();
                     return result;
                 }
-            }
-
-            return result;
-        }
-
-        public static float[] CreateMaskForFirstActiveElement(float[] mask, float[] srcMask)
-        {
-            int count = srcMask.Length;
-            var maskBits = new int[count];
-            var srcMaskBits = new int[count];
-            for (int i = 0; i < count; i++)
-            {
-                maskBits[i] = BitConverter.SingleToInt32Bits(mask[i]);
-                srcMaskBits[i] = BitConverter.SingleToInt32Bits(srcMask[i]);
-            }
-
-            var resultBits = CreateMaskForFirstActiveElement(maskBits, srcMaskBits);
-            var result = new float[count];
-            for (int i = 0; i < count; i++)
-            {
-                result[i] = BitConverter.Int32BitsToSingle(resultBits[i]);
-            }
-
-            return result;
-        }
-
-        public static double[] CreateMaskForFirstActiveElement(double[] mask, double[] srcMask)
-        {
-            int count = srcMask.Length;
-            var maskBits = new long[count];
-            var srcMaskBits = new long[count];
-            for (int i = 0; i < count; i++)
-            {
-                maskBits[i] = BitConverter.DoubleToInt64Bits(mask[i]);
-                srcMaskBits[i] = BitConverter.DoubleToInt64Bits(srcMask[i]);
-            }
-
-            var resultBits = CreateMaskForFirstActiveElement(maskBits, srcMaskBits);
-            var result = new double[count];
-            for (int i = 0; i < count; i++)
-            {
-                result[i] = BitConverter.Int64BitsToDouble(resultBits[i]);
             }
 
             return result;
@@ -120,9 +136,9 @@ namespace JIT.HardwareIntrinsics.Arm
 
             for (int i = start; i < count; i++)
             {
-                if (mask[i] != T.Zero)
+                if (IsMaskActive(mask[i]))
                 {
-                    result[i] = T.One;
+                    result[i] = AllBitsSet<T>();
                     return result;
                 }
             }
@@ -157,11 +173,11 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             int result = 0;
 
-            if (mask[i] != T.Zero)
+            if (IsMaskActive(mask[i]))
             {
                 for (int j = 0; j <= i; j++)
                 {
-                    if (mask[j] != T.Zero && left[i] == right[j])
+                    if (IsMaskActive(mask[j]) && left[i] == right[j])
                     {
                         result++;
                     }
@@ -243,7 +259,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             T result = T.Zero;
             T one = T.One;
-            int bitSize = Unsafe.SizeOf<T>() * 8;
+            int bitSize = sizeof(T) * 8;
 
             for (int i = 0; i < bitSize; i++)
             {
@@ -273,7 +289,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             T result = T.Zero;
             T one = T.One;
-            int bitSize = Unsafe.SizeOf<T>() * 8;
+            int bitSize = sizeof(T) * 8;
 
             for (int i = 0; i < bitSize; i++)
             {
@@ -619,164 +635,48 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
 
-        public static double SveAbsoluteCompareGreaterThan(double left, double right)
-        {
-            long result = 0;
+        public static T SveAbsoluteCompareGreaterThan<T>(T left, T right)
+            where T : INumberBase<T>, IComparisonOperators<T, T, bool>
+            => T.Abs(left) > T.Abs(right) ? AllBitsSet<T>() : T.Zero;
 
-            left = Math.Abs(left);
-            right = Math.Abs(right);
+        public static T SveAbsoluteCompareGreaterThanOrEqual<T>(T left, T right)
+            where T : INumberBase<T>, IComparisonOperators<T, T, bool>
+            => T.Abs(left) >= T.Abs(right) ? AllBitsSet<T>() : T.Zero;
 
-            if (left > right)
-            {
-                result = 1;
-            }
+        public static T SveAbsoluteCompareLessThan<T>(T left, T right)
+            where T : INumberBase<T>, IComparisonOperators<T, T, bool>
+            => T.Abs(left) < T.Abs(right) ? AllBitsSet<T>() : T.Zero;
 
-            return BitConverter.Int64BitsToDouble(result);
-        }
+        public static T SveAbsoluteCompareLessThanOrEqual<T>(T left, T right)
+            where T : INumberBase<T>, IComparisonOperators<T, T, bool>
+            => T.Abs(left) <= T.Abs(right) ? AllBitsSet<T>() : T.Zero;
 
-        public static float SveAbsoluteCompareGreaterThan(float left, float right)
-        {
-            int result = 0;
-
-            left = Math.Abs(left);
-            right = Math.Abs(right);
-
-            if (left > right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double SveAbsoluteCompareGreaterThanOrEqual(double left, double right)
-        {
-            long result = 0;
-
-            left = Math.Abs(left);
-            right = Math.Abs(right);
-
-            if (left >= right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float SveAbsoluteCompareGreaterThanOrEqual(float left, float right)
-        {
-            int result = 0;
-
-            left = Math.Abs(left);
-            right = Math.Abs(right);
-
-            if (left >= right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double SveAbsoluteCompareLessThan(double left, double right)
-        {
-            long result = 0;
-
-            left = Math.Abs(left);
-            right = Math.Abs(right);
-
-            if (left < right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float SveAbsoluteCompareLessThan(float left, float right)
-        {
-            int result = 0;
-
-            left = Math.Abs(left);
-            right = Math.Abs(right);
-
-            if (left < right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double SveAbsoluteCompareLessThanOrEqual(double left, double right)
-        {
-            long result = 0;
-
-            left = Math.Abs(left);
-            right = Math.Abs(right);
-
-            if (left <= right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int64BitsToDouble(result);
-        }
-
-        public static float SveAbsoluteCompareLessThanOrEqual(float left, float right)
-        {
-            int result = 0;
-
-            left = Math.Abs(left);
-            right = Math.Abs(right);
-
-            if (left <= right)
-            {
-                result = 1;
-            }
-
-            return BitConverter.Int32BitsToSingle(result);
-        }
-
-        public static double SveCompareEqual(double left, double right) => BitConverter.Int64BitsToDouble((left == right) ? 1 : 0);
-        public static float SveCompareEqual(float left, float right) => BitConverter.Int32BitsToSingle((left == right) ? 1 : 0);
         public static T SveCompareEqual<T>(T left, T right)
-            where T : INumber<T>, IEqualityOperators<T, T, bool>
-            => left == right ? T.One : T.Zero;
+            where T : INumberBase<T>
+            => left == right ? AllBitsSet<T>() : T.Zero;
 
-        public static double SveCompareNotEqual(double left, double right) => BitConverter.Int64BitsToDouble((left != right) ? 1 : 0);
-        public static float SveCompareNotEqual(float left, float right) => BitConverter.Int32BitsToSingle((left != right) ? 1 : 0);
         public static T SveCompareNotEqual<T>(T left, T right)
-            where T : INumber<T>, IEqualityOperators<T, T, bool>
-            => left != right ? T.One : T.Zero;
+            where T : INumberBase<T>
+            => left != right ? AllBitsSet<T>() : T.Zero;
 
-        public static double SveCompareGreaterThan(double left, double right) => BitConverter.Int64BitsToDouble((left > right) ? 1 : 0);
-        public static float SveCompareGreaterThan(float left, float right) => BitConverter.Int32BitsToSingle((left > right) ? 1 : 0);
         public static T SveCompareGreaterThan<T>(T left, T right)
-            where T : INumber<T>, IComparisonOperators<T, T, bool>
-            => left > right ? T.One : T.Zero;
+            where T : INumberBase<T>, IComparisonOperators<T, T, bool>
+            => left > right ? AllBitsSet<T>() : T.Zero;
 
-        public static double SveCompareGreaterThanOrEqual(double left, double right) => BitConverter.Int64BitsToDouble((left >= right) ? 1 : 0);
-        public static float SveCompareGreaterThanOrEqual(float left, float right) => BitConverter.Int32BitsToSingle((left >= right) ? 1 : 0);
         public static T SveCompareGreaterThanOrEqual<T>(T left, T right)
-            where T : INumber<T>, IComparisonOperators<T, T, bool>
-            => left >= right ? T.One : T.Zero;
+            where T : INumberBase<T>, IComparisonOperators<T, T, bool>
+            => left >= right ? AllBitsSet<T>() : T.Zero;
 
-        public static double SveCompareLessThan(double left, double right) => BitConverter.Int64BitsToDouble((left < right) ? 1 : 0);
-        public static float SveCompareLessThan(float left, float right) => BitConverter.Int32BitsToSingle((left < right) ? 1 : 0);
         public static T SveCompareLessThan<T>(T left, T right)
-            where T : INumber<T>, IComparisonOperators<T, T, bool>
-            => left < right ? T.One : T.Zero;
+            where T : INumberBase<T>, IComparisonOperators<T, T, bool>
+            => left < right ? AllBitsSet<T>() : T.Zero;
 
-        public static double SveCompareLessThanOrEqual(double left, double right) => BitConverter.Int64BitsToDouble((left <= right) ? 1 : 0);
-        public static float SveCompareLessThanOrEqual(float left, float right) => BitConverter.Int32BitsToSingle((left <= right) ? 1 : 0);
         public static T SveCompareLessThanOrEqual<T>(T left, T right)
-            where T : INumber<T>, IComparisonOperators<T, T, bool>
-            => left <= right ? T.One : T.Zero;
+            where T : INumberBase<T>, IComparisonOperators<T, T, bool>
+            => left <= right ? AllBitsSet<T>() : T.Zero;
 
-        public static double SveCompareUnordered(double left, double right) => BitConverter.Int64BitsToDouble((double.IsNaN(left) || double.IsNaN(right)) ? 1 : 0);
-        public static float SveCompareUnordered(float left, float right) => BitConverter.Int32BitsToSingle((float.IsNaN(left) || float.IsNaN(right)) ? 1 : 0);
+        public static double SveCompareUnordered(double left, double right) => BitConverter.Int64BitsToDouble((double.IsNaN(left) || double.IsNaN(right)) ? -1 : 0);
+        public static float SveCompareUnordered(float left, float right) => BitConverter.Int32BitsToSingle((float.IsNaN(left) || float.IsNaN(right)) ? -1 : 0);
 
         public static byte Abs(sbyte value) => value < 0 ? (byte)-value : (byte)value;
 
@@ -1051,7 +951,7 @@ namespace JIT.HardwareIntrinsics.Arm
             where T : unmanaged, INumber<T>, IShiftOperators<T, int, T>
         {
             T roundConst = T.Zero;
-            int shift = 8 * Unsafe.SizeOf<U>();
+            int shift = 8 * sizeof(U);
             if (round)
             {
                 roundConst = T.One << (shift - 1);
@@ -1908,6 +1808,18 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static byte ExtractNarrowingSaturateUnsignedUpper(byte[] op1, short[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
 
+        public static sbyte SaturatingExtractNarrowingLower(short[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (sbyte)0;
+
+        public static sbyte SaturatingExtractNarrowingUpper(sbyte[] even, short[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static byte SaturatingExtractNarrowingLower(ushort[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (byte)0;
+
+        public static byte SaturatingExtractNarrowingUpper(byte[] even, ushort[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static byte SaturatingExtractUnsignedNarrowingLower(short[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturateUnsigned(op[i / 2]) : (byte)0;
+
+        public static byte SaturatingExtractUnsignedNarrowingUpper(byte[] even, short[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturateUnsigned(op[(i - 1) / 2]) : even[i];
+
         private static (short val, bool ovf) MultiplyDoublingOvf(sbyte op1, sbyte op2, bool rounding, short op3, bool subOp)
         {
             short product = (short)((short)op1 * (short)op2);
@@ -2268,6 +2180,18 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static ushort ExtractNarrowingSaturateUnsignedUpper(ushort[] op1, int[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
+
+        public static short SaturatingExtractNarrowingLower(int[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (short)0;
+
+        public static short SaturatingExtractNarrowingUpper(short[] even, int[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static ushort SaturatingExtractNarrowingLower(uint[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : (ushort)0;
+
+        public static ushort SaturatingExtractNarrowingUpper(ushort[] even, uint[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static ushort SaturatingExtractUnsignedNarrowingLower(int[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturateUnsigned(op[i / 2]) : (ushort)0;
+
+        public static ushort SaturatingExtractUnsignedNarrowingUpper(ushort[] even, int[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturateUnsigned(op[(i - 1) / 2]) : even[i];
 
         private static (int val, bool ovf) MultiplyDoublingOvf(short op1, short op2, bool rounding, int op3, bool subOp)
         {
@@ -2652,6 +2576,18 @@ namespace JIT.HardwareIntrinsics.Arm
         }
 
         public static uint ExtractNarrowingSaturateUnsignedUpper(uint[] op1, long[] op2, int i) => i < op1.Length ? op1[i] : ExtractNarrowingSaturateUnsigned(op2[i - op1.Length]);
+
+        public static int SaturatingExtractNarrowingLower(long[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : 0;
+
+        public static int SaturatingExtractNarrowingUpper(int[] even, long[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static uint SaturatingExtractNarrowingLower(ulong[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturate(op[i / 2]) : 0u;
+
+        public static uint SaturatingExtractNarrowingUpper(uint[] even, ulong[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturate(op[(i - 1) / 2]) : even[i];
+
+        public static uint SaturatingExtractUnsignedNarrowingLower(long[] op, int i) => (i % 2 == 0) ? ExtractNarrowingSaturateUnsigned(op[i / 2]) : 0u;
+
+        public static uint SaturatingExtractUnsignedNarrowingUpper(uint[] even, long[] op, int i) => (i % 2 == 1) ? ExtractNarrowingSaturateUnsigned(op[(i - 1) / 2]) : even[i];
 
         private static (long val, bool ovf) MultiplyDoublingOvf(int op1, int op2, bool rounding, long op3, bool subOp)
         {
@@ -3201,7 +3137,7 @@ namespace JIT.HardwareIntrinsics.Arm
             where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
             where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
         {
-            Debug.Assert(Unsafe.SizeOf<TUnsigned>() == Unsafe.SizeOf<TSigned>(), "Unsigned/signed types must be same width");
+            Debug.Assert(sizeof(TUnsigned) == sizeof(TSigned), "Unsigned/signed types must be same width");
 
             var signedMaxAsUnsigned = TUnsigned.AllBitsSet >> 1;
             var leftUnsigned = TUnsigned.CreateTruncating(left);
@@ -3233,7 +3169,7 @@ namespace JIT.HardwareIntrinsics.Arm
             where TUnsigned : IBinaryInteger<TUnsigned>, IUnsignedNumber<TUnsigned>
             where TSigned   : IBinaryInteger<TSigned>, ISignedNumber<TSigned>
         {
-            Debug.Assert(Unsafe.SizeOf<TUnsigned>() == Unsafe.SizeOf<TSigned>(), "Unsigned/signed types must be same width");
+            Debug.Assert(sizeof(TUnsigned) == sizeof(TSigned), "Unsigned/signed types must be same width");
 
             if (TSigned.IsNegative(right))
             {
@@ -3329,7 +3265,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             for (int i = 0; i < op1.Length; i++)
             {
-                if (BitConverter.DoubleToInt64Bits(mask[i]) != 0)
+                if (IsMaskActive(mask[i]))
                 {
                     result += op2[i];
                 }
@@ -3346,7 +3282,7 @@ namespace JIT.HardwareIntrinsics.Arm
 
             for (int i = 0; i < op1.Length; i++)
             {
-                if (BitConverter.SingleToInt32Bits(mask[i]) != 0)
+                if (IsMaskActive(mask[i]))
                 {
                     result += op2[i];
                 }
@@ -6259,234 +6195,111 @@ namespace JIT.HardwareIntrinsics.Arm
             return result;
         }
 
-        public static int WhileLessThanMask(int op1, int op2)
-        {
-            return (op1 < op2) ? 1 : 0;
-        }
+        public static T WhileLessThanMask<T>(int op1, int op2) where T : INumberBase<T> =>
+            op1 < op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static uint WhileLessThanMask(uint op1, uint op2)
-        {
-            return (uint)((op1 < op2) ? 1 : 0);
-        }
+        public static T WhileLessThanMask<T>(uint op1, uint op2) where T : INumberBase<T> =>
+            op1 < op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static long WhileLessThanMask(long op1, long op2)
-        {
-            return (op1 < op2) ? 1 : 0;
-        }
+        public static T WhileLessThanMask<T>(long op1, long op2) where T : INumberBase<T> =>
+            op1 < op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static ulong WhileLessThanMask(ulong op1, ulong op2)
-        {
-            return (ulong)((op1 < op2) ? 1 : 0);
-        }
+        public static T WhileLessThanMask<T>(ulong op1, ulong op2) where T : INumberBase<T> =>
+            op1 < op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static int WhileLessThanOrEqualMask(int op1, int op2)
-        {
-            return (op1 <= op2) ? 1 : 0;
-        }
+        public static T WhileLessThanOrEqualMask<T>(int op1, int op2) where T : INumberBase<T> =>
+            op1 <= op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static uint WhileLessThanOrEqualMask(uint op1, uint op2)
-        {
-            return (uint)((op1 <= op2) ? 1 : 0);
-        }
+        public static T WhileLessThanOrEqualMask<T>(uint op1, uint op2) where T : INumberBase<T> =>
+            op1 <= op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static long WhileLessThanOrEqualMask(long op1, long op2)
-        {
-            return (op1 <= op2) ? 1 : 0;
-        }
+        public static T WhileLessThanOrEqualMask<T>(long op1, long op2) where T : INumberBase<T> =>
+            op1 <= op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static ulong WhileLessThanOrEqualMask(ulong op1, ulong op2)
-        {
-            return (ulong)((op1 <= op2) ? 1 : 0);
-        }
+        public static T WhileLessThanOrEqualMask<T>(ulong op1, ulong op2) where T : INumberBase<T> =>
+            op1 <= op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static int WhileGreaterThanMask(int op1, int op2)
-        {
-            return (op1 > op2) ? 1 : 0;
-        }
+        public static T WhileGreaterThanMask<T>(int op1, int op2) where T : INumberBase<T> =>
+            op1 > op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static uint WhileGreaterThanMask(uint op1, uint op2)
-        {
-            return (uint)((op1 > op2) ? 1 : 0);
-        }
+        public static T WhileGreaterThanMask<T>(uint op1, uint op2) where T : INumberBase<T> =>
+            op1 > op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static long WhileGreaterThanMask(long op1, long op2)
-        {
-            return (op1 > op2) ? 1 : 0;
-        }
+        public static T WhileGreaterThanMask<T>(long op1, long op2) where T : INumberBase<T> =>
+            op1 > op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static ulong WhileGreaterThanMask(ulong op1, ulong op2)
-        {
-            return (ulong)((op1 > op2) ? 1 : 0);
-        }
+        public static T WhileGreaterThanMask<T>(ulong op1, ulong op2) where T : INumberBase<T> =>
+            op1 > op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static int WhileGreaterThanOrEqualMask(int op1, int op2)
-        {
-            return (op1 >= op2) ? 1 : 0;
-        }
+        public static T WhileGreaterThanOrEqualMask<T>(int op1, int op2) where T : INumberBase<T> =>
+            op1 >= op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static uint WhileGreaterThanOrEqualMask(uint op1, uint op2)
-        {
-            return (uint)((op1 >= op2) ? 1 : 0);
-        }
+        public static T WhileGreaterThanOrEqualMask<T>(uint op1, uint op2) where T : INumberBase<T> =>
+            op1 >= op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static long WhileGreaterThanOrEqualMask(long op1, long op2)
-        {
-            return (op1 >= op2) ? 1 : 0;
-        }
+        public static T WhileGreaterThanOrEqualMask<T>(long op1, long op2) where T : INumberBase<T> =>
+            op1 >= op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static ulong WhileGreaterThanOrEqualMask(ulong op1, ulong op2)
-        {
-            return (ulong)((op1 >= op2) ? 1 : 0);
-        }
+        public static T WhileGreaterThanOrEqualMask<T>(ulong op1, ulong op2) where T : INumberBase<T> =>
+            op1 >= op2 ? AllBitsSet<T>() : T.Zero;
 
-        public static ulong MaskBothSet(byte[] op1, byte[] op2)
+        public static ulong MaskBothSet<T>(T[] op1, T[] op2) where T : INumberBase<T>
         {
             ulong acc = 0;
             for (var i = 0; i < op1.Length; i++)
             {
-                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
+                acc += (ulong)((IsMaskActive(op1[i]) && IsMaskActive(op2[i])) ? 1 : 0);
             }
             return acc;
         }
-
-        public static ulong MaskBothSet(sbyte[] op1, sbyte[] op2)
-        {
-            ulong acc = 0;
-            for (var i = 0; i < op1.Length; i++)
-            {
-                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
-            }
-            return acc;
-        }
-
-        public static ulong MaskBothSet(short[] op1, short[] op2)
-        {
-            ulong acc = 0;
-            for (var i = 0; i < op1.Length; i++)
-            {
-                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
-            }
-            return acc;
-        }
-
-        public static ulong MaskBothSet(ushort[] op1, ushort[] op2)
-        {
-            ulong acc = 0;
-            for (var i = 0; i < op1.Length; i++)
-            {
-                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
-            }
-            return acc;
-        }
-
-        public static ulong MaskBothSet(int[] op1, int[] op2)
-        {
-            ulong acc = 0;
-            for (var i = 0; i < op1.Length; i++)
-            {
-                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
-            }
-            return acc;
-        }
-
-        public static ulong MaskBothSet(uint[] op1, uint[] op2)
-        {
-            ulong acc = 0;
-            for (var i = 0; i < op1.Length; i++)
-            {
-                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
-            }
-            return acc;
-        }
-
-        public static ulong MaskBothSet(long[] op1, long[] op2)
-        {
-            ulong acc = 0;
-            for (var i = 0; i < op1.Length; i++)
-            {
-                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
-            }
-            return acc;
-        }
-
-        public static ulong MaskBothSet(ulong[] op1, ulong[] op2)
-        {
-            ulong acc = 0;
-            for (var i = 0; i < op1.Length; i++)
-            {
-                acc += (ulong)((op1[i] == 1 && op2[i] == 1) ? 1 : 0);
-            }
-            return acc;
-        }
-
-        public static ulong MaskBothSet(float[] op1, float[] op2)
-        {
-            ulong acc = 0;
-            for (var i = 0; i < op1.Length; i++)
-            {
-                acc += (ulong)((BitConverter.SingleToInt32Bits(op1[i]) == 1 && BitConverter.SingleToInt32Bits(op2[i]) == 1) ? 1 : 0);
-            }
-            return acc;
-        }
-
-        public static ulong MaskBothSet(double[] op1, double[] op2)
-        {
-            ulong acc = 0;
-            for (var i = 0; i < op1.Length; i++)
-            {
-                acc += (ulong)((BitConverter.DoubleToInt64Bits(op1[i]) == 1 && BitConverter.DoubleToInt64Bits(op2[i]) == 1) ? 1 : 0);
-            }
-            return acc;
-        }
-
         public static byte getMaskByte()
         {
-            return (byte)(TestLibrary.Generator.GetByte() % 2);
+            return (TestLibrary.Generator.GetByte() % 2) == 0 ? byte.MinValue : byte.MaxValue;
         }
 
         public static sbyte getMaskSByte()
         {
-            return (sbyte)(TestLibrary.Generator.GetByte() % 2);
+            return (TestLibrary.Generator.GetByte() % 2) == 0 ? (sbyte)0 : (sbyte)-1;
         }
 
         public static short getMaskInt16()
         {
-            return (short)(TestLibrary.Generator.GetUInt16() % 2);
+            return (TestLibrary.Generator.GetUInt16() % 2) == 0 ? (short)0 : (short)-1;
         }
 
         public static ushort getMaskUInt16()
         {
-            return (ushort)(TestLibrary.Generator.GetUInt16() % 2);
+            return (TestLibrary.Generator.GetUInt16() % 2) == 0 ? ushort.MinValue : ushort.MaxValue;
         }
 
         public static int getMaskInt32()
         {
-            return (int)(TestLibrary.Generator.GetUInt32() % 2);
+            return (TestLibrary.Generator.GetUInt32() % 2) == 0 ? 0 : -1;
         }
 
         public static uint getMaskUInt32()
         {
-            return (uint)(TestLibrary.Generator.GetUInt32() % 2);
+            return (TestLibrary.Generator.GetUInt32() % 2) == 0 ? uint.MinValue : uint.MaxValue;
         }
 
         public static long getMaskInt64()
         {
-            return (long)(TestLibrary.Generator.GetUInt64() % 2);
+            return (TestLibrary.Generator.GetUInt64() % 2) == 0 ? 0 : -1;
         }
 
         public static ulong getMaskUInt64()
         {
-            return (ulong)(TestLibrary.Generator.GetUInt64() % 2);
+            return (TestLibrary.Generator.GetUInt64() % 2) == 0 ? ulong.MinValue : ulong.MaxValue;
         }
 
         public static float getMaskSingle()
         {
-            return BitConverter.UInt32BitsToSingle((TestLibrary.Generator.GetUInt32() % 2));
+            return BitConverter.Int32BitsToSingle((TestLibrary.Generator.GetUInt32() % 2) == 0 ? 0 : -1);
         }
 
         public static double getMaskDouble()
         {
-            return BitConverter.UInt64BitsToDouble((TestLibrary.Generator.GetUInt64() % 2));
+            return BitConverter.Int64BitsToDouble((TestLibrary.Generator.GetUInt64() % 2) == 0 ? 0 : -1);
         }
 
         public static int MaskNumberOfElementsVector(int elems, SveMaskPattern pattern)
@@ -6542,113 +6355,42 @@ namespace JIT.HardwareIntrinsics.Arm
 
         public static int NumberOfElementsInVectorInt8(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<byte>>() / sizeof(byte), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<byte>) / sizeof(byte), pattern);
         }
 
         public static int NumberOfElementsInVectorInt16(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<short>>() / sizeof(short), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<short>) / sizeof(short), pattern);
         }
 
         public static int NumberOfElementsInVectorInt32(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<int>>() / sizeof(int), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<int>) / sizeof(int), pattern);
         }
 
         public static int NumberOfElementsInVectorInt64(SveMaskPattern pattern)
         {
-            return MaskNumberOfElementsVector(Unsafe.SizeOf<Vector<long>>() / sizeof(long), pattern);
+            return MaskNumberOfElementsVector(sizeof(Vector<long>) / sizeof(long), pattern);
         }
 
-        public static int NumberOfActiveElementsInMask(sbyte[] mask)
+        public static int NumberOfActiveElementsInMask<T>(T[] mask) where T : INumberBase<T>
         {
             int acc = 0;
             for (var i = 0; i < mask.Length; i++)
             {
-                acc += (mask[i] == 1) ? 1 : 0;
+                acc += IsMaskActive(mask[i]) ? 1 : 0;
             }
             return acc;
         }
 
-        public static int NumberOfActiveElementsInMask(short[] mask)
+        public static T[] Compact<T>(T[] op1, T[] op2) where T : INumberBase<T>
         {
-            int acc = 0;
-            for (var i = 0; i < mask.Length; i++)
-            {
-                acc += (mask[i] == 1) ? 1 : 0;
-            }
-            return acc;
-        }
-
-        public static int NumberOfActiveElementsInMask(int[] mask)
-        {
-            int acc = 0;
-            for (var i = 0; i < mask.Length; i++)
-            {
-                acc += (mask[i] == 1) ? 1 : 0;
-            }
-            return acc;
-        }
-
-        public static int NumberOfActiveElementsInMask(long[] mask)
-        {
-            int acc = 0;
-            for (var i = 0; i < mask.Length; i++)
-            {
-                acc += (mask[i] == 1) ? 1 : 0;
-            }
-            return acc;
-        }
-
-        public static int NumberOfActiveElementsInMask(byte[] mask)
-        {
-            int acc = 0;
-            for (var i = 0; i < mask.Length; i++)
-            {
-                acc += (mask[i] == 1) ? 1 : 0;
-            }
-            return acc;
-        }
-
-        public static int NumberOfActiveElementsInMask(ushort[] mask)
-        {
-            int acc = 0;
-            for (var i = 0; i < mask.Length; i++)
-            {
-                acc += (mask[i] == 1) ? 1 : 0;
-            }
-            return acc;
-        }
-
-        public static int NumberOfActiveElementsInMask(uint[] mask)
-        {
-            int acc = 0;
-            for (var i = 0; i < mask.Length; i++)
-            {
-                acc += (mask[i] == 1) ? 1 : 0;
-            }
-            return acc;
-        }
-
-        public static int NumberOfActiveElementsInMask(ulong[] mask)
-        {
-            int acc = 0;
-            for (var i = 0; i < mask.Length; i++)
-            {
-                acc += (mask[i] == 1) ? 1 : 0;
-            }
-            return acc;
-        }
-
-        public static double[] Compact(double[] op1, double[] op2)
-        {
-            double[] result = new double[op1.Length];
-            Array.Fill<double>(result, 0, 0, op1.Length);
+            T[] result = new T[op1.Length];
 
             int i = 0;
             for (int j = 0; j < op1.Length; j++)
             {
-                if (op1[j] != 0)
+                if (IsMaskActive(op1[j]))
                 {
                     result[i++] = op2[j];
                 }
@@ -6656,92 +6398,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return result;
         }
-
-        public static int[] Compact(int[] op1, int[] op2)
-        {
-            int[] result = new int[op1.Length];
-            Array.Fill<int>(result, 0, 0, op1.Length);
-
-            int i = 0;
-            for (int j = 0; j < op1.Length; j++)
-            {
-                if (op1[j] != 0)
-                {
-                    result[i++] = op2[j];
-                }
-            }
-
-            return result;
-        }
-
-        public static long[] Compact(long[] op1, long[] op2)
-        {
-            long[] result = new long[op1.Length];
-            Array.Fill<long>(result, 0, 0, op1.Length);
-
-            long i = 0;
-            for (int j = 0; j < op1.Length; j++)
-            {
-                if (op1[j] != 0)
-                {
-                    result[i++] = op2[j];
-                }
-            }
-
-            return result;
-        }
-
-        public static float[] Compact(float[] op1, float[] op2)
-        {
-            float[] result = new float[op1.Length];
-            Array.Fill<float>(result, 0, 0, op1.Length);
-
-            int i = 0;
-            for (int j = 0; j < op1.Length; j++)
-            {
-                if (op1[j] != 0)
-                {
-                    result[i++] = op2[j];
-                }
-            }
-
-            return result;
-        }
-
-        public static uint[] Compact(uint[] op1, uint[] op2)
-        {
-            uint[] result = new uint[op1.Length];
-            Array.Fill<uint>(result, 0, 0, op1.Length);
-
-            int i = 0;
-            for (int j = 0; j < op1.Length; j++)
-            {
-                if (op1[j] != 0)
-                {
-                    result[i++] = op2[j];
-                }
-            }
-
-            return result;
-        }
-
-        public static ulong[] Compact(ulong[] op1, ulong[] op2)
-        {
-            ulong[] result = new ulong[op1.Length];
-            Array.Fill<ulong>(result, 0, 0, op1.Length);
-
-            ulong i = 0;
-            for (int j = 0; j < op1.Length; j++)
-            {
-                if (op1[j] != 0)
-                {
-                    result[i++] = op2[j];
-                }
-            }
-
-            return result;
-        }
-
         public static int LoadInt16FromByteArray(byte[] array, int offset)
         {
             int ret = 0;
@@ -6932,7 +6588,7 @@ namespace JIT.HardwareIntrinsics.Arm
         {
             for (var i = mask.Length - 1; i >= 0; i--)
             {
-                if (mask[i] != T.Zero)
+                if (IsMaskActive(mask[i]))
                 {
                     return x[i];
                 }
@@ -6948,7 +6604,7 @@ namespace JIT.HardwareIntrinsics.Arm
             for (var i = 0; i < count; i++)
             {
                 var isElementActive = op[i] != T.Zero;
-                if (mask[i] != T.Zero)
+                if (IsMaskActive(mask[i]))
                 {
                     if (isBreakSet)
                     {
@@ -6956,7 +6612,7 @@ namespace JIT.HardwareIntrinsics.Arm
                     }
                     else
                     {
-                        result[i] = T.One;
+                        result[i] = AllBitsSet<T>();
                     }
                     isBreakSet = isBreakSet || isElementActive;
                 }
@@ -7015,11 +6671,11 @@ namespace JIT.HardwareIntrinsics.Arm
             var isLastActive = LastActive(mask, op1) != T.Zero;
             for (var i = 0; i < count; i++)
             {
-                if (mask[i] != T.Zero)
+                if (IsMaskActive(mask[i]))
                 {
                     if (isLastActive)
                     {
-                        result[i] = T.One;
+                        result[i] = AllBitsSet<T>();
                     }
                     else
                     {
@@ -7087,7 +6743,7 @@ namespace JIT.HardwareIntrinsics.Arm
             for (var i = 0; i < count; i++)
             {
                 var isElementActive = op[i] != T.Zero;
-                if (mask[i] != T.Zero)
+                if (IsMaskActive(mask[i]))
                 {
                     isBreakSet = isBreakSet || isElementActive;
                     if (isBreakSet)
@@ -7096,7 +6752,7 @@ namespace JIT.HardwareIntrinsics.Arm
                     }
                     else
                     {
-                        result[i] = T.One;
+                        result[i] = AllBitsSet<T>();
                     }
                 }
                 else
@@ -7154,12 +6810,12 @@ namespace JIT.HardwareIntrinsics.Arm
             var isLastActive = LastActive(mask, op1) != T.Zero;
             for (var i = 0; i < count; i++)
             {
-                if (mask[i] != T.Zero)
+                if (IsMaskActive(mask[i]))
                 {
                     isLastActive = isLastActive && (op2[i] == T.Zero);
                     if (isLastActive)
                     {
-                        result[i] = T.One;
+                        result[i] = AllBitsSet<T>();
                     }
                     else
                     {
@@ -7233,7 +6889,7 @@ namespace JIT.HardwareIntrinsics.Arm
             where TMem : INumberBase<TMem>
             where TElem : INumberBase<TElem>
         {
-            return (mask[index] == TElem.Zero) ? TElem.Zero : TElem.CreateTruncating(data[index]);
+            return (IsMaskInactive(mask[index])) ? TElem.Zero : TElem.CreateTruncating(data[index]);
         }
 
         private static TElem GetLoadVectorExpectedResultByIndex<TMem, TElem>(int index, TMem[] data, TElem[] result)
@@ -7241,7 +6897,7 @@ namespace JIT.HardwareIntrinsics.Arm
             where TElem : INumberBase<TElem>
         {
             TElem[] mask = new TElem[result.Length];
-            Array.Fill(mask, TElem.One);
+            Array.Fill(mask, AllBitsSet<TElem>());
 
             return GetLoadVectorExpectedResultByIndex(index, mask, data, result);
         }
@@ -7304,7 +6960,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Index : IBinaryInteger<Index>
         {
-            return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(data[int.CreateChecked(indices[index])]);
+            return (IsMaskInactive(mask[index])) ? T.Zero : T.CreateTruncating(data[int.CreateChecked(indices[index])]);
         }
 
         private static unsafe T GetGatherVectorBasesResultByIndex<T, AddressT, ExtendedElementT>(int index, T[] mask, AddressT[] data)
@@ -7312,7 +6968,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 where AddressT : unmanaged, INumberBase<AddressT>
                 where ExtendedElementT : unmanaged, INumberBase<ExtendedElementT>
         {
-            return (mask[index] == T.Zero) ? T.Zero : T.CreateTruncating(*(ExtendedElementT*)Unsafe.BitCast<AddressT, nint>(data[index]));
+            return (IsMaskInactive(mask[index])) ? T.Zero : T.CreateTruncating(*(ExtendedElementT*)Unsafe.BitCast<AddressT, nint>(data[index]));
         }
 
         private static bool GetGatherVectorResultByByteOffset<T, ExtendedElementT, Offset>(int index, T[] mask, byte[] data, Offset[] offsets, T result)
@@ -7320,7 +6976,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 where ExtendedElementT : INumberBase<ExtendedElementT>
                 where Offset : IBinaryInteger<Offset>
         {
-            if (mask[index] == T.Zero)
+            if (IsMaskInactive(mask[index]))
             {
                 return result == T.Zero;
             }
@@ -7521,14 +7177,14 @@ namespace JIT.HardwareIntrinsics.Arm
                         return TFault.Zero;
                     }
 
-                    if (mask[i] == TElem.Zero)
+                    if (IsMaskInactive(mask[i]))
                     {
-                        return TFault.One;
+                        return AllBitsSet<TFault>();
                     }
 
                     if (i < validElementCount)
                     {
-                        return TFault.One;
+                        return AllBitsSet<TFault>();
                     }
 
                     hasFaulted = true;
@@ -7565,9 +7221,9 @@ namespace JIT.HardwareIntrinsics.Arm
                         return TFault.Zero;
                     }
 
-                    if (mask[i] == T.Zero)
+                    if (IsMaskInactive(mask[i]))
                     {
-                        return TFault.One;
+                        return AllBitsSet<TFault>();
                     }
 
                     var index = int.CreateChecked(indices[i]);
@@ -7576,7 +7232,7 @@ namespace JIT.HardwareIntrinsics.Arm
                         hasFaulted = true;
                         return TFault.Zero;
                     }
-                    return TFault.One;
+                    return AllBitsSet<TFault>();
                 });
             if (expectedFaultResult != faultResult)
             {
@@ -7609,9 +7265,9 @@ namespace JIT.HardwareIntrinsics.Arm
                         return TFault.Zero;
                     }
 
-                    if (mask[i] == T.Zero)
+                    if (IsMaskInactive(mask[i]))
                     {
-                        return TFault.One;
+                        return AllBitsSet<TFault>();
                     }
 
                     if (data[i] == AddressT.Zero)
@@ -7619,7 +7275,7 @@ namespace JIT.HardwareIntrinsics.Arm
                         hasFaulted = true;
                         return TFault.Zero;
                     }
-                    return TFault.One;
+                    return AllBitsSet<TFault>();
                 });
             if (expectedFaultResult != faultResult)
             {
@@ -7643,7 +7299,7 @@ namespace JIT.HardwareIntrinsics.Arm
                 return false;
             }
 
-            var elemSize = Unsafe.SizeOf<ExtendedElementT>();
+            var elemSize = sizeof(ExtendedElementT);
             var hasFaulted = false;
             var expectedFaultResult =
                 InitVector<TFault>(i =>
@@ -7653,9 +7309,9 @@ namespace JIT.HardwareIntrinsics.Arm
                         return TFault.Zero;
                     }
 
-                    if (mask[i] == T.Zero)
+                    if (IsMaskInactive(mask[i]))
                     {
-                        return TFault.One;
+                        return AllBitsSet<TFault>();
                     }
 
                     var offset = int.CreateChecked(offsets[i]);
@@ -7664,7 +7320,7 @@ namespace JIT.HardwareIntrinsics.Arm
                         hasFaulted = true;
                         return TFault.Zero;
                     }
-                    return TFault.One;
+                    return AllBitsSet<TFault>();
                 });
             if (expectedFaultResult != faultResult)
             {
@@ -7684,7 +7340,7 @@ namespace JIT.HardwareIntrinsics.Arm
             var mask = new T[count];
             for (var i = 0; i < count; i++)
             {
-                mask[i] = T.One;
+                mask[i] = AllBitsSet<T>();
             }
 
             if (LastActive(mask, op1) != T.Zero)
@@ -7891,7 +7547,7 @@ namespace JIT.HardwareIntrinsics.Arm
             T[] result = new T[left.Length];
             for (int i = 0; i < left.Length; i++)
             {
-                if (mask[i] != T.Zero)
+                if (IsMaskActive(mask[i]))
                 {
                     bool found = false;
                     for (int j = 0; j < right.Length; j++)
@@ -7904,11 +7560,11 @@ namespace JIT.HardwareIntrinsics.Arm
                     }
                     if (isNoMatch)
                     {
-                        result[i] = found ? T.Zero : T.One;
+                        result[i] = found ? T.Zero : AllBitsSet<T>();
                     }
                     else
                     {
-                        result[i] = found ? T.One : T.Zero;
+                        result[i] = found ? AllBitsSet<T>() : T.Zero;
                     }
                 }
                 else
@@ -8486,5 +8142,122 @@ namespace JIT.HardwareIntrinsics.Arm
 
             return sum;
         }
+
+        private static ulong RotateLeft1(ulong op) => (op << 1) | (op >> 63);
+
+        public static ulong BitwiseRotateLeftBy1AndXor(ulong op1, ulong op2)
+            => op1 ^ RotateLeft1(op2);
+
+        public static long BitwiseRotateLeftBy1AndXor(long op1, long op2)
+            => op1 ^ unchecked((long)RotateLeft1((ulong)op2));
+
+        // SM4 encoding functions
+        public static class Sm4
+        {
+            // SM4 substitution box used by the non-linear Tau transform.
+            private static readonly byte[] SBox =
+            {
+                0xd6,0x90,0xe9,0xfe,0xcc,0xe1,0x3d,0xb7,0x16,0xb6,0x14,0xc2,0x28,0xfb,0x2c,0x05,
+                0x2b,0x67,0x9a,0x76,0x2a,0xbe,0x04,0xc3,0xaa,0x44,0x13,0x26,0x49,0x86,0x06,0x99,
+                0x9c,0x42,0x50,0xf4,0x91,0xef,0x98,0x7a,0x33,0x54,0x0b,0x43,0xed,0xcf,0xac,0x62,
+                0xe4,0xb3,0x1c,0xa9,0xc9,0x08,0xe8,0x95,0x80,0xdf,0x94,0xfa,0x75,0x8f,0x3f,0xa6,
+                0x47,0x07,0xa7,0xfc,0xf3,0x73,0x17,0xba,0x83,0x59,0x3c,0x19,0xe6,0x85,0x4f,0xa8,
+                0x68,0x6b,0x81,0xb2,0x71,0x64,0xda,0x8b,0xf8,0xeb,0x0f,0x4b,0x70,0x56,0x9d,0x35,
+                0x1e,0x24,0x0e,0x5e,0x63,0x58,0xd1,0xa2,0x25,0x22,0x7c,0x3b,0x01,0x21,0x78,0x87,
+                0xd4,0x00,0x46,0x57,0x9f,0xd3,0x27,0x52,0x4c,0x36,0x02,0xe7,0xa0,0xc4,0xc8,0x9e,
+                0xea,0xbf,0x8a,0xd2,0x40,0xc7,0x38,0xb5,0xa3,0xf7,0xf2,0xce,0xf9,0x61,0x15,0xa1,
+                0xe0,0xae,0x5d,0xa4,0x9b,0x34,0x1a,0x55,0xad,0x93,0x32,0x30,0xf5,0x8c,0xb1,0xe3,
+                0x1d,0xf6,0xe2,0x2e,0x82,0x66,0xca,0x60,0xc0,0x29,0x23,0xab,0x0d,0x53,0x4e,0x6f,
+                0xd5,0xdb,0x37,0x45,0xde,0xfd,0x8e,0x2f,0x03,0xff,0x6a,0x72,0x6d,0x6c,0x5b,0x51,
+                0x8d,0x1b,0xaf,0x92,0xbb,0xdd,0xbc,0x7f,0x11,0xd9,0x5c,0x41,0x1f,0x10,0x5a,0xd8,
+                0x0a,0xc1,0x31,0x88,0xa5,0xcd,0x7b,0xbd,0x2d,0x74,0xd0,0x12,0xb8,0xe5,0xb4,0xb0,
+                0x89,0x69,0x97,0x4a,0x0c,0x96,0x77,0x7e,0x65,0xb9,0xf1,0x09,0xc5,0x6e,0xc6,0x84,
+                0x18,0xf0,0x7d,0xec,0x3a,0xdc,0x4d,0x20,0x79,0xee,0x5f,0x3e,0xd7,0xcb,0x39,0x48
+            };
+
+            private static uint Tau(uint x)
+            {
+                // Apply the SM4 S-box independently to each byte of the 32-bit word.
+                return (uint)(SBox[x & 0xff]
+                    | (SBox[(x >> 8) & 0xff] << 8)
+                    | (SBox[(x >> 16) & 0xff] << 16)
+                    | (SBox[(x >> 24) & 0xff] << 24));
+            }
+
+            public static uint Encode(int index, uint[] data, uint[] roundKeys)
+            {
+                uint[] result = new uint[data.Length];
+
+                // SM4E processes four 32-bit words at a time and applies four rounds.
+                for (int s = 0; s < data.Length; s += 4)
+                {
+                    uint x0 = data[s + 0];
+                    uint x1 = data[s + 1];
+                    uint x2 = data[s + 2];
+                    uint x3 = data[s + 3];
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        uint t = x1 ^ x2 ^ x3 ^ roundKeys[s + i];
+                        t = Tau(t);
+                        // Encryption linear transform: L(B) = B ^ rotl(B,2) ^ rotl(B,10) ^ rotl(B,18) ^ rotl(B,24).
+                        t ^= BitOperations.RotateLeft(t, 2)
+                           ^ BitOperations.RotateLeft(t, 10)
+                           ^ BitOperations.RotateLeft(t, 18)
+                           ^ BitOperations.RotateLeft(t, 24);
+                        t ^= x0;
+
+                        x0 = x1;
+                        x1 = x2;
+                        x2 = x3;
+                        x3 = t;
+                    }
+
+                    result[s + 0] = x0;
+                    result[s + 1] = x1;
+                    result[s + 2] = x2;
+                    result[s + 3] = x3;
+                }
+
+                return result[index];
+            }
+
+            public static uint KeyUpdate(int index, uint[] key, uint[] constants)
+            {
+                uint[] result = new uint[key.Length];
+
+                // SM4EKEY uses the same four-word recurrence with the key-schedule linear transform.
+                for (int s = 0; s < key.Length; s += 4)
+                {
+                    uint k0 = key[s + 0];
+                    uint k1 = key[s + 1];
+                    uint k2 = key[s + 2];
+                    uint k3 = key[s + 3];
+
+                    for (int i = 0; i < 4; i++)
+                    {
+                        uint t = k1 ^ k2 ^ k3 ^ constants[s + i];
+                        t = Tau(t);
+                        // Key-schedule linear transform: L'(B) = B ^ rotl(B,13) ^ rotl(B,23).
+                        t ^= BitOperations.RotateLeft(t, 13)
+                           ^ BitOperations.RotateLeft(t, 23);
+                        t ^= k0;
+
+                        k0 = k1;
+                        k1 = k2;
+                        k2 = k3;
+                        k3 = t;
+                    }
+
+                    result[s + 0] = k0;
+                    result[s + 1] = k1;
+                    result[s + 2] = k2;
+                    result[s + 3] = k3;
+                }
+
+                return result[index];
+            }
+        }
+
     }
 }

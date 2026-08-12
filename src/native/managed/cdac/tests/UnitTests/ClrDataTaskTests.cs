@@ -16,21 +16,23 @@ public unsafe class ClrDataTaskTests
     {
         TargetTestHelpers helpers = new(arch);
 
-        ulong globalPtrAddr = 0x1000;
+        ulong appDomainGlobalPtrAddr = 0x1000;
         ulong expectedAppDomain = 0x2000;
 
         var targetBuilder = new TestPlaceholderTarget.Builder(arch);
-        byte[] ptrData = new byte[helpers.PointerSize];
-        helpers.WritePointer(ptrData, expectedAppDomain);
+        byte[] appDomainPtrData = new byte[helpers.PointerSize];
+        helpers.WritePointer(appDomainPtrData, expectedAppDomain);
         targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
         {
-            Address = globalPtrAddr,
-            Data = ptrData,
+            Address = appDomainGlobalPtrAddr,
+            Data = appDomainPtrData,
             Name = "AppDomainGlobalPointer"
         });
 
         var target = targetBuilder
-            .AddGlobals((Constants.Globals.AppDomain, globalPtrAddr))
+            .AddGlobals(
+                (Constants.Globals.AppDomain, appDomainGlobalPtrAddr))
+            .AddContract<Contracts.ILoader>("c1")
             .Build();
 
         TargetPointer taskAddress = new TargetPointer(0x5000);

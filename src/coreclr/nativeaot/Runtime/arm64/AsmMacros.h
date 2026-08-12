@@ -224,6 +224,7 @@ TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister
         str         $trashReg1, [$trashReg2]
         str         xzr, [$threadReg, #OFFSETOF__Thread__m_ppvHijackedReturnAddressLocation]
         str         xzr, [$threadReg, #OFFSETOF__Thread__m_pvHijackedReturnAddress]
+        str         xzr, [$threadReg, #OFFSETOF__Thread__m_pSpForPacSign]
 0
     MEND
 

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Needed for GCStressIncompatible, GC.WaitForPendingFinalizers -->
+    <!-- Needed for CLRTestTargetUnsupported, GCStressIncompatible, GC.WaitForPendingFinalizers -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
 
     <!-- Test needs explicit Main as it uses command-line parameters -->

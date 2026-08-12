@@ -347,7 +347,7 @@ public static class Program
         using var stressLogData = MemoryMappedFile.CreateFromFile(options.InputFile.FullName, FileMode.Open, null, 0, MemoryMappedFileAccess.Read);
         using MemoryMappedViewAccessor accessor = stressLogData.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);
 
-        if (accessor.Capacity < Unsafe.SizeOf<StressLogHeader>())
+        if (accessor.Capacity < sizeof(StressLogHeader))
         {
             Console.WriteLine("Invalid memory-mapped stress log");
             return 1;
@@ -494,6 +494,7 @@ public static class Program
             (address, buffer) => ReadFromMemoryMappedLog(address, buffer, header),
             (address, buffer) => throw new NotImplementedException("StressLogAnalyzer does not provide WriteToTarget implementation"),
             (threadId, contextFlags, bufferToFill) => throw new NotImplementedException("StressLogAnalyzer does not provide GetTargetThreadContext implementation"),
+            (threadId, context) => throw new NotImplementedException("StressLogAnalyzer does not provide SetTargetThreadContext implementation"),
             (ulong size, out ulong allocatedAddress) => throw new NotImplementedException("StressLogAnalyzer does not provide AllocVirtual implementation"),
             true,
             nuint.Size,
@@ -585,7 +586,7 @@ public static class Program
                     "StressLogModuleTable": [[ 1 ], "pointer" ],
                 },
                 "contracts": {
-                    "StressLog": 2,
+                    "StressLog": "c2",
                 }
             }
             """"u8)!;

@@ -134,7 +134,7 @@ namespace System.Text.Json
 
             WriteStringByOptionsPropertyName(propertyName);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
@@ -293,7 +293,7 @@ namespace System.Text.Json
 
             WriteStringByOptionsPropertyName(utf8PropertyName);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }
@@ -483,7 +483,7 @@ namespace System.Text.Json
         {
             ArgumentNullException.ThrowIfNull(propertyName);
 
-            if (value == null)
+            if (value is null)
             {
                 WriteNull(propertyName.AsSpan());
             }
@@ -563,7 +563,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(JsonEncodedText propertyName, string? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 WriteNull(propertyName);
             }
@@ -809,7 +809,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(ReadOnlySpan<char> propertyName, string? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 WriteNull(propertyName);
             }
@@ -881,7 +881,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteString(ReadOnlySpan<byte> utf8PropertyName, string? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 WriteNull(utf8PropertyName);
             }
@@ -908,7 +908,7 @@ namespace System.Text.Json
 
             WriteStringByOptions(escapedPropertyName, escapedValue.Slice(0, written));
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(valueArray);
             }
@@ -931,7 +931,7 @@ namespace System.Text.Json
 
             WriteStringByOptions(escapedPropertyName, escapedValue.Slice(0, written));
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<char>.Shared.Return(valueArray);
             }
@@ -954,7 +954,7 @@ namespace System.Text.Json
 
             WriteStringByOptions(escapedPropertyName.Slice(0, written), escapedValue);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
@@ -977,7 +977,7 @@ namespace System.Text.Json
 
             WriteStringByOptions(escapedPropertyName.Slice(0, written), escapedValue);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }
@@ -1108,12 +1108,12 @@ namespace System.Text.Json
 
             WriteStringByOptions(propertyName, value);
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<char>.Shared.Return(valueArray);
             }
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
@@ -1168,12 +1168,12 @@ namespace System.Text.Json
 
             WriteStringByOptions(utf8PropertyName, utf8Value);
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(valueArray);
             }
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }
@@ -1228,12 +1228,12 @@ namespace System.Text.Json
 
             WriteStringByOptions(propertyName, utf8Value);
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(valueArray);
             }
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
@@ -1288,12 +1288,12 @@ namespace System.Text.Json
 
             WriteStringByOptions(utf8PropertyName, value);
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<char>.Shared.Return(valueArray);
             }
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }

@@ -184,7 +184,6 @@ class DacDbiInterfaceImpl;
 // whenever we compare it to a PTR_Frame value (the usual use of the value).
 #define FRAME_TOP_VALUE  ~0     // we want to say -1 here, but gcc has trouble with the signed value
 #define FRAME_TOP (PTR_Frame(FRAME_TOP_VALUE))
-#define GCFRAME_TOP (PTR_GCFrame(FRAME_TOP_VALUE))
 
 
 enum class FrameIdentifier : TADDR
@@ -792,6 +791,9 @@ inline CONTEXT * GETREDIRECTEDCONTEXT(Thread * thread) { LIMITED_METHOD_CONTRACT
 typedef DPTR(class TransitionFrame) PTR_TransitionFrame;
 
 #ifdef TARGET_WASM
+// Wasm has no native return address for an R2R inline P/Invoke. This sentinel marks the frame as
+// active; stack walkers recover the caller virtual IP from m_pCallSiteSP.
+static constexpr TADDR INLINED_PINVOKE_FROM_R2R = 1;
 TADDR GetWasmVirtualIPFromStackPointer(TADDR sp);
 #endif
 
@@ -1062,6 +1064,7 @@ public:
     }
 
     void UpdateContextFromTransitionBlock(TransitionBlock *pTransitionBlock);
+    void SetContext(T_CONTEXT *pContext);
 #endif
 
     TADDR GetReturnAddressPtr_Impl()
@@ -1210,6 +1213,7 @@ template<>
 struct cdac_data<FuncEvalFrame>
 {
     static constexpr size_t DebuggerEvalPtr = offsetof(FuncEvalFrame, m_pDebuggerEval);
+    static constexpr size_t ReturnAddress = offsetof(FuncEvalFrame, m_ReturnAddress);
 };
 
 typedef DPTR(FuncEvalFrame) PTR_FuncEvalFrame;
@@ -1359,6 +1363,14 @@ public:
         trace->InitForUnmanaged(GetPInvokeCalliTarget());
         return TRUE;
     }
+
+    friend struct ::cdac_data<PInvokeCalliFrame>;
+};
+
+template <>
+struct cdac_data<PInvokeCalliFrame>
+{
+    static constexpr size_t VASigCookiePtr = offsetof(PInvokeCalliFrame, m_pVASigCookie);
 };
 
 // Some context-related forwards.
@@ -1808,6 +1820,17 @@ private:
 #ifdef FEATURE_INTERPRETER
     PTR_VOID      m_osStackLocation;
 #endif
+
+    friend struct ::cdac_data<GCFrame>;
+};
+
+template<>
+struct cdac_data<GCFrame>
+{
+    static constexpr size_t Next = offsetof(GCFrame, m_Next);
+    static constexpr size_t ObjRefs = offsetof(GCFrame, m_pObjRefs);
+    static constexpr size_t NumObjRefs = offsetof(GCFrame, m_numObjRefs);
+    static constexpr size_t GCFlags = offsetof(GCFrame, m_gcFlags);
 };
 
 //-----------------------------------------------------------------------------
@@ -2066,23 +2089,26 @@ public:
     MethodDesc *GetFunction_Impl()
     {
         WRAPPER_NO_CONTRACT;
-        if (FrameHasActiveCall(this) && HasFunction())
-            // Mask off marker bits
-            return PTR_MethodDesc((dac_cast<TADDR>(m_Datum) & ~(sizeof(TADDR) - 1)));
-        else
+        if (!FrameHasActiveCall(this))
+        {
             return NULL;
-    }
+        }
 
-    BOOL HasFunction()
-    {
-        WRAPPER_NO_CONTRACT;
+        TADDR datum = dac_cast<TADDR>(m_Datum) & ~(TADDR)InlinedCallFrameMarker::Mask;
 
-#ifdef HOST_64BIT
-        // See code:GenericPInvokeCalliHelper
-        return ((m_Datum != NULL) && !(dac_cast<TADDR>(m_Datum) & 0x1));
-#else // HOST_64BIT
-        return ((dac_cast<TADDR>(m_Datum) & ~0xffff) != 0);
-#endif // HOST_64BIT
+#ifdef TARGET_X86
+        if ((datum & ~0xffff) == 0)
+        {
+            return NULL;
+        }
+#else
+        if (datum == 0)
+        {
+            return NULL;
+        }
+#endif
+
+        return PTR_MethodDesc(datum);
     }
 
     // Retrieves the return address into the code that called out
@@ -2128,13 +2154,9 @@ public:
 
     void UpdateRegDisplay_Impl(const PREGDISPLAY, bool updateFloats = false);
 
-    // m_Datum contains PInvokeMethodDesc ptr or
-    // - on 64 bit host: CALLI target address (if lowest bit is set)
-    // - on windows x86 host: argument stack size (if value is <64k)
-    // When m_Datum contains PInvokeMethodDesc ptr, then on other than windows x86 host
-    // - bit 1 set indicates invoking new exception handling helpers
-    // - bit 2 indicates CallCatchFunclet or CallFinallyFunclet
-    // See code:HasFunction.
+    // m_Datum contains a PInvokeMethodDesc pointer, except on x86 where it may instead
+    // contain the outgoing argument stack size for vararg and CALLI stubs.
+    // Low bits may carry InlinedCallFrameMarker values.
     PTR_PInvokeMethodDesc   m_Datum;
 
     // X86: ESP after pushing the outgoing arguments, and just before calling
@@ -2441,7 +2463,7 @@ public:
 
     void GcScanRoots_Impl(promote_func *fn, ScanContext* sc)
     {
-        fn(dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation)), sc, 0);
+        fn(GetContinuationPtr(), sc, 0);
     }
 
     void SetContinuation(OBJECTREF continuation)
@@ -2459,7 +2481,7 @@ public:
     PTR_PTR_Object GetContinuationPtr()
     {
         LIMITED_METHOD_CONTRACT;
-        return dac_cast<PTR_PTR_Object>(dac_cast<TADDR>(&m_continuation));
+        return dac_cast<PTR_PTR_Object>(PTR_HOST_MEMBER_TADDR(InterpreterFrame, this, m_continuation));
     }
 private:
     // The last known topmost interpreter frame in the InterpExecMethod belonging to

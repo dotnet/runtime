@@ -6,10 +6,11 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Unicode;
 
 using Internal.Text;
@@ -738,10 +739,6 @@ namespace Internal.JitInterface
         private const int handleMultiplier = 8;
         private const int handleBase = 0x420000;
 
-#if DEBUG
-        private static readonly IntPtr s_handleHighBitSet = (sizeof(IntPtr) == 4) ? new IntPtr(0x40000000) : new IntPtr(0x4000000000000000);
-#endif
-
         private IntPtr ObjectToHandle(object obj)
         {
             // MethodILScopes need to go through ObjectToHandle(MethodILScope methodIL).
@@ -757,9 +754,6 @@ namespace Internal.JitInterface
             if (!_objectToHandle.TryGetValue(obj, out handle))
             {
                 handle = (IntPtr)(handleMultiplier * _handleToObject.Count + handleBase);
-#if DEBUG
-                handle = new IntPtr((long)s_handleHighBitSet | (long)handle);
-#endif
                 _handleToObject.Add(obj);
                 _objectToHandle.Add(obj, handle);
             }
@@ -769,9 +763,6 @@ namespace Internal.JitInterface
         private object HandleToObject(void* handle)
         {
             Debug.Assert(handle != null);
-#if DEBUG
-            handle = (void*)(~s_handleHighBitSet & (nint)handle);
-#endif
             int index = ((int)handle - handleBase) / handleMultiplier;
             return _handleToObject[index];
         }
@@ -831,9 +822,15 @@ namespace Internal.JitInterface
             // of async contexts. Regular user implemented runtime async methods
             // require this behavior, but thunks should be transparent and should not
             // come with this behavior.
-            if (method.IsAsyncVariant() && method.IsAsync)
+            if (method.RequiresSaveRestoreOfAsyncContexts())
             {
                 methodInfo->options |= CorInfoOptions.CORINFO_ASYNC_SAVE_CONTEXTS;
+            }
+
+            if (method.SupportsAsyncVersionCodegen())
+            {
+                // This is an async version and the IL belongs to the sync version.
+                methodInfo->options |= CorInfoOptions.CORINFO_ASYNC_VERSION;
             }
 
             methodInfo->regionKind = CorInfoRegionKind.CORINFO_REGION_NONE;
@@ -901,7 +898,7 @@ namespace Internal.JitInterface
 
             // Varargs are not supported in .NET Core
             if (sig->callConv == CorInfoCallConv.CORINFO_CALLCONV_VARARG)
-                ThrowHelper.ThrowBadImageFormatException();
+                ThrowHelper.ThrowInvalidProgramException();
 
             if (!signature.IsStatic) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_HASTHIS;
             if (signature.IsExplicitThis) sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_EXPLICITTHIS;
@@ -1086,6 +1083,36 @@ namespace Internal.JitInterface
             return method.IsIntrinsic || HardwareIntrinsicHelpers.IsHardwareIntrinsic(method);
         }
 
+        private bool canValueClassInstancePointerEscape(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            MethodDesc method = HandleToObject(ftn);
+
+            Debug.Assert(!method.Signature.IsStatic);
+
+            if (method.GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod)
+                return true;
+
+            // ECMA augment III.1.7.7 allows making this escaping assumption
+            // based on RefSafetyRules and UnscopedRef attributes.
+            if (!ModuleOptsIntoRefSafetyRules(ecmaMethod.Module, 11))
+                return true;
+
+            return ecmaMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute");
+        }
+
+        private static bool ModuleOptsIntoRefSafetyRules(EcmaModule module, int minVersion)
+        {
+            MetadataReader reader = module.MetadataReader;
+            CustomAttributeHandle handle = reader.GetCustomAttributeHandle(
+                reader.GetModuleDefinition().GetCustomAttributes(),
+                "System.Runtime.CompilerServices", "RefSafetyRulesAttribute");
+            if (handle.IsNil)
+                return false;
+
+            CustomAttributeValue<TypeDesc> value = reader.GetCustomAttribute(handle).DecodeValue(new CustomAttributeTypeProvider(module));
+            return value.FixedArguments.Length == 1 && value.FixedArguments[0].Value is int version && version >= minVersion;
+        }
+
         private uint getMethodAttribsInternal(MethodDesc method)
         {
             CorInfoFlag result = 0;
@@ -1132,12 +1159,10 @@ namespace Internal.JitInterface
             if (method.IsPInvoke)
                 result |= CorInfoFlag.CORINFO_FLG_PINVOKE;
 
-#if READYTORUN
             if (method.RequireSecObject)
             {
                 result |= CorInfoFlag.CORINFO_FLG_DONT_INLINE_CALLER;
             }
-#endif
 
             if (method.IsAggressiveOptimization)
             {
@@ -1205,6 +1230,42 @@ namespace Internal.JitInterface
             // TODO: Inlining
         }
 
+        private bool canTailCall(CORINFO_METHOD_STRUCT_* callerHnd, CORINFO_METHOD_STRUCT_* declaredCalleeHnd, CORINFO_METHOD_STRUCT_* exactCalleeHnd, bool fIsTailPrefix)
+        {
+            if (!fIsTailPrefix)
+            {
+                MethodDesc caller = HandleToObject(callerHnd);
+
+                // Do not tailcall out of the entry point as it results in a confusing debugger experience.
+                if (caller is EcmaMethod em && em.Module.EntryPoint == caller)
+                {
+                    return false;
+                }
+
+                // Do not tailcall from methods that are marked as NoInlining (people often use no-inline
+                // to mean "I want to always see this method in stacktrace")
+                if (caller.IsNoInlining)
+                {
+                    // NOTE: we don't have to handle NoOptimization here, because JIT is not expected
+                    // to emit fast tail calls if optimizations are disabled.
+                    return false;
+                }
+
+                // Methods with StackCrawlMark depend on finding their caller on the stack.
+                // If we tail call one of these guys, they get confused.  For lack of
+                // a better way of identifying them, we use DynamicSecurity attribute to identify
+                // them.
+                //
+                MethodDesc callee = exactCalleeHnd == null ? null : HandleToObject(exactCalleeHnd);
+                if (callee != null && callee.RequireSecObject)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private void getMethodSig(CORINFO_METHOD_STRUCT_* ftn, CORINFO_SIG_INFO* sig, CORINFO_CLASS_STRUCT_* memberParent)
         {
             MethodDesc method = HandleToObject(ftn);
@@ -1266,6 +1327,7 @@ namespace Internal.JitInterface
             // later.
             if (!_compilation.CanInline(MethodBeingCompiled, method))
                 return false;
+
 
             MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
@@ -1485,6 +1547,76 @@ namespace Internal.JitInterface
             }
 
 #if READYTORUN
+            bool isArray = decl.OwningType.IsInterface && objType.IsArray;
+            bool contextIsMethod = isArray || decl.HasInstantiation;
+#else
+            bool contextIsMethod = decl.HasInstantiation;
+#endif
+            MethodDesc instArgTarget = unboxingStub ? nonUnboxingImpl : impl;
+            bool requiresInstMethodDescArg = instArgTarget.RequiresInstMethodDescArg();
+            bool requiresInstMethodTableArg = instArgTarget.RequiresInstMethodTableArg();
+
+            // For unboxing stubs whose unboxed entry needs a MethodTable inst arg, the boxed object supplies the exact MT.
+            // For MethodDesc cases we always need to supply the exact MD.
+            if (requiresInstMethodDescArg || (requiresInstMethodTableArg && !unboxingStub))
+            {
+                if (originalImpl.OwningType.IsCanonicalSubtype(CanonicalFormKind.Any))
+                {
+                    // If we end up with a shared MethodTable that is not exact,
+                    // we can't devirtualize since it's not possible to compute the instantiation argument even as a runtime lookup.
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+
+                if (originalImpl.IsRuntimeDeterminedExactMethod || originalImpl.IsSharedByGenericInstantiations)
+                {
+                    // TODO: Support for runtime lookup
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+            }
+
+#if READYTORUN
+            if (isArray)
+            {
+                // Array interface devirt is not yet supported by R2R.
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+            }
+#endif
+
+            if (requiresInstMethodDescArg)
+            {
+#if READYTORUN
+                if (unboxingStub)
+                {
+                    // We need an unboxing stub that points to an instantiated method but this is not happening in R2R.
+                    info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                    return false;
+                }
+
+                MethodWithToken originalImplWithToken = new MethodWithToken(originalImpl, methodWithTokenImpl.Token, null, false, null, null);
+                info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.MethodDictionary, originalImplWithToken));
+#else
+                // We could produce a method generic dictionary constant lookup for originalImpl,
+                // but due to IL scanner limitations, we cannot devirtualize shared generic virtual methods right now.
+                info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_FAILED_CANON;
+                return false;
+#endif
+            }
+            else if (requiresInstMethodTableArg)
+            {
+                if (!unboxingStub)
+                {
+#if READYTORUN
+                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeDictionary, originalImpl.OwningType));
+#else
+                    info->instParamLookup.constLookup = CreateConstLookupToSymbol(_compilation.NodeFactory.ConstructedTypeSymbol(originalImpl.OwningType));
+#endif
+                }
+            }
+
+#if READYTORUN
             // Testing has not shown that concerns about virtual matching are significant
             // Only generate verification for builds with the stress mode enabled
             if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout)
@@ -1498,7 +1630,7 @@ namespace Internal.JitInterface
 #endif
             info->detail = CORINFO_DEVIRTUALIZATION_DETAIL.CORINFO_DEVIRTUALIZATION_SUCCESS;
             info->devirtualizedMethod = ObjectToHandle(impl);
-            info->tokenLookupContext = contextFromType(owningType);
+            info->tokenLookupContext = contextIsMethod ? contextFromMethod(originalImpl) : contextFromType(owningType);
 
             return true;
 
@@ -1519,7 +1651,7 @@ namespace Internal.JitInterface
 
                 CORINFO_RESOLVED_TOKEN result = default(CORINFO_RESOLVED_TOKEN);
                 MethodILScope scope = jitInterface._compilation.GetMethodIL(methodWithToken.Method);
-                scope ??= EcmaMethodILScope.Create((EcmaMethod)methodWithToken.Method.GetTypicalMethodDefinition());
+                scope ??= EcmaMethodILScope.Create(methodWithToken.Method.GetTypicalMethodDefinition());
                 result.tokenScope = jitInterface.ObjectToHandle(scope);
                 result.tokenContext = jitInterface.contextFromMethod(method);
 #if READYTORUN
@@ -1540,28 +1672,6 @@ namespace Internal.JitInterface
             }
         }
 
-        private CORINFO_METHOD_STRUCT_* getUnboxedEntry(CORINFO_METHOD_STRUCT_* ftn, ref bool requiresInstMethodTableArg)
-        {
-            MethodDesc result = null;
-            requiresInstMethodTableArg = false;
-
-            MethodDesc method = HandleToObject(ftn);
-            if (method.IsUnboxingThunk())
-            {
-                result = method.GetUnboxedMethod();
-                requiresInstMethodTableArg = method.RequiresInstMethodTableArg();
-            }
-
-            return result != null ? ObjectToHandle(result) : null;
-        }
-
-        private CORINFO_METHOD_STRUCT_* getInstantiatedEntry(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_STRUCT_** methodArg, CORINFO_CLASS_STRUCT_** classArg)
-        {
-            *methodArg = null;
-            *classArg = null;
-            return null;
-        }
-
         private CORINFO_METHOD_STRUCT_* getAsyncOtherVariant(CORINFO_METHOD_STRUCT_* ftn, ref bool variantIsThunk)
         {
             MethodDesc method = HandleToObject(ftn);
@@ -1569,7 +1679,7 @@ namespace Internal.JitInterface
             {
                 method = method.GetTargetOfAsyncVariant();
             }
-            else if (method.Signature.ReturnsTaskOrValueTask())
+            else if (HasCallableAsyncVariant(method))
             {
                 method = method.GetAsyncVariant();
             }
@@ -1579,7 +1689,7 @@ namespace Internal.JitInterface
                 return null;
             }
 
-            variantIsThunk = method?.IsAsyncThunk() ?? false;
+            variantIsThunk = method.IsAsyncThunk();
             return ObjectToHandle(method);
         }
 
@@ -1897,15 +2007,7 @@ namespace Internal.JitInterface
 
                 if (pResolvedToken.tokenType is CorInfoTokenKind.CORINFO_TOKENKIND_Await)
                 {
-                    // in rare cases a method that returns Task is not actually TaskReturning (i.e. returns T).
-                    // we cannot resolve to an Async variant in such case.
-                    // return NULL, so that caller would re-resolve as a regular method call
-                    bool allowAsyncVariant = method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask();
-
-                    // Don't get async variant of Delegate.Invoke method; the pointed to method is not an async variant either.
-                    allowAsyncVariant = allowAsyncVariant && !method.OwningType.IsDelegate;
-
-                    method = allowAsyncVariant
+                    method = HasCallableAsyncVariant(method)
                         ? _compilation.TypeSystemContext.GetAsyncVariantMethod(method)
                         : null;
                 }
@@ -1976,6 +2078,33 @@ namespace Internal.JitInterface
             pResolvedToken.cbTypeSpec = 0;
             pResolvedToken.pMethodSpec = null;
             pResolvedToken.cbMethodSpec = 0;
+        }
+
+        private static bool HasCallableAsyncVariant(MethodDesc method)
+        {
+            // In some cases a method that returns Task is not actually
+            // TaskReturning (i.e. it might return T). We cannot resolve to an
+            // async variant in such case.
+            if (!method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
+            {
+                return false;
+            }
+
+            // Don't get async variant of Delegate.Invoke method; the pointed
+            // to method is not an async variant either.
+            if (method.OwningType.IsDelegate)
+            {
+                return false;
+            }
+
+            // Don't get async variant of ComImport methods since we do not
+            // generate any runtime async entry points for them.
+            if (method.OwningType.IsComImport)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private void findSig(CORINFO_MODULE_STRUCT_* module, uint sigTOK, CORINFO_CONTEXT_STRUCT* context, CORINFO_SIG_INFO* sig)
@@ -2542,6 +2671,39 @@ namespace Internal.JitInterface
             throw new InvalidOperationException();
         }
 
+        //------------------------------------------------------------------------
+        // IsSimdIntrinsicType: Check whether a type is one of the SIMD types that the
+        // JIT considers to be a primitive.
+        //
+        // Arguments:
+        //   type - The type to check.
+        //
+        // Return Value:
+        //   True if the type is a SIMD type; otherwise false.
+        //
+        // Remarks:
+        //   This is an explicit allow list mirroring the types recognized by
+        //   Compiler::getBaseTypeAndSizeOfSIMDType. The other intrinsic types in these
+        //   namespaces (Decimal32/Decimal64/Decimal128, Matrix3x2/Matrix4x4) are laid
+        //   out like any other struct, so the JIT needs their fields reported.
+        //
+        private static bool IsSimdIntrinsicType(MetadataType type)
+        {
+            if (VectorFieldLayoutAlgorithm.IsVectorType(type) || VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(type))
+            {
+                return true;
+            }
+
+            if (!type.IsIntrinsic || type.Namespace != "System.Numerics"u8)
+            {
+                return false;
+            }
+
+            Utf8Span name = type.Name;
+            return name == "Vector2"u8 || name == "Vector3"u8 || name == "Vector4"u8 ||
+                   name == "Quaternion"u8 || name == "Plane"u8;
+        }
+
         private GetTypeLayoutResult GetTypeLayoutHelper(MetadataType type, uint parentIndex, uint baseOffs, FieldDesc field, CORINFO_TYPE_LAYOUT_NODE* treeNodes, nuint maxTreeNodes, nuint* numTreeNodes)
         {
             if (*numTreeNodes >= maxTreeNodes)
@@ -2583,34 +2745,30 @@ namespace Internal.JitInterface
 
             // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
             // not care about since they are considered primitives by the JIT.
-            if (type.IsIntrinsic)
+            if (IsSimdIntrinsicType(type))
             {
-                Utf8Span ns = type.Namespace;
-                if (ns == "System.Runtime.Intrinsics"u8 || ns == "System.Numerics"u8)
+                parNode->simdTypeHnd = ObjectToHandle(type);
+                if (parentIndex != uint.MaxValue)
                 {
-                    parNode->simdTypeHnd = ObjectToHandle(type);
-                    if (parentIndex != uint.MaxValue)
-                    {
 #if READYTORUN
-                        if (NeedsTypeLayoutCheck(type))
-                        {
-                            // We cannot allow the JIT to call getClassSize for
-                            // arbitrary types of fields as it will insert a fixup
-                            // that we may not be able to encode. We could skip the
-                            // field, but that will make prejit promotion different
-                            // from the runtime promotion. We could also change the
-                            // JIT to avoid calling getClassSize and just use the
-                            // size from the returned node, but for that we would
-                            // need to be sure that the type layout check fixup
-                            // added in getTypeLayout is sufficient to guarantee
-                            // the size of all these intrinsically handled SIMD
-                            // types.
-                            return GetTypeLayoutResult.Failure;
-                        }
+                    if (NeedsTypeLayoutCheck(type))
+                    {
+                        // We cannot allow the JIT to call getClassSize for
+                        // arbitrary types of fields as it will insert a fixup
+                        // that we may not be able to encode. We could skip the
+                        // field, but that will make prejit promotion different
+                        // from the runtime promotion. We could also change the
+                        // JIT to avoid calling getClassSize and just use the
+                        // size from the returned node, but for that we would
+                        // need to be sure that the type layout check fixup
+                        // added in getTypeLayout is sufficient to guarantee
+                        // the size of all these intrinsically handled SIMD
+                        // types.
+                        return GetTypeLayoutResult.Failure;
+                    }
 #endif
 
-                        return GetTypeLayoutResult.Success;
-                    }
+                    return GetTypeLayoutResult.Success;
                 }
             }
 
@@ -3451,8 +3609,10 @@ namespace Internal.JitInterface
 
             pEEInfoOut.inlinedCallFrameInfo.size = (uint)SizeOfPInvokeTransitionFrame;
 
-            pEEInfoOut.offsetOfDelegateInstance = (uint)pointerSize;            // Delegate::_firstParameter
-            pEEInfoOut.offsetOfDelegateFirstTarget = OffsetOfDelegateFirstTarget;
+            // _target
+            pEEInfoOut.offsetOfDelegateInstance = 2 * (uint)pointerSize;
+            // _methodPtr
+            pEEInfoOut.offsetOfDelegateFirstTarget = pEEInfoOut.offsetOfDelegateInstance + (uint)pointerSize;
 
             pEEInfoOut.sizeOfReversePInvokeFrame = (uint)SizeOfReversePInvokeTransitionFrame;
 
@@ -3492,6 +3652,166 @@ namespace Internal.JitInterface
             pAsyncInfoOut.restoreContextsOnSuspensionMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null));
             pAsyncInfoOut.finishSuspensionNoContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null));
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
+        }
+
+        private void getWasmWellKnownGlobals(ref CORINFO_WASM_WELLKNOWN_GLOBALS pWellKnownGlobalsOut)
+        {
+            NodeFactory factory = _compilation.NodeFactory;
+            pWellKnownGlobalsOut.stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.StackPointerName)));
+            pWellKnownGlobalsOut.imageBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.ImageBaseName)));
+            pWellKnownGlobalsOut.tableBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.TableBaseName)));
+            pWellKnownGlobalsOut.asyncContinuation = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.AsyncContinuationName)));
+        }
+        private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
+        {
+            instArg.lookupKind.needsRuntimeLookup = false;
+            instArg.constLookup.accessType = InfoAccessType.IAT_VALUE;
+            instArg.constLookup.addr = null;
+
+            MethodDesc caller = HandleToObject(callerHandle);
+            Debug.Assert(caller.SupportsAsyncVersionCodegen());
+
+            MethodDesc taskReturningMethod = caller.GetTargetOfAsyncVariant();
+            TypeDesc taskReturnType = taskReturningMethod.Signature.ReturnType;
+            bool isValueTask = taskReturnType.IsValueType;
+
+            CompilerTypeSystemContext context = _compilation.TypeSystemContext;
+            DefType asyncHelpers = context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+
+            TypeDesc returnType = caller.Signature.ReturnType;
+            MethodDesc runtimeDeterminedCaller = caller.GetSharedRuntimeFormMethodTarget();
+            TypeDesc runtimeDeterminedReturnType = runtimeDeterminedCaller.Signature.ReturnType;
+
+            MethodDesc result;
+            MethodDesc runtimeDeterminedResult;
+            if (returnType.IsVoid)
+            {
+                TypeDesc parameterType = isValueTask
+                    ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask"u8)
+                    : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task"u8);
+                MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 0, context.GetWellKnownType(WellKnownType.Void), [parameterType]);
+                result = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature);
+                runtimeDeterminedResult = result;
+            }
+            else
+            {
+                TypeDesc signatureVariable = context.GetSignatureVariable(0, method: true);
+                TypeDesc parameterType = isValueTask
+                    ? context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "ValueTask`1"u8).MakeInstantiatedType(signatureVariable)
+                    : context.SystemModule.GetKnownType("System.Threading.Tasks"u8, "Task`1"u8).MakeInstantiatedType(signatureVariable);
+                MethodSignature signature = new MethodSignature(MethodSignatureFlags.Static, 1, signatureVariable, [parameterType]);
+                result = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature).MakeInstantiatedMethod(returnType);
+                runtimeDeterminedResult = asyncHelpers.GetKnownMethod("TransparentAwait"u8, signature).MakeInstantiatedMethod(runtimeDeterminedReturnType);
+            }
+
+            MethodDesc targetMethod = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            *contextHandle = contextFromMethod(result);
+
+            if (targetMethod.RequiresInstArg())
+            {
+#if READYTORUN
+                if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
+                {
+                    // TODO-Async: the instantiation argument would have to be obtained through a runtime
+                    // generic dictionary lookup, which is not yet emitted here, so defer to the runtime JIT.
+                    throw new RequiresRuntimeJitException($"getAwaitReturnCall: runtime-determined exact instantiation requires runtime JIT ({runtimeDeterminedResult})");
+                }
+
+                instArg.constLookup = CreateConstLookupToSymbol(
+                    _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                        ReadyToRunHelperId.MethodDictionary,
+                        new MethodWithToken(
+                            runtimeDeterminedResult,
+                            _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(runtimeDeterminedResult, allowDynamicallyCreatedReference: true, throwIfNotFound: true),
+                            constrainedType: null,
+                            unboxing: false,
+                            genericContextObject: caller)));
+#else
+                // Runtime lookup is needed
+                ComputeLookup(caller != MethodBeingCompiled, runtimeDeterminedResult, ReadyToRunHelperId.MethodDictionary, caller, ref instArg);
+#endif
+            }
+
+            return ObjectToHandle(targetMethod);
+        }
+
+        private CORINFO_METHOD_STRUCT_* getAwaitAwaiterInContinuationCall(
+            CORINFO_METHOD_STRUCT_* callerHandle,
+            ref CORINFO_RESOLVED_TOKEN pResolvedToken,
+            bool isUnsafe,
+            CORINFO_CONTEXT_STRUCT** contextHandle,
+            ref CORINFO_LOOKUP instArg)
+        {
+            instArg.lookupKind.needsRuntimeLookup = false;
+            instArg.constLookup.accessType = InfoAccessType.IAT_VALUE;
+            instArg.constLookup.addr = null;
+
+            MethodDesc caller = HandleToObject(callerHandle);
+            MethodDesc awaitAwaiterMethod = HandleToObject(pResolvedToken.hMethod);
+            Debug.Assert(awaitAwaiterMethod.Instantiation.Length == 1);
+            TypeDesc awaiterType = awaitAwaiterMethod.Instantiation[0];
+
+            // The resolved token gives us the canonical form of the awaiter
+            // type; the dependency analysis needs the runtime determined form.
+            var runtimeDeterminedAwaitAwaiterMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+            TypeDesc runtimeDeterminedAwaiterType = runtimeDeterminedAwaitAwaiterMethod.Instantiation[0];
+
+            CompilerTypeSystemContext context = _compilation.TypeSystemContext;
+            DefType asyncHelpers =
+                context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            MethodSignature signature = new MethodSignature(
+                MethodSignatureFlags.Static,
+                1,
+                context.GetWellKnownType(WellKnownType.Void),
+                [context.GetWellKnownType(WellKnownType.Int32)]);
+            MethodDesc typicalMethod = asyncHelpers.GetKnownMethod(
+                isUnsafe ? "UnsafeAwaitAwaiterInContinuation"u8 : "AwaitAwaiterInContinuation"u8,
+                signature);
+            MethodDesc result = typicalMethod.MakeInstantiatedMethod(awaiterType);
+            MethodDesc runtimeDeterminedResult = typicalMethod.MakeInstantiatedMethod(runtimeDeterminedAwaiterType);
+
+            MethodDesc targetMethod = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            *contextHandle = contextFromMethod(result);
+
+            if (targetMethod.RequiresInstArg())
+            {
+#if READYTORUN
+                if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
+                {
+                    // TODO-Async: the instantiation argument would have to be obtained through a runtime
+                    // generic dictionary lookup, which is not yet emitted here.
+                    if (((ReadyToRunCompilerContext)context).TargetAllowsRuntimeCodeGeneration)
+                    {
+                        // Leave this method to runtime JIT that will be able to avoid the box
+                        throw new RequiresRuntimeJitException($"getAwaitAwaiterInContinuationCall: runtime-determined exact instantiation requires runtime JIT ({runtimeDeterminedResult})");
+                    }
+                    else
+                    {
+                        // Skip the optimization, which will result in a box,
+                        // but is still better than interpreter fallback
+                        return null;
+                    }
+                }
+
+                instArg.constLookup = CreateConstLookupToSymbol(
+                    _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                        ReadyToRunHelperId.MethodDictionary,
+                        new MethodWithToken(
+                            runtimeDeterminedResult,
+                            _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(
+                                runtimeDeterminedResult,
+                                allowDynamicallyCreatedReference: true,
+                                throwIfNotFound: true),
+                            constrainedType: null,
+                            unboxing: false,
+                            genericContextObject: caller)));
+#else
+                ComputeLookup(caller != MethodBeingCompiled, runtimeDeterminedResult, ReadyToRunHelperId.MethodDictionary,
+                              caller, ref instArg);
+#endif
+            }
+
+            return ObjectToHandle(targetMethod);
         }
 
         private CORINFO_CLASS_STRUCT_* getContinuationType(nuint dataSize, ref bool objRefs, nuint objRefsSize)
@@ -3727,6 +4047,8 @@ namespace Internal.JitInterface
                     return CorInfoWasmType.CORINFO_WASM_TYPE_F32;
                 case WasmValueType.F64:
                     return CorInfoWasmType.CORINFO_WASM_TYPE_F64;
+                case WasmValueType.V128:
+                    return CorInfoWasmType.CORINFO_WASM_TYPE_V128;
                 default:
                     ThrowHelper.ThrowInvalidProgramException();
                     return CorInfoWasmType.CORINFO_WASM_TYPE_I32; // unreachable
@@ -4213,6 +4535,8 @@ namespace Internal.JitInterface
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
+        partial void TryUseWasmMethodCodeStoreFixup(void* target, CorInfoReloc fRelocType, BlockType locationBlock, int relocOffset, int addlDelta, ref bool handled);
+
         private ref ArrayBuilder<Relocation> findRelocBlock(BlockType blockType, out int length)
         {
             switch (blockType)
@@ -4245,6 +4569,7 @@ namespace Internal.JitInterface
                 CorInfoReloc.ARM64_BRANCH26 => RelocType.IMAGE_REL_BASED_ARM64_BRANCH26,
                 CorInfoReloc.ARM64_PAGEBASE_REL21 => RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21,
                 CorInfoReloc.ARM64_PAGEOFFSET_12A => RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A,
+                CorInfoReloc.ARM64_PAGEOFFSET_12L => RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L,
                 CorInfoReloc.ARM64_LIN_TLSDESC_ADR_PAGE21 => RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21,
                 CorInfoReloc.ARM64_LIN_TLSDESC_LD64_LO12 => RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12,
                 CorInfoReloc.ARM64_LIN_TLSDESC_ADD_LO12 => RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12,
@@ -4263,12 +4588,14 @@ namespace Internal.JitInterface
                 CorInfoReloc.RISCV64_PCREL_S => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S,
                 CorInfoReloc.WASM_FUNCTION_INDEX_LEB => RelocType.WASM_FUNCTION_INDEX_LEB,
                 CorInfoReloc.WASM_TABLE_INDEX_SLEB => RelocType.WASM_TABLE_INDEX_SLEB,
+                CorInfoReloc.WASM_TABLE_INDEX_I32 => RelocType.WASM_TABLE_INDEX_I32,
                 CorInfoReloc.WASM_MEMORY_ADDR_LEB => RelocType.WASM_MEMORY_ADDR_LEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_SLEB => RelocType.WASM_MEMORY_ADDR_SLEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB => RelocType.WASM_MEMORY_ADDR_REL_SLEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_REL_LEB => RelocType.WASM_MEMORY_ADDR_REL_LEB,
                 CorInfoReloc.WASM_TYPE_INDEX_LEB => RelocType.WASM_TYPE_INDEX_LEB,
                 CorInfoReloc.WASM_GLOBAL_INDEX_LEB => RelocType.WASM_GLOBAL_INDEX_LEB,
+                CorInfoReloc.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB => RelocType.WASM_CLR_RESTORE_CONTEXT_EXCEPTION_TAG_LEB,
                 _ => throw new ArgumentException("Unsupported relocation type: " + reloc),
             };
 
@@ -4277,6 +4604,17 @@ namespace Internal.JitInterface
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
+
+            // On WebAssembly a direct code pointer to a compiled method cannot be materialized at
+            // build time. When such a reference lands in the method's read-only data blob, replace
+            // the relocation with a method-load-time fixup that stores the target's runtime
+            // MultiCallableAddrOfCode into the location.
+            bool handledByCodeStoreFixup = false;
+            TryUseWasmMethodCodeStoreFixup(target, fRelocType, locationBlock, relocOffset, addlDelta, ref handledByCodeStoreFixup);
+            if (handledByCodeStoreFixup)
+            {
+                return;
+            }
 
             int length;
             ref ArrayBuilder<Relocation> sourceBlock = ref findRelocBlock(locationBlock, out length);
@@ -4355,6 +4693,17 @@ namespace Internal.JitInterface
                 default:
                     return CorInfoReloc.NONE;
             }
+        }
+
+        private uint getAddressAlignment(void* address)
+        {
+            if (address != null && HandleToObject(address) is IObjectNodeWithAlignment node)
+            {
+                return (uint)node.GetAlignment(_compilation.NodeFactory);
+            }
+
+            // Null or unknown target: report unaligned so the JIT avoids alignment-sensitive relocations.
+            return 1;
         }
 
         private uint getExpectedTargetArchitecture()
@@ -4468,29 +4817,32 @@ namespace Internal.JitInterface
 
             if (this.MethodBeingCompiled.IsUnmanagedCallersOnly)
             {
+#if READYTORUN
+                const bool isFallbackBodyCompilation = false;
+#else
+                bool isFallbackBodyCompilation = _isFallbackBodyCompilation;
+#endif
+
                 // Validate UnmanagedCallersOnlyAttribute usage
-                if (!this.MethodBeingCompiled.Signature.IsStatic) // Must be a static method
+                if (!isFallbackBodyCompilation && !this.MethodBeingCompiled.Signature.IsStatic) // Must be a static method
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonStaticMethod, this.MethodBeingCompiled);
                 }
 
-                if (this.MethodBeingCompiled.HasInstantiation || this.MethodBeingCompiled.OwningType.HasInstantiation) // No generics involved
+                if (!isFallbackBodyCompilation && (this.MethodBeingCompiled.HasInstantiation || this.MethodBeingCompiled.OwningType.HasInstantiation)) // No generics involved
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramGenericMethod, this.MethodBeingCompiled);
                 }
 
-                if (this.MethodBeingCompiled.IsAsync)
+                if (!isFallbackBodyCompilation && this.MethodBeingCompiled.IsAsync)
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramAsync, this.MethodBeingCompiled);
                 }
 
-#if READYTORUN
-                // TODO: enable this check in full AOT
-                if (Marshaller.IsMarshallingRequired(this.MethodBeingCompiled.Signature, ((MetadataType)this.MethodBeingCompiled.OwningType).Module, this.MethodBeingCompiled.GetUnmanagedCallersOnlyMethodCallingConventions())) // Only blittable arguments
+                if (!isFallbackBodyCompilation && MarshalHelpers.IsMarshallingRequired(this.MethodBeingCompiled.Signature, ((MetadataType)this.MethodBeingCompiled.OwningType).Module)) // Only blittable arguments
                 {
                     ThrowHelper.ThrowInvalidProgramException(ExceptionStringID.InvalidProgramNonBlittableTypes, this.MethodBeingCompiled);
                 }
-#endif
 
                 flags.Set(CorJitFlag.CORJIT_FLAG_REVERSE_PINVOKE);
             }
@@ -4524,7 +4876,7 @@ namespace Internal.JitInterface
             }
 
 #if READYTORUN
-            if (this.MethodBeingCompiled.Context.Target.OperatingSystem == TargetOS.Browser)
+            if (this.MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.Wasm32)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_PORTABLE_ENTRY_POINTS);
             }

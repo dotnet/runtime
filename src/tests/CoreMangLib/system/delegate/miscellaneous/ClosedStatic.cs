@@ -8,6 +8,8 @@ public class ClosedStatic
 {
     public int scale;
 
+    public ClosedStatic() { }
+
     private ClosedStatic(int scale)
     {
         this.scale = scale;

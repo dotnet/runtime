@@ -148,8 +148,6 @@ namespace Wasm.Build.Tests
                 EnvVars["WasmTestSupport"] = "true";
                 EnvVars["WasmTestExitOnUnhandledError"] = "true";
                 EnvVars["WasmTestLogExitCode"] = "true";
-                // EnvVars["WasmTestForwardConsole"] = "true"; // only necessary for firefox, because chromedriver supports it natively
-                // EnvVars["WasmTestAsyncFlushOnExit"] = "true"; // only necessary for old nodejs versions
                 // EnvVars["WasmTestAppendElementOnExit"] = "true"; // only used by xharness // https://github.com/dotnet/xharness/blob/799df8d4c86ff50c83b7a57df9e3691eeab813ec/src/Microsoft.DotNet.XHarness.CLI/Commands/WASM/Browser/WasmBrowserTestRunner.cs#L122-L141
 
                 // Flow paths required by BrowserWasmApp.CoreCLR.targets into the dotnet-new-generated
@@ -213,7 +211,7 @@ namespace Wasm.Build.Tests
         public string GetRuntimeNativeDir(string tfm, RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
             => Path.Combine(GetRuntimePackDir(tfm, runtimeType), "runtimes", DefaultRuntimeIdentifier, "native");
         public bool IsMultiThreadingRuntimePackAvailableFor(string tfm)
-            => IsWorkload && File.Exists(Path.Combine(GetRuntimeNativeDir(tfm, RuntimeVariant.MultiThreaded), "dotnet.native.worker.mjs"));
+            => IsWorkload && File.Exists(Path.Combine(GetRuntimeNativeDir(tfm, RuntimeVariant.MultiThreaded), "dotnet.native.wasm"));
 
         public static string WasmOverridePacksTargetsPath = Path.Combine(TestDataPath, "WasmOverridePacks.targets");
 

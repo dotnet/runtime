@@ -1206,6 +1206,9 @@ namespace Mono.Linker.Steps
             MarkCustomAttributeArguments(ca, origin);
 
             TypeReference constructor_type = ca.Constructor.DeclaringType;
+            if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(Context.Annotations.FlowAnnotations, constructor_type))
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in origin, this, Context, constructor_type);
+
             TypeDefinition? type = Context.Resolve(constructor_type);
 
             if (type == null)
@@ -1487,6 +1490,9 @@ namespace Mono.Linker.Steps
             Annotations.Mark(assembly, reason, origin);
             if (CheckProcessed(assembly))
                 return;
+
+            // Flush any TypeMapAssemblyTarget attributes that were waiting for this assembly to be marked.
+            _typeMapHandler.TriggerPendingAssemblyTargets(assembly);
 
             var assemblyOrigin = new MessageOrigin(assembly);
 

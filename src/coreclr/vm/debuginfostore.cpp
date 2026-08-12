@@ -143,6 +143,9 @@ public:
     void DoEncodedVarLocType(ICorDebugInfo::VarLocType & dw) { m_w.WriteEncodedU32(dw); }
     void DoEncodedUnsigned(unsigned & dw) { m_w.WriteEncodedU32(dw); }
 
+    void DoImplicitCallReturnValueILOffset(uint32_t& ilOffset) { }
+    void DoImplicitEndOffset(uint32_t& endOffset, uint32_t startOffset) { }
+
     // Stack offsets are aligned on a DWORD boundary, so that lets us shave off 2 bits.
     void DoEncodedStackOffset(signed & dwOffset)
     {
@@ -250,6 +253,17 @@ public:
         dw = (unsigned) m_r.ReadEncodedU32_NoThrow();
     }
 
+    void DoImplicitCallReturnValueILOffset(uint32_t& ilOffset)
+    {
+        SUPPORTS_DAC;
+        ilOffset = 0;
+    }
+
+    void DoImplicitEndOffset(uint32_t& endOffset, uint32_t startOffset)
+    {
+        SUPPORTS_DAC;
+        endOffset = startOffset + 1;
+    }
 
     // Stack offsets are aligned on a DWORD boundary, so that lets us shave off 2 bits.
     void DoEncodedStackOffset(signed & dwOffset)
@@ -340,14 +354,21 @@ static void DoNativeVarInfo(
     // - VarLoc information. This is a tagged variant.
     // The entries aren't sorted in any particular order.
     trans.DoCookie(0xB);
+    // record var number.
+    trans.DoEncodedAdjustedU32(pVar->varNumber, (DWORD)ICorDebugInfo::MAX_ILNUM);
+
     trans.DoEncodedU32(pVar->startOffset);
 
-
-    trans.DoEncodedDeltaU32(pVar->endOffset, pVar->startOffset);
-
-    // record var number.
-    trans.DoEncodedAdjustedU32(pVar->varNumber, (DWORD) ICorDebugInfo::MAX_ILNUM);
-
+    if (pVar->varNumber == (DWORD)ICorDebugInfo::CALL_RETURN_ILNUM)
+    {
+        trans.DoEncodedU32(pVar->callReturnValueILOffset);
+        trans.DoImplicitEndOffset(pVar->endOffset, pVar->startOffset);
+    }
+    else
+    {
+        trans.DoEncodedDeltaU32(pVar->endOffset, pVar->startOffset);
+        trans.DoImplicitCallReturnValueILOffset(pVar->callReturnValueILOffset);
+    }
 
     // Now write the VarLoc... This is a variant like structure and so we'll get different
     // compressioned depending on what we've got.

@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Runtime.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/51912", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsBrowser))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsWasm))]
     public static class NullableMetadataTests
     {
         private const string NullableAttributeFullName = "System.Runtime.CompilerServices.NullableAttribute";
@@ -133,6 +133,7 @@ namespace System.Runtime.Tests
         [InlineData("mscorlib")]
         [InlineData("System.Threading.Overlapped")]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99592", typeof(PlatformDetection), nameof(PlatformDetection.IsBuiltWithAggressiveTrimming), nameof(PlatformDetection.IsAppleMobile))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public static void ShimsHaveOnlyTypeForwards(string assemblyName)
         {
             Assembly assembly = Assembly.Load(assemblyName);
@@ -143,6 +144,7 @@ namespace System.Runtime.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/129223", TestPlatforms.Wasi)]
         public static void ShimsDontHaveNullablePublicOnlyAttribute()
         {
             Assembly assembly = Assembly.Load("mscorlib");

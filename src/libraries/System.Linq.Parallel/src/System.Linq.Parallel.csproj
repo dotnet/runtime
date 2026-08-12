@@ -14,6 +14,7 @@
 
   <!-- Compiled Source Files -->
   <ItemGroup>
+    <Compile Include="$(CoreLibSharedDir)System\Collections\HashHelpers.cs" Link="Common\System\Collections\HashHelpers.cs" />
     <Compile Include="System\Linq\Parallel\Channels\AsynchronousChannel.cs" />
     <Compile Include="System\Linq\Parallel\Channels\SynchronousChannel.cs" />
     <Compile Include="System\Linq\Parallel\Enumerables\AggregationMinMaxHelpers.cs" />

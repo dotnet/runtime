@@ -143,8 +143,18 @@ bool GCToOSInterface::Initialize()
 
     g_pageSizeUnixInl = uint32_t((pageSize > 0) ? pageSize : 0x1000);
 
-    // Calculate and cache the number of processors on this machine
+#ifdef TARGET_ANDROID
+    // Android tries really hard to save power by powering off CPUs on SMP phones which
+    // means the normal way to query cpu count can underestimate the number of available CPUs.
+    int cpuCount = minipal_get_cpu_present_count();
+    if (cpuCount == -1)
+    {
+        cpuCount = sysconf(SYSCONF_GET_NUMPROCS);
+    }
+#else
     int cpuCount = sysconf(SYSCONF_GET_NUMPROCS);
+#endif
+
     if (cpuCount == -1)
     {
         return false;
@@ -382,9 +392,6 @@ static void* VirtualReserveInner(size_t size, size_t alignment, uint32_t flags, 
 
     size_t alignedSize = size + (alignment - OS_PAGE_SIZE);
     int mmapFlags = MAP_ANON | MAP_PRIVATE | hugePagesFlag;
-#ifdef __HAIKU__
-    mmapFlags |= MAP_NORESERVE;
-#endif
     void * pRetVal = mmap(nullptr, alignedSize, PROT_NONE, mmapFlags, -1, 0);
 
     if (pRetVal != MAP_FAILED)
@@ -535,9 +542,6 @@ bool GCToOSInterface::VirtualDecommit(void* address, size_t size)
     // longer need these pages. Also, GC depends on re-committed pages to
     // be zeroed-out.
     int mmapFlags = MAP_FIXED | MAP_ANON | MAP_PRIVATE;
-#ifdef TARGET_HAIKU
-    mmapFlags |= MAP_NORESERVE;
-#endif
     bool bRetVal = mmap(address, size, PROT_NONE, mmapFlags, -1, 0) != MAP_FAILED;
 
 #if defined(MADV_DONTDUMP)
@@ -568,7 +572,7 @@ bool GCToOSInterface::VirtualReset(void * address, size_t size, bool unlock)
     st = madvise(address, size, MADV_DONTDUMP);
 #endif
 
-#ifdef MADV_FREE
+#if defined(MADV_FREE) && !defined(TARGET_SUNOS)
     // Tell the kernel that the application doesn't need the pages in the range.
     // Freeing the pages can be delayed until a memory pressure occurs.
     st = madvise(address, size, MADV_FREE);
@@ -1013,11 +1017,13 @@ static size_t GetCurrentVirtualMemorySize()
 //  non zero if it has succeeded, GetVirtualMemoryMaxAddress() if not available
 size_t GCToOSInterface::GetVirtualMemoryLimit()
 {
+#ifdef RLIMIT_AS
     rlimit addressSpaceLimit;
     if ((getrlimit(RLIMIT_AS, &addressSpaceLimit) == 0) && (addressSpaceLimit.rlim_cur != RLIM_INFINITY))
     {
         return addressSpaceLimit.rlim_cur;
     }
+#endif // RLIMIT_AS
 
     // No virtual memory limit
     return GetVirtualMemoryMaxAddress();

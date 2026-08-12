@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -619,17 +620,23 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
 
             using var physicalFilesWatcher = CreateWatcher(rootPath, useActivePolling);
 
-            // On some platforms (e.g., Linux) the FSW does not fire OnError when the watched directory
-            // is deleted (see https://github.com/dotnet/runtime/issues/126295), so we cannot wait
-            // for the token to fire. Instead, wait briefly and then re-register after deleting the directory.
-            physicalFilesWatcher.CreateFileChangeToken("file.txt");
+            // When using a real FileSystemWatcher, deleting the watched directory fires OnError
+            // which causes the token to fire. With polling there is no FSW, so we just wait briefly.
+            IChangeToken initialToken = physicalFilesWatcher.CreateFileChangeToken("file.txt");
+
             Directory.Delete(rootPath, recursive: true);
-            await Task.Delay(WaitTimeForTokenToFire);
+
+            if (useActivePolling)
+            {
+                await Task.Delay(WaitTimeForTokenToFire);
+            }
+            else
+            {
+                await WhenChanged(initialToken);
+            }
 
             // Re-watch the same file — root is now missing, so this goes through PendingCreationWatcher where available
-            IChangeToken token = physicalFilesWatcher.CreateFileChangeToken("file.txt");
-
-            Task changed = WhenChanged(token);
+            Task changed = WhenChanged(physicalFilesWatcher.CreateFileChangeToken("file.txt"));
 
             // Recreate the root — token must not fire yet
             Directory.CreateDirectory(rootPath);
@@ -640,6 +647,37 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             File.WriteAllText(Path.Combine(rootPath, "file.txt"), string.Empty);
 
             await changed;
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public void CreateFileChangeToken_ReRegisterWhileRootMissing_TearsDownStaleWatcher()
+        {
+            using var root = new TempDirectory(GetTestFilePath());
+            string rootPath = root.Path;
+
+            using var fileSystemWatcher = new MockFileSystemWatcher(rootPath);
+
+            // Call BeginInit, which suspends the watcher so enabling it stores EnableRaisingEvents without starting a real
+            // OS watch. This lets us delete the root directory below without the watcher's background
+            // thread asynchronously raising Error (which would make this test racy) while still
+            // reproducing the state this test targets: EnableRaisingEvents == true over a dead watch.
+            fileSystemWatcher.BeginInit();
+
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(rootPath, fileSystemWatcher, pollForChanges: false);
+
+            physicalFilesWatcher.CreateFileChangeToken("file.txt");
+            Assert.True(fileSystemWatcher.EnableRaisingEvents);
+
+            // The watched root is deleted out from under the watcher. On Linux the inotify watch is
+            // torn down (bound to the now-deleted inode), but EnableRaisingEvents keeps reporting true
+            // until OnError runs. A token can be re-registered in that window.
+            Directory.Delete(rootPath);
+
+            // Re-registering while the root is missing must tear down the stale watcher and fall back
+            // to watching for the root to reappear, rather than leaving the dead watch in place.
+            physicalFilesWatcher.CreateFileChangeToken("file.txt");
+            Assert.False(fileSystemWatcher.EnableRaisingEvents);
         }
 
         [Theory]
@@ -773,6 +811,155 @@ namespace Microsoft.Extensions.FileProviders.Physical.Tests
             File.WriteAllText(Path.Combine(rootDir, "appsettings.json"), "{}");
 
             await changed;
+        }
+
+        [Theory]
+        [InlineData(true)]  // Win32Exception -> matched on NativeErrorCode
+        [InlineData(false)] // IOException -> matched on HResult
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_SameErrorRecurs_SecondOccurrenceIsSuppressed(bool win32)
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/121475:
+            // On a file system that can't be watched (e.g. a WSL path accessed from Windows), enabling
+            // the FileSystemWatcher keeps raising the same Error, which cancels tokens, which re-creates
+            // tokens and re-enables the watcher, recursing until the stack overflows. The first
+            // occurrence of an error is reported, but an identical recurrence (same type and error code)
+            // with no change delivered in between is suppressed so the loop can't form.
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            // First error is reported: it cancels the token created before it.
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32, code: 5)));
+            await WhenChanged(first);
+
+            // The same error (same code) recurs: it must NOT cancel the new token.
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32, code: 5)));
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(second.HasChanged, "A repeated identical error must not cancel tokens.");
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_DifferentErrorCode_IsReported(bool win32)
+        {
+            // Distinct errors (same type, different error code) are not the same persistent failure, so
+            // each is reported.
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32, code: 5)));
+            await WhenChanged(first);
+
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32, code: 6)));
+            await WhenChanged(second);
+        }
+
+        [Theory]
+        [InlineData(true)]  // InternalBufferOverflowException
+        [InlineData(false)] // DirectoryNotFoundException
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_RecoverableError_IsAlwaysReported(bool bufferOverflow)
+        {
+            // InternalBufferOverflowException (events were dropped, rescan needed) and
+            // DirectoryNotFoundException (the watched directory was deleted/moved) mean the watcher is
+            // still functioning or a real change happened, so every occurrence must be reported even when
+            // it repeats identically.
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            Func<Exception> createError = bufferOverflow
+                ? () => new InternalBufferOverflowException()
+                : () => new DirectoryNotFoundException();
+
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(createError()));
+            await WhenChanged(first);
+
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(createError()));
+            await WhenChanged(second);
+        }
+
+        private static Exception MakeError(bool win32, int code)
+            => win32 ? new Win32Exception(code) : new IOException("watcher error", code);
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_SameError_AfterDeliveredChange_IsReportedAgain()
+        {
+            // A change delivered between two identical errors proves the watcher works, so the second
+            // error starts over and is reported rather than suppressed as a persistent recurrence.
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32: false, code: 5)));
+            await WhenChanged(first);
+
+            // A delivered change resets the remembered error.
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, root.Path, "unrelated.txt"));
+
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32: false, code: 5)));
+            await WhenChanged(second);
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_ChangeOutsideRoot_DoesNotResetDetection()
+        {
+            // When the watcher watches an ancestor, it can deliver events for
+            // siblings outside _root. Such events must not reset the persistent-error detection, otherwise
+            // unrelated activity could prevent suppression from engaging during an unwatchable-root loop.
+            using var tempDir = new TempDirectory(GetTestFilePath());
+            string rootDir = Path.Combine(tempDir.Path, "rootDir");
+            Directory.CreateDirectory(rootDir);
+
+            // The FSW watches the ancestor (tempDir), so it can raise events outside rootDir.
+            using var fileSystemWatcher = new MockFileSystemWatcher(tempDir.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(rootDir, fileSystemWatcher, pollForChanges: false);
+
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32: false, code: 5)));
+            await WhenChanged(first);
+
+            // A change to a sibling outside rootDir must NOT reset the remembered error.
+            fileSystemWatcher.CallOnChanged(new FileSystemEventArgs(WatcherChangeTypes.Changed, tempDir.Path, "outside.txt"));
+
+            // The same error recurs: it must still be suppressed.
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(MakeError(win32: false, code: 5)));
+            await Task.Delay(WaitTimeForTokenToFire);
+            Assert.False(second.HasChanged, "An out-of-root change must not reset persistent-error detection.");
+        }
+
+        [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
+        public async Task OnError_NullException_IsAlwaysReported()
+        {
+            // An Error with no exception carries no identity to de-duplicate, so every occurrence is
+            // reported rather than suppressed.
+            using var root = new TempDirectory(GetTestFilePath());
+            using var fileSystemWatcher = new MockFileSystemWatcher(root.Path);
+            using var physicalFilesWatcher = new PhysicalFilesWatcher(root.Path, fileSystemWatcher, pollForChanges: false);
+
+            IChangeToken first = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(null!));
+            await WhenChanged(first);
+
+            IChangeToken second = physicalFilesWatcher.CreateFileChangeToken("appsettings.json");
+            fileSystemWatcher.CallOnError(new ErrorEventArgs(null!));
+            await WhenChanged(second);
         }
 
         private class TestPollingChangeToken : IPollingChangeToken

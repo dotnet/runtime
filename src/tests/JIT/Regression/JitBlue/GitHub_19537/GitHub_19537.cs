@@ -384,9 +384,7 @@ public class Test
                                  M41, M42, M43, M44);
         }
 
-        [OuterLoop]
-        [Fact]
-        public static int TestEntryPoint()
+        public static int Run()
         {
             Matrix4x4 m1 = new Matrix4x4(1.0F,2.0F,3.0F,4.0F,
                                          5.0F,6.0F,7.0F,8.0F,
@@ -418,5 +416,14 @@ public class Test
         }
 
     }
-}
 
+    public class GitHub_19537_Test
+    {
+        [OuterLoop]
+        [Fact]
+        public static int TestEntryPoint()
+        {
+            return Matrix4x4.Run();
+        }
+    }
+}

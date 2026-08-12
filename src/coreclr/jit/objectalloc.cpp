@@ -2832,12 +2832,16 @@ void ObjectAllocator::RewriteUses()
 
                         // Rewrite the call to make the box accesses explicit in jitted code.
                         // user = COMMA(
-                        //           CALL(UNBOX_HELPER_TYPETEST, obj->MethodTable, type),
+                        //           CALL(UNBOX_HELPER_TYPETEST, type, obj->MethodTable),
                         //           ADD(obj, TARGET_POINTER_SIZE))
                         //
                         JITDUMP("Rewriting to invoke box type test helper%s\n", isForEffect ? " for side effect" : "");
 
+                        // Unbox_TypeTest returns void, unlike Unbox. isForEffect above reads the
+                        // original type.
                         call->gtCallMethHnd = m_compiler->eeFindHelper(CORINFO_HELP_UNBOX_TYPETEST);
+                        call->gtType        = TYP_VOID;
+                        call->gtReturnType  = TYP_VOID;
                         GenTree* const mt   = m_compiler->gtNewMethodTableLookup(lcl, /* onStack */ true);
                         call->gtArgs.Remove(secondArg);
                         call->gtArgs.PushBack(m_compiler, NewCallArg::Primitive(mt));
@@ -2902,7 +2906,7 @@ void ObjectAllocator::RewriteUses()
                             call->gtCallType    = CT_INDIRECT;
                             call->gtControlExpr = target;
                             call->gtCallMethHnd = NO_METHOD_HANDLE;
-                            call->gtCallMoreFlags &= ~(GTF_CALL_M_DELEGATE_INV | GTF_CALL_M_WRAPPER_DELEGATE_INV);
+                            call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
                         }
                     }
                 }
@@ -3440,7 +3444,7 @@ GenTree* ObjectAllocator::IsGuard(BasicBlock* block, GuardInfo* info)
     info->m_local  = addr->AsLclVar()->GetLclNum();
     bool isNonNull = false;
     bool isExact   = false;
-    info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->gtCompileTimeHandle;
+    info->m_type   = (CORINFO_CLASS_HANDLE)op2->AsIntCon()->GetCompileTimeHandle();
     info->m_block  = block;
     info->m_stmt   = stmt;
     info->m_relop  = tree;
@@ -3981,6 +3985,20 @@ bool ObjectAllocator::CheckCanClone(CloneInfo* info)
     assert(!info->m_checkedCanClone);
     JITDUMP("** Seeing if we can clone to guarantee non-escape under V%02u\n", info->m_local);
     BasicBlock* const allocBlock = info->m_allocBlock;
+
+    // Cloning redirects the allocation block's sole outgoing edge to the fast path,
+    // so the allocation block must be a block kind that has a single target.
+    //
+    // If the allocation block ends in a conditional (say the def of the enumerator var
+    // is in the allocation block, and is followed by a GDV guard), we can't simply
+    // redirect, so bail out.
+    //
+    if (!allocBlock->HasTarget())
+    {
+        JITDUMP("allocation block " FMT_BB " is a %s, and so has no unique target edge\n", allocBlock->bbNum,
+                bbKindNames[allocBlock->GetKind()]);
+        return false;
+    }
 
     // The allocation site must not be in a loop (stack allocation limitation)
     //

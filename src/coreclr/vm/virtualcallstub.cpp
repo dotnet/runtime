@@ -98,11 +98,23 @@ struct CachedIndirectionCellBlockListNode
 
 BYTE* GenerateDispatchStubCellEntryMethodDesc(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, MethodDesc *pMD, LCGMethodResolver *pResolver)
 {
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
     return GenerateDispatchStubCellEntrySlot(pLoaderAllocator, ownerType, pMD->GetSlot(), pResolver);
 }
 
 BYTE* GenerateDispatchStubCellEntrySlot(LoaderAllocator *pLoaderAllocator, TypeHandle ownerType, int methodSlot, LCGMethodResolver *pResolver)
 {
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
     VirtualCallStubManager * pMgr = pLoaderAllocator->GetVirtualCallStubManager();
 
     DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(ownerType, methodSlot);
@@ -981,7 +993,7 @@ BOOL VirtualCallStubManager::TraceManager(Thread *thread,
     Object *pObj = StubManagerHelpers::GetThisPtr(pContext);
 
     // Call common trace code.
-    return (TraceResolver(pObj, token, trace));
+    return TraceResolver(pObj, token, trace);
 }
 
 #ifndef DACCESS_COMPILE
@@ -992,7 +1004,7 @@ DispatchToken VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle ownerT
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -1015,7 +1027,7 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, MethodDesc *pMD)
     CONTRACTL {
         THROWS;
         GC_TRIGGERS;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pMD));
         PRECONDITION(!pMD->IsInterface() || ownerType.GetMethodTable()->HasSameTypeDefAs(pMD->GetMethodTable()));
         INJECT_FAULT(COMPlusThrowOM(););
@@ -1029,13 +1041,12 @@ PCODE VirtualCallStubManager::GetCallStub(TypeHandle ownerType, MethodDesc *pMD)
 //find or create a stub
 PCODE VirtualCallStubManager::GetCallStub(DispatchToken token)
 {
-    CONTRACT (PCODE) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(RETVAL != NULL);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     GCX_COOP(); // This is necessary for BucketTable synchronization
 
@@ -1069,18 +1080,18 @@ PCODE VirtualCallStubManager::GetCallStub(DispatchToken token)
     _ASSERTE(stub != CALL_STUB_EMPTY_ENTRY);
     stats.site_counter++;
 
-    RETURN (stub);
+    _ASSERTE(stub != 0);
+    return stub;
 }
 
 PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
 {
-    CONTRACT(PCODE) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(RETVAL != NULL);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     GCX_COOP(); // This is necessary for BucketTable synchronization
 
@@ -1111,18 +1122,17 @@ PCODE VirtualCallStubManager::GetVTableCallStub(DWORD slot)
     }
 
     _ASSERTE(stub != CALL_STUB_EMPTY_ENTRY);
-    RETURN(stub);
+    return stub;
 }
 
 VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
 {
-    CONTRACT(VTableCallHolder*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
         INJECT_FAULT(COMPlusThrowOM(););
-        POSTCONDITION(RETVAL != NULL);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     //allocate from the requisite heap and copy the template over it.
     size_t vtableHolderSize = VTableCallHolder::GetHolderSize(slot);
@@ -1140,7 +1150,7 @@ VTableCallHolder* VirtualCallStubManager::GenerateVTableCallStub(DWORD slot)
 
     PerfMap::LogStubs(__FUNCTION__, "GenerateVTableCallStub", (PCODE)pHolder->stub(), pHolder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 
-    RETURN(pHolder);
+    return pHolder;
 }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
@@ -1167,13 +1177,12 @@ BYTE* GetStubIndirectionCell(BYTE** pBlocksStart, UINT32 index, UINT32 sizeOfInd
 
 BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToken token, BOOL fUseRecycledCell /* = FALSE*/ )
 {
-    CONTRACT (BYTE*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(target != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     _ASSERTE(UseCachedInterfaceDispatch() || isStubStatic(target));
 
@@ -1244,7 +1253,7 @@ BYTE *VirtualCallStubManager::GenerateStubIndirection(PCODE target, DispatchToke
         *((PCODE *)ret) = target;
     )
 
-    RETURN ret;
+    return ret;
 }
 
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
@@ -1465,24 +1474,32 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
 
-    MethodDesc *pTargetMD = COMDelegate::GetMethodDescForOpenVirtualDelegate(delegateObj);
+    MethodDesc *pTargetMD = COMDelegate::GetMethodDescForOpenVirtualDelegate((DELEGATEREF)delegateObj);
     pSDFrame->SetFunction(pTargetMD);
 
     pSDFrame->Push(CURRENT_THREAD);
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
     GCStress<vsd_on_resolve>::MaybeTriggerAndProtect(pObj);
 
-    DispatchToken token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle(pTargetMD->GetMethodTable()), pTargetMD->GetSlot());
+    DispatchToken token;
+    
+    {
+        GCX_PREEMP();
+        token = VirtualCallStubManager::GetTokenFromOwnerAndSlot(TypeHandle(pTargetMD->GetMethodTable()), pTargetMD->GetSlot());
+    }
     target = CachedInterfaceDispatchResolveWorker(NULL, protectedObj, token);
 
 #if _DEBUG
@@ -1495,6 +1512,7 @@ extern "C" PCODE CID_VirtualOpenDelegateDispatchWorker(TransitionBlock * pTransi
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
@@ -1545,11 +1563,13 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     if (pObj == NULL) {
         pSDFrame->SetForNullReferenceException();
         pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
 
@@ -1566,6 +1586,7 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
     pSDFrame->SetRepresentativeSlot(pRepresentativeMT, representativeToken.GetSlotNumber());
 
     pSDFrame->Push(CURRENT_THREAD);
+    INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
     INSTALL_MANAGED_EXCEPTION_DISPATCHER;
     INSTALL_UNWIND_AND_CONTINUE_HANDLER;
 
@@ -1583,6 +1604,7 @@ extern "C" PCODE CID_ResolveWorker(TransitionBlock * pTransitionBlock,
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
     UNINSTALL_MANAGED_EXCEPTION_DISPATCHER;
+    UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
     pSDFrame->Pop(CURRENT_THREAD);
 
     return target;
@@ -1763,11 +1785,13 @@ PCODE VSD_ResolveWorkerForInterfaceLookupSlot(TransitionBlock * pTransitionBlock
 
     if (pObj == NULL) {
         pSDFrame->Push(CURRENT_THREAD);
+        INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(pSDFrame);
         INSTALL_MANAGED_EXCEPTION_DISPATCHER_EX;
         INSTALL_UNWIND_AND_CONTINUE_HANDLER_EX;
         COMPlusThrow(kNullReferenceException);
         UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(propagateExceptionToNativeCode);
         UNINSTALL_MANAGED_EXCEPTION_DISPATCHER_EX(propagateExceptionToNativeCode);
+        UNINSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME;
         _ASSERTE(!"Throw returned");
     }
 
@@ -2493,26 +2517,26 @@ VirtualCallStubManager::Resolver(
 // Given a contract, return true if the contract represents a slot on the target.
 BOOL VirtualCallStubManager::IsClassToken(DispatchToken token)
 {
-    CONTRACT (BOOL) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-    } CONTRACT_END;
-    RETURN (token.IsThisToken());
+    } CONTRACTL_END;
+    return token.IsThisToken();
 }
 
 //----------------------------------------------------------------------------
 // Given a contract, return true if the contract represents an interface, false if just a slot.
 BOOL VirtualCallStubManager::IsInterfaceToken(DispatchToken token)
 {
-    CONTRACT (BOOL) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
-    } CONTRACT_END;
+    } CONTRACTL_END;
     BOOL ret = token.IsTypedToken();
     // For now, only interfaces have typed dispatch tokens.
     CONSISTENCY_CHECK(!ret || CheckPointer(AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())));
     CONSISTENCY_CHECK(!ret || AppDomain::GetCurrentDomain()->LookupType(token.GetTypeID())->IsInterface());
-    RETURN (ret);
+    return ret;
 }
 
 #ifndef DACCESS_COMPILE
@@ -2523,13 +2547,12 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
     DispatchToken token,
     MethodTable * pMT)
 {
-    CONTRACT (MethodDesc *) {
+    CONTRACTL {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pMT));
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     // This is called in a context where managed references on the stack may not be fully protected,
     // so garbage collection must be forbidden here.
@@ -2542,7 +2565,7 @@ VirtualCallStubManager::GetRepresentativeMethodDescFromToken(
         token = DispatchToken::CreateDispatchToken(token.GetSlotNumber());
     }
     CONSISTENCY_CHECK(token.IsThisToken());
-    RETURN (pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber()));
+    return pMT->GetMethodDescForSlot_NoThrow(token.GetSlotNumber());
 }
 
 //----------------------------------------------------------------------------
@@ -2836,7 +2859,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
                                                              size_t           dispatchToken,
                                                              bool *           pMayHaveReenteredCooperativeGCMode)
 {
-    CONTRACT (DispatchHolder*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
@@ -2844,8 +2867,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
         PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     size_t dispatchHolderSize = sizeof(DispatchHolder);
 
@@ -2854,7 +2876,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     if (m_fShouldAllocateLongJumpDispatchStubs
         INDEBUG(|| g_pConfig->ShouldGenerateLongJumpDispatchStub()))
     {
-        RETURN GenerateDispatchStubLong(addrOfCode,
+        return GenerateDispatchStubLong(addrOfCode,
                                         addrOfFail,
                                         pMTExpected,
                                         dispatchToken,
@@ -2872,7 +2894,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
     if (!DispatchHolder::CanShortJumpDispatchStubReachFailTarget(addrOfFail, (LPCBYTE)holder))
     {
         m_fShouldAllocateLongJumpDispatchStubs = TRUE;
-        RETURN GenerateDispatchStub(addrOfCode, addrOfFail, pMTExpected, dispatchToken, pMayHaveReenteredCooperativeGCMode);
+        return GenerateDispatchStub(addrOfCode, addrOfFail, pMTExpected, dispatchToken, pMayHaveReenteredCooperativeGCMode);
     }
 #endif
 
@@ -2908,7 +2930,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
 
     PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 
-    RETURN (holder);
+    return holder;
 }
 
 #ifdef TARGET_AMD64
@@ -2922,7 +2944,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
                                                                  size_t           dispatchToken,
                                                                  bool *           pMayHaveReenteredCooperativeGCMode)
 {
-    CONTRACT (DispatchHolder*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
@@ -2930,8 +2952,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
         PRECONDITION(addrOfFail != NULL);
         PRECONDITION(CheckPointer(pMTExpected));
         PRECONDITION(pMayHaveReenteredCooperativeGCMode != nullptr);
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     //allocate from the requisite heap and copy the template over it.
     size_t dispatchHolderSize = DispatchHolder::GetHolderSize(DispatchStub::e_TYPE_LONG);
@@ -2966,7 +2987,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
 
     PerfMap::LogStubs(__FUNCTION__, "GenerateDispatchStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 
-    RETURN (holder);
+    return holder;
 }
 #endif
 
@@ -2983,7 +3004,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 #endif
                                                            )
 {
-    CONTRACT (ResolveHolder*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
@@ -2991,8 +3012,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 #if defined(TARGET_X86)
         PRECONDITION(addrOfPatcher != NULL);
 #endif
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     _ASSERTE(addrOfResolver);
 
@@ -3062,7 +3082,7 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 
     PerfMap::LogStubs(__FUNCTION__, "GenerateResolveStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 
-    RETURN (holder);
+    return holder;
 }
 
 //----------------------------------------------------------------------------
@@ -3070,13 +3090,12 @@ ResolveHolder *VirtualCallStubManager::GenerateResolveStub(PCODE            addr
 */
 LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, size_t dispatchToken)
 {
-    CONTRACT (LookupHolder*) {
+    CONTRACTL {
         THROWS;
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(addrOfResolver != NULL);
-        POSTCONDITION(CheckPointer(RETVAL));
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     //allocate from the requisite heap and copy the template over it.
     LookupHolder * holder     = (LookupHolder*) (void*) lookup_heap->AllocAlignedMem(sizeof(LookupHolder), CODE_SIZE_ALIGN);
@@ -3093,7 +3112,7 @@ LookupHolder *VirtualCallStubManager::GenerateLookupStub(PCODE addrOfResolver, s
 
     PerfMap::LogStubs(__FUNCTION__, "GenerateLookupStub", (PCODE)holder->stub(), holder->stub()->size(), PerfMapStubType::IndividualWithinBlock);
 
-    RETURN (holder);
+    return holder;
 }
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 
@@ -4117,7 +4136,7 @@ BOOL VirtualCallStubManagerIterator::Next()
         m_pCurMgr = m_pCurMgr->m_pNext;
     }
 
-    return (m_pCurMgr != NULL);
+    return m_pCurMgr != NULL;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////

@@ -11,7 +11,6 @@ using System.Numerics;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
-using System.Text;
 
 using ILCompiler.DependencyAnalysis;
 
@@ -868,17 +867,25 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
-        private protected override void EmitChecksumsForObject(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations, ReadOnlySpan<byte> originalOutput)
+        private protected override List<(long Offset, byte[] Value)> ComputeChecksums(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations)
         {
-            base.EmitChecksumsForObject(outputFileStream, checksumRelocations, originalOutput);
+            List<(long Offset, byte[] Value)> pendingWrites = base.ComputeChecksums(outputFileStream, checksumRelocations);
 
             if (_coffTimestamp is null)
             {
                 // If we were not provided a deterministic timestamp, generate one from a hash of the content.
-                outputFileStream.Seek(_coffHeaderOffset + CoffHeader.TimeDateStampOffset(bigObj: false), SeekOrigin.Begin);
-                using BinaryWriter writer = new(outputFileStream, Encoding.UTF8, leaveOpen: true);
-                writer.Write(BlobContentId.FromHash(SHA256.HashData(originalOutput)).Stamp);
+                outputFileStream.Seek(0, SeekOrigin.Begin);
+                Span<byte> hash = stackalloc byte[SHA256.HashSizeInBytes];
+                SHA256.HashData(outputFileStream, hash);
+
+                byte[] timestamp = new byte[sizeof(uint)];
+                BinaryPrimitives.WriteUInt32LittleEndian(timestamp, BlobContentId.FromHash(hash.ToArray()).Stamp);
+
+                long timestampOffset = _coffHeaderOffset + CoffHeader.TimeDateStampOffset(bigObj: false);
+                pendingWrites.Add((timestampOffset, timestamp));
             }
+
+            return pendingWrites;
         }
 
         private unsafe void ResolveRelocations(int sectionIndex, List<SymbolicRelocation> symbolicRelocations, long imageBase, MemoryStream stream)

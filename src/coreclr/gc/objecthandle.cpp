@@ -1535,13 +1535,19 @@ uint8_t** Ref_ScanBridgeObjects(uint32_t condemned, uint32_t maxgen, ScanContext
     }
 
     // The callee here will free the allocated memory.
-    MarkCrossReferencesArgs *args = ProcessBridgeObjects();
-
-    if (args != NULL)
+    if (ShouldProcessBridgeObjects())
     {
-        GCToEEInterface::TriggerClientBridgeProcessing(args);
+        MarkCrossReferencesArgs *args = ProcessBridgeObjects();
+
+        if (args != NULL)
+        {
+            GCToEEInterface::TriggerClientBridgeProcessing(args);
+        }
     }
 
+    // Every registered bridge object is promoted whether or not the cross references were
+    // computed above, so skipping the work while the client is busy only delays reporting a
+    // dead peer, it never collects one early.
     return GetRegisteredBridges(numObjs);
 }
 #endif // FEATURE_JAVAMARSHAL
@@ -1815,6 +1821,7 @@ void Ref_AgeHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
 #endif
+        HNDTYPE_DEPENDENT,
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
 #endif
@@ -1868,13 +1875,13 @@ void Ref_RejuvenateHandles(uint32_t condemned, uint32_t maxgen, ScanContext* sc)
         HNDTYPE_WEAK_SHORT,
         HNDTYPE_WEAK_LONG,
 
-
         HNDTYPE_STRONG,
 
         HNDTYPE_PINNED,
 #ifdef FEATURE_VARIABLE_HANDLES
         HNDTYPE_VARIABLE,
 #endif
+        HNDTYPE_DEPENDENT,
 #ifdef FEATURE_REFCOUNTED_HANDLES
         HNDTYPE_REFCOUNTED,
 #endif

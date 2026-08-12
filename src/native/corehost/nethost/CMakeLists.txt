@@ -3,7 +3,7 @@
 
 # CMake does not recommend using globbing since it messes with the freshness checks
 set(SOURCES
-    nethost.cpp
+    nethost.c
 )
 
 if(CLR_CMAKE_TARGET_WIN32)
@@ -33,8 +33,8 @@ if (WIN32)
     )
 endif(WIN32)
 
-target_link_libraries(nethost PRIVATE hostmisc fxr_resolver)
-target_link_libraries(libnethost PRIVATE hostmisc::public fxr_resolver)
+target_link_libraries(nethost PRIVATE hostmisc_c fxr_resolver minipal_objects)
+target_link_libraries(libnethost PRIVATE hostmisc_c fxr_resolver minipal_objects)
 target_compile_definitions(nethost PRIVATE FEATURE_LIBHOST NETHOST_EXPORT)
 target_compile_definitions(libnethost PRIVATE FEATURE_LIBHOST NETHOST_EXPORT)
 
@@ -47,6 +47,7 @@ target_link_libraries (libnethost PUBLIC ${CMAKE_DL_LIBS})
 
 install(FILES ../coreclr_delegates.h DESTINATION corehost)
 install(FILES ../hostfxr.h DESTINATION corehost)
+install(FILES ../error_codes.h DESTINATION corehost RENAME host_error_codes.h)
 install(FILES nethost.h DESTINATION corehost)
 install_with_stripped_symbols(nethost TARGETS corehost)
 

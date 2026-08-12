@@ -5,6 +5,7 @@ using ILCompiler.DependencyAnalysis.Wasm;
 using ILCompiler.ObjectWriter;
 using ILCompiler.ObjectWriter.WasmInstructions;
 using Internal.JitInterface;
+using Internal.CallingConvention;
 using Internal.Text;
 using Internal.TypeSystem;
 using Internal.ReadyToRunConstants;
@@ -89,8 +90,38 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         MethodSignature INodeWithTypeSignature.Signature => WasmLowering.RaiseSignature(_wasmSignature, _context);
 
         bool INodeWithTypeSignature.IsUnmanagedCallersOnly => false;
-        bool INodeWithTypeSignature.IsAsyncCall => false;
+        bool INodeWithTypeSignature.IsAsyncCall => _wasmSignature.SignatureString.Contains('a');
         bool INodeWithTypeSignature.HasGenericContextArg => false;
+
+        private bool HasAsyncContinuation => _wasmSignature.SignatureString.Contains('a');
+        private bool HasGenericContextBeforeAsync
+        {
+            get
+            {
+                int asyncMarkerIndex = _wasmSignature.SignatureString.IndexOf('a');
+                if (asyncMarkerIndex < 0)
+                {
+                    return false;
+                }
+
+                int pos = 1;
+                if (_wasmSignature.SignatureString[0] == 'S')
+                {
+                    while ((pos < _wasmSignature.SignatureString.Length) && char.IsDigit(_wasmSignature.SignatureString[pos]))
+                    {
+                        pos++;
+                    }
+                }
+
+                if ((pos < _wasmSignature.SignatureString.Length) && (_wasmSignature.SignatureString[pos] == 'T'))
+                {
+                    pos++;
+                }
+
+                char hiddenParamChar = (_context.Target.PointerSize == 4) ? 'i' : 'l';
+                return (pos < asyncMarkerIndex) && (_wasmSignature.SignatureString[pos] == hiddenParamChar);
+            }
+        }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
@@ -124,7 +155,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             ISymbolNode helperTypeIndex = factory.WasmTypeNode(_helperTypeParams);
 
             MethodSignature methodSignature = WasmLowering.RaiseSignature(_wasmSignature, _context);
-            (ArgIterator argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context);
+            bool hasAsyncContinuation = HasAsyncContinuation;
+            bool hasGenericContextBeforeAsync = HasGenericContextBeforeAsync;
+            (ArgIterator<TypeHandle> argit, TransitionBlock transitionBlock) = GCRefMapBuilder.BuildArgIterator(methodSignature, _context, methodIsAsyncCall: hasAsyncContinuation);
 
             int[] offsets = new int[methodSignature.Length];
             bool[] isIndirectStructArg = new bool[methodSignature.Length];
@@ -146,6 +179,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             // Align total allocation (args + transition block) to 16 byte boundaries
             int sizeOfStoredLocals = AlignmentHelper.AlignUp(argit.SizeOfFrameArgumentArray() + transitionBlock.SizeOfTransitionBlock, 16);
+            int asyncContinuationOffset = hasAsyncContinuation ? argit.GetAsyncContinuationArgOffset() : 0;
 
             List<WasmExpr> expressions = new List<WasmExpr>();
             // local.get 0
@@ -198,6 +232,16 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (hasRetBuffArg)
             {
+                wasmLocalIndex++;
+            }
+
+            // The async continuation is a wasm local but not a methodSignature param; store it here,
+            // unless a generic context precedes it (handled after the first param below).
+            if (hasAsyncContinuation && !hasGenericContextBeforeAsync)
+            {
+                expressions.Add(Local.Get(0));
+                expressions.Add(Local.Get(wasmLocalIndex));
+                expressions.Add(I32.Store((ulong)asyncContinuationOffset));
                 wasmLocalIndex++;
             }
 
@@ -254,6 +298,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         default:
                             throw new System.Exception("Unexpected wasm type arg");
                     }
+                    wasmLocalIndex++;
+                }
+
+                // Async continuation follows the generic context param; store it now.
+                if (hasAsyncContinuation && hasGenericContextBeforeAsync && (i == 0))
+                {
+                    expressions.Add(Local.Get(0));
+                    expressions.Add(Local.Get(wasmLocalIndex));
+                    expressions.Add(I32.Store((ulong)asyncContinuationOffset));
                     wasmLocalIndex++;
                 }
             }
@@ -315,6 +368,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 wasmLocalIndex++;
             }
 
+            // Forward the async continuation stored above (unless a generic context precedes it).
+            if (hasAsyncContinuation && !hasGenericContextBeforeAsync)
+            {
+                expressions.Add(Local.Get(0));
+                expressions.Add(I32.Load((ulong)asyncContinuationOffset));
+                wasmLocalIndex++;
+            }
+
             for (int i = 0; i < methodSignature.Length; i++)
             {
                 TypeDesc paramType = methodSignature[i];
@@ -357,6 +418,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         default:
                             throw new System.Exception("Unexpected wasm type arg");
                     }
+                    wasmLocalIndex++;
+                }
+
+                // Async continuation follows the generic context param; forward it now.
+                if (hasAsyncContinuation && hasGenericContextBeforeAsync && (i == 0))
+                {
+                    expressions.Add(Local.Get(0));
+                    expressions.Add(I32.Load((ulong)asyncContinuationOffset));
                     wasmLocalIndex++;
                 }
             }

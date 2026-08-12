@@ -3,6 +3,7 @@
 
 #include "classfactory.h"
 #include "eltprofiler/slowpatheltprofiler.h"
+#include "elttransitions/elttransitions.h"
 #include "enumthreadsprofiler/enumthreadsprofiler.h"
 #include "eventpipeprofiler/eventpipereadingprofiler.h"
 #include "eventpipeprofiler/eventpipewritingprofiler.h"
@@ -14,6 +15,7 @@
 #include "gcheapenumerationprofiler/gcheapenumerationprofiler.h"
 #include "gcprofiler/gcprofiler.h"
 #include "handlesprofiler/handlesprofiler.h"
+#include "ijw/ijwprofiler.h"
 #include "metadatagetdispenser/metadatagetdispenser.h"
 #include "nullprofiler/nullprofiler.h"
 #include "rejitprofiler/rejitprofiler.h"
@@ -113,6 +115,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     {
         profiler = new SlowPathELTProfiler();
     }
+    else if (clsid == EltTransitions::GetClsid())
+    {
+        profiler = new EltTransitions();
+    }
     else if (clsid == GCProfiler::GetClsid())
     {
         profiler = new GCProfiler();
@@ -168,6 +174,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     else if (clsid == GCSkipObjectsAllocatedByClassCallbackProfiler::GetClsid())
     {
         profiler = new GCSkipObjectsAllocatedByClassCallbackProfiler();
+    }
+    else if (clsid == IjwProfiler::GetClsid())
+    {
+        profiler = new IjwProfiler();
     }
     else
     {

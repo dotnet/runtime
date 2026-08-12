@@ -84,7 +84,7 @@ internal sealed class StacksCommand : Command
                 {
                     try
                     {
-                        TargetPointer ip = stackWalk.GetInstructionPointer(frame);
+                        TargetCodePointer ip = stackWalk.GetInstructionPointer(frame);
                         TargetPointer mdPtr = stackWalk.GetMethodDescPtr(frame);
                         string frameName;
 

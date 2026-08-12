@@ -1111,6 +1111,13 @@ uint8_t** GetRegisteredBridges(size_t* pNumBridges)
     return (uint8_t**)g_registeredBridges.data;
 }
 
+bool ShouldProcessBridgeObjects()
+{
+    // The client discards any set of cross references handed to it while it is still
+    // processing a previous one, so computing it would be pure waste.
+    return !GCToEEInterface::IsClientBridgeProcessingActive();
+}
+
 static bool TarjanSccAlgorithm()
 {
     int i;
