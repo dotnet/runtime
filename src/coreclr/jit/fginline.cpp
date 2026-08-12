@@ -2823,8 +2823,7 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
             gtNewContinuationMemberIndir(ContinuationMember::InlineFrameExecutionContext(inlineDepth), TYP_REF);
         GenTree* const contContext =
             gtNewContinuationMemberIndir(ContinuationMember::InlineFrameContinuationContext(inlineDepth), TYP_REF);
-        GenTree* const flags =
-            gtNewContinuationMemberIndir(ContinuationMember::InlineFrameFlags(inlineDepth), TYP_INT);
+        GenTree* const flags = gtNewContinuationMemberIndir(ContinuationMember::InlineFrameFlags(inlineDepth), TYP_INT);
 
         GenTreeCall* const restoreCall = gtNewUserCallNode(asyncInfo->restoreInlinedFrameContextsMethHnd, TYP_VOID);
         restoreCall->gtArgs.PushFront(this, NewCallArg::Primitive(flags));
