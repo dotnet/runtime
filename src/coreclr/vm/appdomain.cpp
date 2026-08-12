@@ -2336,18 +2336,6 @@ void AppDomain::LoadAssembly(Assembly *pAssembly,
 
 thread_local LoadLevelLimiter* LoadLevelLimiter::t_currentLoadLevelLimiter = nullptr;
 
-namespace
-{
-    FileLoadLevel GetCurrentFileLoadLevel()
-    {
-        WRAPPER_NO_CONTRACT;
-        if (LoadLevelLimiter::GetCurrent() == NULL)
-            return FILE_ACTIVE;
-        else
-            return (FileLoadLevel)(LoadLevelLimiter::GetCurrent()->GetLoadLevel()-1);
-    }
-}
-
 Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
                                   PEAssembly * pPEAssembly,
                                   FileLoadLevel targetLevel)
