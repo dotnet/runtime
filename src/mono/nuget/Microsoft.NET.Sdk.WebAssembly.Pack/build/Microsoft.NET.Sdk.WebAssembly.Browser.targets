@@ -1312,11 +1312,11 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <Target Name="_EnsureDotnetTypeScriptDefinitions"
-          DependsOnTargets="_ResolveDotnetTypeScriptDefinitionPaths"
+          DependsOnTargets="_ResolveWasmConfiguration;_ResolveDotnetTypeScriptDefinitionPaths"
           AfterTargets="PrepareForBuild"
           Inputs="$(_DotnetTypesSourcePath)"
           Outputs="$(_DotnetTypesDestPath)"
-          Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
+          Condition="'$(_WasmEmitTypeScriptDefinitions)' == 'true'">
 
     <MakeDir Directories="$(_DotnetTypesDestDir)"
              Condition="Exists('$(_DotnetTypesSourcePath)')" />
