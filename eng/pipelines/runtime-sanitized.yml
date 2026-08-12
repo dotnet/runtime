@@ -48,6 +48,23 @@ extends:
                   scenarios:
                     - normal
                     - no_tiered_compilation
+              # Emit per-binary ASan usage telemetry (BinSkim BA2032). Windows-only.
+              - task: BinSkim@4
+                displayName: 'Emit ASan usage telemetry (BinSkim BA2032)'
+                condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
+                inputs:
+                  TargetPattern: guardianGlob
+                  AnalyzeTargetGlob: +:f|$(Build.SourcesDirectory)\artifacts\bin\**\*.exe;+:f|$(Build.SourcesDirectory)\artifacts\bin\**\*.dll
+                  toolVersion: '4.4.9'
+                env:
+                  GDN_BINSKIM_RUNONLYRULES: BA2032
+                  GDN_BINSKIM_KIND: Fail;Pass;Informational
+              - task: PostAnalysis@2
+                displayName: 'Guardian: upload SDL results (BA2032)'
+                condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
+                inputs:
+                  GdnBreakAllTools: false
+                  GdnBreakGdnToolBinSkim: false
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
@@ -80,6 +97,23 @@ extends:
                   creator: dotnet-bot
                   testBuildArgs: nativeaot tree nativeaot
                   liveLibrariesBuildConfig: Release
+              # Emit per-binary ASan usage telemetry (BinSkim BA2032). Windows-only.
+              - task: BinSkim@4
+                displayName: 'Emit ASan usage telemetry (BinSkim BA2032)'
+                condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
+                inputs:
+                  TargetPattern: guardianGlob
+                  AnalyzeTargetGlob: +:f|$(Build.SourcesDirectory)\artifacts\bin\**\*.exe;+:f|$(Build.SourcesDirectory)\artifacts\bin\**\*.dll
+                  toolVersion: '4.4.9'
+                env:
+                  GDN_BINSKIM_RUNONLYRULES: BA2032
+                  GDN_BINSKIM_KIND: Fail;Pass;Informational
+              - task: PostAnalysis@2
+                displayName: 'Guardian: upload SDL results (BA2032)'
+                condition: and(succeededOrFailed(), eq(variables['Agent.OS'], 'Windows_NT'))
+                inputs:
+                  GdnBreakAllTools: false
+                  GdnBreakGdnToolBinSkim: false
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
                 parameters:
