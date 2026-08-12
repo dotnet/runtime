@@ -176,11 +176,12 @@ internal class RISCV64Unwinder(Target target)
         // need to skip some to account for partial execution of the prolog.
         //
         // N.B. As an optimization here, note that each byte of unwind codes can
-        //      describe at most one 32-bit instruction. Thus, the largest prologue
-        //      that could possibly be described by UnwindWords (which is 4 * the
-        //      number of unwind code bytes) is 4 * UnwindWords words. If
-        //      OffsetInFunction is larger than this value, it is guaranteed to be
-        //      in the body of the function.
+        //      describe at most one instruction, and each instruction can cover at
+        //      most two halfwords. Thus, the largest prolog that could possibly be
+        //      described by UnwindWords (which is 4 * the number of unwind code
+        //      bytes) is 2 * (4 * UnwindWords) halfwords. If OffsetInFunction is
+        //      larger than this value, it is guaranteed to be in the body of the
+        //      function.
         //
         uint scopeSize;
         if (offsetInFunction < 2 * (4 * unwindWords))
