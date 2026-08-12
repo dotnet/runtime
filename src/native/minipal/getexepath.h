@@ -27,7 +27,8 @@
 #include <StorageDefs.h>
 #elif defined(TARGET_WASI)
 #include <string.h>
-#elif HAVE_GETAUXVAL
+#elif defined(__linux__)
+// Keep the inline and external definitions identical; HAVE_GETAUXVAL is configured separately by each consumer.
 #include <sys/auxv.h>
 #endif
 
@@ -39,10 +40,10 @@ extern "C" {
  * Get the full path to the executable for the current process.
  * Resolves symbolic links. The caller is responsible for releasing the buffer.
  *
- * @return A pointer to a null-terminated string containing the executable path, 
+ * @return A pointer to a null-terminated string containing the executable path,
  *         or NULL if an error occurs.
  */
-static inline char* minipal_getexepath(void)
+inline char* minipal_getexepath(void)
 {
 #if defined(__APPLE__)
     uint32_t len = PATH_MAX;
@@ -95,7 +96,7 @@ static inline char* minipal_getexepath(void)
         {
             size_t seg = strcspn(p, ":");
             char path[PATH_MAX];
-            
+
             if (snprintf(path, sizeof(path), "%.*s/%s", (int)seg, p, exe) < (int)sizeof(path))
             {
                 struct stat sb;
@@ -180,7 +181,7 @@ static inline char* minipal_getexepath(void)
         return path;
     }
 
-#if HAVE_GETAUXVAL && defined(AT_EXECFN)
+#if defined(AT_EXECFN)
     // fallback to AT_EXECFN, which does not work properly in rare cases
     // when .NET process is set as interpreter (shebang).
     const char* exePath = (const char *)(getauxval(AT_EXECFN));
@@ -188,7 +189,7 @@ static inline char* minipal_getexepath(void)
     {
         return realpath(exePath, NULL);
     }
-#endif // HAVE_GETAUXVAL && defined(AT_EXECFN)
+#endif // defined(AT_EXECFN)
 
     return NULL;
 #endif // defined(__APPLE__)
