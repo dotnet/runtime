@@ -3351,69 +3351,72 @@ void AsyncStressPolicy::NoteBool(InlineObservation obs, bool value)
 //    value    - the value being observed
 //
 // Notes:
-//    Async callees skip the size based rejections. Those are SetNever, which
-//    would also mark the callee NOINLINE for every other call site, so there is
-//    no point in letting the base policy see them first.
-//
-//    This is deliberately not restricted to the calls the stress mode picked:
-//    the candidate screen creates its own InlineResult before the call is a
-//    candidate, so no group exists yet at that point, and gating the bypass on
-//    one would let the screen mark large async callees NOINLINE before the stress
-//    mode ever gets to consider them. The call site specific decisions are gated
-//    instead, see BudgetCheck and DetermineProfitability.
+//    The size based rejections are skipped for every callee: they are SetNever,
+//    which would also mark the callee NOINLINE for every other call site, and the
+//    candidate screen makes them long before it is known whether the stress mode
+//    picked this call. Callees the stress mode did not pick are left to the normal
+//    profitability heuristics instead, see DetermineProfitability.
 //
 //    CALLEE_MAXSTACK is deliberately not among them: stack heavy callees are
 //    left on the normal policy rather than being forced in.
 //
 void AsyncStressPolicy::NoteInt(InlineObservation obs, int value)
 {
-    if (obs == InlineObservation::CALLSITE_ASYNC_STRESS_INDEX)
+    switch (obs)
     {
-        m_AsyncStressIndex = value;
-        return;
-    }
-
-    if (m_IsAsyncCall)
-    {
-        switch (obs)
+        case InlineObservation::CALLSITE_ASYNC_STRESS_INDEX:
         {
-            case InlineObservation::CALLEE_IL_CODE_SIZE:
-            {
-                assert(value != 0);
-                m_CodeSize = static_cast<unsigned>(value);
-
-                if (m_CodeSize > InlineStrategy::IMPLEMENTATION_MAX_INLINE_SIZE)
-                {
-                    SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
-                }
-                else if (m_IsForceInline)
-                {
-                    SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
-                }
-                else
-                {
-                    SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
-                }
-
-                return;
-            }
-
-            case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
-            {
-                // Keep rejecting callees that do not return, but ignore the block count
-                // limit; async callees routinely have more blocks than it allows.
-                //
-                if (!m_IsForceInline && m_IsNoReturn && (value == 1))
-                {
-                    SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
-                }
-
-                return;
-            }
-
-            default:
-                break;
+            m_AsyncStressIndex = value;
+            return;
         }
+
+        case InlineObservation::CALLEE_IL_CODE_SIZE:
+        {
+            assert(m_IsForceInlineKnown);
+            assert(value != 0);
+            m_CodeSize = static_cast<unsigned>(value);
+
+            unsigned alwaysInlineSize = InlineStrategy::ALWAYS_INLINE_SIZE;
+            if (m_InsideThrowBlock)
+            {
+                alwaysInlineSize /= 2;
+            }
+
+            if (m_CodeSize > InlineStrategy::IMPLEMENTATION_MAX_INLINE_SIZE)
+            {
+                SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+            }
+            else if (m_IsForceInline)
+            {
+                SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+            }
+            else if (m_CodeSize <= alwaysInlineSize)
+            {
+                SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
+            }
+            else
+            {
+                SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+            }
+
+            return;
+        }
+
+        case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+        {
+            // Keep rejecting callees that do not return, but ignore the block count
+            // limit; async callees routinely have more blocks than it allows.
+            //
+            if (!m_IsForceInline && m_IsNoReturn && (value == 1))
+            {
+                SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
+            }
+
+            return;
+        }
+
+        default:
+            break;
     }
 
     ExtendedDefaultPolicy::NoteInt(obs, value);
@@ -3454,8 +3457,9 @@ bool AsyncStressPolicy::BudgetCheck() const
 //    The roll can go either way against what the normal policy would have done:
 //    it inlines callees the ExtendedDefaultPolicy would have rejected as too big
 //    or unprofitable, and it rejects ones it would have accepted. Force inlines
-//    are the exception. Those are never discretionary candidates, so this is not
-//    even reached for them and the stress mode cannot take them away.
+//    and callees below the always inline size are the exception. Those are never
+//    discretionary candidates, so this is not even reached for them and the stress
+//    mode cannot take them away.
 //
 void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
