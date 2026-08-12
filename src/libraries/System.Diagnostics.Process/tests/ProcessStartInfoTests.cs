@@ -210,6 +210,21 @@ namespace System.Diagnostics.Tests
             });
         }
 
+        [Fact]
+        public void EnvironmentVariableNameContainingNull_ThrowsArgumentException()
+        {
+            const string InvalidName = "Name\0Suffix";
+            ProcessStartInfo psi = new ProcessStartInfo();
+            IDictionary environment = (IDictionary)psi.Environment;
+            ICollection<KeyValuePair<string, string>> environmentCollection = psi.Environment;
+
+            AssertExtensions.Throws<ArgumentException>("key", () => psi.Environment[InvalidName] = "value");
+            AssertExtensions.Throws<ArgumentException>("key", () => environment[InvalidName] = "value");
+            AssertExtensions.Throws<ArgumentException>("key", () => psi.Environment.Add(InvalidName, "value"));
+            AssertExtensions.Throws<ArgumentException>("key", () => environmentCollection.Add(new KeyValuePair<string, string>(InvalidName, "value")));
+            AssertExtensions.Throws<ArgumentException>("key", () => environment.Add(InvalidName, "value"));
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestSetEnvironmentOnChildProcess()
         {

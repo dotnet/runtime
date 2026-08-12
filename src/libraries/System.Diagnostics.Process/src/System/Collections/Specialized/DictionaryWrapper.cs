@@ -17,7 +17,11 @@ namespace System.Collections.Specialized
         public string? this[string key]
         {
             get => _contents[key];
-            set => _contents[key] = value;
+            set
+            {
+                ValidateKey(key);
+                _contents[key] = value;
+            }
         }
 
         public object? this[object key]
@@ -81,5 +85,13 @@ namespace System.Collections.Specialized
         public IEnumerator<KeyValuePair<string, string?>> GetEnumerator() => _contents.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _contents.GetEnumerator();
         IDictionaryEnumerator IDictionary.GetEnumerator() => _contents.GetEnumerator();
+
+        private static void ValidateKey(string key)
+        {
+            if (key.Contains('\0'))
+            {
+                throw new ArgumentException(SR.Argument_EnvironmentVariableNameContainsNull, nameof(key));
+            }
+        }
     }
 }
