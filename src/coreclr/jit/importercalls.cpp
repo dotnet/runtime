@@ -6537,6 +6537,82 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 }
 
 //------------------------------------------------------------------------
+// impRotateHelper: import a NI_PRIMITIVE_RotateLeft or
+//    NI_PRIMITIVE_RotateRight intrinsic.
+//
+// Arguments:
+//    baseType   - the type being rotated (TYP_INT or TYP_LONG)
+//    rotateOper - GT_ROL for RotateLeft, GT_ROR for RotateRight
+//
+// Returns:
+//    IR tree to use in place of the call, or nullptr if the jit should treat
+//    the intrinsic call like a normal call.
+//
+GenTree* Compiler::impRotateHelper(var_types baseType, genTreeOps rotateOper)
+{
+    assert((rotateOper == GT_ROL) || (rotateOper == GT_ROR));
+
+    GenTree* op2 = impStackTop().val;
+
+    unsigned rotateMask = varTypeIsLong(baseType) ? 0x3F : 0x1F;
+
+    if (!op2->IsIntegralConst())
+    {
+#if LOWER_DECOMPOSE_LONGS
+        if (varTypeIsLong(baseType))
+        {
+            // TODO-CQ: variable-sized long rotates need special handling on 32-bit.
+            return nullptr;
+        }
+#endif // LOWER_DECOMPOSE_LONGS
+
+        // Import non-constant rotates as an explicitly masked ROL/ROR(op1, AND(op2, mask)) instead.
+        // Lowering will remove this mask if the target's rotate implicitly masks its operand.
+        impPopStack();
+        GenTree* rotateValue = impPopStack().val;
+        GenTree* rotateAmount =
+            gtNewOperNode(GT_AND, genActualType(op2), op2, gtNewIconNode(rotateMask, genActualType(op2)));
+        return gtNewOperNode(rotateOper, baseType, rotateValue, rotateAmount);
+    }
+
+    // Pop the value from the stack
+    impPopStack();
+
+    GenTree* op1  = impPopStack().val;
+    uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
+
+    // Mask the offset to ensure deterministic xplat behavior for overshifting
+    cns2 &= rotateMask;
+
+    if (cns2 == 0)
+    {
+        // No rotation is a nop
+        return op1;
+    }
+
+    if (op1->IsIntegralConst())
+    {
+        if (varTypeIsLong(baseType))
+        {
+            uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
+            uint64_t res =
+                (rotateOper == GT_ROL) ? BitOperations::RotateLeft(cns1, cns2) : BitOperations::RotateRight(cns1, cns2);
+            return gtNewLconNode(res);
+        }
+        else
+        {
+            uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
+            uint32_t res =
+                (rotateOper == GT_ROL) ? BitOperations::RotateLeft(cns1, cns2) : BitOperations::RotateRight(cns1, cns2);
+            return gtNewIconNode(res, baseType);
+        }
+    }
+
+    op2->AsIntConCommon()->SetIconValue(cns2);
+    return gtFoldExpr(gtNewOperNode(rotateOper, baseType, op1, op2));
+}
+
+//------------------------------------------------------------------------
 // impPrimitiveNamedIntrinsic: import a NamedIntrinsic representing a primitive operation
 //
 // Arguments:
@@ -7093,47 +7169,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
 
-            GenTree* op2 = impStackTop().val;
-
-            if (!op2->IsIntegralConst())
-            {
-                // TODO-CQ: ROL currently expects op2 to be a constant
-                break;
-            }
-
-            // Pop the value from the stack
-            impPopStack();
-
-            GenTree* op1  = impPopStack().val;
-            uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
-
-            // Mask the offset to ensure deterministic xplat behavior for overshifting
-            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
-
-            if (cns2 == 0)
-            {
-                // No rotation is a nop
-                return op1;
-            }
-
-            if (op1->IsIntegralConst())
-            {
-                if (varTypeIsLong(baseType))
-                {
-                    uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
-                    result        = gtNewLconNode(BitOperations::RotateLeft(cns1, cns2));
-                }
-                else
-                {
-                    uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                    result        = gtNewIconNode(BitOperations::RotateLeft(cns1, cns2), baseType);
-                }
-                break;
-            }
-
-            op2->AsIntConCommon()->SetIconValue(cns2);
-            result = gtFoldExpr(gtNewOperNode(GT_ROL, baseType, op1, op2));
-
+            result = impRotateHelper(baseType, GT_ROL);
             break;
         }
 
@@ -7142,47 +7178,7 @@ GenTree* Compiler::impPrimitiveNamedIntrinsic(NamedIntrinsic        intrinsic,
             assert(sig->numArgs == 2);
             assert(!varTypeIsSmall(retType) && !varTypeIsSmall(baseType));
 
-            GenTree* op2 = impStackTop().val;
-
-            if (!op2->IsIntegralConst())
-            {
-                // TODO-CQ: ROR currently expects op2 to be a constant
-                break;
-            }
-
-            // Pop the value from the stack
-            impPopStack();
-
-            GenTree* op1  = impPopStack().val;
-            uint32_t cns2 = static_cast<uint32_t>(op2->AsIntConCommon()->IconValue());
-
-            // Mask the offset to ensure deterministic xplat behavior for overshifting
-            cns2 &= varTypeIsLong(baseType) ? 0x3F : 0x1F;
-
-            if (cns2 == 0)
-            {
-                // No rotation is a nop
-                return op1;
-            }
-
-            if (op1->IsIntegralConst())
-            {
-                if (varTypeIsLong(baseType))
-                {
-                    uint64_t cns1 = static_cast<uint64_t>(op1->AsIntConCommon()->LngValue());
-                    result        = gtNewLconNode(BitOperations::RotateRight(cns1, cns2));
-                }
-                else
-                {
-                    uint32_t cns1 = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
-                    result        = gtNewIconNode(BitOperations::RotateRight(cns1, cns2), baseType);
-                }
-                break;
-            }
-
-            op2->AsIntConCommon()->SetIconValue(cns2);
-            result = gtFoldExpr(gtNewOperNode(GT_ROR, baseType, op1, op2));
-
+            result = impRotateHelper(baseType, GT_ROR);
             break;
         }
 

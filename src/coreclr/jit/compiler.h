@@ -1838,7 +1838,6 @@ struct FuncInfoDsc
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
     unsigned funWasmFrameSize;
     unsigned funWasmExnRefLocalIndex = UINT_MAX;
-    unsigned funWasmImageBaseLocalIndex = UINT_MAX;
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
@@ -5457,6 +5456,7 @@ protected:
                                         CORINFO_SIG_INFO*     sig
                                         R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                         bool                  mustExpand);
+    GenTree* impRotateHelper(var_types baseType, genTreeOps rotateOper);
 
 #ifdef FEATURE_HW_INTRINSICS
     bool IsValidForShuffle(GenTree* indices,
