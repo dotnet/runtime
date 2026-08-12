@@ -75,7 +75,7 @@ extends:
           parameters:
             helixAccessToken: $(HelixApiAccessToken)
             timeoutInMinutes: 540
-            testResultUploadParallelism: 64
+            testResultUploadParallelism: 48
             # Some path-filtered builds intentionally submit no Helix jobs.
             allowNoHelixJobs: true
 
