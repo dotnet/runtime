@@ -2723,8 +2723,9 @@ inline bool Compiler::lvaReportParamTypeArg()
 inline int Compiler::lvaCachedGenericContextArgOffset()
 {
     assert(lvaDoneFrameLayout == FINAL_FRAME_LAYOUT);
+    assert(lvaCachedGenericContextArg != BAD_VAR_NUM);
 
-    return lvaCachedGenericContextArgOffs;
+    return lvaGetDesc(lvaCachedGenericContextArg)->GetStackOffset();
 }
 
 //------------------------------------------------------------------------

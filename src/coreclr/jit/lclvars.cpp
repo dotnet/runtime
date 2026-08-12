@@ -316,6 +316,25 @@ void Compiler::lvaInitTypeRef()
         }
     }
 
+    const bool mayNeedGenericContextArg = (info.compMethodInfo->options & (CORINFO_GENERICS_CTXT_FROM_METHODDESC |
+                                                                           CORINFO_GENERICS_CTXT_FROM_METHODTABLE |
+                                                                           CORINFO_GENERICS_CTXT_FROM_THIS)) != 0;
+
+#ifdef JIT32_GCENCODER
+    const bool mayNeedSynchronizedThis = !info.compIsStatic && ((info.compFlags & CORINFO_FLG_SYNCH) != 0);
+#else
+    const bool mayNeedSynchronizedThis = false;
+#endif
+
+    if (mayNeedGenericContextArg || mayNeedSynchronizedThis)
+    {
+        lvaCachedGenericContextArg = lvaGrabTemp(true DEBUGARG("cached generic context"));
+
+        LclVarDsc* cachedGenericContextArg = lvaGetDesc(lvaCachedGenericContextArg);
+        cachedGenericContextArg->lvType    = TYP_I_IMPL;
+        cachedGenericContextArg->lvOnFrame = false;
+    }
+
     if (getNeedsGSSecurityCookie())
     {
         // Ensure that there will be at least one stack variable since
@@ -3439,6 +3458,22 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     const bool isRecompute = false;
     lvaComputeRefCounts(isRecompute, setSlotNumbers);
 
+    if (lvaCachedGenericContextArg != BAD_VAR_NUM)
+    {
+        LclVarDsc* cachedGenericContextArg = lvaGetDesc(lvaCachedGenericContextArg);
+
+        if (lvaReportParamTypeArg() || lvaKeepAliveAndReportThis())
+        {
+            cachedGenericContextArg->lvImplicitlyReferenced = 1;
+            cachedGenericContextArg->lvOnFrame              = true;
+            lvaSetVarDoNotEnregister(lvaCachedGenericContextArg DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+        }
+        else
+        {
+            cachedGenericContextArg->lvImplicitlyReferenced = 0;
+        }
+    }
+
     // If we don't need precise reference counts, e.g. we're not optimizing, we're done.
     if (!PreciseRefCountsRequired())
     {
@@ -3507,10 +3542,11 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
             // and not tracked.
             for (unsigned lclNum = 0; lclNum < lvaCount; lclNum++)
             {
-                LclVarDsc* varDsc                = lvaGetDesc(lclNum);
-                const bool isSpecialVarargsParam = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
+                LclVarDsc* varDsc                     = lvaGetDesc(lclNum);
+                const bool isSpecialVarargsParam      = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
+                const bool isDormantGenericContextArg = (lclNum == lvaCachedGenericContextArg) && !varDsc->lvOnFrame;
 
-                if (isSpecialVarargsParam)
+                if (isSpecialVarargsParam || isDormantGenericContextArg)
                 {
                     assert(varDsc->lvRefCnt() == 0);
                 }
@@ -3541,9 +3577,10 @@ void Compiler::lvaComputeRefCounts(bool isRecompute, bool setSlotNumbers)
 
             // Special case for some varargs params ... these must
             // remain unreferenced.
-            const bool isSpecialVarargsParam = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
+            const bool isSpecialVarargsParam      = varDsc->lvIsParam && lvaIsArgAccessedViaVarArgsCookie(lclNum);
+            const bool isDormantGenericContextArg = (lclNum == lvaCachedGenericContextArg) && !varDsc->lvOnFrame;
 
-            if (!isSpecialVarargsParam)
+            if (!isSpecialVarargsParam && !isDormantGenericContextArg)
             {
                 varDsc->lvImplicitlyReferenced = 1;
             }
@@ -4565,12 +4602,6 @@ void Compiler::lvaFixVirtualFrameOffsets()
         temp->tdAdjustTempOffs(delta + frameLocalsDelta);
     }
 
-    if (lvaCachedGenericContextArgOffs < frameBoundary)
-    {
-        lvaCachedGenericContextArgOffs += frameLocalsDelta;
-    }
-    lvaCachedGenericContextArgOffs += delta;
-
 #if FEATURE_FIXED_OUT_ARGS
 
     if (lvaOutgoingArgSpaceVar != BAD_VAR_NUM)
@@ -5063,15 +5094,13 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
         {
             PatchpointInfo* ppInfo = info.compPatchpointInfo;
             assert(ppInfo->HasGenericContextArgOffset());
-            const int originalOffset       = ppInfo->GenericContextArgOffset();
-            lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;
+            const int originalOffset = ppInfo->GenericContextArgOffset();
+            lvaGetDesc(lvaCachedGenericContextArg)->SetStackOffset(originalFrameStkOffs + originalOffset);
         }
         else
         {
             // For CORINFO_CALLCONV_PARAMTYPE (if needed)
-            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
-            stkOffs -= TARGET_POINTER_SIZE;
-            lvaCachedGenericContextArgOffs = stkOffs;
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaCachedGenericContextArg, TARGET_POINTER_SIZE, stkOffs);
         }
     }
 #ifndef JIT32_GCENCODER
@@ -5083,18 +5112,16 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
             PatchpointInfo* ppInfo = info.compPatchpointInfo;
             if (ppInfo->HasKeptAliveThis())
             {
-                const int originalOffset       = ppInfo->KeptAliveThisOffset();
-                lvaCachedGenericContextArgOffs = originalFrameStkOffs + originalOffset;
-                canUseExistingSlot             = true;
+                const int originalOffset = ppInfo->KeptAliveThisOffset();
+                lvaGetDesc(lvaCachedGenericContextArg)->SetStackOffset(originalFrameStkOffs + originalOffset);
+                canUseExistingSlot = true;
             }
         }
 
         if (!canUseExistingSlot)
         {
             // When "this" is also used as generic context arg.
-            lvaIncrementFrameSize(TARGET_POINTER_SIZE);
-            stkOffs -= TARGET_POINTER_SIZE;
-            lvaCachedGenericContextArgOffs = stkOffs;
+            stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaCachedGenericContextArg, TARGET_POINTER_SIZE, stkOffs);
         }
     }
 #endif
@@ -5328,7 +5355,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if ((lclNum == lvaMonAcquired) || (lclNum == lvaResumedIndicator) || (lclNum == lvaAsyncThreadObjectVar) ||
+            if ((lclNum == lvaMonAcquired) || (lclNum == lvaCachedGenericContextArg) ||
+                (lclNum == lvaResumedIndicator) || (lclNum == lvaAsyncThreadObjectVar) ||
                 (lclNum == lvaAsyncExecutionContextVar) || (lclNum == lvaAsyncSynchronizationContextVar))
             {
                 continue;
