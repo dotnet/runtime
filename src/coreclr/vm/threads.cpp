@@ -1043,13 +1043,13 @@ static void SetIlsIndex(DWORD tlsIndex)
 
 #ifndef FEATURE_PORTABLE_HELPERS
 template <typename TAction>
-static void ReportCopiedWriteBarrier(TAction action, void* start, void* end, const char* name, LPCWSTR nameW)
+static void ReportCopiedWriteBarrier(TAction action, PCODE address, size_t size, const char* name, LPCWSTR nameW)
 {
     LIMITED_METHOD_CONTRACT;
 
-    _ASSERTE((BYTE*)start < (BYTE*)end);
-    size_t size = (BYTE*)end - (BYTE*)start;
-    action(reinterpret_cast<PCODE>(GetWriteBarrierCodeLocation(start)), size, name, nameW);
+    _ASSERTE(IsIPInWriteBarrierCodeCopy(address));
+    _ASSERTE(size != 0);
+    action(address, size, name, nameW);
 }
 
 template <typename TAction>
@@ -1060,16 +1060,78 @@ static void EnumerateCopiedWriteBarriers(TAction action)
     if (IsWriteBarrierCopyEnabled())
     {
 #ifdef TARGET_X86
-        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierEAX, (void*)JIT_WriteBarrierEBX, "@WriteBarrierEAX", W("@WriteBarrierEAX"));
-        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierEBX, (void*)JIT_WriteBarrierECX, "@WriteBarrierEBX", W("@WriteBarrierEBX"));
-        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierECX, (void*)JIT_WriteBarrierESI, "@WriteBarrierECX", W("@WriteBarrierECX"));
-        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierESI, (void*)JIT_WriteBarrierEDI, "@WriteBarrierESI", W("@WriteBarrierESI"));
-        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierEDI, (void*)JIT_WriteBarrierEBP, "@WriteBarrierEDI", W("@WriteBarrierEDI"));
-        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrierEBP, (void*)JIT_PatchedWriteBarrierGroup_End, "@WriteBarrierEBP", W("@WriteBarrierEBP"));
+        struct WriteBarrierEntry
+        {
+            PCODE Address;
+            const char* Name;
+            LPCWSTR NameW;
+        };
+
+        // Use the configured helper targets as the source of truth for which register-specific
+        // barriers execute from the private copy.
+#define X86_WRITE_BARRIER_REGISTER(reg) \
+        { VolatileLoad(&hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_ASSIGN_REF_##reg].pfnHelper), "WriteBarrier" #reg, W("WriteBarrier" #reg) },
+
+        WriteBarrierEntry writeBarriers[] =
+        {
+            ENUM_X86_WRITE_BARRIER_REGISTERS()
+        };
+
+#undef X86_WRITE_BARRIER_REGISTER
+
+        // The helper enumeration order is independent of the assembly layout. Sort by address so
+        // each barrier can be sized to the beginning of the next barrier.
+        for (size_t i = 1; i < ARRAY_SIZE(writeBarriers); i++)
+        {
+            WriteBarrierEntry current = writeBarriers[i];
+            size_t j = i;
+            while (j > 0 && writeBarriers[j - 1].Address > current.Address)
+            {
+                writeBarriers[j] = writeBarriers[j - 1];
+                j--;
+            }
+            writeBarriers[j] = current;
+        }
+
+        // The final barrier ends at the explicit end of the patched write-barrier group.
+        PCODE writeBarrierGroupEnd = reinterpret_cast<PCODE>(
+            GetWriteBarrierCodeLocation((void*)JIT_PatchedWriteBarrierGroup_End));
+        for (size_t i = 0; i < ARRAY_SIZE(writeBarriers); i++)
+        {
+            // Event tracing reports a start address and byte count, so end is exclusive.
+            PCODE end = i + 1 < ARRAY_SIZE(writeBarriers) ? writeBarriers[i + 1].Address : writeBarrierGroupEnd;
+            _ASSERTE(writeBarriers[i].Address < end);
+            ReportCopiedWriteBarrier(
+                action,
+                writeBarriers[i].Address,
+                end - writeBarriers[i].Address,
+                writeBarriers[i].Name,
+                writeBarriers[i].NameW);
+        }
 #else
-        ReportCopiedWriteBarrier(action, (void*)JIT_WriteBarrier, (void*)JIT_WriteBarrier_End, "@WriteBarrier", W("@WriteBarrier"));
+        // The configured helper target identifies the executable copy; the assembly end label
+        // provides the exact size without inspecting the copied instructions.
+        PCODE writeBarrier = VolatileLoad(&hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_ASSIGN_REF].pfnHelper);
+        ReportCopiedWriteBarrier(
+            action,
+            writeBarrier,
+            (BYTE*)JIT_WriteBarrier_End - (BYTE*)JIT_WriteBarrier,
+            "WriteBarrier",
+            W("WriteBarrier"));
+
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-        ReportCopiedWriteBarrier(action, (void*)JIT_CheckedWriteBarrier, (void*)JIT_CheckedWriteBarrier_End, "@CheckedWriteBarrier", W("@CheckedWriteBarrier"));
+        PCODE checkedWriteBarrier = VolatileLoad(&hlpDynamicFuncTable[DYNAMIC_CORINFO_HELP_CHECKED_ASSIGN_REF].pfnHelper);
+        // Some targets use a checked helper outside the copied region. Report it only when the
+        // configured helper actually points into the copy.
+        if (IsIPInWriteBarrierCodeCopy(checkedWriteBarrier))
+        {
+            ReportCopiedWriteBarrier(
+                action,
+                checkedWriteBarrier,
+                (BYTE*)JIT_CheckedWriteBarrier_End - (BYTE*)JIT_CheckedWriteBarrier,
+                "CheckedWriteBarrier",
+                W("CheckedWriteBarrier"));
+        }
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 #endif // TARGET_X86
     }
@@ -1086,16 +1148,14 @@ void ReportCopiedWriteBarriersToPerfMap()
 }
 
 #ifdef FEATURE_EVENT_TRACE
-void ReportCopiedWriteBarriersToEtw(DWORD eventOptions)
+void ReportCopiedWriteBarriersToEventTracing(DWORD eventOptions)
 {
     WRAPPER_NO_CONTRACT;
 
     EnumerateCopiedWriteBarriers([eventOptions](PCODE address, size_t size, const char*, LPCWSTR name)
     {
-        if (FitsInU4(size))
-        {
-            ETW::MethodLog::SendHelperEvent(address, static_cast<ULONG>(size), name, eventOptions);
-        }
+        _ASSERTE(FitsInU4(size));
+        ETW::MethodLog::SendHelperEvent(address, static_cast<ULONG>(size), name, eventOptions);
     });
 }
 #endif // FEATURE_EVENT_TRACE
@@ -1112,7 +1172,7 @@ void InitThreadManagerTracingData()
     ReportCopiedWriteBarriersToPerfMap();
 
 #ifdef FEATURE_EVENT_TRACE
-    ReportCopiedWriteBarriersToEtw(ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
+    ReportCopiedWriteBarriersToEventTracing(ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
 #endif // FEATURE_EVENT_TRACE
 #endif // !FEATURE_PORTABLE_HELPERS
 }
@@ -1150,10 +1210,6 @@ void InitThreadManager()
             ExecutableWriterHolder<void> barrierWriterHolder(s_barrierCopy, writeBarrierSize);
             memcpy(barrierWriterHolder.GetRW(), (BYTE*)JIT_PatchedCodeStart, writeBarrierSize);
         }
-#ifdef FEATURE_PERFMAP
-        // We would log the to the perfmap here, but its not yet initialized
-#endif
-
         // Store the JIT_WriteBarrier copy location to a global variable so that helpers
         // can jump to it.
 #ifdef TARGET_X86

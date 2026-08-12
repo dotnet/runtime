@@ -188,8 +188,8 @@ namespace Tracing.Tests.RundownValidation
 
         private static bool IsWriteBarrierName(string name)
         {
-            return name.StartsWith("@WriteBarrier", StringComparison.Ordinal) ||
-                name == "@CheckedWriteBarrier";
+            return name.StartsWith("WriteBarrier", StringComparison.Ordinal) ||
+                name == "CheckedWriteBarrier";
         }
 
         private static void GenerateVirtualStubDispatchActivity()

@@ -333,7 +333,7 @@ void InitThreadManagerTracingData();
 #ifndef FEATURE_PORTABLE_HELPERS
 void ReportCopiedWriteBarriersToPerfMap();
 #ifdef FEATURE_EVENT_TRACE
-void ReportCopiedWriteBarriersToEtw(DWORD eventOptions);
+void ReportCopiedWriteBarriersToEventTracing(DWORD eventOptions);
 #endif // FEATURE_EVENT_TRACE
 #endif // !FEATURE_PORTABLE_HELPERS
 

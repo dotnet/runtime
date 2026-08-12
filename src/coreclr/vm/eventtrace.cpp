@@ -5277,7 +5277,7 @@ VOID ETW::MethodLog::SendEventsForJitMethods(BOOL getCodeVersionIds, LoaderAlloc
 #ifndef FEATURE_PORTABLE_HELPERS
         if (pLoaderAllocatorFilter == nullptr && fSendMethodEvent)
         {
-            ReportCopiedWriteBarriersToEtw(dwEventOptions);
+            ReportCopiedWriteBarriersToEventTracing(dwEventOptions);
         }
 #endif // !FEATURE_PORTABLE_HELPERS
     } EX_CATCH{} EX_END_CATCH
