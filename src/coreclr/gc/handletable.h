@@ -89,7 +89,6 @@ HHANDLETABLE    HndGetHandleTable(OBJECTHANDLE handle);
 /*
  * write barrier
  */
-void            HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value);
 void            HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF value);
 
 /*
@@ -147,6 +146,10 @@ void ValidateFetchObjrefForHandle(OBJECTREF);
  * handle assignment
  */
 void HndAssignHandle(OBJECTHANDLE handle, OBJECTREF objref);
+
+#ifndef DACCESS_COMPILE
+int GetConvertedGeneration(_UNCHECKED_OBJECTREF obj);
+#endif // DACCESS_COMPILE
 
 /*
  * interlocked-exchange assignment
@@ -224,4 +227,3 @@ FORCEINLINE BOOL HndIsNullOrDestroyedHandle(_UNCHECKED_OBJECTREF value)
 #include "handletable.inl"
 
 #endif //_HANDLETABLE_H
-
