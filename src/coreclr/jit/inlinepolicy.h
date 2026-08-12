@@ -502,9 +502,10 @@ public:
 
 // AsyncStressPolicy behaves like the ExtendedDefaultPolicy except that it
 // deliberately over-inlines async callees, to stress the general runtime async
-// inlining transformation. Async callees bypass the normal profitability and
-// budget heuristics; how many of them actually get inlined is decided later, by
-// the decaying random choice in Compiler::fgAsyncStressShouldInline.
+// inlining transformation. Async callees bypass the normal size and budget
+// heuristics, and their profitability is instead a random choice that decays
+// with inline depth and with the callee's position in its body's shuffled group
+// of async candidates (see Compiler::fgAsyncStressPrepare).
 
 class AsyncStressPolicy : public ExtendedDefaultPolicy
 {
@@ -513,6 +514,7 @@ public:
     AsyncStressPolicy(Compiler* compiler, bool isPrejitRoot)
         : ExtendedDefaultPolicy(compiler, isPrejitRoot)
         , m_IsAsyncCall(false)
+        , m_AsyncStressIndex(-1)
     {
     }
 
@@ -532,6 +534,9 @@ public:
 
 private:
     bool m_IsAsyncCall;
+    // Position of this callee in its enclosing body's shuffled group of async
+    // inline candidates, or -1 if it is not part of a group.
+    int m_AsyncStressIndex;
 };
 
 // SizePolicy is an experimental policy that will inline as much

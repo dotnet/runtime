@@ -7585,15 +7585,7 @@ private:
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
 #ifdef DEBUG
-    void fgAsyncStressPrepare(BasicBlock* firstBB, BasicBlock* lastBB, unsigned depth);
-    bool fgAsyncStressShouldInline(GenTreeCall* call, unsigned inlineDepth);
-
-    // Is general runtime async inlining being stressed, i.e. are async callees forcibly
-    // inlined with a decaying random probability? See AsyncStressPolicy.
-    static bool compAsyncInliningStress()
-    {
-        return JitConfig.JitStressAsyncInlining() != 0;
-    }
+    void fgAsyncStressPrepare(unsigned depth);
 #endif // DEBUG
     bool IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo);
     bool ContextComplexityExceeds(CORINFO_CONTEXT_HANDLE handle, int max);
@@ -11791,6 +11783,13 @@ public:
     bool compRandomInlineStress()
     {
         return compStressCompile(STRESS_RANDOM_INLINE, 50);
+    }
+
+    // Is general runtime async inlining being stressed, i.e. are async callees inlined
+    // with a decaying random probability? See AsyncStressPolicy.
+    static bool compAsyncInliningStress()
+    {
+        return JitConfig.JitStressAsyncInlining() != 0;
     }
 
     bool compPromoteFewerStructs(unsigned lclNum);

@@ -13,35 +13,33 @@
 #ifdef DEBUG
 
 //------------------------------------------------------------------------
-// fgAsyncStressPrepare: pick the async inline candidates of one method body
+// fgAsyncStressPrepare: pick the async inline candidates of this method body
 //   for async inlining stress.
 //
 // Arguments:
-//    firstBB - first block of the body
-//    lastBB  - last block of the body
-//    depth   - inline depth the body's candidates would be inlined at; the
-//              candidates of the root method are at depth 1
+//    depth - inline depth the body's candidates would be inlined at; the
+//            candidates of the root method are at depth 1
 //
 // Notes:
 //    Called once per body, before any of its candidates is inlined, so the IR
 //    holds the complete set and every call in it has its final async-ness. The
-//    candidates are shuffled and numbered here; fgAsyncStressShouldInline then
-//    turns the number into a probability.
+//    candidates are shuffled and numbered here; AsyncStressPolicy then turns the
+//    number into a probability.
 //
 //    Shuffling is what makes the choice vary between seeds. Without it the
 //    decay would always favor the first call site in a body.
 //
-//    Candidates created after this runs, such as the frame transition call or
-//    ones from late devirtualization, keep the default index and are left to
-//    the normal policy.
+//    Candidates created after this runs, such as the frame transition call or ones
+//    from late devirtualization, keep the default index and are left to the normal
+//    policy.
 //
-void Compiler::fgAsyncStressPrepare(BasicBlock* firstBB, BasicBlock* lastBB, unsigned depth)
+void Compiler::fgAsyncStressPrepare(unsigned depth)
 {
     assert(compAsyncInliningStress());
 
     ArrayStack<InlineCandidateInfo*> candidates(getAllocator(CMK_Inlining));
 
-    for (BasicBlock* block = firstBB;; block = block->Next())
+    for (BasicBlock* const block : Blocks())
     {
         for (Statement* const stmt : block->Statements())
         {
@@ -54,11 +52,6 @@ void Compiler::fgAsyncStressPrepare(BasicBlock* firstBB, BasicBlock* lastBB, uns
             {
                 candidates.Push(expr->AsCall()->GetSingleInlineCandidateInfo());
             }
-        }
-
-        if (block == lastBB)
-        {
-            break;
         }
     }
 
@@ -78,74 +71,11 @@ void Compiler::fgAsyncStressPrepare(BasicBlock* firstBB, BasicBlock* lastBB, uns
 
     for (int i = 0; i < candidates.Height(); i++)
     {
-        candidates.Bottom(i)->asyncStressIndex = (unsigned)i;
+        candidates.Bottom(i)->asyncStressIndex = i;
     }
 
     JITDUMP("Async inlining stress: %d async candidate(s) in this body, to be inlined at depth %u\n",
             candidates.Height(), depth);
-}
-
-//------------------------------------------------------------------------
-// fgAsyncStressShouldInline: decide whether to inline an async candidate
-//   under async inlining stress.
-//
-// Arguments:
-//    call        - the async call being considered
-//    inlineDepth - depth this inline would be at; top level candidates are at
-//                  depth 1
-//
-// Return Value:
-//    True if the inline should be attempted.
-//
-// Notes:
-//    The n'th candidate (0 based) of a body, in the order fgAsyncStressPrepare
-//    shuffled them into, is inlined with probability pct^(depth + n). The decay
-//    keeps a body with many async calls from inlining all of them, which would
-//    make compile times explode and bury the interesting cases.
-//
-//    The roll only ever adds inlines. A callee the normal policy would have inlined
-//    anyway is always inlined, so that turning the stress mode on cannot take away
-//    coverage or make a test that relies on an inline happening flaky.
-//
-bool Compiler::fgAsyncStressShouldInline(GenTreeCall* call, unsigned inlineDepth)
-{
-    assert(compAsyncInliningStress() && call->IsAsync());
-
-    InlineCandidateInfo* const candidateInfo = call->GetSingleInlineCandidateInfo();
-
-    unsigned const index = candidateInfo->asyncStressIndex;
-
-    if (index == UINT_MAX)
-    {
-        // Not part of a group, so not something the stress mode picked.
-        return true;
-    }
-
-    if ((candidateInfo->methAttr & CORINFO_FLG_FORCEINLINE) != 0)
-    {
-        // The normal policy inlines this regardless, so leave it alone.
-        return true;
-    }
-
-    if (inlineDepth > (unsigned)JitConfig.JitStressAsyncInliningMaxDepth())
-    {
-        JITDUMP("Async inlining stress: rejecting [%06u], depth %u is over the limit\n", dspTreeID(call), inlineDepth);
-        return false;
-    }
-
-    double probability = 1.0;
-    for (unsigned i = 0; i < inlineDepth + index; i++)
-    {
-        probability *= (double)JitConfig.JitStressAsyncInliningPct() / 100.0;
-    }
-
-    CLRRandom* const random   = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
-    bool const       inlineIt = random->NextDouble() < probability;
-
-    JITDUMP("Async inlining stress: [%06u] is candidate %u of its body at depth %u, probability %.4f: %s\n",
-            dspTreeID(call), index, inlineDepth, probability, inlineIt ? "inlining" : "rejecting");
-
-    return inlineIt;
 }
 
 #endif // DEBUG
@@ -989,7 +919,7 @@ PhaseStatus Compiler::fgInline()
 #ifdef DEBUG
     if (compAsyncInliningStress())
     {
-        fgAsyncStressPrepare(fgFirstBB, fgLastBB, 1);
+        fgAsyncStressPrepare(1);
     }
 #endif // DEBUG
 
@@ -1500,14 +1430,6 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
         return;
     }
 
-#ifdef DEBUG
-    if (compAsyncInliningStress() && call->IsAsync() && !fgAsyncStressShouldInline(call, inlineDepth))
-    {
-        inlineResult->NoteFatal(InlineObservation::CALLSITE_RANDOM_REJECT);
-        return;
-    }
-#endif // DEBUG
-
     // Set the trap to catch all errors (including recoverable ones from the EE)
     struct Param
     {
@@ -1666,8 +1588,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     //
     if (compAsyncInliningStress())
     {
-        Compiler* const inlinee = InlineeCompiler;
-        fgAsyncStressPrepare(inlinee->fgFirstBB, inlinee->fgLastBB, inlineDepth + 1);
+        InlineeCompiler->fgAsyncStressPrepare(inlineDepth + 1);
     }
 #endif // DEBUG
 

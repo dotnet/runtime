@@ -3360,6 +3360,12 @@ void AsyncStressPolicy::NoteBool(InlineObservation obs, bool value)
 //
 void AsyncStressPolicy::NoteInt(InlineObservation obs, int value)
 {
+    if (obs == InlineObservation::CALLSITE_ASYNC_STRESS_INDEX)
+    {
+        m_AsyncStressIndex = value;
+        return;
+    }
+
     if (m_IsAsyncCall)
     {
         switch (obs)
@@ -3433,9 +3439,16 @@ bool AsyncStressPolicy::BudgetCheck() const
 //    methodInfo -- method info for the callee
 //
 // Notes:
-//    Async callees are always considered profitable. The actual thinning out
-//    happens later in Compiler::fgAsyncStressShouldInline, which is where the
-//    inline depth and the set of candidates in the enclosing body are known.
+//    The n'th candidate (0 based) of a body, in the order fgAsyncStressPrepare
+//    shuffled them into, is inlined with probability pct^(depth + n). The decay
+//    keeps a body with many async calls from inlining all of them, which would
+//    make compile times explode and bury the interesting cases.
+//
+//    The roll can go either way against what the normal policy would have done:
+//    it inlines callees the ExtendedDefaultPolicy would have rejected as too big
+//    or unprofitable, and it rejects ones it would have accepted. Force inlines
+//    are the exception. Those are never discretionary candidates, so this is not
+//    even reached for them and the stress mode cannot take them away.
 //
 void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
@@ -3447,11 +3460,42 @@ void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 
     if (m_IsPrejitRoot)
     {
+        // The prejit root has no call site, so there is nothing to decay by. Leave it a
+        // candidate so that the call sites in the methods that inline it get the choice.
         SetCandidate(InlineObservation::CALLEE_IS_PROFITABLE_INLINE);
+        return;
+    }
+
+    if (m_AsyncStressIndex < 0)
+    {
+        // Not part of a group, so not something the stress mode picked.
+        SetCandidate(InlineObservation::CALLSITE_IS_PROFITABLE_INLINE);
+        return;
+    }
+
+    assert(m_CallsiteDepth > 0);
+
+    if (m_CallsiteDepth > (unsigned)JitConfig.JitStressAsyncInliningMaxDepth())
+    {
+        SetFailure(InlineObservation::CALLSITE_RANDOM_REJECT);
+        return;
+    }
+
+    double probability = 1.0;
+    for (unsigned i = 0; i < m_CallsiteDepth + (unsigned)m_AsyncStressIndex; i++)
+    {
+        probability *= (double)JitConfig.JitStressAsyncInliningPct() / 100.0;
+    }
+
+    CLRRandom* const random = m_RootCompiler->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
+
+    if (random->NextDouble() < probability)
+    {
+        SetCandidate(InlineObservation::CALLSITE_RANDOM_ACCEPT);
     }
     else
     {
-        SetCandidate(InlineObservation::CALLSITE_IS_PROFITABLE_INLINE);
+        SetFailure(InlineObservation::CALLSITE_RANDOM_REJECT);
     }
 }
 

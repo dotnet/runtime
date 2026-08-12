@@ -667,6 +667,19 @@ InlineResult::InlineResult(
     // create their own InlineResult, and both policies need to know.
     m_Policy->NoteBool(InlineObservation::CALLEE_IS_ASYNC, call->IsAsync());
 
+#ifdef DEBUG
+    // Under async inlining stress the position the call holds in its body's shuffled
+    // candidate group is what decides the probability the policy inlines it. The group is
+    // formed once the calls are candidates, so this is only available on the InlineResult
+    // of the inline attempt, which is the one whose policy makes that decision.
+    if (Compiler::compAsyncInliningStress() && call->IsAsync() && call->IsInlineCandidate() &&
+        !call->IsGuardedDevirtualizationCandidate())
+    {
+        m_Policy->NoteInt(InlineObservation::CALLSITE_ASYNC_STRESS_INDEX,
+                          call->GetSingleInlineCandidateInfo()->asyncStressIndex);
+    }
+#endif // DEBUG
+
     // Pass along some optional information to the policy.
     if (stmt != nullptr)
     {

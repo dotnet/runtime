@@ -626,9 +626,9 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 
 #ifdef DEBUG
     // Position of this candidate in its enclosing body's shuffled group of async inline
-    // candidates, under async inlining stress. UINT_MAX means the candidate is not part
-    // of any group and so is left to the normal policy; see Compiler::fgAsyncStressPrepare.
-    unsigned asyncStressIndex = UINT_MAX;
+    // candidates, under async inlining stress. -1 means the candidate is not part of any
+    // group and so is left to the normal policy; see Compiler::fgAsyncStressPrepare.
+    int asyncStressIndex = -1;
 #endif // DEBUG
 };
 
