@@ -83,31 +83,6 @@ void EditAndContinueModule::Destruct()
     Module::Destruct();
 }
 
-// This holder trait is slightly different from ReleaseHolderTraits
-// to account for the narrow contract.
-template <typename TYPE>
-struct EncReleaseHolderTraits final
-{
-    using Type = TYPE*;
-    static constexpr Type Default() { return NULL; }
-    static void Free(Type value)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_PREEMPTIVE;
-        }
-        CONTRACTL_END;
-
-        if (value != NULL)
-            value->Release();
-    }
-};
-
-template<typename _TYPE>
-using EncReleaseHolder = LifetimeHolder<EncReleaseHolderTraits<_TYPE>>;
-
 //---------------------------------------------------------------------------------------
 //
 // ApplyEditAndContinue - updates this module for an EnC
@@ -212,11 +187,11 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
     }
 
     // get the delta interface
-    EncReleaseHolder<IMDInternalImportENC> pIMDInternalImportENC;
+    NoGCTriggerReleaseHolder<IMDInternalImportENC> pIMDInternalImportENC;
     IfFailRet(pMDImport->QueryInterface(IID_IMDInternalImportENC, (void **)&pIMDInternalImportENC));
 
     // get an emitter interface
-    EncReleaseHolder<IMetaDataEmit> pEmitter;
+    NoGCTriggerReleaseHolder<IMetaDataEmit> pEmitter;
     IfFailRet(GetMDPublicInterfaceFromInternal(pMDImport, IID_IMetaDataEmit, (void **)&pEmitter));
 
     // Copy the delta IL into our RVA-able IL memory

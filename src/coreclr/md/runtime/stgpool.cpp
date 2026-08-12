@@ -162,6 +162,7 @@ void StgPool::Uninit()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END
@@ -200,6 +201,7 @@ StgPool::ConvertToRW()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -224,6 +226,7 @@ StgPool::SetHash(int bHash)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -239,6 +242,7 @@ void StgPool::Trim()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END
@@ -383,6 +387,7 @@ StgPool::AddSegment(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -455,6 +460,7 @@ StgPool::PersistToStream(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END
@@ -528,6 +534,7 @@ StgPool::PersistPartialToStream(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY);
     }
     CONTRACTL_END
@@ -649,6 +656,7 @@ StgPool::CopyData(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         PRECONDITION(CheckPointer(pBuffer));
         PRECONDITION(CheckPointer(pcbWritten));
     }
@@ -842,6 +850,7 @@ void StgStringPool::Uninit()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END
@@ -864,6 +873,7 @@ StgStringPool::SetHash(int bHash)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -1205,6 +1215,7 @@ void StgGuidPool::Uninit()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END
@@ -1229,6 +1240,7 @@ StgGuidPool::AddSegment(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -1251,6 +1263,7 @@ StgGuidPool::SetHash(int bHash)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -1514,6 +1527,7 @@ void StgBlobPool::Uninit()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END
@@ -1705,6 +1719,7 @@ StgBlobPool::SetHash(int bHash)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END

@@ -991,18 +991,6 @@ public:
     }
 };
 
-#ifdef ENABLE_CONTRACTS_IMPL
-// Out-of-line hook that enforces the ReleaseHolder release-path contract
-// (NOTHROW / GC_TRIGGERS / MODE_PREEMPTIVE).
-//
-// Exactly one definition is linked into each binary, selected by which utilcode flavor
-// that binary uses - the two are mutually exclusive, so there is never a collision or a
-// gap:
-//   * the hosted EE (coreclr.dll / static host) provides the enforcing definition
-//   * hostless and tool builds provide a no-op stub
-void ContractReleaseValidate();
-#endif // ENABLE_CONTRACTS_IMPL
-
 template <typename TYPE>
 struct ReleaseHolderTraits final
 {
@@ -1010,13 +998,13 @@ struct ReleaseHolderTraits final
     static constexpr Type Default() { return NULL; }
     static void Free(Type value)
     {
-        STATIC_CONTRACT_NOTHROW;
-        STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_MODE_PREEMPTIVE;
-
-#ifdef ENABLE_CONTRACTS_IMPL
-        ContractReleaseValidate();
-#endif // ENABLE_CONTRACTS_IMPL
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
 
         if (value != NULL)
             value->Release();
@@ -1025,6 +1013,31 @@ struct ReleaseHolderTraits final
 
 template<typename _TYPE>
 using ReleaseHolder = LifetimeHolder<ReleaseHolderTraits<_TYPE>>;
+
+// This holder trait is slightly different from ReleaseHolderTraits
+// to account for the narrower GC_NOTRIGGER contract.
+template <typename TYPE>
+struct NoGCTriggerReleaseHolderTraits final
+{
+    using Type = TYPE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
+        }
+        CONTRACTL_END;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+template<typename _TYPE>
+using NoGCTriggerReleaseHolder = LifetimeHolder<NoGCTriggerReleaseHolderTraits<_TYPE>>;
 
 //-----------------------------------------------------------------------------
 // Wrap win32 functions using HANDLE

@@ -188,7 +188,7 @@ STDAPI GetMDInternalInterfaceFromPublic(
     void        **ppIUnkInternal)       // [out] Return interface on success.
 {
     HRESULT hr = S_OK;
-    ReleaseHolder<IGetIMDInternalImport> pGetIMDInternalImport;
+    NoGCTriggerReleaseHolder<IGetIMDInternalImport> pGetIMDInternalImport;
 
     // IMDInternalImport is the only internal import interface currently supported by
     // this function.
@@ -220,7 +220,7 @@ STDAPI GetMDPublicInterfaceFromInternal(
     void        **ppIUnkPublic)         // [out] Return interface on success.
 {
     HRESULT     hr = S_OK;
-    IMDInternalImport *pInternalImport = 0;;
+    NoGCTriggerReleaseHolder<IMDInternalImport> pInternalImport;
     IUnknown    *pIUnkPublic = NULL;
     OptionValue optVal = { MDDupAll, MDRefToDefDefault, MDNotifyDefault, MDUpdateFull, MDErrorOutOfOrderDefault , MDThreadSafetyOn};
     RegMeta     *pMeta = 0;
@@ -262,7 +262,7 @@ STDAPI GetMDPublicInterfaceFromInternal(
     pMeta = new (nothrow) RegMeta();
     IfNullGo(pMeta);
     IfFailGo(pMeta->SetOption(&optVal));
-    IfFailGo( pMeta->InitWithStgdb((IUnknown*)pInternalImport, ((MDInternalRW*)pInternalImport)->GetMiniStgdb()) );
+    IfFailGo( pMeta->InitWithStgdb(pInternalImport, ((MDInternalRW*)(IMDInternalImport*)pInternalImport)->GetMiniStgdb()) );
     IfFailGo( pMeta->QueryInterface(riid, ppIUnkPublic) );
 
     // The following makes the public object and the internal object point to each other.
@@ -277,9 +277,6 @@ STDAPI GetMDPublicInterfaceFromInternal(
 ErrExit:
     if (isLockedForWrite)
         pInternalImport->GetReaderWriterLock()->UnlockWrite();
-
-    if (pInternalImport)
-        pInternalImport->Release();
 
     if (FAILED(hr))
     {
@@ -301,7 +298,7 @@ STDAPI ConvertMDInternalImport(         // S_OK, S_FALSE (no conversion), or err
     IMDInternalImport **ppIMD)          // [out] Put the RW here.
 {
     HRESULT     hr;                     // A result.
-    IMDInternalImportENC *pENC = NULL;  // ENC interface on the metadata.
+    NoGCTriggerReleaseHolder<IMDInternalImportENC> pENC;  // ENC interface on the metadata.
 
     _ASSERTE(pIMD != NULL);
     _ASSERTE(ppIMD != NULL);
@@ -319,8 +316,6 @@ STDAPI ConvertMDInternalImport(         // S_OK, S_FALSE (no conversion), or err
     }
 
 ErrExit:
-    if (pENC)
-        pENC->Release();
     return hr;
 } // ConvertMDInternalImport
 
