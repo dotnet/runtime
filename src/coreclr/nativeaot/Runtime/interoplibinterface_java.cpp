@@ -154,12 +154,19 @@ FCIMPL2(FC_BOOL_RET, GCHandle_InternalTryGetBridgeWait, OBJECTHANDLE handle, OBJ
 {
     Object* object = ObjectFromHandle(handle);
     if (g_GCBridgeActive && object != nullptr &&
-        (object->GetHeader()->GetBits() & BIT_SBLK_BRIDGE_PENDING) != 0)
+        (object->GetHeader()->GetBitsAcquire() & BIT_SBLK_BRIDGE_PENDING) != 0)
     {
         FC_RETURN_BOOL(false);
     }
 
-    *pObjResult = object;
+    // See explanation in Interop::TryGetObjectFromHandleWithoutBridgeWait
+    Object* confirmedObject = ObjectFromHandle(handle);
+    if (confirmedObject != object)
+    {
+        FC_RETURN_BOOL(false);
+    }
+
+    *pObjResult = confirmedObject;
     FC_RETURN_BOOL(true);
 }
 FCIMPLEND

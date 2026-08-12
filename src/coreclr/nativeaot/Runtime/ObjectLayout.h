@@ -5,6 +5,8 @@
 // Low-level types describing GC object layouts.
 //
 
+#include "volatile.h"
+
 // Bits stolen from the sync block index that the GC/HandleTable knows about (currently these are at the same
 // positions as the mainline runtime).
 #ifdef FEATURE_JAVAMARSHAL
@@ -25,6 +27,7 @@ private:
 
 public:
     uint32_t GetBits() { return m_uSyncBlockValue; }
+    uint32_t GetBitsAcquire() { return VolatileLoad(&m_uSyncBlockValue); }
     void SetBit(uint32_t uBit);
     void ClrBit(uint32_t uBit);
     void SetGCBit() { m_uSyncBlockValue |= BIT_SBLK_GC_RESERVE; }

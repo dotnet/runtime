@@ -865,6 +865,14 @@ class ObjHeader
         return m_SyncBlockValue.LoadWithoutBarrier();
     }
 
+    DWORD GetBitsAcquire()
+    {
+        LIMITED_METHOD_CONTRACT;
+        SUPPORTS_DAC;
+
+        return m_SyncBlockValue.Load();
+    }
+
 
     DWORD SetBits(DWORD newBits, DWORD oldBits)
     {
