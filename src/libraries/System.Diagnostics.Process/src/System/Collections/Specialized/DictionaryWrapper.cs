@@ -20,6 +20,7 @@ namespace System.Collections.Specialized
             set
             {
                 ValidateKey(key);
+                ValidateValue(value);
                 _contents[key] = value;
             }
         }
@@ -88,12 +89,19 @@ namespace System.Collections.Specialized
 
         private static void ValidateKey(string key)
         {
-            ArgumentNullException.ThrowIfNull(key);
-
-            if (key.Contains('\0'))
+            if (key is not null && key.Contains('\0'))
             {
-                throw new ArgumentException(SR.Argument_EnvironmentVariableNameContainsNull, nameof(key));
+                throw new ArgumentException(SR.Argument_NullCharInEnvVar, nameof(key));
             }
         }
+
+        private static void ValidateValue(string? value)
+        {
+            if (value is not null && value.Contains('\0'))
+            {
+                throw new ArgumentException(SR.Argument_NullCharInEnvVar, nameof(value));
+            }
+        }
+
     }
 }
