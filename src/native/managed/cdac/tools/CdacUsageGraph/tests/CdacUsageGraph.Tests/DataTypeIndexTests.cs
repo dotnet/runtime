@@ -764,6 +764,73 @@ public sealed class DataTypeIndexTests
             RuntimeReferences(),
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
+    [Theory]
+    [InlineData("GetContract<IDependency>()")]
+    [InlineData("TryGetContract<IDependency>(out _)")]
+    public void GenericContractLookupRecordsContractDependency(string lookup)
+    {
+        string source = $$"""
+            namespace Microsoft.Diagnostics.DataContractReader
+            {
+                public class ContractRegistry
+                {
+                    public TContract GetContract<TContract>()
+                        where TContract : Contracts.IContract
+                        => throw null!;
+
+                    public bool TryGetContract<TContract>(out TContract contract)
+                        where TContract : Contracts.IContract
+                    {
+                        contract = default!;
+                        return false;
+                    }
+                }
+            }
+            namespace Microsoft.Diagnostics.DataContractReader.Contracts
+            {
+                public interface IContract { }
+                public interface IDependency : IContract { }
+            }
+            namespace Microsoft.Diagnostics.DataContractReader.Data
+            {
+                public interface IData<T> { }
+            }
+            namespace Example
+            {
+                using Microsoft.Diagnostics.DataContractReader.Contracts;
+
+                public interface ITest
+                {
+                    void Read(Microsoft.Diagnostics.DataContractReader.ContractRegistry registry);
+                }
+
+                public sealed class TestContract : ITest
+                {
+                    public void Read(
+                        Microsoft.Diagnostics.DataContractReader.ContractRegistry registry)
+                    {
+                        _ = registry.{{lookup}};
+                    }
+                }
+            }
+            """;
+        CSharpCompilation compilation = CreateAnalysisCompilation(source);
+        Assert.Empty(compilation.GetDiagnostics().Where(
+            diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        INamedTypeSymbol implementation = compilation.GetTypeByMetadataName(
+            "Example.TestContract")!;
+        ContractVersion label = new(new ContractInterface("ITest"), "c1");
+        UsageGraph graph = new UsageWalker(
+            compilation,
+            DataTypeDiscovery.BuildIndex(compilation)).Walk(
+                [Registration(label, implementation)],
+                "");
+
+        Assert.Contains(
+            new ContractInterface("IDependency"),
+            Contract(graph, label).ContractsUsed);
+    }
+
     [Fact]
     public void InterfaceComputedPropertyUsesSameProvenanceAsDirectRead()
     {

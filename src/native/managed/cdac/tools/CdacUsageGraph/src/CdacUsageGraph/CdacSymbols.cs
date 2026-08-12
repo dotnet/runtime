@@ -36,6 +36,8 @@ internal static class CdacSymbols
     public const string StaticReferenceAttributeMetadataName =
         "Microsoft.Diagnostics.DataContractReader.StaticReferenceAttribute";
     public const string ContractRegistrationMethodName = "Register";
+    public const string GetContractMethodName = "GetContract";
+    public const string TryGetContractMethodName = "TryGetContract";
     public const string ReadGlobalMethodName = "ReadGlobal";
     public const string TryReadGlobalMethodName = "TryReadGlobal";
     public const string ReadGlobalPointerMethodName = "ReadGlobalPointer";
