@@ -494,6 +494,48 @@ namespace System.Threading.Channels.Tests
             await write2;
         }
 
+        [Fact]
+        public async Task AsyncOperation_SynchronousCancellationDuringRegistration_ReservesCompletion()
+        {
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            object operation = CreateSynchronouslyCanceledAsyncOperation(
+                "System.Threading.Channels.BlockedReadAsyncOperation`1",
+                cts.Token,
+                typeof(int));
+
+            await AssertExtensions.CanceledAsync(cts.Token, async () => await GetOperationValueTask<int>(operation));
+            Assert.False(TryReserveOperation(operation));
+        }
+
+        [Fact]
+        public async Task SynchronouslyCanceledReader_DirectHandoffSkipsCanceledReader()
+        {
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            object canceledReader = CreateSynchronouslyCanceledAsyncOperation(
+                "System.Threading.Channels.BlockedReadAsyncOperation`1",
+                cts.Token,
+                typeof(int));
+
+            await AssertExtensions.CanceledAsync(cts.Token, async () => await GetOperationValueTask<int>(canceledReader));
+            Assert.False(TryReserveOperation(canceledReader));
+
+            Channel<int> c = Channel.CreateBounded<int>(1);
+            SetOperationListHead(GetChannelParent(c), "_blockedReadersHead", canceledReader);
+
+            ValueTask<int> liveRead = c.Reader.ReadAsync();
+            Assert.True(c.Writer.TryWrite(42));
+            Assert.Equal(42, await liveRead);
+            Assert.Equal(0, c.Reader.Count);
+
+            (object next, object previous) = GetOperationLinks(canceledReader);
+            Assert.Null(next);
+            Assert.Null(previous);
+        }
+
         [Theory]
         [InlineData(1)]
         [InlineData(10)]
