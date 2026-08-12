@@ -74,14 +74,33 @@ bool Interop::TryGetObjectFromHandleWithoutBridgeWait(
 {
     LIMITED_METHOD_CONTRACT;
 
+    // g_GCBridgeActive is Volatile<bool> and pending bit clear uses InterlockedAnd. These should be set with release
+    // stores guaranteeing the order: weak-reference nulling -> pending-bit clearing -> g_GCBridgeActive = false
     Object* object = OBJECTREFToObject(ObjectFromHandle(handle));
     if (g_GCBridgeActive && object != nullptr &&
-        (object->GetHeader()->GetBits() & BIT_SBLK_BRIDGE_PENDING) != 0)
+        (object->GetHeader()->GetBitsAcquire() & BIT_SBLK_BRIDGE_PENDING) != 0)
     {
         return false;
     }
 
-    *result = object;
+    // If object is nullptr, the handle value is stable, refetching is harmless
+    // If bridge is not active, refetching the handle should guarantee we get the right value
+    // since `g_GCBridgeActive` is Volatile<bool>
+    // The only remaining interesting case is gc bridge being active, with non-null object which
+    // had the bridge pending bit not set.
+    //
+    // If the bridge pending bit was never set because the object was not due for collection, handle value is stable
+    // If the bridge pending bit was set but got cleared in the meantime due to this code racing with the bridge
+    // finisher, refetching the handle will guarantee that we see the new value of the handle, because the
+    // bit is cleared with InterlockedAnd which does a release barrier (guaranteeing that the potential handle nulling
+    // was already published).
+    Object* confirmedObject = OBJECTREFToObject(ObjectFromHandle(handle));
+    if (confirmedObject != object)
+    {
+        return false;
+    }
+
+    *result = confirmedObject;
     return true;
 }
 
