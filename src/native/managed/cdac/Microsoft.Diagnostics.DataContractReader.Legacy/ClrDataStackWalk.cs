@@ -15,15 +15,17 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
 {
     private readonly TargetPointer _threadAddr;
-    private readonly uint _flags;
+    private readonly CLRDataStackWalkFlag _flags;
     private readonly Target _target;
     private readonly IXCLRDataStackWalk? _legacyImpl;
     private readonly ThreadData _threadData;
 
     private bool _currentFrameIsValid;
     private IEnumerator<IStackDataFrameHandle> _dataFrames;
+    private ulong _stackPointerBeforeFiltering;
+    private ulong _stackSizeSkipped;
 
-    public ClrDataStackWalk(TargetPointer threadAddr, uint flags, Target target, IXCLRDataStackWalk? legacyImpl)
+    public ClrDataStackWalk(TargetPointer threadAddr, CLRDataStackWalkFlag flags, Target target, IXCLRDataStackWalk? legacyImpl)
     {
         _threadAddr = threadAddr;
         _flags = flags;
@@ -44,20 +46,31 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
     /// </summary>
     private bool MoveNextLegacyVisible()
     {
-        while (_dataFrames.MoveNext())
+        if (!_dataFrames.MoveNext())
         {
+            return false;
+        }
+
+        IStackWalk stackWalk = _target.Contracts.StackWalk;
+        _stackPointerBeforeFiltering = stackWalk.GetStackPointer(_dataFrames.Current).Value;
+
+        do
+        {
+            _stackSizeSkipped = unchecked(stackWalk.GetStackPointer(_dataFrames.Current).Value - _stackPointerBeforeFiltering);
             if (IsLegacyVisible(_dataFrames.Current))
             {
                 return true;
             }
         }
+        while (_dataFrames.MoveNext());
+
         return false;
     }
 
-    internal static bool IsLegacyVisible(IStackDataFrameHandle frame)
+    internal bool IsLegacyVisible(IStackDataFrameHandle frame)
         => frame.State is StackWalkState.Frameless
-                       or StackWalkState.Frame
-                       or StackWalkState.SkippedFrame;
+            || ((_flags & CLRDataStackWalkFlag.CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE) != 0
+                && frame.State is StackWalkState.Frame or StackWalkState.SkippedFrame);
 
     private void Reseed(byte[] context, bool isFirst)
     {
@@ -196,7 +209,32 @@ public sealed unsafe partial class ClrDataStackWalk : IXCLRDataStackWalk
         return hr;
     }
     int IXCLRDataStackWalk.GetStackSizeSkipped(ulong* stackSizeSkipped)
-        => LegacyFallbackHelper.CanFallback() && _legacyImpl is not null ? _legacyImpl.GetStackSizeSkipped(stackSizeSkipped) : HResults.E_NOTIMPL;
+    {
+        int hr = HResults.S_OK;
+        try
+        {
+            *stackSizeSkipped = _stackSizeSkipped;
+        }
+        catch (System.Exception ex)
+        {
+            hr = ex.HResult;
+        }
+
+#if DEBUG
+        if (_legacyImpl is not null)
+        {
+            ulong stackSizeSkippedLocal = 0;
+            int hrLocal = _legacyImpl.GetStackSizeSkipped(stackSizeSkipped is null ? null : &stackSizeSkippedLocal);
+            Debug.ValidateHResult(hr, hrLocal);
+            if (hr == HResults.S_OK)
+            {
+                Debug.Assert(*stackSizeSkipped == stackSizeSkippedLocal, $"cDAC: {*stackSizeSkipped:x}, DAC: {stackSizeSkippedLocal:x}");
+            }
+        }
+#endif
+
+        return hr;
+    }
     int IXCLRDataStackWalk.Next()
     {
         int hr;

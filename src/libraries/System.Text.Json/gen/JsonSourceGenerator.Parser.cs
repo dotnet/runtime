@@ -861,9 +861,13 @@ namespace System.Text.Json.SourceGeneration
                                 // generated pattern arm uses the underlying T symbol — never the source
                                 // Nullable<T> string spelling. Compute this from the symbol here so the
                                 // emitter never has to manipulate FQN strings.
-                                TypeRef patternTypeRef = caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableCaseType
-                                    ? new TypeRef(nullableCaseType.TypeArguments[0])
-                                    : caseTypeRef;
+                                ITypeSymbol patternType = caseType is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullableCaseType
+                                    ? nullableCaseType.TypeArguments[0]
+                                    : caseType;
+
+                                TypeRef patternTypeRef = SymbolEqualityComparer.Default.Equals(patternType, caseType)
+                                    ? caseTypeRef
+                                    : new TypeRef(patternType);
 
                                 resolvedUnionCaseSpecs.Add(new UnionCaseSpec
                                 {

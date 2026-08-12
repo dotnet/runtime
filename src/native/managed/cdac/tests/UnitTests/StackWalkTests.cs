@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
+using Microsoft.Diagnostics.DataContractReader.Legacy;
 using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Moq;
 using Xunit;
@@ -14,6 +15,161 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 
 public unsafe class StackWalkTests
 {
+    [Fact]
+    public void X86Unwind_EbpProlog_RestoresCallerContext()
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+
+        const uint MethodStart = 0x1000;
+        const uint GcInfoAddress = 0x1800;
+        const uint CurrentEbp = 0x2100;
+        const uint CallerEbp = 0x3100;
+        const uint ReturnAddress = 0x1234_5678;
+        const uint SavedEdi = 0x1111_1111;
+        const uint SavedEsi = 0x2222_2222;
+        const uint CurrentEbx = 0x3333_3333;
+
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = MethodStart,
+            Data = [0x55, 0x8b, 0xec, 0x57, 0x56, 0x53],
+            Name = "Method code",
+        });
+
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = GcInfoAddress,
+            Data = [0x20, 0x4f],
+            Name = "GC info",
+        });
+
+        byte[] stack = new byte[0x20];
+        helpers.Write(stack.AsSpan(0x04, sizeof(uint)), CurrentEbx);
+        helpers.Write(stack.AsSpan(0x08, sizeof(uint)), SavedEsi);
+        helpers.Write(stack.AsSpan(0x0c, sizeof(uint)), SavedEdi);
+        helpers.Write(stack.AsSpan(0x10, sizeof(uint)), CallerEbp);
+        helpers.Write(stack.AsSpan(0x14, sizeof(uint)), ReturnAddress);
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = CurrentEbp - 0x10,
+            Data = stack,
+            Name = "Stack",
+        });
+
+        CodeBlockHandle codeBlock = new(new TargetPointer(MethodStart));
+        TargetPointer gcInfo = new(GcInfoAddress);
+        uint gcInfoVersion = 4;
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(new TargetCodePointer(MethodStart + 5))).Returns(codeBlock);
+        executionManager.Setup(e => e.GetGCInfo(codeBlock, out gcInfo, out gcInfoVersion));
+        executionManager.Setup(e => e.GetRelativeOffset(codeBlock)).Returns(new TargetNUInt(5));
+        executionManager.Setup(e => e.GetStartAddress(codeBlock)).Returns(new TargetPointer(MethodStart));
+        executionManager.Setup(e => e.GetFuncletStartAddress(codeBlock)).Returns(new TargetPointer(MethodStart));
+        executionManager.Setup(e => e.IsFunclet(codeBlock)).Returns(false);
+
+        Mock<IRuntimeInfo> runtimeInfo = new();
+        runtimeInfo.Setup(r => r.GetTargetOperatingSystem()).Returns(RuntimeInfoOperatingSystem.Windows);
+
+        TestPlaceholderTarget target = targetBuilder
+            .AddMockContract(executionManager.Object)
+            .AddMockContract(runtimeInfo.Object)
+            .Build();
+
+        X86Context context = new()
+        {
+            ContextFlags = (uint)X86Context.ContextFlagsValues.CONTEXT_FULL,
+            Eip = MethodStart + 5,
+            Esp = CurrentEbp - 8,
+            Ebp = CurrentEbp,
+            Edi = uint.MaxValue,
+            Esi = uint.MaxValue,
+            Ebx = CurrentEbx,
+        };
+
+        Assert.True(new Contracts.StackWalkHelpers.X86.X86Unwinder(target).Unwind(ref context));
+        Assert.Equal(SavedEdi, context.Edi);
+        Assert.Equal(SavedEsi, context.Esi);
+        Assert.Equal(CurrentEbx, context.Ebx);
+        Assert.Equal(CallerEbp, context.Ebp);
+        Assert.Equal(CurrentEbp + (2 * sizeof(uint)), context.Esp);
+        Assert.Equal(ReturnAddress, context.Eip);
+        Assert.NotEqual(0u, context.ContextFlags & (uint)X86Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
+    }
+
+    [Fact]
+    public void ARMUnwind_CompactEpilog_RestoresCallerContext()
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+
+        const uint ImageBase = 0x1000_0000;
+        const uint FunctionStart = 0x1000;
+        const uint RuntimeFunctionAddress = 0x1800;
+        const uint CurrentSp = 0x2000;
+        const uint SavedR4 = 0x4444_4444;
+        const uint ReturnAddress = 0x1234_5679;
+
+        Layout<MockRuntimeFunction> runtimeFunctionLayout = MockRuntimeFunction.CreateLayout(arch, includeEndAddress: false);
+        byte[] runtimeFunctionData = new byte[runtimeFunctionLayout.Size];
+        MockRuntimeFunction runtimeFunction = runtimeFunctionLayout.Create(runtimeFunctionData, RuntimeFunctionAddress);
+        runtimeFunction.BeginAddress = FunctionStart;
+        runtimeFunction.UnwindData =
+            1u |           // Flag = packed unwind data
+            (16u << 2) |   // FunctionLength = 16 halfwords
+            (16u << 16) |  // L = 1, Reg = 0: save r4 and lr
+            (1u << 22);    // StackAdjust = 1 word
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = RuntimeFunctionAddress,
+            Data = runtimeFunctionData,
+            Name = "Runtime function",
+        });
+
+        byte[] stack = new byte[2 * sizeof(uint)];
+        helpers.Write(stack.AsSpan(0, sizeof(uint)), SavedR4);
+        helpers.Write(stack.AsSpan(sizeof(uint), sizeof(uint)), ReturnAddress);
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = CurrentSp,
+            Data = stack,
+            Name = "Stack",
+        });
+
+        TargetCodePointer controlPc = new(ImageBase + FunctionStart + (15 * 2));
+        CodeBlockHandle codeBlock = new(new TargetPointer(controlPc.Value));
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(controlPc)).Returns(codeBlock);
+        executionManager.Setup(e => e.GetUnwindInfoBaseAddress(codeBlock)).Returns(new TargetPointer(ImageBase));
+        executionManager.Setup(e => e.GetUnwindInfo(codeBlock)).Returns(new TargetPointer(RuntimeFunctionAddress));
+
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(runtimeFunctionLayout),
+            })
+            .AddMockContract(executionManager.Object)
+            .Build();
+
+        ARMContext context = new()
+        {
+            ContextFlags = (uint)ARMContext.ContextFlagsValues.CONTEXT_FULL,
+            R4 = uint.MaxValue,
+            Sp = CurrentSp,
+            Lr = uint.MaxValue,
+            Pc = (uint)controlPc.Value,
+        };
+
+        Assert.True(new Contracts.StackWalkHelpers.ARM.ARMUnwinder(target).Unwind(ref context));
+        Assert.Equal(SavedR4, context.R4);
+        Assert.Equal(CurrentSp + (2 * sizeof(uint)), context.Sp);
+        Assert.Equal(ReturnAddress, context.Lr);
+        Assert.Equal(ReturnAddress, context.Pc);
+        Assert.NotEqual(0u, context.ContextFlags & (uint)ARMContext.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
+    }
+
     [Fact]
     public void GenericContextStorage_PreservesRegisterRepresentation()
     {
@@ -38,6 +194,59 @@ public unsafe class StackWalkTests
         context.SetupGet(c => c.RawContextFlags).Returns(contextFlags);
 
         Assert.Equal(expected, StackWalk_1.HasFaultedContext(context.Object));
+    }
+
+    [Fact]
+    public void GetStackSizeSkipped_ReturnsBytesSkippedByFiltering()
+    {
+        IXCLRDataStackWalk stackWalk = CreateClrDataStackWalk(
+            new TestStackDataFrameHandle(StackWalkState.Frameless, 0x1000),
+            new TestStackDataFrameHandle(StackWalkState.InitialNativeContext, 0x1100),
+            new TestStackDataFrameHandle(StackWalkState.NativeMarker, 0x1200),
+            new TestStackDataFrameHandle(StackWalkState.Frameless, 0x1500));
+
+        ulong stackSizeSkipped = ulong.MaxValue;
+        Assert.Equal(HResults.S_OK, stackWalk.GetStackSizeSkipped(&stackSizeSkipped));
+        Assert.Equal(0ul, stackSizeSkipped);
+
+        Assert.Equal(HResults.S_OK, stackWalk.Next());
+        Assert.Equal(HResults.S_OK, stackWalk.GetStackSizeSkipped(&stackSizeSkipped));
+        Assert.Equal(0x400ul, stackSizeSkipped);
+    }
+
+    private static IXCLRDataStackWalk CreateClrDataStackWalk(params TestStackDataFrameHandle[] frames)
+    {
+        TargetPointer threadAddress = new(0x1000);
+        ThreadData threadData = new()
+        {
+            ThreadAddress = threadAddress,
+        };
+
+        var thread = new Mock<IThread>();
+        thread.Setup(t => t.GetThreadData(threadAddress)).Returns(threadData);
+
+        var stackWalk = new Mock<IStackWalk>();
+        stackWalk.Setup(s => s.CreateStackWalk(threadData)).Returns(frames);
+        stackWalk
+            .Setup(s => s.GetStackPointer(It.IsAny<IStackDataFrameHandle>()))
+            .Returns((IStackDataFrameHandle frame) => ((TestStackDataFrameHandle)frame).StackPointer);
+
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        TestPlaceholderTarget target = new TestPlaceholderTarget.Builder(arch)
+            .AddMockContract(thread)
+            .AddMockContract(stackWalk)
+            .Build();
+
+        return new ClrDataStackWalk(threadAddress, CLRDataStackWalkFlag.CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE, target, legacyImpl: null);
+    }
+
+    private sealed record TestStackDataFrameHandle(StackWalkState State, ulong StackPointerValue) : IStackDataFrameHandle
+    {
+        public TargetPointer StackPointer => new(StackPointerValue);
+        public bool IsInterrupted => false;
+        public bool HasFaulted => false;
+        public bool IsExceptionFrame => false;
+        public bool IsActiveFrame => false;
     }
 
     private static TestPlaceholderTarget CreateTarget(

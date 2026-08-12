@@ -223,6 +223,8 @@ namespace System.Runtime.CompilerServices
             public INotifyCompletion? Notifier;
             public ValueTaskSourceContinuation? ValueTaskSourceContinuation;
             public RuntimeAsyncTaskContinuation? TaskContinuation;
+            public delegate*<Continuation, int, Action, void> AwaiterContinuation;
+            public int AwaiterOffset;
 
             // When we suspend in the leaf, the contexts are captured into these fields.
             public ExecutionContext? LeafExecutionContext;
@@ -265,6 +267,8 @@ namespace System.Runtime.CompilerServices
             [NonVersionable]
             public void Push(RuntimeAsyncStackState* stackState)
             {
+                stackState->AwaiterContinuation = null;
+                stackState->AwaiterOffset = 0;
                 stackState->Next = StackState;
                 StackState = stackState;
                 CurrentThread ??= Thread.CurrentThread;
@@ -805,7 +809,15 @@ namespace System.Runtime.CompilerServices
 
                 try
                 {
-                    if (stackState->CriticalNotifier is { } critNotifier)
+                    if (stackState->AwaiterContinuation != null)
+                    {
+                        // The awaiter is stored in the continuation for the caller of
+                        // AwaitAwaiterInContinuation or UnsafeAwaitAwaiterInContinuation.
+                        Debug.Assert((headContinuation.Flags & ContinuationFlags.AllContinuationFlags) == 0);
+                        stackState->AwaiterContinuation(
+                            headContinuation, stackState->AwaiterOffset, GetContinuationAction());
+                    }
+                    else if (stackState->CriticalNotifier is { } critNotifier)
                     {
                         // Result of async call to AwaitAwaiter or UnsafeAwaitAwaiter.
                         // These never have special continuation context handling.
@@ -917,6 +929,7 @@ namespace System.Runtime.CompilerServices
 #pragma warning restore CA1822
 
             [StackTraceHidden]
+            // Diagnostic tooling depends on this name when classifying async callstack frames.
             // NOTE, any changes done to this method need to be replicated in InstrumentedDispatchContinuations as well.
             private unsafe void DispatchContinuations()
             {
@@ -1045,6 +1058,7 @@ namespace System.Runtime.CompilerServices
             }
 
             [StackTraceHidden]
+            // Diagnostic tooling depends on this name when classifying async callstack frames.
             private unsafe void InstrumentedDispatchContinuations(AsyncInstrumentation.Flags flags)
             {
                 // Intentionally skip initialization for this state; the Push
