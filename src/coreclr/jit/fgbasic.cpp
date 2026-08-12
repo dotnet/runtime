@@ -2419,26 +2419,26 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     {
         compInlineResult->Note(InlineObservation::CALLEE_END_OPCODE_SCAN);
 
-        // We never mark async calls as no-inline, since suspensions do end up
+        // If there are no return blocks we know it does not return, however if there
+        // return blocks we don't know it returns as it may be counting unreachable code.
+        // However we will still make the CALLEE_DOES_NOT_RETURN observation.
+
+        // We never mark async calls as no-return, since suspensions do end up
         // running suspension code in the caller. This is a bit conservative as
         // we still know that the IL code won't run after, but this simplifies
         // the reasoning about no-return calls throughout the JIT.
-        if (!impInlineInfo->iciCall->IsAsync())
+        const bool doesNotReturn = (retBlocks == 0) && !compIsAsync();
+
+        compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, doesNotReturn);
+
+        if (doesNotReturn && isInlining &&
+            info.compCompHnd->notifyMethodInfoUsage(impInlineInfo->iciCall->gtCallMethHnd))
         {
-            // If there are no return blocks we know it does not return, however if there
-            // return blocks we don't know it returns as it may be counting unreachable code.
-            // However we will still make the CALLEE_DOES_NOT_RETURN observation.
+            // Mark the call node as "no return" as it can impact caller's code quality.
+            setCallDoesNotReturn(impInlineInfo->iciCall);
 
-            compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
-
-            if ((retBlocks == 0) && isInlining && info.compCompHnd->notifyMethodInfoUsage(impInlineInfo->iciCall->gtCallMethHnd))
-            {
-                // Mark the call node as "no return" as it can impact caller's code quality.
-                setCallDoesNotReturn(impInlineInfo->iciCall);
-
-                // NOTE: we also ask VM whether we're allowed to do so - we don't want to mark a call
-                // as "no-return" if its IL may change.
-            }
+            // NOTE: we also ask VM whether we're allowed to do so - we don't want to mark a call
+            // as "no-return" if its IL may change.
         }
 
         // If the inline is viable and discretionary, do the
