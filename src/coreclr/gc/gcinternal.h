@@ -325,7 +325,7 @@ public:
         flavor = f;
 
 #ifdef JOIN_STATS
-        start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+        start_tick = (uint64_t)minipal_lowres_ticks();
 #endif //JOIN_STATS
 
         return TRUE;
@@ -512,7 +512,7 @@ respin:
 #ifdef JOIN_STATS
     uint64_t get_ts()
     {
-        return GCToOSInterface::QueryPerformanceCounter();
+        return minipal_hires_ticks();
     }
 
     void start_ts (gc_heap* gch)
@@ -559,7 +559,7 @@ respin:
         par_loss_total[id] += par_loss;
 
         // every 10 seconds, print a summary of the time spent in each type of join
-        if (GCToOSInterface::GetLowPrecisionTimeStamp() - start_tick > 10*1000)
+        if ((uint64_t)minipal_lowres_ticks() - start_tick > 10*1000)
         {
             printf("**** summary *****\n");
             for (int i = 0; i < 16; i++)
@@ -573,7 +573,7 @@ respin:
                    ts_scale*in_join_total[i]);
                 elapsed_total[i] = wake_total[i] = seq_loss_total[i] = par_loss_total[i] = in_join_total[i] = 0;
             }
-            start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+            start_tick = (uint64_t)minipal_lowres_ticks();
         }
 #endif //JOIN_STATS
 

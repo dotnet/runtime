@@ -165,7 +165,7 @@ double qpf_us;
 
 uint64_t RawGetHighPrecisionTimeStamp()
 {
-    return (uint64_t)GCToOSInterface::QueryPerformanceCounter();
+    return (uint64_t)minipal_hires_ticks();
 }
 
 #ifdef BGC_SERVO_TUNING
@@ -314,11 +314,11 @@ process_sync_log_stats()
 {
 #ifdef SYNCHRONIZATION_STATS
 
-    uint64_t log_elapsed = GCToOSInterface::GetLowPrecisionTimeStamp() - log_start_tick;
+    uint64_t log_elapsed = (uint64_t)minipal_lowres_ticks() - log_start_tick;
 
     if (log_elapsed > log_interval)
     {
-        uint64_t total = GCToOSInterface::QueryPerformanceCounter() - log_start_hires;
+        uint64_t total = minipal_hires_ticks() - log_start_hires;
         // Print out the cycles we spent on average in each suspend and restart.
         printf("\n_________________________________________________________________________________\n"
             "Past %d(s): #%3d GCs; Total gc_lock contended: %8u; GC: %12u\n"

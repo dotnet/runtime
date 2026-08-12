@@ -250,11 +250,11 @@ inline void FATAL_GC_ERROR()
 #ifdef SYNCHRONIZATION_STATS
 #define BEGIN_TIMING(x) \
     int64_t x##_start; \
-    x##_start = GCToOSInterface::QueryPerformanceCounter()
+    x##_start = minipal_hires_ticks()
 
 #define END_TIMING(x) \
     int64_t x##_end; \
-    x##_end = GCToOSInterface::QueryPerformanceCounter(); \
+    x##_end = minipal_hires_ticks(); \
     x += x##_end - x##_start
 
 #else //SYNCHRONIZATION_STATS
