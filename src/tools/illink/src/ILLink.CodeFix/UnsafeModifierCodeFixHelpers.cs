@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using ILLink.CodeFixProvider;
 using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
@@ -25,6 +26,10 @@ namespace ILLink.CodeFix
         /// <summary>
         /// Registers an add-unsafe action for a supported declaration that has no existing safety modifier.
         /// </summary>
+        /// <remarks>
+        /// A declaration that documents why it is safe gets <c>safe</c> instead, so an audited member does not
+        /// become caller-unsafe and force its callers into <c>unsafe</c> contexts.
+        /// </remarks>
         internal static async Task RegisterAddUnsafeCodeFixAsync(
             CodeFixContext context,
             LocalizableString codeFixTitle,
@@ -45,11 +50,25 @@ namespace ILLink.CodeFix
                 return;
             }
 
+            SyntaxKind modifier = SyntaxKind.UnsafeKeyword;
             string title = codeFixTitle.ToString();
+            string displayTitle = title;
+            if (UnsafeMigrationSyntaxHelpers.SafeKeywordKind != SyntaxKind.None
+                && UnsafeMigrationSyntaxHelpers.HasSafetyDocumentation(declaration))
+            {
+                modifier = UnsafeMigrationSyntaxHelpers.SafeKeywordKind;
+                displayTitle = new LocalizableResourceString(
+                    nameof(Resources.AddSafeToDocumentedMemberCodeFixTitle),
+                    Resources.ResourceManager,
+                    typeof(Resources)).ToString();
+            }
+
+            // Both flavors share an equivalence key so a single fix-all pass can apply the contract each
+            // declaration asks for, rather than settling on whichever flavor it encountered first.
             context.RegisterCodeFix(
                 CodeAction.Create(
-                    title,
-                    cancellationToken => AddUnsafeModifierAsync(context.Document, declaration, cancellationToken),
+                    displayTitle,
+                    cancellationToken => AddModifierAsync(context.Document, declaration, modifier, cancellationToken),
                     title),
                 context.Diagnostics[0]);
         }

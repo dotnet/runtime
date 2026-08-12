@@ -701,6 +701,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Atomics,           W("EnableArm64At
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Crc32,             W("EnableArm64Crc32"),          1, "Allows Arm64 Crc32+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Dczva,             W("EnableArm64Dczva"),          1, "Allows Arm64 Dczva+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Dp,                W("EnableArm64Dp"),             1, "Allows Arm64 Dp+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Fp16,              W("EnableArm64Fp16"),           1, "Allows Arm64 Fp16+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Rdm,               W("EnableArm64Rdm"),            1, "Allows Arm64 Rdm+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha1,              W("EnableArm64Sha1"),           1, "Allows Arm64 Sha1+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Sha256,            W("EnableArm64Sha256"),         1, "Allows Arm64 Sha256+ hardware intrinsics to be disabled")

@@ -493,37 +493,6 @@ FCIMPL0(void, StubHelpers::ClearLastError)
 }
 FCIMPLEND
 
-FCIMPL1(void*, StubHelpers::GetDelegateTarget, DelegateObject *pThisUNSAFE)
-{
-    PCODE pEntryPoint = (PCODE)NULL;
-
-#ifdef _DEBUG
-    PreserveLastErrorHolder preserveLastError;
-#endif
-
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pThisUNSAFE));
-    }
-    CONTRACTL_END;
-
-    DELEGATEREF orefThis = (DELEGATEREF)ObjectToOBJECTREF(pThisUNSAFE);
-
-#if defined(HOST_64BIT)
-    UINT_PTR target = (UINT_PTR)orefThis->GetMethodPtrAux();
-
-    // See code:GenericPInvokeCalliHelper
-    // The lowest bit is used to distinguish between MD and target on 64-bit.
-    target = (target << 1) | 1;
-#endif // HOST_64BIT
-
-    pEntryPoint = orefThis->GetMethodPtrAux();
-
-    return (PVOID)pEntryPoint;
-}
-FCIMPLEND
-
 extern "C" void QCALLTYPE StubHelpers_ThrowInteropParamException(INT resID, INT paramIdx)
 {
     QCALL_CONTRACT;

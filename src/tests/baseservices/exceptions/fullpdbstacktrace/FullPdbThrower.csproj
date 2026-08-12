@@ -5,6 +5,7 @@
     <DebugType Condition="'$(TargetOS)' == 'windows'">Full</DebugType>
     <DebugSymbols>true</DebugSymbols>
     <Optimize>false</Optimize>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser'">true</CLRTestTargetUnsupported>
     <!-- Needed for StackTraceLineNumberSupport, IlasmRoundTripIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <!-- ilasm does not support full PDBs -->

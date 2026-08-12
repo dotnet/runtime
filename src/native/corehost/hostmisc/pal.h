@@ -16,6 +16,19 @@
 #include <string.h>
 #include <stdio.h>
 
+#if defined(TARGET_SUNOS)
+  // Ensure character traits have been processed safely before we intercept the identifier
+  #if defined(__cplusplus)
+    #include <locale>
+    #include <cctype>
+  #else
+    #include <ctype.h>
+  #endif
+
+  // Undefine the system bitmask before defining this project _X macro
+  #undef _X
+#endif
+
 #if defined(_WIN32)
 typedef wchar_t pal_char_t;
 #ifdef __cplusplus

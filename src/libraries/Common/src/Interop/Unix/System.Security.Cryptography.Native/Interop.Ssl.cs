@@ -32,9 +32,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetError")]
         internal static partial SslErrorCode SslGetError(SafeSslHandle ssl, int ret);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetError")]
-        internal static partial SslErrorCode SslGetError(IntPtr ssl, int ret);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetQuietShutdown")]
         internal static partial void SslSetQuietShutdown(SafeSslHandle ssl, int mode);
 
@@ -124,7 +121,10 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetFd")]
         internal static partial int SslSetFd(SafeSslHandle ssl, SafeSocketHandle socket);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetAcceptMovingWriteBuffer")]
+        internal static partial void SslSetAcceptMovingWriteBuffer(SafeSslHandle ssl);
+
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslDoHandshake", SetLastError = true)]
         internal static partial int SslDoHandshake(SafeSslHandle ssl, out SslErrorCode error);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslHandshake", SetLastError = true)]
@@ -165,10 +165,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_IsSslStateOK")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsSslStateOK(SafeSslHandle ssl);
-
-        // NOTE: this is just an (unsafe) overload to the BioWrite method from Interop.Bio.cs.
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
-        internal static unsafe partial int BioWrite(SafeBioHandle b, byte* data, int len);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BioWrite")]
         internal static partial int BioWrite(SafeBioHandle b, ref byte data, int len);
@@ -266,10 +262,6 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetOpenSslCipherSuiteName")]
         private static unsafe partial byte* GetOpenSslCipherSuiteName(SafeSslHandle ssl, int cipherSuite, out int isTls12OrLower);
 
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SetCiphers")]
-        [return: MarshalAs(UnmanagedType.Bool)]
-        internal static unsafe partial bool SslSetCiphers(SafeSslHandle ssl, byte* cipherList, byte* cipherSuites);
-
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetVerifyPeer")]
         internal static partial void SslSetVerifyPeer(SafeSslHandle ssl, [MarshalAs(UnmanagedType.Bool)] bool failIfNoPeerCert);
 
@@ -278,9 +270,6 @@ internal static partial class Interop
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
         internal static partial IntPtr SslGetData(IntPtr ssl);
-
-        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetData")]
-        internal static partial IntPtr SslGetData(SafeSslHandle ssl);
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSetData")]
         internal static partial int SslSetData(SafeSslHandle ssl, IntPtr data);
@@ -582,6 +571,15 @@ namespace Microsoft.Win32.SafeHandles
             // CertVerifyCallback needs the SafeSslHandle to stash a
             // CertificateValidationException; expose it via the options.
             options.SafeSslHandle = handle;
+
+            if (useFd)
+            {
+                // Socket-bound sessions can see SSL_write flush only part of a record and
+                // report WANT_WRITE. The retry hands OpenSSL a span over the same managed
+                // buffer, but the GC may have relocated it in the meantime; without this
+                // mode OpenSSL rejects the changed address with SSL_R_BAD_WRITE_RETRY.
+                Interop.Ssl.SslSetAcceptMovingWriteBuffer(handle);
+            }
 
             if (useFd && !useReplayBio)
             {

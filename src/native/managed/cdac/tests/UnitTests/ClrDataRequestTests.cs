@@ -85,7 +85,7 @@ public unsafe class ClrDataRequestTests
             RequestType.Task => new ClrDataTask(default, null!, null),
             RequestType.MethodDefinition => new ClrDataMethodDefinition(null!, default, 0, null),
             RequestType.MethodInstance => new ClrDataMethodInstance(null!, default, default, null),
-            RequestType.Value => new ClrDataValue(null!, 0, Array.Empty<NativeVarLocation>(), null),
+            RequestType.Value => new ClrDataValue(null!, TargetPointer.Null, 0, null, TargetPointer.Null, [], null),
             _ => throw new ArgumentOutOfRangeException(nameof(type)),
         };
 
