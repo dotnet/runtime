@@ -437,12 +437,22 @@ PhaseStatus Compiler::SaveAsyncContexts()
     execCtxDsc->lvType = TYP_REF;
     syncCtxDsc->lvType = TYP_REF;
 
-    // None of these are read once this frame has resumed, so a suspension does not need to
-    // capture them. That holds for inlined frames too, which get their own set of these.
-    resumedDsc->lvOnlyUsedOnSynchronousPath = true;
-    threadDsc->lvOnlyUsedOnSynchronousPath  = true;
-    execCtxDsc->lvOnlyUsedOnSynchronousPath = true;
-    syncCtxDsc->lvOnlyUsedOnSynchronousPath = true;
+    // These are only read while this frame has not resumed, and the root method's frame
+    // has resumed exactly when the physical frame has: its resumption path stores the
+    // indicator, and every other read is guarded by it. So a suspension need not capture
+    // them.
+    //
+    // That does not hold for an inlined frame. The physical frame can resume at a
+    // suspension point belonging to some other frame, which leaves this frame's indicator
+    // saying "not resumed" while its unrestored contexts are read anyway. So an inlined
+    // frame's set has to be captured like any other live state.
+    if (!compIsForInlining())
+    {
+        resumedDsc->lvOnlyUsedOnSynchronousPath = true;
+        threadDsc->lvOnlyUsedOnSynchronousPath  = true;
+        execCtxDsc->lvOnlyUsedOnSynchronousPath = true;
+        syncCtxDsc->lvOnlyUsedOnSynchronousPath = true;
+    }
 
     if (opts.IsOSR())
     {
