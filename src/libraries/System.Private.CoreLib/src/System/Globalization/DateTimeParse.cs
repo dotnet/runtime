@@ -921,6 +921,13 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     else
                     {
                         // This is a day number
+                        if (raw.numCount == 3 || tokenValue == -1)
+                        {
+                            result.SetBadDateTimeFailure();
+                            LexTraceExit("0105 (raw.numCount == 3)", dps);
+                            return false;
+                        }
+
                         dtok.num = tokenValue;
                         raw.AddNumber(dtok.num);
 
