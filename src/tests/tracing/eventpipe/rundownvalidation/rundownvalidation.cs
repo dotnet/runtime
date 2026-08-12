@@ -194,6 +194,11 @@ namespace Tracing.Tests.RundownValidation
 
         private static void GenerateVirtualStubDispatchActivity()
         {
+            if (!PlatformDetection.IsCoreCLR || !RuntimeFeature.IsDynamicCodeCompiled)
+            {
+                return;
+            }
+
             const int InterfaceMethodCount = 128;
 
             AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(
