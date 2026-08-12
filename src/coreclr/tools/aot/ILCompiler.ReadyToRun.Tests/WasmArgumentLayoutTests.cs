@@ -261,6 +261,42 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
+    /// Ordinary structs with the same size but different alignment need distinct thunk signatures.
+    /// Otherwise raising resolves both to whichever type was cached first and computes the wrong
+    /// transition-block offsets for the other.
+    /// </summary>
+    [Fact]
+    public void ByReferenceStructSignaturePreservesElevatedAlignment()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        DefType alignedEight = MakeAlignedEightBlob(context, 32);
+        DefType int128 = InstantiateMultiSlotType(context, Int128Type);
+        DefType alignedSixteen = MakeValueTuple(context, int128, int128);
+
+        Assert.Equal(32, alignedEight.InstanceFieldSize.AsInt);
+        Assert.Equal(8, alignedEight.InstanceFieldAlignment.AsInt);
+        Assert.Equal(32, alignedSixteen.InstanceFieldSize.AsInt);
+        Assert.Equal(16, alignedSixteen.InstanceFieldAlignment.AsInt);
+
+        MethodSignature alignedSixteenSignature = MakeProbeSignature(context, alignedSixteen);
+        MethodSignature alignedEightSignature = MakeProbeSignature(context, alignedEight);
+
+        WasmSignature alignedSixteenLowered =
+            WasmLowering.GetSignature(alignedSixteenSignature, WasmLowering.LoweringFlags.None);
+        WasmSignature alignedEightLowered =
+            WasmLowering.GetSignature(alignedEightSignature, WasmLowering.LoweringFlags.None);
+
+        Assert.Equal("vlS!32:16ip", alignedSixteenLowered.SignatureString);
+        Assert.Equal("vlS32ip", alignedEightLowered.SignatureString);
+        Assert.Equal(
+            GetArgumentOffsets(context, alignedSixteenSignature),
+            GetArgumentOffsets(context, WasmLowering.RaiseSignature(alignedSixteenLowered, context)));
+        Assert.Equal(
+            GetArgumentOffsets(context, alignedEightSignature),
+            GetArgumentOffsets(context, WasmLowering.RaiseSignature(alignedEightLowered, context)));
+    }
+
+    /// <summary>
     /// Narrow vectors are not multi-slot. <see cref="System.Runtime.Intrinsics.Vector64{T}"/> is a
     /// single <c>ulong</c> field, so it unwraps to a scalar <c>i64</c> rather than to any slot form.
     /// Note the multi-slot widths are named by BYTE SIZE, so 64 there means Vector512, not Vector64.
@@ -464,7 +500,9 @@ public class WasmArgumentLayoutTests
 
         // A second field makes it an ordinary aggregate, so it goes back to the struct ABI.
         DefType twoFields = MakeValueTuple(context, wrapped, wrapped);
-        Assert.Equal($"vlS{twoFields.InstanceFieldSize.AsInt}ip", SignatureOf(context, twoFields));
+        Assert.Equal(
+            $"vlS!{twoFields.InstanceFieldSize.AsInt}:{twoFields.InstanceFieldAlignment.AsInt}ip",
+            SignatureOf(context, twoFields));
     }
 
     /// <summary>

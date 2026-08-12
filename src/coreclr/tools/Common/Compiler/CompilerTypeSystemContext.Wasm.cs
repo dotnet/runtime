@@ -14,6 +14,7 @@ namespace ILCompiler
     {
         private readonly object _structCacheLock = new object();
         private readonly Dictionary<int, TypeDesc> _structsBySize = new Dictionary<int, TypeDesc>();
+        private readonly Dictionary<(int Size, int Alignment), TypeDesc> _structsByLayout = new Dictionary<(int, int), TypeDesc>();
         private readonly Dictionary<int, TypeDesc> _returnStructsBySize = new Dictionary<int, TypeDesc>();
         private volatile TypeDesc _cachedEmptyStruct;
         private volatile TypeDesc _wasmV128Type;
@@ -90,18 +91,27 @@ namespace ILCompiler
         }
 
         /// <summary>
-        /// Caches a struct type by its element size, so RaiseSignature can retrieve a real
-        /// type of that size. Only the first struct encountered for a given size is retained.
+        /// Caches a struct type by the layout represented in its signature encoding, so
+        /// RaiseSignature can retrieve a real type with the same argument layout. Alignments up to
+        /// 8 use the legacy size-only encoding; larger alignments are part of the cache key.
         /// </summary>
-        public void CacheStructBySize(TypeDesc type)
+        public void CacheStruct(TypeDesc type)
         {
             int size = type.GetElementSize().AsInt;
             if (size <= 0)
                 return;
 
+            int alignment = ((DefType)type).InstanceFieldAlignment.AsInt;
             lock (_structCacheLock)
             {
-                _structsBySize.TryAdd(size, type);
+                if (alignment > 8)
+                {
+                    _structsByLayout.TryAdd((size, alignment), type);
+                }
+                else
+                {
+                    _structsBySize.TryAdd(size, type);
+                }
             }
         }
 
@@ -145,6 +155,17 @@ namespace ILCompiler
             lock (_structCacheLock)
             {
                 if (_structsBySize.TryGetValue(size, out TypeDesc result))
+                    return result;
+            }
+
+            return null;
+        }
+
+        public TypeDesc GetCachedStructOfLayout(int size, int alignment)
+        {
+            lock (_structCacheLock)
+            {
+                if (_structsByLayout.TryGetValue((size, alignment), out TypeDesc result))
                     return result;
             }
 

@@ -1049,14 +1049,15 @@ namespace
         ToV128,
         ToSlotsI64,  // Passed by value as several i64 slots (Int128/UInt128)
         ToSlotsV128, // Passed by value as several v128 slots (Vector256<T>, Vector512<T>)
-        ToStruct,   // S<N> — multi-field struct passed by pointer, structSize holds the size
+        ToStruct,   // S<N> or S!<N>:<A> — multi-field struct passed by pointer
         ToEmpty,    // e — empty struct, takes no wasm argument
     };
 
     struct ConvertResult
     {
         ConvertType type;
-        uint32_t structSize; // only meaningful when type == ToStruct
+        uint32_t structSize;      // meaningful for struct and multi-slot types
+        uint32_t structAlignment; // only meaningful when type == ToStruct
     };
 
     // Lowers a TypeHandle to a ConvertResult, unwrapping single-field structs
@@ -1237,7 +1238,7 @@ namespace
             // One field with padding — treat as multi-field struct
         }
 
-        return { ConvertType::ToStruct, size };
+        return { ConvertType::ToStruct, size, (uint32_t)pMT->GetFieldAlignmentRequirement() };
     }
 
     ConvertResult ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)
@@ -1316,9 +1317,12 @@ namespace
             case ConvertType::ToEmpty:     c = 'e'; break;
             case ConvertType::ToStruct:
             {
-                // Encode as S<N> where N is the struct size in decimal
-                char sizeBuf[16];
-                int len = sprintf_s(sizeBuf, sizeof(sizeBuf), "S%u", cr.structSize);
+                // Preserve the size-only encoding when the transition block's minimum 8-byte
+                // alignment makes the declared alignment immaterial.
+                char sizeBuf[32];
+                int len = cr.structAlignment > 8
+                    ? sprintf_s(sizeBuf, sizeof(sizeBuf), "S!%u:%u", cr.structSize, cr.structAlignment)
+                    : sprintf_s(sizeBuf, sizeof(sizeBuf), "S%u", cr.structSize);
                 for (int j = 0; j < len; j++)
                 {
                     if (pos + (uint32_t)j < maxSize)
@@ -1378,6 +1382,7 @@ namespace
             {
                 cr.type = ConvertType::ToStruct;
             }
+            cr.structAlignment = 0;
 
             pos += AppendTypeCode(cr, keyBuffer, pos, maxSize);
         }

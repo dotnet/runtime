@@ -2436,12 +2436,23 @@ namespace Internal.JitInterface
         public static int GetClassAlignmentRequirementStatic(DefType type)
         {
             int alignment = type.Context.Target.PointerSize;
+            bool isWasm = type.Context.Target.Architecture == TargetArchitecture.Wasm32;
 
             if (type is MetadataType metadataType && !metadataType.IsAutoLayout)
             {
-                if (metadataType.IsSequentialLayout || MarshalUtils.IsBlittableType(metadataType))
+                if (metadataType.IsSequentialLayout ||
+                    MarshalUtils.IsBlittableType(metadataType) ||
+                    (isWasm && metadataType.IsExplicitLayout))
                 {
                     alignment = metadataType.InstanceFieldAlignment.AsInt;
+                }
+            }
+            else if (isWasm)
+            {
+                int fieldAlignment = type.InstanceFieldAlignment.AsInt;
+                if (fieldAlignment > 8)
+                {
+                    alignment = fieldAlignment;
                 }
             }
 
