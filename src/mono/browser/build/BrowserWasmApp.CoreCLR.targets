@@ -492,6 +492,9 @@
       <EmscriptenEnvVars Include="EMSDK_PYTHON=$(EmscriptenPythonToolsPath)python.exe" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONPATH=$(EmscriptenPythonToolsPath)" Condition="'$(OS)' == 'Windows_NT'" />
       <EmscriptenEnvVars Include="PYTHONHOME=" Condition="'$(OS)' == 'Windows_NT'" />
+      <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
+      <EmscriptenEnvVars Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
     </ItemGroup>
   </Target>
 
@@ -560,9 +563,13 @@
     <PropertyGroup>
       <!-- WASM-TODO https://github.com/dotnet/runtime/issues/128362 -->
       <_MinipalIncludeDir Condition="'$(MINIPAL_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(MINIPAL_INCLUDE_DIR)'))))</_MinipalIncludeDir>
+      <!-- Restored SDK: headers ship in the runtime pack under native/include/minipal. -->
+      <_MinipalIncludeDir Condition="'$(_MinipalIncludeDir)' == '' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include\minipal\utils.h')">$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)', 'include', 'minipal'))</_MinipalIncludeDir>
       <_MinipalIncludeDir Condition="'$(_MinipalIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'native', 'minipal'))</_MinipalIncludeDir>
       <_MinipalIncludeRoot>$([MSBuild]::NormalizeDirectory('$(_MinipalIncludeDir)', '..'))</_MinipalIncludeRoot>
       <_VmWasmIncludeDir Condition="'$(CORECLR_VM_WASM_INCLUDE_DIR)' != ''">$([MSBuild]::EnsureTrailingSlash($([System.IO.Path]::GetFullPath('$(CORECLR_VM_WASM_INCLUDE_DIR)'))))</_VmWasmIncludeDir>
+      <!-- Restored SDK: callhelpers.hpp ships in the runtime pack under native/include. -->
+      <_VmWasmIncludeDir Condition="'$(_VmWasmIncludeDir)' == '' and Exists('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)include\callhelpers.hpp')">$([MSBuild]::NormalizeDirectory('$(MicrosoftNetCoreAppRuntimePackRidNativeDir)', 'include'))</_VmWasmIncludeDir>
       <_VmWasmIncludeDir Condition="'$(_VmWasmIncludeDir)' == ''">$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..', '..', '..', 'coreclr', 'vm', 'wasm'))</_VmWasmIncludeDir>
     </PropertyGroup>
     <ItemGroup>

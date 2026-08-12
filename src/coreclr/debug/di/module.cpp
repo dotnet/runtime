@@ -491,9 +491,9 @@ void CordbModule::RefreshMetaData()
         // So far we've only got a reader for in-memory-writable metadata (MDInternalRW implementation)
         // We could make a reader for MDInternalRO, but no need yet. This also ensures we don't encroach into common
         // scenario where we can map a file on disk.
-        TADDR remoteMDInternalRWAddr = (TADDR)NULL;
-        IfFailThrow(GetProcess()->GetDAC()->GetPEFileMDInternalRW(m_vmPEFile, &remoteMDInternalRWAddr));
-        if (remoteMDInternalRWAddr != (TADDR)NULL)
+        BOOL hasReadWriteMetadata = FALSE;
+        IfFailThrow(GetProcess()->GetDAC()->HasReadWriteMetadata(m_vmPEFile, &hasReadWriteMetadata));
+        if (hasReadWriteMetadata)
         {
             _ASSERTE(m_pIMImport == NULL);
             ULONG32 cbSize = 0;

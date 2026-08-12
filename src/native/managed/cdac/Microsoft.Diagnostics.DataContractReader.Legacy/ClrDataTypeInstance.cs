@@ -15,6 +15,9 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
     private readonly ITypeHandle _typeHandle;
     private readonly IXCLRDataTypeInstance? _legacyImpl;
 
+    internal ITypeHandle TypeHandle => _typeHandle;
+    internal IXCLRDataTypeInstance? LegacyImpl => _legacyImpl;
+
     public ClrDataTypeInstance(Target target, ITypeHandle typeHandle, IXCLRDataTypeInstance? legacyImpl)
     {
         _target = target;
@@ -154,8 +157,11 @@ public sealed unsafe partial class ClrDataTypeInstance : IXCLRDataTypeInstance
                 token = rts.GetTypeDefToken(_typeHandle);
                 ILoader loader = _target.Contracts.Loader;
                 Contracts.ModuleHandle moduleHandle = loader.GetModuleHandleFromModulePtr(module);
-                ModuleLookupTables tables = loader.GetLookupTables(moduleHandle);
-                TargetPointer definitionTypeAddress = loader.GetModuleLookupMapElement(tables.TypeDefToMethodTable, token, out _);
+                TargetPointer definitionTypeAddress = loader.GetModuleLookupMapElement(
+                    moduleHandle,
+                    ModuleLookupMapKind.TypeDefToMethodTable,
+                    token,
+                    out _);
                 definitionType = definitionTypeAddress == TargetPointer.Null ? null : rts.GetTypeHandle(definitionTypeAddress);
             }
 

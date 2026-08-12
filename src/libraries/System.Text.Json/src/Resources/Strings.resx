@@ -659,6 +659,9 @@
   <data name="Polymorphism_InferredDerivedTypeIsNotAccessible" xml:space="preserve">
     <value>The inferred derived type '{0}' is less accessible than the polymorphic base type '{1}'. Inferred derived types must be at least as accessible as the base type.</value>
   </data>
+  <data name="Polymorphism_InferClosedTypePolymorphismOnNonClosedType" xml:space="preserve">
+    <value>The type '{0}' enables JsonPolymorphicAttribute.InferClosedTypePolymorphism but is not a closed type, so no derived types can be inferred. Declare the type 'closed' or register its derived types using JsonDerivedTypeAttribute.</value>
+  </data>
   <data name="Polymorphism_InvalidCustomTypeDiscriminatorPropertyName" xml:space="preserve">
     <value>The metadata property names '$id', '$ref', and '$values' are reserved and cannot be used as custom type discriminator property names.</value>
   </data>

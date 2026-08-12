@@ -4642,10 +4642,10 @@ GenTree::VisitResult GenTree::VisitLocalDefs(Compiler* comp, TVisitor visitor)
         GenTreeLclVarCommon* asyncResumedLclAddr = comp->gtCallGetDefinedAsyncResumedLclAddr(call);
         if (asyncResumedLclAddr != nullptr)
         {
-            bool isEntire = comp->lvaLclExactSize(asyncResumedLclAddr->GetLclNum()) == 1;
+            bool isEntire = comp->lvaLclExactSize(asyncResumedLclAddr->GetLclNum()) == TARGET_POINTER_SIZE;
 
-            RETURN_IF_ABORT(
-                visitor(LocalDef(asyncResumedLclAddr, isEntire, asyncResumedLclAddr->GetLclOffs(), ValueSize(1))));
+            RETURN_IF_ABORT(visitor(LocalDef(asyncResumedLclAddr, isEntire, asyncResumedLclAddr->GetLclOffs(),
+                                             ValueSize(TARGET_POINTER_SIZE))));
         }
 
         GenTreeLclVarCommon* retBufLclAddr = comp->gtCallGetDefinedRetBufLclAddr(call);
