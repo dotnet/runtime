@@ -328,6 +328,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     GenTree*         varArgsCookie     = nullptr;
     GenTree*         instParam         = nullptr;
     GenTree*         asyncContinuation = nullptr;
+    // Set when the async call gets the contexts of the frame it is in rather than the
+    // inlining call's; see impSetupAsyncCall.
+    bool asyncCallUsesOwnContexts = false;
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
@@ -630,7 +633,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di);
+                    impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di, &asyncCallUsesOwnContexts);
 
                     if (compDonotInline())
                     {
@@ -952,7 +955,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di);
+        impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di, &asyncCallUsesOwnContexts);
 
         if (compDonotInline())
         {
@@ -1113,7 +1116,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
-    if (asyncContinuation != nullptr)
+    // An await that may suspend in the inlinee's own frame uses that frame's contexts,
+    // which its SaveAsyncContexts adds. Everything else runs in the inlining call's frame
+    // and takes its contexts.
+    if ((asyncContinuation != nullptr) && !asyncCallUsesOwnContexts)
     {
         impInheritAsyncContextsFromInliner(call->AsCall());
     }
@@ -7763,21 +7769,28 @@ void Compiler::impCheckForPInvokeCall(
 //   Register a call as being async and set up context handling information depending on the IL.
 //
 // Arguments:
-//    call        - The call
-//    methHnd     - Method handle being called
-//    opcode      - The IL opcode for the call
-//    prefixFlags - Flags containing context handling information from IL
-//    ni          - Named intrinsic recognized for the callee (or NI_Illegal)
-//    callDI      - Debug info for the async call
+//    call            - The call
+//    methHnd         - Method handle being called
+//    opcode          - The IL opcode for the call
+//    prefixFlags     - Flags containing context handling information from IL
+//    ni              - Named intrinsic recognized for the callee (or NI_Illegal)
+//    callDI          - Debug info for the async call
+//    usesOwnContexts - [out] Set to true if the call gets the contexts of the frame it is
+//                      in, which is the case for an await that may suspend in an inlinee's
+//                      own frame. Set to false if it should instead inherit the inlining
+//                      call's contexts, which the caller does via
+//                      impInheritAsyncContextsFromInliner.
 //
 void Compiler::impSetupAsyncCall(GenTreeCall*          call,
                                  CORINFO_METHOD_HANDLE methHnd,
                                  OPCODE                opcode,
                                  unsigned              prefixFlags,
                                  NamedIntrinsic        ni,
-                                 const DebugInfo&      callDI)
+                                 const DebugInfo&      callDI,
+                                 bool*                 usesOwnContexts)
 {
     AsyncCallInfo asyncInfo;
+    *usesOwnContexts = false;
 
     // Some async helpers always suspend when called. For these we can skip the
     // check for a null continuation after the call and suspend unconditionally.
@@ -7800,8 +7813,7 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
         // inlinee's tail can run in the caller's context, so we can inherit all context
         // handling from the inlining call and no logical frame transition is needed when
         // the inlinee returns.
-        bool inheritsCallerContexts    = m_nextAwaitIsTail || compIsAsyncVersion();
-        m_nextAsyncCallUsesOwnContexts = false;
+        bool inheritsCallerContexts = m_nextAwaitIsTail || compIsAsyncVersion();
 
         // We cannot inline if the callee returns valueTask.AsTask(). We need to preserve
         // the continuation in this case to be able to mark it with
@@ -7866,7 +7878,7 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
             }
 
             JITDUMP("Call [%06u] is an await in an inlinee that may suspend\n", dspTreeID(call));
-            m_nextAsyncCallUsesOwnContexts = true;
+            *usesOwnContexts = true;
         }
         else
         {
@@ -7958,22 +7970,19 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
 //   call - The async call
 //
 // Remarks:
-//   Currently we only allow inlining of async calls when all awaits are tail
-//   awaits. In that case inlining is simplified as we can just inherit
-//   everything from the inlining call.
+//   For an await that runs in the inlining call's frame rather than a frame of its own,
+//   which is the case for a tail await of the inlinee and for the transparent await an
+//   async version forwards through. Such an await has no contexts to use, so it takes the
+//   inlining call's: a suspension in it then runs exactly the handling that the frame it
+//   ended up in would have run.
+//
+//   Awaits that may suspend in a frame of their own instead get their own contexts, from
+//   that frame's SaveAsyncContexts, and are skipped here.
 //
 void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 {
     if (!compIsForInlining())
     {
-        return;
-    }
-
-    if (m_nextAsyncCallUsesOwnContexts)
-    {
-        // General async inlining: this await may suspend, so it uses the inlinee's own
-        // contexts, which are added by the inlinee's SaveAsyncContexts phase.
-        m_nextAsyncCallUsesOwnContexts = false;
         return;
     }
 
@@ -7991,12 +8000,8 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
         return;
     }
 
-    // We are inlining an async call that does not save contexts into a call
-    // that does. We currently allow this only in cases where the tail of the
-    // inlinee can run in the caller's context, and hence we propagate the
-    // caller's context here. It means we do not need to worry about switching
-    // into the caller's context when the inlinee is returning to the caller
-    // after the await.
+    // Take the values as they appear in the inlining call, so a suspension restores and
+    // captures exactly what the frame this await ended up in would have.
     assert(resumedUseArg->GetNode()->OperIs(GT_LCL_VAR) && resumedDefArg->GetNode()->OperIs(GT_LCL_ADDR) &&
            execArg->GetNode()->OperIs(GT_LCL_VAR) && syncArg->GetNode()->OperIs(GT_LCL_VAR));
     JITDUMP("Inheriting resumed use [%06u], resumed def [%06u], and contexts [%06u] and [%06u] from caller node\n",
@@ -8044,10 +8049,7 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 
     // This call ends up in the same frame as the inlining call, so it hands off through
     // the same chain of frames in the same way.
-    if (call->IsAsync() && inlCall->IsAsync())
-    {
-        call->GetAsyncInfo().InlineFrameContextHandling = inlCall->GetAsyncInfo().InlineFrameContextHandling;
-    }
+    call->GetAsyncInfo().InlineFrameContextHandling = inlCall->GetAsyncInfo().InlineFrameContextHandling;
 }
 
 //------------------------------------------------------------------------

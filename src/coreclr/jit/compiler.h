@@ -5337,7 +5337,7 @@ protected:
                                     GenTree**                 instParam,
                                     NamedIntrinsic            ni);
 
-    void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, NamedIntrinsic ni, const DebugInfo& callDI);
+    void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, NamedIntrinsic ni, const DebugInfo& callDI, bool* usesOwnContexts);
 
     void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
     void impInheritAsyncContextsFromInliner(GenTreeCall* call);
@@ -5718,8 +5718,6 @@ private:
     // Set while importing an inlinee for an async call that gets its own context
     // handling instead of inheriting it from the inlining call, i.e. an await that may
     // suspend inside a generally-inlined async callee. Consumed by
-    // impInheritAsyncContextsFromInliner.
-    bool m_nextAsyncCallUsesOwnContexts = false;
 
     bool impSpillStackEntry(unsigned level,
                             unsigned varNum

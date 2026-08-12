@@ -11999,8 +11999,25 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     AsyncCallInfo* asyncInfo = new (this, CMK_Async) AsyncCallInfo;
 
-    if (impInlineRoot()->compIsAsyncVersion())
+    // Whether the frame this await logically belongs to sits inside a frame that does its
+    // own context handling. The await is a transparent forward, so a suspension in it has
+    // to take part in that enclosing frame's handling, in particular by recording that the
+    // frame resumed.
+    //
+    // This is a property of the immediately enclosing frame rather than of the root:
+    // general async inlining can splice a context-owning frame in between this one and an
+    // async version root, and then the root being a transparent forwarder says nothing
+    // about what this await runs inside.
+    bool const hasContextHandling =
+        compIsForInlining() &&
+        (impInlineInfo->iciCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse) != nullptr);
+
+    if (!hasContextHandling)
     {
+        // No enclosing frame handles contexts, which means every frame out to the root is
+        // a transparent forwarder, so the root is an async version too.
+        assert(impInlineRoot()->compIsAsyncVersion());
+
         asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
 
 #if FEATURE_TAILCALL_OPT
@@ -12015,8 +12032,9 @@ bool Compiler::impWrapTopOfStackInAwait()
     }
     else
     {
-        // We are inlining into an async method. This means we have a proper
-        // async await, and we require proper handling.
+        // The await runs inside a frame that does context handling, either because we are
+        // inlining into an async method or because a context-owning frame encloses this
+        // one. Either way it is a proper async await and needs that frame's handling.
         assert(compIsForInlining() && impInlineInfo->iciCall->IsAsync());
         GenTreeCall* inlCall = impInlineInfo->iciCall;
 
