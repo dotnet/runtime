@@ -3355,6 +3355,13 @@ void AsyncStressPolicy::NoteBool(InlineObservation obs, bool value)
 //    would also mark the callee NOINLINE for every other call site, so there is
 //    no point in letting the base policy see them first.
 //
+//    This is deliberately not restricted to the calls the stress mode picked:
+//    the candidate screen creates its own InlineResult before the call is a
+//    candidate, so no group exists yet at that point, and gating the bypass on
+//    one would let the screen mark large async callees NOINLINE before the stress
+//    mode ever gets to consider them. The call site specific decisions are gated
+//    instead, see BudgetCheck and DetermineProfitability.
+//
 //    CALLEE_MAXSTACK is deliberately not among them: stack heavy callees are
 //    left on the normal policy rather than being forced in.
 //
@@ -3420,11 +3427,11 @@ void AsyncStressPolicy::NoteInt(InlineObservation obs, int value)
 //
 bool AsyncStressPolicy::BudgetCheck() const
 {
-    // Async inlines are the point of this policy, so they ignore the budget. Everything
-    // else stays on the normal budget so that the stress mode does not turn into a
-    // general "inline everything" mode.
+    // Async inlines are the point of this policy, so the ones the stress mode picked
+    // ignore the budget. Everything else stays on the normal budget so that the stress
+    // mode does not turn into a general "inline everything" mode.
     //
-    if (m_IsAsyncCall)
+    if (IsStressPicked())
     {
         return false;
     }
@@ -3452,8 +3459,10 @@ bool AsyncStressPolicy::BudgetCheck() const
 //
 void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
-    if (!m_IsAsyncCall)
+    if (!IsStressPicked())
     {
+        // Not an async call, or an async candidate the stress mode did not pick, such as
+        // one created by late devirtualization. Leave it to the normal heuristics.
         ExtendedDefaultPolicy::DetermineProfitability(methodInfo);
         return;
     }
@@ -3463,13 +3472,6 @@ void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         // The prejit root has no call site, so there is nothing to decay by. Leave it a
         // candidate so that the call sites in the methods that inline it get the choice.
         SetCandidate(InlineObservation::CALLEE_IS_PROFITABLE_INLINE);
-        return;
-    }
-
-    if (m_AsyncStressIndex < 0)
-    {
-        // Not part of a group, so not something the stress mode picked.
-        SetCandidate(InlineObservation::CALLSITE_IS_PROFITABLE_INLINE);
         return;
     }
 
