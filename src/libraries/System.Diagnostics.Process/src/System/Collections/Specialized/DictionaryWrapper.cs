@@ -19,8 +19,8 @@ namespace System.Collections.Specialized
             get => _contents[key];
             set
             {
-                ValidateKey(key);
-                ValidateValue(value);
+                Validate(nameof(key), key);
+                Validate(nameof(value), value);
                 _contents[key] = value;
             }
         }
@@ -87,19 +87,11 @@ namespace System.Collections.Specialized
         IEnumerator IEnumerable.GetEnumerator() => _contents.GetEnumerator();
         IDictionaryEnumerator IDictionary.GetEnumerator() => _contents.GetEnumerator();
 
-        private static void ValidateKey(string key)
-        {
-            if (key is not null && key.Contains('\0'))
-            {
-                throw new ArgumentException(SR.Argument_NullCharInEnvVar, nameof(key));
-            }
-        }
-
-        private static void ValidateValue(string? value)
+        private static void Validate(string name, string? value)
         {
             if (value is not null && value.Contains('\0'))
             {
-                throw new ArgumentException(SR.Argument_NullCharInEnvVar, nameof(value));
+                throw new ArgumentException(SR.Argument_NullCharInEnvVar, name);
             }
         }
 
