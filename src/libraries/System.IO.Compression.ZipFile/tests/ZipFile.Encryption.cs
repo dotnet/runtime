@@ -77,6 +77,62 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
+        public async Task Encryption_EmptyEntry_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "password123";
+            var entries = new[]
+            {
+                ("readme.txt", "hello world", (string?)password, (ZipEncryptionMethod?)encryptionMethod),
+                (".gitkeep", "", (string?)password, (ZipEncryptionMethod?)encryptionMethod)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                foreach (var (name, content, pwd, _) in entries)
+                {
+                    ZipArchiveEntry entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+                    Assert.True(entry.IsEncrypted);
+                    Assert.Equal(encryptionMethod, entry.EncryptionMethod);
+                    Assert.Equal(content.Length, entry.Length);
+                    await AssertEntryTextEquals(entry, content, pwd, async);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
+        public async Task UpdateMode_EmptyEncryptedEntry_Unchanged_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "password123";
+            var entries = new[] { (".gitkeep", "", (string?)password, (ZipEncryptionMethod?)encryptionMethod) };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            // Open in update mode and save without modifying anything.
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
+            {
+                Assert.Equal(1, archive.Entries.Count);
+            }
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                ZipArchiveEntry entry = archive.GetEntry(".gitkeep");
+                Assert.NotNull(entry);
+                Assert.True(entry.IsEncrypted);
+                Assert.Equal(encryptionMethod, entry.EncryptionMethod);
+                await AssertEntryTextEquals(entry, "", password, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task Encryption_MixedPlainAndEncrypted_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();

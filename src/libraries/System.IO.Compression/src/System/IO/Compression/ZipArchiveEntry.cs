@@ -2402,14 +2402,16 @@ namespace System.IO.Compression
                 {
                     _crcSizeStream.Dispose(); // now we have size/crc info
 
-                    if (!_everWritten && _encryptionStream is null)
+                    bool finishHeader = _everWritten;
+
+                    if (!_everWritten)
                     {
-                        // write local header, no data, so we use stored
-                        _entry.WriteLocalFileHeader(isEmptyFile: true, forceWrite: true);
-                    }
-                    else
-                    {
-                        if (!_everWritten)
+                        if (_encryptionStream is null)
+                        {
+                            // write local header, no data, so we use stored
+                            _entry.WriteLocalFileHeader(isEmptyFile: true, forceWrite: true);
+                        }
+                        else
                         {
                             // No data was written through CheckSumAndSizeWriteStream, but an encrypted entry
                             // still stores its encryption header (and, for AES, the authentication code), so
@@ -2423,8 +2425,12 @@ namespace System.IO.Compression
                             _encryptionStream.Dispose();
 
                             _entry._compressedSize = _entry._archive.ArchiveStream.Position - startPosition;
+                            finishHeader = true;
                         }
+                    }
 
+                    if (finishHeader)
+                    {
                         // go back and finish writing
                         if (_entry._archive.ArchiveStream.CanSeek)
                         {
@@ -2455,14 +2461,16 @@ namespace System.IO.Compression
                 {
                     await _crcSizeStream.DisposeAsync().ConfigureAwait(false); // now we have size/crc info
 
-                    if (!_everWritten && _encryptionStream is null)
+                    bool finishHeader = _everWritten;
+
+                    if (!_everWritten)
                     {
-                        // write local header, no data, so we use stored
-                        await _entry.WriteLocalFileHeaderAsync(isEmptyFile: true, forceWrite: true, preserveDataDescriptor: false, cancellationToken: default).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        if (!_everWritten)
+                        if (_encryptionStream is null)
+                        {
+                            // write local header, no data, so we use stored
+                            await _entry.WriteLocalFileHeaderAsync(isEmptyFile: true, forceWrite: true, preserveDataDescriptor: false, cancellationToken: default).ConfigureAwait(false);
+                        }
+                        else
                         {
                             // No data was written through CheckSumAndSizeWriteStream, but an encrypted entry
                             // still stores its encryption header (and, for AES, the authentication code), so
@@ -2476,8 +2484,12 @@ namespace System.IO.Compression
                             await _encryptionStream.DisposeAsync().ConfigureAwait(false);
 
                             _entry._compressedSize = _entry._archive.ArchiveStream.Position - startPosition;
+                            finishHeader = true;
                         }
+                    }
 
+                    if (finishHeader)
+                    {
                         // go back and finish writing
                         if (_entry._archive.ArchiveStream.CanSeek)
                         {
