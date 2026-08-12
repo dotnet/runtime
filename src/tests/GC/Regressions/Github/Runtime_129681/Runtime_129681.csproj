@@ -3,6 +3,8 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <!-- Test enables GC cover which is not compatible with the interpreter -->
+    <InterpreterIncompatible>true</InterpreterIncompatible>
 
     <CLRTestBatchPreCommands><![CDATA[
       $(CLRTestBatchPreCommands)
