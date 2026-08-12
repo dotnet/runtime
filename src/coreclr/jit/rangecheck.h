@@ -587,8 +587,8 @@ struct RangeOps
                 return Range(Limit(Limit::keConstant, leftLimit), Limit(Limit::keConstant, rightLimit));
             }
 
-            return Range(isAlwaysPositive ? Limit(Limit::keConstant, 0) : Limit(Limit::keUnknown),
-                isAlwaysNegative ? Limit(Limit::keConstant, -0) : Limit(Limit::keUnknown));
+            return Range(isAlwaysPositive ? Limit(Limit::keConstant, 0) : Limit(Limit::keConstant, INT32_MIN),
+                isAlwaysNegative ? Limit(Limit::keConstant, -0) : Limit(Limit::keConstant, INT32_MAX));
         }
 
         return Range(Limit(Limit::keUnknown));
