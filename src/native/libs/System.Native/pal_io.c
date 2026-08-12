@@ -14,7 +14,6 @@
 #include <errno.h>
 #include <fnmatch.h>
 #include <stddef.h>
-#include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -79,7 +78,7 @@ extern int     getpeereid(int, uid_t *__restrict__, gid_t *__restrict__);
 // Some libc implementations (e.g. glibc >= 2.28, musl >= 1.2) already declare `struct statx`
 // and the STATX_* constants in <sys/stat.h>. Only pull in <linux/stat.h> when that isn't the
 // case, to avoid conflicting redefinitions.
-#ifndef STATX_BASIC_STATS
+#if !HAVE_STATX && HAVE_STATX_SYSCALL && !defined(STATX_BASIC_STATS)
 #include <linux/stat.h>
 #endif
 #include <sys/utsname.h>
@@ -215,12 +214,16 @@ c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 c_static_assert(PAL_UF_HIDDEN == UF_HIDDEN);
 #endif
 
-#if HAVE_STATX_SYSCALL
+#if !HAVE_STATX && HAVE_STATX_SYSCALL
 
 c_static_assert(sizeof(struct statx) == 256);
 
 // Set once we know the statx syscall is not usable, so that we don't keep paying for failing calls.
-static _Atomic(int32_t) g_statxUnsupported = 0;
+static int32_t g_statxUnsupported = 0;
+
+#endif // !HAVE_STATX && HAVE_STATX_SYSCALL
+
+#if HAVE_STATX || HAVE_STATX_SYSCALL
 
 static bool ConvertStatxFileStatus(const struct statx* src, FileStatus* dst)
 {
@@ -271,37 +274,44 @@ static bool ConvertStatxFileStatus(const struct statx* src, FileStatus* dst)
 // and -1 when the call failed with errno set.
 static int32_t TryStatxFileStatus(int fd, const char* path, int32_t flags, FileStatus* output)
 {
-    if (atomic_load(&g_statxUnsupported))
+    long ret;
+    struct statx result;
+
+#if HAVE_STATX
+    while ((ret = statx(fd, path, flags, STATX_BASIC_STATS | STATX_BTIME, &result)) < 0 && errno == EINTR);
+#else
+    if (g_statxUnsupported != 0)
     {
         return 0;
     }
 
-    struct statx result;
-    long ret;
     while ((ret = syscall(__NR_statx,
                           fd,
                           path,
                           flags,
                           STATX_BASIC_STATS | STATX_BTIME,
                           &result)) < 0 && errno == EINTR);
+#endif
 
     if (ret == 0)
     {
         return ConvertStatxFileStatus(&result, output) ? 1 : 0;
     }
 
+#if !HAVE_STATX && HAVE_STATX_SYSCALL
     // The syscall doesn't exist (kernel older than 4.11) or it is blocked (for example, by a
     // seccomp filter). Fall back to stat() from now on; it reports the real error, if any.
     if (errno == ENOSYS || errno == EPERM || errno == EINVAL || errno == EOPNOTSUPP)
     {
-        atomic_store(&g_statxUnsupported, 1);
+        g_statxUnsupported = 1;
         return 0;
     }
+#endif
 
     return -1;
 }
 
-#endif // HAVE_STATX_SYSCALL
+#endif // HAVE_STATX || HAVE_STATX_SYSCALL
 
 static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
@@ -343,7 +353,7 @@ static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 
 int32_t SystemNative_Stat(const char* path, FileStatus* output)
 {
-#if HAVE_STATX_SYSCALL
+#if HAVE_STATX || HAVE_STATX_SYSCALL
     int32_t statxResult = TryStatxFileStatus(AT_FDCWD, path, 0, output);
     if (statxResult != 0)
     {
@@ -365,7 +375,7 @@ int32_t SystemNative_Stat(const char* path, FileStatus* output)
 
 int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
 {
-#if HAVE_STATX_SYSCALL
+#if HAVE_STATX || HAVE_STATX_SYSCALL
     int32_t statxResult = TryStatxFileStatus(ToFileDescriptor(fd), "", AT_EMPTY_PATH, output);
     if (statxResult != 0)
     {
@@ -387,7 +397,7 @@ int32_t SystemNative_FStat(intptr_t fd, FileStatus* output)
 
 int32_t SystemNative_LStat(const char* path, FileStatus* output)
 {
-#if HAVE_STATX_SYSCALL
+#if HAVE_STATX || HAVE_STATX_SYSCALL
     int32_t statxResult = TryStatxFileStatus(AT_FDCWD, path, AT_SYMLINK_NOFOLLOW, output);
     if (statxResult != 0)
     {

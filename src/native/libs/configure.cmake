@@ -191,6 +191,11 @@ check_symbol_exists(
     sys/stat.h
     HAVE_STAT64)
 
+check_symbol_exists(
+    statx
+    sys/stat.h
+    HAVE_STATX)
+
 # The statx() syscall was added in Linux 4.11 and provides the file creation (birth) time,
 # which stat() doesn't. It is invoked directly via syscall() because the C library the runtime
 # is built against may predate it.
