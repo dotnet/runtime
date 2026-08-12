@@ -185,6 +185,27 @@ namespace ILAssembler.Tests
         }
 
         [Theory]
+        [InlineData("{ 2A 50 }", "2A50")]
+        [InlineData("{ 1E }", "1E")]
+        [InlineData("{ 00 0A FF }", "000AFF")]
+        public void RawMarshalBlob_EmitsSuppliedBytes(string blob, string expectedHex)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .field public marshal({{blob}}) int32[] Values
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.GetFieldDefinition(MetadataTokens.FieldDefinitionHandle(1));
+
+            Assert.Equal(Convert.FromHexString(expectedHex), reader.GetBlobBytes(field.GetMarshallingDescriptor()));
+        }
+
+        [Theory]
         [InlineData("int8", UnmanagedType.U1)]
         [InlineData("int16", UnmanagedType.U2)]
         [InlineData("int32", UnmanagedType.U4)]

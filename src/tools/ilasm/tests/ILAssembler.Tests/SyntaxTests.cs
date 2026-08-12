@@ -191,6 +191,65 @@ namespace ILAssembler.Tests
         }
 
 
+        [Theory]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi Test
+            {
+            """)]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .namespace NS
+            {
+                .class public auto ansi Test
+                {
+                    .method public static void M() cil managed
+                    {
+            """)]
+        [InlineData(".class public auto ansi")]
+        [InlineData(".method public static void")]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi Test
+            {
+                .method public static void M() cil managed
+                {
+                    .try
+            """)]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi Test
+            {
+                .method public static void M(int32 .method cil managed
+                {
+                    .maxstack 2
+                    ret
+                }
+            }
+            """)]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi
+            {
+                .method public instance void M() cil managed
+                {
+                    .override [mscorlib]System.Object::ToString
+                    ret
+                }
+            }
+            """)]
+        public void TruncatedDocument_ReportsDiagnosticsInsteadOfThrowing(string source)
+        {
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        }
+
         [Fact]
         public void ParserErrorListener_ReportsSyntaxErrors()
         {

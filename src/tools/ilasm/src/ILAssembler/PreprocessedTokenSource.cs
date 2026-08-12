@@ -99,12 +99,18 @@ namespace ILAssembler
                 {
                     ReportPreprocessorSyntaxError(nextToken);
                 }
-                _includeSourceStack.Pop();
-                if (_includeSourceStack.Count == 0)
+
+                if (_includeSourceStack.Count == 1)
                 {
-                    // If we hit EOF of our entry file, return the EOF token.
+                    // If we hit EOF of our entry file, return the EOF token. The root source is
+                    // deliberately left on the stack so that the accessors below (Line, Column,
+                    // InputStream, SourceName and TokenFactory) keep working after EOF. The parser's
+                    // error recovery queries them while synthesizing missing tokens for a truncated
+                    // document, which would otherwise fault on an empty stack.
                     return nextToken;
                 }
+
+                _includeSourceStack.Pop();
                 nextToken = CurrentTokenSource.NextToken();
             }
             return nextToken;

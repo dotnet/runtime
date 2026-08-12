@@ -22,28 +22,22 @@ public sealed class DocumentCompiler
         Dictionary<string, SourceText> loadedDocuments = new();
         ImmutableArray<Diagnostic>.Builder diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
 
-        GrammarVisitor? visitor = null;
+        GrammarActions? actions = null;
         IReadOnlyDictionary<string, string?>? definedVariables = null;
 
         foreach (var document in documents)
         {
             loadedDocuments[document.Path!] = document;
 
-            var inputSource = new AntlrInputStream(document.Text)
-            {
-                name = document.Path
-            };
+            StringCharStream inputSource = new(document.Text, document.Path);
             CILLexer lexer = new(inputSource);
             PreprocessedTokenSource preprocessor = new(lexer, path =>
             {
-                var includedDocument = includedDocumentLoader(path);
-                var includedSource = new AntlrInputStream(includedDocument.Text)
-                {
-                    name = includedDocument.Path
-                };
+                SourceText includedDocument = includedDocumentLoader(path);
+                StringCharStream includedSource = new(includedDocument.Text, includedDocument.Path);
                 loadedDocuments[includedDocument.Path!] = includedDocument;
                 return new CILLexer(includedSource);
-            }, text => new CILLexer(new AntlrInputStream(text)), definedVariables);
+            }, text => new CILLexer(new StringCharStream(text)), definedVariables);
 
             preprocessor.OnPreprocessorSyntaxError += (source, start, length, msg) =>
             {
@@ -57,29 +51,33 @@ public sealed class DocumentCompiler
                 }
             };
 
-            CILParser parser = new(new CommonTokenStream(preprocessor));
+            actions ??= new GrammarActions(loadedDocuments, options, resourceLocator);
+            actions.BeginDocument();
+
+            CILParser parser = new(new UnbufferedTokenStream(preprocessor))
+            {
+                Actions = actions,
+                BuildParseTree = false
+            };
             parser.RemoveErrorListeners();
-            var parserDiagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
+            ImmutableArray<Diagnostic>.Builder parserDiagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
             parser.AddErrorListener(new ParserErrorListener(parserDiagnostics, loadedDocuments));
-            var result = parser.decls();
+            _ = parser.decls();
+            parser.VerifyParseTreeModesBalanced();
 
             // Add parser diagnostics to the main list
             diagnostics.AddRange(parserDiagnostics);
-
-            visitor ??= new GrammarVisitor(loadedDocuments, options, resourceLocator);
-
-            _ = result.Accept(visitor);
 
             // Transfer defined constants to the next document
             definedVariables = preprocessor.DefinedVariables;
         }
 
-        if (visitor is null)
+        if (actions is null)
         {
             return (diagnostics.ToImmutable(), null);
         }
 
-        var image = visitor.BuildImage();
+        var image = actions.BuildImage();
 
         bool anyErrors = diagnostics.Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         anyErrors |= image.Diagnostics.Any(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);

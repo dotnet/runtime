@@ -6,6 +6,7 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -194,6 +195,49 @@ namespace ILAssembler.Tests
             ReadOnlySpan<byte> data = pe.GetSectionData(field.GetRelativeVirtualAddress()).GetContent().AsSpan(0, sizeof(double));
 
             Assert.Equal(4503599627370496d, BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(data)));
+        }
+
+        [Fact]
+        public void LargeByteArray_StreamsIntoDataSectionWithoutLosingBytes()
+        {
+            const int Length = 64 * 1024;
+            byte[] expected = new byte[Length];
+            for (int i = 0; i < Length; i++)
+            {
+                expected[i] = (byte)((i * 31) + 7);
+            }
+
+            StringBuilder literal = new(Length * 3);
+            for (int i = 0; i < Length; i++)
+            {
+                if (i > 0)
+                {
+                    literal.Append(i % 32 == 0 ? '\n' : ' ');
+                }
+
+                literal.Append(expected[i].ToString("X2", CultureInfo.InvariantCulture));
+            }
+
+            string source = $$"""
+                .assembly extern mscorlib { }
+                .assembly test { }
+
+                .data D_LARGE = bytearray ({{literal}})
+
+                .class public explicit ansi sealed DataHolder extends [mscorlib]System.ValueType
+                {
+                    .size 8
+                    .field [0] public static int8 LargeData at D_LARGE
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var field = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .Single(definition => reader.GetString(definition.Name) == "LargeData");
+
+            Assert.Equal(expected, ReadData(pe, field, Length));
         }
 
         private static byte[] ReadData(PEReader pe, FieldDefinition field, int length)

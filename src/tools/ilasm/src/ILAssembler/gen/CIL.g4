@@ -418,9 +418,17 @@ WS: [ \t\r\n] -> skip;
 SINGLE_LINE_COMMENT: '//' ~[\r\n]* -> skip;
 COMMENT: '/*' .*? '*/' -> skip;
 
-decls: decl*;
+decls
+@init {BeginStreaming();}
+:
+    decl*
+;
+finally {EndParseTreeMode();}
 
-decl:
+decl
+@init {BeginSubtree();}
+@after {Actions.OnDeclaration(_localctx);}
+:
 	classHead '{' classDecls '}'
 	| nameSpaceHead '{' decls '}'
 	| methodHead '{' methodDecls '}'
@@ -447,6 +455,7 @@ decl:
 	| compControl
 	| typelist
 	| mscorlib;
+finally {EndParseTreeMode(); Actions.EndDeclaration(_localctx);}
 
 subsystem: '.subsystem' int32;
 
@@ -564,10 +573,20 @@ vtfixupAttr:
 vtableDecl: '.vtable' '=' '(' bytes ')' /* deprecated */;
 
 /*  Namespace and class declaration  */
-nameSpaceHead: '.namespace' dottedName;
+nameSpaceHead
+@init {BeginSubtree();}
+@after {Actions.BeginNamespace(_localctx);}
+:
+    '.namespace' dottedName
+;
+finally {EndParseTreeMode();}
 
-classHead:
+classHead
+@init {BeginSubtree();}
+@after {Actions.BeginType(_localctx);}
+:
 	'.class' classAttr* dottedName typarsClause extendsClause implClause;
+finally {EndParseTreeMode();}
 
 
 classAttr:
@@ -603,7 +622,12 @@ extendsClause: /* EMPTY */ | 'extends' typeSpec;
 
 implClause: /* EMPTY */ | 'implements' implList;
 
-classDecls: classDecl*;
+classDecls
+@init {BeginStreaming();}
+:
+    classDecl*
+;
+finally {EndParseTreeMode();}
 
 implList: (typeSpec ',')* typeSpec;
 
@@ -1030,7 +1054,10 @@ genArity: /* EMPTY */ | genArityNotEmpty;
 genArityNotEmpty: '<' '[' int32 ']' '>';
 
 /*  Class body declarations  */
-classDecl:
+classDecl
+@init {BeginSubtree();}
+@after {Actions.OnClassDeclaration(_localctx);}
+:
 	methodHead '{' methodDecls '}'
 	| classHead '{' classDecls '}'
 	| eventHead '{' eventDecls '}'
@@ -1053,6 +1080,7 @@ classDecl:
 	| PARAM CONSTRAINT '[' int32 ']' ',' typeSpec customAttrDecl*
 	| PARAM CONSTRAINT dottedName ',' typeSpec customAttrDecl*
 	| '.interfaceimpl' TYPE typeSpec customDescr;
+finally {EndParseTreeMode(); Actions.EndClassDeclaration(_localctx);}
 
 /*  Field declaration  */
 fieldDecl:
@@ -1135,9 +1163,13 @@ paramAttrElement:
 	| '[' opt = 'opt' ']'
 	| '[' int32 ']';
 
-methodHead:
+methodHead
+@init {BeginSubtree();}
+@after {Actions.BeginMethod(_localctx);}
+:
 	'.method' (methAttr | pinvImpl)* callConv paramAttr type marshalClause methodName typarsClause sigArgs
 		implAttr*;
+finally {EndParseTreeMode();}
 
 methAttr: 'static'
 	| 'public'
@@ -1208,9 +1240,17 @@ EXPORT: '.export';
 OVERRIDE: '.override';
 VTENTRY: '.vtentry';
 
-methodDecls: methodDecl*;
+methodDecls
+@init {BeginStreaming();}
+:
+    methodDecl*
+;
+finally {EndParseTreeMode();}
 
-methodDecl:
+methodDecl
+@init {BeginSubtree();}
+@after {Actions.OnMethodDeclaration(_localctx);}
+:
 	instr                                                         // MOVED TO TOP - instructions must be matched first!
 	| EMITBYTE int32
 	| sehBlock
@@ -1237,6 +1277,7 @@ methodDecl:
 	| PARAM CONSTRAINT '[' int32 ']' ',' typeSpec customAttrDecl*
 	| PARAM CONSTRAINT dottedName ',' typeSpec customAttrDecl*
 	| PARAM '[' int32 ']' initOpt customAttrDecl*;
+finally {EndParseTreeMode();}
 
 labelDecl: id ':';
 
@@ -1244,10 +1285,19 @@ customDescrInMethodBody:
 	customDescr
 	| customDescrWithOwner;
 
-scopeBlock: '{' methodDecls '}';
+scopeBlock
+@init {Actions.BeginScope(_localctx);}
+:
+	'{' methodDecls '}'
+;
+finally {Actions.EndScope(_localctx);}
 
 /* Structured exception handling directives  */
-sehBlock: tryBlock sehClauses;
+sehBlock
+@after {Actions.EndExceptionBlock(_localctx);}
+:
+	tryBlock sehClauses
+;
 
 sehClauses: sehClause+;
 
@@ -1267,7 +1317,11 @@ filterClause:
 	| 'filter' id
 	| 'filter' int32;
 
-catchClause: 'catch' typeSpec;
+catchClause
+@after {Actions.OnCatchClause(_localctx);}
+:
+	'catch' typeSpec
+;
 
 finallyClause: 'finally';
 
@@ -1327,9 +1381,22 @@ fieldSerInit:
 	| BOOL '(' truefalse ')'
 	| 'bytearray' '(' bytes ')';
 
-bytes: hexbyte*;
+bytes
+returns [System.Collections.Immutable.ImmutableArray<byte> Value]
+@init {BeginStreaming(); Actions.BeginBytes();}
+:
+	(b = hexbyte {Actions.AddByte($b.Value);})*
+;
+finally {_localctx.Value = Actions.EndBytes(); EndParseTreeMode();}
 
-hexbyte: INT32 | ID | HEXBYTE;
+hexbyte
+returns [byte Value]
+@after {_localctx.Value = GrammarActions.ParseHexbyte(_localctx.Start);}
+:
+	INT32
+	| ID
+	| HEXBYTE
+;
 /*  Field/parameter initialization  */
 fieldInit: fieldSerInit | compQstring | NULLREF;
 

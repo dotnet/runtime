@@ -441,5 +441,65 @@ namespace ILAssembler.Tests
             Assert.True(region.HandlerLength > 0);
         }
 
+        [Fact]
+        public void MultipleCatchClauses_ResolveCatchTypesBeforeTheirHandlerBodies()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi beforefieldinit Test extends [mscorlib]System.Object
+                {
+                    .method public static void M() cil managed
+                    {
+                        .maxstack 1
+                        .try
+                        {
+                            leave.s DONE
+                        }
+                        catch [mscorlib]System.ArgumentException
+                        {
+                            castclass [mscorlib]System.IO.Stream
+                            pop
+                            leave.s DONE
+                        }
+                        catch [mscorlib]System.NotSupportedException
+                        {
+                            castclass [mscorlib]System.Text.StringBuilder
+                            pop
+                            leave.s DONE
+                        }
+                    DONE:
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            // Native ilasm resolves a catch type as soon as the clause is parsed, so each catch type
+            // precedes every type its handler body references.
+            Assert.Equal(
+                ["System.Object", "System.ValueType", "System.ArgumentException", "System.IO.Stream", "System.NotSupportedException", "System.Text.StringBuilder"],
+                reader.TypeReferences
+                    .Select(reader.GetTypeReference)
+                    .Select(reference => reader.GetString(reference.Namespace) + "." + reader.GetString(reference.Name))
+                    .ToArray());
+
+            var method = reader.MethodDefinitions
+                .Select(reader.GetMethodDefinition)
+                .First(definition => reader.GetString(definition.Name) == "M");
+            var body = pe.GetMethodBody(method.RelativeVirtualAddress);
+
+            Assert.Equal(2, body.ExceptionRegions.Length);
+            Assert.All(body.ExceptionRegions, region => Assert.Equal(ExceptionRegionKind.Catch, region.Kind));
+            Assert.Equal(
+                ["System.ArgumentException", "System.NotSupportedException"],
+                body.ExceptionRegions
+                    .Select(region => reader.GetTypeReference((TypeReferenceHandle)region.CatchType))
+                    .Select(reference => reader.GetString(reference.Namespace) + "." + reader.GetString(reference.Name))
+                    .ToArray());
+        }
+
     }
 }
