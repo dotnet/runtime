@@ -974,6 +974,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_InferClosedTypePolymorphismOnNonClosedType(Type baseType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_InferClosedTypePolymorphismOnNonClosedType, baseType));
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_InvalidCustomTypeDiscriminatorPropertyName()
         {
             throw new InvalidOperationException(SR.Polymorphism_InvalidCustomTypeDiscriminatorPropertyName);

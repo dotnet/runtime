@@ -141,5 +141,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.wasm DESTINATION sharedF
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.js.symbols DESTINATION corehost COMPONENT runtime)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/dotnet.native.js.symbols DESTINATION sharedFramework COMPONENT runtime)
 
+# Headers included by the CoreCLR native relink generated sources (see BrowserWasmApp.CoreCLR.targets).
+install(FILES ${CLR_REPO_ROOT_DIR}/src/coreclr/vm/wasm/callhelpers.hpp DESTINATION sharedFramework/include COMPONENT runtime)
+install(FILES ${CLR_SRC_NATIVE_DIR}/minipal/entrypoints.h DESTINATION sharedFramework/include/minipal COMPONENT runtime)
+install(FILES ${CLR_SRC_NATIVE_DIR}/minipal/utils.h DESTINATION sharedFramework/include/minipal COMPONENT runtime)
+
 set_source_files_properties(${BROWSERHOST_SOURCES} PROPERTIES OBJECT_DEPENDS
     "${JS_SYSTEM_NATIVE_BROWSER};${JS_SYSTEM_BROWSER_UTILS};${JS_SYSTEM_RUNTIME_INTEROPSERVICES_JAVASCRIPT_NATIVE};${JS_BROWSER_HOST};${JS_SYSTEM_NATIVE_BROWSER_EXPOST}")

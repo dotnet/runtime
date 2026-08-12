@@ -8,6 +8,188 @@ using System.Runtime.InteropServices;
 
 namespace System.Formats.Asn1
 {
+    internal abstract class RestrictedAsciiSetEncoding : RestrictedAsciiStringEncoding
+    {
+        protected RestrictedAsciiSetEncoding(string allowedChars)
+            : base(allowedChars)
+        {
+        }
+
+        protected override int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
+        {
+            if (chars.Length >= Vector<byte>.Count && Vector.IsHardwareAccelerated)
+            {
+                return GetBytesVectorized(chars, bytes, write);
+            }
+
+            return base.GetBytes(chars, bytes, write);
+        }
+
+        protected override int GetChars(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
+        {
+            if (bytes.Length >= Vector<byte>.Count && Vector.IsHardwareAccelerated)
+            {
+                return GetCharsVectorized(bytes, chars, write);
+            }
+
+            return base.GetChars(bytes, chars, write);
+        }
+
+        // Keep the vectorization out of GetChars and GetBytes to avoid regressing code size
+        // and register allocation for small inputs.
+        private int GetBytesVectorized(ReadOnlySpan<char> chars, Span<byte> bytes, bool write)
+        {
+            int available = write ? Math.Min(chars.Length, bytes.Length) : chars.Length;
+            int position = 0;
+
+            Debug.Assert(Vector<byte>.Count == 2 * Vector<ushort>.Count);
+
+            // Revisit this cast when Vector<char> is supported: https://github.com/dotnet/runtime/issues/127611
+            ReadOnlySpan<ushort> source = MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available);
+            Span<byte> destination = write ? bytes.Slice(0, available) : Span<byte>.Empty;
+
+            while (source.Length >= Vector<byte>.Count)
+            {
+                Vector<ushort> lower = new Vector<ushort>(source);
+                Vector<ushort> upper = new Vector<ushort>(source.Slice(Vector<ushort>.Count));
+
+                if (!IsAllowed(lower) || !IsAllowed(upper))
+                {
+                    // Do not advance the position so the scalar path can determine the exact invalid index.
+                    break;
+                }
+
+                if (write)
+                {
+                    Vector.Narrow(lower, upper).CopyTo(destination);
+                    destination = destination.Slice(Vector<byte>.Count);
+                }
+
+                source = source.Slice(Vector<byte>.Count);
+                position += Vector<byte>.Count;
+            }
+
+            return GetBytesScalar(chars, bytes, write, position);
+        }
+
+        private int GetCharsVectorized(ReadOnlySpan<byte> bytes, Span<char> chars, bool write)
+        {
+            int available = write ? Math.Min(bytes.Length, chars.Length) : bytes.Length;
+            int position = 0;
+
+            Debug.Assert(Vector<byte>.Count == 2 * Vector<ushort>.Count);
+
+            ReadOnlySpan<byte> source = bytes.Slice(0, available);
+            // Revisit this cast when Vector<char> is supported: https://github.com/dotnet/runtime/issues/127611
+            Span<ushort> destination = write ?
+                MemoryMarshal.Cast<char, ushort>(chars).Slice(0, available) :
+                Span<ushort>.Empty;
+
+            while (source.Length >= Vector<byte>.Count)
+            {
+                Vector<byte> value = new Vector<byte>(source);
+
+                if (!IsAllowed(value))
+                {
+                    // Do not advance the position so the scalar path can determine the exact invalid index.
+                    break;
+                }
+
+                if (write)
+                {
+                    Vector.Widen(value, out Vector<ushort> lower, out Vector<ushort> upper);
+                    lower.CopyTo(destination);
+                    upper.CopyTo(destination.Slice(Vector<ushort>.Count));
+                    destination = destination.Slice(Vector<byte>.Count);
+                }
+
+                source = source.Slice(Vector<byte>.Count);
+                position += Vector<byte>.Count;
+            }
+
+            return GetCharsScalar(bytes, chars, write, position);
+        }
+
+        protected abstract bool IsAllowed(Vector<byte> value);
+        protected abstract bool IsAllowed(Vector<ushort> value);
+    }
+
+    internal sealed partial class NumericStringEncoding
+    {
+        protected override bool IsAllowed(Vector<byte> value)
+        {
+            // Allow ASCII digits.
+            Vector<byte> allowed = Vector.LessThanOrEqual(
+                value - new Vector<byte>((byte)'0'),
+                new Vector<byte>('9' - '0'));
+
+            // Allow space.
+            allowed |= Vector.Equals(value, new Vector<byte>((byte)' '));
+
+            return Vector.AllWhereAllBitsSet(allowed);
+        }
+
+        protected override bool IsAllowed(Vector<ushort> value)
+        {
+            // Allow ASCII digits.
+            Vector<ushort> allowed = Vector.LessThanOrEqual(
+                value - new Vector<ushort>('0'),
+                new Vector<ushort>('9' - '0'));
+
+            // Allow space.
+            allowed |= Vector.Equals(value, new Vector<ushort>(' '));
+
+            return Vector.AllWhereAllBitsSet(allowed);
+        }
+    }
+
+    internal sealed partial class PrintableStringEncoding
+    {
+        private const byte EqualsQuestionMarkMask = (byte)('=' ^ '?');
+
+        protected override bool IsAllowed(Vector<byte> value)
+        {
+            // Allow uppercase and lowercase ASCII letters.
+            Vector<byte> allowed = Vector.LessThanOrEqual(
+                (value | new Vector<byte>(0b100000)) - new Vector<byte>((byte)'a'),
+                new Vector<byte>('z' - 'a'));
+
+            // Allow apostrophe through colon, excluding asterisk.
+            allowed |= Vector.LessThanOrEqual(
+                value - new Vector<byte>((byte)'\''),
+                new Vector<byte>(':' - '\'')) & ~Vector.Equals(value, new Vector<byte>((byte)'*'));
+
+            // Allow equals sign and question mark by setting their only differing bit before comparing with '?'.
+            allowed |= Vector.Equals(value | new Vector<byte>(EqualsQuestionMarkMask), new Vector<byte>((byte)'?'));
+
+            // Allow space.
+            allowed |= Vector.Equals(value, new Vector<byte>((byte)' '));
+
+            return Vector.AllWhereAllBitsSet(allowed);
+        }
+
+        protected override bool IsAllowed(Vector<ushort> value)
+        {
+            // Allow uppercase and lowercase ASCII letters.
+            Vector<ushort> allowed = Vector.LessThanOrEqual(
+                (value | new Vector<ushort>(0b100000)) - new Vector<ushort>('a'),
+                new Vector<ushort>('z' - 'a'));
+
+            // Allow apostrophe through colon, excluding asterisk.
+            allowed |= Vector.LessThanOrEqual(
+                value - new Vector<ushort>('\''),
+                new Vector<ushort>(':' - '\'')) & ~Vector.Equals(value, new Vector<ushort>('*'));
+
+            // Allow equals sign and question mark by setting their only differing bit before comparing with '?'.
+            allowed |= Vector.Equals(value | new Vector<ushort>(EqualsQuestionMarkMask), new Vector<ushort>('?'));
+
+            // Allow space.
+            allowed |= Vector.Equals(value, new Vector<ushort>(' '));
+
+            return Vector.AllWhereAllBitsSet(allowed);
+        }
+    }
+
     internal abstract class RestrictedAsciiRangeEncoding : SpanBasedEncoding
     {
         private readonly byte _minCharAllowed;

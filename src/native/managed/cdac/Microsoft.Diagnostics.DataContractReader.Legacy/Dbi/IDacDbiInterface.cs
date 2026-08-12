@@ -557,6 +557,9 @@ public unsafe partial interface IDacDbiInterface
     int FlushCache();
 
     [PreserveSig]
+    int Destroy();
+
+    [PreserveSig]
     int DacSetTargetConsistencyChecks(Interop.BOOL fEnableAsserts);
 
     [PreserveSig]
@@ -883,7 +886,7 @@ public unsafe partial interface IDacDbiInterface
     int GetGCHeapInformation(COR_HEAPINFO* pHeapInfo);
 
     [PreserveSig]
-    int GetPEFileMDInternalRW(ulong vmPEAssembly, ulong* pAddrMDInternalRW);
+    int HasReadWriteMetadata(ulong vmPEAssembly, Interop.BOOL* pHasReadWriteMetadata);
 
     [PreserveSig]
     int AreOptimizationsDisabled(ulong vmModule, uint methodTk, Interop.BOOL* pOptimizationsDisabled);

@@ -738,7 +738,9 @@ namespace System.Text.Json.SourceGeneration
                     writer.WriteLine("},");
 
                     // The deconstructor switch has no `_` arm — it relies on the union's
-                    // declared case set being exhaustively covered by its arms.
+                    // declared case set being exhaustively covered by its arms. The `Value`
+                    // property patterns below still count towards that coverage, so adding a
+                    // `_` arm would make it unreachable (CS8510).
                     writer.WriteLine($"UnionDeconstructor = static ({genericArg} value) =>");
                     writer.WriteLine('{');
                     writer.Indentation++;
@@ -783,7 +785,17 @@ namespace System.Text.Json.SourceGeneration
                         }
 
                         string patternTypeFQN = caseSpec.PatternType.FullyQualifiedName;
-                        writer.WriteLine($"{patternTypeFQN} caseValue{deconArmIndex} => (typeof({caseSpec.CaseType.FullyQualifiedName}), (object?)caseValue{deconArmIndex}),");
+                        string caseTypeFQN = caseSpec.CaseType.FullyQualifiedName;
+
+                        // Always match on Value rather than writing a bare type pattern. C# union
+                        // matching tests a type pattern against the union instance before falling
+                        // back to the union's value, so whenever the instance can itself match the
+                        // case type the bare form binds the incoming union instead of its payload —
+                        // silently where the conversion is implicit, and as CS8780 where it is not.
+                        // The union shape guarantees a public object Value holding the payload, so
+                        // the property pattern is unconditionally correct and does not depend on
+                        // predicting which types the compiler considers instance-compatible.
+                        writer.WriteLine($"{{ Value: {patternTypeFQN} caseValue{deconArmIndex} }} => (typeof({caseTypeFQN}), (object?)caseValue{deconArmIndex}),");
                         deconArmIndex++;
                     }
 

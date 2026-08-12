@@ -1214,6 +1214,18 @@ CORINFO_METHOD_HANDLE MyICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHan
     return jitInstance->mc->repGetAwaitReturnCall(callerHandle, contextHandle, instArg);
 }
 
+CORINFO_METHOD_HANDLE MyICJI::getAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHandle,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    jitInstance->mc->cr->AddCall("getAwaitAwaiterInContinuationCall");
+    return jitInstance->mc->repGetAwaitAwaiterInContinuationCall(
+        callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+}
+
 /*********************************************************************************/
 //
 // Diagnostic methods

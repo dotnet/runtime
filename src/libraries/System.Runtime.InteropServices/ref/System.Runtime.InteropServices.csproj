@@ -8,6 +8,7 @@
     <NoWarn>$(NoWarn);CS9368</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <Features>$(Features);updated-memory-safety-rules</Features>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Runtime.InteropServices.cs" />

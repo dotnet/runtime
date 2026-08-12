@@ -103,20 +103,27 @@ public class R2RTestSuites
             // Has a try/finally, so the JIT materializes the table base via a well-known-global global.get.
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("SumWithFinally", StringComparison.Ordinal)));
+            // Has a catch clause, so the JIT emits a try_table catch_ref that references the
+            // imported restore-context exception tag.
+            Assert.True(methods.Exists(method =>
+                method.SignatureString.Contains("CatchException", StringComparison.Ordinal)));
+
+            Assert.True(WasmR2RAssert.WasmIndexSpacesHaveExpectedEntries(webcilReader, out string indexDiagnostic), indexDiagnostic);
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
-            // relocations that the R2R object writer must self-resolve back to the fixed global
-            // indices. Verify the emitted code contains a correctly self-resolved 'global.get' for the
+            // relocations that the R2R object writer must self-resolve to the fixed global
+            // indices and shrink down to their minimal size. Verify the emitted code contains a correctly self-resolved 'global.get' for the
             // image base (1, materialized by static-data reads in SumStaticData) and the table base
             // (2, materialized by the try/finally funclet path in SumWithFinally). Each pattern encodes
-            // the exact resolved index, so a regression in self-resolution changes it (or makes
-            // crossgen2 throw while emitting the method). The stack-pointer well-known global is passed to
-            // managed methods as a parameter in R2R, so it is not referenced via 'global.get' here.
+            // the exact resolved index in its minimal form, so a regression in self-resolution changes
+            // it (or makes crossgen2 throw while emitting the method). The stack-pointer well-known global
+            // is passed to managed methods as a parameter in R2R, so it is not referenced via
+            // 'global.get' here.
             const int ImageBaseGlobal = 1;
             const int TableBaseGlobal = 2;
-            Assert.True(R2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, ImageBaseGlobal),
+            Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, ImageBaseGlobal),
                 "Expected a 'global.get' of the wasm image-base well-known global in the emitted code.");
-            Assert.True(R2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
+            Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, TableBaseGlobal),
                 "Expected a 'global.get' of the wasm table-base well-known global in the emitted code.");
         }
     }
