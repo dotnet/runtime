@@ -645,7 +645,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (call->AsCall()->IsAsync())
                 {
-                    impInsertAsyncArgsForLdvirtftnCall(call->AsCall());
+                    impInsertAsyncArgsForLdvirtftnCall(call->AsCall(), asyncCallUsesOwnContexts);
                 }
 
                 GenTree* thisPtr = impPopStack().val;
@@ -8058,13 +8058,15 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 //   ldvirtftn.
 //
 // Arguments:
-//    call - The call
+//    call            - The call
+//    usesOwnContexts - Whether the call is an await in an inlinee that gets its own
+//                      contexts, as reported by impSetupAsyncCall
 //
 // Remarks:
 //   Should be called before the 'this' arg is inserted, but after other IL args
 //   have been inserted.
 //
-void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call)
+void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call, bool usesOwnContexts)
 {
     assert(call->AsCall()->IsAsync());
 
@@ -8079,7 +8081,10 @@ void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call)
                                                   .WellKnown(WellKnownArg::AsyncContinuation));
     }
 
-    impInheritAsyncContextsFromInliner(call);
+    if (!usesOwnContexts)
+    {
+        impInheritAsyncContextsFromInliner(call);
+    }
 }
 
 //------------------------------------------------------------------------

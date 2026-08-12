@@ -5339,7 +5339,7 @@ protected:
 
     void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, NamedIntrinsic ni, const DebugInfo& callDI, bool* usesOwnContexts);
 
-    void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
+    void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call, bool usesOwnContexts);
     void impInheritAsyncContextsFromInliner(GenTreeCall* call);
 
     CORINFO_CLASS_HANDLE impGetSpecialIntrinsicExactReturnType(GenTreeCall* call);
