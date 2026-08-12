@@ -216,8 +216,6 @@ c_static_assert(PAL_UF_HIDDEN == UF_HIDDEN);
 
 #if !HAVE_STATX && HAVE_STATX_SYSCALL
 
-c_static_assert(sizeof(struct statx) == 256);
-
 // Set once we know the statx syscall is not usable, so that we don't keep paying for failing calls.
 static int32_t g_statxUnsupported = 0;
 

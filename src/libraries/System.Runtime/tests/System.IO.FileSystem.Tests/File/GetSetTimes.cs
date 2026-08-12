@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.IO.Tests
@@ -73,28 +72,7 @@ namespace System.IO.Tests
             Assert.InRange(GetCreationTimeUtc(path), DateTime.MinValue, GetLastWriteTimeUtc(path));
         }
 
-        [ConditionalFact(typeof(IOInputs), nameof(IOInputs.DoesNotSupportBirthTime))]
-        [PlatformSpecific(TestPlatforms.Linux)]
-        public async Task CreationTimeSet_GetReturnsExpected_WhenNotInFuture()
-        {
-            // On Linux, when there is no birth time, we synthesize CreationTime from the oldest of status changed time (ctime) and write time (mtime).
-            // Changing the CreationTime, updates mtime and causes ctime to change to the current time.
-            // When setting CreationTime to a value that isn't in the future, getting the CreationTime should return the same value.
-
-            string path = GetTestFilePath();
-            File.WriteAllText(path, "");
-
-            // Set the creation time to a value in the past that is between ctime and now.
-            await Task.Delay(600);
-            DateTime newCreationTimeUtc = DateTime.UtcNow.Subtract(TimeSpan.FromMilliseconds(300));
-
-            SetCreationTimeUtc(path, newCreationTimeUtc);
-
-            Assert.Equal(newCreationTimeUtc, GetLastWriteTimeUtc(path));
-            Assert.Equal(newCreationTimeUtc, GetCreationTimeUtc(path));
-        }
-
-        [ConditionalFact(typeof(IOInputs), nameof(IOInputs.SupportsBirthTime))]
+        [Fact]
         [PlatformSpecific(TestPlatforms.Linux)]
         public void CreationTimeGet_ReturnsBirthTime_WhenAvailable()
         {

@@ -11,53 +11,6 @@ internal static class IOInputs
     public static bool SupportsSettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsApplePlatform;
     public static bool SupportsGettingCreationTime => PlatformDetection.IsWindows || PlatformDetection.IsApplePlatform;
 
-    // On Linux, the creation (birth) time is only reported when both the kernel and the file system provide it.
-    // Otherwise, the creation time is synthesized from the oldest of the status changed time and the write time.
-    public static bool SupportsBirthTime { get; } = GetSupportsBirthTime();
-    public static bool DoesNotSupportBirthTime => !SupportsBirthTime;
-
-    private static bool GetSupportsBirthTime()
-    {
-        if (PlatformDetection.IsWindows || PlatformDetection.IsApplePlatform)
-        {
-            return true;
-        }
-
-        if (!OperatingSystem.IsLinux())
-        {
-            return false;
-        }
-
-        string path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-        try
-        {
-            File.Create(path).Dispose();
-
-            // When there is no birth time, the creation time follows the actual stored write time.
-            DateTime writeTimeUtc = DateTime.UtcNow.AddMinutes(-10);
-            File.SetLastWriteTimeUtc(path, writeTimeUtc);
-
-            return File.GetCreationTimeUtc(path) != File.GetLastWriteTimeUtc(path);
-        }
-        catch (IOException)
-        {
-            return false;
-        }
-        catch (UnauthorizedAccessException)
-        {
-            return false;
-        }
-        finally
-        {
-            try
-            {
-                File.Delete(path);
-            }
-            catch (IOException) { }
-            catch (UnauthorizedAccessException) { }
-        }
-    }
-
     // Max path length (minus trailing \0). Unix values vary system to system; just using really long values here likely to be more than on the average system.
     public static readonly int MaxPath = OperatingSystem.IsWindows() ? 259 : 10000;
 
