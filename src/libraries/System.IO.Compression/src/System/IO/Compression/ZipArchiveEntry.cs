@@ -2402,19 +2402,29 @@ namespace System.IO.Compression
                 {
                     _crcSizeStream.Dispose(); // now we have size/crc info
 
-                    // If no data was written through CheckSumAndSizeWriteStream, its lazy _baseStream
-                    // (DeflateStream wrapping the encryption stream) was never created, so the encryption
-                    // stream would be orphaned. Dispose it explicitly to finalize encryption
-                    // (e.g., write the ZipCrypto 12-byte header or AES salt/verifier/HMAC).
-                    if (!_everWritten)
+                    if (!_everWritten && _encryptionStream is null)
                     {
-                        _encryptionStream?.Dispose();
-
                         // write local header, no data, so we use stored
                         _entry.WriteLocalFileHeader(isEmptyFile: true, forceWrite: true);
                     }
                     else
                     {
+                        if (!_everWritten)
+                        {
+                            // No data was written through CheckSumAndSizeWriteStream, but an encrypted entry
+                            // still stores its encryption header (and, for AES, the authentication code), so
+                            // the local file header must describe an encrypted entry. Write it first, then
+                            // dispose the encryption stream (its lazy _baseStream was never created, so it
+                            // would otherwise be orphaned) to emit those bytes after the header.
+                            _usedZip64inLH = _entry.WriteLocalFileHeader(isEmptyFile: false, forceWrite: true);
+
+                            long startPosition = _entry._archive.ArchiveStream.Position;
+
+                            _encryptionStream.Dispose();
+
+                            _entry._compressedSize = _entry._archive.ArchiveStream.Position - startPosition;
+                        }
+
                         // go back and finish writing
                         if (_entry._archive.ArchiveStream.CanSeek)
                         {
@@ -2445,22 +2455,29 @@ namespace System.IO.Compression
                 {
                     await _crcSizeStream.DisposeAsync().ConfigureAwait(false); // now we have size/crc info
 
-                    // If no data was written through CheckSumAndSizeWriteStream, its lazy _baseStream
-                    // (DeflateStream wrapping the encryption stream) was never created, so the encryption
-                    // stream would be orphaned. Dispose it explicitly to finalize encryption
-                    // (e.g., write the ZipCrypto 12-byte header or AES salt/verifier/HMAC).
-                    if (!_everWritten)
+                    if (!_everWritten && _encryptionStream is null)
                     {
-                        if (_encryptionStream is not null)
-                        {
-                            await _encryptionStream.DisposeAsync().ConfigureAwait(false);
-                        }
-
                         // write local header, no data, so we use stored
                         await _entry.WriteLocalFileHeaderAsync(isEmptyFile: true, forceWrite: true, preserveDataDescriptor: false, cancellationToken: default).ConfigureAwait(false);
                     }
                     else
                     {
+                        if (!_everWritten)
+                        {
+                            // No data was written through CheckSumAndSizeWriteStream, but an encrypted entry
+                            // still stores its encryption header (and, for AES, the authentication code), so
+                            // the local file header must describe an encrypted entry. Write it first, then
+                            // dispose the encryption stream (its lazy _baseStream was never created, so it
+                            // would otherwise be orphaned) to emit those bytes after the header.
+                            _usedZip64inLH = await _entry.WriteLocalFileHeaderAsync(isEmptyFile: false, forceWrite: true, preserveDataDescriptor: false, cancellationToken: default).ConfigureAwait(false);
+
+                            long startPosition = _entry._archive.ArchiveStream.Position;
+
+                            await _encryptionStream.DisposeAsync().ConfigureAwait(false);
+
+                            _entry._compressedSize = _entry._archive.ArchiveStream.Position - startPosition;
+                        }
+
                         // go back and finish writing
                         if (_entry._archive.ArchiveStream.CanSeek)
                         {
