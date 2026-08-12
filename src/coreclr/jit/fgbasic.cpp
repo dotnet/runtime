@@ -2419,25 +2419,26 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
     {
         compInlineResult->Note(InlineObservation::CALLEE_END_OPCODE_SCAN);
 
-        // If there are no return blocks we know it does not return, however if there
-        // return blocks we don't know it returns as it may be counting unreachable code.
-        // However we will still make the CALLEE_DOES_NOT_RETURN observation.
-
-        compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
-
-        // An async call has an exit that is not a return in the IL: when it suspends it
-        // returns a continuation to its caller, and the async transformation materializes
-        // the check and the resumption point after the call much later. Marking such a
-        // call no-return would let the code after it be trimmed away, leaving the
-        // resumption with nothing to resume into.
-        if ((retBlocks == 0) && isInlining && !impInlineInfo->iciCall->IsAsync() &&
-            info.compCompHnd->notifyMethodInfoUsage(impInlineInfo->iciCall->gtCallMethHnd))
+        // We never mark async calls as no-inline, since suspensions do end up
+        // running suspension code in the caller. This is a bit conservative as
+        // we still know that the IL code won't run after, but this simplifies
+        // the reasoning about no-return calls throughout the JIT.
+        if (!impInlineInfo->iciCall->IsAsync())
         {
-            // Mark the call node as "no return" as it can impact caller's code quality.
-            setCallDoesNotReturn(impInlineInfo->iciCall);
+            // If there are no return blocks we know it does not return, however if there
+            // return blocks we don't know it returns as it may be counting unreachable code.
+            // However we will still make the CALLEE_DOES_NOT_RETURN observation.
 
-            // NOTE: we also ask VM whether we're allowed to do so - we don't want to mark a call
-            // as "no-return" if its IL may change.
+            compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
+
+            if ((retBlocks == 0) && isInlining && info.compCompHnd->notifyMethodInfoUsage(impInlineInfo->iciCall->gtCallMethHnd))
+            {
+                // Mark the call node as "no return" as it can impact caller's code quality.
+                setCallDoesNotReturn(impInlineInfo->iciCall);
+
+                // NOTE: we also ask VM whether we're allowed to do so - we don't want to mark a call
+                // as "no-return" if its IL may change.
+            }
         }
 
         // If the inline is viable and discretionary, do the
