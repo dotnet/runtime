@@ -21,11 +21,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <remarks>
         /// <para>
         /// With the built-in <see cref="IOptionsFactory{TOptions}"/>, asynchronous validation runs during startup and
-        /// seeds the built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> instances.
-        /// Options requiring asynchronous validation cannot be accessed synchronously before startup completes. If
-        /// an options value was successfully created synchronously before startup, it retains the singleton slot
-        /// while startup validation runs against a separate candidate, and that existing value is published to the
-        /// monitor cache.
+        /// seeds the built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> instances
+        /// when their caches do not already contain a value. Options requiring asynchronous validation cannot be
+        /// accessed synchronously before startup completes. A value successfully created synchronously before or
+        /// during startup remains the cache winner, and a faulted monitor cache entry causes startup validation to
+        /// fail rather than being replaced.
         /// </para>
         /// <para>
         /// A derived or replacement <see cref="IOptionsFactory{TOptions}"/> uses synchronous startup validation and
@@ -38,13 +38,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// listeners from being notified; no asynchronous last-known-good guarantee is provided.
         /// </para>
         /// <para>
-        /// Publication to the built-in monitor cache is atomic. Applications using a custom or derived
-        /// <see cref="IOptionsMonitorCache{TOptions}"/> must avoid concurrent cache access during startup validation;
-        /// startup throws <see cref="InvalidOperationException"/> if publication does not succeed. For compatibility,
-        /// this method exposes the built-in startup validator through <see cref="IStartupValidator"/> and
-        /// <see cref="IAsyncStartupValidator"/> as the same singleton. A custom validator registered only as
-        /// <see cref="IStartupValidator"/> takes precedence and suppresses all asynchronous startup validators. New
-        /// custom startup validators should register only <see cref="IAsyncStartupValidator"/>.
+        /// Publication uses <see cref="IOptionsMonitorCache{TOptions}.GetOrAdd"/> so an existing monitor value is not
+        /// replaced. For compatibility, this method exposes the built-in startup validator through
+        /// <see cref="IStartupValidator"/> and <see cref="IAsyncStartupValidator"/> as the same singleton. A custom
+        /// validator registered only as <see cref="IStartupValidator"/> takes precedence and suppresses all
+        /// asynchronous startup validators. New custom startup validators should register only
+        /// <see cref="IAsyncStartupValidator"/>.
         /// </para>
         /// </remarks>
         /// <typeparam name="TOptions">The type of options.</typeparam>
@@ -75,8 +74,8 @@ namespace Microsoft.Extensions.DependencyInjection
                     vo._validators[(typeof(TOptions), name)] = () => monitor.Get(name);
 
                     // Async path: run the complete validation (both sync and async validators) for this (type, name)
-                    // and seed the monitor cache with the validated instance so the first synchronous access after
-                    // startup returns it instead of re-running the throwing synchronous Validate.
+                    // and seed empty caches so the first synchronous access after startup does not re-run the throwing
+                    // synchronous Validate. Values already materialized through a synchronous path remain the winners.
                     vo._asyncValidators[(typeof(TOptions), name)] = async (CancellationToken ct) =>
                     {
                         if (factory is OptionsFactory<TOptions> asyncFactory &&
@@ -97,18 +96,15 @@ namespace Microsoft.Extensions.DependencyInjection
                             }
 
                             TOptions validated = await asyncFactory.CreateAsync(name, ct).ConfigureAwait(false);
-                            // A successfully created pre-start IOptions value owns the singleton slot, even though
-                            // asynchronous startup validation ran against this separately created candidate.
-                            TOptions winner = optionsManager?.GetOrSetValue(validated) ?? validated;
+                            // A successfully created pre-start IOptions value is used when the monitor cache is empty.
+                            // Otherwise, the existing monitor value remains the winner and seeds IOptions if necessary.
+                            TOptions winner = sharedCache.GetOrAdd(
+                                name,
+                                () => optionsManager?.GetOrSetValue(validated) ?? validated);
 
-                            if (!OptionsCache<TOptions>.TryAddOrReplace(sharedCache, name, winner))
+                            if (optionsManager is not null)
                             {
-                                throw new InvalidOperationException(
-                                    SR.Format(
-                                        SR.AsyncValidationCachePublicationFailed,
-                                        typeof(TOptions),
-                                        name,
-                                        sharedCache.GetType()));
+                                optionsManager.GetOrSetValue(winner);
                             }
                         }
                         else

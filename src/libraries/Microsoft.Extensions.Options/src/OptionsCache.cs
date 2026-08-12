@@ -17,8 +17,6 @@ namespace Microsoft.Extensions.Options
     {
         private readonly ConcurrentDictionary<string, Lazy<TOptions>> _cache = new ConcurrentDictionary<string, Lazy<TOptions>>(concurrencyLevel: 1, capacity: 31, StringComparer.Ordinal); // 31 == default capacity
 
-        private const int FallbackReplaceAttempts = 3;
-
         /// <summary>
         /// Clears all options instances from the cache.
         /// </summary>
@@ -104,38 +102,6 @@ namespace Microsoft.Extensions.Options
                 () =>
 #endif
                 options));
-        }
-
-        internal static bool TryAddOrReplace(IOptionsMonitorCache<TOptions> cache, string? name, TOptions options)
-        {
-            ArgumentNullException.ThrowIfNull(options);
-
-            name ??= Options.DefaultName;
-
-            if (cache is OptionsCache<TOptions> optionsCache &&
-                optionsCache.GetType() == typeof(OptionsCache<TOptions>))
-            {
-                // ConcurrentDictionary's indexer atomically adds or replaces the built-in cache entry.
-                optionsCache._cache[name] = new Lazy<TOptions>(
-#if !(NET || NETSTANDARD2_1)
-                    () =>
-#endif
-                    options);
-                return true;
-            }
-
-            // IOptionsMonitorCache<TOptions> has no atomic replacement operation. Respect custom and derived cache
-            // behavior by using its public contract, with bounded retries when another operation wins the gap.
-            for (int attempt = 0; attempt < FallbackReplaceAttempts; attempt++)
-            {
-                cache.TryRemove(name);
-                if (cache.TryAdd(name, options))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         /// <summary>

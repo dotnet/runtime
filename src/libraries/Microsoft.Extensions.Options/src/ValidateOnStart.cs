@@ -37,6 +37,11 @@ namespace Microsoft.Extensions.Options
                     exceptions ??= new();
                     exceptions.Add(ex);
                 }
+                catch (Exception ex)
+                {
+                    (exceptions ??= new()).Add(ex);
+                    break;
+                }
             }
 
             if (exceptions != null)
@@ -69,6 +74,15 @@ namespace Microsoft.Extensions.Options
                 {
                     exceptions ??= new();
                     exceptions.Add(ex);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    (exceptions ??= new()).Add(ex);
+                    break;
                 }
             }
 

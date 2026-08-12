@@ -36,9 +36,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <remarks>
         /// The <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
-        /// An asynchronous validator already registered directly as <see cref="IValidateOptions{TOptions}"/> is reused
-        /// and conservatively treated as applying to every options name. To scope a validator registration to
-        /// <paramref name="name"/>, do not also register it directly as <see cref="IValidateOptions{TOptions}"/>.
         /// </remarks>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
@@ -58,6 +55,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <remarks>
         /// The <see cref="OptionsBuilderExtensions.ValidateOnStart{TOptions}(OptionsBuilder{TOptions})"/> extension is called by this method.
+        /// The validator registration is not scoped to <paramref name="name"/>. The name selects the options instance
+        /// evaluated during startup; the validator determines which names it validates.
         /// </remarks>
         /// <typeparam name="TOptions">The options type to be configured.</typeparam>
         /// <typeparam name="TValidateOptions">The <see cref="IValidateOptions{TOptions}"/> validator type.</typeparam>
@@ -72,37 +71,8 @@ namespace Microsoft.Extensions.DependencyInjection
             where TOptions : class
             where TValidateOptions : class, IValidateOptions<TOptions>
         {
-            var optionsBuilder = new OptionsBuilder<TOptions>(services, name ?? Options.Options.DefaultName);
-
-            if (typeof(IAsyncValidateOptions<TOptions>).IsAssignableFrom(typeof(TValidateOptions)))
-            {
-                foreach (ServiceDescriptor descriptor in services)
-                {
-                    if (descriptor.ServiceType == typeof(IValidateOptions<TOptions>) &&
-                        (descriptor.ImplementationType == typeof(TValidateOptions) ||
-                         descriptor.ImplementationInstance is TValidateOptions))
-                    {
-                        return optionsBuilder.ValidateOnStart();
-                    }
-                }
-
-                services.TryAddSingleton<TValidateOptions>();
-
-                foreach (ServiceDescriptor descriptor in services)
-                {
-                    if (descriptor.ImplementationInstance is AsyncValidateOnStartRegistration<TOptions, TValidateOptions> registration &&
-                        registration.Name == optionsBuilder.Name)
-                    {
-                        return optionsBuilder.ValidateOnStart();
-                    }
-                }
-
-                services.AddSingleton(new AsyncValidateOnStartRegistration<TOptions, TValidateOptions>(optionsBuilder.Name));
-                return optionsBuilder.Validate<TValidateOptions>().ValidateOnStart();
-            }
-
             services.AddOptions().TryAddEnumerable(ServiceDescriptor.Singleton<IValidateOptions<TOptions>, TValidateOptions>());
-            return optionsBuilder.ValidateOnStart();
+            return new OptionsBuilder<TOptions>(services, name ?? Options.Options.DefaultName).ValidateOnStart();
         }
         /// <summary>
         /// Registers an action used to configure a particular type of options.
@@ -315,11 +285,5 @@ namespace Microsoft.Extensions.DependencyInjection
             return new OptionsBuilder<TOptions>(services, name);
         }
 
-        private sealed class AsyncValidateOnStartRegistration<TOptions, TValidateOptions>
-        {
-            public AsyncValidateOnStartRegistration(string name) => Name = name;
-
-            public string Name { get; }
-        }
     }
 }

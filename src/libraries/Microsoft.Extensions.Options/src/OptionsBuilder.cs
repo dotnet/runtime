@@ -604,9 +604,7 @@ namespace Microsoft.Extensions.Options
             ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddSingleton<IValidateOptions<TOptions>>(
-                new NamedAsyncValidateOptionsFilter<TOptions>(
-                    Name,
-                    new AsyncValidateOptions<TOptions>(Name, validation, failureMessage)));
+                new AsyncValidateOptions<TOptions>(Name, validation, failureMessage));
             return this;
         }
 
@@ -631,13 +629,11 @@ namespace Microsoft.Extensions.Options
             ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
-                new NamedAsyncValidateOptionsFilter<TOptions>(
+                new AsyncValidateOptions<TOptions, TDep>(
                     Name,
-                    new AsyncValidateOptions<TOptions, TDep>(
-                        Name,
-                        sp.GetRequiredService<TDep>(),
-                        validation,
-                        failureMessage)));
+                    sp.GetRequiredService<TDep>(),
+                    validation,
+                    failureMessage));
             return this;
         }
 
@@ -668,14 +664,12 @@ namespace Microsoft.Extensions.Options
             ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
-                new NamedAsyncValidateOptionsFilter<TOptions>(
+                new AsyncValidateOptions<TOptions, TDep1, TDep2>(
                     Name,
-                    new AsyncValidateOptions<TOptions, TDep1, TDep2>(
-                        Name,
-                        sp.GetRequiredService<TDep1>(),
-                        sp.GetRequiredService<TDep2>(),
-                        validation,
-                        failureMessage)));
+                    sp.GetRequiredService<TDep1>(),
+                    sp.GetRequiredService<TDep2>(),
+                    validation,
+                    failureMessage));
             return this;
         }
 
@@ -710,15 +704,13 @@ namespace Microsoft.Extensions.Options
             ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
-                new NamedAsyncValidateOptionsFilter<TOptions>(
+                new AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3>(
                     Name,
-                    new AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3>(
-                        Name,
-                        sp.GetRequiredService<TDep1>(),
-                        sp.GetRequiredService<TDep2>(),
-                        sp.GetRequiredService<TDep3>(),
-                        validation,
-                        failureMessage)));
+                    sp.GetRequiredService<TDep1>(),
+                    sp.GetRequiredService<TDep2>(),
+                    sp.GetRequiredService<TDep3>(),
+                    validation,
+                    failureMessage));
             return this;
         }
 
@@ -757,16 +749,14 @@ namespace Microsoft.Extensions.Options
             ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
-                new NamedAsyncValidateOptionsFilter<TOptions>(
+                new AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4>(
                     Name,
-                    new AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4>(
-                        Name,
-                        sp.GetRequiredService<TDep1>(),
-                        sp.GetRequiredService<TDep2>(),
-                        sp.GetRequiredService<TDep3>(),
-                        sp.GetRequiredService<TDep4>(),
-                        validation,
-                        failureMessage)));
+                    sp.GetRequiredService<TDep1>(),
+                    sp.GetRequiredService<TDep2>(),
+                    sp.GetRequiredService<TDep3>(),
+                    sp.GetRequiredService<TDep4>(),
+                    validation,
+                    failureMessage));
             return this;
         }
 
@@ -809,17 +799,15 @@ namespace Microsoft.Extensions.Options
             ArgumentNullException.ThrowIfNull(validation);
 
             Services.AddTransient<IValidateOptions<TOptions>>(sp =>
-                new NamedAsyncValidateOptionsFilter<TOptions>(
+                new AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>(
                     Name,
-                    new AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5>(
-                        Name,
-                        sp.GetRequiredService<TDep1>(),
-                        sp.GetRequiredService<TDep2>(),
-                        sp.GetRequiredService<TDep3>(),
-                        sp.GetRequiredService<TDep4>(),
-                        sp.GetRequiredService<TDep5>(),
-                        validation,
-                        failureMessage)));
+                    sp.GetRequiredService<TDep1>(),
+                    sp.GetRequiredService<TDep2>(),
+                    sp.GetRequiredService<TDep3>(),
+                    sp.GetRequiredService<TDep4>(),
+                    sp.GetRequiredService<TDep5>(),
+                    validation,
+                    failureMessage));
             return this;
         }
     }

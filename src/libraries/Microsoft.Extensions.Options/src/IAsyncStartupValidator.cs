@@ -25,8 +25,13 @@ namespace Microsoft.Extensions.Options
         /// A single validator returns a failed <see cref="ValidateOptionsResult"/> when validating.
         /// </exception>
         /// <exception cref="System.AggregateException">
-        /// Multiple option instances fail validation, each producing an
-        /// <see cref="OptionsValidationException"/>.
+        /// Multiple failures occur during startup validation.
+        /// </exception>
+        /// <exception cref="System.InvalidOperationException">
+        /// The registered options services do not support asynchronous startup validation.
+        /// </exception>
+        /// <exception cref="System.OperationCanceledException">
+        /// The operation was canceled through <paramref name="cancellationToken"/>.
         /// </exception>
         Task ValidateAsync(CancellationToken cancellationToken = default);
     }
