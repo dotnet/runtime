@@ -640,6 +640,7 @@ protected:
 #if defined(TARGET_ARM64)
     void genArm64EmitterUnitTestsGeneral();
     void genArm64EmitterUnitTestsAdvSimd();
+    void genArm64EmitterUnitTestsFp16();
     void genArm64EmitterUnitTestsSve();
     void genArm64EmitterUnitTestsPac();
 #endif
@@ -1204,7 +1205,8 @@ protected:
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
 #ifdef TARGET_WASM
-    void genCodeForFrameSize(GenTree* tree);
+    void           genCodeForFrameSize(GenTree* tree);
+    cnsval_ssize_t genWasmMemargOffset(GenTree* addr);
 #endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);

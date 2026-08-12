@@ -3609,12 +3609,13 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER
 /**********************************************************************/
 /* This is called by the runtime when a single jit helper method with stub is initialized */
 /**********************************************************************/
-VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName)
+VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
 {
     CONTRACTL {
         NOTHROW;
         GC_TRIGGERS;
         PRECONDITION(ullHelperStartAddress != 0);
+        PRECONDITION(ulHelperSize != 0);
     } CONTRACTL_END;
 
     EX_TRY
@@ -3623,11 +3624,9 @@ VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
                                         TRACE_LEVEL_INFORMATION,
                                         CLR_JIT_KEYWORD))
         {
-            DWORD dwHelperSize=0;
-            Stub::RecoverStubAndSize((TADDR)ullHelperStartAddress, &dwHelperSize);
             ETW::MethodLog::SendHelperEvent(
                 ullHelperStartAddress,
-                dwHelperSize,
+                ulHelperSize,
                 pHelperName,
                 ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
         }

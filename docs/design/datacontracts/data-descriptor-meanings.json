@@ -335,7 +335,6 @@
     "LoaderAllocator.ObjectHandle": "Handle to the managed loader allocator object",
     "LoaderAllocator.ReferenceCount": "Reference count of the loader allocator",
     "LoaderAllocator.StaticsHeap": "Heap containing statics-related allocations",
-    "LoaderAllocator.StubHeap": "Heap containing runtime stubs",
     "LoaderAllocator.VirtualCallStubManager": "Pointer to the virtual-call stub manager",
     "LoaderCodeHeap.LoaderHeap": "Offset of the embedded `ExplicitControlLoaderHeap` within the `LoaderCodeHeap` object; adding this to the object's base address yields the loader heap address",
     "LoaderHeap.FirstBlock": "Pointer to the first loader-heap block",

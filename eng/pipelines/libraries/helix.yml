@@ -2,6 +2,7 @@ parameters:
   runtimeFlavor: ''
   archType: ''
   buildConfig: ''
+  helixBuildConfig: ''
   creator: ''
   helixQueues: ''
   osGroup: ''
@@ -24,7 +25,7 @@ steps:
           /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
           /p:TargetArchitecture=${{ parameters.archType }}
           /p:TargetRuntimeIdentifier=${{ parameters.targetRid }}
-          /p:Configuration=${{ parameters.buildConfig }}
+          /p:Configuration=${{ coalesce(parameters.helixBuildConfig, parameters.buildConfig) }}
           /p:TargetOS=${{ parameters.osGroup }}
           /p:MonoForceInterpreter=${{ parameters.interpreter }}
           /p:TestScope=${{ parameters.testScope }}

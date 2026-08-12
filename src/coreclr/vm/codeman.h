@@ -98,19 +98,20 @@ enum StubCodeBlockKind : int
 {
     STUB_CODE_BLOCK_UNKNOWN = 0,
     STUB_CODE_BLOCK_JUMPSTUB = 1,
-    UNUSED = 2,
-    STUB_CODE_BLOCK_DYNAMICHELPER = 3,
-    STUB_CODE_BLOCK_STUBPRECODE = 4,
-    STUB_CODE_BLOCK_FIXUPPRECODE = 5,
+    STUB_CODE_BLOCK_DYNAMICHELPER = 2,
+    STUB_CODE_BLOCK_STUBPRECODE = 3,
+    STUB_CODE_BLOCK_FIXUPPRECODE = 4,
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-    STUB_CODE_BLOCK_VSD_DISPATCH_STUB = 6,
-    STUB_CODE_BLOCK_VSD_RESOLVE_STUB = 7,
-    STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 8,
-    STUB_CODE_BLOCK_VSD_VTABLE_STUB = 9,
+    STUB_CODE_BLOCK_VSD_DISPATCH_STUB = 5,
+    STUB_CODE_BLOCK_VSD_RESOLVE_STUB = 6,
+    STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 7,
+    STUB_CODE_BLOCK_VSD_VTABLE_STUB = 8,
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef FEATURE_TIERED_COMPILATION
-    STUB_CODE_BLOCK_CALLCOUNTING = 0xA,
+    STUB_CODE_BLOCK_CALLCOUNTING = 9,
 #endif // FEATURE_TIERED_COMPILATION
+    STUB_CODE_BLOCK_WRAPPER_STUB = 0xA,
+    STUB_CODE_BLOCK_SHUFFLE_THUNK = 0xB,
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholder used by ReadyToRun images
@@ -123,12 +124,6 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
         return "JumpStub";
-    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
-        return "MethodCallThunk";
-#ifdef FEATURE_TIERED_COMPILATION
-    case STUB_CODE_BLOCK_CALLCOUNTING:
-        return "CallCountingStub";
-#endif
     case STUB_CODE_BLOCK_DYNAMICHELPER:
         return "MethodCallThunk";
     case STUB_CODE_BLOCK_FIXUPPRECODE:
@@ -143,6 +138,16 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
         return "VSD_VTableStub";
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return "CallCountingStub";
+#endif // FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
+        return "WrapperStub";
+    case STUB_CODE_BLOCK_SHUFFLE_THUNK:
+        return "ShuffleThunk";
+    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+        return "MethodCallThunk";
     default:
         return "Unknown";
     }
@@ -154,12 +159,6 @@ inline LPCWSTR GetStubCodeBlockKindStringW(StubCodeBlockKind kind)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
         return W("JumpStub");
-    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
-        return W("MethodCallThunk");
-#ifdef FEATURE_TIERED_COMPILATION
-    case STUB_CODE_BLOCK_CALLCOUNTING:
-        return W("CallCountingStub");
-#endif
     case STUB_CODE_BLOCK_DYNAMICHELPER:
         return W("MethodCallThunk");
     case STUB_CODE_BLOCK_FIXUPPRECODE:
@@ -174,6 +173,16 @@ inline LPCWSTR GetStubCodeBlockKindStringW(StubCodeBlockKind kind)
     case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
         return W("VSD_VTableStub");
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return W("CallCountingStub");
+#endif // FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
+        return W("WrapperStub");
+    case STUB_CODE_BLOCK_SHUFFLE_THUNK:
+        return W("ShuffleThunk");
+    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+        return W("MethodCallThunk");
     default:
         return W("Unknown");
     }

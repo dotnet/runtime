@@ -32,6 +32,16 @@ function libCoreRunFactory() {
                 }
 
                 ENV["DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"] = "true";
+
+                if (ENVIRONMENT_IS_NODE) {
+                    const original_proc_exit = _proc_exit;
+                    _proc_exit = (code) => {
+                        if (!keepRuntimeAlive()) {
+                            process.exit(code);
+                        }
+                        return original_proc_exit(code);
+                    };
+                }
             },
         },
         $CORERUN__postset: "CORERUN.selfInitialize()",

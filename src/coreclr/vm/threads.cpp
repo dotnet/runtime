@@ -958,7 +958,6 @@ DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
-
 #ifdef TARGET_X86
 extern "C" void STDCALL JIT_PatchedWriteBarrierGroup_End();
 #else
