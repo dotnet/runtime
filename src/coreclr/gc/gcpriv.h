@@ -1112,7 +1112,7 @@ struct static_data
     float fragmentation_burden_limit;
     float limit;
     float max_limit;
-    uint64_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
+    uint64_t time_clock; // time after which to collect generation, in performance counts (see minipal_hires_ticks)
     size_t gc_clock; // number of gcs after which to collect generation
 };
 
