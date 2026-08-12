@@ -18,61 +18,29 @@ namespace Microsoft.Extensions.Configuration
         private const string Keyword = "ref(";
         private const char BodyClose = ')';
 
+        // The shortest a reference can be, "$ref()", which is also what makes the keyword comparison below safe.
         private const int MinLength = 6;
 
-        // How a value reads.
-        internal enum Shape
-        {
-            // Nothing to do with us.
-            Text,
-
-            // A reference, whose body is the key expression to resolve.
-            Reference,
-
-            // Text that spells a reference but for the extra sigil in front of it, so one sigil comes off and what is
-            // left is text. Which is how a value says the reference syntax rather than uses it, at any depth: "$$ref(X)"
-            // is the text "$ref(X)", and "$$$ref(X)" the text "$$ref(X)".
-            Escaped,
-        }
-
-        // Reports how <paramref name="value"/> reads, and for a reference the span between the opening parenthesis and
-        // the final ')'. The keyword is matched case-insensitively, in keeping with configuration keys generally.
-        internal static Shape Classify(string value, out int bodyStart, out int bodyLength)
+        // Whether <paramref name="value"/> is a reference, and if so the span between the opening parenthesis and the
+        // final ')'. The keyword is matched case-insensitively, in keeping with configuration keys generally. There is
+        // no escape: a value that spells a reference is one, and an application holding text that cannot be read any
+        // other way turns transformations off rather than learning a syntax to say so.
+        internal static bool IsReference(string value, out int bodyStart, out int bodyLength)
         {
             bodyStart = 0;
             bodyLength = 0;
 
-            if (value.Length < MinLength || value[value.Length - 1] != BodyClose || value[0] != Sigil)
+            if (value.Length < MinLength
+             || value[value.Length - 1] != BodyClose
+             || value[0] != Sigil
+             || string.Compare(value, 1, Keyword, 0, Keyword.Length, StringComparison.OrdinalIgnoreCase) != 0)
             {
-                return Shape.Text;
+                return false;
             }
 
-            // The last character is known to be ')', so counting the sigils cannot run off the end.
-            int sigils = 1;
-            while (value[sigils] == Sigil)
-            {
-                sigils++;
-            }
-
-            if (!HasKeyword(value, sigils))
-            {
-                return Shape.Text;
-            }
-
-            if (sigils > 1)
-            {
-                return Shape.Escaped;
-            }
-
-            bodyStart = sigils + Keyword.Length;
+            bodyStart = 1 + Keyword.Length;
             bodyLength = value.Length - 1 - bodyStart;
-            return Shape.Reference;
-        }
-
-        private static bool HasKeyword(string value, int start)
-        {
-            return value.Length - start >= Keyword.Length
-               && string.Compare(value, start, Keyword, 0, Keyword.Length, StringComparison.OrdinalIgnoreCase) == 0;
+            return true;
         }
 
         // Whether <paramref name="c"/> opens a quoted run. Either quote character will do, so a key containing one is

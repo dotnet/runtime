@@ -28,8 +28,8 @@ namespace Microsoft.Extensions.Configuration
         /// through the stage after it rather than from the front of the pipeline, so a stage placed before it cannot
         /// change what a reference resolves to, and a stage placed after it can.
         /// <para>
-        /// Turning references off leaves nothing here but the providers, which is what lets the trimmer drop reference
-        /// resolution outright rather than merely leaving it unreachable.
+        /// Turning transformations off leaves nothing here but the providers, which is what lets the trimmer drop
+        /// reference resolution outright rather than merely leaving it unreachable.
         /// </para>
         /// </remarks>
         internal static ConfigurationEngine Default { get; } = ReferenceEngine.Disabled

@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Configuration
     // of its own reads as absent.
     internal sealed class ReferenceEngine : ConfigurationEngine
     {
-        private const string SwitchName = "Microsoft.Extensions.Configuration.DisableConfigurationReferences";
+        private const string SwitchName = "Microsoft.Extensions.Configuration.DisableConfigurationTransformations";
         // The three ways one read can grow, each bounded on its own: steps from one reference to the next, levels of
         // sub-reference, and values put into any single key expression.
         private const int MaxChain = 64;
@@ -58,17 +58,10 @@ namespace Microsoft.Extensions.Configuration
                 return true;
             }
 
-            ReferenceSyntax.Shape shape = ReferenceSyntax.Classify(raw, out int bodyStart, out int bodyLength);
-
-            // A chained configuration has already read its own values, escapes and all, so what it serves is text.
-            if (shape == ReferenceSyntax.Shape.Text || providers[providerIndex] is ChainedConfigurationProvider)
+            // A chained configuration has already read its own values, so what it serves is text.
+            if (!ReferenceSyntax.IsReference(raw, out int bodyStart, out int bodyLength)
+             || providers[providerIndex] is ChainedConfigurationProvider)
             {
-                return true;
-            }
-
-            if (shape == ReferenceSyntax.Shape.Escaped)
-            {
-                value = raw.Substring(1);
                 return true;
             }
 
