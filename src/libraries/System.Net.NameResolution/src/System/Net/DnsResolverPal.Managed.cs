@@ -51,6 +51,16 @@ namespace System.Net
         // (InterNetwork / InterNetworkV6) are supported.
         public static void ValidateServers(IPEndPoint[] servers)
         {
+            if (servers.Length == 0 && OperatingSystem.IsAndroid())
+            {
+                // With no explicit servers the resolver falls back to the system configuration,
+                // which on Android cannot be read: there is no accessible /etc/resolv.conf and
+                // IPInterfaceProperties.DnsAddresses is unsupported there for the same reason.
+                // Rather than silently querying an unreachable fallback address, reject the
+                // configuration up front. See https://github.com/dotnet/runtime/issues/132212.
+                throw new PlatformNotSupportedException(SR.net_dns_system_servers_not_supported);
+            }
+
             foreach (IPEndPoint server in servers)
             {
                 if (server.AddressFamily is not (AddressFamily.InterNetwork or AddressFamily.InterNetworkV6))
