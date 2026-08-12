@@ -369,7 +369,7 @@ namespace ILCompiler.ObjectWriter
 
         private void InsertWasmStub(Utf8String name, WasmFunctionBody body)
         {
-            SectionDataEmitter codeSection = GetOrCreateSection<SectionDataEmitter>(ObjectNodeSection.WasmCodeSection, out SectionWriter codeWriter);
+            GetOrCreateSection(ObjectNodeSection.WasmCodeSection, out SectionWriter codeWriter);
 
             int codeSize = body.EncodeSize();
             byte[] data = new byte[codeSize];
