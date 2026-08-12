@@ -548,7 +548,6 @@ void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
 #endif
 }
 
-#ifndef DACCESS_COMPILE
 /*
  * HndEnumHandles
  *
@@ -1089,4 +1088,3 @@ void DEBUG_LogScanningStatistics(HandleTable *pTable, uint32_t level)
 
 
 /*--------------------------------------------------------------------------*/
-

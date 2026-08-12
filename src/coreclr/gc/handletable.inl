@@ -30,6 +30,13 @@ FORCEINLINE void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF
     if (*pClumpAge != 0)
     {
         int generation = GetConvertedGeneration(value);
+
+        if (generation == 0)
+        {
+            *pClumpAge = 0;
+            return;
+        }
+
         uint32_t uType = HandleFetchType(handle);
 
 #ifdef FEATURE_ASYNC_PINNED_HANDLES

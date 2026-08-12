@@ -610,15 +610,6 @@ void HandleQuickSetUserData(OBJECTHANDLE handle, uintptr_t lUserData);
 
 
 /*
- * HandleFetchType
- *
- * Computes the type index for a given handle.
- *
- */
-uint32_t HandleFetchType(OBJECTHANDLE handle);
-
-
-/*
  * HandleFetchHandleTable
  *
  * Returns the containing handle table of a given handle.
@@ -942,7 +933,3 @@ void CALLBACK BlockVerifyAgeMapForBlocks(PTR_TableSegment pSegment, uint32_t uBl
 PTR_TableSegment CALLBACK xxxAsyncSegmentIterator(PTR_HandleTable pTable, TableSegment *pPrevSegment, CrstHolderWithState *pCrstHolder);
 
 /*--------------------------------------------------------------------------*/
-
-#ifndef DACCESS_COMPILE
-
-#endif //DACCESS_COMPILE

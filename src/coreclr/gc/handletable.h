@@ -14,6 +14,7 @@
 #define _HANDLETABLE_H
 
 #include "gcinterface.h"
+#include "handletableconstants.h"
 
 /****************************************************************************
  *
@@ -149,6 +150,7 @@ void HndAssignHandle(OBJECTHANDLE handle, OBJECTREF objref);
 
 #ifndef DACCESS_COMPILE
 int GetConvertedGeneration(_UNCHECKED_OBJECTREF obj);
+uint32_t HandleFetchType(OBJECTHANDLE handle);
 #endif // DACCESS_COMPILE
 
 /*
