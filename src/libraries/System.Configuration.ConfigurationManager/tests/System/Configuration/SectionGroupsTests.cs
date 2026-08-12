@@ -65,5 +65,69 @@ namespace System.ConfigurationTests
                 Assert.Equal("System.Configuration.NameValueSectionHandler, System", sectionGroup.Sections[0].SectionInformation.Type);
             }
         }
+
+        public static string InvalidSectionAndSectionGroupNamesConfiguration =
+@"<?xml version='1.0' encoding='utf-8' ?>
+<configuration>
+    <configSections>
+        <sectionGroup name='outer'>
+            <section name='inner/invalid' type='System.Configuration.NameValueSectionHandler, System' />
+            <sectionGroup name='innerGroup/invalid' type='Missing.SectionGroup, Missing.Assembly' />
+        </sectionGroup>
+    </configSections>
+</configuration>";
+
+        [Fact]
+        public void InvalidSectionNameContainingPathSeparatorThrowsOnAllAccessors()
+        {
+            using (var temp = new TempConfig(InvalidSectionAndSectionGroupNamesConfiguration))
+            {
+                var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
+                ConfigurationSectionCollection sections = config.GetSectionGroup("outer").Sections;
+
+                Assert.Throws<ConfigurationErrorsException>(() => sections["inner/invalid"]);
+                Assert.Throws<ConfigurationErrorsException>(() => sections[0]);
+                Assert.Throws<ConfigurationErrorsException>(() => sections.GetEnumerator().MoveNext());
+                Assert.Throws<ConfigurationErrorsException>(() => sections.CopyTo(new ConfigurationSection[sections.Count], 0));
+            }
+        }
+
+        [Fact]
+        public void InvalidSectionGroupNameContainingPathSeparatorThrowsOnAllAccessors()
+        {
+            using (var temp = new TempConfig(InvalidSectionAndSectionGroupNamesConfiguration))
+            {
+                var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
+                ConfigurationSectionGroupCollection sectionGroups = config.GetSectionGroup("outer").SectionGroups;
+
+                Assert.Throws<ConfigurationErrorsException>(() => sectionGroups["innerGroup/invalid"]);
+                Assert.Throws<ConfigurationErrorsException>(() => sectionGroups[0]);
+                Assert.Throws<ConfigurationErrorsException>(() => sectionGroups.GetEnumerator().MoveNext());
+                Assert.Throws<ConfigurationErrorsException>(() => sectionGroups.CopyTo(new ConfigurationSectionGroup[sectionGroups.Count], 0));
+            }
+        }
+
+        public static string DescendantSectionAndSectionGroupConfiguration =
+@"<?xml version='1.0' encoding='utf-8' ?>
+<configuration>
+    <configSections>
+        <sectionGroup name='outer'>
+            <section name='inner' type='System.Configuration.NameValueSectionHandler, System' />
+            <sectionGroup name='innerGroup' />
+        </sectionGroup>
+    </configSections>
+</configuration>";
+
+        [Fact]
+        public void DescendantsAreNotAccessibleFromParentCollections()
+        {
+            using (var temp = new TempConfig(DescendantSectionAndSectionGroupConfiguration))
+            {
+                var config = ConfigurationManager.OpenExeConfiguration(temp.ExePath);
+
+                Assert.Null(config.RootSectionGroup.Sections["outer/inner"]);
+                Assert.Null(config.RootSectionGroup.SectionGroups["outer/innerGroup"]);
+            }
+        }
     }
 }
