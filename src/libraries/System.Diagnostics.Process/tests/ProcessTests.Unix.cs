@@ -79,6 +79,20 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public void ProcessStart_UseShellExecute_OnLinux_ThrowsWhenNoOpenerOnPath()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.StartInfo.EnvironmentVariables["PATH"] = string.Empty;
+
+            RemoteExecutor.Invoke(() =>
+            {
+                Win32Exception exception = Assert.Throws<Win32Exception>(() => Process.Start(new ProcessStartInfo { UseShellExecute = true, FileName = Environment.CurrentDirectory }));
+                Assert.Equal(ERROR_NO_ASSOCIATION, exception.NativeErrorCode);
+            }, options).Dispose();
+        }
+
         [Fact]
         [OuterLoop("Opens program")]
         [SkipOnPlatform(TestPlatforms.MacCatalyst, "In App Sandbox mode, the process doesn't have read access to the binary.")]
@@ -1060,6 +1074,7 @@ namespace System.Diagnostics.Tests
 
         private const int O_RDONLY = 0;
         private const int O_WRONLY = 1;
+        private const int ERROR_NO_ASSOCIATION = 0x483;
 
         private static readonly string[] s_allowedProgramsToRun = new string[] { "xdg-open", "gnome-open", "kfmclient" };
 
