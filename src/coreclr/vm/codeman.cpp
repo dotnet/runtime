@@ -2326,6 +2326,7 @@ BOOL EEJitManager::LoadJIT()
 
 //**************************************************************************
 
+#ifndef DACCESS_COMPILE
 void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 {
     WRAPPER_NO_CONTRACT;
@@ -2343,6 +2344,7 @@ void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
     }
 #endif // FEATURE_EVENT_TRACE
 }
+#endif // DACCESS_COMPILE
 
 CodeFragmentHeap::CodeFragmentHeap(LoaderAllocator * pAllocator, StubCodeBlockKind kind)
     : m_pAllocator(pAllocator), m_pFreeBlocks(NULL), m_kind(kind),
