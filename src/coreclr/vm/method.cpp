@@ -2408,12 +2408,11 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         if (pPrecode == NULL)
             return NULL;
 #endif
-        StubCodeBlockKind codeBlockKind = pRS->_pRangeList->GetCodeBlockKind();
-        if (codeBlockKind == STUB_CODE_BLOCK_FIXUPPRECODE)
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_FIXUPPRECODE)
         {
             return dac_cast<PTR_MethodDesc>(pPrecode->AsFixupPrecode()->GetMethodDesc());
         }
-        if (codeBlockKind == STUB_CODE_BLOCK_STUBPRECODE)
+        if (pRS->_pRangeList->GetCodeBlockKind() == STUB_CODE_BLOCK_STUBPRECODE)
         {
             return dac_cast<PTR_MethodDesc>(pPrecode->AsStubPrecode()->GetMethodDesc());
         }
@@ -2423,19 +2422,8 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         MethodDesc* pMD;
         if (pRS->_pjit->JitCodeToMethodInfo(pRS, entryPoint, &pMD, NULL))
             return pMD;
-
-        // These stubs don't have a corresponding method by design
-        StubCodeBlockKind codeBlockKind = pRS->_pjit->GetStubCodeBlockKind(pRS, entryPoint);
-        if (codeBlockKind == STUB_CODE_BLOCK_WRAPPER_STUB ||
-            codeBlockKind == STUB_CODE_BLOCK_SHUFFLE_THUNK)
-        {
-            return NULL;
-        }
     }
 
-
-    // We should never get here
-    _ASSERTE(!"NonVirtualEntry2MethodDesc failed");
     return NULL;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 }
