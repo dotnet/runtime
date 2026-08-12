@@ -15,7 +15,18 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <Import Project="$(CoreClrProjectRoot)tools\aot\AotCompilerCommon.props" />
+  <PropertyGroup>
+    <!-- Keep these NativeAOT runtime settings in sync with the first PropertyGroup in AotCompilerCommon.props. -->
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <TieredCompilation>false</TieredCompilation>
+    <EventSourceSupport>true</EventSourceSupport>
+    <OptimizationPreference>Speed</OptimizationPreference>
+    <ControlFlowGuard>Guard</ControlFlowGuard>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StripSymbols Condition="'$(KeepNativeSymbols)' == 'true'">false</StripSymbols>
+    <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
+  </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="System.CommandLine" Version="$(SystemCommandLineVersion)" />
