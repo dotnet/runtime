@@ -40,9 +40,10 @@ exist and scores workflow output against them, is deferred.
   signature, check for an existing KBE, and emit the create-issue safe-output at
   `out/kbe.md`. Graders check the static Known Build Error format, meaning the
   title, exactly `Known Build Error` plus one blocking label, the three sections,
-  a single json signature, the match-count marker, and no test-muting. They also
-  check `tool-calls` evidence that it actually fetched a real build and searched
-  existing KBEs.
+  collapsed authoring guidance, a single json signature, the collapsed
+  workflow-owned positive match-count metadata, and no test-muting. They also check
+  `tool-calls` evidence that it actually fetched a real build and searched existing
+  KBEs.
 
 - **`ci-failure-fix`** has the agent find a real open `[ci-scan]` Known Build
   Error issue via `gh`, reason about it, and emit one safe-output at
