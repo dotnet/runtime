@@ -515,6 +515,7 @@ public:
         : ExtendedDefaultPolicy(compiler, isPrejitRoot)
         , m_IsAsyncCall(false)
         , m_AsyncStressIndex(-1)
+        , m_BasicBlockCount(0)
     {
     }
 
@@ -533,14 +534,28 @@ public:
     }
 
 private:
+    // Is this an async callee that the stress mode picked, i.e. one that is part of
+    // its body's shuffled group of async candidates? Candidates created after the
+    // group was formed, such as ones from late devirtualization, are not, and are
+    // left to the normal heuristics. The prejit root has no call site and thus no
+    // group, but must stay inlineable for the call sites that will inline it.
+    bool IsStressPicked() const
+    {
+        return m_IsAsyncCall && (m_IsPrejitRoot || (m_AsyncStressIndex >= 0));
+    }
+
     bool m_IsAsyncCall;
     // Position of this callee in its enclosing body's shuffled group of async
     // inline candidates, or -1 if it is not part of a group.
     int m_AsyncStressIndex;
+    // Block count of the callee, kept so that DetermineProfitability can make the
+    // block count based rejection that NoteInt deferred.
+    unsigned m_BasicBlockCount;
 };
 
 // SizePolicy is an experimental policy that will inline as much
-// as possible without increasing the (estimated) method size.//
+// as possible without increasing the (estimated) method size.
+//
 // It may be useful down the road as a policy to use for methods
 // that are rarely executed (eg class constructors).
 

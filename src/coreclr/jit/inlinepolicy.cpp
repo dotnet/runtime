@@ -3351,62 +3351,72 @@ void AsyncStressPolicy::NoteBool(InlineObservation obs, bool value)
 //    value    - the value being observed
 //
 // Notes:
-//    Async callees skip the size based rejections. Those are SetNever, which
-//    would also mark the callee NOINLINE for every other call site, so there is
-//    no point in letting the base policy see them first.
+//    The size based rejections are deferred for every callee: they are SetNever,
+//    which would also mark the callee NOINLINE for every other call site, and the
+//    sizes are observed long before it is known whether the stress mode picked this
+//    call. DetermineProfitability makes them for the callees it did not pick.
 //
 //    CALLEE_MAXSTACK is deliberately not among them: stack heavy callees are
 //    left on the normal policy rather than being forced in.
 //
 void AsyncStressPolicy::NoteInt(InlineObservation obs, int value)
 {
-    if (obs == InlineObservation::CALLSITE_ASYNC_STRESS_INDEX)
+    switch (obs)
     {
-        m_AsyncStressIndex = value;
-        return;
-    }
-
-    if (m_IsAsyncCall)
-    {
-        switch (obs)
+        case InlineObservation::CALLSITE_ASYNC_STRESS_INDEX:
         {
-            case InlineObservation::CALLEE_IL_CODE_SIZE:
-            {
-                assert(value != 0);
-                m_CodeSize = static_cast<unsigned>(value);
-
-                if (m_CodeSize > InlineStrategy::IMPLEMENTATION_MAX_INLINE_SIZE)
-                {
-                    SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
-                }
-                else if (m_IsForceInline)
-                {
-                    SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
-                }
-                else
-                {
-                    SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
-                }
-
-                return;
-            }
-
-            case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
-            {
-                // Keep rejecting callees that do not return, but ignore the block count
-                // limit; async callees routinely have more blocks than it allows.
-                //
-                if (!m_IsForceInline && m_IsNoReturn && (value == 1))
-                {
-                    SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
-                }
-
-                return;
-            }
-
-            default:
-                break;
+            m_AsyncStressIndex = value;
+            return;
         }
+
+        case InlineObservation::CALLEE_IL_CODE_SIZE:
+        {
+            assert(m_IsForceInlineKnown);
+            assert(value != 0);
+            m_CodeSize = static_cast<unsigned>(value);
+
+            unsigned alwaysInlineSize = InlineStrategy::ALWAYS_INLINE_SIZE;
+            if (m_InsideThrowBlock)
+            {
+                alwaysInlineSize /= 2;
+            }
+
+            if (m_CodeSize > InlineStrategy::IMPLEMENTATION_MAX_INLINE_SIZE)
+            {
+                SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+            }
+            else if (m_IsForceInline)
+            {
+                SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+            }
+            else if (m_CodeSize <= alwaysInlineSize)
+            {
+                SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
+            }
+            else
+            {
+                SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+            }
+
+            return;
+        }
+
+        case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+        {
+            m_BasicBlockCount = static_cast<unsigned>(value);
+
+            // Keep rejecting callees that do not return; that is not a size limit.
+            //
+            if (!m_IsForceInline && m_IsNoReturn && (value == 1))
+            {
+                SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
+            }
+
+            return;
+        }
+
+        default:
+            break;
     }
 
     ExtendedDefaultPolicy::NoteInt(obs, value);
@@ -3420,11 +3430,11 @@ void AsyncStressPolicy::NoteInt(InlineObservation obs, int value)
 //
 bool AsyncStressPolicy::BudgetCheck() const
 {
-    // Async inlines are the point of this policy, so they ignore the budget. Everything
-    // else stays on the normal budget so that the stress mode does not turn into a
-    // general "inline everything" mode.
+    // Async inlines are the point of this policy, so the ones the stress mode picked
+    // ignore the budget. Everything else stays on the normal budget so that the stress
+    // mode does not turn into a general "inline everything" mode.
     //
-    if (m_IsAsyncCall)
+    if (IsStressPicked())
     {
         return false;
     }
@@ -3447,13 +3457,33 @@ bool AsyncStressPolicy::BudgetCheck() const
 //    The roll can go either way against what the normal policy would have done:
 //    it inlines callees the ExtendedDefaultPolicy would have rejected as too big
 //    or unprofitable, and it rejects ones it would have accepted. Force inlines
-//    are the exception. Those are never discretionary candidates, so this is not
-//    even reached for them and the stress mode cannot take them away.
+//    and callees below the always inline size are the exception. Those are never
+//    discretionary candidates, so this is not even reached for them and the stress
+//    mode cannot take them away.
 //
 void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
 {
-    if (!m_IsAsyncCall)
+    if (!IsStressPicked())
     {
+        // Not an async call, or an async candidate the stress mode did not pick, such as
+        // one created by late devirtualization. Make the size based rejections NoteInt
+        // deferred, then leave it to the normal heuristics.
+        //
+        ExtendedDefaultPolicy::NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, static_cast<int>(m_CodeSize));
+
+        if (InlDecisionIsFailure(m_Decision))
+        {
+            return;
+        }
+
+        ExtendedDefaultPolicy::NoteInt(InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS,
+                                       static_cast<int>(m_BasicBlockCount));
+
+        if (InlDecisionIsFailure(m_Decision))
+        {
+            return;
+        }
+
         ExtendedDefaultPolicy::DetermineProfitability(methodInfo);
         return;
     }
@@ -3466,13 +3496,6 @@ void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         return;
     }
 
-    if (m_AsyncStressIndex < 0)
-    {
-        // Not part of a group, so not something the stress mode picked.
-        SetCandidate(InlineObservation::CALLSITE_IS_PROFITABLE_INLINE);
-        return;
-    }
-
     assert(m_CallsiteDepth > 0);
 
     if (m_CallsiteDepth > (unsigned)JitConfig.JitStressAsyncInliningMaxDepth())
@@ -3481,11 +3504,8 @@ void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         return;
     }
 
-    double probability = 1.0;
-    for (unsigned i = 0; i < m_CallsiteDepth + (unsigned)m_AsyncStressIndex; i++)
-    {
-        probability *= (double)JitConfig.JitStressAsyncInliningPct() / 100.0;
-    }
+    const double pct         = (double)JitConfig.JitStressAsyncInliningPct() / 100.0;
+    const double probability = pow(pct, (double)(m_CallsiteDepth + (unsigned)m_AsyncStressIndex));
 
     CLRRandom* const random = m_RootCompiler->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
 
