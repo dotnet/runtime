@@ -2715,7 +2715,11 @@ void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
     unsigned lclOffset = lclAddrNode->GetLclOffs();
 
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-    if ((lclOffset != 0) || (m_compiler->lvaFrameAddress(lclNum, &FPBased) != 0))
+
+    // A folded address contributes its frame offset to the user's memarg instead.
+    //
+    if (((lclAddrNode->gtLIRFlags & LIR::Flags::FoldedAddr) == LIR::Flags::None) &&
+        ((lclOffset != 0) || (m_compiler->lvaFrameAddress(lclNum, &FPBased) != 0)))
     {
         GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
         GetEmitter()->emitIns(INS_I_add);
@@ -2936,6 +2940,35 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* tree)
 }
 
 //------------------------------------------------------------------------
+// genWasmMemargOffset: Get the offset an indirection folds into its memarg.
+//
+// Arguments:
+//    addr - the address node of the indirection
+//
+// Return Value:
+//    The offset to encode in the memarg, or zero if the address carries no folded offset.
+//
+cnsval_ssize_t CodeGen::genWasmMemargOffset(GenTree* addr)
+{
+    if (addr->isContained() && addr->OperIs(GT_LEA))
+    {
+        return addr->AsAddrMode()->Offset();
+    }
+
+    if (addr->OperIs(GT_LCL_ADDR) && ((addr->gtLIRFlags & LIR::Flags::FoldedAddr) != LIR::Flags::None))
+    {
+        bool      FPBased;
+        const int offset = m_compiler->lvaFrameAddress(addr->AsLclFld()->GetLclNum(), &FPBased) +
+                           static_cast<int>(addr->AsLclFld()->GetLclOffs());
+        noway_assert(offset >= 0); // WASM address modes are unsigned.
+        assert(FPBased);
+        return offset;
+    }
+
+    return 0;
+}
+
+//------------------------------------------------------------------------
 // genCodeForIndir: Produce code for a GT_IND node.
 //
 // Arguments:
@@ -2959,13 +2992,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     // TODO-WASM: Memory barriers
 
-    if (addr->isContained() && addr->OperIs(GT_LEA))
-    {
-        // The contained address mode's offset folds into the memarg; its base is already pushed.
-        //
-        GetEmitter()->emitIns_I(ins_Load(type), emitActualTypeSize(type), addr->AsAddrMode()->Offset());
-    }
-    else if (addr->isContained())
+    if (addr->isContained() && !addr->OperIs(GT_LEA))
     {
         // A contained address constant folds into the memarg offset, so emit just the image base here.
         //
@@ -2981,7 +3008,9 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     }
     else
     {
-        GetEmitter()->emitIns_I(ins_Load(type), emitActualTypeSize(type), 0);
+        // A contained address mode's offset or a folded local's frame offset supplies the memarg.
+        //
+        GetEmitter()->emitIns_I(ins_Load(type), emitActualTypeSize(type), genWasmMemargOffset(addr));
     }
 
     WasmProduceReg(tree);
@@ -2998,10 +3027,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree* data = tree->Data();
     GenTree* addr = tree->Addr();
 
-    // Only a contained address mode is expected; its offset folds into the memarg below.
+    // A contained address mode's offset or a folded local's frame offset supplies the memarg.
     //
     assert(!addr->isContained() || addr->OperIs(GT_LEA));
-    const cnsval_ssize_t offset = addr->isContained() ? addr->AsAddrMode()->Offset() : 0;
+    const cnsval_ssize_t offset = genWasmMemargOffset(addr);
 
     // We must consume the operands in the proper execution order,
     // so that liveness is updated appropriately.

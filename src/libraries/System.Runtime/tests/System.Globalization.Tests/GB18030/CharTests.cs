@@ -6,7 +6,6 @@ using Xunit;
 
 namespace GB18030.Tests;
 
-[SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
 public class CharTests
 {
     [Theory]
@@ -102,7 +101,6 @@ public class CharTests
         if (utf32String.Length < 2)
         {
             char c = utf32String[0];
-#if !NETFRAMEWORK
             Assert.False(char.IsAscii(c));
             Assert.False(char.IsAsciiDigit(c));
             Assert.False(char.IsAsciiHexDigit(c));
@@ -112,7 +110,6 @@ public class CharTests
             Assert.False(char.IsAsciiLetterOrDigit(c));
             Assert.False(char.IsAsciiLetterLower(c));
             Assert.False(char.IsAsciiLetterUpper(c));
-#endif
             Assert.False(char.IsControl(c));
             Assert.False(char.IsDigit(c));
             Assert.False(char.IsLower(c));

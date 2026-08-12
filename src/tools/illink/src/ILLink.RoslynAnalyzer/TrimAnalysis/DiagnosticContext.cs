@@ -15,11 +15,13 @@ namespace ILLink.Shared.TrimAnalysis
         public readonly Location Location { get; }
 
         private readonly Action<Diagnostic>? _reportDiagnostic;
+        private readonly Compilation _compilation;
 
-        public DiagnosticContext(Location location, Action<Diagnostic>? reportDiagnostic)
+        public DiagnosticContext(Location location, Action<Diagnostic>? reportDiagnostic, Compilation compilation)
         {
             Location = location;
             _reportDiagnostic = reportDiagnostic;
+            _compilation = compilation;
         }
 
         private Diagnostic CreateDiagnostic(DiagnosticId id, params string[] args)
@@ -68,7 +70,7 @@ namespace ILLink.Shared.TrimAnalysis
             Dictionary<string, string?>? DAMArgument = new Dictionary<string, string?>();
 
             // not supporting merging differing attributes, check to make sure symbol has no other attributes
-            if (symbol.DeclaringSyntaxReferences.Length == 0
+            if (!TryGetCodeFixLocation(symbol, out Location symbolLocation)
                     || (actualValue is not MethodReturnValue
                         && symbol.TryGetAttribute(DynamicallyAccessedMembersAnalyzer.DynamicallyAccessedMembersAttribute, out var _))
                     || (actualValue is MethodReturnValue
@@ -80,13 +82,29 @@ namespace ILLink.Shared.TrimAnalysis
             }
             else
             {
-                Location symbolLocation;
-                symbolLocation = symbol.DeclaringSyntaxReferences[0].GetSyntax().GetLocation();
                 DAMArgument.Add("attributeArgument", expectedAnnotationsValue.DynamicallyAccessedMemberTypes.ToString());
                 sourceLocation = new Location[] { symbolLocation };
             }
 
             return Diagnostic.Create(DiagnosticDescriptors.GetDiagnosticDescriptor(id), Location, sourceLocation, DAMArgument?.ToImmutableDictionary(), args);
+        }
+
+        /// <summary>
+        /// Determines whether a code fix location can be attached to a diagnostic for <paramref name="symbol"/>.
+        /// </summary>
+        private bool TryGetCodeFixLocation(ISymbol symbol, out Location location)
+        {
+            foreach (SyntaxReference syntaxReference in symbol.DeclaringSyntaxReferences)
+            {
+                if (_compilation.ContainsSyntaxTree(syntaxReference.SyntaxTree))
+                {
+                    location = syntaxReference.GetSyntax().GetLocation();
+                    return true;
+                }
+            }
+
+            location = null!;
+            return false;
         }
     }
 }
