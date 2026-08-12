@@ -55,7 +55,7 @@ public class StressLogDumpTests : DumpTestBase
         bool foundMessages = false;
         foreach (ThreadStressLogData thread in threads)
         {
-            var messages = stressLog.GetStressMessages(thread).Take(10).ToList();
+            var messages = stressLog.GetStressMessages(thread.Address).Take(10).ToList();
             if (messages.Count > 0)
             {
                 foundMessages = true;

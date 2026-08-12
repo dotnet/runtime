@@ -136,6 +136,13 @@ FlowGraphDfsTree* FgWasm::WasmDfs(bool& hasBlocksOnlyReachableViaEH)
         }
     }
 
+    // Sort handler entries by funclet index (descending), so
+    // that RPO and funclet emission order agree.
+    //
+    jitstd::sort(entryBlocks.begin(), entryBlocks.end(), [comp](BasicBlock* a, BasicBlock* b) {
+        return comp->funGetFuncIdx(a) > comp->funGetFuncIdx(b);
+    });
+
     // Also look for any non-funclet entry block that is only reachable EH.
     // These should have been connected up to special Wasm switches by fgWasmEhFlow.
     // If not, something is wrong.
@@ -217,7 +224,7 @@ private:
     BitVec               m_blocks;
     BitVec               m_entries;
     jitstd::vector<Scc*> m_nested;
-    BasicBlock*          m_wasmTryHeader;
+    BasicBlock*          m_tryEntry;
     unsigned             m_numIrr;
 
     // lowest common ancestor try index + 1, or 0 if method region
@@ -241,7 +248,7 @@ public:
         , m_blocks(BitVecOps::UninitVal())
         , m_entries(BitVecOps::UninitVal())
         , m_nested(fgWasm->Comp()->getAllocator(CMK_WasmSccTransform))
-        , m_wasmTryHeader(nullptr)
+        , m_tryEntry(nullptr)
         , m_numIrr(0)
         , m_enclosingTryIndex(0)
         , m_enclosingHndIndex(0)
@@ -262,6 +269,13 @@ public:
     {
         ComputeEntries();
         FindNested();
+    }
+
+    bool IsWasmTryCatch(BasicBlock* block)
+    {
+        assert(m_compiler->bbIsTryBeg(block));
+        GenTree* const lastNode = block->GetLastLIRNode();
+        return ((lastNode != nullptr) && lastNode->OperIs(GT_WASM_JEXCEPT));
     }
 
     void ComputeEntries()
@@ -321,23 +335,20 @@ public:
                         m_enclosingTryIndex = m_compiler->bbFindInnermostCommonTryRegion(m_enclosingTryIndex, block);
                     }
 
+                    // Dispatch through try entries is more complex.
+                    // So limit what we handle; at most one SCC entry
+                    // is also a try entry.
+                    //
                     if (m_compiler->bbIsTryBeg(block))
                     {
-                        GenTree* const lastNode = block->GetLastLIRNode();
-
-                        if ((lastNode != nullptr) && lastNode->OperIs(GT_WASM_JEXCEPT))
+                        if (m_tryEntry == nullptr)
                         {
-                            JITDUMP(FMT_BB " is also a Wasm try entry\n", block->bbNum);
-
-                            if (m_wasmTryHeader == nullptr)
-                            {
-                                m_wasmTryHeader = block;
-                            }
-                            else
-                            {
-                                JITDUMP("Multiple Wasm try entries in SCC %u\n", m_num);
-                                NYI_WASM("SCC with multiple wasm try entry headers");
-                            }
+                            m_tryEntry = block;
+                        }
+                        else
+                        {
+                            JITDUMP("Multiple try entries in SCC %u entry set\n", m_num);
+                            NYI_WASM("SCC with multiple try entry headers");
                         }
                     }
                 }
@@ -570,9 +581,9 @@ public:
         return m_enclosingHndIndex;
     }
 
-    BasicBlock* WasmTryHeader() const
+    BasicBlock* TryHeader() const
     {
-        return m_wasmTryHeader;
+        return m_tryEntry;
     }
 
     //-----------------------------------------------------------------------------
@@ -616,7 +627,7 @@ public:
             LclVarDsc* const controlVarDsc = m_compiler->lvaGetDesc(controlVarNum);
             controlVarDsc->lvType          = TYP_INT;
             BasicBlock*      dispatcher    = nullptr;
-            BasicBlock*      wasmTryHeader = WasmTryHeader();
+            BasicBlock*      tryHeader     = TryHeader();
             FlowEdge** const succs         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
             FlowEdge** const cases         = new (m_compiler, CMK_FlowEdge) FlowEdge*[numHeaders];
             unsigned         headerNumber  = 0;
@@ -638,11 +649,11 @@ public:
                     unsigned    dispatchHndIndex = EnclosingHndIndex();
                     BasicBlock* nearBlk          = nullptr;
 
-                    if (wasmTryHeader != nullptr)
+                    if (tryHeader != nullptr)
                     {
-                        dispatchTryIndex = wasmTryHeader->bbTryIndex;
-                        dispatchHndIndex = wasmTryHeader->bbHndIndex;
-                        nearBlk          = wasmTryHeader;
+                        dispatchTryIndex = tryHeader->bbTryIndex;
+                        dispatchHndIndex = tryHeader->bbHndIndex;
+                        nearBlk          = tryHeader;
                     }
 
                     if ((dispatchTryIndex > 0) || (dispatchHndIndex > 0))
@@ -673,29 +684,29 @@ public:
                 //
                 BasicBlock* inboundTarget = dispatcher;
 
-                // With the dispatcher inside the Wasm try region, every external pred must enter
-                // the try via its ebdTryBeg (the Wasm try header) before reaching the dispatcher.
-                // For headers other than the Wasm try header itself, redirect preds to the Wasm
-                // try header; the dispatcher then branches back out to the chosen header. When
-                // header == wasmTryHeader, inboundTarget == header so no rewrite happens.
+                // With the dispatcher inside the try region, every external pred must enter
+                // the try via its ebdTryBeg (the try header) before reaching the dispatcher.
+                // For headers other than the try header itself, redirect preds to the try
+                // header; the dispatcher then branches back out to the chosen header. When
+                // header == tryHeader, inboundTarget == header so no rewrite happens.
                 //
-                if (wasmTryHeader != nullptr)
+                if (tryHeader != nullptr)
                 {
-                    // The dispatcher (inside the Wasm try) can only safely branch to headers in
-                    // a try region that encloses the Wasm try region. A header in a sibling or
+                    // The dispatcher (inside the try) can only safely branch to headers in
+                    // a try region that encloses the try region. A header in a sibling or
                     // deeper-nested try would force a middle-entry edge on its boundary.
                     //
-                    if (header->hasTryIndex() && !m_compiler->bbInTryRegions(header->getTryIndex(), wasmTryHeader))
+                    if (header->hasTryIndex() && !m_compiler->bbInTryRegions(header->getTryIndex(), tryHeader))
                     {
-                        NYI_WASM("SCC entry header in a try region that does not enclose the Wasm try header");
+                        NYI_WASM("SCC entry header in a try region that does not enclose the try header");
                     }
 
-                    if (header != wasmTryHeader)
+                    if (header != tryHeader)
                     {
-                        JITDUMP("Will route flow to " FMT_BB " via Wasm try header " FMT_BB "\n", header->bbNum,
-                                wasmTryHeader->bbNum);
+                        JITDUMP("Will route flow to " FMT_BB " via try header " FMT_BB "\n", header->bbNum,
+                                tryHeader->bbNum);
                     }
-                    inboundTarget = wasmTryHeader;
+                    inboundTarget = tryHeader;
                 }
 
                 weight_t headerWeight = header->bbWeight;
@@ -758,15 +769,28 @@ public:
                 //
                 BasicBlock* outboundTarget = header;
 
-                // But for the wasm try header, normal entry flows from the wasm try header T
-                // to its false target F.
+                // If the header is a try header, things are more complicated.
                 //
-                // Here we make the dispatcher be the false target of T,
-                // and the dispatcher will then jump to F.
+                // If this is a wasm try/catch, we already split up the header to be empty
+                // except for a JTRUE(GT_WASM_JEXCEPT). So the header's false successor
+                // is the original try entry, dispatcher should jump there, and the orignal
+                // try entry should instead jump (if false) to the dispatcher.
                 //
-                if (header == wasmTryHeader)
+                // If this is a try but not a wasm try/catch, then split the header, and
+                // branch from the head of the split to the dispatcher,
+                // and from the dispatcher to the tail of the split.
+                //
+                if (header == tryHeader)
                 {
-                    outboundTarget = wasmTryHeader->GetFalseTarget();
+                    if (IsWasmTryCatch(header))
+                    {
+                        outboundTarget = tryHeader->GetFalseTarget();
+                    }
+                    else
+                    {
+                        outboundTarget = m_compiler->fgSplitBlockAtBeginning(header);
+                    }
+
                     m_compiler->fgReplaceJumpTarget(header, outboundTarget, dispatcher);
                 }
 
@@ -1046,6 +1070,450 @@ bool FgWasm::WasmTransformSccs(ArrayStack<Scc*>& sccs)
 }
 
 //-----------------------------------------------------------------------------
+// WasmTryEntryDispatch: describes a try region that needs an entry dispatcher
+//
+struct WasmTryEntryDispatch
+{
+    // Header block of the try region (its ebdTryBeg).
+    BasicBlock* m_header;
+
+    // The dispatch block created just inside the region.
+    BasicBlock* m_dispatcher;
+
+    // The block that normal (non-dispatched) entry into the region should reach.
+    BasicBlock* m_normalTarget;
+};
+
+typedef JitHashTable<BasicBlock*, JitPtrKeyFuncs<BasicBlock>, unsigned> WasmBlockToIndexMap;
+
+//-----------------------------------------------------------------------------
+// fgWasmRepairTryEntries: reshape try regions so that each is entered only via
+//   its ebdTryBeg.
+//
+// Returns:
+//   suitable phase status
+//
+// Notes:
+//   Runtime-async resumption and catch resumption can transfer control directly
+//   into the middle of a try region. Wasm has no way to express this for try-catches.
+//   For generality we fix this for all try regions.
+//
+//   Each region with side entries gets a dispatch block just inside its header,
+//   switching on a control variable that holds a dense index identifying the ultimate
+//   target. A side entry edge is redirected to the header of the outermost region it
+//   was entering, and the cascade of dispatchers steers control inward, one region at
+//   a time, until it reaches the target.
+//
+//   Normal entry into a region sets the control variable to a sentinel value
+//   (initialized on method entry) and so falls into the dispatcher's default case.
+//
+PhaseStatus Compiler::fgWasmRepairTryEntries()
+{
+    assert(fgNodeThreading == NodeThreading::LIR);
+
+    // If there's no EH we cannot have EH with side entries.
+    //
+    if (compHndBBtabCount == 0)
+    {
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // Find the side entry edges.
+    //
+    // For each edge into a try region block, walk the block's enclosing try regions
+    // from innermost outward, stopping at the first region that also contains the
+    // source. The last walked is the outermost one the edge enters. If the edge does
+    // not target that region's header, it is a side entry.
+    //
+    struct SideEntry
+    {
+        BasicBlock* m_pred;
+        BasicBlock* m_startHeader;
+        BasicBlock* m_target;
+    };
+
+    CompAllocator const   allocator = getAllocator(CMK_WasmCfgLowering);
+    ArrayStack<SideEntry> sideEntries(allocator);
+
+    for (BasicBlock* const block : Blocks())
+    {
+        if (!block->hasTryIndex())
+        {
+            continue;
+        }
+
+        // A handler nested inside a try carries the enclosing try's index, but for flow
+        // purposes it is outside that try (see FlowGraphTryRegions::Build). Entering such
+        // a block is not a try region side entry.
+        //
+        if (!BasicBlock::sameHndRegion(block, ehGetDsc(block->getTryIndex())->ebdTryBeg))
+        {
+            continue;
+        }
+
+        for (FlowEdge* const edge : block->PredEdges())
+        {
+            BasicBlock* const pred = edge->getSourceBlock();
+
+            // Catchret edges do not represent real Wasm control flow; resumption
+            // out of a catch is modelled by the post-try dispatch block.
+            //
+            if (pred->KindIs(BBJ_EHCATCHRET))
+            {
+                continue;
+            }
+
+            unsigned outermost = EHblkDsc::NO_ENCLOSING_INDEX;
+            for (unsigned index = block->getTryIndex(); index != EHblkDsc::NO_ENCLOSING_INDEX;
+                 index          = ehGetDsc(index)->ebdEnclosingTryIndex)
+            {
+                if (bbInTryRegions(index, pred))
+                {
+                    break;
+                }
+
+                outermost = index;
+            }
+
+            if (outermost == EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                // The source is already inside the innermost region, so this edge
+                // does not cross any region boundary.
+                //
+                continue;
+            }
+
+            BasicBlock* const startHeader = ehGetDsc(outermost)->ebdTryBeg;
+
+            if (startHeader == block)
+            {
+                // A normal entry, at the header of the outermost region entered.
+                //
+                continue;
+            }
+
+            JITDUMP("Side entry " FMT_BB " -> " FMT_BB ", entering try region headed by " FMT_BB "\n", pred->bbNum,
+                    block->bbNum, startHeader->bbNum);
+
+            sideEntries.Push({pred, startHeader, block});
+        }
+    }
+
+    if (sideEntries.Empty())
+    {
+        JITDUMP("No try region side entries\n");
+        return PhaseStatus::MODIFIED_NOTHING;
+    }
+
+    // Assign a dense index to each distinct side entry target, and record the chain of
+    // try region headers the dispatch must traverse to reach it: innermost first,
+    // ending at the header of the outermost region any side entry to it enters.
+    //
+    // A target can have several side entries entering at different depths; the longest
+    // chain covers them all.
+    //
+    ArrayStack<BasicBlock*>                     targets(allocator);
+    jitstd::vector<jitstd::vector<BasicBlock*>> targetPaths(allocator);
+    WasmBlockToIndexMap                         giveIndex(allocator);
+
+    for (SideEntry const& sideEntry : sideEntries.BottomUpOrder())
+    {
+        jitstd::vector<BasicBlock*> path(allocator);
+        for (unsigned index = sideEntry.m_target->getTryIndex(); index != EHblkDsc::NO_ENCLOSING_INDEX;
+             index          = ehGetDsc(index)->ebdEnclosingTryIndex)
+        {
+            BasicBlock* const header = ehGetDsc(index)->ebdTryBeg;
+            path.push_back(header);
+
+            if (header == sideEntry.m_startHeader)
+            {
+                break;
+            }
+        }
+
+        assert(!path.empty());
+        assert(path.back() == sideEntry.m_startHeader);
+
+        unsigned index = 0;
+        if (giveIndex.Lookup(sideEntry.m_target, &index))
+        {
+            // Both chains start at the target's own try region and walk outward through
+            // the same enclosing region sequence, just stopping at different depths. So
+            // the shorter must be a prefix of the longer, and keeping the longer covers
+            // every side entry to this target.
+            //
+#ifdef DEBUG
+            jitstd::vector<BasicBlock*> const& existing = targetPaths[index];
+            size_t const                       common   = min(existing.size(), path.size());
+            for (size_t p = 0; p < common; p++)
+            {
+                assert(existing[p] == path[p]);
+            }
+#endif
+
+            if (path.size() > targetPaths[index].size())
+            {
+                targetPaths[index] = std::move(path);
+            }
+        }
+        else
+        {
+            index = (unsigned)targets.Height();
+            giveIndex.Set(sideEntry.m_target, index);
+            targets.Push(sideEntry.m_target);
+            targetPaths.push_back(std::move(path));
+            JITDUMP("Side entry target %u is " FMT_BB "\n", index, sideEntry.m_target->bbNum);
+        }
+    }
+
+    unsigned const numTargets = (unsigned)targets.Height();
+
+    // Every region on some target's cascade chain needs a dispatcher.
+    //
+    ArrayStack<WasmTryEntryDispatch> dispatches(allocator);
+    WasmBlockToIndexMap              giveDispatch(allocator);
+
+    for (unsigned v = 0; v < numTargets; v++)
+    {
+        for (BasicBlock* const header : targetPaths[v])
+        {
+            unsigned dispatchIndex = 0;
+            if (!giveDispatch.Lookup(header, &dispatchIndex))
+            {
+                giveDispatch.Set(header, (unsigned)dispatches.Height());
+                dispatches.Push({header, nullptr, nullptr});
+            }
+        }
+    }
+
+    // Create the control variable and initialize it to a sentinel that lands in
+    // every dispatcher's default case.
+    //
+    unsigned const controlVarNum      = lvaGrabTemp(/* shortLifetime */ false DEBUGARG("Wasm try entry dispatch"));
+    lvaGetDesc(controlVarNum)->lvType = TYP_INT;
+
+    // fgFirstBB cannot be a dispatch header.
+    //
+    assert(!fgFirstBB->hasTryIndex() && !fgFirstBB->hasHndIndex());
+
+    {
+        GenTree* const sentinel = gtNewIconNode((ssize_t)numTargets, TYP_INT);
+        GenTree* const store    = gtNewStoreLclVarNode(controlVarNum, sentinel);
+        LIR::Range     range    = LIR::SeqTree(this, store);
+        LIR::AsRange(fgFirstBB).InsertAtBeginning(std::move(range));
+    }
+
+    // Create the dispatch blocks. This must happen before we wire up any switch
+    // cases, since a case in one region may target the header of another.
+    //
+    for (WasmTryEntryDispatch& dispatch : dispatches.BottomUpOrder())
+    {
+        BasicBlock* const header = dispatch.m_header;
+
+        // For a Wasm try/catch the header has already been split so that it holds
+        // just the GT_WASM_JEXCEPT test, and normal entry continues on its false
+        // edge. Otherwise split the header so the code it holds moves out of the way.
+        //
+        GenTree* const lastNode = header->GetLastLIRNode();
+
+        if ((lastNode != nullptr) && lastNode->OperIs(GT_WASM_JEXCEPT))
+        {
+            dispatch.m_normalTarget = header->GetFalseTarget();
+        }
+        else
+        {
+            dispatch.m_normalTarget = fgSplitBlockAtBeginning(header);
+        }
+
+        dispatch.m_dispatcher = fgNewBBafter(BBJ_SWITCH, header, /* extendRegion */ false);
+        dispatch.m_dispatcher->copyEHRegion(dispatch.m_normalTarget);
+        dispatch.m_dispatcher->inheritWeight(header);
+
+        fgReplaceJumpTarget(header, dispatch.m_normalTarget, dispatch.m_dispatcher);
+
+        JITDUMP("Try region headed by " FMT_BB ": dispatcher " FMT_BB ", normal entry " FMT_BB "\n", header->bbNum,
+                dispatch.m_dispatcher->bbNum, dispatch.m_normalTarget->bbNum);
+    }
+
+    // Wire up each dispatcher.
+    //
+    // For control var value v, a given dispatcher is only involved if its header is on
+    // targets[v]'s cascade chain. At the innermost header's dispatcher control goes to
+    // the target itself (or, when the target is this header, to the region's normal
+    // entry) through a landing pad that restores the sentinel. Further out, control goes
+    // to the next header inward; that header's dispatcher continues the cascade. Values
+    // not on the chain, and the sentinel, use the default case.
+    //
+    for (WasmTryEntryDispatch const& dispatch : dispatches.BottomUpOrder())
+    {
+        BasicBlock* const header     = dispatch.m_header;
+        BasicBlock* const dispatcher = dispatch.m_dispatcher;
+        unsigned const    caseCount  = numTargets + 1;
+
+        FlowEdge** const cases          = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
+        FlowEdge** const succs          = new (this, CMK_FlowEdge) FlowEdge*[caseCount];
+        unsigned         numUniqueSuccs = 0;
+
+        BlockToBlockMap    resetPads(allocator);
+        BlockToFlowEdgeMap caseEdges(allocator);
+
+        for (unsigned v = 0; v <= numTargets; v++)
+        {
+            BasicBlock* caseTarget = dispatch.m_normalTarget;
+
+            if (v < numTargets)
+            {
+                jitstd::vector<BasicBlock*> const& path = targetPaths[v];
+
+                size_t pos = path.size();
+                for (size_t p = 0; p < path.size(); p++)
+                {
+                    if (path[p] == header)
+                    {
+                        pos = p;
+                        break;
+                    }
+                }
+
+                // This dispatcher must handle this case value
+                //
+                if (pos == 0)
+                {
+                    // This is the innermost dispatcher. Route flow through a per-target
+                    // pad that resets the control var to a sentinel, so a subsequent
+                    // normal entry to this region is not misdirected by a stale value.
+                    //
+                    BasicBlock* const dest =
+                        (targets.BottomRef((int)v) == header) ? dispatch.m_normalTarget : targets.BottomRef((int)v);
+
+                    if (!resetPads.Lookup(dest, &caseTarget))
+                    {
+                        BasicBlock* const pad = fgNewBBafter(BBJ_ALWAYS, dispatcher, /* extendRegion */ false);
+                        pad->copyEHRegion(dest);
+                        pad->inheritWeightPercentage(dispatcher, 0);
+
+                        FlowEdge* const padEdge = fgAddRefPred(dest, pad);
+                        padEdge->setLikelihood(1.0);
+                        pad->SetTargetEdge(padEdge);
+
+                        GenTree* const sentinel = gtNewIconNode((ssize_t)numTargets, TYP_INT);
+                        GenTree* const store    = gtNewStoreLclVarNode(controlVarNum, sentinel);
+                        LIR::Range     range    = LIR::SeqTree(this, store);
+                        LIR::AsRange(pad).InsertAtEnd(std::move(range));
+
+                        resetPads.Set(dest, pad);
+                        caseTarget = pad;
+
+                        JITDUMP("Reset pad " FMT_BB " for " FMT_BB "\n", pad->bbNum, dest->bbNum);
+                    }
+                }
+                else if (pos < path.size())
+                {
+                    // Cascade inward. The next header always has a dispatcher, since
+                    // dispatchers are created for every block on every chain.
+                    //
+                    caseTarget = path[pos - 1];
+                    assert(giveDispatch.Lookup(caseTarget));
+                }
+            }
+
+            FlowEdge* caseEdge = nullptr;
+            if (caseEdges.Lookup(caseTarget, &caseEdge))
+            {
+                caseEdge->incrementDupCount();
+                caseTarget->bbRefs++;
+            }
+            else
+            {
+                caseEdge = fgAddRefPred(caseTarget, dispatcher);
+                caseEdge->setLikelihood(0.0);
+                caseEdges.Set(caseTarget, caseEdge);
+                succs[numUniqueSuccs++] = caseEdge;
+            }
+
+            cases[v] = caseEdge;
+        }
+
+        // The normal entry uses the default. Assume it carries all the profile weight
+        // and that all side entries are cold. This must happen after the loop above,
+        // since a case value this dispatcher does not route also falls to the normal
+        // entry and so shares the default's edge.
+        //
+        cases[numTargets]->setLikelihood(1.0);
+
+        BBswtDesc* const swtDesc = new (this, CMK_BasicBlock) BBswtDesc(succs, numUniqueSuccs, cases, caseCount, true);
+        dispatcher->SetSwitch(swtDesc);
+
+        GenTree* const controlVar = gtNewLclvNode(controlVarNum, TYP_INT);
+        GenTree* const switchNode = gtNewOperNode(GT_SWITCH, TYP_VOID, controlVar);
+
+        assert(dispatcher->isEmpty());
+        LIR::Range range = LIR::SeqTree(this, switchNode);
+        LIR::AsRange(dispatcher).InsertAtEnd(std::move(range));
+
+        JITDUMP("Dispatcher " FMT_BB " for region headed by " FMT_BB ": %u cases, %u unique successors\n",
+                dispatcher->bbNum, header->bbNum, caseCount, numUniqueSuccs);
+    }
+
+    fgHasSwitch = true;
+
+    // Finally, redirect the side entry edges.
+    //
+    for (SideEntry const& sideEntry : sideEntries.BottomUpOrder())
+    {
+        BasicBlock* const pred = sideEntry.m_pred;
+
+        unsigned   index = 0;
+        bool const found = giveIndex.Lookup(sideEntry.m_target, &index);
+        assert(found);
+
+        // Sink the control var store into the pred when it has no other successor;
+        // otherwise split the edge and put it there.
+        //
+        BasicBlock* transferBlock;
+        if (pred->HasTarget() && (pred->GetTarget() == sideEntry.m_target) && !pred->isBBCallFinallyPairTail())
+        {
+            transferBlock = pred;
+        }
+        else
+        {
+            transferBlock = fgSplitEdge(pred, sideEntry.m_target);
+        }
+
+        GenTree* const targetIndex = gtNewIconNode((ssize_t)index, TYP_INT);
+        GenTree* const store       = gtNewStoreLclVarNode(controlVarNum, targetIndex);
+        LIR::Range     range       = LIR::SeqTree(this, store);
+
+        if (transferBlock->isEmpty())
+        {
+            LIR::AsRange(transferBlock).InsertAtEnd(std::move(range));
+        }
+        else
+        {
+            LIR::InsertBeforeTerminator(transferBlock, std::move(range));
+        }
+
+        fgReplaceJumpTarget(transferBlock, sideEntry.m_target, targetPaths[index].back());
+
+        JITDUMP("Side entry to " FMT_BB " (index %u) now enters via " FMT_BB " from " FMT_BB "\n",
+                sideEntry.m_target->bbNum, index, targetPaths[index].back()->bbNum, transferBlock->bbNum);
+    }
+
+    // Weight moved from the side entry targets to the region headers, so any profile
+    // data we had is no longer self-consistent.
+    //
+    if (fgPgoConsistent)
+    {
+        JITDUMP("Profile is now inconsistent: try region entry flow was rerouted\n");
+        fgPgoConsistent = false;
+    }
+
+    fgInvalidateDfsTree();
+
+    return PhaseStatus::MODIFIED_EVERYTHING;
+}
+
+//-----------------------------------------------------------------------------
 // fgWasmTransformSccs: transform SCCs into reducible flow
 //
 // Returns:
@@ -1064,18 +1532,16 @@ PhaseStatus Compiler::fgWasmTransformSccs()
     FlowGraphDfsTree* const dfsTree                     = fgWasm.WasmDfs(hasBlocksOnlyReachableViaEH);
     fgWasm.SetDfsAndTraits(dfsTree);
 
-    // Build the try region descriptors, and if there are any regions with multiple
-    // entry blocks, add temporary flow edges from those blocks to the enclosing try region
-    // main entry blocks, making the try regions look like loops.
+    // Build the try region descriptors.
     //
-    FlowGraphTryRegions*  tryRegions = FlowGraphTryRegions::Build(this, dfsTree);
-    ArrayStack<FlowEdge*> temporaryEdges(getAllocator(CMK_WasmSccTransform));
+    FlowGraphTryRegions* tryRegions = FlowGraphTryRegions::Build(this, dfsTree);
+    JITDUMPEXEC(FlowGraphTryRegions::Dump(tryRegions));
 
-    if (tryRegions->HasMultipleEntryTryRegions())
+    // fgWasmRepairTryEntries just ran, so every region should be single entry.
+    //
+    if (tryRegions->HasSideEntry())
     {
-        JITDUMP("\nThere are try regions with multiple entries.\n");
-        JITDUMPEXEC(FlowGraphTryRegions::Dump(tryRegions));
-        tryRegions->AddMultipleEntryRegionEdges(temporaryEdges);
+        NYI_WASM("Try region side entry survived fgWasmRepairTryEntries");
     }
 
     FlowGraphNaturalLoops* const loops       = FlowGraphNaturalLoops::Find(dfsTree);
@@ -1091,10 +1557,6 @@ PhaseStatus Compiler::fgWasmTransformSccs()
         fgWasm.WasmFindSccs(sccs);
         assert(!sccs.Empty());
 
-        // Remove the temporary edges before transforming the SCCs.
-        //
-        tryRegions->RemoveMultipleEntryRegionEdges(temporaryEdges);
-
         transformed = fgWasm.WasmTransformSccs(sccs);
         assert(transformed);
 
@@ -1108,11 +1570,6 @@ PhaseStatus Compiler::fgWasmTransformSccs()
         FlowGraphNaturalLoops* loops2 = FlowGraphNaturalLoops::Find(dfsTree2);
         assert(loops2->ImproperLoopHeaders() == 0);
 #endif
-    }
-    else
-    {
-        assert(!tryRegions->HasMultipleEntryTryRegions());
-        assert(temporaryEdges.Empty());
     }
 
     return transformed ? PhaseStatus::MODIFIED_EVERYTHING : PhaseStatus::MODIFIED_NOTHING;
@@ -1215,12 +1672,13 @@ PhaseStatus Compiler::fgWasmControlFlow()
     FlowGraphTryRegions* const tryRegions = FlowGraphTryRegions::Build(this, dfsTree);
     JITDUMPEXEC(FlowGraphTryRegions::Dump(tryRegions));
 
-    // We cannot handle multiple entry try regions yet.
+    // A wasm try region is a lexically nested construct, so it can only be entered at
+    // its header. Nothing between fgWasmRepairTryEntries and here should introduce a
+    // side entry, but if one appears we cannot express the region.
     //
-    if (tryRegions->HasMultipleEntryTryRegions())
+    if (tryRegions->HasSideEntry())
     {
-        JITDUMP("\nThere are multiple entry try regions\n");
-        NYI_WASM("Multiple entry try regions");
+        NYI_WASM("Try region side entry");
     }
 
     // Our interval ends are at the starts of blocks, so we need a block that
@@ -1434,11 +1892,36 @@ PhaseStatus Compiler::fgWasmControlFlow()
                 continue;
             }
 
-            // Non-contiguous, non-subsumed forward branch. Start the Block at the try
-            // header when crossing a try-catch exit so it encloses the wrapper.
+            // Non-contiguous, non-subsumed forward branch. If it exits enclosing
+            // try/catch regions, start the Block at the outermost escaped catch-try
+            // so the Block encloses those trys' ends. Each Try emits a trailing
+            // validation `unreachable` after its `end`; starting only at the innermost
+            // try would nest the Block inside an outer try sharing this target as its
+            // end cursor, so the branch would land on that `unreachable` instead of the
+            // continuation. Single-level try/catch is unchanged (outermost == innermost).
             //
-            BasicBlock* const   blockStart = isCrossingTryCatchExit ? blockTryDsc->ebdTryBeg : block;
-            WasmInterval* const branch     = WasmInterval::NewBlock(this, blockStart, initialLayout[succNum]);
+            BasicBlock* blockStart = block;
+            for (EHblkDsc* tryDsc = ehGetBlockTryDsc(block); tryDsc != nullptr;)
+            {
+                // Once succ is contained in an enclosing try, all outer trys contain it
+                // too, so the branch does not exit them.
+                //
+                if (bbInTryRegions(ehGetIndex(tryDsc), succ))
+                {
+                    break;
+                }
+
+                if (tryDsc->HasCatchHandler())
+                {
+                    blockStart = tryDsc->ebdTryBeg;
+                }
+
+                tryDsc = (tryDsc->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+                             ? nullptr
+                             : ehGetDsc(tryDsc->ebdEnclosingTryIndex);
+            }
+
+            WasmInterval* const branch = WasmInterval::NewBlock(this, blockStart, initialLayout[succNum]);
             fgWasmIntervals->push_back(branch);
 
             // Remember an interval end here
@@ -1771,6 +2254,55 @@ PhaseStatus Compiler::fgWasmControlFlow()
     //
     fgIndexToBlockMap = initialLayout;
 
+    // Verify the physical block order (what codegen walks) agrees with the assigned
+    // preorder numbers (what the wasm intervals / codegen cursor are keyed on).
+    //
+#ifdef DEBUG
+    {
+        unsigned order = 0;
+        for (BasicBlock* const block : Blocks())
+        {
+            if (block->bbPreorderNum != order)
+            {
+                JITDUMP("Blocks out of order: " FMT_BB " has order %u, but bbPreorderNum=%u\n", block->bbNum, order,
+                        block->bbPreorderNum);
+            }
+            assert((block->bbPreorderNum == order) && "block order disagrees with preorder num");
+            order++;
+        }
+    }
+
+    {
+        // Verify that each funclet's blocks are contiguous.
+        //
+        jitstd::vector<bool> regionClosed(compFuncInfoCount, false, getAllocator(CMK_DebugOnly));
+        unsigned             prevRegion = UINT_MAX;
+        for (BasicBlock* const block : Blocks())
+        {
+            const unsigned region = bbFuncletRegionOf(block);
+            assert(region < compFuncInfoCount);
+
+            if (region != prevRegion)
+            {
+                if (prevRegion != UINT_MAX)
+                {
+                    regionClosed[prevRegion] = true;
+                }
+
+                if (regionClosed[region])
+                {
+                    JITDUMP("Wasm function region %u is not contiguous: " FMT_BB " re-enters it\n", region,
+                            block->bbNum);
+                }
+                assert(!regionClosed[region] &&
+                       "wasm function region (main method / funclet) blocks are not contiguous");
+
+                prevRegion = region;
+            }
+        }
+    }
+#endif // DEBUG
+
     JITDUMPEXEC(fgDumpWasmControlFlow());
     JITDUMPEXEC(fgDumpWasmControlFlowDot());
 
@@ -1891,12 +2423,21 @@ PhaseStatus Compiler::fgWasmSpillRefs()
             //  them. If we can somehow guarantee that all callees will spill their ref parameters
             //  immediately, we could do this before the block above.
 
-            // Remove used nodes from defs list, they're no longer meaningfully 'live'.
-            tree->VisitOperands([&defs](GenTree* op) {
+            // Remove used nodes from defs list, they're no longer meaningfully 'live'. A contained operand is
+            //  not itself on the operand stack, so look through it to the operands that are.
+            auto removeUses = [&defs](GenTree* op, auto& recurse) -> void {
                 if (!op->IsValue())
-                    return GenTree::VisitResult::Continue;
+                    return;
+                if (op->isContained())
+                {
+                    op->VisitOperands([&recurse](GenTree* innerOp) {
+                        recurse(innerOp, recurse);
+                        return GenTree::VisitResult::Continue;
+                    });
+                    return;
+                }
                 if (!op->TypeIs(TYP_REF, TYP_BYREF))
-                    return GenTree::VisitResult::Continue;
+                    return;
 
                 for (size_t i = defs.size(); i > 0; i--)
                 {
@@ -1907,7 +2448,16 @@ PhaseStatus Compiler::fgWasmSpillRefs()
                         break;
                     }
                 }
+            };
 
+            // A contained node is part of its parent, so it is visited as part of the parent instead.
+            if (tree->isContained())
+            {
+                continue;
+            }
+
+            tree->VisitOperands([&removeUses](GenTree* op) {
+                removeUses(op, removeUses);
                 return GenTree::VisitResult::Continue;
             });
 
@@ -2881,9 +3431,10 @@ PhaseStatus Compiler::fgWasmVirtualIP()
     // In the main method we update the VirtualIP local
     // (which will end up at $fp[4]).
     //
-    auto updateVirtualIPOnFrame = [&](FuncInfoDsc* func, BasicBlock* block, GenTree* beforeNode = nullptr) {
+    auto updateVirtualIPOnFrame = [&](FuncInfoDsc* func, BasicBlock* block, unsigned vipValue,
+                                      GenTree* beforeNode = nullptr) {
         const unsigned virtualIPlclNum = getVirtualIPLclNum();
-        GenTree* const virtualIPValue  = gtNewIconNode(virtualIP);
+        GenTree* const virtualIPValue  = gtNewIconNode(vipValue);
         GenTree*       setVirtualIP    = nullptr;
 
         if (func->IsFunclet())
@@ -2920,9 +3471,33 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         updatesAdded++;
     };
 
+    // Elide redundant Virtual IP stores: a store is redundant when the required value is
+    // already on the frame on every path into the block.
+    //
+    struct PerBlockData
+    {
+        enum : unsigned
+        {
+            VIP_UNSET = UINT_MAX,     // no value yet (meet identity)
+            VIP_MANY  = UINT_MAX - 1, // conflicting or unknown value
+        };
+
+        unsigned requiredVip  = 0;         // virtual IP this block requires on the frame
+        unsigned funcIndex    = 0;         // owning func index
+        unsigned availableIn  = VIP_UNSET; // virtual IP available on entry
+        unsigned availableOut = VIP_UNSET; // virtual IP available on exit
+        bool     isRequired   = false;     // block needs a correct value on the frame
+        bool     isFuncEntry  = false;     // first block of its func
+    };
+
+    const unsigned      numBlocks  = fgBBNumMax + 1;
+    PerBlockData* const blockData  = new (this, CMK_WasmEH) PerBlockData[numBlocks];
+    unsigned            vipFuncIdx = 0;
+
     for (FuncInfoDsc* const func : Funcs())
     {
         func->startVirtualIP = virtualIP;
+        bool vipFirstInFunc  = true;
 
         if (func->IsMethod())
         {
@@ -2982,18 +3557,16 @@ PhaseStatus Compiler::fgWasmVirtualIP()
                 clauses[clauseIndex].clause.ClassToken = virtualIP;
             }
 
-            // For now, just refresh the stack Virtual IP at the start of each non-empty
-            // block (later we can refine this to something like: blocks that have calls
-            // or will inspire calls during codegen).
+            // Record the required Virtual IP and store-site/entry flags for each block.
             //
-            // Also refresh BBJ_CALLFINALLY blocks: the implicit call_indirect to the
-            // finally funclet is emitted at codegen time and the runtime EH walker
-            // would otherwise see the stale try-region virtualIP and re-dispatch the
-            // same finally during unwind.
-            //
-            if (!block->isEmpty() || block->KindIs(BBJ_CALLFINALLY))
+            PerBlockData& data = blockData[block->bbNum];
+            data.requiredVip   = virtualIP;
+            data.funcIndex     = vipFuncIdx;
+            data.isRequired    = !block->isEmpty() || block->KindIs(BBJ_CALLFINALLY);
+            if (vipFirstInFunc)
             {
-                updateVirtualIPOnFrame(func, block);
+                data.isFuncEntry = true;
+                vipFirstInFunc   = false;
             }
 
             // If this is the end of the region, update its extent.
@@ -3046,6 +3619,98 @@ PhaseStatus Compiler::fgWasmVirtualIP()
         }
 
         func->endVirtualIP = virtualIP;
+        vipFuncIdx++;
+    }
+
+    // Solve the available-Virtual-IP dataflow: a block's incoming value is the meet of its
+    // in-func predecessors' outgoing values (cross-func edges and function entries are unknown).
+    //
+    class VirtualIPMerge
+    {
+        PerBlockData* const m_data;
+        unsigned            m_merge;
+
+        void MeetInto(unsigned value)
+        {
+            if (value == PerBlockData::VIP_UNSET)
+            {
+                return;
+            }
+            if (m_merge == PerBlockData::VIP_UNSET)
+            {
+                m_merge = value;
+            }
+            else if ((m_merge == PerBlockData::VIP_MANY) || (value == PerBlockData::VIP_MANY) || (m_merge != value))
+            {
+                m_merge = PerBlockData::VIP_MANY;
+            }
+        }
+
+    public:
+        VirtualIPMerge(PerBlockData* data)
+            : m_data(data)
+            , m_merge(PerBlockData::VIP_UNSET)
+        {
+        }
+
+        void StartMerge(BasicBlock* block)
+        {
+            m_merge = m_data[block->bbNum].isFuncEntry ? PerBlockData::VIP_MANY : PerBlockData::VIP_UNSET;
+        }
+
+        void Merge(BasicBlock* block, BasicBlock* pred, unsigned dupCount)
+        {
+            const bool crossFunc = m_data[pred->bbNum].funcIndex != m_data[block->bbNum].funcIndex;
+            MeetInto(crossFunc ? PerBlockData::VIP_MANY : m_data[pred->bbNum].availableOut);
+        }
+
+        void MergeHandler(BasicBlock* block, BasicBlock* tryBeg, BasicBlock* tryLast)
+        {
+            // Handler funclets have a fresh frame; nothing is available on entry.
+            //
+            MeetInto(PerBlockData::VIP_MANY);
+        }
+
+        bool EndMerge(BasicBlock* block)
+        {
+            PerBlockData& data = m_data[block->bbNum];
+            data.availableIn   = m_merge;
+            const unsigned out = data.isRequired ? data.requiredVip : m_merge;
+            if (out != data.availableOut)
+            {
+                data.availableOut = out;
+                return true;
+            }
+            return false;
+        }
+    };
+
+    VirtualIPMerge vipMerge(blockData);
+    DataFlow       vipFlow(this);
+    vipFlow.ForwardAnalysis(vipMerge);
+
+    // ForwardAnalysis builds the generic DFS tree; drop it so later wasm phases recompute theirs.
+    fgInvalidateDfsTree();
+
+    // Emit a store only where a required block's value is not already available on every path in.
+    //
+    for (FuncInfoDsc* const func : Funcs())
+    {
+        for (BasicBlock* const block : func->Blocks(this))
+        {
+            const PerBlockData& data = blockData[block->bbNum];
+
+            // A required block reached by the dataflow leaves its required value on the frame.
+            // Unreachable blocks are never visited, so their availableOut keeps its default.
+            //
+            assert(!data.isRequired || (data.availableOut == data.requiredVip) ||
+                   (data.availableOut == PerBlockData::VIP_UNSET));
+
+            if (data.isRequired && (data.availableIn != data.requiredVip))
+            {
+                updateVirtualIPOnFrame(func, block, data.requiredVip);
+            }
+        }
     }
 
 #ifdef DEBUG

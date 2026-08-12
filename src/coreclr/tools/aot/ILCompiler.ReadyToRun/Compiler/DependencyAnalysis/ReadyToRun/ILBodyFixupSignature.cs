@@ -115,6 +115,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             sb.Append(nameMangler.CompilationUnitPrefix);
             sb.Append($@"ILBodyFixupSignature({_fixupKind.ToString()}): ");
             sb.Append(nameMangler.GetMangledMethodName(ILMethod));
+            sb.Append(" for ");
+            sb.Append(nameMangler.GetMangledMethodName(_signatureMethod));
         }
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)

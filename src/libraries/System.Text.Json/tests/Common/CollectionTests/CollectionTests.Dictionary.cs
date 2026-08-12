@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
@@ -731,6 +732,8 @@ namespace System.Text.Json.Serialization.Tests
         // levels deep, along with matching JSON, encompassing the various planes of
         // dictionaries that can be combined: generic, non-generic, BCL, user-derived,
         // immutable, mutable, readonly, concurrent, specialized.
+        [RequiresUnreferencedCode("Uses Type.MakeGenericType to construct nested dictionary types.")]
+        [RequiresDynamicCode("Uses Type.MakeGenericType to construct nested dictionary types.")]
         private static IEnumerable<(Type, string)> NestedDictionaryTypeData()
         {
             string testJson = """{"Key":1}""";
@@ -793,6 +796,8 @@ namespace System.Text.Json.Serialization.Tests
 #endif
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/66220", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [RequiresUnreferencedCode("Uses Type.MakeGenericType to construct nested dictionary types.")]
+        [RequiresDynamicCode("Uses Type.MakeGenericType to construct nested dictionary types.")]
         public async Task NestedDictionariesRoundtrip()
         {
             JsonSerializerOptions options = new JsonSerializerOptions();
@@ -1300,11 +1305,11 @@ namespace System.Text.Json.Serialization.Tests
             await VerifyIgnore<ClassWithIgnoredImmutableDictionary>(false, true, false, addMissing: true);
         }
 
-        private async Task VerifyIgnore<T>(bool skip1, bool skip2, bool skip3, bool addMissing = false)
+        private async Task VerifyIgnore<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(bool skip1, bool skip2, bool skip3, bool addMissing = false)
         {
             static IDictionary<string, int> GetProperty(T objectToVerify, string propertyName)
             {
-                return (IDictionary<string, int>)objectToVerify.GetType().GetProperty(propertyName).GetValue(objectToVerify);
+                return (IDictionary<string, int>)typeof(T).GetProperty(propertyName).GetValue(objectToVerify);
             }
 
             void Verify(T objectToVerify)

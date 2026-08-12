@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Numerics.Tensors.Tests
 {
@@ -34,28 +35,74 @@ namespace System.Numerics.Tensors.Tests
             public static readonly T Value = DetermineTolerance<T>(DefaultDoubleTolerance, DefaultFloatTolerance, Half.CreateTruncating(DefaultHalfTolerance)) ?? T.CreateTruncating(0);
         }
 
-        public static bool IsEqualWithTolerance<T>(T expected, T actual, T? tolerance = null) where T : unmanaged, INumber<T>
+        public static void AssertEqualWithTolerance<T>(T expected, T actual, T? tolerance = null, string? banner = null) where T : unmanaged, INumber<T>
         {
-            if (T.IsNaN(expected) != T.IsNaN(actual))
+            T actualTolerance = tolerance ?? DefaultTolerance<T>.Value;
+            try
             {
-                return false;
+                T scaledTolerance = checked(T.Max(T.Abs(expected), T.Abs(actual)) * actualTolerance);
+                if (T.IsFinite(scaledTolerance))
+                {
+                    actualTolerance = T.Max(scaledTolerance, actualTolerance);
+                }
             }
+            catch (OverflowException) { } // Multiplication and T.Abs can throw for integers, just keep the original tolerance in that case.
 
-            tolerance = tolerance ?? DefaultTolerance<T>.Value;
-            T diff = T.Abs(expected - actual);
-            return !(diff > tolerance && diff > T.Max(T.Abs(expected), T.Abs(actual)) * tolerance);
+            // Delegate to AssertExtensions.Equal for special value comparisons (NaN, +-inf, +-0)
+            if (typeof(T) == typeof(double))
+            {
+                AssertExtensions.Equal((double)(object)expected, (double)(object)actual, (double)(object)actualTolerance, banner);
+            }
+            else if (typeof(T) == typeof(float))
+            {
+                AssertExtensions.Equal((float)(object)expected, (float)(object)actual, (float)(object)actualTolerance, banner);
+            }
+            else if (typeof(T) == typeof(Half))
+            {
+                AssertExtensions.Equal((Half)(object)expected, (Half)(object)actual, (Half)(object)actualTolerance, banner);
+            }
+            else if (typeof(T) == typeof(NFloat))
+            {
+                AssertExtensions.Equal((NFloat)(object)expected, (NFloat)(object)actual, (NFloat)(object)actualTolerance, banner);
+            }
+            else if (typeof(T) == typeof(sbyte) || typeof(T) == typeof(byte) ||
+                typeof(T) == typeof(short) || typeof(T) == typeof(ushort) || typeof(T) == typeof(char) ||
+                typeof(T) == typeof(int) || typeof(T) == typeof(uint) ||
+                typeof(T) == typeof(long) || typeof(T) == typeof(ulong) ||
+                typeof(T) == typeof(nint) || typeof(T) == typeof(nuint) ||
+                typeof(T) == typeof(Int128) || typeof(T) == typeof(UInt128))
+            {
+                T delta;
+                try
+                {
+                    delta = T.Abs(checked(expected - actual));
+                }
+                catch (OverflowException)
+                {
+                    // Subtraction and T.Abs can throw for integers, in that case the mismatch is large enough to fail assertion
+                    throw EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), banner);
+                }
+                if (delta > actualTolerance)
+                {
+                    throw EqualException.ForMismatchedValues(expected.ToString(), actual.ToString(), banner);
+                }
+            }
+            else
+            {
+                throw new NotImplementedException($"Type not supported for {nameof(AssertEqualWithTolerance)}: {typeof(T).Name}");
+            }
         }
 #else
-        public static bool IsEqualWithTolerance(float expected, float actual, float? tolerance = null)
+        public static void AssertEqualWithTolerance(float expected, float actual, float? tolerance = null, string? banner = null)
         {
-            if (float.IsNaN(expected) != float.IsNaN(actual))
+            float actualTolerance = tolerance ?? DefaultFloatTolerance;
+            float scaledTolerance = MathF.Max(MathF.Abs(expected), MathF.Abs(actual)) * (tolerance ?? DefaultFloatTolerance);
+            if (!float.IsNaN(scaledTolerance) && !float.IsInfinity(scaledTolerance))
             {
-                return false;
+                actualTolerance = MathF.Max(actualTolerance, scaledTolerance);
             }
 
-            tolerance ??= DefaultFloatTolerance;
-            float diff = MathF.Abs(expected - actual);
-            return !(diff > tolerance && diff > MathF.Max(MathF.Abs(expected), MathF.Abs(actual)) * tolerance);
+            AssertExtensions.Equal(expected, actual, actualTolerance, banner);
         }
 #endif
 
@@ -82,13 +129,13 @@ namespace System.Numerics.Tensors.Tests
             }
             else if (typeof(T) == typeof(NFloat))
             {
-                if (IntPtr.Size == 8 && doubleTolerance != null)
+                if (NFloat.Size == 8 && doubleTolerance != null)
                 {
                     return (T?)(object)(NFloat)doubleTolerance;
                 }
-                else if (IntPtr.Size == 4 && floatTolerance != null)
+                else if (NFloat.Size == 4 && floatTolerance != null)
                 {
-                    return (T?)(object)(NFloat)doubleTolerance;
+                    return (T?)(object)(NFloat)floatTolerance;
                 }
             }
 #endif

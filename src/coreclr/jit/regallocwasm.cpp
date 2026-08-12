@@ -431,14 +431,18 @@ void WasmRegAlloc::CollectReferencesForBlock(BasicBlock* block)
 //
 void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 {
+    // Track how many times this funclet will materialize the image base, so we can
+    // decide below whether to cache it in a wasm local.
+    //
+    if (node->IsCnsIntOrI() && node->IsIconHandle() && node->AsIntConCommon()->ImmedValNeedsReloc(m_compiler))
+    {
+        m_perFuncletData[m_currentFunclet]->m_imageBaseUses++;
+    }
+
     switch (node->OperGet())
     {
         case GT_NULLCHECK:
-            if (node->gtGetOp1()->gtLIRFlags & LIR::Flags::MultiplyUsed)
-            {
-                ConsumeTemporaryRegForOperand(node->gtGetOp1()
-                                                  DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
-            }
+            CollectReferencesForNullCheck(node->AsIndir());
             break;
 
         case GT_LCL_VAR:
@@ -501,6 +505,10 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
 
         case GT_CKFINITE:
             ConsumeTemporaryRegForOperand(node->gtGetOp1() DEBUGARG("ckfinite finiteness check"));
+            break;
+
+        case GT_HWINTRINSIC:
+            CollectReferencesForHardwareIntrinsic(node->AsHWIntrinsic());
             break;
 
         default:
@@ -649,6 +657,24 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
 }
 
 //------------------------------------------------------------------------
+// CollectReferencesForNullCheck: Collect virtual register references for a null check.
+//
+// Arguments:
+//    node - The GT_NULLCHECK node.
+//
+void WasmRegAlloc::CollectReferencesForNullCheck(GenTreeIndir* node)
+{
+    // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+    //
+    GenTree* const base = node->Base();
+
+    if (base->gtLIRFlags & LIR::Flags::MultiplyUsed)
+    {
+        ConsumeTemporaryRegForOperand(base DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
+    }
+}
+
+//------------------------------------------------------------------------
 // CollectReferencesForIndir: Collect virtual register references for an indirection.
 //
 // Arguments:
@@ -656,8 +682,17 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
 //
 void WasmRegAlloc::CollectReferencesForIndir(GenTreeIndir* node)
 {
-    GenTree* const addr = node->Addr();
-    ConsumeTemporaryRegForOperand(addr DEBUGARG("indirection address"));
+    // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+    //
+    ConsumeTemporaryRegForOperand(node->Base() DEBUGARG("indirection address"));
+
+    if (node->OperIs(GT_STOREIND) && node->TypeIs(TYP_SIMD12))
+    {
+        // The SIMD12 store stashes the v128 value so it can re-push it for the trailing lane store.
+        regNumber internalReg = RequestInternalRegister(node, TYP_SIMD16);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -696,6 +731,64 @@ void WasmRegAlloc::CollectReferencesForLclVar(GenTreeLclVar* lclVar)
     }
 }
 
+// ------------------------------------------------------------------------
+// CollectReferencesForHardwareIntrinsic: Collect virtual register references for a hardware intrinsic.
+//
+// Arguments:
+//    node - The GT_HWINTRINSIC node
+//
+// Notes:
+//   There are only 3 cases where we need to consume temporary registers for a hardware intrinsic:
+//   1) A swizzle with a contained mask (source operand multiply used)
+//   2) A hardware intrinsic with a non-constant immediate operand that requires a jump table fallback (all operands
+//   multiply used)
+//   3) A memory load/store hardware intrinsic that requires a null check of the address (address
+//   multiply used for null check)
+void WasmRegAlloc::CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node)
+{
+    // A constant, in-range mask Swizzle is lowered to an immediate i8x16.shuffle, which reuses the
+    // source operand as both shuffle inputs. Lowering marked the source multiply-used (and contained
+    // the mask), so release its temporary register here.
+    if ((node->GetHWIntrinsicId() == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
+    {
+        ConsumeTemporaryRegForOperand(node->Op(1) DEBUGARG("i8x16.shuffle source reuse"));
+        return;
+    }
+
+    bool needsJumpTableFallback = false;
+    if (HWIntrinsicInfo::HasImmediateOperand(node->GetHWIntrinsicId()))
+    {
+        GenTree* immOp = node->GetImmOp();
+        // Only intrinsics that have a non-constant immediate need a jump-table fallback, and mark operands
+        // MultiplyUsed during Lowering (see Lowering::LowerHWIntrinsic in lowerwasm.cpp).
+        if (!immOp->IsCnsIntOrI())
+        {
+            needsJumpTableFallback = true;
+        }
+    }
+
+    if (needsJumpTableFallback)
+    {
+        // All operands are marked multiply used in this case, so we consume a temporary register for each operand
+        // in reverse (wasm stack) order.
+        int operandCount = static_cast<int>(node->GetOperandCount());
+        for (int i = operandCount; i >= 1; i--)
+        {
+            ConsumeTemporaryRegForOperand(node->Op(i) DEBUGARG("hardware intrinsic fallback"));
+        }
+    }
+    else
+    {
+        // We still need to consume a temporary register due to a null check of the address operand for memory
+        // load/store intrinsics.
+        GenTree* addr;
+        if (node->OperIsMemoryLoad(&addr) || node->OperIsMemoryStore(&addr))
+        {
+            ConsumeTemporaryRegForOperand(addr DEBUGARG("hardware intrinsic memory address null check"));
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // RewriteLocalStackStore: rewrite a store to the stack to STOREIND(LCL_ADDR, ...).
 //
@@ -712,9 +805,6 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     // TODO-WASM-TP: this is nice and simple, but can we do this more efficiently?
     GenTree* value          = lclNode->Data();
     GenTree* insertionPoint = value->gtFirstNodeInOperandOrder();
-
-    // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
-    // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
 
     var_types storeType = lclNode->TypeGet();
     // We can end up with a block copy operation storing a non-STRUCT into a STRUCT due to type erasure.
@@ -751,6 +841,16 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
 
     LIR::ReadOnlyRange storeRange(store, store);
     m_compiler->GetLowering()->LowerRange(m_currentBlock, storeRange);
+
+    if (store->OperIs(GT_STOREIND) && store->TypeIs(TYP_SIMD12))
+    {
+        // genStoreIndTypeSimd12 tees the value into a v128 temporary to split the store into an 8-byte and a
+        // 4-byte lane store. The main collection walk does not revisit this freshly-introduced node, so request
+        // that internal register here. The re-materializable LCL_ADDR address needs no temporary.
+        regNumber internalReg = RequestInternalRegister(store, TYP_SIMD16);
+        regNumber releasedReg = ReleaseTemporaryRegister(WasmRegToType(internalReg));
+        assert(releasedReg == internalReg);
+    }
 
     // FIXME-WASM: Should we be doing this here?
     // CollectReferencesForNode(store);
@@ -1009,12 +1109,35 @@ void WasmRegAlloc::ResolveReferences()
                 unreached();
         }
 
+        // Decide up front whether to cache the image base in a wasm local, so the local can be
+        // declared as part of an existing group rather than one of its own.
+        //
+        // Each use costs 6 bytes as a `global.get` (the global index is a padded relocation) and
+        // 2 bytes as a `local.get`, against 8 bytes to initialize the local in the prolog. So
+        // three uses is the first count that wins.
+        //
+        PhysicalRegBank& imageBaseBank  = virtToPhysRegMap[static_cast<unsigned>(TypeToWasmValueType(TYP_I_IMPL))];
+        const bool       cacheImageBase = data->m_imageBaseUses >= 3;
+
+        if (cacheImageBase)
+        {
+            imageBaseBank.DeclaredCount++;
+        }
+
         for (WasmValueType type = WasmValueType::First; type < WasmValueType::Count; ++type)
         {
             PhysicalRegBank& physRegs = virtToPhysRegMap[static_cast<unsigned>(type)];
             physRegs.IndexBase        = indexBase;
             physRegs.Index            = indexBase;
             indexBase += physRegs.DeclaredCount;
+        }
+
+        // Reserve the last slot of the bank for the image base. The allocator below only ever
+        // hands out the slots the virtual registers need, so it never reaches this one.
+        //
+        if (cacheImageBase)
+        {
+            funcInfo->funWasmImageBaseLocalIndex = imageBaseBank.IndexBase + imageBaseBank.DeclaredCount - 1;
         }
 
         // Allocate all our virtual registers to physical ones.

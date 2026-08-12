@@ -850,7 +850,7 @@ void emitter::emitIns_R_R_R(
         (INS_fadd_d <= ins && ins <= INS_fmax_d) || (INS_feq_s <= ins && ins <= INS_fle_s) ||
         (INS_feq_d <= ins && ins <= INS_fle_d) || (INS_lr_w <= ins && ins <= INS_amomaxu_d) ||
         (INS_sh1add <= ins && ins <= INS_sh3add_uw) || (INS_rol <= ins && ins <= INS_maxu) ||
-        (INS_bset <= ins && ins <= INS_binv))
+        (INS_bset <= ins && ins <= INS_binv) || (INS_czero_eqz <= ins && ins <= INS_czero_nez))
     {
 #ifdef DEBUG
         switch (ins)
@@ -962,6 +962,9 @@ void emitter::emitIns_R_R_R(
             case INS_bclr:
             case INS_bext:
             case INS_binv:
+
+            case INS_czero_eqz:
+            case INS_czero_nez:
                 break;
             default:
                 NYI_RISCV64("illegal ins within emitIns_R_R_R!");
@@ -1010,7 +1013,7 @@ bool emitter::tryEmitCompressedIns_R_R_R(
     instruction ins, emitAttr attr, regNumber rd, regNumber rs1, regNumber rs2, insOpts opt)
 {
     // TODO-RISCV64-RVC: Disable this early return once compresed instructions are allowed in prolog / epilog
-    if (m_compiler->compGeneratingProlog || m_compiler->compGeneratingEpilog)
+    if (emitGeneratingPrologOrFuncletProlog() || emitGeneratingEpilogOrFuncletEpilog())
     {
         return false;
     }
@@ -1634,7 +1637,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     int insCountLimit = prefMaxInsCount;
     // If we are currently generating prolog / epilog, we are currently not inside a method block, therefore, we should
     // not use the emitDataConst + emitIns_R_C combination.
-    if (m_compiler->compGeneratingProlog || m_compiler->compGeneratingEpilog)
+    if (emitGeneratingPrologOrFuncletProlog() || emitGeneratingEpilogOrFuncletEpilog())
     {
         insCountLimit = absMaxInsCount;
     }
@@ -1861,7 +1864,7 @@ int emitter::emitLoadImmediate(emitAttr size, regNumber reg, ssize_t imm)
     {
         if (doEmit)
         {
-            assert(!m_compiler->compGeneratingProlog && !m_compiler->compGeneratingEpilog);
+            assert(!emitGeneratingPrologOrFuncletProlog() && !emitGeneratingEpilogOrFuncletEpilog());
             auto constAddr = emitDataConst(&originalImm, sizeof(long), sizeof(long), TYP_LONG);
             emitIns_R_C(INS_ld, EA_PTRSIZE, reg, REG_NA, m_compiler->eeFindJitDataOffs(constAddr));
         }
@@ -2874,15 +2877,6 @@ static unsigned UpperNBitsOfWordSignExtend(ssize_t word)
     static constexpr unsigned kSignExtend = 1 << (31 - MaskSize);
 
     return UpperNBitsOfWord<MaskSize>(word + kSignExtend);
-}
-
-template <uint8_t UpperMaskSize, uint8_t LowerMaskSize>
-static ssize_t DoubleWordSignExtend(ssize_t doubleWord)
-{
-    static constexpr size_t kLowerSignExtend = static_cast<size_t>(1) << (63 - LowerMaskSize);
-    static constexpr size_t kUpperSignExtend = static_cast<size_t>(1) << (63 - UpperMaskSize);
-
-    return doubleWord + (kLowerSignExtend | kUpperSignExtend);
 }
 
 /*static*/ unsigned emitter::TrimSignedToImm12(ssize_t imm12)
@@ -4035,6 +4029,18 @@ void emitter::emitDispInsName(
                         return emitDispIllegalInstruction(code);
                     printf("binv           %s, %s, %s\n", rd, rs1, rs2);
                     return;
+                case 0b0000111:
+                    switch (opcode3)
+                    {
+                        case 0b101:
+                            printf("czero.eqz      %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        case 0b111:
+                            printf("czero.nez      %s, %s, %s\n", rd, rs1, rs2);
+                            return;
+                        default:
+                            return emitDispIllegalInstruction(code);
+                    }
                 default:
                     return emitDispIllegalInstruction(code);
             }

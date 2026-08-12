@@ -39,7 +39,6 @@ enum SignatureKind
     SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE,
 };
 
-class Stub;
 class MethodDesc;
 class NativeCodeVersion;
 class FieldDesc;
@@ -178,8 +177,6 @@ EXTERN_C FCDECL1(void*, JIT_GetGCStaticBase_Helper, MethodTable *pMT);
 
 EXTERN_C void DoJITFailFast();
 EXTERN_C FCDECL0(void, JIT_FailFast);
-
-FCDECL0(int, JIT_GetCurrentManagedThreadId);
 
 EXTERN_C void ReversePInvokeBadTransition();
 
@@ -428,6 +425,7 @@ public:
 protected:
     COR_ILMETHOD_DECODER* getMethodInfoWorker(
         MethodDesc* ftn,
+        MethodDesc* ilFtn,
         COR_ILMETHOD_DECODER* header,
         CORINFO_METHOD_INFO* methInfo,
         CORINFO_CONTEXT_HANDLE exactContext = NULL);
@@ -540,6 +538,8 @@ public:
     }
 
     // ICorDebugInfo stuff.
+    void getVars(CORINFO_METHOD_HANDLE ftn, ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
+                 bool *extendOthers) override final;
     void setBoundaries(CORINFO_METHOD_HANDLE ftn,
                        ULONG32 cMap, ICorDebugInfo::OffsetMapping *pMap) override final;
     void setVars(CORINFO_METHOD_HANDLE ftn, ULONG32 cVars,
@@ -1007,7 +1007,7 @@ struct VMAUXILIARYSYMBOLDEF
     PTR_CSTR name;
 };
 
-#define MAX_AUXILIARY_SYMBOLS 7
+#define MAX_AUXILIARY_SYMBOLS 17
 
 #if defined(DACCESS_COMPILE)
 

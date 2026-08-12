@@ -11,21 +11,26 @@ export function abortPosix(exitCode: number, reason: any, nativeReady: boolean):
     try {
         _ems_.EXITSTATUS = exitCode;
         _ems_.DOTNET.isAborting = true;
+        if (_ems_.dotnetBrowserUtilsExports.abortBackgroundTimers) {
+            _ems_.dotnetBrowserUtilsExports.abortBackgroundTimers();
+        }
         if (exitCode === 0 && nativeReady) {
             _ems_._exit(0);
             _ems_.ABORT = true;
             return;
         } else if (nativeReady) {
+            _ems_.___funcs_on_exit = () => { };
             _ems_.ABORT = true;
             _ems_.___trap();
         } else {
+            _ems_.___funcs_on_exit = () => { };
             _ems_.ABORT = true;
             _ems_.abort(reason);
         }
         throw reason;
     } catch (error: any) {
         // do not propagate ExitStatus exception
-        if (typeof error === "object" && (typeof error.status === "number" || error instanceof WebAssembly.RuntimeError)) {
+        if (error && (typeof error.status === "number" || error instanceof WebAssembly.RuntimeError)) {
             return;
         }
         throw error;

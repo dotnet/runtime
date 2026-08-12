@@ -22,65 +22,7 @@ namespace System.Diagnostics
         internal static bool SupportsAtomicNonInheritablePipeCreation => Interop.Sys.IsAtomicNonInheritablePipeCreationSupported;
 
         private static bool IsExecutable(string fullPath)
-        {
-            Interop.Sys.FileStatus fileinfo;
-
-            if (Interop.Sys.Stat(fullPath, out fileinfo) < 0)
-            {
-                return false;
-            }
-
-            // Check if the path is a directory.
-            if ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR)
-            {
-                return false;
-            }
-
-            const UnixFileMode AllExecute = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
-
-            UnixFileMode permissions = ((UnixFileMode)fileinfo.Mode) & AllExecute;
-
-            // Avoid checking user/group when permission.
-            if (permissions == AllExecute)
-            {
-                return true;
-            }
-            else if (permissions == 0)
-            {
-                return false;
-            }
-
-            uint euid = Interop.Sys.GetEUid();
-
-            if (euid == 0)
-            {
-                return true; // We're root.
-            }
-
-            if (euid == fileinfo.Uid)
-            {
-                // We own the file.
-                return (permissions & UnixFileMode.UserExecute) != 0;
-            }
-
-            bool groupCanExecute = (permissions & UnixFileMode.GroupExecute) != 0;
-            bool otherCanExecute = (permissions & UnixFileMode.OtherExecute) != 0;
-
-            // Avoid group check when group and other have same permissions.
-            if (groupCanExecute == otherCanExecute)
-            {
-                return groupCanExecute;
-            }
-
-            if (Interop.Sys.IsMemberOfGroup(fileinfo.Gid))
-            {
-                return groupCanExecute;
-            }
-            else
-            {
-                return otherCanExecute;
-            }
-        }
+            => Interop.Sys.Access(fullPath, Interop.Sys.AccessMode.X_OK) == 0 && !Directory.Exists(fullPath);
 
         internal static unsafe void EnsureInitialized()
         {
@@ -232,7 +174,7 @@ namespace System.Diagnostics
                                                               Directory.GetCurrentDirectory();
                 string filenameInWorkingDirectory = Path.Combine(workingDirectory, filename);
                 // filename is a relative path in the working directory
-                if (File.Exists(filenameInWorkingDirectory))
+                if (IsExecutable(filenameInWorkingDirectory))
                 {
                     resolvedFilename = filenameInWorkingDirectory;
                 }
@@ -248,7 +190,7 @@ namespace System.Diagnostics
                 return null;
             }
 
-            if (Interop.Sys.Access(resolvedFilename, Interop.Sys.AccessMode.X_OK) == 0)
+            if (IsExecutable(resolvedFilename))
             {
                 return resolvedFilename;
             }
@@ -323,10 +265,27 @@ namespace System.Diagnostics
             return argvList.ToArray();
         }
 
+        internal static string ResolveValidPath(string filename, string? workingDirectory)
+        {
+            string? resolvedPath = ResolvePath(filename);
+            if (string.IsNullOrEmpty(resolvedPath))
+            {
+                Interop.ErrorInfo error = Interop.Error.ENOENT.Info();
+                throw CreateExceptionForErrorStartingProcess(error.GetErrorMessage(), error.RawErrno, filename, workingDirectory);
+            }
+
+            if (Directory.Exists(resolvedPath))
+            {
+                throw new Win32Exception(SR.DirectoryNotValidAsInput);
+            }
+
+            return resolvedPath;
+        }
+
         /// <summary>Resolves a path to the filename passed to ProcessStartInfo. </summary>
         /// <param name="filename">The filename.</param>
         /// <returns>The resolved path. It can return null in case of URLs.</returns>
-        internal static string? ResolvePath(string filename)
+        private static string? ResolvePath(string filename)
         {
             // Follow the same resolution that Windows uses with CreateProcess:
             // 1. First try the exact path provided
@@ -351,7 +310,7 @@ namespace System.Diagnostics
                 try
                 {
                     path = Path.Combine(Path.GetDirectoryName(path)!, filename);
-                    if (File.Exists(path))
+                    if (IsExecutable(path))
                     {
                         return path;
                     }
@@ -361,7 +320,7 @@ namespace System.Diagnostics
 
             // Then check the current directory
             path = Path.Combine(Directory.GetCurrentDirectory(), filename);
-            if (File.Exists(path))
+            if (IsExecutable(path))
             {
                 return path;
             }

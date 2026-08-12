@@ -29,7 +29,10 @@ if(NOT WIN32 AND NOT HOST_WASM AND NOT (CLR_CMAKE_TARGET_ARCH_WASM AND NOT CLR_C
 endif()
 
 if(CLR_CMAKE_HOST_UNIX)
-    list(APPEND SOURCES cpucount.c)
+    list(APPEND SOURCES
+        cpucount.c
+        thread.c
+    )
 endif()
 
 # Provide an object library for scenarios where we ship static libraries
@@ -60,9 +63,17 @@ if(CLR_CMAKE_HOST_ANDROID)
   target_link_libraries(minipal PRIVATE log)
 endif(CLR_CMAKE_HOST_ANDROID)
 
+set(SANITIZER_EXPORTS_FILE ${CMAKE_CURRENT_SOURCE_DIR}/sanitizer_exports.def)
+
 add_library(minipal_sanitizer_support OBJECT
     sansupport.c)
-# Exclude this target from the default build as we may not have sanitzer headers available
+
+set_source_files_properties(sansupport.c PROPERTIES OBJECT_DEPENDS ${SANITIZER_EXPORTS_FILE})
+
+if (MSVC)
+    target_link_options(minipal_sanitizer_support INTERFACE /DEF:${SANITIZER_EXPORTS_FILE})
+endif()
+# Exclude this target from the default build as we may not have sanitizer headers available
 # in a non-sanitized build.
 set_target_properties(minipal_sanitizer_support PROPERTIES EXCLUDE_FROM_ALL ON)
 

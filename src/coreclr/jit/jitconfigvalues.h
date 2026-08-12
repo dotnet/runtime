@@ -439,8 +439,10 @@ RELEASE_CONFIG_INTEGER(EnableX86Serialize,          "EnableX86Serialize",       
 RELEASE_CONFIG_INTEGER(EnableArm64Aes,              "EnableArm64Aes",            1) // Allows Arm64 Aes+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Atomics,          "EnableArm64Atomics",        1) // Allows Arm64 Atomics+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Crc32,            "EnableArm64Crc32",          1) // Allows Arm64 Crc32+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Cssc,             "EnableArm64Cssc",           1) // Allows Arm64 Cssc+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Dczva,            "EnableArm64Dczva",          1) // Allows Arm64 Dczva+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Dp,               "EnableArm64Dp",             1) // Allows Arm64 Dp+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Fp16,             "EnableArm64Fp16",           1) // Allows Arm64 Fp16+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Rdm,              "EnableArm64Rdm",            1) // Allows Arm64 Rdm+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             "EnableArm64Sha1",           1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           "EnableArm64Sha256",         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
@@ -455,6 +457,7 @@ RELEASE_CONFIG_INTEGER(EnableArm64SveSm4,           "EnableArm64SveSm4",        
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zba,            "EnableRiscV64Zba",          1) // Allows RiscV64 Zba hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbb,            "EnableRiscV64Zbb",          1) // Allows RiscV64 Zbb hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableRiscV64Zbs,            "EnableRiscV64Zbs",          1) // Allows RiscV64 Zbs hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableRiscV64Zicond,         "EnableRiscV64Zicond",       1) // Allows RiscV64 Zicond hardware intrinsics to be disabled
 #endif
 
 RELEASE_CONFIG_INTEGER(EnableEmbeddedBroadcast,     "EnableEmbeddedBroadcast",   1) // Allows embedded broadcasts to be disabled
@@ -576,10 +579,6 @@ RELEASE_CONFIG_INTEGER(JitInlineSIMDMultiplier, "JitInlineSIMDMultiplier", 3)
 // Ex lclMAX_TRACKED constant.
 RELEASE_CONFIG_INTEGER(JitMaxLocalsToTrack, "JitMaxLocalsToTrack", 0x400)
 
-#if defined(FEATURE_ENABLE_NO_RANGE_CHECKS)
-RELEASE_CONFIG_INTEGER(JitNoRngChks, "JitNoRngChks", 0) // If 1, don't generate range checks
-#endif
-
 OPT_CONFIG_INTEGER(JitDoAssertionProp, "JitDoAssertionProp", 1) // Perform assertion propagation optimization
 OPT_CONFIG_INTEGER(JitDoCopyProp, "JitDoCopyProp", 1) // Perform copy propagation on variables that appear redundant
 OPT_CONFIG_INTEGER(JitDoOptimizeIVs, "JitDoOptimizeIVs", 1)     // Perform optimization of induction variables
@@ -621,12 +620,6 @@ OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
 // the last time suspension happened, and skips storing them in the case where
 // a continuation is being reused.
 OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAnalysisRange")
-
-// Enable continuation reuse based on method hash range
-OPT_CONFIG_STRING(JitAsyncReuseContinuationsRange, "JitAsyncReuseContinuationsRange")
-// Save and reuse continuation instances in runtime async functions. Also
-// implies use of shared continuation layouts for all suspension points.
-RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 1)
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
@@ -903,7 +896,6 @@ CONFIG_INTEGER(JitDispIns, "JitDispIns", 0)
 #if defined(TARGET_WASM)
 // Set this to 1 to turn NYI_WASM into R2R unsupported failures instead of asserts.
 RELEASE_CONFIG_INTEGER(JitWasmNyiToR2RUnsupported, "JitWasmNyiToR2RUnsupported", 0)
-RELEASE_CONFIG_INTEGER(JitWasmSimdNyiToR2RUnsupported, "JitWasmSimdNyiToR2RUnsupported", 0)
 
 // Specify methods that will fail with R2R unsupported after codegen.
 // Useful for bypassing methods that compile cleanly but have invalid Wasm codegen.

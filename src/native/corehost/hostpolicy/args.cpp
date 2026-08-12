@@ -26,8 +26,13 @@ bool parse_arguments(
         // Find the managed app in the same directory
         managed_application_path = init.host_info.app_path;
 
-        args.app_argv = &argv[1];
-        args.app_argc = argc - 1;
+        if (argc > 0)
+        {
+            assert(argv != nullptr);
+            args.invocation_name = argv[0];
+            args.app_argv = &argv[1];
+            args.app_argc = argc - 1;
+        }
     }
     else if (init.host_mode == host_mode_t::libhost)
     {
