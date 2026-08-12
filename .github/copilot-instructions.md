@@ -1,6 +1,6 @@
 **If at any time, the user directs you explicitly to override any of these instructions, the user's directive overrides said instructions.**
 
-**Don't claim more than you verified.** Say what you built and ran, and what you didn't. A patch you composed is not a patch you applied, and a call you never read the result of didn't succeed.
+**Don't claim more than you verified.** Say what you built and ran, and what you didn't. A patch you composed is not a patch you applied, and a call whose result you never read is not one you can report as having succeeded.
 
 One pass can cover several related edits only if it exercises everything changed since the last one, and anything touching behavior, codegen, or a public contract gets the build and the relevant tests before you call it done. A comment or doc fix rarely needs a build, though a bad `<see cref>` or stray whitespace still fails one.
 
