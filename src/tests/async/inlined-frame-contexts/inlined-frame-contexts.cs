@@ -25,18 +25,25 @@ public class Async2InlinedFrameContexts
 
         public NamedContext(string name) => Name = name;
 
+        // Queue the callback and re-establish this context around it, as a real UI-style
+        // context would. Running it inline instead would make an awaiting loop recurse
+        // one frame deeper per iteration, since each suspension posts from inside the
+        // previous callback.
         public override void Post(SendOrPostCallback d, object? state)
         {
-            SynchronizationContext currentCtx = Current;
-            SetSynchronizationContext(this);
-            try
+            ThreadPool.QueueUserWorkItem(_ =>
             {
-                d(state);
-            }
-            finally
-            {
-                SetSynchronizationContext(currentCtx);
-            }
+                SynchronizationContext currentCtx = Current;
+                SetSynchronizationContext(this);
+                try
+                {
+                    d(state);
+                }
+                finally
+                {
+                    SetSynchronizationContext(currentCtx);
+                }
+            });
         }
     }
 
