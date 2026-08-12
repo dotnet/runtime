@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <minipal/utils.h>
 
 #if defined(__linux__)
 #include <unistd.h>
@@ -79,6 +80,10 @@ static inline size_t minipal_get_current_thread_id_no_cache(void)
     return tid;
 }
 
+#if !defined(__wasm) || defined(_REENTRANT)
+extern PLATFORM_THREAD_LOCAL size_t minipal_cached_thread_id;
+#endif
+
 /**
  * Get the current thread ID.
  *
@@ -90,20 +95,12 @@ static inline size_t minipal_get_current_thread_id(void)
     return minipal_get_current_thread_id_no_cache();
 
 #else // !__wasm || _REENTRANT
-#if defined(__GNUC__) && !defined(__clang__) && defined(__cplusplus)
-    // gcc doesn't like _Thread_local when __cplusplus is defined.
-    // although thread_local is C2x, which other compilers don't allow with C11.
-    static thread_local size_t tid = 0;
-#else
-    static _Thread_local size_t tid = 0;
-#endif
-
-    if (!tid)
+    if (!minipal_cached_thread_id)
     {
-        tid = minipal_get_current_thread_id_no_cache();
+        minipal_cached_thread_id = minipal_get_current_thread_id_no_cache();
     }
 
-    return tid;
+    return minipal_cached_thread_id;
 #endif // __wasm && !_REENTRANT
 }
 
