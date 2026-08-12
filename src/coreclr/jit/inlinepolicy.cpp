@@ -3504,11 +3504,8 @@ void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
         return;
     }
 
-    double probability = 1.0;
-    for (unsigned i = 0; i < m_CallsiteDepth + (unsigned)m_AsyncStressIndex; i++)
-    {
-        probability *= (double)JitConfig.JitStressAsyncInliningPct() / 100.0;
-    }
+    const double pct         = (double)JitConfig.JitStressAsyncInliningPct() / 100.0;
+    const double probability = pow(pct, (double)(m_CallsiteDepth + (unsigned)m_AsyncStressIndex));
 
     CLRRandom* const random = m_RootCompiler->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
 
