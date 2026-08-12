@@ -88,6 +88,8 @@ namespace System.Collections.Specialized
 
         private static void ValidateKey(string key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             if (key.Contains('\0'))
             {
                 throw new ArgumentException(SR.Argument_EnvironmentVariableNameContainsNull, nameof(key));
