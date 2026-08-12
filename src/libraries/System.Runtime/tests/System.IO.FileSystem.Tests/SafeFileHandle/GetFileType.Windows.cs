@@ -126,28 +126,10 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        public unsafe void FileStream_SymbolicLink_CanSeek_IsNotAffectedByType()
-        {
-            string targetPath = GetTestFilePath();
-            string linkPath = GetTestFilePath();
-            File.WriteAllText(targetPath, "test");
-            File.CreateSymbolicLink(linkPath, targetPath);
-
-            using SafeFileHandle handleWithoutTypeAccess = OpenSymbolicLink(linkPath);
-            using FileStream streamWithoutTypeAccess = new(handleWithoutTypeAccess, FileAccess.Read);
-            bool canSeekWithoutTypeAccess = streamWithoutTypeAccess.CanSeek;
-            Assert.True(canSeekWithoutTypeAccess);
-
-            using SafeFileHandle handleWithTypeAccess = OpenSymbolicLink(linkPath);
-            Assert.Equal(FileHandleType.SymbolicLink, handleWithTypeAccess.Type);
-            using FileStream streamWithTypeAccess = new(handleWithTypeAccess, FileAccess.Read);
-            bool canSeekWithTypeAccess = streamWithTypeAccess.CanSeek;
-            Assert.True(canSeekWithTypeAccess);
-        }
-
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
-        public unsafe void FileStream_SymbolicLink_CanSeek_IsNotAffectedBySubsequentTypeAccess()
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public unsafe void FileStream_SymbolicLink_CanSeek_IsNotAffectedByType(bool accessTypeFirst)
         {
             string targetPath = GetTestFilePath();
             string linkPath = GetTestFilePath();
@@ -155,13 +137,15 @@ namespace System.IO.Tests
             File.CreateSymbolicLink(linkPath, targetPath);
 
             using SafeFileHandle handle = OpenSymbolicLink(linkPath);
-            using FileStream stream = new(handle, FileAccess.Read);
-            bool canSeekBeforeTypeAccess = stream.CanSeek;
-            Assert.True(canSeekBeforeTypeAccess);
+            if (accessTypeFirst)
+            {
+                Assert.Equal(FileHandleType.SymbolicLink, handle.Type);
+            }
 
+            using FileStream stream = new(handle, FileAccess.Read);
+            Assert.True(stream.CanSeek);
             Assert.Equal(FileHandleType.SymbolicLink, handle.Type);
-            bool canSeekAfterTypeAccess = stream.CanSeek;
-            Assert.True(canSeekAfterTypeAccess);
+            Assert.True(stream.CanSeek);
         }
 
         private static unsafe SafeFileHandle OpenSymbolicLink(string path)
