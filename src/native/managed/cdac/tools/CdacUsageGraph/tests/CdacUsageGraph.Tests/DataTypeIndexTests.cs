@@ -1137,13 +1137,62 @@ public sealed class DataTypeIndexTests
             new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
 
         IReadOnlyList<ContractRegistration> registrations =
-            ContractRegistrationParser.Parse(compilation);
+            ContractRegistrationParser.Parse(
+                compilation,
+                CdacSymbols.CoreCLRContractsMetadataName);
 
         ContractRegistration registration = Assert.Single(registrations);
         Assert.Equal(new ContractVersion(new ContractInterface("ITest"), "c1"), registration.Label);
         Assert.Equal("ITest", registration.Interface.Name);
         Assert.Equal("Impl", registration.Impl.Name);
         Assert.Equal("Impl", registration.Constructor.ContainingType.Name);
+    }
+
+    [Fact]
+    public void DiscoversDefaultValueFromConfiguredRegistrationType()
+    {
+        const string source = """
+            namespace Microsoft.Diagnostics.DataContractReader
+            {
+                public sealed class ContractRegistry
+                {
+                    public void Register<T>(string version, System.Func<object, T> factory) { }
+                }
+            }
+            namespace Microsoft.Diagnostics.DataContractReader.Contracts
+            {
+                public interface IContract { }
+                public interface ITest : IContract { }
+                public readonly struct Impl : ITest { }
+            }
+            namespace Example
+            {
+                public static class PrivateContracts
+                {
+                    public static void Register(
+                        Microsoft.Diagnostics.DataContractReader.ContractRegistry registry)
+                    {
+                        registry.Register<
+                            Microsoft.Diagnostics.DataContractReader.Contracts.ITest>(
+                                "n1",
+                                _ => default(
+                                    Microsoft.Diagnostics.DataContractReader.Contracts.Impl));
+                    }
+                }
+            }
+            """;
+        CSharpCompilation compilation = CSharpCompilation.Create(
+            "ConfiguredRegistrationDiscoveryTest",
+            [CSharpSyntaxTree.ParseText(source)],
+            RuntimeReferences(),
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        IReadOnlyList<ContractRegistration> registrations =
+            ContractRegistrationParser.Parse(compilation, "Example.PrivateContracts");
+
+        ContractRegistration registration = Assert.Single(registrations);
+        Assert.Equal(new ContractVersion(new ContractInterface("ITest"), "n1"), registration.Label);
+        Assert.Equal("Impl", registration.Impl.Name);
     }
 
     [Fact]
