@@ -50,7 +50,7 @@ pr:
 variables:
   - template: /eng/pipelines/common/variables.yml
   - name: enableHelixJobMonitor
-    value: true
+    value: false
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -171,6 +171,7 @@ extends:
           platforms:
           - wasi_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # CoreCLR library-test smoke leg run on wasmtime via Helix
       # (wasi_wasm queue). Starts with a single-library smoke set; see
@@ -181,6 +182,7 @@ extends:
           - wasi_wasm
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
