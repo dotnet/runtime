@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.MDInternalRW))]
 internal sealed partial class MDInternalRW : IData<MDInternalRW>
 {
-    [Field] public TargetPointer Stgdb { get; }
+    [Field] public partial TargetPointer Stgdb { get; }
 }

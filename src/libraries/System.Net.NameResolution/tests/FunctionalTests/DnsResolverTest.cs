@@ -225,6 +225,7 @@ namespace System.Net.NameResolution.Tests
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/131188", typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsServer2025))]
         public async Task ResolveAddresses_NonExistent_ReturnsNxDomain(bool async)
         {
             using DnsResolver r = new DnsResolver();

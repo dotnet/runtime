@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.InterfaceEntry))]
 internal sealed partial class InterfaceEntry : IData<InterfaceEntry>
 {
-    [Field] public TargetPointer MethodTable { get; }
-    [Field] public TargetPointer Unknown { get; }
+    [Field] public partial TargetPointer MethodTable { get; }
+    [Field] public partial TargetPointer Unknown { get; }
 }

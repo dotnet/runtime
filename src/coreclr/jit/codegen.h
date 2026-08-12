@@ -229,6 +229,8 @@ protected:
     void                       genEmitBeginBlock(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndBlock();
     void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
+    void                       genStoreAsyncContinuationGlobal();
+    void                       genClearAsyncContinuationGlobal();
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
@@ -441,6 +443,7 @@ protected:
 
 #if defined(TARGET_ARM64)
     void genUnknownSizeFrame();
+    void genZeroInitializeUnknownSizeFrame();
 #endif
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -467,6 +470,9 @@ protected:
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
     void genPoisonFrame(regMaskTP bbRegLiveIn);
+#ifdef TARGET_ARM64
+    void genPoisonUnknownSizeVariable(int varNum, char poisonVal);
+#endif
 
 #if defined(TARGET_ARM)
 
@@ -613,6 +619,9 @@ protected:
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
     void genBeginFnProlog();
+#ifdef TARGET_WASM
+    void genInitImageBaseLocal(FuncInfoDsc* func);
+#endif
     void genFnEpilog(BasicBlock* block);
 
     void genReserveFuncletProlog(BasicBlock* block);
@@ -631,6 +640,7 @@ protected:
 #if defined(TARGET_ARM64)
     void genArm64EmitterUnitTestsGeneral();
     void genArm64EmitterUnitTestsAdvSimd();
+    void genArm64EmitterUnitTestsFp16();
     void genArm64EmitterUnitTestsSve();
     void genArm64EmitterUnitTestsPac();
 #endif
@@ -807,6 +817,7 @@ protected:
 
     void genCodeForDivMod(GenTreeOp* treeNode);
     void genCodeForMul(GenTreeOp* treeNode);
+    void genCodeForBitOp(GenTreeOp* treeNode);
     void genCodeForIncSaturate(GenTree* treeNode);
     void genCodeForMulHi(GenTreeOp* treeNode);
     void genLeaInstruction(GenTreeAddrMode* lea);
@@ -1194,7 +1205,8 @@ protected:
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
 #ifdef TARGET_WASM
-    void genCodeForFrameSize(GenTree* tree);
+    void           genCodeForFrameSize(GenTree* tree);
+    cnsval_ssize_t genWasmMemargOffset(GenTree* addr);
 #endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);

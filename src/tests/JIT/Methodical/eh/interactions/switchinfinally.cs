@@ -87,7 +87,8 @@ namespace test3
         /// The main entry point for the application.
         /// </summary>
         [Fact]
-        [ActiveIssue("needs triage", TestPlatforms.Browser | TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("needs triage", TestPlatforms.Wasi | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [ActiveIssue("needs triage", typeof(TestLibrary.PlatformDetection), nameof(TestLibrary.PlatformDetection.IsBrowser), nameof(TestLibrary.PlatformDetection.IsMonoRuntime))]
         public static int TestEntryPoint()
         {
             //Start recording

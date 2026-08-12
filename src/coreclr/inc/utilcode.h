@@ -806,8 +806,10 @@ public:
 
     T *Append()
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             NOTHROW;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         // The array should grow, if we can't fit one more element into the array.
@@ -818,8 +820,10 @@ public:
 
     T *AppendThrowing()
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         // The array should grow, if we can't fit one more element into the array.
@@ -2355,7 +2359,6 @@ struct HASHLINK
 
 template <class T> class CChainedHash
 {
-    friend class VerifyLayoutsMD;
 public:
     CChainedHash(int iBuckets=32) :
         m_rgData(0),

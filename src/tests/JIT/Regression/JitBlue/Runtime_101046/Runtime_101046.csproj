@@ -8,5 +8,6 @@
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
     <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

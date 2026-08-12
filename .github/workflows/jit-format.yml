@@ -7,6 +7,9 @@ on:
       - 'src/coreclr/jit/**'
     branches: [ main ]
 
+permissions:
+  contents: read
+
 jobs:
   format:
     strategy:
@@ -37,7 +40,7 @@ jobs:
         with:
           path: runtime
       - name: Install Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
       
       - name: Run jitformat.py
         run: |

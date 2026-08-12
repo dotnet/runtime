@@ -103,18 +103,6 @@ void CodeGen::genMarkLabelsForCodegen()
 //
 void CodeGen::genBeginFnProlog()
 {
-    // SIMD (Vector2/3/4, Vector128) parameters are lowered to i32 in the wasm signature, so any
-    // vector operation performed on them produces an invalid module (e.g. a v128/f64 op with
-    // an i32 operand). Bail such methods to the interpreter until SIMD parameters are
-    // properly supported in the wasm calling convention.
-    for (unsigned lclNum = 0; lclNum < m_compiler->info.compArgsCount; lclNum++)
-    {
-        if (varTypeIsSIMD(m_compiler->lvaGetDesc(lclNum)->TypeGet()))
-        {
-            NYI_WASM_SIMD("SIMD parameter");
-        }
-    }
-
     GetEmitter()->emitIns(INS_code_size);
 
     FuncInfoDsc* const func = m_compiler->funGetFunc(ROOT_FUNC_IDX);
@@ -127,6 +115,28 @@ void CodeGen::genBeginFnProlog()
     {
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
+    }
+
+    genInitImageBaseLocal(func);
+}
+
+//------------------------------------------------------------------------
+// genInitImageBaseLocal: initialize the wasm local caching the image base, if this
+//   function has one.
+//
+// Arguments:
+//   func - the function or funclet whose prolog is being generated
+//
+// Notes:
+//   Emitted in the prolog, which dominates every use. The imageBase global is immutable,
+//   so the cached value never needs refreshing.
+//
+void CodeGen::genInitImageBaseLocal(FuncInfoDsc* func)
+{
+    if (func->funWasmImageBaseLocalIndex != UINT_MAX)
+    {
+        GetEmitter()->emitImageBaseGlobal();
+        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, func->funWasmImageBaseLocalIndex);
     }
 }
 
@@ -291,7 +301,11 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
 
         LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
         // Skip homing parameters that are dead at method entry (not live into the first block).
-        if (varDsc->lvTracked && !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
+        // Exception: on wasm all on-frame GC locals are reported to the GC stack walk as untracked
+        // (i.e. live for the whole method), so a GC parameter's frame slot must still be homed
+        if (varDsc->lvTracked &&
+            !VarSetOps::IsMember(m_compiler, m_compiler->fgFirstBB->bbLiveIn, varDsc->lvVarIndex) &&
+            !(varDsc->lvOnFrame && varDsc->HasGCPtr()))
         {
             return;
         }
@@ -454,6 +468,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
     }
+
+    genInitImageBaseLocal(func);
 
     // All the funclet params are used from their home registers, so nothing
     // needs homing here.
@@ -1046,6 +1062,22 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 #endif // FEATURE_SIMD
 
+        case GT_ASYNC_CONTINUATION:
+            genCodeForAsyncContinuation(treeNode);
+            break;
+
+        case GT_RETURN_SUSPEND:
+            genReturnSuspend(treeNode->AsUnOp());
+            break;
+
+        case GT_ASYNC_RESUME_INFO:
+            genAsyncResumeInfo(treeNode->AsVal());
+            break;
+
+        case GT_RECORD_ASYNC_RESUME:
+            genRecordAsyncResume(treeNode->AsVal());
+            break;
+
         default:
 #ifdef DEBUG
             if (JitConfig.JitWasmNyiToR2RUnsupported())
@@ -1147,6 +1179,109 @@ void CodeGen::genCatchArg(GenTree* treeNode)
     // The catch arg is passed as the 3rd parameter, so has Wasm local index 2.
     GetEmitter()->emitIns_I(INS_local_get, EA_GCREF, 2);
     WasmProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genStoreAsyncContinuationGlobal: Pop the operand-stack top into the async continuation global.
+//
+void CodeGen::genStoreAsyncContinuationGlobal()
+{
+    GetEmitter()->emitIns_I(INS_global_set, EA_SET_FLG(EA_GCREF, EA_CNS_RELOC_FLG),
+                            (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->asyncContinuation);
+}
+
+//------------------------------------------------------------------------
+// genClearAsyncContinuationGlobal: Null the async continuation global on the normal-return path.
+//
+void CodeGen::genClearAsyncContinuationGlobal()
+{
+    emitter* emit = GetEmitter();
+    emit->emitIns_I(INS_I_const, EA_PTRSIZE, 0);
+    emit->emitIns_I(INS_global_set, EA_SET_FLG(EA_GCREF, EA_CNS_RELOC_FLG),
+                    (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->asyncContinuation);
+}
+
+//------------------------------------------------------------------------
+// genCodeForAsyncContinuation: Read the async continuation global onto the operand stack.
+//
+// Arguments:
+//    tree - The GT_ASYNC_CONTINUATION node.
+//
+void CodeGen::genCodeForAsyncContinuation(GenTree* tree)
+{
+    assert(tree->OperIs(GT_ASYNC_CONTINUATION));
+    assert(tree->TypeIs(TYP_REF));
+
+    GetEmitter()->emitIns_I(INS_global_get, EA_SET_FLG(EA_GCREF, EA_CNS_RELOC_FLG),
+                            (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->asyncContinuation);
+    WasmProduceReg(tree);
+}
+
+//------------------------------------------------------------------------
+// genReturnSuspend: Emit code for a GT_RETURN_SUSPEND node.
+//
+// Stores the continuation into the async global, then pushes a zero of the native return type
+// so the epilog's `return` is well-typed.
+//
+// Arguments:
+//    treeNode - The GT_RETURN_SUSPEND node.
+//
+void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_RETURN_SUSPEND));
+
+    GenTree* op = treeNode->gtGetOp1();
+    assert(op->TypeIs(TYP_REF));
+
+    genConsumeReg(op);
+    genStoreAsyncContinuationGlobal();
+
+    var_types retNativeType = m_compiler->info.compRetNativeType;
+    if (retNativeType != TYP_VOID)
+    {
+        emitter* emit = GetEmitter();
+        switch (genActualType(retNativeType))
+        {
+            case TYP_INT:
+            case TYP_REF:
+            case TYP_BYREF:
+                emit->emitIns_I(INS_i32_const, emitActualTypeSize(retNativeType), 0);
+                break;
+            case TYP_LONG:
+                emit->emitIns_I(INS_i64_const, EA_8BYTE, 0);
+                break;
+            case TYP_FLOAT:
+                emit->emitIns_I(INS_f32_const, EA_4BYTE, 0);
+                break;
+            case TYP_DOUBLE:
+                emit->emitIns_I(INS_f64_const, EA_8BYTE, 0);
+                break;
+            default:
+                unreached();
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// genAsyncResumeInfo: Emit code for a GT_ASYNC_RESUME_INFO node.
+//
+// Pushes the address of the per-method resume-info entry.
+//
+// Arguments:
+//    tree - The GT_ASYNC_RESUME_INFO node.
+//
+void CodeGen::genAsyncResumeInfo(GenTreeVal* tree)
+{
+    assert(tree->OperIs(GT_ASYNC_RESUME_INFO));
+    assert(tree->TypeIs(TYP_I_IMPL));
+
+    CORINFO_FIELD_HANDLE fieldHnd = genEmitAsyncResumeInfo((unsigned)tree->gtVal1);
+    assert(m_compiler->eeIsJitDataOffs(fieldHnd));
+    int dataOffs = m_compiler->eeGetJitDataOffs(fieldHnd);
+    assert(dataOffs >= 0);
+
+    GetEmitter()->emitDataOffsetConstant((UNATIVE_OFFSET)dataOffs);
+    WasmProduceReg(tree);
 }
 
 //------------------------------------------------------------------------
@@ -1582,9 +1717,7 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
             break;
 
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForBinary");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
@@ -2012,9 +2145,7 @@ void CodeGen::genCodeForShift(GenTree* tree)
             break;
 
         default:
-            ins = INS_none;
-            NYI_WASM("genCodeForShift");
-            break;
+            unreached();
     }
 
     GetEmitter()->emitIns(ins);
@@ -2284,7 +2415,19 @@ void CodeGen::genRangeCheck(GenTree* tree)
     assert(tree->OperIs(GT_BOUNDS_CHECK));
     GenTreeBoundsChk* boundsCheck = tree->AsBoundsChk();
     genConsumeOperands(boundsCheck);
-    GetEmitter()->emitIns(INS_I_ge_u);
+#ifdef FEATURE_SIMD
+    if (varTypeIsSIMD(boundsCheck->GetIndex()->TypeGet()))
+    {
+        GetEmitter()->emitIns(INS_i8x16_splat);
+        GetEmitter()->emitIns(INS_i8x16_ge_u);
+        GetEmitter()->emitIns(INS_v128_any_true);
+    }
+    else
+#endif
+    {
+        GetEmitter()->emitIns(INS_I_ge_u);
+    }
+
     genJumpToThrowHlpBlk(boundsCheck->gtThrowKind);
 }
 
@@ -2572,7 +2715,11 @@ void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
     unsigned lclOffset = lclAddrNode->GetLclOffs();
 
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-    if ((lclOffset != 0) || (m_compiler->lvaFrameAddress(lclNum, &FPBased) != 0))
+
+    // A folded address contributes its frame offset to the user's memarg instead.
+    //
+    if (((lclAddrNode->gtLIRFlags & LIR::Flags::FoldedAddr) == LIR::Flags::None) &&
+        ((lclOffset != 0) || (m_compiler->lvaFrameAddress(lclNum, &FPBased) != 0)))
     {
         GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
         GetEmitter()->emitIns(INS_I_add);
@@ -2591,11 +2738,6 @@ void CodeGen::genCodeForLclFld(GenTreeLclFld* tree)
     assert(tree->OperIs(GT_LCL_FLD));
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(tree);
     var_types  type   = tree->TypeGet();
-
-    if (type == TYP_SIMD16)
-    {
-        NYI_WASM_SIMD("SIMD16 local field load");
-    }
 
     if (type == TYP_SIMD12)
     {
@@ -2798,6 +2940,35 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* tree)
 }
 
 //------------------------------------------------------------------------
+// genWasmMemargOffset: Get the offset an indirection folds into its memarg.
+//
+// Arguments:
+//    addr - the address node of the indirection
+//
+// Return Value:
+//    The offset to encode in the memarg, or zero if the address carries no folded offset.
+//
+cnsval_ssize_t CodeGen::genWasmMemargOffset(GenTree* addr)
+{
+    if (addr->isContained() && addr->OperIs(GT_LEA))
+    {
+        return addr->AsAddrMode()->Offset();
+    }
+
+    if (addr->OperIs(GT_LCL_ADDR) && ((addr->gtLIRFlags & LIR::Flags::FoldedAddr) != LIR::Flags::None))
+    {
+        bool      FPBased;
+        const int offset = m_compiler->lvaFrameAddress(addr->AsLclFld()->GetLclNum(), &FPBased) +
+                           static_cast<int>(addr->AsLclFld()->GetLclOffs());
+        noway_assert(offset >= 0); // WASM address modes are unsigned.
+        assert(FPBased);
+        return offset;
+    }
+
+    return 0;
+}
+
+//------------------------------------------------------------------------
 // genCodeForIndir: Produce code for a GT_IND node.
 //
 // Arguments:
@@ -2808,24 +2979,38 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     assert(tree->OperIs(GT_IND));
 
     var_types type = tree->TypeGet();
+    GenTree*  addr = tree->Addr();
 
-    genConsumeAddress(tree->Addr());
+    genConsumeAddress(addr);
 
     if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
     {
-        regNumber addrReg = GetMultiUseOperandReg(tree->Addr());
-        genEmitNullCheck(addrReg);
+        // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+        //
+        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()));
     }
 
     // TODO-WASM: Memory barriers
 
-    if (type == TYP_SIMD12)
+    if (addr->isContained() && !addr->OperIs(GT_LEA))
+    {
+        // A contained address constant folds into the memarg offset, so emit just the image base here.
+        //
+        assert(addr->IsIconHandle() && !tree->TypeIs(TYP_SIMD12));
+        assert(addr->AsIntConCommon()->ImmedValNeedsReloc(m_compiler));
+        GetEmitter()->emitImageBase();
+        GetEmitter()->emitIns_MemargAddress(ins_Load(type), emitActualTypeSize(type),
+                                            (void*)addr->AsIntConCommon()->IntegralValue());
+    }
+    else if (type == TYP_SIMD12)
     {
         genLoadIndTypeSimd12(tree);
     }
     else
     {
-        GetEmitter()->emitIns_I(ins_Load(type), emitActualTypeSize(type), 0);
+        // A contained address mode's offset or a folded local's frame offset supplies the memarg.
+        //
+        GetEmitter()->emitIns_I(ins_Load(type), emitActualTypeSize(type), genWasmMemargOffset(addr));
     }
 
     WasmProduceReg(tree);
@@ -2842,7 +3027,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree* data = tree->Data();
     GenTree* addr = tree->Addr();
 
-    assert(!addr->isContained());
+    // A contained address mode's offset or a folded local's frame offset supplies the memarg.
+    //
+    assert(!addr->isContained() || addr->OperIs(GT_LEA));
+    const cnsval_ssize_t offset = genWasmMemargOffset(addr);
 
     // We must consume the operands in the proper execution order,
     // so that liveness is updated appropriately.
@@ -2851,8 +3039,9 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
     if ((tree->gtFlags & GTF_IND_NONFAULTING) == 0)
     {
-        regNumber addrReg = GetMultiUseOperandReg(addr);
-        genEmitNullCheck(addrReg);
+        // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+        //
+        genEmitNullCheck(GetMultiUseOperandReg(tree->Base()));
     }
 
     GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
@@ -2863,20 +3052,13 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     else // A normal store, not a WriteBarrier store
     {
         var_types type = tree->TypeGet();
-        if (type == TYP_SIMD16)
-        {
-            // Storing a SIMD16 value emits v128.store, but the data operand is not
-            // materialized as a v128 (it comes through as an i32), producing an invalid
-            // module. Bail until SIMD16 store is properly supported.
-            NYI_WASM_SIMD("SIMD16 store indirect");
-        }
 
         // TODO-WASM: Memory barriers
 
         if (type == TYP_SIMD8)
         {
             // stack: [addr, value] -> store the low 8 bytes.
-            GetEmitter()->emitIns_MemargLane(INS_v128_store64_lane, EA_8BYTE, 0, 0);
+            GetEmitter()->emitIns_MemargLane(INS_v128_store64_lane, EA_8BYTE, offset, 0);
         }
         else if (type == TYP_SIMD12)
         {
@@ -2884,7 +3066,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
         else
         {
-            GetEmitter()->emitIns_I(ins_Store(type), emitActualTypeSize(type), 0);
+            GetEmitter()->emitIns_I(ins_Store(type), emitActualTypeSize(type), offset);
         }
     }
 
@@ -2980,13 +3162,6 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             assert(seg.IsPassedInRegister());
             WasmValueType wvt = WasmRegToType(seg.GetRegister());
             assert(wvt < WasmValueType::Count);
-            if (wvt == WasmValueType::V128)
-            {
-                // Passing a 16-byte SIMD value by value through a call is not yet correctly
-                // implemented: the argument is materialized as an i32 (by-ref) while the call
-                // signature requires v128, producing an invalid module. Bail for now.
-                NYI_WASM_SIMD("SIMD16 call argument");
-            }
             typeStack.Push((CorInfoWasmType)emitter::GetWasmValueTypeCode(wvt));
         }
     }
@@ -3167,10 +3342,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
-
         default:
             JITDUMP("Helper '%s' has no hard-coded signature\n", m_compiler->eeGetMethodFullName(params.methHnd));
-            NYI_WASM("Missing signature for helper in genEmitHelperCall");
             unreached();
     }
 
@@ -3911,10 +4084,6 @@ void CodeGen::genLoadLocalIntoReg(regNumber targetReg, unsigned lclNum)
 {
     LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
     var_types  type   = varDsc->GetRegisterType();
-    if (type == TYP_SIMD16)
-    {
-        NYI_WASM_SIMD("SIMD16 local load");
-    }
 
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
     GetEmitter()->emitIns_S(ins_Load(type), emitTypeSize(type), lclNum, 0);

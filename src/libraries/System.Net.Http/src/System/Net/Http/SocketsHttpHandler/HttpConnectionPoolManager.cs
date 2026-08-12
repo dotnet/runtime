@@ -37,7 +37,7 @@ namespace System.Net.Http
         private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> _pools;
         /// <summary>Timer used to initiate cleaning of the pools.</summary>
         private readonly Timer? _cleaningTimer;
-        /// <summary>Heart beat timer currently used for Http2 ping only.</summary>
+        /// <summary>Heart beat timer currently used for Http2 ping only. Not stopped by <see cref="Dispose"/>; it stops itself.</summary>
         private readonly Timer? _heartBeatTimer;
 
         private readonly HttpConnectionSettings _settings;
@@ -53,6 +53,8 @@ namespace System.Net.Http
         /// <see cref="ConcurrentDictionary{TKey,TValue}.IsEmpty"/> call.
         /// </summary>
         private bool _timerIsRunning;
+        /// <summary>Whether <see cref="Dispose"/> has been called.</summary>
+        private bool _disposed;
         /// <summary>Object used to synchronize access to state in the pool.</summary>
         private object SyncObj => _pools;
 
@@ -94,6 +96,18 @@ namespace System.Net.Http
                     _cleanPoolTimeout = timerPeriod.TotalSeconds >= MinScavengeSeconds ? timerPeriod : TimeSpan.FromSeconds(MinScavengeSeconds);
                 }
 
+                // The connection eviction callback is invoked from this timer. If one is set, make sure the timer
+                // fires at least this often so eviction decisions happen on a predictable cadence, regardless of
+                // how large (or infinite) the idle timeout is, which would otherwise drive the period alone.
+                if (settings._shouldEvictConnection is not null)
+                {
+                    const int MaxEvictionIntervalSeconds = 5;
+                    if (_cleanPoolTimeout.TotalSeconds > MaxEvictionIntervalSeconds)
+                    {
+                        _cleanPoolTimeout = TimeSpan.FromSeconds(MaxEvictionIntervalSeconds);
+                    }
+                }
+
                 using (ExecutionContext.SuppressFlow()) // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
                 {
                     // Create the timer.  Ensure the Timer has a weak reference to this manager; otherwise, it
@@ -116,12 +130,20 @@ namespace System.Net.Http
                     {
                         long heartBeatInterval = (long)Math.Max(1000, Math.Min(_settings._keepAlivePingDelay.TotalMilliseconds, _settings._keepAlivePingTimeout.TotalMilliseconds) / 4);
 
+                        // Unlike the cleaning timer, this one is deliberately not stopped by Dispose.
+                        // Requests that were already in flight keep running after the handler is disposed,
+                        // and they must keep sending keep alive PINGs to detect an unresponsive server.
+                        // Instead, the timer stops itself once the manager has been disposed and has no
+                        // connections left. If the manager becomes unreachable without ever being disposed,
+                        // the timer becomes unreachable with it and is stopped by its own finalizer.
                         _heartBeatTimer = new Timer(static state =>
                         {
                             var wr = (WeakReference<HttpConnectionPoolManager>)state!;
-                            if (wr.TryGetTarget(out HttpConnectionPoolManager? thisRef))
+                            if (wr.TryGetTarget(out HttpConnectionPoolManager? manager) &&
+                                !manager.HeartBeat() &&
+                                manager._disposed)
                             {
-                                thisRef.HeartBeat();
+                                manager._heartBeatTimer?.Dispose();
                             }
                         }, thisRef, heartBeatInterval, heartBeatInterval);
                     }
@@ -337,10 +359,21 @@ namespace System.Net.Http
         {
             HttpConnectionKey key = GetConnectionKey(request, proxyUri, isProxyConnect);
 
+            string? sslHostName = key.SslHostName;
+
+            if (sslHostName is not null && request.IsConnectionPoolPartitioningBySniDisabled())
+            {
+                // The request is using HTTPS, but has opted out of partitioning the connection pool by SNI.
+                // The connection pool will be shared by requests to the same Uri Host, regardless of the Host header.
+                // This enables requests where the Uri is set to an IP of shared infrastructure to share connections even if the host names differ.
+                // This is a dangerous opt-in where the caller is responsible for ensuring that the server certificate is acceptable for all requests to a given IP.
+                key = new HttpConnectionKey(key.Kind, key.Host, key.Port, sslHostName: null, key.ProxyUri, key.Identity);
+            }
+
             HttpConnectionPool? pool;
             while (!_pools.TryGetValue(key, out pool))
             {
-                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, GetTelemetryServerAddress(request, key));
+                pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, sslHostName, key.ProxyUri, GetTelemetryServerAddress(request, key));
 
                 if (_cleaningTimer == null)
                 {
@@ -434,6 +467,11 @@ namespace System.Net.Http
         {
             HttpRequestException rethrowException;
 
+            // Save the original ProxyAuthorization header value so we can restore it when retrying with a different proxy.
+            // This ensures that any proxy credentials set from the credential cache during a failed attempt are cleared
+            // before trying the next proxy, while preserving any user-set credentials.
+            Headers.AuthenticationHeaderValue? originalProxyAuthorization = request.Headers.ProxyAuthorization;
+
             do
             {
                 try
@@ -443,6 +481,10 @@ namespace System.Net.Http
                 catch (HttpRequestException ex) when (ex.AllowRetry != RequestRetryType.NoRetry)
                 {
                     rethrowException = ex;
+
+                    // Clear any proxy-auth credentials that were set from the proxy credential cache for the previous proxy.
+                    // Restore the original value before retrying with the next proxy.
+                    request.Headers.ProxyAuthorization = originalProxyAuthorization;
                 }
             }
             while (multiProxy.ReadNext(out firstProxy, out _));
@@ -454,8 +496,8 @@ namespace System.Net.Http
         /// <summary>Disposes of the pools, disposing of each individual pool.</summary>
         public void Dispose()
         {
+            _disposed = true;
             _cleaningTimer?.Dispose();
-            _heartBeatTimer?.Dispose();
             foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
             {
                 pool.Value.Dispose();
@@ -510,12 +552,17 @@ namespace System.Net.Http
             // be returned to pools they weren't associated with.
         }
 
-        private void HeartBeat()
+        /// <summary>Sends keep alive PINGs on all pooled connections, and reports whether any connections remain.</summary>
+        private bool HeartBeat()
         {
+            bool anyLiveConnections = false;
+
             foreach (KeyValuePair<HttpConnectionKey, HttpConnectionPool> pool in _pools)
             {
-                pool.Value.HeartBeat();
+                anyLiveConnections |= pool.Value.HeartBeat();
             }
+
+            return anyLiveConnections;
         }
 
         private static string GetIdentityIfDefaultCredentialsUsed(bool defaultCredentialsUsed)

@@ -625,7 +625,16 @@ namespace System.IO.Compression
         /// </summary>
         internal void ReadEncryptionSaltIfNeeded()
         {
-            if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser())
+            if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+            {
+                return;
+            }
+
+            // A corrupt central directory can point the local header offset past the end of the
+            // archive. Seeking there throws ArgumentOutOfRangeException on some streams (e.g.
+            // MemoryStream). Mirror the check in IsOpenableInitialVerifications and defer the error
+            // to when the entry is actually opened, same as for non AES encrypted entries.
+            if (_offsetOfLocalHeader > _archive.ArchiveStream.Length)
             {
                 return;
             }
@@ -1795,7 +1804,7 @@ namespace System.IO.Compression
 
                         ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                        using (ZipCryptoStream encryptionStream = ZipCryptoStream.Create(
+                        using (Stream encryptionStream = ZipCryptoStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keys: _derivedZipCryptoKeyMaterial.Value,
                             passwordVerifierLow2Bytes: verifierLow2Bytes,
@@ -1826,7 +1835,7 @@ namespace System.IO.Compression
 
                         bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                        using (WinZipAesStream encryptionStream = WinZipAesStream.Create(
+                        using (Stream encryptionStream = WinZipAesStream.Create(
                             baseStream: _archive.ArchiveStream,
                             keyMaterial: _derivedAesKeyMaterial.Value,
                             totalStreamSize: -1,
