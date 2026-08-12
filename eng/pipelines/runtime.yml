@@ -52,6 +52,10 @@ variables:
   - name: enableHelixJobMonitor
     value: true
   - template: /eng/pipelines/helix-platforms.yml
+  # Keep the monitor enabled in the PR merge even when the target branch
+  # temporarily changes the default above.
+  - name: enableHelixJobMonitor
+    value: true
 
 extends:
   template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
