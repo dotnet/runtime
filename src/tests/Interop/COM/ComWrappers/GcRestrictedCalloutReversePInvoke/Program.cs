@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using ComWrappersTests.Common;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
