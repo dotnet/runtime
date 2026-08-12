@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CS3021</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -42,6 +42,12 @@
       Lines="$([System.IO.File]::ReadAllText('%(_AntlrGeneratedFiles.Identity)').Replace('Generated from $(_AntlrGrammarAbsolutePath)', 'Generated from CIL.g4'))"
       Overwrite="true" />
     <Move SourceFiles="%(_AntlrGeneratedFiles.Identity).tmp" DestinationFiles="%(_AntlrGeneratedFiles.Identity)" />
+  </Target>
+
+  <Target Name="RemoveGeneratedParserCompileItems" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Compile Remove="CIL*.cs" />
+    </ItemGroup>
   </Target>
 
 </Project>
