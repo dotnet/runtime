@@ -1601,8 +1601,15 @@ namespace System.Runtime.CompilerServices
         //
         // The suspension walks the inlined frames outward, and a frame having resumed implies
         // its caller has too, so these can be emitted as a straight line: once one frame has
-        // resumed, this and every subsequent restore for the frames outside it no-op.
-        private static void CaptureInlinedFrameTransition(bool resumed,
+        // resumed, this and every subsequent capture for the frames outside it no-op.
+        //
+        // Which of the three variants the JIT emits follows how the caller awaited the frame.
+        // Each assigns the whole flags value rather than adding to it, since the per-depth
+        // storage is shared and may hold what an unrelated suspension point left there.
+        //
+        // Capture with the caller's continuation context, for a frame whose caller awaited it in
+        // a way that has to come back to the context it was on.
+        private static void CaptureInlinedFrameTransitionWithContinuationContext(bool resumed,
                                                           ref object? continuationContext,
                                                           ref ContinuationFlags flags,
                                                           ref ExecutionContext? execContext)
@@ -1612,7 +1619,40 @@ namespace System.Runtime.CompilerServices
                 return;
             }
 
+            flags = default;
             CaptureContinuationContext(ref continuationContext, ref flags);
+            execContext = CaptureExecutionContext();
+        }
+
+        // Capture for a frame whose caller awaited it in a way that captures no continuation
+        // context at all, as a custom awaiter does, so only the ExecutionContext has to be
+        // restored when the frame logically returns.
+        private static void CaptureInlinedFrameTransitionNoContinuationContext(bool resumed,
+                                                          ref ContinuationFlags flags,
+                                                          ref ExecutionContext? execContext)
+        {
+            if (resumed)
+            {
+                return;
+            }
+
+            flags = default;
+            execContext = CaptureExecutionContext();
+        }
+
+        // Capture for a frame whose caller awaited it with ConfigureAwait(false), which asks to
+        // continue off any captured context, so the frame gets back to the thread pool rather
+        // than to a context it recorded.
+        private static void CaptureInlinedFrameTransitionContinueOnThreadPool(bool resumed,
+                                                          ref ContinuationFlags flags,
+                                                          ref ExecutionContext? execContext)
+        {
+            if (resumed)
+            {
+                return;
+            }
+
+            flags = ContinuationFlags.ContinueOnThreadPool;
             execContext = CaptureExecutionContext();
         }
 

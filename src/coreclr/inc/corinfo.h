@@ -1839,9 +1839,11 @@ struct CORINFO_ASYNC_INFO
     // Method handle for AsyncHelpers.RestoreInlinedFrameContexts, used when an inlined
     // async callee logically returns to its caller after having been resumed
     CORINFO_METHOD_HANDLE restoreInlinedFrameContextsMethHnd;
-    // Method handle for AsyncHelpers.CaptureInlinedFrameTransition, used on suspension to capture
+    // Method handles for AsyncHelpers.CaptureInlinedFrameTransition*, used on suspension to capture
     // the contexts each inlined async frame hands to its caller
-    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionMethHnd;
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionWithContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionNoContinuationContextMethHnd;
+    CORINFO_METHOD_HANDLE captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
     // Finish suspension without saving continuation context (i.e. custom awaiter or ConfigureAwait(false))
     CORINFO_METHOD_HANDLE finishSuspensionNoContinuationContextMethHnd;
     // Finish suspension with saving continuation context (i.e. normal task await)

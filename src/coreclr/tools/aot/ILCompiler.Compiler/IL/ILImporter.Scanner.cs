@@ -1083,7 +1083,9 @@ namespace Internal.IL
             // The JIT synthesizes calls to these when it inlines an async callee that may
             // suspend, which it can do at any async call site.
             _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("RestoreInlinedFrameContexts"u8, null)), asyncReason);
-            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransition"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionWithContinuationContext"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionNoContinuationContext"u8, null)), asyncReason);
+            _dependencies.Add(_factory.MethodEntrypoint(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionContinueOnThreadPool"u8, null)), asyncReason);
         }
 
         // The JIT rewrites calls to AsyncHelpers.AwaitAwaiter/UnsafeAwaitAwaiter with a struct

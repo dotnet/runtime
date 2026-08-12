@@ -731,8 +731,7 @@ void Compiler::AddContextArgsToAsyncCalls(BasicBlock* block)
             NewCallArg resumedDefArg = NewCallArg::Primitive(resumedAddr).WellKnown(WellKnownArg::AsyncResumedDef);
             NewCallArg resumedUseArg = NewCallArg::Primitive(resumed).WellKnown(WellKnownArg::AsyncResumedUse);
             NewCallArg execCtxArg    = NewCallArg::Primitive(execCtx).WellKnown(WellKnownArg::AsyncExecutionContext);
-            NewCallArg syncCtxArg =
-                NewCallArg::Primitive(syncCtx).WellKnown(WellKnownArg::AsyncSynchronizationContext);
+            NewCallArg syncCtxArg = NewCallArg::Primitive(syncCtx).WellKnown(WellKnownArg::AsyncSynchronizationContext);
 
             // The def is only ever present once, so keeping it outside leaves the rest as
             // a clean run of (resumed, exec context, sync context) triples, one per frame.
@@ -792,13 +791,30 @@ void Compiler::AddContextArgsToAsyncCalls(BasicBlock* block)
                 // no frame transitions to run on suspension.
                 JITDUMP("Inlining call [%06u] has no context args; inlinee has no enclosing async frame\n",
                         dspTreeID(inlCall));
+                return WALK_CONTINUE;
             }
-            else
+
+            // How each of those frames has to hand off to its caller. This frame hands off
+            // the way the inlining call awaited it, and the frames outside it the way the
+            // inlining call already records.
+            jitstd::vector<ContinuationContextHandling>* const handling = new (m_compiler, CMK_Async)
+                jitstd::vector<ContinuationContextHandling>(m_compiler->getAllocator(CMK_Async));
+            handling->push_back(inlCall->GetAsyncInfo().ContinuationContextHandling);
+
+            if (inlCall->GetAsyncInfo().InlineFrameContextHandling != nullptr)
             {
-                // This frame and the ones enclosing it. The first set doubles as the one
-                // the handling of the suspension itself consumes.
-                JITDUMP("Extended async call [%06u] to %u frames in chain\n", dspTreeID(call), (numCopied / 3) + 1);
+                for (ContinuationContextHandling outer : *inlCall->GetAsyncInfo().InlineFrameContextHandling)
+                {
+                    handling->push_back(outer);
+                }
             }
+
+            call->GetAsyncInfo().InlineFrameContextHandling = handling;
+            assert(handling->size() == (numCopied / 3));
+
+            // This frame and the ones enclosing it. The first set doubles as the one
+            // the handling of the suspension itself consumes.
+            JITDUMP("Extended async call [%06u] to %u frames in chain\n", dspTreeID(call), (numCopied / 3) + 1);
 
             return WALK_CONTINUE;
         }
@@ -2093,7 +2109,7 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
             ClassLayout*    memberLayout;
             var_types const storageType = member.GetStorageType(&memberLayout);
             assert(memberLayout == nullptr);
-            unsigned const alignment             = genTypeAlignments[storageType];
+            unsigned const alignment = genTypeAlignments[storageType];
             layout->ContinuationMemberOffsets[j] =
                 allocLayout(std::min(alignment, (unsigned)TARGET_POINTER_SIZE), genTypeSize(storageType));
         }
@@ -3402,6 +3418,9 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
 
     assert(frameResumed != nullptr);
 
+    jitstd::vector<ContinuationContextHandling>* const handling = call->GetAsyncInfo().InlineFrameContextHandling;
+    assert((handling != nullptr) && (handling->size() == numEnclosing));
+
     JITDUMP("    Call [%06u] is inside an inlined async frame; %u frames in chain\n", Compiler::dspTreeID(call),
             numFrames);
 
@@ -3463,9 +3482,9 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
     // A frame's own indicator is not enough to see that: it is only set when the frame
     // logically returns, which has not happened yet at a suspension. So accumulate the
     // indicators of the frames walked so far and gate on that instead.
-    unsigned const anyResumedLcl = m_compiler->lvaGrabTemp(false DEBUGARG("Async any inlined frame resumed"));
-    LclVarDsc* const anyResumedDsc            = m_compiler->lvaGetDesc(anyResumedLcl);
-    anyResumedDsc->lvType                     = TYP_INT;
+    unsigned const   anyResumedLcl = m_compiler->lvaGrabTemp(false DEBUGARG("Async any inlined frame resumed"));
+    LclVarDsc* const anyResumedDsc = m_compiler->lvaGetDesc(anyResumedLcl);
+    anyResumedDsc->lvType          = TYP_INT;
     anyResumedDsc->lvOnlyUsedOnSynchronousPath = true;
 
     GenTree* const initAnyResumed =
@@ -3493,8 +3512,31 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
 
         if (membersAreLive)
         {
-            GenTreeCall* captureCall =
-                m_compiler->gtNewUserCallNode(m_asyncInfo->captureInlinedFrameTransitionMethHnd, TYP_VOID);
+            // The caller's await decides whether this frame has to come back to the
+            // context it was on when it suspended.
+            ContinuationContextHandling const frameHandling = (*handling)[i];
+            CORINFO_METHOD_HANDLE             captureMethHnd;
+            bool                              captureContinuationContext = false;
+            switch (frameHandling)
+            {
+                case ContinuationContextHandling::ContinueOnCapturedContext:
+                    captureMethHnd = m_asyncInfo->captureInlinedFrameTransitionWithContinuationContextMethHnd;
+                    captureContinuationContext = true;
+                    break;
+
+                case ContinuationContextHandling::ContinueOnThreadPool:
+                    captureMethHnd = m_asyncInfo->captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
+                    break;
+
+                case ContinuationContextHandling::None:
+                    captureMethHnd = m_asyncInfo->captureInlinedFrameTransitionNoContinuationContextMethHnd;
+                    break;
+
+                default:
+                    unreached();
+            }
+
+            GenTreeCall* captureCall = m_compiler->gtNewUserCallNode(captureMethHnd, TYP_VOID);
             captureCall->gtArgs.PushFront(m_compiler,
                                           NewCallArg::Primitive(
                                               ContinuationMemberAddress(layout,
@@ -3504,11 +3546,14 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
                                           NewCallArg::Primitive(
                                               ContinuationMemberAddress(layout,
                                                                         ContinuationMember::InlineFrameFlags(depth))));
-            captureCall->gtArgs
-                .PushFront(m_compiler,
-                           NewCallArg::Primitive(
-                               ContinuationMemberAddress(layout,
-                                                         ContinuationMember::InlineFrameContinuationContext(depth))));
+            if (captureContinuationContext)
+            {
+                captureCall->gtArgs
+                    .PushFront(m_compiler,
+                               NewCallArg::Primitive(
+                                   ContinuationMemberAddress(layout, ContinuationMember::InlineFrameContinuationContext(
+                                                                         depth))));
+            }
             captureCall->gtArgs.PushFront(m_compiler,
                                           NewCallArg::Primitive(m_compiler->gtNewLclvNode(anyResumedLcl, TYP_INT)));
 
@@ -3523,9 +3568,9 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
 
         // Fold in the frame we are about to hand off to: from here on out its handling,
         // and that of every frame outside it, is likewise only needed the first time.
-        GenTree* const merged  = m_compiler->gtNewOperNode(GT_OR, TYP_INT,
-                                                           m_compiler->gtNewLclvNode(anyResumedLcl, TYP_INT),
-                                                           m_compiler->gtCloneExpr(outerResumed));
+        GenTree* const merged =
+            m_compiler->gtNewOperNode(GT_OR, TYP_INT, m_compiler->gtNewLclvNode(anyResumedLcl, TYP_INT),
+                                      m_compiler->gtCloneExpr(outerResumed));
         GenTree* const orStore = m_compiler->gtNewStoreLclVarNode(anyResumedLcl, merged);
         LIR::AsRange(tailBB).InsertAtEnd(LIR::SeqTree(m_compiler, orStore));
 

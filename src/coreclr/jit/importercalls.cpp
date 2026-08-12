@@ -8041,6 +8041,13 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 
         call->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(arg.GetNode())).WellKnown(wka));
     }
+
+    // This call ends up in the same frame as the inlining call, so it hands off through
+    // the same chain of frames in the same way.
+    if (call->IsAsync() && inlCall->IsAsync())
+    {
+        call->GetAsyncInfo().InlineFrameContextHandling = inlCall->GetAsyncInfo().InlineFrameContextHandling;
+    }
 }
 
 //------------------------------------------------------------------------
