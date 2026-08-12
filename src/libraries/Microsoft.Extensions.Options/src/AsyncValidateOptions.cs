@@ -44,11 +44,14 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get; }
 
         /// <summary>
-        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// Attempts to validate a specific named options instance synchronously.
         /// </summary>
         /// <param name="name">The name of the options instance being validated.</param>
         /// <param name="options">The options instance.</param>
-        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
         public ValidateOptionsResult Validate(string? name, TOptions options)
         {
             // null name is used to configure all named options
@@ -131,11 +134,14 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get; }
 
         /// <summary>
-        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// Attempts to validate a specific named options instance synchronously.
         /// </summary>
         /// <param name="name">The name of the options instance being validated.</param>
         /// <param name="options">The options instance.</param>
-        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
         public ValidateOptionsResult Validate(string? name, TOptions options)
         {
             if (Name is null || name == Name)
@@ -216,11 +222,14 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get; }
 
         /// <summary>
-        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// Attempts to validate a specific named options instance synchronously.
         /// </summary>
         /// <param name="name">The name of the options instance being validated.</param>
         /// <param name="options">The options instance.</param>
-        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
         public ValidateOptionsResult Validate(string? name, TOptions options)
         {
             if (Name is null || name == Name)
@@ -309,11 +318,14 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get; }
 
         /// <summary>
-        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// Attempts to validate a specific named options instance synchronously.
         /// </summary>
         /// <param name="name">The name of the options instance being validated.</param>
         /// <param name="options">The options instance.</param>
-        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
         public ValidateOptionsResult Validate(string? name, TOptions options)
         {
             if (Name is null || name == Name)
@@ -410,11 +422,14 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get; }
 
         /// <summary>
-        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// Attempts to validate a specific named options instance synchronously.
         /// </summary>
         /// <param name="name">The name of the options instance being validated.</param>
         /// <param name="options">The options instance.</param>
-        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
         public ValidateOptionsResult Validate(string? name, TOptions options)
         {
             if (Name is null || name == Name)
@@ -519,11 +534,14 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get; }
 
         /// <summary>
-        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null"/>).
+        /// Attempts to validate a specific named options instance synchronously.
         /// </summary>
         /// <param name="name">The name of the options instance being validated.</param>
         /// <param name="options">The options instance.</param>
-        /// <returns>The <see cref="ValidateOptionsResult"/> result.</returns>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
         public ValidateOptionsResult Validate(string? name, TOptions options)
         {
             if (Name is null || name == Name)

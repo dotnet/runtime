@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace Microsoft.Extensions.Options
 {
     /// <summary>
-    /// Used by hosts to asynchronously validate options during startup.
+    /// Provides asynchronous options validation during host startup.
     /// </summary>
     /// <remarks>
     /// New implementations should be registered only as <see cref="IAsyncStartupValidator"/>. Do not additionally
@@ -17,11 +17,10 @@ namespace Microsoft.Extensions.Options
     public interface IAsyncStartupValidator
     {
         /// <summary>
-        /// Asynchronously validates each options type and name configured for startup validation. When the built-in
-        /// options factory creates a value, it invokes each registered <see cref="IValidateOptions{TOptions}"/> once,
-        /// preferring <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/> when available.
+        /// Validates options asynchronously during host startup.
         /// </summary>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous validation operation.</returns>
         /// <exception cref="OptionsValidationException">
         /// A single validator returns a failed <see cref="ValidateOptionsResult"/> when validating.
         /// </exception>

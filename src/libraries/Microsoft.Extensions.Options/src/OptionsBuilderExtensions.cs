@@ -19,28 +19,33 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Enforces options validation check on start rather than at run time.
         /// </summary>
         /// <remarks>
-        /// When the built-in <see cref="IOptionsFactory{TOptions}"/> implementation is used, asynchronous validation
-        /// runs during startup and seeds the built-in <see cref="IOptions{TOptions}"/> and
-        /// <see cref="IOptionsMonitor{TOptions}"/> instances for subsequent synchronous access. If an options value
-        /// was successfully created synchronously before startup, that instance retains the singleton slot and is
-        /// published to the monitor cache while asynchronous validation runs against a separate startup candidate.
+        /// <para>
+        /// With the built-in <see cref="IOptionsFactory{TOptions}"/>, asynchronous validation runs during startup and
+        /// seeds the built-in <see cref="IOptions{TOptions}"/> and <see cref="IOptionsMonitor{TOptions}"/> instances.
+        /// Options requiring asynchronous validation cannot be accessed synchronously before startup completes. If
+        /// an options value was successfully created synchronously before startup, it retains the singleton slot
+        /// while startup validation runs against a separate candidate, and that existing value is published to the
+        /// monitor cache.
+        /// </para>
+        /// <para>
         /// A derived or replacement <see cref="IOptionsFactory{TOptions}"/> uses synchronous startup validation and
-        /// does not invoke <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/>.
-        /// Options that require asynchronous validation cannot be accessed synchronously before startup validation
-        /// completes. Default-name asynchronous validation requires the built-in <see cref="IOptions{TOptions}"/>
-        /// implementation so the validated value can be installed safely; startup fails when a custom implementation
-        /// is registered. The built-in <see cref="IOptionsSnapshot{TOptions}"/> implementation validates instances
-        /// synchronously in per-scope caches that startup validation does not populate. The built-in options monitor
-        /// also reloads synchronously and provides no asynchronous last-known-good guarantee. Publication to the
-        /// built-in monitor cache is atomic. The <see cref="IOptionsMonitorCache{TOptions}"/> contract has no atomic
-        /// replacement operation, so applications using a custom or derived cache must avoid concurrent cache access
-        /// during startup validation if atomic publication is required. Startup validation throws
-        /// <see cref="InvalidOperationException"/> if publication to a custom or derived cache does not succeed.
-        /// For compatibility, this method exposes the built-in startup validator through
-        /// <see cref="IStartupValidator"/> and <see cref="IAsyncStartupValidator"/> as the same singleton instance.
-        /// A custom startup validator registered only as <see cref="IStartupValidator"/> takes precedence and
-        /// suppresses asynchronous startup validators. New custom startup validators should therefore register only
-        /// <see cref="IAsyncStartupValidator"/>, not both startup contracts.
+        /// does not invoke <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/>. Default-name asynchronous
+        /// validation requires the built-in <see cref="IOptions{TOptions}"/> implementation; startup throws
+        /// <see cref="InvalidOperationException"/> when a custom implementation is registered. The built-in
+        /// <see cref="IOptionsSnapshot{TOptions}"/> validates synchronously in per-scope caches that startup validation
+        /// does not populate. The built-in options monitor also reloads synchronously and does not invoke asynchronous
+        /// validation. The built-in asynchronous validators therefore cause reload to fail and prevent change
+        /// listeners from being notified; no asynchronous last-known-good guarantee is provided.
+        /// </para>
+        /// <para>
+        /// Publication to the built-in monitor cache is atomic. Applications using a custom or derived
+        /// <see cref="IOptionsMonitorCache{TOptions}"/> must avoid concurrent cache access during startup validation;
+        /// startup throws <see cref="InvalidOperationException"/> if publication does not succeed. For compatibility,
+        /// this method exposes the built-in startup validator through <see cref="IStartupValidator"/> and
+        /// <see cref="IAsyncStartupValidator"/> as the same singleton. A custom validator registered only as
+        /// <see cref="IStartupValidator"/> takes precedence and suppresses all asynchronous startup validators. New
+        /// custom startup validators should register only <see cref="IAsyncStartupValidator"/>.
+        /// </para>
         /// </remarks>
         /// <typeparam name="TOptions">The type of options.</typeparam>
         /// <param name="optionsBuilder">The <see cref="OptionsBuilder{TOptions}"/> to configure options instance.</param>

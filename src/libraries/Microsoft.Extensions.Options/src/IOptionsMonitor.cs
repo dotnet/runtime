@@ -13,8 +13,9 @@ namespace Microsoft.Extensions.Options
     /// <remarks>
     /// The default implementation, <see cref="OptionsMonitor{TOptions}"/>, recreates and validates options
     /// synchronously after change notifications. It does not invoke
-    /// <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/> or provide an asynchronous last-known-good
-    /// guarantee.
+    /// <see cref="IAsyncValidateOptions{TOptions}.ValidateAsync"/>. The built-in asynchronous validators therefore
+    /// cause reload to fail and prevent registered change listeners from being called; no asynchronous last-known-good
+    /// guarantee is provided.
     /// </remarks>
     public interface IOptionsMonitor<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] out TOptions>
     {

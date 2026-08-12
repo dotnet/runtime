@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         /// <summary>
         /// Order:
         ///  IHostLifetime.WaitForStartAsync
-        ///  Startup validation: a custom sync IStartupValidator (if any) via Validate(), otherwise every IAsyncStartupValidator via ValidateAsync()
+        ///  Startup validation: a custom sync-only IStartupValidator (if any) via Validate(), otherwise every IAsyncStartupValidator via ValidateAsync()
         ///  IHostedLifecycleService.StartingAsync
         ///  IHostedService.Start
         ///  IHostedLifecycleService.StartedAsync
