@@ -66,10 +66,11 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
         switch (parentNode->OperGet())
         {
             case GT_CMPXCHG:
-            case GT_LOCKADD:
+            case GT_XORR:
+            case GT_XAND:
             case GT_XADD:
-                NYI_LOONGARCH64("GT_CMPXCHG,GT_LOCKADD,GT_XADD");
-                break;
+            case GT_XCHG:
+                return (immVal == 0);
 
             case GT_ADD:
             case GT_EQ:

@@ -106,5 +106,7 @@ namespace Internal.ReadyToRunConstants
         Cssc = 93,
         Zicond = 94,
         Fp16 = 95,
+        LAM_BH = 96,
+        LAM_CAS = 97,
     }
 }
