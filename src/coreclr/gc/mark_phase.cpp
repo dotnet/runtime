@@ -2080,7 +2080,7 @@ gc_heap::mark_steal()
                 {
 
 #ifdef SNOOP_STATS
-                    dprintf (SNOOP_LOG, ("heap%d: marking %zx from %d [%d] tl:%dms",
+                    dprintf (SNOOP_LOG, ("heap%d: marking %zx from %d [%d] tl:%I64dms",
                             heap_number, (size_t)o, (heap_number+1)%n_heaps, level,
                             (minipal_lowres_ticks()-begin_tick)));
                     int64_t start_tick = minipal_lowres_ticks();
@@ -2089,7 +2089,7 @@ gc_heap::mark_steal()
                     mark_object_simple1 (o, start, heap_number);
 
 #ifdef SNOOP_STATS
-                    dprintf (SNOOP_LOG, ("heap%d: done marking %zx from %d [%d] %dms tl:%dms",
+                    dprintf (SNOOP_LOG, ("heap%d: done marking %zx from %d [%d] %I64dms tl:%I64dms",
                             heap_number, (size_t)o, (heap_number+1)%n_heaps, level,
                             (minipal_lowres_ticks()-start_tick),(minipal_lowres_ticks()-begin_tick)));
 #endif //SNOOP_STATS
