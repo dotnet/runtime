@@ -10,7 +10,7 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a node containing information necessary at runtime to locate type's thread static base.
     /// </summary>
-    public class TypeThreadStaticIndexNode : DehydratableObjectNode, ISymbolDefinitionNode, ISortableSymbolNode
+    public class TypeThreadStaticIndexNode : DehydratableObjectNode, ISymbolDefinitionNode, ISortableSymbolNode, IDataDescriptorTypeProvider
     {
         private MetadataType _type;
         private ThreadStaticsNode _inlinedThreadStatics;
@@ -95,6 +95,9 @@ namespace ILCompiler.DependencyAnalysis
         public MetadataType Type => _type;
 
         public override int ClassCode => -149601250;
+
+        MetadataType IDataDescriptorTypeProvider.GetDataDescriptorType(CompilerTypeSystemContext context)
+            => context.SystemModule.GetType("Internal.Runtime.CompilerHelpers"u8, "TypeThreadStaticIndex"u8);
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {

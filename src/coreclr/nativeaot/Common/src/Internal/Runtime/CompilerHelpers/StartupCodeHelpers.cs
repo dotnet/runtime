@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -337,10 +338,25 @@ namespace Internal.Runtime.CompilerHelpers
         }
     }
 
+    [DataContract]
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct TypeManagerSlot
     {
+        [DataContract]
         public TypeManagerHandle TypeManager;
+
+        [DataContract]
         public int ModuleIndex;
+    }
+
+    [DataContract]
+    [StructLayout(LayoutKind.Sequential)]
+    internal unsafe struct TypeThreadStaticIndex
+    {
+        [DataContract]
+        public TypeManagerSlot* TypeManagerSlot;
+
+        [DataContract]
+        public nint ClassIndex;
     }
 }

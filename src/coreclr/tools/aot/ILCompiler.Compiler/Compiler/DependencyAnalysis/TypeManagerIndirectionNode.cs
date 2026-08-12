@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Text;
+using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    public class TypeManagerIndirectionNode : ObjectNode, ISymbolDefinitionNode
+    public class TypeManagerIndirectionNode : ObjectNode, ISymbolDefinitionNode, IDataDescriptorTypeProvider
     {
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -31,5 +32,8 @@ namespace ILCompiler.DependencyAnalysis
         }
 
         public override int ClassCode => -2028598574;
+
+        MetadataType IDataDescriptorTypeProvider.GetDataDescriptorType(CompilerTypeSystemContext context)
+            => context.SystemModule.GetType("Internal.Runtime.CompilerHelpers"u8, "TypeManagerSlot"u8);
     }
 }

@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using ILCompiler.Dataflow;
+using ILCompiler.DependencyAnalysis;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
@@ -80,7 +82,11 @@ namespace ILCompiler.Compiler.Tests
                 .UseILProvider(ilProvider);
 
             IILScanner scanner = builder.GetILScannerBuilder()
-                .UseCompilationRoots(new ICompilationRootProvider[] { new SingleMethodRootProvider(method) })
+                .UseCompilationRoots(new ICompilationRootProvider[]
+                {
+                    new SingleMethodRootProvider(method),
+                    new ThreadStaticBaseRootProvider(method.OwningType)
+                })
                 .UseMetadataManager(metadataManager)
                 .ToILScanner();
 
@@ -119,6 +125,13 @@ namespace ILCompiler.Compiler.Tests
                 Assert.DoesNotContain(methodToCheck.GetCanonMethodTarget(CanonicalFormKind.Specific), results.CompiledMethodBodies);
             }
 
+            foreach (var attr in method.GetDecodedCustomAttributes(assetsNamespace, "GeneratesDataDescriptorTypeAttribute"))
+            {
+                foundSomethingToCheck = true;
+                string typeName = (string)attr.FixedArguments[0].Value;
+                AssertDataDescriptorType(metadataManager, typeName, context.Target.PointerSize);
+            }
+
             //
             // Make sure we checked something
             //
@@ -132,6 +145,40 @@ namespace ILCompiler.Compiler.Tests
                 throw new NotImplementedException(); // TODO: parse sig and instantiation
 
             return ((TypeDesc)attr.FixedArguments[0].Value).GetMethod(Encoding.UTF8.GetBytes((string)attr.FixedArguments[1].Value), null);
+        }
+
+        private static void AssertDataDescriptorType(UsageBasedMetadataManager metadataManager, string typeName, int pointerSize)
+        {
+            byte[] json = ManagedDataDescriptorNode.BuildJsonDescriptor(metadataManager);
+            using JsonDocument document = JsonDocument.Parse(json);
+            JsonElement jsonType = document.RootElement.GetProperty("types").GetProperty(typeName);
+            Assert.Equal(2 * pointerSize, jsonType.GetProperty("!").GetInt32());
+            if (typeName == "Internal.Runtime.CompilerHelpers.TypeManagerSlot")
+            {
+                Assert.Equal(0, jsonType.GetProperty("TypeManager").GetInt32());
+                Assert.Equal(pointerSize, jsonType.GetProperty("ModuleIndex").GetInt32());
+            }
+            else
+            {
+                Assert.Equal("Internal.Runtime.CompilerHelpers.TypeThreadStaticIndex", typeName);
+                Assert.Equal(0, jsonType.GetProperty("TypeManagerSlot").GetInt32());
+                Assert.Equal(pointerSize, jsonType.GetProperty("ClassIndex").GetInt32());
+            }
+        }
+
+        private sealed class ThreadStaticBaseRootProvider : ICompilationRootProvider
+        {
+            private readonly TypeDesc _type;
+
+            public ThreadStaticBaseRootProvider(TypeDesc type)
+            {
+                _type = type;
+            }
+
+            public void AddCompilationRoots(IRootingServiceProvider rootProvider)
+            {
+                rootProvider.RootThreadStaticBaseForType(_type, "Dependency graph test");
+            }
         }
     }
 }

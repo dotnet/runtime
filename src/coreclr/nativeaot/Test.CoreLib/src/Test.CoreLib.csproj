@@ -71,6 +71,9 @@
     <Compile Include="$(IntermediatesDir)\nativeaot\Runtime\Full\AsmOffsets.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\..\System.Private.CoreLib\src\System\Diagnostics\DataContractAttribute.cs">
+      <Link>System\Diagnostics\DataContractAttribute.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\NativeFormat\NativeFormatReader.Primitives.cs">
       <Link>Internal\NativeFormat\NativeFormatReader.Primitives.cs</Link>
     </Compile>

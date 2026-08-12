@@ -64,6 +64,18 @@ namespace ILCompiler.Compiler.Tests.Assets
                 new Derived().CallBaseGenericVirtualDirectly<object>();
             }
         }
+
+        class ThreadStaticDataDescriptorTest
+        {
+            [ThreadStatic]
+            public static object Value = null;
+
+            [GeneratesDataDescriptorType("Internal.Runtime.CompilerHelpers.TypeManagerSlot")]
+            [GeneratesDataDescriptorType("Internal.Runtime.CompilerHelpers.TypeThreadStaticIndex")]
+            public static void Entrypoint()
+            {
+            }
+        }
     }
 
     #region Custom attributes that define invariants to check
@@ -92,5 +104,18 @@ namespace ILCompiler.Compiler.Tests.Assets
         public Type[] GenericArguments;
         public Type[] Signature;
     }
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
+    public class GeneratesDataDescriptorTypeAttribute : Attribute
+    {
+        public GeneratesDataDescriptorTypeAttribute(string name) { }
+    }
     #endregion
+}
+
+namespace System
+{
+    public sealed class ThreadStaticAttribute : Attribute
+    {
+    }
 }

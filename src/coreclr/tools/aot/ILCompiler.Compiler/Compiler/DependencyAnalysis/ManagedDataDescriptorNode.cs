@@ -17,9 +17,9 @@ namespace ILCompiler.DependencyAnalysis
     /// can consume as a sub-descriptor. ILC knows managed type layouts at compile time,
     /// so it can emit field offsets that would otherwise require runtime metadata resolution.
     ///
-    /// Types are discovered by scanning MetadataManager.GetTypesWithEETypes() for types
-    /// annotated with [DataContract], ensuring only types that actually have a MethodTable
-    /// in the binary are included.
+    /// Runtime types are discovered by scanning MetadataManager.GetTypesWithEETypes() for
+    /// [DataContract]-annotated types. ILC object nodes can also register annotated managed
+    /// layout types for data that does not have a MethodTable.
     /// </summary>
     public class ManagedDataDescriptorNode : ObjectNode, ISymbolDefinitionNode
     {
@@ -48,7 +48,7 @@ namespace ILCompiler.DependencyAnalysis
             if (relocsOnly)
                 return new ObjectData(Array.Empty<byte>(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
 
-            byte[] jsonBytes = BuildJsonDescriptor(factory);
+            byte[] jsonBytes = BuildJsonDescriptor(factory.MetadataManager);
 
             // Header layout: magic(8) + flags(4) + desc_size(4) + desc_ptr(ptr) + pointer_data_count(4) + pad(4) + pointer_data(ptr)
             int headerSize = 8 + 4 + 4 + factory.Target.PointerSize + 4 + 4 + factory.Target.PointerSize;
@@ -92,7 +92,7 @@ namespace ILCompiler.DependencyAnalysis
         /// ContractDescriptorParser. Types are objects with an optional "!" size sigil and
         /// field-name properties mapped to their offsets.
         /// </summary>
-        private static byte[] BuildJsonDescriptor(NodeFactory factory)
+        internal static byte[] BuildJsonDescriptor(MetadataManager metadataManager)
         {
             using var stream = new MemoryStream();
             using (var writer = new Utf8JsonWriter(stream))
@@ -102,13 +102,24 @@ namespace ILCompiler.DependencyAnalysis
                 writer.WriteString("baseline", "empty");
 
                 writer.WriteStartObject("types");
-                foreach (TypeDesc type in factory.MetadataManager.GetTypesWithEETypes())
+                foreach (TypeDesc type in metadataManager.GetTypesWithEETypes())
                 {
                     if (type is not EcmaType ecmaType)
                         continue;
 
                     if (!ecmaType.HasCustomAttribute(DataContractAttributeNamespace, DataContractAttributeName))
                         continue;
+
+                    WriteType(writer, ecmaType);
+                }
+
+                foreach (MetadataType type in metadataManager.GetDataDescriptorTypes())
+                {
+                    if (type is not EcmaType ecmaType ||
+                        !ecmaType.HasCustomAttribute(DataContractAttributeNamespace, DataContractAttributeName))
+                    {
+                        throw new InvalidOperationException($"Registered data descriptor type '{type}' is not annotated with [DataContract].");
+                    }
 
                     WriteType(writer, ecmaType);
                 }

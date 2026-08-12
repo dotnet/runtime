@@ -69,6 +69,7 @@ namespace ILCompiler
         private readonly SortedSet<MetadataType> _typesWithThreadStaticsGenerated = new SortedSet<MetadataType>(CompilerComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
+        private readonly SortedSet<MetadataType> _dataDescriptorTypes = new SortedSet<MetadataType>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _methodsGenerated = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
@@ -250,6 +251,11 @@ namespace ILCompiler
 
         protected virtual void Graph_NewMarkedNode(DependencyNodeCore<NodeFactory> obj)
         {
+            if (obj is IDataDescriptorTypeProvider dataDescriptorTypeProvider)
+            {
+                _dataDescriptorTypes.Add(dataDescriptorTypeProvider.GetDataDescriptorType(_typeSystemContext));
+            }
+
             var eetypeNode = obj as EETypeNode;
             if (eetypeNode != null)
             {
@@ -1154,6 +1160,11 @@ namespace ILCompiler
         internal IEnumerable<TypeDesc> GetTypesWithEETypes()
         {
             return _typesWithEETypesGenerated;
+        }
+
+        internal IEnumerable<MetadataType> GetDataDescriptorTypes()
+        {
+            return _dataDescriptorTypes;
         }
 
         internal IEnumerable<TypeDesc> GetTypesWithConstructedEETypes()

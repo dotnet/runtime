@@ -1666,6 +1666,7 @@ namespace ILCompiler.DependencyAnalysis
         public virtual void AttachToDependencyGraph(DependencyAnalyzerBase<NodeFactory> graph)
         {
             ReadyToRunHeader = new ReadyToRunHeaderNode();
+            MetadataManager.AttachToDependencyGraph(graph);
 
             graph.AddRoot(ReadyToRunHeader, "ReadyToRunHeader is always generated");
             graph.AddRoot(new ModulesSectionNode(), "ModulesSection is always generated");
@@ -1694,7 +1695,6 @@ namespace ILCompiler.DependencyAnalysis
             InteropStubManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
             TypeMapManager.AddToReadyToRunHeader(ReadyToRunHeader, this, new ExternalReferencesTableIndex(commonFixupsTableNode, this));
             MetadataManager.AddToReadyToRunHeader(ReadyToRunHeader, this, commonFixupsTableNode);
-            MetadataManager.AttachToDependencyGraph(graph);
             TypeMapManager.AttachToDependencyGraph(graph);
             ReadyToRunHeader.Add(MetadataManager.BlobIdToReadyToRunSection(ReflectionMapBlob.CommonFixupsTable), commonFixupsTableNode);
         }

@@ -21,6 +21,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="ILCompiler.Compiler.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
     <ProjectReference Include="..\ILCompiler.MetadataTransform\ILCompiler.MetadataTransform.csproj" />
@@ -641,6 +645,7 @@
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X64\X64ReadyToRunHelperNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InterfaceDispatchMapNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\IDataDescriptorTypeProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86UnboxingStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86JumpStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\Target_X86\X86ReadyToRunHelperNode.cs" />
