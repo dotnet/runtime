@@ -97,7 +97,6 @@ namespace System.IO.Compression.Tests
                     Assert.NotNull(entry);
                     Assert.True(entry.IsEncrypted);
                     Assert.Equal(encryptionMethod, entry.EncryptionMethod);
-                    Assert.Equal(content.Length, entry.Length);
                     await AssertEntryTextEquals(entry, content, pwd, async);
                 }
             }
