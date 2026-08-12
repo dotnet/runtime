@@ -54,7 +54,8 @@ PALTEST(filemapping_memmgt_MapViewOfFile_test5_paltest_mapviewoffile_test5, "fil
     {
         Trace("ERROR:%u: Able to create a MapViewOfFile with "
               "hFileMapping=0x%lx.\n",
-              GetLastError());
+              GetLastError(),
+              hFileMapping);
         UnmapViewOfFile(lpMapViewAddress);
         Fail("");
     }
@@ -75,7 +76,8 @@ PALTEST(filemapping_memmgt_MapViewOfFile_test5_paltest_mapviewoffile_test5, "fil
     {
         Trace("ERROR:%u: Able to create a MapViewOfFile with "
               "hFileMapping=0x%lx.\n",
-              GetLastError());
+              GetLastError(),
+              hFileMapping);
         UnmapViewOfFile(lpMapViewAddress);
         Fail("");
     }
