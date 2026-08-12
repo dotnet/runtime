@@ -403,27 +403,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
-        public static void AddCertificate()
-        {
-            SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.CounterSignedRsaPkcs1OneSigner);
-
-            int numOfCerts = cms.Certificates.Count;
-
-            using (X509Certificate2 newCert = Certificates.RSAKeyTransfer1.GetCertificate())
-            {
-                cms.AddCertificate(newCert);
-
-                Assert.Equal(numOfCerts + 1, cms.Certificates.Count);
-                Assert.True(cms.Certificates.Contains(newCert));
-
-                cms.CheckSignature(true);
-            }
-        }
-
         [Fact]
-        public static void AddCertificate_Sha256()
+        public static void AddCertificate()
         {
             SignedCms cms = new SignedCms();
             cms.Decode(SignedDocuments.CounterSignedRsaPkcs1Sha256OneSigner);
@@ -441,32 +422,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
-        public static void AddCertificateWithPrivateKey()
-        {
-            SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.CounterSignedRsaPkcs1OneSigner);
-
-            int numOfCerts = cms.Certificates.Count;
-
-            using (X509Certificate2 newCert = Certificates.RSAKeyTransfer1.TryGetCertificateWithPrivateKey())
-            {
-                Assert.True(newCert.HasPrivateKey);
-                cms.AddCertificate(newCert);
-
-                Assert.Equal(numOfCerts + 1, cms.Certificates.Count);
-
-                X509Certificate2 addedCert = cms.Certificates.OfType<X509Certificate2>().Where((cert) => cert.Equals(newCert)).Single();
-                Assert.False(addedCert.HasPrivateKey);
-
-                Assert.Equal(newCert, addedCert);
-
-                cms.CheckSignature(true);
-            }
-        }
-
         [Fact]
-        public static void AddCertificateWithPrivateKey_Sha256()
+        public static void AddCertificateWithPrivateKey()
         {
             SignedCms cms = new SignedCms();
             cms.Decode(SignedDocuments.CounterSignedRsaPkcs1Sha256OneSigner);
@@ -530,34 +487,8 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
-        public static void RemoveAllCertsAddBackSignerCert()
-        {
-            SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.CounterSignedRsaPkcs1OneSigner);
-
-            SignerInfo signerInfoBeforeRemoval = cms.SignerInfos[0];
-            X509Certificate2 signerCert = signerInfoBeforeRemoval.Certificate;
-
-            while (cms.Certificates.Count > 0)
-            {
-                cms.RemoveCertificate(cms.Certificates[0]);
-            }
-
-            // Signer info should be gone
-            Assert.Throws<CryptographicException>(() => cms.CheckSignature(true));
-
-            Assert.Null(cms.SignerInfos[0].Certificate);
-            Assert.NotNull(signerInfoBeforeRemoval.Certificate);
-
-            cms.AddCertificate(signerCert);
-            cms.CheckSignature(true);
-
-            Assert.Equal(1, cms.Certificates.Count);
-        }
-
         [Fact]
-        public static void RemoveAllCertsAddBackSignerCert_Sha256()
+        public static void RemoveAllCertsAddBackSignerCert()
         {
             SignedCms cms = new SignedCms();
             cms.Decode(SignedDocuments.CounterSignedRsaPkcs1Sha256OneSigner);
