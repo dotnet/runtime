@@ -78,6 +78,8 @@ public:
 
 
 private:
+    friend struct ::cdac_data<EnCFieldDesc>;
+
     // True if Fixup() has been called on this instance
     BOOL m_bNeedsFixup;
 
@@ -188,10 +190,10 @@ struct cdac_data<EnCEEClassData>
 };
 
 template<>
-struct cdac_data<EnCAddedFieldElement>
+struct cdac_data<EnCFieldDesc>
 {
-    static constexpr size_t Next = offsetof(EnCAddedFieldElement, m_next);
-    static constexpr size_t FieldDesc = offsetof(EnCAddedFieldElement, m_fieldDesc);
+    static constexpr size_t NeedsFixup = offsetof(EnCFieldDesc, m_bNeedsFixup);
+    static constexpr size_t StaticFieldData = offsetof(EnCFieldDesc, m_pStaticFieldData);
 };
 
 //---------------------------------------------------------------------------------------
@@ -379,6 +381,8 @@ public:
     void Cleanup();
 
 private:
+    friend struct ::cdac_data<EnCSyncBlockInfo>;
+
     // Gets the address of an EnC field accounting for its type: valuetype, class or primitive
     PTR_CBYTE GetEnCFieldAddrFromHelperFieldDesc(FieldDesc *    pHelperFieldDesc,
                                                  OBJECTREF      pHelper,
@@ -386,6 +390,12 @@ private:
 
     // Pointer to the head of the list
     PTR_EnCAddedField m_pList;
+};
+
+template<>
+struct cdac_data<EnCSyncBlockInfo>
+{
+    static constexpr size_t List = offsetof(EnCSyncBlockInfo, m_pList);
 };
 
 // The DPTR is actually defined in syncblk.h to make it visible to SyncBlock

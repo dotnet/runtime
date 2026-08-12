@@ -1491,6 +1491,22 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
+    public static void DCS_NullableDataContractStructAsRoot_DeserializesWithoutPriorInitialization()
+    {
+        // Regression: cold-cache deserialization of Nullable<T> for a [DataContract] struct
+        // must not throw SerializationException ("DataContract cache overflow").
+        const string xml = "<DataContractSerializerTests.NullableRootDataContractStruct" +
+            " xmlns=\"http://schemas.datacontract.org/2004/07/\"" +
+            " xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"/>";
+        var serializer = new DataContractSerializer(typeof(NullableRootDataContractStruct?));
+
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(xml));
+        var deserialized = (NullableRootDataContractStruct?)serializer.ReadObject(stream);
+
+        Assert.True(deserialized.HasValue);
+    }
+
+    [Fact]
     public static void DCS_SimpleStructWithProperties()
     {
         SimpleStructWithProperties x = new SimpleStructWithProperties() { Num = 1, Text = "Foo" };
@@ -1547,6 +1563,11 @@ public static partial class DataContractSerializerTests
     }
 
 #region private type has to be in with in the class
+    [DataContract]
+    private struct NullableRootDataContractStruct
+    {
+    }
+
     [DataContract]
     private class PrivateType
     {
@@ -2854,6 +2875,39 @@ public static partial class DataContractSerializerTests
         string expectedxmlstring = "<ObjectContainer xmlns =\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><_data i:type=\"a:DTOContainer\" xmlns:a=\"http://www.default.com\"><nDTO i:type=\"a:DTO\"><DateTime xmlns=\"http://schemas.datacontract.org/2004/07/System\">9999-12-31T23:59:59.9999999Z</DateTime><OffsetMinutes xmlns=\"http://schemas.datacontract.org/2004/07/System\">0</OffsetMinutes></nDTO></_data></ObjectContainer>";
         ObjectContainer deserialized = DataContractSerializerHelper.SerializeAndDeserialize(instance, expectedxmlstring, null, serializerfunc, false);
         Assert.Equal(DateTimeOffset.MaxValue, ((DTOContainer)deserialized.Data).nDTO);
+    }
+
+    [Fact]
+    public static void DCS_ExtensionData_UnknownElementWithCData()
+    {
+        // An unknown member that carries its value in a CDATA section, as can be produced by a
+        // newer contract version or an external system.
+        string sourceXml =
+            "<CdataVersioned xmlns=\"http://example.com/cdata\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\">" +
+            "<Prop1>hello</Prop1>" +
+            "<Prop2><![CDATA[<InnerTag2></InnerTag2>]]></Prop2>" +
+            "</CdataVersioned>";
+
+        // A version that knows Prop2 reads the CDATA content as the member value.
+        var directReader = XmlDictionaryReader.CreateTextReader(Encoding.UTF8.GetBytes(sourceXml), XmlDictionaryReaderQuotas.Max);
+        var direct = (CdataVersionedV2)new DataContractSerializer(typeof(CdataVersionedV2)).ReadObject(directReader);
+        Assert.Equal("<InnerTag2></InnerTag2>", direct.Prop2);
+
+        // A down-level version stores the unknown Prop2 (with CDATA) in ExtensionData. This used to
+        // throw a SerializationException because CDATA content was not handled while reading extension data.
+        var serV1 = new DataContractSerializer(typeof(CdataVersionedV1));
+        var v1Reader = XmlDictionaryReader.CreateTextReader(Encoding.UTF8.GetBytes(sourceXml), XmlDictionaryReaderQuotas.Max);
+        var v1 = (CdataVersionedV1)serV1.ReadObject(v1Reader);
+        Assert.Equal("hello", v1.Prop1);
+        Assert.NotNull(v1.ExtensionData);
+
+        // Round-trip the down-level object and read it back as the new version; Prop2 is preserved.
+        var ms = new MemoryStream();
+        serV1.WriteObject(ms, v1);
+        ms.Position = 0;
+        var v2 = (CdataVersionedV2)new DataContractSerializer(typeof(CdataVersionedV2)).ReadObject(ms);
+        Assert.Equal("hello", v2.Prop1);
+        Assert.Equal("<InnerTag2></InnerTag2>", v2.Prop2);
     }
 
     [Fact]
@@ -4216,10 +4270,12 @@ public static partial class DataContractSerializerTests
         for (int i = 0; i < myFamily.Members.Length; ++i)
         {
             Assert.Equal(myFamily.Members[i].Name, newFamily.Members[i].Name);
+            Assert.Equal(myFamily.Members[i].Age, newFamily.Members[i].Age);
         }
     }
 
     [Fact]
+    [SkipOnPlatform(TestPlatforms.Wasi, "/tmp is not preopened in the wasmtime '--dir .' sandbox, so temp files cannot be created.")]
     public static void DCS_FileStreamSurrogate()
     {
         using (var testFile = TempFile.Create())

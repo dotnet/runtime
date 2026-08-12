@@ -237,7 +237,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             assert(isIntegerRegister(id->idReg1()) || // ZR
                    isVectorRegister(id->idReg1()));
             assert(isIntegerRegister(id->idReg2())); // SP
-            assert((emitGetInsSC(id) == 0) || (id->idIsTlsGD()));
+            assert((emitGetInsSC(id) == 0) || id->idIsTlsGD() || id->idIsReloc());
             assert(insOptsNone(id->idInsOpt()));
             break;
 
@@ -429,7 +429,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
 
         case IF_DR_2A: // DR_2A   X..........mmmmm ......nnnnn.....         Rn Rm
             assert(isValidGeneralDatasize(id->idOpSize()));
-            assert(isGeneralRegister(id->idReg1()));
+            assert(isGeneralRegisterOrZR(id->idReg1()));
             assert(isGeneralRegister(id->idReg2()));
             break;
 
@@ -725,7 +725,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov, fcvtXX - register)
         case IF_DV_2K: // DV_2K   .........X.mmmmm ......nnnnn.....      Vn Vm      (fcmp)
             assert(insOptsNone(id->idInsOpt()));
-            assert(isValidVectorElemsizeFloat(id->idOpSize()));
+            assert(isValidVectorElemsizeFloat(id->idOpSize()) || (id->idOpSize() == EA_2BYTE));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             break;
@@ -735,7 +735,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             dstsize = optGetDstsize(id->idInsOpt());
             srcsize = optGetSrcsize(id->idInsOpt());
             assert(isValidGeneralDatasize(dstsize));
-            assert(isValidVectorElemsizeFloat(srcsize));
+            assert(isValidVectorElemsizeFloat(srcsize) || (srcsize == EA_2BYTE));
             assert(dstsize == id->idOpSize());
             assert(isGeneralRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
@@ -746,7 +746,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             dstsize = optGetDstsize(id->idInsOpt());
             srcsize = optGetSrcsize(id->idInsOpt());
             assert(isValidGeneralDatasize(srcsize));
-            assert(isValidVectorElemsizeFloat(dstsize));
+            assert(isValidVectorElemsizeFloat(dstsize) || (dstsize == EA_2BYTE));
             assert(dstsize == id->idOpSize());
             assert(isVectorRegister(id->idReg1()));
             assert(isGeneralRegister(id->idReg2()));
@@ -958,7 +958,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
             break;
 
         case IF_DV_4A: // DV_4A   .........X.mmmmm .aaaaannnnnddddd      Rd Rn Rm Ra (scalar)
-            assert(isValidGeneralDatasize(id->idOpSize()));
+            assert(isValidScalarDatasize(id->idOpSize()));
             assert(isVectorRegister(id->idReg1()));
             assert(isVectorRegister(id->idReg2()));
             assert(isVectorRegister(id->idReg3()));
@@ -3613,6 +3613,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case INS_OPTS_8BYTE_TO_D:
         case INS_OPTS_S_TO_D:
         case INS_OPTS_H_TO_D:
+        case INS_OPTS_H_TO_8BYTE:
 
             return EA_8BYTE;
 
@@ -3622,11 +3623,14 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case INS_OPTS_8BYTE_TO_S:
         case INS_OPTS_D_TO_S:
         case INS_OPTS_H_TO_S:
+        case INS_OPTS_H_TO_4BYTE:
 
             return EA_4BYTE;
 
         case INS_OPTS_S_TO_H:
         case INS_OPTS_D_TO_H:
+        case INS_OPTS_4BYTE_TO_H:
+        case INS_OPTS_8BYTE_TO_H:
 
             return EA_2BYTE;
 
@@ -3647,6 +3651,7 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case INS_OPTS_8BYTE_TO_S:
         case INS_OPTS_D_TO_S:
         case INS_OPTS_D_TO_H:
+        case INS_OPTS_8BYTE_TO_H:
 
             return EA_8BYTE;
 
@@ -3656,11 +3661,14 @@ emitter::code_t emitter::emitInsCode(instruction ins, insFormat fmt)
         case INS_OPTS_4BYTE_TO_D:
         case INS_OPTS_S_TO_D:
         case INS_OPTS_S_TO_H:
+        case INS_OPTS_4BYTE_TO_H:
 
             return EA_4BYTE;
 
         case INS_OPTS_H_TO_S:
         case INS_OPTS_H_TO_D:
+        case INS_OPTS_H_TO_4BYTE:
+        case INS_OPTS_H_TO_8BYTE:
 
             return EA_2BYTE;
 
@@ -4596,18 +4604,17 @@ void emitter::emitIns_R_R(instruction     ins,
                 fmt = IF_DV_2M;
                 break;
             }
-            if (ins == INS_cnt)
-            {
-                // Doesn't have general register version(s)
-                break;
-            }
-
+            // INS_cnt on general registers requires FEAT_CSSC; fall through to the DR_2G encoding.
+            assert((ins != INS_cnt) || m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc));
             FALLTHROUGH;
 
+        case INS_ctz:
         case INS_rev:
             assert(insOptsNone(opt));
             assert(isGeneralRegister(reg1));
             assert(isGeneralRegister(reg2));
+            // INS_ctz on general registers requires FEAT_CSSC.
+            assert((ins != INS_ctz) || m_compiler->compIsaSupportedDebugOnly(InstructionSet_Cssc));
             if (ins == INS_rev32)
             {
                 assert(size == EA_8BYTE);
@@ -4751,7 +4758,7 @@ void emitter::emitIns_R_R(instruction     ins,
         case INS_fcmp:
         case INS_fcmpe:
             assert(insOptsNone(opt));
-            assert(isValidVectorElemsizeFloat(size));
+            assert(isValidVectorElemsizeFloat(size) || (size == EA_2BYTE));
             assert(isVectorRegister(reg1));
             assert(isVectorRegister(reg2));
             fmt = IF_DV_2K;
@@ -4873,7 +4880,7 @@ void emitter::emitIns_R_R(instruction     ins,
                 {
                     assert(isGeneralRegister(reg2));
                     assert(insOptsConvertIntToFloat(opt));
-                    assert(isValidVectorElemsizeFloat(size));
+                    assert(isValidVectorElemsizeFloat(size) || (size == EA_2BYTE));
                     fmt = IF_DV_2I;
                 }
             }
@@ -4905,7 +4912,7 @@ void emitter::emitIns_R_R(instruction     ins,
             {
                 // Scalar operation
                 assert(insOptsNone(opt));
-                assert(isValidVectorElemsizeFloat(size));
+                assert(isValidVectorElemsizeFloat(size) || (size == EA_2BYTE));
                 assert(isVectorRegister(reg1));
                 assert(isVectorRegister(reg2));
                 fmt = IF_DV_2G;
@@ -5906,6 +5913,13 @@ void emitter::emitIns_R_R_I(instruction     ins,
             }
         }
 
+        // Try to fold a preceding relocatable "adrp/add" page-offset into this load, turning
+        // "adrp Rd,sym; add Rd,Rd,#:lo12:sym; ldr Rd,[Rd]" into "adrp Rd,sym; ldr Rd,[Rd,#:lo12:sym]".
+        if ((fmt == IF_LS_2A) && m_compiler->opts.compReloc && TryFoldPageOffsetIntoLdr(ins, attr, reg1, reg2))
+        {
+            return;
+        }
+
         // Try to optimize a load/store with an alternative instruction.
         if (isLdrStr && m_compiler->opts.OptimizationEnabled() &&
             OptimizeLdrStr(ins, attr, reg1, reg2, imm, size, fmt, false, -1, -1 DEBUG_ARG(false)))
@@ -6094,6 +6108,7 @@ void emitter::emitIns_R_R_R(instruction     ins,
             FALLTHROUGH;
 
         case INS_sadalp:
+        case INS_sm4e:
         case INS_suqadd:
         case INS_uadalp:
         case INS_usqadd:
@@ -8245,22 +8260,43 @@ void emitter::emitIns_R_S(instruction ins, emitAttr attr, regNumber reg1, int va
         isSimple = false;
         reg2     = REG_UNKBASE;
 
+        var_types localType = TYP_UNDEF;
+
         if (varx >= 0)
         {
-            imm = m_compiler->unkSizeFrame.GetAddressingOffset(m_compiler->lvaGetDesc(varx));
+            LclVarDsc* varDsc = m_compiler->lvaGetDesc(varx);
+            imm               = m_compiler->unkSizeFrame.GetAddressingOffset(varDsc);
+            localType         = varDsc->TypeGet();
         }
         else
         {
-            imm = m_compiler->unkSizeFrame.GetAddressingOffset(codeGen->regSet.tmpGetNum(varx));
+            TempDsc* tmpDsc = codeGen->regSet.tmpGetNum(varx);
+            imm             = m_compiler->unkSizeFrame.GetAddressingOffset(tmpDsc);
+            localType       = tmpDsc->tdTempType();
         }
 
         switch (ins)
         {
             case INS_lea:
-                // We shouldn't be materializing the address of a mask.
-                assert(m_compiler->lvaGetActualType(varx) != TYP_MASK);
-                // addvl reg1, x19, #imm
-                emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                // TODO-SVE: Support materializing address of a mask local / temp.
+                assert(localType != TYP_MASK);
+                if (isValidSimm<6>(imm))
+                {
+                    // addvl reg1, x19, #imm
+                    emitIns_R_R_I(INS_sve_addvl, EA_8BYTE, reg1, REG_UNKBASE, imm);
+                }
+                else
+                {
+                    // Cannot encode immediate, generate `addr = fp + imm * VL`.
+                    //
+                    // set reg1 = imm
+                    // rdvl rsvd, #1
+                    // madd reg1, reg1, rsvd, x19
+                    regNumber rsvd = codeGen->rsGetRsvdReg();
+                    codeGen->instGen_Set_Reg_To_Imm(EA_8BYTE, reg1, imm);
+                    emitIns_R_I(INS_sve_rdvl, EA_8BYTE, rsvd, 1);
+                    emitIns_R_R_R_R(INS_madd, EA_8BYTE, reg1, reg1, rsvd, REG_UNKBASE);
+                }
                 return;
 
             case INS_sve_ldr:
@@ -9486,12 +9522,6 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     }
 #endif
 
-    /* Managed RetVal: emit sequence point for the call */
-    if (m_compiler->opts.compDbgInfo && params.debugInfo.GetLocation().IsValid())
-    {
-        codeGen->genIPmappingAdd(IPmappingDscKind::Normal, params.debugInfo, false);
-    }
-
     /*
         We need to allocate the appropriate instruction descriptor based
         on whether this is a direct/indirect call, and whether we need to
@@ -10117,6 +10147,10 @@ void emitter::emitIns_Call(const EmitCallParams& params)
     {
         return 0x00400000; // set the bit at location 22
     }
+    else if (size == EA_2BYTE)
+    {
+        return 0x00C00000; // set the bits at location 23 and 22 (ftype=11, half-precision)
+    }
     assert(size == EA_4BYTE);
     return 0x00000000;
 }
@@ -10326,6 +10360,16 @@ void emitter::emitIns_Call(const EmitCallParams& params)
             result = 0x80400000; // sf=1, type=01
             break;
 
+        case INS_OPTS_H_TO_4BYTE: // Half to INT32
+            assert(fmt == IF_DV_2H);
+            result = 0x00C00000; // sf=0, type=11
+            break;
+
+        case INS_OPTS_H_TO_8BYTE: // Half to INT64
+            assert(fmt == IF_DV_2H);
+            result = 0x80C00000; // sf=1, type=11
+            break;
+
         case INS_OPTS_4BYTE_TO_S: // INT32 to Single
             assert(fmt == IF_DV_2I);
             result = 0x00000000; // sf=0, type=00
@@ -10344,6 +10388,16 @@ void emitter::emitIns_Call(const EmitCallParams& params)
         case INS_OPTS_8BYTE_TO_D: // INT64 to Double
             assert(fmt == IF_DV_2I);
             result = 0x80400000; // sf=1, type=01
+            break;
+
+        case INS_OPTS_4BYTE_TO_H: // INT32 to Half
+            assert(fmt == IF_DV_2I);
+            result = 0x00C00000; // sf=0, type=11
+            break;
+
+        case INS_OPTS_8BYTE_TO_H: // INT64 to Half
+            assert(fmt == IF_DV_2I);
+            result = 0x80C00000; // sf=1, type=11
             break;
 
         default:
@@ -11429,6 +11483,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             {
                 emitRecordRelocation(odst, (void*)emitGetInsSC(id), CorInfoReloc::ARM64_LIN_TLSDESC_LD64_LO12);
             }
+            else if (id->idIsReloc())
+            {
+                // "ldr Rt,[Rn,#:lo12:sym]" with the page offset folded in from a preceding adrp/add pair.
+                emitRecordRelocation(odst, (void*)emitGetInsSC(id), CorInfoReloc::ARM64_PAGEOFFSET_12L);
+            }
             break;
 
         case IF_LS_2B: // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
@@ -12269,9 +12328,21 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_DV_2G: // DV_2G   .........X...... ......nnnnnddddd      Vd Vn      (fmov, fcvtXX - register)
             elemsize = id->idOpSize();
             code     = emitInsCode(ins, fmt);
-            code |= insEncodeFloatElemsize(elemsize); // X
-            code |= insEncodeReg_Vd(id->idReg1());    // ddddd
-            code |= insEncodeReg_Vn(id->idReg2());    // nnnnn
+            if ((elemsize == EA_2BYTE) && ((ins == INS_frecpe) || (ins == INS_frsqrte)))
+            {
+                // FRECPE/FRSQRTE are "Advanced SIMD scalar two-register miscellaneous" ops. Unlike the
+                // ftype-selected scalar ops in this format (fsqrt, frintX, fcvtXX, ...), their half-precision
+                // forms live in the dedicated FP16 sub-encoding, so setting ftype=11 would emit the Dd,Dn form.
+                // Set the FP16 sz/opcode bits explicitly so we emit e.g. FRECPE Hd,Hn (0x5EF9D800) rather than
+                // FRECPE Dd,Dn (0x5EE1D800).
+                code |= 0x00580000;
+            }
+            else
+            {
+                code |= insEncodeFloatElemsize(elemsize); // X
+            }
+            code |= insEncodeReg_Vd(id->idReg1()); // ddddd
+            code |= insEncodeReg_Vn(id->idReg2()); // nnnnn
             dst += emitOutput_Instr(dst, code);
             break;
 
@@ -13862,9 +13933,21 @@ void emitter::emitDispInsHelp(
 
         case IF_LS_2A: // LS_2A   .X.......X...... ......nnnnnttttt      Rt Rn
             assert(insOptsNone(id->idInsOpt()));
-            assert((emitGetInsSC(id) == 0) || id->idIsTlsGD());
+            assert((emitGetInsSC(id) == 0) || id->idIsTlsGD() || id->idIsReloc());
             emitDispReg(id->idReg1(), emitInsTargetRegSize(id), true);
-            emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);
+            if (id->idIsReloc() && !id->idIsTlsGD())
+            {
+                // "ldr Rt,[Rn,#:lo12:sym]" with the page offset folded in from a preceding adrp/add pair.
+                printf("[");
+                emitDispReg(id->idReg2(), EA_PTRSIZE, true);
+                printf("[LOW RELOC ");
+                emitDispImm((ssize_t)emitGetInsSC(id), false);
+                printf("]]");
+            }
+            else
+            {
+                emitDispAddrRI(id->idReg2(), id->idInsOpt(), 0);
+            }
             break;
 
         case IF_LS_2B: // LS_2B   .X.......Xiiiiii iiiiiinnnnnttttt      Rt Rn    imm(0-4095)
@@ -14999,8 +15082,8 @@ void emitter::emitInsLoadStoreOp(instruction ins, emitAttr attr, regNumber dataR
                     // First load/store tmpReg with the large offset constant
                     codeGen->instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, offset);
                     // Then add the base register
-                    //      rd = rd + base
-                    emitIns_R_R_R(INS_add, addType, tmpReg, tmpReg, memBase->GetRegNum());
+                    //      rd = base + rd
+                    emitIns_R_R_R(INS_add, addType, tmpReg, memBase->GetRegNum(), tmpReg);
 
                     noway_assert(emitInsIsLoad(ins) || (tmpReg != dataReg));
                     noway_assert(tmpReg != index->GetRegNum());
@@ -16454,8 +16537,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     }
                     else
                     {
-                        // S-form
-                        assert(id->idOpSize() == EA_4BYTE);
+                        // S-form or H-form
+                        assert((id->idOpSize() == EA_4BYTE) || (id->idOpSize() == EA_2BYTE));
                         result.insThroughput = PERFSCORE_THROUGHPUT_9C;
                         result.insLatency    = PERFSCORE_LATENCY_12C;
                     }
@@ -16615,8 +16698,8 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     }
                     else
                     {
-                        // S-form
-                        assert(id->idOpSize() == EA_4BYTE);
+                        // S-form or H-form
+                        assert((id->idOpSize() == EA_4BYTE) || (id->idOpSize() == EA_2BYTE));
                         result.insThroughput = PERFSCORE_THROUGHPUT_3C;
                         result.insLatency    = PERFSCORE_LATENCY_10C;
                     }
@@ -17599,9 +17682,12 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     ssize_t     prevImm = emitGetInsSC(emitLastIns);
     instruction optIns  = (ins == INS_ldr) ? INS_ldp : INS_stp;
 
+    // For IF_LS_2C (ldur/stur) the immediate is already the raw byte offset; for the scaled
+    // formats it must be multiplied by the operand size to recover the byte offset that
+    // emitIns_R_R_R_I_LdStPair / emitIns_R_R_I expect.
     emitAttr prevReg1Attr;
-    ssize_t  prevImmSize   = prevImm * size;
-    ssize_t  newImmSize    = imm * size;
+    ssize_t  prevImmSize   = (emitLastIns->idInsFmt() == IF_LS_2C) ? prevImm : (prevImm * size);
+    ssize_t  newImmSize    = (fmt == IF_LS_2C) ? imm : (imm * size);
     bool     isLastLclVar  = emitLastIns->idIsLclVar();
     int      prevOffset    = -1;
     int      prevLclVarNum = -1;
@@ -17637,7 +17723,7 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     if ((ins == INS_str) && (reg1 == REG_ZR) && (prevReg1 == REG_ZR) && (size == EA_4BYTE))
     {
         // The first register is at the lower offset for the ascending order
-        ssize_t offset = (optimizationOrder == eRO_ascending ? prevImm : imm) * size;
+        ssize_t offset = (optimizationOrder == eRO_ascending ? prevImmSize : newImmSize);
         emitIns_R_R_I(INS_str, EA_8BYTE, REG_ZR, reg2, offset, INS_OPTS_NONE);
         return true;
     }
@@ -17707,13 +17793,28 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
     emitAttr  prevSize   = emitLastIns->idOpSize();
     ssize_t   prevImm    = emitGetInsSC(emitLastIns);
 
-    // If we have this format, the 'imm' and/or 'prevImm' are not scaled(encoded),
-    // therefore we cannot proceed.
-    // TODO: In this context, 'imm' and 'prevImm' are assumed to be scaled(encoded).
-    //       They should never be scaled(encoded) until its about to be written to the buffer.
-    if (fmt == IF_LS_2C || lastInsFmt == IF_LS_2C)
+    // For IF_LS_2C (ldur/stur) the immediate is the raw, unscaled byte offset, whereas for the
+    // scaled formats (IF_LS_2B) it has already been divided by the operand size. Normalize both
+    // immediates to the scaled representation so that the range and adjacency checks below operate
+    // on consistent units. A raw byte offset that is not a multiple of the operand size cannot be
+    // re-encoded as a scaled ldp/stp offset, so in that case the accesses cannot be merged.
+    const unsigned scale     = NaturalScale_helper(size);
+    const ssize_t  scaleMask = ((ssize_t)1 << scale) - 1;
+    if (fmt == IF_LS_2C)
     {
-        return eRO_none;
+        if ((imm & scaleMask) != 0)
+        {
+            return eRO_none;
+        }
+        imm >>= scale;
+    }
+    if (lastInsFmt == IF_LS_2C)
+    {
+        if ((prevImm & scaleMask) != 0)
+        {
+            return eRO_none;
+        }
+        prevImm >>= scale;
     }
 
     // Signed, *raw* immediate value fits in 7 bits, so for LDP/ STP the raw value is from -64 to +63.
@@ -17897,7 +17998,7 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
         return false;
     }
 
-    if ((emitLastIns->idInsFmt() != IF_LS_2A) || emitLastIns->idIsTlsGD())
+    if ((emitLastIns->idInsFmt() != IF_LS_2A) || emitLastIns->idIsTlsGD() || emitLastIns->idIsReloc())
     {
         return false;
     }
@@ -17996,6 +18097,89 @@ bool emitter::OptimizePostIndexed(instruction ins, regNumber reg, ssize_t imm, e
     {
         id->idGCrefReg2(GCT_GCREF);
     }
+
+    dispIns(id);
+    appendToCurIG(id);
+    return true;
+}
+
+//-----------------------------------------------------------------------------------
+// TryFoldPageOffsetIntoLdr: Fold the page offset of an immediately preceding relocatable
+//   "add Rd, Rd, #:lo12:sym" (PAGEOFFSET_12A) into a "ldr Rd, [Rd]" so that the pair
+//   "adrp Rd, sym; add Rd, Rd, #:lo12:sym; ldr Rd, [Rd]" becomes the shorter
+//   "adrp Rd, sym; ldr Rd, [Rd, #:lo12:sym]" using a PAGEOFFSET_12L relocation.
+//
+// Arguments:
+//   ins  - The load instruction being emitted (must be INS_ldr to fold).
+//   attr - The operand attributes of the load.
+//   reg1 - The destination register of the load.
+//   reg2 - The base (address) register of the load.
+//
+// Returns:
+//   True if the fold was performed and the (relocatable) load was emitted; false otherwise.
+//
+bool emitter::TryFoldPageOffsetIntoLdr(instruction ins, emitAttr attr, regNumber reg1, regNumber reg2)
+{
+    if (ins != INS_ldr)
+    {
+        return false;
+    }
+
+    // The load must overwrite its own base so the full cell address is provably dead.
+    if (reg1 != reg2)
+    {
+        return false;
+    }
+
+    // PAGEOFFSET_12L patches a 64-bit LDR (offset scaled by 8); restrict to 64-bit general-register
+    // loads (this includes GCREF/BYREF, which are EA_8BYTE in a general register).
+    if ((EA_SIZE(attr) != EA_8BYTE) || !isGeneralRegister(reg1))
+    {
+        return false;
+    }
+
+    if (!emitCanPeepholeLastIns())
+    {
+        return false;
+    }
+
+    if (m_compiler->compGeneratingUnwindProlog || m_compiler->compGeneratingUnwindEpilog)
+    {
+        // Don't remove instructions while generating the "unwind" part of prologs or epilogs.
+        return false;
+    }
+
+    // The previous instruction must be the "add Rd, Rd, #:lo12:sym" half of an adrp/add reloc pair.
+    instrDesc* prevId = emitLastIns;
+    if ((prevId->idIns() != INS_add) || (prevId->idInsFmt() != IF_DI_2A) || !prevId->idIsReloc() ||
+        prevId->idIsTlsGD() || (prevId->idReg1() != reg1) || (prevId->idReg2() != reg1))
+    {
+        return false;
+    }
+
+    void* sym = prevId->idAddr()->iiaAddr;
+
+    // PAGEOFFSET_12L encodes the :lo12: page offset scaled by 8, so the reloc target must be at
+    // least 8-byte aligned. Only fold when the VM guarantees that alignment for 'sym' (e.g. in
+    // NativeAOT a byte-packed non-GC static region may be only 4-byte aligned, which the linker
+    // rejects for R_AARCH64_LDST64_ABS_LO12_NC).
+    if (m_compiler->eeGetAddressAlignment(sym) < 8)
+    {
+        return false;
+    }
+
+    // Drop the "add"; the preceding "adrp" already put the page base of 'sym' into reg1.
+    emitRemoveLastInstruction();
+
+    // Emit "ldr reg1, [reg1]" carrying a PAGEOFFSET_12L relocation against 'sym'. The instruction
+    // encodes a zero offset; the relocation deposits the scaled :lo12: page offset of 'sym'.
+    instrDesc* id = emitNewInstrSC(attr, (ssize_t)sym);
+    id->idIns(INS_ldr);
+    id->idInsFmt(IF_LS_2A);
+    id->idInsOpt(INS_OPTS_NONE);
+    id->idReg1(reg1);
+    id->idReg2(reg1);
+    id->idSetIsDspReloc();
 
     dispIns(id);
     appendToCurIG(id);

@@ -6,11 +6,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.Frame))]
 internal sealed partial class Frame : IData<Frame>
 {
-    [Field] public TargetPointer Next { get; }
-    public TargetPointer Identifier { get; private set; }
+    [Field] public partial TargetPointer Next { get; }
+    [CustomInit(nameof(InitIdentifier))] public partial TargetPointer Identifier { get; }
 
-    partial void OnInit(Target target, TargetPointer address)
+    private partial TargetPointer InitIdentifier(Target target, TargetPointer address)
     {
-        Identifier = target.ReadPointer(address);
+        return target.ReadPointer(address);
     }
 }

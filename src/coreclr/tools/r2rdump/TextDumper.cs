@@ -260,7 +260,7 @@ namespace R2RDump
             {
                 _writer.WriteLine("UnwindInfo:");
                 _writer.Write(rtf.UnwindInfo);
-                if (_model.Raw && !isWasm)
+                if (_model.Raw)
                 {
                     DumpBytes(rtf.UnwindRVA, (uint)rtf.UnwindInfo.Size);
                 }

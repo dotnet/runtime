@@ -96,9 +96,10 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static (Vector128<byte>, Vector128<byte>) AsciiToHexVector128(Vector128<byte> src, Vector128<byte> hexMap)
         {
-            Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported);
+            Debug.Assert(Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported);
 
             // The algorithm is simple: a single srcVec (contains the whole 16b Guid) is converted
             // into nibbles and then, via hexMap, converted into a HEX representation via
@@ -115,6 +116,7 @@ namespace System
 
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static void EncodeTo_Vector128<TChar>(ReadOnlySpan<byte> source, Span<TChar> destination, Casing casing)
         {
             Debug.Assert(source.Length >= (Vector128<TChar>.Count / 2));
@@ -187,7 +189,7 @@ namespace System
             Debug.Assert(utf8Destination.Length >= (source.Length * 2));
 
 #if SYSTEM_PRIVATE_CORELIB
-            if ((AdvSimd.Arm64.IsSupported || Ssse3.IsSupported) && (source.Length >= (Vector128<byte>.Count / 2)))
+            if ((AdvSimd.Arm64.IsSupported || Ssse3.IsSupported || PackedSimd.IsSupported) && (source.Length >= (Vector128<byte>.Count / 2)))
             {
                 EncodeTo_Vector128(source, utf8Destination, casing);
                 return;
@@ -204,7 +206,7 @@ namespace System
             Debug.Assert(destination.Length >= (source.Length * 2));
 
 #if SYSTEM_PRIVATE_CORELIB
-            if ((AdvSimd.Arm64.IsSupported || Ssse3.IsSupported) && (source.Length >= (Vector128<ushort>.Count / 2)))
+            if ((AdvSimd.Arm64.IsSupported || Ssse3.IsSupported || PackedSimd.IsSupported) && (source.Length >= (Vector128<ushort>.Count / 2)))
             {
                 EncodeTo_Vector128(source, Unsafe.BitCast<Span<char>, Span<ushort>>(destination), casing);
                 return;

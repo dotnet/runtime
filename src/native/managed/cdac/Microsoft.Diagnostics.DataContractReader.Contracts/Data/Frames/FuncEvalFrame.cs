@@ -9,5 +9,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.FuncEvalFrame))]
 internal partial class FuncEvalFrame : IData<FuncEvalFrame>
 {
-    [Field] public TargetPointer DebuggerEvalPtr { get; }
+    [Field] public partial TargetPointer DebuggerEvalPtr { get; }
+    [Field] public partial TargetCodePointer ReturnAddress { get; }
 }

@@ -5,8 +5,9 @@ using System;
 using System.Linq;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 using Microsoft.Diagnostics.DataContractReader.Legacy;
+using Microsoft.Diagnostics.DataContractReader.TestInfrastructure;
 using Xunit;
-using static Microsoft.Diagnostics.DataContractReader.Tests.TestHelpers;
+using static Microsoft.Diagnostics.DataContractReader.TestInfrastructure.TestHelpers;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpTests;
 
@@ -194,7 +195,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
         ThreadData crashingThread = DumpTestHelpers.FindFailFastThread(Target);
 
         IStackDataFrameHandle? managedFrame = null;
-        foreach (IStackDataFrameHandle dataFrame in stackWalk.CreateStackWalk(crashingThread).Where(ClrDataStackWalk.IsLegacyVisible))
+        foreach (IStackDataFrameHandle dataFrame in DumpTestStackWalker.LegacyVisibleFrames(stackWalk, crashingThread))
         {
             TargetPointer md = stackWalk.GetMethodDescPtr(dataFrame);
             if (md != TargetPointer.Null)
@@ -206,7 +207,7 @@ public unsafe class IXCLRDataAppDomainDumpTests : DumpTestBase
 
         Assert.NotNull(managedFrame);
 
-        ClrDataFrame frame = new ClrDataFrame(Target, managedFrame, legacyImpl: null);
+        ClrDataFrame frame = new ClrDataFrame(Target, crashingThread.ThreadAddress, managedFrame, legacyImpl: null);
         IXCLRDataFrame xclrFrame = frame;
 
         DacComNullableByRef<IXCLRDataAppDomain> appDomainOut = new(isNullRef: false);

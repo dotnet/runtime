@@ -36,7 +36,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void CodeGen::genSetGSSecurityCookie(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (!m_compiler->getNeedsGSSecurityCookie())
     {
@@ -497,7 +497,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             }
 
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
-                                   INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
+                                   INS_FLAGS_DONT_CARE DEBUGARG(con->GetTargetHandle()) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);
         }
         break;
@@ -791,8 +791,8 @@ void CodeGen::genCodeForLongUMod(GenTreeOp* node)
     GenTree* const divisor = node->gtOp2;
     assert(divisor->gtSkipReloadOrCopy()->OperGet() == GT_CNS_INT);
     assert(divisor->gtSkipReloadOrCopy()->isUsedFromReg());
-    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->gtIconVal >= 2);
-    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->gtIconVal <= 0x3fffffff);
+    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->IconValue() >= 2);
+    assert(divisor->gtSkipReloadOrCopy()->AsIntCon()->IconValue() <= 0x3fffffff);
 
     // dividendLo must be in RAX; dividendHi must be in RDX
     genCopyRegIfNeeded(dividendLo, REG_EAX);
@@ -1126,6 +1126,47 @@ void CodeGen::genCodeForBinary(GenTreeOp* treeNode)
 #endif
         genCheckOverflow(treeNode);
     }
+    genProduceReg(treeNode);
+}
+
+//------------------------------------------------------------------------
+// genCodeForBitOp: Generate code for a GT_BIT_SET/GT_BIT_CLEAR/GT_BIT_INVERT operation, i.e. the
+// value-producing `bts`/`btr`/`btc` instructions which set, reset, or complement a single bit of op1
+// selected by op2.
+//
+// Arguments:
+//    treeNode - the node to generate the code for
+//
+void CodeGen::genCodeForBitOp(GenTreeOp* treeNode)
+{
+    assert(treeNode->OperIs(GT_BIT_SET, GT_BIT_CLEAR, GT_BIT_INVERT));
+
+    GenTree* op1 = treeNode->gtGetOp1(); // value (read-modify-write destination)
+    GenTree* op2 = treeNode->gtGetOp2(); // bit index
+
+    genConsumeOperands(treeNode);
+
+    regNumber targetReg  = treeNode->GetRegNum();
+    var_types targetType = genActualType(treeNode);
+    emitAttr  size       = emitTypeSize(targetType);
+    emitter*  emit       = GetEmitter();
+
+    assert((targetType == TYP_INT) || (targetType == TYP_LONG));
+    assert(op1->isUsedFromReg() && op2->isUsedFromReg());
+
+    instruction ins = treeNode->OperIs(GT_BIT_SET) ? INS_bts : treeNode->OperIs(GT_BIT_CLEAR) ? INS_btr : INS_btc;
+
+    // These are read-modify-write: the `mov` below loads op1 (the value) into the destination and
+    // then `bts`/`btr`/`btc` reads the bit index from op2. LSRA marks op2 as delayFree except when
+    // op2 shares op1's interval and it's their last use -- i.e. `x <op> (1 << x)`, where op1 and op2
+    // are the same value (see AddDelayFreeUses). So the destination can only alias op2 when op1 and
+    // op2 hold the same value, in which case the `mov` writes that same value back into op2's
+    // register and nothing is clobbered before the bit-test reads it. When the operands are distinct
+    // values, delayFree guarantees the destination and op2 use different registers.
+    inst_Mov(targetType, targetReg, op1->GetRegNum(), /* canSkip */ true);
+
+    emit->emitIns_R_R(ins, size, targetReg, op2->GetRegNum());
+
     genProduceReg(treeNode);
 }
 
@@ -1892,6 +1933,12 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             genCodeForBinary(treeNode->AsOp());
             break;
 
+        case GT_BIT_SET:
+        case GT_BIT_CLEAR:
+        case GT_BIT_INVERT:
+            genCodeForBitOp(treeNode->AsOp());
+            break;
+
         case GT_MUL:
             if (varTypeIsFloating(treeNode->TypeGet()))
             {
@@ -2326,7 +2373,7 @@ void CodeGen::genMultiRegStoreToSIMDLocal(GenTreeLclVar* lclNode)
 //
 void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (delta == 0)
     {
@@ -2360,7 +2407,7 @@ void CodeGen::genEstablishFramePointer(int delta, bool reportUnwindData)
 //
 void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     if (frameSize == 0)
     {
@@ -2802,7 +2849,7 @@ void CodeGen::genLclHeap(GenTree* tree)
     size_t amount = 0;
     if (size->IsCnsIntOrI() && size->isContained())
     {
-        amount = size->AsIntCon()->gtIconVal;
+        amount = size->AsIntCon()->IconValue();
         assert((amount > 0) && (amount <= UINT_MAX));
 
         // 'amount' is the total number of bytes to localloc to properly STACK_ALIGN
@@ -4055,7 +4102,7 @@ void CodeGen::genClearStackVec3ArgUpperBits()
     }
 #endif
 
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     unsigned varNum = 0;
 
@@ -5235,10 +5282,10 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
         noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
 #if TARGET_64BIT
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_GS,
-                          (int)addr->AsIntCon()->gtIconVal);
+                          (int)addr->AsIntCon()->IconValue());
 #else
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
-                          (int)addr->AsIntCon()->gtIconVal);
+                          (int)addr->AsIntCon()->IconValue());
 #endif
     }
     else
@@ -5431,12 +5478,11 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                     GenTreeHWIntrinsic* hwintrinsic = data->AsHWIntrinsic();
                     NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
                     var_types           baseType    = hwintrinsic->GetSimdBaseType();
+                    unsigned            simdSize    = hwintrinsic->GetSimdSize();
 
                     switch (intrinsicId)
                     {
-                        case NI_Vector128_ToScalar:
-                        case NI_Vector256_ToScalar:
-                        case NI_Vector512_ToScalar:
+                        case NI_Vector_ToScalar:
                         case NI_X86Base_ConvertToInt32:
                         case NI_X86Base_ConvertToUInt32:
                         case NI_X86Base_X64_ConvertToInt64:
@@ -5457,9 +5503,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             break;
                         }
 
-                        case NI_Vector128_GetElement:
+                        case NI_Vector_GetElement:
                         {
                             assert(baseType == TYP_FLOAT);
+                            assert(simdSize == 16);
                             FALLTHROUGH;
                         }
 
@@ -5509,7 +5556,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
                             ssize_t        ival = op2->IconValue();
 
                             assert((ival >= 0) && (ival <= 255));
-                            op2->gtIconVal = static_cast<int8_t>(ival);
+                            op2->SetIconValue(static_cast<int8_t>(ival));
                             break;
                         }
 
@@ -6016,20 +6063,9 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
         }
     }
 
-    params.isJump      = call->IsFastTailCall();
-    params.hasAsyncRet = call->IsAsync();
-
-    // We need to propagate the IL offset information to the call instruction, so we can emit
-    // an IL to native mapping record for the call, to support managed return value debugging.
-    // We don't want tail call helper calls that were converted from normal calls to get a record,
-    // so we skip this hash table lookup logic in that case.
-
-    if (m_compiler->opts.compDbgInfo && m_compiler->genCallSite2DebugInfoMap != nullptr && !call->IsTailCall())
-    {
-        DebugInfo di;
-        (void)m_compiler->genCallSite2DebugInfoMap->Lookup(call, &di);
-        params.debugInfo = di;
-    }
+    params.isJump          = call->IsFastTailCall();
+    params.hasAsyncRet     = call->IsAsync();
+    params.returnValueCall = call;
 
 #ifdef DEBUG
     // Pass the call signature information down into the emitter so the emitter can associate
@@ -6147,7 +6183,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call X86_ARG(target_ssize_t stackA
 
                 params.callType    = EC_FUNC_TOKEN;
                 params.methHnd     = (CORINFO_METHOD_HANDLE)1;
-                params.addr        = (void*)tlsGetAddr->AsIntCon()->gtIconVal;
+                params.addr        = (void*)tlsGetAddr->AsIntCon()->IconValue();
                 params.noSafePoint = true;
                 genEmitCallWithCurrentGC(params);
             }
@@ -6409,11 +6445,6 @@ void CodeGen::genCompareInt(GenTreeOp* treeNode)
         // TYP_INT but the op size is TYP_LONG the instruction itself will
         // ignore the upper part of the register anyway.
         type = genActualType(op1->TypeGet());
-
-        // The emitter's general logic handles op1/op2 for bt reversed. As a
-        // small hack we reverse it in codegen instead of special casing the
-        // emitter throughout.
-        std::swap(op1, op2);
     }
     else if (op1->isUsedFromReg() && op2->IsIntegralConst(0))
     {
@@ -8385,6 +8416,13 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
             assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaMonAcquired) == -preservedAreaSize);
         }
 
+        if (m_compiler->lvaResumedIndicator != BAD_VAR_NUM)
+        {
+            preservedAreaSize += TARGET_POINTER_SIZE;
+
+            assert(m_compiler->lvaGetCallerSPRelativeOffset(m_compiler->lvaResumedIndicator) == -preservedAreaSize);
+        }
+
         if (m_compiler->lvaAsyncThreadObjectVar != BAD_VAR_NUM)
         {
             preservedAreaSize += TARGET_POINTER_SIZE;
@@ -9466,7 +9504,7 @@ void CodeGen::genAmd64EmitterUnitTestsCTEST()
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     // Give profiler a chance to back out of hooking this method
     if (!m_compiler->compIsProfilerHookNeeded())
@@ -9609,7 +9647,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 //
 void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
     // Give profiler a chance to back out of hooking this method
     if (!m_compiler->compIsProfilerHookNeeded())
@@ -9914,7 +9952,7 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 //
 void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(m_compiler->opts.IsOSR());
     assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
@@ -9991,7 +10029,7 @@ void CodeGen::genOSRSaveRemainingCalleeSavedRegisters()
 {
     // We should be generating the prolog of an OSR root frame.
     //
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(m_compiler->opts.IsOSR());
     assert(m_compiler->funCurrentFunc()->funKind == FuncKind::FUNC_ROOT);
 
@@ -10073,7 +10111,7 @@ void CodeGen::genOSRHandleTier0CalleeSavedRegistersAndFrame()
 //
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
 
 #if DEBUG
     // OSR root frames must handle this differently. See
@@ -10217,7 +10255,7 @@ void CodeGen::genPushCalleeSavedRegistersFromMaskAPX(regMaskTP rsPushRegs)
 
 void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
 {
-    assert(m_compiler->compGeneratingEpilog);
+    assert(GetEmitter()->emitGeneratingEpilogOrFuncletEpilog());
 
 #ifdef TARGET_AMD64
 
@@ -10407,8 +10445,6 @@ void CodeGen::genFnEpilog(BasicBlock* block)
         printf("*************** In genFnEpilog()\n");
     }
 #endif
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     VarSetOps::Assign(m_compiler, gcInfo.gcVarPtrSetCur, GetEmitter()->emitInitGCrefVars);
     gcInfo.gcRegGCrefSetCur = GetEmitter()->emitInitGCrefRegs;
@@ -10879,8 +10915,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     assert(m_compiler->bbIsFuncletBeg(block));
     assert(isFramePointerUsed());
 
-    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
-
     gcInfo.gcResetForBB();
 
     m_compiler->unwindBegProlog();
@@ -10924,8 +10958,6 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
         printf("*************** In genFuncletEpilog()\n");
     }
 #endif
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     genClearAvxStateInEpilog();
 
@@ -11014,8 +11046,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     }
 #endif
 
-    ScopedSetVariable<bool> _setGeneratingProlog(&m_compiler->compGeneratingProlog, true);
-
     gcInfo.gcResetForBB();
 
     m_compiler->unwindBegProlog();
@@ -11051,8 +11081,6 @@ void CodeGen::genFuncletEpilog(BasicBlock* /* block */)
         printf("*************** In genFuncletEpilog()\n");
     }
 #endif
-
-    ScopedSetVariable<bool> _setGeneratingEpilog(&m_compiler->compGeneratingEpilog, true);
 
     genClearAvxStateInEpilog();
 
@@ -11094,7 +11122,7 @@ void CodeGen::genCaptureFuncletPrologEpilogInfo()
 //
 void CodeGen::genZeroInitFrameUsingBlockInit(int untrLclHi, int untrLclLo, regNumber initReg, bool* pInitRegZeroed)
 {
-    assert(m_compiler->compGeneratingProlog);
+    assert(GetEmitter()->emitGeneratingPrologOrFuncletProlog());
     assert(genUseBlockInit);
     assert(untrLclHi > untrLclLo);
 

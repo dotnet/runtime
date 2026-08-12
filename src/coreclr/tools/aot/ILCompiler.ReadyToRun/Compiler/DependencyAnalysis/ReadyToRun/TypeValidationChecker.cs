@@ -73,7 +73,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Spot check that the system module ALWAYS succeeds
                 if (failAtEnd)
                 {
-                    throw new InternalCompilerErrorException("System module failed to validate all types");
+                    throw new InternalCompilerErrorException("System module failed to validate all types:" + Environment.NewLine
+                        + string.Join(Environment.NewLine, _typeLoadValidationErrors.Select(e => e.type.ToString())));
                 }
             }
 #endif
@@ -228,7 +229,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     {
                         if (methodDef.Attributes.HasFlag(MethodAttributes.RTSpecialName))
                         {
-                            if (!method.Name.SequenceEqual(".cctor"u8) && !method.Name.StartsWith("_VtblGap"u8))
+                            if (method.Name != ".cctor"u8 && !method.Name.StartsWith("_VtblGap"u8))
                             {
                                 AddTypeValidationError(type, $"Special name method {method} defined on interface");
                                 return false;

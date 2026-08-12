@@ -323,10 +323,15 @@ OnHijackTripThreadReturn
 ; void* PacStripPtr(void *);
 ; This function strips the pointer of PAC info that is passed as an argument.
 ; We prefer to strip a pointer where it's not going to be used to branch execution to.
-    LEAF_ENTRY PacStripPtr
-        DCD     0xDAC143E0  ; xpaci x0 instruction in binary to avoid requiring PAC-enabled assemblers
-        ret
-    LEAF_END PacStripPtr
+; It is a no-op on non-PAC enabled machines.
+    NESTED_ENTRY PacStripPtr
+        PROLOG_SAVE_REG_PAIR fp, lr, #-16!
+        mov lr, x0
+        DCD     0xD50320FF  ; xpaclri instruction in binary to avoid requiring PAC-enabled assemblers
+        mov x0, lr
+        EPILOG_RESTORE_REG_PAIR fp, lr, #16!
+        EPILOG_RETURN
+    NESTED_END
 
 ; void* PacSignPtr(void *, void *);
 ; This function signs the input pointer using x1 as salt. It is a no-op on non-PAC enabled machines.

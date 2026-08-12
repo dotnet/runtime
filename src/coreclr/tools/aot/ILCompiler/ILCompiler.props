@@ -53,31 +53,4 @@
   <ItemGroup>
     <Compile Remove="repro\*" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' == ''">$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
-    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</TargetArchitectureForSharedLibraries>
-    <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitectureForSharedLibraries)'=='armel'">arm</TargetArchitectureForSharedLibraries>
-
-    <JitInterfaceLibraryName>$(_LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)</JitInterfaceLibraryName>
-    <!-- This will be provided when using the liveBuild, and unset otherwise. -->
-    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$(RuntimeBinDir)$(CrossHostArch)</CoreCLRArtifactsPath>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <Content Include="$(CoreCLRArtifactsPath)/$(JitInterfaceLibraryName)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      ExcludeFromSingleFile="$(PublishSingleFile)"
-      Link="%(FileName)%(Extension)"
-      Condition="'$(TargetsWasm)' != 'true'"
-      />
-
-    <Content Include="$(CoreCLRArtifactsPath)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)"
-      CopyToOutputDirectory="PreserveNewest"
-      CopyToPublishDirectory="PreserveNewest"
-      ExcludeFromSingleFile="$(PublishSingleFile)"
-      Link="%(FileName)%(Extension)"
-      />
-  </ItemGroup>
 </Project>

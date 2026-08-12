@@ -481,6 +481,23 @@ ep_rt_config_value_get_circular_mb (void)
 
 static
 inline
+uint32_t
+ep_rt_config_value_get_buffering_mode (void)
+{
+    STATIC_CONTRACT_NOTHROW;
+
+    uint64_t value;
+    if (RhConfig::Environment::TryGetIntegerValue("EventPipeBufferingMode", &value))
+    {
+        EP_ASSERT(value <= UINT32_MAX);
+        return static_cast<uint32_t>(value);
+    }
+
+    return 0;
+}
+
+static
+inline
 bool
 ep_rt_config_value_get_output_streaming (void)
 {
@@ -774,9 +791,19 @@ EP_RT_DEFINE_THREAD_FUNC (ep_rt_thread_aot_start_session_or_sampling_thread)
 
     ep_rt_thread_params_t* thread_params = reinterpret_cast<ep_rt_thread_params_t *>(data);
 
-    // We will create a new thread. cannot call ep_rt_aot_thread_get_handle since that will return null
-    extern ep_rt_thread_handle_t ep_rt_aot_setup_thread (void);
-    thread_params->thread = ep_rt_aot_setup_thread ();
+    if (thread_params->thread_type == EP_THREAD_TYPE_SESSION) {
+        // The session drain thread runs a purely native drain loop whose blocking primitives (PalSleep,
+        // CLREventStatic::Wait, CrstStatic::Enter) all tolerate a thread with no runtime Thread, so - like the
+        // CoreCLR native drain thread - it does not attach to the ThreadStore. That lets it start during
+        // diagnostic-port startup suspension, before RuntimeInstance/ThreadStore is initialized, without
+        // AttachCurrentThread dereferencing a not-yet-created RuntimeInstance.
+        thread_params->thread = NULL;
+    } else if (thread_params->thread_type == EP_THREAD_TYPE_SAMPLING) {
+        // The sampling thread's callback walks managed stacks, so it attaches to the ThreadStore via
+        // ep_rt_aot_setup_thread (ThreadStore::AttachCurrentThread).
+        extern ep_rt_thread_handle_t ep_rt_aot_setup_thread (void);
+        thread_params->thread = ep_rt_aot_setup_thread ();
+    }
 
     size_t result = thread_params->thread_func (thread_params);
     delete thread_params;

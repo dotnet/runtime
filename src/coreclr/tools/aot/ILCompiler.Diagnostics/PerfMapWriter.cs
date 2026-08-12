@@ -116,6 +116,7 @@ namespace ILCompiler.Diagnostics
                 TargetOS.OSX => PerfMapOSToken.OSX,
                 TargetOS.FreeBSD => PerfMapOSToken.FreeBSD,
                 TargetOS.NetBSD => PerfMapOSToken.NetBSD,
+                TargetOS.OpenBSD => PerfMapOSToken.OpenBSD,
                 TargetOS.SunOS => PerfMapOSToken.SunOS,
                 _ => throw new NotImplementedException(details.OperatingSystem.ToString())
             };

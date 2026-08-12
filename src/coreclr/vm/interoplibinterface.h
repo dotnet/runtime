@@ -52,16 +52,28 @@ public: // GC interaction
     static void OnEnteredFinalizerQueue(_In_ OBJECTREF object);
 };
 
+class ObjcTrackingInformationObject final : public Object
+{
+    friend class CoreLibBinder;
+public:
+    INT_PTR _memory;
+    INT_PTR _longWeakHandle;
+};
+
+#ifdef USE_CHECKED_OBJECTREFS
+using OBJC_TRACKING_INFO_REF = REF<ObjcTrackingInformationObject>;
+#else
+using OBJC_TRACKING_INFO_REF = DPTR(ObjcTrackingInformationObject);
+#endif
+
 
 extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     _In_ ObjCMarshalNative::BeginEndCallback beginEndCallback,
     _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
-    _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization);
+    _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization,
+    _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable);
 
-extern "C" void* QCALLTYPE ObjCMarshal_CreateReferenceTrackingHandle(
-    _In_ QCall::ObjectHandleOnStack obj,
-    _Out_ int* memInSizeT,
-    _Outptr_ void** mem);
+extern "C" void* QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCall::ObjectHandleOnStack obj);
 
 extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateReferenceTrackingMemory(
     _In_ QCall::ObjectHandleOnStack obj,
@@ -71,6 +83,7 @@ extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateReferenceTrackingMemory(
 extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
     _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
     _In_ void* fptr);
+
 #endif // FEATURE_OBJCMARSHAL
 
 #ifdef FEATURE_JAVAMARSHAL

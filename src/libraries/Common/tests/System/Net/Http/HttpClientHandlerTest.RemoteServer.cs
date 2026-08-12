@@ -1290,9 +1290,9 @@ namespace System.Net.Http.Functional.Tests
                 try
                 {
                     using HttpResponseMessage response = await client.GetAsync(uri);
-                    if (response.StatusCode is HttpStatusCode.GatewayTimeout or HttpStatusCode.BadGateway)
+                    if ((int)response.StatusCode >= 500)
                     {
-                        // Ignore the erroneous status code, the test depends on an external server that is out of our control.
+                        // Ignore any 5xx server error, the test depends on an external server that is out of our control.
                         _output.WriteLine(response.ToString());
                         return;
                     }

@@ -20,9 +20,9 @@ internal interface IGCHeap
 
     Data.OomHistory OomData { get; }
 
-    TargetPointer InternalRootArray { get; }
-    TargetNUInt InternalRootArrayIndex { get; }
-    bool HeapAnalyzeSuccess { get; }
+    TargetPointer? InternalRootArray { get; }
+    TargetNUInt? InternalRootArrayIndex { get; }
+    bool? HeapAnalyzeSuccess { get; }
 
     TargetPointer InterestingData { get; }
     TargetPointer CompactReasons { get; }

@@ -43,7 +43,7 @@ namespace ILCompiler.Dataflow
         public static MethodIL WrapIL(MethodIL methodIL)
         {
             MethodDesc owningMethod = methodIL.OwningMethod;
-            if (owningMethod.IsAsync && owningMethod.IsAsyncVariant())
+            if (owningMethod.IsAsyncVariant())
             {
                 return new AsyncMaskedMethodIL(((CompilerTypeSystemContext)owningMethod.Context).GetTargetOfAsyncVariantMethod(owningMethod), methodIL);
             }

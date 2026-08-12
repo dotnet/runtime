@@ -28,11 +28,16 @@ namespace System.Net.Mail.Tests
                 "Display \"Test\" Name",
                 "Display \\\"Test\\\" Name",
                 "\"",
+                "Display \\ Name",
+                "Display \\\\ Name",
+                "C:\\path\\to\\file",
+                "\\",
             };
             foreach (var displayName in displayNamesWithQuotes)
             {
-                yield return new object[]{ Address, displayName, null, $"\"{displayName.Replace("\"", "\\\"")}\" <{Address}>" };
-                yield return new object[]{ Address, $"\"{displayName}\"", displayName, $"\"{displayName.Replace("\"", "\\\"")}\" <{Address}>" };
+                string escaped = displayName.Replace("\\", "\\\\").Replace("\"", "\\\"");
+                yield return new object[]{ Address, displayName, null, $"\"{escaped}\" <{Address}>" };
+                yield return new object[]{ Address, $"\"{displayName}\"", displayName, $"\"{escaped}\" <{Address}>" };
             }
 
             yield return new object[]{ Address, null, "", Address };

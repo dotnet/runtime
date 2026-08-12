@@ -790,7 +790,8 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
         return false;
     }
 
-    const ValueNum treeNormVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
+    // Not const: the relop simplification below may rewrite `tree` and refresh this VN.
+    ValueNum treeNormVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
 
     if (vnStore->IsVNConstant(treeNormVN))
     {
@@ -1105,6 +1106,9 @@ bool Compiler::optRedundantDominatingBranch(BasicBlock* const block)
             }
 
             fgValueNumberTree(tree);
+
+            // We rewrote block's relop; refresh its VN so later dom branches don't use a stale one (#128062).
+            treeNormVN = vnStore->VNNormalValue(tree->GetVN(VNK_Liberal));
         }
         madeChanges = true;
 

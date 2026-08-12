@@ -275,16 +275,16 @@ namespace ILLink.Shared.TrimAnalysis
 
             foreach (var intf in type.RuntimeInterfaces)
             {
-                if (intf.Name.SequenceEqual("IReflect"u8) && intf.Namespace.SequenceEqual("System.Reflection"u8))
+                if (intf.Name == "IReflect"u8 && intf.Namespace == "System.Reflection"u8)
                     return true;
             }
 
-            if (metadataType.Name.SequenceEqual("IReflect"u8) && metadataType.Namespace.SequenceEqual("System.Reflection"u8))
+            if (metadataType.Name == "IReflect"u8 && metadataType.Namespace == "System.Reflection"u8)
                 return true;
 
             do
             {
-                if (metadataType.Name.SequenceEqual("Type"u8) && metadataType.Namespace.SequenceEqual("System"u8))
+                if (metadataType.Name == "Type"u8 && metadataType.Namespace == "System"u8)
                     return true;
             } while ((metadataType = metadataType.BaseType) != null);
 
@@ -509,7 +509,7 @@ namespace ILLink.Shared.TrimAnalysis
 
                     PropertyPseudoDesc property = new PropertyPseudoDesc(ecmaType, propertyHandle);
 
-                    if (CompilerGeneratedNames.IsExtensionType(ecmaType.Name))
+                    if (CompilerGeneratedNames.IsExtensionType(ecmaType.Name.AsSpan()))
                     {
                         // Annotations on extension properties are not supported.
                         _logger.LogWarning(property, DiagnosticId.DynamicallyAccessedMembersIsNotAllowedOnExtensionProperties, property.GetDisplayName());
@@ -649,7 +649,7 @@ namespace ILLink.Shared.TrimAnalysis
 
             private IReadOnlyList<GenericParameterDesc?>? GetGeneratedTypeAttributes(EcmaType typeDef)
             {
-                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.Name))
+                if (!CompilerGeneratedNames.IsStateMachineOrDisplayClass(typeDef.Name.AsSpan()))
                 {
                     return null;
                 }

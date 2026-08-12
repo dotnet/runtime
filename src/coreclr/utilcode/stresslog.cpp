@@ -191,13 +191,13 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     WCHAR logFilenameReplaced[MAX_PATH];
     ReplacePid(logFilename, logFilenameReplaced, MAX_PATH);
 
-    HandleHolder hFile = WszCreateFile(logFilenameReplaced,
+    HandleHolder hFile{ WszCreateFile(logFilenameReplaced,
         GENERIC_READ | GENERIC_WRITE,
         FILE_SHARE_READ,
         NULL,                 // default security descriptor
         CREATE_ALWAYS,
         FILE_ATTRIBUTE_NORMAL,
-        NULL);
+        NULL) };
 
     if (hFile == INVALID_HANDLE_VALUE)
     {
@@ -205,7 +205,7 @@ static LPVOID CreateMemoryMappedFile(LPWSTR logFilename, size_t maxBytesTotal)
     }
 
     size_t fileSize = maxBytesTotal;
-    HandleHolder hMap = CreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL);
+    HandleHolder hMap{ CreateFileMapping(hFile, NULL, PAGE_READWRITE, (DWORD)(fileSize >> 32), (DWORD)fileSize, NULL) };
     if (hMap == NULL)
     {
         return nullptr;
