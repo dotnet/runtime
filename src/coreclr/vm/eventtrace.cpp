@@ -3606,33 +3606,6 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER
     } EX_CATCH { } EX_END_CATCH
 }
 
-/**********************************************************************/
-/* This is called by the runtime when a single jit helper method with stub is initialized */
-/**********************************************************************/
-VOID ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_TRIGGERS;
-        PRECONDITION(ullHelperStartAddress != 0);
-        PRECONDITION(ulHelperSize != 0);
-    } CONTRACTL_END;
-
-    EX_TRY
-    {
-        if(ETW_TRACING_CATEGORY_ENABLED(MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context,
-                                        TRACE_LEVEL_INFORMATION,
-                                        CLR_JIT_KEYWORD))
-        {
-            ETW::MethodLog::SendHelperEvent(
-                ullHelperStartAddress,
-                ulHelperSize,
-                pHelperName,
-                ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
-        }
-    } EX_CATCH { } EX_END_CATCH
-}
-
 /****************************************************************************/
 /* This is called by the runtime when a dynamic method is destroyed */
 /****************************************************************************/
