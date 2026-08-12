@@ -34,19 +34,19 @@ namespace System.Net.Security.Tests
         [InlineData(null, false, false)]
         [InlineData(null, true, true)]
         [InlineData(false, true, false)]
-        public async Task UseLegacySslStream_SelectsExpectedHandshakePath(bool? appContextValue, bool? environmentValue, bool expectLegacyPath)
+        public async Task UseLegacySslStreamHandshake_SelectsExpectedHandshakePath(bool? appContextValue, bool? environmentValue, bool expectLegacyPath)
         {
             var psi = new ProcessStartInfo();
             if (environmentValue.HasValue)
             {
-                psi.Environment.Add("DOTNET_SYSTEM_NET_SECURITY_USELEGACYSSLSTREAM", environmentValue.Value ? "1" : "0");
+                psi.Environment.Add("DOTNET_SYSTEM_NET_SECURITY_USELEGACYSSLSTREAMHANDSHAKE", environmentValue.Value ? "1" : "0");
             }
 
             await RemoteExecutor.Invoke(async (switchValue, expectLegacyPathValue) =>
             {
                 if (bool.TryParse(switchValue, out bool value))
                 {
-                    AppContext.SetSwitch("System.Net.Security.UseLegacySslStream", value);
+                    AppContext.SetSwitch("System.Net.Security.UseLegacySslStreamHandshake", value);
                 }
 
                 (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();

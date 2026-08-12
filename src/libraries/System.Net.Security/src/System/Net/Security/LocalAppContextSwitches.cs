@@ -41,11 +41,11 @@ namespace System
             get => GetCachedSwitchValue("System.Net.Security.EnableServerOcspStaplingFromOnlyCertificateOnLinux", ref s_enableOcspStapling);
         }
 
-        private static int s_useLegacySslStream;
-        internal static bool UseLegacySslStream
+        private static int s_useLegacySslStreamHandshake;
+        internal static bool UseLegacySslStreamHandshake
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => GetCachedSwitchValue("System.Net.Security.UseLegacySslStream", "DOTNET_SYSTEM_NET_SECURITY_USELEGACYSSLSTREAM", ref s_useLegacySslStream);
+            get => GetCachedSwitchValue("System.Net.Security.UseLegacySslStreamHandshake", "DOTNET_SYSTEM_NET_SECURITY_USELEGACYSSLSTREAMHANDSHAKE", ref s_useLegacySslStreamHandshake);
         }
 
 #if !TARGET_WINDOWS
