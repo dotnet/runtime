@@ -3351,11 +3351,10 @@ void AsyncStressPolicy::NoteBool(InlineObservation obs, bool value)
 //    value    - the value being observed
 //
 // Notes:
-//    The size based rejections are skipped for every callee: they are SetNever,
+//    The size based rejections are deferred for every callee: they are SetNever,
 //    which would also mark the callee NOINLINE for every other call site, and the
-//    candidate screen makes them long before it is known whether the stress mode
-//    picked this call. Callees the stress mode did not pick are left to the normal
-//    profitability heuristics instead, see DetermineProfitability.
+//    sizes are observed long before it is known whether the stress mode picked this
+//    call. DetermineProfitability makes them for the callees it did not pick.
 //
 //    CALLEE_MAXSTACK is deliberately not among them: stack heavy callees are
 //    left on the normal policy rather than being forced in.
@@ -3404,8 +3403,9 @@ void AsyncStressPolicy::NoteInt(InlineObservation obs, int value)
 
         case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
         {
-            // Keep rejecting callees that do not return, but ignore the block count
-            // limit; async callees routinely have more blocks than it allows.
+            m_BasicBlockCount = static_cast<unsigned>(value);
+
+            // Keep rejecting callees that do not return; that is not a size limit.
             //
             if (!m_IsForceInline && m_IsNoReturn && (value == 1))
             {
@@ -3466,7 +3466,24 @@ void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     if (!IsStressPicked())
     {
         // Not an async call, or an async candidate the stress mode did not pick, such as
-        // one created by late devirtualization. Leave it to the normal heuristics.
+        // one created by late devirtualization. Make the size based rejections NoteInt
+        // deferred, then leave it to the normal heuristics.
+        //
+        ExtendedDefaultPolicy::NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, static_cast<int>(m_CodeSize));
+
+        if (InlDecisionIsFailure(m_Decision))
+        {
+            return;
+        }
+
+        ExtendedDefaultPolicy::NoteInt(InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS,
+                                       static_cast<int>(m_BasicBlockCount));
+
+        if (InlDecisionIsFailure(m_Decision))
+        {
+            return;
+        }
+
         ExtendedDefaultPolicy::DetermineProfitability(methodInfo);
         return;
     }

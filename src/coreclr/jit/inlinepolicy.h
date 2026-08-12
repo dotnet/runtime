@@ -515,6 +515,7 @@ public:
         : ExtendedDefaultPolicy(compiler, isPrejitRoot)
         , m_IsAsyncCall(false)
         , m_AsyncStressIndex(-1)
+        , m_BasicBlockCount(0)
     {
     }
 
@@ -547,6 +548,9 @@ private:
     // Position of this callee in its enclosing body's shuffled group of async
     // inline candidates, or -1 if it is not part of a group.
     int m_AsyncStressIndex;
+    // Block count of the callee, kept so that DetermineProfitability can make the
+    // block count based rejection that NoteInt deferred.
+    unsigned m_BasicBlockCount;
 };
 
 // SizePolicy is an experimental policy that will inline as much
