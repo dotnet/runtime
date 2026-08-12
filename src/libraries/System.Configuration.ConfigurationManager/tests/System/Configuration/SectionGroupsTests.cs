@@ -79,6 +79,7 @@ namespace System.ConfigurationTests
 </configuration>";
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The package is a partial facade on .NET Framework; the inbox implementation is used.")]
         public void SlashNamedSectionsAndGroupsThrowStoredConfigurationErrors()
         {
             using (var temp = new TempConfig(SlashNamedSectionConfiguration))
