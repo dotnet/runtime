@@ -889,6 +889,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         compInlineResult->NoteBool(InlineObservation::CALLEE_IS_FORCE_INLINE, isForceInline);
         compInlineResult->NoteBool(InlineObservation::CALLEE_IS_INTRINSIC_TYPE,
                                    (info.compClassAttr & CORINFO_FLG_INTRINSIC_TYPE) != 0);
+        compInlineResult->NoteBool(InlineObservation::CALLEE_IS_ASYNC, compIsAsync());
         compInlineResult->NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, codeSize);
 
         // Determine if call site is within a try.
