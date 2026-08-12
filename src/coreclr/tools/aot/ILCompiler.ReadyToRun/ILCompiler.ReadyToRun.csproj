@@ -217,6 +217,7 @@
     <Compile Include="$(ToolsProjectRoot)illink\src\ILLink.Shared\TypeSystemProxy\WellKnownType.cs" Link="ILLink.Shared\TypeSystemProxy\WellKnownType.cs" />
     <Compile Include="CodeGen\ReadyToRunContainerFormat.cs" />
     <Compile Include="Compiler\AssemblyExtensions.cs" />
+    <Compile Include="Compiler\CompilationWorklist.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ImportReferenceProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DeferredTillPhaseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\EnclosingTypeMapNode.cs" />
