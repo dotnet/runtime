@@ -25,6 +25,12 @@ namespace System.Runtime.CompilerServices
         // nothing is ever stored into this, so we can use a static instance.
         private static int[]? s_sentinelTable;
 
+        // Rotating victim index used when a bucket is full. It is deliberately not stored
+        // in the table's aux data: every lookup reads hashShift/tableMask from that cache line,
+        // so an ordinary RMW from an inserting thread would false-share with all readers.
+        // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
+        private static uint s_victimCounter;
+
         // The actual storage.
         private int[] _table;
 
@@ -105,7 +111,7 @@ namespace System.Runtime.CompilerServices
         {
             // element 0 is used for embedded aux data
             //
-            // AuxData: { hashShift, tableMask, victimCounter }
+            // AuxData: { hashShift, tableMask }
             return ref Unsafe.As<byte, int>(ref Unsafe.AddByteOffset(ref table.GetRawData(), (nint)sizeof(nint)));
         }
 
@@ -121,12 +127,6 @@ namespace System.Runtime.CompilerServices
         private static ref int TableMask(ref int tableData)
         {
             return ref Unsafe.Add(ref tableData, 1);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref uint VictimCounter(ref int tableData)
-        {
-            return ref Unsafe.As<int, uint>(ref Unsafe.Add(ref tableData, 2));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -289,7 +289,9 @@ namespace System.Runtime.CompilerServices
                     //        If we used Robin Hood strategy we could eventually end up with all
                     //        entries in the table being maximally "poor".
 
-                    uint version = pEntry._version;
+                    // Volatile.Read is to ensure that the version cannot be re-fetched between here
+                    // and the CompareExchange below, which would defeat the claim of the entry.
+                    uint version = Volatile.Read(ref pEntry._version);
 
                     // mask the lower version bit to make it even.
                     // This way we will detect both if version is changing (odd) or has changed (even, but different).
@@ -346,15 +348,16 @@ namespace System.Runtime.CompilerServices
             }
 
             // pick a victim somewhat randomly within a bucket
-            // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
-            uint victimDistance = VictimCounter(ref tableData)++ & (BUCKET_SIZE - 1);
+            uint victimDistance = s_victimCounter++ & (BUCKET_SIZE - 1);
             // position the victim in a quadratic reprobe bucket
             uint victim = (victimDistance * victimDistance + victimDistance) / 2;
 
             {
                 ref CastCacheEntry pEntry = ref Element(ref tableData, (bucket + (int)victim) & TableMask(ref tableData));
 
-                uint version = pEntry._version;
+                // Volatile.Read is to ensure that the version cannot be re-fetched between here
+                // and the CompareExchange below, which would defeat the claim of the entry.
+                uint version = Volatile.Read(ref pEntry._version);
 
                 // mask the lower version bit to make it even.
                 // This way we will detect both if version is changing (odd) or has changed (even, but different).
@@ -402,6 +405,15 @@ namespace System.Runtime.CompilerServices
 
         private bool MaybeReplaceCacheWithLarger(int size)
         {
+            // Another thread may have already grown the table while we were probing a stale one.
+            // Do not shrink it back and do not waste an allocation - just retry against what is there.
+            // This matters under load: without it every thread that finds a full bucket allocates
+            // its own table, and all but the last one are thrown away along with their entries.
+            if (CacheElementCount(ref TableData(_table)) >= size)
+            {
+                return true;
+            }
+
             int[]? newTable = CreateCastCache(size);
             if (newTable == null)
             {

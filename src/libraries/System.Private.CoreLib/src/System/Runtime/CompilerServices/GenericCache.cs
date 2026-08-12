@@ -34,8 +34,6 @@ namespace System.Runtime.CompilerServices
         // AuxData  (to store some data specific to the table in the element #0 )
         [FieldOffset(0)]
         internal byte hashShift;
-        [FieldOffset(1)]
-        internal byte victimCounter;
     }
 
     // NOTE: It is ok if TKey contains references, but we want it to be a struct,
@@ -56,6 +54,12 @@ namespace System.Runtime.CompilerServices
         private const int VERSION_NUM_SIZE = 29;
         private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
         private const int BUCKET_SIZE = 8;
+
+        // Rotating victim index used when a bucket is full. It is deliberately not stored
+        // in the table's aux data: every lookup reads hashShift from that cache line, so an
+        // ordinary RMW from an inserting thread would false-share with all readers.
+        // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
+        private static byte s_victimCounter;
 
         // The fields of this structure are known to coreclr, so if they are updated, you must also update object.h
 
@@ -116,12 +120,6 @@ namespace System.Runtime.CompilerServices
         private static ref byte HashShift(Entry[] table)
         {
             return ref TableData(table)._info.hashShift;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref byte VictimCounter(Entry[] table)
-        {
-            return ref TableData(table)._info.victimCounter;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -271,7 +269,9 @@ namespace System.Runtime.CompilerServices
                     //        If we used Robin Hood strategy we could eventually end up with all
                     //        entries in the table being maximally "poor".
 
-                    uint version = pEntry.Version;
+                    // Volatile.Read is to ensure that the version cannot be re-fetched between here
+                    // and the CompareExchange below, which would defeat the claim of the entry.
+                    uint version = Volatile.Read(ref pEntry.Version);
 
                     // mask the lower version bit to make it even.
                     // This way we will detect both if version is changing (odd) or has changed (even, but different).
@@ -329,15 +329,16 @@ namespace System.Runtime.CompilerServices
             }
 
             // pick a victim somewhat randomly within a bucket
-            // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
-            byte victimDistance = (byte)(VictimCounter(table)++ & (BUCKET_SIZE - 1));
+            byte victimDistance = (byte)(s_victimCounter++ & (BUCKET_SIZE - 1));
             // position the victim in a quadratic reprobe bucket
             int victim = (victimDistance * victimDistance + victimDistance) / 2;
 
             {
                 ref Entry pEntry = ref Element(table, (bucket + victim) & TableMask(table));
 
-                uint version = pEntry.Version;
+                // Volatile.Read is to ensure that the version cannot be re-fetched between here
+                // and the CompareExchange below, which would defeat the claim of the entry.
+                uint version = Volatile.Read(ref pEntry.Version);
 
                 // mask the lower version bit to make it even.
                 // This way we will detect both if version is changing (odd) or has changed (even, but different).
@@ -388,6 +389,15 @@ namespace System.Runtime.CompilerServices
 
         private bool MaybeReplaceCacheWithLarger(int size)
         {
+            // Another thread may have already grown the table while we were probing a stale one.
+            // Do not shrink it back and do not waste an allocation - just retry against what is there.
+            // This matters under load: without it every thread that finds a full bucket allocates
+            // its own table, and all but the last one are thrown away along with their entries.
+            if (CacheElementCount(_table) >= size)
+            {
+                return true;
+            }
+
             Entry[]? newTable = CreateCacheTable(size);
             if (newTable == null)
             {

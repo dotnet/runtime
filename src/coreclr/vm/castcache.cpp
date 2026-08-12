@@ -12,6 +12,7 @@
 BASEARRAYREF* CastCache::s_pTableRef = NULL;
 OBJECTHANDLE CastCache::s_sentinelTable = NULL;
 DWORD CastCache::s_lastFlushSize     = INITIAL_CACHE_SIZE;
+DWORD CastCache::s_victimCounter     = 0;
 const DWORD CastCache::INITIAL_CACHE_SIZE;
 
 BASEARRAYREF CastCache::CreateCastCache(DWORD size)
@@ -82,6 +83,15 @@ BOOL CastCache::MaybeReplaceCacheWithLarger(DWORD size)
         MODE_COOPERATIVE;
     }
     CONTRACTL_END;
+
+    // Another thread may have already grown the table while we were probing a stale one.
+    // Do not shrink it back and do not waste an allocation - just retry against what is there.
+    // This matters under load: without it every thread that finds a full bucket allocates
+    // its own table, and all but the last one are thrown away along with their entries.
+    if (CacheElementCount(TableData(*s_pTableRef)) >= size)
+    {
+        return TRUE;
+    }
 
     BASEARRAYREF newTable = CreateCastCache(size);
     if (!newTable)
@@ -297,8 +307,7 @@ void CastCache::TrySet(TADDR source, TADDR target, BOOL result)
     }
 
     // pick a victim somewhat randomly within a bucket
-    // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
-    DWORD victimDistance = VictimCounter(tableData)++ & (BUCKET_SIZE - 1);
+    DWORD victimDistance = s_victimCounter++ & (BUCKET_SIZE - 1);
     // position the victim in a quadratic reprobe bucket
     DWORD victim = (victimDistance * victimDistance + victimDistance) / 2;
 

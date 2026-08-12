@@ -206,6 +206,12 @@ private:
 
     static DWORD          s_lastFlushSize;
 
+    // Rotating victim index used when a bucket is full. It is deliberately not stored
+    // in the table's aux data: every lookup reads hashShift/tableMask from that cache line,
+    // so an ordinary RMW from an inserting thread would false-share with all readers.
+    // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
+    static DWORD          s_victimCounter;
+
     FORCEINLINE static TypeHandle::CastResult TryGetFromCache(TADDR source, TADDR target)
     {
         CONTRACTL
@@ -280,6 +286,8 @@ private:
         LIMITED_METHOD_CONTRACT;
 
         // element 0 is used for embedded aux data
+        //
+        // AuxData: { hashShift, tableMask }
         return (DWORD*)((BYTE*)OBJECTREFToObject(table) + ARRAYBASE_SIZE);
     }
 
@@ -302,12 +310,6 @@ private:
     {
         LIMITED_METHOD_CONTRACT;
         return *(tableData + 1);
-    }
-
-    FORCEINLINE static DWORD& VictimCounter(DWORD* tableData)
-    {
-        LIMITED_METHOD_CONTRACT;
-        return *(tableData + 2);
     }
 
     FORCEINLINE static DWORD CacheElementCount(DWORD* tableData)
