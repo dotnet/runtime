@@ -639,36 +639,34 @@ ULONG PEAssembly::GetPEImageTimeDateStamp()
 #ifndef DACCESS_COMPILE
 
 PEAssembly::PEAssembly(
-                BINDER_SPACE::Assembly* pBindResultInfo,
+                BINDER_SPACE::Assembly* pBoundAssembly,
                 IMetaDataEmit* pEmit,
-                BOOL isSystem,
-                AssemblyBinder* pDynamicAssemblyBinder /*= NULL*/,
-                PEImage * pPEImage /*= NULL*/,
-                BINDER_SPACE::Assembly * pHostAssembly /*= NULL*/)
+                AssemblyBinder* pDynamicAssemblyBinder /*= NULL*/)
+    :
+#ifdef LOGGING
+      m_pDebugName{NULL},
+#endif // LOGGING
+      m_PEImage{NULL}
+    , m_MDImportIsRW_Debugger_Use_Only{FALSE}
+    , m_pMDImport{NULL}
+    , m_pImporter{NULL}
+    , m_pEmitter{NULL}
+    , m_refCount{1}
+    , m_pHostAssembly{nullptr}
+    , m_pAssemblyBinder{nullptr}
 {
     CONTRACTL
     {
-        PRECONDITION(CheckPointer(pEmit, NULL_OK));
-        PRECONDITION(pBindResultInfo == NULL || pPEImage == NULL);
+        // A PEAssembly is either bound by an AssemblyBinder or dynamic (reflection emit)
+        PRECONDITION((pBoundAssembly == NULL) != (pEmit == NULL));
+        // A bound assembly takes its binder from the bind result, not from a caller.
+        PRECONDITION(pBoundAssembly == NULL || pDynamicAssemblyBinder == NULL);
         STANDARD_VM_CHECK;
     }
     CONTRACTL_END;
 
-#ifdef LOGGING
-    m_pDebugName = NULL;
-#endif // LOGGING
-    m_PEImage = NULL;
-    m_MDImportIsRW_Debugger_Use_Only = FALSE;
-    m_pMDImport = NULL;
-    m_pImporter = NULL;
-    m_pEmitter = NULL;
-    m_refCount = 1;
-    m_isSystem = isSystem;
-    m_pHostAssembly = nullptr;
-    m_pAssemblyBinder = nullptr;
-
-    pPEImage = pBindResultInfo ? pBindResultInfo->GetPEImage() : pPEImage;
-    if (pPEImage)
+    PEImage* pPEImage = pBoundAssembly ? pBoundAssembly->GetPEImage() : NULL;
+    if (pPEImage != NULL)
     {
         _ASSERTE(pPEImage->CheckUniqueInstance());
         pPEImage->AddRef();
@@ -704,21 +702,9 @@ PEAssembly::PEAssembly(
 
     // Set the host assembly and binding context as the AssemblySpec initialization
     // for CoreCLR will expect to have it set.
-    if (pHostAssembly != nullptr)
+    if (pBoundAssembly != nullptr)
     {
-        m_pHostAssembly = clr::SafeAddRef(pHostAssembly);
-    }
-
-    if(pBindResultInfo != nullptr)
-    {
-        // Cannot have both pHostAssembly and a coreclr based bind
-        _ASSERTE(pHostAssembly == nullptr);
-        pBindResultInfo = clr::SafeAddRef(pBindResultInfo);
-        m_pHostAssembly = pBindResultInfo;
-    }
-
-    if (m_pHostAssembly != nullptr)
-    {
+        m_pHostAssembly = clr::SafeAddRef(pBoundAssembly);
         m_pAssemblyBinder = m_pHostAssembly->GetBinder();
     }
     else
@@ -732,24 +718,6 @@ PEAssembly::PEAssembly(
 #endif // LOGGING
 }
 #endif // !DACCESS_COMPILE
-
-
-PEAssembly *PEAssembly::Open(
-    PEImage *          pPEImageIL,
-    BINDER_SPACE::Assembly * pHostAssembly)
-{
-    STANDARD_VM_CONTRACT;
-
-    PEAssembly * pPEAssembly = new PEAssembly(
-        nullptr,        // BindResult
-        nullptr,        // IMetaDataEmit
-        FALSE,          // isSystem
-        nullptr,        // DynamicAssemblyBinder
-        pPEImageIL,
-        pHostAssembly);
-
-    return pPEAssembly;
-}
 
 
 PEAssembly::~PEAssembly()
@@ -828,12 +796,12 @@ PEAssembly *PEAssembly::DoOpenSystem()
     ReleaseHolder<BINDER_SPACE::Assembly> pBoundAssembly;
     IfFailThrow(GetAppDomain()->GetDefaultBinder()->BindToSystem(&pBoundAssembly));
 
-    return new PEAssembly(pBoundAssembly, NULL, TRUE);
+    return new PEAssembly(pBoundAssembly, NULL);
 }
 
-PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBindResult)
+PEAssembly* PEAssembly::Open(BINDER_SPACE::Assembly* pBoundAssembly)
 {
-    return new PEAssembly(pBindResult,NULL,/*isSystem*/ false);
+    return new PEAssembly(pBoundAssembly, NULL);
 };
 
 /* static */
@@ -850,7 +818,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit, AssemblyBin
     // we have.)
     ReleaseHolder<IMetaDataEmit> pEmit;
     pAssemblyEmit->QueryInterface(IID_IMetaDataEmit, (void **)&pEmit);
-    return new PEAssembly(NULL, pEmit, FALSE, pDynamicAssemblyBinder);
+    return new PEAssembly(NULL, pEmit, pDynamicAssemblyBinder);
 }
 
 #endif // #ifndef DACCESS_COMPILE

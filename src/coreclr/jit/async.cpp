@@ -797,6 +797,9 @@ PhaseStatus AsyncTransformation::Run()
     INDEBUG(m_compiler->mostRecentlyActivePhase = PHASE_ASYNC);
     VarSetOps::AssignNoCopy(m_compiler, m_compiler->compCurLife, VarSetOps::MakeEmpty(m_compiler));
 
+    // The analyses below use BlockPredsWithEH. Clear its cache in case it was used before this.
+    m_compiler->m_blockToEHPreds = nullptr;
+
     // Compute locals unchanged from their default values
     DefaultValueAnalysis defaultValues(m_compiler);
     defaultValues.Run();

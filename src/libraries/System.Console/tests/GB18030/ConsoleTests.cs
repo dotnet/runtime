@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -11,9 +13,33 @@ public class ConsoleTests
 {
     protected static readonly int WaitInMS = 30 * 1000 * PlatformDetection.SlowRuntimeTimeoutModifier;
 
-    // GB18030 console tests require a platform whose console subsystem supports the GB18030
-    // code page. Older platforms (e.g. Windows Nano Server) don't, so gate on GB18030 support.
-    public static bool IsSupported => RemoteExecutor.IsSupported && TestHelper.IsGB18030Supported;
+    public static bool IsSupported { get; } =
+        RemoteExecutor.IsSupported &&
+        TestHelper.IsGB18030Supported &&
+        (!PlatformDetection.IsWindows || IsConsoleInputEncodingSupported());
+
+    private static bool IsConsoleInputEncodingSupported()
+    {
+        Encoding? originalEncoding = null;
+
+        try
+        {
+            originalEncoding = Console.InputEncoding;
+            Console.InputEncoding = TestHelper.GB18030Encoding;
+            return Console.InputEncoding.CodePage == TestHelper.GB18030Encoding.CodePage;
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        finally
+        {
+            if (originalEncoding is not null)
+            {
+                Console.InputEncoding = originalEncoding;
+            }
+        }
+    }
 
     [ConditionalTheory(typeof(ConsoleTests), nameof(IsSupported))]
     [MemberData(nameof(TestHelper.DecodedMemberData), MemberType = typeof(TestHelper))]
@@ -42,9 +68,7 @@ public class ConsoleTests
     {
         var remoteOptions = new RemoteInvokeOptions();
         remoteOptions.StartInfo.RedirectStandardInput = true;
-#if !NETFRAMEWORK
         remoteOptions.StartInfo.StandardInputEncoding = TestHelper.GB18030Encoding;
-#endif
 
         using RemoteInvokeHandle remoteHandle = RemoteExecutor.Invoke(line =>
         {
@@ -54,18 +78,8 @@ public class ConsoleTests
             return 42;
         }, decodedText, remoteOptions);
 
-        if (PlatformDetection.IsNetFramework)
-        {
-            // there's no StandardInputEncoding in .NET Framework, re-encode and write.
-            byte[] encoded = TestHelper.GB18030Encoding.GetBytes(decodedText);
-            remoteHandle.Process.StandardInput.BaseStream.Write(encoded, 0, encoded.Length);
-            remoteHandle.Process.StandardInput.Close();
-        }
-        else
-        {
-            remoteHandle.Process.StandardInput.Write(decodedText);
-            remoteHandle.Process.StandardInput.Close();
-        }
+        remoteHandle.Process.StandardInput.Write(decodedText);
+        remoteHandle.Process.StandardInput.Close();
 
         Assert.True(remoteHandle.Process.WaitForExit(WaitInMS));
     }

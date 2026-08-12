@@ -8,14 +8,13 @@ using Xunit;
 
 namespace GB18030.Tests;
 
-[SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
 public class CharUnicodeInfoTests
 {
     [Theory]
     [MemberData(nameof(TestHelper.GB18030CharUnicodeInfoMemberData), MemberType = typeof(TestHelper))]
     public void GetUnicodeCategory(CharUnicodeInfoTestCase testCase)
     {
-        UnicodeCategory expected = PlatformDetection.IsNetFramework ? UnicodeCategory.OtherNotAssigned : UnicodeCategory.OtherLetter;
+        const UnicodeCategory expected = UnicodeCategory.OtherLetter;
 
         if (testCase.Utf32CodeValue.Length == 1)
         {
@@ -23,9 +22,7 @@ public class CharUnicodeInfoTests
         }
 
         Assert.Equal(expected, CharUnicodeInfo.GetUnicodeCategory(testCase.Utf32CodeValue, 0));
-#if !NETFRAMEWORK
         Assert.Equal(expected, CharUnicodeInfo.GetUnicodeCategory(testCase.CodePoint));
-#endif
-        Assert.True(PlatformDetection.IsNetFramework || testCase.GeneralCategory == expected);
+        Assert.Equal(expected, testCase.GeneralCategory);
     }
 }
