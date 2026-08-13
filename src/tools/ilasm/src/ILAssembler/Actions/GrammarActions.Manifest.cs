@@ -26,10 +26,8 @@ namespace ILAssembler
     internal sealed partial class GrammarActions : ICILVisitor<GrammarResult>
     {
         GrammarResult ICILVisitor<GrammarResult>.VisitAlignment(CILParser.AlignmentContext context) => VisitAlignment(context);
-        public GrammarResult.Literal<int> VisitAlignment(CILParser.AlignmentContext context)
-        {
-            return VisitInt32(context.int32());
-        }
+        public GrammarResult VisitAlignment(CILParser.AlignmentContext context)
+            => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitAsmAttr(CILParser.AsmAttrContext context) => VisitAsmAttr(context);
         public GrammarResult.Literal<AssemblyFlags> VisitAsmAttr(CILParser.AsmAttrContext context)
@@ -175,8 +173,14 @@ namespace ILAssembler
             else if (context.asmOrRefDecl() is { } asmOrRef)
             {
                 _currentAssemblyOrRef = _entityRegistry.Assembly;
-                VisitAsmOrRefDecl(asmOrRef);
-                _currentAssemblyOrRef = null;
+                try
+                {
+                    VisitAsmOrRefDecl(asmOrRef);
+                }
+                finally
+                {
+                    _currentAssemblyOrRef = null;
+                }
             }
             return GrammarResult.SentinelValue.Result;
         }
@@ -224,7 +228,8 @@ namespace ILAssembler
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitCorflags(CILParser.CorflagsContext context) => VisitCorflags(context);
-        public GrammarResult.Literal<int> VisitCorflags(CILParser.CorflagsContext context) => VisitInt32(context.int32());
+        public GrammarResult VisitCorflags(CILParser.CorflagsContext context)
+            => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
         public GrammarResult VisitExportHead(CILParser.ExportHeadContext context) => throw new NotImplementedException("Obsolete syntax");
         GrammarResult ICILVisitor<GrammarResult>.VisitExptAttr(CILParser.ExptAttrContext context) => VisitExptAttr(context);
@@ -406,7 +411,8 @@ namespace ILAssembler
             => context.ChildCount != 0 ? new(true) : new(false);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitImagebase(CILParser.ImagebaseContext context) => VisitImagebase(context);
-        public GrammarResult.Literal<long> VisitImagebase(CILParser.ImagebaseContext context) => VisitInt64(context.int64());
+        public GrammarResult VisitImagebase(CILParser.ImagebaseContext context)
+            => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
         public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
         GrammarResult ICILVisitor<GrammarResult>.VisitManifestResDecls(CILParser.ManifestResDeclsContext context) => VisitManifestResDecls(context);
@@ -477,30 +483,21 @@ namespace ILAssembler
         }
 
         public GrammarResult VisitModuleHead(CILParser.ModuleHeadContext context)
-        {
-            if (context.ChildCount > 2)
-            {
-                _ = _entityRegistry.GetOrCreateModuleReference(VisitDottedName(context.dottedName()).Value, _ => { });
-                return GrammarResult.SentinelValue.Result;
-            }
-
-            if (context.dottedName() is { } moduleName)
-            {
-                _entityRegistry.Module.Name = VisitDottedName(moduleName).Value;
-            }
-            return GrammarResult.SentinelValue.Result;
-        }
+            => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
         // .mscorlib directive indicates the assembly being compiled is mscorlib itself.
         // This is currently a no-op; the flag would be used to affect type resolution
         // when support for compiling mscorlib is added.
-        public GrammarResult VisitMscorlib(CILParser.MscorlibContext context) => GrammarResult.SentinelValue.Result;
+        public GrammarResult VisitMscorlib(CILParser.MscorlibContext context)
+            => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitStackreserve(CILParser.StackreserveContext context) => VisitStackreserve(context);
-        public GrammarResult.Literal<long> VisitStackreserve(CILParser.StackreserveContext context) => VisitInt64(context.int64());
+        public GrammarResult VisitStackreserve(CILParser.StackreserveContext context)
+            => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitSubsystem(CILParser.SubsystemContext context) => VisitSubsystem(context);
-        public GrammarResult.Literal<int> VisitSubsystem(CILParser.SubsystemContext context) => VisitInt32(context.int32());
+        public GrammarResult VisitSubsystem(CILParser.SubsystemContext context)
+            => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
         public GrammarResult VisitTypedefDecl(CILParser.TypedefDeclContext context)
         {
@@ -610,16 +607,7 @@ namespace ILAssembler
         }
 
         public GrammarResult VisitTypelist(CILParser.TypelistContext context)
-        {
-            foreach (var name in context.className())
-            {
-                // We don't do anything with the class names here.
-                // We just go through the name resolution process to ensure that the names are valid
-                // and to provide TypeReference table rows.
-                _ = VisitClassName(name);
-            }
-            return GrammarResult.SentinelValue.Result;
-        }
+            => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
         public GrammarResult VisitVtableDecl(CILParser.VtableDeclContext context)
         {
