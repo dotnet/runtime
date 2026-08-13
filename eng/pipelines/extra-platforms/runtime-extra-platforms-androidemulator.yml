@@ -46,6 +46,7 @@ jobs:
             creator: dotnet-bot
             testBuildArgs: nativeaot tree nativeaot/SmokeTests /p:BuildNativeAOTRuntimePack=true
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -85,6 +86,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
 #
 # Android emulators
@@ -116,6 +118,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
 #
 # Android arm64 devices and x64 emulators
@@ -149,3 +152,4 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
