@@ -163,11 +163,6 @@ uint64_t qpf;
 double qpf_ms;
 double qpf_us;
 
-uint64_t RawGetHighPrecisionTimeStamp()
-{
-    return (uint64_t)minipal_hires_ticks();
-}
-
 #ifdef BGC_SERVO_TUNING
 bool gc_heap::bgc_tuning::enable_fl_tuning = false;
 uint32_t gc_heap::bgc_tuning::memory_load_goal = 0;

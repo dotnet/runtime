@@ -1916,8 +1916,6 @@ extern const size_t low_latency_alloc;
 extern gc_reason gc_trigger_reason;
 extern double qpf_us;
 
-uint64_t RawGetHighPrecisionTimeStamp();
-
 #ifdef WRITE_WATCH
 #ifdef BACKGROUND_GC
 extern const size_t ww_reset_quantum;

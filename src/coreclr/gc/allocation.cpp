@@ -1004,7 +1004,7 @@ void add_to_hb_numa (
     bool set_ideal_p)
 {
     int tid = (int)GCToOSInterface::GetCurrentThreadIdForLogging ();
-    uint64_t timestamp = RawGetHighPrecisionTimeStamp ();
+    int64_t timestamp = minipal_hires_ticks ();
 
     int saved_proc_no = proc_no;
     int numa_no = -1;
