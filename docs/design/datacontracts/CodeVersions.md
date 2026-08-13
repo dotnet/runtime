@@ -124,7 +124,6 @@ _None._
 | --- |
 | `ExecutionManager` |
 | `Loader` |
-| `ManagedTypeSource` |
 | `PlatformMetadata` |
 | `RuntimeTypeSystem` |
 <!-- END GENERATED: usage contract=CodeVersions version=c1 -->

@@ -33,7 +33,6 @@ byte[] GetWatsonBuckets(TargetPointer threadPointer);
 
 | Contract Name |
 | --- |
-| `ManagedTypeSource` |
 | `Object` |
 <!-- END GENERATED: usage contract=WindowsErrorReporting version=c1 -->
 

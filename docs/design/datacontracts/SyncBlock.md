@@ -51,9 +51,7 @@ bool GetBuiltInComData(TargetPointer syncBlock, out TargetPointer rcw, out Targe
 
 ### Contracts used
 
-| Contract Name |
-| --- |
-| `ManagedTypeSource` |
+_None._
 <!-- END GENERATED: usage contract=SyncBlock version=c1 -->
 
 ``` csharp

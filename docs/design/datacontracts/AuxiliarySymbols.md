@@ -35,7 +35,6 @@ bool TryGetAuxiliarySymbolName(TargetPointer ip, out string symbolName);
 
 | Contract Name |
 | --- |
-| `ManagedTypeSource` |
 | `PlatformMetadata` |
 <!-- END GENERATED: usage contract=AuxiliarySymbols version=c1 -->
 

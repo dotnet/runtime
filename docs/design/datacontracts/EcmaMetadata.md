@@ -66,7 +66,6 @@ _None._
 | Contract Name |
 | --- |
 | `Loader` |
-| `ManagedTypeSource` |
 <!-- END GENERATED: usage contract=EcmaMetadata version=c1 -->
 
 

@@ -107,6 +107,8 @@ internal sealed class UsageWalker
         }
 
         IMethodSymbol callee = inv.TargetMethod;
+        if (_symbols.IsGeneratedLayoutSet(callee.ContainingType))
+            return;
         if (TryHandleContractLookup(callee, label, subst))
             return;
         if (TryHandleDataDescriptorDependencies(callee, label, subst))

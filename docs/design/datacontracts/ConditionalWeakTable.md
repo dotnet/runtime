@@ -39,7 +39,6 @@ _None._
 | Contract Name |
 | --- |
 | `GC` |
-| `ManagedTypeSource` |
 | `Object` |
 | `RuntimeTypeSystem` |
 <!-- END GENERATED: usage contract=ConditionalWeakTable version=c1 -->

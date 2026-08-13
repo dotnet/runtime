@@ -121,7 +121,6 @@ public RCWData GetRCWData(TargetPointer rcw);
 
 | Contract Name |
 | --- |
-| `ManagedTypeSource` |
 | `SyncBlock` |
 <!-- END GENERATED: usage contract=BuiltInCOM version=c1 -->
 

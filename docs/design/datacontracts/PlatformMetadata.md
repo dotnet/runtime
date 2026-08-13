@@ -37,9 +37,7 @@ This contract exposes properties that describe the target platform
 
 ### Contracts used
 
-| Contract Name |
-| --- |
-| `ManagedTypeSource` |
+_None._
 <!-- END GENERATED: usage contract=PlatformMetadata version=c1 -->
 
 

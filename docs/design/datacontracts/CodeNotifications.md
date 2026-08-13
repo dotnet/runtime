@@ -51,9 +51,7 @@ void SetAllCodeNotifications(TargetPointer module, CodeNotificationKind flags);
 
 ### Contracts used
 
-| Contract Name |
-| --- |
-| `ManagedTypeSource` |
+_None._
 <!-- END GENERATED: usage contract=CodeNotifications version=c1 -->
 
 

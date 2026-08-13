@@ -248,7 +248,6 @@ enum ClrModifiableAssemblies : uint
 | Contract Name |
 | --- |
 | `EcmaMetadata` |
-| `ManagedTypeSource` |
 | `SHash` |
 <!-- END GENERATED: usage contract=Loader version=c1 -->
 

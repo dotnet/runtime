@@ -96,7 +96,6 @@ ulong GetSize(TargetPointer address);
 
 | Contract Name |
 | --- |
-| `ManagedTypeSource` |
 | `RuntimeTypeSystem` |
 | `SyncBlock` |
 <!-- END GENERATED: usage contract=Object version=c1 -->

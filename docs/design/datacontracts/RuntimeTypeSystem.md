@@ -673,7 +673,6 @@ static class RuntimeTypeSystem_1_Helpers
 | `EcmaMetadata` |
 | `ExecutionManager` |
 | `Loader` |
-| `ManagedTypeSource` |
 | `PlatformMetadata` |
 | `PrecodeStubs` |
 | `ReJIT` |

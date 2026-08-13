@@ -45,9 +45,7 @@ IEnumerable<TargetNUInt> GetRejitIds(TargetPointer methodDesc)
 
 ### Contracts used
 
-| Contract Name |
-| --- |
-| `ManagedTypeSource` |
+_None._
 <!-- END GENERATED: usage contract=ReJIT version=c1 -->
 
 

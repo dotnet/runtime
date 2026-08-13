@@ -832,6 +832,103 @@ public sealed class DataTypeIndexTests
     }
 
     [Fact]
+    public void GeneratedLayoutSetContractLookupIsNotAttributedToConsumer()
+    {
+        const string source = """
+            namespace Microsoft.Diagnostics.DataContractReader
+            {
+                public sealed class CdacTypeAttribute : System.Attribute
+                {
+                    public CdacTypeAttribute(params string[] names) { }
+                }
+
+                public class ContractRegistry
+                {
+                    public TContract GetContract<TContract>()
+                        where TContract : Contracts.IContract
+                        => throw null!;
+                }
+            }
+            namespace Microsoft.Diagnostics.DataContractReader.Contracts
+            {
+                public interface IContract { }
+                public interface IDependency : IContract { }
+            }
+            namespace Microsoft.Diagnostics.DataContractReader.Generated
+            {
+                public static class LayoutSet
+                {
+                    public static void Resolve(
+                        Microsoft.Diagnostics.DataContractReader.ContractRegistry registry)
+                    {
+                        _ = registry.GetContract<
+                            Microsoft.Diagnostics.DataContractReader.Contracts.IDependency>();
+                    }
+                }
+            }
+            namespace Microsoft.Diagnostics.DataContractReader.Data
+            {
+                public interface IData<T>
+                    where T : IData<T>
+                {
+                    static abstract T Create(
+                        Microsoft.Diagnostics.DataContractReader.ContractRegistry registry);
+                }
+
+                [Microsoft.Diagnostics.DataContractReader.CdacType("Widget")]
+                public sealed class Widget : IData<Widget>
+                {
+                    public static Widget Create(
+                        Microsoft.Diagnostics.DataContractReader.ContractRegistry registry)
+                    {
+                        Microsoft.Diagnostics.DataContractReader.Generated.LayoutSet.Resolve(
+                            registry);
+                        return new Widget();
+                    }
+                }
+            }
+            namespace Example
+            {
+                public static class DataCache
+                {
+                    public static T GetOrAdd<T>()
+                        where T : Microsoft.Diagnostics.DataContractReader.Data.IData<T>
+                        => default!;
+                }
+
+                public interface ITest
+                {
+                    void Read();
+                }
+
+                public sealed class TestContract : ITest
+                {
+                    public void Read()
+                    {
+                        _ = DataCache.GetOrAdd<
+                            Microsoft.Diagnostics.DataContractReader.Data.Widget>();
+                    }
+                }
+            }
+            """;
+        CSharpCompilation compilation = CreateAnalysisCompilation(source);
+        Assert.Empty(compilation.GetDiagnostics().Where(
+            diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+        INamedTypeSymbol implementation = compilation.GetTypeByMetadataName(
+            "Example.TestContract")!;
+        ContractVersion label = new(new ContractInterface("ITest"), "c1");
+        UsageGraph graph = new UsageWalker(
+            compilation,
+            DataTypeDiscovery.BuildIndex(compilation)).Walk(
+                [Registration(label, implementation)],
+                "");
+
+        Assert.DoesNotContain(
+            new ContractInterface("IDependency"),
+            Contract(graph, label).ContractsUsed);
+    }
+
+    [Fact]
     public void InterfaceComputedPropertyUsesSameProvenanceAsDirectRead()
     {
         const string source = """

@@ -22,6 +22,8 @@ internal static class CdacSymbols
         "Microsoft.Diagnostics.DataContractReader.Contracts.CoreCLRContracts";
     public const string IDataMetadataName =
         "Microsoft.Diagnostics.DataContractReader.Data.IData`1";
+    public const string GeneratedLayoutSetMetadataName =
+        "Microsoft.Diagnostics.DataContractReader.Generated.LayoutSet";
     public const string TargetMetadataName =
         "Microsoft.Diagnostics.DataContractReader.Target";
 

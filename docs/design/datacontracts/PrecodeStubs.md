@@ -54,7 +54,6 @@ _None._
 
 | Contract Name |
 | --- |
-| `ManagedTypeSource` |
 | `PlatformMetadata` |
 <!-- END GENERATED: usage contract=PrecodeStubs version=c1 -->
 

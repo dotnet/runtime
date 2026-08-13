@@ -270,7 +270,6 @@ Within a range section fragment, a [nibble map](#nibblemap) structure is used to
 | `FeatureFlags` |
 | `GCInfo` |
 | `Loader` |
-| `ManagedTypeSource` |
 | `PlatformMetadata` |
 | `PrecodeStubs` |
 | `RuntimeInfo` |
