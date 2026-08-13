@@ -318,6 +318,9 @@
   <data name="Argument_EncodingConversionOverflowChars" xml:space="preserve">
     <value>The output char buffer is too small to contain the decoded characters, encoding '{0}' fallback '{1}'.</value>
   </data>
+  <data name="Argument_NullCharInEnvVar" xml:space="preserve">
+    <value>Environment variable cannot contain a null character.</value>
+  </data>
   <data name="ArgumentOutOfRange_GetByteCountOverflow" xml:space="preserve">
     <value>Too many characters. The resulting number of bytes is larger than what can be returned as an int.</value>
   </data>

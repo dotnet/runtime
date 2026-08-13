@@ -8,10 +8,12 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using ComWrappersTests.Common;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     public static void TestEntryPoint()
     {
         ComWrappers.RegisterForTrackerSupport(TrackerComWrappers.Instance);

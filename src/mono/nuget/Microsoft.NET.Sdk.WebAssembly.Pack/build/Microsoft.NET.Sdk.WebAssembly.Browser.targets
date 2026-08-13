@@ -1293,20 +1293,35 @@ Copyright (c) .NET Foundation. All rights reserved.
   <!-- Prevent the wwwroot glob from picking up dotnet.d.ts copied by _EnsureDotnetTypeScriptDefinitions (https://github.com/dotnet/runtime/issues/124729) -->
   <ItemGroup Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
     <Content Remove="wwwroot\dotnet.d.ts" />
+    <Content Remove="wwwroot\_framework\dotnet.d.ts" />
   </ItemGroup>
 
-  <!-- Ensure dotnet.d.ts is available in wwwroot for TypeScript development experience when enabled -->
-  <Target Name="_EnsureDotnetTypeScriptDefinitions" 
-          AfterTargets="_ResolveWasmConfiguration" 
-          Condition="'$(_WasmEmitTypeScriptDefinitions)' == 'true'">
+  <!-- Ensure dotnet.d.ts is beside dotnet.js in wwwroot/_framework for TypeScript development experience when enabled -->
+  <PropertyGroup>
+    <_DotnetTypesDestDir>$([MSBuild]::NormalizeDirectory($(MSBuildProjectDirectory), 'wwwroot', '_framework'))</_DotnetTypesDestDir>
+    <_DotnetTypesDestPath>$([MSBuild]::NormalizePath($(_DotnetTypesDestDir), 'dotnet.d.ts'))</_DotnetTypesDestPath>
+  </PropertyGroup>
+
+  <Target Name="_ResolveDotnetTypeScriptDefinitionPaths"
+          DependsOnTargets="ResolveRuntimePackAssets">
     <PropertyGroup>
       <_RuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_RuntimePackDir>
       <_RuntimePackDir Condition="'$(_RuntimePackDir)' == ''">%(ResolvedRuntimePack.PackageDirectory)</_RuntimePackDir>
       <_RuntimePackNativeDir>$([MSBuild]::NormalizeDirectory($(_RuntimePackDir), 'runtimes', 'browser-wasm', 'native'))</_RuntimePackNativeDir>
       <_DotnetTypesSourcePath>$([MSBuild]::NormalizePath($(_RuntimePackNativeDir), 'dotnet.d.ts'))</_DotnetTypesSourcePath>
-      <_DotnetTypesDestPath>$(MSBuildProjectDirectory)\wwwroot\dotnet.d.ts</_DotnetTypesDestPath>
     </PropertyGroup>
-    
+  </Target>
+
+  <Target Name="_EnsureDotnetTypeScriptDefinitions"
+          DependsOnTargets="_ResolveDotnetTypeScriptDefinitionPaths"
+          AfterTargets="PrepareForBuild"
+          Inputs="$(_DotnetTypesSourcePath)"
+          Outputs="$(_DotnetTypesDestPath)"
+          Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
+
+    <MakeDir Directories="$(_DotnetTypesDestDir)"
+             Condition="Exists('$(_DotnetTypesSourcePath)')" />
+
     <!-- Copy dotnet.d.ts if source exists. MSBuild will skip if files are identical. -->
     <Copy SourceFiles="$(_DotnetTypesSourcePath)"
           DestinationFiles="$(_DotnetTypesDestPath)"
