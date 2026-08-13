@@ -26,7 +26,7 @@ namespace System.Configuration
                 throw new Win32Exception(error);
             }
 
-            char[] buffer = new char[checked((int)length)];
+            char[] buffer = new char[length];
             fixed (char* bufferPtr = buffer)
             {
                 error = Interop.Kernel32.GetCurrentPackageFamilyName(&length, bufferPtr);
