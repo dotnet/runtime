@@ -2423,9 +2423,15 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         // return blocks we don't know it returns as it may be counting unreachable code.
         // However we will still make the CALLEE_DOES_NOT_RETURN observation.
 
-        compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, retBlocks == 0);
+        // We never mark async calls as no-return, since suspensions do end up
+        // running suspension code in the caller. This is a bit conservative as
+        // we still know that the IL code won't run after, but this simplifies
+        // the reasoning about no-return calls throughout the JIT.
+        const bool doesNotReturn = (retBlocks == 0) && !compIsAsync();
 
-        if ((retBlocks == 0) && isInlining &&
+        compInlineResult->NoteBool(InlineObservation::CALLEE_DOES_NOT_RETURN, doesNotReturn);
+
+        if (doesNotReturn && isInlining &&
             info.compCompHnd->notifyMethodInfoUsage(impInlineInfo->iciCall->gtCallMethHnd))
         {
             // Mark the call node as "no return" as it can impact caller's code quality.

@@ -95,6 +95,7 @@ enum class WasmValueType : unsigned;
 #ifdef DEBUG
 struct IndentStack;
 #endif
+struct ContinuationMember;
 
 class Lowering; // defined in lower.h
 
@@ -668,6 +669,9 @@ private:
 
     unsigned char lvIsSpan : 1; // The local is a Span<T>
 
+    unsigned char lvIsVectorPerElementMask           : 1; // The local is known to be a per-element mask
+    unsigned char lvVectorPerElementMaskElemSizeLog2 : 2; // Maximum log2(element size) for the local mask
+
 public:
     union
     {
@@ -868,6 +872,58 @@ public:
     {
         lvIsSpan = value;
     }
+
+#ifdef FEATURE_HW_INTRINSICS
+    // Is this local a per-element mask compatible with the given base type?
+    bool IsVectorPerElementMask(var_types simdBaseType) const
+    {
+        return lvIsVectorPerElementMask &&
+               (GetVectorPerElementMaskElemSizeLog2(simdBaseType) <= lvVectorPerElementMaskElemSizeLog2);
+    }
+
+    // Mark this local as a per-element mask with the given base type.
+    void SetIsVectorPerElementMask(var_types simdBaseType)
+    {
+        unsigned elemSizeLog2 = GetVectorPerElementMaskElemSizeLog2(simdBaseType);
+
+        if (!lvIsVectorPerElementMask || (elemSizeLog2 > lvVectorPerElementMaskElemSizeLog2))
+        {
+            lvVectorPerElementMaskElemSizeLog2 = static_cast<unsigned char>(elemSizeLog2);
+        }
+
+        lvIsVectorPerElementMask = true;
+    }
+
+private:
+    static unsigned GetVectorPerElementMaskElemSizeLog2(var_types simdBaseType)
+    {
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                return 0;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                return 1;
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                return 2;
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                return 3;
+
+            default:
+                unreached();
+        }
+    }
+
+public:
+#endif // FEATURE_HW_INTRINSICS
 
     /////////////////////
 
@@ -2360,18 +2416,12 @@ class FlowGraphTryRegion
     jitstd::vector<BasicBlock*> m_unreachableBlocks;
 
     bool m_requiresRuntimeResumption;
-    bool m_hasSideEntry;
 
     FlowGraphTryRegion(EHblkDsc* ehDsc, FlowGraphTryRegions* regions);
 
     void SetRequiresRuntimeResumption()
     {
         m_requiresRuntimeResumption = true;
-    }
-
-    void SetHasSideEntry()
-    {
-        m_hasSideEntry = true;
     }
 
     bool IsMutualProtectWith(FlowGraphTryRegion* other) const
@@ -2414,13 +2464,6 @@ public:
         return m_requiresRuntimeResumption;
     }
 
-    // True if control can enter the try via some block other than the header block.
-    //
-    bool HasSideEntry() const
-    {
-        return m_hasSideEntry;
-    }
-
     FlowGraphTryRegion* EnclosingRegion() const;
 
     BasicBlock* GetHeaderBlock() const
@@ -2449,12 +2492,12 @@ private:
     unsigned m_numRegions;
     unsigned m_numTryCatchRegions;
     bool m_tryRegionsIncludeHandlerBlocks;
-    bool m_hasMultipleEntryTryRegions;
+    bool m_hasSideEntry;
     BitVecTraits m_traits;
 
-    void SetHasMultipleEntryTryRegions()
+    void SetHasSideEntry()
     {
-        m_hasMultipleEntryTryRegions = true;
+        m_hasSideEntry = true;
     }
 
 public:
@@ -2492,11 +2535,10 @@ public:
 
     bool TryRegionsIncludeHandlerBlocks() const { return m_tryRegionsIncludeHandlerBlocks; }
 
-    bool HasMultipleEntryTryRegions() const { return m_hasMultipleEntryTryRegions; }
-
-    void AddMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
-
-    void RemoveMultipleEntryRegionEdges(ArrayStack<FlowEdge*>& edges);
+    // True if some try region is entered at a block other than its header.
+    // fgWasmRepairTryEntries should have removed all of these.
+    //
+    bool HasSideEntry() const { return m_hasSideEntry; }
 
 #ifdef DEBUG
     static void Dump(FlowGraphTryRegions* regions);
@@ -3311,11 +3353,22 @@ public:
 
 #if defined(FEATURE_SIMD)
     GenTreeVecCon* gtNewVconNode(var_types type);
-    GenTreeVecCon* gtNewVconNode(var_types type, void* data);
+    GenTreeVecCon* gtNewVconNode(var_types type, const void* data);
+#if defined(TARGET_ARM64)
+    GenTreeVecCon* gtNewSimdVconNode(var_types type, var_types baseType, SimdScalableKind kind, uint64_t index, uint64_t step = 0);
+
+    inline GenTreeVecCon* gtNewSimdVconNode(var_types type, const simdscalable_t* con)
+    {
+        return gtNewSimdVconNode(type, con->gtSimdScalableBaseType, con->gtSimdScalableKind, con->gtSimdScalableIndex, con->gtSimdScalableStep);
+    }
+#endif // TARGET_ARM64
 #endif // FEATURE_SIMD
 
 #if defined(FEATURE_MASKED_HW_INTRINSICS)
     GenTreeMskCon* gtNewMskConNode(var_types type);
+#if defined(TARGET_ARM64)
+    GenTreeMskCon* gtNewMskConNode(var_types type, var_types baseType, bool index);
+#endif // TARGET_ARM64
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     GenTree* gtNewAllBitsSetConNode(var_types type);
@@ -3362,8 +3415,12 @@ public:
     // On wasm these helpers return void* (InitHelpers.InitClass/InitInstantiatedClass). Model them as
     // value-returning so the call_indirect signature matches the compiled managed helper; the value is unused.
     static constexpr var_types HelperInitClassRetType = TYP_I_IMPL;
+    // Likewise for CastHelpers.Unbox at sites that discard the result. Modeling it TYP_BYREF off
+    // wasm is equally correct but costs code size for no benefit.
+    static constexpr var_types HelperUnboxDiscardedRetType = TYP_BYREF;
 #else
-    static constexpr var_types HelperInitClassRetType = TYP_VOID;
+    static constexpr var_types HelperInitClassRetType      = TYP_VOID;
+    static constexpr var_types HelperUnboxDiscardedRetType = TYP_VOID;
 #endif // TARGET_WASM
 
     GenTreeCall* gtNewVirtualFunctionLookupHelperCallNode(
@@ -3432,7 +3489,7 @@ public:
         var_types type, GenTree* op1, var_types simdBaseType, unsigned simdSize);
 
 #if defined(TARGET_ARM64)
-    GenTree* gtNewSimdAllTrueMaskNode(var_types simdBaseType);
+    GenTree* gtNewSimdTrueMaskNode(var_types simdBaseType);
     GenTree* gtNewSimdFalseMaskByteNode();
 #endif
 
@@ -4074,7 +4131,7 @@ public:
 #endif // FEATURE_HW_INTRINSICS
 
 #if defined(FEATURE_HW_INTRINSICS) && defined(FEATURE_MASKED_HW_INTRINSICS)
-    GenTreeMskCon* gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon);
+    GenTree* gtFoldExprConvertVecCnsToMask(GenTreeHWIntrinsic* tree, GenTreeVecCon* vecCon);
 #endif // FEATURE_MASKED_HW_INTRINSICS
 
     // Options to control behavior of gtTryRemoveBoxUpstreamEffects
@@ -4085,6 +4142,7 @@ public:
         BR_REMOVE_BUT_NOT_NARROW,              // remove effects, return original source tree
         BR_DONT_REMOVE,                        // check if removal is possible, return copy source tree
         BR_DONT_REMOVE_WANT_TYPE_HANDLE,       // check if removal is possible, return type handle tree
+        BR_MAKE_LOCAL_COPY                     // revise box to copy to temp local and return local's address
     };
 
     GenTree* gtTryRemoveBoxUpstreamEffects(GenTree* tree, BoxRemovalOptions options = BR_REMOVE_AND_NARROW);
@@ -4107,6 +4165,7 @@ public:
     bool gtIsTypeof(GenTree* tree, CORINFO_CLASS_HANDLE* handle = nullptr);
 
     GenTreeLclVarCommon* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
+    GenTreeLclVarCommon* gtCallGetDefinedAsyncResumedLclAddr(GenTreeCall* call);
 
 //-------------------------------------------------------------------------
 // Functions to display the trees
@@ -4340,6 +4399,7 @@ public:
     unsigned lvaMonAcquired = BAD_VAR_NUM; // boolean variable introduced into in synchronized methods
                              // that tracks whether the lock has been taken
 
+    unsigned lvaResumedIndicator = BAD_VAR_NUM;               // Variable representing "have we resumed?" for async methods
     unsigned lvaAsyncThreadObjectVar = BAD_VAR_NUM;           // Thread local for async methods
     unsigned lvaAsyncExecutionContextVar = BAD_VAR_NUM;       // ExecutionContext local for async methods
     unsigned lvaAsyncSynchronizationContextVar = BAD_VAR_NUM; // SynchronizationContext local for async methods
@@ -5246,6 +5306,14 @@ protected:
                                 unsigned                clsFlags,
                                 bool                    isReadonlyCall);
 
+    void impTryOptimizeAwaitAwaiter(GenTreeCall*              call,
+                                    CORINFO_RESOLVED_TOKEN*   pResolvedToken,
+                                    CORINFO_CALL_INFO*        callInfo,
+                                    CORINFO_METHOD_HANDLE*    methHnd,
+                                    CORINFO_CONTEXT_HANDLE*   exactContextHnd,
+                                    GenTree**                 instParam,
+                                    NamedIntrinsic            ni);
+
     void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, NamedIntrinsic ni, const DebugInfo& callDI);
 
     void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
@@ -5342,6 +5410,13 @@ protected:
 
     NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+    NamedIntrinsic lookupHalfNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    NamedIntrinsic lookupHalfIntrinsic(NamedIntrinsic ni);
+#endif // FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64)
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+    int lookupHalfRoundingMode(NamedIntrinsic ni);
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -5359,6 +5434,7 @@ protected:
                                         CORINFO_SIG_INFO*     sig
                                         R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                         bool                  mustExpand);
+    GenTree* impRotateHelper(var_types baseType, genTreeOps rotateOper);
 
 #ifdef FEATURE_HW_INTRINSICS
     bool IsValidForShuffle(GenTree* indices,
@@ -6237,6 +6313,11 @@ public:
     PhaseStatus placeLoopAlignInstructions();
 #endif
 
+    jitstd::vector<ContinuationMember>* m_asyncContinuationMembers = nullptr;
+    size_t GetContinuationMemberIndex(const ContinuationMember& member);
+    size_t GetContinuationMemberCount() const;
+    const ContinuationMember& GetContinuationMember(size_t index);
+
     PhaseStatus SaveAsyncContexts();
     void AddContextArgsToAsyncCalls(BasicBlock* block);
     BasicBlock* CreateReturnBB(unsigned* mergedReturnLcl);
@@ -6870,6 +6951,7 @@ public:
     void fgWasmEhTransformTry(ArrayStack<BasicBlock*>* catchRetBlocks, unsigned regionIndex, unsigned catchRetIndexLocalNum);
     PhaseStatus fgWasmControlFlow();
     PhaseStatus fgWasmTransformSccs();
+    PhaseStatus fgWasmRepairTryEntries();
     PhaseStatus fgWasmVirtualIP();
     PhaseStatus fgWasmSpillRefs();
 #ifdef DEBUG
@@ -8456,7 +8538,7 @@ public:
                 double        m_dconVal;
                 IntegralRange m_range;
                 simd16_t      m_simdVal;    // for O2K_CONST_VEC, inline storage for TYP_SIMD8/12/16.
-                simd_t*       m_bigSimdVal; // for O2K_CONST_VEC, heap-allocated storage for TYP_SIMD32/64.
+                simd_t*       m_bigSimdVal; // for O2K_CONST_VEC, heap-allocated storage for larger payloads.
                 struct
                 {
                     ssize_t   m_iconVal;
@@ -8490,7 +8572,7 @@ public:
             }
 
             // Returns a pointer to the SIMD constant payload. The valid byte length is GetSimdSize().
-            // For TYP_SIMD8/12/16 the storage is inline; for TYP_SIMD32/64 it is heap-allocated.
+            // For TYP_SIMD8/12/16 the storage is inline; larger payloads are heap-allocated.
             const void* GetSimdConstant() const
             {
                 assert(KindIs(O2K_CONST_VEC));
@@ -8956,8 +9038,14 @@ public:
                 dsc.m_op2.m_kind = O2K_CONST_VEC;
 
                 assert(varTypeIsSIMD(cns));
-                const unsigned simdSize = genTypeSize(cns->TypeGet());
-                dsc.m_op2.m_simdSize    = static_cast<uint8_t>(simdSize);
+                unsigned simdSize = genTypeSize(cns->TypeGet());
+#if defined(TARGET_ARM64)
+                if (cns->TypeIs(TYP_SIMD))
+                {
+                    simdSize = sizeof(simdscalable_t);
+                }
+#endif // TARGET_ARM64
+                dsc.m_op2.m_simdSize = static_cast<uint8_t>(simdSize);
 
                 if (simdSize <= sizeof(simd16_t))
                 {
@@ -9897,6 +9985,7 @@ public:
     void         funSetCurrentFunc(unsigned funcIdx);
     FuncInfoDsc* funGetFunc(unsigned funcIdx);
     unsigned int funGetFuncIdx(BasicBlock* block);
+    unsigned int bbFuncletRegionOf(BasicBlock* block);
     bool         bbIsInSameFunclet(BasicBlock* block1, BasicBlock* block2);
 
     // LIVENESS
@@ -10446,7 +10535,7 @@ public:
         return simdType;
     }
 
-    static var_types getIndexTypeForShuffle(var_types simdBaseType)
+    static var_types getUnsignedSimdBaseType(var_types simdBaseType)
     {
         switch (simdBaseType)
         {
@@ -11751,7 +11840,7 @@ public:
         bool compIsVarArgs             : 1; // Does the method have varargs parameters?
         bool compInitMem               : 1; // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback      : 1; // JIT inserted a profiler Enter callback
-        bool compPublishStubParam      : 1; // EAX captured in prolog will be available through an intrinsic
+        bool compPublishStubParam      : 1; // Hidden argument captured in prolog will be available through an intrinsic
         bool compHasNextCallRetAddr    : 1; // The NextCallReturnAddress intrinsic is used.
         bool compUsesAsyncContinuation : 1; // The AsyncCallContinuation intrinsic is used.
 

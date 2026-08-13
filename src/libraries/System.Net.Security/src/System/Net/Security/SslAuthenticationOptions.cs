@@ -152,7 +152,14 @@ namespace System.Net.Security
 
             if (sslServerAuthenticationOptions.ServerCertificateContext != null)
             {
+                // Release any previously owned context before replacing it with the caller's context.
+                if (OwnsCertificateContext && CertificateContext is not null &&
+                    !ReferenceEquals(CertificateContext, sslServerAuthenticationOptions.ServerCertificateContext))
+                {
+                    CertificateContext.ReleaseResources();
+                }
                 CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
+                OwnsCertificateContext = false;
             }
             else if (sslServerAuthenticationOptions.ServerCertificate != null)
             {

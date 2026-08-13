@@ -24,7 +24,7 @@ TargetPointer GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPoin
 | `EnCAddedField` | `Next` | `pointer` | Pointer to the next EnCAddedField entry in the per-object linked list hanging off the SyncBlock. |
 | `EnCAddedFieldElement` | `FieldDesc` | `pointer` | Address of the embedded EnCFieldDesc (layout-compatible with FieldDesc). |
 | `EnCAddedFieldElement` | `Next` | `pointer` | Pointer to the next EnCAddedFieldElement in the linked list. |
-| `EnCAddedStaticField` | `FieldData` | `pointer` | Address of the first byte of static field storage on this entry. |
+| `EnCAddedStaticField` | `FieldData` | `pointer` | Address of the inline storage for a primitive field, or of a pointer to GC-tracked storage for a class or value-type field. |
 | `EnCEEClassData` | `AddedInstanceFields` | `pointer` | Head of the linked list of EnCAddedFieldElement for added instance fields. |
 | `EnCEEClassData` | `AddedStaticFields` | `pointer` | Head of the linked list of EnCAddedFieldElement for added static fields. |
 | `EnCEEClassData` | `MethodTable` | `pointer` | Pointer to the MethodTable whose EnC data is held by this entry. |
@@ -35,8 +35,6 @@ TargetPointer GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPoin
 | `Module` | `EnCClassList` | `pointer` | Pointer to the list of classes added through Edit and Continue |
 | `Object` | *(type size)* | `uint32` | Size in bytes of the fixed Object portion through its MethodTable pointer |
 | `SyncBlock` | `EnCInfo` | `pointer` | Pointer to Edit-and-Continue added-field information for the object; optional when Edit and Continue is not configured |
-| `SyncBlock` | `InteropInfo` | `pointer` | Pointer to optional COM interop data associated with the sync block |
-| `SyncBlock` | `Lock` | `ObjectHandle` | Object handle referring to the System.Threading.Lock used for the object's monitor |
 | `System.Diagnostics.EditAndContinueHelper` | `_objectReference` | `pointer` | Holds the per-field storage for an EnC-added instance field. |
 | `UnorderedArrayBase` | `Count` | `uint32` | Number of valid entries currently stored in the array. |
 | `UnorderedArrayBase` | `Table` | `pointer` | Pointer to the backing storage holding the array's entries. |
@@ -117,8 +115,11 @@ TargetPointer GetEnCStaticFieldDataAddress(TargetPointer encFieldDescPointer)
     if (staticFieldData == TargetPointer.Null)
         return TargetPointer.Null;
 
-    // [FieldAddress] on EnCAddedStaticField::FieldData returns the address of the field slot
-    return staticFieldData + /* EnCAddedStaticField::FieldData offset */;
+    TargetPointer fieldDataAddress = staticFieldData + /* EnCAddedStaticField::FieldData offset */;
+    CorElementType fieldType = target.Contracts.RuntimeTypeSystem.GetFieldDescType(encFieldDescPointer);
+    return fieldType is CorElementType.ValueType or CorElementType.Class
+        ? target.ReadPointer(fieldDataAddress)
+        : fieldDataAddress;
 }
 
 TargetPointer GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPointer encFieldDescPointer)
@@ -172,7 +173,7 @@ TargetPointer GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPoin
                 // Primitive stored in a 1-element array. Return the address of the first element.
                 if (fieldObject == TargetPointer.Null)
                     return TargetPointer.Null;
-                return target.Contracts.Object.GetArrayData(fieldObject, out _, out _, out _);
+                return target.Contracts.Object.GetArrayData(fieldObject, out _, out _, out _, out _, out _);
             }
         }
         entryPtr = target.ReadPointer(entryPtr + /* EnCAddedField::Next offset */);

@@ -674,24 +674,6 @@ Module *EEDbgInterfaceImpl::MethodDescGetModule(MethodDesc *pFD)
 
 #ifndef DACCESS_COMPILE
 
-COR_ILMETHOD* EEDbgInterfaceImpl::MethodDescGetILHeader(MethodDesc *pFD)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        PRECONDITION(CheckPointer(pFD));
-    }
-    CONTRACTL_END;
-
-    if (pFD->IsIL())
-    {
-        return pFD->GetILHeader();
-    }
-
-    return NULL;
-}
-
 MethodDesc *EEDbgInterfaceImpl::FindLoadedMethodRefOrDef(Module* pModule,
                                                           mdToken memberRef)
 {

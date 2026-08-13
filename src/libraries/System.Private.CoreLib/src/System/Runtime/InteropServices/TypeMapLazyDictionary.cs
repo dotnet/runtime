@@ -72,7 +72,9 @@ namespace System.Runtime.InteropServices
         // See assemblynative.hpp for native version.
         public unsafe struct ProcessAttributesCallbackArg
         {
+            /// <safety>Holds only a pointer value addressing a native UTF-8 string; reading or writing the field never dereferences it, so field access alone cannot read or write that memory (any dereference requires an unsafe context).</safety>
             public void* Utf8String1;
+            /// <safety>Holds only a pointer value addressing a native UTF-8 string; reading or writing the field never dereferences it, so field access alone cannot read or write that memory (any dereference requires an unsafe context).</safety>
             public void* Utf8String2;
             public int StringLen1;
             public int StringLen2;
@@ -357,6 +359,7 @@ namespace System.Runtime.InteropServices
 
         private unsafe struct TypeNameUtf8
         {
+            /// <safety>Reads or stores only a pointer value addressing a native UTF-8 type name; it never dereferences the pointed-to memory, so accessing the property cannot itself read or write that memory (any dereference requires an unsafe context).</safety>
             public required void* Utf8TypeName { get; init; }
             public required int Utf8TypeNameLen { get; init; }
         }

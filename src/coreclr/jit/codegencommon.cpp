@@ -785,6 +785,23 @@ void CodeGenInterface::genUpdateLife(VARSET_VALARG_TP newLife)
     m_compiler->compUpdateLife</*ForCodeGen*/ true>(newLife);
 }
 
+//------------------------------------------------------------------------
+// genUpdateVarReg: Update the current register location for a multi-reg lclVar
+//
+// Arguments:
+//    varDsc   - the LclVarDsc for the lclVar
+//    tree     - the lclVar node
+//    regIndex - the index of the register in the node
+//
+// inline
+void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
+{
+    // This should only be called for multireg lclVars.
+    assert(m_compiler->lvaEnregMultiRegVars);
+    assert(tree->IsMultiRegLclVar() || tree->OperIs(GT_COPY));
+    varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
+}
+
 #ifndef TARGET_WASM
 // Return the register mask for the given register variable
 // inline
@@ -1334,7 +1351,23 @@ bool CodeGen::genCreateAddrMode(GenTree*  addr,
 // TODO-WASM: Prove whether a given addressing mode obeys the Wasm rules.
 // See https://github.com/dotnet/runtime/pull/122897#issuecomment-3721304477 for more details.
 #if defined(TARGET_WASM)
-    return false;
+    // Wasm only folds "base + constant" into the memarg. See "Lowering::GetFoldableAddrMode" for why a GC-typed
+    // base and a non-negative constant prove the addition does not wrap. A relocatable constant cannot fold
+    // because that would drop the relocation.
+    //
+    if (!addr->OperIs(GT_ADD) || addr->gtOverflow() || !varTypeIsGC(addr->gtGetOp1()) ||
+        !addr->gtGetOp2()->IsCnsIntOrI() || addr->gtGetOp2()->AsIntCon()->ImmedValNeedsReloc(m_compiler) ||
+        (addr->gtGetOp2()->AsIntCon()->IconValue() < 0))
+    {
+        return false;
+    }
+
+    *revPtr = false;
+    *rv1Ptr = addr->gtGetOp1();
+    *rv2Ptr = nullptr;
+    *mulPtr = 0;
+    *cnsPtr = addr->gtGetOp2()->AsIntCon()->IconValue();
+    return true;
 #endif // TARGET_WASM
     /*
         The following indirections are valid address modes on x86/x64:
@@ -2390,8 +2423,10 @@ void CodeGen::genGenerateMachineCode()
     // check to see if any jumps can be removed
     GetEmitter()->emitRemoveJumpToNextInst();
 
+#if !defined(TARGET_WASM)
     /* Bind jump distances */
     GetEmitter()->emitJumpDistBind();
+#endif
 
 #if FEATURE_LOOP_ALIGN
     /* Perform alignment adjustments */
@@ -6069,6 +6104,7 @@ unsigned CodeGen::genEmitJumpTable(GenTree* treeNode, bool relativeAddr)
     emit->emitDataGenEnd();
     return jmpTabBase;
 }
+#endif // !defined(TARGET_WASM)
 
 //----------------------------------------------------------------------------------
 // genEmitAsyncResumeInfoTable:
@@ -6116,8 +6152,6 @@ CORINFO_FIELD_HANDLE CodeGen::genEmitAsyncResumeInfo(unsigned stateNum)
     UNATIVE_OFFSET        baseOffs = genEmitAsyncResumeInfoTable(&dataSection);
     return m_compiler->eeFindJitDataOffs(baseOffs + stateNum * sizeof(CORINFO_AsyncResumeInfo));
 }
-
-#endif // !TARGET_WASM
 
 //------------------------------------------------------------------------
 // getCallTarget - Get the node that evaluates to the call target
@@ -7457,8 +7491,13 @@ void CodeGen::genReturn(GenTree* treeNode)
 
     if (treeNode->OperIs(GT_RETURN) && m_compiler->compIsAsync())
     {
+#ifdef TARGET_WASM
+        // Wasm returns the continuation in a global.
+        genClearAsyncContinuationGlobal();
+#else
         instGen_Set_Reg_To_Zero(EA_PTRSIZE, REG_ASYNC_CONTINUATION_RET);
         gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
+#endif
     }
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
@@ -8507,6 +8546,14 @@ void CodeGen::genPoisonFrame(regMaskTP regLiveIn)
         }
 
         assert(varDsc->lvOnFrame);
+
+#ifdef TARGET_ARM64
+        if (m_compiler->lvaIsUnknownSizeLocal(varNum))
+        {
+            genPoisonUnknownSizeVariable(varNum, (char)poisonVal);
+            continue;
+        }
+#endif
 
         unsigned int size = m_compiler->lvaLclStackHomeSize(varNum);
         if ((size / TARGET_POINTER_SIZE) > 16)

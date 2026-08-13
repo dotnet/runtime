@@ -783,7 +783,7 @@ void COMDelegate::Init()
     }
     CONTRACTL_END;
 #if defined(FEATURE_PORTABLE_SHUFFLE_THUNKS) || defined(TARGET_X86)
-    s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator()->GetStubHeap());
+    s_pShuffleThunkCache = new ShuffleThunkCache(SystemDomain::GetGlobalLoaderAllocator());
 #endif
 }
 
@@ -820,13 +820,7 @@ CLRToCOMCallInfo * COMDelegate::PopulateCLRToCOMCallInfo(MethodTable * pDelMT)
 }
 #endif // FEATURE_COMINTEROP
 
-// We need a LoaderHeap that lives at least as long as the DelegateEEClass, but ideally no longer
-LoaderHeap *DelegateEEClass::GetStubHeap()
-{
-    return GetInvokeMethod()->GetLoaderAllocator()->GetStubHeap();
-}
-
-static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
+static PCODE CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTargetWithThis)
 {
     SigTypeContext typeContext(pDelegateMD);
     MetaSig sig(pDelegateMD);
@@ -883,7 +877,7 @@ static Stub* CreateILDelegateShuffleThunk(MethodDesc* pDelegateMD, bool callTarg
     ILStubResolver* pResolver = pStubMD->AsDynamicMethodDesc()->GetILStubResolver();
     pResolver->SetStubTargetMethodSig(pTargetSig, cbTargetSig);
 
-    return Stub::NewStub(JitILStub(pStubMD), NEWSTUB_FL_SHUFFLE_THUNK);
+    return JitILStub(pStubMD);
 }
 
 static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
@@ -902,9 +896,9 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
 
     // Look for a thunk cached on the delegate class first. Note we need a different thunk for instance methods with a
     // hidden return buffer argument because the extra argument switches place with the target when coming from the caller.
-    Stub* pShuffleThunk = isInstRetBuff ? pClass->m_pInstRetBuffCallStub : pClass->m_pStaticCallStub;
+    PCODE pShuffleThunk = isInstRetBuff ? pClass->m_pInstRetBuffCallStub : pClass->m_pStaticCallStub;
     if (pShuffleThunk)
-        return pShuffleThunk->GetEntryPoint();
+        return pShuffleThunk;
 
     GCX_PREEMP();
 
@@ -937,23 +931,14 @@ static PCODE SetupShuffleThunk(MethodTable * pDelMT, MethodDesc *pTargetMeth)
     }
 
     // Cache the shuffle thunk
-    Stub** ppThunk = isInstRetBuff ? &pClass->m_pInstRetBuffCallStub : &pClass->m_pStaticCallStub;
-    Stub* pExistingThunk = InterlockedCompareExchangeT(ppThunk, pShuffleThunk, NULL);
-    if (pExistingThunk != NULL)
+    PCODE* ppThunk = isInstRetBuff ? &pClass->m_pInstRetBuffCallStub : &pClass->m_pStaticCallStub;
+    PCODE pExistingThunk = InterlockedCompareExchangeT(ppThunk, pShuffleThunk, PCODE(0));
+    if (pExistingThunk != 0)
     {
-        if (pShuffleThunk->HasExternalEntryPoint()) // IL thunk
-        {
-            pShuffleThunk->DecRef();
-        }
-        else
-        {
-            ExecutableWriterHolder<Stub> shuffleThunkWriterHolder(pShuffleThunk, sizeof(Stub));
-            shuffleThunkWriterHolder.GetRW()->DecRef();
-        }
         pShuffleThunk = pExistingThunk;
     }
 
-    return pShuffleThunk->GetEntryPoint();
+    return pShuffleThunk;
 }
 
 extern "C" PCODE CID_VirtualOpenDelegateDispatch(TransitionBlock * pTransitionBlock);
@@ -1831,7 +1816,7 @@ BOOL COMDelegate::HasSingleTarget(DELEGATEREF delegate)
 }
 
 // Get the cpu stub for a delegate invoke.
-Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
+PCODE COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1886,7 +1871,7 @@ Stub* COMDelegate::GetInvokeMethodStub(EEImplMethodDesc* pMD)
                                                                 NULL,
                                                                 &sl);
 
-        return Stub::NewStub(JitILStub(pStubMD));
+        return JitILStub(pStubMD);
     }
     else
     {

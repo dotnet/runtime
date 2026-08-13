@@ -270,7 +270,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         }
         else
         {
-            context.AddSource("SimpleRunner.g.cs", GenerateStandaloneSimpleTestRunner(methods, aliasMap));
+            context.AddSource(
+                "SimpleRunner.g.cs",
+                GenerateStandaloneSimpleTestRunner(
+                    methods,
+                    aliasMap,
+                    configOptions.GlobalOptions.RequiresProcessIsolation()));
         }
     }
 
@@ -300,7 +305,47 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
     {
         // For simplicity, we'll use top-level statements for the generated Main method.
         CodeBuilder builder = new();
+        CodeBuilder testExecutorBuilder = new();
+        int outOfProcessTestCount = testInfos.Count(static test => test is OutOfProcessTest);
+        if (outOfProcessTestCount != 0)
+        {
+            builder.AppendLine("#nullable enable annotations");
+            builder.AppendLine();
+        }
         AppendAliasMap(builder, aliasMap);
+
+        ITestReporterWrapper reporter =
+            new WrapperLibraryTestSummaryReporting(
+                "summary",
+                "filter",
+                "outputRecorder",
+                outOfProcessTestCount != 0 ? "outOfProcessPlanWriter" : null);
+        int currentTestExecutor = 0;
+
+        // This code breaks the tests into groups called by helper methods.
+        //
+        // Reasonably large methods are known to take a long time to compile, and use excessive stack
+        // leading to test failures. Groups of 50 were sufficient to avoid this problem.
+        //
+        // However, large methods also appear to causes problems when the tests are run in gcstress
+        // modes. Groups of 1 appear to help with this. It hasn't been directly measured but
+        // experimentally has improved gcstress testing.
+        foreach (ITestInfo test in testInfos)
+        {
+            currentTestExecutor++;
+            testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
+                                           + "System.IO.StreamWriter tempLogSw, "
+                                           + "System.IO.StreamWriter statsCsvSw"
+                                           + (outOfProcessTestCount != 0
+                                               ? ", System.IO.StreamWriter? outOfProcessPlanWriter)"
+                                               : ")"));
+            testExecutorBuilder.AppendLine("{");
+            testExecutorBuilder.PushIndent();
+            testExecutorBuilder.Append(test.GenerateTestExecution(reporter));
+            testExecutorBuilder.PopIndent();
+            testExecutorBuilder.AppendLine("}");
+            testExecutorBuilder.AppendLine();
+        }
 
         builder.AppendLine("XUnitWrapperLibrary.TestFilter filter;");
         builder.AppendLine("XUnitWrapperLibrary.TestSummary summary;");
@@ -341,11 +386,34 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
 
         builder.AppendLine("Initialize();");
 
+        if (outOfProcessTestCount != 0)
+        {
+            builder.AppendLine("if (TestLibrary.OutOfProcessTest.OutOfProcessPlanFile is string outOfProcessPlanFile)");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine("using (System.IO.StreamWriter unusedWriter = new(System.IO.Stream.Null))");
+                builder.AppendLine("using (System.IO.StreamWriter outOfProcessPlanWriter = System.IO.File.CreateText(outOfProcessPlanFile))");
+                using (builder.NewBracesScope())
+                {
+                    for (int i = 1; i <= currentTestExecutor; i++)
+                    {
+                        builder.AppendLine($"TestExecutor{i}(unusedWriter, unusedWriter, outOfProcessPlanWriter);");
+                    }
+                }
+                builder.AppendLine("return 100;");
+            }
+
+            builder.AppendLine("if (System.OperatingSystem.IsBrowser() && !TestLibrary.OutOfProcessTest.IsUsingPrecomputedResults)");
+            using (builder.NewBracesScope())
+            {
+                builder.AppendLine(@"System.Console.Error.WriteLine(""Out-of-process tests require host-side orchestration on Browser."");");
+                builder.AppendLine("return 1;");
+            }
+        }
+
         // Open the stream writer for the temp log.
         builder.AppendLine($@"using (System.IO.StreamWriter tempLogSw = System.IO.File.AppendText(""{assemblyName}.tempLog.xml""))");
         builder.AppendLine($@"using (System.IO.StreamWriter statsCsvSw = System.IO.File.AppendText(""{assemblyName}.testStats.csv""))");
-        CodeBuilder testExecutorBuilder = new();
-        int totalTestsEmitted = 0;
 
         using (builder.NewBracesScope())
         {
@@ -355,56 +423,11 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             // Otherwise, it's going to fail when attempting to find dumps.
             builder.AppendLine($@"summary.WriteHeaderToTempLog(""{assemblyName}"", tempLogSw);");
 
-            ITestReporterWrapper reporter =
-                new WrapperLibraryTestSummaryReporting("summary", "filter", "outputRecorder");
-
-            int testsLeftInCurrentTestExecutor = 0;
-            int currentTestExecutor = 0;
-
-            if (testInfos.Length > 0)
+            for (int i = 1; i <= currentTestExecutor; i++)
             {
-                // This code breaks the tests into groups called by helper methods.
-                //
-                // Reasonably large methods are known to take a long time to compile, and use excessive stack
-                // leading to test failures. Groups of 50 were sufficient to avoid this problem.
-                //
-                // However, large methods also appear to causes problems when the tests are run in gcstress
-                // modes. Groups of 1 appear to help with this. It hasn't been directly measured but
-                // experimentally has improved gcstress testing.
-                foreach (ITestInfo test in testInfos)
-                {
-                    if (testsLeftInCurrentTestExecutor == 0)
-                    {
-                        if (currentTestExecutor != 0)
-                        {
-                            testExecutorBuilder.PopIndent();
-                            testExecutorBuilder.AppendLine("}");
-                            testExecutorBuilder.AppendLine();
-                        }
-
-                        currentTestExecutor++;
-                        testExecutorBuilder.AppendLine($"void TestExecutor{currentTestExecutor}("
-                                                       + "System.IO.StreamWriter tempLogSw, "
-                                                       + "System.IO.StreamWriter statsCsvSw)");
-                        testExecutorBuilder.AppendLine("{");
-                        testExecutorBuilder.PushIndent();
-
-                        builder.AppendLine($"TestExecutor{currentTestExecutor}(tempLogSw, statsCsvSw);");
-                        testsLeftInCurrentTestExecutor = 1; // Break test executors into groups of 1, which empirically seems to work well
-                    }
-                    else
-                    {
-                        testExecutorBuilder.AppendLine();
-                    }
-
-                    testExecutorBuilder.Append(test.GenerateTestExecution(reporter));
-                    totalTestsEmitted++;
-                    testsLeftInCurrentTestExecutor--;
-                }
-
-                testExecutorBuilder.PopIndent();
-                testExecutorBuilder.AppendLine("}");
-                testExecutorBuilder.AppendLine();
+                builder.AppendLine(outOfProcessTestCount != 0
+                    ? $"TestExecutor{i}(tempLogSw, statsCsvSw, null);"
+                    : $"TestExecutor{i}(tempLogSw, statsCsvSw);");
             }
 
             builder.AppendLine("summary.WriteFooterToTempLog(tempLogSw);");
@@ -432,7 +455,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         builder.AppendLine();
 
         builder.Append(testExecutorBuilder);
-        builder.AppendLine("public static class TestCount { public const int Count = " + totalTestsEmitted.ToString() + "; }");
+        builder.AppendLine("public static class TestCount { public const int Count = " + testInfos.Length.ToString() + "; }");
+        if (outOfProcessTestCount != 0)
+        {
+            builder.AppendLine();
+            builder.AppendLine("#nullable restore annotations");
+        }
         return builder.GetCode();
     }
 
@@ -576,10 +604,22 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
         return builder.GetCode();
     }
 
-    private static string GenerateStandaloneSimpleTestRunner(ImmutableArray<ITestInfo> testInfos, ImmutableDictionary<string, string> aliasMap)
+    private static string GenerateStandaloneSimpleTestRunner(
+        ImmutableArray<ITestInfo> testInfos,
+        ImmutableDictionary<string, string> aliasMap,
+        bool reportOutOfProcessStatus)
     {
-        ITestReporterWrapper reporter = new NoTestReporting();
+        const string testExecutedIdentifier = "outOfProcessTestExecuted";
+        const string skipReasonIdentifier = "outOfProcessSkipReason";
+        ITestReporterWrapper reporter = reportOutOfProcessStatus
+            ? new StandaloneTestReporting(testExecutedIdentifier, skipReasonIdentifier)
+            : new NoTestReporting();
         CodeBuilder builder = new();
+        if (reportOutOfProcessStatus)
+        {
+            builder.AppendLine("#nullable enable");
+            builder.AppendLine();
+        }
         AppendAliasMap(builder, aliasMap);
         builder.AppendLine("class __GeneratedMainWrapper");
         using (builder.NewBracesScope())
@@ -587,6 +627,12 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
             builder.AppendLine("public static int Main()");
             using (builder.NewBracesScope())
             {
+                if (reportOutOfProcessStatus)
+                {
+                    builder.AppendLine($"bool {testExecutedIdentifier} = false;");
+                    builder.AppendLine($"string? {skipReasonIdentifier} = null;");
+                    builder.AppendLine();
+                }
                 builder.AppendLine("try");
                 using (builder.NewBracesScope())
                 {
@@ -600,6 +646,16 @@ public sealed class XUnitWrapperGenerator : IIncrementalGenerator
                 {
                     builder.AppendLine("System.Console.WriteLine(ex.ToString());");
                     builder.AppendLine("return 101;");
+                }
+                if (reportOutOfProcessStatus)
+                {
+                    builder.AppendLine();
+                    builder.AppendLine(@"string? outOfProcessStatusFile = System.Environment.GetEnvironmentVariable(""__TestOutOfProcessStatusFile"");");
+                    builder.AppendLine($"if (!System.String.IsNullOrEmpty(outOfProcessStatusFile) && !{testExecutedIdentifier} && {skipReasonIdentifier} is not null)");
+                    using (builder.NewBracesScope())
+                    {
+                        builder.AppendLine($"System.IO.File.WriteAllText(outOfProcessStatusFile, {skipReasonIdentifier} + System.Environment.NewLine);");
+                    }
                 }
                 builder.AppendLine("return 100;");
             }
