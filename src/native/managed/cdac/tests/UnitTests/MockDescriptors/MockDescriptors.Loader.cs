@@ -64,6 +64,7 @@ internal sealed class MockLoaderModule : TypedView
     private const string FlagsFieldName = "Flags";
     private const string LoaderAllocatorFieldName = "LoaderAllocator";
     private const string DynamicMetadataFieldName = "DynamicMetadata";
+    private const string MetadataGenerationFieldName = "MetadataGeneration";
     private const string SimpleNameFieldName = "SimpleName";
     private const string PathFieldName = "Path";
     private const string FileNameFieldName = "FileName";
@@ -80,14 +81,16 @@ internal sealed class MockLoaderModule : TypedView
     private const string MethodDefToILCodeVersioningStateMapFieldName = "MethodDefToILCodeVersioningStateMap";
     private const string DynamicILBlobTableFieldName = "DynamicILBlobTable";
 
-    public static Layout<MockLoaderModule> CreateLayout(MockTarget.Architecture architecture)
-        => new SequentialLayoutBuilder("Module", architecture)
+    public static Layout<MockLoaderModule> CreateLayout(MockTarget.Architecture architecture, bool includeCodeVersioning = true)
+    {
+        SequentialLayoutBuilder builder = new SequentialLayoutBuilder("Module", architecture)
             .AddPointerField(AssemblyFieldName)
             .AddPointerField(PEAssemblyFieldName)
             .AddPointerField(BaseFieldName)
             .AddUInt32Field(FlagsFieldName)
             .AddPointerField(LoaderAllocatorFieldName)
             .AddPointerField(DynamicMetadataFieldName)
+            .AddUInt32Field(MetadataGenerationFieldName)
             .AddPointerField(SimpleNameFieldName)
             .AddPointerField(PathFieldName)
             .AddPointerField(FileNameFieldName)
@@ -100,10 +103,20 @@ internal sealed class MockLoaderModule : TypedView
             .AddPointerField(MemberRefToDescMapFieldName)
             .AddPointerField(MethodDefToDescMapFieldName)
             .AddPointerField(TypeDefToMethodTableMapFieldName)
-            .AddPointerField(TypeRefToMethodTableMapFieldName)
-            .AddPointerField(MethodDefToILCodeVersioningStateMapFieldName)
+            .AddPointerField(TypeRefToMethodTableMapFieldName);
+
+        // MethodDefToILCodeVersioningStateMap is only emitted when the target was built with
+        // code versioning (FEATURE_CODE_VERSIONING). Builds where it is disabled (e.g. WASM)
+        // omit it from the Module layout entirely.
+        if (includeCodeVersioning)
+        {
+            builder = builder.AddPointerField(MethodDefToILCodeVersioningStateMapFieldName);
+        }
+
+        return builder
             .AddPointerField(DynamicILBlobTableFieldName)
             .Build<MockLoaderModule>();
+    }
 
     public ulong Assembly
     {
@@ -151,6 +164,48 @@ internal sealed class MockLoaderModule : TypedView
     {
         get => ReadPointerField(GrowableSymbolStreamFieldName);
         set => WritePointerField(GrowableSymbolStreamFieldName, value);
+    }
+
+    public int MemberRefToDescMapOffset => Layout.GetField(MemberRefToDescMapFieldName).Offset;
+}
+
+internal sealed class MockModuleLookupMap : TypedView
+{
+    private const string TableDataFieldName = "TableData";
+    private const string NextFieldName = "Next";
+    private const string CountFieldName = "Count";
+    private const string SupportedFlagsMaskFieldName = "SupportedFlagsMask";
+
+    public static Layout<MockModuleLookupMap> CreateLayout(MockTarget.Architecture architecture)
+        => new SequentialLayoutBuilder("ModuleLookupMap", architecture)
+            .AddPointerField(TableDataFieldName)
+            .AddPointerField(NextFieldName)
+            .AddUInt32Field(CountFieldName)
+            .AddNUIntField(SupportedFlagsMaskFieldName)
+            .Build<MockModuleLookupMap>();
+
+    public ulong TableData
+    {
+        get => ReadPointerField(TableDataFieldName);
+        set => WritePointerField(TableDataFieldName, value);
+    }
+
+    public ulong Next
+    {
+        get => ReadPointerField(NextFieldName);
+        set => WritePointerField(NextFieldName, value);
+    }
+
+    public uint Count
+    {
+        get => ReadUInt32Field(CountFieldName);
+        set => WriteUInt32Field(CountFieldName, value);
+    }
+
+    public ulong SupportedFlagsMask
+    {
+        get => ReadPointerField(SupportedFlagsMaskFieldName);
+        set => WritePointerField(SupportedFlagsMaskFieldName, value);
     }
 }
 
@@ -232,6 +287,7 @@ internal sealed class MockLoaderBuilder
     internal Layout<MockLoaderHeap> LoaderHeapLayout { get; }
     internal Layout<MockLoaderHeapBlock> LoaderHeapBlockLayout { get; }
     internal Layout<MockCGrowableSymbolStream> CGrowableSymbolStreamLayout { get; }
+    internal Layout<MockModuleLookupMap> ModuleLookupMapLayout { get; }
 
     private readonly MockMemorySpace.BumpAllocator _allocator;
 
@@ -240,19 +296,20 @@ internal sealed class MockLoaderBuilder
     {
     }
 
-    public MockLoaderBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange)
+    public MockLoaderBuilder(MockMemorySpace.Builder builder, (ulong Start, ulong End) allocationRange, bool includeCodeVersioning = true)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         Builder = builder;
         _allocator = Builder.CreateAllocator(allocationRange.Start, allocationRange.End);
 
-        ModuleLayout = MockLoaderModule.CreateLayout(builder.TargetTestHelpers.Arch);
+        ModuleLayout = MockLoaderModule.CreateLayout(builder.TargetTestHelpers.Arch, includeCodeVersioning);
         AssemblyLayout = MockLoaderAssembly.CreateLayout(builder.TargetTestHelpers.Arch);
         EEConfigLayout = MockEEConfig.CreateLayout(builder.TargetTestHelpers.Arch);
         LoaderHeapLayout = MockLoaderHeap.CreateLayout(builder.TargetTestHelpers.Arch);
         LoaderHeapBlockLayout = MockLoaderHeapBlock.CreateLayout(builder.TargetTestHelpers.Arch);
         CGrowableSymbolStreamLayout = MockCGrowableSymbolStream.CreateLayout(builder.TargetTestHelpers.Arch);
+        ModuleLookupMapLayout = MockModuleLookupMap.CreateLayout(builder.TargetTestHelpers.Arch);
     }
 
     internal MockLoaderHeap AddLoaderHeap(ulong firstBlockAddress = 0)
@@ -312,6 +369,27 @@ internal sealed class MockLoaderBuilder
         MockEEConfig config = EEConfigLayout.Create(_allocator.Allocate((ulong)EEConfigLayout.Size, "EEConfig"));
         config.ModifiableAssemblies = modifiableAssemblies;
         return config;
+    }
+
+    internal void SetMemberRefToDescMap(MockLoaderModule module, params ulong[] entries)
+    {
+        int pointerSize = Builder.TargetTestHelpers.PointerSize;
+        var table = _allocator.Allocate((ulong)((entries.Length + 1) * pointerSize), "MemberRefToDescMap entries");
+        for (int i = 0; i < entries.Length; i++)
+        {
+            Builder.TargetTestHelpers.WritePointer(
+                table.Data.AsSpan().Slice((i + 1) * pointerSize, pointerSize),
+                entries[i]);
+        }
+
+        var map = new MockModuleLookupMap();
+        map.Init(
+            module.Memory.Slice(module.MemberRefToDescMapOffset, ModuleLookupMapLayout.Size),
+            module.Address + (ulong)module.MemberRefToDescMapOffset,
+            ModuleLookupMapLayout);
+        map.TableData = table.Address;
+        map.Count = (uint)entries.Length + 1;
+        map.SupportedFlagsMask = 3;
     }
 
     /// <summary>

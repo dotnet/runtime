@@ -67,7 +67,14 @@ namespace System.Runtime.CompilerServices
             MethodInfo? methodInfo = typeof(TStateMachine).GetMethod("MoveNext", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
             if (methodInfo is not null)
             {
-                return (ulong)methodInfo.MethodHandle.Value;
+#if MONO
+                return (ulong)(nuint)RuntimeMethodHandle.GetNativeCodeInternal(methodInfo.MethodHandle.Value);
+#else
+                if (methodInfo is IRuntimeMethodInfo runtimeMethodInfo)
+                {
+                    return (ulong)(nuint)RuntimeMethodHandle.GetNativeCodeInternal(runtimeMethodInfo);
+                }
+#endif
             }
 
             return 0;

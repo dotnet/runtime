@@ -3,6 +3,14 @@
 
 // C implementations of the pal_* APIs needed by trace.c on non-Windows.
 
+// glibc guards dladdr/Dl_info (used by pal_get_loaded_library) behind _GNU_SOURCE
+// in <dlfcn.h>. As a C translation unit we don't pick it up transitively the way
+// the C++ files do via libstdc++, so request it explicitly. Must be defined
+// before including any system header.
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #if defined(TARGET_FREEBSD)
 #define _WITH_GETLINE
 #endif
@@ -13,6 +21,7 @@
 
 #include <assert.h>
 #include <dirent.h>
+#include <dlfcn.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -93,6 +102,10 @@ bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t 
 #if HAVE_DIRENT_D_TYPE
         int entry_type = entry->d_type;
 #else
+#define DT_UNKNOWN 0
+#define DT_DIR 4
+#define DT_REG 8
+#define DT_LNK 10
         int entry_type = DT_UNKNOWN;
 #endif
 
@@ -293,7 +306,198 @@ pal_char_t* pal_get_default_installation_dir(void)
     }
 
     return pal_strdup(_X("/usr/local/share/dotnet"));
+#elif defined(TARGET_OPENBSD)
+    return pal_strdup(_X("/usr/local/share/dotnet"));
 #else
     return pal_strdup(_X("/usr/share/dotnet"));
 #endif
+}
+
+bool pal_is_path_fully_qualified(const pal_char_t* path)
+{
+    return path != NULL && path[0] == DIR_SEPARATOR;
+}
+
+bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
+{
+    *dll = dlopen(path, RTLD_LAZY);
+    if (*dll == NULL)
+    {
+        trace_error(_X("Failed to load %s, error: %s"), path, dlerror());
+        return false;
+    }
+    return true;
+}
+
+void pal_unload_library(pal_dll_t library)
+{
+    if (dlclose(library) != 0)
+    {
+        trace_warning(_X("Failed to unload library, error: %s"), dlerror());
+    }
+}
+
+pal_proc_t pal_get_symbol(pal_dll_t library, const char* name)
+{
+    void* result = dlsym(library, name);
+    if (result == NULL)
+    {
+        trace_info(_X("Probed for and did not find library symbol %s, error: %s"), name, dlerror());
+    }
+    return result;
+}
+
+bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len)
+{
+    // On Unix pal_char_t is char and the input is already UTF-8, so this is a
+    // length-checked copy rather than an encoding conversion.
+    size_t required = strlen(utf8) + 1;
+    if (required > out_len)
+    {
+        return false;
+    }
+
+    memcpy(out, utf8, required);
+    return true;
+}
+
+// dlopen on some systems only finds a loaded library when given its full path.
+// As a fallback, scan /proc/self/maps for a mapped file whose name contains
+// library_name. On success sets *dll and *out_path (heap-allocated, caller
+// frees) and returns true.
+static bool get_loaded_library_from_proc_maps(const pal_char_t* library_name, pal_dll_t* dll, pal_char_t** out_path)
+{
+    FILE* file = pal_file_open(_X("/proc/self/maps"), _X("r"));
+    if (file == NULL)
+        return false;
+
+    char* line = NULL;
+    size_t line_cap = 0;
+    bool found = false;
+    char found_path[PATH_MAX + 1];
+    while (getline(&line, &line_cap, file) != -1)
+    {
+        // Build the sscanf format dynamically to safely handle parenthesized PATH_MAX values on some platforms (like Haiku)
+        char fmt[64];
+        snprintf(fmt, sizeof(fmt), "%%*p-%%*p %%*[-rwxsp] %%*p %%*[:0-9a-f] %%*d %%%ds\n", PATH_MAX);
+
+        char buf[PATH_MAX + 1]; // + 1 for the NUL terminator
+        if (sscanf(line, fmt, buf) == 1)
+        {
+            const char* last_sep = strrchr(buf, DIR_SEPARATOR);
+            if (last_sep == NULL)
+                continue;
+
+            if (strstr(last_sep, library_name) != NULL)
+            {
+                memcpy(found_path, buf, strlen(buf) + 1);
+                found = true;
+                break;
+            }
+        }
+    }
+
+    free(line);
+    fclose(file);
+    if (!found)
+        return false;
+
+    pal_dll_t dll_maybe = dlopen(found_path, RTLD_LAZY | RTLD_NOLOAD);
+    if (dll_maybe == NULL)
+        return false;
+
+    pal_char_t* path_copy = pal_strdup(found_path);
+    if (path_copy == NULL)
+    {
+        dlclose(dll_maybe);
+        return false;
+    }
+
+    *dll = dll_maybe;
+    *out_path = path_copy;
+    return true;
+}
+
+bool pal_get_loaded_library(
+    const pal_char_t* library_name,
+    const char* symbol_name,
+    pal_dll_t* dll,
+    pal_char_t** out_path)
+{
+    *dll = NULL;
+    *out_path = NULL;
+
+    const pal_char_t* lookup_name = library_name;
+#if defined(TARGET_OSX)
+    pal_char_t* rpath_name = NULL;
+    if (!pal_is_path_fully_qualified(library_name))
+    {
+        size_t cap = STRING_LENGTH(_X("@rpath/")) + pal_strlen(library_name) + 1;
+        rpath_name = (pal_char_t*)malloc(cap * sizeof(pal_char_t));
+        if (rpath_name == NULL)
+            return false;
+
+        pal_str_printf(rpath_name, cap, _X("@rpath/%s"), library_name);
+        lookup_name = rpath_name;
+    }
+#endif
+
+    pal_dll_t dll_maybe = dlopen(lookup_name, RTLD_LAZY | RTLD_NOLOAD);
+#if defined(TARGET_OSX)
+    free(rpath_name);
+#endif
+
+    if (dll_maybe == NULL)
+    {
+        if (pal_is_path_fully_qualified(library_name))
+            return false;
+
+        return get_loaded_library_from_proc_maps(library_name, dll, out_path);
+    }
+
+    // Not all systems support getting the path from just the handle (e.g.
+    // dlinfo), so we rely on the caller passing a symbol name to get (any)
+    // address in the library.
+    if (symbol_name == NULL)
+    {
+        dlclose(dll_maybe);
+        return false;
+    }
+
+    void* proc = dlsym(dll_maybe, symbol_name);
+    Dl_info info;
+    if (proc == NULL || dladdr(proc, &info) == 0)
+    {
+        dlclose(dll_maybe);
+        return false;
+    }
+
+    pal_char_t* path_copy = pal_strdup(info.dli_fname);
+    if (path_copy == NULL)
+    {
+        dlclose(dll_maybe);
+        return false;
+    }
+
+    *dll = dll_maybe;
+    *out_path = path_copy;
+    return true;
+}
+
+void pal_err_print_line(const pal_char_t* message)
+{
+    fputs(message, stderr);
+    fputc('\n', stderr);
+}
+
+void pal_file_vprintf(FILE* f, const pal_char_t* format, va_list vl)
+{
+    vfprintf(f, format, vl);
+    fputc('\n', f);
+}
+
+void pal_out_vprint_line(const pal_char_t* format, va_list vl)
+{
+    vfprintf(stdout, format, vl);
+    fputc('\n', stdout);
 }

@@ -77,7 +77,10 @@ public class SingleFileTestRunner : XunitTestFramework
         discoverer.Find(false, discoverySink, TestFrameworkOptions.ForDiscovery(assemblyConfig));
         discoverySink.Finished.WaitOne();
 
-        string xmlResultFileName = null;
+        string testResultsDirectory = Environment.GetEnvironmentVariable("TEST_RESULTS_DIR");
+        string xmlResultFileName = string.IsNullOrEmpty(testResultsDirectory)
+            ? null
+            : Path.Combine(testResultsDirectory, "testResults.xml");
         XunitFilters filters = new XunitFilters();
         // Quick hack wo much validation to get args that are passed (notrait, xml)
         Dictionary<string, List<string>> noTraits = new Dictionary<string, List<string>>();

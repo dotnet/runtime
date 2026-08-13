@@ -368,6 +368,7 @@ set( JIT_HEADERS
   host.h
   hostallocator.h
   hwintrinsic.h
+  hwintrinsiclist.h
   ICorJitInfo_names_generated.h
   ICorJitInfo_wrapper_generated.hpp
   inline.h
@@ -432,6 +433,7 @@ set( JIT_HEADERS
   varset.h
   vartype.h
   vartypesdef.h
+  wellknownargs.h
 )
 
 # Arch specific headers
@@ -766,6 +768,17 @@ if (CLR_CMAKE_TARGET_UNIX)
       else()
         install_clr(TARGETS clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
       endif()
+    endif()
+endif()
+
+# crossgen2 and ILC load the target-specific JIT (e.g. clrjit_win_x64_x64) rather than clrjit,
+# so it has to be part of the jit component for a build that only requests that component to be
+# able to run them. This mirrors what the block above already does for Unix targets.
+if (CLR_CMAKE_TARGET_WIN32)
+    if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
+      install_clr(TARGETS clrjit_universal_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
+    else()
+      install_clr(TARGETS clrjit_win_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
     endif()
 endif()
 

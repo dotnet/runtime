@@ -39,16 +39,14 @@ namespace System.Text.Json.Serialization
 
         internal ConverterStrategy ConverterStrategy
         {
-            get => _converterStrategy;
+            get;
             init
             {
                 CanUseDirectReadOrWrite = value == ConverterStrategy.Value && IsInternalConverter;
                 RequiresReadAhead = value == ConverterStrategy.Value;
-                _converterStrategy = value;
+                field = value;
             }
         }
-
-        private ConverterStrategy _converterStrategy;
 
         /// <summary>
         /// Invoked by the base contructor to populate the initial value of the <see cref="ConverterStrategy"/> property.

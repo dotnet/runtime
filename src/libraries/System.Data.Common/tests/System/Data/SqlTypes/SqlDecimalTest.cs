@@ -566,8 +566,10 @@ namespace System.Data.Tests.SqlTypes
         //[Category ("MobileNotWorking")]
         public void ReadWriteXmlTest()
         {
-            string xml1 = "<?xml version=\"1.0\" encoding=\"utf-16\"?><decimal>4556.89756</decimal>";
-            string xml2 = "<?xml version=\"1.0\" encoding=\"utf-16\"?><decimal>-6445.9999</decimal>";
+            // These reflect the exact decimal representation of the double values below. Converting a
+            // double to decimal is correctly rounded, so it preserves the full value rather than truncating.
+            string xml1 = "<?xml version=\"1.0\" encoding=\"utf-16\"?><decimal>4556.8975600000003396417014301</decimal>";
+            string xml2 = "<?xml version=\"1.0\" encoding=\"utf-16\"?><decimal>-6445.9998999999997977283783257</decimal>";
             string xml3 = "<?xml version=\"1.0\" encoding=\"utf-16\"?><decimal>0x455687AB3E4D56F</decimal>";
             decimal test1 = new decimal(4556.89756);
             // This one fails because of a possible conversion bug

@@ -41,3 +41,13 @@ module Main =
         let v = f.M 0 65000 0 0 0 0 0 0 0 0 0 0 0 0 0 0
         Assert.Equal(2112532500, v)
 
+    [<EntryPoint>]
+    let entryPoint _argv =
+        let f : Foo = Bar()
+        let v = f.M 0 65000 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+        if v = 2112532500 then
+            printfn "PASS"
+            100
+        else
+            printfn "FAIL: Result was %A" v
+            -1

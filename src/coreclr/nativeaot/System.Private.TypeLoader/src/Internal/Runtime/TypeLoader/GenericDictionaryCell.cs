@@ -4,7 +4,9 @@
 
 using System;
 using System.Diagnostics;
+using System.Runtime;
 
+using Internal.Metadata.NativeFormat;
 using Internal.NativeFormat;
 using Internal.Runtime.Augments;
 using Internal.Runtime.CompilerServices;
@@ -99,13 +101,45 @@ namespace Internal.Runtime.TypeLoader
 
             internal override unsafe IntPtr Create(TypeBuilder builder)
             {
-                var dispatchCellAndComposition = (nint*)MemoryHelpers.AllocateMemory((2 + 2) * sizeof(nint));
-                dispatchCellAndComposition[0] = 0;
-                dispatchCellAndComposition[1] = 0;
-                dispatchCellAndComposition[2] = builder.GetRuntimeTypeHandle(InterfaceType).Value;
-                dispatchCellAndComposition[3] = Slot;
+                var dispatchCell = (DynamicDispatchCell.DynamicInterfaceDispatchCell*)MemoryHelpers.AllocateMemory(sizeof(DynamicDispatchCell.DynamicInterfaceDispatchCell));
+                dispatchCell->DispatchCell.Cell = default;
+                dispatchCell->InterfaceType = builder.GetRuntimeTypeHandle(InterfaceType).ToIntPtr();
+                dispatchCell->Slot = Slot;
 
-                return (IntPtr)dispatchCellAndComposition;
+                return (IntPtr)dispatchCell;
+            }
+        }
+
+        private class GvmDispatchCell : GenericDictionaryCell
+        {
+            internal MethodDesc Method;
+
+            internal override void Prepare(TypeBuilder builder)
+            {
+                if (Method.IsCanonicalMethod(CanonicalFormKind.Any))
+                    Environment.FailFast("Unable to compute GVM dispatch information for a canonical method.");
+
+                builder.RegisterForPreparation(Method.OwningType);
+                foreach (var type in Method.Instantiation)
+                    builder.RegisterForPreparation(type);
+            }
+
+            internal override unsafe IntPtr Create(TypeBuilder builder)
+            {
+                var dispatchCell = (DynamicDispatchCell.DynamicGvmDispatchCell*)MemoryHelpers.AllocateMemory(sizeof(DynamicDispatchCell.DynamicGvmDispatchCell));
+                dispatchCell->DispatchCell.Cell = default;
+                dispatchCell->OwningType = builder.GetRuntimeTypeHandle(Method.OwningType).ToIntPtr();
+                dispatchCell->Handle = Method.NameAndSignature.Handle;
+                dispatchCell->IsAsyncVariant = Method.AsyncVariant;
+
+                MethodTable** instantiation = (MethodTable**)MemoryHelpers.AllocateMemory(sizeof(MethodTable*) * Method.Instantiation.Length);
+                for (int i = 0; i < Method.Instantiation.Length; i++)
+                {
+                    instantiation[i] = (MethodTable*)builder.GetRuntimeTypeHandle(Method.Instantiation[i]).Value;
+                }
+
+                dispatchCell->Instantiation = instantiation;
+                return (IntPtr)dispatchCell;
             }
         }
 
@@ -334,8 +368,7 @@ namespace Internal.Runtime.TypeLoader
                 RuntimeMethodHandle handle = TypeLoaderEnvironment.Instance.GetRuntimeMethodHandleForComponents(
                     builder.GetRuntimeTypeHandle(Method.OwningType),
                     Method.NameAndSignature.Handle,
-                    genericArgHandles,
-                    Method.AsyncVariant);
+                    genericArgHandles);
 
                 return *(IntPtr*)&handle;
             }
@@ -462,6 +495,15 @@ namespace Internal.Runtime.TypeLoader
                         TypeLoaderLogger.WriteLine("InterfaceCall: " + interfaceType.ToString() + ", slot #" + slot.LowLevelToString());
 
                         cell = new InterfaceCallCell() { InterfaceType = interfaceType, Slot = (int)slot };
+                    }
+                    break;
+
+                case FixupSignatureKind.GvmDispatchCell:
+                    {
+                        var method = nativeLayoutInfoLoadContext.GetMethod(ref parser);
+                        TypeLoaderLogger.WriteLine("GvmDispatchCell: " + method.OwningType.ToString() + "::" + method.NameAndSignature.GetName());
+
+                        cell = new GvmDispatchCell() { Method = method };
                     }
                     break;
 

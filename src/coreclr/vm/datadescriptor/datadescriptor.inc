@@ -214,10 +214,11 @@ CDAC_TYPE_END(Array)
 
 CDAC_TYPE_BEGIN(Delegate)
 CDAC_TYPE_SIZE(sizeof(DelegateObject))
+CDAC_TYPE_FIELD(Delegate, T_POINTER, HelperObject, cdac_data<DelegateObject>::HelperObject)
 CDAC_TYPE_FIELD(Delegate, T_POINTER, Target, cdac_data<DelegateObject>::Target)
 CDAC_TYPE_FIELD(Delegate, T_POINTER, MethodPtr, cdac_data<DelegateObject>::MethodPtr)
 CDAC_TYPE_FIELD(Delegate, T_POINTER, MethodPtrAux, cdac_data<DelegateObject>::MethodPtrAux)
-CDAC_TYPE_FIELD(Delegate, T_NINT, InvocationCount, cdac_data<DelegateObject>::InvocationCount)
+CDAC_TYPE_FIELD(Delegate, T_NINT, ExtraData, cdac_data<DelegateObject>::ExtraData)
 CDAC_TYPE_END(Delegate)
 
 CDAC_TYPE_BEGIN(TypedByRef)
@@ -308,6 +309,7 @@ CDAC_TYPE_FIELD(Module, T_POINTER, Base, cdac_data<Module>::Base)
 CDAC_TYPE_FIELD(Module, T_UINT32, Flags, cdac_data<Module>::Flags)
 CDAC_TYPE_FIELD(Module, T_POINTER, LoaderAllocator, cdac_data<Module>::LoaderAllocator)
 CDAC_TYPE_FIELD(Module, T_POINTER, DynamicMetadata, cdac_data<Module>::DynamicMetadata)
+CDAC_TYPE_FIELD(Module, T_UINT32, MetadataGeneration, cdac_data<Module>::MetadataGeneration)
 CDAC_TYPE_FIELD(Module, T_POINTER, SimpleName, cdac_data<Module>::SimpleName)
 CDAC_TYPE_FIELD(Module, T_POINTER, Path, cdac_data<Module>::Path)
 CDAC_TYPE_FIELD(Module, T_POINTER, FileName, cdac_data<Module>::FileName)
@@ -401,7 +403,6 @@ CDAC_TYPE_FIELD(LoaderAllocator, T_UINT32, ReferenceCount, cdac_data<LoaderAlloc
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, HighFrequencyHeap, cdac_data<LoaderAllocator>::HighFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, LowFrequencyHeap, cdac_data<LoaderAllocator>::LowFrequencyHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, StaticsHeap, cdac_data<LoaderAllocator>::StaticsHeap)
-CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, StubHeap, cdac_data<LoaderAllocator>::StubHeap)
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, ExecutableHeap, cdac_data<LoaderAllocator>::ExecutableHeap)
 #ifdef HAS_FIXUP_PRECODE
 CDAC_TYPE_FIELD(LoaderAllocator, T_POINTER, FixupPrecodeHeap, cdac_data<LoaderAllocator>::FixupPrecodeHeap)
@@ -441,6 +442,8 @@ CDAC_TYPE_BEGIN(PEAssembly)
 CDAC_TYPE_INDETERMINATE(PEAssembly)
 CDAC_TYPE_FIELD(PEAssembly, T_POINTER, PEImage, cdac_data<PEAssembly>::PEImage)
 CDAC_TYPE_FIELD(PEAssembly, T_POINTER, AssemblyBinder, cdac_data<PEAssembly>::AssemblyBinder)
+CDAC_TYPE_FIELD(PEAssembly, T_INT32, MDImportIsRW, cdac_data<PEAssembly>::MDImportIsRW)
+CDAC_TYPE_FIELD(PEAssembly, T_POINTER, MDImport, cdac_data<PEAssembly>::MDImport)
 CDAC_TYPE_END(PEAssembly)
 
 CDAC_TYPE_BEGIN(AssemblyBinder)
@@ -450,6 +453,7 @@ CDAC_TYPE_END(AssemblyBinder)
 
 CDAC_TYPE_BEGIN(PEImage)
 CDAC_TYPE_INDETERMINATE(PEImage)
+CDAC_TYPE_FIELD(PEImage, T_POINTER, FlatImageLayout, cdac_data<PEImage>::FlatImageLayout)
 CDAC_TYPE_FIELD(PEImage, T_POINTER, LoadedImageLayout, cdac_data<PEImage>::LoadedImageLayout)
 CDAC_TYPE_FIELD(PEImage, TYPE(ProbeExtensionResult), ProbeExtensionResult, cdac_data<PEImage>::ProbeExtensionResult)
 CDAC_TYPE_END(PEImage)
@@ -489,8 +493,6 @@ CDAC_TYPE_END(SystemDomain)
 CDAC_TYPE_BEGIN(Debugger)
 CDAC_TYPE_INDETERMINATE(Debugger)
 CDAC_TYPE_FIELD(Debugger, T_INT32, LeftSideInitialized, offsetof(Debugger, m_fLeftSideInitialized))
-CDAC_TYPE_FIELD(Debugger, T_UINT32, Defines, offsetof(Debugger, m_defines))
-CDAC_TYPE_FIELD(Debugger, T_UINT32, MDStructuresVersion, offsetof(Debugger, m_mdDataStructureVersion))
 CDAC_TYPE_FIELD(Debugger, T_POINTER, RCThread, cdac_data<Debugger>::RCThread)
 CDAC_TYPE_FIELD(Debugger, T_INT32, RSRequestedSync, cdac_data<Debugger>::RSRequestedSync)
 CDAC_TYPE_FIELD(Debugger, T_INT32, SendExceptionsOutsideOfJMC, cdac_data<Debugger>::SendExceptionsOutsideOfJMC)
@@ -502,6 +504,20 @@ CDAC_TYPE_BEGIN(DebuggerRCThread)
 CDAC_TYPE_INDETERMINATE(DebuggerRCThread)
 CDAC_TYPE_FIELD(DebuggerRCThread, T_POINTER, DCB, cdac_data<DebuggerRCThread>::DCB)
 CDAC_TYPE_END(DebuggerRCThread)
+
+#if defined(TARGET_AMD64)
+CDAC_TYPE_BEGIN(DebuggerPatchTable)
+CDAC_TYPE_INDETERMINATE(DebuggerPatchTable)
+CDAC_TYPE_FIELD(DebuggerPatchTable, T_POINTER, Entries, cdac_data<DebuggerPatchTable>::Entries)
+CDAC_TYPE_FIELD(DebuggerPatchTable, T_UINT32, Count, cdac_data<DebuggerPatchTable>::Count)
+CDAC_TYPE_END(DebuggerPatchTable)
+
+CDAC_TYPE_BEGIN(DebuggerControllerPatch)
+CDAC_TYPE_SIZE(sizeof(DebuggerControllerPatch))
+CDAC_TYPE_FIELD(DebuggerControllerPatch, T_POINTER, Address, offsetof(DebuggerControllerPatch, address))
+CDAC_TYPE_FIELD(DebuggerControllerPatch, T_NUINT, Opcode, offsetof(DebuggerControllerPatch, opcode))
+CDAC_TYPE_END(DebuggerControllerPatch)
+#endif // TARGET_AMD64
 
 CDAC_TYPE_BEGIN(MemoryRange)
 CDAC_TYPE_SIZE(sizeof(MemoryRange))
@@ -523,11 +539,16 @@ CDAC_TYPE_FIELD(ArrayListBlock, T_UINT32, Size, cdac_data<ArrayListBase>::Size)
 CDAC_TYPE_FIELD(ArrayListBlock, T_POINTER, ArrayStart, cdac_data<ArrayListBase>::ArrayStart)
 CDAC_TYPE_END(ArrayListBlock)
 
+CDAC_TYPE_BEGIN(Signature)
+CDAC_TYPE_SIZE(sizeof(Signature))
+CDAC_TYPE_FIELD(Signature, T_POINTER, SignaturePointer, cdac_data<Signature>::SignaturePointer)
+CDAC_TYPE_FIELD(Signature, T_UINT32, SignatureLength, cdac_data<Signature>::SignatureLength)
+CDAC_TYPE_END(Signature)
+
 CDAC_TYPE_BEGIN(VASigCookie)
 CDAC_TYPE_INDETERMINATE(VASigCookie)
 CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SizeOfArgs, offsetof(VASigCookie, sizeOfArgs))
-CDAC_TYPE_FIELD(VASigCookie, T_POINTER, SignaturePointer, cdac_data<VASigCookie>::SignaturePointer)
-CDAC_TYPE_FIELD(VASigCookie, T_UINT32, SignatureLength, cdac_data<VASigCookie>::SignatureLength)
+CDAC_TYPE_FIELD(VASigCookie, TYPE(Signature), Signature, cdac_data<VASigCookie>::Signature)
 CDAC_TYPE_END(VASigCookie)
 
 // RuntimeTypeSystem
@@ -572,7 +593,26 @@ CDAC_TYPE_FIELD(EEClass, T_UINT16, NumStaticFields, cdac_data<EEClass>::NumStati
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumThreadStaticFields, cdac_data<EEClass>::NumThreadStaticFields)
 CDAC_TYPE_FIELD(EEClass, T_UINT16, NumNonVirtualSlots, cdac_data<EEClass>::NumNonVirtualSlots)
 CDAC_TYPE_FIELD(EEClass, T_UINT8, BaseSizePadding, cdac_data<EEClass>::BaseSizePadding)
+CDAC_TYPE_FIELD(EEClass, T_POINTER, OptionalFields, cdac_data<EEClass>::OptionalFields)
 CDAC_TYPE_END(EEClass)
+
+CDAC_TYPE_BEGIN(EEClassOptionalFields)
+CDAC_TYPE_INDETERMINATE(EEClassOptionalFields)
+#ifdef UNIX_AMD64_ABI
+CDAC_TYPE_FIELD(EEClassOptionalFields, TYPE(SystemVEightByteRegistersInfo), EightByteRegistersInfo, cdac_data<EEClassOptionalFields>::EightByteRegistersInfo)
+#endif // UNIX_AMD64_ABI
+CDAC_TYPE_END(EEClassOptionalFields)
+
+#ifdef UNIX_AMD64_ABI
+CDAC_TYPE_BEGIN(SystemVEightByteRegistersInfo)
+CDAC_TYPE_INDETERMINATE(SystemVEightByteRegistersInfo)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, NumEightBytes, cdac_data<SystemVEightByteRegistersInfo>::NumEightBytes)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassification0, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassification0)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteClassification1, cdac_data<SystemVEightByteRegistersInfo>::EightByteClassification1)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSize0, cdac_data<SystemVEightByteRegistersInfo>::EightByteSize0)
+CDAC_TYPE_FIELD(SystemVEightByteRegistersInfo, T_UINT8, EightByteSize1, cdac_data<SystemVEightByteRegistersInfo>::EightByteSize1)
+CDAC_TYPE_END(SystemVEightByteRegistersInfo)
+#endif // UNIX_AMD64_ABI
 
 CDAC_TYPE_BEGIN(GenericsDictInfo)
 CDAC_TYPE_INDETERMINATE(GenericsDictInfo)
@@ -601,6 +641,7 @@ CDAC_TYPE_BEGIN(TypeVarTypeDesc)
 CDAC_TYPE_INDETERMINATE(TypeVarTypeDesc)
 CDAC_TYPE_FIELD(TypeVarTypeDesc, T_POINTER, Module, cdac_data<TypeVarTypeDesc>::Module)
 CDAC_TYPE_FIELD(TypeVarTypeDesc, T_UINT32, Token, cdac_data<TypeVarTypeDesc>::Token)
+CDAC_TYPE_FIELD(TypeVarTypeDesc, T_UINT32, Index, cdac_data<TypeVarTypeDesc>::Index)
 CDAC_TYPE_END(TypeVarTypeDesc)
 
 CDAC_TYPE_BEGIN(FnPtrTypeDesc)
@@ -615,6 +656,54 @@ CDAC_TYPE_BEGIN(DynamicMetadata)
 CDAC_TYPE_FIELD(DynamicMetadata, T_UINT32, Size, cdac_data<DynamicMetadata>::Size)
 CDAC_TYPE_FIELD(DynamicMetadata, T_ARRAY(T_UINT8), Data, cdac_data<DynamicMetadata>::Data)
 CDAC_TYPE_END(DynamicMetadata)
+
+CDAC_TYPE_BEGIN(MDInternalRW)
+CDAC_TYPE_INDETERMINATE(MDInternalRW)
+CDAC_TYPE_FIELD(MDInternalRW, T_POINTER, Stgdb, offsetof(MDInternalRW, m_pStgdb))
+CDAC_TYPE_END(MDInternalRW)
+
+CDAC_TYPE_BEGIN(CLiteWeightStgdbRW)
+CDAC_TYPE_INDETERMINATE(CLiteWeightStgdbRW)
+CDAC_TYPE_FIELD(CLiteWeightStgdbRW, TYPE(CMiniMdRW), MiniMd, cdac_data<CLiteWeightStgdbRW>::MiniMd)
+CDAC_TYPE_FIELD(CLiteWeightStgdbRW, T_POINTER, MetadataAddress, cdac_data<CLiteWeightStgdbRW>::MetadataAddress)
+CDAC_TYPE_END(CLiteWeightStgdbRW)
+
+CDAC_TYPE_BEGIN(CMiniMdRW)
+CDAC_TYPE_INDETERMINATE(CMiniMdRW)
+CDAC_TYPE_FIELD(CMiniMdRW, TYPE(CMiniMdSchema), Schema, cdac_data<CMiniMdBase>::Schema)
+CDAC_TYPE_FIELD(CMiniMdRW, T_UINT32, TableCount, cdac_data<CMiniMdBase>::TableCount)
+CDAC_TYPE_FIELD(CMiniMdRW, T_UINT32, All4ByteColumns, cdac_data<CMiniMdRW>::All4ByteColumns)
+CDAC_TYPE_FIELD(CMiniMdRW, TYPE(TableRW), Tables, cdac_data<CMiniMdRW>::Tables)
+CDAC_TYPE_FIELD(CMiniMdRW, TYPE(StgPool), StringHeap, cdac_data<CMiniMdRW>::StringHeap)
+CDAC_TYPE_FIELD(CMiniMdRW, TYPE(StgPool), BlobHeap, cdac_data<CMiniMdRW>::BlobHeap)
+CDAC_TYPE_FIELD(CMiniMdRW, TYPE(StgPool), UserStringHeap, cdac_data<CMiniMdRW>::UserStringHeap)
+CDAC_TYPE_FIELD(CMiniMdRW, TYPE(StgPool), GuidHeap, cdac_data<CMiniMdRW>::GuidHeap)
+CDAC_TYPE_END(CMiniMdRW)
+
+CDAC_TYPE_BEGIN(CMiniMdSchema)
+CDAC_TYPE_INDETERMINATE(CMiniMdSchema)
+CDAC_TYPE_FIELD(CMiniMdSchema, T_UINT8, Heaps, offsetof(CMiniMdSchema, m_heaps))
+CDAC_TYPE_FIELD(CMiniMdSchema, T_UINT64, Sorted, offsetof(CMiniMdSchema, m_sorted))
+CDAC_TYPE_FIELD(CMiniMdSchema, T_ARRAY(T_UINT32), RecordCounts, offsetof(CMiniMdSchema, m_cRecs))
+CDAC_TYPE_END(CMiniMdSchema)
+
+CDAC_TYPE_BEGIN(TableRW)
+CDAC_TYPE_SIZE(sizeof(MetaData::TableRW))
+CDAC_TYPE_END(TableRW)
+
+CDAC_TYPE_BEGIN(StgPoolSeg)
+CDAC_TYPE_INDETERMINATE(StgPoolSeg)
+CDAC_TYPE_FIELD(StgPoolSeg, T_POINTER, SegData, cdac_data<StgPoolSeg>::SegData)
+CDAC_TYPE_FIELD(StgPoolSeg, T_POINTER, NextSegment, cdac_data<StgPoolSeg>::NextSegment)
+CDAC_TYPE_FIELD(StgPoolSeg, T_UINT32, DataSize, cdac_data<StgPoolSeg>::DataSize)
+CDAC_TYPE_END(StgPoolSeg)
+
+CDAC_TYPE_BEGIN(StgPool)
+CDAC_TYPE_INDETERMINATE(StgPool)
+CDAC_TYPE_FIELD(StgPool, T_POINTER, SegData, cdac_data<StgPool>::SegData)
+CDAC_TYPE_FIELD(StgPool, T_POINTER, NextSegment, cdac_data<StgPool>::NextSegment)
+CDAC_TYPE_FIELD(StgPool, T_UINT32, DataSize, cdac_data<StgPool>::DataSize)
+CDAC_TYPE_END(StgPool)
 
 #ifdef STRESS_LOG
 CDAC_TYPE_BEGIN(StressLog)
@@ -651,7 +740,6 @@ CDAC_TYPE_END(ThreadStressLog)
 
 CDAC_TYPE_BEGIN(StressLogChunk)
 CDAC_TYPE_SIZE(sizeof(StressLogChunk))
-CDAC_TYPE_FIELD(StressLogChunk, T_POINTER, Prev, offsetof(StressLogChunk, prev))
 CDAC_TYPE_FIELD(StressLogChunk, T_POINTER, Next, offsetof(StressLogChunk, next))
 CDAC_TYPE_FIELD(StressLogChunk, T_ARRAY(T_UINT8), Buf, offsetof(StressLogChunk, buf))
 CDAC_TYPE_FIELD(StressLogChunk, T_UINT32, Sig1, offsetof(StressLogChunk, dwSig1))
@@ -706,7 +794,8 @@ CDAC_TYPE_END(NativeCodeSlot)
 
 CDAC_TYPE_BEGIN(AsyncMethodData)
 CDAC_TYPE_SIZE(sizeof(AsyncMethodData))
-CDAC_TYPE_FIELD(AsyncMethodData, T_UINT32, Flags, offsetof(AsyncMethodData, flags))
+CDAC_TYPE_FIELD(AsyncMethodData, T_UINT32, Flags, cdac_data<AsyncMethodData>::Flags)
+CDAC_TYPE_FIELD(AsyncMethodData, TYPE(Signature), Signature, cdac_data<AsyncMethodData>::Signature)
 CDAC_TYPE_END(AsyncMethodData)
 
 CDAC_TYPE_BEGIN(InstantiatedMethodDesc)
@@ -862,7 +951,20 @@ CDAC_TYPE_FIELD(ReadyToRunInfo, T_UINT32, NumImportSections, cdac_data<ReadyToRu
 CDAC_TYPE_FIELD(ReadyToRunInfo, TYPE(HashMap), EntryPointToMethodDescMap, cdac_data<ReadyToRunInfo>::EntryPointToMethodDescMap)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, LoadedImageBase, cdac_data<ReadyToRunInfo>::LoadedImageBase)
 CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, Composite, cdac_data<ReadyToRunInfo>::Composite)
+#ifdef TARGET_WASM
+CDAC_TYPE_FIELD(ReadyToRunInfo, T_POINTER, MinVirtualIP, cdac_data<ReadyToRunInfo>::MinVirtualIP)
+#endif // TARGET_WASM
 CDAC_TYPE_END(ReadyToRunInfo)
+
+#ifdef TARGET_WASM
+CDAC_TYPE_BEGIN(FunctionTableIndexRangeSection)
+CDAC_TYPE_INDETERMINATE(FunctionTableIndexRangeSection)
+CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_UINT32, MinFunctionTableIndex, cdac_data<FunctionTableIndexRangeSection>::MinFunctionTableIndex)
+CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_UINT32, NumRuntimeFunctions, cdac_data<FunctionTableIndexRangeSection>::NumRuntimeFunctions)
+CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_POINTER, R2RModule, cdac_data<FunctionTableIndexRangeSection>::R2RModule)
+CDAC_TYPE_FIELD(FunctionTableIndexRangeSection, T_POINTER, Next, cdac_data<FunctionTableIndexRangeSection>::Next)
+CDAC_TYPE_END(FunctionTableIndexRangeSection)
+#endif // TARGET_WASM
 
 CDAC_TYPE_BEGIN(ReadyToRunHeader)
 CDAC_TYPE_INDETERMINATE(ReadyToRunHeader)
@@ -1046,7 +1148,18 @@ CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, EndAddress, offsetof(HeapList, endA
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, MapBase, offsetof(HeapList, mapBase))
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, HeaderMap, offsetof(HeapList, pHdrMap))
 CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, Heap, offsetof(HeapList, pHeap))
+#ifdef TARGET_64BIT
+CDAC_TYPE_FIELD(CodeHeapListNode, T_POINTER, CLRPersonalityRoutine, offsetof(HeapList, CLRPersonalityRoutine))
+#endif
 CDAC_TYPE_END(CodeHeapListNode)
+
+#if !defined(TARGET_UNIX) && !defined(TARGET_X86)
+CDAC_TYPE_BEGIN(DynamicFunctionTable)
+CDAC_TYPE_INDETERMINATE(DynamicFunctionTable)
+CDAC_TYPE_FIELD(DynamicFunctionTable, T_POINTER, MinimumAddress, offsetof(DYNAMIC_FUNCTION_TABLE, MinimumAddress))
+CDAC_TYPE_FIELD(DynamicFunctionTable, T_POINTER, Context, offsetof(DYNAMIC_FUNCTION_TABLE, Context))
+CDAC_TYPE_END(DynamicFunctionTable)
+#endif // !defined(TARGET_UNIX) && !defined(TARGET_X86)
 
 CDAC_TYPE_BEGIN(CodeHeap)
 CDAC_TYPE_INDETERMINATE(CodeHeap)
@@ -1097,6 +1210,8 @@ CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, RejitState, cdac_data<ILCodeVersion
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_POINTER, ILAddress, cdac_data<ILCodeVersionNode>::ILAddress)
 CDAC_TYPE_FIELD(ILCodeVersionNode, TYPE(InstrumentedILOffsetMapping), InstrumentedILMap, cdac_data<ILCodeVersionNode>::InstrumentedILMap)
 CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Deoptimized, cdac_data<ILCodeVersionNode>::Deoptimized)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_UINT32, Source, cdac_data<ILCodeVersionNode>::Source)
+CDAC_TYPE_FIELD(ILCodeVersionNode, T_NUINT, EnCVersion, cdac_data<ILCodeVersionNode>::EnCVersion)
 CDAC_TYPE_END(ILCodeVersionNode)
 
 CDAC_TYPE_BEGIN(InstrumentedILOffsetMapping)
@@ -1573,6 +1688,8 @@ CDAC_GLOBAL_STRING(Architecture, wasm)
 
 CDAC_GLOBAL_STRING(RuntimeFlavor, Coreclr)
 
+CDAC_GLOBAL_STRING(RuntimeProductVersionString, RuntimeProductVersion)
+
 CDAC_GLOBAL_STRING(RID, RID_STRING)
 
 CDAC_GLOBAL(GCInfoVersion, T_UINT32, GCINFO_VERSION)
@@ -1583,8 +1700,14 @@ CDAC_GLOBAL_POINTER(ThreadStore, &ThreadStore::s_pThreadStore)
 CDAC_GLOBAL_POINTER(FinalizerThread, &::g_pFinalizerThread)
 CDAC_GLOBAL_POINTER(GCThread, &::g_pSuspensionThread)
 CDAC_GLOBAL_POINTER(EEConfig, &::g_pConfig)
+#ifndef FEATURE_PORTABLE_ENTRYPOINTS
+CDAC_GLOBAL_POINTER(ThePreStub, &g_cdacThePreStub)
+#endif // !FEATURE_PORTABLE_ENTRYPOINTS
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_POINTER(Debugger, &::g_pDebugger)
+#if defined(TARGET_AMD64)
+CDAC_GLOBAL_POINTER(DebuggerPatchTable, cdac_data<DebuggerController>::PatchTable)
+#endif // TARGET_AMD64
 CDAC_GLOBAL_POINTER(CLRJitAttachState, &::CLRJitAttachState)
 CDAC_GLOBAL_POINTER(CORDebuggerControlFlags, &::g_CORDebuggerControlFlags)
 CDAC_GLOBAL(MaxHijackFunctions, T_UINT32, cdac_data<Debugger>::MaxHijackFunctions)
@@ -1635,6 +1758,7 @@ CDAC_GLOBAL(DirectorySeparator, T_UINT8, (uint8_t)DIRECTORY_SEPARATOR_CHAR_A)
 CDAC_GLOBAL(HashMapSlotsPerBucket, T_UINT32, SLOTS_PER_BUCKET)
 CDAC_GLOBAL(HashMapValueMask, T_UINT64, VALUE_MASK)
 CDAC_GLOBAL(MethodDescAlignment, T_UINT64, MethodDesc::ALIGNMENT)
+CDAC_GLOBAL(CorDBDefaultEnCFunctionVersion, T_NUINT, CorDB_DEFAULT_ENC_FUNCTION_VERSION)
 CDAC_GLOBAL(ArrayBaseSize, T_UINT32, ARRAYBASE_BASESIZE)
 CDAC_GLOBAL(SyncBlockValueToObjectOffset, T_UINT16, OBJHEADER_SIZE - cdac_data<ObjHeader>::SyncBlockValue)
 CDAC_GLOBAL(StubCodeBlockLast, T_UINT8, STUB_CODE_BLOCK_LAST)
@@ -1682,7 +1806,7 @@ CDAC_GLOBAL_POINTER(TlsIndexBase, &::_tls_index)
 CDAC_GLOBAL(StressLogEnabled, T_UINT8, 1)
 CDAC_GLOBAL_POINTER(StressLog, &StressLog::theLog)
 CDAC_GLOBAL(StressLogHasModuleTable, T_UINT8, 1)
-CDAC_GLOBAL(StressLogMaxModules, T_UINT64, cdac_offsets<StressLog>::MAX_MODULES)
+CDAC_GLOBAL(StressLogMaxModules, T_NUINT, cdac_offsets<StressLog>::MAX_MODULES)
 CDAC_GLOBAL(StressLogChunkSize, T_UINT32, STRESSLOG_CHUNK_SIZE)
 CDAC_GLOBAL(StressLogValidChunkSig, T_UINT32, StressLogChunk::ValidChunkSig)
 CDAC_GLOBAL(StressLogMaxMessageSize, T_UINT64, (uint64_t)StressMsg::maxMsgSize)
@@ -1691,6 +1815,9 @@ CDAC_GLOBAL(StressLogEnabled, T_UINT8, 0)
 #endif
 CDAC_GLOBAL_POINTER(ExecutionManagerCodeRangeMapAddress, cdac_data<ExecutionManager>::CodeRangeMapAddress)
 CDAC_GLOBAL_POINTER(EEJitManagerAddress, cdac_data<ExecutionManager>::EEJitManagerAddress)
+#ifdef TARGET_WASM
+CDAC_GLOBAL_POINTER(FunctionTableIndexRangeList, cdac_data<ExecutionManager>::FunctionTableIndexRangeListAddress)
+#endif // TARGET_WASM
 CDAC_GLOBAL_POINTER(PlatformMetadata, &::g_cdacPlatformMetadata)
 #ifdef PROFILING_SUPPORTED
 CDAC_GLOBAL_POINTER(ProfilerControlBlock, &::g_profControlBlock)
@@ -1725,6 +1852,7 @@ CDAC_GLOBAL(RCWInterfaceCacheSize, T_UINT32, INTERFACE_ENTRY_CACHE_SIZE)
 // When adding a new subdescriptor, EnumMemDescriptors must be updated appropriately.
 CDAC_GLOBAL_SUB_DESCRIPTOR(GC, &(g_gc_dac_vars.gc_descriptor))
 
+// Contract versions for .NET 11 are frozen and must not be changed in any .NET 11 release branch.
 CDAC_GLOBAL_CONTRACT(AuxiliarySymbols, c1)
 #if FEATURE_COMINTEROP
 CDAC_GLOBAL_CONTRACT(BuiltInCOM, c1)
@@ -1740,13 +1868,13 @@ CDAC_GLOBAL_CONTRACT(DacStreams, c1)
 #if defined(DEBUGGING_SUPPORTED) && !defined(TARGET_WASM)
 CDAC_GLOBAL_CONTRACT(Debugger, c1)
 #endif // DEBUGGING_SUPPORTED && !TARGET_WASM
-CDAC_GLOBAL_CONTRACT(DebugInfo, c2)
+CDAC_GLOBAL_CONTRACT(DebugInfo, c1)
 CDAC_GLOBAL_CONTRACT(EcmaMetadata, c1)
 #ifdef FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_CONTRACT(RuntimeMutableTypeSystem, c1)
 #endif // FEATURE_METADATA_UPDATER
 CDAC_GLOBAL_CONTRACT(Exception, c1)
-CDAC_GLOBAL_CONTRACT(ExecutionManager, c2)
+CDAC_GLOBAL_CONTRACT(ExecutionManager, c1)
 CDAC_GLOBAL_CONTRACT(GCInfo, c1)
 CDAC_GLOBAL_CONTRACT(Loader, c1)
 CDAC_GLOBAL_CONTRACT(ManagedTypeSource, c1)
@@ -1757,7 +1885,7 @@ CDAC_GLOBAL_CONTRACT(ObjectiveCMarshal, c1)
 CDAC_GLOBAL_CONTRACT(Object, c1)
 CDAC_GLOBAL_CONTRACT(FeatureFlags, c1)
 CDAC_GLOBAL_CONTRACT(PlatformMetadata, c1)
-CDAC_GLOBAL_CONTRACT(PrecodeStubs, c3)
+CDAC_GLOBAL_CONTRACT(PrecodeStubs, c1)
 #ifdef PROFILING_SUPPORTED
 CDAC_GLOBAL_CONTRACT(ReJIT, c1)
 #endif // PROFILING_SUPPORTED
@@ -1769,5 +1897,6 @@ CDAC_GLOBAL_CONTRACT(StackWalk, c1)
 CDAC_GLOBAL_CONTRACT(StressLog, c2)
 CDAC_GLOBAL_CONTRACT(SyncBlock, c1)
 CDAC_GLOBAL_CONTRACT(Thread, c1)
+CDAC_GLOBAL_CONTRACT(WindowsErrorReporting, c1)
 
 CDAC_GLOBALS_END()

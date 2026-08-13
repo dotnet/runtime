@@ -14,9 +14,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
     public class CopiedMethodILNode : ObjectNode, ISymbolDefinitionNode
     {
-        // Throws NullReferenceException if the stripped body is encountered.
-        // Tiny header (0x0A: 2 bytes code size) + ldnull (0x14) + throw (0x7A).
-        private static readonly byte[] s_minimalILBody = [0x0A, 0x14, 0x7A];
+        // Sentinel body for stripped IL methods: tiny header (0x0A) + invalid opcode 0xFE 0x24.
+        // Invalid IL so it can never collide with a real method body.
+        private static readonly byte[] s_minimalILBody = [0x0A, 0xFE, 0x24];
 
         EcmaMethod _method;
 
@@ -58,7 +58,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             if (factory.OptimizationFlags.StripILBodies
                 && factory.OptimizationFlags.CompiledMethodDefs.Contains(_method)
-                && !MayNeedILAtRuntime(_method))
+                && !MayNeedILAtRuntime(factory, _method))
             {
                 return new ObjectData(s_minimalILBody, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
             }
@@ -72,7 +72,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             return new ObjectData(bodyBytes, Array.Empty<Relocation>(), 4, new ISymbolDefinitionNode[] { this });
         }
 
-        private static bool MayNeedILAtRuntime(MethodDesc method)
+        private static bool MayNeedILAtRuntime(NodeFactory factory, MethodDesc method)
         {
             if (method.HasInstantiation || method.OwningType.HasInstantiation)
             {
@@ -80,10 +80,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return true;
             }
 
-            if (method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask() && !method.IsAsync)
+            if (method.GetTypicalMethodDefinition().Signature.ReturnsTaskOrValueTask())
             {
-                // IL may be needed for async version of non-async Task-returning method
-                return true;
+                MethodDesc asyncVariant = method.GetAsyncVariant().GetTypicalMethodDefinition();
+                if (!factory.OptimizationFlags.CompiledMethodDefs.Contains(asyncVariant))
+                {
+                    // IL may be needed to compile the async variant at runtime
+                    return true;
+                }
             }
 
             return false;

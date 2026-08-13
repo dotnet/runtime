@@ -317,6 +317,8 @@ namespace System.Tests
             Validate(string.Concat((ReadOnlySpan<string?>)values));
             Validate(string.Concat((IEnumerable<string>)values));
             Validate(string.Concat<string>((IEnumerable<string>)values)); // Call the generic IEnumerable<T>-based overload
+            Validate(string.Concat(values.Select(s => s)));
+            Validate(string.Concat(new List<string?>(values)));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]

@@ -11,6 +11,24 @@
 #include "ecall.h"
 #include "writebarriermanager.h"
 
+static void SetJitHelperAuxiliarySymbol(CorInfoHelpFunc ftnNum, const char* name)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    VMHELPDEF const& helperDef = hlpFuncTable[ftnNum];
+    PCODE pfnHelper = helperDef.pfnHelper;
+    DynamicCorInfoHelpFunc dynamicFtnNum;
+    if (helperDef.IsDynamicHelper(&dynamicFtnNum))
+    {
+        pfnHelper = hlpDynamicFuncTable[dynamicFtnNum].pfnHelper;
+    }
+
+    if (pfnHelper != (PCODE)NULL)
+    {
+        SetAuxiliarySymbol((void*)pfnHelper, name);
+    }
+}
+
 void InitJITAllocationHelpers()
 {
     STANDARD_VM_CONTRACT;
@@ -57,4 +75,18 @@ void InitJITAllocationHelpers()
 #endif
         }
     }
+
+// Debugger depends on new helper names starting with CORINFO_HELP_NEW
+#define SET_NEW_HELPER_AUXILIARY_SYMBOL(code) SetJitHelperAuxiliarySymbol(code, #code);
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWFAST)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWFAST_MAYBEFROZEN)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWSFAST)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWSFAST_ALIGN8)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWSFAST_ALIGN8_VC)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWARR_1_DIRECT)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWARR_1_MAYBEFROZEN)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWARR_1_PTR)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWARR_1_VC)
+    SET_NEW_HELPER_AUXILIARY_SYMBOL(CORINFO_HELP_NEWARR_1_ALIGN8)
+#undef SET_NEW_HELPER_AUXILIARY_SYMBOL
 }
