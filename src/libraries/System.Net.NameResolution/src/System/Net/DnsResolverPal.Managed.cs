@@ -864,6 +864,9 @@ namespace System.Net
                 return systemServers;
             }
 
+            // Matches glibc: resolv.conf(5) specifies that when the file is missing or contains
+            // no nameserver entries, the name server on the local machine is queried. Hosts
+            // running a local resolver (dnsmasq, unbound, a container sidecar) rely on this.
             return new IPEndPoint[] { new IPEndPoint(IPAddress.Loopback, ResolvConf.DefaultDnsPort) };
         }
 
