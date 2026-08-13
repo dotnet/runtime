@@ -495,10 +495,13 @@ assemblyBlock:
 
 mscorlib: '.mscorlib';
 
-languageDecl:
+languageDecl returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
 	'.language' languageString
 	| '.language' languageString ',' languageString
 	| '.language' languageString ',' languageString ',' languageString;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 languageString: SQSTRING | QSTRING;
 
@@ -664,7 +667,9 @@ implList: (typeSpec ',')* typeSpec;
 /*  External source declarations  */
 esHead: '.line' | '#line';
 
-extSourceSpec:
+extSourceSpec returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
 	esHead int32 SQSTRING
 	| esHead int32
 	| esHead int32 ':' int32 SQSTRING
@@ -680,6 +685,7 @@ extSourceSpec:
 	| esHead int32 ':' int32 ',' int32 QSTRING
 	| esHead int32 ',' int32 ':' int32 QSTRING
 	| esHead int32 ',' int32 ':' int32 ',' int32 QSTRING;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 /*  Manifest declarations  */
 fileDecl:
@@ -1030,10 +1036,9 @@ nativeUint returns [byte Value]:
 	'native' ('unsigned' INT | UINT) {_localctx.Value = Actions.GetNativeUIntType();};
 
 /*  Security declarations  */
-PERMISSION: '.permission';
-PERMISSIONSET: '.permissionset';
-
-secDecl:
+secDecl returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
 	PERMISSION secAction typeSpec '(' nameValPairs ')'
 	| PERMISSION secAction typeSpec '=' '{' customBlobDescr '}'
 	| PERMISSION secAction typeSpec
@@ -1041,8 +1046,12 @@ secDecl:
 	| PERMISSIONSET secAction 'bytearray' '(' bytes ')'
 	| PERMISSIONSET secAction compQstring
 	| PERMISSIONSET secAction '=' '{' secAttrSetBlob '}';
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
-secAttrSetBlob: | (secAttrBlob ',')* secAttrBlob;
+	PERMISSION: '.permission';
+	PERMISSIONSET: '.permissionset';
+
+	secAttrSetBlob: | (secAttrBlob ',')* secAttrBlob;
 
 secAttrBlob:
 	'class' SQSTRING '=' '{' customBlobNVPairs '}'
@@ -1223,7 +1232,13 @@ fieldAttr:
 
 atOpt: /* EMPTY */ | 'at' id | 'at' int32;
 
-initOpt: /* EMPTY */ | '=' fieldInit;
+initOpt returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
+	/* EMPTY */
+	| '=' fieldInit
+;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 repeatOpt: /* EMPTY */ | '[' int32 ']';
 
@@ -1391,39 +1406,72 @@ methodDecl:
 	| ZEROINIT {Actions.SetZeroInit();}
 	| labelDecl
 	| scopeBlock
-	| methodDeclIsland;
-
-methodDeclIsland
-@init {BeginSubtree();}
-@after {Actions.ProcessMethodDeclarationIsland(_localctx);}
-:
-	LOCALS sigArgs
-	| LOCALS 'init' sigArgs
-	| dataDecl
-	| secDecl
-	| extSourceSpec
-	| languageDecl
-	| customDescrInMethodBody  // Only customDescr and customDescrWithOwner, NOT bare typedefs
+	| localsDecl
+	| declaration = dataDecl {Actions.ProcessMethodDataDeclaration($declaration.ctx);}
+	| security = secDecl {Actions.ProcessMethodSecurityDeclaration($security.ctx);}
+	| source = extSourceSpec {Actions.ProcessMethodSourceDirective($source.ctx);}
+	| language = languageDecl {Actions.ProcessMethodLanguageDirective($language.ctx);}
+	| attribute = customDescrInMethodBody {Actions.ProcessMethodCustomAttribute($attribute.ctx);}
 	| compControl
-	| EXPORT '[' int32 ']'
-	| EXPORT '[' int32 ']' 'as' id
-	| VTENTRY int32 ':' int32
-	| OVERRIDE typeSpec '::' methodName
-	| OVERRIDE 'method' callConv type typeSpec '::' methodName genArity sigArgs
-	| PARAM TYPE '[' int32 ']' customAttrDecl*
-	| PARAM TYPE dottedName customAttrDecl*
-	| PARAM CONSTRAINT '[' int32 ']' ',' typeSpec customAttrDecl*
-	| PARAM CONSTRAINT dottedName ',' typeSpec customAttrDecl*
-	| PARAM '[' int32 ']' initOpt customAttrDecl*
+	| exportDecl
+	| vtentryDecl
+	| overrideDecl
+	| parameterDecl
 ;
-finally {EndParseTreeMode();}
+
+localsDecl
+@init {Actions.BeginSemanticRoot(_localctx);}
+:
+	LOCALS initialize = 'init'? arguments = sigArgs
+;
+finally {Actions.EndLocalsDirective(_localctx);}
+
+exportDecl
+@init {Actions.BeginSemanticRoot(_localctx);}
+:
+	EXPORT '[' ordinal = int32 ']' ('as' alias = id)?
+;
+finally {Actions.EndExportDirective(_localctx);}
+
+vtentryDecl
+@init {Actions.BeginSemanticRoot(_localctx);}
+:
+	VTENTRY table = int32 ':' slot = int32
+;
+finally {Actions.EndVTableEntryDirective(_localctx);}
+
+overrideDecl
+@init {Actions.BeginSemanticRoot(_localctx);}
+:
+	OVERRIDE owner = typeSpec '::' name = methodName
+	| OVERRIDE 'method' convention = callConv returnType = type owner = typeSpec '::' name = methodName
+		arity = genArity arguments = sigArgs
+;
+finally {Actions.EndOverrideDirective(_localctx);}
+
+parameterDecl
+@init {Actions.BeginParameterDirective(_localctx);}
+:
+	PARAM TYPE '[' genericIndex = int32 ']' (attribute = customAttrDecl {Actions.AddParameterCustomAttribute(_localctx, $attribute.ctx);})*
+	| PARAM TYPE genericName = dottedName (attribute = customAttrDecl {Actions.AddParameterCustomAttribute(_localctx, $attribute.ctx);})*
+	| PARAM CONSTRAINT '[' constraintIndex = int32 ']' ',' constraintType = typeSpec
+		(attribute = customAttrDecl {Actions.AddParameterCustomAttribute(_localctx, $attribute.ctx);})*
+	| PARAM CONSTRAINT constraintName = dottedName ',' constraintType = typeSpec
+		(attribute = customAttrDecl {Actions.AddParameterCustomAttribute(_localctx, $attribute.ctx);})*
+	| PARAM '[' parameterIndex = int32 ']' initializer = initOpt
+		(attribute = customAttrDecl {Actions.AddParameterCustomAttribute(_localctx, $attribute.ctx);})*
+;
+finally {Actions.EndParameterDirective(_localctx);}
 
 labelDecl:
 	name = id ':' {Actions.DefineLabel($name.start);};
 
-customDescrInMethodBody:
+customDescrInMethodBody returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
 	customDescr
 	| customDescrWithOwner;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 scopeBlock
 @init {Actions.BeginScope(_localctx);}
@@ -1434,48 +1482,67 @@ finally {Actions.EndScope(_localctx);}
 
 /* Structured exception handling directives  */
 sehBlock
-@init {BeginSubtree();}
-@after {Actions.EndExceptionBlock(_localctx);}
+@init {Actions.BeginExceptionBlock(_localctx);}
 :
-	tryBlock sehClauses
+	tryRange = tryBlock clauses = sehClauses
 ;
-finally {EndParseTreeMode();}
+finally {Actions.EndExceptionBlock(_localctx);}
 
-sehClauses: sehClause+;
+sehClauses returns [object Value]
+@init {Actions.BeginExceptionClauses(_localctx);}
+:
+	(clause = sehClause {Actions.AddExceptionClause(_localctx, $clause.Value);})+
+;
+finally {_localctx.Value = Actions.EndExceptionClauses(_localctx);}
 
-tryBlock:
-	'.try' scopeBlock
-	| '.try' id 'to' id
-	| '.try' int32 'to' int32;
+tryBlock returns [object Value]:
+	'.try' body = scopeBlock {_localctx.Value = Actions.CreateScopeExceptionRange($body.ctx);}
+	| '.try' startLabel = id 'to' endLabel = id
+		{_localctx.Value = Actions.CreateLabelExceptionRange($startLabel.start, $endLabel.start);}
+	| '.try' startOffset = int32 'to' endOffset = int32
+		{_localctx.Value = Actions.CreateOffsetExceptionRange($startOffset.start, $endOffset.start);};
 
-sehClause:
-	catchClause handlerBlock
-	| filterClause handlerBlock
-	| finallyClause handlerBlock
-	| faultClause handlerBlock;
+sehClause returns [object Value]:
+	caught = catchClause handler = handlerBlock
+		{_localctx.Value = Actions.CreateCatchExceptionClause($caught.Value, $handler.Value);}
+	| filtered = filterClause handler = handlerBlock
+		{_localctx.Value = Actions.CreateFilterExceptionClause($filtered.Value, $handler.Value);}
+	| finallyClause handler = handlerBlock
+		{_localctx.Value = Actions.CreateFinallyExceptionClause($handler.Value);}
+	| faultClause handler = handlerBlock
+		{_localctx.Value = Actions.CreateFaultExceptionClause($handler.Value);};
 
-filterClause:
-	'filter' scopeBlock
-	| 'filter' id
-	| 'filter' int32;
+filterClause returns [object Value]:
+	'filter' body = scopeBlock {_localctx.Value = Actions.CreateScopeFilter($body.ctx);}
+	| 'filter' label = id {_localctx.Value = Actions.CreateLabelFilter($label.start);}
+	| 'filter' offset = int32 {_localctx.Value = Actions.CreateOffsetFilter($offset.start);};
 
 catchClause
-@after {Actions.OnCatchClause(_localctx);}
+returns [object Value]
+@init {Actions.BeginCatchClause(_localctx);}
 :
-	'catch' typeSpec
+	'catch' catchType = typeSpec
 ;
+finally {_localctx.Value = Actions.EndCatchClause(_localctx);}
 
 finallyClause: 'finally';
 
 faultClause: 'fault';
 
-handlerBlock:
-	scopeBlock
-	| 'handler' id 'to' id
-	| 'handler' int32 'to' int32;
+handlerBlock returns [object Value]:
+	body = scopeBlock {_localctx.Value = Actions.CreateScopeExceptionRange($body.ctx);}
+	| 'handler' startLabel = id 'to' endLabel = id
+		{_localctx.Value = Actions.CreateLabelExceptionRange($startLabel.start, $endLabel.start);}
+	| 'handler' startOffset = int32 'to' endOffset = int32
+		{_localctx.Value = Actions.CreateOffsetExceptionRange($startOffset.start, $endOffset.start);};
 
 /*  Data declaration  */
-dataDecl: ddHead ddBody;
+dataDecl returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
+	ddHead ddBody
+;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 ddHead: '.data' tls id '=' | '.data' tls;
 
@@ -1589,10 +1656,13 @@ classSeqElement: NULLREF | 'class' SQSTRING | className;
 
 objSeq: serInit*;
 
-customAttrDecl:
+customAttrDecl returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
 	customDescr
 	| customDescrWithOwner
 	| dottedName /* typedef */;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 /* Assembly References */
 asmOrRefDecl:
