@@ -220,6 +220,20 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
             return null;
         }
     }
+
+    private CodeBlock GetOrCreateCodeBlock(CodeBlockHandle codeInfoHandle)
+    {
+        if (_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
+            return info;
+
+        info = GetCodeBlock(new TargetCodePointer(codeInfoHandle.Address.Value));
+        if (info is null || !info.Valid)
+            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+
+        _codeInfos.TryAdd(codeInfoHandle.Address, info);
+        return info;
+    }
+
     CodeBlockHandle? IExecutionManager.GetCodeBlockHandle(TargetCodePointer ip)
     {
         TargetPointer key = ip.AsTargetPointer; // FIXME: thumb bit. It's harmless (we potentialy have 2 cache entries per IP), but we should fix it
@@ -238,16 +252,14 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     TargetPointer IExecutionManager.GetMethodDesc(CodeBlockHandle codeInfoHandle)
     {
-        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
-            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+        CodeBlock info = GetOrCreateCodeBlock(codeInfoHandle);
 
         return info.MethodDescAddress;
     }
 
     TargetPointer IExecutionManager.GetStartAddress(CodeBlockHandle codeInfoHandle)
     {
-        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
-            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+        CodeBlock info = GetOrCreateCodeBlock(codeInfoHandle);
 
         return info.StartAddress;
     }
@@ -338,8 +350,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     bool IExecutionManager.IsFilterFunclet(CodeBlockHandle codeInfoHandle)
     {
-        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
-            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+        CodeBlock info = GetOrCreateCodeBlock(codeInfoHandle);
 
         IExecutionManager eman = this;
 
@@ -406,8 +417,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     TargetNUInt IExecutionManager.GetRelativeOffset(CodeBlockHandle codeInfoHandle)
     {
-        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
-            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+        CodeBlock info = GetOrCreateCodeBlock(codeInfoHandle);
 
         return info.RelativeOffset;
     }
@@ -539,8 +549,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
 
     private RangeSection RangeSectionFromCodeBlockHandle(CodeBlockHandle codeInfoHandle)
     {
-        if (!_codeInfos.TryGetValue(codeInfoHandle.Address, out CodeBlock? info))
-            throw new InvalidOperationException($"{nameof(CodeBlock)} not found for {codeInfoHandle.Address}");
+        _ = GetOrCreateCodeBlock(codeInfoHandle);
 
         RangeSection range = RangeSection.Find(_target, _topRangeSectionMap, _rangeSectionMapLookup, codeInfoHandle.Address.Value);
         return range;

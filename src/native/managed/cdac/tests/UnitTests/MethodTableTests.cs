@@ -159,6 +159,10 @@ public class MethodTableTests
         Assert.Equal(systemStringMethodTablePtr.Value, systemStringTypeHandle.Address.Value);
         Assert.False(contract.IsFreeObjectMethodTable(systemStringTypeHandle));
         Assert.True(contract.IsString(systemStringTypeHandle));
+
+        contract.Flush(FlushScope.All);
+
+        Assert.True(contract.IsString(systemStringTypeHandle));
     }
 
     [Theory]

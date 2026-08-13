@@ -168,6 +168,11 @@ public class ExecutionManagerTests
         TargetPointer actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
         Assert.Equal(new TargetPointer(expectedMethodDescAddress), actualMethodDesc);
 
+        em.Flush(FlushScope.All);
+
+        actualMethodDesc = em.GetMethodDesc(eeInfo.Value);
+        Assert.Equal(new TargetPointer(expectedMethodDescAddress), actualMethodDesc);
+
         // test middle of method
         eeInfo = em.GetCodeBlockHandle(new TargetCodePointer(methodStart + methodSize / 2));
         Assert.NotNull(eeInfo);

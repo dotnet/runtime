@@ -163,6 +163,12 @@ public class MethodDescTests
         Assert.False(rts.IsDynamicMethod(handle));
         Assert.False(rts.IsILStub(handle));
         Assert.False(rts.IsArrayMethod(handle, out _));
+
+        rts.Flush(FlushScope.All);
+
+        Assert.Equal(expectedToken, rts.GetMethodToken(handle));
+        Assert.Equal(expectedSlotNum, rts.GetSlotNumber(handle));
+        Assert.Equal(objectMethodTable, rts.GetMethodTable(handle));
     }
 
     [Theory]
