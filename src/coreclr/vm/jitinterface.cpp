@@ -10663,65 +10663,6 @@ void CEEInfo::ComputeRuntimeLookupForAwaitCall(MethodDesc* pCallerMD, MethodDesc
     FinishComputeRuntimeLookup(sigBuilder, pCallerMD, lookup);
 }
 
-void CEEInfo::ComputeRuntimeLookupForAwaitAwaiterInContinuationCall(
-    MethodDesc* pCallerMD,
-    MethodDesc* pTypicalAwaitMD,
-    CORINFO_SIG_INFO* callSig,
-    CORINFO_LOOKUP* lookup)
-{
-    lookup->lookupKind.needsRuntimeLookup = true;
-
-    CORINFO_RUNTIME_LOOKUP* rlookup = &lookup->runtimeLookup;
-    rlookup->signature = NULL;
-    rlookup->indirectFirstOffset = 0;
-    rlookup->indirectSecondOffset = 0;
-    rlookup->sizeOffset = CORINFO_NO_SIZE_CHECK;
-    rlookup->indirections = CORINFO_USEHELPER;
-
-    if (pCallerMD->RequiresInstMethodDescArg())
-    {
-        lookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_METHODPARAM;
-        rlookup->helper = CORINFO_HELP_RUNTIMEHANDLE_METHOD;
-    }
-    else if (pCallerMD->RequiresInstMethodTableArg())
-    {
-        lookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_CLASSPARAM;
-        rlookup->helper = CORINFO_HELP_RUNTIMEHANDLE_CLASS;
-    }
-    else
-    {
-        lookup->lookupKind.runtimeLookupKind = CORINFO_LOOKUP_THISOBJ;
-        rlookup->helper = CORINFO_HELP_RUNTIMEHANDLE_CLASS;
-    }
-
-    SigBuilder sigBuilder;
-    sigBuilder.AppendData(MethodDescSlot);
-    if (lookup->lookupKind.runtimeLookupKind != CORINFO_LOOKUP_METHODPARAM)
-    {
-        sigBuilder.AppendData(pCallerMD->GetMethodTable()->GetNumDicts() - 1);
-    }
-
-    sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
-    sigBuilder.AppendPointer(pTypicalAwaitMD->GetMethodTable());
-    sigBuilder.AppendData(ENCODE_METHOD_SIG_MethodInstantiation | ENCODE_METHOD_SIG_InstantiatingStub);
-    sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
-    sigBuilder.AppendPointer(pTypicalAwaitMD->GetMethodTable());
-    sigBuilder.AppendData(RidFromToken(pTypicalAwaitMD->GetMemberDef()));
-    sigBuilder.AppendData(1);
-
-    _ASSERTE(callSig->pSig != NULL);
-    SigPointer instantiation(callSig->pSig, callSig->cbSig);
-    BYTE callingConvention;
-    IfFailThrow(instantiation.GetByte(&callingConvention));
-    _ASSERTE(callingConvention == IMAGE_CEE_CS_CALLCONV_GENERICINST);
-    uint32_t numArgs;
-    IfFailThrow(instantiation.GetData(&numArgs));
-    _ASSERTE(numArgs == 1);
-    instantiation.ConvertToInternalExactlyOne(GetModule(callSig->scope), NULL, &sigBuilder);
-
-    FinishComputeRuntimeLookup(sigBuilder, pCallerMD, lookup);
-}
-
 static MethodTable* getContinuationType(
     size_t dataSize,
     bool* objRefs,
