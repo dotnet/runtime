@@ -29,5 +29,6 @@ namespace Microsoft.Extensions.Options.Generators
         INamedTypeSymbol CancellationTokenSymbol,
         INamedTypeSymbol? IAsyncValidatableObjectSymbol = null,
         bool HasTryValidateValueAsyncMethod = false,
-        INamedTypeSymbol? AsyncValidateOptionsSymbol = null);
+        INamedTypeSymbol? AsyncValidateOptionsSymbol = null,
+        INamedTypeSymbol? AsyncValidationAttributeSymbol = null);
 }

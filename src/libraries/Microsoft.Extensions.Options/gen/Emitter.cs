@@ -757,6 +757,14 @@ namespace Microsoft.Extensions.Options.Generators
                 || vm.TransValidatorEmitsAsync
                 || vm.EnumerationValidatorEmitsAsync;
 
+        // Whether this member can actually suspend. Synchronous validation attributes are still invoked through
+        // TryValidateValueAsync, but that call completes synchronously and does not justify the per-member allocations
+        // required by the concurrent validation path.
+        private bool MemberAsyncValidationCanSuspend(ValidatedMember vm)
+            => (_symbolHolder.HasTryValidateValueAsyncMethod && vm.ValidationAttributes.Any(static attr => attr.IsAsyncValidationAttribute))
+                || vm.TransValidatorEmitsAsync
+                || vm.EnumerationValidatorEmitsAsync;
+
         private void GenAsyncModelValidationMethod(
             ValidatedModel modelToValidate,
             bool makeStatic,
@@ -764,7 +772,7 @@ namespace Microsoft.Extensions.Options.Generators
             ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
         {
             bool concurrentMembers = modelToValidate.MembersToValidate.Count >= 2
-                && modelToValidate.MembersToValidate.Any(MemberAsyncValidationHasAwait);
+                && modelToValidate.MembersToValidate.Any(MemberAsyncValidationCanSuspend);
 
             // Determine whether the generated method body will contain any await. The method is always declared
             // async regardless (so that cancellationToken.ThrowIfCancellationRequested() below surfaces as a

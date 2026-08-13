@@ -734,6 +734,73 @@ public class EmitterTests
             generatedSource);
     }
 
+#if NET
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task ConcurrentMemberEmissionRequiresGenuinelyAsyncWork(bool useAsyncValidationAttribute)
+    {
+        string attributeDefinition = useAsyncValidationAttribute
+            ? """
+                public sealed class TestAsyncAttribute : AsyncValidationAttribute
+                {
+                    protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+                        => ValidationResult.Success;
+
+                    protected override async Task<ValidationResult?> IsValidAsync(
+                        object? value,
+                        ValidationContext validationContext,
+                        CancellationToken cancellationToken)
+                    {
+                        await Task.Yield();
+                        return ValidationResult.Success;
+                    }
+                }
+
+                """
+            : string.Empty;
+        string attributeName = useAsyncValidationAttribute ? "TestAsync" : "Required";
+        string source = $$"""
+            using System.ComponentModel.DataAnnotations;
+            using System.Threading;
+            using System.Threading.Tasks;
+            using Microsoft.Extensions.Options;
+
+            namespace Test
+            {
+                {{attributeDefinition}}public class FirstModel
+                {
+                    [{{attributeName}}]
+                    public string First { get; set; } = string.Empty;
+
+                    [{{attributeName}}]
+                    public string Second { get; set; } = string.Empty;
+                }
+
+                [OptionsValidator]
+                public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+                {
+                }
+            }
+            """;
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source);
+
+        Assert.Empty(diagnostics);
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.Contains("TryValidateValueAsync", generatedSource);
+        if (useAsyncValidationAttribute)
+        {
+            Assert.Contains("global::Test.TestAsyncAttribute", generatedSource);
+            Assert.Contains("Task.WhenAll(", generatedSource);
+        }
+        else
+        {
+            Assert.DoesNotContain("Task.WhenAll(", generatedSource);
+        }
+    }
+#endif // NET
+
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
     public async Task MultiModelValidatorEmitsAsyncOnlyForOptedInModel()
     {

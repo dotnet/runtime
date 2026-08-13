@@ -8,6 +8,7 @@ namespace Microsoft.Extensions.Options.Generators
     internal static class SymbolLoader
     {
         public const string OptionsValidatorAttribute = "Microsoft.Extensions.Options.OptionsValidatorAttribute";
+        internal const string AsyncValidationAttributeType = "System.ComponentModel.DataAnnotations.AsyncValidationAttribute";
         internal const string ValidationAttribute = "System.ComponentModel.DataAnnotations.ValidationAttribute";
         internal const string MaxLengthAttribute = "System.ComponentModel.DataAnnotations.MaxLengthAttribute";
         internal const string MinLengthAttribute = "System.ComponentModel.DataAnnotations.MinLengthAttribute";
@@ -91,6 +92,7 @@ namespace Microsoft.Extensions.Options.Generators
             // DataAnnotations APIs are available only on .NET 11 and later.
             var iAsyncValidatableObjectSymbol = GetSymbol(IAsyncValidatableObjectType);
             var asyncValidateOptionsSymbol = GetSymbol(IAsyncValidateOptionsType);
+            var asyncValidationAttributeSymbol = GetSymbol(AsyncValidationAttributeType);
             var validatorSymbol = GetSymbol(ValidatorType);
             bool hasTryValidateValueAsyncMethod = validatorSymbol?.GetMembers("TryValidateValueAsync").Length > 0;
 
@@ -115,7 +117,8 @@ namespace Microsoft.Extensions.Options.Generators
                 cancellationTokenSymbol,
                 iAsyncValidatableObjectSymbol,
                 hasTryValidateValueAsyncMethod,
-                asyncValidateOptionsSymbol);
+                asyncValidateOptionsSymbol,
+                asyncValidationAttributeSymbol);
 
             return true;
         }

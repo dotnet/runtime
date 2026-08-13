@@ -615,7 +615,9 @@ namespace Microsoft.Extensions.Options.Generators
                         TrackRangeAttributeForSubstitution(attribute, memberType, ref attributeFullQualifiedName);
                     }
 
-                    var validationAttr = new ValidationAttributeInfo(attributeFullQualifiedName);
+                    bool isAsyncAttribute = _symbolHolder.AsyncValidationAttributeSymbol is not null
+                        && ConvertTo(attributeType, _symbolHolder.AsyncValidationAttributeSymbol);
+                    var validationAttr = new ValidationAttributeInfo(attributeFullQualifiedName, isAsyncAttribute);
                     validationAttrs.Add(validationAttr);
 
                     ImmutableArray<IParameterSymbol> parameters = attribute.AttributeConstructor?.Parameters ?? ImmutableArray<IParameterSymbol>.Empty;
