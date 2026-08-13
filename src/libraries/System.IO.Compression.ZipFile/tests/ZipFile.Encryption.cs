@@ -188,6 +188,42 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
+        public async Task UpdateMode_EmptyEncryptedEntry_OpenedNotModified_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string emptyEntryName = ".gitkeep";
+            string password = "PLACEHOLDER";
+            var entries = new[]
+            {
+                (emptyEntryName, "", (string?)password, (ZipEncryptionMethod?)encryptionMethod)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
+            {
+                ZipArchiveEntry emptyEntry = archive.GetEntry(emptyEntryName);
+                Assert.NotNull(emptyEntry);
+
+                // Open the empty encrypted entry for read-write and dispose it without writing anything.
+                // The entry must still be re-encrypted with valid encryption headers so it can be decrypted.
+                Stream stream = await OpenEntryStream(async, emptyEntry, password);
+                await DisposeStream(async, stream);
+            }
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                ZipArchiveEntry entry = archive.GetEntry(emptyEntryName);
+                Assert.NotNull(entry);
+                Assert.True(entry.IsEncrypted);
+                Assert.Equal(encryptionMethod, entry.EncryptionMethod);
+                await AssertEntryTextEquals(entry, "", password, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
         public async Task Encryption_MixedPlainAndEncrypted_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
