@@ -1114,6 +1114,12 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitAsmOrRefDecl([NotNull] CILParser.AsmOrRefDeclContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.assemblyRefBlock"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitAssemblyRefBlock([NotNull] CILParser.AssemblyRefBlockContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.assemblyRefHead"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -1131,6 +1137,12 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitAssemblyRefDecl([NotNull] CILParser.AssemblyRefDeclContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.exptypeBlock"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitExptypeBlock([NotNull] CILParser.ExptypeBlockContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.exptypeHead"/>.
 	/// </summary>
@@ -1161,6 +1173,12 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitExptypeDecl([NotNull] CILParser.ExptypeDeclContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.manifestResBlock"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitManifestResBlock([NotNull] CILParser.ManifestResBlockContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.manifestResHead"/>.
 	/// </summary>
