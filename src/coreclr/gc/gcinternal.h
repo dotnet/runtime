@@ -12,6 +12,7 @@
 #include "gcdesc.h"
 #include "softwarewritewatch.h"
 #include "handletable.h"
+#include "gchandletableimpl.h"
 #include "gcenv.inl"
 #include "gceventstatus.h"
 #include <minipal/memorybarrierprocesswide.h>
