@@ -46,6 +46,58 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
+        [Theory]
+        [InlineData("ldc.i4")]
+        [InlineData("ldc.i8")]
+        [InlineData("ldarg")]
+        [InlineData("br")]
+        [InlineData("ldtoken")]
+        [InlineData("ldc.r8 bytearray(00 00")]
+        [InlineData("ldstr bytearray(48 00")]
+        public void MalformedSimpleInstruction_DoesNotLeakMethodState(string malformedInstruction)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void Bad() cil managed
+                    {
+                        {{malformedInstruction}}
+                    }
+
+                    .method public static void Good() cil managed
+                    {
+                        ret
+                    }
+                }
+                """;
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ =>
+                {
+                    Assert.Fail("Expected no includes");
+                    return default;
+                },
+                _ =>
+                {
+                    Assert.Fail("Expected no resources");
+                    return default;
+                },
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.NotNull(result);
+
+            BlobBuilder image = new();
+            result!.Serialize(image);
+            using PEReader pe = new(image.ToImmutableArray());
+            byte[] il = GetMethodIL(pe, "Good");
+
+            Assert.Equal([0x2A], il);
+        }
+
 
         [Fact]
         public void DataLabelReference_FixedUpCorrectly()

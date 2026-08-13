@@ -122,12 +122,15 @@ namespace ILAssembler
         GrammarResult ICILVisitor<GrammarResult>.VisitId(CILParser.IdContext context) => VisitId(context);
         public static GrammarResult.String VisitId(CILParser.IdContext context)
         {
-            string text = context.GetText();
-            if (context.SQSTRING() is not null && text.Length >= 2 && text[0] == '\'')
-            {
-                text = text.Substring(1, text.Length - 2);
-            }
-            return new GrammarResult.String(text);
+            return new GrammarResult.String(ParseIdentifier(context.Start));
+        }
+
+        private static string ParseIdentifier(IToken token)
+        {
+            string text = token.Text;
+            return text.Length >= 2 && text[0] == '\''
+                ? text.Substring(1, text.Length - 2)
+                : text;
         }
 
         private static bool ParseIntegerValue(ReadOnlySpan<char> value, out long result)
@@ -201,21 +204,23 @@ namespace ILAssembler
 
         public GrammarResult.Literal<int> VisitInt32(CILParser.Int32Context context)
         {
-            IToken node = context.INT32().Symbol;
+            return new(ParseInt32(context.INT32().Symbol));
+        }
 
-            ReadOnlySpan<char> value = node.Text.AsSpan();
-
+        private int ParseInt32(IToken token)
+        {
+            ReadOnlySpan<char> value = token.Text.AsSpan();
             if (!ParseIntegerValue(value, out long num))
             {
                 _diagnostics.Add(new Diagnostic(
                     DiagnosticIds.LiteralOutOfRange,
                     DiagnosticSeverity.Error,
-                    string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, node.Text),
-                    Location.From(node, _documents)));
-                return new GrammarResult.Literal<int>(0);
+                    string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, token.Text),
+                    Location.From(token, _documents)));
+                return 0;
             }
 
-            return new GrammarResult.Literal<int>((int)num);
+            return (int)num;
         }
 
 
@@ -226,21 +231,23 @@ namespace ILAssembler
 
         public GrammarResult.Literal<long> VisitInt64(CILParser.Int64Context context)
         {
-            IToken node = context.GetChild<ITerminalNode>(0).Symbol;
+            return new(ParseInt64(context.Start));
+        }
 
-            ReadOnlySpan<char> value = node.Text.AsSpan();
-
+        private long ParseInt64(IToken token)
+        {
+            ReadOnlySpan<char> value = token.Text.AsSpan();
             if (!ParseIntegerValue(value, out long num))
             {
                 _diagnostics.Add(new Diagnostic(
                     DiagnosticIds.LiteralOutOfRange,
                     DiagnosticSeverity.Error,
-                    string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, node.Text),
-                    Location.From(node, _documents)));
-                return new GrammarResult.Literal<long>(0);
+                    string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, token.Text),
+                    Location.From(token, _documents)));
+                return 0;
             }
 
-            return new GrammarResult.Literal<long>(num);
+            return num;
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => VisitIntOrWildcard(context);

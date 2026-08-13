@@ -70,25 +70,6 @@ internal sealed partial class GrammarActions
         _catchTypes.Clear();
     }
 
-    internal void OnMethodDeclaration(CILParser.MethodDeclContext context)
-    {
-        // A method header that failed to parse never opened a method, so its body items have
-        // nothing to attach to.
-        if (_currentMethod is null)
-        {
-            return;
-        }
-
-        if (TryProcessInstruction(context) ||
-            context.scopeBlock() is not null ||
-            context.sehBlock() is not null)
-        {
-            return;
-        }
-
-        VisitMethodDecl(context);
-    }
-
     internal void BeginScope(CILParser.ScopeBlockContext context)
     {
         if (_currentMethod is null)
@@ -292,28 +273,16 @@ internal sealed partial class GrammarActions
 
     private readonly record struct ScopeFrame(CILParser.ScopeBlockContext Context, int Start, int LocalsScopeCount);
 
-    public GrammarResult VisitMethodDecl(CILParser.MethodDeclContext context)
+    internal GrammarResult ProcessMethodDeclarationIsland(CILParser.MethodDeclIslandContext context)
     {
-        Debug.Assert(_currentMethod is not null);
+        if (_currentMethod is null)
+        {
+            return GrammarResult.SentinelValue.Result;
+        }
+
         var currentMethod = _currentMethod!;
 
-        if (context.EMITBYTE() is not null)
-        {
-            currentMethod.Definition.MethodBody.CodeBuilder.WriteByte((byte)VisitInt32(context.GetChild<CILParser.Int32Context>(0)).Value);
-        }
-        else if (context.ENTRYPOINT() is not null)
-        {
-            _entityRegistry.EntryPoint = currentMethod.Definition;
-        }
-        else if (context.ZEROINIT() is not null)
-        {
-            currentMethod.Definition.BodyAttributes = MethodBodyAttributes.InitLocals;
-        }
-        else if (context.MAXSTACK() is not null)
-        {
-            currentMethod.Definition.MaxStack = VisitInt32(context.GetChild<CILParser.Int32Context>(0)).Value;
-        }
-        else if (context.LOCALS() is not null)
+        if (context.LOCALS() is not null)
         {
             if (context.ChildCount == 3)
             {
@@ -347,18 +316,6 @@ internal sealed partial class GrammarActions
                 }
                 currentMethod.AllLocals.Add(loc);
             }
-        }
-        else if (context.labelDecl() is CILParser.LabelDeclContext labelDecl)
-        {
-            var labelId = labelDecl.id();
-            string labelName = VisitId(labelId).Value;
-            currentMethod.DeclaredLabels.Add(labelName);
-            if (!currentMethod.Labels.TryGetValue(labelName, out var label))
-            {
-                label = currentMethod.Definition.MethodBody.DefineLabel();
-                currentMethod.Labels[labelName] = label;
-            }
-            currentMethod.Definition.MethodBody.MarkLabel(label);
         }
         else if (context.EXPORT() is not null)
         {
@@ -566,10 +523,6 @@ internal sealed partial class GrammarActions
                 customAttr.Owner = currentMethod.Definition;
             }
         }
-        else if (context.GetChild(0) is CILParser.InstrContext instr)
-        {
-            _ = VisitInstr(instr);
-        }
         else
         {
             // Handle other methodDecl alternatives
@@ -643,35 +596,16 @@ internal sealed partial class GrammarActions
             // Report errors for any labels that were referenced but never declared
             foreach (var undefinedLabel in _currentMethod.UndefinedLabelReferences)
             {
-                string labelName = undefinedLabel.Key;
-                ParserRuleContext context = undefinedLabel.Value;
-
-                // Only report if the label was never declared
-                if (!_currentMethod.DeclaredLabels.Contains(labelName))
-                {
-                    ReportError(DiagnosticIds.LabelNotFound,
-                        string.Format(DiagnosticMessageTemplates.LabelNotFound, labelName),
-                        context);
-                }
+                ReportError(
+                    DiagnosticIds.LabelNotFound,
+                    string.Format(DiagnosticMessageTemplates.LabelNotFound, undefinedLabel.Key),
+                    undefinedLabel.Value);
             }
         }
 
         public GrammarResult VisitLabels(CILParser.LabelsContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitLabelDecl(CILParser.LabelDeclContext context) => VisitLabelDecl(context);
-        public GrammarResult VisitLabelDecl(CILParser.LabelDeclContext context)
-        {
-            var labelId = context.id();
-            string labelName = VisitId(labelId).Value;
-            _currentMethod!.DeclaredLabels.Add(labelName);
-            if (!_currentMethod!.Labels.TryGetValue(labelName, out var label))
-            {
-                label = _currentMethod.Definition.MethodBody.DefineLabel();
-                _currentMethod.Labels[labelName] = label;
-            }
-            _currentMethod.Definition.MethodBody.MarkLabel(label);
-            return GrammarResult.SentinelValue.Result;
-        }
+        GrammarResult ICILVisitor<GrammarResult>.VisitLabelDecl(CILParser.LabelDeclContext context) => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitMethAttr(CILParser.MethAttrContext context) => VisitMethAttr(context);
         public GrammarResult.Flag<MethodAttributes> VisitMethAttr(CILParser.MethAttrContext context)
@@ -707,6 +641,10 @@ internal sealed partial class GrammarActions
 
 
         public GrammarResult VisitMethodDecls(CILParser.MethodDeclsContext context) => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitMethodDecl(CILParser.MethodDeclContext context) => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitMethodDeclIsland(CILParser.MethodDeclIslandContext context) => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitMethodHead(CILParser.MethodHeadContext context) => VisitMethodHead(context);
         public GrammarResult.Literal<EntityRegistry.MethodDefinitionEntity> VisitMethodHead(CILParser.MethodHeadContext context)

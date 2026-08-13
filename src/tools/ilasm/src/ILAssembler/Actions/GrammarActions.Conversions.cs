@@ -132,6 +132,15 @@ namespace ILAssembler
         private void ReportError(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Error, id, message, context);
 
+        private void ReportError(string id, string message, IToken token)
+        {
+            _diagnostics.Add(new Diagnostic(
+                id,
+                DiagnosticSeverity.Error,
+                message,
+                Location.From(token, _documents)));
+        }
+
         private void ReportWarning(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Warning, id, message, context);
 
@@ -183,9 +192,7 @@ namespace ILAssembler
 
             public Dictionary<string, LabelHandle> Labels { get; } = new();
 
-            public HashSet<string> DeclaredLabels { get; } = new();
-
-            public Dictionary<string, ParserRuleContext> UndefinedLabelReferences { get; } = new();
+            public Dictionary<string, IToken> UndefinedLabelReferences { get; } = new();
 
             public Dictionary<string, int> ArgumentNames { get; } = new();
 
