@@ -128,7 +128,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class C
                 {
-                    extern unsafe ~C();
+                    extern safe ~C();
                 }
                 """
             },
