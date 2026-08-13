@@ -1,0 +1,19 @@
+<Project>
+  <!-- Override the ResolveReadyToRunCompilers target to use the in-build crossgen2 for browser-wasm.
+       Mirrors src/mono/msbuild/apple/build/AppleBuild.ReadyToRun.targets. Imported after the SDK
+       targets via AfterMicrosoftNETSdkTargets so it wins over the SDK's own ResolveReadyToRunCompilers. -->
+  <Target Name="ResolveReadyToRunCompilers"
+          Condition="'$(PublishReadyToRun)' == 'true'"
+          DependsOnTargets="$(ResolveReadyToRunCompilersDependsOn)">
+    <PropertyGroup>
+      <Crossgen2Path>$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</Crossgen2Path>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Crossgen2Tool Include="$(Crossgen2Path)"
+                     TargetArch="$(TargetArchitecture)"
+                     TargetOS="$(TargetOS)"
+                     PerfmapFormatVersion="$(PublishReadyToRunPerfmapFormatVersion)"/>
+    </ItemGroup>
+  </Target>
+</Project>

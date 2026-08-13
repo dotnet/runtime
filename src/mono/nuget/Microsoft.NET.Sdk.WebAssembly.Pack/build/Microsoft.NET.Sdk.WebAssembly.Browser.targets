@@ -299,9 +299,18 @@ Copyright (c) .NET Foundation. All rights reserved.
   <!-- Resolve and classify build asset candidates.
        This target always runs to ensure candidate items are populated for downstream consumers. -->
   <Target Name="_ComputeWasmBuildCandidates" DependsOnTargets="ResolveReferences;PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;_ResolveWasmConfiguration;_WasmNativeForBuild">
+    <ItemGroup>
+      <!-- Prebuilt R2R webcil-in-wasm images shipped in the runtime pack native/ dir (e.g.
+           System.Private.CoreLib.wasm). Each replaces conversion of the managed .dll of the same
+           name: the .dll is kept as the assembly's metadata source but this native image is staged
+           in its place. Exclude dotnet.native*.wasm (the runtime module; it has no managed peer). -->
+      <_WasmPackR2RWebcilFile Include="$(_RuntimePackNativeDir)*.wasm" Exclude="$(_RuntimePackNativeDir)dotnet.native*.wasm" />
+    </ItemGroup>
+
     <PropertyGroup>
       <_WasmNativeAssetFileNames>;@(WasmNativeAsset->'%(FileName)%(Extension)');@(WasmAssembliesFinal->'%(FileName)%(Extension)');</_WasmNativeAssetFileNames>
       <_WasmIntermediateAssemblyFileNames Condition="@(WasmAssembliesFinal->Count()) != 0">;@(IntermediateAssembly->'%(FileName)%(Extension)');</_WasmIntermediateAssemblyFileNames>
+      <_WasmPackR2RWebcilFileNames>;@(_WasmPackR2RWebcilFile->'%(FileName)%(Extension)');</_WasmPackR2RWebcilFileNames>
     </PropertyGroup>
 
     <ItemGroup>
@@ -309,6 +318,10 @@ Copyright (c) .NET Foundation. All rights reserved.
 
       <!-- Remove dotnet.js/wasm from runtime pack, in favor of the relinked ones in @(WasmNativeAsset) -->
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$(_WasmNativeAssetFileNames.Contains(';%(FileName)%(Extension);'))" />
+
+      <!-- Remove the native copy of each prebuilt R2R webcil so it is not surfaced as a native
+           WasmResource that would collide with the staged assembly webcil of the same name. -->
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="$(_WasmPackR2RWebcilFileNames.Contains(';%(FileName)%(Extension);'))" />
 
       <!-- If we have @(WasmAssembliesFinal), prefer them over @(ReferenceCopyLocalPaths). They come from AOT during build. In that case @(ReferenceCopyLocalPaths) is already empty  -->
       <_WasmProjectAssemblyBuild Include="@(WasmAssembliesFinal)" Condition="$(_WasmIntermediateAssemblyFileNames.Contains(';%(FileName)%(Extension);'))" />
@@ -386,6 +399,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmDllBuildCandidates Include="@(_BuildAssetsCandidates)" Condition="'%(Extension)' == '.dll'" />
       <_WasmDllBuildCandidatesNonCulture Include="@(_WasmDllBuildCandidates)" Condition="'%(AssetTraitName)' != 'Culture'">
         <WebcilOutputPath>$(_WasmBuildWebcilPath)%(FileName).wasm</WebcilOutputPath>
+        <!-- When the runtime pack ships a prebuilt R2R webcil for this assembly, stage it instead
+             of converting the .dll (ConvertDllsToWebcil copies %(R2RWebcilPath) to the output). -->
+        <R2RWebcilPath Condition="Exists('$(_RuntimePackNativeDir)%(FileName).wasm')">$(_RuntimePackNativeDir)%(FileName).wasm</R2RWebcilPath>
       </_WasmDllBuildCandidatesNonCulture>
       <_WasmDllBuildCandidatesCulture Include="@(_WasmDllBuildCandidates)" Condition="'%(AssetTraitName)' == 'Culture'">
         <WebcilOutputPath>$(_WasmBuildWebcilPath)%(AssetTraitValue)/%(FileName).wasm</WebcilOutputPath>
@@ -938,6 +954,47 @@ Copyright (c) .NET Foundation. All rights reserved.
     DependsOnTargets="PrepareResourceNames;ComputeIntermediateSatelliteAssemblies;ResolveAssemblyReferences"
     BeforeTargets="PrepareForPublish" />
 
+  <!-- Feed the trimmed managed assemblies into mainline PublishReadyToRun as R2R compile targets.
+       The Blazor/WebAssembly publish routes managed assemblies through ILLink + StaticWebAsset/webcil, so
+       ILLink's ComputeManagedAssemblies stamps PostprocessAssembly=true on the linker collection, not on
+       ResolvedFileToPublish. Mainline R2R builds its compile list from ResolvedFileToPublish items with
+       PostprocessAssembly=true, so that list is empty and crossgen2 never runs. Bridge the trimmed IL from
+       the linker output dir into ResolvedFileToPublish so crossgen2 (wasm obj-format) produces per-assembly
+       R2R webcil-in-wasm at $(IntermediateOutputPath)R2R, which _WasmStagePublishR2R then stages.
+       The trimmed IL is also what crossgen2 references, so keep references/compile on IL: any base-SDK R2R
+       mark on the runtime-pack copy (e.g. CoreLib under native/, untrimmed) is cleared in favor of the
+       trimmed IL, otherwise crossgen2 cannot resolve it against the trimmed closure.
+       R2R is CoreCLR-only, so this never affects Mono. -->
+  <Target Name="_WasmFeedReadyToRunCompileList"
+          Condition="'$(UseMonoRuntime)' != 'true' and '$(PublishReadyToRun)' == 'true' and '$(PublishTrimmed)' == 'true' and '$(PublishReadyToRunComposite)' != 'true' and '$(IntermediateLinkDir)' != ''"
+          BeforeTargets="_PrepareForReadyToRunCompilation">
+    <ItemGroup>
+      <!-- Clear base-SDK R2R marks for any assembly we supply as trimmed IL below. The base SDK can mark the
+           runtime-pack copy (e.g. CoreLib under native/, untrimmed) whose path is inconsistent with the
+           trimmed reference set, leaving crossgen unable to resolve it. The runtime-pack candidate stays in
+           ResolvedFileToPublish for webcil output; it just stops being a compile target. -->
+      <ResolvedFileToPublish Update="@(ResolvedFileToPublish)" PostprocessAssembly="false"
+        Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true' and Exists('$(IntermediateLinkDir)%(ResolvedFileToPublish.FileName).dll')" />
+    </ItemGroup>
+    <ItemGroup>
+      <!-- Trimmed IL closure is the R2R compile + reference set, including the app (MainAssembly). -->
+      <_WasmReadyToRunCompileInput Include="$(IntermediateLinkDir)*.dll" />
+      <ResolvedFileToPublish Include="@(_WasmReadyToRunCompileInput)"
+                             PostprocessAssembly="true"
+                             RelativePath="%(FileName)%(Extension)"
+                             CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Force the mainline R2R images ($(IntermediateOutputPath)R2R) to be produced before the wasm publish
+       converts assemblies to webcil, so _WasmStagePublishR2R can stage them. ProcessPublishFilesForWasm runs
+       AfterTargets=ILLink; in a Blazor publish that schedules it BEFORE CreateReadyToRunImages, so without
+       this ordering the publish converts trimmed IL and the R2R output (produced later) never ships. -->
+  <Target Name="_WasmEnsureReadyToRunBeforePublish"
+          Condition="'$(UseMonoRuntime)' != 'true' and '$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' != 'true' and '$(WasmBuildingForNestedPublish)' != 'true'"
+          DependsOnTargets="CreateReadyToRunImages"
+          BeforeTargets="ProcessPublishFilesForWasm" />
+
   <!-- Wasm's Nested publish is run just to build the native bits. We don't need to run blazor targets for that -->
   <Target Name="ProcessPublishFilesForWasm" DependsOnTargets="_ResolveWasmConfiguration;LoadStaticWebAssetsBuildManifest;_GatherWasmFilesToPublish" AfterTargets="ILLink" Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
     <!-- The list of static web assets already contains all the assets from the build. We want to correct certain assets that might
@@ -958,6 +1015,15 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmEmitSourceMapPublish Condition="'$(_WasmEmitSourceMapPublish)' == ''">false</_WasmEmitSourceMapPublish>
       <_WasmEmitDiagnosticModulePublish Condition="'$(EnableDiagnostics)' == 'true' or '$(WasmEmitSymbolMap)' == 'true' or '$(WasmTestSupport)' == 'true'">true</_WasmEmitDiagnosticModulePublish>
       <_WasmEmitDiagnosticModulePublish Condition="'$(_WasmEmitDiagnosticModulePublish)' == ''">false</_WasmEmitDiagnosticModulePublish>
+      <!-- Stage the runtime pack's prebuilt R2R webcils instead of converting IL only when the app is
+           not trimmed: the pack ships an untrimmed image, which matches only the untrimmed .dll. A
+           trimmed publish converts the trimmed IL as usual (needs per-app re-crossgen for R2R). -->
+      <_WasmStagePackR2RWebcil Condition="'$(PublishTrimmed)' != 'true' and '$(_WasmEnableWebcil)' == 'true'">true</_WasmStagePackR2RWebcil>
+      <!-- Stage the per-app R2R images produced by mainline PublishReadyToRun (- -obj-format:wasm) over the
+           trimmed publish closure. Non-composite writes one webcil-in-wasm .dll per assembly under
+           $(IntermediateOutputPath)R2R; ConvertDllsToWebcil copies them via %(R2RWebcilPath). -->
+      <_WasmStagePublishR2R Condition="'$(PublishReadyToRun)' == 'true' and '$(_WasmEnableWebcil)' == 'true' and '$(PublishReadyToRunComposite)' != 'true'">true</_WasmStagePublishR2R>
+      <_WasmPublishR2RDir Condition="'$(_WasmStagePublishR2R)' == 'true'">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'R2R'))</_WasmPublishR2RDir>
     </PropertyGroup>
 
     <ItemGroup Condition="@(WasmAssembliesFinal->Count()) == 0 or '$(TargetFrameworkVersion)' == 'v6.0'">
@@ -977,6 +1043,23 @@ Copyright (c) .NET Foundation. All rights reserved.
            in multi-client hosted publish scenarios. -->
       <_WasmResolvedFilesToPublish Include="@(ResolvedFileToPublish)"
         Condition="'%(ResolvedFileToPublish.CopyToPublishDirectory)' != 'Never'" />
+    </ItemGroup>
+
+    <!-- Drop the native copy of each prebuilt R2R webcil (from the runtime pack native/ dir) so it is
+         not published as a native WasmResource that would collide with the staged assembly webcil of
+         the same name. Only when staging (untrimmed); dotnet.native.wasm has no managed peer. -->
+    <ItemGroup Condition="'$(_WasmStagePackR2RWebcil)' == 'true'">
+      <_WasmResolvedFilesToPublish Remove="@(_WasmResolvedFilesToPublish)"
+        Condition="'%(Extension)' == '.wasm' and '%(FileName)' != 'dotnet.native' and Exists('$(_RuntimePackNativeDir)%(FileName).wasm')" />
+    </ItemGroup>
+
+    <!-- Trimmed R2R publish: when an assembly was app-trimmed and re-crossgen'd (an image exists in the
+         R2R dir), drop the runtime pack's untrimmed native/*.wasm copy of it so the per-app trimmed R2R
+         image is the one that ships (otherwise both collide as _framework/<name>.wasm). Assemblies that
+         were not app-trimmed keep shipping the pack's R2R native/*.wasm. -->
+    <ItemGroup Condition="'$(_WasmStagePublishR2R)' == 'true'">
+      <_WasmResolvedFilesToPublish Remove="@(_WasmResolvedFilesToPublish)"
+        Condition="'%(Extension)' == '.wasm' and '%(FileName)' != 'dotnet.native' and Exists('$(_WasmPublishR2RDir)%(FileName).dll')" />
     </ItemGroup>
 
     <ComputeWasmPublishAssets
@@ -1009,6 +1092,25 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'webcil', 'publish'))</_WasmPublishWebcilPath>
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
+
+    <!-- When the runtime pack ships a prebuilt R2R webcil for an assembly, stage it (copy) instead of
+         converting the .dll (ConvertDllsToWebcil copies %(R2RWebcilPath) to the output). Untrimmed only. -->
+    <ItemGroup Condition="'$(_WasmStagePackR2RWebcil)' == 'true'">
+      <_NewWasmPublishStaticWebAssets Update="@(_NewWasmPublishStaticWebAssets)"
+        Condition="'%(Extension)' == '.dll' and '%(AssetTraitName)' != 'Culture' and Exists('$(_RuntimePackNativeDir)%(FileName).wasm')"
+        R2RWebcilPath="$(_RuntimePackNativeDir)%(FileName).wasm" />
+    </ItemGroup>
+
+    <!-- Trimmed publish R2R: mainline PublishReadyToRun re-crossgens the trimmed closure to per-assembly
+         R2R webcil-in-wasm images at $(IntermediateOutputPath)R2R (via the wasm crossgen container) and
+         replaces the IL entries in ResolvedFileToPublish. Those .dll candidates are already webcil-in-wasm,
+         so stage them (ConvertDllsToWebcil copies %(R2RWebcilPath)) instead of parsing them as IL. The
+         Exists() check keeps this a no-op for assemblies crossgen excluded (they stay IL and convert). -->
+    <ItemGroup Condition="'$(_WasmStagePublishR2R)' == 'true'">
+      <_NewWasmPublishStaticWebAssets Update="@(_NewWasmPublishStaticWebAssets)"
+        Condition="'%(Extension)' == '.dll' and '%(AssetTraitName)' != 'Culture' and Exists('$(_WasmPublishR2RDir)%(FileName).dll')"
+        R2RWebcilPath="$(_WasmPublishR2RDir)%(FileName).dll" />
+    </ItemGroup>
 
     <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
@@ -1059,6 +1161,23 @@ Copyright (c) .NET Foundation. All rights reserved.
         Condition="'%(AssetKind)' != 'Build' and
                     (('%(StaticWebAsset.AssetTraitName)' == 'WasmResource' and '%(StaticWebAsset.AssetTraitValue)' != 'manifest' and '%(StaticWebAsset.AssetTraitValue)' != 'boot') or
                     '%(StaticWebAsset.AssetTraitName)' == 'Culture')" />
+    </ItemGroup>
+
+    <!-- The runtime pack's prebuilt R2R webcil-in-wasm images (native/*.wasm) are native assets, so the IL
+         trimmer never drops them and they stay in ResolvedFileToPublish. Their served copies are staged into
+         _framework above (ConvertDllsToWebcil via %(R2RWebcilPath)), so the raw native/*.wasm must not also be
+         copied loose into the publish root - otherwise the whole untrimmed framework closure lands there,
+         unused. Remove them so the publish root stays clean, matching the IL-webcil publish. CoreCLR-only:
+         the Mono pack ships no managed native/*.wasm, so this is a no-op there. -->
+    <ItemGroup Condition="'$(UseMonoRuntime)' != 'true' and '$(_WasmEnableWebcil)' == 'true'">
+      <_WasmPackR2RNativeImage Include="$(_RuntimePackNativeDir)*.wasm" Exclude="$(_RuntimePackNativeDir)dotnet.native*.wasm" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(UseMonoRuntime)' != 'true' and '$(_WasmEnableWebcil)' == 'true'">
+      <_WasmPackR2RNativeImageNames>;@(_WasmPackR2RNativeImage->'%(FileName)%(Extension)');</_WasmPackR2RNativeImageNames>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(UseMonoRuntime)' != 'true' and '$(_WasmEnableWebcil)' == 'true' and '@(_WasmPackR2RNativeImage)' != ''">
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
+        Condition="$(_WasmPackR2RNativeImageNames.Contains(';%(FileName)%(Extension);'))" />
     </ItemGroup>
   </Target>
 

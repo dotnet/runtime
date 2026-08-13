@@ -119,6 +119,10 @@
       <_systemPrivateCoreLib Include="$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll"
                              Condition="Exists('$(CoreCLRArtifactsPath)IL/System.Private.CoreLib.dll') and '@(_systemPrivateCoreLib)' == ''" />
       <RuntimeFiles Include="@(_systemPrivateCoreLib)" />
+      <!-- R2R webcil-in-wasm CoreLib (browser CoreCLR): shipped alongside the IL .dll, which is kept for trimming/reference. -->
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.wasm"
+                    Condition="'$(TargetsBrowser)' == 'true' and Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.wasm')"
+                    IsNative="true" />
       <RuntimeFiles
         Include="
           $(CoreCLRSharedFrameworkPdbDir)*.pdb;

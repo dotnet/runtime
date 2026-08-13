@@ -24,6 +24,21 @@
     <UseMonoRuntime>true</UseMonoRuntime>
   </PropertyGroup>
 
+  <!-- ReadyToRun for browser-wasm CoreCLR publish: ride mainline PublishReadyToRun with the wasm
+       container format and the in-tree crossgen2. Mirrors src/mono/msbuild/apple/build/AppleBuild.props.
+       Trimmed publish re-crossgens the trimmed closure (the untrimmed pack R2R is invalid there). -->
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser' and '$(PublishReadyToRun)' == 'true'">
+    <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == ''">wasm</PublishReadyToRunContainerFormat>
+    <!-- Per-assembly (non-composite) for bring-up; composite is a later phase. -->
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">false</PublishReadyToRunComposite>
+    <!-- crossgen2 wasm codegen cannot emit some NYI/SIMD sequences into R2R; fall back to runtime JIT for those. -->
+    <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
+    <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != '' and Exists('$(Crossgen2SdkOverrideTargetsPath)')">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
+    <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)WasmApp.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
+  </PropertyGroup>
+  <Import Project="$(Crossgen2SdkOverridePropsPath)"
+          Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser' and '$(PublishReadyToRun)' == 'true' and '$(Crossgen2SdkOverridePropsPath)' != '' and Exists('$(Crossgen2SdkOverridePropsPath)')" />
+
   <PropertyGroup Condition="'$(IsTestProject)' == 'true' or '$(IsOutputTypeLibrary)' == 'true'">
     <OutputType>library</OutputType>
   </PropertyGroup>
