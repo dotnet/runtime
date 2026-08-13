@@ -1615,6 +1615,10 @@ namespace System.IO.Compression
                 else if (UseAesEncryption)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
+                    if (!_archive.ArchiveStream.CanSeek)
+                    {
+                        _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
+                    }
                     CompressionMethod = (ZipCompressionMethod)WinZipAesMethod;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
