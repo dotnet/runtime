@@ -129,7 +129,7 @@ char* minipal_getexepath(void)
         return NULL;
     }
 
-    return strdup(path);
+    return _strdup(path);
 #elif defined(TARGET_BROWSER)
     const char *browserVirtualAppBase = "/"; // keep in sync other places that define browserVirtualAppBase
     return strdup(browserVirtualAppBase);
