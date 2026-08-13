@@ -14,7 +14,7 @@ namespace ILCompiler
     {
         private readonly object _structCacheLock = new object();
         private readonly Dictionary<int, TypeDesc> _structsBySize = new Dictionary<int, TypeDesc>();
-        private readonly Dictionary<(int Size, int Alignment), TypeDesc> _structsByLayout = new Dictionary<(int, int), TypeDesc>();
+        private readonly Dictionary<int, TypeDesc> _alignedStructsBySize = new Dictionary<int, TypeDesc>();
         private readonly Dictionary<int, TypeDesc> _returnStructsBySize = new Dictionary<int, TypeDesc>();
         private volatile TypeDesc _cachedEmptyStruct;
         private volatile TypeDesc _wasmV128Type;
@@ -92,8 +92,9 @@ namespace ILCompiler
 
         /// <summary>
         /// Caches a struct type by the layout represented in its signature encoding, so
-        /// RaiseSignature can retrieve a real type with the same argument layout. Alignments up to
-        /// 8 use the legacy size-only encoding; larger alignments are part of the cache key.
+        /// RaiseSignature can retrieve a real type with the same argument layout. Structs whose
+        /// alignment exceeds 8 use a separate cache because their transition-block slots are
+        /// 16-byte aligned.
         /// </summary>
         public void CacheStruct(TypeDesc type)
         {
@@ -106,7 +107,7 @@ namespace ILCompiler
             {
                 if (alignment > 8)
                 {
-                    _structsByLayout.TryAdd((size, alignment), type);
+                    _alignedStructsBySize.TryAdd(size, type);
                 }
                 else
                 {
@@ -161,11 +162,11 @@ namespace ILCompiler
             return null;
         }
 
-        public TypeDesc GetCachedStructOfLayout(int size, int alignment)
+        public TypeDesc GetCachedAlignedStructOfSize(int size)
         {
             lock (_structCacheLock)
             {
-                if (_structsByLayout.TryGetValue((size, alignment), out TypeDesc result))
+                if (_alignedStructsBySize.TryGetValue(size, out TypeDesc result))
                     return result;
             }
 

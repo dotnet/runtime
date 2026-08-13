@@ -184,7 +184,7 @@ internal sealed class InterpToNativeGenerator
             int slot = 0;
             foreach (var token in args)
             {
-                if (token[0] == 'S' && SignatureMapper.GetStructAlignment(token) > 8)
+                if (token[0] == 'A')
                 {
                     slot = (slot + 1) & ~1;
                 }

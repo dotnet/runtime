@@ -409,33 +409,17 @@ namespace Internal.JitInterface
             _ => throw new InvalidOperationException($"Unknown signature char: {c}")
         };
 
-        private static (int Size, int Alignment) ParseStructLayout(string sig, ref int pos)
+        private static int ParseStructSize(string sig, ref int pos)
         {
-            Debug.Assert(sig[pos] == 'S');
-            pos++; // skip 'S'
-
-            if (pos < sig.Length && sig[pos] == '!')
+            Debug.Assert(sig[pos] is 'S' or 'A');
+            pos++; // skip 'S'/'A'
+            int start = pos;
+            while (pos < sig.Length && char.IsDigit(sig[pos]))
             {
-                pos++; // skip '!'
-                int size = ParseInteger(sig, ref pos);
-                Debug.Assert(pos < sig.Length && sig[pos] == ':');
-                pos++; // skip ':'
-                int alignment = ParseInteger(sig, ref pos);
-                return (size, alignment);
+                pos++;
             }
 
-            return (ParseInteger(sig, ref pos), 0);
-
-            static int ParseInteger(string sig, ref int pos)
-            {
-                int start = pos;
-                while (pos < sig.Length && char.IsDigit(sig[pos]))
-                {
-                    pos++;
-                }
-
-                return int.Parse(sig.AsSpan(start, pos - start));
-            }
+            return int.Parse(sig.AsSpan(start, pos - start));
         }
 
         public static MethodSignature RaiseSignature(WasmSignature wasmSignature, TypeSystemContext context)
@@ -452,8 +436,7 @@ namespace Internal.JitInterface
             }
             else if (sig[pos] == 'S')
             {
-                (int structSize, int structAlignment) = ParseStructLayout(sig, ref pos);
-                Debug.Assert(structAlignment == 0, $"Struct returns do not encode alignment in signature '{sig}'");
+                int structSize = ParseStructSize(sig, ref pos);
                 returnType = ((CompilerTypeSystemContext)context).GetCachedReturnStructOfSize(structSize);
                 Debug.Assert(returnType is not null, $"No cached struct of size {structSize} for return type in signature '{sig}'");
             }
@@ -514,15 +497,16 @@ namespace Internal.JitInterface
                     parameters.Add(((CompilerTypeSystemContext)context).GetWasmElevatedType(c, elevation));
                     pos += 2;
                 }
-                else if (c == 'S')
+                else if (c is 'S' or 'A')
                 {
-                    (int structSize, int structAlignment) = ParseStructLayout(sig, ref pos);
+                    bool isAlignedStruct = c == 'A';
+                    int structSize = ParseStructSize(sig, ref pos);
                     CompilerTypeSystemContext compilerContext = (CompilerTypeSystemContext)context;
-                    TypeDesc cachedStruct = structAlignment == 0
-                        ? compilerContext.GetCachedStructOfSize(structSize)
-                        : compilerContext.GetCachedStructOfLayout(structSize, structAlignment);
+                    TypeDesc cachedStruct = isAlignedStruct
+                        ? compilerContext.GetCachedAlignedStructOfSize(structSize)
+                        : compilerContext.GetCachedStructOfSize(structSize);
                     Debug.Assert(cachedStruct is not null,
-                        $"No cached struct of size {structSize} and alignment {structAlignment} for parameter in signature '{sig}'");
+                        $"No cached {(isAlignedStruct ? "aligned " : "")}struct of size {structSize} for parameter in signature '{sig}'");
                     parameters.Add(cachedStruct);
                 }
                 else
@@ -743,17 +727,8 @@ namespace Internal.JitInterface
                     {
                         Debug.Assert(paramType is DefType);
                         int paramAlignment = ((DefType)paramType).InstanceFieldAlignment.AsInt;
-                        sigBuilder.Append('S');
-                        if (paramAlignment > 8)
-                        {
-                            sigBuilder.Append('!');
-                        }
+                        sigBuilder.Append(paramAlignment > 8 ? 'A' : 'S');
                         sigBuilder.Append(paramSize);
-                        if (paramAlignment > 8)
-                        {
-                            sigBuilder.Append(':');
-                            sigBuilder.Append(paramAlignment);
-                        }
                         ((CompilerTypeSystemContext)paramType.Context).CacheStruct(paramType);
                         result.Add(pointerType);
                     }

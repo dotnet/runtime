@@ -1078,8 +1078,8 @@ The string format is:
 | `V` | returns `v128` (a `Vector128<T>`, or a 16-byte `Vector<T>`) |
 | `S<N>` | struct return via hidden buffer, `N` is the struct size in bytes |
 
-Struct returns always use `S<N>` regardless of alignment. The alignment-qualified form is
-valid only for parameters because their placement in the transition block depends on it.
+Struct returns always use `S<N>` regardless of alignment. The aligned form is valid only
+for parameters because their placement in the transition block depends on it.
 
 **This pointer** (if the method has a `this` parameter):
 
@@ -1107,7 +1107,7 @@ it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
 | `d` | `f64` parameter |
 | `V` | `v128` parameter (a `Vector128<T>`, or a 16-byte `Vector<T>`, passed by value) |
 | `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes and its alignment is at most 8 |
-| `S!<N>:<A>` | struct parameter passed by reference with size `<N>` and alignment `<A>`, where `<A>` is greater than 8 |
+| `A<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes and its alignment exceeds 8 |
 | `e` | empty struct parameter — elided from Wasm args but present in the string |
 | `<slot><E>` | multi-slot parameter passed by value, see below |
 
@@ -1129,7 +1129,7 @@ The digit is required. A repeated slot character without one — `ll`, `VV` — 
 aggregate: it is two independent scalar parameters, which is how every implementation
 reads it. So `ll2VV4` is `i64`, `Int128`, `Vector128<T>`, `Vector512<T>`. The grammar stays
 unambiguous because no other token places a digit after a slot character; struct tokens
-consume their own size and optional alignment.
+consume their own size.
 
 These types are still *returned* through a hidden buffer, encoded as `S<N>` like any other
 aggregate. Limitation: a single digit carries both the slot count and the elevation factor,
@@ -1139,6 +1139,10 @@ elevation 1. No such type exists in the Wasm ABI today.
 
 WasmAppBuilder does not emit or consume multi-slot tokens: they do not appear in
 `InternalCall` or `PInvoke` signatures.
+
+A struct argument is placed at its own alignment clamped to `[8, 16]` in the transition
+block. Therefore `A<N>` covers every struct whose declared alignment exceeds 8: alignments
+of 16 or higher all require the same 16-byte transition-block placement.
 
 **Suffix**:
 
@@ -1166,14 +1170,14 @@ prefix to distinguish thunk categories:
 | `void F(int x)` (instance) | `vTip` |
 | `static MyStruct F()` where `MyStruct` is 16 bytes | `S16p` |
 | `static void F(MyStruct s)` where `MyStruct` is 8 bytes | `vS8p` |
-| `static void F(long tag, MyStruct s, int t)` where `MyStruct` is 32 bytes and 16-byte aligned | `vlS!32:16ip` |
+| `static void F(long tag, MyStruct s, int t)` where `MyStruct` is 32 bytes and at least 16-byte aligned | `vlA32ip` |
 | `static int F(float x, double y)` | `ifdp` |
 | `static long F(long tag, Int128 v, int t)` | `lll2ip` |
 | `static int F(long tag, Vector512<int> v, int t)` | `ilV4ip` |
 | `[UnmanagedCallersOnly] static int F(int x)` | `ii` |
 
 **Slot sizing for structs**: When computing interpreter stack layout, struct parameters
-(`S<N>` and `S!<N>:<A>`) consume `max((N + 7) / 8, 1)` interpreter stack slots, while all
+(`S<N>` and `A<N>`) consume `max((N + 7) / 8, 1)` interpreter stack slots, while all
 other parameter types consume exactly 1 slot.
 
 # References
