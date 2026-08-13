@@ -13,22 +13,27 @@ on:
   roles: [admin, maintainer, write]
   permissions: {}
 
-if: |
-  github.repository == 'dotnet/runtime'
+if: (!github.event.repository.fork)
 
 # ###############################################################
-# Override COPILOT_GITHUB_TOKEN with a random PAT from the pool.
-# This stop-gap will be removed when org billing is available.
-# See: .github/workflows/shared/pat_pool.README.md for more info.
+# Select a PAT from the pool and override COPILOT_GITHUB_TOKEN.
+# Run agentic jobs in an isolated `copilot-pat-pool` environment.
+#
+# When org-level billing is available, this will be removed.
+# See `shared/pat_pool.README.md` for more information.
 # ###############################################################
 imports:
-  - shared/pat_pool.md
+  - uses: shared/pat_pool.md
+    with:
+      environment: copilot-pat-pool
+
+environment: copilot-pat-pool
 
 engine:
   id: copilot
   model: claude-opus-4.8
   env:
-    COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, secrets.COPILOT_GITHUB_TOKEN) }}
+    COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, 'NO COPILOT PAT AVAILABLE') }}
 
 concurrency:
   group: "ci-failure-scan"
@@ -181,7 +186,15 @@ Choose the label by the definition the signature came from. Never apply both blo
 
 ### Step 3 — Classify each failure (log-extraction only)
 
-Classification here drives WHERE the agent reads the signature text from. It does NOT drive WHERE the issue gets filed — every actionable signature flows through Step 4 + Step 5 Branch A. The timeline graph is `Stage -> Phase -> Job -> Task`; walk it via `parentId`. Drill into one representative console log per signature to confirm the shape.
+Classification here drives WHERE the agent reads the signature text from. It does NOT drive WHERE the issue gets filed — every actionable signature flows through Step 4 + Step 5 Branch A. The timeline graph is `Stage -> Phase -> Job -> Task`; walk it via `parentId`.
+
+**Inventory first, then classify.** Before choosing any representative console log, build the complete candidate-failure inventory for `source`:
+
+1. Enumerate **every failed leaf record** (`Task` / `Job` / `Phase`) that can carry a distinct failure for the source build.
+2. For every `Send to Helix` task attached to a failed job / phase in the source build, enumerate **every failed Helix work item** behind that task — not just the first failing leg, not just one log per definition, and not just the first match from `head`.
+3. Treat each failed work item (or build-break leaf) as a candidate input to signature extraction, then group identical signatures afterward.
+
+Do **not** collapse a build to one arbitrarily chosen failed `Send to Helix` log when multiple failed logs or work items exist. Detection and grouping must still consider **all** failures seen in the source build. Drill into one representative console log **per distinct grouped signature** only after this complete inventory exists.
 
 Save the canonical failure log to `/tmp/gh-aw/agent/failure.log` per signature before extracting; KBE check 7 greps it for the verbatim signature.
 
@@ -192,11 +205,11 @@ curl -s "$log_url" | tee /tmp/gh-aw/agent/failure.log | tail -5
 
 1. **Build break.** Failed task is `Build product` / `Build native components` / `Configure CMake` / any pre-test compile step, AND `Send to Helix` is `skipped`. Read the signature from the failing compile task log (CSxxxx / linker error / cmake error line).
 2. **Phase/Stage-only failure with no failed Job underneath.** Compile breaks aggregated at phase level (e.g. `windows-arm64 checked` on JIT stress pipelines). Open the Phase log + the latest log of any non-succeeded child Task and treat as build break.
-3. **Helix work-item failure.** `Send to Helix` succeeded but Job still failed. Extract Helix job IDs from the `Send to Helix` log (`Sent Helix Job: <GUID>`), query Helix work items, fetch the failing console log, locate the `[FAIL]` line.
+3. **Helix work-item failure.** `Send to Helix` succeeded but Job still failed. Extract Helix job IDs from **every relevant** `Send to Helix` log for the source build (`Sent Helix Job: <GUID>`), where "relevant" means the log belongs to a failed job / phase that could carry a distinct failure. Query Helix work items and enumerate **all** failed work items behind those jobs. Fetch each failing console log, locate the `[FAIL]` line, and only then group repeated signatures. If one source build has 4 relevant `Send to Helix` tasks and 7 failed work items across them, the Step 3 output must account for all 7 candidate failures before any dedup or cap logic runs.
 4. **Dead-lettered Helix work item.** Console URI contains `helix-workitem-deadletter`. Extract `[FAIL]` line if present; if not, treat as infra noise (no stable signature) and skip emission entirely — record `skipped: infra noise — no stable signature` in the tally.
 5. **Infra-shaped Job failure with no Helix work items.** `Initialize job` failed / agent disconnect / `Pool is offline`. Skip emission entirely — record `skipped: infra noise — no stable signature` in the tally.
 
-For each (1)/(2)/(3) signature, compute the tuple `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL]-or-compile-error signature)`. Look back ~10 prior completed builds in the same definition for first-seen-in-window timestamp and occurrence count.
+For each (1)/(2)/(3) signature from that complete inventory, compute the tuple `(definition_id, work_item_or_phase, queue, stress_mode, [FAIL]-or-compile-error signature)`. Multiple failed work items from the same source build may yield multiple distinct tuples; preserve them all unless they collapse by exact signature grouping. Look back ~10 prior completed builds in the same definition for first-seen-in-window timestamp and occurrence count.
 
 If the same signature appears in *every* sampled build (100% failure rate in the ~10-build window), the true first occurrence likely predates the window. Widen the build-list query (`&%24skip=10`, `&%24skip=20`, ...) up to ~40 additional builds and stop as soon as you find a build where the signature is absent (`succeeded`/`partiallySucceeded` without this signature). Report the build immediately after that gap as `First build it occurred` in the KBE body. If you hit the 40-build cap without finding a gap, set `First build it occurred` to the oldest build you scanned and add `Persistent across the entire scanned window; true origin may predate <oldest-build-date>.` as a body note.
 
@@ -206,7 +219,14 @@ If the same signature appears in *every* sampled build (100% failure rate in the
   - List builds: `?definitions={id}&branchName=refs/heads/main&statusFilter=completed&resultFilter=succeeded,failed,partiallySucceeded&%24top=25&api-version=7.1`
   - Timeline: `/builds/{id}/timeline?api-version=7.1` returns flat `records[]`; reconstruct via `parentId`. A failed record with non-null log id is a leaf to inspect.
 - **Helix REST.** `https://helix.dot.net/api/jobs/{jobId}/workitems?api-version=2019-06-17`. Each item has `Name`, `State`, `ExitCode`, `ConsoleOutputUri`. Failed: `ExitCode != 0` or `State == "Failed"`.
-- **Build Analysis attachment (best-effort).** `https://dev.azure.com/dnceng-public/public/_apis/build/builds/{id}/attachments/Build_Analysis_KnownIssues_v1?api-version=7.1`. Use to dedupe. 404 = none attached; do not fail.
+- **Build Analysis GitHub check (best-effort).** Read the source SHA from the
+  AzDO build, then query
+  `GET /repos/dotnet/runtime/commits/{sha}/check-runs` and inspect the completed
+  `Build Analysis` check's `output.text`. If the report links the source build's
+  failure to an existing issue, record `existing-kbe #<n>`. Reports omit some
+  known errors when they exceed GitHub's output limits, so absence is not proof
+  that Build Analysis did not match; always continue with the exact KBE searches
+  in Step 4.2 after a miss.
 
 ### Step 3.5 — Follow-up-build presence gate
 
@@ -315,7 +335,7 @@ No meta / aggregate / outage issues. Every KBE is keyed to a single `(definition
 
 Stable means >= 2 occurrences across >= 2 distinct builds in the ~10-build window, OR a build break that fails all legs of the current build (block-everyone severity that warrants filing on first sight). Multiple legs, retries, or work items of the SAME build (same build id) count as a single occurrence, not two — a one-off failure that appears in only one build is NOT stable; record `skipped: < 2 occurrences and not blocking` and let the next run revisit. Emit one `create_issue` using exactly the shared new-KBE template from `.github/workflows/shared/create-kbe.instructions.md` section `<a id="new-kbe-template"></a>` / `## New-KBE template`, including whichever of `<a id="literal-kbe-template"></a>` / `### KBE issue body - literal substring match`, `<a id="regex-kbe-template"></a>` / `### KBE issue body - regex match`, or `<a id="kbe-array-form"></a>` / `### KBE multi-line array form` fits the signature. Apply `Known Build Error` and the blocking label chosen per [KBE label selection](#kbe-label-selection) so the org project auto-add rule picks it up; do NOT try to mutate the project from this workflow. Append to the same-run dedup cache (Step 4.0) after emission.
 
-**Match-count gate.** Reject the emit if the body lacks `<!-- ci-scan-match-count: <N> hits in failure.log -->` with `N >= 1`. Treat an absent marker as `N=0` and record the same skip reason check #7 of the shared instructions uses: `skipped: signature did not match failure.log (N=<count>)`. Rationale, log-source caveats, and native-assert handling live in check #7.
+**Match-count gate.** Reject the emit unless the KBE body contains the collapsed, workflow-identified verification block defined by check #7 of the shared instructions, with `N >= 1`. Treat an absent block or field as `N=0` and record the same skip reason check #7 uses: `skipped: signature did not match failure.log (N=<count>)`. Rationale, log-source caveats, and native-assert handling live in check #7.
 
 If the shared KBE lookup flow recorded `linked-tracker #<tracker>`, cross-link it as `Tracking: dotnet/runtime#<tracker>` in the KBE body.
 

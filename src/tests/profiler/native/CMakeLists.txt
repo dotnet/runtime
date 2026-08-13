@@ -5,6 +5,7 @@ set(SOURCES
     classload/classload.cpp
     dynamicjitoptimization/dynamicjitoptimization.cpp
     eltprofiler/slowpatheltprofiler.cpp
+    elttransitions/elttransitions.cpp
     enumthreadsprofiler/enumthreadsprofiler.cpp
     eventpipeprofiler/eventpipereadingprofiler.cpp
     eventpipeprofiler/eventpipewritingprofiler.cpp
@@ -18,6 +19,7 @@ set(SOURCES
     gcskipobjectsallocatedbyclasscallbackprofiler/gcskipobjectsallocatedbyclasscallbackprofiler.cpp
     getappdomainstaticaddress/getappdomainstaticaddress.cpp
     handlesprofiler/handlesprofiler.cpp
+    ijw/ijwprofiler.cpp
     inlining/inlining.cpp
     metadatagetdispenser/metadatagetdispenser.cpp
     moduleload/moduleload.cpp
@@ -28,6 +30,8 @@ set(SOURCES
     rejitprofiler/ilrewriter.cpp
     rejitprofiler/sigparse.cpp
     releaseondetach/releaseondetach.cpp
+    runtimeasyncapis/runtimeasyncapisprofiler.cpp
+    runtimeasynctypes/runtimeasynctypesprofiler.cpp
     transitions/transitions.cpp
     profiler.def
     profiler.cpp

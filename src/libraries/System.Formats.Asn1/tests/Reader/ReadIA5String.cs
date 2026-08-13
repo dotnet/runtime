@@ -140,6 +140,12 @@ namespace System.Formats.Asn1.Tests.Reader
                       "0000",
                     "Dr. & Mrs. Smith-Jones & children",
                 },
+                new object[]
+                {
+                    AsnEncodingRules.BER,
+                    "1640" + new string('4', 128),
+                    new string('D', 64),
+                },
             };
 
         [Theory]
@@ -372,6 +378,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("Bad IA5 value", AsnEncodingRules.BER, "1602E280")]
         [InlineData("Bad IA5 value", AsnEncodingRules.CER, "1602E280")]
         [InlineData("Bad IA5 value", AsnEncodingRules.DER, "1602E280")]
+        [InlineData("Bad IA5 value after vector prefix", AsnEncodingRules.BER, "1621414141414141414141414141414141414141414141414141414141414141414180")]
         [InlineData("Wrong Tag", AsnEncodingRules.BER, "04024869")]
         public void GetIA5String_Throws(
             string description,
@@ -431,6 +438,7 @@ namespace System.Formats.Asn1.Tests.Reader
         [InlineData("NonEmpty Null", AsnEncodingRules.CER, "3680000100")]
         [InlineData("LongLength Null", AsnEncodingRules.BER, "3680008100")]
         [InlineData("Bad IA5 value", AsnEncodingRules.BER, "1602E280")]
+        [InlineData("Bad IA5 value after vector prefix", AsnEncodingRules.BER, "1621414141414141414141414141414141414141414141414141414141414141414180")]
         public void TryCopyIA5String_Throws(
             string description,
             AsnEncodingRules ruleSet,

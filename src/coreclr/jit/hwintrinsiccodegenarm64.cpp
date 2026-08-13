@@ -298,7 +298,7 @@ static void genEmitCreateWhileMask(emitter*            emit,
 void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNumber targetReg)
 {
     const HWIntrinsic intrinCndSel(cndSelNode);
-    assert(intrinCndSel.id == NI_Sve_ConditionalSelect);
+    assert(HWIntrinsicInfo::IsSveConditionalSelect(intrinCndSel.id));
 
     GenTree* maskOp    = intrinCndSel.op1;
     GenTree* embMaskOp = intrinCndSel.op2;
@@ -360,7 +360,10 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
     insScalableOpts sopt     = INS_SCALABLE_OPTS_NONE;
 
 #ifdef DEBUG
-    checkRMWRegisters(intrinEmbMask, targetReg);
+    if (isRMW)
+    {
+        checkRMWRegisters(intrinEmbMask, targetReg);
+    }
 #endif
 
     // Setup instruction options and handle special cases.
@@ -418,7 +421,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
             // targetReg != falseReg: Move falseReg into targetReg.
             if (falseOp->isContained())
             {
-                assert(falseOp->IsVectorZero());
+                assert(falseOp->IsZeroForSelect());
                 if (maskOp->IsTrueMask(intrinCndSel.baseType))
                 {
                     // If maskOp is all-true, no need to move falseReg to targetReg
@@ -456,7 +459,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
             {
                 embOpt = INS_OPTS_SCALABLE_B;
                 // This instruction is zeroing predicated, just use unpredicated mov.
-                assert(falseOp->IsVectorZero());
+                assert(falseOp->IsZeroForSelect());
                 GetEmitter()->emitInsSve_R_R_R_R(insEmbMask, emitSize, targetReg, maskReg, embMaskOp1Reg, embMaskOp2Reg,
                                                  embOpt, sopt);
                 return;
@@ -567,7 +570,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
         else if (isOptionalEmbMask)
         {
             if (maskOp->IsTrueMask(intrinEmbMask.baseType) ||
-                (!falseOp->IsVectorZero() && (targetReg != falseReg) && (falseReg != embMaskOp1Reg)))
+                (!falseOp->IsZeroForSelect() && (targetReg != falseReg) && (falseReg != embMaskOp1Reg)))
             {
                 // If the embedded instruction supports optional mask operation, and when movprfx is not needed,
                 // use the "unpredicated" version of the instruction.
@@ -688,7 +691,7 @@ void CodeGen::genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNu
 
     // Determine the move option, based on the register usage.
     insSveMovOpts mopt = INS_SVE_MOV_OPTS_UNPRED;
-    if (falseOp->IsVectorZero())
+    if (falseOp->IsZeroForSelect())
     {
         // If `falseReg` is zero, then move the first operand of `intrinEmbMask` in the
         // destination using /Z.
@@ -894,10 +897,27 @@ void CodeGen::checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg)
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    const HWIntrinsic intrin(node);
+    const HWIntrinsic      intrin(node);
+    CORINFO_InstructionSet isa = HWIntrinsicInfo::lookupIsa(intrin.id);
 
     // We need to validate that other phases of the compiler haven't introduced unsupported intrinsics
-    assert(m_compiler->compIsaSupportedDebugOnly(HWIntrinsicInfo::lookupIsa(intrin.id)));
+
+    if (isa == InstructionSet_Vector)
+    {
+        if (node->GetSimdSize() == 8)
+        {
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector64));
+        }
+        else
+        {
+            assert((node->GetSimdSize() == 12) || (node->GetSimdSize() == 16));
+            assert(m_compiler->compIsaSupportedDebugOnly(InstructionSet_Vector128));
+        }
+    }
+    else
+    {
+        assert(m_compiler->compIsaSupportedDebugOnly(isa));
+    }
 
     regNumber targetReg = node->GetRegNum();
 
@@ -1086,7 +1106,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
             }
         }
-        else if (intrin.id == NI_Sve_ConditionalSelect && intrin.op2->IsEmbMaskOp())
+        else if (HWIntrinsicInfo::IsSveConditionalSelect(intrin.id) && intrin.op2->IsEmbMaskOp())
         {
             // Handle case where op2 is operation that needs embedded mask
             genEmbeddedMaskedHWIntrinsic(node, targetReg);
@@ -1134,7 +1154,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     // This handles optimizations for instructions that have
                     // an implicit 'zero' vector of what would be the second operand.
                     if (HWIntrinsicInfo::SupportsContainment(intrin.id) && intrin.op2->isContained() &&
-                        intrin.op2->IsVectorZero())
+                        intrin.op2->IsZeroForSelect())
                     {
                         GetEmitter()->emitIns_R_R(ins, emitSize, targetReg, op1Reg, opt);
                     }
@@ -1273,6 +1293,97 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_ArmBase_ConvertToSingle:
+                GetEmitter()->emitIns_R_R(ins, EA_4BYTE, targetReg, op1Reg, INS_OPTS_H_TO_S);
+                break;
+
+            case NI_ArmBase_ConvertToDouble:
+                GetEmitter()->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg, INS_OPTS_H_TO_D);
+                break;
+
+            case NI_ArmBase_ConvertToHalf:
+            {
+                // Baseline FCVT precision conversion; the source (base) type selects the width.
+                assert((intrin.baseType == TYP_FLOAT) || (intrin.baseType == TYP_DOUBLE));
+                insOpts cvtOption = (intrin.baseType == TYP_FLOAT) ? INS_OPTS_S_TO_H : INS_OPTS_D_TO_H;
+                GetEmitter()->emitIns_R_R(ins, EA_2BYTE, targetReg, op1Reg, cvtOption);
+                break;
+            }
+
+            case NI_Fp16_ConvertToInt32:
+            case NI_Fp16_ConvertToUInt32:
+                GetEmitter()->emitIns_R_R(ins, EA_4BYTE, targetReg, op1Reg, INS_OPTS_H_TO_4BYTE);
+                break;
+
+            case NI_Fp16_ConvertToInt64:
+            case NI_Fp16_ConvertToUInt64:
+                GetEmitter()->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg, INS_OPTS_H_TO_8BYTE);
+                break;
+
+            case NI_Fp16_ConvertToHalf:
+            {
+                // The instruction is already selected by the source (base) type; only the
+                // conversion option needs to distinguish the source width and signedness.
+                insOpts cvtOption = INS_OPTS_NONE;
+
+                switch (intrin.baseType)
+                {
+                    case TYP_INT:
+                    case TYP_UINT:
+                        cvtOption = INS_OPTS_4BYTE_TO_H;
+                        break;
+                    case TYP_LONG:
+                    case TYP_ULONG:
+                        cvtOption = INS_OPTS_8BYTE_TO_H;
+                        break;
+                    default:
+                        unreached();
+                }
+
+                GetEmitter()->emitIns_R_R(ins, EA_2BYTE, targetReg, op1Reg, cvtOption);
+                break;
+            }
+
+            case NI_Fp16_CompareEqual:
+            case NI_Fp16_CompareGreaterThan:
+            case NI_Fp16_CompareGreaterThanOrEqual:
+            case NI_Fp16_CompareLessThan:
+            case NI_Fp16_CompareLessThanOrEqual:
+            case NI_Fp16_CompareNotEqual:
+            {
+                insCond cond = INS_COND_EQ;
+
+                switch (intrin.id)
+                {
+                    case NI_Fp16_CompareEqual:
+                        cond = INS_COND_EQ;
+                        break;
+                    case NI_Fp16_CompareGreaterThan:
+                        cond = INS_COND_GT;
+                        break;
+                    case NI_Fp16_CompareGreaterThanOrEqual:
+                        cond = INS_COND_GE;
+                        break;
+                    case NI_Fp16_CompareLessThan:
+                        // 'mi' rather than 'lt' so an unordered (NaN) comparison yields false.
+                        cond = INS_COND_MI;
+                        break;
+                    case NI_Fp16_CompareLessThanOrEqual:
+                        // 'ls' rather than 'le' so an unordered (NaN) comparison yields false.
+                        cond = INS_COND_LS;
+                        break;
+                    case NI_Fp16_CompareNotEqual:
+                        cond = INS_COND_NE;
+                        break;
+                    default:
+                        unreached();
+                }
+
+                GetEmitter()->emitIns_R_R(INS_fcmp, EA_2BYTE, op1Reg, op2Reg);
+                GetEmitter()->emitIns_R_COND(INS_cset, EA_4BYTE, targetReg, cond);
+                break;
+            }
+
             case NI_Crc32_ComputeCrc32:
             case NI_Crc32_ComputeCrc32C:
             case NI_Crc32_Arm64_ComputeCrc32:
@@ -1406,7 +1517,13 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 // fmov (scalar) zeros the upper bits and is not safe to use
                 assert(!intrin.op3->isContainedFltOrDblImmed());
 
-                assert(targetReg != op3Reg);
+                // The mov above copies op1 into targetReg and the ins below then reads op3. That is
+                // only unsafe when targetReg == op3Reg but targetReg != op1Reg, as the mov would then
+                // clobber op3 before it is read. LSRA marks op3 delayFree, so a distinct op3 can never
+                // share the def register; targetReg == op3Reg is only reachable when op3 aliases op1
+                // (e.g. Vector.Create(x, ..., x, ...) after a floating-point CreateScalarUnsafe is
+                // elided into a bare scalar), in which case the mov is skipped and op3 is preserved.
+                assert((targetReg != op3Reg) || (targetReg == op1Reg));
 
                 HWIntrinsicImmOpHelper helper(this, intrin.op2, node);
 
@@ -1643,9 +1760,25 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector64_CreateScalarUnsafe:
-            case NI_Vector128_CreateScalarUnsafe:
-                if (intrin.op1->isContainedFltOrDblImmed())
+            case NI_Vector_CreateScalarUnsafe:
+            {
+                var_types simdType = Compiler::getSIMDTypeForSize(node->GetSimdSize());
+
+                if (simdType == TYP_SIMD)
+                {
+                    emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+
+                    if (varTypeIsFloating(intrin.baseType))
+                    {
+                        regNumber tmpReg  = internalRegisters.Extract(node, RBM_ALLINT);
+                        insOpts   fmovOpt = (emitSize == EA_8BYTE) ? INS_OPTS_D_TO_8BYTE : INS_OPTS_S_TO_4BYTE;
+                        GetEmitter()->emitIns_Mov(INS_fmov, emitSize, tmpReg, op1Reg, /* canSkip */ false, fmovOpt);
+                        op1Reg = tmpReg;
+                    }
+
+                    GetEmitter()->emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                }
+                else if (intrin.op1->isContainedFltOrDblImmed())
                 {
                     // fmov reg, #imm8
                     const double dataValue = intrin.op1->AsDblCon()->DconValue();
@@ -1675,6 +1808,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                 }
                 break;
+            }
 
             case NI_AdvSimd_AddWideningLower:
             case NI_AdvSimd_AddWideningUpper:
@@ -1858,18 +1992,17 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector64_ToVector128:
+            case NI_Vector_ToVector128:
                 GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ false);
                 break;
 
-            case NI_Vector64_ToVector128Unsafe:
-            case NI_Vector128_AsVector128Unsafe:
-            case NI_Vector128_GetLower:
+            case NI_Vector_ToVector128Unsafe:
+            case NI_Vector_AsVector128Unsafe:
+            case NI_Vector_GetLower:
                 GetEmitter()->emitIns_Mov(ins, emitSize, targetReg, op1Reg, /* canSkip */ true);
                 break;
 
-            case NI_Vector64_GetElement:
-            case NI_Vector128_GetElement:
+            case NI_Vector_GetElement:
             {
                 assert(intrin.numOperands == 2);
                 assert(!intrin.op1->isContained());
@@ -1904,14 +2037,14 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector128_GetUpper:
+            case NI_Vector_GetUpper:
             {
                 const int byteIndex = 8;
                 GetEmitter()->emitIns_R_R_R_I(ins, emitSize, targetReg, op1Reg, op1Reg, byteIndex, INS_OPTS_16B);
                 break;
             }
 
-            case NI_Vector128_AsVector3:
+            case NI_Vector_AsVector3:
             {
                 // AsVector3 can be a no-op when it's already in the right register, otherwise
                 // we just need to move the value over. Vector3 operations will themselves mask
@@ -1922,8 +2055,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            case NI_Vector64_ToScalar:
-            case NI_Vector128_ToScalar:
+            case NI_Vector_ToScalar:
             {
                 if ((varTypeIsFloating(intrin.baseType) && (targetReg == op1Reg)))
                 {
@@ -2075,8 +2207,8 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_ConvertMaskToVector:
                 // PMOV would be ideal here, but it is in SVE2.1.
-                // Instead, use a predicated move: MOV <Zd>.<T>, <Pg>/Z, #1
-                GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, 1, opt);
+                // Instead, use a predicated move: MOV <Zd>.<T>, <Pg>/Z, #-1
+                GetEmitter()->emitIns_R_R_I(ins, emitSize, targetReg, op1Reg, -1, opt);
                 break;
 
             case NI_Sve_ConvertVectorToMask:
@@ -2754,7 +2886,6 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             case NI_Sve_CreateBreakAfterPropagateMask:
             case NI_Sve_CreateBreakBeforePropagateMask:
-            case NI_Sve_ConditionalSelect_Predicates:
             {
                 GetEmitter()->emitInsSve_R_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, op3Reg, INS_OPTS_SCALABLE_B);
                 break;
@@ -3081,6 +3212,29 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 opt = INS_OPTS_SCALABLE_D;
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Vector_Create:
+            {
+                emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+
+                if (varTypeIsFloating(intrin.baseType))
+                {
+                    regNumber tmpReg  = internalRegisters.Extract(node, RBM_ALLINT);
+                    insOpts   fmovOpt = (emitSize == EA_8BYTE) ? INS_OPTS_D_TO_8BYTE : INS_OPTS_S_TO_4BYTE;
+                    GetEmitter()->emitIns_Mov(INS_fmov, emitSize, tmpReg, op1Reg, /* canSkip */ false, fmovOpt);
+                    op1Reg = tmpReg;
+                }
+
+                GetEmitter()->emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                break;
+            }
+
+            case NI_Vector_CreateSequence:
+            {
+                emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
             }
 

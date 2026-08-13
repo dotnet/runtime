@@ -1534,7 +1534,12 @@ BOOL gc_heap::commit_new_mark_array (uint32_t* new_mark_array_addr)
         }
     }
 
-#if defined(MULTIPLE_HEAPS) && !defined(USE_REGIONS)
+#ifndef USE_REGIONS
+    // Re-commit the mark array for the expansion segment created during a compacting GC
+    // that has not yet been threaded onto its generation list (see new_heap_segment and
+    // issue #123490). The generation-list walk above cannot reach it, so without this it
+    // would keep a stale heap_segment_flags_ma_committed while its pages on the new array
+    // stay uncommitted, and a later BGC's pinning scan would read an uncommitted page.
     if (new_heap_segment)
     {
         if (!commit_mark_array_with_check (new_heap_segment, new_mark_array_addr))
@@ -1542,7 +1547,7 @@ BOOL gc_heap::commit_new_mark_array (uint32_t* new_mark_array_addr)
             return FALSE;
         }
     }
-#endif //MULTIPLE_HEAPS && !USE_REGIONS
+#endif //!USE_REGIONS
 
     return TRUE;
 }
@@ -2024,7 +2029,7 @@ void gc_heap::background_mark_phase ()
         bgc_uoh_current_size[loh_generation - uoh_start_generation],
         bgc_uoh_current_size[poh_generation - uoh_start_generation]));
 
-#if defined(FEATURE_BASICFREEZE) && !defined(USE_REGIONS)
+#ifndef USE_REGIONS
     if (ro_segments_in_range)
     {
         dprintf (2, ("nonconcurrent marking in range ro segments"));
@@ -2032,7 +2037,7 @@ void gc_heap::background_mark_phase ()
         //concurrent_print_time_delta ("nonconcurrent marking in range ro segments");
         concurrent_print_time_delta ("NRRO");
     }
-#endif //FEATURE_BASICFREEZE && !USE_REGIONS
+#endif //!USE_REGIONS
 
     dprintf (2, ("nonconcurrent marking stack roots"));
     GCScan::GcScanRoots(background_promote,
@@ -3775,9 +3780,7 @@ void gc_heap::background_sweep()
     current_sweep_pos = 0;
 #endif //DOUBLY_LINKED_FL
 
-#ifdef FEATURE_BASICFREEZE
     sweep_ro_segments();
-#endif //FEATURE_BASICFREEZE
 
     dprintf (3, ("lh state: planning"));
 
@@ -4113,8 +4116,6 @@ void gc_heap::background_sweep()
                 seg->flags |= heap_segment_flags_swept;
                 current_sweep_pos = end;
             }
-
-            verify_soh_segment_list();
 
 #ifdef DOUBLY_LINKED_FL
             while (next_seg && heap_segment_background_allocated (next_seg) == 0)

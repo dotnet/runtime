@@ -42,10 +42,10 @@ run-browser:
 	fi
 
 run-console:
-	cd bin/$(CONFIG)/wwwroot && $(V8_PATH) --stack-trace-limit=1000 --experimental-wasm-exnref --single-threaded $(MAIN_JS) -- $(ARGS)
+	cd bin/$(CONFIG)/wwwroot && $(V8_PATH) --stack-trace-limit=1000 --single-threaded $(MAIN_JS) -- $(ARGS)
 
 run-console-node:
-	cd bin/$(CONFIG)/wwwroot && node --stack-trace-limit=1000 --experimental-wasm-exnref --single-threaded $(MAIN_JS) $(ARGS)
+	cd bin/$(CONFIG)/wwwroot && node --experimental-wasm-exnref --stack-trace-limit=1000 --single-threaded $(MAIN_JS) $(ARGS)
 
 debug-console-node:
-	cd bin/$(CONFIG)/wwwroot && node --inspect=9222 --stack-trace-limit=1000 --experimental-wasm-exnref --single-threaded $(MAIN_JS) $(ARGS)
+	cd bin/$(CONFIG)/wwwroot && node --experimental-wasm-exnref --inspect=9222 --stack-trace-limit=1000 --single-threaded $(MAIN_JS) $(ARGS)

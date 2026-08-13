@@ -566,6 +566,15 @@ ep_rt_config_value_get_circular_mb (void)
 
 static
 inline
+uint32_t
+ep_rt_config_value_get_buffering_mode (void)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return CLRConfig::GetConfigValue (CLRConfig::INTERNAL_EventPipeBufferingMode);
+}
+
+static
+inline
 bool
 ep_rt_config_value_get_output_streaming (void)
 {
@@ -978,7 +987,39 @@ ep_rt_thread_create (
 				result = true;
 			}
 		}
-		else if (thread_type == EP_THREAD_TYPE_SESSION || thread_type == EP_THREAD_TYPE_SAMPLING)
+		else if (thread_type == EP_THREAD_TYPE_SESSION)
+		{
+			// Create the session drain thread as a raw native thread (no managed Thread), like the diagnostics
+			// server thread, so it never enters cooperative GC mode and can start during early startup before
+			// the GC / Thread Store are initialized - removing the need to defer session streaming until
+			// ep_finish_init. Unlike the SERVER branch it must carry the session pointer, so it wraps params
+			// and reuses ep_rt_thread_coreclr_start_func (which skips DestroyThread when thread == NULL).
+			rt_coreclr_thread_params_internal_t *thread_params = new (nothrow) rt_coreclr_thread_params_internal_t ();
+			if (thread_params)
+			{
+				thread_params->thread_params.thread_type = thread_type;
+				thread_params->thread_params.thread = NULL;
+				thread_params->thread_params.thread_func = reinterpret_cast<LPTHREAD_START_ROUTINE>(thread_func);
+				thread_params->thread_params.thread_params = params;
+
+				DWORD native_thread_id = 0;
+				HANDLE native_thread = ::CreateThread (nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(ep_rt_thread_coreclr_start_func), thread_params, 0, &native_thread_id);
+				if (native_thread != NULL)
+				{
+					if (id)
+					{
+						*reinterpret_cast<DWORD *>(id) = native_thread_id;
+					}
+					::CloseHandle (native_thread);
+					result = true;
+				}
+				else
+				{
+					delete thread_params;
+				}
+			}
+		}
+		else if (thread_type == EP_THREAD_TYPE_SAMPLING)
 		{
 			rt_coreclr_thread_params_internal_t *thread_params = new (nothrow) rt_coreclr_thread_params_internal_t ();
 			if (thread_params)

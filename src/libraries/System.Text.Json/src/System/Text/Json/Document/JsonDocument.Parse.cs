@@ -124,7 +124,7 @@ namespace System.Text.Json
             ArgumentNullException.ThrowIfNull(utf8Json);
 
             ArraySegment<byte> drained = ReadToEnd(utf8Json);
-            Debug.Assert(drained.Array != null);
+            Debug.Assert(drained.Array is not null);
             try
             {
                 return Parse(
@@ -154,10 +154,10 @@ namespace System.Text.Json
 
         internal static JsonDocument ParseValue(Stream utf8Json, JsonDocumentOptions options)
         {
-            Debug.Assert(utf8Json != null);
+            Debug.Assert(utf8Json is not null);
 
             ArraySegment<byte> drained = ReadToEnd(utf8Json);
-            Debug.Assert(drained.Array != null);
+            Debug.Assert(drained.Array is not null);
 
             byte[] owned = new byte[drained.Count];
             Buffer.BlockCopy(drained.Array, 0, owned, 0, drained.Count);
@@ -185,7 +185,7 @@ namespace System.Text.Json
 
         internal static JsonDocument ParseValue(string json, JsonDocumentOptions options)
         {
-            Debug.Assert(json != null);
+            Debug.Assert(json is not null);
             return ParseValue(json.AsSpan(), options);
         }
 
@@ -221,7 +221,7 @@ namespace System.Text.Json
             CancellationToken cancellationToken = default)
         {
             ArraySegment<byte> drained = await ReadToEndAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-            Debug.Assert(drained.Array != null);
+            Debug.Assert(drained.Array is not null);
             try
             {
                 return Parse(
@@ -245,7 +245,7 @@ namespace System.Text.Json
             CancellationToken cancellationToken = default)
         {
             ArraySegment<byte> drained = await ReadToEndAsync(utf8Json, cancellationToken).ConfigureAwait(false);
-            Debug.Assert(drained.Array != null);
+            Debug.Assert(drained.Array is not null);
 
             byte[] owned = new byte[drained.Count];
             Buffer.BlockCopy(drained.Array, 0, owned, 0, drained.Count);
@@ -439,7 +439,7 @@ namespace System.Text.Json
             bool ret = TryParseValue(ref reader, out JsonDocument? document, shouldThrow: true, useArrayPools: true, allowDuplicateProperties);
 
             Debug.Assert(ret, "TryParseValue returned false with shouldThrow: true.");
-            Debug.Assert(document != null, "null document returned with shouldThrow: true.");
+            Debug.Assert(document is not null, "null document returned with shouldThrow: true.");
             return document;
         }
 
@@ -758,14 +758,12 @@ namespace System.Text.Json
         {
             // These tokens should already have been processed.
             Debug.Assert(
-                tokenType != JsonTokenType.Null &&
-                tokenType != JsonTokenType.False &&
-                tokenType != JsonTokenType.True);
+                tokenType is not (JsonTokenType.Null or JsonTokenType.False or JsonTokenType.True));
 
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
             MetadataDb database;
 
-            if (tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number)
+            if (tokenType is JsonTokenType.String or JsonTokenType.Number)
             {
                 // For primitive types, we can avoid renting MetadataDb and creating StackRowStack.
                 database = MetadataDb.CreateLocked(utf8Json.Length);
@@ -859,7 +857,7 @@ namespace System.Text.Json
             }
             catch
             {
-                if (rented != null)
+                if (rented is not null)
                 {
                     // Holds document content, clear it before returning it.
                     rented.AsSpan(0, written).Clear();
@@ -941,7 +939,7 @@ namespace System.Text.Json
             }
             catch
             {
-                if (rented != null)
+                if (rented is not null)
                 {
                     // Holds document content, clear it before returning it.
                     rented.AsSpan(0, written).Clear();

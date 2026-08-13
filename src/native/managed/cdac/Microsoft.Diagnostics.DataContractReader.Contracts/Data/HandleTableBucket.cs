@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.HandleTableBucket))]
 internal sealed partial class HandleTableBucket : IData<HandleTableBucket>
 {
-    [Field] public TargetPointer Table { get; }
+    [Field] public partial TargetPointer Table { get; }
 }

@@ -2266,6 +2266,25 @@ namespace SerializationTypes
         public MoreChoices[] ChoiceArray;
     }
 
+    public enum AliasedChoiceType
+    {
+        [XmlEnum("Word")]
+        WordChoice,
+        [XmlEnum("Number")]
+        NumberChoice,
+    }
+
+    public class TypeWithAliasedChoiceIdentifier
+    {
+        [XmlChoiceIdentifier("ChoiceType")]
+        [XmlElement("Word", typeof(string))]
+        [XmlElement("Number", typeof(int))]
+        public object Item;
+
+        [XmlIgnore]
+        public AliasedChoiceType ChoiceType;
+    }
+
     internal class MyFileStreamSurrogateProvider : ISerializationSurrogateProvider
     {
         static MyFileStreamSurrogateProvider()
@@ -2384,6 +2403,126 @@ namespace SerializationTypes
 
             return obj;
         }
+    }
+
+    public class TypeWithXmlAttributeOnArray
+    {
+        [XmlAttribute("values")]
+        public string[] Values;
+    }
+
+    public class TypeWithMixedTextAndElementArray
+    {
+        [XmlText(typeof(string))]
+        [XmlElement("num", typeof(int))]
+        public object[] Items;
+    }
+
+    public class TypeWithXmlTextOnListOfString
+    {
+        [XmlText]
+        public List<string> Text = new List<string>();
+    }
+
+    // XmlSerializer test types: derived class overriding virtual [XmlText] property from base.
+    public class CustomerWithGroupIdRef
+    {
+        [XmlElement("GROUP_IDREF")]
+        public GroupIdRef? GroupIdRef { get; set; }
+    }
+
+    public abstract class GroupIdRefBase<TConcrete> where TConcrete : GroupIdRefBase<TConcrete>
+    {
+        public GroupIdRefBase() { Value = null!; }
+
+        public GroupIdRefBase(string value, string? type)
+        {
+            Type = type;
+            Value = value;
+        }
+
+        [XmlAttribute("type")]
+        public virtual string? Type { get; set; }
+
+        [XmlText]
+        public virtual string Value { get; set; }
+    }
+
+    public class GroupIdRef : GroupIdRefBase<GroupIdRef>
+    {
+        public GroupIdRef() { Value = null!; }
+
+        public GroupIdRef(string value, string? type)
+        {
+            Type = type;
+            Value = value;
+        }
+
+        [XmlAttribute("type")]
+        public override string? Type { get; set; }
+
+        [XmlText]
+        public override string Value { get; set; }
+    }
+
+    // XmlSerializer test types: overriding a virtual [XmlAttribute] property in a derived class.
+    // The base maps 'Code' to an attribute named "aprop".
+    public class GroupWithAttributeBase
+    {
+        [XmlAttribute("aprop")]
+        public virtual string? Code { get; set; }
+    }
+
+    // Valid override: re-applies [XmlAttribute] with the same name. The derived setter records
+    // that it was invoked so deserialization can be shown to assign the overridden property.
+    public class GroupWithSameNameAttributeOverride : GroupWithAttributeBase
+    {
+        private string? _code;
+
+        [XmlIgnore]
+        public bool DerivedSetterInvoked { get; private set; }
+
+        [XmlAttribute("aprop")]
+        public override string? Code
+        {
+            get => _code;
+            set
+            {
+                _code = value;
+                DerivedSetterInvoked = true;
+            }
+        }
+    }
+
+    // Invalid override: the override maps the same property to a different attribute name.
+    public class GroupWithRenamedAttributeOverride : GroupWithAttributeBase
+    {
+        [XmlAttribute("bprop")]
+        public override string? Code { get; set; }
+    }
+
+    // Invalid override: the override omits [XmlAttribute]. XmlSerializer reads member attributes
+    // without inheritance, so the override maps as an element and conflicts with the base attribute.
+    public class GroupWithDroppedAttributeOverride : GroupWithAttributeBase
+    {
+        public override string? Code { get; set; }
+    }
+
+    public class TypeWithArrayLikeFieldsOrdered
+    {
+        // Like TypeWithFieldsOrdered, the 'Order' values intentionally differ from the order of
+        // definition, and two string members share the ambiguous element name "strfld" so that
+        // honoring the declared order is required to read the fields correctly. The int array adds
+        // an array-like member in the middle of the sequence: it can match several repeated
+        // elements, and the sequence position only advances once a non-matching element is seen.
+        [XmlElement(Order = 3, ElementName = "strfld")]
+        public string StringField2;
+        [XmlElement(Order = 1, ElementName = "num")]
+        public int[] Numbers;
+        [XmlElement(Order = 0)]
+        public int Leading;
+        [XmlElement(Order = 2, ElementName = "strfld")]
+        public string StringField1;
     }
 }
 
@@ -3021,6 +3160,27 @@ class PersonV2 : IExtensibleDataObject
             extensionDataObject_value = value;
         }
     }
+}
+
+[DataContract(Name = "CdataVersioned", Namespace = "http://example.com/cdata")]
+class CdataVersionedV1 : IExtensibleDataObject
+{
+    [DataMember(Order = 0)]
+    public string Prop1 { get; set; }
+
+    public ExtensionDataObject ExtensionData { get; set; }
+}
+
+[DataContract(Name = "CdataVersioned", Namespace = "http://example.com/cdata")]
+class CdataVersionedV2 : IExtensibleDataObject
+{
+    [DataMember(Order = 0)]
+    public string Prop1 { get; set; }
+
+    [DataMember(Order = 1)]
+    public string Prop2 { get; set; }
+
+    public ExtensionDataObject ExtensionData { get; set; }
 }
 
 [DataContract]

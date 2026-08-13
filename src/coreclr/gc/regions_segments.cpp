@@ -17,7 +17,6 @@ uint8_t* align_on_segment (uint8_t* add)
     return (uint8_t*)((size_t)(add + (((size_t)1 << gc_heap::min_segment_size_shr) - 1)) & ~(((size_t)1 << gc_heap::min_segment_size_shr) - 1));
 }
 
-#ifdef FEATURE_BASICFREEZE
 inline
 size_t ro_seg_begin_index (heap_segment* seg)
 {
@@ -38,7 +37,6 @@ size_t ro_seg_end_index (heap_segment* seg)
     return end_index;
 }
 
-#endif //FEATURE_BASICFREEZE
 
 size_t size_seg_mapping_table_of (uint8_t* from, uint8_t* end)
 {
@@ -56,7 +54,6 @@ size_t size_region_to_generation_table_of (uint8_t* from, uint8_t* end)
     return sizeof (uint8_t)*((size_t)(end - from) >> gc_heap::min_segment_size_shr);
 }
 
-#ifdef FEATURE_BASICFREEZE
 void seg_mapping_table_add_ro_segment (heap_segment* seg)
 {
     if ((heap_segment_reserved (seg) <= g_gc_lowest_address) || (heap_segment_mem (seg) >= g_gc_highest_address))
@@ -78,7 +75,6 @@ void seg_mapping_table_remove_ro_segment (heap_segment* seg)
     UNREFERENCED_PARAMETER(seg);
 }
 
-#endif //FEATURE_BASICFREEZE
 #ifndef USE_REGIONS
 void gc_heap::seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp)
 {
@@ -700,7 +696,6 @@ void gc_heap::thread_uoh_segment (int gen_number, heap_segment* new_seg)
     heap_segment_next (seg) = new_seg;
 }
 
-#ifdef FEATURE_BASICFREEZE
 // Note that we always insert at the head of the max_generation segment list.
 BOOL gc_heap::insert_ro_segment (heap_segment* seg)
 {
@@ -822,7 +817,6 @@ void gc_heap::remove_ro_segment (heap_segment* seg)
     leave_spin_lock (&gc_heap::gc_lock);
 }
 
-#endif //FEATURE_BASICFREEZE
 #ifdef USE_REGIONS
 void get_initial_region(int gen, int hn, uint8_t** region_start, uint8_t** region_end)
 {

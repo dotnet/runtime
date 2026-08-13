@@ -913,7 +913,7 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupported))]
+        [ConditionalFact(typeof(ThreadPoolTests), nameof(IsThreadingAndRemoteExecutorSupportedAndNotDebugRuntime))]
         public static void CooperativeBlockingCanCreateThreadsFaster()
         {
             // Run in a separate process to test in a clean thread pool environment such that work items queued by the test
@@ -1500,6 +1500,10 @@ namespace System.Threading.ThreadPools.Tests
 
         public static bool IsThreadingAndRemoteExecutorSupported =>
             PlatformDetection.IsMultithreadingSupported && RemoteExecutor.IsSupported;
+
+        // Timing-sensitive tests can be too flaky on a Debug runtime, which is much slower
+        public static bool IsThreadingAndRemoteExecutorSupportedAndNotDebugRuntime =>
+            IsThreadingAndRemoteExecutorSupported && !PlatformDetection.IsDebugRuntime;
 
         private static bool GetUseWindowsThreadPool()
         {

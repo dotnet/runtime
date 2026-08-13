@@ -16,12 +16,9 @@ enum class TrapThreadsFlags
     TrapThreads = 1,
 };
 
-extern "C" void PopulateDebugHeaders();
-
 class ThreadStore
 {
     friend class RuntimeInstance;
-    friend void PopulateDebugHeaders();
     friend struct ::cdac_data<ThreadStore>;
 
     SList<Thread>       m_ThreadList;
@@ -88,5 +85,4 @@ ThreadStore * GetThreadStore();
 
 #define END_FOREACH_THREAD  \
     }                       \
-}                           \
-
+}

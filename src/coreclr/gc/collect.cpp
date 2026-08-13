@@ -884,9 +884,7 @@ void gc_heap::garbage_collect (int n)
     if (gc_t_join.joined())
 #endif //MULTIPLE_HEAPS
     {
-#ifdef FEATURE_BASICFREEZE
         seg_table->delete_old_slots();
-#endif //FEATURE_BASICFREEZE
 
 #ifndef USE_REGIONS
         copy_brick_card_table_on_growth ();

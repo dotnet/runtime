@@ -45,8 +45,7 @@ extern "C" void STDCALL CallDescrWorkerInternal(CallDescrData* pCallDescrData)
         // fallback already present in ExecuteInterpretedMethodWithArgs_PortableEntryPoint_Complex and
         // the CALL_INTERP_METHOD path in InterpExecMethod. Without this, the NULL bytecode pointer
         // would be handed to the interpreter and dispatched as INTOP_INVALID.
-        ManagedMethodParam param = { pMethod, args, (int8_t*)retBuff, (PCODE)NULL, nullptr };
-        InvokeManagedMethod(&param);
+        InvokeManagedMethod(pMethod, args, (int8_t*)retBuff, (PCODE)NULL, nullptr);
         return;
     }
 

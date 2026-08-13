@@ -11,6 +11,8 @@ namespace Microsoft.Interop.JavaScript
         public const string JSExportAttribute = "System.Runtime.InteropServices.JavaScript.JSExportAttribute";
         public const string JavaScriptMarshal = "System.Runtime.InteropServices.JavaScript.JavaScriptMarshal";
         public const string DebuggerNonUserCodeAttribute = "global::System.Diagnostics.DebuggerNonUserCode";
+        public const string SupportedOSPlatformAttribute = "global::System.Runtime.Versioning.SupportedOSPlatform";
+        public const string BrowserPlatform = "browser";
 
         public const string JSFunctionSignatureGlobal = "global::System.Runtime.InteropServices.JavaScript.JSFunctionBinding";
         public const string JSMarshalerArgumentGlobal = "global::System.Runtime.InteropServices.JavaScript.JSMarshalerArgument";

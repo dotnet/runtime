@@ -95,6 +95,7 @@ internal static unsafe class Program
         EnumCategory();
         ReturnCategory();
         HfaCategory();
+        SysVCategory();
         DeepStackCategory();
     }
 
@@ -537,7 +538,105 @@ internal static unsafe class Program
     [MethodImpl(MethodImplOptions.NoInlining)] private static void Vec128FloatArg(Vector128<float> v) { AllocBurst(); GC.KeepAlive((object)v.GetElement(0)); }
     [MethodImpl(MethodImplOptions.NoInlining)] private static void VecNumericsFloatArg(Vector<float> v) { AllocBurst(); GC.KeepAlive((object)v[0]); }
 
-    // ===== Category 13: deep stack =====
+    // ===== Category 13: SystemV-AMD64 struct-in-register shapes =====
+    // On non-Unix-x64 targets the cDAC's descriptor is absent so classification
+    // returns "not in registers" and the runtime path agrees trivially. Linux/
+    // macOS x64 read the cached SystemVEightByteRegistersInfo and produce
+    // different GCRefMap tokens per eightbyte classification.
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void SysVCategory()
+    {
+        // Single-eightbyte shapes.
+        SysVIntPair(default);           // Integer
+        SysVFloatPair(default);         // SSE
+        SysVIntFloat(default);          // mixed -> Integer (Integer wins)
+        SysVSingleRef(default);         // IntegerReference
+
+        // Two-eightbyte shapes.
+        SysVLongLong(default);          // Integer + Integer
+        SysVLongDouble(default);        // Integer + SSE
+        SysVDoubleDouble(default);      // SSE + SSE
+        SysVRefInt(default);            // IntegerReference + Integer
+
+        SysVNested(default);            // nested value type
+
+        // Span<byte>: IntegerByRef + Integer.
+        Span<byte> sp = stackalloc byte[8];
+        SysVSpanByte(sp);
+
+        SysVThreeRefs(default);         // 24 bytes -> stack
+        SysVVector128Arg(default);      // intrinsic Vector -> stack
+        SysVInt128Arg(default);         // 2 Integer eightbytes (runtime doesn't reject Int128 by name)
+        SysVEmpty(default);             // 1-byte empty -> 1 Integer eightbyte (NoClass normalized to Integer)
+        // SSE + IntegerReference: ref goes in RDI, not RSI -- SSE eightbytes
+        // don't advance the general-register cursor.
+        SysVDoubleRef(default);
+
+        // Unions (LayoutKind.Explicit) -- exercises the classifier's merge path.
+        SysVIntFloatUnion(default);     // int + float @ 0 -> Integer
+        SysVIntIntUnion(default);       // int + int @ 0 -> Integer
+
+        SysVSmall(default);             // { int a; byte b; } -> Integer (unaligned tail)
+        SysVWrapInt(default);           // { int a; } single-field wrapper
+    }
+
+    // ---- SystemV struct shapes ----
+    private struct IntPair { public int A, B; }
+    private struct FloatPair { public float A, B; }
+    private struct IntFloat { public int A; public float B; }
+    private struct SingleRef { public object? R; }
+    private struct LongLong { public long A, B; }
+    private struct LongDouble { public long A; public double B; }
+    private struct DoubleDouble { public double A, B; }
+    private struct RefInt { public object? R; public long Padding; }
+    private struct DoubleRef { public double D; public object? R; }
+    private struct SysVNestedStruct { public IntPair Inner; public int Trailing; }
+    private struct SysVThreeRefsStruct { public object? R1, R2, R3; }
+    private struct Int128Wrapper { public System.Int128 V; }
+    private struct EmptyStruct { }
+    private struct SmallUnaligned { public int A; public byte B; }
+    private struct WrapInt { public int A; }
+
+    // Union: int and float at the same offset. Classifier sees both as
+    // unique-offset fields and merges via ReClassifyField (Integer+SSE = Integer).
+    [StructLayout(LayoutKind.Explicit)]
+    private struct IntFloatUnion
+    {
+        [FieldOffset(0)] public int I;
+        [FieldOffset(0)] public float F;
+    }
+
+    // Union: two ints at the same offset. Merge collapses to Integer.
+    [StructLayout(LayoutKind.Explicit)]
+    private struct IntIntUnion
+    {
+        [FieldOffset(0)] public int A;
+        [FieldOffset(0)] public int B;
+    }
+
+    // ---- SystemV arg helpers ----
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVIntPair(IntPair s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVFloatPair(FloatPair s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVIntFloat(IntFloat s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVSingleRef(SingleRef s) { AllocBurst(); GC.KeepAlive(s.R); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVLongLong(LongLong s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVLongDouble(LongDouble s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVDoubleDouble(DoubleDouble s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVRefInt(RefInt s) { AllocBurst(); GC.KeepAlive(s.R); GC.KeepAlive((object)s.Padding); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVDoubleRef(DoubleRef s) { AllocBurst(); GC.KeepAlive(s.R); GC.KeepAlive((object)s.D); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVNested(SysVNestedStruct s) { AllocBurst(); GC.KeepAlive((object)(s.Inner.A + s.Trailing)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVSpanByte(Span<byte> s) { AllocBurst(); GC.KeepAlive((object)s.Length); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVThreeRefs(SysVThreeRefsStruct s) { AllocBurst(); GC.KeepAlive(s.R1); GC.KeepAlive(s.R2); GC.KeepAlive(s.R3); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVVector128Arg(Vector128<int> v) { AllocBurst(); GC.KeepAlive((object)v.GetElement(0)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVInt128Arg(Int128Wrapper s) { AllocBurst(); GC.KeepAlive((object)s.V.ToString()); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVEmpty(EmptyStruct s) { AllocBurst(); GC.KeepAlive((object)s); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVSmall(SmallUnaligned s) { AllocBurst(); GC.KeepAlive((object)(s.A + s.B)); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVWrapInt(WrapInt s) { AllocBurst(); GC.KeepAlive((object)s.A); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVIntFloatUnion(IntFloatUnion s) { AllocBurst(); GC.KeepAlive((object)s.I); }
+    [MethodImpl(MethodImplOptions.NoInlining)] private static void SysVIntIntUnion(IntIntUnion s) { AllocBurst(); GC.KeepAlive((object)s.A); }
+
+    // ===== Category 14: deep stack =====
     // Mutually-recursive chains of methods with mixed signatures. At any
     // given allocation trigger many frames are simultaneously live, so a
     // single stack-walk verification run touches multiple MDs across
