@@ -25,20 +25,47 @@ namespace ILAssembler
 #pragma warning disable CA1822 // Mark members as static
     internal sealed partial class GrammarActions : ICILVisitor<GrammarResult>
     {
+        private CILParser.CompQstringContext? _composedStringOwner;
+        private StringBuilder? _composedStringAccumulator;
+
         GrammarResult ICILVisitor<GrammarResult>.VisitCompQstring(CILParser.CompQstringContext context)
         {
             return VisitCompQstring(context);
         }
 
-        private static GrammarResult.String VisitCompQstring(CILParser.CompQstringContext context)
+        internal void BeginComposedString(CILParser.CompQstringContext context)
         {
-            StringBuilder builder = new();
-            foreach (var item in context.QSTRING())
-            {
-                builder.Append(StringHelpers.ParseQuotedString(item.Symbol.Text));
-            }
-            return new(builder.ToString());
+            Debug.Assert(_composedStringOwner is null);
+            Debug.Assert(_composedStringAccumulator is null);
+            _composedStringOwner = context;
+            _composedStringAccumulator = new StringBuilder();
         }
+
+        internal void AddComposedStringPart(CILParser.CompQstringContext context, IToken token)
+        {
+            if (ReferenceEquals(_composedStringOwner, context) &&
+                _composedStringAccumulator is { } accumulator)
+            {
+                accumulator.Append(StringHelpers.ParseQuotedString(token.Text));
+            }
+        }
+
+        internal string EndComposedString(CILParser.CompQstringContext context)
+        {
+            if (!ReferenceEquals(_composedStringOwner, context))
+            {
+                return string.Empty;
+            }
+
+            string value = _composedStringAccumulator?.ToString() ?? string.Empty;
+            _composedStringOwner = null;
+            _composedStringAccumulator = null;
+
+            return value;
+        }
+
+        private static GrammarResult.String VisitCompQstring(CILParser.CompQstringContext context)
+            => new(context.Value ?? string.Empty);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitDottedName(CILParser.DottedNameContext context)
         {
@@ -62,48 +89,40 @@ namespace ILAssembler
 
         GrammarResult ICILVisitor<GrammarResult>.VisitDottedNamePart(CILParser.DottedNamePartContext context) => throw new UnreachableException();
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitFloat64(CILParser.Float64Context context) => VisitFloat64(context);
-        public GrammarResult.Literal<double> VisitFloat64(CILParser.Float64Context context)
+        internal double ParseFloatingLiteral(IToken token)
         {
-            if (context.FLOAT64() is ITerminalNode float64)
+            string text = token.Text;
+            bool neg = text.StartsWith('-');
+            if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double result))
             {
-                string text = float64.Symbol.Text;
-                bool neg = text.StartsWith('-');
-                if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out double result))
-                {
-                    result = neg ? double.MaxValue : double.MinValue;
-                }
-                return new(result);
+                result = neg ? double.MaxValue : double.MinValue;
             }
-            else if (context.int32() is CILParser.Int32Context int32)
-            {
-                IToken node = int32.INT32().Symbol;
-                if (!ParseIntegerValue(node.Text.AsSpan(), out long intValue))
-                {
-                    _diagnostics.Add(new Diagnostic(
-                        DiagnosticIds.LiteralOutOfRange,
-                        DiagnosticSeverity.Error,
-                        string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, node.Text),
-                        Location.From(node, _documents)));
-                    intValue = 0;
-                }
 
-                if (context.FLOAT32() is not null)
-                {
-                    // FLOAT32 '(' int32 ')' — hex bits reinterpreted as float32
-                    return new(BitConverter.Int32BitsToSingle((int)intValue));
-                }
-                // int32 or int32 '.' — plain integer or trailing-dot float
-                return new((double)intValue);
-            }
-            else if (context.int64() is CILParser.Int64Context int64)
-            {
-                // FLOAT64_ '(' int64 ')' — hex bits reinterpreted as float64
-                long value = VisitInt64(int64).Value;
-                return new(BitConverter.Int64BitsToDouble(value));
-            }
-            throw new UnreachableException();
+            return result;
         }
+
+        internal double ParseFloatingInteger(IToken token)
+        {
+            if (!ParseIntegerValue(token.Text.AsSpan(), out long value))
+            {
+                ReportLiteralOutOfRange(token);
+                value = 0;
+            }
+
+            return value;
+        }
+
+        internal double ParseFloat32Bits(IToken token)
+            => BitConverter.Int32BitsToSingle(ParseInt32(token));
+
+        internal double ParseFloat64Bits(IToken token)
+            => BitConverter.Int64BitsToDouble(ParseInt64(token));
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitFloat64(CILParser.Float64Context context) => VisitFloat64(context);
+
+        public static GrammarResult.Literal<double> VisitFloat64(CILParser.Float64Context context)
+            => new(context.Value);
+
         GrammarResult ICILVisitor<GrammarResult>.VisitId(CILParser.IdContext context) => VisitId(context);
         public static GrammarResult.String VisitId(CILParser.IdContext context)
         {
@@ -197,11 +216,7 @@ namespace ILAssembler
             ReadOnlySpan<char> value = token.Text.AsSpan();
             if (!ParseIntegerValue(value, out long num))
             {
-                _diagnostics.Add(new Diagnostic(
-                    DiagnosticIds.LiteralOutOfRange,
-                    DiagnosticSeverity.Error,
-                    string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, token.Text),
-                    Location.From(token, _documents)));
+                ReportLiteralOutOfRange(token);
                 return 0;
             }
 
@@ -224,15 +239,20 @@ namespace ILAssembler
             ReadOnlySpan<char> value = token.Text.AsSpan();
             if (!ParseIntegerValue(value, out long num))
             {
-                _diagnostics.Add(new Diagnostic(
-                    DiagnosticIds.LiteralOutOfRange,
-                    DiagnosticSeverity.Error,
-                    string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, token.Text),
-                    Location.From(token, _documents)));
+                ReportLiteralOutOfRange(token);
                 return 0;
             }
 
             return num;
+        }
+
+        private void ReportLiteralOutOfRange(IToken token)
+        {
+            _diagnostics.Add(new Diagnostic(
+                DiagnosticIds.LiteralOutOfRange,
+                DiagnosticSeverity.Error,
+                string.Format(DiagnosticMessageTemplates.LiteralOutOfRange, token.Text),
+                Location.From(token, _documents)));
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => VisitIntOrWildcard(context);

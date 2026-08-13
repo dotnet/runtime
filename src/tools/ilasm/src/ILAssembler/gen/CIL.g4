@@ -410,7 +410,13 @@ id:
 	| SQSTRING;
 dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart) | SQSTRING;
 dottedNamePart: ID | VALUE | INSTANCE | SQSTRING | DOTTEDNAME | 'volatile';
-compQstring: (QSTRING PLUS)* QSTRING;
+compQstring returns [string Value]
+@init {BeginStreaming(); Actions.BeginComposedString(_localctx);}
+:
+	(head = QSTRING {Actions.AddComposedStringPart(_localctx, $head);} PLUS)*
+	tail = QSTRING {Actions.AddComposedStringPart(_localctx, $tail);}
+;
+finally {_localctx.Value = Actions.EndComposedString(_localctx); EndParseTreeMode();}
 
 
 WS: [ \t\r\n] -> skip;
@@ -483,12 +489,12 @@ typelist: '.typelist' '{' (className)* '}';
 int32: INT32;
 int64: INT64 | INT32;
 
-float64:
-	FLOAT64
-	| int32 '.'	/* trailing-dot integer as float (e.g., ldc.r8 1.) */
-	| int32
-	| FLOAT32 '(' int32 ')'
-	| FLOAT64_ '(' int64 ')';
+float64 returns [double Value]:
+	decimal = FLOAT64 {_localctx.Value = Actions.ParseFloatingLiteral($decimal);}
+	| trailing = int32 '.' {_localctx.Value = Actions.ParseFloatingInteger($trailing.start);}	/* trailing-dot integer as float (e.g., ldc.r8 1.) */
+	| integer = int32 {_localctx.Value = Actions.ParseFloatingInteger($integer.start);}
+	| FLOAT32 '(' singleBits = int32 ')' {_localctx.Value = Actions.ParseFloat32Bits($singleBits.start);}
+	| FLOAT64_ '(' doubleBits = int64 ')' {_localctx.Value = Actions.ParseFloat64Bits($doubleBits.start);};
 
 intOrWildcard: int32 | PTR;
 
@@ -677,41 +683,45 @@ instr:
 	simpleInstr
 	| instructionIsland;
 
-simpleInstr:
+simpleInstr
+@after {Actions.CompleteSimpleInstruction(_localctx);}
+:
 	op = INSTR_NONE {Actions.EmitNoOperandInstruction($op);}
 	| op = INSTR_VAR index = int32 {Actions.EmitVariableIndexInstruction($op, $index.start);}
 	| op = INSTR_VAR name = id {Actions.EmitVariableNameInstruction($op, $name.start);}
 	| op = INSTR_I value32 = int32 {Actions.EmitInt32Instruction($op, $value32.start);}
 	| op = INSTR_I8 value64 = int64 {Actions.EmitInt64Instruction($op, $value64.start);}
+	| op = INSTR_R value = float64 {Actions.EmitFloatingInstruction($op, $value.Value);}
+	| op = INSTR_R integerValue = int64 {Actions.EmitFloatingInstruction($op, $integerValue.start);}
 	| op = INSTR_R '(' rawFloat = bytes ')' {Actions.EmitRawFloatingInstruction($op, $rawFloat.Value, $rawFloat.start);}
 	| op = INSTR_R 'bytearray' '(' rawFloat = bytes ')' {Actions.EmitRawFloatingInstruction($op, $rawFloat.Value, $rawFloat.start);}
 	| op = INSTR_BRTARGET offset = int32 {Actions.EmitBranchOffsetInstruction($op, $offset.start);}
 	| op = INSTR_BRTARGET label = id {Actions.EmitBranchLabelInstruction($op, $label.start);}
+	| op = INSTR_STRING userString = compQstring {Actions.EmitStringInstruction($op, $userString.Value);}
+	| op = INSTR_STRING ANSI '(' ansiString = compQstring ')' {Actions.EmitAnsiStringInstruction($op, $ansiString.Value);}
 	| op = INSTR_STRING 'bytearray' '(' rawString = bytes ')' {Actions.EmitRawStringInstruction($op, $rawString.Value);}
-	| op = INSTR_TOK rawToken = int32 {Actions.EmitRawTokenInstruction($op, $rawToken.start);};
+	| op = INSTR_TOK rawToken = int32 {Actions.EmitRawTokenInstruction($op, $rawToken.start);}
+	| op = INSTR_SWITCH {Actions.BeginSwitchInstruction(_localctx, $op);} ('(' labels ')' | '()')
+;
+finally {Actions.EndSwitchInstruction(_localctx);}
 
 instructionIsland
 @init {BeginSubtree();}
 @after {Actions.ProcessInstructionIsland(_localctx);}
 :
-	INSTR_R float64
-	| INSTR_R int64
-	| INSTR_METHOD methodRef
+	INSTR_METHOD methodRef
 	| INSTR_FIELD fieldRef
 	| INSTR_FIELD mdtoken
 	| INSTR_TYPE typeSpec
-	| INSTR_STRING compQstring
-	| INSTR_STRING ANSI '(' compQstring ')'
 	| INSTR_SIG callConv type sigArgs
 	| INSTR_TOK ownerType /* ownerType ::= memberRef | typeSpec */
-	| INSTR_SWITCH '(' labels ')'
-	| INSTR_SWITCH '()'
 ;
 finally {EndParseTreeMode();}
 
 labels:
 	/* empty */
-	| ((id | int32) ',')* (id | int32);
+	| ((headLabel = id {Actions.AddSwitchLabel($headLabel.start);} | headOffset = int32 {Actions.AddSwitchOffset($headOffset.start);}) ',')*
+	  (tailLabel = id {Actions.AddSwitchLabel($tailLabel.start);} | tailOffset = int32 {Actions.AddSwitchOffset($tailOffset.start);});
 
 typeArgs: '<' (type ',')* type '>';
 
