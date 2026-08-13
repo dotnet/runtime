@@ -28,7 +28,6 @@ namespace Microsoft.Extensions.Caching.Memory
         private long _absoluteExpirationTicks = NotSet;
         private short _absoluteExpirationOffsetMinutes;
         private bool _isDisposed;
-        private bool _isExpired;
         private bool _isValueSet;
         private byte _evictionReason;
         private byte _priority = (byte)CacheItemPriority.Normal;
@@ -228,17 +227,20 @@ namespace Microsoft.Extensions.Caching.Memory
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // added based on profiling
         internal bool CheckExpired(DateTime utcNow)
-            => _isExpired
+            => EvictionReason != EvictionReason.None
                 || CheckForExpiredTime(utcNow)
                 || (_tokens != null && _tokens.CheckForExpiredTokens(this));
 
         internal void SetExpired(EvictionReason reason)
         {
+            // The eviction reason doubles as the "is expired" flag, so that a reader observing an expired
+            // entry always observes the reason that expired it. A separate flag would be a second,
+            // independently visible write: on a weak memory model a concurrent reader could see the entry
+            // as expired while still reading EvictionReason.None, and evict a live entry (dotnet/runtime#72879).
             if (EvictionReason == EvictionReason.None)
             {
                 EvictionReason = reason;
             }
-            _isExpired = true;
             _tokens?.DetachTokens();
         }
 

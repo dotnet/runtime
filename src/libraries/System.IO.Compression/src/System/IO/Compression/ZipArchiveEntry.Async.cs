@@ -177,7 +177,16 @@ public partial class ZipArchiveEntry
     /// </summary>
     internal async Task ReadEncryptionSaltIfNeededAsync(CancellationToken cancellationToken)
     {
-        if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser())
+        if (!IsAesEncrypted || !_originallyInArchive || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+        {
+            return;
+        }
+
+        // A corrupt central directory can point the local header offset past the end of the
+        // archive. Seeking there throws ArgumentOutOfRangeException on some streams (e.g.
+        // MemoryStream). Mirror the check in IsOpenableInitialVerifications and defer the error
+        // to when the entry is actually opened, same as for non AES encrypted entries.
+        if (_offsetOfLocalHeader > _archive.ArchiveStream.Length)
         {
             return;
         }
@@ -229,9 +238,9 @@ public partial class ZipArchiveEntry
 
             if (IsAesEncrypted)
             {
-                if (OperatingSystem.IsBrowser())
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                 {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                 }
 
                 if (_aesSalt is null)
@@ -528,9 +537,9 @@ public partial class ZipArchiveEntry
         {
             if (IsAesEncrypted)
             {
-                if (OperatingSystem.IsBrowser())
+                if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                 {
-                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                    throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                 }
 
                 if (_aesSalt is null)
@@ -572,9 +581,9 @@ public partial class ZipArchiveEntry
 
     private async Task<Stream> DecryptAndStoreForUpdateWithAesAsync(WinZipAesKeyMaterial aesKeys, CancellationToken cancellationToken)
     {
-        if (OperatingSystem.IsBrowser())
+        if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
         {
-            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+            throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
         }
 
         await ThrowIfNotOpenableAsync(needToUncompress: true, needToLoadIntoMemory: true, cancellationToken).ConfigureAwait(false);
@@ -749,7 +758,7 @@ public partial class ZipArchiveEntry
 
                     ushort verifierLow2Bytes = (ushort)ZipHelper.DateTimeToDosTime(_lastModified.DateTime);
 
-                    ZipCryptoStream encryptionStream = ZipCryptoStream.Create(
+                    Stream encryptionStream = ZipCryptoStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keys: _derivedZipCryptoKeyMaterial.Value,
                         passwordVerifierLow2Bytes: verifierLow2Bytes,
@@ -782,9 +791,9 @@ public partial class ZipArchiveEntry
                 else if (UseAesEncryption && _derivedAesKeyMaterial != null)
                 {
 
-                    if (OperatingSystem.IsBrowser())
+                    if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
                     {
-                        throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnBrowser);
+                        throw new PlatformNotSupportedException(SR.WinZipEncryptionNotSupportedOnPlatform);
                     }
                     // For AES, we need to:
                     // 1. Write header with CompressionMethod = Aes (99)
@@ -803,7 +812,7 @@ public partial class ZipArchiveEntry
                     // The AES extra field stores the real compression method
                     bool useDeflate = _compressionLevel != CompressionLevel.NoCompression;
 
-                    WinZipAesStream encryptionStream = WinZipAesStream.Create(
+                    Stream encryptionStream = WinZipAesStream.Create(
                         baseStream: _archive.ArchiveStream,
                         keyMaterial: _derivedAesKeyMaterial.Value,
                         totalStreamSize: -1,

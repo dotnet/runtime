@@ -928,6 +928,10 @@ mono_ldtoken_wrapper_generic_shared (MonoImage *image, int token, MonoMethod *me
 guint64
 mono_fconv_u8 (double v)
 {
+	if (mono_isinf (v))
+		return v > 0 ? G_MAXUINT64 : 0;
+	if (mono_isnan (v))
+		return 0;
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	const double two63 = 2147483648.0 * 4294967296.0;
 	if (v < two63) {
@@ -945,6 +949,10 @@ mono_fconv_u8 (double v)
 guint64
 mono_rconv_u8 (float v)
 {
+	if (mono_isinf (v))
+		return v > 0 ? G_MAXUINT64 : 0;
+	if (mono_isnan (v))
+		return 0;
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 	const float two63 = 2147483648.0 * 4294967296.0;
 	if (v < two63) {
@@ -953,8 +961,6 @@ mono_rconv_u8 (float v)
 		return (gint64)(v - two63) + ((guint64)1 << 63);
 	}
 #else
-	if (mono_isinf (v) || mono_isnan (v))
-		return 0;
 	return (guint64)v;
 #endif
 }
@@ -972,8 +978,10 @@ mono_fconv_i8 (double v)
 guint32
 mono_fconv_u4 (double v)
 {
-	/* MS.NET behaves like this for some reason */
-	if (mono_isinf (v) || mono_isnan (v))
+	/* Match the saturating behavior of the managed conversion. */
+	if (mono_isinf (v))
+		return v > 0 ? G_MAXUINT32 : 0;
+	if (mono_isnan (v))
 		return 0;
 	return (guint32)v;
 }
@@ -981,7 +989,9 @@ mono_fconv_u4 (double v)
 guint32
 mono_rconv_u4 (float v)
 {
-	if (mono_isinf (v) || mono_isnan (v))
+	if (mono_isinf (v))
+		return v > 0 ? G_MAXUINT32 : 0;
+	if (mono_isnan (v))
 		return 0;
 	return (guint32) v;
 }

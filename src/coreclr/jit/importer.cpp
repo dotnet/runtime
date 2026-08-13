@@ -2788,6 +2788,11 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
 // Returns:
 //    The Vector128.CreateScalar node that contains op1
 //
+// Notes:
+//    This may append a temp store, which spills the import stack. Callers with multiple
+//    operands must therefore materialize the last operand first and leave the preceding
+//    ones on the import stack until then, so that IL evaluation order is preserved.
+//
 GenTree* Compiler::impSimdCreateScalarHalf(GenTree* op1)
 {
     unsigned op1Tmp;
@@ -3909,7 +3914,7 @@ GenTree* Compiler::impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken)
 
     if (runtimeLookup)
     {
-        node = gtNewHelperCallNode(CORINFO_HELP_INITCLASS, TYP_VOID, node);
+        node = gtNewHelperCallNode(CORINFO_HELP_INITCLASS, HelperInitClassRetType, node);
     }
     else
     {
@@ -9473,12 +9478,15 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     {
                         JITDUMP("\nHave extra IL stack entry after tail await\n");
                         GenTree* val = impPopStack().val;
-                        if (varTypeIsStruct(val))
+                        if ((val->gtFlags & GTF_SIDE_EFFECT) != 0)
                         {
-                            val = impNormStructVal(val, CHECK_SPILL_ALL);
-                        }
+                            if (varTypeIsStruct(val))
+                            {
+                                val = impNormStructVal(val, CHECK_SPILL_ALL);
+                            }
 
-                        impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+                            impAppendTree(gtUnusedValNode(val), CHECK_SPILL_ALL, impCurStmtDI);
+                        }
                     }
 
                     prefixFlags &= ~PREFIX_TAILCALL;
@@ -10700,7 +10708,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     { // compDonotInline()
                         return;
                     }
-                    op1 = gtNewHelperCallNode(helper, TYP_VOID, op2, op1);
+                    // The byref is formed from clone + TARGET_POINTER_SIZE below, so discard the
+                    // helper result to keep the enclosing COLON/QMARK void.
+                    op1 = gtUnusedValNode(gtNewHelperCallNode(helper, HelperUnboxDiscardedRetType, op2, op1));
 
                     op1 = new (this, GT_COLON) GenTreeColon(TYP_VOID, gtNewNothingNode(), op1);
                     op1 = gtNewQmarkNode(TYP_VOID, condBox, op1->AsColon());

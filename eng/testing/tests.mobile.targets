@@ -151,7 +151,7 @@
   <Import Project="$(MSBuildThisFileDirectory)workloads-testing.targets" Condition="'$(SkipWorkloadsTestingTargetsImport)' == 'true'" />
 
   <Target Name="PublishTestAsSelfContained"
-          Condition="'$(IsCrossTargetingBuild)' != 'true'"
+          Condition="'$(IsCrossTargetingBuild)' != 'true' and '$(IgnoreForCI)' != 'true'"
           AfterTargets="$(PublishTestAsSelfContainedAfterTargets)"
           DependsOnTargets="$(PublishTestAsSelfContainedDependsOn);$(BundleTestAppTargets);ArchiveTests" />
 

@@ -8,8 +8,10 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Exception_1 : IException
 {
-    // STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE flag value from src/coreclr/vm/clrex.h.
+    // StackTraceElementFlags values from src/coreclr/vm/clrex.h.
     private const int STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001;
+    private const int STEF_IP_ADJUSTED = 0x0002;
+    private const int STEF_CONTINUATION = 0x0008;
 
     private readonly Target _target;
 
@@ -27,8 +29,7 @@ internal readonly struct Exception_1 : IException
         // exception Object*. This has the same lifetime as the ExInfo (both are invalidated
         // when PopExInfos calls ReleaseResources). See dacimpl.h for the equivalent native
         // DAC documentation.
-        Target.TypeInfo type = _target.GetTypeInfo(DataType.ExceptionInfo);
-        thrownObjectHandle = exceptionInfoAddr + (ulong)type.Fields[nameof(Data.ExceptionInfo.ThrownObject)].Offset;
+        thrownObjectHandle = exceptionInfoAddr + (ulong)Data.ExceptionInfo.GetThrownObjectOffset(_target);
         return exceptionInfo.ThrownObject;
     }
 
@@ -63,7 +64,7 @@ internal readonly struct Exception_1 : IException
         TargetPointer mt = objectContract.GetMethodTableAddress(stackTraceObj);
         if (mt == TargetPointer.Null)
             throw new InvalidOperationException($"Stack trace object 0x{stackTraceObj.Value:x} has no MethodTable.");
-        TypeHandle stackTraceHandle = rtsContract.GetTypeHandle(mt);
+        ITypeHandle stackTraceHandle = rtsContract.GetTypeHandle(mt);
 
         TargetPointer i1ArrayAddr;
         if (rtsContract.ContainsGCPointers(stackTraceHandle))
@@ -88,16 +89,24 @@ internal readonly struct Exception_1 : IException
         if (frameCount == 0)
             yield break;
 
-        Target.TypeInfo elementTypeInfo = _target.GetTypeInfo(DataType.StackTraceElement);
-        ulong elementSize = elementTypeInfo.Size!.Value;
+        ulong elementSize = Data.StackTraceElement.GetSize(_target);
+        bool compensateForOldEhIp = _target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X64;
 
-        uint headerSize = _target.GetTypeInfo(DataType.StackTraceArrayHeader).Size!.Value;
+        uint headerSize = Data.StackTraceArrayHeader.GetSize(_target);
         TargetPointer cursor = payload + headerSize;
         for (uint i = 0; i < frameCount; i++)
         {
             Data.StackTraceElement element = _target.ProcessedData.GetOrAdd<Data.StackTraceElement>(cursor);
+            TargetPointer ip = element.Ip;
+            if (compensateForOldEhIp
+                && i == 0
+                && (element.Flags & (STEF_IP_ADJUSTED | STEF_CONTINUATION)) == 0)
+            {
+                ip = new TargetPointer(ip.Value - 1);
+            }
+
             yield return new ExceptionStackFrameInfo(
-                element.Ip,
+                ip,
                 element.MethodDesc,
                 (element.Flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE) != 0);
             cursor += elementSize;

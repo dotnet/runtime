@@ -909,7 +909,7 @@ namespace System.Text.Json
             get
             {
                 Debug.Assert(IsReadOnly);
-                Debug.Assert(TypeInfoResolver != null);
+                Debug.Assert(TypeInfoResolver is not null);
                 return _canUseFastPathSerializationLogic ??= TypeInfoResolver.IsCompatibleWithOptions(this);
             }
         }
@@ -1028,7 +1028,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowInvalidOperationException_JsonSerializerIsReflectionDisabled();
             }
 
-            Debug.Assert(_typeInfoResolver != null);
+            Debug.Assert(_typeInfoResolver is not null);
             // NB preserve write order.
             _isReadOnly = true;
             _isConfiguredForJsonSerializer = true;
@@ -1055,7 +1055,7 @@ namespace System.Text.Json
 
             JsonTypeInfo? info = resolver.GetTypeInfo(type, this);
 
-            if (info != null)
+            if (info is not null)
             {
                 if (info.Type != type)
                 {

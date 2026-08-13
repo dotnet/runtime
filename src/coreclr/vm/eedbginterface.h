@@ -259,8 +259,6 @@ public:
 
 #ifndef DACCESS_COMPILE
 
-    virtual COR_ILMETHOD* MethodDescGetILHeader(MethodDesc *pFD) = 0;
-
     virtual void MarkDebuggerAttached(void) = 0;
 
     virtual void MarkDebuggerUnattached(void) = 0;
