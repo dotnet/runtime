@@ -1892,7 +1892,8 @@ namespace System.IO.Compression
                 }
                 else // _compressedBytes path - copying unchanged entry data
                 {
-                    if (_uncompressedSize == 0)
+                    bool emptyEncryptedEntry = _uncompressedSize == 0 && Encryption != ZipEncryptionMethod.None;
+                    if (_uncompressedSize == 0 && !emptyEncryptedEntry)
                     {
                         // reset size to ensure proper central directory size header
                         _compressedSize = 0;
@@ -1917,7 +1918,7 @@ namespace System.IO.Compression
                             Encryption = ZipEncryptionMethod.None;
                         }
 
-                        WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0, forceWrite: true);
+                        WriteLocalFileHeader(isEmptyFile: _uncompressedSize == 0 && !emptyEncryptedEntry, forceWrite: true);
 
                         // WriteLocalFileHeaderInitialize may have cleared the DataDescriptor flag
                         // (because Encryption was temporarily set to None and the stream is seekable).
@@ -1945,8 +1946,8 @@ namespace System.IO.Compression
                         CompressionMethod = savedCompressionMethod;
                     }
 
-                    // according to ZIP specs, zero-byte files MUST NOT include file data
-                    if (_uncompressedSize != 0)
+                    // according to ZIP specs, zero-byte unencrypted files MUST NOT include file data
+                    if (_uncompressedSize != 0 || emptyEncryptedEntry)
                     {
                         Debug.Assert(_compressedBytes != null);
                         foreach (byte[] compressedBytes in _compressedBytes)

@@ -135,23 +135,49 @@ namespace System.IO.Compression.Tests
         [Theory]
         [MemberData(nameof(EncryptionMethodAndBoolTestData))]
         [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
-        public async Task UpdateMode_EmptyEncryptedEntry_Unchanged_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
+        public async Task UpdateMode_EmptyEncryptedEntry_UnchangedAfterRewrite_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
         {
             string archivePath = GetTempArchivePath();
+            string modifiedEntryName = "modified.txt";
+            string emptyEntryName = ".gitkeep";
             string password = "PLACEHOLDER";
-            var entries = new[] { (".gitkeep", "", (string?)password, (ZipEncryptionMethod?)encryptionMethod) };
+            string modifiedContent = "Updated content that forces the archive to be rewritten.";
+            var entries = new[]
+            {
+                (modifiedEntryName, "Original content", (string?)null, (ZipEncryptionMethod?)null),
+                (emptyEntryName, "", (string?)password, (ZipEncryptionMethod?)encryptionMethod)
+            };
 
             await CreateArchiveWithEntries(archivePath, entries, async);
 
-            // Open in update mode and save without modifying anything.
             using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
             {
-                Assert.Equal(1, archive.Entries.Count);
+                ZipArchiveEntry modifiedEntry = archive.GetEntry(modifiedEntryName);
+                Assert.NotNull(modifiedEntry);
+
+                using (Stream stream = await OpenEntryStream(async, modifiedEntry))
+                {
+                    stream.SetLength(0);
+                    byte[] modifiedContentBytes = Encoding.UTF8.GetBytes(modifiedContent);
+                    if (async)
+                        await stream.WriteAsync(modifiedContentBytes, 0, modifiedContentBytes.Length);
+                    else
+                        stream.Write(modifiedContentBytes, 0, modifiedContentBytes.Length);
+                }
+
+                ZipArchiveEntry emptyEntry = archive.GetEntry(emptyEntryName);
+                Assert.NotNull(emptyEntry);
+                Assert.True(emptyEntry.IsEncrypted);
+                Assert.Equal(encryptionMethod, emptyEntry.EncryptionMethod);
             }
 
             using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
             {
-                ZipArchiveEntry entry = archive.GetEntry(".gitkeep");
+                ZipArchiveEntry modifiedEntry = archive.GetEntry(modifiedEntryName);
+                Assert.NotNull(modifiedEntry);
+                await AssertEntryTextEquals(modifiedEntry, modifiedContent, null, async);
+
+                ZipArchiveEntry entry = archive.GetEntry(emptyEntryName);
                 Assert.NotNull(entry);
                 Assert.True(entry.IsEncrypted);
                 Assert.Equal(encryptionMethod, entry.EncryptionMethod);
