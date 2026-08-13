@@ -37,8 +37,7 @@ namespace BinderTracingTests
                 }
                 catch { }
 
-                List<HandlerInvocation> invocations = handlers.Invocations.Where(invocation => Helpers.AssemblyNamesMatch(invocation.AssemblyName, assemblyName)).ToList();
-                Assert.Single(invocations);
+                Assert.Single(handlers.Invocations);
                 Assert.Empty(handlers.Binds);
                 return new BindOperation()
                 {
@@ -48,7 +47,7 @@ namespace BinderTracingTests
                     RequestingAssemblyLoadContext = DefaultALC,
                     Success = false,
                     Cached = false,
-                    AssemblyLoadContextResolvingHandlers = invocations,
+                    AssemblyLoadContextResolvingHandlers = handlers.Invocations,
                     NestedBinds = handlers.Binds
                 };
             }
@@ -276,9 +275,7 @@ namespace BinderTracingTests
             };
         }
 
-        [BinderTest(isolate: true,
-            additionalLoadsToTrack: new string[] { "AssemblyToLoadDependency" },
-            activeIssue: "https://github.com/dotnet/runtime/issues/68521")] // Emit-based Invoke causes an extra load.
+        [BinderTest(isolate: true, additionalLoadsToTrack: new string[] { "AssemblyToLoadDependency" })] // Emit-based Invoke causes an extra load.
         public static BindOperation AssemblyLoadFromResolveHandler_MissingDependency()
         {
             string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
