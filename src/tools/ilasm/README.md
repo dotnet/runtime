@@ -1,10 +1,11 @@
 # ILAssembler
 
 ILAssembler compiles declarations while ANTLR parses the input. The parser uses
-`UnbufferedTokenStream` with parse-tree construction disabled. Grammar actions retain bounded
-subtrees only while `GrammarActions` processes a declaration or method-body item, so a complete
-document or method body is never retained. Rules such as `bytes` stream their content into an
-accumulator instead of building a subtree at all.
+`UnbufferedTokenStream` with parse-tree construction disabled. Namespace, type, top-level,
+class-member and method-body structure is action-driven, while shared directives retain bounded
+subtrees for their existing visitors. A complete document, declaration body or method body is
+never retained. Rules such as `bytes` stream their content into an accumulator instead of building
+a subtree at all.
 
 `GrammarActions` is a single `internal sealed partial class` split across
 `src/ILAssembler/Actions/GrammarActions.*.cs`:
@@ -18,7 +19,8 @@ accumulator instead of building a subtree at all.
 | `GrammarActions.CustomAttributes.cs` | Custom attribute values and serialization. |
 | `GrammarActions.Data.cs` | Data and blob declarations. |
 | `GrammarActions.Debug.cs` | Source and debug directives. |
-| `GrammarActions.Declarations.cs` | Top-level `decl` dispatch and conversion. |
+| `GrammarActions.Declarations.cs` | Parser-driven top-level declaration visitor guards. |
+| `GrammarActions.Declarations.Actions.cs` | Direct top-level declarations and shared-directive dispatch. |
 | `GrammarActions.Instructions.cs` | Tree-free value instruction and method-item actions. |
 | `GrammarActions.Instructions.References.cs` | Reference and signature instruction actions. |
 | `GrammarActions.Literals.cs` | Literals, names and strings. |
@@ -44,7 +46,10 @@ accumulator instead of building a subtree at all.
 | `GrammarActions.Signatures.References.cs` | Member-reference synthesis and materialization. |
 | `GrammarActions.Signatures.Types.cs` | Type-signature materialization and encoding. |
 | `GrammarActions.Signatures.Values.cs` | Internal synthesized signature value model. |
-| `GrammarActions.Types.cs` | Namespace and type scopes and declaration conversion. |
+| `GrammarActions.Types.cs` | Namespace and type scope ownership and shared type conversion. |
+| `GrammarActions.Types.Headers.cs` | Namespace and type-header materialization and visitor guards. |
+| `GrammarActions.Types.Headers.Actions.cs` | Namespace, type attribute, base and interface parser actions. |
+| `GrammarActions.Types.Headers.Values.cs` | Internal synthesized type-header value model. |
 | `GrammarActions.Types.References.cs` | Type-name synthesis and resolution. |
 
 `CILParser.Actions.cs` holds the parse-tree mode helpers the grammar calls.
@@ -61,12 +66,13 @@ ILAssembler entities and signature implementation values remain internal, so gen
 slots use `object` where an internal value or array crosses that boundary and `GrammarActions`
 provides the strongly typed accessors.
 
-All type, signature, reference, marshalling, class-member, method-header, method-body directive and
-exception-handling rules synthesize values without retaining structural subtrees. `scopeBlock`
-records offsets under its context key without inspecting children. The remaining `BeginSubtree`
-islands are `decl`, `nameSpaceHead`, `classHead`, `dataDecl`, `secDecl`, `extSourceSpec`,
-`languageDecl`, `initOpt`, `customAttrDecl`, `customDescr`, `customDescrWithOwner` and
-`customDescrInMethodBody`.
+All namespace, type-header, top-level, type, signature, reference, marshalling, class-member,
+method-header, method-body directive and exception-handling structure is action-driven.
+`scopeBlock` records offsets under its context key without inspecting children. The remaining
+`BeginSubtree` islands are the bounded shared roots `assemblyBlock`, `assemblyRefBlock`,
+`exptypeBlock`, `manifestResBlock`, `dataDecl`, `fileDecl`, `vtableDecl`, `vtfixupDecl`, `secDecl`,
+`extSourceSpec`, `languageDecl`, `typedefDecl`, `initOpt`, `customAttrDecl`, `customDescr`,
+`customDescrWithOwner` and `customDescrInMethodBody`.
 
 Semantic state that a rule pushes must be released from that rule's `finally` clause and be keyed on
 the owning context, because ANTLR skips `@after` actions and the remainder of an alternative once a
@@ -74,8 +80,9 @@ rule reports a syntax error. Inline actions placed after a subrule reference are
 they run only when the alternative completes.
 
 Only the parser actions walk the structural rules. The recursive `ICILVisitor` entry points for
-`decls`, `classDecls`, `methodDecls`, `scopeBlock` and the SEH rules throw `UnreachableException` so
-that there is exactly one live traversal algorithm.
+`decl`, `decls`, `nameSpaceHead`, `classHead`, their synthesized dependency rules, `classDecls`,
+`methodDecls`, `scopeBlock` and the SEH rules throw `UnreachableException` so that there is exactly
+one live traversal algorithm.
 
 ## Build
 

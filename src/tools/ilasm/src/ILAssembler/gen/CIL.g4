@@ -449,49 +449,71 @@ decls
 finally {EndParseTreeMode();}
 
 decl
-@init {BeginSubtree();}
-@after {Actions.OnDeclaration(_localctx);}
+@init {BeginStreaming();}
 :
 	classHead '{' classDecls '}'
 	| nameSpaceHead '{' decls '}'
 	| methodHead '{' methodDecls '}'
 	| fieldDecl
-	| dataDecl
-	| vtableDecl
-	| vtfixupDecl
-	| extSourceSpec
-	| fileDecl
-	| assemblyBlock
-	| assemblyRefHead '{' assemblyRefDecls '}'
-	| exptypeHead '{' exptypeDecls '}'
-	| manifestResHead '{' manifestResDecls '}'
-	| moduleHead
-	| secDecl
-	| customAttrDecl
-	| subsystem
-	| corflags
-	| alignment
-	| imagebase
-	| stackreserve
-	| languageDecl
-	| typedefDecl
-	| compControl
+	| {Actions.BeginTopLevelDirective();}
+		data = dataDecl {Actions.ProcessTopLevelDataDeclaration($data.ctx);}
+	| {Actions.BeginTopLevelDirective();}
+		vtable = vtableDecl {Actions.ProcessTopLevelVTableDeclaration($vtable.ctx);}
+	| {Actions.BeginTopLevelDirective();}
+		vtfixup = vtfixupDecl {Actions.ProcessTopLevelVTableFixupDeclaration($vtfixup.ctx);}
+	| {Actions.BeginTopLevelDirective();}
+		source = extSourceSpec {Actions.ProcessTopLevelSourceDirective($source.ctx);}
+	| {Actions.BeginTopLevelDirective();}
+		file = fileDecl {Actions.ProcessTopLevelFileDeclaration($file.ctx);}
+	| {Actions.BeginTopLevelDirective();}
+		assembly = assemblyBlock {Actions.ProcessTopLevelAssembly($assembly.ctx);}
+	| {Actions.BeginTopLevelDirective();}
+		assemblyReference = assemblyRefBlock
+		{Actions.ProcessTopLevelAssemblyReference($assemblyReference.ctx);}
+	| {Actions.BeginTopLevelDirective();}
+		exportedType = exptypeBlock {Actions.ProcessTopLevelExportedType($exportedType.ctx);}
+	| {Actions.BeginTopLevelDirective();}
+		resource = manifestResBlock {Actions.ProcessTopLevelManifestResource($resource.ctx);}
+	| {Actions.BeginTopLevelDirective();}
+		module = moduleHead
+		{Actions.ProcessTopLevelModule($module.Value, $module.HasName, $module.IsExternal);}
+	| {Actions.BeginTopLevelDirective();}
+		security = secDecl {Actions.ProcessTopLevelSecurityDeclaration($security.ctx);}
+	| attribute = customAttrDecl {Actions.ProcessTopLevelCustomAttribute($attribute.ctx);}
+	| {Actions.BeginTopLevelDirective();} subsystem
+	| {Actions.BeginTopLevelDirective();} corflags
+	| {Actions.BeginTopLevelDirective();} alignment
+	| {Actions.BeginTopLevelDirective();} imagebase
+	| {Actions.BeginTopLevelDirective();} stackreserve
+	| {Actions.BeginTopLevelDirective();}
+		language = languageDecl {Actions.ProcessTopLevelLanguageDirective($language.ctx);}
+	| {Actions.BeginTopLevelDirective();}
+		typedef = typedefDecl {Actions.ProcessTopLevelTypedef($typedef.ctx);}
+	| {Actions.BeginTopLevelDirective();} compControl
 	| typelist
-	| mscorlib;
+	| {Actions.BeginTopLevelDirective();} mscorlib;
 finally {EndParseTreeMode(); Actions.EndDeclaration(_localctx);}
 
-subsystem: '.subsystem' int32;
+subsystem:
+	'.subsystem' value = int32 {Actions.ProcessTopLevelSubsystem($value.start);};
 
-corflags: '.corflags' int32;
+corflags:
+	'.corflags' value = int32 {Actions.ProcessTopLevelCorFlags($value.start);};
 
-alignment: '.file' 'alignment' int32;
+alignment:
+	'.file' 'alignment' value = int32 {Actions.ProcessTopLevelAlignment($value.start);};
 
-imagebase: '.imagebase' int64;
+imagebase:
+	'.imagebase' value = int64 {Actions.ProcessTopLevelImageBase($value.start);};
 
-stackreserve: '.stackreserve' int64;
+stackreserve:
+	'.stackreserve' value = int64 {Actions.ProcessTopLevelStackReserve($value.start);};
 
-assemblyBlock:
+assemblyBlock returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
 	'.assembly' asmAttr dottedName '{' assemblyDecls '}';
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 mscorlib: '.mscorlib';
 
@@ -505,7 +527,13 @@ finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParse
 
 languageString: SQSTRING | QSTRING;
 
-typelist: '.typelist' '{' (className)* '}';
+typelist
+@init {Actions.BeginTopLevelTypeList();}
+:
+	'.typelist' '{'
+	(name = className {Actions.ProcessTopLevelTypeListEntry($name.Value);})*
+	'}'
+;
 
 int32: INT32;
 int64: INT64 | INT32;
@@ -533,12 +561,15 @@ compControl:
 
 
 /*  Aliasing of types, type specs, methods, fields and custom attributes */
-typedefDecl:
+typedefDecl returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
 	'.typedef' type 'as' dottedName
 	| '.typedef' className 'as' dottedName
 	| '.typedef' memberRef 'as' dottedName
 	| '.typedef' customDescr 'as' dottedName
 	| '.typedef' customDescrWithOwner 'as' dottedName;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 /* Custom attribute declarations  */
 customDescr returns [bool HasSyntaxError]
@@ -593,13 +624,21 @@ serializTypeElement:
 	| ENUM className;
 
 /*  Module declaration */
-moduleHead:
-	MODULE 'extern' dottedName
-	| MODULE dottedName
-	| MODULE;
+moduleHead returns [string Value, bool HasName, bool IsExternal]:
+	MODULE 'extern' name = dottedName
+		{Actions.SetModuleHeader(_localctx, $name.Value, true);}
+	| MODULE name = dottedName
+		{Actions.SetModuleHeader(_localctx, $name.Value, false);}
+	| MODULE
+		{Actions.SetEmptyModuleHeader(_localctx);};
 
 /*  VTable Fixup table declaration  */
-vtfixupDecl: '.vtfixup' '[' int32 ']' vtfixupAttr 'at' id;
+vtfixupDecl returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
+	'.vtfixup' '[' int32 ']' vtfixupAttr 'at' id
+;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 vtfixupAttr:
 	/* EMPTY */
@@ -609,57 +648,82 @@ vtfixupAttr:
 	| vtfixupAttr 'callmostderived'
 	| vtfixupAttr 'retainappdomain';
 
-vtableDecl: '.vtable' '=' '(' bytes ')' /* deprecated */;
+vtableDecl returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
+	'.vtable' '=' '(' bytes ')' /* deprecated */
+;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 /*  Namespace and class declaration  */
-nameSpaceHead
-@init {BeginSubtree();}
-@after {Actions.BeginNamespace(_localctx);}
+nameSpaceHead returns [string Value]
+@init {BeginStreaming(); Actions.BeginNamespaceHeader(_localctx);}
+@after {Actions.BeginNamespace(_localctx, _localctx.Value);}
 :
-    '.namespace' dottedName
+	'.namespace' name = dottedName {_localctx.Value = $name.Value;}
 ;
-finally {EndParseTreeMode();}
+finally {Actions.EndNamespaceHeader(_localctx); EndParseTreeMode();}
 
-classHead
-@init {BeginSubtree();}
-@after {Actions.BeginType(_localctx);}
+classHead returns [object Value]
+@init {BeginStreaming(); Actions.BeginClassHeader(_localctx);}
+@after {Actions.BeginType(_localctx, _localctx.Value);}
 :
-	'.class' classAttr* dottedName typarsClause extendsClause implClause;
-finally {EndParseTreeMode();}
+	'.class'
+	(attribute = classAttr {Actions.AddClassHeaderAttribute(_localctx, $attribute.Value);})*
+	name = dottedName genericParameters = typarsClause baseType = extendsClause interfaces = implClause
+		{_localctx.Value = Actions.CreateClassHeader(
+			_localctx,
+			$name.stop,
+			$name.Value,
+			$genericParameters.Value,
+			$baseType.Value,
+			$interfaces.Value);}
+;
+finally {Actions.EndClassHeader(_localctx); EndParseTreeMode();}
 
 
-classAttr:
-	'public'
-	| 'private'
-	| VALUE
-	| ENUM
-	| INTERFACE
-	| 'sealed'
-	| 'abstract'
-	| 'auto'
-	| 'sequential'
-	| EXPLICIT
-	| 'extended'
-	| ANSI
-	| 'unicode'
-	| 'autochar'
-	| 'import'
-	| 'serializable'
-	| 'windowsruntime'
-	| 'nested' 'public'
-	| 'nested' 'private'
-	| 'nested' 'family'
-	| 'nested' 'assembly'
-	| 'nested' 'famandassem'
-	| 'nested' 'famorassem'
-	| 'beforefieldinit'
-	| 'specialname'
-	| 'rtspecialname'
-	| 'flags' '(' int32 ')';
+classAttr returns [object Value]:
+	attribute = 'public' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'private' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = VALUE {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = ENUM {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = INTERFACE {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'sealed' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'abstract' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'auto' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'sequential' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = EXPLICIT {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'extended' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = ANSI {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'unicode' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'autochar' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'import' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'serializable' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'windowsruntime' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| 'nested' visibility = 'public' {_localctx.Value = Actions.CreateNestedClassAttribute($visibility);}
+	| 'nested' visibility = 'private' {_localctx.Value = Actions.CreateNestedClassAttribute($visibility);}
+	| 'nested' visibility = 'family' {_localctx.Value = Actions.CreateNestedClassAttribute($visibility);}
+	| 'nested' visibility = 'assembly' {_localctx.Value = Actions.CreateNestedClassAttribute($visibility);}
+	| 'nested' visibility = 'famandassem' {_localctx.Value = Actions.CreateNestedClassAttribute($visibility);}
+	| 'nested' visibility = 'famorassem' {_localctx.Value = Actions.CreateNestedClassAttribute($visibility);}
+	| attribute = 'beforefieldinit' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'specialname' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| attribute = 'rtspecialname' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
+	| 'flags' '(' flags = int32 ')' {_localctx.Value = Actions.CreateRawClassAttribute($flags.start);};
 
-extendsClause: /* EMPTY */ | 'extends' typeSpec;
+extendsClause returns [object Value]
+@init {_localctx.Value = Actions.CreateEmptyClassBase();}
+:
+	/* EMPTY */
+	| 'extends' baseType = typeSpec {_localctx.Value = Actions.CreateClassBase($baseType.Value);}
+;
 
-implClause: /* EMPTY */ | 'implements' implList;
+implClause returns [object Value]
+@init {_localctx.Value = Actions.CreateEmptyInterfaceList();}
+:
+	/* EMPTY */
+	| 'implements' interfaces = implList {_localctx.Value = $interfaces.Value;}
+;
 
 classDecls
 @init {BeginStreaming();}
@@ -668,7 +732,13 @@ classDecls
 ;
 finally {EndParseTreeMode();}
 
-implList: (typeSpec ',')* typeSpec;
+implList returns [object Value]
+@init {Actions.BeginInterfaceList(_localctx);}
+:
+	(interfaceType = typeSpec {Actions.AddInterfaceType(_localctx, $interfaceType.Value);} ',')*
+	lastInterfaceType = typeSpec {Actions.AddInterfaceType(_localctx, $lastInterfaceType.Value);}
+;
+finally {_localctx.Value = Actions.EndInterfaceList(_localctx);}
 
 /*  External source declarations  */
 esHead: '.line' | '#line';
@@ -694,9 +764,12 @@ extSourceSpec returns [bool HasSyntaxError]
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 /*  Manifest declarations  */
-fileDecl:
+fileDecl returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
 	'.file' fileAttr* dottedName fileEntry HASH '=' '(' bytes ')' fileEntry
 	| '.file' fileAttr* dottedName fileEntry;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 fileAttr: 'nometadata';
 
@@ -1816,6 +1889,13 @@ asmOrRefDecl:
 	| customAttrDecl
 	| compControl;
 
+assemblyRefBlock returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
+	assemblyRefHead '{' assemblyRefDecls '}'
+;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+
 assemblyRefHead:
 	'.assembly' 'extern' asmAttr dottedName
 	| '.assembly' 'extern' asmAttr dottedName 'as' dottedName;
@@ -1827,6 +1907,13 @@ assemblyRefDecl:
 	| asmOrRefDecl
 	| '.publickeytoken' '=' '(' bytes ')'
 	| 'auto';
+
+exptypeBlock returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
+	exptypeHead '{' exptypeDecls '}'
+;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 exptypeHead: '.class' 'extern' exptAttr* dottedName;
 
@@ -1853,6 +1940,13 @@ exptypeDecl:
 	| '.class' int32
 	| customAttrDecl
 	| compControl;
+
+manifestResBlock returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
+	manifestResHead '{' manifestResDecls '}'
+;
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 manifestResHead:
 	MRESOURCE manresAttr* dottedName

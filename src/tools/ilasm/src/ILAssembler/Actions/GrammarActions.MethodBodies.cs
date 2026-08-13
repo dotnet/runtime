@@ -37,20 +37,6 @@ internal sealed partial class GrammarActions
 
         GrammarResult ICILVisitor<GrammarResult>.VisitHandlerBlock(CILParser.HandlerBlockContext context) => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitImplClause(CILParser.ImplClauseContext context) => VisitImplClause(context);
-        public GrammarResult.Sequence<EntityRegistry.InterfaceImplementationEntity> VisitImplClause(CILParser.ImplClauseContext context) => context.implList() is {} implList ? VisitImplList(implList) : new(ImmutableArray<EntityRegistry.InterfaceImplementationEntity>.Empty);
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitImplList(CILParser.ImplListContext context) => VisitImplList(context);
-        public GrammarResult.Sequence<EntityRegistry.InterfaceImplementationEntity> VisitImplList(CILParser.ImplListContext context)
-        {
-            var builder = ImmutableArray.CreateBuilder<EntityRegistry.InterfaceImplementationEntity>();
-            foreach (var impl in context.typeSpec())
-            {
-                builder.Add(EntityRegistry.CreateUnrecordedInterfaceImplementation(_currentTypeDefinition.PeekOrDefault()!, VisitTypeSpec(impl).Value));
-            }
-            return new(builder.ToImmutable());
-        }
-
         private void ValidateLabelReferences()
         {
             if (_currentMethod is null)
