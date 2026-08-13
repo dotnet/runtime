@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -16,7 +17,7 @@ internal sealed partial class ExecutionManagerCore<T> : IExecutionManager
     internal readonly Target _target;
 
     // maps CodeBlockHandle.Address (which is the CodeHeaderAddress) to the CodeBlock
-    private readonly Dictionary<TargetPointer, CodeBlock> _codeInfos = new();
+    private readonly ConcurrentDictionary<TargetPointer, CodeBlock> _codeInfos = new();
     private readonly TargetPointer _topRangeSectionMapAddress;
     private readonly ExecutionManagerHelpers.RangeSectionMap _rangeSectionMapLookup;
     private readonly EEJitManager _eeJitManager;

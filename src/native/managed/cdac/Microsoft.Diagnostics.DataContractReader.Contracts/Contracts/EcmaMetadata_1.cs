@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Reflection.Metadata;
@@ -17,9 +18,9 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
     private const byte HEAP_STRING_4 = 0x01;
     private const byte HEAP_GUID_4 = 0x02;
     private const byte HEAP_BLOB_4 = 0x04;
-    private readonly Dictionary<ModuleHandle, (uint Generation, MetadataReaderProvider? Provider)> _metadata = [];
-    private readonly Dictionary<ModuleHandle, (uint Generation, byte[] Blob)> _readWriteMetadataBlob = [];
-    private readonly Dictionary<ModuleHandle, TargetSpan> _readOnlyMetadataAddress = [];
+    private readonly ConcurrentDictionary<ModuleHandle, (uint Generation, MetadataReaderProvider? Provider)> _metadata = [];
+    private readonly ConcurrentDictionary<ModuleHandle, (uint Generation, byte[] Blob)> _readWriteMetadataBlob = [];
+    private readonly ConcurrentDictionary<ModuleHandle, TargetSpan> _readOnlyMetadataAddress = [];
 
     public void Flush(FlushScope scope)
     {
@@ -104,7 +105,6 @@ internal sealed class EcmaMetadata_1(Target target) : IEcmaMetadata
             {
                 return cached.Provider?.GetMetadataReader();
             }
-            cached.Provider?.Dispose();
         }
 
         MetadataReaderProvider? provider = GetMetadataProvider(handle);

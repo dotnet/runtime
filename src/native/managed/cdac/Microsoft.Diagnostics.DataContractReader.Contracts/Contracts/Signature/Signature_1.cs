@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using Microsoft.Diagnostics.DataContractReader.SignatureHelpers;
@@ -18,7 +18,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal sealed class Signature_1 : ISignature
 {
     private readonly Target _target;
-    private readonly Dictionary<ModuleHandle, SignatureTypeProvider<ITypeHandle?>> _thProviders = [];
+    private readonly ConcurrentDictionary<ModuleHandle, SignatureTypeProvider<ITypeHandle?>> _thProviders = [];
 
     internal Signature_1(Target target)
     {
@@ -31,16 +31,10 @@ internal sealed class Signature_1 : ISignature
     }
 
     private SignatureTypeProvider<ITypeHandle?> GetTypeHandleProvider(ModuleHandle moduleHandle)
-    {
-        if (_thProviders.TryGetValue(moduleHandle, out SignatureTypeProvider<ITypeHandle?>? thProvider))
-        {
-            return thProvider;
-        }
-
-        SignatureTypeProvider<ITypeHandle?> newProvider = new(_target, moduleHandle);
-        _thProviders[moduleHandle] = newProvider;
-        return newProvider;
-    }
+        => _thProviders.GetOrAdd(
+            moduleHandle,
+            static (moduleHandle, target) => new SignatureTypeProvider<ITypeHandle?>(target, moduleHandle),
+            _target);
 
     ITypeHandle? ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle? ctx)
     {

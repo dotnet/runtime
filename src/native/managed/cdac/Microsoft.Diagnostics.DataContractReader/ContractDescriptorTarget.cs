@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -947,7 +948,7 @@ public sealed unsafe class ContractDescriptorTarget : Target
     public sealed class DataCache : Target.IDataCache
     {
         private readonly ContractDescriptorTarget _target;
-        private readonly Dictionary<(ulong, Type), object?> _readDataByAddress = [];
+        private readonly ConcurrentDictionary<(ulong, Type), object?> _readDataByAddress = [];
 
         public DataCache(ContractDescriptorTarget target)
         {

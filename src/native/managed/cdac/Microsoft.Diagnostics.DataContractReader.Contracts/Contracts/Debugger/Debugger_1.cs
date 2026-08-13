@@ -3,7 +3,7 @@
 
 using System;
 using System.Buffers.Binary;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -21,7 +21,7 @@ internal sealed class Debugger_1 : IDebugger
     private const uint UnhandledExceptionHijackIndex = 0;
 
     private readonly Target _target;
-    private Dictionary<TargetPointer, byte>? _patches;
+    private ConcurrentDictionary<TargetPointer, byte>? _patches;
 
     internal Debugger_1(Target target)
     {
@@ -167,7 +167,7 @@ internal sealed class Debugger_1 : IDebugger
     {
         try
         {
-            Dictionary<TargetPointer, byte> patches = GetPatches();
+            ConcurrentDictionary<TargetPointer, byte> patches = GetPatches();
             if (patches.TryGetValue(address, out byte opcode))
             {
                 return opcode;
@@ -181,9 +181,9 @@ internal sealed class Debugger_1 : IDebugger
         return _target.Read<byte>(address);
     }
 
-    private Dictionary<TargetPointer, byte> GetPatches() => _patches ??= ReadPatches();
+    private ConcurrentDictionary<TargetPointer, byte> GetPatches() => _patches ??= ReadPatches();
 
-    private Dictionary<TargetPointer, byte> ReadPatches()
+    private ConcurrentDictionary<TargetPointer, byte> ReadPatches()
     {
         if (!_target.TryReadGlobalPointer(Constants.Globals.DebuggerPatchTable, out TargetPointer? patchTablePointerAddress))
             return [];
@@ -196,7 +196,7 @@ internal sealed class Debugger_1 : IDebugger
         if (patchTable.Entries == TargetPointer.Null)
             return [];
 
-        Dictionary<TargetPointer, byte> patches = [];
+        ConcurrentDictionary<TargetPointer, byte> patches = [];
         uint patchSize = Data.DebuggerControllerPatch.GetSize(_target);
 
         for (uint i = 0; i < patchTable.Count; i++)

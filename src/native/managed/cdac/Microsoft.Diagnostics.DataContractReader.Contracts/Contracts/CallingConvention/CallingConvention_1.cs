@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
@@ -20,7 +21,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal sealed class CallingConvention_1 : ICallingConvention
 {
     private readonly Target _target;
-    private readonly Dictionary<ModuleHandle, SignatureTypeInfoProvider> _signatureTypeInfoProviders = [];
+    private readonly ConcurrentDictionary<ModuleHandle, SignatureTypeInfoProvider> _signatureTypeInfoProviders = [];
 
     internal CallingConvention_1(Target target)
     {
@@ -100,16 +101,10 @@ internal sealed class CallingConvention_1 : ICallingConvention
     }
 
     private SignatureTypeInfoProvider GetSignatureTypeInfoProvider(ModuleHandle moduleHandle)
-    {
-        if (_signatureTypeInfoProviders.TryGetValue(moduleHandle, out SignatureTypeInfoProvider? provider))
-        {
-            return provider;
-        }
-
-        provider = new SignatureTypeInfoProvider(_target, moduleHandle);
-        _signatureTypeInfoProviders[moduleHandle] = provider;
-        return provider;
-    }
+        => _signatureTypeInfoProviders.GetOrAdd(
+            moduleHandle,
+            static (moduleHandle, target) => new SignatureTypeInfoProvider(target, moduleHandle),
+            _target);
 
     private ModuleHandle GetModuleHandle(ITypeHandle typeHandle)
     {

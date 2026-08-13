@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
@@ -13,10 +14,11 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 {
     private readonly Target _target;
-    private readonly Dictionary<string, Target.TypeInfo?> _typeInfoCache = new();
-    private readonly Dictionary<string, ITypeHandle?> _typeHandleCache = new();
-    private readonly Dictionary<(string Fqn, string FieldName), TargetPointer> _fieldDescCache = new();
-    private bool _inSearch;
+    private readonly ConcurrentDictionary<string, (bool Found, Target.TypeInfo Info)> _typeInfoCache = new();
+    private readonly ConcurrentDictionary<string, (bool Found, ITypeHandle? TypeHandle)> _typeHandleCache = new();
+    private readonly ConcurrentDictionary<(string Fqn, string FieldName), TargetPointer> _fieldDescCache = new();
+    [ThreadStatic]
+    private static bool t_inSearch;
 
     public ManagedTypeSource_1(Target target)
     {
@@ -51,37 +53,37 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
     public bool TryGetTypeInfo(string fullyQualifiedName, out Target.TypeInfo info)
     {
-        if (_typeInfoCache.TryGetValue(fullyQualifiedName, out Target.TypeInfo? cached))
+        if (_typeInfoCache.TryGetValue(fullyQualifiedName, out (bool Found, Target.TypeInfo Info) cached))
         {
-            info = cached ?? default;
-            return cached.HasValue;
+            info = cached.Info;
+            return cached.Found;
         }
 
         // Re-entrancy guard: if we're already searching for a type and we recurse
         // (e.g., LayoutSet -> ManagedTypeSource -> IData -> LayoutSet), short-circuit
         // to break the cycle. Do NOT cache the negative result here — the outer search
         // may legitimately succeed for this same name once the recursion unwinds.
-        if (_inSearch)
+        if (t_inSearch)
         {
             info = default;
             return false;
         }
 
-        _inSearch = true;
+        t_inSearch = true;
         try
         {
             if (!TryBuildTypeInfo(fullyQualifiedName, out info))
             {
-                _typeInfoCache[fullyQualifiedName] = null;
+                _typeInfoCache[fullyQualifiedName] = (false, default);
                 return false;
             }
 
-            _typeInfoCache[fullyQualifiedName] = info;
+            _typeInfoCache[fullyQualifiedName] = (true, info);
             return true;
         }
         finally
         {
-            _inSearch = false;
+            t_inSearch = false;
         }
     }
 
@@ -95,20 +97,20 @@ internal sealed class ManagedTypeSource_1 : IManagedTypeSource
 
     public bool TryGetTypeHandle(string fullyQualifiedName, [NotNullWhen(true)] out ITypeHandle? typeHandle)
     {
-        if (_typeHandleCache.TryGetValue(fullyQualifiedName, out ITypeHandle? cached))
+        if (_typeHandleCache.TryGetValue(fullyQualifiedName, out (bool Found, ITypeHandle? TypeHandle) cached))
         {
-            typeHandle = cached;
-            return typeHandle is not null;
+            typeHandle = cached.TypeHandle;
+            return cached.Found;
         }
 
         if (!TryResolveType(fullyQualifiedName, out typeHandle, out _, out _))
         {
             typeHandle = null;
-            _typeHandleCache[fullyQualifiedName] = null;
+            _typeHandleCache[fullyQualifiedName] = (false, null);
             return false;
         }
 
-        _typeHandleCache[fullyQualifiedName] = typeHandle;
+        _typeHandleCache[fullyQualifiedName] = (true, typeHandle);
         return true;
     }
 

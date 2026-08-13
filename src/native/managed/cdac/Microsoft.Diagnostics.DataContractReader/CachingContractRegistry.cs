@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -17,9 +17,9 @@ internal sealed class CachingContractRegistry : ContractRegistry
 {
     public delegate bool TryGetContractVersionDelegate(string contractName, [NotNullWhen(true)] out string? version);
 
-    private readonly Dictionary<Type, IContract> _contracts = [];
-    private readonly Dictionary<(Type, string), Func<Target, IContract>> _creators = [];
-    private readonly HashSet<(Type, string)> _unsupportedVersions = [];
+    private readonly ConcurrentDictionary<Type, IContract> _contracts = [];
+    private readonly ConcurrentDictionary<(Type, string), Func<Target, IContract>> _creators = [];
+    private readonly ConcurrentDictionary<(Type, string), byte> _unsupportedVersions = [];
     private readonly Target _target;
     private readonly TryGetContractVersionDelegate _tryGetContractVersion;
 
@@ -41,7 +41,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
 
     public override void RegisterUnsupported<TContract>(string version)
     {
-        _unsupportedVersions.Add((typeof(TContract), version));
+        _unsupportedVersions.TryAdd((typeof(TContract), version), 0);
     }
 
     public override bool TryGetContract<TContract>([NotNullWhen(true)] out TContract contract, [NotNullWhen(false)] out System.Exception? failureException)
@@ -115,7 +115,7 @@ internal sealed class CachingContractRegistry : ContractRegistry
 
         if (!_creators.TryGetValue((contractType, version), out creator))
         {
-            failureException = _unsupportedVersions.Contains((contractType, version))
+            failureException = _unsupportedVersions.ContainsKey((contractType, version))
                 ? new ContractObsoleteException(contractName, version)
                 : new ContractUnrecognizedException(contractName, version);
             return false;

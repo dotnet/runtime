@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -30,13 +31,13 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
 
     // TODO(cdac): we mutate this dictionary - copies of the RuntimeTypeSystem_1 struct share this instance.
     // If we need to invalidate our view of memory, we should clear this dictionary.
-    private readonly Dictionary<TargetPointer, MethodTable> _methodTables = new();
-    private readonly Dictionary<TargetPointer, MethodDesc> _methodDescs = new();
-    private readonly Dictionary<TypeKey, ITypeHandle> _typeHandles = new();
+    private readonly ConcurrentDictionary<TargetPointer, MethodTable> _methodTables = new();
+    private readonly ConcurrentDictionary<TargetPointer, MethodDesc> _methodDescs = new();
+    private readonly ConcurrentDictionary<TypeKey, ITypeHandle> _typeHandles = new();
     // Interns TargetTypeHandle instances per address so repeated GetTypeHandle calls
     // (a hot entrypoint for signature decoding, object/type inspection, etc.) don't
     // allocate a new handle each time.
-    private readonly Dictionary<TargetPointer, TargetTypeHandle> _targetTypeHandles = new();
+    private readonly ConcurrentDictionary<TargetPointer, TargetTypeHandle> _targetTypeHandles = new();
 
     public void Flush(FlushScope scope)
     {
@@ -47,14 +48,7 @@ internal partial struct RuntimeTypeSystem_1 : IRuntimeTypeSystem
     }
 
     private TargetTypeHandle GetOrCreateTargetTypeHandle(TargetPointer address)
-    {
-        if (!_targetTypeHandles.TryGetValue(address, out TargetTypeHandle? handle))
-        {
-            handle = new TargetTypeHandle(address);
-            _targetTypeHandles[address] = handle;
-        }
-        return handle;
-    }
+        => _targetTypeHandles.GetOrAdd(address, static address => new TargetTypeHandle(address));
 
     internal struct MethodTable
     {

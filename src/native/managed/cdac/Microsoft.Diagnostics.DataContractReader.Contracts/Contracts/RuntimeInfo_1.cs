@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Threading;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
@@ -9,42 +10,47 @@ internal sealed class RuntimeInfo_1 : IRuntimeInfo
 {
     private readonly Target _target;
 
-    private RuntimeInfoArchitecture? _architecture;
-    private RuntimeInfoOperatingSystem? _operatingSystem;
-    private RuntimeInfoRuntimeFlavor? _runtimeFlavor;
-    private string? _runtimeProductVersion;
-    private uint? _recommendedReaderVersion;
+    private Lazy<RuntimeInfoArchitecture> _architecture;
+    private Lazy<RuntimeInfoOperatingSystem> _operatingSystem;
+    private Lazy<RuntimeInfoRuntimeFlavor> _runtimeFlavor;
+    private Lazy<string> _runtimeProductVersion;
+    private Lazy<uint> _recommendedReaderVersion;
 
     public RuntimeInfo_1(Target target)
     {
         _target = target;
+        _architecture = new(ReadArchitecture);
+        _operatingSystem = new(ReadOperatingSystem);
+        _runtimeFlavor = new(ReadRuntimeFlavor);
+        _runtimeProductVersion = new(() => _target.ReadGlobalString(Constants.Globals.RuntimeProductVersionString));
+        _recommendedReaderVersion = new(ReadRecommendedReaderVersion);
     }
 
     public void Flush(FlushScope scope)
     {
-        _architecture = null;
-        _operatingSystem = null;
-        _runtimeFlavor = null;
-        _runtimeProductVersion = null;
-        _recommendedReaderVersion = null;
+        Volatile.Write(ref _architecture, new(ReadArchitecture));
+        Volatile.Write(ref _operatingSystem, new(ReadOperatingSystem));
+        Volatile.Write(ref _runtimeFlavor, new(ReadRuntimeFlavor));
+        Volatile.Write(ref _runtimeProductVersion, new(() => _target.ReadGlobalString(Constants.Globals.RuntimeProductVersionString)));
+        Volatile.Write(ref _recommendedReaderVersion, new(ReadRecommendedReaderVersion));
     }
 
     RuntimeInfoArchitecture IRuntimeInfo.GetTargetArchitecture()
-        => _architecture ??= ReadArchitecture();
+        => Volatile.Read(ref _architecture).Value;
 
     RuntimeInfoOperatingSystem IRuntimeInfo.GetTargetOperatingSystem()
-        => _operatingSystem ??= ReadOperatingSystem();
+        => Volatile.Read(ref _operatingSystem).Value;
 
     RuntimeInfoRuntimeFlavor IRuntimeInfo.GetRuntimeFlavor()
-        => _runtimeFlavor ??= ReadRuntimeFlavor();
+        => Volatile.Read(ref _runtimeFlavor).Value;
 
     string IRuntimeInfo.GetRuntimeProductVersion()
-        => _runtimeProductVersion ??= _target.ReadGlobalString(Constants.Globals.RuntimeProductVersionString);
+        => Volatile.Read(ref _runtimeProductVersion).Value;
 
     uint IRuntimeInfo.GetCurrentReaderVersion() => 1;
 
     uint IRuntimeInfo.GetRecommendedReaderVersion()
-        => _recommendedReaderVersion ??= ReadRecommendedReaderVersion();
+        => Volatile.Read(ref _recommendedReaderVersion).Value;
 
     private RuntimeInfoArchitecture ReadArchitecture()
     {
