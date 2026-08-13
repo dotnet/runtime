@@ -131,9 +131,7 @@ namespace Microsoft.Extensions.Options.Generators
 
                 GenModelValidationMethod(modelToValidate, vt.IsSynthetic, ref staticValidationAttributesDict, ref staticValidatorsDict);
 
-                // Only emit the async validation method when the validator type explicitly implements
-                // IAsyncValidateOptions<T> for this model and the required async validation symbols are available (.NET 11+).
-                if (modelToValidate.GenerateAsyncValidateMethod && _symbolHolder.AsyncValidateOptionsSymbol is not null && _symbolHolder.IAsyncValidatableObjectSymbol is not null)
+                if (modelToValidate.GenerateAsyncValidateMethod && _symbolHolder.AsyncValidateOptionsSymbol is not null)
                 {
                     OutLn();
                     GenAsyncModelValidationMethod(modelToValidate, vt.IsSynthetic, ref staticValidationAttributesDict, ref staticValidatorsDict);
@@ -742,24 +740,37 @@ namespace Microsoft.Extensions.Options.Generators
             OutCloseBrace();
         }
 
+        // Whether the generated ValidateAsync body for this member's local validation function will contain any
+        // await. When it won't (e.g. a member only has a transitive/enumerated validator that resolves to its
+        // synchronous Validate method), the local function needs a CS1998 suppression since it is still declared
+        // async so its exceptions (including a canceled token) surface on the returned Task instead of throwing
+        // synchronously.
+        private bool MemberAsyncValidationHasAwait(ValidatedMember vm)
+            => (_symbolHolder.HasTryValidateValueAsyncMethod && vm.ValidationAttributes.Count > 0)
+                || vm.TransValidatorEmitsAsync
+                || vm.EnumerationValidatorEmitsAsync;
+
         private void GenAsyncModelValidationMethod(
             ValidatedModel modelToValidate,
             bool makeStatic,
             ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict,
             ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
         {
-            // Determine whether the generated method body will contain any await. When it won't (for example the model
-            // only self-validates synchronously via IValidatableObject, or every nested validator resolves to a
-            // synchronous one), we emit a non-async method that returns a completed Task to avoid a CS1998
-            // "async method lacks await" warning. Only nested validators that actually emit ValidateAsync are awaited.
-            bool willAwait = modelToValidate.SelfValidatesAsync;
+            bool concurrentMembers = modelToValidate.MembersToValidate.Count >= 2
+                && modelToValidate.MembersToValidate.Any(MemberAsyncValidationHasAwait);
+
+            // Determine whether the generated method body will contain any await. The method is always declared
+            // async regardless (so that cancellationToken.ThrowIfCancellationRequested() below surfaces as a
+            // faulted/canceled Task instead of throwing synchronously to the caller - a plain non-async method
+            // would throw directly). When the body genuinely contains no await (e.g. the model only self-validates
+            // synchronously via IValidatableObject and has no members), we suppress the resulting CS1998 warning.
+            // Running two or more members concurrently always awaits Task.WhenAll.
+            bool willAwait = concurrentMembers || modelToValidate.SelfValidatesAsync;
             if (!willAwait)
             {
                 foreach (var vm in modelToValidate.MembersToValidate)
                 {
-                    if (vm.ValidationAttributes.Count > 0 ||
-                        vm.TransValidatorEmitsAsync ||
-                        vm.EnumerationValidatorEmitsAsync)
+                    if (MemberAsyncValidationHasAwait(vm))
                     {
                         willAwait = true;
                         break;
@@ -787,84 +798,207 @@ namespace Microsoft.Extensions.Options.Generators
                 OutLn("#endif");
             }
 
-            OutLn($"public {(makeStatic ? "static " : string.Empty)}{(willAwait ? "async " : string.Empty)}global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, {modelToValidate.Name} options, global::System.Threading.CancellationToken cancellationToken = default)");
-            OutOpenBrace();
-            OutLn($"global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;");
-            OutLn("#if NET");
-            OutLn($"var context = new {StaticValidationContextType}(options, \"{modelToValidate.SimpleName}\", null, null);");
-            OutLn("#else");
-            OutLn($"var context = new {StaticValidationContextType}(options);");
-            OutLn("#endif");
-
-            int capacity = modelToValidate.MembersToValidate.Count == 0 ? 0 : modelToValidate.MembersToValidate.Max(static vm => vm.ValidationAttributes.Count);
-            if (capacity > 0)
+            if (!willAwait)
             {
-                OutLn($"var validationResults = new {StaticListType}<{StaticValidationResultType}>();");
-                OutLn($"var validationAttributes = new {StaticListType}<{StaticValidationAttributeType}>({capacity});");
+                OutLn("#pragma warning disable CS1998 // The method is declared async so cancellationToken.ThrowIfCancellationRequested() below surfaces on the returned Task rather than throwing synchronously.");
             }
+
+            OutLn($"public {(makeStatic ? "static " : string.Empty)}async global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, {modelToValidate.Name} options, global::System.Threading.CancellationToken cancellationToken = default)");
+            OutOpenBrace();
+            OutLn($"cancellationToken.ThrowIfCancellationRequested();");
             OutLn();
+            OutLn($"global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;");
 
-            bool cleanListsBeforeUse = false;
-            foreach (var vm in modelToValidate.MembersToValidate)
+            bool contextDeclared = false;
+            if (concurrentMembers)
             {
-                if (vm.ValidationAttributes.Count > 0)
-                {
-                    GenAsyncMemberValidation(vm, ref staticValidationAttributesDict, cleanListsBeforeUse);
-                    cleanListsBeforeUse = true;
-                    OutLn();
-                }
+                GenConcurrentAsyncMemberValidations(modelToValidate, ref staticValidationAttributesDict, ref staticValidatorsDict);
+            }
+            else
+            {
+                OutLn("#if NET");
+                OutLn($"var context = new {StaticValidationContextType}(options, \"{modelToValidate.SimpleName}\", null, null);");
+                OutLn("#else");
+                OutLn($"var context = new {StaticValidationContextType}(options);");
+                OutLn("#endif");
+                contextDeclared = true;
 
-                if (vm.TransValidatorType is not null)
+                int capacity = modelToValidate.MembersToValidate.Count == 0 ? 0 : modelToValidate.MembersToValidate.Max(static vm => vm.ValidationAttributes.Count);
+                if (capacity > 0)
                 {
-                    GenAsyncTransitiveValidation(vm, ref staticValidatorsDict);
-                    OutLn();
+                    OutLn($"var validationResults = new {StaticListType}<{StaticValidationResultType}>();");
+                    OutLn($"var validationAttributes = new {StaticListType}<{StaticValidationAttributeType}>({capacity});");
                 }
+                OutLn();
 
-                if (vm.EnumerationValidatorType is not null)
+                bool cleanListsBeforeUse = false;
+                foreach (var vm in modelToValidate.MembersToValidate)
                 {
-                    GenAsyncEnumerationValidation(vm, ref staticValidatorsDict);
-                    OutLn();
+                    if (vm.ValidationAttributes.Count > 0)
+                    {
+                        GenAsyncMemberValidation(vm, ref staticValidationAttributesDict, cleanListsBeforeUse);
+                        cleanListsBeforeUse = true;
+                        OutLn();
+                    }
+
+                    if (vm.TransValidatorType is not null)
+                    {
+                        GenAsyncTransitiveValidation(vm, ref staticValidatorsDict);
+                        OutLn();
+                    }
+
+                    if (vm.EnumerationValidatorType is not null)
+                    {
+                        GenAsyncEnumerationValidation(vm, ref staticValidatorsDict);
+                        OutLn();
+                    }
                 }
+            }
+
+            if (!contextDeclared && (modelToValidate.SelfValidatesAsync || modelToValidate.SelfValidates))
+            {
+                OutLn("#if NET");
+                OutLn($"var context = new {StaticValidationContextType}(options, \"{modelToValidate.SimpleName}\", null, null);");
+                OutLn("#else");
+                OutLn($"var context = new {StaticValidationContextType}(options);");
+                OutLn("#endif");
             }
 
             GenAsyncModelSelfValidationIfNecessary(modelToValidate);
 
-            if (willAwait)
-            {
-                OutLn($"return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();");
-            }
-            else
-            {
-                OutLn($"return global::System.Threading.Tasks.Task.FromResult(builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build());");
-            }
-
+            OutLn($"return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();");
             OutCloseBrace();
+
+            if (!willAwait)
+            {
+                OutLn("#pragma warning restore CS1998");
+            }
         }
 
-        private void GenAsyncMemberValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict, bool cleanListsBeforeUse)
+        // Emits one async local function per member (each owning its own ValidationContext, ValidationResult list,
+        // ValidationAttribute list, and ValidateOptionsResultBuilder - no mutable state is shared between members),
+        // starts them all, and awaits their completion together via Task.WhenAll so member validation for a model
+        // with 2+ MembersToValidate runs concurrently (see dotnet/runtime issue #128882). The per-member results are
+        // then merged into the outer builder in original declaration order, regardless of completion order, so
+        // existing failure ordering remains deterministic.
+        private void GenConcurrentAsyncMemberValidations(
+            ValidatedModel modelToValidate,
+            ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict,
+            ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
         {
-            OutLn($"context.MemberName = \"{vm.Name}\";");
-            OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"{vm.Name}\" : $\"{{name}}.{vm.Name}\";");
+            var members = modelToValidate.MembersToValidate;
+            var taskVarNames = new string[members.Count];
+
+            for (int i = 0; i < members.Count; i++)
+            {
+                var vm = members[i];
+                bool memberHasAwait = MemberAsyncValidationHasAwait(vm);
+                string builderVar = $"memberBuilder{i}";
+                string contextVar = $"memberContext{i}";
+                string resultsVar = $"memberValidationResults{i}";
+                string attributesVar = $"memberValidationAttributes{i}";
+
+                if (!memberHasAwait)
+                {
+                    OutLn("#pragma warning disable CS1998 // This member's validation never awaits, but the local function is declared async to participate uniformly in Task.WhenAll below.");
+                }
+
+                OutLn($"async global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> Validate{i}Async()");
+                OutOpenBrace();
+                OutLn($"global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? {builderVar} = null;");
+
+                if (vm.ValidationAttributes.Count > 0)
+                {
+                    OutLn("#if NET");
+                    OutLn($"var {contextVar} = new {StaticValidationContextType}(options, \"{modelToValidate.SimpleName}\", null, null);");
+                    OutLn("#else");
+                    OutLn($"var {contextVar} = new {StaticValidationContextType}(options);");
+                    OutLn("#endif");
+                    OutLn($"var {resultsVar} = new {StaticListType}<{StaticValidationResultType}>();");
+                    OutLn($"var {attributesVar} = new {StaticListType}<{StaticValidationAttributeType}>({vm.ValidationAttributes.Count});");
+
+                    GenAsyncMemberValidation(vm, ref staticValidationAttributesDict, cleanListsBeforeUse: false, contextVar, builderVar, resultsVar, attributesVar);
+                }
+
+                if (vm.TransValidatorType is not null)
+                {
+                    GenAsyncTransitiveValidation(vm, ref staticValidatorsDict, builderVar);
+                }
+
+                if (vm.EnumerationValidatorType is not null)
+                {
+                    GenAsyncEnumerationValidation(vm, ref staticValidatorsDict, builderVar);
+                }
+
+                OutLn($"return {builderVar} is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : {builderVar}.Build();");
+                OutCloseBrace();
+
+                if (!memberHasAwait)
+                {
+                    OutLn("#pragma warning restore CS1998");
+                }
+
+                OutLn();
+
+                taskVarNames[i] = $"memberTask{i}";
+            }
+
+            for (int i = 0; i < members.Count; i++)
+            {
+                OutLn($"var {taskVarNames[i]} = Validate{i}Async();");
+            }
+
+            OutLn($"var memberResults = await global::System.Threading.Tasks.Task.WhenAll({string.Join(", ", taskVarNames)}).ConfigureAwait(false);");
+            OutLn();
+
+            for (int i = 0; i < members.Count; i++)
+            {
+                OutLn($"if (memberResults[{i}].Failed)");
+                OutOpenBrace();
+                OutLn($"(builder ??= new()).AddResult(memberResults[{i}]);");
+                OutCloseBrace();
+            }
+        }
+
+        private void GenAsyncMemberValidation(
+            ValidatedMember vm,
+            ref Dictionary<string, StaticFieldInfo> staticValidationAttributesDict,
+            bool cleanListsBeforeUse,
+            string contextVar = "context",
+            string builderVar = "builder",
+            string resultsVar = "validationResults",
+            string attributesVar = "validationAttributes")
+        {
+            OutLn($"{contextVar}.MemberName = \"{vm.Name}\";");
+            OutLn($"{contextVar}.DisplayName = string.IsNullOrEmpty(name) ? \"{vm.Name}\" : $\"{{name}}.{vm.Name}\";");
 
             if (cleanListsBeforeUse)
             {
-                OutLn($"validationResults.Clear();");
-                OutLn($"validationAttributes.Clear();");
+                OutLn($"{resultsVar}.Clear();");
+                OutLn($"{attributesVar}.Clear();");
             }
 
             foreach (var attr in vm.ValidationAttributes)
             {
                 var staticValidationAttributeInstance = GetOrAddStaticValidationAttribute(ref staticValidationAttributesDict, attr);
-                OutLn($"validationAttributes.Add({_staticValidationAttributeHolderClassFQN}.{staticValidationAttributeInstance.FieldName});");
+                OutLn($"{attributesVar}.Add({_staticValidationAttributeHolderClassFQN}.{staticValidationAttributeInstance.FieldName});");
             }
 
-            OutLn($"if (!await global::System.ComponentModel.DataAnnotations.Validator.TryValidateValueAsync(options.{vm.Name}{_TryGetValueNullableAnnotation}, context, validationResults, validationAttributes, cancellationToken).ConfigureAwait(false))");
+            if (_symbolHolder.HasTryValidateValueAsyncMethod)
+            {
+                OutLn($"if (!await global::System.ComponentModel.DataAnnotations.Validator.TryValidateValueAsync(options.{EscapeIdentifier(vm.Name)}{_TryGetValueNullableAnnotation}, {contextVar}, {resultsVar}, {attributesVar}, cancellationToken).ConfigureAwait(false))");
+            }
+            else
+            {
+                OutLn($"if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.{EscapeIdentifier(vm.Name)}{_TryGetValueNullableAnnotation}, {contextVar}, {resultsVar}, {attributesVar}))");
+            }
+
             OutOpenBrace();
-            OutLn($"(builder ??= new()).AddResults(validationResults);");
+            OutLn($"({builderVar} ??= new()).AddResults({resultsVar});");
             OutCloseBrace();
         }
 
-        private void GenAsyncTransitiveValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
+        private void GenAsyncTransitiveValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict, string builderVar = "builder")
         {
             string callSequence;
             if (vm.TransValidateTypeIsSynthetic)
@@ -881,28 +1015,32 @@ namespace Microsoft.Extensions.Options.Generators
             var valueAccess = (vm.IsNullable && vm.IsValueType) ? ".Value" : string.Empty;
 
             var baseName = $"string.IsNullOrEmpty(name) ? \"{vm.Name}\" : $\"{{name}}.{vm.Name}\"";
+            var memberAccess = $"options.{EscapeIdentifier(vm.Name)}";
+            string asyncCallSequence = vm.TransValidatorAsyncInterfaceType is null
+                ? callSequence
+                : $"(({vm.TransValidatorAsyncInterfaceType}){callSequence})";
 
-            // A nested validator only emits ValidateAsync when it was synthesized for an async context. When the resolved
-            // validator does not emit ValidateAsync (a user-supplied validator, or a synthesized one shared with a
-            // synchronous parent), we fall back to its synchronous Validate method to guarantee the generated code compiles.
+            // A nested validator emits an awaited ValidateAsync call only when it was synthesized for an async context or
+            // when it implements IAsyncValidateOptions<T> for the member type.
+            // Otherwise we fall back to its synchronous Validate method to guarantee the generated code compiles.
             string resultExpression = vm.TransValidatorEmitsAsync
-                ? $"await {callSequence}.ValidateAsync({baseName}, options.{vm.Name}{valueAccess}, cancellationToken).ConfigureAwait(false)"
-                : $"{callSequence}.Validate({baseName}, options.{vm.Name}{valueAccess})";
+                ? $"await {asyncCallSequence}.ValidateAsync({baseName}, {memberAccess}{valueAccess}, cancellationToken).ConfigureAwait(false)"
+                : $"{callSequence}.Validate({baseName}, {memberAccess}{valueAccess})";
 
             if (vm.IsNullable)
             {
-                OutLn($"if (options.{vm.Name} is not null)");
+                OutLn($"if ({memberAccess} is not null)");
                 OutOpenBrace();
-                OutLn($"(builder ??= new()).AddResult({resultExpression});");
+                OutLn($"({builderVar} ??= new()).AddResult({resultExpression});");
                 OutCloseBrace();
             }
             else
             {
-                OutLn($"(builder ??= new()).AddResult({resultExpression});");
+                OutLn($"({builderVar} ??= new()).AddResult({resultExpression});");
             }
         }
 
-        private void GenAsyncEnumerationValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict)
+        private void GenAsyncEnumerationValidation(ValidatedMember vm, ref Dictionary<string, StaticFieldInfo> staticValidatorsDict, string builderVar = "builder")
         {
             var valueAccess = (vm.IsValueType && vm.IsNullable) ? ".Value" : string.Empty;
             var enumeratedValueAccess = (vm.EnumeratedIsNullable && vm.EnumeratedIsValueType) ? ".Value" : string.Empty;
@@ -919,16 +1057,20 @@ namespace Microsoft.Extensions.Options.Generators
             }
 
             bool awaitItem = vm.EnumerationValidatorEmitsAsync;
+            var memberAccess = $"options.{EscapeIdentifier(vm.Name)}";
+            string asyncCallSequence = vm.EnumerationValidatorAsyncInterfaceType is null
+                ? callSequence
+                : $"(({vm.EnumerationValidatorAsyncInterfaceType}){callSequence})";
 
             if (vm.IsNullable)
             {
-                OutLn($"if (options.{vm.Name} is not null)");
+                OutLn($"if ({memberAccess} is not null)");
             }
 
             OutOpenBrace();
 
             OutLn($"var count = 0;");
-            OutLn($"foreach (var o in options.{vm.Name}{valueAccess})");
+            OutLn($"foreach (var o in {memberAccess}{valueAccess})");
             OutOpenBrace();
 
             if (vm.EnumeratedIsNullable)
@@ -937,9 +1079,9 @@ namespace Microsoft.Extensions.Options.Generators
                 OutOpenBrace();
                 var propertyName = $"string.IsNullOrEmpty(name) ? $\"{vm.Name}[{{count}}]\" : $\"{{name}}.{vm.Name}[{{count}}]\"";
                 string itemResult = awaitItem
-                    ? $"await {callSequence}.ValidateAsync({propertyName}, o{enumeratedValueAccess}, cancellationToken).ConfigureAwait(false)"
+                    ? $"await {asyncCallSequence}.ValidateAsync({propertyName}, o{enumeratedValueAccess}, cancellationToken).ConfigureAwait(false)"
                     : $"{callSequence}.Validate({propertyName}, o{enumeratedValueAccess})";
-                OutLn($"(builder ??= new()).AddResult({itemResult});");
+                OutLn($"({builderVar} ??= new()).AddResult({itemResult});");
                 OutCloseBrace();
 
                 if (!vm.EnumeratedMayBeNull)
@@ -947,7 +1089,7 @@ namespace Microsoft.Extensions.Options.Generators
                     OutLn($"else");
                     OutOpenBrace();
                     var error = $"string.IsNullOrEmpty(name) ? $\"{vm.Name}[{{count}}] is null\" : $\"{{name}}.{vm.Name}[{{count}}] is null\"";
-                    OutLn($"(builder ??= new()).AddError({error});");
+                    OutLn($"({builderVar} ??= new()).AddError({error});");
                     OutCloseBrace();
                 }
 
@@ -957,9 +1099,9 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 var propertyName = $"string.IsNullOrEmpty(name) ? $\"{vm.Name}[{{count++}}]\" : $\"{{name}}.{vm.Name}[{{count++}}]\"";
                 string itemResult = awaitItem
-                    ? $"await {callSequence}.ValidateAsync({propertyName}, o{enumeratedValueAccess}, cancellationToken).ConfigureAwait(false)"
+                    ? $"await {asyncCallSequence}.ValidateAsync({propertyName}, o{enumeratedValueAccess}, cancellationToken).ConfigureAwait(false)"
                     : $"{callSequence}.Validate({propertyName}, o{enumeratedValueAccess})";
-                OutLn($"(builder ??= new()).AddResult({itemResult});");
+                OutLn($"({builderVar} ??= new()).AddResult({itemResult});");
             }
 
             OutCloseBrace();
@@ -972,9 +1114,13 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 OutLn($"context.MemberName = \"ValidateAsync\";");
                 OutLn($"context.DisplayName = string.IsNullOrEmpty(name) ? \"ValidateAsync\" : $\"{{name}}.ValidateAsync\";");
-                OutLn($"await foreach (var asyncValidationResult in global::System.Threading.Tasks.TaskAsyncEnumerableExtensions.ConfigureAwait(((global::System.ComponentModel.DataAnnotations.IAsyncValidatableObject)options).ValidateAsync(context, cancellationToken), false))");
+                OutLn($"var asyncSelfValidationResults = ((global::System.ComponentModel.DataAnnotations.IAsyncValidatableObject)options).ValidateAsync(context, cancellationToken);");
+                OutLn($"if (asyncSelfValidationResults is not null)");
+                OutOpenBrace();
+                OutLn($"await foreach (var asyncValidationResult in global::System.Threading.Tasks.TaskAsyncEnumerableExtensions.ConfigureAwait(asyncSelfValidationResults, false))");
                 OutOpenBrace();
                 OutLn($"(builder ??= new()).AddResult(asyncValidationResult);");
+                OutCloseBrace();
                 OutCloseBrace();
                 OutLn();
             }

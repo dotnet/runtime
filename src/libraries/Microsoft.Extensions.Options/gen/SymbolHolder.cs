@@ -26,6 +26,8 @@ namespace Microsoft.Extensions.Options.Generators
         INamedTypeSymbol TimeSpanSymbol,
         INamedTypeSymbol ValidateObjectMembersAttributeSymbol,
         INamedTypeSymbol ValidateEnumeratedItemsAttributeSymbol,
+        INamedTypeSymbol CancellationTokenSymbol,
         INamedTypeSymbol? IAsyncValidatableObjectSymbol = null,
+        bool HasTryValidateValueAsyncMethod = false,
         INamedTypeSymbol? AsyncValidateOptionsSymbol = null);
 }
