@@ -14,7 +14,6 @@
 #define _HANDLETABLE_H
 
 #include "gcinterface.h"
-#include "handletableconstants.h"
 
 /****************************************************************************
  *

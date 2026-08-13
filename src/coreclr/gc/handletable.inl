@@ -9,6 +9,7 @@
 
 #ifndef DACCESS_COMPILE
 #include "gc.h"
+#include "handletableconstants.h"
 
 FORCEINLINE int GetConvertedGeneration(_UNCHECKED_OBJECTREF obj)
 {
