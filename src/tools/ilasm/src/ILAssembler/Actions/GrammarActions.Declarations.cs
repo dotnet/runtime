@@ -28,7 +28,8 @@ internal sealed partial class GrammarActions
     {
         if (context.classHead() is not null ||
             context.nameSpaceHead() is not null ||
-            context.methodHead() is not null)
+            context.methodHead() is not null ||
+            context.fieldDecl() is not null)
         {
             return;
         }
@@ -51,10 +52,9 @@ internal sealed partial class GrammarActions
             throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
         }
 
-        if (context.fieldDecl() is { } fieldDecl)
+        if (context.fieldDecl() is not null)
         {
-            _ = VisitFieldDecl(fieldDecl);
-            return GrammarResult.SentinelValue.Result;
+            throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
         }
         if (context.dataDecl() is { } dataDecl)
         {
