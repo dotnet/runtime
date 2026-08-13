@@ -585,6 +585,7 @@ protected:
 #ifdef PROFILING_SUPPORTED
     void genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed);
     void genProfilingLeaveCallback(unsigned helper);
+    void genProfilingLeaveCallbackForAsyncSuspend(regNumber continuationReg);
 #endif // PROFILING_SUPPORTED
 
     //

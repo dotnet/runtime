@@ -7535,6 +7535,64 @@ void CodeGen::genSwiftErrorReturn(GenTree* treeNode)
 }
 #endif // SWIFT_SUPPORT
 
+#ifdef PROFILING_SUPPORTED
+//------------------------------------------------------------------------
+// genProfilingLeaveCallbackForAsyncSuspend:
+//   Emit a profiler Leave callback for a Runtime Async suspension and preserve
+//   the continuation across the helper call.
+//
+// Arguments:
+//   continuationReg - Register containing the continuation to return.
+//
+// Notes:
+//   A suspension Leave represents the end of a physical execution segment, not
+//   logical method completion. The normal return registers therefore do not
+//   contain a semantic method result. The final completion path continues to
+//   use the normal return codegen and exposes its actual return value.
+//
+void CodeGen::genProfilingLeaveCallbackForAsyncSuspend(regNumber continuationReg)
+{
+#ifdef TARGET_ARM
+    // The ARM32 Leave helper preserves REG_PROFILER_RET_SCRATCH, which is also the dedicated
+    // Runtime Async continuation register. For integer/soft-float returns it preserves R0 by
+    // moving it through this scratch register; for void and hard-float returns R0 is overwritten
+    // and the scratch register itself is preserved.
+    static_assert(REG_ASYNC_CONTINUATION_RET == REG_PROFILER_RET_SCRATCH);
+    bool r0InUse;
+    if (m_compiler->info.compRetType == TYP_VOID)
+    {
+        r0InUse = false;
+    }
+    else if (varTypeIsFloating(m_compiler->info.compRetType) ||
+             m_compiler->IsHfa(m_compiler->info.compMethodInfo->args.retTypeClass))
+    {
+        r0InUse = m_compiler->info.compIsVarArgs || m_compiler->opts.compUseSoftFP;
+    }
+    else
+    {
+        r0InUse = true;
+    }
+
+    if (!r0InUse)
+    {
+        inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, continuationReg, /* canSkip */ true);
+        gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
+        genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
+        return;
+    }
+#endif
+
+    // The Leave helper preserves the normal return register, but may overwrite the dedicated
+    // Runtime Async continuation register because it is an argument register on supported ABIs.
+    // Temporarily use the normal return register to carry the continuation across the callback.
+    inst_Mov(TYP_REF, REG_INTRET, continuationReg, /* canSkip */ true);
+    gcInfo.gcMarkRegPtrVal(REG_INTRET, TYP_REF);
+    genProfilingLeaveCallback(CORINFO_HELP_PROF_FCN_LEAVE);
+    inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, REG_INTRET, /* canSkip */ true);
+    gcInfo.gcMarkRegSetNpt(genRegMask(REG_INTRET));
+}
+#endif // PROFILING_SUPPORTED
+
 //------------------------------------------------------------------------
 // genReturnSuspend:
 //   Generate code for a GT_RETURN_SUSPEND node
@@ -7548,7 +7606,18 @@ void CodeGen::genReturnSuspend(GenTreeUnOp* treeNode)
     assert(op->TypeIs(TYP_REF));
 
     regNumber reg = genConsumeReg(op);
-    inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, reg, /* canSkip */ true);
+
+#ifdef PROFILING_SUPPORTED
+    if (m_compiler->compIsProfilerHookNeeded())
+    {
+        genProfilingLeaveCallbackForAsyncSuspend(reg);
+    }
+    else
+#endif
+    {
+        inst_Mov(TYP_REF, REG_ASYNC_CONTINUATION_RET, reg, /* canSkip */ true);
+    }
+
     gcInfo.gcMarkRegPtrVal(REG_ASYNC_CONTINUATION_RET, TYP_REF);
 
     ReturnTypeDesc retTypeDesc = m_compiler->compRetTypeDesc;
