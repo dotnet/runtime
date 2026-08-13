@@ -10,6 +10,8 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -18,6 +20,11 @@ extends:
     stages:
     - stage: Build
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -75,6 +82,7 @@ extends:
             displayNameArgs: R2R_CG2
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -98,6 +106,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: TestReadyToRun_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       # Run pri0 tests with hot/cold splitting enabled (only supported on x64 at the moment)
       # TODO: test on arm64 once supported
@@ -117,3 +126,4 @@ extends:
             displayNameArgs: R2R_CG2_HotColdSplitting
             liveLibrariesBuildConfig: Release
             unifiedArtifactsName: BuildArtifacts_$(osGroup)$(osSubgroup)_$(archType)_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}

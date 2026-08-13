@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ComMethodTable))]
 internal sealed partial class ComMethodTable : IData<ComMethodTable>
 {
-    [Field] public TargetNUInt Flags { get; }
-    [Field] public TargetPointer MethodTable { get; }
+    [Field] public partial TargetNUInt Flags { get; }
+    [Field] public partial TargetPointer MethodTable { get; }
 }

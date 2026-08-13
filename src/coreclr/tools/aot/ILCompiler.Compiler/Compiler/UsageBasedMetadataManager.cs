@@ -640,9 +640,11 @@ namespace ILCompiler
             {
                 dependencies ??= new CombinedDependencyList();
                 dependencies.Add(new DependencyNodeCore<NodeFactory>.CombinedDependencyListEntry(
-                    factory.ReflectedMethod(impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    factory.ReflectedDelegateTargetVirtualMethod(decl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
-                    "Virtual method declaration is reflectable"));
+                    factory.ReflectableVirtualMethodImpl(
+                        decl.GetCanonMethodTarget(CanonicalFormKind.Specific),
+                        impl.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                    null,
+                    "Virtual method implementation discovered"));
             }
         }
 

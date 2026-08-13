@@ -1057,6 +1057,21 @@
         <target state="translated">LibraryImportAttribute erfordert unsicheren Code.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierDescriptionLibraryImport">
+        <source>Under the updated memory safety rules, calling into native code is a safety contract that the compiler cannot verify. Mark the method 'unsafe' to require callers to audit the call, or 'safe' after auditing the interop boundary. This matches the requirement the language places on 'extern' members.</source>
+        <target state="translated">Nach den aktualisierten Speicher­sicherheitsregeln ist das Aufrufen von nativem Code ein Sicherheitsvertrag, den der Compiler nicht überprüfen kann. Markieren Sie die Methode als „unsafe“, damit Aufrufende den Aufruf prüfen müssen, oder als „safe“, nachdem die Interop-Grenze geprüft wurde. Das entspricht der Anforderung, die die Sprache an „extern“-Member stellt.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierMessageLibraryImport">
+        <source>Method '{0}' with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
+        <target state="translated">Die Methode „{0}“ mit „LibraryImportAttribute“ muss als „safe“ oder „unsafe“ markiert werden.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierTitleLibraryImport">
+        <source>Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
+        <target state="translated">Die Methode mit „LibraryImportAttribute“ muss als „safe“ oder „unsafe“ markiert werden.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
         <source>The return type the two method must be the expected type.</source>
         <target state="translated">Der Rückgabetyp, den die beiden Methoden aufweisen müssen, muss der erwartete Typ sein.</target>

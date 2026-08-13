@@ -14,7 +14,7 @@ public class Test
     static AutoResetEvent _are = new AutoResetEvent(false);
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/102544", typeof(Utilities), nameof(Utilities.IsNativeAot))]
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         Thread th = new Thread(new ThreadStart(Thread2));
@@ -125,4 +125,3 @@ public class Test
         }
     }
 }
-

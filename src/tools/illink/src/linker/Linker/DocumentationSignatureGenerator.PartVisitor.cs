@@ -178,11 +178,13 @@ namespace Mono.Linker
 
                 // Compute arity counting only the newly-introduced generic parameters
                 var declaringType = genericInstance.DeclaringType;
-                var declaringArity = 0;
-                if (declaringType != null && declaringType.HasGenericParameters)
-                    declaringArity = declaringType.GenericParameters.Count;
+                var declaringArity = declaringType?.GetGenericParameterCount(resolver) ?? 0;
                 var totalArity = genericInstance.GenericArguments.Count;
                 var arity = totalArity - declaringArity;
+                Debug.Assert(arity >= 0);
+
+                if (arity == 0)
+                    return;
 
                 // Un-mangle the generic type name
                 var suffixLength = arity.ToString().Length + 1;

@@ -1257,8 +1257,10 @@ ClrDataFrame::GetLocalSig(MetaSig** sig,
         // (including IL stubs) do not have their local sig's available after JIT time.
         // IL methods with dynamically generated IL (for example, UnsafeAccessors) may
         // not have an IL header.
+        EECodeInfo codeInfo(GetControlPC(&m_regDisp));
+        PCODE nativeStart = codeInfo.IsValid() ? PINSTRToPCODE(codeInfo.GetStartAddress()) : (PCODE)NULL;
         COR_ILMETHOD* ilHeader = m_methodDesc->IsIL()
-            ? m_methodDesc->GetILHeader()
+            ? m_methodDesc->GetILHeaderForNativeCode(nativeStart)
             : NULL;
         if (ilHeader == NULL)
         {
