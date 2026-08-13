@@ -286,7 +286,7 @@ namespace System.Text.Json.Schema.Tests
 
         record PocoWithProperty(int Value);
 
-        public sealed class PocoWithGetOnlyProperties
+        sealed class PocoWithGetOnlyProperties
         {
             public IEnumerable<string> Values => [];
             public string SingleValueGetOnly { get; } = "value";
