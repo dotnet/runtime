@@ -535,7 +535,13 @@ customDescrWithOwner:
 
 customType: methodRef;
 
-ownerType: typeSpec | memberRef;
+ownerType
+@init {BeginSubtree();}
+:
+	typeSpec
+	| memberRef
+;
+finally {EndParseTreeMode();}
 
 /*  Verbal description of custom attribute initialization blob  */
 customBlobDescr: customBlobArgs customBlobNVPairs;
@@ -682,7 +688,13 @@ asmAttr: asmAttrAny*;
 /*  IL instructions and associated definitions  */
 instr:
 	simpleInstr
-	| instructionIsland;
+	| op = INSTR_METHOD methodOperand = methodRef {Actions.EmitMethodReferenceInstruction($op, $methodOperand.ctx);}
+	| op = INSTR_FIELD fieldOperand = fieldRef {Actions.EmitFieldReferenceInstruction($op, $fieldOperand.ctx);}
+	| op = INSTR_FIELD metadataOperand = mdtoken {Actions.EmitMetadataTokenInstruction($op, $metadataOperand.ctx);}
+	| op = INSTR_TYPE typeOperand = typeSpec {Actions.EmitTypeReferenceInstruction($op, $typeOperand.ctx);}
+	| op = INSTR_SIG signatureOperand = calliSignature {Actions.EmitCalliInstruction($op, $signatureOperand.ctx);}
+	| op = INSTR_TOK ownerOperand = ownerType {Actions.EmitOwnerTokenInstruction($op, $ownerOperand.ctx);}
+;
 
 simpleInstr
 @after {Actions.CompleteSimpleInstruction(_localctx);}
@@ -706,16 +718,10 @@ simpleInstr
 ;
 finally {Actions.EndSwitchInstruction(_localctx);}
 
-instructionIsland
+calliSignature
 @init {BeginSubtree();}
-@after {Actions.ProcessInstructionIsland(_localctx);}
 :
-	INSTR_METHOD methodRef
-	| INSTR_FIELD fieldRef
-	| INSTR_FIELD mdtoken
-	| INSTR_TYPE typeSpec
-	| INSTR_SIG callConv type sigArgs
-	| INSTR_TOK ownerType /* ownerType ::= memberRef | typeSpec */
+	callConv type sigArgs
 ;
 finally {EndParseTreeMode();}
 
@@ -753,11 +759,15 @@ assemblyDecls: assemblyDecl*;
 
 assemblyDecl: (HASH 'algorithm' int32) | secDecl | asmOrRefDecl;
 
-typeSpec:
+typeSpec
+@init {BeginSubtree();}
+:
 	className
 	| '[' dottedName ']'
 	| '[' MODULE dottedName ']'
-	| type;
+	| type
+;
+finally {EndParseTreeMode();}
 
 /*  Native types for marshaling signatures  */
 nativeType:
@@ -985,13 +995,17 @@ secAction:
 	| 'noncasinheritance';
 
 /*  Method referencing  */
-methodRef:
+methodRef
+@init {BeginSubtree();}
+:
 	callConv type typeSpec '::' methodName typeArgs? sigArgs
 	| callConv type typeSpec '::' methodName genArityNotEmpty sigArgs
 	| callConv type methodName typeArgs? sigArgs
 	| callConv type methodName genArityNotEmpty sigArgs
 	| mdtoken
-	| dottedName /* typeDef */;
+	| dottedName /* typeDef */
+;
+finally {EndParseTreeMode();}
 
 callConv:
 	INSTANCE callConv
@@ -1009,18 +1023,26 @@ callKind:
 	| UNMANAGED FASTCALL
 	| UNMANAGED;
 
-mdtoken: 'mdtoken' '(' int32 ')';
+mdtoken
+@init {BeginSubtree();}
+:
+	'mdtoken' '(' int32 ')'
+;
+finally {EndParseTreeMode();}
 
 memberRef:
 	'method' methodRef
 	| 'field' fieldRef
 	| mdtoken;
 
-fieldRef:
+fieldRef
+@init {BeginSubtree();}
+:
 	type typeSpec '::' dottedName
 	| type dottedName
 	| dottedName // typedef
-    ;
+;
+finally {EndParseTreeMode();}
 
 /* Generic type parameters declaration  */
 typeList: (typeSpec ',')* typeSpec;

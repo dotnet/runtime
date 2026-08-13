@@ -448,9 +448,6 @@ internal sealed partial class GrammarActions
     GrammarResult ICILVisitor<GrammarResult>.VisitSimpleInstr(CILParser.SimpleInstrContext context)
         => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitInstructionIsland(CILParser.InstructionIslandContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
     GrammarResult ICILVisitor<GrammarResult>.VisitMdtoken(CILParser.MdtokenContext context) => VisitMdtoken(context);
 
     public GrammarResult.Literal<EntityRegistry.EntityBase> VisitMdtoken(CILParser.MdtokenContext context)

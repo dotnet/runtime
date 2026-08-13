@@ -345,11 +345,11 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitSimpleInstr([NotNull] CILParser.SimpleInstrContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instructionIsland"/>.
+	/// Visit a parse tree produced by <see cref="CILParser.calliSignature"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitInstructionIsland([NotNull] CILParser.InstructionIslandContext context);
+	Result VisitCalliSignature([NotNull] CILParser.CalliSignatureContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.labels"/>.
 	/// </summary>
