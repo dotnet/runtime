@@ -4,10 +4,11 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <Optimize>True</Optimize>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <!-- These platforms do not support native test assets: https://github.com/dotnet/runtime/issues/123946 -->
+    <CLRTestTargetUnsupported Condition="'$(TargetsWasm)' == 'true' or '$(TargetsMobile)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
   <ItemGroup>
     <CMakeProjectReference Include="CMakeLists.txt" />
     <Compile Include="$(MSBuildProjectName).cs" />
-    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
 </Project>

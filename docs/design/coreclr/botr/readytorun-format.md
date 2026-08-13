@@ -1105,6 +1105,36 @@ it knows a hidden retbuf pointer argument is present in the Wasm parameter list.
 | `V` | `v128` parameter (a `Vector128<T>`, or a 16-byte `Vector<T>`, passed by value) |
 | `S<N>` | struct parameter passed by reference, `<N>` is the struct size in bytes |
 | `e` | empty struct parameter — elided from Wasm args but present in the string |
+| `<slot><E>` | multi-slot parameter passed by value, see below |
+
+**Multi-slot parameters**: some types are passed by value across several Wasm parameters
+because no single Wasm value type can hold them, matching the Wasm C ABI. The slot
+character is followed by the factor by which the type's alignment is elevated above that
+slot's natural alignment:
+
+| Encoding | Slots | Alignment | Type |
+|---|---|---|---|
+| `l2` | 2 x `i64` | 16 (elevated 2x) | `Int128`, `UInt128`, `Decimal128` |
+| `V2` | 2 x `v128` | 32 (elevated 2x) | `Vector256<T>` |
+| `V4` | 4 x `v128` | 64 (elevated 4x) | `Vector512<T>` |
+
+A single-field struct wrapping one of these is passed the same way as the type it wraps,
+matching the treatment of a struct wrapping a `v128`.
+
+The digit is required. A repeated slot character without one — `ll`, `VV` — is not an
+aggregate: it is two independent scalar parameters, which is how every implementation
+reads it. So `ll2VV4` is `i64`, `Int128`, `Vector128<T>`, `Vector512<T>`. The grammar stays
+unambiguous because no other token places a digit after a slot character; `S<N>` consumes
+its own digits.
+
+These types are still *returned* through a hidden buffer, encoded as `S<N>` like any other
+aggregate. Limitation: a single digit carries both the slot count and the elevation factor,
+so an aggregate whose elevation differs from its slot count has no spelling. That includes
+one whose alignment is merely natural for its slot type, which would need count `N` with
+elevation 1. No such type exists in the Wasm ABI today.
+
+WasmAppBuilder does not emit or consume multi-slot tokens: they do not appear in
+`InternalCall` or `PInvoke` signatures.
 
 **Suffix**:
 
@@ -1133,6 +1163,8 @@ prefix to distinguish thunk categories:
 | `static MyStruct F()` where `MyStruct` is 16 bytes | `S16p` |
 | `static void F(MyStruct s)` where `MyStruct` is 8 bytes | `vS8p` |
 | `static int F(float x, double y)` | `ifdp` |
+| `static long F(long tag, Int128 v, int t)` | `lll2ip` |
+| `static int F(long tag, Vector512<int> v, int t)` | `ilV4ip` |
 | `[UnmanagedCallersOnly] static int F(int x)` | `ii` |
 
 **Slot sizing for structs**: When computing interpreter stack layout, struct parameters

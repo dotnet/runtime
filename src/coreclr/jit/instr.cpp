@@ -500,7 +500,7 @@ bool CodeGenInterface::instIsFP(instruction ins)
     assert((unsigned)ins < ArrLen(instInfo));
 
 #ifdef TARGET_XARCH
-    return (instInfo[ins] & INS_FLAGS_x87Instr) != 0;
+    return (instInfo[ins] & INS_FLAGS_X87Instr) != 0;
 #else
     return (instInfo[ins] & INST_FP) != 0;
 #endif

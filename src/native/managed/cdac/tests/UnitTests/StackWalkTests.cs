@@ -16,6 +16,72 @@ namespace Microsoft.Diagnostics.DataContractReader.Tests;
 public unsafe class StackWalkTests
 {
     [Fact]
+    public void LoongArch64Unwind_EpilogReturn_DoesNotRepeatStackAdjustment()
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+
+        const ulong ImageBase = 0x1000_0000;
+        const uint FunctionStart = 0x1000;
+        const uint XdataRva = 0x2000;
+        const ulong RuntimeFunctionAddress = 0x1800;
+        const ulong CallerSp = 0x3000;
+        const ulong ReturnAddress = 0x1234_5678_9abc_def0;
+
+        Layout<MockRuntimeFunction> runtimeFunctionLayout = MockRuntimeFunction.CreateLayout(arch, includeEndAddress: false);
+        byte[] runtimeFunctionData = new byte[runtimeFunctionLayout.Size];
+        MockRuntimeFunction runtimeFunction = runtimeFunctionLayout.Create(runtimeFunctionData, RuntimeFunctionAddress);
+        runtimeFunction.BeginAddress = FunctionStart;
+        runtimeFunction.UnwindData = XdataRva;
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = RuntimeFunctionAddress,
+            Data = runtimeFunctionData,
+            Name = "Runtime function",
+        });
+
+        byte[] unwindData = new byte[2 * sizeof(uint)];
+        helpers.Write(unwindData.AsSpan(0, sizeof(uint)), 16u | (1u << 21) | (1u << 27));
+        unwindData[4] = 0x01; // alloc_s 16
+        unwindData[5] = 0xe4; // end
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = ImageBase + XdataRva,
+            Data = unwindData,
+            Name = "Unwind data",
+        });
+
+        TargetCodePointer controlPc = new(ImageBase + FunctionStart + (15 * sizeof(uint)));
+        CodeBlockHandle codeBlock = new(new TargetPointer(controlPc.Value));
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(controlPc)).Returns(codeBlock);
+        executionManager.Setup(e => e.GetUnwindInfoBaseAddress(codeBlock)).Returns(new TargetPointer(ImageBase));
+        executionManager.Setup(e => e.GetUnwindInfo(codeBlock)).Returns(new TargetPointer(RuntimeFunctionAddress));
+
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(runtimeFunctionLayout),
+            })
+            .AddMockContract(executionManager.Object)
+            .Build();
+
+        LoongArch64Context context = new()
+        {
+            ContextFlags = (uint)LoongArch64Context.ContextFlagsValues.CONTEXT_FULL,
+            Sp = CallerSp,
+            Ra = ReturnAddress,
+            Pc = controlPc.Value,
+        };
+
+        Assert.True(new Contracts.StackWalkHelpers.LoongArch64.LoongArch64Unwinder(target).Unwind(ref context));
+        Assert.Equal(CallerSp, context.Sp);
+        Assert.Equal(ReturnAddress, context.Pc);
+        Assert.NotEqual(0u, context.ContextFlags & (uint)LoongArch64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
+    }
+
+    [Fact]
     public void X86Unwind_EbpProlog_RestoresCallerContext()
     {
         MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = false };
@@ -238,6 +304,90 @@ public unsafe class StackWalkTests
         Assert.Equal(CurrentSp, context.Sp);
         Assert.Equal(ReturnAddress, context.Pc);
         Assert.NotEqual(0u, context.ContextFlags & (uint)RISCV64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
+    }
+
+    [Fact]
+    public void ARM64Unwind_SaveAnyPair_RestoresCallerContext()
+    {
+        MockTarget.Architecture arch = new() { IsLittleEndian = true, Is64Bit = true };
+        TestPlaceholderTarget.Builder targetBuilder = new(arch);
+        TargetTestHelpers helpers = targetBuilder.MemoryBuilder.TargetTestHelpers;
+
+        const ulong ImageBase = 0x1000_0000;
+        const uint FunctionStart = 0x1000;
+        const uint XdataRva = 0x2000;
+        const ulong RuntimeFunctionAddress = 0x1800;
+        const ulong CurrentSp = 0x3000;
+        const ulong SavedX19 = 0x1919_1919_1919_1919;
+        const ulong SavedX20 = 0x2020_2020_2020_2020;
+        const ulong ReturnAddress = 0x1234_5678_9abc_def0;
+
+        Layout<MockRuntimeFunction> runtimeFunctionLayout = MockRuntimeFunction.CreateLayout(arch, includeEndAddress: false);
+        byte[] runtimeFunctionData = new byte[runtimeFunctionLayout.Size];
+        MockRuntimeFunction runtimeFunction = runtimeFunctionLayout.Create(runtimeFunctionData, RuntimeFunctionAddress);
+        runtimeFunction.BeginAddress = FunctionStart;
+        runtimeFunction.UnwindData = XdataRva;
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = RuntimeFunctionAddress,
+            Data = runtimeFunctionData,
+            Name = "Runtime function",
+        });
+
+        byte[] unwindData = new byte[2 * sizeof(uint)];
+        helpers.Write(unwindData.AsSpan(0, sizeof(uint)), 16u | (1u << 27));
+        unwindData[4] = 0xe7; // save_any
+        unwindData[5] = 0x53; // p=1, x=0, r=19
+        unwindData[6] = 0x00; // f=0, o=0
+        unwindData[7] = 0xe4; // end
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = ImageBase + XdataRva,
+            Data = unwindData,
+            Name = "Unwind data",
+        });
+
+        byte[] stack = new byte[2 * sizeof(ulong)];
+        helpers.Write(stack.AsSpan(0, sizeof(ulong)), SavedX19);
+        helpers.Write(stack.AsSpan(sizeof(ulong), sizeof(ulong)), SavedX20);
+        targetBuilder.MemoryBuilder.AddHeapFragment(new MockMemorySpace.HeapFragment
+        {
+            Address = CurrentSp,
+            Data = stack,
+            Name = "Stack",
+        });
+
+        TargetCodePointer controlPc = new(ImageBase + FunctionStart + (8 * sizeof(uint)));
+        CodeBlockHandle codeBlock = new(new TargetPointer(controlPc.Value));
+        Mock<IExecutionManager> executionManager = new();
+        executionManager.Setup(e => e.GetCodeBlockHandle(controlPc)).Returns(codeBlock);
+        executionManager.Setup(e => e.GetUnwindInfoBaseAddress(codeBlock)).Returns(new TargetPointer(ImageBase));
+        executionManager.Setup(e => e.GetUnwindInfo(codeBlock)).Returns(new TargetPointer(RuntimeFunctionAddress));
+
+        TestPlaceholderTarget target = targetBuilder
+            .AddTypes(new Dictionary<DataType, Target.TypeInfo>
+            {
+                [DataType.RuntimeFunction] = TargetTestHelpers.CreateTypeInfo(runtimeFunctionLayout),
+            })
+            .AddMockContract(executionManager.Object)
+            .Build();
+
+        ARM64Context context = new()
+        {
+            ContextFlags = (uint)ARM64Context.ContextFlagsValues.CONTEXT_FULL,
+            X19 = ulong.MaxValue,
+            X20 = ulong.MaxValue,
+            Sp = CurrentSp,
+            Lr = ReturnAddress,
+            Pc = controlPc.Value,
+        };
+
+        Assert.True(new Contracts.StackWalkHelpers.ARM64.ARM64Unwinder(target).Unwind(ref context));
+        Assert.Equal(SavedX19, context.X19);
+        Assert.Equal(SavedX20, context.X20);
+        Assert.Equal(CurrentSp, context.Sp);
+        Assert.Equal(ReturnAddress, context.Pc);
+        Assert.NotEqual(0u, context.ContextFlags & (uint)ARM64Context.ContextFlagsValues.CONTEXT_UNWOUND_TO_CALL);
     }
 
     [Fact]
