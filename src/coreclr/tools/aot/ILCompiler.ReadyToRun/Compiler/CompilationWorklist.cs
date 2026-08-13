@@ -99,6 +99,7 @@ namespace ILCompiler
                     Worker worker = _workers[i];
                     worker.Thread.Join();
                     worker.Start.Dispose();
+                    worker.State = default;
                 }
             }
 

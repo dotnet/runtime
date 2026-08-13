@@ -399,14 +399,10 @@ namespace ILCompiler
 
         public override void Compile(string outputFile)
         {
-            try
-            {
-                _dependencyGraph.ComputeMarkedNodes();
-            }
-            finally
-            {
-                _compilationWorklist.Dispose();
-            }
+            _dependencyGraph.ComputeMarkedNodes();
+
+            // Release per-worker JIT state before object emission to reduce peak memory usage.
+            _compilationWorklist.Dispose();
 
             var nodes = _dependencyGraph.MarkedNodeList;
 
@@ -1014,6 +1010,8 @@ namespace ILCompiler
 
         public override void Dispose()
         {
+            _compilationWorklist.Dispose();
+
             // Workaround for https://github.com/dotnet/runtime/issues/23103.
             // ManifestMetadataTable.Dispose() allows to break circular reference
             // ConcurrentBag<EcmaModule> -> EcmaModule -> EcmaAssembly -> ReadyToRunCompilerContext -> ... -> ConcurrentBag<EcmaModule>.
