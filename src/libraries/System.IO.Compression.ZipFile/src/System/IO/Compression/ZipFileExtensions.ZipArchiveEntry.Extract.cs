@@ -219,16 +219,21 @@ namespace System.IO.Compression
 
             // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
             DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
-            string destinationDirectoryFullPath = di.FullName;
-            if (!destinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
-            {
-                char sep = Path.DirectorySeparatorChar;
-                destinationDirectoryFullPath = string.Concat(destinationDirectoryFullPath, new ReadOnlySpan<char>(in sep));
-            }
+            string fullDestination = Path.GetFullPath(di.FullName);
 
-            fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
+            string sanitizedEntryPath = ArchivingUtils.SanitizeEntryFilePath(source.FullName);
+            fileDestinationPath = Path.GetFullPath(Path.Combine(fullDestination, sanitizedEntryPath));
 
-            if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
+            // Build a destination prefix that always ends in a separator, so that the comparison below
+            // doesn't produce false positives for roots (e.g. "C:\" or "\\server\share\") that already end
+            // in a separator, and doesn't allow a sibling directory with a matching prefix (e.g. "Dest" vs
+            // "Destinations") to be treated as being inside the destination.
+            string destinationPrefix = fullDestination.EndsWith(Path.DirectorySeparatorChar)
+                ? fullDestination
+                : fullDestination + Path.DirectorySeparatorChar;
+
+            // Ensure the path stays within the destination directory boundary.
+            if (!fileDestinationPath.StartsWith(destinationPrefix, StringComparison.Ordinal))
             {
                 throw new IOException(SR.IO_ExtractingResultsInOutside);
             }

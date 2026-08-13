@@ -63,6 +63,9 @@
   <data name="net_completed_result" xml:space="preserve">
     <value>This operation cannot be performed on a completed asynchronous result object.</value>
   </data>
+  <data name="net_io_eof" xml:space="preserve">
+    <value>Received an unexpected EOF or 0 bytes from the transport stream.</value>
+  </data>
   <data name="net_io_invalidasyncresult" xml:space="preserve">
     <value>The IAsyncResult object was not returned from the corresponding asynchronous method on this class.</value>
   </data>
@@ -89,5 +92,8 @@
   </data>
   <data name="net_dns_unsupported_address_family" xml:space="preserve">
     <value>Only the InterNetwork and InterNetworkV6 address families are supported.</value>
+  </data>
+  <data name="net_invalid_dns_name" xml:space="preserve">
+    <value>The DNS name '{0}' is not a valid domain name.</value>
   </data>
 </root>

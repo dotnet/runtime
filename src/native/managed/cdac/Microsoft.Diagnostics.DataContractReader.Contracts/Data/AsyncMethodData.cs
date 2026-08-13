@@ -6,6 +6,6 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.AsyncMethodData))]
 internal sealed partial class AsyncMethodData : IData<AsyncMethodData>
 {
-    [Field] public uint Flags { get; }
-    [Field] public Signature Signature { get; }
+    [Field] public partial uint Flags { get; }
+    [Field] public partial Signature Signature { get; }
 }

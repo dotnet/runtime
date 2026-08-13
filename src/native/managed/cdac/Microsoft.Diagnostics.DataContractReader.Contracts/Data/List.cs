@@ -8,9 +8,9 @@ internal sealed partial class List : IData<List>
 {
     /// <summary>Pointer to the backing <c>T[]</c> array.</summary>
     [Field("_items")]
-    public TargetPointer Items { get; }
+    public partial TargetPointer Items { get; }
 
     /// <summary>Logical element count.</summary>
     [Field("_size")]
-    public int Size { get; }
+    public partial int Size { get; }
 }

@@ -221,7 +221,7 @@ void gc_heap::get_card_table_element_layout (uint8_t* start, uint8_t* end, size_
     for (int element = brick_table_element; element <= total_bookkeeping_elements; element++)
     {
         layout[element] = layout[element - 1] + sizes[element - 1];
-        if ((element != total_bookkeeping_elements) && (sizes[element] != 0))
+        if (element != total_bookkeeping_elements)
         {
             layout[element] = ALIGN_UP(layout[element], alignment[element]);
         }
@@ -605,7 +605,7 @@ int gc_heap::grow_brick_card_tables (uint8_t* start,
 
             if (saved_g_lowest_address < g_gc_lowest_address)
             {
-                if (ps > (size_t)g_gc_lowest_address)
+                if (ps >= (size_t)g_gc_lowest_address)
                     saved_g_lowest_address = (uint8_t*)(size_t)OS_PAGE_SIZE;
                 else
                 {

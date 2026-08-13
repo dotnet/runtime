@@ -2908,7 +2908,7 @@ gc_heap::dt_high_memory_load_p()
     return ((settings.entry_memory_load >= high_memory_load_th) || g_low_memory_status);
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
 #ifndef PREFETCH
 #define PREFETCH
 #endif

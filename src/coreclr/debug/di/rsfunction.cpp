@@ -777,47 +777,59 @@ HRESULT CordbFunction::GetILCodeAndSigToken()
             // constructor to zero its data and localVarSigToken is explicitly inited.
             TargetBuffer codeInfo;
             mdSignature  localVarSigToken = mdSignatureNil;
-            SIZE_T       currentEnCVersion;
+            SIZE_T       currentEnCVersion = m_dwEnCVersionNumber;
 
             {
                 RSLockHolder lockHolder(GetProcess()->GetProcessLock());
 
-                // In the dump case we may not have the backing memory for this. In such a case
-                // we construct an empty ILCode object and leave the signatureToken as mdSignatureNil.
-                // It may also be the case that the memory we read from the dump be inconsistent (huge method size)
-                // and we also fallback on creating an empty ILCode object.
-                // See issue DD 273199 for cases where IL and NGEN metadata mismatch (different RVAs).
-                ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY(
-                    IfFailThrow(pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeAssembly(),
-                                                            m_MDToken,
-                                                            &codeInfo,
-                                                            &localVarSigToken));
-                );
+#ifdef FEATURE_CODE_VERSIONING
+                // A non-default EnC version has its IL on an explicit IL code version node.
+                if (m_dwEnCVersionNumber != CorDB_DEFAULT_ENC_FUNCTION_VERSION)
+                {
+                    ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY(
+                        IfFailThrow(pProcess->GetDAC()->GetEnCILCodeAndSig(GetModule()->m_vmModule,
+                                                                          m_MDToken,
+                                                                          m_dwEnCVersionNumber,
+                                                                          &codeInfo,
+                                                                          &localVarSigToken));
+                    );
+                }
+#endif // FEATURE_CODE_VERSIONING
 
-                currentEnCVersion = m_pModule->LookupFunctionLatestVersion(m_MDToken)->m_dwEnCVersionNumber;
+                if (codeInfo.pAddress == 0)
+                {
+                    // In the dump case we may not have the backing memory for this. In such a case
+                    // we construct an empty ILCode object and leave the signatureToken as mdSignatureNil.
+                    // It may also be the case that the memory we read from the dump be inconsistent (huge method size)
+                    // and we also fallback on creating an empty ILCode object.
+                    // See issue DD 273199 for cases where IL and NGEN metadata mismatch (different RVAs).
+                    ALLOW_DATATARGET_MISSING_OR_INCONSISTENT_MEMORY(
+                        IfFailThrow(pProcess->GetDAC()->GetILCodeAndSig(m_pModule->GetRuntimeAssembly(),
+                                                                m_MDToken,
+                                                                &codeInfo,
+                                                                &localVarSigToken));
+                    );
+                }
             }
 
             LOG((LF_CORDB,LL_INFO10000,"R:CF::GICAST: looking for IL code, version 0x%x\n", currentEnCVersion));
 
+            LOG((LF_CORDB,LL_INFO10000,"R:CF::GICAST: not found, creating...\n"));
+            if(codeInfo.pAddress == 0)
+            {
+                LOG((LF_CORDB,LL_INFO10000,"R:CF::GICAST: memory was missing - empty ILCode being created\n"));
+            }
+
+            // If everything succeeded, we set the IL code object (it's an outparam here).
+            _ASSERTE(m_pILCode == NULL);
+            m_pILCode.Assign(new(nothrow)CordbILCode(this,
+                                                    codeInfo,
+                                                    currentEnCVersion,
+                                                    localVarSigToken));
+
             if (m_pILCode == NULL)
             {
-                LOG((LF_CORDB,LL_INFO10000,"R:CF::GICAST: not found, creating...\n"));
-                if(codeInfo.pAddress == 0)
-                {
-                    LOG((LF_CORDB,LL_INFO10000,"R:CF::GICAST: memory was missing - empty ILCode being created\n"));
-                }
-
-                // If everything succeeded, we set the IL code object (it's an outparam here).
-                _ASSERTE(m_pILCode == NULL);
-                m_pILCode.Assign(new(nothrow)CordbILCode(this,
-                                                        codeInfo,
-                                                        currentEnCVersion,
-                                                        localVarSigToken));
-
-                if (m_pILCode == NULL)
-                {
-                    ThrowHR(E_OUTOFMEMORY);
-                }
+                ThrowHR(E_OUTOFMEMORY);
             }
         }
     }
