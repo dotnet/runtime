@@ -37,7 +37,7 @@ namespace System.Configuration
                 throw new Win32Exception(error);
             }
 
-            return new string(buffer, 0, checked((int)length) - 1);
+            return new string(buffer, 0, (int)length - 1);
         }
     }
 }
