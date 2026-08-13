@@ -38,6 +38,12 @@ internal sealed class SZArrayOfRecords : SZArrayRecord<SerializationRecord>
 
     private SerializationRecord?[] ToArray(bool allowNulls)
     {
+        // When Length is different than record count, we know the record list contains at least one Multiple Null Record.
+        if (!allowNulls && Length != Records.Count)
+        {
+            ThrowHelper.ThrowArrayContainedNulls();
+        }
+
         SerializationRecord?[] result = new SerializationRecord?[Length];
 
         int resultIndex = 0;

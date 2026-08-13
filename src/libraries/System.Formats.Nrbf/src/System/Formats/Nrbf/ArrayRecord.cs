@@ -116,6 +116,12 @@ public abstract class ArrayRecord : SerializationRecord
 
     internal static void Populate(List<SerializationRecord> source, Array destination, int[] lengths, AllowedRecordTypes allowedRecordTypes, bool allowNulls)
     {
+        // When destination length is different than record count, we know the record list contains at least one Multiple Null Record.
+        if (!allowNulls && destination.LongLength != source.Count)
+        {
+            ThrowHelper.ThrowArrayContainedNulls();
+        }
+
         int[] indices = new int[lengths.Length];
         nuint numElementsWritten = 0; // only for debugging; not used in release builds
 

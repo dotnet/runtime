@@ -512,5 +512,40 @@ namespace System.Formats.Nrbf.Tests
                 }
             }
         }
+
+#if !NETFRAMEWORK
+        [Fact]
+        public void GetArray_AllowNullsFalse_DoesNotAllocateLargeArray_WhenMultipleNullRecordIsPresent()
+        {
+            // The tests need to ensure that 2GB+ array does not get allocated.
+            // 200k is enough to get the job done and avoid getting false positives.
+            const long AllocationThreshold = 200_000;
+
+            using MemoryStream stream = new();
+            BinaryWriter writer = new(stream, Text.Encoding.UTF8);
+
+            WriteSerializedStreamHeader(writer);
+
+            writer.Write((byte)SerializationRecordType.ArraySingleObject);
+            writer.Write(1); // object ID
+            writer.Write(Array.MaxLength); // length
+            writer.Write((byte)SerializationRecordType.ObjectNullMultiple);
+            writer.Write(Array.MaxLength); // null count
+            writer.Write((byte)SerializationRecordType.MessageEnd);
+
+            stream.Position = 0;
+
+            SerializationRecord serializationRecord = NrbfDecoder.Decode(stream);
+
+            long before = GC.GetAllocatedBytesForCurrentThread();
+
+            SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)serializationRecord;
+            Assert.Throws<SerializationException>(() => arrayRecord.GetArray(allowNulls: false));
+
+            long after = GC.GetAllocatedBytesForCurrentThread();
+
+            Assert.InRange(after, before, before + AllocationThreshold);
+        }
+#endif
     }
 }
