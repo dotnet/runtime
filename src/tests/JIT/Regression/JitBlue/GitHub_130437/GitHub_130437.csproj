@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
     <LanguageTargets>$(RepoRoot)src/coreclr/.nuget/Microsoft.NET.Sdk.IL/Microsoft.NET.Sdk.IL.targets.template</LanguageTargets>
     <Optimize>True</Optimize>
