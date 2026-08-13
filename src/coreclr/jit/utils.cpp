@@ -1743,6 +1743,7 @@ void HelperCallProperties::init()
             case CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT:
             case CORINFO_HELP_JIT_PINVOKE_BEGIN:
             case CORINFO_HELP_JIT_PINVOKE_END:
+            case CORINFO_HELP_REPORT_UNMANAGED_EXCEPTION_FROM_PINVOKE:
                 exceptions = ExceptionSetFlags::None;
                 break;
 

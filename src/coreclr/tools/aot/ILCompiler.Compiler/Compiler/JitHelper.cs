@@ -276,6 +276,9 @@ namespace ILCompiler
                 case ReadyToRunHelper.PInvokeEnd:
                     mangledName = "RhpPInvokeReturn";
                     break;
+                case ReadyToRunHelper.ReportUnmanagedExceptionFromPInvoke:
+                    mangledName = "JIT_ReportUnmanagedExceptionFromPInvoke";
+                    break;
 
                 case ReadyToRunHelper.ReversePInvokeEnter:
                     mangledName = "RhpReversePInvoke";

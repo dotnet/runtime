@@ -3058,6 +3058,29 @@ void CodeGen::genCall(GenTreeCall* call)
 {
     regNumber thisReg = REG_NA;
 
+    WasmValueType callResultType = WasmValueType::Invalid;
+    if (call->IsUnmanaged())
+    {
+        assert(!call->IsFastTailCall());
+
+        const var_types callRetType = genActualType(call);
+        if (!call->ShouldHaveRetBufArg() && (callRetType != TYP_VOID))
+        {
+            callResultType = callRetType == TYP_STRUCT
+                                 ? TypeToWasmValueType(WasmClassifier::ToJitType(
+                                       m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd)))
+                                 : ActualTypeToWasmValueType(callRetType);
+        }
+
+        emitter* emit = GetEmitter();
+        emit->emitIns_BlockTy(INS_block, callResultType);
+        emit->emitIns_BlockTy(INS_block, WasmValueType::ExnRef);
+        emit->emitIns_BlockTy(INS_block, WasmValueType::ExnRef);
+        emit->emitIns_Ty_I(INS_try_table, callResultType, 2);
+        emit->emitIns_I(INS_catch_ref, EA_4BYTE, 0);
+        emit->emitIns_I(INS_catch_all_ref, EA_4BYTE, 1);
+    }
+
     if (call->NeedsNullCheck())
     {
         CallArg* thisArg  = call->gtArgs.GetThisArg();
@@ -3081,6 +3104,20 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 
     genCallInstruction(call);
+
+    if (call->IsUnmanaged())
+    {
+        emitter* emit = GetEmitter();
+        emit->emitIns(INS_end);
+        emit->emitIns_I(INS_br, EA_4BYTE, 2);
+        emit->emitIns(INS_end);
+        emit->emitIns(INS_throw_ref);
+        emit->emitIns(INS_end);
+        genEmitHelperCall(CORINFO_HELP_REPORT_UNMANAGED_EXCEPTION_FROM_PINVOKE, 0, EA_UNKNOWN);
+        emit->emitIns(INS_throw_ref);
+        emit->emitIns(INS_end);
+    }
+
     WasmProduceReg(call);
 }
 
@@ -3240,6 +3277,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
         params.callType = EC_FUNC_TOKEN;
         genEmitCallWithCurrentGC(params);
     }
+
 }
 
 //------------------------------------------------------------------------
@@ -3323,6 +3361,8 @@ void CodeGen::genEmitHelperCall(unsigned helper, int argSize, emitAttr retSize, 
         // RhBulkMoveWithWriteBarrier
         HELPER_SIG(CORINFO_HELP_BULK_WRITEBARRIER, UNMANAGED, CORINFO_WASM_TYPE_VOID /* retval */, CORINFO_WASM_TYPE_I,
                    CORINFO_WASM_TYPE_I, CORINFO_WASM_TYPE_I);
+        HELPER_SIG(CORINFO_HELP_REPORT_UNMANAGED_EXCEPTION_FROM_PINVOKE, UNMANAGED,
+                   CORINFO_WASM_TYPE_VOID /* retval */);
         default:
             JITDUMP("Helper '%s' has no hard-coded signature\n", m_compiler->eeGetMethodFullName(params.methHnd));
             unreached();

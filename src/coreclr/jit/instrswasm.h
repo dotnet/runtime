@@ -32,6 +32,7 @@ INST2(invalid,             "INVALID",              0, IF_NONE,          0xFC, BA
 INST(unreachable,          "unreachable",          0, IF_OPCODE,        0x00)
 INST(label,                "label",                0, IF_RAW_ULEB128,   0x00)
 INST(catch_ref,            "catch_ref",            0, IF_CATCH_DECL,    0x00)
+INST(catch_all_ref,        "catch_all_ref",        0, IF_CATCH_ALL_DECL, 0x00)
 INST(local_cnt,            "local.cnt",            0, IF_RAW_ULEB128,   0x00)
 INST(local_decl,           "local",                0, IF_LOCAL_DECL,    0x00)
 INST(code_size,            "code.size",            0, IF_CODE_SIZE,     0x00)

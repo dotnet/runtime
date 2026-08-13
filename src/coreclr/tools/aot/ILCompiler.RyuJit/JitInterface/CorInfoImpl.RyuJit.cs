@@ -742,6 +742,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.PInvokeEnd;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_REPORT_UNMANAGED_EXCEPTION_FROM_PINVOKE:
+                    id = ReadyToRunHelper.ReportUnmanagedExceptionFromPInvoke;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER:
                     id = ReadyToRunHelper.ReversePInvokeEnter;
                     break;

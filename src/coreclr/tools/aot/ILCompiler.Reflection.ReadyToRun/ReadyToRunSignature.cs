@@ -1786,6 +1786,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("PINVOKE_END");
                     break;
 
+                case ReadyToRunHelper.ReportUnmanagedExceptionFromPInvoke:
+                    builder.Append("REPORT_UNMANAGED_EXCEPTION_FROM_PINVOKE");
+                    break;
+
                 case ReadyToRunHelper.GCPoll:
                     builder.Append("GCPOLL");
                     break;

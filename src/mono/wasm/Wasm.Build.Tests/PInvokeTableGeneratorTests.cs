@@ -365,6 +365,67 @@ namespace Wasm.Build.Tests
             Assert.Contains("square: 25", result.TestOutput);
         }
 
+        [Theory]
+        [InlineData(Configuration.Debug)]
+        public async Task UnmanagedExceptionDoesNotUnwindThroughManagedCode(Configuration config)
+        {
+            if (!IsCoreClrRuntime)
+                return;
+
+            const string nativeSource = """
+                extern "C" int throw_unmanaged_exception(int value)
+                {
+                    throw value;
+                }
+                """;
+            const string managedSource = """
+                using System;
+                using System.Runtime.InteropServices;
+
+                Console.WriteLine("TestOutput -> before P/Invoke");
+                try
+                {
+                    _ = ThrowUnmanagedException(42);
+                }
+                catch
+                {
+                    Console.WriteLine("TestOutput -> managed catch");
+                }
+
+                Console.WriteLine("TestOutput -> after P/Invoke");
+                return 42;
+
+                [DllImport("unmanaged-exception", EntryPoint = "throw_unmanaged_exception")]
+                static extern int ThrowUnmanagedException(int value);
+                """;
+
+            const string extraItems = """<NativeFileReference Include="unmanaged-exception.cpp" />""";
+            ProjectInfo info = CopyTestAsset(
+                config,
+                aot: false,
+                TestAsset.WasmBasicTestApp,
+                "unmanaged_exception_boundary",
+                extraProperties: "<WasmBuildNative>true</WasmBuildNative>",
+                extraItems: extraItems);
+
+            File.WriteAllText(Path.Combine(_projectDir, "unmanaged-exception.cpp"), nativeSource);
+            File.WriteAllText(Path.Combine(_projectDir, "Common", "Program.cs"), managedSource);
+            ReplaceMainJsWithMinimalRunMain();
+
+            BuildProject(info, config, new BuildOptions(UseCache: false), isNativeBuild: true);
+
+            RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
+                config,
+                TestScenario: "DotnetRun",
+                ExpectedExitCode: 1));
+
+            Assert.Contains(
+                result.ConsoleOutput,
+                line => line.Contains("Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition"));
+            Assert.DoesNotContain(result.TestOutput, line => line.Contains("managed catch"));
+            Assert.DoesNotContain(result.TestOutput, line => line.Contains("after P/Invoke"));
+        }
+
         private async Task EnsureWasmAbiRulesAreFollowed(Configuration config, bool aot)
         {
             var extraItems = @"<NativeFileReference Include=""wasm-abi.c"" />";

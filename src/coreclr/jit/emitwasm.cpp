@@ -793,6 +793,14 @@ unsigned emitter::instrDesc::idCodeSize() const
             size += SizeOfULEB128(emitGetInsSC(this)); // control flow stack offset
             break;
         }
+        case IF_CATCH_ALL_DECL:
+        {
+            // no opcode, this is part of a try_table
+
+            size = 1;                                  // catch kind
+            size += SizeOfULEB128(emitGetInsSC(this)); // control flow stack offset
+            break;
+        }
         case IF_V128:
             size += 16; // 16 raw bytes for the v128 constant
             break;
@@ -986,6 +994,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         {
             assert(!id->idIsCnsReloc());
             dst += emitOutputOpcode(dst, ins);
+            dst += emitOutputULEB128(dst, (uint64_t)emitGetInsSC(id));
+            break;
+        }
+        case IF_CATCH_ALL_DECL:
+        {
+            // Kind 3: catch_all_ref, followed by the control flow stack offset.
+            dst += emitOutputByte(dst, 3);
             dst += emitOutputULEB128(dst, (uint64_t)emitGetInsSC(id));
             break;
         }
@@ -1447,6 +1462,12 @@ void emitter::emitDispIns(
         {
             // catch_ref RtlRestoreContextTag, depth
             printf(" RtlRestoreContextTag");
+            dispJumpTargetIfAny();
+        }
+        break;
+
+        case IF_CATCH_ALL_DECL:
+        {
             dispJumpTargetIfAny();
         }
         break;

@@ -1273,6 +1273,10 @@ namespace Internal.JitInterface
                     id = ReadyToRunHelper.PInvokeEnd;
                     break;
 
+                case CorInfoHelpFunc.CORINFO_HELP_REPORT_UNMANAGED_EXCEPTION_FROM_PINVOKE:
+                    id = ReadyToRunHelper.ReportUnmanagedExceptionFromPInvoke;
+                    break;
+
                 case CorInfoHelpFunc.CORINFO_HELP_STACK_PROBE:
                     id = ReadyToRunHelper.StackProbe;
                     break;

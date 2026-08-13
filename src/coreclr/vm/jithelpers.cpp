@@ -2177,6 +2177,9 @@ Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
+#ifdef TARGET_WASM
+EXTERN_C void JIT_ReportUnmanagedExceptionFromPInvoke();
+#endif
 
 #ifdef DEBUGGING_SUPPORTED
 void DebuggerTraceCall(void* returnAddr, void* thunkDataMaybe)
