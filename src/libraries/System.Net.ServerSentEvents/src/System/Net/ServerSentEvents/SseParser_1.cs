@@ -40,6 +40,8 @@ namespace System.Net.ServerSentEvents
 #else
             1024;
 #endif
+        /// <summary>The maximum amount of data buffered by default.</summary>
+        private const int DefaultMaxBufferSize = 1024 * 1024 * 1024;
 
         /// <summary>The stream to be parsed.</summary>
         private readonly Stream _stream;
@@ -74,7 +76,7 @@ namespace System.Net.ServerSentEvents
         /// <remarks>This can be different than <see cref="_dataLength"/> != 0 if empty data was appended.</remarks>
         private bool _dataAppended;
 
-        private int _maxBufferSize = 1024 * 1024 * 1024;
+        private readonly int _maxBufferSize;
 
         /// <summary>The event type for the next event.</summary>
         private string? _eventType;
@@ -87,11 +89,12 @@ namespace System.Net.ServerSentEvents
 
         /// <summary>Initialize the enumerable.</summary>
         /// <param name="stream">The stream to parse.</param>
-        /// <param name="itemParser">The function to use to parse payload bytes into a <typeparamref name="T"/>.</param>
-        internal SseParser(Stream stream, SseItemParser<T> itemParser)
+        /// <param name="options">The options to use to parse the stream.</param>
+        internal SseParser(Stream stream, SseParserOptions<T> options)
         {
             _stream = stream;
-            _itemParser = itemParser;
+            _itemParser = options.ItemParser;
+            _maxBufferSize = options.MaxBufferSize == -1 ? DefaultMaxBufferSize : options.MaxBufferSize;
         }
 
         /// <summary>Gets an enumerable of the server-sent events from this parser.</summary>
@@ -556,7 +559,7 @@ namespace System.Net.ServerSentEvents
         /// <summary>Grows the buffer, returning the existing one to the ArrayPool and renting an ArrayPool replacement.</summary>
         private void GrowBuffer([NotNull] ref byte[]? buffer, int minimumLength)
         {
-            if (minimumLength > _maxBufferSize)
+            if (_maxBufferSize >= 0 && minimumLength > _maxBufferSize)
             {
                 throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
             }
