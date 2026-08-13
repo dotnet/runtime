@@ -51,6 +51,7 @@ TargetPointer GetEnCInstanceFieldAddress(TargetPointer objectAddress, TargetPoin
 | --- |
 | `GC` |
 | `Loader` |
+| `ManagedTypeSource` |
 | `Object` |
 | `RuntimeTypeSystem` |
 <!-- END GENERATED: usage contract=RuntimeMutableTypeSystem version=c1 -->

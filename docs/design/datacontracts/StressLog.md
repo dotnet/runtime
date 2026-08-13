@@ -89,7 +89,9 @@ bool IsPointerInStressLog(StressLogData stressLog, TargetPointer pointer);
 
 ### Contracts used
 
-_None._
+| Contract Name |
+| --- |
+| `ManagedTypeSource` |
 <!-- END GENERATED: usage contract=StressLog version=c1 -->
 
 ## Version 2 dependency changes from Version 1

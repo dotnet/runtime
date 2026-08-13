@@ -318,6 +318,7 @@ public readonly record struct GCHeapSegmentInfo(
 | --- |
 | `BuiltInCOM` |
 | `FeatureFlags` |
+| `ManagedTypeSource` |
 | `Object` |
 | `Thread` |
 <!-- END GENERATED: usage contract=GC version=c1 -->

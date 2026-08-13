@@ -32,6 +32,7 @@ TargetPointer GetTaggedMemory(TargetPointer address, out TargetNUInt size);
 | Contract Name |
 | --- |
 | `ConditionalWeakTable` |
+| `ManagedTypeSource` |
 <!-- END GENERATED: usage contract=ObjectiveCMarshal version=c1 -->
 
 ### Contract Constants

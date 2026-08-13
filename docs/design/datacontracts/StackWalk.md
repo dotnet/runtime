@@ -223,6 +223,7 @@ Unwinding call frames on the stack usually requires an OS specific implementatio
 | `ExecutionManager` |
 | `GC` |
 | `GCInfo` |
+| `ManagedTypeSource` |
 | `Object` |
 | `PlatformMetadata` |
 | `RuntimeInfo` |

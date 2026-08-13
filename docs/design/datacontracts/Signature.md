@@ -47,6 +47,7 @@ _None._
 | --- |
 | `EcmaMetadata` |
 | `Loader` |
+| `ManagedTypeSource` |
 | `RuntimeInfo` |
 | `RuntimeTypeSystem` |
 <!-- END GENERATED: usage contract=Signature version=c1 -->

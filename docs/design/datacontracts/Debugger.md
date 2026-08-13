@@ -70,6 +70,7 @@ TargetPointer PrepareExceptionHijack(byte[] context, TargetPointer vmThread, byt
 
 | Contract Name |
 | --- |
+| `ManagedTypeSource` |
 | `RuntimeInfo` |
 | `Thread` |
 <!-- END GENERATED: usage contract=Debugger version=c1 -->

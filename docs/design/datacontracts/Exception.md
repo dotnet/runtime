@@ -62,6 +62,7 @@ _None._
 
 | Contract Name |
 | --- |
+| `ManagedTypeSource` |
 | `Object` |
 | `RuntimeInfo` |
 | `RuntimeTypeSystem` |

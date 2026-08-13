@@ -159,7 +159,9 @@ TargetPointer GetThreadLocalStaticBase(TargetPointer threadPointer, TargetPointe
 
 ### Contracts used
 
-_None._
+| Contract Name |
+| --- |
+| `ManagedTypeSource` |
 <!-- END GENERATED: usage contract=Thread version=c1 -->
 
 ``` csharp
