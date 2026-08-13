@@ -292,7 +292,8 @@ namespace System.Configuration
                     userConfigPath,
                     ConfigurationManagerInternalFactory.Instance.ExeProductVersion,
                     ConfigurationManagerInternalFactory.Instance.UserConfigFilename,
-                    ClientConfigPaths.Current.LegacyConfigDirectoryPrefix);
+                    ClientConfigPaths.Current.LegacyConfigDirectoryPrefix,
+                    ClientConfigPaths.Current.StableConfigDirectoryName);
 
                 // Cache for future use.
                 if (isRoaming)
@@ -312,7 +313,8 @@ namespace System.Configuration
             string currentConfigDirectory,
             string currentVersionString,
             string userConfigFilename,
-            string legacyDirectoryPrefix)
+            string legacyDirectoryPrefix,
+            string stableConfigDirectoryName)
         {
             if (string.IsNullOrEmpty(currentConfigDirectory) ||
                 string.IsNullOrEmpty(userConfigFilename) ||
@@ -321,7 +323,8 @@ namespace System.Configuration
                 return null;
             }
 
-            if (string.IsNullOrEmpty(legacyDirectoryPrefix))
+            if (string.IsNullOrEmpty(legacyDirectoryPrefix) ||
+                string.IsNullOrEmpty(stableConfigDirectoryName))
             {
                 return FindPreviousConfigFileUsingExistingBehavior(
                     currentConfigDirectory,
@@ -351,8 +354,7 @@ namespace System.Configuration
                 return previousConfigFile;
             }
 
-            string stableIdentityPrefix = legacyDirectoryPrefix + "BundleIdentifier_";
-            if (!IsIdentityDirectoryName(currentIdentityDirectory.Name, stableIdentityPrefix))
+            if (!string.Equals(currentIdentityDirectory.Name, stableConfigDirectoryName, StringComparison.Ordinal))
             {
                 return null;
             }

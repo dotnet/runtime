@@ -2,38 +2,52 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Configuration
 {
-    internal static partial class AppleApplication
+    internal static class AppleApplication
     {
-        internal static string GetMainBundleIdentifier()
+        internal static unsafe string GetMainBundleIdentifier()
         {
-            IntPtr identifier = Interop.GetMainBundleIdentifier();
+            IntPtr bundle = Interop.CoreFoundation.CFBundleGetMainBundle();
+            IntPtr identifier = bundle == IntPtr.Zero
+                ? IntPtr.Zero
+                : Interop.CoreFoundation.CFBundleGetIdentifier(bundle);
             if (identifier == IntPtr.Zero)
             {
                 return null;
             }
 
-            try
+            IntPtr length = Interop.CoreFoundation.CFStringGetLength(identifier);
+            long maximumByteCount = Interop.CoreFoundation.CFStringGetMaximumSizeForEncoding(
+                length,
+                Interop.CoreFoundation.kCFStringEncodingUTF8).ToInt64();
+            if (maximumByteCount < 0 || maximumByteCount >= int.MaxValue)
             {
-                // Apple bundle identifiers are restricted to ASCII letters, digits, periods, and hyphens.
-                return Marshal.PtrToStringAnsi(identifier);
+                return null;
             }
-            finally
+
+            byte[] buffer = new byte[(int)maximumByteCount + 1];
+            fixed (byte* bufferPtr = buffer)
             {
-                Interop.Free(identifier);
+                if (Interop.CoreFoundation.CFStringGetCString(
+                    identifier,
+                    bufferPtr,
+                    new IntPtr(buffer.Length),
+                    Interop.CoreFoundation.kCFStringEncodingUTF8) == 0)
+                {
+                    return null;
+                }
             }
-        }
 
-        private static partial class Interop
-        {
-            [LibraryImport("libSystem.Native", EntryPoint = "SystemNative_Free")]
-            internal static partial void Free(IntPtr ptr);
+            int terminator = Array.IndexOf(buffer, (byte)0);
+            if (terminator < 0)
+            {
+                return null;
+            }
 
-            [LibraryImport("libSystem.Native", EntryPoint = "SystemNative_GetMainBundleIdentifier")]
-            internal static partial IntPtr GetMainBundleIdentifier();
+            return Encoding.UTF8.GetString(buffer, 0, terminator);
         }
     }
 }

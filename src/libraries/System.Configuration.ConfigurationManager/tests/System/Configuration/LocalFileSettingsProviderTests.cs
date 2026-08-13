@@ -77,8 +77,10 @@ namespace System.ConfigurationTests
             Assert.Equal(defaultValue, propertyValues["Test"].PropertyValue);
         }
 
-        [Fact]
-        public void AppleMobileIdentity_UsesStableBoundedBundleIdentifierHash()
+        [Theory]
+        [InlineData("BundleIdentifier", "com.contoso.test")]
+        [InlineData("PackageFamilyName", "Microsoft.Windows.Photos_8wekyb3d8bbwe")]
+        public void StableIdentity_UsesBoundedHashAcrossInstallationPaths(string identityType, string identity)
         {
             const string FirstPath = "/var/containers/Bundle/Application/F67E5161-EBAA-4084-B89C-2D17C837D315/Test.app/Test.dll";
             const string SecondPath = "/var/containers/Bundle/Application/9293AD65-BCC7-453C-8D42-8902B64FF19E/Test.app/Test.dll";
@@ -86,37 +88,38 @@ namespace System.ConfigurationTests
             string first = GetApplicationIdentitySuffix(
                 FirstPath,
                 isSingleFile: false,
-                isAppleMobile: true,
-                bundleIdentifier: "com.contoso.test");
+                identityType,
+                identity);
             string second = GetApplicationIdentitySuffix(
                 SecondPath,
                 isSingleFile: false,
-                isAppleMobile: true,
-                bundleIdentifier: "com.contoso.test");
+                identityType,
+                identity);
 
             Assert.Equal(first, second);
-            Assert.StartsWith("_BundleIdentifier_", first);
-            Assert.Equal("_BundleIdentifier_".Length + 32, first.Length);
+            Assert.StartsWith("_" + identityType + "_", first);
+            Assert.Equal(identityType.Length + 34, first.Length);
         }
 
         [Fact]
-        public void NonAppleMobileIdentity_PreservesExistingBehavior()
+        public void NoStableIdentity_PreservesExistingBehavior()
         {
             const string ApplicationPath = "/Applications/Test/Test.dll";
 
             string expected = GetApplicationIdentitySuffix(
                 ApplicationPath,
                 isSingleFile: false,
-                isAppleMobile: false,
-                bundleIdentifier: null);
+                stableIdentityType: null,
+                stableIdentity: null);
             string actual = GetApplicationIdentitySuffix(
                 ApplicationPath,
                 isSingleFile: false,
-                isAppleMobile: false,
-                bundleIdentifier: "com.contoso.ignored");
+                stableIdentityType: null,
+                stableIdentity: "com.contoso.ignored");
 
             Assert.Equal(expected, actual);
             Assert.DoesNotContain("BundleIdentifier", actual);
+            Assert.DoesNotContain("PackageFamilyName", actual);
         }
 
         [PlatformSpecific(TestPlatforms.iOS | TestPlatforms.tvOS)]
@@ -145,7 +148,8 @@ namespace System.ConfigurationTests
                 currentDirectory,
                 "3.0.0.0",
                 UserConfigFilename,
-                LegacyPrefix);
+                LegacyPrefix,
+                StableIdentityName);
 
             Assert.Equal(expected, actual);
         }
@@ -163,7 +167,8 @@ namespace System.ConfigurationTests
                 currentDirectory,
                 "3.0.0.0",
                 UserConfigFilename,
-                legacyDirectoryPrefix: null);
+                legacyDirectoryPrefix: null,
+                stableConfigDirectoryName: null);
 
             Assert.Null(actual);
         }
@@ -188,7 +193,8 @@ namespace System.ConfigurationTests
                 currentDirectory,
                 "4.0.0.0",
                 UserConfigFilename,
-                LegacyPrefix);
+                LegacyPrefix,
+                StableIdentityName);
 
             Assert.Equal(expected, actual);
         }
@@ -213,7 +219,8 @@ namespace System.ConfigurationTests
                 currentDirectory,
                 "3.0.0.0",
                 UserConfigFilename,
-                LegacyPrefix);
+                LegacyPrefix,
+                StableIdentityName);
 
             Assert.Null(actual);
         }
@@ -234,7 +241,8 @@ namespace System.ConfigurationTests
                 currentDirectory,
                 "3.0.0.0",
                 UserConfigFilename,
-                LegacyPrefix);
+                LegacyPrefix,
+                StableIdentityName);
 
             Assert.Null(actual);
         }
@@ -246,8 +254,8 @@ namespace System.ConfigurationTests
         private static string GetApplicationIdentitySuffix(
             string applicationPath,
             bool isSingleFile,
-            bool isAppleMobile,
-            string bundleIdentifier)
+            string stableIdentityType,
+            string stableIdentity)
         {
             Type clientConfigPaths = typeof(LocalFileSettingsProvider).Assembly.GetType("System.Configuration.ClientConfigPaths");
             MethodInfo getApplicationIdentitySuffix = clientConfigPaths.GetMethod(
@@ -256,25 +264,33 @@ namespace System.ConfigurationTests
 
             return (string)getApplicationIdentitySuffix.Invoke(
                 null,
-                new object[] { applicationPath, isSingleFile, isAppleMobile, bundleIdentifier });
+                new object[] { applicationPath, isSingleFile, stableIdentityType, stableIdentity });
         }
 
         private static string FindPreviousConfigFile(
             string currentConfigDirectory,
             string currentVersion,
             string userConfigFilename,
-            string legacyDirectoryPrefix)
+            string legacyDirectoryPrefix,
+            string stableConfigDirectoryName)
         {
             MethodInfo findPreviousConfigFile = typeof(LocalFileSettingsProvider).GetMethod(
                 "FindPreviousConfigFile",
                 BindingFlags.NonPublic | BindingFlags.Static,
                 binder: null,
-                new[] { typeof(string), typeof(string), typeof(string), typeof(string) },
+                new[] { typeof(string), typeof(string), typeof(string), typeof(string), typeof(string) },
                 modifiers: null);
 
             return (string)findPreviousConfigFile.Invoke(
                 null,
-                new object[] { currentConfigDirectory, currentVersion, userConfigFilename, legacyDirectoryPrefix });
+                new object[]
+                {
+                    currentConfigDirectory,
+                    currentVersion,
+                    userConfigFilename,
+                    legacyDirectoryPrefix,
+                    stableConfigDirectoryName
+                });
         }
 
         private static string LegacyIdentityName(char hashCharacter)

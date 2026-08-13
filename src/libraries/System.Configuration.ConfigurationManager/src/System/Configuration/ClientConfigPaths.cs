@@ -23,6 +23,7 @@ namespace System.Configuration
         private const string UrlDesc = "Url";
         private const string PathDesc = "Path";
         private const string BundleIdentifierDesc = "BundleIdentifier";
+        private const string PackageFamilyNameDesc = "PackageFamilyName";
 
         private static ClientConfigPaths s_current;
         private static volatile bool s_currentIncludesUserConfig;
@@ -143,16 +144,21 @@ namespace System.Configuration
             string applicationUriLower = !string.IsNullOrEmpty(ApplicationUri)
                 ? ApplicationUri.ToLowerInvariant()
                 : null;
-            bool isAppleMobile = IsAlwaysSandboxedAppleMobile();
-            string bundleIdentifier = isAppleMobile ? AppleApplication.GetMainBundleIdentifier() : null;
-            string hashSuffix = GetApplicationIdentitySuffix(applicationUriLower, isSingleFile, isAppleMobile, bundleIdentifier);
+            GetStableApplicationIdentity(out string stableIdentityType, out string stableIdentity);
+            string hashSuffix = GetApplicationIdentitySuffix(
+                applicationUriLower,
+                isSingleFile,
+                stableIdentityType,
+                stableIdentity);
             string part2 = !string.IsNullOrEmpty(namePrefix) && !string.IsNullOrEmpty(hashSuffix)
                 ? namePrefix + hashSuffix
                 : null;
-            LegacyConfigDirectoryPrefix = isAppleMobile &&
-                !string.IsNullOrEmpty(bundleIdentifier) &&
+            LegacyConfigDirectoryPrefix = !string.IsNullOrEmpty(stableIdentity) &&
                 !string.IsNullOrEmpty(namePrefix)
                 ? namePrefix + "_"
+                : null;
+            StableConfigDirectoryName = LegacyConfigDirectoryPrefix is not null
+                ? part2
                 : null;
 
             // (3) The product version
@@ -201,6 +207,8 @@ namespace System.Configuration
 
         internal string LegacyConfigDirectoryPrefix { get; }
 
+        internal string StableConfigDirectoryName { get; }
+
         internal static ClientConfigPaths GetPaths(string exePath, bool includeUserConfig)
         {
             ClientConfigPaths result;
@@ -244,15 +252,15 @@ namespace System.Configuration
         internal static string GetApplicationIdentitySuffix(
             string exePath,
             bool isSingleFile,
-            bool isAppleMobile,
-            string bundleIdentifier)
+            string stableIdentityType,
+            string stableIdentity)
         {
-            if (isAppleMobile && !string.IsNullOrEmpty(bundleIdentifier))
+            if (!string.IsNullOrEmpty(stableIdentityType) && !string.IsNullOrEmpty(stableIdentity))
             {
                 try
                 {
-                    string hash = IdentityHelper.GetStrongHashSuitableForObjectName(bundleIdentifier);
-                    return "_" + BundleIdentifierDesc + "_" + hash;
+                    string hash = IdentityHelper.GetStrongHashSuitableForObjectName(stableIdentity);
+                    return "_" + stableIdentityType + "_" + hash;
                 }
                 catch (PlatformNotSupportedException)
                 {
@@ -260,6 +268,37 @@ namespace System.Configuration
             }
 
             return GetTypeAndHashSuffix(exePath, isSingleFile);
+        }
+
+        private static void GetStableApplicationIdentity(out string identityType, out string identity)
+        {
+            if (IsAlwaysSandboxedAppleMobile())
+            {
+                identityType = BundleIdentifierDesc;
+                identity = AppleApplication.GetMainBundleIdentifier();
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                identityType = PackageFamilyNameDesc;
+                try
+                {
+                    identity = WindowsApplication.GetCurrentPackageFamilyName();
+                }
+                catch (EntryPointNotFoundException)
+                {
+                    identity = null;
+                }
+            }
+            else
+            {
+                identityType = null;
+                identity = null;
+            }
+
+            if (string.IsNullOrEmpty(identity))
+            {
+                identityType = null;
+            }
         }
 
         // Returns a type and hash suffix based on what used to come from app domain evidence.
