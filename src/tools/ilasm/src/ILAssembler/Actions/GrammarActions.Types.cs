@@ -1,24 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
 using Antlr4.Runtime;
-using Antlr4.Runtime.Misc;
-using Antlr4.Runtime.Tree;
 
 namespace ILAssembler;
 
@@ -26,22 +12,6 @@ internal sealed partial class GrammarActions
 {
     private readonly Stack<RuleContext> _namespaceOwners = new();
     private readonly Stack<RuleContext> _typeOwners = new();
-
-    internal void BeginNamespace(CILParser.NameSpaceHeadContext context)
-    {
-        ClearPendingCustomAttributeOwners();
-        string namespaceName = VisitNameSpaceHead(context).Value;
-        string? outerNamespace = _currentNamespace.PeekOrDefault();
-        _currentNamespace.Push(string.IsNullOrEmpty(outerNamespace) ? namespaceName : $"{outerNamespace}.{namespaceName}");
-        _namespaceOwners.Push(context.Parent);
-    }
-
-    internal void BeginType(CILParser.ClassHeadContext context)
-    {
-        ClearPendingCustomAttributeOwners();
-        _currentTypeDefinition.Push(VisitClassHead(context).Value);
-        _typeOwners.Push(context.Parent);
-    }
 
     /// <summary>
     /// Releases the namespace, type and method state that a top-level declaration introduced.
@@ -53,12 +23,6 @@ internal sealed partial class GrammarActions
     internal void EndDeclaration(CILParser.DeclContext context)
     {
         EndScopesOwnedBy(context);
-        if (context.nameSpaceHead() is not null ||
-            context.classHead() is not null ||
-            context.methodHead() is not null)
-        {
-            ClearPendingCustomAttributeOwners();
-        }
     }
 
     /// <summary>
@@ -127,300 +91,7 @@ internal sealed partial class GrammarActions
     }
 
 #pragma warning disable CA1822 // Mark members as static
-        GrammarResult ICILVisitor<GrammarResult>.VisitClassAttr(CILParser.ClassAttrContext context) => VisitClassAttr(context);
-
-        public GrammarResult.Literal<(GrammarResult.Flag<TypeAttributes> Attribute, EntityRegistry.WellKnownBaseType? FallbackBase, bool RequireSealed)> VisitClassAttr(CILParser.ClassAttrContext context)
-        {
-            if (context.int32() is CILParser.Int32Context int32)
-            {
-                int value = VisitInt32(int32).Value;
-                // COMPAT: The VALUE and ENUM keywords use sentinel values to pass through the fallback base type
-                // in ILASM. These sentinel values can be provided through the "pass the value of the flag" feature,
-                // so we detect those old flags here and provide the correct fallback type.
-                bool requireSealed = false;
-                EntityRegistry.WellKnownBaseType? fallbackBase = null;
-                if ((value & 0x80000000) != 0)
-                {
-                    requireSealed = true;
-                    fallbackBase = EntityRegistry.WellKnownBaseType.System_ValueType;
-                }
-                if ((value & 0x40000000) != 0)
-                {
-                    fallbackBase = EntityRegistry.WellKnownBaseType.System_Enum;
-                }
-                // Mask off the sentinel bits
-                value &= unchecked((int)~0xC0000000);
-                // COMPAT: When explicit flags are provided they always supercede previously set flags
-                // (other than the sentinel values)
-                return new((new((TypeAttributes)value, ShouldAppend: false), fallbackBase, requireSealed));
-            }
-
-            if (context.ENUM() is not null)
-            {
-                // COMPAT: ilasm implies the Sealed flag when using the 'value' keyword in a type declaration
-                // even when the 'enum' keyword is used.
-                return new((new(context.VALUE() is not null ? TypeAttributes.Sealed : 0), EntityRegistry.WellKnownBaseType.System_Enum, false));
-            }
-            else if (context.VALUE() is not null)
-            {
-                // COMPAT: ilasm implies the Sealed flag when using the 'value' keyword in a type declaration
-                return new((new(TypeAttributes.Sealed), EntityRegistry.WellKnownBaseType.System_ValueType, true));
-            }
-            else if (context.EXPLICIT() is not null)
-            {
-                return new((new(TypeAttributes.ExplicitLayout), null, false));
-            }
-            else if (context.INTERFACE() is not null)
-            {
-                // COMPAT: interface implies abstract
-                return new((new(TypeAttributes.Interface | TypeAttributes.Abstract), null, false));
-            }
-
-            switch (context.GetText())
-            {
-                case "public":
-                    return new((new(TypeAttributes.Public, TypeAttributes.VisibilityMask), null, false));
-                case "private":
-                    return new((new(TypeAttributes.NotPublic, TypeAttributes.VisibilityMask), null, false));
-                case "nestedpublic":
-                    return new((new(TypeAttributes.NestedPublic, TypeAttributes.VisibilityMask), null, false));
-                case "nestedprivate":
-                    return new((new(TypeAttributes.NestedPrivate, TypeAttributes.VisibilityMask), null, false));
-                case "nestedfamily":
-                    return new((new(TypeAttributes.NestedFamily, TypeAttributes.VisibilityMask), null, false));
-                case "nestedassembly":
-                    return new((new(TypeAttributes.NestedAssembly, TypeAttributes.VisibilityMask), null, false));
-                case "nestedfamandassem":
-                    return new((new(TypeAttributes.NestedFamANDAssem, TypeAttributes.VisibilityMask), null, false));
-                case "nestedfamorassem":
-                    return new((new(TypeAttributes.NestedFamORAssem, TypeAttributes.VisibilityMask), null, false));
-                case "ansi":
-                    return new((new(TypeAttributes.AnsiClass, TypeAttributes.StringFormatMask), null, false));
-                case "autochar":
-                    return new((new(TypeAttributes.AutoClass, TypeAttributes.StringFormatMask), null, false));
-                case "unicode":
-                    return new((new(TypeAttributes.UnicodeClass, TypeAttributes.StringFormatMask), null, false));
-                case "auto":
-                    return new((new(TypeAttributes.AutoLayout, TypeAttributes.LayoutMask), null, false));
-                case "sequential":
-                    return new((new(TypeAttributes.SequentialLayout, TypeAttributes.LayoutMask), null, false));
-                case "extended":
-                    return new((new(TypeAttributes.ExtendedLayout, TypeAttributes.LayoutMask), null, false));
-                case "sealed":
-                    return new((new(TypeAttributes.Sealed), null, false));
-                case "abstract":
-                    return new((new(TypeAttributes.Abstract), null, false));
-                case "import":
-                    return new((new(TypeAttributes.Import), null, false));
-                case "serializable":
-#pragma warning disable SYSLIB0050
-                    return new((new(TypeAttributes.Serializable), null, false));
-#pragma warning restore SYSLIB0050
-                case "windowsruntime":
-                    return new((new(TypeAttributes.WindowsRuntime), null, false));
-                case "beforefieldinit":
-                    return new((new(TypeAttributes.BeforeFieldInit), null, false));
-                case "specialname":
-                    return new((new(TypeAttributes.SpecialName), null, false));
-                case "rtspecialname":
-                    return new((new(TypeAttributes.RTSpecialName), null, false));
-                default:
-                    return new((new((TypeAttributes)Enum.Parse(typeof(TypeAttributes), context.GetText(), true)), null, false));
-            }
-        }
-
         public GrammarResult VisitClassDecls(CILParser.ClassDeclsContext context) => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitClassHead(CILParser.ClassHeadContext context) => VisitClassHead(context);
-        public GrammarResult.Literal<EntityRegistry.TypeDefinitionEntity> VisitClassHead(CILParser.ClassHeadContext context)
-        {
-            string typeFullName = VisitDottedName(context.dottedName()).Value;
-            int typeFullNameLastDot = typeFullName.LastIndexOf('.');
-            // A dot at position 0 is part of the name (e.g., ".GlobalStruct"), not a namespace separator
-            if (typeFullNameLastDot == 0)
-            {
-                typeFullNameLastDot = -1;
-            }
-            string typeNS;
-            if (_currentTypeDefinition.Count != 0)
-            {
-                if (typeFullNameLastDot == -1)
-                {
-                    typeNS = string.Empty;
-                }
-                else
-                {
-                    typeNS = typeFullName.Substring(0, typeFullNameLastDot);
-                }
-            }
-            else
-            {
-                if (typeFullNameLastDot == -1)
-                {
-                    typeNS = _currentNamespace.PeekOrDefault() ?? string.Empty;
-                }
-                else
-                {
-                    typeNS = $"{_currentNamespace.PeekOrDefault()}{typeFullName.Substring(0, typeFullNameLastDot)}";
-                }
-            }
-
-            bool isNewType = false;
-
-            var typeDefinition = _entityRegistry.GetOrCreateTypeDefinition(
-                _currentTypeDefinition.PeekOrDefault(),
-                typeNS,
-                typeFullNameLastDot != -1
-                    ? typeFullName.Substring(typeFullNameLastDot + 1)
-                    : typeFullName,
-                (newTypeDef) =>
-                {
-                    isNewType = true;
-                    EntityRegistry.WellKnownBaseType? fallbackBase = _options.NoAutoInherit ? null : EntityRegistry.WellKnownBaseType.System_Object;
-                    bool requireSealed = false;
-                    var classAttrs = context.classAttr();
-                    newTypeDef.Attributes = classAttrs.Select(VisitClassAttr).Aggregate(
-                        (TypeAttributes)0,
-                        (acc, result) =>
-                        {
-                            var (attribute, implicitBase, attrRequireSealed) = result.Value;
-                            if (implicitBase is not null)
-                            {
-                                fallbackBase = implicitBase;
-                            }
-                            if (!attribute.ShouldAppend)
-                            {
-                                requireSealed = attrRequireSealed;
-                                return attribute.Value;
-                            }
-                            requireSealed |= attrRequireSealed;
-                            if (attribute.Value == TypeAttributes.RTSpecialName)
-                            {
-                                // COMPAT: ILASM ignores the rtspecialname directive on a type.
-                                return acc;
-                            }
-                            if ((attribute.Value & TypeAttributes.Interface) != 0)
-                            {
-                                // COMPAT: interface implies abstract
-                                return acc | TypeAttributes.Interface | TypeAttributes.Abstract;
-                            }
-                            // Use the Flag's | operator which handles group masks
-                            // (visibility, layout, string format) correctly.
-                            return acc | attribute;
-                        });
-
-
-                    ImmutableArray<GenericParameterDeclarationValue> genericParameters =
-                        GetGenericParameterDeclarations(context.typarsClause().Value);
-                    RegisterGenericParameterNames(
-                        newTypeDef,
-                        newTypeDef.GenericParameters,
-                        genericParameters);
-
-                    // Push the type so that !T references in constraints, extends, and implements can resolve
-                    _currentTypeDefinition.Push(newTypeDef);
-
-                    MaterializeGenericParameterConstraints(
-                        newTypeDef.GenericParameters,
-                        newTypeDef.GenericParameterConstraints,
-                        genericParameters);
-
-                    if (context.extendsClause() is CILParser.ExtendsClauseContext extends)
-                    {
-                        newTypeDef.BaseType = VisitExtendsClause(context.extendsClause()).Value;
-                    }
-
-                    if (context.implClause() is CILParser.ImplClauseContext impl)
-                    {
-                        newTypeDef.InterfaceImplementations.AddRange(VisitImplClause(context.implClause()).Value);
-                    }
-
-                    _currentTypeDefinition.Pop();
-
-                    // Interfaces should not have an implicit base type
-                    if (newTypeDef.Attributes.HasFlag(TypeAttributes.Interface))
-                    {
-                        fallbackBase = null;
-                    }
-
-                    newTypeDef.BaseType ??= _entityRegistry.ResolveImplicitBaseType(fallbackBase);
-
-                    // When the user has provided a type definition for a type that directly inherits
-                    // System.ValueType but has not sealed it, emit a warning and add the 'sealed' modifier.
-                    if (!newTypeDef.Attributes.HasFlag(TypeAttributes.Sealed) &&
-                        (requireSealed // COMPAT: when both the sentinel values for 'value' and 'enum' are explicitly
-                                       // specified, the sealed modifier is required even though
-                                       // the base type isn't System.ValueType.
-                        || _entityRegistry.SystemValueTypeType.Equals(newTypeDef.BaseType)))
-                    {
-                        _diagnostics.Add(
-                            new Diagnostic(
-                                DiagnosticIds.UnsealedValueType,
-                                DiagnosticSeverity.Error,
-                                string.Format(DiagnosticMessageTemplates.UnsealedValueType, newTypeDef.Name),
-                                Location.From(context.dottedName().Stop, _documents)));
-                        newTypeDef.Attributes |= TypeAttributes.Sealed;
-                    }
-                });
-
-            if (!isNewType)
-            {
-                // Type was forward-referenced. Apply attributes, generic params,
-                // base type, and interface implementations that were deferred.
-                var classAttrs = context.classAttr();
-                typeDefinition.Attributes = classAttrs.Select(VisitClassAttr).Aggregate(
-                    typeDefinition.Attributes,
-                    (acc, result) =>
-                    {
-                        var (attribute, _, _) = result.Value;
-                        if (!attribute.ShouldAppend)
-                            return attribute.Value;
-                        if ((attribute.Value & TypeAttributes.Interface) != 0)
-                            return acc | TypeAttributes.Interface | TypeAttributes.Abstract;
-                        return acc | attribute.Value;
-                    });
-
-                if (typeDefinition.GenericParameters.Count == 0)
-                {
-                    ImmutableArray<GenericParameterDeclarationValue> genericParameters =
-                        GetGenericParameterDeclarations(context.typarsClause().Value);
-                    RegisterGenericParameterNames(
-                        typeDefinition,
-                        typeDefinition.GenericParameters,
-                        genericParameters);
-
-                    _currentTypeDefinition.Push(typeDefinition);
-
-                    MaterializeGenericParameterConstraints(
-                        typeDefinition.GenericParameters,
-                        typeDefinition.GenericParameterConstraints,
-                        genericParameters);
-                }
-                else
-                {
-                    _currentTypeDefinition.Push(typeDefinition);
-                }
-
-                if (context.extendsClause() is CILParser.ExtendsClauseContext extends && typeDefinition.BaseType is null)
-                {
-                    typeDefinition.BaseType = VisitExtendsClause(extends).Value;
-                }
-                else
-                {
-                    _ = context.extendsClause()?.Accept(this);
-                }
-
-                if (context.implClause() is CILParser.ImplClauseContext impl)
-                {
-                    typeDefinition.InterfaceImplementations.AddRange(VisitImplClause(impl).Value);
-                }
-
-                _currentTypeDefinition.Pop();
-            }
-
-            return new(typeDefinition);
-        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitClassName(CILParser.ClassNameContext context) => VisitClassName(context);
 
@@ -462,23 +133,5 @@ internal sealed partial class GrammarActions
                     : null);
             return new(blob);
         }
-        GrammarResult ICILVisitor<GrammarResult>.VisitExtendsClause(CILParser.ExtendsClauseContext context) => VisitExtendsClause(context);
-
-        public GrammarResult.Literal<EntityRegistry.TypeEntity?> VisitExtendsClause(CILParser.ExtendsClauseContext context)
-        {
-            if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
-            {
-                return new(VisitTypeSpec(typeSpec).Value);
-            }
-            else
-            {
-                return new(null);
-            }
-        }
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitNameSpaceHead(CILParser.NameSpaceHeadContext context) => VisitNameSpaceHead(context);
-
-        public static GrammarResult.String VisitNameSpaceHead(CILParser.NameSpaceHeadContext context) => VisitDottedName(context.dottedName());
-
 #pragma warning restore CA1822 // Mark members as static
 }

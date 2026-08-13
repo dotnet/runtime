@@ -134,6 +134,26 @@ namespace ILAssembler.Tests
         [InlineData("""
             .assembly extern mscorlib { }
             .assembly test { }
+            .namespace
+            {
+            }
+            .class public auto ansi Following
+            {
+            }
+            """)]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi Broken extends
+            {
+            }
+            .class public auto ansi Following
+            {
+            }
+            """)]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
             .class public auto ansi Broken
             {
                 .method public static void M() cil managed
@@ -155,7 +175,7 @@ namespace ILAssembler.Tests
             {
             }
             """)]
-        public void SyntaxErrorInDeclarationBody_DoesNotLeakScopesIntoFollowingDeclarations(string source)
+        public void SyntaxErrorInDeclaration_DoesNotLeakScopesIntoFollowingDeclarations(string source)
         {
             var compiler = new DocumentCompiler();
             var (diagnostics, image) = compiler.Compile(
