@@ -52,6 +52,12 @@ internal sealed class GCInfoX86_1 : IGCInfo
     bool IGCInfo.IsGcSafe(IGCInfoHandle gcInfoHandle, uint instructionOffset)
         => AssertCorrectHandle(gcInfoHandle).IsGcSafe(instructionOffset);
 
+    bool IGCInfo.TryGetGenericContextStorage(IGCInfoHandle gcInfoHandle, GenericContextLoc contextKind, uint instructionOffset, out GenericContextStorage storage)
+        => AssertCorrectHandle(gcInfoHandle).TryGetGenericContextStorage(contextKind, instructionOffset, out storage);
+
+    TargetPointer IGCInfo.GetAmbientSP(IGCInfoHandle gcInfoHandle, uint codeOffset, TargetPointer fp, TargetPointer sp)
+        => AssertCorrectHandle(gcInfoHandle).GetAmbientSP(codeOffset, fp, sp);
+
     private static IGCInfoDecoder AssertCorrectHandle(IGCInfoHandle gcInfoHandle)
     {
         if (gcInfoHandle is not IGCInfoDecoder handle)

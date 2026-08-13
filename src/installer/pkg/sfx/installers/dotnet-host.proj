@@ -51,13 +51,34 @@
       <FilesToPublish Include="$(MSBuildThisFileDirectory)dnx"
             Destination="$(OutputPath)dnx"
             Condition="'$(TargetsUnix)' == 'true'" />
+      <!--
+        Private, non-conflicting copy of the robust dnx dispatcher used as the repair source by
+        the Linux package post-install and file-trigger scriptlets (https://github.com/dotnet/sdk/issues/55303).
+        InstallerOnly keeps this file out of other PublishToDisk outputs while allowing the native
+        Linux package layout target to copy it after normal publication.
+      -->
+      <FilesToPublish Include="$(MSBuildThisFileDirectory)dnx"
+            Destination="$(OutputPath)dnx.dispatcher"
+            InstallerOnly="true"
+            Condition="'$(TargetsUnix)' == 'true'" />
+      <FilesToPublish Include="$(MSBuildThisFileDirectory)dnx.cmd"
+            Destination="$(OutputPath)dnx.cmd"
+            Condition="'$(TargetsUnix)' != 'true'" />
     </ItemGroup>
 
     <Copy SourceFiles="@(FilesToPublish)"
-          DestinationFiles="%(FilesToPublish.Destination)" />
+          DestinationFiles="%(FilesToPublish.Destination)"
+          Condition="'%(FilesToPublish.InstallerOnly)' != 'true'" />
 
     <Exec Command="chmod 755 &quot;$(OutputPath)dnx&quot;"
           Condition="'$(TargetsUnix)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))" />
+  </Target>
+
+  <Target Name="_SetDnxDispatcherPermissions"
+          AfterTargets="_PublishInstallerOnlyFilesToDisk"
+          Condition="'$(TargetsUnix)' == 'true' and !$([MSBuild]::IsOSPlatform('windows'))">
+    <Exec Command="chmod 755 &quot;$(OutputPath)dnx.dispatcher&quot;"
+          Condition="Exists('$(OutputPath)dnx.dispatcher')" />
   </Target>
 
   <Target Name="PublishSymbolsToDisk">
@@ -81,6 +102,47 @@
     <LinuxPackageSymlink Include="/usr/bin/dnx" LinkTarget="../share/dotnet/dnx" />
     <LinuxPackageConflicts Include="dotnet;dotnet-nightly" />
     <RpmOwnedDirectory Include="/usr/share/dotnet" />
+  </ItemGroup>
+
+  <!--
+    dnx packaging compatibility for native Linux packages
+    (https://github.com/dotnet/sdk/issues/55303).
+
+    Released dotnet-sdk-10.0 packages already install /usr/share/dotnet/dnx and /usr/bin/dnx.
+    Starting with .NET 11, dotnet-host also needs to provide these files. Package managers can
+    reject the installation when two packages provide the same path differently, and reinstalling
+    SDK 10 can restore its older, broken dnx files.
+
+    dotnet-host keeps a safe copy of the current dispatcher in dnx.dispatcher. Its install script
+    copies that file to /usr/share/dotnet/dnx and creates /usr/bin/dnx as a symlink to it. The same
+    repair runs again if a later package operation changes the public files; this occurs because of
+    the transaction trigger file. Removing the final dotnet-host package removes the generated
+    public files.
+
+    - DEB: 'Replaces' tells dpkg that dotnet-host may take these files from .NET 10 SDK packages,
+      but not from later SDK versions. A path trigger runs the repair whenever another package
+      changes either public file.
+    - RPM: '%ghost' tells rpm that dotnet-host owns the public paths without including them in the
+      package archive, avoiding a duplicate-file conflict and having those files deleted by SDK 10
+      removal. A transaction trigger runs the repair after an SDK package is installed or reinstalled.
+  -->
+  <ItemGroup Condition="'$(GenerateDeb)' == 'true' or '$(GenerateRpm)' == 'true'">
+    <LinuxPostInstallScript Include="$(MSBuildThisFileDirectory)dnx-postinst.sh" />
+    <LinuxPostRemoveScript Include="$(MSBuildThisFileDirectory)dnx-postremove.sh" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(GenerateDeb)' == 'true'">
+    <!-- Narrowly scoped to released dotnet-sdk-10.0 (all 10.0.x feature bands); excludes SDK 11 (>= 10.1.0). -->
+    <DebControlProperty Include="Replaces" Value="dotnet-sdk-10.0 (&lt;&lt; 10.1.0)" />
+    <DebControlFile Include="$(MSBuildThisFileDirectory)triggers" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(GenerateRpm)' == 'true'">
+    <RpmGhostFile Include="/usr/share/dotnet/dnx" />
+    <RpmGhostFile Include="/usr/bin/dnx" />
+    <RpmFileTrigger Include="$(MSBuildThisFileDirectory)dnx-postinst.sh"
+                    Kind="TransFileTriggerIn"
+                    Paths="/usr/share/dotnet/sdk" />
   </ItemGroup>
 
   <PropertyGroup>

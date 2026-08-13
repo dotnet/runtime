@@ -19,7 +19,6 @@ class UTSemReadWrite;
 
 class MDInternalRW : public IMDInternalImportENC, public IMDCommon
 {
-    friend class VerifyLayoutsMD;
 public:
 
 

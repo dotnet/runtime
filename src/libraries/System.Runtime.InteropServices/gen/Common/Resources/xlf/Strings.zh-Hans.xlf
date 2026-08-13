@@ -1057,6 +1057,21 @@
         <target state="translated">LibraryImportAttribute 需要不安全的代码。</target>
         <note />
       </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierDescriptionLibraryImport">
+        <source>Under the updated memory safety rules, calling into native code is a safety contract that the compiler cannot verify. Mark the method 'unsafe' to require callers to audit the call, or 'safe' after auditing the interop boundary. This matches the requirement the language places on 'extern' members.</source>
+        <target state="translated">根据更新后的内存安全规则，调用本机代码是编译器无法验证的安全协定。将方法标记为“不安全”可要求调用方审核调用，或在审核互操作边界后将其标记为“安全”。这与语言对 'extern' 成员的要求相匹配。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierMessageLibraryImport">
+        <source>Method '{0}' with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
+        <target state="translated">必须将使用 'LibraryImportAttribute’ 的方法“{0}”标记为“安全”或“不安全”</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierTitleLibraryImport">
+        <source>Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
+        <target state="translated">必须将使用 'LibraryImportAttribute' 的方法标记为“安全”或“不安全”</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
         <source>The return type the two method must be the expected type.</source>
         <target state="translated">这两种方法的返回类型必须为预期类型。</target>

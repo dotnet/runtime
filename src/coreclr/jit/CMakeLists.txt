@@ -771,6 +771,17 @@ if (CLR_CMAKE_TARGET_UNIX)
     endif()
 endif()
 
+# crossgen2 and ILC load the target-specific JIT (e.g. clrjit_win_x64_x64) rather than clrjit,
+# so it has to be part of the jit component for a build that only requests that component to be
+# able to run them. This mirrors what the block above already does for Unix targets.
+if (CLR_CMAKE_TARGET_WIN32)
+    if(CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64)
+      install_clr(TARGETS clrjit_universal_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
+    else()
+      install_clr(TARGETS clrjit_win_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} DESTINATIONS . COMPONENT jit)
+    endif()
+endif()
+
 if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_PGO_INSTRUMENT)
   # Copy PGO dependency to target dir
   set(PGORT_DLL "pgort140.dll")
