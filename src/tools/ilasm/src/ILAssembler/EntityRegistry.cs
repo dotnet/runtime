@@ -572,7 +572,7 @@ namespace ILAssembler
                 builder.AddEvent(
                     evt.Attributes,
                     builder.GetOrAddString(evt.Name),
-                    evt.Type.Handle);
+                    evt.Type?.Handle ?? default(TypeDefinitionHandle));
 
                 foreach (var accessor in evt.Accessors)
                 {
@@ -2174,10 +2174,10 @@ namespace ILAssembler
             public TypeEntity InterfaceType { get; } = interfaceType;
         }
 
-        public sealed class EventEntity(EventAttributes attributes, TypeEntity type, string name) : EntityBase
+        public sealed class EventEntity(EventAttributes attributes, TypeEntity? type, string name) : EntityBase
         {
             public EventAttributes Attributes { get; set; } = attributes;
-            public TypeEntity Type { get; } = type;
+            public TypeEntity? Type { get; } = type;
             public string Name { get; } = name;
 
             public List<(MethodSemanticsAttributes Semantic, EntityBase Method)> Accessors { get; } = new();

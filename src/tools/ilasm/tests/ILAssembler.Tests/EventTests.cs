@@ -174,5 +174,26 @@ namespace ILAssembler.Tests
                 [0x01, 0x00, 0x00, 0x00],
                 reader.GetBlobBytes(reader.GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(eventHandle))).Value));
         }
+
+        [Fact]
+        public void EventWithoutType_EmitsNilEventType()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .event Changed
+                    {
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var @event = reader.GetEventDefinition(Assert.Single(reader.EventDefinitions));
+
+            Assert.Equal("Changed", reader.GetString(@event.Name));
+            Assert.True(@event.Type.IsNil);
+        }
     }
 }

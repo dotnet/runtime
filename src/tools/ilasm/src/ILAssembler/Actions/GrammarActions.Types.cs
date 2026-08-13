@@ -66,11 +66,9 @@ internal sealed partial class GrammarActions
     /// </summary>
     internal void EndClassDeclaration(CILParser.ClassDeclContext context)
     {
+        EndClassGenericDirective(context);
+        EndPropertyAndEventBodies(context);
         EndScopesOwnedBy(context);
-        if (context.classHead() is not null || context.methodHead() is not null)
-        {
-            ClearPendingCustomAttributeOwners();
-        }
     }
 
     private void EndScopesOwnedBy(RuleContext owner)
@@ -93,6 +91,7 @@ internal sealed partial class GrammarActions
 
     private void EndType()
     {
+        CompleteClassMethodOverrides(_currentTypeDefinition.Peek());
         _typeOwners.Pop();
         _currentTypeDefinition.Pop();
         ClearPendingCustomAttributeOwners();
@@ -312,32 +311,20 @@ internal sealed partial class GrammarActions
                         });
 
 
-                    // Two-pass generic parameter processing:
-                    // Pass 1: Register all parameter names (without resolving constraints)
-                    var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
-                    for (int i = 0; i < typarContexts.Length; i++)
-                    {
-                        var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
-                        var param = EntityRegistry.CreateGenericParameter(attributes, VisitDottedName(typarContexts[i].dottedName()).Value);
-                        param.Owner = newTypeDef;
-                        param.Index = i;
-                        newTypeDef.GenericParameters.Add(param);
-                    }
+                    ImmutableArray<GenericParameterDeclarationValue> genericParameters =
+                        GetGenericParameterDeclarations(context.typarsClause().Value);
+                    RegisterGenericParameterNames(
+                        newTypeDef,
+                        newTypeDef.GenericParameters,
+                        genericParameters);
 
                     // Push the type so that !T references in constraints, extends, and implements can resolve
                     _currentTypeDefinition.Push(newTypeDef);
 
-                    // Pass 2: Resolve constraints (now all params are registered and type is on stack)
-                    for (int i = 0; i < typarContexts.Length; i++)
-                    {
-                        var param = newTypeDef.GenericParameters[i];
-                        foreach (var constraint in VisitTyBound(typarContexts[i].tyBound()).Value)
-                        {
-                            constraint.Owner = param;
-                            param.Constraints.Add(constraint);
-                            newTypeDef.GenericParameterConstraints.Add(constraint);
-                        }
-                    }
+                    MaterializeGenericParameterConstraints(
+                        newTypeDef.GenericParameters,
+                        newTypeDef.GenericParameterConstraints,
+                        genericParameters);
 
                     if (context.extendsClause() is CILParser.ExtendsClauseContext extends)
                     {
@@ -396,34 +383,22 @@ internal sealed partial class GrammarActions
 
                 if (typeDefinition.GenericParameters.Count == 0)
                 {
-                    // Two-pass generic parameter processing for forward-referenced types
-                    var typarContexts = context.typarsClause()?.typars()?.typar() ?? Array.Empty<CILParser.TyparContext>();
-                    for (int i = 0; i < typarContexts.Length; i++)
-                    {
-                        var attributes = VisitTyparAttribs(typarContexts[i].typarAttribs()).Value;
-                        var param = EntityRegistry.CreateGenericParameter(attributes, VisitDottedName(typarContexts[i].dottedName()).Value);
-                        param.Owner = typeDefinition;
-                        param.Index = i;
-                        typeDefinition.GenericParameters.Add(param);
-                    }
+                    ImmutableArray<GenericParameterDeclarationValue> genericParameters =
+                        GetGenericParameterDeclarations(context.typarsClause().Value);
+                    RegisterGenericParameterNames(
+                        typeDefinition,
+                        typeDefinition.GenericParameters,
+                        genericParameters);
 
                     _currentTypeDefinition.Push(typeDefinition);
 
-                    // Pass 2: Resolve constraints
-                    for (int i = 0; i < typarContexts.Length; i++)
-                    {
-                        var param = typeDefinition.GenericParameters[i];
-                        foreach (var constraint in VisitTyBound(typarContexts[i].tyBound()).Value)
-                        {
-                            constraint.Owner = param;
-                            param.Constraints.Add(constraint);
-                            typeDefinition.GenericParameterConstraints.Add(constraint);
-                        }
-                    }
+                    MaterializeGenericParameterConstraints(
+                        typeDefinition.GenericParameters,
+                        typeDefinition.GenericParameterConstraints,
+                        genericParameters);
                 }
                 else
                 {
-                    _ = context.typarsClause().Accept(this);
                     _currentTypeDefinition.Push(typeDefinition);
                 }
 
@@ -504,75 +479,6 @@ internal sealed partial class GrammarActions
         GrammarResult ICILVisitor<GrammarResult>.VisitNameSpaceHead(CILParser.NameSpaceHeadContext context) => VisitNameSpaceHead(context);
 
         public static GrammarResult.String VisitNameSpaceHead(CILParser.NameSpaceHeadContext context) => VisitDottedName(context.dottedName());
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitTyBound(CILParser.TyBoundContext context) => VisitTyBound(context);
-        public GrammarResult.Sequence<EntityRegistry.GenericParameterConstraintEntity> VisitTyBound(CILParser.TyBoundContext? context)
-        {
-            // context or typeList can be null when there are no constraints
-            if (context?.typeList() is not CILParser.TypeListContext typeList)
-            {
-                return new(ImmutableArray<EntityRegistry.GenericParameterConstraintEntity>.Empty);
-            }
-            // Filter out null types (from unresolved type parameters) before creating constraints
-            return new(VisitTypeList(typeList).Value
-                .Where(t => t is not null)
-                .Select(EntityRegistry.CreateGenericConstraint)
-                .ToImmutableArray());
-        }
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitTypar(CILParser.TyparContext context) => VisitTypar(context);
-
-        public GrammarResult.Literal<EntityRegistry.GenericParameterEntity> VisitTypar(CILParser.TyparContext context)
-        {
-            GenericParameterAttributes attributes = VisitTyparAttribs(context.typarAttribs()).Value;
-            EntityRegistry.GenericParameterEntity genericParameter = EntityRegistry.CreateGenericParameter(attributes, VisitDottedName(context.dottedName()).Value);
-
-            foreach (var constraint in VisitTyBound(context.tyBound()).Value)
-            {
-                genericParameter.Constraints.Add(constraint);
-            }
-
-            return new(genericParameter);
-        }
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitTyparAttrib(CILParser.TyparAttribContext context) => VisitTyparAttrib(context);
-        public GrammarResult.Flag<GenericParameterAttributes> VisitTyparAttrib(CILParser.TyparAttribContext context)
-        {
-            return context switch
-            {
-                { covariant: not null } => new(GenericParameterAttributes.Covariant),
-                { contravariant: not null } => new(GenericParameterAttributes.Contravariant),
-                { @class: not null } => new(GenericParameterAttributes.ReferenceTypeConstraint),
-                { valuetype: not null } => new(GenericParameterAttributes.NotNullableValueTypeConstraint),
-                { byrefLike: not null } => new(GenericParameterAttributes.AllowByRefLike),
-                { ctor: not null } => new(GenericParameterAttributes.DefaultConstructorConstraint),
-                { flags: CILParser.Int32Context int32 } => new((GenericParameterAttributes)VisitInt32(int32).Value),
-                _ => throw new UnreachableException()
-            };
-        }
-        GrammarResult ICILVisitor<GrammarResult>.VisitTyparAttribs(CILParser.TyparAttribsContext context) => VisitTyparAttribs(context);
-
-        public GrammarResult.Literal<GenericParameterAttributes> VisitTyparAttribs(CILParser.TyparAttribsContext context) =>
-            new(context.typarAttrib()
-                .Select(VisitTyparAttrib)
-                .Aggregate(
-                    (GenericParameterAttributes)0, (agg, attr) => agg | attr));
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitTypars(CILParser.TyparsContext context) => VisitTypars(context);
-        public GrammarResult.Sequence<EntityRegistry.GenericParameterEntity> VisitTypars(CILParser.TyparsContext context)
-        {
-            CILParser.TyparContext[] typeParameters = context.typar();
-            ImmutableArray<EntityRegistry.GenericParameterEntity>.Builder builder = ImmutableArray.CreateBuilder<EntityRegistry.GenericParameterEntity>(typeParameters.Length);
-
-            foreach (var typeParameter in typeParameters)
-            {
-                builder.Add(VisitTypar(typeParameter).Value);
-            }
-            return new(builder.MoveToImmutable());
-        }
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitTyparsClause(CILParser.TyparsClauseContext context) => VisitTyparsClause(context);
-        public GrammarResult.Sequence<EntityRegistry.GenericParameterEntity> VisitTyparsClause(CILParser.TyparsClauseContext context) => context.typars() is null ? new(ImmutableArray<EntityRegistry.GenericParameterEntity>.Empty) : VisitTypars(context.typars());
 
 #pragma warning restore CA1822 // Mark members as static
 }
