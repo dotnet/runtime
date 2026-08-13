@@ -8,6 +8,30 @@
 #define _HANDLETABLE_INL
 
 #ifndef DACCESS_COMPILE
+#include "gc.h"
+
+FORCEINLINE int GetConvertedGeneration(_UNCHECKED_OBJECTREF obj)
+{
+    int generation = g_theGCHeap->WhichGeneration(obj);
+    return generation == INT_MAX ? max_generation : generation;
+}
+
+FORCEINLINE uint32_t HandleFetchType(OBJECTHANDLE handle)
+{
+    WRAPPER_NO_CONTRACT;
+
+    uint8_t* segment = reinterpret_cast<uint8_t*>(reinterpret_cast<uintptr_t>(handle) & HANDLE_SEGMENT_ALIGN_MASK);
+    _ASSERTE(segment);
+
+    uintptr_t offset = reinterpret_cast<uintptr_t>(handle) & HANDLE_SEGMENT_CONTENT_MASK;
+    _ASSERTE(offset >= HANDLE_HEADER_SIZE);
+
+    uint32_t uHandle = static_cast<uint32_t>((offset - HANDLE_HEADER_SIZE) / HANDLE_SIZE);
+    uint32_t uBlock = uHandle / HANDLE_HANDLES_PER_BLOCK;
+
+    return segment[HANDLE_SEGMENT_BLOCK_TYPE_OFFSET + uBlock];
+}
+
 FORCEINLINE void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
 {
     _ASSERTE(value != NULL);

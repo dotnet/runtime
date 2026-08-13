@@ -18,6 +18,7 @@
 
 #include "objecthandle.h"
 #include "handletablepriv.h"
+#include "handletable.inl"
 
 /****************************************************************************
  *
@@ -1878,4 +1879,3 @@ uint32_t TableSegment::DacSize(TADDR addr)
 }
 #endif
 /*--------------------------------------------------------------------------*/
-

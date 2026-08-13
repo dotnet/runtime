@@ -168,6 +168,8 @@ struct _TableSegmentHeader
     uint8_t bSequence;
 };
 
+static_assert(offsetof(_TableSegmentHeader, rgBlockType) == HANDLE_SEGMENT_BLOCK_TYPE_OFFSET);
+
 typedef DPTR(struct _TableSegmentHeader) PTR__TableSegmentHeader;
 typedef DPTR(uintptr_t) PTR_uintptr_t;
 

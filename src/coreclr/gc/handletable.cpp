@@ -19,18 +19,11 @@
 
 #include "objecthandle.h"
 #include "handletablepriv.h"
+#include "handletable.inl"
 
 #if defined(ENABLE_PERF_COUNTERS) || defined(FEATURE_EVENT_TRACE)
 DWORD g_dwHandles = 0;
 #endif // ENABLE_PERF_COUNTERS || FEATURE_EVENT_TRACE
-
-#ifndef DACCESS_COMPILE
-int GetConvertedGeneration(_UNCHECKED_OBJECTREF obj)
-{
-    int generation = g_theGCHeap->WhichGeneration(obj);
-    return generation == INT_MAX ? max_generation : generation;
-}
-#endif //DACCESS_COMPILE
 
 /****************************************************************************
  *

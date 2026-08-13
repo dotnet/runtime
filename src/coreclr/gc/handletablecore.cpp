@@ -443,35 +443,6 @@ void HandleQuickSetUserData(OBJECTHANDLE handle, uintptr_t lUserData)
 #endif // !DACCESS_COMPILE
 
 /*
- * HandleFetchType
- *
- * Computes the type index for a given handle.
- *
- */
-uint32_t HandleFetchType(OBJECTHANDLE handle)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // get the segment for this handle
-    PTR__TableSegmentHeader pSegment = HandleFetchSegmentPointer(handle);
-
-    // find the offset of this handle into the segment
-    uintptr_t offset = (uintptr_t)handle & HANDLE_SEGMENT_CONTENT_MASK;
-
-    // make sure it is in the handle area and not the header
-    _ASSERTE(offset >= HANDLE_HEADER_SIZE);
-
-    // convert the offset to a handle index
-    uint32_t uHandle = (uint32_t)((offset - HANDLE_HEADER_SIZE) / HANDLE_SIZE);
-
-    // compute the block this handle resides in
-    uint32_t uBlock = uHandle / HANDLE_HANDLES_PER_BLOCK;
-
-    // return the block's type
-    return pSegment->rgBlockType[uBlock];
-}
-
-/*
  * HandleFetchHandleTable
  *
  * Computes the type index for a given handle.
@@ -2212,5 +2183,4 @@ void TableFreeBulkUnpreparedHandles(HandleTable *pTable, uint32_t uType, const O
 #endif // !DACCESS_COMPILE
 
 /*--------------------------------------------------------------------------*/
-
 

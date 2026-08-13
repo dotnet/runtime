@@ -148,11 +148,6 @@ void ValidateFetchObjrefForHandle(OBJECTREF);
  */
 void HndAssignHandle(OBJECTHANDLE handle, OBJECTREF objref);
 
-#ifndef DACCESS_COMPILE
-int GetConvertedGeneration(_UNCHECKED_OBJECTREF obj);
-uint32_t HandleFetchType(OBJECTHANDLE handle);
-#endif // DACCESS_COMPILE
-
 /*
  * interlocked-exchange assignment
  */
@@ -223,9 +218,5 @@ FORCEINLINE BOOL HndIsNullOrDestroyedHandle(_UNCHECKED_OBJECTREF value)
 
     return (value == NULL);
 }
-
-/*--------------------------------------------------------------------------*/
-
-#include "handletable.inl"
 
 #endif //_HANDLETABLE_H

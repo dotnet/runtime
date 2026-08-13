@@ -4,9 +4,11 @@
 
 #include "common.h"
 #include "gcenv.h"
+#include "gc.h"
 #include "gchandletableimpl.h"
 #include "objecthandle.h"
 #include "handletablepriv.h"
+#include "handletable.inl"
 
 GCHandleStore* g_gcGlobalHandleStore;
 
