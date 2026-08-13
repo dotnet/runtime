@@ -211,7 +211,7 @@ internal sealed partial class GrammarActions
         return new SignatureArg(
             (System.Reflection.ParameterAttributes)argument.Attributes,
             MaterializeType(argument.Type ?? TypeValue.Error),
-            argument.Marshalling is null ? new BlobBuilder(0) : VisitMarshalClause(argument.Marshalling).Value,
+            MaterializeMarshallingDescriptor(argument.Marshalling),
             argument.Name);
     }
 
