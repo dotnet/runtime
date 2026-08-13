@@ -1755,6 +1755,95 @@ namespace SelfValidation
 }
 namespace SelfValidation
 {
+    partial class AsyncSelfValidatingValidator
+    {
+        /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>Validation result.</returns>
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+        #if !NET
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+             Justification = "The created ValidationContext object is used in a way that never call reflection")]
+        #endif
+        public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.AsyncSelfValidatingModel options)
+        {
+            global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "AsyncSelfValidatingModel", null, null);
+            #else
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
+
+            context.MemberName = "Name";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Name" : $"{name}.Name";
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Name, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            context.MemberName = "Validate";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Validate" : $"{name}.Validate";
+            (builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));
+
+            return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
+        }
+
+        /// <summary>
+        /// Validates a specific named options instance asynchronously (or all when <paramref name="name"/> is <see langword="null" />).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <param name="cancellationToken">The <see cref="global::System.Threading.CancellationToken"/> to monitor for cancellation requests.</param>
+        /// <returns>A task representing the asynchronous validation operation, containing the validation result.</returns>
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+        #if !NET
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+             Justification = "The created ValidationContext object is used in a way that never call reflection")]
+        #endif
+        public async global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, global::SelfValidation.AsyncSelfValidatingModel options, global::System.Threading.CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "AsyncSelfValidatingModel", null, null);
+            #else
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
+
+            context.MemberName = "Name";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Name" : $"{name}.Name";
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!await global::System.ComponentModel.DataAnnotations.Validator.TryValidateValueAsync(options.Name, context, validationResults, validationAttributes, cancellationToken).ConfigureAwait(false))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            context.MemberName = "ValidateAsync";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "ValidateAsync" : $"{name}.ValidateAsync";
+            var asyncSelfValidationResults = ((global::System.ComponentModel.DataAnnotations.IAsyncValidatableObject)options).ValidateAsync(context, cancellationToken);
+            if (asyncSelfValidationResults is not null)
+            {
+                await foreach (var asyncValidationResult in global::System.Threading.Tasks.TaskAsyncEnumerableExtensions.ConfigureAwait(asyncSelfValidationResults, false))
+                {
+                    (builder ??= new()).AddResult(asyncValidationResult);
+                }
+            }
+
+            return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
+        }
+    }
+}
+namespace SelfValidation
+{
     partial struct FirstValidator
     {
         /// <summary>

@@ -101,18 +101,20 @@ namespace Microsoft.Extensions.Options.Generators
                                 _ = _visitedModelTypes.Add(modelType.WithNullableAnnotation(NullableAnnotation.None));
                             }
 
-                            if (AlreadyImplementsValidateMethod(validatorType, modelType))
-                            {
-                                // this type already implements a validation function, we can't auto-generate a new one
-                                Diag(DiagDescriptors.AlreadyImplementsValidateMethod, syntax.GetLocation(), validatorType.Name);
-                                continue;
-                            }
-
                             // Decide, per model, whether we additionally emit a ValidateAsync method. We do so when the
                             // validator type explicitly implements IAsyncValidateOptions<T> for this specific model. A
                             // multi-model validator therefore only gets async validation for the models it opted into.
                             // The async requirement is propagated to any synthesized child validators reached from this model.
                             bool wantsAsync = GetAsyncValidateOptionsInterfaceFor(validatorType, modelType) is not null;
+                            bool generateValidate = true;
+
+                            if (AlreadyImplementsValidateMethod(validatorType, modelType))
+                            {
+                                // A user-supplied Validate conflicts with generation. For an async validator, continue
+                                // parsing so ValidateAsync can still be emitted and the compiler doesn't also report CS0535.
+                                Diag(DiagDescriptors.AlreadyImplementsValidateMethod, syntax.GetLocation(), validatorType.Name);
+                                generateValidate = false;
+                            }
 
                             if (wantsAsync && AlreadyImplementsValidateAsyncMethod(validatorType, modelType))
                             {
@@ -127,6 +129,10 @@ namespace Microsoft.Extensions.Options.Generators
                             }
 
                             bool generateAsync = wantsAsync;
+                            if (!generateValidate && !generateAsync)
+                            {
+                                continue;
+                            }
 
                             Location? modelTypeLocation = modelType.GetLocation();
                             Location lowerLocationInCompilation = modelTypeLocation is not null && modelTypeLocation.SourceTree is not null && _compilation.ContainsSyntaxTree(modelTypeLocation.SourceTree)
@@ -148,6 +154,7 @@ namespace Microsoft.Extensions.Options.Generators
                                 modelType.Name,
                                 selfValidate,
                                 selfValidateAsync,
+                                generateValidate,
                                 generateAsync,
                                 membersToValidate));
                         }
@@ -256,7 +263,7 @@ namespace Microsoft.Extensions.Options.Generators
         /// </summary>
         private bool AlreadyImplementsValidateMethod(INamespaceOrTypeSymbol validatorType, ISymbol modelType)
             => validatorType
-                .GetMembers("Validate")
+                .GetMembers()
                 .OfType<IMethodSymbol>()
                 .Any(m => MatchesGeneratedValidateSignature(m, "Validate", NumValidationMethodArgs, modelType, requireCancellationToken: false));
 
@@ -832,6 +839,7 @@ namespace Microsoft.Extensions.Options.Generators
                 mt.Name,
                 selfValidate,
                 selfValidateAsync,
+                GenerateValidateMethod: true,
                 isAsync,
                 membersToValidate);
 

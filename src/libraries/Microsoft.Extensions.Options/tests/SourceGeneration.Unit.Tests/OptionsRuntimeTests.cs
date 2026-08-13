@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -9,6 +8,8 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Gen.OptionsValidation.Unit.Test
@@ -577,18 +578,61 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
-        public async Task TestGeneratedValidateAsyncPropagatesCancellationToken()
+        public async Task TestExplicitTypeTransitiveAndEnumeratedSyncValidatorsUseSyncFallback()
+        {
+            var options = new ExplicitSyncRootOptions
+            {
+                Nested = new AsyncNestedOptions(),
+                Items = [new AsyncNestedOptions()]
+            };
+
+            ValidateOptionsResult result = await new ExplicitSyncRootOptionsValidator().ValidateAsync("Root", options, default);
+
+            Assert.True(result.Failed);
+            Assert.Equal(2, result.Failures.Count(f => f.Contains("Explicit sync validation failed.")));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task TestGeneratedValidateAsyncForwardsCancellationTokenToChildValidatorsAndSelfValidation()
         {
             using var cts = new CancellationTokenSource();
-            cts.Cancel();
+            var nested = new CancellationObservingChildOptions();
+            var item = new CancellationObservingChildOptions();
+            var options = new CancellationObservingOptions
+            {
+                Name = "valid",
+                Nested = nested,
+                Items = [item]
+            };
 
-            var validator = new CancellationObservingOptionsValidator();
+            ValidateOptionsResult result = await new CancellationObservingOptionsValidator().ValidateAsync("opt", options, cts.Token);
 
-            // The generated ValidateAsync threads its CancellationToken into the validation sinks; with an already
-            // canceled token, validation observes it and throws. A future emitter change that dropped the token would
-            // make this complete normally.
-            await Assert.ThrowsAnyAsync<OperationCanceledException>(
-                () => validator.ValidateAsync("opt", new CancellationObservingOptions { Name = "valid" }, cts.Token));
+            Assert.True(result.Succeeded);
+            Assert.Equal(cts.Token, nested.ValidatorCancellationToken);
+            Assert.Equal(cts.Token, item.ValidatorCancellationToken);
+            Assert.Equal(cts.Token, options.SelfValidationCancellationToken);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task TestGeneratedValidateAsyncForwardsCancellationToAsyncValidationAttribute()
+        {
+            using var cts = new CancellationTokenSource();
+            var options = new AsyncAttributeCancellationOptions { Name = "valid" };
+            Task<ValidateOptionsResult> validationTask =
+                new AsyncAttributeCancellationOptionsValidator().ValidateAsync("opt", options, cts.Token);
+
+            try
+            {
+                await options.AttributeStarted.Task.WaitAsync(TimeSpan.FromSeconds(30));
+                cts.Cancel();
+
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(
+                    () => validationTask.WaitAsync(TimeSpan.FromSeconds(30)));
+            }
+            finally
+            {
+                options.AttributeRelease.TrySetResult(true);
+            }
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
@@ -716,6 +760,31 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
             Assert.True(generatedSelf.Failed);
             Assert.Equal(selfResults.Count, generatedSelf.Failures.Count());
             Assert.Contains(generatedSelf.Failures, f => f.Contains("Name is reserved."));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+        public async Task TestGeneratedValidatorRunsThroughAsyncStartupValidation()
+        {
+            var services = new ServiceCollection();
+            services.AddOptions<AsyncParityOptions>()
+                .Configure(options =>
+                {
+                    options.Name = "reserved";
+                    options.Age = 30;
+                })
+                .Validate<AsyncParityOptionsValidator>()
+                .ValidateOnStart();
+
+            using ServiceProvider serviceProvider = services.BuildServiceProvider();
+            IValidateOptions<AsyncParityOptions> registered =
+                Assert.Single(serviceProvider.GetServices<IValidateOptions<AsyncParityOptions>>());
+
+            Assert.IsAssignableFrom<IAsyncValidateOptions<AsyncParityOptions>>(registered);
+
+            OptionsValidationException error = await Assert.ThrowsAsync<OptionsValidationException>(
+                () => serviceProvider.GetRequiredService<IAsyncStartupValidator>().ValidateAsync());
+
+            Assert.Contains(error.Failures, failure => failure.Contains("Name is reserved."));
         }
 #endif // NET
     }
@@ -1055,18 +1124,108 @@ namespace Microsoft.Gen.OptionsValidation.Unit.Test
     {
     }
 
-    // Flat model whose async self-validation observes the cancellation token, used to prove the generated ValidateAsync
-    // threads its CancellationToken into the validation sinks (TryValidateValueAsync / IAsyncValidatableObject.ValidateAsync).
+    public class ExplicitSyncRootOptions
+    {
+        [ValidateObjectMembers(typeof(ExplicitSyncNestedValidator))]
+        public AsyncNestedOptions? Nested { get; set; }
+
+        [ValidateEnumeratedItems(typeof(ExplicitSyncNestedValidator))]
+        public List<AsyncNestedOptions>? Items { get; set; }
+    }
+
+    public sealed class ExplicitSyncNestedValidator : IValidateOptions<AsyncNestedOptions>
+    {
+        public ValidateOptionsResult Validate(string? name, AsyncNestedOptions options)
+            => ValidateOptionsResult.Fail("Explicit sync validation failed.");
+    }
+
+    [OptionsValidator]
+    public partial class ExplicitSyncRootOptionsValidator : IAsyncValidateOptions<ExplicitSyncRootOptions>
+    {
+    }
+
+    [AttributeUsage(AttributeTargets.Property)]
+    public sealed class CancellationObservingAttribute : AsyncValidationAttribute
+    {
+        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+            => ValidationResult.Success;
+
+        protected override Task<ValidationResult?> IsValidAsync(
+            object? value,
+            ValidationContext validationContext,
+            CancellationToken cancellationToken)
+        {
+            AsyncAttributeCancellationOptions options =
+                (AsyncAttributeCancellationOptions)validationContext.ObjectInstance;
+            options.AttributeStarted.TrySetResult(true);
+            return WaitForReleaseAsync(options, cancellationToken);
+        }
+
+        private static async Task<ValidationResult?> WaitForReleaseAsync(
+            AsyncAttributeCancellationOptions options,
+            CancellationToken cancellationToken)
+        {
+            await options.AttributeRelease.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return ValidationResult.Success;
+        }
+    }
+
+    public sealed class AsyncAttributeCancellationOptions
+    {
+        [CancellationObserving]
+        public string? Name { get; set; }
+
+        public TaskCompletionSource<bool> AttributeStarted { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource<bool> AttributeRelease { get; } =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    [OptionsValidator]
+    public partial class AsyncAttributeCancellationOptionsValidator :
+        IAsyncValidateOptions<AsyncAttributeCancellationOptions>
+    {
+    }
+
+    public sealed class CancellationObservingChildOptions
+    {
+        public CancellationToken ValidatorCancellationToken { get; set; }
+    }
+
+    public sealed class CancellationObservingChildValidator : IAsyncValidateOptions<CancellationObservingChildOptions>
+    {
+        public ValidateOptionsResult Validate(string? name, CancellationObservingChildOptions options)
+            => ValidateOptionsResult.Success;
+
+        public Task<ValidateOptionsResult> ValidateAsync(
+            string? name,
+            CancellationObservingChildOptions options,
+            CancellationToken cancellationToken = default)
+        {
+            options.ValidatorCancellationToken = cancellationToken;
+            return Task.FromResult(ValidateOptionsResult.Success);
+        }
+    }
+
     public class CancellationObservingOptions : IAsyncValidatableObject
     {
         [Required]
         public string? Name { get; set; }
 
+        [ValidateObjectMembers(typeof(CancellationObservingChildValidator))]
+        public CancellationObservingChildOptions? Nested { get; set; }
+
+        [ValidateEnumeratedItems(typeof(CancellationObservingChildValidator))]
+        public List<CancellationObservingChildOptions>? Items { get; set; }
+
+        public CancellationToken SelfValidationCancellationToken { get; set; }
+
         public async IAsyncEnumerable<ValidationResult> ValidateAsync(
             ValidationContext validationContext,
             [global::System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            cancellationToken.ThrowIfCancellationRequested();
+            SelfValidationCancellationToken = cancellationToken;
             await Task.Yield();
             yield break;
         }

@@ -129,11 +129,18 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 var modelToValidate = vt.ModelsToValidate[i];
 
-                GenModelValidationMethod(modelToValidate, vt.IsSynthetic, ref staticValidationAttributesDict, ref staticValidatorsDict);
+                if (modelToValidate.GenerateValidateMethod)
+                {
+                    GenModelValidationMethod(modelToValidate, vt.IsSynthetic, ref staticValidationAttributesDict, ref staticValidatorsDict);
+                }
 
                 if (modelToValidate.GenerateAsyncValidateMethod && _symbolHolder.AsyncValidateOptionsSymbol is not null)
                 {
-                    OutLn();
+                    if (modelToValidate.GenerateValidateMethod)
+                    {
+                        OutLn();
+                    }
+
                     GenAsyncModelValidationMethod(modelToValidate, vt.IsSynthetic, ref staticValidationAttributesDict, ref staticValidatorsDict);
                 }
             }

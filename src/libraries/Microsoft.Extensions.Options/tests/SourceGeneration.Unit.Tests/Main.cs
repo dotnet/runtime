@@ -513,7 +513,7 @@ public class EmitterTests
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
-    public async Task ExplicitValidateInterfaceImplementationDoesNotSuppressGeneration()
+    public async Task ExplicitValidateInterfaceImplementationReportsDiagnostic()
     {
         var (diagnostics, generatedSources) = await RunGenerator(@"
             public class FirstModel
@@ -530,11 +530,136 @@ public class EmitterTests
             }
         ");
 
-        Assert.Empty(diagnostics);
-        _ = Assert.Single(generatedSources);
-        Assert.Contains(
+        Diagnostic diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostic.Id);
+        Assert.DoesNotContain(
             "public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::Test.FirstModel options)",
-            generatedSources[0].SourceText.ToString());
+            Assert.Single(generatedSources).SourceText.ToString());
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task HandWrittenValidateDoesNotPreventAsyncMethodEmission()
+    {
+        string source = """
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            namespace Test
+            {
+                public class FirstModel
+                {
+                    [Required]
+                    public string One { get; set; } = string.Empty;
+                }
+
+                [OptionsValidator]
+                public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+                {
+                    public ValidateOptionsResult Validate(string? name, FirstModel options)
+                        => ValidateOptionsResult.Success;
+                }
+            }
+            """;
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source);
+
+        Diagnostic diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostic.Id);
+
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.Contains("ValidateAsync(string? name, global::Test.FirstModel options,", generatedSource);
+
+        CSharpCompilation compilation = CreateCompilationForOptionsSource(
+            Path.GetRandomFileName(),
+            source + Environment.NewLine + generatedSource);
+
+        using MemoryStream output = new();
+        EmitResult emitResult = compilation.Emit(output);
+        Assert.True(emitResult.Success, string.Join(Environment.NewLine, emitResult.Diagnostics));
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task ExplicitHandWrittenValidateDoesNotPreventAsyncMethodEmission()
+    {
+        string source = """
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            namespace Test
+            {
+                public class FirstModel
+                {
+                    [Required]
+                    public string One { get; set; } = string.Empty;
+                }
+
+                [OptionsValidator]
+                public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+                {
+                    ValidateOptionsResult IValidateOptions<FirstModel>.Validate(string? name, FirstModel options)
+                        => ValidateOptionsResult.Success;
+                }
+            }
+            """;
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source);
+
+        Diagnostic diagnostic = Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostic.Id);
+
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.DoesNotContain(
+            "Validate(string? name, global::Test.FirstModel options)",
+            generatedSource);
+        Assert.Contains(
+            "ValidateAsync(string? name, global::Test.FirstModel options,",
+            generatedSource);
+
+        CSharpCompilation compilation = CreateCompilationForOptionsSource(
+            Path.GetRandomFileName(),
+            source + Environment.NewLine + generatedSource);
+
+        using MemoryStream output = new();
+        EmitResult emitResult = compilation.Emit(output);
+        Assert.True(emitResult.Success, string.Join(Environment.NewLine, emitResult.Diagnostics));
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task HandWrittenValidateAndValidateAsyncSuppressGeneration()
+    {
+        var (diagnostics, generatedSources) = await RunGenerator("""
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+            {
+                public ValidateOptionsResult Validate(string? name, FirstModel options)
+                    => ValidateOptionsResult.Success;
+
+                public System.Threading.Tasks.Task<ValidateOptionsResult> ValidateAsync(
+                    string? name,
+                    FirstModel options,
+                    System.Threading.CancellationToken cancellationToken = default)
+                    => System.Threading.Tasks.Task.FromResult(ValidateOptionsResult.Success);
+            }
+            """);
+
+        Assert.Collection(
+            diagnostics,
+            diagnostic => Assert.Equal(DiagDescriptors.AlreadyImplementsValidateMethod.Id, diagnostic.Id),
+            diagnostic => Assert.Equal(DiagDescriptors.AlreadyImplementsValidateAsyncMethod.Id, diagnostic.Id));
+
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.DoesNotContain(
+            "Validate(string? name, global::Test.FirstModel options)",
+            generatedSource);
+        Assert.DoesNotContain(
+            "ValidateAsync(string? name, global::Test.FirstModel options,",
+            generatedSource);
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
@@ -579,6 +704,66 @@ public class EmitterTests
 
         _ = Assert.Single(diagnostics);
         Assert.Equal(DiagDescriptors.AlreadyImplementsValidateAsyncMethod.Id, diagnostics[0].Id);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task ValidateAsyncOverloadWithWrongThirdParameterDoesNotSuppressGeneration()
+    {
+        var (diagnostics, generatedSources) = await RunGenerator("""
+            public class FirstModel
+            {
+                [Required]
+                public string One { get; set; } = string.Empty;
+            }
+
+            [OptionsValidator]
+            public partial class FirstValidator : IAsyncValidateOptions<FirstModel>
+            {
+                public System.Threading.Tasks.Task<ValidateOptionsResult> ValidateAsync(
+                    string? name,
+                    FirstModel options,
+                    object state)
+                    => System.Threading.Tasks.Task.FromResult(ValidateOptionsResult.Success);
+            }
+            """);
+
+        Assert.Empty(diagnostics);
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.Contains(
+            "global::System.Threading.CancellationToken cancellationToken = default",
+            generatedSource);
+    }
+
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
+    public async Task MultiModelValidatorEmitsAsyncOnlyForOptedInModel()
+    {
+        var (diagnostics, generatedSources) = await RunGenerator("""
+            public class AsyncModel
+            {
+                [Required]
+                public string? Value { get; set; }
+            }
+
+            public class SyncModel
+            {
+                [Required]
+                public string? Value { get; set; }
+            }
+
+            [OptionsValidator]
+            public partial class MultiValidator :
+                IAsyncValidateOptions<AsyncModel>,
+                IValidateOptions<SyncModel>
+            {
+            }
+            """);
+
+        Assert.Empty(diagnostics);
+        string generatedSource = Assert.Single(generatedSources).SourceText.ToString();
+        Assert.Contains("Validate(string? name, global::Test.AsyncModel options)", generatedSource);
+        Assert.Contains("ValidateAsync(string? name, global::Test.AsyncModel options,", generatedSource);
+        Assert.Contains("Validate(string? name, global::Test.SyncModel options)", generatedSource);
+        Assert.DoesNotContain("ValidateAsync(string? name, global::Test.SyncModel options,", generatedSource);
     }
 
     [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.HasAssemblyFiles))]
