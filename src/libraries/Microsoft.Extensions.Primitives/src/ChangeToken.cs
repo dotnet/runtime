@@ -24,14 +24,8 @@ namespace Microsoft.Extensions.Primitives
         /// </remarks>
         public static IDisposable OnChange(Func<IChangeToken?> changeTokenProducer, Action changeTokenConsumer)
         {
-            if (changeTokenProducer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenProducer);
-            }
-            if (changeTokenConsumer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenConsumer);
-            }
+            ArgumentNullException.ThrowIfNull(changeTokenProducer);
+            ArgumentNullException.ThrowIfNull(changeTokenConsumer);
 
             return new SyncChangeTokenRegistration<Action>(changeTokenProducer, static callback => callback(), changeTokenConsumer);
         }
@@ -49,14 +43,8 @@ namespace Microsoft.Extensions.Primitives
         /// </remarks>
         public static IDisposable OnChange<TState>(Func<IChangeToken?> changeTokenProducer, Action<TState> changeTokenConsumer, TState state)
         {
-            if (changeTokenProducer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenProducer);
-            }
-            if (changeTokenConsumer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenConsumer);
-            }
+            ArgumentNullException.ThrowIfNull(changeTokenProducer);
+            ArgumentNullException.ThrowIfNull(changeTokenConsumer);
 
             return new SyncChangeTokenRegistration<TState>(changeTokenProducer, changeTokenConsumer, state);
         }
@@ -74,14 +62,8 @@ namespace Microsoft.Extensions.Primitives
         /// </remarks>
         public static IDisposable OnChange(Func<IChangeToken?> changeTokenProducer, Func<Task> changeTokenConsumer)
         {
-            if (changeTokenProducer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenProducer);
-            }
-            if (changeTokenConsumer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenConsumer);
-            }
+            ArgumentNullException.ThrowIfNull(changeTokenProducer);
+            ArgumentNullException.ThrowIfNull(changeTokenConsumer);
 
             return new AsyncChangeTokenRegistration<Func<Task>>(changeTokenProducer, static callback => callback(), changeTokenConsumer);
         }
@@ -100,14 +82,8 @@ namespace Microsoft.Extensions.Primitives
         /// </remarks>
         public static IDisposable OnChange<TState>(Func<IChangeToken?> changeTokenProducer, Func<TState, Task> changeTokenConsumer, TState state)
         {
-            if (changeTokenProducer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenProducer);
-            }
-            if (changeTokenConsumer is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.changeTokenConsumer);
-            }
+            ArgumentNullException.ThrowIfNull(changeTokenProducer);
+            ArgumentNullException.ThrowIfNull(changeTokenConsumer);
 
             return new AsyncChangeTokenRegistration<TState>(changeTokenProducer, changeTokenConsumer, state);
         }
@@ -177,7 +153,7 @@ namespace Microsoft.Extensions.Primitives
                 else
                 {
                     // Sets can never overlap with other SetDisposable calls so we should never get into this situation
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_ConcurrentDisposableSet);
+                    throw new InvalidOperationException(SR.InvalidOperation_ConcurrentDisposableSet);
                 }
             }
 
@@ -267,7 +243,7 @@ namespace Microsoft.Extensions.Primitives
                 if (consumerTask is null)
                 {
                     RegisterChangeTokenCallback(token);
-                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullConsumerTask);
+                    throw new InvalidOperationException(SR.InvalidOperation_NullConsumerTask);
                 }
 
                 if (consumerTask.Status == TaskStatus.RanToCompletion)

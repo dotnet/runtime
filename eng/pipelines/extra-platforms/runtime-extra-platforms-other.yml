@@ -35,6 +35,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Libraries_Release_CoreCLR
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
         or(
@@ -59,6 +60,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NET481_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             extraHelixArguments: /p:BuildTargetFramework=net481
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       condition: >-
@@ -103,6 +105,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             condition: >-
               or(
               eq(variables['librariesContainsChange'], true),
@@ -146,6 +149,7 @@ jobs:
             creator: dotnet-bot
             llvmAotStepContainer: linux_x64
             testRunNamePrefixSuffix: Mono_Release
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -184,6 +188,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_Release
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
@@ -221,5 +226,6 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_Release
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

@@ -8,5 +8,5 @@ internal sealed partial class RangeSectionMap : IData<RangeSectionMap>
 {
     /// <summary>Pointer to first element.</summary>
     [FieldAddress]
-    public TargetPointer TopLevelData { get; }
+    public partial TargetPointer TopLevelData { get; }
 }
