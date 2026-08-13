@@ -333,89 +333,23 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitAsmAttr([NotNull] CILParser.AsmAttrContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_none"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_none([NotNull] CILParser.Instr_noneContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_var"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_var([NotNull] CILParser.Instr_varContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_i"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_i([NotNull] CILParser.Instr_iContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_i8"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_i8([NotNull] CILParser.Instr_i8Context context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_r"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_r([NotNull] CILParser.Instr_rContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_brtarget"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_brtarget([NotNull] CILParser.Instr_brtargetContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_method"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_method([NotNull] CILParser.Instr_methodContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_field"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_field([NotNull] CILParser.Instr_fieldContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_type"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_type([NotNull] CILParser.Instr_typeContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_string"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_string([NotNull] CILParser.Instr_stringContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_sig"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_sig([NotNull] CILParser.Instr_sigContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_tok"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_tok([NotNull] CILParser.Instr_tokContext context);
-	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.instr_switch"/>.
-	/// </summary>
-	/// <param name="context">The parse tree.</param>
-	/// <return>The visitor result.</return>
-	Result VisitInstr_switch([NotNull] CILParser.Instr_switchContext context);
-	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.instr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitInstr([NotNull] CILParser.InstrContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.simpleInstr"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitSimpleInstr([NotNull] CILParser.SimpleInstrContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.instructionIsland"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitInstructionIsland([NotNull] CILParser.InstructionIslandContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.labels"/>.
 	/// </summary>
@@ -927,6 +861,12 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitMethodDecl([NotNull] CILParser.MethodDeclContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.methodDeclIsland"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitMethodDeclIsland([NotNull] CILParser.MethodDeclIslandContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.labelDecl"/>.
 	/// </summary>
