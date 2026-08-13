@@ -447,16 +447,29 @@ void InitializeCurrentProcessCpuCount()
     uint32_t count = 0;
 
     // If the configuration value has been set, it takes precedence. Otherwise, take into account
-    // process affinity and CPU quota limit.
+    // process affinity and CPU quota limit, except for Android (explained below).
 
     const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
     uint64_t configValue;
+    int cpuPresentCount;
 
     if (g_pRhConfig->ReadConfigValue("PROCESSOR_COUNT", &configValue, true /* decimal */) &&
         0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
         count = configValue;
     }
+#ifdef HOST_ANDROID
+    // Android tries really hard to save power by powering off CPUs on SMP phones which
+    // means the normal way to query cpu count can underestimate the number of available CPUs.
+    else if ((cpuPresentCount = minipal_get_cpu_present_count()) > 0)
+    {
+        count = cpuPresentCount;
+
+        uint32_t cpuLimit;
+        if (GetCpuLimit(&cpuLimit) && cpuLimit < count)
+            count = cpuLimit;
+    }
+#endif
     else
     {
 #if HAVE_SCHED_GETAFFINITY

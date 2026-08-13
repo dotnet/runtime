@@ -3,6 +3,8 @@
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <!-- CrossGen2 reserves 6 GiB for regions which exceeds the 64 MiB hard limit - https://github.com/dotnet/runtime/issues/132062 -->
+    <CrossGenTest>false</CrossGenTest>
 
     <CLRTestBatchPreCommands><![CDATA[
       $(CLRTestBatchPreCommands)

@@ -2336,18 +2336,6 @@ void AppDomain::LoadAssembly(Assembly *pAssembly,
 
 thread_local LoadLevelLimiter* LoadLevelLimiter::t_currentLoadLevelLimiter = nullptr;
 
-namespace
-{
-    FileLoadLevel GetCurrentFileLoadLevel()
-    {
-        WRAPPER_NO_CONTRACT;
-        if (LoadLevelLimiter::GetCurrent() == NULL)
-            return FILE_ACTIVE;
-        else
-            return (FileLoadLevel)(LoadLevelLimiter::GetCurrent()->GetLoadLevel()-1);
-    }
-}
-
 Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
                                   PEAssembly * pPEAssembly,
                                   FileLoadLevel targetLevel)
@@ -2504,9 +2492,6 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
         GetAppDomain()->AddAssemblyToCache(pIdentity, result);
     }
 
-    _ASSERTE(result->GetLoadLevel() >= GetCurrentFileLoadLevel()
-        || result->GetLoadLevel() >= targetLevel);
-    _ASSERTE(result->CheckNoError(targetLevel));
     return result;
 } // AppDomain::LoadAssembly
 
@@ -2532,9 +2517,6 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
 
         pAssembly->ThrowIfError(targetLevel);
 
-        _ASSERTE(pAssembly->CheckNoError(targetLevel));
-        _ASSERTE(pAssembly->GetLoadLevel() >= GetCurrentFileLoadLevel()
-            || pAssembly->GetLoadLevel() >= targetLevel);
         return pAssembly;
     }
 
@@ -2626,9 +2608,6 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     // specify the minimum load level acceptable and throw if not reached.)
 
     pAssembly->RequireLoadLevel((FileLoadLevel)(immediateTargetLevel-1));
-    _ASSERTE(pAssembly->GetLoadLevel() >= GetCurrentFileLoadLevel()
-        || pAssembly->GetLoadLevel() >= targetLevel);
-    _ASSERTE(pAssembly->CheckNoError(targetLevel));
     return pAssembly;
 }
 

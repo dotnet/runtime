@@ -2,6 +2,8 @@ trigger: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -10,6 +12,11 @@ extends:
     stages:
     - stage: Build
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -66,6 +73,7 @@ extends:
           - windows_x64
           - windows_arm64
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testGroup: innerloop
             readyToRun: true
             compositeBuildMode: true
@@ -83,6 +91,7 @@ extends:
           - linux_x64
           - windows_x64
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testGroup: innerloop
             readyToRun: true
             compositeBuildMode: true

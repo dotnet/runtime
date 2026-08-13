@@ -3512,8 +3512,10 @@ void Module::RunEagerFixups()
     COUNT_T nSections;
     PTR_READYTORUN_IMPORT_SECTION pSections = GetImportSections(&nSections);
 
+#ifndef TARGET_WASM
     if (nSections == 0)
         return;
+#endif // !TARGET_WASM
 
 #ifdef _DEBUG
     // Loading types during eager fixup is not a tested scenario. Make bugs out of any attempts to do so in a
@@ -3548,6 +3550,12 @@ void Module::RunEagerFixups()
         // For composite images, multiple modules may request initializing eager fixups
         // from multiple threads so we need to lock their resolution.
         CrstHolder compositeEagerFixups(compositeNativeImage->EagerFixupsLock());
+#ifdef TARGET_WASM
+        GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+        if (nSections == 0)
+            return;
+#endif // TARGET_WASM
+
         if (compositeNativeImage->EagerFixupsHaveRun())
         {
             if (compositeNativeImage->ReadyToRunCodeDisabled())
@@ -3562,6 +3570,12 @@ void Module::RunEagerFixups()
     else
     {
         // Per-module eager fixups don't need locking
+#ifdef TARGET_WASM
+        GetReadyToRunInfo()->RegisterVirtualIPRange(this);
+        if (nSections == 0)
+            return;
+#endif // TARGET_WASM
+
         RunEagerFixupsUnlocked();
     }
 }
@@ -3607,10 +3621,7 @@ void Module::RunEagerFixupsUnlocked()
         }
     }
 
-#ifdef TARGET_WASM
-    // For WASM, register virtual IP ranges instead of real code address ranges.
-    GetReadyToRunInfo()->RegisterVirtualIPRange(this);
-#else
+#ifndef TARGET_WASM
     TADDR base = dac_cast<TADDR>(pNativeImage->GetBase());
 
     ExecutionManager::AddCodeRange(
@@ -3618,7 +3629,7 @@ void Module::RunEagerFixupsUnlocked()
         ExecutionManager::GetReadyToRunJitManager(),
         RangeSection::RANGE_SECTION_NONE,
         this /* pHeapListOrZapModule */);
-#endif // TARGET_WASM
+#endif // !TARGET_WASM
 }
 #endif // !DACCESS_COMPILE
 
