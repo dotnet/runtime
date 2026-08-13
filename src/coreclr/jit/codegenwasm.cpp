@@ -116,28 +116,6 @@ void CodeGen::genBeginFnProlog()
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
     }
-
-    genInitImageBaseLocal(func);
-}
-
-//------------------------------------------------------------------------
-// genInitImageBaseLocal: initialize the wasm local caching the image base, if this
-//   function has one.
-//
-// Arguments:
-//   func - the function or funclet whose prolog is being generated
-//
-// Notes:
-//   Emitted in the prolog, which dominates every use. The imageBase global is immutable,
-//   so the cached value never needs refreshing.
-//
-void CodeGen::genInitImageBaseLocal(FuncInfoDsc* func)
-{
-    if (func->funWasmImageBaseLocalIndex != UINT_MAX)
-    {
-        GetEmitter()->emitImageBaseGlobal();
-        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, func->funWasmImageBaseLocalIndex);
-    }
 }
 
 //------------------------------------------------------------------------
@@ -468,8 +446,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
     }
-
-    genInitImageBaseLocal(func);
 
     // All the funclet params are used from their home registers, so nothing
     // needs homing here.
@@ -1522,10 +1498,9 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 //
 void CodeGen::genFloatToIntCast(GenTree* tree)
 {
-    if (tree->gtOverflow())
-    {
-        NYI_WASM("Overflow checks");
-    }
+    // Overflow checks for floating->integral should be handled on import
+    // by converting to helper calls like CORINFO_HELP_DBL2*_OVF (see fgCastRequiresHelper).
+    assert(!tree->gtOverflow());
 
     var_types   toType     = tree->TypeGet();
     var_types   fromType   = tree->AsCast()->CastOp()->TypeGet();
@@ -3092,12 +3067,12 @@ void CodeGen::genCall(GenTreeCall* call)
 
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
-        genConsumeReg(arg.GetEarlyNode());
+        genConsumeRegs(arg.GetEarlyNode());
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        genConsumeReg(arg.GetLateNode());
+        genConsumeRegs(arg.GetLateNode());
     }
 
     if (call->NeedsNullCheck())
@@ -3147,7 +3122,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else if (callRetType == TYP_STRUCT)
     {
-        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
+        CorInfoWasmType retWasmType = m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd);
+        // A struct wider than the wasm value it lowers to is returned through a hidden buffer,
+        // so it must have been handled by the retbuf branch above.
+        assert(retWasmType != CORINFO_WASM_TYPE_VOID);
+        assert(m_compiler->info.compCompHnd->getClassSize(call->gtRetClsHnd) <=
+               genTypeSize(WasmClassifier::ToJitType(retWasmType)));
+        typeStack.Push(retWasmType);
     }
     else
     {
@@ -4068,11 +4049,6 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 }
 #endif
 
-void CodeGen::genSpillVar(GenTree* tree)
-{
-    NYI_WASM("Put all spillng to memory under '#if HAS_FIXED_REGISTER_SET'");
-}
-
 //------------------------------------------------------------------------
 // genLoadLocalIntoReg: set the register to "load(local on stack)".
 //
@@ -4523,11 +4499,6 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
     NYI_WASM("genCallerSPtoInitialSPdelta");
     return 0;
-}
-
-void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
-{
-    NYI_WASM("Move genUpdateVarReg from codegenlinear.cpp to codegencommon.cpp shared code");
 }
 
 void RegSet::verifyRegUsed(regNumber reg)

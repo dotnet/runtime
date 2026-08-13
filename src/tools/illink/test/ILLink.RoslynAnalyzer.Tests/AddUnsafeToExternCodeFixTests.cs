@@ -26,7 +26,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class C
                 {
-                    public unsafe extern void M();
+                    public extern unsafe void M();
                 }
                 """
             },
@@ -40,7 +40,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class C
                 {
-                    public unsafe extern int P { get; set; }
+                    public extern unsafe int P { get; set; }
                 }
                 """
             },
@@ -54,7 +54,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class C
                 {
-                    public unsafe extern int this[int index] { get; set; }
+                    public extern unsafe int this[int index] { get; set; }
                 }
                 """
             },
@@ -72,7 +72,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
                 class C
                 {
-                    public static unsafe extern event Action E;
+                    public static extern unsafe event Action E;
                 }
                 """
             },
@@ -86,7 +86,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class C
                 {
-                    public unsafe extern C(int value);
+                    public extern unsafe C(int value);
                 }
                 """
             },
@@ -100,7 +100,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class C
                 {
-                    public static unsafe extern C operator +(C left, C right);
+                    public static extern unsafe C operator +(C left, C right);
                 }
                 """
             },
@@ -114,7 +114,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class C
                 {
-                    public static unsafe extern explicit operator int(C value);
+                    public static extern unsafe explicit operator int(C value);
                 }
                 """
             },
@@ -128,7 +128,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class C
                 {
-                    unsafe extern ~C();
+                    extern unsafe ~C();
                 }
                 """
             },
@@ -147,7 +147,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 {
                     void M()
                     {
-                        static unsafe extern void Local();
+                        static extern unsafe void Local();
                     }
                 }
                 """
@@ -162,7 +162,23 @@ namespace ILLink.RoslynAnalyzer.Tests
                 """
                 class C
                 {
-                    required public unsafe extern int P { get; set; }
+                    required public extern unsafe int P { get; set; }
+                }
+                """
+            },
+            {
+                """
+                class C
+                {
+                    /// <safety>Audited interop boundary.</safety>
+                    {|CS9389:extern|} void M();
+                }
+                """,
+                """
+                class C
+                {
+                    /// <safety>Audited interop boundary.</safety>
+                    extern safe void M();
                 }
                 """
             },
@@ -178,7 +194,7 @@ namespace ILLink.RoslynAnalyzer.Tests
                 class C
                 {
                     /// <summary>Invokes native code.</summary>
-                    unsafe extern void M();
+                    extern unsafe void M();
                 }
                 """
             },

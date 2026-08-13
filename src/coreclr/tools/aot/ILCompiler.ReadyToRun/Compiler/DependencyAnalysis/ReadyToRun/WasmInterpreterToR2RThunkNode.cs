@@ -222,7 +222,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     continue;
                 }
 
-                if (isIndirectStructArg[i])
+                if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                {
+                    // Passed by value across several wasm parameters — load each slot.
+                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
+                    for (int slot = 0; slot < slotCount; slot++)
+                    {
+                        expressions.Add(Local.Get(LocalPArgs));
+                        ulong slotOffset = (ulong)(interpOffsets[i] + (slot * slotSize));
+                        expressions.Add(slotType == WasmValueType.I64 ? I64.Load(slotOffset) : V128.Load(slotOffset));
+                        targetParamIndex++;
+                    }
+                }
+                else if (isIndirectStructArg[i])
                 {
                     // Byreference struct — pass a pointer into the incoming pArgs buffer
                     expressions.Add(Local.Get(LocalPArgs));
