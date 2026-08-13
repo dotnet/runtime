@@ -316,10 +316,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             // For struct returns via retbuf the R2R function has already written the struct into
             // pRet, and there is nothing more to do. In particular the thunk must not zero-pad
             // pRet out to an aligned size: pRet is owned by the caller and is only guaranteed to
-            // be as large as the struct. It is the interpreter's return slot only when the
-            // interpreter itself made the call; it is the compiled caller's return buffer when we
-            // got here through WasmR2RToInterpreterThunkNode, and CallDescrData::pRetBuffArg when
-            // we got here through CallDescrWorkerInternal.
+            // be as large as the struct.
 
             // Restore the stack pointer global
             expressions.Add(Local.Get(localSavedSp));
