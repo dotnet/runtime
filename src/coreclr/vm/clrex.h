@@ -668,8 +668,7 @@ class EEFileLoadException : public EEException
   public:
 
     EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException = NULL);
-    EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException = NULL);
-    ~EEFileLoadException();
+    EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo);
 
     void SetRequestingAssemblyChain(const SString &requestingAssemblyChain)
     {
