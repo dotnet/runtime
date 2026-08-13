@@ -84,10 +84,6 @@ namespace BINDER_SPACE
     {
         HRESULT hr = S_OK;
 
-        CRITSEC_Holder contextLock(GetCriticalSectionCookie());
-        if (m_pTrustedPlatformAssemblyMap != nullptr)
-        {
-            GO_WITH_HRESULT(S_OK);
         _ASSERTE(m_pTrustedPlatformAssemblyMap == nullptr);
 
         //
