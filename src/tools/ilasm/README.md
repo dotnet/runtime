@@ -26,7 +26,10 @@ accumulator instead of building a subtree at all.
 | `GrammarActions.Marshalling.Actions.cs` | Synthesized native type and marshalling descriptor actions. |
 | `GrammarActions.Marshalling.cs` | Marshalling visitor wrappers and P/Invoke conversion. |
 | `GrammarActions.Members.cs` | Class member dispatch and conversion. |
-| `GrammarActions.MethodBodies.cs` | Method, lexical scope and exception-handling state and conversion. |
+| `GrammarActions.MethodBodies.cs` | Method headers and parser-driven visitor guards. |
+| `GrammarActions.MethodBodies.Directives.cs` | Direct method-body directives and parameter ownership. |
+| `GrammarActions.MethodBodies.ExceptionHandling.cs` | Lexical scopes and synthesized exception regions. |
+| `GrammarActions.MethodBodies.Values.cs` | Internal method-body directive and exception-region values. |
 | `GrammarActions.Security.cs` | Declarative security conversion. |
 | `GrammarActions.Signatures.cs` | Signature visitor compatibility wrappers. |
 | `GrammarActions.Signatures.Actions.cs` | Signature grammar actions and repetition frames. |
@@ -50,9 +53,12 @@ ILAssembler entities and signature implementation values remain internal, so gen
 slots use `object` where an internal value or array crosses that boundary and `GrammarActions`
 provides the strongly typed accessors.
 
-All type, signature, reference and marshalling rules synthesize values without retaining parse
-subtrees. The remaining `BeginSubtree` islands are structural: `decl`, `nameSpaceHead`,
-`classHead`, `classDecl`, `methodHead`, `methodDeclIsland` and `sehBlock`.
+All type, signature, reference, marshalling, method-body directive and exception-handling rules
+synthesize values without retaining item or exception-block subtrees. `scopeBlock` records offsets
+under its context key without inspecting children. The remaining `BeginSubtree` islands are
+declaration/member structure (`decl`, `nameSpaceHead`, `classHead`, `classDecl`, and `methodHead`)
+and bounded shared directives such as data, security, source, language, initialization and custom
+attribute declarations.
 
 Semantic state that a rule pushes must be released from that rule's `finally` clause and be keyed on
 the owning context, because ANTLR skips `@after` actions and the remainder of an alternative once a

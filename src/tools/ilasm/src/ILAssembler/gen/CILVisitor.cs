@@ -862,11 +862,35 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitMethodDecl([NotNull] CILParser.MethodDeclContext context);
 	/// <summary>
-	/// Visit a parse tree produced by <see cref="CILParser.methodDeclIsland"/>.
+	/// Visit a parse tree produced by <see cref="CILParser.localsDecl"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
-	Result VisitMethodDeclIsland([NotNull] CILParser.MethodDeclIslandContext context);
+	Result VisitLocalsDecl([NotNull] CILParser.LocalsDeclContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.exportDecl"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitExportDecl([NotNull] CILParser.ExportDeclContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.vtentryDecl"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitVtentryDecl([NotNull] CILParser.VtentryDeclContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.overrideDecl"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitOverrideDecl([NotNull] CILParser.OverrideDeclContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.parameterDecl"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitParameterDecl([NotNull] CILParser.ParameterDeclContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.labelDecl"/>.
 	/// </summary>

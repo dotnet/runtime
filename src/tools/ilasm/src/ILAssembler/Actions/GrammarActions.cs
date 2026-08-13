@@ -23,6 +23,10 @@ internal sealed partial class GrammarActions
                 && _typeOwners.Count == 0
                 && _namespaceOwners.Count == 0
                 && _scopeStack.Count == 0
+                && _parameterDirectiveFrames.Count == 0
+                && _exceptionBlockFrames.Count == 0
+                && _exceptionClauseListFrames.Count == 0
+                && _catchClauseFrames.Count == 0
                 && _semanticRootFrames.Count == 0
                 && _dottedNameFrames.Count == 0
                 && _slashedNameFrames.Count == 0
