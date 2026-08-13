@@ -75,7 +75,7 @@ extends:
             allowNoHelixJobs: true
 
       #
-      # Build CoreCLR verticals where we don't run host tests
+      # Build CoreCLR verticals
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -289,8 +289,8 @@ extends:
           useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       #
-      # Build CoreCLR and Libraries with Libraries tests
-      # For running libraries tests and installer tests
+      # Build CoreCLR verticals
+      # Run libraries tests and installer tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -388,7 +388,7 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
-      # Build CoreCLR and Libraries
+      # Build CoreCLR verticals
       # For running installer tests
       #
       - template: /eng/pipelines/common/platform-matrix.yml
