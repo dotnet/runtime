@@ -263,9 +263,6 @@ static void CollectWellKnownArgs(GenTreeCall* call, WellKnownArg wka, ArrayStack
 
 size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
 {
-    // Members describe the root method's continuation, so they are always registered
-    // there: an inlinee's IR ends up in the root and its member offset nodes are
-    // resolved against the root's layout.
     Compiler* const root = impInlineRoot();
 
     if (root->m_asyncContinuationMembers == nullptr)
@@ -1243,8 +1240,6 @@ PhaseStatus AsyncTransformation::Run()
         assert(continuationLayout->ContinuationMemberOffsets[memberIndex] != UINT_MAX);
         ssize_t offset = (OFFSETOF__CORINFO_Continuation__data - SIZEOF__CORINFO_Object) +
                          continuationLayout->ContinuationMemberOffsets[memberIndex];
-        // Preserve the node's type: offsets used in address arithmetic are TYP_I_IMPL,
-        // while those passed to helpers are TYP_INT.
         node->BashToConst(offset, node->TypeGet());
     }
 
@@ -3540,25 +3535,22 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
             }
 
             GenTreeCall* captureCall = m_compiler->gtNewUserCallNode(captureMethHnd, TYP_VOID);
-            captureCall->gtArgs.PushFront(m_compiler,
-                                          NewCallArg::Primitive(
-                                              ContinuationMemberAddress(layout,
-                                                                        ContinuationMember::InlineFrameExecutionContext(
-                                                                            depth))));
-            captureCall->gtArgs.PushFront(m_compiler,
-                                          NewCallArg::Primitive(
-                                              ContinuationMemberAddress(layout,
-                                                                        ContinuationMember::InlineFrameFlags(depth))));
+
+            NewCallArg execCtxArg = NewCallArg::Primitive(
+                ContinuationMemberAddress(layout, ContinuationMember::InlineFrameExecutionContext(depth)));
+            NewCallArg flagsArg =
+                NewCallArg::Primitive(ContinuationMemberAddress(layout, ContinuationMember::InlineFrameFlags(depth)));
+            NewCallArg anyResumedArg = NewCallArg::Primitive(m_compiler->gtNewLclvNode(anyResumedLcl, TYP_INT));
+
+            captureCall->gtArgs.PushFront(m_compiler, execCtxArg);
+            captureCall->gtArgs.PushFront(m_compiler, flagsArg);
             if (captureContinuationContext)
             {
-                captureCall->gtArgs
-                    .PushFront(m_compiler,
-                               NewCallArg::Primitive(
-                                   ContinuationMemberAddress(layout, ContinuationMember::InlineFrameContinuationContext(
-                                                                         depth))));
+                NewCallArg contContextArg = NewCallArg::Primitive(
+                    ContinuationMemberAddress(layout, ContinuationMember::InlineFrameContinuationContext(depth)));
+                captureCall->gtArgs.PushFront(m_compiler, contContextArg);
             }
-            captureCall->gtArgs.PushFront(m_compiler,
-                                          NewCallArg::Primitive(m_compiler->gtNewLclvNode(anyResumedLcl, TYP_INT)));
+            captureCall->gtArgs.PushFront(m_compiler, anyResumedArg);
 
             m_compiler->compCurBB = tailBB;
             m_compiler->fgMorphTree(captureCall);
@@ -3580,10 +3572,13 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
         // Then restore the caller's contexts, as its physical frame's return would have.
         GenTreeCall* restoreCall =
             m_compiler->gtNewUserCallNode(m_asyncInfo->restoreContextsOnSuspensionMethHnd, TYP_VOID);
-        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(outerSync)));
-        restoreCall->gtArgs.PushFront(m_compiler, NewCallArg::Primitive(m_compiler->gtCloneExpr(outerExec)));
-        restoreCall->gtArgs.PushFront(m_compiler,
-                                      NewCallArg::Primitive(m_compiler->gtNewLclvNode(anyResumedLcl, TYP_INT)));
+        NewCallArg outerSyncArg  = NewCallArg::Primitive(m_compiler->gtCloneExpr(outerSync));
+        NewCallArg outerExecArg  = NewCallArg::Primitive(m_compiler->gtCloneExpr(outerExec));
+        NewCallArg anyResumedArg = NewCallArg::Primitive(m_compiler->gtNewLclvNode(anyResumedLcl, TYP_INT));
+
+        restoreCall->gtArgs.PushFront(m_compiler, outerSyncArg);
+        restoreCall->gtArgs.PushFront(m_compiler, outerExecArg);
+        restoreCall->gtArgs.PushFront(m_compiler, anyResumedArg);
 
         m_compiler->compCurBB = tailBB;
         m_compiler->fgMorphTree(restoreCall);

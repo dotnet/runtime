@@ -11999,16 +11999,6 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     AsyncCallInfo* asyncInfo = new (this, CMK_Async) AsyncCallInfo;
 
-    // Whether the frame this await logically belongs to sits inside a frame that does its
-    // own context handling. The await is a transparent forward, so a suspension in it has
-    // to take part in that enclosing frame's handling, in particular by recording that the
-    // frame resumed. Without such a frame there is nothing to inherit and the await is
-    // handled as the tail await it is.
-    //
-    // This is a property of the immediately enclosing frame rather than of the root:
-    // general async inlining can splice a context-owning frame in between this one and an
-    // async version root, and then the root being a transparent forwarder says nothing
-    // about what this await runs inside.
     bool const hasContextHandling =
         compIsForInlining() &&
         (impInlineInfo->iciCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse) != nullptr);

@@ -325,12 +325,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     NamedIntrinsic ni = NI_Illegal;
 
     CORINFO_SIG_INFO calliSig;
-    GenTree*         varArgsCookie     = nullptr;
-    GenTree*         instParam         = nullptr;
-    GenTree*         asyncContinuation = nullptr;
-    // Set when the async call gets the contexts of the frame it is in rather than the
-    // inlining call's; see impSetupAsyncCall.
-    bool asyncCallUsesOwnContexts = false;
+    GenTree*         varArgsCookie            = nullptr;
+    GenTree*         instParam                = nullptr;
+    GenTree*         asyncContinuation        = nullptr;
+    bool             asyncCallUsesOwnContexts = false;
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
@@ -1116,9 +1114,6 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
-    // An await that may suspend in the inlinee's own frame uses that frame's contexts,
-    // which its SaveAsyncContexts adds. Everything else runs in the inlining call's frame
-    // and takes its contexts.
     if ((asyncContinuation != nullptr) && !asyncCallUsesOwnContexts)
     {
         impInheritAsyncContextsFromInliner(call->AsCall());

@@ -2545,15 +2545,15 @@ void Compiler::fgSetupAsyncFrameTransitionCall(GenTreeCall* call, const DebugInf
     asyncInfo.CallAsyncDebugInfo          = di;
     call->SetIsAsync(new (this, CMK_Async) AsyncCallInfo(asyncInfo));
 
+    NewCallArg continuationArg = NewCallArg::Primitive(gtNewNull(), TYP_REF).WellKnown(WellKnownArg::AsyncContinuation);
+
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
     {
-        call->gtArgs.PushFront(this,
-                               NewCallArg::Primitive(gtNewNull(), TYP_REF).WellKnown(WellKnownArg::AsyncContinuation));
+        call->gtArgs.PushFront(this, continuationArg);
     }
     else
     {
-        call->gtArgs.PushBack(this,
-                              NewCallArg::Primitive(gtNewNull(), TYP_REF).WellKnown(WellKnownArg::AsyncContinuation));
+        call->gtArgs.PushBack(this, continuationArg);
     }
 }
 
@@ -2616,11 +2616,6 @@ GenTree* Compiler::gtNewContinuationMemberIndir(const ContinuationMember& member
 //    we have already suspended and resumed at least once, so one more call is cheap. In
 //    particular the "are we already on the right context?" test, which is what actually
 //    decides whether we suspend, stays inside the helper.
-//
-//    The members are read off the continuation this method was resumed with. That is
-//    only valid when resumed_callee is true, which is exactly the guard: resumed_callee
-//    can only become true at a resumption point belonging to this inlinee's own async
-//    calls, and those belong to this method's continuation layout.
 //
 void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicBlock* joinBlock)
 {
@@ -2685,14 +2680,8 @@ void Compiler::fgInlineAppendAsyncFrameStatements(InlineInfo* inlineInfo, BasicB
     // That handler is the fault half of the try-finally SaveAsyncContexts wrapped the
     // inlinee's body in, and it survives inlining as its own clause in this method.
     //
-    // Setting the indicator is all that is needed there: the enclosing frames' restores
-    // are no-ops once their frame has resumed, which is exactly what a normal logical
-    // return would have left behind. The rest of the transition cannot run in a handler
-    // anyway, since getting back onto the caller's continuation context may suspend and
-    // a funclet cannot return a continuation.
-    //
-    // Handlers run innermost first, so a chain of inlined frames propagates the
-    // indicator outwards one frame at a time as the exception unwinds through them.
+    // We only need to propagate the indicator here since that's the only state parent
+    // fault handlers can depend on.
     if (InlineeCompiler->asyncContextRestoreEHID != USHRT_MAX)
     {
         EHblkDsc* const inlineeContextRestore = ehFindEHblkDscById(InlineeCompiler->asyncContextRestoreEHID);
