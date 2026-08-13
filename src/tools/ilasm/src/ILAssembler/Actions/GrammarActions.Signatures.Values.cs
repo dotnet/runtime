@@ -124,7 +124,7 @@ internal sealed partial class GrammarActions
         bool IsSentinel,
         int Attributes,
         TypeValue? Type,
-        CILParser.MarshalClauseContext? Marshalling,
+        MarshallingDescriptorValue? Marshalling,
         string? Name)
     {
         public static SignatureArgumentValue Error { get; } = new(false, 0, TypeValue.Error, null, null);

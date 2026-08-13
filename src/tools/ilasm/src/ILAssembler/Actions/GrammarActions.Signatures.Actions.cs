@@ -246,13 +246,13 @@ internal sealed partial class GrammarActions
     internal object CreateSignatureArgument(
         int attributes,
         object? type,
-        CILParser.MarshalClauseContext marshalling,
+        object? marshalling,
         CILParser.IdContext? name)
         => new SignatureArgumentValue(
             false,
             attributes,
             GetTypeValue(type),
-            marshalling,
+            GetMarshallingDescriptorValue(marshalling),
             name is null ? null : VisitId(name).Value);
 
     internal void BeginParameterAttributes(CILParser.ParamAttrContext context)
