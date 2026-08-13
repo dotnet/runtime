@@ -2535,7 +2535,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             DateTimeRawInfo raw = default;    // The buffer to store temporary parsing information.
             unsafe
             {
-                int* numberPointer = stackalloc int[3];
+                int* numberPointer = stackalloc int[DateTimeRawInfo.MaxBufferLength];
                 raw.Init(numberPointer);
             }
             raw.hasSameDateAndTimeSeparators = dtfi.DateSeparator.Equals(dtfi.TimeSeparator, StringComparison.Ordinal);
@@ -5989,6 +5989,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
     //
     internal unsafe struct DateTimeRawInfo
     {
+        internal const int MaxBufferLength = 3;
         private int* num;
         internal int numCount;
         internal int month;
@@ -6012,6 +6013,12 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         internal void AddNumber(int value)
         {
+            if (numCount >= MaxBufferLength)
+            {
+                // defense in depth. we shouldn't come here though.
+                throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing);
+            }
+
             num[numCount++] = value;
         }
 
