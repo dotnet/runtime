@@ -30,3 +30,8 @@ void SystemNative_FreeEnviron(char** environment)
     // no op
     (void)environment;
 }
+
+char* SystemNative_GetMainBundleIdentifier(void)
+{
+    return NULL;
+}

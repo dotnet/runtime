@@ -227,6 +227,7 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetPriority)
     DllImportEntry(SystemNative_SetPriority)
     DllImportEntry(SystemNative_GetCwd)
+    DllImportEntry(SystemNative_GetMainBundleIdentifier)
     DllImportEntry(SystemNative_SchedSetAffinity)
     DllImportEntry(SystemNative_SchedGetAffinity)
     DllImportEntry(SystemNative_GetProcessPath)

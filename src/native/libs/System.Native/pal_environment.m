@@ -80,3 +80,10 @@ void SystemNative_FreeEnviron(char** environ)
         free(environ);
     }
 }
+
+char* SystemNative_GetMainBundleIdentifier(void)
+{
+    NSString* bundleIdentifier = [[NSBundle mainBundle] bundleIdentifier];
+    const char* utf8BundleIdentifier = [bundleIdentifier UTF8String];
+    return utf8BundleIdentifier == NULL ? NULL : strdup(utf8BundleIdentifier);
+}

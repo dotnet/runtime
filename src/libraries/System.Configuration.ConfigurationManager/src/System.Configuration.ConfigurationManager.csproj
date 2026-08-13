@@ -20,6 +20,7 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="System\Configuration\AppleApplication.cs" />
     <Compile Include="System\Configuration\DictionarySectionHandler.cs" />
     <Compile Include="System\Configuration\DpapiProtectedConfigurationProvider.cs" />
     <Compile Include="System\Configuration\IConfigurationSystem.cs" />

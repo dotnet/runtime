@@ -22,6 +22,7 @@ namespace System.Configuration
         private const string StrongNameDesc = "StrongName";
         private const string UrlDesc = "Url";
         private const string PathDesc = "Path";
+        private const string BundleIdentifierDesc = "BundleIdentifier";
 
         private static ClientConfigPaths s_current;
         private static volatile bool s_currentIncludesUserConfig;
@@ -142,9 +143,16 @@ namespace System.Configuration
             string applicationUriLower = !string.IsNullOrEmpty(ApplicationUri)
                 ? ApplicationUri.ToLowerInvariant()
                 : null;
-            string hashSuffix = GetTypeAndHashSuffix(applicationUriLower, isSingleFile);
+            bool isAppleMobile = IsAlwaysSandboxedAppleMobile();
+            string bundleIdentifier = isAppleMobile ? AppleApplication.GetMainBundleIdentifier() : null;
+            string hashSuffix = GetApplicationIdentitySuffix(applicationUriLower, isSingleFile, isAppleMobile, bundleIdentifier);
             string part2 = !string.IsNullOrEmpty(namePrefix) && !string.IsNullOrEmpty(hashSuffix)
                 ? namePrefix + hashSuffix
+                : null;
+            LegacyConfigDirectoryPrefix = isAppleMobile &&
+                !string.IsNullOrEmpty(bundleIdentifier) &&
+                !string.IsNullOrEmpty(namePrefix)
+                ? namePrefix + "_"
                 : null;
 
             // (3) The product version
@@ -191,6 +199,8 @@ namespace System.Configuration
 
         internal string ProductVersion { get; private set; }
 
+        internal string LegacyConfigDirectoryPrefix { get; }
+
         internal static ClientConfigPaths GetPaths(string exePath, bool includeUserConfig)
         {
             ClientConfigPaths result;
@@ -229,6 +239,27 @@ namespace System.Configuration
             {
                 return null;
             }
+        }
+
+        internal static string GetApplicationIdentitySuffix(
+            string exePath,
+            bool isSingleFile,
+            bool isAppleMobile,
+            string bundleIdentifier)
+        {
+            if (isAppleMobile && !string.IsNullOrEmpty(bundleIdentifier))
+            {
+                try
+                {
+                    string hash = IdentityHelper.GetStrongHashSuitableForObjectName(bundleIdentifier);
+                    return "_" + BundleIdentifierDesc + "_" + hash;
+                }
+                catch (PlatformNotSupportedException)
+                {
+                }
+            }
+
+            return GetTypeAndHashSuffix(exePath, isSingleFile);
         }
 
         // Returns a type and hash suffix based on what used to come from app domain evidence.
@@ -285,6 +316,13 @@ namespace System.Configuration
 
             if (!string.IsNullOrEmpty(hash)) suffix = "_" + typeName + "_" + hash;
             return suffix;
+        }
+
+        private static bool IsAlwaysSandboxedAppleMobile()
+        {
+            return RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS")) ||
+                (RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")) &&
+                !RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACCATALYST")));
         }
 
         private void SetNamesAndVersion(Assembly exeAssembly, bool isHttp)
