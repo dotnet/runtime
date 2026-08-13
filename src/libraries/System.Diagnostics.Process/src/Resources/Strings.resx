@@ -390,4 +390,10 @@
   <data name="Argument_InvalidProcessId" xml:space="preserve">
     <value>The callback must return a positive process ID for the newly created process.</value>
   </data>
+  <data name="UseShellExecuteVerbNotSupported" xml:space="preserve">
+    <value>The verb '{0}' is not supported for UseShellExecute on this platform. Only the default verb is supported.</value>
+  </data>
+  <data name="UseShellExecuteNoOpenProgram" xml:space="preserve">
+    <value>No application is associated with the specified file for UseShellExecute on this platform.</value>
+  </data>
 </root>
