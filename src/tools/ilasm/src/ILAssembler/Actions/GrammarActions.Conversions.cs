@@ -91,6 +91,8 @@ namespace ILAssembler
         private readonly Dictionary<string, int> _mappedFieldDataNames = new();
         private readonly Dictionary<string, List<Blob>> _mappedFieldDataReferenceFixups = new();
         private readonly BlobBuilder _manifestResources = new();
+        private readonly Stack<SemanticRootFrame> _semanticRootFrames = new();
+        private int _syntaxErrorCount;
 
         // Typedef aliases - maps alias name to the resolved entity
         private readonly Dictionary<string, TypedefEntry> _typedefs = new();
@@ -143,6 +145,30 @@ namespace ILAssembler
 
         private void ReportWarning(string id, string message, Antlr4.Runtime.ParserRuleContext context)
             => ReportDiagnostic(DiagnosticSeverity.Warning, id, message, context);
+
+        private void ReportWarning(string id, string message, IToken token)
+        {
+            _diagnostics.Add(new Diagnostic(
+                id,
+                DiagnosticSeverity.Warning,
+                message,
+                Location.From(token, _documents)));
+        }
+
+        private sealed record SemanticRootFrame(ParserRuleContext Owner, int InitialSyntaxErrorCount);
+
+        internal void RecordSyntaxError() => _syntaxErrorCount++;
+
+        internal void BeginSemanticRoot(ParserRuleContext context)
+            => _semanticRootFrames.Push(new(context, _syntaxErrorCount));
+
+        internal bool EndSemanticRoot(ParserRuleContext context)
+        {
+            Debug.Assert(_semanticRootFrames.Count > 0);
+            SemanticRootFrame frame = _semanticRootFrames.Pop();
+            Debug.Assert(ReferenceEquals(frame.Owner, context));
+            return frame.InitialSyntaxErrorCount != _syntaxErrorCount || context.exception is not null;
+        }
 
         private static bool IsRecoverableError(string diagnosticId)
         {

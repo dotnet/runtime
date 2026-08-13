@@ -79,6 +79,7 @@ namespace ILAssembler.Tests
         [InlineData("box")]
         [InlineData("ldtoken")]
         [InlineData("calli default void(")]
+        [InlineData("calli vararg void(class [mscorlib]System.Tuple`1<method void *(int32 modreq(")]
         [InlineData("ldc.r8 float64(")]
         [InlineData("ldc.r8 bytearray(00 00")]
         [InlineData("ldstr \"A\" +")]
@@ -127,6 +128,57 @@ namespace ILAssembler.Tests
             byte[] il = GetMethodIL(pe, "Good");
 
             Assert.Equal([0x2A], il);
+        }
+
+        [Fact]
+        public void MalformedCalliSignature_DoesNotMaterializeDiscardedReferences()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void Bad() cil managed
+                    {
+                        calli default void(class [Unused]Payload
+                    }
+
+                    .method public static void Good() cil managed
+                    {
+                        call void [Used]Target::M()
+                        ret
+                    }
+                }
+                """;
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ =>
+                {
+                    Assert.Fail("Expected no includes");
+                    return default;
+                },
+                _ =>
+                {
+                    Assert.Fail("Expected no resources");
+                    return default;
+                },
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.NotNull(result);
+
+            BlobBuilder image = new();
+            result!.Serialize(image);
+            using PEReader pe = new(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            string[] assemblyReferences = reader.AssemblyReferences
+                .Select(handle => reader.GetString(reader.GetAssemblyReference(handle).Name))
+                .ToArray();
+
+            Assert.Contains("Used", assemblyReferences);
+            Assert.DoesNotContain("Unused", assemblyReferences);
+            Assert.Equal([0x28, 0x01, 0x00, 0x00, 0x0A, 0x2A], GetMethodIL(pe, "Good"));
         }
 
 
@@ -443,6 +495,61 @@ namespace ILAssembler.Tests
             Assert.Equal(SignatureCallingConvention.VarArgs, signature.Header.CallingConvention);
             Assert.Equal(1, signature.RequiredParameterCount);
             Assert.Equal([PrimitiveTypeCode.Int32, PrimitiveTypeCode.String, PrimitiveTypeCode.Int64], signature.ParameterTypes.ToArray());
+        }
+
+        [Fact]
+        public void ReferenceAndCalliOperands_NestedSignaturesDecodeCorrectly()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly Test { }
+                .class public auto ansi Test
+                {
+                    .method public static void F() cil managed
+                    {
+                        ldsfld method vararg void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string) class [mscorlib]System.Tuple`1<class [mscorlib]System.Tuple`1<int32>>::Callback
+                        pop
+                        call void class [mscorlib]System.Tuple`1<class [mscorlib]System.Tuple`1<int32>>::Invoke(method vararg void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string))
+                        ldc.i4.0
+                        conv.i
+                        calli vararg void(class [mscorlib]System.Tuple`1<class [mscorlib]System.Tuple`1<int32>>, ..., method vararg void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string))
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+
+            MemberReference fieldReference = reader.MemberReferences
+                .Select(reader.GetMemberReference)
+                .Single(reference => reader.GetString(reference.Name) == "Callback");
+            Assert.Equal(
+                "method void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string)",
+                fieldReference.DecodeFieldSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null));
+
+            MemberReference methodReference = reader.MemberReferences
+                .Select(reader.GetMemberReference)
+                .Single(reference => reader.GetString(reference.Name) == "Invoke");
+            MethodSignature<string> methodSignature =
+                methodReference.DecodeMethodSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null);
+            Assert.Equal("void", methodSignature.ReturnType);
+            Assert.Equal(
+                new[] { "method void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string)" },
+                methodSignature.ParameterTypes);
+
+            MethodSignature<string> calliSignature = reader
+                .GetStandaloneSignature(MetadataTokens.StandaloneSignatureHandle(1))
+                .DecodeMethodSignature(DocumentCompilerTestHelpers.Decoder, genericContext: null);
+            Assert.Equal(SignatureCallingConvention.VarArgs, calliSignature.Header.CallingConvention);
+            Assert.Equal(1, calliSignature.RequiredParameterCount);
+            Assert.Equal(
+                new[]
+                {
+                    "[mscorlib]System.Tuple`1<[mscorlib]System.Tuple`1<int32>>",
+                    "method void *(int32 modreq([mscorlib]System.Runtime.CompilerServices.IsVolatile), ..., string)",
+                },
+                calliSignature.ParameterTypes);
         }
 
         [Fact]

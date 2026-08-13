@@ -544,18 +544,10 @@ namespace ILAssembler
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitOwnerType(CILParser.OwnerTypeContext context) => VisitOwnerType(context);
+
         public GrammarResult.Literal<EntityRegistry.EntityBase> VisitOwnerType(CILParser.OwnerTypeContext context)
-        {
-            if (context.memberRef() is CILParser.MemberRefContext memberRef)
-            {
-                return VisitMemberRef(memberRef);
-            }
-            if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
-            {
-                return new(VisitTypeSpec(typeSpec).Value);
-            }
-            throw new UnreachableException();
-        }
+            => new(MaterializeOwnerType(GetOwnerTypeValue(context.Value)));
+
         GrammarResult ICILVisitor<GrammarResult>.VisitSerializType(CILParser.SerializTypeContext context) => VisitSerializType(context);
         public GrammarResult.FormattedBlob VisitSerializType(CILParser.SerializTypeContext context)
         {

@@ -774,22 +774,11 @@ internal sealed partial class GrammarActions
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitMethodName(CILParser.MethodNameContext context) => VisitMethodName(context);
-        public GrammarResult.String VisitMethodName(CILParser.MethodNameContext context)
-        {
-            // Error recovery in a malformed method header can leave the name unmatched.
-            if (context.ChildCount == 0)
-            {
-                return new(string.Empty);
-            }
 
-            IParseTree child = context.GetChild(0);
-            return child switch
-            {
-                ITerminalNode terminal => new(terminal.Symbol.Text),
-                CILParser.DottedNameContext dottedName => VisitDottedName(dottedName),
-                _ => new(context.GetText()),
-            };
-        }
+        public static GrammarResult.String VisitMethodName(CILParser.MethodNameContext context)
+            => new(context.Value ?? string.Empty);
+
+        internal string GetMethodName(IToken token) => token.Text;
 
         public GrammarResult VisitScopeBlock(CILParser.ScopeBlockContext context) => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 

@@ -61,7 +61,7 @@ public sealed class DocumentCompiler
             };
             parser.RemoveErrorListeners();
             ImmutableArray<Diagnostic>.Builder parserDiagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
-            parser.AddErrorListener(new ParserErrorListener(parserDiagnostics, loadedDocuments));
+            parser.AddErrorListener(new ParserErrorListener(parserDiagnostics, loadedDocuments, actions.RecordSyntaxError));
             _ = parser.decls();
             parser.VerifyParseTreeModesBalanced();
 
@@ -94,15 +94,21 @@ internal sealed class ParserErrorListener : Antlr4.Runtime.IAntlrErrorListener<I
 {
     private readonly ImmutableArray<Diagnostic>.Builder _diagnostics;
     private readonly Dictionary<string, SourceText> _loadedDocuments;
+    private readonly Action _recordSyntaxError;
 
-    public ParserErrorListener(ImmutableArray<Diagnostic>.Builder diagnostics, Dictionary<string, SourceText> loadedDocuments)
+    public ParserErrorListener(
+        ImmutableArray<Diagnostic>.Builder diagnostics,
+        Dictionary<string, SourceText> loadedDocuments,
+        Action recordSyntaxError)
     {
         _diagnostics = diagnostics;
         _loadedDocuments = loadedDocuments;
+        _recordSyntaxError = recordSyntaxError;
     }
 
     public void SyntaxError(TextWriter output, IRecognizer recognizer, IToken offendingSymbol, int line, int charPositionInLine, string msg, RecognitionException e)
     {
+        _recordSyntaxError();
         var sourceName = offendingSymbol?.TokenSource?.SourceName ?? "";
         var span = new SourceSpan(offendingSymbol?.StartIndex ?? 0, offendingSymbol is null ? 0 : offendingSymbol.StopIndex - offendingSymbol.StartIndex + 1);
         if (_loadedDocuments.TryGetValue(sourceName, out var sourceText))
