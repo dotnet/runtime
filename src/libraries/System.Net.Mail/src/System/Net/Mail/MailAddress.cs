@@ -141,9 +141,6 @@ namespace System.Net.Mail
                     return false;
                 }
 
-                // Reject CR/LF in caller-supplied display names. Such characters would corrupt
-                // the encoded mail header when the address is serialized into a message
-                // (e.g. From/To headers written by SmtpClient).
                 if (MailBnfHelper.HasCROrLF(displayName))
                 {
                     if (throwExceptionIfFail)
