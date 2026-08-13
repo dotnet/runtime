@@ -2,17 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
+using System.Text;
 using Antlr4.Runtime;
 
 namespace ILAssembler;
 
 internal sealed partial class GrammarActions
 {
+    private sealed class SwitchInstructionAccumulator
+    {
+        internal SwitchInstructionAccumulator(CILParser.SimpleInstrContext owner, IToken opcodeToken)
+        {
+            Owner = owner;
+            OpcodeToken = opcodeToken;
+        }
+
+        internal CILParser.SimpleInstrContext Owner { get; }
+
+        internal IToken OpcodeToken { get; }
+
+        internal List<(IToken Token, bool IsOffset)> Operands { get; } = new();
+    }
+
+    private SwitchInstructionAccumulator? _switchInstructionAccumulator;
+
     internal void EmitNoOperandInstruction(IToken opcodeToken)
     {
         if (StartInstruction(opcodeToken) is not { } instruction)
@@ -112,6 +131,26 @@ internal sealed partial class GrammarActions
         instruction.Method.Definition.MethodBody.LoadConstantI8(ParseInt64(valueToken));
     }
 
+    internal void EmitFloatingInstruction(IToken opcodeToken, double value)
+    {
+        if (StartInstruction(opcodeToken) is not { } instruction)
+        {
+            return;
+        }
+
+        WriteFloatingInstruction(instruction.Method, instruction.OpCode, value);
+    }
+
+    internal void EmitFloatingInstruction(IToken opcodeToken, IToken valueToken)
+    {
+        if (StartInstruction(opcodeToken) is not { } instruction)
+        {
+            return;
+        }
+
+        WriteFloatingInstruction(instruction.Method, instruction.OpCode, ParseInt64(valueToken));
+    }
+
     internal void EmitBranchOffsetInstruction(IToken opcodeToken, IToken offsetToken)
     {
         if (StartInstruction(opcodeToken) is not { } instruction)
@@ -173,14 +212,7 @@ internal sealed partial class GrammarActions
             value = 0;
         }
 
-        if (instruction.OpCode == ILOpCode.Ldc_r4)
-        {
-            instruction.Method.Definition.MethodBody.LoadConstantR4((float)value);
-        }
-        else
-        {
-            instruction.Method.Definition.MethodBody.LoadConstantR8(value);
-        }
+        WriteFloatingInstruction(instruction.Method, instruction.OpCode, value);
     }
 
     internal void EmitRawStringInstruction(IToken opcodeToken, ImmutableArray<byte> bytes)
@@ -192,6 +224,29 @@ internal sealed partial class GrammarActions
 
         string value = MemoryMarshal.Cast<byte, char>(bytes.AsSpan()).ToString();
         instruction.Method.Definition.MethodBody.LoadString(_metadataBuilder.GetOrAddUserString(value));
+    }
+
+    internal void EmitStringInstruction(IToken opcodeToken, string value)
+    {
+        if (StartInstruction(opcodeToken) is not { } instruction)
+        {
+            return;
+        }
+
+        instruction.Method.Definition.MethodBody.LoadString(_metadataBuilder.GetOrAddUserString(value));
+    }
+
+    internal void EmitAnsiStringInstruction(IToken opcodeToken, string value)
+    {
+        int byteCount = Encoding.UTF8.GetByteCount(value);
+        if ((byteCount % 2) != 0)
+        {
+            byteCount++;
+        }
+
+        Span<byte> utf8Bytes = new byte[byteCount];
+        Encoding.UTF8.GetBytes(value, utf8Bytes);
+        EmitStringInstruction(opcodeToken, new string(MemoryMarshal.Cast<byte, char>(utf8Bytes)));
     }
 
     internal void EmitRawTokenInstruction(IToken opcodeToken, IToken valueToken)
@@ -252,6 +307,80 @@ internal sealed partial class GrammarActions
         method.Definition.MethodBody.MarkLabel(label);
     }
 
+    internal void BeginSwitchInstruction(CILParser.SimpleInstrContext context, IToken opcodeToken)
+    {
+        Debug.Assert(_switchInstructionAccumulator is null);
+        _switchInstructionAccumulator = new SwitchInstructionAccumulator(context, opcodeToken);
+    }
+
+    internal void AddSwitchLabel(IToken labelToken)
+        => _switchInstructionAccumulator?.Operands.Add((labelToken, false));
+
+    internal void AddSwitchOffset(IToken offsetToken)
+        => _switchInstructionAccumulator?.Operands.Add((offsetToken, true));
+
+    internal void CompleteSimpleInstruction(CILParser.SimpleInstrContext context)
+    {
+        if (_switchInstructionAccumulator is not { } accumulator ||
+            !ReferenceEquals(accumulator.Owner, context) ||
+            StartInstruction(accumulator.OpcodeToken) is not { } instruction)
+        {
+            return;
+        }
+
+        Debug.Assert(instruction.OpCode == ILOpCode.Switch);
+        CurrentMethodContext method = instruction.Method;
+        List<(LabelHandle Label, int? Offset)> labels = new(accumulator.Operands.Count);
+        foreach ((IToken token, bool isOffset) in accumulator.Operands)
+        {
+            if (isOffset)
+            {
+                labels.Add((method.Definition.MethodBody.DefineLabel(), ParseInt32(token)));
+                continue;
+            }
+
+            string labelName = ParseIdentifier(token);
+            if (!method.Labels.TryGetValue(labelName, out LabelHandle label))
+            {
+                label = method.Definition.MethodBody.DefineLabel();
+                method.Labels[labelName] = label;
+                method.UndefinedLabelReferences.TryAdd(labelName, accumulator.OpcodeToken);
+            }
+
+            labels.Add((label, null));
+        }
+
+        if (labels.Count > 0)
+        {
+            SwitchInstructionEncoder switchEncoder = method.Definition.MethodBody.Switch(labels.Count);
+            foreach ((LabelHandle label, _) in labels)
+            {
+                switchEncoder.Branch(label);
+            }
+        }
+        else
+        {
+            method.Definition.MethodBody.OpCode(ILOpCode.Switch);
+            method.Definition.MethodBody.CodeBuilder.WriteInt32(0);
+        }
+
+        foreach ((LabelHandle label, int? offset) in labels)
+        {
+            if (offset is int value)
+            {
+                method.Definition.MethodBody.MarkLabel(label, method.Definition.MethodBody.Offset + value);
+            }
+        }
+    }
+
+    internal void EndSwitchInstruction(CILParser.SimpleInstrContext context)
+    {
+        if (ReferenceEquals(_switchInstructionAccumulator?.Owner, context))
+        {
+            _switchInstructionAccumulator = null;
+        }
+    }
+
     private (CurrentMethodContext Method, ILOpCode OpCode)? StartInstruction(IToken opcodeToken)
     {
         if (_currentMethod is not { } method)
@@ -278,6 +407,18 @@ internal sealed partial class GrammarActions
         else
         {
             method.Definition.MethodBody.CodeBuilder.WriteInt32(index);
+        }
+    }
+
+    private static void WriteFloatingInstruction(CurrentMethodContext method, ILOpCode opcode, double value)
+    {
+        if (opcode == ILOpCode.Ldc_r4)
+        {
+            method.Definition.MethodBody.LoadConstantR4((float)value);
+        }
+        else
+        {
+            method.Definition.MethodBody.LoadConstantR8(value);
         }
     }
 

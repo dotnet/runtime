@@ -46,14 +46,40 @@ namespace ILAssembler.Tests
             Assert.Equal(DiagnosticSeverity.Error, error.Severity);
         }
 
+        [Fact]
+        public void Diagnostic_SwitchLabelNotFound_PointsToInstruction()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        ldc.i4.0
+                        switch (UndefinedLabel)
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.LabelNotFound, error.Id);
+            Assert.Equal(source.IndexOf("switch", StringComparison.Ordinal), error.Location.Span.Start);
+        }
+
         [Theory]
         [InlineData("ldc.i4")]
         [InlineData("ldc.i8")]
         [InlineData("ldarg")]
         [InlineData("br")]
         [InlineData("ldtoken")]
+        [InlineData("ldc.r8 float64(")]
         [InlineData("ldc.r8 bytearray(00 00")]
+        [InlineData("ldstr \"A\" +")]
+        [InlineData("ldstr ansi(\"A\"")]
         [InlineData("ldstr bytearray(48 00")]
+        [InlineData("switch (L0,")]
         public void MalformedSimpleInstruction_DoesNotLeakMethodState(string malformedInstruction)
         {
             string source = $$"""
@@ -661,7 +687,7 @@ namespace ILAssembler.Tests
 
 
         [Fact]
-        public void SwitchInstruction_CommaLabels()
+        public void SwitchInstruction_NamedLabels_EmitsExpectedBranchTable()
         {
             string source = """
                 .assembly extern System.Runtime { }
@@ -679,8 +705,54 @@ namespace ILAssembler.Tests
                 }
                 """;
 
-            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
-            Assert.Empty(diagnostics);
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            byte[] il = GetMethodIL(pe, "M");
+            int switchOffset = Array.IndexOf(il, (byte)0x45);
+
+            Assert.True(switchOffset >= 0);
+            Assert.Equal(3, BitConverter.ToInt32(il, switchOffset + 1));
+            Assert.Equal(0, BitConverter.ToInt32(il, switchOffset + 5));
+            Assert.Equal(1, BitConverter.ToInt32(il, switchOffset + 9));
+            Assert.Equal(2, BitConverter.ToInt32(il, switchOffset + 13));
+        }
+
+        [Theory]
+        [InlineData("ldc.r4", "1.5", 1.5)]
+        [InlineData("ldc.r8", "1.5", 1.5)]
+        [InlineData("ldc.r8", ".5", 0.5)]
+        [InlineData("ldc.r8", "5e+1", 50.0)]
+        [InlineData("ldc.r8", "-1.25e-2", -0.0125)]
+        [InlineData("ldc.r8", "float32(0x3F800000)", 1.0)]
+        public void FloatingPointInstruction_TextAndFloat32BitForms_EmitExpectedValue(
+            string opcode,
+            string literal,
+            double expected)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        {{opcode}} {{literal}}
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            byte[] il = GetMethodIL(pe, "M");
+            if (opcode == "ldc.r4")
+            {
+                Assert.Equal(0x22, il[0]);
+                Assert.Equal((float)expected, BitConverter.ToSingle(il, 1));
+            }
+            else
+            {
+                Assert.Equal(0x23, il[0]);
+                Assert.Equal(expected, BitConverter.ToDouble(il, 1));
+            }
         }
 
         [Fact]
@@ -704,6 +776,27 @@ namespace ILAssembler.Tests
 
             Assert.Equal(0x23, il[0]);
             Assert.Equal(Math.PI, BitConverter.ToDouble(il, 1), 14);
+        }
+
+        [Fact]
+        public void FloatingPointInstruction_IntegerOverflow_ReportsDiagnostic()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        ldc.r8 99999999999999999999999999999999
+                        pop
+                        ret
+                    }
+                }
+                """;
+
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+            var error = Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticIds.LiteralOutOfRange, error.Id);
         }
 
         [Fact]
@@ -818,7 +911,7 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
-        public void LdstrInstruction_ByteArrayAndAnsiForms_EmitExpectedUserStrings()
+        public void LdstrInstruction_ComposedAnsiAndRawForms_EmitExpectedUserStrings()
         {
             string source = """
                 .assembly extern mscorlib { }
@@ -833,7 +926,19 @@ namespace ILAssembler.Tests
 
                     .method public static string GetAnsi() cil managed
                     {
-                        ldstr ansi("AB")
+                        ldstr ansi("A" + "B")
+                        ret
+                    }
+
+                    .method public static string GetOddAnsi() cil managed
+                    {
+                        ldstr ansi("A" + "BC")
+                        ret
+                    }
+
+                    .method public static string GetComposed() cil managed
+                    {
+                        ldstr "A" + "B"
                         ret
                     }
                 }
@@ -844,6 +949,8 @@ namespace ILAssembler.Tests
 
             Assert.Equal("Hi", ReadLdstrValue(pe, reader, "GetUtf16"));
             Assert.Equal("\u4241", ReadLdstrValue(pe, reader, "GetAnsi"));
+            Assert.Equal("\u4241\u0043", ReadLdstrValue(pe, reader, "GetOddAnsi"));
+            Assert.Equal("AB", ReadLdstrValue(pe, reader, "GetComposed"));
         }
 
         [Fact]
@@ -927,6 +1034,30 @@ namespace ILAssembler.Tests
             Assert.Equal(2, BitConverter.ToInt32(il, switchOffset + 1));
             Assert.Equal(3, BitConverter.ToInt32(il, switchOffset + 5));
             Assert.Equal(6, BitConverter.ToInt32(il, switchOffset + 9));
+        }
+
+        [Theory]
+        [InlineData("switch ()")]
+        [InlineData("switch ( )")]
+        public void SwitchInstruction_Empty_EmitsEmptyBranchTable(string instruction)
+        {
+            string source = $$"""
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .method public static void M() cil managed
+                    {
+                        {{instruction}}
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            byte[] il = GetMethodIL(pe, "M");
+
+            Assert.Equal(0x45, il[0]);
+            Assert.Equal(0, BitConverter.ToInt32(il, 1));
         }
 
         [Fact]
