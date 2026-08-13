@@ -1097,6 +1097,66 @@ namespace ILAssembler.Tests
         }
 
         [Fact]
+        public void MethodBodyCustomAttributes_PreserveOwnerAndOrder()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .method public static void M<T>(int32 value) cil managed
+                    {
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                        .custom instance void [mscorlib]System.Diagnostics.DebuggerHiddenAttribute::.ctor() = (01 00 00 00)
+                        .param [1]
+                            .custom instance void [mscorlib]System.Diagnostics.DebuggerHiddenAttribute::.ctor() = (01 00 00 00)
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                        .param type T
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                            .custom instance void [mscorlib]System.Diagnostics.DebuggerHiddenAttribute::.ctor() = (01 00 00 00)
+                        .param constraint T, [mscorlib]System.IDisposable
+                            .custom instance void [mscorlib]System.Diagnostics.DebuggerHiddenAttribute::.ctor() = (01 00 00 00)
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                        ret
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            MethodDefinitionHandle methodHandle = Assert.Single(reader.MethodDefinitions);
+            var method = reader.GetMethodDefinition(methodHandle);
+            ParameterHandle parameterHandle = method.GetParameters()
+                .Single(handle => reader.GetParameter(handle).SequenceNumber == 1);
+            GenericParameterHandle genericParameterHandle = Assert.Single(method.GetGenericParameters());
+            GenericParameterConstraintHandle constraintHandle =
+                Assert.Single(reader.GetGenericParameter(genericParameterHandle).GetConstraints());
+
+            Assert.Equal(
+                ["ObsoleteAttribute", "DebuggerHiddenAttribute"],
+                GetAttributeTypeNames(reader, reader.GetCustomAttributes(methodHandle)));
+            Assert.Equal(
+                ["DebuggerHiddenAttribute", "ObsoleteAttribute"],
+                GetAttributeTypeNames(reader, reader.GetCustomAttributes(parameterHandle)));
+            Assert.Equal(
+                ["ObsoleteAttribute", "DebuggerHiddenAttribute"],
+                GetAttributeTypeNames(reader, reader.GetCustomAttributes(genericParameterHandle)));
+            Assert.Equal(
+                ["DebuggerHiddenAttribute", "ObsoleteAttribute"],
+                GetAttributeTypeNames(reader, reader.GetCustomAttributes(constraintHandle)));
+
+            static string[] GetAttributeTypeNames(
+                MetadataReader reader,
+                CustomAttributeHandleCollection attributes)
+                => attributes
+                    .Select(reader.GetCustomAttribute)
+                    .Select(attribute => reader.GetMemberReference((MemberReferenceHandle)attribute.Constructor))
+                    .Select(constructor => reader.GetTypeReference((TypeReferenceHandle)constructor.Parent))
+                    .Select(type => reader.GetString(type.Name))
+                    .ToArray();
+        }
+
+        [Fact]
         public void PseudoCustomAttribute_ZeroArgDescriptor_MalformedBlobSkipped()
         {
             // SerializableAttribute has zero fixed and zero named-arg descriptors. The native
