@@ -1,12 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <Optimize>True</Optimize>
-    <!-- The bug is in the wasm interpreter-to-R2R thunk, and it only reproduces when the
-         caller is optimized R2R code. Force crossgen on the browser leg so this actually
-         runs as wasm R2R; otherwise a plain browser leg runs it as normal JIT and silently
-         false-passes. AlwaysUseCrossGen2 only takes effect through the project's own run
-         script, which a merged test runner never invokes, so process isolation is required
-         for it to do anything. -->
+    <!-- The bug only reproduces when the caller is optimized R2R code, so force crossgen on
+         the browser leg. AlwaysUseCrossGen2 only takes effect through the project's own run
+         script, which requires process isolation. -->
     <AlwaysUseCrossGen2 Condition="'$(TargetOS)' == 'browser'">true</AlwaysUseCrossGen2>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>

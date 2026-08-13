@@ -9,9 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Xunit;
 
-// On wasm32 these are 12, 20 and 28 bytes. Each size is greater than 4 and congruent to 4
-// modulo 8, so the wasm interpreter-to-R2R thunk used to zero-pad the caller's return buffer
-// out to the next multiple of 8, writing four bytes past its end.
+// On wasm32 these are 12, 20 and 28 bytes: sizes the interpreter-to-R2R thunk used to zero-pad
+// out to the next multiple of 8, writing past the end of the caller's return buffer.
 public struct Db12
 {
     public byte[] Data;
@@ -102,7 +101,7 @@ public struct RowStack
 public class Runtime_131640
 {
     // Two byref-like values are kept live across the struct-returning call so the repro does
-    // not depend on a single frame slot landing immediately above that call's return buffer.
+    // not depend on a single frame slot landing above that call's return buffer.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Sum(ReadOnlySpan<byte> span, ReadOnlySpan<byte> other, ref RowStack stack)
     {
@@ -119,8 +118,7 @@ public class Runtime_131640
         return total;
     }
 
-    // The spans are materialized before the struct-returning call and stay live across it, so
-    // they occupy frame slots around that call's return buffer.
+    // The spans are materialized before the struct-returning call and stay live across it.
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static int Run12(ReadOnlyMemory<byte> bytes)
     {

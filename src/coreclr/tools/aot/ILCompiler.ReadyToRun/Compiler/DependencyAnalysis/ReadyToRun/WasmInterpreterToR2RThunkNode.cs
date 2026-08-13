@@ -314,9 +314,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
 
             // For struct returns via retbuf the R2R function has already written the struct into
-            // pRet, and there is nothing more to do. In particular the thunk must not zero-pad
-            // pRet out to an aligned size: pRet is owned by the caller and is only guaranteed to
-            // be as large as the struct.
+            // pRet, and there is nothing more to do.
 
             // Restore the stack pointer global
             expressions.Add(Local.Get(localSavedSp));
