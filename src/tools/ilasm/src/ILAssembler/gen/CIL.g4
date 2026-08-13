@@ -673,56 +673,41 @@ asmAttrAny:
 asmAttr: asmAttrAny*;
 
 /*  IL instructions and associated definitions  */
-instr_none: INSTR_NONE;
-
-instr_var: INSTR_VAR;
-
-instr_i: INSTR_I;
-
-instr_i8: INSTR_I8;
-
-instr_r: INSTR_R;
-
-instr_brtarget: INSTR_BRTARGET;
-
-instr_method: INSTR_METHOD;
-
-instr_field: INSTR_FIELD;
-
-instr_type: INSTR_TYPE;
-
-instr_string: INSTR_STRING;
-
-instr_sig: INSTR_SIG;
-
-instr_tok: INSTR_TOK;
-
-instr_switch: INSTR_SWITCH;
-
 instr:
-	instr_none
-	| instr_var int32
-	| instr_var id
-	| instr_i int32
-	| instr_i8 int64
-	| instr_r float64
-	| instr_r int64
-	| instr_r '(' bytes ')'
-	| instr_r 'bytearray' '(' bytes ')'  // Support bytearray syntax for floating point instructions
-	| instr_brtarget int32
-	| instr_brtarget id
-	| instr_method methodRef
-	| instr_field fieldRef
-	| instr_field mdtoken
-	| instr_type typeSpec
-	| instr_string compQstring
-	| instr_string ANSI '(' compQstring ')'
-	| instr_string 'bytearray' '(' bytes ')'
-	| instr_sig callConv type sigArgs
-	| instr_tok ownerType /* ownerType ::= memberRef | typeSpec */
-	| instr_tok int32
-	| instr_switch '(' labels ')'
-	| instr_switch '()';
+	simpleInstr
+	| instructionIsland;
+
+simpleInstr:
+	op = INSTR_NONE {Actions.EmitNoOperandInstruction($op);}
+	| op = INSTR_VAR index = int32 {Actions.EmitVariableIndexInstruction($op, $index.start);}
+	| op = INSTR_VAR name = id {Actions.EmitVariableNameInstruction($op, $name.start);}
+	| op = INSTR_I value32 = int32 {Actions.EmitInt32Instruction($op, $value32.start);}
+	| op = INSTR_I8 value64 = int64 {Actions.EmitInt64Instruction($op, $value64.start);}
+	| op = INSTR_R '(' rawFloat = bytes ')' {Actions.EmitRawFloatingInstruction($op, $rawFloat.Value, $rawFloat.start);}
+	| op = INSTR_R 'bytearray' '(' rawFloat = bytes ')' {Actions.EmitRawFloatingInstruction($op, $rawFloat.Value, $rawFloat.start);}
+	| op = INSTR_BRTARGET offset = int32 {Actions.EmitBranchOffsetInstruction($op, $offset.start);}
+	| op = INSTR_BRTARGET label = id {Actions.EmitBranchLabelInstruction($op, $label.start);}
+	| op = INSTR_STRING 'bytearray' '(' rawString = bytes ')' {Actions.EmitRawStringInstruction($op, $rawString.Value);}
+	| op = INSTR_TOK rawToken = int32 {Actions.EmitRawTokenInstruction($op, $rawToken.start);};
+
+instructionIsland
+@init {BeginSubtree();}
+@after {Actions.ProcessInstructionIsland(_localctx);}
+:
+	INSTR_R float64
+	| INSTR_R int64
+	| INSTR_METHOD methodRef
+	| INSTR_FIELD fieldRef
+	| INSTR_FIELD mdtoken
+	| INSTR_TYPE typeSpec
+	| INSTR_STRING compQstring
+	| INSTR_STRING ANSI '(' compQstring ')'
+	| INSTR_SIG callConv type sigArgs
+	| INSTR_TOK ownerType /* ownerType ::= memberRef | typeSpec */
+	| INSTR_SWITCH '(' labels ')'
+	| INSTR_SWITCH '()'
+;
+finally {EndParseTreeMode();}
 
 labels:
 	/* empty */
@@ -1246,20 +1231,24 @@ methodDecls
 ;
 finally {EndParseTreeMode();}
 
-methodDecl
-@init {BeginSubtree();}
-@after {Actions.OnMethodDeclaration(_localctx);}
-:
-	instr                                                         // MOVED TO TOP - instructions must be matched first!
-	| EMITBYTE int32
+methodDecl:
+	instr
+	| EMITBYTE value = int32 {Actions.EmitByte($value.start);}
 	| sehBlock
-	| MAXSTACK int32
-	| LOCALS sigArgs
-	| LOCALS 'init' sigArgs
-	| ENTRYPOINT
-	| ZEROINIT
-	| dataDecl
+	| MAXSTACK value = int32 {Actions.SetMaxStack($value.start);}
+	| ENTRYPOINT {Actions.SetEntryPoint();}
+	| ZEROINIT {Actions.SetZeroInit();}
 	| labelDecl
+	| scopeBlock
+	| methodDeclIsland;
+
+methodDeclIsland
+@init {BeginSubtree();}
+@after {Actions.ProcessMethodDeclarationIsland(_localctx);}
+:
+	LOCALS sigArgs
+	| LOCALS 'init' sigArgs
+	| dataDecl
 	| secDecl
 	| extSourceSpec
 	| languageDecl
@@ -1270,15 +1259,16 @@ methodDecl
 	| VTENTRY int32 ':' int32
 	| OVERRIDE typeSpec '::' methodName
 	| OVERRIDE 'method' callConv type typeSpec '::' methodName genArity sigArgs
-	| scopeBlock
 	| PARAM TYPE '[' int32 ']' customAttrDecl*
 	| PARAM TYPE dottedName customAttrDecl*
 	| PARAM CONSTRAINT '[' int32 ']' ',' typeSpec customAttrDecl*
 	| PARAM CONSTRAINT dottedName ',' typeSpec customAttrDecl*
-	| PARAM '[' int32 ']' initOpt customAttrDecl*;
+	| PARAM '[' int32 ']' initOpt customAttrDecl*
+;
 finally {EndParseTreeMode();}
 
-labelDecl: id ':';
+labelDecl:
+	name = id ':' {Actions.DefineLabel($name.start);};
 
 customDescrInMethodBody:
 	customDescr
@@ -1293,10 +1283,12 @@ finally {Actions.EndScope(_localctx);}
 
 /* Structured exception handling directives  */
 sehBlock
+@init {BeginSubtree();}
 @after {Actions.EndExceptionBlock(_localctx);}
 :
 	tryBlock sehClauses
 ;
+finally {EndParseTreeMode();}
 
 sehClauses: sehClause+;
 
