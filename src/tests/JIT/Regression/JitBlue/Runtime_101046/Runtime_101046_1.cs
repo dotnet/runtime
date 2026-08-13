@@ -6,14 +6,12 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using TestLibrary;
 using Xunit;
 
-public unsafe class Runtime_101046
+public unsafe class Runtime_101046_1
 {
     [Fact]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/106393", TestRuntimes.Mono)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/123946", typeof(PlatformDetection), nameof(PlatformDetection.PlatformDoesNotSupportNativeTestAssets))]
     public static int TestEntryPoint()
     {
         ushort value = unchecked((ushort)-123);
