@@ -16,8 +16,6 @@ Module Name:
 #include "gcinterface.h"
 #include "env/gcenv.os.h"
 
-#include "gchandletableimpl.h"
-
 #ifdef BUILD_AS_STANDALONE
 #include "gcenv.ee.standalone.inl"
 
@@ -485,5 +483,9 @@ FILE* CreateLogFile(const GCConfigStringHolder& temp_logfile_name, bool is_confi
 void log_init_error_to_host (const char* format, ...);
 
 uint64_t GetHighPrecisionTimeStamp();
+
+// Included last since handletable.inl (pulled in by this header) depends on
+// the declarations above, such as g_theGCHeap.
+#include "gchandletableimpl.h"
 
 #endif // __GC_H

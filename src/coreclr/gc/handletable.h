@@ -219,4 +219,8 @@ FORCEINLINE BOOL HndIsNullOrDestroyedHandle(_UNCHECKED_OBJECTREF value)
     return (value == NULL);
 }
 
+/*--------------------------------------------------------------------------*/
+
+#include "handletable.inl"
+
 #endif //_HANDLETABLE_H

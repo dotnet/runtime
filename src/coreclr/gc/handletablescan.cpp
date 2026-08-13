@@ -18,7 +18,6 @@
 
 #include "objecthandle.h"
 #include "handletablepriv.h"
-#include "handletable.inl"
 
 /****************************************************************************
  *

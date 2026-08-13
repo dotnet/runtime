@@ -90,9 +90,6 @@ FORCEINLINE void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF
         }
     }
 }
-#else
-void HndWriteBarrierWorker(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value);
-#endif // DACCESS_COMPILE
 
 inline void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
 {
@@ -221,5 +218,6 @@ inline BOOL HndFirstAssignHandle(OBJECTHANDLE handle, OBJECTREF objref)
     // return our result
     return success;
 }
+#endif // DACCESS_COMPILE
 
 #endif // _HANDLETABLE_INL
