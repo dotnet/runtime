@@ -19,11 +19,31 @@ internal sealed partial class GrammarActions
     internal void BeginDocument()
     {
         Debug.Assert(
-            _currentMethod is null && _typeOwners.Count == 0 && _namespaceOwners.Count == 0 && _scopeStack.Count == 0,
-            "Namespace, type, method and scope state must be released by the owning rule's finally block.");
+            _currentMethod is null
+                && _typeOwners.Count == 0
+                && _namespaceOwners.Count == 0
+                && _scopeStack.Count == 0
+                && _semanticRootFrames.Count == 0
+                && _dottedNameFrames.Count == 0
+                && _slashedNameFrames.Count == 0
+                && _typeSignatureFrames.Count == 0
+                && _typeArgumentsFrames.Count == 0
+                && _boundsFrames.Count == 0
+                && _signatureArgumentsFrames.Count == 0
+                && _parameterAttributesFrames.Count == 0,
+            "Per-document semantic state must be released by the owning rule's finally block.");
 
         EndMethod();
         ResetTypeScopes();
         ClearPendingCustomAttributeOwners();
+        _semanticRootFrames.Clear();
+        _dottedNameFrames.Clear();
+        _slashedNameFrames.Clear();
+        _typeSignatureFrames.Clear();
+        _typeArgumentsFrames.Clear();
+        _boundsFrames.Clear();
+        _signatureArgumentsFrames.Clear();
+        _parameterAttributesFrames.Clear();
+        _syntaxErrorCount = 0;
     }
 }

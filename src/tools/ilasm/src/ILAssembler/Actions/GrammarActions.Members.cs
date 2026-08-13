@@ -503,35 +503,9 @@ internal sealed partial class GrammarActions
         public GrammarResult VisitFieldOrProp(CILParser.FieldOrPropContext context) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitFieldRef(CILParser.FieldRefContext context) => VisitFieldRef(context);
+
         public GrammarResult.Literal<EntityRegistry.EntityBase> VisitFieldRef(CILParser.FieldRefContext context)
-        {
-            if (context.type() is not CILParser.TypeContext type)
-            {
-                // This is a typedef reference for a field member
-                string alias = VisitDottedName(context.dottedName()).Value;
-                var resolved = TryResolveTypedefAsMember(alias);
-                if (resolved is not null)
-                {
-                    return new(resolved);
-                }
-                ReportError(DiagnosticIds.TypedefNotFound, string.Format(DiagnosticMessageTemplates.TypedefNotFound, alias), context);
-                return new(_entityRegistry.CreateLazilyRecordedMemberReference(_entityRegistry.ModuleType, alias, new BlobBuilder()));
-            }
-
-            var fieldTypeSig = VisitType(type).Value;
-            EntityRegistry.TypeEntity definingType = _entityRegistry.ModuleType;
-            if (context.typeSpec() is CILParser.TypeSpecContext typeSpec)
-            {
-                definingType = VisitTypeSpec(typeSpec).Value;
-            }
-
-            string name = VisitDottedName(context.dottedName()).Value;
-
-            var fieldSig = new BlobBuilder(fieldTypeSig.Count + 1);
-            fieldSig.WriteByte((byte)SignatureKind.Field);
-            fieldTypeSig.WriteContentTo(fieldSig);
-            return new(_entityRegistry.CreateLazilyRecordedMemberReference(definingType, name, fieldSig));
-        }
+            => new(MaterializeFieldReference(GetFieldReferenceValue(context.Value)));
 
         GrammarResult ICILVisitor<GrammarResult>.VisitInitOpt(CILParser.InitOptContext context) => VisitInitOpt(context);
         public GrammarResult.Literal<object?> VisitInitOpt(CILParser.InitOptContext context)
@@ -545,24 +519,9 @@ internal sealed partial class GrammarActions
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitMemberRef(CILParser.MemberRefContext context) => VisitMemberRef(context);
+
         public GrammarResult.Literal<EntityRegistry.EntityBase> VisitMemberRef(CILParser.MemberRefContext context)
-        {
-            if (context.mdtoken() is CILParser.MdtokenContext mdToken)
-            {
-                return VisitMdtoken(mdToken);
-            }
-
-            if (context.methodRef() is CILParser.MethodRefContext methodRef)
-            {
-                return VisitMethodRef(methodRef);
-            }
-            if (context.fieldRef() is CILParser.FieldRefContext fieldRef)
-            {
-                return VisitFieldRef(fieldRef);
-            }
-
-            throw new UnreachableException();
-        }
+            => new(MaterializeMemberReference(GetMemberReferenceValue(context.Value)));
 
         GrammarResult ICILVisitor<GrammarResult>.VisitPropAttr(CILParser.PropAttrContext context) => VisitPropAttr(context);
         public static GrammarResult.Flag<PropertyAttributes> VisitPropAttr(CILParser.PropAttrContext context)

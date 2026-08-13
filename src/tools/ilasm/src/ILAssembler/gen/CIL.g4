@@ -408,8 +408,26 @@ id:
 	| VALUE
 	| INSTANCE
 	| SQSTRING;
-dottedName: DOTTEDNAME | ((dottedNamePart '.')* dottedNamePart) | SQSTRING;
-dottedNamePart: ID | VALUE | INSTANCE | SQSTRING | DOTTEDNAME | 'volatile';
+dottedName returns [string Value]
+@init {Actions.BeginDottedName(_localctx);}
+:
+	direct = DOTTEDNAME {Actions.AddDottedNameToken(_localctx, $direct);}
+	| ((part = dottedNamePart {Actions.AddDottedNamePart(_localctx, $part.Value);} '.')*
+		tail = dottedNamePart {Actions.AddDottedNamePart(_localctx, $tail.Value);})
+	| quoted = SQSTRING {Actions.AddDottedNameToken(_localctx, $quoted);}
+;
+finally {_localctx.Value = Actions.EndDottedName(_localctx);}
+
+dottedNamePart returns [string Value]
+@after {_localctx.Value = Actions.ParseDottedNamePart(_localctx.Start);}
+:
+	ID
+	| VALUE
+	| INSTANCE
+	| SQSTRING
+	| DOTTEDNAME
+	| 'volatile'
+;
 compQstring returns [string Value]
 @init {BeginStreaming(); Actions.BeginComposedString(_localctx);}
 :
@@ -535,12 +553,13 @@ customDescrWithOwner:
 customType: methodRef;
 
 ownerType
-@init {BeginSubtree();}
+returns [object Value, bool HasSyntaxError]
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
-	typeSpec
-	| memberRef
+	typeValue = typeSpec {_localctx.Value = Actions.CreateTypeOwner($typeValue.Value);}
+	| member = memberRef {_localctx.Value = Actions.CreateMemberOwner($member.Value);}
 ;
-finally {EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 /*  Verbal description of custom attribute initialization blob  */
 customBlobDescr: customBlobArgs customBlobNVPairs;
@@ -718,55 +737,88 @@ simpleInstr
 finally {Actions.EndSwitchInstruction(_localctx);}
 
 calliSignature
-@init {BeginSubtree();}
+returns [object Value, bool HasSyntaxError]
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
-	callConv type sigArgs
+	convention = callConv returnType = type arguments = sigArgs
+		{_localctx.Value = Actions.CreateCalliSignature($convention.Value, $returnType.Value, $arguments.Value);}
 ;
-finally {EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 labels:
 	/* empty */
 	| ((headLabel = id {Actions.AddSwitchLabel($headLabel.start);} | headOffset = int32 {Actions.AddSwitchOffset($headOffset.start);}) ',')*
 	  (tailLabel = id {Actions.AddSwitchLabel($tailLabel.start);} | tailOffset = int32 {Actions.AddSwitchOffset($tailOffset.start);});
 
-typeArgs: '<' (type ',')* type '>';
+typeArgs returns [object Value]
+@init {Actions.BeginTypeArguments(_localctx);}
+:
+	'<' (argument = type {Actions.AddTypeArgument(_localctx, $argument.Value);} ',')*
+		lastArgument = type {Actions.AddTypeArgument(_localctx, $lastArgument.Value);} '>'
+;
+finally {_localctx.Value = Actions.EndTypeArguments(_localctx);}
 
-bounds: '[' (bound ',')* bound ']';
+bounds returns [object Value]
+@init {Actions.BeginBounds(_localctx);}
+:
+	'[' (item = bound {Actions.AddBound(_localctx, $item.ctx);} ',')*
+		lastItem = bound {Actions.AddBound(_localctx, $lastItem.ctx);} ']'
+;
+finally {_localctx.Value = Actions.EndBounds(_localctx);}
 
-sigArgs: '(' (sigArg ',')* sigArg ')' | '()';
+sigArgs returns [object Value]
+@init {Actions.BeginSignatureArguments(_localctx);}
+:
+	'(' (argument = sigArg {Actions.AddSignatureArgument(_localctx, $argument.Value);} ',')*
+		lastArgument = sigArg {Actions.AddSignatureArgument(_localctx, $lastArgument.Value);} ')'
+	| '()'
+;
+finally {_localctx.Value = Actions.EndSignatureArguments(_localctx);}
 
-sigArg:
-	ELLIPSIS
-	| paramAttr type marshalClause id?;
+sigArg returns [object Value]:
+	ELLIPSIS {_localctx.Value = Actions.CreateSentinelSignatureArgument();}
+	| attributes = paramAttr argumentType = type marshalling = marshalClause name = id?
+		{_localctx.Value = Actions.CreateSignatureArgument($attributes.Value, $argumentType.Value, $marshalling.ctx, $name.ctx);};
 
 /*  Class referencing  */
 
-className:
-	'[' dottedName ']' slashedName
-	| '[' mdtoken ']' slashedName
-	| '[' PTR ']' slashedName
-	| '[' MODULE dottedName ']' slashedName
-	| slashedName
-	| mdtoken
-	| THIS
-	| BASE
-	| NESTER;
+className returns [object Value]:
+	'[' assemblyName = dottedName ']' typeName = slashedName
+		{_localctx.Value = Actions.CreateAssemblyQualifiedClassName($assemblyName.Value, $typeName.Value);}
+	| '[' scopeToken = mdtoken ']' typeName = slashedName
+		{_localctx.Value = Actions.CreateTokenQualifiedClassName($scopeToken.Value, $typeName.Value);}
+	| '[' PTR ']' typeName = slashedName
+		{_localctx.Value = Actions.CreatePointerQualifiedClassName($typeName.Value);}
+	| '[' MODULE moduleName = dottedName ']' typeName = slashedName
+		{_localctx.Value = Actions.CreateModuleQualifiedClassName(_localctx.Start, $moduleName.Value, $typeName.Value);}
+	| typeName = slashedName {_localctx.Value = Actions.CreateUnqualifiedClassName($typeName.Value);}
+	| typeToken = mdtoken {_localctx.Value = Actions.CreateTokenClassName($typeToken.Value);}
+	| THIS {_localctx.Value = Actions.CreateThisClassName(_localctx.Start);}
+	| BASE {_localctx.Value = Actions.CreateBaseClassName(_localctx.Start);}
+	| NESTER {_localctx.Value = Actions.CreateNesterClassName(_localctx.Start);};
 
-slashedName: (dottedName '/')* dottedName;
+slashedName returns [object Value]
+@init {Actions.BeginSlashedName(_localctx);}
+:
+	(part = dottedName {Actions.AddSlashedNamePart(_localctx, $part.Value);} '/')*
+	lastPart = dottedName {Actions.AddSlashedNamePart(_localctx, $lastPart.Value);}
+;
+finally {_localctx.Value = Actions.EndSlashedName(_localctx);}
 
 assemblyDecls: assemblyDecl*;
 
 assemblyDecl: (HASH 'algorithm' int32) | secDecl | asmOrRefDecl;
 
 typeSpec
-@init {BeginSubtree();}
+returns [object Value, bool HasSyntaxError]
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
-	className
-	| '[' dottedName ']'
-	| '[' MODULE dottedName ']'
-	| type
+	classType = className {_localctx.Value = Actions.CreateClassTypeSpecification($classType.Value);}
+	| '[' assemblyName = dottedName ']' {_localctx.Value = Actions.CreateAssemblyTypeSpecification($assemblyName.Value);}
+	| '[' MODULE moduleName = dottedName ']' {_localctx.Value = Actions.CreateModuleTypeSpecification($moduleName.Value);}
+	| signatureType = type {_localctx.Value = Actions.CreateSignatureTypeSpecification($signatureType.Value);}
 ;
-finally {EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 /*  Native types for marshaling signatures  */
 nativeType:
@@ -881,65 +933,79 @@ variantTypeElement:
 	| CLSID;
 
 /*  Managed types for signatures  */
-type: elementType typeModifiers*;
+type returns [object Value]
+@init {Actions.BeginTypeSignature(_localctx);}
+:
+	element = elementType {Actions.SetTypeSignatureElement(_localctx, $element.Value);}
+	(modifier = typeModifiers {Actions.AddTypeSignatureModifier(_localctx, $modifier.Value);})*
+;
+finally {_localctx.Value = Actions.EndTypeSignature(_localctx);}
 
-typeModifiers:
-	ARRAY_TYPE_NO_BOUNDS			# SZArrayModifier
-	| '[' ']'						# SZArrayModifier
-	| bounds					# ArrayModifier
-	| REF						# ByRefModifier
-	| PTR  				# PtrModifier
-	| 'pinned'					# PinnedModifier
-	| 'modreq' '(' typeSpec ')'	# RequiredModifier
-	| 'modopt' '(' typeSpec ')'	# OptionalModifier
-	| typeArgs					# GenericArgumentsModifier;
+typeModifiers returns [object Value]:
+	ARRAY_TYPE_NO_BOUNDS {_localctx.Value = Actions.CreateSzArrayTypeModifier();} # SZArrayModifier
+	| '[' ']' {_localctx.Value = Actions.CreateSzArrayTypeModifier();} # SZArrayModifier
+	| arrayBounds = bounds {_localctx.Value = Actions.CreateArrayTypeModifier($arrayBounds.Value);} # ArrayModifier
+	| REF {_localctx.Value = Actions.CreateByReferenceTypeModifier();} # ByRefModifier
+	| PTR {_localctx.Value = Actions.CreatePointerTypeModifier();} # PtrModifier
+	| 'pinned' {_localctx.Value = Actions.CreatePinnedTypeModifier();} # PinnedModifier
+	| 'modreq' '(' modifierType = typeSpec ')' {_localctx.Value = Actions.CreateCustomTypeModifier($modifierType.Value, true);} # RequiredModifier
+	| 'modopt' '(' modifierType = typeSpec ')' {_localctx.Value = Actions.CreateCustomTypeModifier($modifierType.Value, false);} # OptionalModifier
+	| arguments = typeArgs {_localctx.Value = Actions.CreateGenericArgumentsModifier($arguments.Value);} # GenericArgumentsModifier;
 
-elementType:
-	'class' className
-	| OBJECT
-	| VALUE 'class' className
-	| VALUETYPE className
-	| 'method' callConv type PTR sigArgs
-	| METHOD_TYPE_PARAMETER int32
-	| TYPE_PARAMETER int32
-	| METHOD_TYPE_PARAMETER dottedName
-	| TYPE_PARAMETER dottedName
-	| TYPEDREF
-	| VOID
-	| nativeInt
-	| nativeUint
-	| simpleType
-	| dottedName /* typedef */
-	| ELLIPSIS type;
+elementType returns [object Value]:
+	'class' classType = className {_localctx.Value = Actions.CreateClassElementType($classType.Value, false);}
+	| OBJECT {_localctx.Value = Actions.CreateObjectElementType();}
+	| VALUE 'class' valueClassType = className {_localctx.Value = Actions.CreateClassElementType($valueClassType.Value, true);}
+	| VALUETYPE valueType = className {_localctx.Value = Actions.CreateClassElementType($valueType.Value, true);}
+	| 'method' convention = callConv returnType = type PTR arguments = sigArgs
+		{_localctx.Value = Actions.CreateFunctionPointerElementType($convention.Value, $returnType.Value, $arguments.Value);}
+	| METHOD_TYPE_PARAMETER parameterIndex = int32 {_localctx.Value = Actions.CreateIndexedGenericParameterElementType(true, $parameterIndex.start);}
+	| TYPE_PARAMETER parameterIndex = int32 {_localctx.Value = Actions.CreateIndexedGenericParameterElementType(false, $parameterIndex.start);}
+	| METHOD_TYPE_PARAMETER parameterName = dottedName {_localctx.Value = Actions.CreateNamedGenericParameterElementType(_localctx.Start, true, $parameterName.Value);}
+	| TYPE_PARAMETER parameterName = dottedName {_localctx.Value = Actions.CreateNamedGenericParameterElementType(_localctx.Start, false, $parameterName.Value);}
+	| TYPEDREF {_localctx.Value = Actions.CreateTypedReferenceElementType();}
+	| VOID {_localctx.Value = Actions.CreateVoidElementType();}
+	| signedNative = nativeInt {_localctx.Value = Actions.CreatePrimitiveElementType($signedNative.Value);}
+	| unsignedNative = nativeUint {_localctx.Value = Actions.CreatePrimitiveElementType($unsignedNative.Value);}
+	| primitive = simpleType {_localctx.Value = Actions.CreatePrimitiveElementType($primitive.Value);}
+	| alias = dottedName {_localctx.Value = Actions.CreateTypedefElementType(_localctx.Start, $alias.Value);} /* typedef */
+	| ELLIPSIS sentinelType = type {_localctx.Value = Actions.CreateSentinelElementType($sentinelType.Value);};
 
-simpleType:
-	CHAR
-	| STRING
-	| BOOL
-	| INT8
-	| INT16
-	| INT32_
-	| INT64_
-	| FLOAT32
-	| FLOAT64_
-	| UINT8
-	| UINT16
-	| UINT32
-	| UINT64
-	| 'unsigned' INT8
-	| 'unsigned' INT16
-	| 'unsigned' INT32_
-	| 'unsigned' INT64_;
+simpleType returns [byte Value]:
+	value = CHAR {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = STRING {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = BOOL {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = INT8 {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = INT16 {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = INT32_ {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = INT64_ {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = FLOAT32 {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = FLOAT64_ {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = UINT8 {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = UINT16 {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = UINT32 {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| value = UINT64 {_localctx.Value = Actions.GetSimpleType($value, false);}
+	| 'unsigned' value = INT8 {_localctx.Value = Actions.GetSimpleType($value, true);}
+	| 'unsigned' value = INT16 {_localctx.Value = Actions.GetSimpleType($value, true);}
+	| 'unsigned' value = INT32_ {_localctx.Value = Actions.GetSimpleType($value, true);}
+	| 'unsigned' value = INT64_ {_localctx.Value = Actions.GetSimpleType($value, true);};
 
-bound:
+bound returns [int Lower, int Upper, bool HasLower, bool HasUpper]
+@init {Actions.InitializeBound(_localctx);}
+:
+	/* EMPTY */
 	| ELLIPSIS
-	| int32
-	| int32 ELLIPSIS int32
-	| int32 ELLIPSIS;
+	| size = int32 {Actions.SetBoundSize(_localctx, $size.start);}
+	| lower = int32 ELLIPSIS upper = int32 {Actions.SetBoundRange(_localctx, $lower.start, $upper.start);}
+	| lower = int32 ELLIPSIS {Actions.SetBoundLower(_localctx, $lower.start);}
+;
 
 /* Parser rules for multi-word type tokens that need whitespace handling */
-nativeInt: 'native' INT;
-nativeUint: 'native' ('unsigned' INT | UINT);
+nativeInt returns [byte Value]:
+	'native' INT {_localctx.Value = Actions.GetNativeIntType();};
+
+nativeUint returns [byte Value]:
+	'native' ('unsigned' INT | UINT) {_localctx.Value = Actions.GetNativeUIntType();};
 
 /*  Security declarations  */
 PERMISSION: '.permission';
@@ -995,53 +1061,65 @@ secAction:
 
 /*  Method referencing  */
 methodRef
-@init {BeginSubtree();}
+returns [object Value, bool HasSyntaxError]
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
-	callConv type typeSpec '::' methodName typeArgs? sigArgs
-	| callConv type typeSpec '::' methodName genArityNotEmpty sigArgs
-	| callConv type methodName typeArgs? sigArgs
-	| callConv type methodName genArityNotEmpty sigArgs
-	| mdtoken
-	| dottedName /* typeDef */
+	convention = callConv returnType = type owner = typeSpec '::' name = methodName genericArguments = typeArgs? arguments = sigArgs
+		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, $owner.Value, $name.Value, $genericArguments.ctx, null, $arguments.Value);}
+	| convention = callConv returnType = type owner = typeSpec '::' name = methodName genericArity = genArityNotEmpty arguments = sigArgs
+		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, $owner.Value, $name.Value, null, $genericArity.Value, $arguments.Value);}
+	| convention = callConv returnType = type name = methodName genericArguments = typeArgs? arguments = sigArgs
+		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, null, $name.Value, $genericArguments.ctx, null, $arguments.Value);}
+	| convention = callConv returnType = type name = methodName genericArity = genArityNotEmpty arguments = sigArgs
+		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, null, $name.Value, null, $genericArity.Value, $arguments.Value);}
+	| token = mdtoken {_localctx.Value = Actions.CreateTokenMethodReference($token.Value);}
+	| alias = dottedName {_localctx.Value = Actions.CreateTypedefMethodReference(_localctx.Start, $alias.Value);} /* typeDef */
 ;
-finally {EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
-callConv:
-	INSTANCE callConv
-	| EXPLICIT callConv
-	| callKind
-	| 'callconv' '(' int32 ')';
+callConv returns [byte Value]:
+	INSTANCE inner = callConv {_localctx.Value = Actions.AddInstanceCallingConvention($inner.Value);}
+	| EXPLICIT inner = callConv {_localctx.Value = Actions.AddExplicitCallingConvention($inner.Value);}
+	| kind = callKind {_localctx.Value = $kind.Value;}
+	| 'callconv' '(' raw = int32 ')' {_localctx.Value = Actions.GetRawCallingConvention($raw.start);};
 
-callKind:
+callKind returns [byte Value]
+@init {_localctx.Value = Actions.GetDefaultCallingConvention();}
+:
 	/* EMPTY */
-	| DEFAULT
-	| VARARG
-	| UNMANAGED CDECL
-	| UNMANAGED STDCALL
-	| UNMANAGED THISCALL
-	| UNMANAGED FASTCALL
-	| UNMANAGED;
+	| kind = DEFAULT {_localctx.Value = Actions.GetCallingConvention($kind);}
+	| kind = VARARG {_localctx.Value = Actions.GetCallingConvention($kind);}
+	| UNMANAGED kind = CDECL {_localctx.Value = Actions.GetCallingConvention($kind);}
+	| UNMANAGED kind = STDCALL {_localctx.Value = Actions.GetCallingConvention($kind);}
+	| UNMANAGED kind = THISCALL {_localctx.Value = Actions.GetCallingConvention($kind);}
+	| UNMANAGED kind = FASTCALL {_localctx.Value = Actions.GetCallingConvention($kind);}
+	| kind = UNMANAGED {_localctx.Value = Actions.GetCallingConvention($kind);}
+;
 
 mdtoken
-@init {BeginSubtree();}
+returns [int Value, bool HasSyntaxError]
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
-	'mdtoken' '(' int32 ')'
+	'mdtoken' '(' token = int32 ')' {_localctx.Value = Actions.ParseInt32($token.start);}
 ;
-finally {EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
-memberRef:
-	'method' methodRef
-	| 'field' fieldRef
-	| mdtoken;
+memberRef returns [object Value]:
+	'method' method = methodRef {_localctx.Value = Actions.CreateMethodMemberReference($method.Value);}
+	| 'field' field = fieldRef {_localctx.Value = Actions.CreateFieldMemberReference($field.Value);}
+	| token = mdtoken {_localctx.Value = Actions.CreateTokenMemberReference($token.Value);};
 
 fieldRef
-@init {BeginSubtree();}
+returns [object Value, bool HasSyntaxError]
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
-	type typeSpec '::' dottedName
-	| type dottedName
-	| dottedName // typedef
+	fieldType = type owner = typeSpec '::' name = dottedName
+		{_localctx.Value = Actions.CreateFieldReference($fieldType.Value, $owner.Value, $name.Value);}
+	| fieldType = type name = dottedName
+		{_localctx.Value = Actions.CreateFieldReference($fieldType.Value, null, $name.Value);}
+	| alias = dottedName {_localctx.Value = Actions.CreateTypedefFieldReference(_localctx.Start, $alias.Value);} // typedef
 ;
-finally {EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 /* Generic type parameters declaration  */
 typeList: (typeSpec ',')* typeSpec;
@@ -1065,9 +1143,11 @@ typars: (typar ',')* typar;
 
 tyBound: '(' typeList ')';
 
-genArity: /* EMPTY */ | genArityNotEmpty;
+genArity returns [int Value]:
+	value = genArityNotEmpty? {_localctx.Value = Actions.GetGenericArity($value.ctx);};
 
-genArityNotEmpty: '<' '[' int32 ']' '>';
+genArityNotEmpty returns [int Value]:
+	'<' '[' value = int32 ']' '>' {_localctx.Value = Actions.ParseInt32($value.start);};
 
 /*  Class body declarations  */
 classDecl
@@ -1167,17 +1247,28 @@ propDecl:
 
 /*  Method declaration  */
 
-marshalClause: /* EMPTY */ | 'marshal' '(' marshalBlob ')';
+marshalClause
+@init {BeginSubtree();}
+:
+	/* EMPTY */
+	| 'marshal' '(' marshalBlob ')'
+;
+finally {EndParseTreeMode();}
 
 marshalBlob: nativeType | '{' hexbyte+ '}';
 
-paramAttr: paramAttrElement*;
+paramAttr returns [int Value]
+@init {Actions.BeginParameterAttributes(_localctx);}
+:
+	(element = paramAttrElement {Actions.AddParameterAttribute(_localctx, $element.ctx);})*
+;
+finally {_localctx.Value = Actions.EndParameterAttributes(_localctx);}
 
-paramAttrElement:
-	'[' in = 'in' ']'
-	| '[' out = 'out' ']'
-	| '[' opt = 'opt' ']'
-	| '[' int32 ']';
+paramAttrElement returns [int Value, bool ShouldAppend]:
+	'[' attribute = 'in' ']' {Actions.SetParameterAttributeElement(_localctx, $attribute);}
+	| '[' attribute = 'out' ']' {Actions.SetParameterAttributeElement(_localctx, $attribute);}
+	| '[' attribute = 'opt' ']' {Actions.SetParameterAttributeElement(_localctx, $attribute);}
+	| '[' raw = int32 ']' {Actions.SetRawParameterAttributeElement(_localctx, $raw.start);};
 
 methodHead
 @init {BeginSubtree();}
@@ -1226,7 +1317,10 @@ pinvAttr:
 	| 'charmaperror' ':' 'off'
 	| 'flags' '(' int32 ')';
 
-methodName: '.ctor' | '.cctor' | dottedName;
+methodName returns [string Value]:
+	ctorName = '.ctor' {_localctx.Value = Actions.GetMethodName($ctorName);}
+	| cctorName = '.cctor' {_localctx.Value = Actions.GetMethodName($cctorName);}
+	| dotted = dottedName {_localctx.Value = $dotted.Value;};
 
 implAttr:
 	'native'
