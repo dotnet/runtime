@@ -49,16 +49,6 @@
 #error "Don't know how to obtain max path on this platform"
 #endif
 
-pal::string_t pal::get_timestamp()
-{
-    std::time_t t = std::time(nullptr);
-    const std::size_t elems = 100;
-    char_t buf[elems];
-    std::strftime(buf, elems, _X("%c %Z"), std::gmtime(&t));
-
-    return pal::string_t(buf);
-}
-
 bool pal::touch_file(const pal::string_t& path)
 {
     int fd = open(path.c_str(), (O_CREAT | O_EXCL), (S_IRUSR | S_IRGRP | S_IROTH));
@@ -136,123 +126,36 @@ bool pal::getcwd(pal::string_t* recv)
     return true;
 }
 
-namespace
-{
-    bool get_loaded_library_from_proc_maps(const pal::char_t* library_name, pal::dll_t* dll, pal::string_t* path)
-    {
-        char* line = nullptr;
-        size_t lineLen = 0;
-        ssize_t read;
-        FILE* file = pal::file_open(_X("/proc/self/maps"), _X("r"));
-        if (file == nullptr)
-            return false;
-
-        // Read maps file line by line to check fo the library
-        bool found = false;
-        pal::string_t path_local;
-        while ((read = getline(&line, &lineLen, file)) != -1)
-        {
-            char buf[PATH_MAX];
-            if (sscanf(line, "%*p-%*p %*[-rwxsp] %*p %*[:0-9a-f] %*d %s\n", buf) == 1)
-            {
-                path_local = buf;
-                size_t pos = path_local.rfind(DIR_SEPARATOR);
-                if (pos == std::string::npos)
-                    continue;
-
-                pos = path_local.find(library_name, pos);
-                if (pos != std::string::npos)
-                {
-                    found = true;
-                    break;
-                }
-            }
-        }
-
-        fclose(file);
-        free(line);
-        if (!found)
-            return false;
-
-        pal::dll_t dll_maybe = dlopen(path_local.c_str(), RTLD_LAZY | RTLD_NOLOAD);
-        if (dll_maybe == nullptr)
-            return false;
-
-        *dll = dll_maybe;
-        path->assign(path_local);
-        return true;
-    }
-}
-
 bool pal::get_loaded_library(
     const char_t* library_name,
     const char* symbol_name,
     /*out*/ dll_t* dll,
     /*out*/ pal::string_t* path)
 {
-    pal::string_t library_name_local;
-#if defined(TARGET_OSX)
-    if (!pal::is_path_fully_qualified(library_name))
-        library_name_local.append("@rpath/");
-#endif
-    library_name_local.append(library_name);
-
-    dll_t dll_maybe = dlopen(library_name_local.c_str(), RTLD_LAZY | RTLD_NOLOAD);
-    if (dll_maybe == nullptr)
-    {
-        if (pal::is_path_fully_qualified(library_name))
-            return false;
-
-        // dlopen on some systems only finds loaded libraries when given the full path
-        // Check proc maps as a fallback
-        return get_loaded_library_from_proc_maps(library_name, dll, path);
-    }
-
-    // Not all systems support getting the path from just the handle (e.g. dlinfo),
-    // so we rely on the caller passing in a symbol name so that we get (any) address
-    // in the library
-    assert(symbol_name != nullptr);
-    pal::proc_t proc = pal::get_symbol(dll_maybe, symbol_name);
-    Dl_info info;
-    if (dladdr(proc, &info) == 0)
-    {
-        dlclose(dll_maybe);
+    pal_dll_t dll_c = nullptr;
+    pal_char_t* path_c = nullptr;
+    if (!::pal_get_loaded_library(library_name, symbol_name, &dll_c, &path_c))
         return false;
-    }
 
-    *dll = dll_maybe;
-    path->assign(info.dli_fname);
+    *dll = dll_c;
+    path->assign(path_c);
+    free(path_c);
     return true;
 }
 
 bool pal::load_library(const string_t* path, dll_t* dll)
 {
-    *dll = dlopen(path->c_str(), RTLD_LAZY);
-    if (*dll == nullptr)
-    {
-        trace::error(_X("Failed to load %s, error: %s"), path->c_str(), dlerror());
-        return false;
-    }
-    return true;
+    return pal_load_library(path->c_str(), dll);
 }
 
-pal::proc_t pal::get_symbol(dll_t library, const char* name)
+pal_proc_t pal::get_symbol(dll_t library, const char* name)
 {
-    auto result = dlsym(library, name);
-    if (result == nullptr)
-    {
-        trace::info(_X("Probed for and did not find library symbol %s, error: %s"), name, dlerror());
-    }
-
-    return result;
+    return pal_get_symbol(library, name);
 }
 
 void pal::unload_library(dll_t library)
 {
-    if (dlclose(library) != 0)
-    {
-        trace::warning(_X("Failed to unload library, error: %s"), dlerror());
-    }
+    pal_unload_library(library);
 }
 
 int pal::xtoi(const char_t* input)
@@ -267,7 +170,7 @@ bool pal::is_path_rooted(const pal::string_t& path)
 
 bool pal::is_path_fully_qualified(const pal::string_t& path)
 {
-    return is_path_rooted(path);
+    return pal_is_path_fully_qualified(path.c_str());
 }
 
 bool pal::get_default_breadcrumb_store(string_t* recv)
@@ -1041,11 +944,6 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 bool pal::file_exists(const pal::string_t& path)
 {
     return ::pal_file_exists(path.c_str());
-}
-
-bool pal::is_directory(const pal::string_t& path)
-{
-    return ::pal_directory_exists(path.c_str());
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)

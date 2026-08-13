@@ -25,9 +25,7 @@
 #include "ecall.h"
 #include "threadsuspend.h"
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 // target write barriers
 EXTERN_C void JIT_WriteBarrier(Object **dst, Object *ref);
@@ -214,14 +212,14 @@ class ThumbNearJump : public InstructionFormat
                 {
                 case InstructionFormat::k16:
                     if(variationCode == 0xe)
-                        return  (offset >= -2048 && offset <= 2046 && (offset & 0x1) == 0);
+                        return  offset >= -2048 && offset <= 2046 && (offset & 0x1) == 0;
                     else
-                        return (offset >= -256 && offset <= 254 && (offset & 0x1) == 0);
+                        return offset >= -256 && offset <= 254 && (offset & 0x1) == 0;
                 case InstructionFormat::k32:
                     if(variationCode == 0xe)
-                        return  ((offset >= -16777216) && (offset <= 16777214) && ((offset & 0x1) == 0));
+                        return  (offset >= -16777216) && (offset <= 16777214) && ((offset & 0x1) == 0);
                     else
-                        return  ((offset >= -1048576) && (offset <= 1048574) && ((offset & 0x1) == 0));
+                        return  (offset >= -1048576) && (offset <= 1048574) && ((offset & 0x1) == 0);
                 default:
                     _ASSERTE(!"Unknown refsize");
                     return FALSE;
@@ -1301,7 +1299,7 @@ void FaultingExceptionFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool u
 
 void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
@@ -1314,7 +1312,7 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     // @TODO: Remove this after the debugger is fixed to avoid stack-walks from bad places
     // @TODO: This may be still needed for sampling profilers
@@ -1351,8 +1349,6 @@ void InlinedCallFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateF
     // in sync with definition of REG_SAVED_LOCALLOC_SP in the JIT.
     pRD->pCurrentContext->R9 = (DWORD) dac_cast<TADDR>(m_pSPAfterProlog);
     pRD->pCurrentContextPointers->R9 = (DWORD *)&m_pSPAfterProlog;
-
-    RETURN;
 }
 
 #ifdef FEATURE_HIJACK
@@ -1364,14 +1360,14 @@ TADDR ResumableFrame::GetReturnAddressPtr_Impl(void)
 
 void ResumableFrame::UpdateRegDisplay_Impl(const PREGDISPLAY pRD, bool updateFloats)
 {
-    CONTRACT_VOID
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
         MODE_ANY;
         SUPPORTS_DAC;
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     CopyMemory(pRD->pCurrentContext, m_Regs, sizeof(T_CONTEXT));
 
@@ -1494,13 +1490,9 @@ void MovRegImm(BYTE* p, int reg, TADDR imm)
     size_t rxOffset = pStartRX - pStart; \
     BYTE * p = pStart;
 
-#ifdef FEATURE_PERFMAP
 #define BEGIN_DYNAMIC_HELPER_EMIT(size) \
     BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size) \
     PerfMap::LogStubs(__FUNCTION__, "DynamicHelper", (PCODE)p, size, PerfMapStubType::Individual);
-#else
-#define BEGIN_DYNAMIC_HELPER_EMIT(size) BEGIN_DYNAMIC_HELPER_EMIT_WORKER(size)
-#endif
 
 
 #define END_DYNAMIC_HELPER_EMIT() \

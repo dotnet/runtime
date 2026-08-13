@@ -358,10 +358,10 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            // Compress data with WindowLog=24 (16 MB), which exceeds the RFC 9659-mandated decompression limit of WindowLog=23 (8 MB).
+            // Compress data with WindowLog2=24 (16 MB), which exceeds the RFC 9659-mandated decompression limit of WindowLog2=23 (8 MB).
             byte[] content = new byte[1024];
             var compressedStream = new MemoryStream();
-            using (var zstdStream = new ZstandardStream(compressedStream, new ZstandardCompressionOptions { WindowLog = 24 }, leaveOpen: true))
+            using (var zstdStream = new ZstandardStream(compressedStream, new ZstandardCompressionOptions { WindowLog2 = 24 }, leaveOpen: true))
             {
                 await zstdStream.WriteAsync(content);
             }

@@ -156,9 +156,11 @@ private:
     void      CollectReferencesForCast(GenTreeOp* castNode);
     void      CollectReferencesForBinop(GenTreeOp* binOpNode);
     void      CollectReferencesForIndir(GenTreeIndir* node);
+    void      CollectReferencesForNullCheck(GenTreeIndir* node);
     void      CollectReferencesForBlockStore(GenTreeBlk* node);
     void      CollectReferencesForLclVar(GenTreeLclVar* lclVar);
     void      CollectReferencesForIndexAddr(GenTreeIndexAddr* indexAddrNode);
+    void      CollectReferencesForHardwareIntrinsic(GenTreeHWIntrinsic* node);
     void      RewriteLocalStackStore(GenTreeLclVarCommon* node);
     void      CollectReference(GenTree* node);
     void      RequestTemporaryRegisterForMultiplyUsedNode(GenTree* node);

@@ -30,6 +30,7 @@ parameters:
   unifiedBuildNameSuffix: ''
   unifiedBuildConfigOverride: ''
   extraBuildArgs: ''
+  useHelixMonitor: false
 
 ### Test run job
 
@@ -290,6 +291,7 @@ jobs:
         shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
         runtimeVariant: ${{ parameters.runtimeVariant }}
         SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+        useHelixMonitor: ${{ parameters.useHelixMonitor }}
 
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           creator: $(Build.DefinitionName)
@@ -328,17 +330,6 @@ jobs:
           helixAccessToken: $(HelixApiAccessToken)
 
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
-
-        # helixpublishwitharcade.proj processes one scenario per parallel MSBuild invocation. Each invocation only
-        # creates Helix work items and them waits for their completion on the remote Helix machines, so is not
-        # computationally intensive. We want Helix to be provided with all the possible work items in up front,
-        # so can do as much work in parallel as possible. Thus, increase the amount of allowed MSBuild parallelism
-        # to at least the maximum number of scenarios to be processed in a testGroup.
-        #
-        # We only need to do this for a testGroup with more than one or two scenarios, though it isn't functionally
-        # a problem to always do it. Thus, we only exempt this setting for a few cases.
-        ${{ if notIn(parameters.testGroup, 'innerloop', 'outerloop', 'ilasm', 'gc-longrunning', 'gc-simulator', 'gc-standalone', 'gc-standalone-server') }}:
-          msbuildParallelism: '/maxcpucount:55'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
           ${{ if and(eq(parameters.runInterpreter, 'true'),eq(variables['Build.Reason'], 'PullRequest')) }}:
@@ -587,7 +578,7 @@ jobs:
           archiveType: $(archiveType)
           tarCompression: $(tarCompression)
           archiveExtension: $(archiveExtension)
-          artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+          artifactName: 'SuperPMI_Collection_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
           displayName: 'Upload artifacts SuperPMI $(CollectionName)-$(CollectionType) collection'
           condition: always()
 
@@ -627,7 +618,7 @@ jobs:
         displayName: Publish SuperPMI logs
         inputs:
           targetPath: $(SpmiLogsLocation)
-          artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)'
+          artifactName: 'SuperPMI_Logs_$(CollectionName)_$(CollectionType)_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_Attempt$(System.JobAttempt)'
         condition: always()
 
     ########################################################################################################

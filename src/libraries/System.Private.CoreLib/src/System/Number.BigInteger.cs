@@ -936,18 +936,15 @@ namespace System
                     if ((exponent & 1) != 0)
                     {
                         // Multiply into the next temporary
-                        unsafe
-                        {
-                            // It is safe to reinterpret the memory at the indexed position of Pow10BigNumTable as a BigInteger,
-                            // because Pow10BigNumTable is laid out such that each indexed position contains a valid BigInteger
-                            // representation with the correct structure and alignment.
+                        // It is safe to reinterpret the memory at the indexed position of Pow10BigNumTable as a BigInteger,
+                        // because Pow10BigNumTable is laid out such that each indexed position contains a valid BigInteger
+                        // representation with the correct structure and alignment.
 
-                            int pow10BigNumTableIndex = Pow10BigNumTableIndices[index];
-                            Debug.Assert((pow10BigNumTableIndex + ((sizeof(BigInteger) + sizeof(uint) - 1) / sizeof(uint))) < Pow10BigNumTable.Length);
+                        int pow10BigNumTableIndex = Pow10BigNumTableIndices[index];
+                        Debug.Assert((pow10BigNumTableIndex + ((sizeof(BigInteger) + sizeof(uint) - 1) / sizeof(uint))) < Pow10BigNumTable.Length);
 
-                            ref BigInteger rhs = ref Unsafe.As<uint, BigInteger>(ref Unsafe.AsRef(in Pow10BigNumTable[pow10BigNumTableIndex]));
-                            Multiply(ref lhs, ref rhs, out product);
-                        }
+                        ref BigInteger rhs = ref Unsafe.As<uint, BigInteger>(ref Unsafe.AsRef(in Pow10BigNumTable[pow10BigNumTableIndex]));
+                        Multiply(ref lhs, ref rhs, out product);
 
                         // Swap to the next temporary
                         ref BigInteger temp = ref product;
@@ -1342,6 +1339,31 @@ namespace System
                 if (_length > 1)
                 {
                     return ((ulong)_blocks[1] << 32) + _blocks[0];
+                }
+
+                if (_length > 0)
+                {
+                    return _blocks[0];
+                }
+
+                return 0;
+            }
+
+            public UInt128 ToUInt128()
+            {
+                if (_length > 3)
+                {
+                    return new UInt128(((ulong)_blocks[3] << 32) + _blocks[2], ((ulong)(_blocks[1]) << 32) + _blocks[0]);
+                }
+
+                if (_length > 2)
+                {
+                    return new UInt128((ulong)_blocks[2], ((ulong)_blocks[1] << 32) + _blocks[0]);
+                }
+
+                if (_length > 1)
+                {
+                    return ((ulong)(_blocks[1]) << 32) + _blocks[0];
                 }
 
                 if (_length > 0)

@@ -422,19 +422,13 @@ namespace System
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-
-            if (s == null)
-            {
-                result = 0;
-                return false;
-            }
-            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         //
@@ -1432,15 +1426,23 @@ namespace System
 
             if (typeof(TOther) == typeof(byte))
             {
-                var actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
-                                   (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+#if MONO
+                byte actualResult = (value >= byte.MaxValue) ? byte.MaxValue :
+                                    (value <= byte.MinValue) ? byte.MinValue : (byte)value;
+#else
+                byte actualResult = (byte)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
             else if (typeof(TOther) == typeof(char))
             {
+#if MONO
                 char actualResult = (value >= char.MaxValue) ? char.MaxValue :
                                     (value <= char.MinValue) ? char.MinValue : (char)value;
+#else
+                char actualResult = (char)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1454,8 +1456,12 @@ namespace System
             }
             else if (typeof(TOther) == typeof(ushort))
             {
+#if MONO
                 ushort actualResult = (value >= ushort.MaxValue) ? ushort.MaxValue :
                                       (value <= ushort.MinValue) ? ushort.MinValue : (ushort)value;
+#else
+                ushort actualResult = (ushort)value;
+#endif
                 result = (TOther)(object)actualResult;
                 return true;
             }
@@ -1504,6 +1510,27 @@ namespace System
                 result = default;
                 return false;
             }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(string, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out float result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s.AsSpan(), style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out float result, out int charsConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(s, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out charsConsumed);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParsePartial(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf, out int)" />
+        public static bool TryParsePartial(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out float result, out int bytesConsumed)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.TryParseFloat(utf8Text, style | Number.AllowTrailingInvalidCharacters, NumberFormatInfo.GetInstance(provider), out result, out bytesConsumed);
         }
 
         //
@@ -2208,7 +2235,7 @@ namespace System
         public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out float result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result, out _);
         }
 
         /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />

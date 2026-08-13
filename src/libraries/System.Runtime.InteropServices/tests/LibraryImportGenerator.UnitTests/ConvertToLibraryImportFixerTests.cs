@@ -1229,13 +1229,68 @@ namespace LibraryImportGenerator.UnitTests
             await VerifyCodeFixAsync(source, fixedSource);
         }
 
-        private static async Task VerifyCodeFixAsync(string source, string fixedSource, LanguageVersion languageVersion = LanguageVersion.Default, string? editorconfig = null)
+        [Fact]
+        public async Task UnsafeModifierIsPreserved()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist")]
+                    public static unsafe extern void [|Method|](int* i);
+                }
+
+               """;
+
+            string fixedSource = """
+                 using System.Runtime.InteropServices;
+                 partial class Test
+                 {
+                     [LibraryImport("DoesNotExist")]
+                     public static unsafe partial void {|CS8795:Method|}(int* i);
+                 }
+
+                """;
+
+            await VerifyCodeFixAsync(source, fixedSource);
+        }
+
+        [Fact]
+        public async Task SafeModifierIsPreserved()
+        {
+            string source = """
+                using System.Runtime.InteropServices;
+                partial class Test
+                {
+                    [DllImport("DoesNotExist")]
+                    public static safe extern void [|Method|]();
+                }
+
+               """;
+
+            string fixedSource = """
+                 using System.Runtime.InteropServices;
+                 partial class Test
+                 {
+                     [LibraryImport("DoesNotExist")]
+                     public static {|CS9388:safe|} partial void {|CS8795:Method|}();
+                 }
+
+                """;
+
+            // The fixer test does not run the generator, so the `extern` implementing part that makes `safe`
+            // legal on this declaration is missing, the same way the implementation itself is (CS8795).
+            await VerifyCodeFixAsync(source, fixedSource, updatedMemorySafetyRules: true);
+        }
+
+        private static async Task VerifyCodeFixAsync(string source, string fixedSource, LanguageVersion languageVersion = LanguageVersion.Default, string? editorconfig = null, bool updatedMemorySafetyRules = false)
         {
             var test = new TestWithLanguageVersion
             {
                 TestCode = source,
                 FixedCode = fixedSource,
-                LanguageVersion = languageVersion,
+                LanguageVersion = updatedMemorySafetyRules ? LanguageVersion.Preview : languageVersion,
+                UpdatedMemorySafetyRules = updatedMemorySafetyRules,
             };
 
             if (editorconfig is not null)
@@ -1296,7 +1351,15 @@ namespace LibraryImportGenerator.UnitTests
         {
             public LanguageVersion LanguageVersion { get; set; }
 
-            protected override ParseOptions CreateParseOptions() => ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
+            public bool UpdatedMemorySafetyRules { get; set; }
+
+            protected override ParseOptions CreateParseOptions()
+            {
+                var parseOptions = ((CSharpParseOptions)base.CreateParseOptions()).WithLanguageVersion(LanguageVersion);
+                return UpdatedMemorySafetyRules
+                    ? parseOptions.WithFeatures([.. parseOptions.Features, new KeyValuePair<string, string>(Microsoft.Interop.MemorySafetyRules.UpdatedMemorySafetyRulesFeature, "")])
+                    : parseOptions;
+            }
         }
     }
 }

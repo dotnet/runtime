@@ -651,11 +651,13 @@ namespace System.Reflection
     [StructLayout(LayoutKind.Explicit)]
     internal struct PrimitiveValue
     {
+        /// <safety>Overlaps only Byte8; both views are non-reference integers (int and long), so reinterpreting one as the other cannot forge a managed reference or read out of bounds.</safety>
         [FieldOffset(0)]
-        public int Byte4;
+        public safe int Byte4;
 
+        /// <safety>Overlaps only Byte4; both views are non-reference integers (long and int), so reinterpreting one as the other cannot forge a managed reference.</safety>
         [FieldOffset(0)]
-        public long Byte8;
+        public safe long Byte8;
     }
 
     internal sealed class CustomAttributeEncodedArgument
@@ -1701,7 +1703,7 @@ namespace System.Reflection
             RuntimeTypeHandle attributeTypeHandle = attributeType.TypeHandle;
 
             bool result = RuntimeMethodHandle.IsCAVisibleFromDecoratedType(new QCallTypeHandle(ref attributeTypeHandle),
-                                                                    ctorWithParameters is not null ? ctorWithParameters.Value : RuntimeMethodHandleInternal.EmptyHandle,
+                                                                    ctorWithParameters is not null ? IRuntimeMethodInfo.GetValue(ctorWithParameters) : RuntimeMethodHandleInternal.EmptyHandle,
                                                                     new QCallTypeHandle(ref parentTypeHandle),
                                                                     new QCallModule(ref decoratedModule)) != Interop.BOOL.FALSE;
 

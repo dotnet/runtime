@@ -4187,7 +4187,11 @@ void GCInfo::gcMakeRegPtrTable(
                 flags = (GcSlotFlags)(flags | GC_SLOT_INTERIOR);
             }
 
+            // Per the wasm ABI refs homed on the linear stack are reported pinned, since copies of them
+            //  on the wasm operand stack are invisible to the GC. See "GC References at Call Sites".
+#ifndef TARGET_WASM
             if (varDsc->lvPinned)
+#endif // !TARGET_WASM
             {
                 // Or in pinned_OFFSET_FLAG for 'pinned' pointer tracking
                 flags = (GcSlotFlags)(flags | GC_SLOT_PINNED);

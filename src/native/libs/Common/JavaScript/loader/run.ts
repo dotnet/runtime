@@ -9,7 +9,7 @@ import { createPromiseCompletionSource } from "./promise-completion-source";
 import { getIcuResourceName } from "./icu";
 import { loaderConfig, validateLoaderConfig } from "./config";
 import { fetchAssembly, fetchIcu, fetchNativeSymbols, fetchPdb, fetchSatelliteAssemblies, fetchVfs, fetchMainWasm, loadDotnetModule, loadJSModule, nativeModulePromiseController, verifyAllAssetsDownloaded, callLibraryInitializerOnRuntimeReady, callLibraryInitializerOnRuntimeConfigLoaded, prefetchAllResources, prefetchJSModuleLinks, resolveAllDownloadsQueued } from "./assets";
-import { initPolyfills } from "./polyfills";
+import { initPolyfillsLoader } from "./polyfills";
 import { validateEngineFeatures } from "./bootstrap";
 
 const runMainPromiseController = createPromiseCompletionSource<number>();
@@ -90,7 +90,7 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
             }
 
             // after onConfigLoaded hooks that could install polyfills, our polyfills can be initialized
-            await initPolyfills();
+            await initPolyfillsLoader();
 
             configInitialized = true;
             modulesAfterConfigLoadedCache = modulesAfterConfigLoadedPromises;
@@ -118,7 +118,6 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         const wasmNativePromise: Promise<Response> = fetchMainWasm(resources.wasmNative[0]);
 
         const coreAssembliesPromise = forEachResource(resources.coreAssembly, fetchAssembly);
-        const coreVfsPromise = forEachResource(resources.coreVfs, fetchVfs);
 
         const icuResourceName = getIcuResourceName();
         const icuDataPromise = forEachResource(resources.icu, fetchIcu, asset => asset.name === icuResourceName);
@@ -158,7 +157,6 @@ export async function createRuntime(downloadOnly: boolean, httpCacheOnly: boolea
         await nativeModulePromiseController.promise;
         runtimeState.nativeReady = true;
         await coreAssembliesPromise;
-        await coreVfsPromise;
         await vfsPromise;
         await icuDataPromise;
         await wasmNativePromise; // this is just to propagate errors

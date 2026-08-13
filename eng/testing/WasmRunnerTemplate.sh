@@ -44,7 +44,7 @@ if [[ "$XHARNESS_COMMAND" == "test" ]]; then
 	fi
 
 	if [[ -z "$JS_ENGINE_ARGS" ]]; then
-		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000 --engine-arg=--experimental-wasm-exnref"
+		JS_ENGINE_ARGS="--engine-arg=--stack-trace-limit=1000"
 	fi
 else
 	if [[ "$SCENARIO" == "WasmTestOnChrome" || "$SCENARIO" == "wasmtestonchrome" ]]; then
