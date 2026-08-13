@@ -14468,7 +14468,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
     if (tree == nullptr)
     {
         printf(" [%p] <NULL>\n", tree);
-        fflush(jitstdout()); // flush
+        fflush(jitsdout());
         return;
     }
 
@@ -15058,7 +15058,7 @@ void Compiler::gtDispTree(GenTree*                    tree,
             else
             {
                 printf("<DON'T KNOW HOW TO DISPLAY THIS NODE> :");
-                fflush(jitstdout()); // flush
+                fflush(jitsdout());
             }
             break;
     }
@@ -19908,7 +19908,7 @@ void dispNodeList(GenTree* list, bool verbose)
         last = list;
         list = next;
     }
-    fflush(jitstdout()); // flush
+    fflush(jitsdout());
 }
 #endif
 

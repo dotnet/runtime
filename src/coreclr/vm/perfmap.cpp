@@ -442,7 +442,7 @@ void PerfMap::LogInterpreterMethod(MethodDesc * pMethod, PCODE irAddress, size_t
         pMethod->GetFullMethodInfo(name);
 
         SString line;
-        line.Printf(FMT_CODE_ADDR " %zx [Interpreter] %s\n", reinterpret_cast<void*>(irAddress), irSize,
+        line.Printf(FMT_CODE_ADDR " %zx [Interpreter] %s\n", (void*)irAddress, irSize,
                     name.GetUTF8());
 
         {

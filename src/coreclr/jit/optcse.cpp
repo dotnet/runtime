@@ -827,7 +827,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(key);
-                printf("K_%p", (void*)(size_t)dspPtr(kVal));
+                printf("K_%zx", (size_t)dspPtr(kVal));
             }
 
             printf(" in " FMT_BB ", [cost=%2u, size=%2u]: \n", compCurBB->bbNum, tree->GetCostEx(), tree->GetCostSz());
@@ -4327,8 +4327,8 @@ void CSE_Heuristic::SortCandidates()
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                printf(FMT_CSE ", {K_%p} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
-                       (void*)(size_t)dspPtr(kVal), dsc->csdUseCount, def, use, cost,
+                printf(FMT_CSE ", {K_%zx} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
+                       (size_t)dspPtr(kVal), dsc->csdUseCount, def, use, cost,
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
 
@@ -4981,8 +4981,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         {
             if (isSharedConst)
             {
-                printf("\nWe have shared Const CSE's and selected " FMT_VN " with a value of 0x%p as the base.\n",
-                       dsc->csdConstDefVN, (void*)(size_t)dspPtr(dsc->csdConstDefValue));
+                printf("\nWe have shared Const CSE's and selected " FMT_VN " with a value of 0x%zx as the base.\n",
+                       dsc->csdConstDefVN, (size_t)dspPtr(dsc->csdConstDefValue));
             }
             else // !isSharedConst
             {
@@ -5371,8 +5371,8 @@ void CSE_HeuristicCommon::ConsiderCandidates()
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                printf("\nConsidering " FMT_CSE " {K_%p} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
-                       (void*)(size_t)dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
+                printf("\nConsidering " FMT_CSE " {K_%zx} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
+                       (size_t)dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             printf("CSE Expression : \n");

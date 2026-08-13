@@ -7147,17 +7147,17 @@ HRESULT CordbProcess::GetRuntimeOffsets()
     LOG((LF_CORDB, LL_INFO10000, "    m_genericHijackFuncAddr=          0x%p\n",
          m_runtimeOffsets.m_genericHijackFuncAddr));
     LOG((LF_CORDB, LL_INFO10000, "    m_signalHijackStartedBPAddr=      %p\n",
-         reinterpret_cast<void*>(m_runtimeOffsets.m_signalHijackStartedBPAddr)));
+         (void*)(m_runtimeOffsets.m_signalHijackStartedBPAddr)));
     LOG((LF_CORDB, LL_INFO10000, "    m_excepNotForRuntimeBPAddr=       %p\n",
-         reinterpret_cast<void*>(m_runtimeOffsets.m_excepNotForRuntimeBPAddr)));
+         (void*)(m_runtimeOffsets.m_excepNotForRuntimeBPAddr)));
     LOG((LF_CORDB, LL_INFO10000, "    m_notifyRSOfSyncCompleteBPAddr=   %p\n",
-         reinterpret_cast<void*>(m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr)));
+         (void*)(m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr)));
     LOG((LF_CORDB, LL_INFO10000, "    m_debuggerWordTLSIndex=           0x%08x\n",
          m_runtimeOffsets.m_debuggerWordTLSIndex));
 #endif // FEATURE_INTEROP_DEBUGGING
 
     LOG((LF_CORDB, LL_INFO10000, "    m_setThreadContextNeededAddr=     %p\n",
-         reinterpret_cast<void*>(m_runtimeOffsets.m_setThreadContextNeededAddr)));
+         (void*)(m_runtimeOffsets.m_setThreadContextNeededAddr)));
     LOG((LF_CORDB, LL_INFO10000, "    m_TLSIndex=                       0x%08zx\n",
          m_runtimeOffsets.m_TLSIndex));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateOffset=            0x%08zx\n",

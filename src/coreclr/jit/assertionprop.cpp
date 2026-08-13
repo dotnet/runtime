@@ -1009,7 +1009,7 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
                 ssize_t iconVal = curAssertion.GetOp2().GetIntConstant();
                 if (IsAot())
                 {
-                    printf("MT(%p)", (void*)(size_t)dspPtr(iconVal));
+                    printf("MT(%p)", (void*)dspPtr(iconVal));
                 }
                 else
                 {
@@ -1022,7 +1022,7 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             }
             else if (curAssertion.GetOp2().HasIconFlag())
             {
-                printf("[%p]", (void*)(size_t)dspPtr(curAssertion.GetOp2().GetIntConstant()));
+                printf("[%zx]", (size_t)dspPtr(curAssertion.GetOp2().GetIntConstant()));
             }
             else
             {

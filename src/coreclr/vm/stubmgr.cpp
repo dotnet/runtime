@@ -42,13 +42,13 @@ void LogTraceDestination(const char * szHint, PCODE stubAddr, TraceDestination *
         MethodDesc * md = pTrace->GetMethodDesc();
         LOG((LF_CORDB, LL_INFO10000, "'%s' yields '%s' to method %p for input %p.\n",
             szHint, GetTType(pTrace->GetTraceType()),
-            md, reinterpret_cast<void*>(stubAddr)));
+            md, (void*)stubAddr));
     }
     else
     {
         LOG((LF_CORDB, LL_INFO10000, "'%s' yields '%s' to address %p for input %p.\n",
             szHint, GetTType(pTrace->GetTraceType()),
-            reinterpret_cast<void*>(pTrace->GetAddress()), reinterpret_cast<void*>(stubAddr)));
+            (void*)pTrace->GetAddress(), (void*)stubAddr));
     }
 }
 #endif
@@ -84,22 +84,22 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
         switch(this->type)
         {
             case TRACE_ENTRY_STUB:
-                buffer.Printf("TRACE_ENTRY_STUB(addr=%p)", reinterpret_cast<void*>(GetAddress()));
+                buffer.Printf("TRACE_ENTRY_STUB(addr=%p)", (void*)GetAddress());
                 pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_STUB:
-                buffer.Printf("TRACE_STUB(addr=%p)", reinterpret_cast<void*>(GetAddress()));
+                buffer.Printf("TRACE_STUB(addr=%p)", (void*)GetAddress());
                 pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_UNMANAGED:
-                buffer.Printf("TRACE_UNMANAGED(addr=%p)", reinterpret_cast<void*>(GetAddress()));
+                buffer.Printf("TRACE_UNMANAGED(addr=%p)", (void*)GetAddress());
                 pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_MANAGED:
-                buffer.Printf("TRACE_MANAGED(addr=%p)", reinterpret_cast<void*>(GetAddress()));
+                buffer.Printf("TRACE_MANAGED(addr=%p)", (void*)GetAddress());
                 pValue = buffer.GetUTF8();
                 break;
 
@@ -112,12 +112,12 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
                 break;
 
             case TRACE_FRAME_PUSH:
-                buffer.Printf("TRACE_FRAME_PUSH(addr=%p)", reinterpret_cast<void*>(GetAddress()));
+                buffer.Printf("TRACE_FRAME_PUSH(addr=%p)", (void*)GetAddress());
                 pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_MGR_PUSH:
-                buffer.Printf("TRACE_MGR_PUSH(addr=%p, sm=%s)", reinterpret_cast<void*>(GetAddress()),
+                buffer.Printf("TRACE_MGR_PUSH(addr=%p, sm=%s)", (void*)GetAddress(),
                               this->GetStubManager()->DbgGetName());
                 pValue = buffer.GetUTF8();
                 break;

@@ -5204,7 +5204,7 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
         if (sizeof(meminfo) != res)
         {
-            LOG((LF_EH, LL_INFO1000, "VirtualQuery failed on %p\n", reinterpret_cast<void*>(uStartOfThisRegion)));
+            LOG((LF_EH, LL_INFO1000, "VirtualQuery failed on %p\n", (void*)uStartOfThisRegion));
             break;
         }
 
@@ -5217,8 +5217,8 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
         UINT_PTR uRegionSize = uStartOfNextRegion - uStartOfThisRegion;
 
-        LOG((LF_EH, LL_INFO1000, "%p -> %p (%d pg)  ", reinterpret_cast<void*>(uStartOfThisRegion),
-             reinterpret_cast<void*>(uStartOfNextRegion - 1), (int)(uRegionSize / minipal_getpagesize())));
+        LOG((LF_EH, LL_INFO1000, "%p -> %p (%d pg)  ", (void*)uStartOfThisRegion,
+             (void*)(uStartOfNextRegion - 1), (int)(uRegionSize / minipal_getpagesize())));
         DebugLogMBIFlags(meminfo.State, meminfo.Protect);
         LOG((LF_EH, LL_INFO1000, "\n"));
 
@@ -5256,12 +5256,12 @@ void Thread::DebugLogStackMBIs()
     UINT_PTR uStackSize         = uStackBase - uStackLimit;
 
     LOG((LF_EH, LL_INFO1000, "----------------------------------------------------------------------\n"));
-    LOG((LF_EH, LL_INFO1000, "Stack Snapshot %p -> %p (%d pg)\n", reinterpret_cast<void*>(uStackLimit),
-         reinterpret_cast<void*>(uStackBase), (int)(uStackSize / minipal_getpagesize())));
+    LOG((LF_EH, LL_INFO1000, "Stack Snapshot %p -> %p (%d pg)\n", (void*)uStackLimit,
+         (void*)uStackBase, (int)(uStackSize / minipal_getpagesize())));
     if (pThread)
     {
         LOG((LF_EH, LL_INFO1000, "Last normal addr: %p\n",
-             reinterpret_cast<void*>(pThread->GetLastNormalStackAddress())));
+             (void*)pThread->GetLastNormalStackAddress()));
     }
 
     DebugLogStackRegionMBIs(uStackLimit, uStackBase);
