@@ -27,6 +27,21 @@ namespace ILAssembler
     {
         private CILParser.CompQstringContext? _composedStringOwner;
         private StringBuilder? _composedStringAccumulator;
+        private readonly Stack<DottedNameFrame> _dottedNameFrames = new();
+
+        private sealed class DottedNameFrame
+        {
+            public DottedNameFrame(CILParser.DottedNameContext owner)
+            {
+                Owner = owner;
+            }
+
+            public CILParser.DottedNameContext Owner { get; }
+
+            public string? FirstPart { get; set; }
+
+            public StringBuilder? Builder { get; set; }
+        }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitCompQstring(CILParser.CompQstringContext context)
         {
@@ -72,22 +87,53 @@ namespace ILAssembler
             return VisitDottedName(context);
         }
 
-        public static GrammarResult.String VisitDottedName(CILParser.DottedNameContext context)
+        internal void BeginDottedName(CILParser.DottedNameContext context)
+            => _dottedNameFrames.Push(new(context));
+
+        internal void AddDottedNamePart(CILParser.DottedNameContext context, string value)
         {
-            if (context.DOTTEDNAME() is not null)
+            Debug.Assert(_dottedNameFrames.Count > 0);
+            DottedNameFrame frame = _dottedNameFrames.Peek();
+            Debug.Assert(ReferenceEquals(frame.Owner, context));
+            if (!ReferenceEquals(frame.Owner, context))
             {
-                return new(context.GetText());
+                return;
             }
 
-            return new(string.Join(
-                ".",
-                context.dottedNamePart().Select(part =>
-                    part.SQSTRING() is null
-                        ? part.GetText()
-                        : StringHelpers.ParseQuotedString(part.GetText()))));
+            if (frame.FirstPart is null)
+            {
+                frame.FirstPart = value;
+                return;
+            }
+
+            frame.Builder ??= new StringBuilder(frame.FirstPart);
+            frame.Builder.Append('.');
+            frame.Builder.Append(value);
         }
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitDottedNamePart(CILParser.DottedNamePartContext context) => throw new UnreachableException();
+        internal void AddDottedNameToken(CILParser.DottedNameContext context, IToken token)
+            => AddDottedNamePart(context, ParseIdentifier(token));
+
+        internal string EndDottedName(CILParser.DottedNameContext context)
+        {
+            Debug.Assert(_dottedNameFrames.Count > 0);
+            DottedNameFrame frame = _dottedNameFrames.Pop();
+            Debug.Assert(ReferenceEquals(frame.Owner, context));
+            return ReferenceEquals(frame.Owner, context)
+                ? frame.Builder?.ToString() ?? frame.FirstPart ?? string.Empty
+                : string.Empty;
+        }
+
+        public static GrammarResult.String VisitDottedName(CILParser.DottedNameContext context)
+            => new(context.Value ?? string.Empty);
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitDottedNamePart(CILParser.DottedNamePartContext context)
+            => new GrammarResult.String(context.Value ?? string.Empty);
+
+        internal string ParseDottedNamePart(IToken token)
+            => token.Text.Length >= 2 && token.Text[0] == '\''
+                ? StringHelpers.ParseQuotedString(token.Text)
+                : token.Text;
 
         internal double ParseFloatingLiteral(IToken token)
         {
@@ -211,7 +257,7 @@ namespace ILAssembler
             return new(ParseInt32(context.INT32().Symbol));
         }
 
-        private int ParseInt32(IToken token)
+        internal int ParseInt32(IToken token)
         {
             ReadOnlySpan<char> value = token.Text.AsSpan();
             if (!ParseIntegerValue(value, out long num))
@@ -264,15 +310,7 @@ namespace ILAssembler
         }
 
         public static GrammarResult.Literal<TypeName> VisitSlashedName(CILParser.SlashedNameContext context)
-        {
-            TypeName? currentTypeName = null;
-            foreach (var item in context.dottedName())
-            {
-                currentTypeName = new TypeName(currentTypeName, VisitDottedName(item).Value);
-            }
-            // We'll always have at least one dottedName, so the value here will be non-null
-            return new(currentTypeName!);
-        }
+            => new(GetSlashedNameValue(context));
 
         GrammarResult ICILVisitor<GrammarResult>.VisitTruefalse(CILParser.TruefalseContext context) => VisitTruefalse(context);
 

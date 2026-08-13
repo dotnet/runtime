@@ -451,6 +451,5 @@ internal sealed partial class GrammarActions
     GrammarResult ICILVisitor<GrammarResult>.VisitMdtoken(CILParser.MdtokenContext context) => VisitMdtoken(context);
 
     public GrammarResult.Literal<EntityRegistry.EntityBase> VisitMdtoken(CILParser.MdtokenContext context)
-        => new(_entityRegistry.ResolveHandleToEntity(
-            MetadataTokens.EntityHandle(VisitInt32(context.int32()).Value)));
+        => new(ResolveMetadataToken(context.Value));
 }
