@@ -444,8 +444,6 @@ class AsyncTransformation
                                     AsyncAnalysis&                  analyses,
                                     ContinuationLayoutBuilder*      layoutBuilder);
 
-    bool HasNonContextRestoreExceptionalFlow(BasicBlock* block);
-
     void LiftLIREdges(BasicBlock*                     block,
                       const jitstd::vector<GenTree*>& defs,
                       ContinuationLayoutBuilder*      layoutBuilder);

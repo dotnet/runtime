@@ -368,29 +368,22 @@ bool Compiler::ehIsAsyncContextRestore(unsigned short ehID)
 //   body, so a plain hasTryIndex() check cannot distinguish user EH from the EH
 //   the JIT itself introduced.
 //
+//   Only the try nesting is considered. The C# compiler hoists awaits out of
+//   handlers, so the JIT never sees a suspension point inside one.
+//
 bool Compiler::ehIsInsideNonAsyncContextRestoreRegion(BasicBlock* block)
 {
-    if (block->hasTryIndex())
+    if (!block->hasTryIndex())
     {
-        for (unsigned index = block->getTryIndex(); index != EHblkDsc::NO_ENCLOSING_INDEX;
-             index          = ehGetDsc(index)->ebdEnclosingTryIndex)
-        {
-            if (!ehIsAsyncContextRestore(ehGetDsc(index)->ebdID))
-            {
-                return true;
-            }
-        }
+        return false;
     }
 
-    if (block->hasHndIndex())
+    for (unsigned index = block->getTryIndex(); index != EHblkDsc::NO_ENCLOSING_INDEX;
+         index          = ehGetDsc(index)->ebdEnclosingTryIndex)
     {
-        for (unsigned index = block->getHndIndex(); index != EHblkDsc::NO_ENCLOSING_INDEX;
-             index          = ehGetDsc(index)->ebdEnclosingHndIndex)
+        if (!ehIsAsyncContextRestore(ehGetDsc(index)->ebdID))
         {
-            if (!ehIsAsyncContextRestore(ehGetDsc(index)->ebdID))
-            {
-                return true;
-            }
+            return true;
         }
     }
 
@@ -1548,7 +1541,7 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
     auto visitDef = [&](const LocalDef& def) {
         if (def.IsEntire)
         {
-            if (HasNonContextRestoreExceptionalFlow(block))
+            if (m_compiler->ehIsInsideNonAsyncContextRestoreRegion(block))
             {
                 JITDUMP("  V%02u is fully defined but the block has exceptional flow\n", def.Def->GetLclNum());
             }
@@ -1602,29 +1595,6 @@ void AsyncTransformation::CreateLiveSetForSuspension(BasicBlock*                
         }
     }
 #endif
-}
-
-//------------------------------------------------------------------------
-// AsyncTransformation::HasNonContextRestoreExceptionalFlow:
-//   Check if there is internal control flow out of the specified block and if
-//   that target is not the canonical "restore context" EH handler.
-//
-// Parameters:
-//   block - The block
-//
-// Returns:
-//   True if there is such control flow.
-//
-bool AsyncTransformation::HasNonContextRestoreExceptionalFlow(BasicBlock* block)
-{
-    if (!block->hasTryIndex())
-    {
-        return false;
-    }
-
-    EHblkDsc* ehDsc = m_compiler->ehGetDsc(block->getTryIndex());
-    return (ehDsc->ebdID != m_compiler->asyncContextRestoreEHID) ||
-           (ehDsc->ebdEnclosingTryIndex != EHblkDsc::NO_ENCLOSING_INDEX);
 }
 
 //------------------------------------------------------------------------
@@ -1798,7 +1768,7 @@ void AsyncTransformation::BuildContinuation(BasicBlock*                block,
         layoutBuilder->SetNeedsOSRAddress();
     }
 
-    if (HasNonContextRestoreExceptionalFlow(block))
+    if (m_compiler->ehIsInsideNonAsyncContextRestoreRegion(block))
     {
         // If we are enclosed in any try region that isn't our special "context
         // restore" try region then we need to rethrow an exception. For our
@@ -2248,7 +2218,7 @@ CallDefinitionInfo AsyncTransformation::CanonicalizeCallDefinition(BasicBlock*  
         // preserve its value because of an exception being thrown after
         // potential resumption. (This check is conservative, we could use liveness for it as well.)
         if (!call->gtNext->OperIsLocalStore() || (call->gtNext->Data() != call) ||
-            HasNonContextRestoreExceptionalFlow(block))
+            m_compiler->ehIsInsideNonAsyncContextRestoreRegion(block))
         {
             LIR::Use use;
             bool     gotUse = LIR::AsRange(block).TryGetUse(call, &use);
