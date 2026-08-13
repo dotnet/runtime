@@ -16,7 +16,7 @@
 // $SaveFPArgs : "Yes" or "No" . For varidic functions FP Args are not present in FP regs
 //                        So need not save FP Args registers for vararg Pinvoke
 
-.macro PINVOKE_STUB __PInvokeStubFuncName,__PInvokeGenStubFuncName,__PInvokeStubWorkerName,VASigCookieReg,HiddenArg,SaveFPArgs,ShiftLeftAndOrSecret=0
+.macro PINVOKE_STUB __PInvokeStubFuncName,__PInvokeGenStubFuncName,__PInvokeStubWorkerName,VASigCookieReg,HiddenArg,SaveFPArgs
 
         NESTED_ENTRY \__PInvokeStubFuncName, _TEXT, NoHandler
 
@@ -25,16 +25,6 @@
 
         // if null goto stub generation
         beq  $t0, $zero, \__PInvokeGenStubFuncName
-
-        .if (\ShiftLeftAndOrSecret == 1)
-            //
-            // We need to distinguish between a MethodDesc* and an unmanaged target.
-            // The way we do this is to shift the managed target to the left by one bit and then set the
-            // least significant bit to 1.  This works because MethodDesc* are always 8-byte aligned.
-            //
-            slli.d    \HiddenArg, \HiddenArg, 1
-            ori       \HiddenArg, \HiddenArg, 1
-        .endif
 
         jirl  $r0, $t0, 0
 
@@ -174,7 +164,7 @@ PINVOKE_STUB VarargPInvokeStub, VarargPInvokeGenILStub, VarargPInvokeStubWorker,
 // $t3 = VASigCookie*
 // $t2 = Unmanaged target
 //
-PINVOKE_STUB GenericPInvokeCalliHelper, GenericPInvokeCalliGenILStub, GenericPInvokeCalliStubWorker, $t3, $t2, 1, 1
+PINVOKE_STUB GenericPInvokeCalliHelper, GenericPInvokeCalliGenILStub, GenericPInvokeCalliStubWorker, $t3, $t2, 1
 
 //// ------------------------------------------------------------------
 //// VarargPInvokeStub_RetBuffArg & VarargPInvokeGenILStub_RetBuffArg

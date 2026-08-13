@@ -2473,6 +2473,9 @@ namespace Internal.JitInterface
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
         {
+            // Constraint resolution may update tokenType for internal bookkeeping, but getCallInfo
+            // treats the resolved token as input and must not expose that mutation to the caller.
+            CORINFO_RESOLVED_TOKEN resolvedToken = pResolvedToken;
             MethodDesc methodToCall;
             MethodDesc targetMethod;
             TypeDesc constrainedType;
@@ -2482,7 +2485,7 @@ namespace Internal.JitInterface
             EcmaModule callerModule;
             bool useInstantiatingStub;
             ceeInfoGetCallInfo(
-                ref pResolvedToken,
+                ref resolvedToken,
                 pConstrainedResolvedToken,
                 callerHandle,
                 flags,
@@ -2550,7 +2553,7 @@ namespace Internal.JitInterface
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.DispatchCell(
-                                ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
+                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false),
                                 MethodBeingCompiled));
 
                         // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
@@ -2611,7 +2614,7 @@ namespace Internal.JitInterface
                             // READYTORUN: FUTURE: Direct calls if possible
                             pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                                 _compilation.NodeFactory.MethodEntrypoint(
-                                    ComputeMethodWithToken(nonUnboxingMethod, ref pResolvedToken, constrainedType, unboxing: isUnboxingStub),
+                                    ComputeMethodWithToken(nonUnboxingMethod, ref resolvedToken, constrainedType, unboxing: isUnboxingStub),
                                     isInstantiatingStub: useInstantiatingStub,
                                     isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0,
                                     isJumpableImportRequired: false));
@@ -2635,7 +2638,7 @@ namespace Internal.JitInterface
                     {
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
-                                ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: null, unboxing: false),
+                                ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
                         // Wasm routes all virtual calls through LDVIRTFTN (stub dispatch is unsupported),
@@ -2665,7 +2668,7 @@ namespace Internal.JitInterface
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            ComputeMethodWithToken(targetMethod, ref pResolvedToken, constrainedType: constrainedType, unboxing: false)));
+                            ComputeMethodWithToken(targetMethod, ref resolvedToken, constrainedType: constrainedType, unboxing: false)));
                     }
                     else
                     {

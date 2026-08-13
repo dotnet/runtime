@@ -2336,18 +2336,6 @@ void AppDomain::LoadAssembly(Assembly *pAssembly,
 
 thread_local LoadLevelLimiter* LoadLevelLimiter::t_currentLoadLevelLimiter = nullptr;
 
-namespace
-{
-    FileLoadLevel GetCurrentFileLoadLevel()
-    {
-        WRAPPER_NO_CONTRACT;
-        if (LoadLevelLimiter::GetCurrent() == NULL)
-            return FILE_ACTIVE;
-        else
-            return (FileLoadLevel)(LoadLevelLimiter::GetCurrent()->GetLoadLevel()-1);
-    }
-}
-
 Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
                                   PEAssembly * pPEAssembly,
                                   FileLoadLevel targetLevel)
@@ -2504,9 +2492,6 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
         GetAppDomain()->AddAssemblyToCache(pIdentity, result);
     }
 
-    _ASSERTE(result->GetLoadLevel() >= GetCurrentFileLoadLevel()
-        || result->GetLoadLevel() >= targetLevel);
-    _ASSERTE(result->CheckNoError(targetLevel));
     return result;
 } // AppDomain::LoadAssembly
 
@@ -2532,9 +2517,6 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
 
         pAssembly->ThrowIfError(targetLevel);
 
-        _ASSERTE(pAssembly->CheckNoError(targetLevel));
-        _ASSERTE(pAssembly->GetLoadLevel() >= GetCurrentFileLoadLevel()
-            || pAssembly->GetLoadLevel() >= targetLevel);
         return pAssembly;
     }
 
@@ -2626,9 +2608,6 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     // specify the minimum load level acceptable and throw if not reached.)
 
     pAssembly->RequireLoadLevel((FileLoadLevel)(immediateTargetLevel-1));
-    _ASSERTE(pAssembly->GetLoadLevel() >= GetCurrentFileLoadLevel()
-        || pAssembly->GetLoadLevel() >= targetLevel);
-    _ASSERTE(pAssembly->CheckNoError(targetLevel));
     return pAssembly;
 }
 
@@ -3138,7 +3117,6 @@ PEAssembly * AppDomain::BindAssemblySpec(
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     PRECONDITION(CheckPointer(pSpec));
-    PRECONDITION(pSpec->GetAppDomain() == this);
     PRECONDITION(this==::GetAppDomain());
 
     GCX_PREEMP();
@@ -3161,7 +3139,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
             PEAssembly* result = NULL;
             {
                 ReleaseHolder<BINDER_SPACE::Assembly> boundAssembly;
-                hrBindResult = pSpec->Bind(this, &boundAssembly, &bindDiagnosticInfo);
+                hrBindResult = pSpec->Bind(&boundAssembly, &bindDiagnosticInfo);
 
                 if (boundAssembly)
                 {
@@ -3196,7 +3174,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     if (!pSpec->IsCoreLibSatellite())
                     {
                         // Trigger the resolve event also for non-throw situation.
-                        AssemblySpec NewSpec(this);
+                        AssemblySpec NewSpec;
                         AssemblySpec *pFailedSpec = NULL;
 
                         fForceReThrow = TRUE; // Managed resolve event handler can throw
@@ -3216,7 +3194,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
     {
         Exception *ex = GET_EXCEPTION();
 
-        AssemblySpec NewSpec(this);
+        AssemblySpec NewSpec;
         AssemblySpec *pFailedSpec = NULL;
 
         // Let transient exceptions or managed resolve event handler exceptions propagate
