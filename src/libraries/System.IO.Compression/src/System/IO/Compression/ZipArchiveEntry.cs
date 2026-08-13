@@ -1608,6 +1608,9 @@ namespace System.IO.Compression
                 if (Encryption == ZipEncryptionMethod.ZipCrypto)
                 {
                     _generalPurposeBitFlag |= BitFlagValues.IsEncrypted;
+                    // If DataDescriptor is used, then ZipCrypto password validation is done against the modification time of the entry,
+                    // not the CRC (which is not known in DataDescriptor mode). The current implementation always uses DataDescriptor
+                    // for ZipCrypto to avoid needing to seek back and update the header with the CRC that is known only after the entry is closed.
                     _generalPurposeBitFlag |= BitFlagValues.DataDescriptor;
                     compressedSizeTruncated = 0;
                     uncompressedSizeTruncated = 0;
