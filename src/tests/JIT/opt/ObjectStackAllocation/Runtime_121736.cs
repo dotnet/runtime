@@ -10,6 +10,7 @@ using TestLibrary;
 public class Runtime_121736
 {
     [ActiveIssue("needs triage", TestRuntimes.Mono)]
+    [SkipOnCoreClr("This test takes a very long time under GC stress and causes timeouts.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void Test()
     {

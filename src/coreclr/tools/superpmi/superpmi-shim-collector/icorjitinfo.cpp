@@ -28,6 +28,14 @@ bool interceptor_ICJI::isIntrinsic(CORINFO_METHOD_HANDLE ftn)
     return temp;
 }
 
+bool interceptor_ICJI::canValueClassInstancePointerEscape(CORINFO_METHOD_HANDLE ftn)
+{
+    mc->cr->AddCall("canValueClassInstancePointerEscape");
+    bool temp = original_ICorJitInfo->canValueClassInstancePointerEscape(ftn);
+    mc->recCanValueClassInstancePointerEscape(ftn, temp);
+    return temp;
+}
+
 bool interceptor_ICJI::notifyMethodInfoUsage(CORINFO_METHOD_HANDLE ftn)
 {
     mc->cr->AddCall("notifyMethodInfoUsage");
@@ -1393,6 +1401,20 @@ CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(CORINFO_METHOD_HANDLE
     mc->cr->AddCall("getAwaitReturnCall");
     CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitReturnCall(callerHandle, contextHandle, instArg);
     mc->recGetAwaitReturnCall(callerHandle, contextHandle, instArg, result);
+    return result;
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHandle,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    mc->cr->AddCall("getAwaitAwaiterInContinuationCall");
+    CORINFO_METHOD_HANDLE result = original_ICorJitInfo->getAwaitAwaiterInContinuationCall(
+        callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+    mc->recGetAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg, result);
     return result;
 }
 

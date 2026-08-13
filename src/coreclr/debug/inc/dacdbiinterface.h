@@ -188,6 +188,10 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE FlushCache() = 0;
 
+    // Release cDAC-owned wrappers for caller-owned COM objects before DBI
+    // destroys those objects and unloads the DAC module.
+    virtual HRESULT STDMETHODCALLTYPE Destroy() = 0;
+
     //
     // Control DAC's checking of the target's consistency. Specifically, if this is disabled then
     // ASSERTs in VM code are ignored. The default is disabled, since DAC should do it's best to
@@ -1689,7 +1693,7 @@ public:
     //     output: pIsValidRef      - FALSE if the object reference is bad
     //             pObjSize         - size of the object in bytes
     //             pObjOffsetToVars - byte offset from the object base to the first field
-    //             pObjTypeData     - expanded type information for the object
+    //     in/out: pObjTypeData     - expanded type information for the object
     // Note: returns an appropriate failure HRESULT on error
     virtual HRESULT STDMETHODCALLTYPE GetBasicObjectInfo(CORDB_ADDRESS objectAddress, OUT BOOL * pIsValidRef, OUT UINT * pObjSize, OUT UINT * pObjOffsetToVars, OUT DebuggerIPCE_ExpandedTypeData * pObjTypeData) = 0;
 
@@ -1959,16 +1963,14 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetGCHeapInformation(OUT COR_HEAPINFO * pHeapInfo) = 0;
 
-    // If a PEAssembly has an RW capable IMDInternalImport, this gets the address of the MDInternalRW
-    // object which implements it.
+    // Determines whether a PEAssembly has an RW capable IMDInternalImport.
     //
     //
     // Arguments:
-    //    vmPEAssembly - target PEAssembly to get metadata MDInternalRW for.
-    //    pAddrMDInternalRW - If a PEAssembly has an RW capable IMDInternalImport, this will be set to the address
-    //                        of the MDInternalRW object which implements it. Otherwise it will be NULL.
+    //    vmPEAssembly - target PEAssembly to inspect.
+    //    pHasReadWriteMetadata - whether the PEAssembly has an RW capable IMDInternalImport.
     //
-    virtual HRESULT STDMETHODCALLTYPE GetPEFileMDInternalRW(VMPTR_PEAssembly vmPEAssembly, OUT TADDR* pAddrMDInternalRW) = 0;
+    virtual HRESULT STDMETHODCALLTYPE HasReadWriteMetadata(VMPTR_PEAssembly vmPEAssembly, OUT BOOL* pHasReadWriteMetadata) = 0;
 
     // DEPRECATED - use GetActiveRejitILCodeVersionNode
     // Retrieves the active ReJitInfo for a given module/methodDef, if it exists.
@@ -2042,36 +2044,6 @@ public:
     //
     virtual HRESULT STDMETHODCALLTYPE AreOptimizationsDisabled(VMPTR_Module vmModule, mdMethodDef methodTk, OUT BOOL* pOptimizationsDisabled) = 0;
 
-    // Retrieves a bit field indicating which defines were in use when clr was built. This only includes
-    // defines that are specified in the Debugger::_Target_Defines enumeration, which is a small subset of
-    // all defines.
-    //
-    //
-    // Arguments:
-    //    pDefines  - [out] The set of defines clr.dll was built with. Bit offsets are encoded using the
-    //                enumeration Debugger::_Target_Defines
-    //
-    // Returns:
-    //    S_OK if no error
-    //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
-    //
-    virtual HRESULT STDMETHODCALLTYPE GetDefinesBitField(ULONG32 *pDefines) = 0;
-
-    // Retrieves a version number indicating the shape of the data structures used in the Metadata implementation
-    // inside clr.dll. This number changes anytime a datatype layout changes so that they can be correctly
-    // deserialized from out of process
-    //
-    //
-    // Arguments:
-    //    pMDStructuresVersion  - [out] The layout version number for metadata data structures. See
-    //                            Debugger::Debugger() in Debug\ee\Debugger.cpp for a description of the options.
-    //
-    // Returns:
-    //    S_OK if no error
-    //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
-    //
-    virtual HRESULT STDMETHODCALLTYPE GetMDStructuresVersion(ULONG32* pMDStructuresVersion) = 0;
-
 #ifdef FEATURE_CODE_VERSIONING
     // Retrieves the active rejit ILCodeVersionNode for a given module/methodDef, if it exists.
     //     Active is defined as after GetReJitParameters returns from the profiler dll and
@@ -2089,6 +2061,26 @@ public:
     //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
     //
     virtual HRESULT STDMETHODCALLTYPE GetActiveRejitILCodeVersionNode(VMPTR_Module vmModule, mdMethodDef methodTk, OUT VMPTR_ILCodeVersionNode* pVmILCodeVersionNode) = 0;
+
+    // Retrieves the IL code buffer and local variable signature token for a specific EnC version
+    // of a method, if that version exists.
+    //
+    //
+    // Arguments:
+    //    vmModule       - The module to search in
+    //    methodTk       - The methodDef token indicates the method within the module to check
+    //    enCVersion     - The EnC version number to look up
+    //    pCodeInfo      - [out] The target address and size of the IL code for the requested version.
+    //                     Cleared (pAddress == 0) if no matching version is found (for example the
+    //                     default version, which has no explicit node).
+    //    pLocalSigToken - [out] The local variable signature token for the requested version, or
+    //                     mdSignatureNil if none / not found.
+    //
+    // Returns:
+    //    S_OK regardless of whether a matching version is found, as long as the answer is certain
+    //    error HRESULTs such as CORDBG_READ_VIRTUAL_FAILURE are possible
+    //
+    virtual HRESULT STDMETHODCALLTYPE GetEnCILCodeAndSig(VMPTR_Module vmModule, mdMethodDef methodTk, SIZE_T enCVersion, OUT TargetBuffer * pCodeInfo, OUT mdSignature * pLocalSigToken) = 0;
 
     // Retrieves the NativeCodeVersionNode for a given MethodDesc/code address, if it exists.
     // NOTE: The initial (default) code generated for a MethodDesc is a valid MethodDesc/code address pair but it won't have a corresponding
@@ -2205,6 +2197,31 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetGenericArgTokenIndex(
         VMPTR_MethodDesc vmMethod,
         OUT UINT32* pTokenIndex) = 0;
+
+    // Get the size in bytes of the serialized read-write metadata blob for a module.
+    //
+    // Arguments:
+    //    vmModule - target module whose in-memory read-write metadata should be serialized.
+    //    pSize    - Out parameter receiving the size in bytes of the serialized ECMA-335 metadata blob.
+    //
+    // Notes:
+    //    This reconstructs a contiguous ECMA-335 metadata image from the target's writable
+    //    (MDInternalRW) metadata. Use FillReadWriteMetadata to retrieve the bytes into a
+    //    caller-allocated buffer of at least *pSize bytes.
+    virtual HRESULT STDMETHODCALLTYPE GetReadWriteMetadataSize(VMPTR_Module vmModule, OUT ULONG32 * pSize) = 0;
+
+    // Serialize the read-write metadata for a module into a caller-allocated buffer.
+    //
+    // Arguments:
+    //    vmModule - target module whose in-memory read-write metadata should be serialized.
+    //    pBuffer  - caller-allocated buffer that receives the serialized ECMA-335 metadata blob.
+    //    cbBuffer - size in bytes of pBuffer; must be at least the size reported by GetReadWriteMetadataSize.
+    //
+    // Notes:
+    //    The resulting buffer is a contiguous ECMA-335 metadata image suitable for OpenScopeOnMemory.
+    //    Returns HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER) when cbBuffer is smaller than the
+    //    serialized metadata size.
+    virtual HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer) = 0;
 
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL

@@ -434,11 +434,7 @@ void WasmRegAlloc::CollectReferencesForNode(GenTree* node)
     switch (node->OperGet())
     {
         case GT_NULLCHECK:
-            if (node->gtGetOp1()->gtLIRFlags & LIR::Flags::MultiplyUsed)
-            {
-                ConsumeTemporaryRegForOperand(node->gtGetOp1()
-                                                  DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
-            }
+            CollectReferencesForNullCheck(node->AsIndir());
             break;
 
         case GT_LCL_VAR:
@@ -653,6 +649,24 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
 }
 
 //------------------------------------------------------------------------
+// CollectReferencesForNullCheck: Collect virtual register references for a null check.
+//
+// Arguments:
+//    node - The GT_NULLCHECK node.
+//
+void WasmRegAlloc::CollectReferencesForNullCheck(GenTreeIndir* node)
+{
+    // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+    //
+    GenTree* const base = node->Base();
+
+    if (base->gtLIRFlags & LIR::Flags::MultiplyUsed)
+    {
+        ConsumeTemporaryRegForOperand(base DEBUGARG("Orphaned GT_NULLCHECK with multiply-used flag"));
+    }
+}
+
+//------------------------------------------------------------------------
 // CollectReferencesForIndir: Collect virtual register references for an indirection.
 //
 // Arguments:
@@ -660,8 +674,9 @@ void WasmRegAlloc::CollectReferencesForBinop(GenTreeOp* binopNode)
 //
 void WasmRegAlloc::CollectReferencesForIndir(GenTreeIndir* node)
 {
-    GenTree* const addr = node->Addr();
-    ConsumeTemporaryRegForOperand(addr DEBUGARG("indirection address"));
+    // "Base" is the address itself unless it is a contained address mode, which is never materialized.
+    //
+    ConsumeTemporaryRegForOperand(node->Base() DEBUGARG("indirection address"));
 
     if (node->OperIs(GT_STOREIND) && node->TypeIs(TYP_SIMD12))
     {
@@ -782,9 +797,6 @@ void WasmRegAlloc::RewriteLocalStackStore(GenTreeLclVarCommon* lclNode)
     // TODO-WASM-TP: this is nice and simple, but can we do this more efficiently?
     GenTree* value          = lclNode->Data();
     GenTree* insertionPoint = value->gtFirstNodeInOperandOrder();
-
-    // TODO-WASM-RA: figure out the address mode story here. Right now this will produce an address not folded
-    // into the store's address mode. We can utilize a contained LEA, but that will require some liveness work.
 
     var_types storeType = lclNode->TypeGet();
     // We can end up with a block copy operation storing a non-STRUCT into a STRUCT due to type erasure.

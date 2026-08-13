@@ -76,22 +76,22 @@ namespace ILCompiler
 
             var logger = new Logger(Console.Out, Get(_command.IsVerbose));
 
-            // Crossgen2 is partial AOT and its pre-compiled methods can be
-            // thrown away at runtime if they mismatch in required ISAs or
-            // computed layouts of structs. Thus we want to ensure that usage
-            // of Vector<T> is only optimistic and doesn't hard code a dependency
-            // that would cause the entire image to be invalidated.
-            bool isVectorTOptimistic = true;
-
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
+            bool targetAllowsRuntimeCodeGeneration = GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
+
+            // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
+            // they mismatch in required ISAs or computed layouts of structs. On targets that allow
+            // runtime code generation we keep Vector<T> usage optimistic so we never hard code a
+            // dependency that could invalidate the entire image. On targets that do not allow
+            // runtime code generation, we do not want an ISA mismatch to invalidate any code
+            // in the image. There we make Vector<T> non-optimistic and hard code the ISA support
+            // to avoid falling back to the interpreter.
+            bool isVectorTOptimistic = targetAllowsRuntimeCodeGeneration;
             bool allowOptimistic = _command.OptimizationMode != OptimizationMode.PreferSize;
 
-            if (targetOS is TargetOS.iOS or TargetOS.tvOS or TargetOS.iOSSimulator or TargetOS.tvOSSimulator or TargetOS.MacCatalyst or TargetOS.Browser or TargetOS.Wasi)
+            if (!targetAllowsRuntimeCodeGeneration)
             {
-                // These platforms do not support jitted code, so we want to ensure that we don't
-                // need to fall back to the interpreter for any hardware-intrinsic optimizations.
-                // Disable optimistic instruction sets by default.
                 allowOptimistic = false;
             }
 
@@ -99,6 +99,11 @@ namespace ILCompiler
                 SR.InstructionSetMustNotBe, SR.InstructionSetInvalidImplication, logger,
                 allowOptimistic: allowOptimistic,
                 isReadyToRun: true);
+            if (!targetAllowsRuntimeCodeGeneration)
+            {
+                instructionSetSupport = Helpers.GetFixedInstructionSetSupport(instructionSetSupport);
+            }
+
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
             var targetDetails = new TargetDetails(targetArchitecture, targetOS, targetAbi, instructionSetSupport.GetVectorTSimdVector());
 
@@ -142,6 +147,7 @@ namespace ILCompiler
             // Initialize type system context
             //
             _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib,
+                targetAllowsRuntimeCodeGeneration,
                 instructionSetSupport,
                 oldTypeSystemContext: null);
 
@@ -286,6 +292,7 @@ namespace ILCompiler
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
                         typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib,
+                            targetAllowsRuntimeCodeGeneration,
                             _typeSystemContext.InstructionSetSupport,
                             _typeSystemContext);
                         typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
@@ -698,6 +705,12 @@ namespace ILCompiler
                 if (((ReadyToRunCodegenCompilation)compilation).DeterminismCheckFailed)
                     throw new Exception("Determinism Check Failed");
             }
+        }
+
+        private static bool GetTargetAllowsRuntimeCodeGeneration(TargetOS operatingSystem, TargetArchitecture architecture)
+        {
+            return operatingSystem is not (TargetOS.iOS or TargetOS.iOSSimulator or TargetOS.MacCatalyst or TargetOS.tvOS or TargetOS.tvOSSimulator or TargetOS.Browser or TargetOS.Wasi)
+                && architecture is not TargetArchitecture.Wasm32;
         }
 
         private void CheckManagedCppInputFiles(IEnumerable<string> inputPaths)

@@ -211,6 +211,16 @@ namespace System.Net.Primitives.Functional.Tests
         }
 
         [Theory]
+        [InlineData("2000::/3", "::ffff:1.2.3.4", false)]
+        [InlineData("::ffff:0:0/96", "::ffff:192.0.2.1", true)]
+        public void Contains_IPv4MappedAddressInIPv6Network_ReturnsExpected(string networkString, string addressString, bool expected)
+        {
+            IPNetwork network = IPNetwork.Parse(networkString);
+
+            Assert.Equal(expected, network.Contains(IPAddress.Parse(addressString)));
+        }
+
+        [Theory]
         [InlineData("0.0.0.0/0", "0.0.0.0", "127.127.127.127", "255.255.255.255")] // the whole IPv4 space
         [InlineData("0.0.0.0/0", "0.0.0.0", "::ffff:127.127.127.127", "::ffff:255.255.255.255")] // the whole IPv4 space
         [InlineData("::/0", "::", "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")] // the whole IPv6 space

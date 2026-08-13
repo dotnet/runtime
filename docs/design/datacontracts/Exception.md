@@ -63,6 +63,7 @@ _None._
 | Contract Name |
 | --- |
 | `Object` |
+| `RuntimeInfo` |
 | `RuntimeTypeSystem` |
 <!-- END GENERATED: usage contract=Exception version=c1 -->
 
@@ -71,6 +72,8 @@ _None._
 | Name | Type | Purpose | Value |
 | --- | --- | --- | --- |
 | `STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE` | int | Bit in `StackTraceElement::Flags` marking the last frame copied from a foreign (rethrown) stack trace. | `0x0001` |
+| `STEF_IP_ADJUSTED` | int | Bit in `StackTraceElement::Flags` indicating that the captured IP has already been decremented. | `0x0002` |
+| `STEF_CONTINUATION` | int | Bit in `StackTraceElement::Flags` indicating a continuation frame whose IP must not be adjusted. | `0x0008` |
 
 ``` csharp
 TargetPointer GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo, out TargetPointer thrownObjectHandle)
@@ -138,12 +141,19 @@ IEnumerable<ExceptionStackFrameInfo> GetExceptionStackFrames(TargetPointer excep
 
     ulong headerSize = /* StackTraceArrayHeader type size */;
     ulong elementSize = /* StackTraceElement type size */;
+    bool compensateForOldEhIp = RuntimeInfo.GetTargetArchitecture() == RuntimeInfoArchitecture.X64;
     TargetPointer cursor = payload + headerSize;
     for (uint i = 0; i < frameCount; i++)
     {
         TargetPointer ip = target.ReadPointer(cursor + /* StackTraceElement::Ip offset */);
         TargetPointer md = target.ReadPointer(cursor + /* StackTraceElement::MethodDesc offset */);
         int flags = target.Read<int>(cursor + /* StackTraceElement::Flags offset */);
+        if (compensateForOldEhIp
+            && i == 0
+            && (flags & (STEF_IP_ADJUSTED | STEF_CONTINUATION)) == 0)
+        {
+            ip--;
+        }
         yield return new ExceptionStackFrameInfo(
             ip,
             md,

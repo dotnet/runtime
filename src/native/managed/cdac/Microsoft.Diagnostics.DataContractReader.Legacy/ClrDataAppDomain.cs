@@ -19,6 +19,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
     private readonly IXCLRDataAppDomain? _legacyImpl;
 
     public TargetPointer Address => _appDomain;
+    internal IXCLRDataAppDomain? LegacyImpl => _legacyImpl;
 
     public ClrDataAppDomain(Target target, TargetPointer appDomain, IXCLRDataAppDomain? legacyImpl)
     {

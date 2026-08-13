@@ -1293,6 +1293,97 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                 }
                 break;
 
+            case NI_ArmBase_ConvertToSingle:
+                GetEmitter()->emitIns_R_R(ins, EA_4BYTE, targetReg, op1Reg, INS_OPTS_H_TO_S);
+                break;
+
+            case NI_ArmBase_ConvertToDouble:
+                GetEmitter()->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg, INS_OPTS_H_TO_D);
+                break;
+
+            case NI_ArmBase_ConvertToHalf:
+            {
+                // Baseline FCVT precision conversion; the source (base) type selects the width.
+                assert((intrin.baseType == TYP_FLOAT) || (intrin.baseType == TYP_DOUBLE));
+                insOpts cvtOption = (intrin.baseType == TYP_FLOAT) ? INS_OPTS_S_TO_H : INS_OPTS_D_TO_H;
+                GetEmitter()->emitIns_R_R(ins, EA_2BYTE, targetReg, op1Reg, cvtOption);
+                break;
+            }
+
+            case NI_Fp16_ConvertToInt32:
+            case NI_Fp16_ConvertToUInt32:
+                GetEmitter()->emitIns_R_R(ins, EA_4BYTE, targetReg, op1Reg, INS_OPTS_H_TO_4BYTE);
+                break;
+
+            case NI_Fp16_ConvertToInt64:
+            case NI_Fp16_ConvertToUInt64:
+                GetEmitter()->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg, INS_OPTS_H_TO_8BYTE);
+                break;
+
+            case NI_Fp16_ConvertToHalf:
+            {
+                // The instruction is already selected by the source (base) type; only the
+                // conversion option needs to distinguish the source width and signedness.
+                insOpts cvtOption = INS_OPTS_NONE;
+
+                switch (intrin.baseType)
+                {
+                    case TYP_INT:
+                    case TYP_UINT:
+                        cvtOption = INS_OPTS_4BYTE_TO_H;
+                        break;
+                    case TYP_LONG:
+                    case TYP_ULONG:
+                        cvtOption = INS_OPTS_8BYTE_TO_H;
+                        break;
+                    default:
+                        unreached();
+                }
+
+                GetEmitter()->emitIns_R_R(ins, EA_2BYTE, targetReg, op1Reg, cvtOption);
+                break;
+            }
+
+            case NI_Fp16_CompareEqual:
+            case NI_Fp16_CompareGreaterThan:
+            case NI_Fp16_CompareGreaterThanOrEqual:
+            case NI_Fp16_CompareLessThan:
+            case NI_Fp16_CompareLessThanOrEqual:
+            case NI_Fp16_CompareNotEqual:
+            {
+                insCond cond = INS_COND_EQ;
+
+                switch (intrin.id)
+                {
+                    case NI_Fp16_CompareEqual:
+                        cond = INS_COND_EQ;
+                        break;
+                    case NI_Fp16_CompareGreaterThan:
+                        cond = INS_COND_GT;
+                        break;
+                    case NI_Fp16_CompareGreaterThanOrEqual:
+                        cond = INS_COND_GE;
+                        break;
+                    case NI_Fp16_CompareLessThan:
+                        // 'mi' rather than 'lt' so an unordered (NaN) comparison yields false.
+                        cond = INS_COND_MI;
+                        break;
+                    case NI_Fp16_CompareLessThanOrEqual:
+                        // 'ls' rather than 'le' so an unordered (NaN) comparison yields false.
+                        cond = INS_COND_LS;
+                        break;
+                    case NI_Fp16_CompareNotEqual:
+                        cond = INS_COND_NE;
+                        break;
+                    default:
+                        unreached();
+                }
+
+                GetEmitter()->emitIns_R_R(INS_fcmp, EA_2BYTE, op1Reg, op2Reg);
+                GetEmitter()->emitIns_R_COND(INS_cset, EA_4BYTE, targetReg, cond);
+                break;
+            }
+
             case NI_Crc32_ComputeCrc32:
             case NI_Crc32_ComputeCrc32C:
             case NI_Crc32_Arm64_ComputeCrc32:
@@ -1670,7 +1761,24 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
 
             case NI_Vector_CreateScalarUnsafe:
-                if (intrin.op1->isContainedFltOrDblImmed())
+            {
+                var_types simdType = Compiler::getSIMDTypeForSize(node->GetSimdSize());
+
+                if (simdType == TYP_SIMD)
+                {
+                    emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+
+                    if (varTypeIsFloating(intrin.baseType))
+                    {
+                        regNumber tmpReg  = internalRegisters.Extract(node, RBM_ALLINT);
+                        insOpts   fmovOpt = (emitSize == EA_8BYTE) ? INS_OPTS_D_TO_8BYTE : INS_OPTS_S_TO_4BYTE;
+                        GetEmitter()->emitIns_Mov(INS_fmov, emitSize, tmpReg, op1Reg, /* canSkip */ false, fmovOpt);
+                        op1Reg = tmpReg;
+                    }
+
+                    GetEmitter()->emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                }
+                else if (intrin.op1->isContainedFltOrDblImmed())
                 {
                     // fmov reg, #imm8
                     const double dataValue = intrin.op1->AsDblCon()->DconValue();
@@ -1700,6 +1808,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                     }
                 }
                 break;
+            }
 
             case NI_AdvSimd_AddWideningLower:
             case NI_AdvSimd_AddWideningUpper:
@@ -3103,6 +3212,29 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             {
                 opt = INS_OPTS_SCALABLE_D;
                 GetEmitter()->emitInsSve_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
+                break;
+            }
+
+            case NI_Vector_Create:
+            {
+                emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+
+                if (varTypeIsFloating(intrin.baseType))
+                {
+                    regNumber tmpReg  = internalRegisters.Extract(node, RBM_ALLINT);
+                    insOpts   fmovOpt = (emitSize == EA_8BYTE) ? INS_OPTS_D_TO_8BYTE : INS_OPTS_S_TO_4BYTE;
+                    GetEmitter()->emitIns_Mov(INS_fmov, emitSize, tmpReg, op1Reg, /* canSkip */ false, fmovOpt);
+                    op1Reg = tmpReg;
+                }
+
+                GetEmitter()->emitInsSve_R_R(ins, emitSize, targetReg, op1Reg, opt);
+                break;
+            }
+
+            case NI_Vector_CreateSequence:
+            {
+                emitSize = (opt == INS_OPTS_SCALABLE_D) ? EA_8BYTE : EA_4BYTE;
+                GetEmitter()->emitIns_R_R_R(ins, emitSize, targetReg, op1Reg, op2Reg, opt);
                 break;
             }
 
