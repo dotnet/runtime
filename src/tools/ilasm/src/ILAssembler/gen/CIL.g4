@@ -779,7 +779,7 @@ finally {_localctx.Value = Actions.EndSignatureArguments(_localctx);}
 sigArg returns [object Value]:
 	ELLIPSIS {_localctx.Value = Actions.CreateSentinelSignatureArgument();}
 	| attributes = paramAttr argumentType = type marshalling = marshalClause name = id?
-		{_localctx.Value = Actions.CreateSignatureArgument($attributes.Value, $argumentType.Value, $marshalling.ctx, $name.ctx);};
+		{_localctx.Value = Actions.CreateSignatureArgument($attributes.Value, $argumentType.Value, $marshalling.Value, $name.ctx);};
 
 /*  Class referencing  */
 
@@ -822,116 +822,138 @@ returns [object Value, bool HasSyntaxError]
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 /*  Native types for marshaling signatures  */
-nativeType:
+nativeType returns [object Value]
+@init {Actions.BeginNativeType(_localctx);}
+:
 	/* EMPTY */
-	| nativeTypeElement nativeTypeArrayPointerInfo*;
+	| element = nativeTypeElement {Actions.SetNativeTypeElement(_localctx, $element.Value);}
+		(info = nativeTypeArrayPointerInfo {Actions.AddNativeTypeArrayPointerInfo(_localctx, $info.Value);})*
+;
+finally {_localctx.Value = Actions.EndNativeType(_localctx);}
 
-nativeTypeArrayPointerInfo:
-	PTR # PointerNativeType
-	| ARRAY_TYPE_NO_BOUNDS # PointerArrayTypeNoSizeData
-	| '[' int32 ']' # PointerArrayTypeSize
-	| '[' int32 PLUS int32 ']' # PointerArrayTypeSizeParamIndex
-	| '[' PLUS int32 ']' # PointerArrayTypeParamIndex
+nativeTypeArrayPointerInfo returns [object Value]:
+	PTR {_localctx.Value = Actions.CreatePointerNativeType();} # PointerNativeType
+	| ARRAY_TYPE_NO_BOUNDS {_localctx.Value = Actions.CreatePointerArrayTypeNoSizeData();} # PointerArrayTypeNoSizeData
+	| '[' size = int32 ']' {_localctx.Value = Actions.CreatePointerArrayTypeSize($size.start);} # PointerArrayTypeSize
+	| '[' size = int32 PLUS parameterIndex = int32 ']'
+		{_localctx.Value = Actions.CreatePointerArrayTypeSizeParamIndex($size.start, $parameterIndex.start);} # PointerArrayTypeSizeParamIndex
+	| '[' PLUS parameterIndex = int32 ']'
+		{_localctx.Value = Actions.CreatePointerArrayTypeParamIndex($parameterIndex.start);} # PointerArrayTypeParamIndex
     ;
 
-nativeTypeElement:
+nativeTypeElement returns [object Value]:
+	/* EMPTY */ {_localctx.Value = Actions.CreateEmptyNativeType();}
+	| marshalType = CUSTOM '(' guid = compQstring ',' nativeTypeName = compQstring ','
+		marshallerType = compQstring ',' cookie = compQstring ')'
+		{_localctx.Value = Actions.CreateDeprecatedCustomMarshallerNativeType(
+			_localctx, $guid.Value, $nativeTypeName.Value, $marshallerType.Value, $cookie.Value);}
+	| marshalType = CUSTOM '(' marshallerType = compQstring ',' cookie = compQstring ')'
+		{_localctx.Value = Actions.CreateCustomMarshallerNativeType($marshallerType.Value, $cookie.Value);}
+	| FIXED marshalType = SYSSTRING '[' size = int32 ']'
+		{_localctx.Value = Actions.CreateFixedSysStringNativeType($size.start);}
+	| FIXED marshalType = ARRAY '[' size = int32 ']' element = nativeType
+		{_localctx.Value = Actions.CreateFixedArrayNativeType($size.start, $element.Value);}
+	| marshalType = VARIANT {_localctx.Value = Actions.CreateDeprecatedNativeType(_localctx, $marshalType);}
+	| marshalType = CURRENCY {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = SYSCHAR {_localctx.Value = Actions.CreateDeprecatedNativeType(_localctx, $marshalType);}
+	| marshalType = VOID {_localctx.Value = Actions.CreateDeprecatedNativeType(_localctx, $marshalType);}
+	| marshalType = BOOL {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = INT8 {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = INT16 {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = INT32_ {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = INT64_ {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = FLOAT32 {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = FLOAT64_ {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = ERROR {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = UINT8 {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = UINT16 {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = UINT32 {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = UINT64 {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = DECIMAL {_localctx.Value = Actions.CreateDeprecatedNativeType(_localctx, $marshalType);}
+	| marshalType = DATE {_localctx.Value = Actions.CreateDeprecatedNativeType(_localctx, $marshalType);}
+	| marshalType = BSTR {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = LPSTR {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = LPWSTR {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = LPTSTR {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = OBJECTREF {_localctx.Value = Actions.CreateDeprecatedNativeType(_localctx, $marshalType);}
+	| marshalType = IUNKNOWN index = iidParamIndex {_localctx.Value = Actions.CreateIidNativeType($marshalType, $index.Value);}
+	| marshalType = IDISPATCH index = iidParamIndex {_localctx.Value = Actions.CreateIidNativeType($marshalType, $index.Value);}
+	| marshalType = STRUCT {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = INTERFACE index = iidParamIndex {_localctx.Value = Actions.CreateIidNativeType($marshalType, $index.Value);}
+	| marshalType = SAFEARRAY variant = variantType
+		{_localctx.Value = Actions.CreateSafeArrayNativeType($variant.Value, null);}
+	| marshalType = SAFEARRAY variant = variantType ',' userDefinedType = compQstring
+		{_localctx.Value = Actions.CreateSafeArrayNativeType($variant.Value, $userDefinedType.Value);}
+	| marshalType = INT {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = UINT {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| 'unsigned' unsignedMarshalType = INT8 {_localctx.Value = Actions.CreateUnsignedNativeType($unsignedMarshalType);}
+	| 'unsigned' unsignedMarshalType = INT16 {_localctx.Value = Actions.CreateUnsignedNativeType($unsignedMarshalType);}
+	| 'unsigned' unsignedMarshalType = INT32_ {_localctx.Value = Actions.CreateUnsignedNativeType($unsignedMarshalType);}
+	| 'unsigned' unsignedMarshalType = INT64_ {_localctx.Value = Actions.CreateUnsignedNativeType($unsignedMarshalType);}
+	| 'nested' marshalType = STRUCT {_localctx.Value = Actions.CreateNestedStructNativeType(_localctx);}
+	| marshalType = BYVALSTR {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| ANSI marshalType = BSTR {_localctx.Value = Actions.CreateAnsiBstrNativeType();}
+	| marshalType = TBSTR {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| VARIANT marshalBool = BOOL {_localctx.Value = Actions.CreateVariantBoolNativeType();}
+	| marshalType = METHOD {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| marshalType = LPSTRUCT {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| 'as' marshalType = ANY {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
+	| alias = dottedName {_localctx.Value = Actions.CreateNativeTypeTypedef(_localctx, $alias.Value);} /* typedef */;
+
+iidParamIndex returns [object Value]:
 	/* EMPTY */
-	| marshalType=CUSTOM '(' compQstring ',' compQstring ',' compQstring ',' compQstring ')'
-	| marshalType=CUSTOM '(' compQstring ',' compQstring ')'
-	| FIXED marshalType=SYSSTRING '[' int32 ']'
-	| FIXED marshalType=ARRAY '[' int32 ']' nativeType
-	| marshalType=VARIANT
-	| marshalType=CURRENCY
-	| marshalType=SYSCHAR
-	| marshalType=VOID
-	| marshalType=BOOL
-	| marshalType=INT8
-	| marshalType=INT16
-	| marshalType=INT32_
-	| marshalType=INT64_
-	| marshalType=FLOAT32
-	| marshalType=FLOAT64_
-	| marshalType=ERROR
-	| marshalType=UINT8
-	| marshalType=UINT16
-	| marshalType=UINT32
-	| marshalType=UINT64
-	| marshalType=DECIMAL
-	| marshalType=DATE
-	| marshalType=BSTR
-	| marshalType=LPSTR
-	| marshalType=LPWSTR
-	| marshalType=LPTSTR
-	| marshalType=OBJECTREF
-	| marshalType=IUNKNOWN iidParamIndex
-	| marshalType=IDISPATCH iidParamIndex
-	| marshalType=STRUCT
-	| marshalType=INTERFACE iidParamIndex
-	| marshalType=SAFEARRAY variantType
-	| marshalType=SAFEARRAY variantType ',' compQstring
-	| marshalType=INT
-	| marshalType=UINT
-	| 'unsigned' unsignedMarshalType=INT8
-	| 'unsigned' unsignedMarshalType=INT16
-	| 'unsigned' unsignedMarshalType=INT32_
-	| 'unsigned' unsignedMarshalType=INT64_
-	| 'nested' marshalType=STRUCT
-	| marshalType=BYVALSTR
-	| ANSI marshalType=BSTR
-	| marshalType=TBSTR
-	| VARIANT marshalBool=BOOL
-	| marshalType=METHOD
-	| marshalType=LPSTRUCT
-	| 'as' marshalType=ANY
-	| dottedName /* typedef */;
+	| '(' 'iidparam' '=' index = int32 ')' {_localctx.Value = Actions.GetIidParamIndex($index.start);};
 
-iidParamIndex: /* EMPTY */ | '(' 'iidparam' '=' int32 ')';
-
-variantType:
+variantType returns [object Value]
+@init {Actions.BeginVariantType(_localctx);}
+:
 	/*EMPTY */
-	| variantTypeElement (ARRAY_TYPE_NO_BOUNDS | VECTOR | REF)*;
+	| element = variantTypeElement {Actions.SetVariantTypeElement(_localctx, $element.Value);}
+		(modifier = (ARRAY_TYPE_NO_BOUNDS | VECTOR | REF) {Actions.AddVariantTypeModifier(_localctx, $modifier);})*
+;
+finally {_localctx.Value = Actions.EndVariantType(_localctx);}
 
-variantTypeElement:
-	NULL
-	| VARIANT
-	| CURRENCY
-	| VOID
-	| BOOL
-	| INT8
-	| INT16
-	| INT32_
-	| INT64_
-	| FLOAT32
-	| FLOAT64_
-	| UINT8
-	| UINT16
-	| UINT32
-	| UINT64
-	| PTR
-	| DECIMAL
-	| DATE
-	| BSTR
-	| LPSTR
-	| LPWSTR
-	| IUNKNOWN
-	| IDISPATCH
-	| SAFEARRAY
-	| INT
-	| UINT
-	| ERROR
-	| HRESULT
-	| CARRAY
-	| USERDEFINED
-	| RECORD
-	| FILETIME
-	| BLOB
-	| STREAM
-	| STORAGE
-	| STREAMED_OBJECT
-	| STORED_OBJECT
-	| BLOB_OBJECT
-	| CF
-	| CLSID;
+variantTypeElement returns [object Value]:
+	value = NULL {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = VARIANT {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = CURRENCY {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = VOID {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = BOOL {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = INT8 {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = INT16 {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = INT32_ {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = INT64_ {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = FLOAT32 {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = FLOAT64_ {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = UINT8 {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = UINT16 {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = UINT32 {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = UINT64 {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = PTR {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = DECIMAL {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = DATE {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = BSTR {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = LPSTR {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = LPWSTR {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = IUNKNOWN {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = IDISPATCH {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = SAFEARRAY {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = INT {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = UINT {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = ERROR {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = HRESULT {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = CARRAY {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = USERDEFINED {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = RECORD {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = FILETIME {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = BLOB {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = STREAM {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = STORAGE {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = STREAMED_OBJECT {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = STORED_OBJECT {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = BLOB_OBJECT {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = CF {_localctx.Value = Actions.GetVariantTypeElement($value);}
+	| value = CLSID {_localctx.Value = Actions.GetVariantTypeElement($value);};
 
 /*  Managed types for signatures  */
 type returns [object Value]
@@ -1248,15 +1270,18 @@ propDecl:
 
 /*  Method declaration  */
 
-marshalClause
-@init {BeginSubtree();}
-:
-	/* EMPTY */
-	| 'marshal' '(' marshalBlob ')'
+marshalClause returns [object Value]:
+	/* EMPTY */ {_localctx.Value = Actions.CreateEmptyMarshallingDescriptor();}
+	| 'marshal' '(' value = marshalBlob ')' {_localctx.Value = Actions.CompleteMarshalClause($value.Value);}
 ;
-finally {EndParseTreeMode();}
 
-marshalBlob: nativeType | '{' hexbyte+ '}';
+marshalBlob returns [object Value]
+@init {Actions.BeginMarshalBlob(_localctx);}
+:
+	nativeValue = nativeType {Actions.SetMarshalBlobNativeType(_localctx, $nativeValue.Value);}
+	| '{' (rawByte = hexbyte {Actions.AddMarshalBlobByte(_localctx, $rawByte.Value);})+ '}'
+;
+finally {_localctx.Value = Actions.EndMarshalBlob(_localctx);}
 
 paramAttr returns [int Value]
 @init {Actions.BeginParameterAttributes(_localctx);}

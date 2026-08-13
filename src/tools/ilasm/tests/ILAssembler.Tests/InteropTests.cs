@@ -205,6 +205,84 @@ namespace ILAssembler.Tests
             Assert.Equal(Convert.FromHexString(expectedHex), reader.GetBlobBytes(field.GetMarshallingDescriptor()));
         }
 
+        [Fact]
+        public void MalformedRawMarshalBlob_DoesNotLeakIntoFollowingField()
+        {
+            string source = """
+                .assembly test { }
+                .class public auto ansi Test
+                {
+                    .field public marshal({ }) int32 Bad
+                    .field public marshal({ 2A 50 }) int32[] Good
+                }
+                """;
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                new SourceText(source, "test.il"),
+                _ => { Assert.Fail("Expected no includes"); return default; },
+                _ => { Assert.Fail("Expected no resources"); return default; },
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.NotNull(result);
+
+            BlobBuilder image = new();
+            result!.Serialize(image);
+            using PEReader pe = new(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            FieldDefinition good = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .Single(field => reader.GetString(field.Name) == "Good");
+
+            Assert.Equal([0x2A, 0x50], reader.GetBlobBytes(good.GetMarshallingDescriptor()));
+        }
+
+        [Theory]
+        [InlineData("marshal({")]
+        [InlineData("marshal(fixed array[2] int32[3 +")]
+        [InlineData("marshal(custom(\"Marshaller\",")]
+        public void MalformedNestedMarshal_DoesNotLeakFramesIntoNextDocument(string malformedMarshal)
+        {
+            ImmutableArray<SourceText> documents =
+            [
+                new SourceText($$"""
+                    .assembly test { }
+                    .class public auto ansi Broken
+                    {
+                        .method public static void M(object {{malformedMarshal}}
+                    """, "broken.il"),
+                new SourceText("""
+                    .class public auto ansi Following
+                    {
+                        .field public marshal(fixed array[2] int16[3+1]) int16[] Values
+                    }
+                    """, "following.il")
+            ];
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                documents,
+                _ => { Assert.Fail("Expected no includes"); return default; },
+                _ => { Assert.Fail("Expected no resources"); return default; },
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.NotNull(result);
+
+            BlobBuilder image = new();
+            result!.Serialize(image);
+            using PEReader pe = new(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            FieldDefinition field = reader.FieldDefinitions
+                .Select(reader.GetFieldDefinition)
+                .Single(field => reader.GetString(field.Name) == "Values");
+
+            Assert.Equal(
+                [0x1E, 0x02, 0x2A, 0x05, 0x01, 0x03, 0x01],
+                reader.GetBlobBytes(field.GetMarshallingDescriptor()));
+        }
+
         [Theory]
         [InlineData("int8", UnmanagedType.U1)]
         [InlineData("int16", UnmanagedType.U2)]
