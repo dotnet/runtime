@@ -27,8 +27,13 @@ accumulator instead of building a subtree at all.
 | `GrammarActions.Members.cs` | Class member dispatch and conversion. |
 | `GrammarActions.MethodBodies.cs` | Method, lexical scope and exception-handling state and conversion. |
 | `GrammarActions.Security.cs` | Declarative security conversion. |
-| `GrammarActions.Signatures.cs` | Signature and type encoding. |
+| `GrammarActions.Signatures.cs` | Signature visitor compatibility wrappers. |
+| `GrammarActions.Signatures.Actions.cs` | Signature grammar actions and repetition frames. |
+| `GrammarActions.Signatures.References.cs` | Member-reference synthesis and materialization. |
+| `GrammarActions.Signatures.Types.cs` | Type-signature materialization and encoding. |
+| `GrammarActions.Signatures.Values.cs` | Internal synthesized signature value model. |
 | `GrammarActions.Types.cs` | Namespace and type scopes and declaration conversion. |
+| `GrammarActions.Types.References.cs` | Type-name synthesis and resolution. |
 
 `CILParser.Actions.cs` holds the parse-tree mode helpers the grammar calls.
 
@@ -37,10 +42,15 @@ accumulator instead of building a subtree at all.
 Parser actions in `src/ILAssembler/gen/CIL.g4` must remain thin; they call a single `Actions` method
 and nothing else. Compilation orchestration belongs in the `GrammarActions` partial-class files.
 
-Instruction dispatch and value operands run entirely with parse-tree construction disabled.
-Reference and signature operand roots such as `methodRef`, `fieldRef`, `mdtoken`, `typeSpec`,
-`ownerType` and `calliSignature` temporarily retain only their own bounded subtrees for semantic
-conversion.
+Instruction dispatch and every operand root run with parse-tree construction disabled.
+Type, signature and reference rules synthesize compact semantic values that their existing
+`VisitX(context).Value` wrappers materialize. The generated ANTLR context classes are public, while
+ILAssembler entities and signature implementation values remain internal, so generated return
+slots use `object` where an internal value or array crosses that boundary and `GrammarActions`
+provides the strongly typed accessors.
+
+`marshalClause` is the remaining signature-layer parse-tree island. It retains only the bounded
+`marshalBlob`/`nativeType` subtree until its containing signature is materialized.
 
 Semantic state that a rule pushes must be released from that rule's `finally` clause and be keyed on
 the owning context, because ANTLR skips `@after` actions and the remainder of an alternative once a

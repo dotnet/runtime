@@ -1,13 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
 
 namespace ILAssembler;
 
@@ -15,7 +12,7 @@ internal sealed partial class GrammarActions
 {
     internal void EmitMethodReferenceInstruction(IToken opcodeToken, CILParser.MethodRefContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || ContainsSyntaxError(context))
+        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
         {
             return;
         }
@@ -40,7 +37,7 @@ internal sealed partial class GrammarActions
 
     internal void EmitFieldReferenceInstruction(IToken opcodeToken, CILParser.FieldRefContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || ContainsSyntaxError(context))
+        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
         {
             return;
         }
@@ -51,7 +48,7 @@ internal sealed partial class GrammarActions
 
     internal void EmitMetadataTokenInstruction(IToken opcodeToken, CILParser.MdtokenContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || ContainsSyntaxError(context))
+        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
         {
             return;
         }
@@ -62,7 +59,7 @@ internal sealed partial class GrammarActions
 
     internal void EmitTypeReferenceInstruction(IToken opcodeToken, CILParser.TypeSpecContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || ContainsSyntaxError(context))
+        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
         {
             return;
         }
@@ -73,53 +70,27 @@ internal sealed partial class GrammarActions
 
     internal void EmitCalliInstruction(IToken opcodeToken, CILParser.CalliSignatureContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || ContainsSyntaxError(context))
+        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
         {
             return;
         }
 
         Debug.Assert(instruction.OpCode == ILOpCode.Calli);
-        BlobBuilder signature = new();
-        signature.WriteByte(VisitCallConv(context.callConv()).Value);
-        ImmutableArray<SignatureArg> arguments = VisitSigArgs(context.sigArgs()).Value;
-        signature.WriteCompressedInteger(arguments.Count(argument => !argument.IsSentinel));
-        VisitType(context.type()).Value.WriteContentTo(signature);
-        foreach (SignatureArg argument in arguments)
-        {
-            argument.SignatureBlob.WriteContentTo(signature);
-        }
-
         instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
-        instruction.Method.Definition.MethodBody.Token(_entityRegistry.GetOrCreateStandaloneSignature(signature).Handle);
+        instruction.Method.Definition.MethodBody.Token(
+            _entityRegistry.GetOrCreateStandaloneSignature(
+                MaterializeCalliSignature(GetCalliSignatureValue(context.Value))).Handle);
     }
 
     internal void EmitOwnerTokenInstruction(IToken opcodeToken, CILParser.OwnerTypeContext context)
     {
-        if (StartInstruction(opcodeToken) is not { } instruction || ContainsSyntaxError(context))
+        if (StartInstruction(opcodeToken) is not { } instruction || context.HasSyntaxError)
         {
             return;
         }
 
         instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
         WriteInstructionToken(instruction.Method, VisitOwnerType(context).Value);
-    }
-
-    private static bool ContainsSyntaxError(IParseTree tree)
-    {
-        if (tree is IErrorNode or ParserRuleContext { exception: not null })
-        {
-            return true;
-        }
-
-        for (int i = 0; i < tree.ChildCount; i++)
-        {
-            if (ContainsSyntaxError(tree.GetChild(i)))
-            {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private static void WriteInstructionToken(CurrentMethodContext method, EntityRegistry.EntityBase entity)
@@ -141,5 +112,5 @@ internal sealed partial class GrammarActions
     }
 
     GrammarResult ICILVisitor<GrammarResult>.VisitCalliSignature(CILParser.CalliSignatureContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
+        => new GrammarResult.FormattedBlob(MaterializeCalliSignature(GetCalliSignatureValue(context.Value)));
 }
