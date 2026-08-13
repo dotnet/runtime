@@ -514,10 +514,14 @@ namespace System.Formats.Nrbf.Tests
         }
 
 #if !NETFRAMEWORK
-        [Fact]
-        public void GetArray_AllowNullsFalse_DoesNotAllocateLargeArray_WhenMultipleNullRecordIsPresent()
+        // GC.GetAllocatedBytesForCurrentThread() is not available on Full Framework.
+        [Theory]
+        [InlineData(SerializationRecordType.ArraySingleObject)]
+        [InlineData(SerializationRecordType.ArraySingleString)]
+        [InlineData(SerializationRecordType.BinaryArray)]
+        public void GetArray_AllowNullsFalse_DoesNotAllocateLargeArray_WhenMultipleNullRecordIsPresent(SerializationRecordType recordType)
         {
-            // The tests need to ensure that 2GB+ array does not get allocated.
+            // The test needs to ensure that 2GB+ array does not get allocated.
             // 200k is enough to get the job done and avoid getting false positives.
             const long AllocationThreshold = 200_000;
 
@@ -526,9 +530,22 @@ namespace System.Formats.Nrbf.Tests
 
             WriteSerializedStreamHeader(writer);
 
-            writer.Write((byte)SerializationRecordType.ArraySingleObject);
+            writer.Write((byte)recordType);
             writer.Write(1); // object ID
-            writer.Write(Array.MaxLength); // length
+
+            if (recordType is SerializationRecordType.BinaryArray)
+            {
+                writer.Write((byte)BinaryArrayType.Single);
+                writer.Write(1); // rank
+                writer.Write(Array.MaxLength); // length
+                writer.Write((byte)3); // BinaryType.SystemClass
+                writer.Write("System.Exception"); // element type name
+            }
+            else
+            {
+                writer.Write(Array.MaxLength); // length
+            }
+
             writer.Write((byte)SerializationRecordType.ObjectNullMultiple);
             writer.Write(Array.MaxLength); // null count
             writer.Write((byte)SerializationRecordType.MessageEnd);
@@ -536,11 +553,21 @@ namespace System.Formats.Nrbf.Tests
             stream.Position = 0;
 
             SerializationRecord serializationRecord = NrbfDecoder.Decode(stream);
+            Assert.Equal(recordType, serializationRecord.RecordType);
 
             long before = GC.GetAllocatedBytesForCurrentThread();
 
-            SZArrayRecord<SerializationRecord> arrayRecord = (SZArrayRecord<SerializationRecord>)serializationRecord;
-            Assert.Throws<SerializationException>(() => arrayRecord.GetArray(allowNulls: false));
+            Assert.Throws<SerializationException>(() =>
+            {
+                if (serializationRecord is SZArrayRecord<string> arrayOfStrings)
+                {
+                    arrayOfStrings.GetArray(allowNulls: false);
+                }
+                else
+                {
+                    ((SZArrayRecord<SerializationRecord>)serializationRecord).GetArray(allowNulls: false);
+                }
+            });
 
             long after = GC.GetAllocatedBytesForCurrentThread();
 

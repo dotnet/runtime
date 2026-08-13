@@ -46,11 +46,7 @@ internal sealed class ArraySingleStringRecord : SZArrayRecord<string?>
 
     private string?[] ToArray(bool allowNulls)
     {
-        // When Length is different than record count, we know the record list contains at least one Multiple Null Record.
-        if (!allowNulls && Length != Records.Count)
-        {
-            ThrowHelper.ThrowArrayContainedNulls();
-        }
+        ThrowIfNullsAreNotAllowedButPresent(Records, allowNulls);
 
         string?[] values = new string?[Length];
 

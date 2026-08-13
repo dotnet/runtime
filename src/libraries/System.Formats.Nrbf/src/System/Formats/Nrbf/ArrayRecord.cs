@@ -114,14 +114,24 @@ public abstract class ArrayRecord : SerializationRecord
 
     internal abstract (AllowedRecordTypes allowed, PrimitiveType primitiveType) GetAllowedRecordType();
 
-    internal static void Populate(List<SerializationRecord> source, Array destination, int[] lengths, AllowedRecordTypes allowedRecordTypes, bool allowNulls)
+    /// <summary>
+    /// Throws if nulls are not allowed and the records are known to contain at least one Multiple Null Record.
+    /// </summary>
+    /// <remarks>
+    /// Every record represents a single value, except for the Multiple Null Records which represent more than one null.
+    /// Because of that, a record count different than the total element count means that nulls are present.
+    /// It's important to perform this check before allocating the array, as the array can be very large.
+    /// </remarks>
+    private protected void ThrowIfNullsAreNotAllowedButPresent(List<SerializationRecord> records, bool allowNulls)
     {
-        // When destination length is different than record count, we know the record list contains at least one Multiple Null Record.
-        if (!allowNulls && destination.LongLength != source.Count)
+        if (!allowNulls && ArrayInfo.FlattenedLength != records.Count)
         {
             ThrowHelper.ThrowArrayContainedNulls();
         }
+    }
 
+    internal static void Populate(List<SerializationRecord> source, Array destination, int[] lengths, AllowedRecordTypes allowedRecordTypes, bool allowNulls)
+    {
         int[] indices = new int[lengths.Length];
         nuint numElementsWritten = 0; // only for debugging; not used in release builds
 
