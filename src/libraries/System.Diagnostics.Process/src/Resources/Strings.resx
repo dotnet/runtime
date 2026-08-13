@@ -394,6 +394,6 @@
     <value>The verb '{0}' is not supported for UseShellExecute on this platform. Only the default verb (an empty string or "open") is supported.</value>
   </data>
   <data name="UseShellExecuteNoOpenProgram" xml:space="preserve">
-    <value>No application is associated with the specified file or URL for UseShellExecute on this platform.</value>
+    <value>No shell opener program was found for UseShellExecute on this platform. Install one such as 'xdg-open' (Linux) or 'open' (macOS).</value>
   </data>
 </root>
