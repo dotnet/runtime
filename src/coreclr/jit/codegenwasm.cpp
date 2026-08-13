@@ -4485,9 +4485,9 @@ int CodeGenInterface::genSPtoFPdelta() const
 int CodeGenInterface::genCallerSPtoFPdelta() const
 {
     assert(isFramePointerUsed());
-    int callerSPToFPDelta = genSPtoFPdelta() + genCallerSPtoInitialSPdelta();
-    assert(callerSPToFPDelta <= 0);
-    return callerSPToFPDelta;
+    int callerSPtoFPdelta = genCallerSPtoInitialSPdelta() + genSPtoFPdelta();
+    assert(callerSPtoFPdelta <= 0);
+    return callerSPtoFPdelta;
 }
 
 //---------------------------------------------------------------------
@@ -4496,9 +4496,9 @@ int CodeGenInterface::genCallerSPtoFPdelta() const
 // This number will be negative.
 int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
-    int callerSPToInitialSPDelta = -genTotalFrameSize();
-    assert(callerSPToInitialSPDelta <= 0);
-    return callerSPToInitialSPDelta;
+    int callerSPtoInitialSPdelta = -genTotalFrameSize();
+    assert(callerSPtoInitialSPdelta <= 0);
+    return callerSPtoInitialSPdelta;
 }
 
 void RegSet::verifyRegUsed(regNumber reg)
