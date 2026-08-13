@@ -2066,6 +2066,8 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                 break;
             }
 #elif defined(TARGET_ARM64)
+            // On ARM64, the return value follows the same rules as arguments, when deciding
+            // whether to pass by reference (therefore through the return buffer).
             if  (!IsArgPassedByRef(thValueType))
                 break;
 #else
