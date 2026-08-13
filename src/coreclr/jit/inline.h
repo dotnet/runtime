@@ -623,6 +623,13 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
 
     CorInfoInitClassResult initClassResult;
     InlineContext*         inlinersContext;
+
+#ifdef DEBUG
+    // Position of this candidate in its enclosing body's shuffled group of async inline
+    // candidates, under async inlining stress. -1 means the candidate is not part of any
+    // group and so is left to the normal policy; see Compiler::fgAsyncStressPrepare.
+    int asyncStressIndex = -1;
+#endif // DEBUG
 };
 
 // LateDevirtualizationInfo
