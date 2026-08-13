@@ -8,9 +8,10 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
+        /// <safety>P/Invoke to the OS that returns the current thread's numeric id by value; it takes no arguments and reads or writes no caller-supplied memory.</safety>
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
-        public static partial int GetCurrentThreadId();
+        public static safe partial int GetCurrentThreadId();
     }
 }

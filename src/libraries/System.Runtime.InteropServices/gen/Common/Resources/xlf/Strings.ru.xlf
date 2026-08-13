@@ -1057,6 +1057,21 @@
         <target state="translated">Для LibraryImportAttribute требуется небезопасный код.</target>
         <note />
       </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierDescriptionLibraryImport">
+        <source>Under the updated memory safety rules, calling into native code is a safety contract that the compiler cannot verify. Mark the method 'unsafe' to require callers to audit the call, or 'safe' after auditing the interop boundary. This matches the requirement the language places on 'extern' members.</source>
+        <target state="translated">Согласно обновленным правилам безопасности памяти, вызов нативного кода является контрактом безопасности, который компилятор не может проверить. Пометьте метод как "небезопасный", чтобы потребовать от вызывающих сторон проверки вызова, или как "безопасный" после проверки границы взаимодействия. Это соответствует требованию, которое язык программирования предъявляет к "внешним" участникам.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierMessageLibraryImport">
+        <source>Method '{0}' with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
+        <target state="translated">Метод "{0}" с атрибутом "LibraryImport" должен быть помечен как "безопасный" или "небезопасный"</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierTitleLibraryImport">
+        <source>Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
+        <target state="translated">Метод с атрибутом "LibraryImport" должен быть помечен как "безопасный" или "небезопасный"</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
         <source>The return type the two method must be the expected type.</source>
         <target state="translated">Тип возвращаемого значения метода two должен быть ожидаемым.</target>

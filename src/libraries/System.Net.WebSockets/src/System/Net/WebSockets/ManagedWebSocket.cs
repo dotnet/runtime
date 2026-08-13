@@ -922,7 +922,6 @@ namespace System.Net.WebSockets
                             if (_receiveBufferCount > 0)
                             {
                                 int receiveBufferBytesToCopy = Math.Min(limit, _receiveBufferCount);
-                                Debug.Assert(receiveBufferBytesToCopy > 0);
 
                                 _receiveBuffer.Span.Slice(_receiveBufferOffset, receiveBufferBytesToCopy).CopyTo(
                                     header.Compressed ? _inflater!.Span : payloadBuffer.Span);

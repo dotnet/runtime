@@ -47,6 +47,7 @@ target_link_libraries (libnethost PUBLIC ${CMAKE_DL_LIBS})
 
 install(FILES ../coreclr_delegates.h DESTINATION corehost)
 install(FILES ../hostfxr.h DESTINATION corehost)
+install(FILES ../error_codes.h DESTINATION corehost RENAME host_error_codes.h)
 install(FILES nethost.h DESTINATION corehost)
 install_with_stripped_symbols(nethost TARGETS corehost)
 

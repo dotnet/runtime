@@ -222,7 +222,7 @@ public struct TypeNameBuilder
                     AppendTypeCore(ref tnb, typeSystemContract.GetTypeParam(typeHandle), default, format & ~TypeNameFormat.FormatAssembly);
                 }
             }
-            else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken))
+            else if (typeSystemContract.IsGenericVariable(typeHandle, out TargetPointer modulePointer, out uint genericParamToken, out _))
             {
                 Contracts.ModuleHandle module = tnb.Target.Contracts.Loader.GetModuleHandleFromModulePtr(modulePointer);
                 MetadataReader reader = tnb.Target.Contracts.EcmaMetadata.GetMetadata(module)!;
@@ -330,7 +330,7 @@ public struct TypeNameBuilder
     // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
     // and enclose each parameter in square brackets to disambiguate the commas
     // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
-    private static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<ITypeHandle> inst, TypeNameFormat format)
+    internal static void AppendInst(Target target, StringBuilder stringBuilder, ReadOnlySpan<ITypeHandle> inst, TypeNameFormat format)
     {
         TypeNameBuilder tnb = new(stringBuilder, target, format, initialStateIsName: true);
         AppendInst(ref tnb, inst, format);
@@ -342,7 +342,7 @@ public struct TypeNameBuilder
         foreach (ITypeHandle arg in inst)
         {
             tnb.OpenGenericArgument();
-            if (format.HasFlag(TypeNameFormat.FormatFullInst) && !tnb.Target.Contracts.RuntimeTypeSystem.IsGenericVariable(arg, out _, out _))
+            if (format.HasFlag(TypeNameFormat.FormatFullInst) && !tnb.Target.Contracts.RuntimeTypeSystem.IsGenericVariable(arg, out _, out _, out _))
             {
                 AppendTypeCore(ref tnb, arg, default, format | TypeNameFormat.FormatNamespace | TypeNameFormat.FormatAssembly);
             }

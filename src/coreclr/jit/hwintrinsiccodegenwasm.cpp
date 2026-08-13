@@ -26,9 +26,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 {
-    // emitIns_Lane
-    // emitIns_Memarg_Lane
-
     const HWIntrinsic info(node);
     genConsumeMultiOpOperands(node);
 
@@ -40,7 +37,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         {
             case HW_Category_SIMD:
             {
-                if ((info.id == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
+                if (info.id == NI_PackedSimd_Shuffle)
+                {
+                    assert(node->Op(3)->isContained());
+                    GetEmitter()->emitIns_V128Imm(ins, node->Op(3)->AsVecCon()->gtSimdVal.u8);
+                }
+                else if ((info.id == NI_PackedSimd_Swizzle) && node->Op(2)->isContained())
                 {
                     // A constant, fully in-range mask was lowered to an immediate i8x16.shuffle.
                     // prior codegen left the source on the value stack once (the mask
@@ -98,7 +100,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
             }
             default:
             {
-                NYI_WASM_SIMD("CodeGen::genHWIntrinsic: Unsupported category for table-driven intrinsic");
+                unreached();
             }
         }
     }
@@ -118,7 +120,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
 
             default:
             {
-                NYI_WASM_SIMD("!codeGenIsTableDriven");
+                unreached();
             }
         }
     }
@@ -247,8 +249,7 @@ void CodeGen::genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrin
                 }
                 default:
                 {
-                    NYI_WASM_SIMD(
-                        "CodeGen::genHWIntrinsicJumpTableFallback: Unsupported category for jump table intrinsic");
+                    unreached();
                 }
             }
             // proper branch depth is immUpperBound + 1 - i; The $inner block accounts for the + 1.

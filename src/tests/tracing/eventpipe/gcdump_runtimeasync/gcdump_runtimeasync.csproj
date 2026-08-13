@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- Runtime Async-generated IL is currently supported only by CoreCLR. -->
+    <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'mono'">true</DisableProjectBuild>
+    <!-- Emit Runtime Async method bodies so the runtime creates the dynamic metadata-less
+         continuation MethodTables this test exercises. Runtime Async is enabled by the
+         runtime-async feature and DOTNET_RuntimeAsync CLR test environment variable. -->
+    <Features>$(Features);runtime-async=on</Features>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Runtime Async is a preview feature enabled per-process at startup. -->
+    <CLRTestEnvironmentVariable Include="DOTNET_RuntimeAsync" Value="1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <ProjectReference Include="../common/eventpipe_common.csproj" />
+    <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

@@ -1057,6 +1057,21 @@
         <target state="translated">LibraryImportAttribute には安全でないコードが必要です。</target>
         <note />
       </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierDescriptionLibraryImport">
+        <source>Under the updated memory safety rules, calling into native code is a safety contract that the compiler cannot verify. Mark the method 'unsafe' to require callers to audit the call, or 'safe' after auditing the interop boundary. This matches the requirement the language places on 'extern' members.</source>
+        <target state="translated">更新されたメモリの安全規則では、ネイティブ コードへの呼び出しは、コンパイラが検証できない安全コントラクトです。呼び出し元に呼び出しの監査を求めるには、メソッドに 'unsafe' を指定します。相互運用境界を監査した後は、'safe' を指定します。これは、言語が 'extern' メンバーに課している要件と一致します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierMessageLibraryImport">
+        <source>Method '{0}' with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
+        <target state="translated">'LibraryImportAttribute' を持つメソッド '{0}' は、'safe' または 'unsafe' としてマークする必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RequiresExplicitSafetyModifierTitleLibraryImport">
+        <source>Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
+        <target state="translated">'LibraryImportAttribute' を持つメソッドは、'safe' または 'unsafe' としてマークする必要があります</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
         <source>The return type the two method must be the expected type.</source>
         <target state="translated">戻り値の型は、2 つのメソッドが期待する型である必要があります。</target>
