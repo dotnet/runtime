@@ -391,9 +391,9 @@
     <value>The callback must return a positive process ID for the newly created process.</value>
   </data>
   <data name="UseShellExecuteVerbNotSupported" xml:space="preserve">
-    <value>The verb '{0}' is not supported for UseShellExecute on this platform. Only the default verb is supported.</value>
+    <value>The verb '{0}' is not supported for UseShellExecute on this platform. Only the default verb (an empty string or "open") is supported.</value>
   </data>
   <data name="UseShellExecuteNoOpenProgram" xml:space="preserve">
-    <value>No application is associated with the specified file for UseShellExecute on this platform.</value>
+    <value>No application is associated with the specified file or URL for UseShellExecute on this platform.</value>
   </data>
 </root>
