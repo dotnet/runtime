@@ -41,54 +41,6 @@ internal sealed partial class GrammarActions
     public GrammarResult.FormattedBlob VisitNativeTypeElement(CILParser.NativeTypeElementContext context)
         => new(MaterializeNativeTypeElement(GetNativeTypeElementValue(context.Value)));
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitPinvAttr(CILParser.PinvAttrContext context)
-        => VisitPinvAttr(context);
-
-    public GrammarResult.Flag<MethodImportAttributes> VisitPinvAttr(CILParser.PinvAttrContext context)
-    {
-        if (context.int32() is CILParser.Int32Context int32)
-        {
-            return new((MethodImportAttributes)VisitInt32(int32).Value, ShouldAppend: false);
-        }
-
-        return context.GetText() switch
-        {
-            "nomangle" => new(MethodImportAttributes.ExactSpelling),
-            "ansi" => new(MethodImportAttributes.CharSetAnsi),
-            "unicode" => new(MethodImportAttributes.CharSetUnicode),
-            "autochar" => new(MethodImportAttributes.CharSetAuto),
-            "lasterr" => new(MethodImportAttributes.SetLastError),
-            "winapi" => new(MethodImportAttributes.CallingConventionWinApi),
-            "cdecl" => new(MethodImportAttributes.CallingConventionCDecl),
-            "stdcall" => new(MethodImportAttributes.CallingConventionStdCall),
-            "thiscall" => new(MethodImportAttributes.CallingConventionThisCall),
-            "fastcall" => new(MethodImportAttributes.CallingConventionFastCall),
-            "bestfit:on" => new(MethodImportAttributes.BestFitMappingEnable),
-            "bestfit:off" => new(MethodImportAttributes.BestFitMappingDisable),
-            "charmaperror:on" => new(MethodImportAttributes.ThrowOnUnmappableCharEnable),
-            "charmaperror:off" => new(MethodImportAttributes.ThrowOnUnmappableCharDisable),
-            _ => throw new UnreachableException()
-        };
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitPinvImpl(CILParser.PinvImplContext context)
-        => VisitPinvImpl(context);
-
-    public GrammarResult.Literal<(string? ModuleName, string? EntryPointName, MethodImportAttributes Attributes)> VisitPinvImpl(
-        CILParser.PinvImplContext context)
-    {
-        MethodImportAttributes attributes = MethodImportAttributes.None;
-        foreach (CILParser.PinvAttrContext attribute in context.pinvAttr())
-        {
-            attributes |= VisitPinvAttr(attribute);
-        }
-
-        CILParser.CompQstringContext[] names = context.compQstring();
-        string? moduleName = names.Length > 0 ? VisitCompQstring(names[0]).Value : null;
-        string? entryPointName = names.Length > 1 ? VisitCompQstring(names[1]).Value : null;
-        return new((moduleName, entryPointName, attributes));
-    }
-
     GrammarResult ICILVisitor<GrammarResult>.VisitVariantType(CILParser.VariantTypeContext context)
         => VisitVariantType(context);
 

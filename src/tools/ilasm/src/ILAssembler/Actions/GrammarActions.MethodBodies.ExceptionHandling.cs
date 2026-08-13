@@ -18,14 +18,6 @@ internal sealed partial class GrammarActions
     private readonly Stack<ScopeFrame> _scopeStack = new();
     private RuleContext? _methodOwner;
 
-    internal void BeginMethod(CILParser.MethodHeadContext context)
-    {
-        ClearPendingCustomAttributeOwners();
-        ResetMethodBodyState();
-        _currentMethod = new CurrentMethodContext(VisitMethodHead(context).Value);
-        _methodOwner = context.Parent;
-    }
-
     private void EndMethod()
     {
         Debug.Assert(
