@@ -21,6 +21,7 @@ namespace System.Collections.Specialized
             {
                 Validate(nameof(key), key);
                 Validate(nameof(value), value);
+
                 _contents[key] = value;
             }
         }
