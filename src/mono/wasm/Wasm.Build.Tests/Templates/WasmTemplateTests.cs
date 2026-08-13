@@ -352,27 +352,31 @@ namespace Wasm.Build.Tests
             ProjectInfo info = CreateWasmTemplateProject(Template.WasmBrowser, config, aot: false, "tsdefs", extraProperties: emitTypeScriptDtsProp);
 
             string projectDirectory = Path.GetDirectoryName(info.ProjectFilePath)!;
-            string dotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "dotnet.d.ts");
+            string dotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "_framework", "dotnet.d.ts");
+            string rootDotnetDtsWwwrootPath = Path.Combine(projectDirectory, "wwwroot", "dotnet.d.ts");
 
-            // Verify dotnet.d.ts is not in wwwroot after creation
+            // Verify dotnet.d.ts is absent from the project after creation
             Assert.False(File.Exists(dotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after creation of the project");
+            Assert.False(File.Exists(rootDotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {rootDotnetDtsWwwrootPath} after creation of the project");
 
             // Build to trigger the _EnsureDotnetTypeScriptDefinitions target during the build phase
             BuildProject(info, config, new BuildOptions());
 
-            // Verify dotnet.d.ts presence in the project's wwwroot directory after build
+            // Verify dotnet.d.ts presence in the project's wwwroot/_framework directory after build
             bool fileExists = File.Exists(dotnetDtsWwwrootPath);
             if (emitTypeScriptDts)
             {
                 Assert.True(fileExists, $"dotnet.d.ts should be created at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+                Assert.False(File.Exists(rootDotnetDtsWwwrootPath), $"dotnet.d.ts should not be created at {rootDotnetDtsWwwrootPath}");
 
                 // Rebuild with -question to verify the build stays incremental after
-                // dotnet.d.ts is copied to wwwroot (see https://github.com/dotnet/runtime/issues/124729).
+                // dotnet.d.ts is copied to wwwroot/_framework (see https://github.com/dotnet/runtime/issues/124729).
                 BuildProject(info, config, new BuildOptions(UseCache: false, AssertAppBundle: false, ExtraMSBuildArgs: "-question"));
             }
             else
             {
                 Assert.False(fileExists, $"dotnet.d.ts should not exist at {dotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
+                Assert.False(File.Exists(rootDotnetDtsWwwrootPath), $"dotnet.d.ts should not exist at {rootDotnetDtsWwwrootPath} after the build with WasmEmitTypeScriptDefinitions={shouldEmit}");
             }
         }
 

@@ -906,8 +906,8 @@ namespace LibraryImportGenerator.UnitTests
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck
             };
 
+            // The analyzer reports SYSLIB1062 once per compilation to recommend enabling AllowUnsafeBlocks.
             test.ExpectedDiagnostics.Add(VerifyAnalyzerCS.Diagnostic("SYSLIB1062"));
-            test.ExpectedDiagnostics.Add(DiagnosticResult.CompilerError("CS0227").WithLocation(0));
 
             await test.RunAsync();
         }

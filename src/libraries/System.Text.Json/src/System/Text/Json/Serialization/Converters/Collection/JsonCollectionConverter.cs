@@ -54,7 +54,7 @@ namespace System.Text.Json.Serialization
 
         protected static JsonConverter<TElement> GetElementConverter(ref WriteStack state)
         {
-            Debug.Assert(state.Current.JsonPropertyInfo != null);
+            Debug.Assert(state.Current.JsonPropertyInfo is not null);
             return (JsonConverter<TElement>)state.Current.JsonPropertyInfo.EffectiveConverter;
         }
 
@@ -83,7 +83,7 @@ namespace System.Text.Json.Serialization
 
                 state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 JsonConverter<TElement> elementConverter = GetElementConverter(elementTypeInfo);
-                if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+                if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling is null)
                 {
                     // Fast path that avoids validation and extra indirection.
                     while (true)
@@ -181,7 +181,7 @@ namespace System.Text.Json.Serialization
 
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                     {
-                        Debug.Assert(state.ReferenceId != null);
+                        Debug.Assert(state.ReferenceId is not null);
                         Debug.Assert(options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve);
                         Debug.Assert(state.Current.ReturnValue is TCollection);
                         state.ReferenceResolver.AddReference(state.ReferenceId, state.Current.ReturnValue);
@@ -296,7 +296,7 @@ namespace System.Text.Json.Serialization
         {
             bool success;
 
-            if (value == null)
+            if (value is null)
             {
                 writer.WriteNullValue();
                 success = true;

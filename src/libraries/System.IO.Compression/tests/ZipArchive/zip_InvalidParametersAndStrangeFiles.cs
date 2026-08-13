@@ -182,6 +182,55 @@ namespace System.IO.Compression.Tests
         }
 
         [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static async Task ReadCentralDirectory_AesEntryLocalHeaderOffsetPastEndOfStream_DoesNotThrowUnexpectedly(bool async)
+        {
+            // Take a valid AES-encrypted archive and corrupt the first central directory record so its
+            // local header offset points past the end of the stream. Eagerly reading the AES salt while
+            // parsing the central directory must not leak an ArgumentOutOfRangeException from seeking
+            // there; the error is deferred until the entry is actually opened, matching the behavior of
+            // non-encrypted entries.
+            byte[] bytes;
+            using (LocalMemoryStream original = await LocalMemoryStream.ReadAppFileAsync(passwordProtected("PasswordProtected_DifferentPasswords.zip")))
+            {
+                bytes = original.ToArray();
+            }
+
+            // Locate the central directory via the end-of-central-directory record (rather than
+            // searching for a signature, which could match coincidental bytes inside encrypted data),
+            // then overwrite the first record's 4-byte relative-offset-of-local-header field (at offset 42
+            // of the 46-byte header) with a value larger than int.MaxValue. MemoryStream.Seek throws
+            // ArgumentOutOfRangeException for offsets above int.MaxValue, which is the crash being guarded.
+            ReadOnlySpan<byte> endOfCentralDirectorySignature = [0x50, 0x4B, 0x05, 0x06];
+            ReadOnlySpan<byte> centralDirectorySignature = [0x50, 0x4B, 0x01, 0x02];
+            const int OffsetOfStartOfCentralDirectoryPosition = 16;
+            const int RelativeOffsetOfLocalHeaderPosition = 42;
+
+            int endOfCentralDirectory = bytes.AsSpan().LastIndexOf(endOfCentralDirectorySignature);
+            Assert.True(endOfCentralDirectory >= 0);
+            int centralDirectoryStart = (int)BinaryPrimitives.ReadUInt32LittleEndian(
+                bytes.AsSpan(endOfCentralDirectory + OffsetOfStartOfCentralDirectoryPosition));
+            Assert.True(bytes.AsSpan(centralDirectoryStart).StartsWith(centralDirectorySignature));
+            BinaryPrimitives.WriteUInt32LittleEndian(
+                bytes.AsSpan(centralDirectoryStart + RelativeOffsetOfLocalHeaderPosition), 0xF0000000);
+
+            using MemoryStream stream = new MemoryStream(bytes);
+            ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Read);
+
+            // Enumerating the entries parses the central directory and eagerly reads AES salts. For the
+            // corrupted offset this must not throw ArgumentOutOfRangeException from seeking past the end.
+            ZipArchiveEntry corruptedEntry = archive.Entries[0];
+            Assert.True(corruptedEntry.IsEncrypted);
+
+            // The error is deferred: opening the corrupted entry throws InvalidDataException, just like a
+            // non-encrypted entry whose local header offset points past the end of the stream.
+            await Assert.ThrowsAsync<InvalidDataException>(() => OpenEntryStream(async, corruptedEntry));
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
         public static async Task LargeArchive_DataDescriptor_Read_NonZip64_FileLengthGreaterThanIntMax(bool async)
         {

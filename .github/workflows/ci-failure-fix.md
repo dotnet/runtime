@@ -33,20 +33,7 @@ engine:
   id: copilot
   model: claude-opus-4.8
   env:
-    COPILOT_GITHUB_TOKEN: |
-      ${{ case(
-        needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0,
-        needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1,
-        needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2,
-        needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3,
-        needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4,
-        needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5,
-        needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6,
-        needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7,
-        needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8,
-        needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9,
-        'NO COPILOT PAT AVAILABLE')
-      }}
+    COPILOT_GITHUB_TOKEN: ${{ case(needs.pat_pool.outputs.pat_number == '0', secrets.COPILOT_PAT_0, needs.pat_pool.outputs.pat_number == '1', secrets.COPILOT_PAT_1, needs.pat_pool.outputs.pat_number == '2', secrets.COPILOT_PAT_2, needs.pat_pool.outputs.pat_number == '3', secrets.COPILOT_PAT_3, needs.pat_pool.outputs.pat_number == '4', secrets.COPILOT_PAT_4, needs.pat_pool.outputs.pat_number == '5', secrets.COPILOT_PAT_5, needs.pat_pool.outputs.pat_number == '6', secrets.COPILOT_PAT_6, needs.pat_pool.outputs.pat_number == '7', secrets.COPILOT_PAT_7, needs.pat_pool.outputs.pat_number == '8', secrets.COPILOT_PAT_8, needs.pat_pool.outputs.pat_number == '9', secrets.COPILOT_PAT_9, 'NO COPILOT PAT AVAILABLE') }}
 
 concurrency:
   group: "ci-failure-fix"
@@ -80,6 +67,20 @@ safe-outputs:
   add-comment:
     target: "*"
     max: 10
+  data:
+    type: object
+    properties:
+      workflow_artifact:
+        type: string
+        enum: [ci-fix]
+      artifact_kind:
+        type: string
+        enum: [fix, help, handoff]
+      linked_kbe:
+        type: integer
+        minimum: 1
+    required: [workflow_artifact, artifact_kind, linked_kbe]
+    additionalProperties: false
 
 timeout-minutes: 90
 
@@ -110,8 +111,8 @@ To suggest changes, edit this file or comment on the PRs/comments it produces �
 2. **Caps per run: 5 `create_pull_request`, 10 `add_comment`.** On cap, record `-> skipped: cap reached` and move on.
 3. **Never mute.** No `[ActiveIssue]`, `[SkipOnPlatform]`, `[ConditionalFact]` added to disable, `<GCStressIncompatible>`, `<NativeAotIncompatible>`, `<*TestUnsupported>`, `Skip = "..."`, or any csproj exclusion that stops a test from running. If the only available mitigation is to disable a test, do NOT do it — open a help-wanted PR with a non-disabling best-effort change, or (if no code change is possible) a loop-in comment. Disabling is a human decision that lives outside this workflow.
 4. **One KBE = one outcome per run.** Exactly one of: a fix PR (confident or help-wanted), a loop-in comment, or a recorded skip. Never both a PR and a comment for the same KBE in the same run; always prefer the PR.
-5. **At most one open `[ci-fix]` PR and one `ci-fix` loop-in comment per KBE, ever.** Before opening a PR, run the Step 3 PR dedup. Before commenting, search for a prior `ci-fix` comment on that KBE (the marker `<!-- ci-fix:handoff -->`). If a comment already exists, skip with `-> skipped: loop-in comment already posted`. Build Analysis tracks occurrence counts in the KBE body; do not add occurrence chatter.
-6. **Every PR title starts with `[ci-fix] `.** Every PR body and every loop-in comment carries the artifact marker block (see Output markers).
+5. **At most one open `[ci-fix]` PR and one `ci-fix` loop-in comment per KBE, ever.** Before opening a PR, run the Step 3 PR dedup. Before commenting, search for a prior `ci-fix` handoff using the structured-data or legacy-visible signatures in Step 3.6. If a comment already exists, skip with `-> skipped: loop-in comment already posted`. Build Analysis tracks occurrence counts in the KBE body; do not add occurrence chatter.
+6. **Every PR title starts with `[ci-fix] `.** Every PR body and every loop-in comment carries the visible artifact block and the matching `safe-outputs.data` object (see Output identity).
 7. **Cross-run dedup is GitHub-search based, not `/tmp`.** `/tmp/gh-aw/agent/` is per-run only. Before emitting anything for a KBE, run the existing-artifact searches in Step 3 against live GitHub.
 8. **Fixes are small and validated; help-wanted PRs are honest.** A confident fix PR satisfies the small-fix bounds in Step 5 and is build-validated. A help-wanted PR may exceed those bounds or be unvalidated, but it MUST stay draft, carry a real best-effort diff (never a test-disable), and state plainly in the body what is unverified and what help is needed.
 9. **All intermediate state under `/tmp/gh-aw/agent/`.** Each bash invocation is a fresh subshell; persist anything you want to keep.
@@ -160,14 +161,18 @@ For each result, read the body + latest comments through the `github` MCP (NOT `
 
 ### Step 3 — Existing-artifact dedup (search live GitHub, every KBE)
 
-Before doing any analysis work, confirm nothing already handles this KBE. GitHub's search tokenizer drops the leading `#`, so a bare `"#<kbe>"` phrase match is unreliable: build a `<kbe> -> [PRs]` map once per run by enumerating every `[ci-fix]` PR (`repo:dotnet/runtime is:pr in:title "[ci-fix]"` across `is:open`, `is:merged`, `is:closed closed:>=<today-30d>`) and parsing each `Linked KBE:` marker, then resolve checks 1–3 against that map. Use the `github` MCP search tools:
+Before doing any analysis work, confirm nothing already handles this KBE. GitHub's search tokenizer drops the leading `#`, so a bare `"#<kbe>"` phrase match is unreliable: build a `<kbe> -> [PRs]` map once per run by enumerating every `[ci-fix]` PR (`repo:dotnet/runtime is:pr in:title "[ci-fix]"` across `is:open`, `is:merged`, `is:closed closed:>=<today-30d>`) and parsing each visible `Linked KBE:` field, then resolve checks 1–3 against that map. Use the `github` MCP search tools:
 
 1. **Open fix PR already exists** — `repo:dotnet/runtime is:pr is:open in:title "[ci-fix]" "#<kbe>"` OR body contains `Linked KBE: #<kbe>`. If found -> `-> skipped: open fix PR #<n> already exists`.
 2. **Merged fix PR exists** — `repo:dotnet/runtime is:pr is:merged "Linked KBE: #<kbe>"`. If found, the KBE is likely already fixed -> `-> skipped: fix PR #<n> already merged; KBE may be stale`.
 3. **Closed-unmerged fix PR within 30d** — `repo:dotnet/runtime is:pr is:closed -is:merged "Linked KBE: #<kbe>" closed:>=<today-30d>`. If found, do NOT re-open the same fix unless you have a clearly different change. Record `-> skipped: prior fix PR #<n> closed without merge within 30d`.
 4. **A human (non-`[ci-fix]`) PR already references the KBE** — `repo:dotnet/runtime is:pr is:open "#<kbe>"`. If a maintainer is already fixing it -> `-> skipped: human PR #<n> already addressing`.
-5. **Author already engaged on the KBE.** From the KBE comments you read in Step 2, if any `MEMBER`/`OWNER` comment expresses active investigation or fix-forward intent (case-insensitive any of: `i'm fixing`, `i am fixing`, `investigating`, `will investigate`, `looking into`, `root cause`, `fix forward`, `fix-forward`, `landing in #`, `wait for #`, `pr is up`, `working on`), do NOT duplicate their work -> `-> skipped: author already engaged on #<kbe>`.
-6. **Prior hand-off comment** — if the KBE already carries a comment containing the marker `<!-- ci-fix:handoff -->`, a hand-off was already posted; you may still emit a fix PR this run if you have one, but you may NOT post a second comment (Hard rule 5).
+5. **Author already engaged on the KBE.** Inspect the comments collection itself; do not assume comments live at a fixed array index in an issue-read response. If the issue read did not return comments, call the corresponding comments tool explicitly. If any `MEMBER`/`OWNER` comment expresses active investigation or fix-forward intent (case-insensitive any of: `i'm fixing`, `i am fixing`, `investigating`, `will investigate`, `looking into`, `root cause`, `fix forward`, `fix-forward`, `landing in #`, `wait for #`, `pr is up`, `working on`), do NOT duplicate their work -> `-> skipped: author already engaged on #<kbe>`.
+6. **Prior hand-off comment** — inspect each comment independently. A handoff already exists when EITHER:
+   - its `Structured data:` JSON has `workflow_artifact: "ci-fix"`, `artifact_kind: "handoff"`, and `linked_kbe: <kbe>`; OR
+   - for artifacts created before structured data was available, the same comment contains all three visible lines `Workflow artifact: ci-fix`, `Artifact kind: handoff`, and `Linked KBE: #<kbe>`.
+
+   You may still emit a fix PR this run if you have one, but you may NOT post a second comment (Hard rule 5).
 
 Persist each KBE's dedup verdict to `/tmp/gh-aw/agent/dedup/<kbe>.txt` so later steps don't re-query.
 
@@ -221,6 +226,8 @@ Always try to produce a real candidate change first. Read every file you would m
 
 **Already-rooted test-assembly caution.** For any failing leg, when the symptom is a type, assembly, or method *missing at run time* (a `FileNotFoundException` for a `*.TestAssembly.dll`, a reflection lookup returning null, a missing logging/DI provider), first inspect the harness and project sources for existing roots and for whether the missing artifact is already present in the app/layout. If the test assembly or member is already rooted, do **not** propose another `[DynamicDependency]`, `.rd.xml`/`ILLink.Descriptors.xml` root, or `TrimmerRootAssembly` — the change is a no-op reviewers will reject. Similarly, if the assembly is already copied into the app bundle/layout, do **not** propose an additional bundle-copy. Only add a root or copy step when source confirms it is missing. Otherwise pin a concrete product-side root cause, or treat it as no-producible-diff and route to Branch COMMENT (Step 5.5).
 
+**Platform crypto-config caution.** When a `System.Security.Cryptography.*` test fails only on a specific distro/OS crypto configuration (AzureLinux/mariner, `linux_musl`, FIPS, or an OpenSSL-provider variant) and the candidate change would hard-code a platform-specific crypto expectation — a key-size floor, algorithm availability, cipher enable/disable, or a per-distro test-expectation change — do **not** open a confident (Branch FIX) PR. The correct behavior depends on the distro's crypto provider configuration, which is a security-area-owner decision, so a guessed expectation change will be rejected. Route to Branch COMMENT (Step 5.5, loop-in), or Branch HELP (Step 5.4) only when you name the specific platform crypto configuration as the explicit open question for a human to confirm.
+
 Once you have a candidate diff, classify it:
 
 **Confident (Branch FIX, Step 5.3)** — ALL of:
@@ -241,7 +248,7 @@ Branch from `origin/main`. Stage only the files you change with `git add <specif
 
 **Validation contract.** Build-validate the change. For libraries: `dotnet build` the affected test project (and run the single failing test if feasible). Record the exact command and its result. If you ultimately cannot validate within the environment, this is no longer a confident fix — drop to Branch HELP (Step 5.4).
 
-Emit one `create_pull_request` using the Fix-PR template (Templates section). The PR MUST link the KBE (`Linked KBE: #<n>`) and carry the artifact marker block (`Artifact kind: fix`). Do not apply any label other than `agentic-workflows`. Do NOT add `area-*` labels — the labeler owns area triage.
+Emit one `create_pull_request` using the Fix-PR template (Templates section). The PR MUST link the KBE (`Linked KBE: #<n>`) and carry the visible artifact block plus matching structured data (`Artifact kind: fix`). Do not apply any label other than `agentic-workflows`. Do NOT add `area-*` labels — the labeler owns area triage.
 
 #### Step 5.4 — Emit a help-wanted PR (Branch HELP)
 
@@ -255,7 +262,7 @@ Run whatever validation you can and record the exact command + result (including
 
 Only when no candidate diff is producible at all. Emit one `add_comment` on the KBE using the Loop-in comment template. This contains your root-cause analysis, the suspected regressing PR (if any), and a "Suggested reviewers / area contacts" section.
 
-Respect Hard rule 5 (at most one loop-in comment per KBE, ever) — re-check the `<!-- ci-fix:handoff -->` marker immediately before emitting.
+Respect Hard rule 5 (at most one loop-in comment per KBE, ever) — immediately before emitting, re-check the structured-data and legacy-visible handoff signatures from Step 3.6.
 
 ### Step 6 — Mention rules (apply to help-wanted PR bodies and loop-in comments)
 
@@ -286,9 +293,9 @@ At end of run, print this table to the agent log:
 | kbe | area | outcome | reason |
 ```
 
-## Output markers
+## Output identity
 
-Every PR body and every loop-in comment MUST begin with this marker block (the feedback workflow greps it to separate confident-fix, help-wanted, and comment artifacts and to dedup):
+Every PR body and every loop-in comment MUST begin with this visible block (the feedback workflow reads it for human-friendly classification and backward compatibility):
 
 ```
 Workflow artifact: ci-fix
@@ -296,7 +303,17 @@ Artifact kind: fix        # "fix" = confident PR, "help" = help-wanted PR, "hand
 Linked KBE: #<n>
 ```
 
-Loop-in comments MUST additionally include the HTML marker `<!-- ci-fix:handoff -->` somewhere in the body (used by the one-comment-per-KBE dedup in Step 3.6 / Hard rule 5).
+Every `create_pull_request` and `add_comment` safe-output call MUST also provide this `data` object, using the matching kind:
+
+```json
+{
+  "workflow_artifact": "ci-fix",
+  "artifact_kind": "<fix|help|handoff>",
+  "linked_kbe": <n>
+}
+```
+
+Do not paste this JSON into the body. `safe-outputs.data` validates it and appends it after sanitization as a `Structured data:` fenced JSON block. New readers use that block as the machine-readable identity; the visible block remains the legacy fallback.
 
 ## Templates
 
@@ -376,7 +393,6 @@ Filed by [`ci-failure-fix`](https://github.com/dotnet/runtime/blob/main/.github/
 Workflow artifact: ci-fix
 Artifact kind: handoff
 Linked KBE: #<n>
-<!-- ci-fix:handoff -->
 
 > [!NOTE]
 > AI/Copilot-generated triage note.

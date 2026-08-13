@@ -306,7 +306,7 @@ namespace {Namespace}
             for (var i = 0; i < Vector<{Op3BaseType}>.Count; i++)
             {
                 // op1 is the mask for GatherVector.
-                if (op1[i] != 0)
+                if (Helpers.IsMaskActive(op1[i]))
                 {
                     if (firstActiveElement == -1)
                     {

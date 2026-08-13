@@ -33,6 +33,7 @@ namespace System
             public bool HasNonZeroTail;
             public NumberBufferKind Kind;
             public Span<byte> Digits;
+            /// <safety>Converts the ref to Digits into a pointer value via Unsafe.AsPointer and returns it without dereferencing; the result is not GC-tracked, so any use must be in an unsafe context that establishes Digits still refers to unmovable memory.</safety>
             public readonly byte* DigitsPtr => (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(Digits)); // safe since constructor expects Digits to refer to unmovable memory
 
             public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength) : this(kind, new Span<byte>(digits, digitsLength))
@@ -65,7 +66,7 @@ namespace System
             public void CheckConsistency()
             {
 #if DEBUG
-                Debug.Assert(Kind is NumberBufferKind.Integer or NumberBufferKind.Decimal or NumberBufferKind.FloatingPoint);
+                Debug.Assert(Kind is NumberBufferKind.Integer or NumberBufferKind.Decimal or NumberBufferKind.FloatingPoint or NumberBufferKind.DecimalIeee754);
                 Debug.Assert(Digits[0] != '0', "Leading zeros should never be stored in a Number");
 
                 int numDigits;
@@ -127,6 +128,14 @@ namespace System
             Integer = 1,
             Decimal = 2,
             FloatingPoint = 3,
+
+            /// <summary>
+            /// An IEEE 754 decimal interchange format. Unlike <see cref="NumberBufferKind.FloatingPoint"/> the buffer
+            /// holds the exact coefficient rather than a pre-rounded shortest representation, so formatting must round
+            /// it; unlike <see cref="NumberBufferKind.Decimal"/> that rounding is ties-to-even and a signed zero must
+            /// survive it.
+            /// </summary>
+            DecimalIeee754 = 4,
         }
     }
 }
