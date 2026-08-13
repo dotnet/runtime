@@ -20,6 +20,7 @@ internal sealed partial class GrammarActions
     {
         Debug.Assert(
             _currentMethod is null
+                && _currentAssemblyOrRef is null
                 && _typeOwners.Count == 0
                 && _namespaceOwners.Count == 0
                 && _scopeStack.Count == 0
@@ -49,10 +50,14 @@ internal sealed partial class GrammarActions
                 && _propertyBodyFrames.Count == 0
                 && _eventBodyFrames.Count == 0
                 && _classGenericDirectiveFrames.Count == 0
+                && _namespaceHeaderFrames.Count == 0
+                && _classHeaderFrames.Count == 0
+                && _interfaceListFrames.Count == 0
                 && _pendingClassMethodOverrides.Count == 0,
             "Per-document semantic state must be released by the owning rule's finally block.");
 
         EndMethod();
+        _currentAssemblyOrRef = null;
         ResetTypeScopes();
         ClearPendingCustomAttributeOwners();
         _semanticRootFrames.Clear();
@@ -77,6 +82,9 @@ internal sealed partial class GrammarActions
         _propertyBodyFrames.Clear();
         _eventBodyFrames.Clear();
         _classGenericDirectiveFrames.Clear();
+        _namespaceHeaderFrames.Clear();
+        _classHeaderFrames.Clear();
+        _interfaceListFrames.Clear();
         _pendingClassMethodOverrides.Clear();
         _syntaxErrorCount = 0;
     }
