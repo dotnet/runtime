@@ -36,6 +36,141 @@ namespace System.Diagnostics.Metrics.Tests
             Assert.True(o is EventSource, "Expected object returned from MetricsEventSource.GetInstance() to be assignable to EventSource");
         }
 
+        // The flattened "key=value,key=value" tag string escapes '\', ',' and '=' in each key and
+        // value so the pairs can be decoded without ambiguity. See Helpers.FormatTags.
+        [Theory]
+        // No special characters => unchanged.
+        [InlineData("plain", "simple", "plain=simple")]
+        // Comma in the value must be escaped so it isn't mistaken for a pair separator.
+        [InlineData("comma", "a,b,c", "comma=a\\,b\\,c")]
+        // Equals sign in the value must be escaped so it isn't mistaken for the key/value separator.
+        [InlineData("equals", "x=1", "equals=x\\=1")]
+        // Backslash must be escaped so it isn't mistaken for an escape sequence on decode.
+        [InlineData("path", "C:\\temp", "path=C:\\\\temp")]
+        // Special characters in the key are escaped too.
+        [InlineData("a,b=c", "v", "a\\,b\\=c=v")]
+        // Realistic URL value combining commas and equals signs.
+        [InlineData("url", "/api/items?filter=red,blue&sort=name", "url=/api/items?filter\\=red\\,blue&sort\\=name")]
+        public void FormatTags_EscapesDelimiters(string key, string value, string expected)
+        {
+            KeyValuePair<string, object?>[] objectTags = new[] { new KeyValuePair<string, object?>(key, value) };
+            Assert.Equal(expected, Helpers.FormatTags(objectTags));
+
+            KeyValuePair<string, string>[] stringTags = new[] { new KeyValuePair<string, string>(key, value) };
+            Assert.Equal(expected, Helpers.FormatTags(stringTags));
+        }
+
+        [Fact]
+        public void FormatTags_MultiplePairs_AreCommaSeparated()
+        {
+            KeyValuePair<string, object?>[] tags = new[]
+            {
+                new KeyValuePair<string, object?>("comma", "a,b,c"),
+                new KeyValuePair<string, object?>("equals", "x=1"),
+                new KeyValuePair<string, object?>("plain", "simple"),
+            };
+
+            // Escaped delimiters within values, literal ',' between pairs and literal '=' between key and value.
+            Assert.Equal("comma=a\\,b\\,c,equals=x\\=1,plain=simple", Helpers.FormatTags(tags));
+        }
+
+        [Theory]
+        [InlineData("plain", "simple")]
+        [InlineData("comma", "a,b,c")]
+        [InlineData("equals", "x=1")]
+        [InlineData("path", "C:\\temp")]
+        [InlineData("mixed=key,name", "=leading,and,trailing=")]
+        [InlineData("url", "/api/items?filter=red,blue&sort=name")]
+        public void FormatTags_RoundTripsThroughReferenceDecoder(string key, string value)
+        {
+            // Validates that the escaping produced by FormatTags can be decoded back to the original
+            // key/value pairs without ambiguity.
+            string encoded = Helpers.FormatTags(new[] { new KeyValuePair<string, object?>(key, value) });
+
+            List<KeyValuePair<string, string>> decoded = DecodeTags(encoded);
+
+            KeyValuePair<string, string> single = Assert.Single(decoded);
+            Assert.Equal(key, single.Key);
+            Assert.Equal(value, single.Value);
+        }
+
+        // Reference decoder for the escaped "key=value,key=value" format produced by Helpers.FormatTags.
+        // '\' escapes the following character; an unescaped '=' separates the first key from its value;
+        // an unescaped ',' separates pairs.
+        private static List<KeyValuePair<string, string>> DecodeTags(string encoded)
+        {
+            List<KeyValuePair<string, string>> result = new();
+            if (string.IsNullOrEmpty(encoded))
+            {
+                return result;
+            }
+
+            StringBuilder key = new();
+            StringBuilder value = new();
+            bool inValue = false;
+            for (int i = 0; i < encoded.Length; i++)
+            {
+                char c = encoded[i];
+                if (c == '\\' && i + 1 < encoded.Length)
+                {
+                    (inValue ? value : key).Append(encoded[++i]);
+                }
+                else if (c == '=' && !inValue)
+                {
+                    inValue = true;
+                }
+                else if (c == ',')
+                {
+                    result.Add(new KeyValuePair<string, string>(key.ToString(), value.ToString()));
+                    key.Clear();
+                    value.Clear();
+                    inValue = false;
+                }
+                else
+                {
+                    (inValue ? value : key).Append(c);
+                }
+            }
+
+            result.Add(new KeyValuePair<string, string>(key.ToString(), value.ToString()));
+            return result;
+        }
+
+        // End-to-end validation that tag keys/values containing the ',' pair separator, the '='
+        // key/value separator, or the '\' escape character are escaped in the flattened tag string
+        // that MetricsEventSource publishes, so they can be decoded without ambiguity.
+        [Fact]
+        [OuterLoop("Slow and has lots of console spew")]
+        public async Task EventSourcePublishesTimeSeriesWithTagsContainingDelimiters()
+        {
+            using Meter meter = new Meter("TestMeterDelimiters");
+            Counter<int> c = meter.CreateCounter<int>("counter1");
+
+            EventWrittenEventArgs[] events;
+            using (MetricsEventListener listener = new MetricsEventListener(_output, MetricsEventListener.TimeSeriesValues, IntervalSecs, "TestMeterDelimiters"))
+            {
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 1);
+
+                c.Add(5, new KeyValuePair<string, object?>("url", "/api/items?filter=red,blue&sort=name"));
+                c.Add(6, new KeyValuePair<string, object?>("comma", "a,b,c"), new KeyValuePair<string, object?>("equals", "x=1"));
+                c.Add(7, new KeyValuePair<string, object?>("path", @"C:\temp"));
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 2);
+
+                c.Add(12, new KeyValuePair<string, object?>("url", "/api/items?filter=red,blue&sort=name"));
+                c.Add(13, new KeyValuePair<string, object?>("comma", "a,b,c"), new KeyValuePair<string, object?>("equals", "x=1"));
+                c.Add(14, new KeyValuePair<string, object?>("path", @"C:\temp"));
+                await listener.WaitForCollectionStop(s_waitForEventTimeout, 3);
+                events = listener.Events.ToArray();
+            }
+
+            // Expected escaped tag strings: '\' => "\\", ',' => "\,", '=' => "\="; the ',' between
+            // pairs and the '=' between a key and its value remain literal delimiters.
+            AssertCounterEventsPresent(events, meter.Name, c.Name, @"url=/api/items?filter\=red\,blue&sort\=name", "", ("5", "5"), ("12", "17"));
+            AssertCounterEventsPresent(events, meter.Name, c.Name, @"comma=a\,b\,c,equals=x\=1", "", ("6", "6"), ("13", "19"));
+            AssertCounterEventsPresent(events, meter.Name, c.Name, @"path=C:\\temp", "", ("7", "7"), ("14", "21"));
+            AssertCollectStartStopEventsPresent(events, IntervalSecs, 3);
+        }
+
         // Tests that version event from MetricsEventSource is fired.
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestVersion()
