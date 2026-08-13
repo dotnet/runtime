@@ -37,7 +37,19 @@ internal sealed partial class GrammarActions
                 && _parameterAttributesFrames.Count == 0
                 && _marshalBlobFrames.Count == 0
                 && _nativeTypeFrames.Count == 0
-                && _variantTypeFrames.Count == 0,
+                && _variantTypeFrames.Count == 0
+                && _methodHeaderFrames.Count == 0
+                && _pInvokeFrames.Count == 0
+                && _genericTypeListFrames.Count == 0
+                && _genericParameterAttributesFrames.Count == 0
+                && _genericParametersFrames.Count == 0
+                && _fieldDeclarationFrames.Count == 0
+                && _propertyHeaderFrames.Count == 0
+                && _eventHeaderFrames.Count == 0
+                && _propertyBodyFrames.Count == 0
+                && _eventBodyFrames.Count == 0
+                && _classGenericDirectiveFrames.Count == 0
+                && _pendingClassMethodOverrides.Count == 0,
             "Per-document semantic state must be released by the owning rule's finally block.");
 
         EndMethod();
@@ -54,6 +66,18 @@ internal sealed partial class GrammarActions
         _marshalBlobFrames.Clear();
         _nativeTypeFrames.Clear();
         _variantTypeFrames.Clear();
+        _methodHeaderFrames.Clear();
+        _pInvokeFrames.Clear();
+        _genericTypeListFrames.Clear();
+        _genericParameterAttributesFrames.Clear();
+        _genericParametersFrames.Clear();
+        _fieldDeclarationFrames.Clear();
+        _propertyHeaderFrames.Clear();
+        _eventHeaderFrames.Clear();
+        _propertyBodyFrames.Clear();
+        _eventBodyFrames.Clear();
+        _classGenericDirectiveFrames.Clear();
+        _pendingClassMethodOverrides.Clear();
         _syntaxErrorCount = 0;
     }
 }

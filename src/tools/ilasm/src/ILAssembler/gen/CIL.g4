@@ -541,17 +541,23 @@ typedefDecl:
 	| '.typedef' customDescrWithOwner 'as' dottedName;
 
 /* Custom attribute declarations  */
-customDescr:
+customDescr returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
 	'.custom' customType
 	| '.custom' customType '=' compQstring
 	| '.custom' customType '=' '{' customBlobDescr '}'
 	| '.custom' customType '=' '(' bytes ')';
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
-customDescrWithOwner:
+customDescrWithOwner returns [bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+:
 	'.custom' '(' ownerType ')' customType
 	| '.custom' '(' ownerType ')' customType '=' compQstring
 	| '.custom' '(' ownerType ')' customType '=' '{' customBlobDescr '}'
 	| '.custom' '(' ownerType ')' customType '=' '(' bytes ')';
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 customType: methodRef;
 
@@ -1153,26 +1159,51 @@ returns [object Value, bool HasSyntaxError]
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 /* Generic type parameters declaration  */
-typeList: (typeSpec ',')* typeSpec;
+typeList returns [object Value]
+@init {Actions.BeginGenericTypeList(_localctx);}
+:
+	(item = typeSpec {Actions.AddGenericType(_localctx, $item.Value);} ',')*
+	tail = typeSpec {Actions.AddGenericType(_localctx, $tail.Value);}
+;
+finally {_localctx.Value = Actions.EndGenericTypeList(_localctx);}
 
-typarsClause: /* EMPTY */ | '<' typars '>';
+typarsClause returns [object Value]
+@init {_localctx.Value = Actions.CreateEmptyGenericParameterList();}
+:
+	/* EMPTY */
+	| '<' parameters = typars '>' {_localctx.Value = $parameters.Value;}
+;
 
-typarAttrib:
-	covariant = PLUS
-	| contravariant = '-'
-	| class = 'class'
-	| valuetype = VALUETYPE
-	| byrefLike = 'byreflike'
-	| ctor = '.ctor'
-	| 'flags' '(' flags = int32 ')';
+typarAttrib returns [object Value]:
+	covariant = PLUS {_localctx.Value = Actions.CreateGenericParameterAttribute($covariant);}
+	| contravariant = '-' {_localctx.Value = Actions.CreateGenericParameterAttribute($contravariant);}
+	| class = 'class' {_localctx.Value = Actions.CreateGenericParameterAttribute($class);}
+	| valuetype = VALUETYPE {_localctx.Value = Actions.CreateGenericParameterAttribute($valuetype);}
+	| byrefLike = 'byreflike' {_localctx.Value = Actions.CreateGenericParameterAttribute($byrefLike);}
+	| ctor = '.ctor' {_localctx.Value = Actions.CreateGenericParameterAttribute($ctor);}
+	| 'flags' '(' flags = int32 ')' {_localctx.Value = Actions.CreateRawGenericParameterAttribute($flags.start);};
 
-typarAttribs: typarAttrib*;
+typarAttribs returns [object Value]
+@init {Actions.BeginGenericParameterAttributes(_localctx);}
+:
+	(attribute = typarAttrib {Actions.AddGenericParameterAttribute(_localctx, $attribute.Value);})*
+;
+finally {_localctx.Value = Actions.EndGenericParameterAttributes(_localctx);}
 
-typar: typarAttribs tyBound? dottedName;
+typar returns [object Value]:
+	attributes = typarAttribs constraints = tyBound? name = dottedName
+		{_localctx.Value = Actions.CreateGenericParameterDeclaration($attributes.Value, $constraints.ctx, $name.Value);};
 
-typars: (typar ',')* typar;
+typars returns [object Value]
+@init {Actions.BeginGenericParameters(_localctx);}
+:
+	(parameter = typar {Actions.AddGenericParameter(_localctx, $parameter.Value);} ',')*
+	tail = typar {Actions.AddGenericParameter(_localctx, $tail.Value);}
+;
+finally {_localctx.Value = Actions.EndGenericParameters(_localctx);}
 
-tyBound: '(' typeList ')';
+tyBound returns [object Value]:
+	'(' constraints = typeList ')' {_localctx.Value = $constraints.Value;};
 
 genArity returns [int Value]:
 	value = genArityNotEmpty? {_localctx.Value = Actions.GetGenericArity($value.ctx);};
@@ -1182,104 +1213,188 @@ genArityNotEmpty returns [int Value]:
 
 /*  Class body declarations  */
 classDecl
-@init {BeginSubtree();}
-@after {Actions.OnClassDeclaration(_localctx);}
+@init {BeginStreaming();}
 :
 	methodHead '{' methodDecls '}'
 	| classHead '{' classDecls '}'
-	| eventHead '{' eventDecls '}'
-	| propHead '{' propDecls '}'
+	| eventHeader = eventHead {Actions.BeginEvent(_localctx, $eventHeader.Value);} '{' eventDecls '}'
+	| property = propHead {Actions.BeginProperty(_localctx, $property.Value);} '{' propDecls '}'
 	| fieldDecl
-	| dataDecl
-	| secDecl
-	| extSourceSpec
-	| customAttrDecl
-	| '.size' int32
-	| '.pack' int32
-	| exportHead '{' exptypeDecls '}'
-	| OVERRIDE typeSpec '::' methodName 'with' callConv type typeSpec '::' methodName sigArgs
-	| OVERRIDE 'method' callConv type typeSpec '::' methodName genArity sigArgs 'with' 'method'
-		callConv type typeSpec '::' methodName genArity sigArgs
-	| languageDecl
-	| compControl
-	| PARAM TYPE '[' int32 ']' customAttrDecl*
-	| PARAM TYPE dottedName customAttrDecl*
-	| PARAM CONSTRAINT '[' int32 ']' ',' typeSpec customAttrDecl*
-	| PARAM CONSTRAINT dottedName ',' typeSpec customAttrDecl*
-	| '.interfaceimpl' TYPE typeSpec customDescr;
+	| data = dataDecl {Actions.ProcessClassDataDeclaration($data.ctx);}
+	| security = secDecl {Actions.ProcessClassSecurityDeclaration($security.ctx);}
+	| source = extSourceSpec {Actions.ProcessClassSourceDirective($source.ctx);}
+	| attribute = customAttrDecl {Actions.ProcessClassCustomAttribute($attribute.ctx);}
+	| '.size' size = int32 {Actions.SetClassSize($size.start);}
+	| '.pack' packing = int32 {Actions.SetClassPackingSize($packing.start);}
+	| export = exportHead '{' exportDeclarations = exptypeDecls '}'
+		{Actions.ProcessClassExport($export.ctx, $exportDeclarations.ctx);}
+	| OVERRIDE declarationOwner = typeSpec '::' declarationName = methodName 'with'
+		bodyConvention = callConv bodyReturnType = type bodyOwner = typeSpec '::'
+		bodyName = methodName bodyArguments = sigArgs
+		{Actions.AddClassMethodOverride(
+			_localctx,
+			$declarationOwner.Value,
+			$declarationName.Value,
+			$bodyConvention.Value,
+			$bodyReturnType.Value,
+			$bodyOwner.Value,
+			$bodyName.Value,
+			$bodyArguments.Value);}
+	| OVERRIDE 'method'
+		declarationConvention = callConv declarationReturnType = type declarationOwner = typeSpec '::'
+		declarationName = methodName declarationArity = genArity declarationArguments = sigArgs
+		'with' 'method'
+		bodyConvention = callConv bodyReturnType = type bodyOwner = typeSpec '::'
+		bodyName = methodName bodyArity = genArity bodyArguments = sigArgs
+		{Actions.AddClassMethodOverride(
+			_localctx,
+			$declarationConvention.Value,
+			$declarationReturnType.Value,
+			$declarationOwner.Value,
+			$declarationName.Value,
+			$declarationArity.Value,
+			$declarationArguments.Value,
+			$bodyConvention.Value,
+			$bodyReturnType.Value,
+			$bodyOwner.Value,
+			$bodyName.Value,
+			$bodyArity.Value,
+			$bodyArguments.Value);}
+	| language = languageDecl {Actions.ProcessClassLanguageDirective($language.ctx);}
+	| compControl {Actions.ProcessClassCompilerControl();}
+	| PARAM TYPE '[' parameterIndex = int32 ']'
+		{Actions.BeginClassGenericParameterDirective(_localctx, $parameterIndex.start);}
+		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx, $attribute.ctx);})*
+	| PARAM TYPE parameterName = dottedName
+		{Actions.BeginClassGenericParameterDirective(_localctx, $parameterName.Value);}
+		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx, $attribute.ctx);})*
+	| PARAM CONSTRAINT '[' parameterIndex = int32 ']' ',' constraintType = typeSpec
+		{Actions.BeginClassGenericConstraintDirective(_localctx, $parameterIndex.start, $constraintType.Value);}
+		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx, $attribute.ctx);})*
+	| PARAM CONSTRAINT parameterName = dottedName ',' constraintType = typeSpec
+		{Actions.BeginClassGenericConstraintDirective(_localctx, $parameterName.Value, $constraintType.Value);}
+		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx, $attribute.ctx);})*
+	| '.interfaceimpl' TYPE interfaceType = typeSpec interfaceAttribute = customDescr
+		{Actions.AddInterfaceImplementationAttribute(_localctx, $interfaceType.Value, $interfaceAttribute.ctx);}
+;
 finally {EndParseTreeMode(); Actions.EndClassDeclaration(_localctx);}
 
 /*  Field declaration  */
-fieldDecl:
-	'.field' repeatOpt (fieldAttr | 'marshal' '(' marshalBlob ')')* type dottedName atOpt initOpt;
+fieldDecl returns [object Value]
+@init {BeginStreaming(); Actions.BeginFieldDeclaration(_localctx);}
+@after {Actions.DefineField(_localctx, _localctx.Value);}
+:
+	'.field' offset = repeatOpt
+	(
+		attribute = fieldAttr {Actions.AddFieldAttribute(_localctx, $attribute.Value);}
+		| 'marshal' '(' marshalling = marshalBlob ')' {Actions.SetFieldMarshalling(_localctx, $marshalling.Value);}
+	)*
+	fieldType = type name = dottedName data = atOpt initializer = initOpt
+		{_localctx.Value = Actions.CreateFieldDeclaration(
+			_localctx,
+			$offset.ctx,
+			$fieldType.Value,
+			$name.Value,
+			$data.Value,
+			$initializer.Value);}
+;
+finally {Actions.EndFieldDeclaration(_localctx); EndParseTreeMode();}
 
-fieldAttr:
-	'static'
-	| 'public'
-	| 'private'
-	| 'family'
-	| 'initonly'
-	| 'rtspecialname'
-	| 'specialname'
-	| 'assembly'
-	| 'famandassem'
-	| 'famorassem'
-	| 'privatescope'
-	| 'literal'
-	| 'notserialized'
-	| 'volatile'
-	| 'flags' '(' int32 ')';
+fieldAttr returns [object Value]:
+	attribute = 'static' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'public' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'private' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'family' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'initonly' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'rtspecialname' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'specialname' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'assembly' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'famandassem' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'famorassem' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'privatescope' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'literal' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'notserialized' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| attribute = 'volatile' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
+	| 'flags' '(' flags = int32 ')' {_localctx.Value = Actions.CreateRawFieldAttribute($flags.start);};
 
-atOpt: /* EMPTY */ | 'at' id | 'at' int32;
+atOpt returns [string Value]:
+	/* EMPTY */
+	| 'at' name = id {_localctx.Value = Actions.GetFieldDataName($name.start);}
+	| 'at' offset = int32 {_localctx.Value = Actions.GetFieldDataOffset($offset.start);};
 
-initOpt returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+initOpt returns [object Value, bool HasSyntaxError]
+@init {BeginSubtree(); Actions.BeginFieldInitializer(_localctx);}
 :
 	/* EMPTY */
-	| '=' fieldInit
+	| '=' initializer = fieldInit {Actions.SetFieldInitializer(_localctx, $initializer.ctx);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndFieldInitializer(_localctx); EndParseTreeMode();}
 
-repeatOpt: /* EMPTY */ | '[' int32 ']';
+repeatOpt returns [int Value, bool HasValue]:
+	/* EMPTY */
+	| '[' offset = int32 ']' {Actions.SetFieldOffset(_localctx, $offset.start);};
 
 /*  Event declaration  */
-eventHead:
-	'.event' eventAttr* typeSpec dottedName
-	| '.event' eventAttr* dottedName;
+eventHead returns [object Value]
+@init {Actions.BeginEventHeader(_localctx);}
+:
+	'.event'
+	(attribute = eventAttr {Actions.AddEventAttribute(_localctx, $attribute.Value);})*
+	eventType = typeSpec name = dottedName
+		{_localctx.Value = Actions.CreateEventHeader(_localctx, $eventType.Value, $name.Value);}
+	| '.event'
+	(attribute = eventAttr {Actions.AddEventAttribute(_localctx, $attribute.Value);})*
+	name = dottedName
+		{_localctx.Value = Actions.CreateEventHeader(_localctx, null, $name.Value);}
+;
+finally {Actions.EndEventHeader(_localctx);}
 
-eventAttr:
-    'rtspecialname'
-	| 'specialname';
+eventAttr returns [object Value]:
+	attribute = 'rtspecialname' {_localctx.Value = Actions.CreateEventAttribute($attribute);}
+	| attribute = 'specialname' {_localctx.Value = Actions.CreateEventAttribute($attribute);};
 
 eventDecls: eventDecl*;
 
 eventDecl:
-	'.addon' methodRef
-	| '.removeon' methodRef
-	| '.fire' methodRef
-	| '.other' methodRef
-	| extSourceSpec
-	| customAttrDecl
-	| languageDecl
+	'.addon' accessor = methodRef {Actions.AddEventAdder(_localctx, $accessor.Value);}
+	| '.removeon' accessor = methodRef {Actions.AddEventRemover(_localctx, $accessor.Value);}
+	| '.fire' accessor = methodRef {Actions.AddEventRaiser(_localctx, $accessor.Value);}
+	| '.other' accessor = methodRef {Actions.AddEventOther(_localctx, $accessor.Value);}
+	| source = extSourceSpec {Actions.ProcessEventSourceDirective($source.ctx);}
+	| attribute = customAttrDecl {Actions.AddEventCustomAttribute(_localctx, $attribute.ctx);}
+	| language = languageDecl {Actions.ProcessEventLanguageDirective($language.ctx);}
 	| compControl;
 
 /*  Property declaration  */
-propHead:
-	'.property' propAttr* callConv type dottedName sigArgs initOpt;
+propHead returns [object Value]
+@init {Actions.BeginPropertyHeader(_localctx);}
+:
+	'.property'
+	(attribute = propAttr {Actions.AddPropertyAttribute(_localctx, $attribute.Value);})*
+	convention = callConv propertyType = type name = dottedName arguments = sigArgs initializer = initOpt
+		{_localctx.Value = Actions.CreatePropertyHeader(
+			_localctx,
+			$convention.Value,
+			$propertyType.Value,
+			$name.Value,
+			$arguments.Value,
+			$initializer.Value);}
+;
+finally {Actions.EndPropertyHeader(_localctx);}
 
-propAttr:
-	'rtspecialname'
-	| 'specialname';
+propAttr returns [object Value]:
+	attribute = 'rtspecialname' {_localctx.Value = Actions.CreatePropertyAttribute($attribute);}
+	| attribute = 'specialname' {_localctx.Value = Actions.CreatePropertyAttribute($attribute);};
 
 propDecls: propDecl*;
 
 propDecl:
-	'.set' methodRef
-	| '.get' methodRef
-	| '.other' methodRef
-	| customAttrDecl
-	| extSourceSpec
-	| languageDecl
+	'.set' accessor = methodRef {Actions.AddPropertySetter(_localctx, $accessor.Value);}
+	| '.get' accessor = methodRef {Actions.AddPropertyGetter(_localctx, $accessor.Value);}
+	| '.other' accessor = methodRef {Actions.AddPropertyOther(_localctx, $accessor.Value);}
+	| attribute = customAttrDecl {Actions.AddPropertyCustomAttribute(_localctx, $attribute.ctx);}
+	| source = extSourceSpec {Actions.ProcessPropertySourceDirective($source.ctx);}
+	| language = languageDecl {Actions.ProcessPropertyLanguageDirective($language.ctx);}
 	| compControl;
 
 /*  Method declaration  */
@@ -1311,75 +1426,103 @@ paramAttrElement returns [int Value, bool ShouldAppend]:
 	| '[' raw = int32 ']' {Actions.SetRawParameterAttributeElement(_localctx, $raw.start);};
 
 methodHead
-@init {BeginSubtree();}
-@after {Actions.BeginMethod(_localctx);}
+returns [object Value]
+@init {BeginStreaming(); Actions.BeginMethodHeader(_localctx);}
+@after {Actions.BeginMethod(_localctx, _localctx.Value);}
 :
-	'.method' (methAttr | pinvImpl)* callConv paramAttr type marshalClause methodName typarsClause sigArgs
-		implAttr*;
-finally {EndParseTreeMode();}
+	'.method'
+	(
+		attribute = methAttr {Actions.AddMethodAttribute(_localctx, $attribute.Value);}
+		| pInvoke = pinvImpl {Actions.AddPInvoke(_localctx, $pInvoke.Value);}
+	)*
+	convention = callConv returnAttributes = paramAttr returnType = type returnMarshalling = marshalClause
+	name = methodName genericParameters = typarsClause arguments = sigArgs
+	(implementation = implAttr {Actions.AddMethodImplementationAttribute(_localctx, $implementation.Value);})*
+		{_localctx.Value = Actions.CreateMethodHeader(
+			_localctx,
+			$convention.Value,
+			$returnAttributes.Value,
+			$returnType.Value,
+			$returnMarshalling.Value,
+			$name.Value,
+			$genericParameters.Value,
+			$arguments.Value);}
+;
+finally {Actions.EndMethodHeader(_localctx); EndParseTreeMode();}
 
-methAttr: 'static'
-	| 'public'
-	| 'private'
-	| 'family'
-	| 'final'
-	| 'specialname'
-	| 'virtual'
-	| 'strict'
-	| 'abstract'
-	| 'assembly'
-	| 'famandassem'
-	| 'famorassem'
-	| 'privatescope'
-	| 'hidebysig'
-	| 'newslot'
-	| 'rtspecialname'
-	| 'unmanagedexp'
-	| 'reqsecobj'
-	| 'flags' '(' int32 ')';
+methAttr returns [object Value]:
+	attribute = 'static' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'public' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'private' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'family' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'final' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'specialname' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'virtual' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'strict' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'abstract' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'assembly' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'famandassem' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'famorassem' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'privatescope' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'hidebysig' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'newslot' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'rtspecialname' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'unmanagedexp' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| attribute = 'reqsecobj' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
+	| 'flags' '(' flags = int32 ')' {_localctx.Value = Actions.CreateRawMethodAttribute($flags.start);};
 
-pinvImpl: 'pinvokeimpl' '(' (compQstring ('as' compQstring)?)? pinvAttr* ')' | 'pinvokeimpl' '()';
+pinvImpl returns [object Value]
+@init {Actions.BeginPInvoke(_localctx);}
+:
+	'pinvokeimpl' '('
+		(module = compQstring {Actions.SetPInvokeModule(_localctx, $module.Value);}
+			('as' entryPoint = compQstring {Actions.SetPInvokeEntryPoint(_localctx, $entryPoint.Value);})?)?
+		(attribute = pinvAttr {Actions.AddPInvokeAttribute(_localctx, $attribute.Value);})*
+	')'
+	| 'pinvokeimpl' '()'
+;
+finally {_localctx.Value = Actions.EndPInvoke(_localctx);}
 
-pinvAttr:
-	'nomangle'
-	| 'ansi'
-	| 'unicode'
-	| 'autochar'
-	| 'lasterr'
-	| 'winapi'
-	| 'cdecl'
-	| 'stdcall'
-	| 'thiscall'
-	| 'fastcall'
-	| 'bestfit' ':' 'on'
-	| 'bestfit' ':' 'off'
-	| 'charmaperror' ':' 'on'
-	| 'charmaperror' ':' 'off'
-	| 'flags' '(' int32 ')';
+pinvAttr returns [object Value]:
+	attribute = 'nomangle' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
+	| attribute = 'ansi' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
+	| attribute = 'unicode' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
+	| attribute = 'autochar' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
+	| attribute = 'lasterr' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
+	| attribute = 'winapi' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
+	| attribute = 'cdecl' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
+	| attribute = 'stdcall' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
+	| attribute = 'thiscall' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
+	| attribute = 'fastcall' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
+	| 'bestfit' ':' setting = 'on' {_localctx.Value = Actions.CreateBestFitPInvokeAttribute($setting);}
+	| 'bestfit' ':' setting = 'off' {_localctx.Value = Actions.CreateBestFitPInvokeAttribute($setting);}
+	| 'charmaperror' ':' setting = 'on' {_localctx.Value = Actions.CreateCharMapErrorPInvokeAttribute($setting);}
+	| 'charmaperror' ':' setting = 'off' {_localctx.Value = Actions.CreateCharMapErrorPInvokeAttribute($setting);}
+	| 'flags' '(' flags = int32 ')' {_localctx.Value = Actions.CreateRawPInvokeAttribute($flags.start);};
 
 methodName returns [string Value]:
 	ctorName = '.ctor' {_localctx.Value = Actions.GetMethodName($ctorName);}
 	| cctorName = '.cctor' {_localctx.Value = Actions.GetMethodName($cctorName);}
 	| dotted = dottedName {_localctx.Value = $dotted.Value;};
 
-implAttr:
-	'native'
-	| 'cil'
-	| 'il'
-	| 'optil'
-	| 'managed'
-	| 'unmanaged'
-	| 'forwardref'
-	| 'preservesig'
-	| 'runtime'
-	| 'internalcall'
-	| 'synchronized'
-	| 'noinlining'
-	| 'aggressiveinlining'
-	| 'nooptimization'
-	| 'aggressiveoptimization'
-	| 'async'
-	| 'flags' '(' int32 ')';
+implAttr returns [object Value]:
+	attribute = 'native' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'cil' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'il' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'optil' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'managed' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'unmanaged' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'forwardref' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'preservesig' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'runtime' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'internalcall' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'synchronized' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'noinlining' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'aggressiveinlining' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'nooptimization' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'aggressiveoptimization' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| attribute = 'async' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
+	| 'flags' '(' flags = int32 ')' {_localctx.Value = Actions.CreateRawMethodImplementationAttribute($flags.start);};
 
 EMITBYTE: '.emitbyte';
 MAXSTACK: '.maxstack';

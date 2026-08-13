@@ -25,12 +25,6 @@ namespace ILAssembler
 #pragma warning disable CA1822 // Mark members as static
     internal sealed partial class GrammarActions : ICILVisitor<GrammarResult>
     {
-        GrammarResult ICILVisitor<GrammarResult>.VisitAtOpt(CILParser.AtOptContext context) => VisitAtOpt(context);
-        public GrammarResult.Literal<string?> VisitAtOpt(CILParser.AtOptContext context)
-            => context.id() is { } id ? new(VisitId(id).Value)
-            : context.int32() is { } i ? new(VisitInt32(i).Value.ToString())
-            : new(null);
-
         public GrammarResult VisitDataDecl(CILParser.DataDeclContext context)
         {
             _ = VisitDdHead(context.ddHead());
