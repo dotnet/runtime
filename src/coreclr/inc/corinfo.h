@@ -590,7 +590,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_ALLOC_CONTINUATION_METHOD,
     CORINFO_HELP_ALLOC_CONTINUATION_CLASS,
 
-    CORINFO_HELP_REPORT_UNMANAGED_EXCEPTION_FROM_PINVOKE, // Report a foreign exception escaping a P/Invoke
+    CORINFO_HELP_REPORT_UNMANAGED_EXCEPTION_FROM_PINVOKE, // Fail fast for a foreign exception escaping a P/Invoke
 
     CORINFO_HELP_COUNT,
 };

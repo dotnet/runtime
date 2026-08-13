@@ -710,9 +710,12 @@ extern "C" void STDCALL GenericPInvokeCalliHelper(void)
     PORTABILITY_ASSERT("GenericPInvokeCalliHelper is not implemented on wasm");
 }
 
-EXTERN_C void JIT_ReportUnmanagedExceptionFromPInvoke()
+EXTERN_C void DECLSPEC_NORETURN JIT_ReportUnmanagedExceptionFromPInvoke()
 {
-    fprintf(stderr, "Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition\n");
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(
+        COR_E_FAILFAST,
+        W("Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition"));
+    UNREACHABLE();
 }
 
 // Does the pinvoke frame transition; the naked wrappers below have already set the wasm

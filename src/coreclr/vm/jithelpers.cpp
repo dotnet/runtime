@@ -2178,7 +2178,7 @@ Thread * JIT_InitPInvokeFrame(InlinedCallFrame *pFrame)
 EXTERN_C void JIT_PInvokeBegin(InlinedCallFrame* pFrame);
 EXTERN_C void JIT_PInvokeEnd(InlinedCallFrame* pFrame);
 #ifdef TARGET_WASM
-EXTERN_C void JIT_ReportUnmanagedExceptionFromPInvoke();
+EXTERN_C void DECLSPEC_NORETURN JIT_ReportUnmanagedExceptionFromPInvoke();
 #endif
 
 #ifdef DEBUGGING_SUPPORTED

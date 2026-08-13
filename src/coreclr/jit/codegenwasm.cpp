@@ -3114,7 +3114,7 @@ void CodeGen::genCall(GenTreeCall* call)
         emit->emitIns(INS_throw_ref);
         emit->emitIns(INS_end);
         genEmitHelperCall(CORINFO_HELP_REPORT_UNMANAGED_EXCEPTION_FROM_PINVOKE, 0, EA_UNKNOWN);
-        emit->emitIns(INS_throw_ref);
+        emit->emitIns(INS_unreachable);
         emit->emitIns(INS_end);
     }
 

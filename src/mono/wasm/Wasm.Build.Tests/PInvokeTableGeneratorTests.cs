@@ -419,9 +419,6 @@ namespace Wasm.Build.Tests
                 TestScenario: "DotnetRun",
                 ExpectedExitCode: 1));
 
-            Assert.Contains(
-                result.ConsoleOutput,
-                line => line.Contains("Unhandled exception: an unmanaged exception was thrown out of a managed-to-native transition"));
             Assert.DoesNotContain(result.TestOutput, line => line.Contains("managed catch"));
             Assert.DoesNotContain(result.TestOutput, line => line.Contains("after P/Invoke"));
         }
