@@ -261,70 +261,40 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
-    /// Ordinary structs with the same size but different alignment need distinct thunk signatures.
-    /// Otherwise raising resolves both to whichever type was cached first and computes the wrong
-    /// transition-block offsets for the other.
+    /// Auto-layout structs use the runtime's effective aggregate alignment for argument placement,
+    /// which can be smaller than the alignment crossgen uses while laying out their fields.
     /// </summary>
     [Fact]
-    public void ByReferenceStructSignaturePreservesElevatedAlignment()
+    public void AutoLayoutStructUsesRuntimeAggregateAlignment()
     {
         ReadyToRunCompilerContext context = CreateWasmContext();
         DefType alignedEight = MakeAlignedEightBlob(context, 32);
         DefType int128 = InstantiateMultiSlotType(context, Int128Type);
-        DefType alignedSixteen = MakeValueTuple(context, int128, int128);
+        DefType autoLayout = MakeValueTuple(context, int128, int128);
 
         Assert.Equal(32, alignedEight.InstanceFieldSize.AsInt);
         Assert.Equal(8, alignedEight.InstanceFieldAlignment.AsInt);
-        Assert.Equal(32, alignedSixteen.InstanceFieldSize.AsInt);
-        Assert.Equal(16, alignedSixteen.InstanceFieldAlignment.AsInt);
+        Assert.Equal(32, autoLayout.InstanceFieldSize.AsInt);
+        Assert.Equal(16, autoLayout.InstanceFieldAlignment.AsInt);
+        Assert.Equal(8, CorInfoImpl.GetClassAlignmentRequirementStatic(autoLayout));
 
-        MethodSignature alignedSixteenSignature = MakeProbeSignature(context, alignedSixteen);
+        MethodSignature autoLayoutSignature = MakeProbeSignature(context, autoLayout);
         MethodSignature alignedEightSignature = MakeProbeSignature(context, alignedEight);
 
-        WasmSignature alignedSixteenLowered =
-            WasmLowering.GetSignature(alignedSixteenSignature, WasmLowering.LoweringFlags.None);
+        WasmSignature autoLayoutLowered =
+            WasmLowering.GetSignature(autoLayoutSignature, WasmLowering.LoweringFlags.None);
         WasmSignature alignedEightLowered =
             WasmLowering.GetSignature(alignedEightSignature, WasmLowering.LoweringFlags.None);
 
-        Assert.Equal("vlA32ip", alignedSixteenLowered.SignatureString);
+        Assert.Equal("vlS32ip", autoLayoutLowered.SignatureString);
         Assert.Equal("vlS32ip", alignedEightLowered.SignatureString);
+        Assert.Equal(new[] { 0, 8, 40 }, GetArgumentOffsets(context, autoLayoutSignature));
         Assert.Equal(
-            GetArgumentOffsets(context, alignedSixteenSignature),
-            GetArgumentOffsets(context, WasmLowering.RaiseSignature(alignedSixteenLowered, context)));
+            GetArgumentOffsets(context, autoLayoutSignature),
+            GetArgumentOffsets(context, WasmLowering.RaiseSignature(autoLayoutLowered, context)));
         Assert.Equal(
             GetArgumentOffsets(context, alignedEightSignature),
             GetArgumentOffsets(context, WasmLowering.RaiseSignature(alignedEightLowered, context)));
-    }
-
-    /// <summary>
-    /// The transition block clamps struct alignment to 16, so larger declared alignments share the
-    /// same encoding and can safely use the same raised stand-in.
-    /// </summary>
-    [Fact]
-    public void ElevatedStructAlignmentsShareTransitionBlockEncoding()
-    {
-        ReadyToRunCompilerContext context = CreateWasmContext();
-        DefType int128 = InstantiateMultiSlotType(context, Int128Type);
-        DefType vector256 = InstantiateMultiSlotType(context, Vector256OfT);
-        DefType alignedSixteen = MakeValueTuple(context, int128, int128, int128, int128);
-        DefType alignedThirtyTwo = MakeValueTuple(context, vector256, vector256);
-
-        Assert.Equal(64, alignedSixteen.InstanceFieldSize.AsInt);
-        Assert.Equal(16, alignedSixteen.InstanceFieldAlignment.AsInt);
-        Assert.Equal(64, alignedThirtyTwo.InstanceFieldSize.AsInt);
-        Assert.Equal(32, alignedThirtyTwo.InstanceFieldAlignment.AsInt);
-
-        WasmSignature alignedSixteenLowered =
-            WasmLowering.GetSignature(MakeProbeSignature(context, alignedSixteen), WasmLowering.LoweringFlags.None);
-        WasmSignature alignedThirtyTwoLowered =
-            WasmLowering.GetSignature(MakeProbeSignature(context, alignedThirtyTwo), WasmLowering.LoweringFlags.None);
-
-        Assert.Equal("vlA64ip", alignedSixteenLowered.SignatureString);
-        Assert.Equal(alignedSixteenLowered.SignatureString, alignedThirtyTwoLowered.SignatureString);
-        Assert.Equal(OffsetsOf(context, alignedSixteen), OffsetsOf(context, alignedThirtyTwo));
-        Assert.Equal(
-            OffsetsOf(context, alignedThirtyTwo),
-            GetArgumentOffsets(context, WasmLowering.RaiseSignature(alignedThirtyTwoLowered, context)));
     }
 
     /// <summary>
@@ -531,7 +501,7 @@ public class WasmArgumentLayoutTests
 
         // A second field makes it an ordinary aggregate, so it goes back to the struct ABI.
         DefType twoFields = MakeValueTuple(context, wrapped, wrapped);
-        Assert.Equal($"vlA{twoFields.InstanceFieldSize.AsInt}ip", SignatureOf(context, twoFields));
+        Assert.Equal($"vlS{twoFields.InstanceFieldSize.AsInt}ip", SignatureOf(context, twoFields));
     }
 
     /// <summary>

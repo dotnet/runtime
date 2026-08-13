@@ -1950,25 +1950,7 @@ unsigned CEEInfo::getClassAlignmentRequirementStatic(TypeHandle clsHnd)
             // if it's managed sequential, we use the managed alignment requirement
             result = pInfo->GetAlignmentRequirement();
         }
-#ifdef TARGET_WASM
-        else if (pInfo->GetLayoutType() == EEClassLayoutInfo::LayoutType::Explicit)
-        {
-            result = pMT->GetFieldAlignmentRequirement();
-        }
-#endif
     }
-#ifdef TARGET_WASM
-    else
-    {
-        unsigned fieldAlignment = pMT->GetFieldAlignmentRequirement();
-        // Auto-layout structs can contain fields aligned beyond the pointer size on Wasm.
-        if (fieldAlignment > 8)
-        {
-            result = fieldAlignment;
-        }
-    }
-#endif
-
 #ifdef FEATURE_64BIT_ALIGNMENT
     if (result < 8 && pMT->RequiresAlign8())
     {

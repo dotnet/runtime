@@ -1238,7 +1238,7 @@ namespace
             // One field with padding — treat as multi-field struct
         }
 
-        return { ConvertType::ToStruct, size, pMT->GetFieldAlignmentRequirement() > INTERP_STACK_SLOT_SIZE };
+        return { ConvertType::ToStruct, size, CEEInfo::getClassAlignmentRequirementStatic(th) > INTERP_STACK_SLOT_SIZE };
     }
 
     ConvertResult ConvertibleTo(CorElementType argType, MetaSig& sig, bool isReturn)

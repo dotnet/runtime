@@ -93,19 +93,18 @@ namespace ILCompiler
         /// <summary>
         /// Caches a struct type by the layout represented in its signature encoding, so
         /// RaiseSignature can retrieve a real type with the same argument layout. Structs whose
-        /// alignment exceeds 8 use a separate cache because their transition-block slots are
-        /// 16-byte aligned.
+        /// effective argument alignment exceeds 8 use a separate cache because their
+        /// transition-block slots are 16-byte aligned.
         /// </summary>
-        public void CacheStruct(TypeDesc type)
+        public void CacheStruct(TypeDesc type, bool requiresAlignedSlot)
         {
             int size = type.GetElementSize().AsInt;
             if (size <= 0)
                 return;
 
-            int alignment = ((DefType)type).InstanceFieldAlignment.AsInt;
             lock (_structCacheLock)
             {
-                if (alignment > 8)
+                if (requiresAlignedSlot)
                 {
                     _alignedStructsBySize.TryAdd(size, type);
                 }

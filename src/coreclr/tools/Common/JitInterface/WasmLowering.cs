@@ -628,7 +628,8 @@ namespace Internal.JitInterface
                     returnContext.CacheReturnStructBySize(returnType);
                     if (!TryGetMultiSegmentLayout(returnType, out _, out _))
                     {
-                        returnContext.CacheStruct(returnType);
+                        int returnAlignment = CorInfoImpl.GetClassAlignmentRequirementStatic((DefType)returnType);
+                        returnContext.CacheStruct(returnType, returnAlignment > 8);
                     }
                 }
             }
@@ -726,10 +727,11 @@ namespace Internal.JitInterface
                     else
                     {
                         Debug.Assert(paramType is DefType);
-                        int paramAlignment = ((DefType)paramType).InstanceFieldAlignment.AsInt;
-                        sigBuilder.Append(paramAlignment > 8 ? 'A' : 'S');
+                        int paramAlignment = CorInfoImpl.GetClassAlignmentRequirementStatic((DefType)paramType);
+                        bool requiresAlignedSlot = paramAlignment > 8;
+                        sigBuilder.Append(requiresAlignedSlot ? 'A' : 'S');
                         sigBuilder.Append(paramSize);
-                        ((CompilerTypeSystemContext)paramType.Context).CacheStruct(paramType);
+                        ((CompilerTypeSystemContext)paramType.Context).CacheStruct(paramType, requiresAlignedSlot);
                         result.Add(pointerType);
                     }
                 }
