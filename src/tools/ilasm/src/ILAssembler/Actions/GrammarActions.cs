@@ -30,7 +30,10 @@ internal sealed partial class GrammarActions
                 && _typeArgumentsFrames.Count == 0
                 && _boundsFrames.Count == 0
                 && _signatureArgumentsFrames.Count == 0
-                && _parameterAttributesFrames.Count == 0,
+                && _parameterAttributesFrames.Count == 0
+                && _marshalBlobFrames.Count == 0
+                && _nativeTypeFrames.Count == 0
+                && _variantTypeFrames.Count == 0,
             "Per-document semantic state must be released by the owning rule's finally block.");
 
         EndMethod();
@@ -44,6 +47,9 @@ internal sealed partial class GrammarActions
         _boundsFrames.Clear();
         _signatureArgumentsFrames.Clear();
         _parameterAttributesFrames.Clear();
+        _marshalBlobFrames.Clear();
+        _nativeTypeFrames.Clear();
+        _variantTypeFrames.Clear();
         _syntaxErrorCount = 0;
     }
 }

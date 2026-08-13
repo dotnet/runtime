@@ -23,7 +23,8 @@ accumulator instead of building a subtree at all.
 | `GrammarActions.Instructions.References.cs` | Reference and signature instruction actions. |
 | `GrammarActions.Literals.cs` | Literals, names and strings. |
 | `GrammarActions.Manifest.cs` | Assembly, module, resource, vtable and typedef directives. |
-| `GrammarActions.Marshalling.cs` | Native type and marshalling conversion. |
+| `GrammarActions.Marshalling.Actions.cs` | Synthesized native type and marshalling descriptor actions. |
+| `GrammarActions.Marshalling.cs` | Marshalling visitor wrappers and P/Invoke conversion. |
 | `GrammarActions.Members.cs` | Class member dispatch and conversion. |
 | `GrammarActions.MethodBodies.cs` | Method, lexical scope and exception-handling state and conversion. |
 | `GrammarActions.Security.cs` | Declarative security conversion. |
@@ -49,8 +50,9 @@ ILAssembler entities and signature implementation values remain internal, so gen
 slots use `object` where an internal value or array crosses that boundary and `GrammarActions`
 provides the strongly typed accessors.
 
-`marshalClause` is the remaining signature-layer parse-tree island. It retains only the bounded
-`marshalBlob`/`nativeType` subtree until its containing signature is materialized.
+All type, signature, reference and marshalling rules synthesize values without retaining parse
+subtrees. The remaining `BeginSubtree` islands are structural: `decl`, `nameSpaceHead`,
+`classHead`, `classDecl`, `methodHead`, `methodDeclIsland` and `sehBlock`.
 
 Semantic state that a rule pushes must be released from that rule's `finally` clause and be keyed on
 the owning context, because ANTLR skips `@after` actions and the remainder of an alternative once a
