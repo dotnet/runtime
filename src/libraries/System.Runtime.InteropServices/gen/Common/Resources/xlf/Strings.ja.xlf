@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="ja" original="../Strings.resx">
     <body>
@@ -1059,17 +1059,17 @@
       </trans-unit>
       <trans-unit id="RequiresExplicitSafetyModifierDescriptionLibraryImport">
         <source>Under the updated memory safety rules, calling into native code is a safety contract that the compiler cannot verify. Mark the method 'unsafe' to require callers to audit the call, or 'safe' after auditing the interop boundary. This matches the requirement the language places on 'extern' members.</source>
-        <target state="new">Under the updated memory safety rules, calling into native code is a safety contract that the compiler cannot verify. Mark the method 'unsafe' to require callers to audit the call, or 'safe' after auditing the interop boundary. This matches the requirement the language places on 'extern' members.</target>
+        <target state="translated">更新されたメモリの安全規則では、ネイティブ コードへの呼び出しは、コンパイラが検証できない安全コントラクトです。呼び出し元に呼び出しの監査を求めるには、メソッドに 'unsafe' を指定します。相互運用境界を監査した後は、'safe' を指定します。これは、言語が 'extern' メンバーに課している要件と一致します。</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresExplicitSafetyModifierMessageLibraryImport">
         <source>Method '{0}' with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
-        <target state="new">Method '{0}' with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</target>
+        <target state="translated">'LibraryImportAttribute' を持つメソッド '{0}' は、'safe' または 'unsafe' としてマークする必要があります</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresExplicitSafetyModifierTitleLibraryImport">
         <source>Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
-        <target state="new">Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</target>
+        <target state="translated">'LibraryImportAttribute' を持つメソッドは、'safe' または 'unsafe' としてマークする必要があります</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">

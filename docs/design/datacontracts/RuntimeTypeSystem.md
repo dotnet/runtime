@@ -585,7 +585,6 @@ static class RuntimeTypeSystem_1_Helpers
 | `LoaderAllocator` | `ObjectHandle` | `ObjectHandle` | Handle to the managed loader allocator object |
 | `LoaderAllocator` | `ReferenceCount` | `uint32` | Reference count of the loader allocator |
 | `LoaderAllocator` | `StaticsHeap` | `pointer` | Heap containing statics-related allocations |
-| `LoaderAllocator` | `StubHeap` | `pointer` | Heap containing runtime stubs |
 | `LoaderAllocator` | `VirtualCallStubManager` | `pointer` | Pointer to the virtual-call stub manager |
 | `MethodDesc` | *(type size)* | `uint32` | Base size for mcIL classification |
 | `MethodDesc` | `ChunkIndex` | `uint8` | Offset of this MethodDesc relative to the end of its containing MethodDescChunk - in multiples of MethodDescAlignment |

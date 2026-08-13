@@ -711,15 +711,15 @@ extern "C" void STDCALL GenericPInvokeCalliHelper(void)
 }
 
 // Does the pinvoke frame transition; the naked wrappers below have already set the wasm
-// __stack_pointer global to sp so it is safe to run native code here.
-EXTERN_C void JIT_PInvokeBeginImpl(void* sp, InlinedCallFrame* pFrame)
+// __stack_pointer global to callersStackPointer so it is safe to run native code here.
+EXTERN_C void JIT_PInvokeBeginImpl(uintptr_t callersStackPointer, InlinedCallFrame* pFrame)
 {
     Thread* pThread = GetThread();
 
-    // Initialize the JIT-provided frame storage, deriving its state from sp/pep since wasm
+    // Initialize the JIT-provided frame storage, deriving its state from callersStackPointer since wasm
     // has no machine registers to read the caller SP / return address from.
     ::new ((void*)pFrame) InlinedCallFrame();
-    pFrame->m_pCallSiteSP          = sp;
+    pFrame->m_pCallSiteSP          = (void*)callersStackPointer;
     pFrame->m_pCallerReturnAddress = INLINED_PINVOKE_FROM_R2R; // When this is true, UpdateRegDisplay_Impl derives state from m_pCallSiteSP.
     pFrame->m_pCalleeSavedFP       = 0;
     pFrame->m_pThread              = pThread;
@@ -798,12 +798,43 @@ extern "C" void STDCALL JIT_StackProbe()
     PORTABILITY_ASSERT("JIT_StackProbe is not implemented on wasm");
 }
 
-EXTERN_C FCDECL0(void, JIT_PollGC);
-FCIMPL0(void, JIT_PollGC)
+EXTERN_C void JIT_PollGCRarePath(uintptr_t callersStackPointer)
 {
-    PORTABILITY_ASSERT("JIT_PollGC is not implemented on wasm");
+    InlinedCallFrame inlinedCallFrame;
+    JIT_PInvokeBeginImpl(callersStackPointer, &inlinedCallFrame);
+
+    Thread* pThread = (Thread*)inlinedCallFrame.m_pThread;
+    pThread->m_fPreemptiveGCDisabled.StoreWithoutBarrier(1);
+    if (g_TrapReturningThreads)
+    {
+        JIT_PInvokeEndRarePath();
+    }
+    else
+    {
+        inlinedCallFrame.Pop();
+    }
 }
-FCIMPLEND
+
+EXTERN_C FCDECL0(void, JIT_PollGC);
+EXTERN_C __attribute__((naked)) void F_CALL_CONV JIT_PollGC(uintptr_t callersStackPointer, PCODE portableEntryPointContext)
+{
+    asm(
+        "i32.const 0\n"
+        "i32.load %[g_TrapReturningThreads]\n"
+        "if\n"
+        "  global.get __stack_pointer\n"
+        "  local.set 1\n"                 /* save previous __stack_pointer into the unused pep local */
+        "  local.get 0\n"                 /* callersStackPointer */
+        "  global.set __stack_pointer\n"
+        "  local.get 0\n"                 /* sp argument for the rare-path helper */
+        "  call %[JIT_PollGCRarePath]\n"
+        "  local.get 1\n"                 /* restore previous __stack_pointer */
+        "  global.set __stack_pointer\n"
+        "end_if\n"
+        "return\n"
+        :: [g_TrapReturningThreads] "i" (&g_TrapReturningThreads),
+           [JIT_PollGCRarePath] "i" (JIT_PollGCRarePath));
+}
 
 void InitJITHelpers1()
 {
@@ -1016,6 +1047,8 @@ namespace
         ToF32,
         ToF64,
         ToV128,
+        ToSlotsI64,  // Passed by value as several i64 slots (Int128/UInt128)
+        ToSlotsV128, // Passed by value as several v128 slots (Vector256<T>, Vector512<T>)
         ToStruct,   // S<N> — multi-field struct passed by pointer, structSize holds the size
         ToEmpty,    // e — empty struct, takes no wasm argument
     };
@@ -1028,6 +1061,115 @@ namespace
 
     // Lowers a TypeHandle to a ConvertResult, unwrapping single-field structs
     // per the BasicCABI spec.
+    // A Vector128<T>, or a 16-byte Vector<T>, over a numeric base type: the one wasm v128.
+    bool IsWasmV128TypeHandle(TypeHandle th)
+    {
+        if (th.IsTypeDesc() || (th.GetSignatureCorElementType() != ELEMENT_TYPE_VALUETYPE))
+        {
+            return false;
+        }
+
+        MethodTable* pMT = th.AsMethodTable();
+        if (!pMT->IsIntrinsicType() || (pMT->GetNumGenericArgs() != 1) ||
+            !CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType()))
+        {
+            return false;
+        }
+
+        PTR_MethodTable pVector128MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR128T);
+        PTR_MethodTable pVectorTMT   = CoreLibBinder::GetClassIfExist(CLASS__VECTORT);
+
+        return ((pVector128MT != nullptr) && pMT->HasSameTypeDefAs(pVector128MT)) ||
+               ((th.GetSize() == 16) && (pVectorTMT != nullptr) && pMT->HasSameTypeDefAs(pVectorTMT));
+    }
+
+    // Returns true for the CoreLib types with special multi-slot Wasm ABI behavior. This check must
+    // remain in sync with IsKnownMultiSegmentType in WasmLowering.cs.
+    bool IsWasmMultiSlotTypeHandle(TypeHandle th)
+    {
+        if (th.IsTypeDesc() || (th.GetSignatureCorElementType() != ELEMENT_TYPE_VALUETYPE))
+        {
+            return false;
+        }
+
+        MethodTable* pMT = th.AsMethodTable();
+        PTR_MethodTable pInt128MT     = CoreLibBinder::GetClassIfExist(CLASS__INT128);
+        PTR_MethodTable pUInt128MT    = CoreLibBinder::GetClassIfExist(CLASS__UINT128);
+        PTR_MethodTable pDecimal128MT = CoreLibBinder::GetClassIfExist(CLASS__DECIMAL128);
+        if (((pInt128MT != nullptr) && pMT->HasSameTypeDefAs(pInt128MT)) ||
+            ((pUInt128MT != nullptr) && pMT->HasSameTypeDefAs(pUInt128MT)) ||
+            ((pDecimal128MT != nullptr) && pMT->HasSameTypeDefAs(pDecimal128MT)))
+        {
+            return true;
+        }
+
+        if (!pMT->IsIntrinsicType() || (pMT->GetNumGenericArgs() != 1) ||
+            !CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType()))
+        {
+            return false;
+        }
+
+        PTR_MethodTable pVector256MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR256T);
+        PTR_MethodTable pVector512MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR512T);
+        return ((pVector256MT != nullptr) && pMT->HasSameTypeDefAs(pVector256MT)) ||
+               ((pVector512MT != nullptr) && pMT->HasSameTypeDefAs(pVector512MT));
+    }
+
+    // Walks a known multi-slot CoreLib type's first fields down to the wasm value type its slots use,
+    // and reports that slot's width. This is safe only after IsWasmMultiSlotTypeHandle succeeds: the
+    // known integer and decimal types have homogeneous uint64 fields, and the known vectors have
+    // homogeneous vector fields. It is not valid for an arbitrary aggregate.
+    bool GetWasmSlotSize(TypeHandle th, uint32_t* pSlotSize)
+    {
+        _ASSERTE(IsWasmMultiSlotTypeHandle(th));
+
+        // Three iterations cover the deepest supported chain:
+        // Vector512<T> -> Vector256<T> -> Vector128<T>.
+        for (int depth = 0; depth < 3; depth++)
+        {
+            if (IsWasmV128TypeHandle(th))
+            {
+                *pSlotSize = 16;
+                return true;
+            }
+
+            CorElementType elemType = th.GetSignatureCorElementType();
+            if ((elemType == ELEMENT_TYPE_I8) || (elemType == ELEMENT_TYPE_U8))
+            {
+                *pSlotSize = 8;
+                return true;
+            }
+
+            if ((elemType != ELEMENT_TYPE_VALUETYPE) || th.IsTypeDesc())
+            {
+                return false;
+            }
+
+            MethodTable* pMT = th.AsMethodTable();
+
+            // A generic intrinsic whose base type is not a supported vector element -- the shared
+            // __Canon form, say -- is not ABI-classifiable, and its fields are an implementation
+            // detail rather than its slots. Same guard IsWasmV128TypeHandle applies, and the same
+            // one GetSlotType applies in crossgen2; without it Vector256<__Canon> walks past the
+            // v128 check into Vector128's raw ulong fields and reports four i64 slots where
+            // crossgen2 says S32.
+            if (pMT->IsIntrinsicType() && (pMT->GetNumGenericArgs() == 1) &&
+                !CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType()))
+            {
+                return false;
+            }
+
+            if (pMT->GetNumInstanceFields() == 0)
+            {
+                return false;
+            }
+
+            th = pMT->GetApproxFieldDescListRaw()->GetApproxFieldTypeHandleThrowing();
+        }
+
+        return false;
+    }
+
     ConvertResult LowerTypeHandle(TypeHandle th)
     {
         uint32_t size = th.GetSize();
@@ -1060,19 +1202,21 @@ namespace
 
         MethodTable* pMT = th.AsMethodTable();
 
-        bool isSupportedVectorBaseType =
-            pMT->IsIntrinsicType() &&
-            (pMT->GetNumGenericArgs() == 1) &&
-            CorIsNumericalType(pMT->GetInstantiation()[0].GetSignatureCorElementType());
-        if (isSupportedVectorBaseType)
+        if (IsWasmV128TypeHandle(th))
         {
-            PTR_MethodTable pVector128MT = CoreLibBinder::GetClassIfExist(CLASS__VECTOR128T);
-            PTR_MethodTable pVectorTMT = CoreLibBinder::GetClassIfExist(CLASS__VECTORT);
+            return { ConvertType::ToV128, 0 };
+        }
 
-            if ((pVector128MT != nullptr && pMT->HasSameTypeDefAs(pVector128MT)) ||
-                ((size == 16) && (pVectorTMT != nullptr) && pMT->HasSameTypeDefAs(pVectorTMT)))
+        // The known CoreLib multi-slot types are passed by value across several slots. Ordinary
+        // aggregates remain indirect even if their fields have the same shape. The size and
+        // alignment checks verify that each known type has the layout required by its ABI.
+        if (IsWasmMultiSlotTypeHandle(th) && ((uint32_t)pMT->GetFieldAlignmentRequirement() == size))
+        {
+            uint32_t slotSize = 0;
+            if (GetWasmSlotSize(TypeHandle(pMT), &slotSize) && (size > slotSize))
             {
-                return { ConvertType::ToV128, 0 };
+                _ASSERTE((size % slotSize) == 0);
+                return { (slotSize == 8) ? ConvertType::ToSlotsI64 : ConvertType::ToSlotsV128, size };
             }
         }
 
@@ -1152,6 +1296,23 @@ namespace
             case ConvertType::ToF32:       c = 'f'; break;
             case ConvertType::ToF64:       c = 'd'; break;
             case ConvertType::ToV128:      c = 'V'; break;
+            case ConvertType::ToSlotsI64:
+            case ConvertType::ToSlotsV128:
+            {
+                // Passed by value across several wasm parameters, spelled '<slot><elevation>'.
+                // The elevation factor equals the slot count, so both come from the size.
+                bool     isInt128 = (cr.type == ConvertType::ToSlotsI64);
+                uint32_t slotSize = isInt128 ? 8 : 16;
+                _ASSERTE((cr.structSize % slotSize) == 0);
+                uint32_t slotCount = cr.structSize / slotSize;
+                _ASSERTE(slotCount >= 2 && slotCount <= 9);
+
+                if (pos < maxSize)
+                    keyBuffer[pos] = isInt128 ? 'l' : 'V';
+                if (pos + 1 < maxSize)
+                    keyBuffer[pos + 1] = (char)('0' + slotCount);
+                return 2;
+            }
             case ConvertType::ToEmpty:     c = 'e'; break;
             case ConvertType::ToStruct:
             {
@@ -1210,6 +1371,14 @@ namespace
             ConvertResult cr = ConvertibleTo(sig.GetReturnType(), sig, true /* isReturn */);
             if (cr.type == ConvertType::NotConvertible)
                 return UINT32_MAX;
+
+            // The multi-slot convention applies to parameters only; these types are returned
+            // through a hidden buffer like any other aggregate.
+            if ((cr.type == ConvertType::ToSlotsI64) || (cr.type == ConvertType::ToSlotsV128))
+            {
+                cr.type = ConvertType::ToStruct;
+            }
+
             pos += AppendTypeCode(cr, keyBuffer, pos, maxSize);
         }
 

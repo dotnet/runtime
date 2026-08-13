@@ -124,8 +124,25 @@ using namespace CorUnix;
 // Thread ID of thread that has started the ExitProcess process
 Volatile<LONG> terminator = 0;
 
+static SIZE_T InterlockedCompareExchangeSizeT(SIZE_T volatile* destination, SIZE_T exchange, SIZE_T comparand)
+{
+#ifdef HOST_64BIT
+    LONGLONG result = InterlockedCompareExchange64(
+        reinterpret_cast<LONGLONG volatile*>(destination),
+        *reinterpret_cast<LONGLONG*>(&exchange),
+        *reinterpret_cast<LONGLONG*>(&comparand));
+    return *reinterpret_cast<SIZE_T*>(&result);
+#else
+    LONG result = InterlockedCompareExchange(
+        reinterpret_cast<LONG volatile*>(destination),
+        *reinterpret_cast<LONG*>(&exchange),
+        *reinterpret_cast<LONG*>(&comparand));
+    return *reinterpret_cast<SIZE_T*>(&result);
+#endif
+}
+
 // Id of thread generating a core dump
-Volatile<LONG> g_crashingThreadId = 0;
+SIZE_T g_crashingThreadId = 0;
 
 // Process ID of this process.
 DWORD gPID = (DWORD) -1;
@@ -227,6 +244,10 @@ CreateSemaphoreName(
     LPCSTR applicationGroupId);
 
 static BOOL PROCEndProcess(UINT uExitCode, BOOL bTerminateUnconditionally);
+
+static bool TryEnterCrashDumpGate(CrashDumpSerializeMode serializeMode);
+
+static void ExitCrashDumpGate(CrashDumpSerializeMode serializeMode);
 
 /*++
 Function:
@@ -1435,47 +1456,25 @@ PROCBuildCreateDumpCommandLine(
 
 /*++
 Function:
-  PROCCreateCrashDump
+  PROCLaunchCreateDump
 
-  Creates crash dump of the process. Can be called from the unhandled
-  native exception handler. Allows only one thread to generate the core
-  dump if serialize is true.
+  Launches the out-of-proc createdump utility for the process. Does not
+  serialize; callers that need serialization should go through PROCCreateCrashDump.
 
 Return:
   TRUE - succeeds, FALSE - fails
 --*/
-BOOL
-PROCCreateCrashDump(
+static BOOL
+PROCLaunchCreateDump(
     const char* argv[],
     LPSTR errorMessageBuffer,
-    INT cbErrorMessageBuffer,
-    bool serialize)
+    INT cbErrorMessageBuffer)
 {
 #if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WASM)
     return FALSE;
 #else
     _ASSERTE(argv[0] != nullptr);
     _ASSERTE(errorMessageBuffer == nullptr || cbErrorMessageBuffer > 0);
-
-    if (serialize)
-    {
-        size_t currentThreadId = THREADSilentGetCurrentThreadId();
-        size_t previousThreadId = InterlockedCompareExchange(&g_crashingThreadId, currentThreadId, 0);
-        if (previousThreadId != 0)
-        {
-            // Return error if reenter this code
-            if (previousThreadId == currentThreadId)
-            {
-                return false;
-            }
-
-            // The first thread generates the crash info and any other threads are blocked
-            while (true)
-            {
-                poll(NULL, 0, INFTIM);
-            }
-        }
-    }
 
     int pipe_descs[4];
     if (pipe(pipe_descs) == -1 || pipe(pipe_descs + 2) == -1)
@@ -1632,6 +1631,39 @@ PROCCreateCrashDump(
 }
 
 /*++
+Function:
+  PROCCreateCrashDump
+
+  Creates a crash dump of the process via the out-of-proc createdump utility,
+  serializing concurrent crash diagnostics per serializeMode. Can be
+  called from the unhandled native exception handler.
+
+Return:
+  TRUE  - succeeds.
+  FALSE - fails, another thread already owns the gate under
+          CrashDumpSerialize_NoWait, or the owning thread re-enters the gate.
+          Under CrashDumpSerialize_WaitInfinite a losing non-owner thread blocks
+          indefinitely in TryEnterCrashDumpGate instead of returning.
+--*/
+static BOOL
+PROCCreateCrashDump(
+    const char* argv[],
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer,
+    CrashDumpSerializeMode serializeMode)
+{
+    if (!TryEnterCrashDumpGate(serializeMode))
+    {
+        return FALSE;
+    }
+
+    BOOL result = PROCLaunchCreateDump(argv, errorMessageBuffer, cbErrorMessageBuffer);
+
+    ExitCrashDumpGate(serializeMode);
+    return result;
+}
+
+/*++
 Function
   PROCAbortInitialize()
 
@@ -1750,7 +1782,7 @@ PAL_GenerateCoreDump(
     BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, nullptr, dumpType, flags);
     if (result)
     {
-        result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer, false);
+        result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer, CrashDumpSerialize_None);
     }
     free(program);
     free(pidarg);
@@ -1805,6 +1837,115 @@ PROCLogManagedCallstackForSignal(int signal)
 
 /*++
 Function:
+  TryEnterCrashDumpGate
+
+  Serializes so that one thread generates a crash dump or in-proc crash report at a time.
+  The first thread to arrive wins the gate; concurrent threads wait (or not) depending on the
+  mode. See CrashDumpSerializeMode.
+
+Return:
+  TRUE  - the calling thread owns the gate.
+  FALSE - the calling thread does not own the gate. Returned for
+          CrashDumpSerialize_NoWait and for a reentrant call by the owning
+          thread; a losing non-owner CrashDumpSerialize_WaitInfinite thread
+          blocks indefinitely instead and never returns.
+--*/
+static bool
+TryEnterCrashDumpGate(CrashDumpSerializeMode serializeMode)
+{
+    if (serializeMode == CrashDumpSerialize_None)
+    {
+        // No serialization requested.
+        return true;
+    }
+
+    SIZE_T currentThreadId = THREADSilentGetCurrentThreadId();
+    SIZE_T previousThreadId = InterlockedCompareExchangeSizeT(&g_crashingThreadId, currentThreadId, 0);
+    if (previousThreadId == 0)
+    {
+        // Won the gate.
+        return true;
+    }
+
+    // Lost the gate, or this is a reentrant call on the owning thread. A
+    // WaitInfinite contender (other than the owner) waits indefinitely; the owner
+    // and CrashDumpSerialize_NoWait fall through and return immediately.
+    if (previousThreadId != currentThreadId && serializeMode == CrashDumpSerialize_WaitInfinite)
+    {
+        // The winner generates diagnostics and should terminate the process.
+        // Wait here until that happens.
+        while (true)
+        {
+#if HAVE_POLL
+            poll(NULL, 0, INFTIM);
+#else
+            pause();
+#endif
+        }
+    }
+
+    return false;
+}
+
+/*++
+Function:
+  ExitCrashDumpGate
+
+  Releases the gate acquired by TryEnterCrashDumpGate. Only the owning thread
+  releases the gate; a call from any other thread is a no-op.
+--*/
+static void
+ExitCrashDumpGate(CrashDumpSerializeMode serializeMode)
+{
+    // CrashDumpSerialize_None never acquired the gate, and
+    // CrashDumpSerialize_WaitInfinite intentionally leaves it held.
+    if (serializeMode == CrashDumpSerialize_None || serializeMode == CrashDumpSerialize_WaitInfinite)
+    {
+        return;
+    }
+
+    // Re-arm the gate so a later crash can generate diagnostics again, but only
+    // if this thread still owns it.
+    SIZE_T currentThreadId = THREADSilentGetCurrentThreadId();
+    InterlockedCompareExchangeSizeT(&g_crashingThreadId, 0, currentThreadId);
+}
+
+/*++
+Function:
+  PROCCreateInProcCrashReport
+
+  Invokes the host-registered in-proc crash report callback, serializing
+  concurrent crash diagnostics per serializeMode through the shared gate.
+  Can be called from the unhandled native exception handler.
+
+Parameters:
+  signal - POSIX signal number
+  siginfo - POSIX signal info or nullptr
+  context - signal context or nullptr
+  serializeMode - how to serialize concurrent crash diagnostics
+
+(no return value)
+--*/
+static VOID
+PROCCreateInProcCrashReport(int signal, siginfo_t* siginfo, void* context, CrashDumpSerializeMode serializeMode)
+{
+    if (!TryEnterCrashDumpGate(serializeMode))
+    {
+        return;
+    }
+
+    // The host emits its report from this signal frame.
+    PINPROCCRASHREPORT_CALLBACK callback = g_inProcCrashReportCallback;
+    if (callback != nullptr)
+    {
+        callback(signal, siginfo, context);
+    }
+
+    ExitCrashDumpGate(serializeMode);
+}
+
+/*++
+Function:
   PROCCreateCrashDumpIfEnabled
 
   Creates crash dump of the process (if enabled). Can be
@@ -1814,22 +1955,29 @@ Parameters:
   signal - POSIX signal number
   siginfo - POSIX signal info or nullptr
   context - signal context or nullptr
-  serialize - allow only one thread to generate core dump
+  serializeMode - how to serialize concurrent crash diagnostics
 
 (no return value)
 --*/
 VOID
-PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool serialize)
+PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, CrashDumpSerializeMode serializeMode)
 {
     // Preserve context pointer to prevent optimization
     DoNotOptimize(&context);
 
-    // If a host registered an in-proc crash report callback, prefer it: the
-    // host emits its report from this signal frame.
-    PINPROCCRASHREPORT_CALLBACK callback = g_inProcCrashReportCallback;
-    if (callback != nullptr)
+    // If a host registered an in-proc crash report callback, it owns crash
+    // reporting for this process: the host emits its report from this signal
+    // frame and createdump is not launched.
+    if (g_inProcCrashReportCallback != nullptr)
     {
-        callback(signal, siginfo, context, serialize);
+        // The in-proc crash reporter runs only on terminal crash paths. Non-terminal
+        // paths that may continue execution after signal handling (e.g. SIGTERM, which
+        // uses CrashDumpSerialize_None) are skipped, because the reporter does not
+        // support recurrent invocations.
+        if (serializeMode != CrashDumpSerialize_None)
+        {
+            PROCCreateInProcCrashReport(signal, siginfo, context, serializeMode);
+        }
         return;
     }
 
@@ -1895,7 +2043,7 @@ PROCCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo, void* context, bool
         argv[argc] = nullptr;
         _ASSERTE(argc < MAX_ARGV_ENTRIES);
 
-        PROCCreateCrashDump(argv, nullptr, 0, serialize);
+        PROCCreateCrashDump(argv, nullptr, 0, serializeMode);
 
         free(signalArg);
         free(crashThreadArg);
@@ -1927,7 +2075,7 @@ PROCAbort(int signal, siginfo_t* siginfo, void* context)
     // Do any shutdown cleanup before aborting or creating a core dump
     PROCNotifyProcessShutdown();
 
-    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, true);
+    PROCCreateCrashDumpIfEnabled(signal, siginfo, context, CrashDumpSerialize_WaitInfinite);
 
     // Restore all signals; the SIGABORT handler to prevent recursion and
     // the others to prevent multiple core dumps from being generated.
