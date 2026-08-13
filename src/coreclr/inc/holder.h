@@ -1014,31 +1014,6 @@ struct ReleaseHolderTraits final
 template<typename _TYPE>
 using ReleaseHolder = LifetimeHolder<ReleaseHolderTraits<_TYPE>>;
 
-// This holder trait is slightly different from ReleaseHolderTraits
-// to account for the narrower GC_NOTRIGGER contract.
-template <typename TYPE>
-struct NoGCTriggerReleaseHolderTraits final
-{
-    using Type = TYPE*;
-    static constexpr Type Default() { return NULL; }
-    static void Free(Type value)
-    {
-        CONTRACTL
-        {
-            NOTHROW;
-            GC_NOTRIGGER;
-            MODE_PREEMPTIVE;
-        }
-        CONTRACTL_END;
-
-        if (value != NULL)
-            value->Release();
-    }
-};
-
-template<typename _TYPE>
-using NoGCTriggerReleaseHolder = LifetimeHolder<NoGCTriggerReleaseHolderTraits<_TYPE>>;
-
 //-----------------------------------------------------------------------------
 // Wrap win32 functions using HANDLE
 //-----------------------------------------------------------------------------
