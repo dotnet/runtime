@@ -229,7 +229,7 @@ Build with the repository's bootstrapped SDK from the repository root. Use a
 dedicated output directory inside the repro:
 
 ```text
-dotnet.cmd build artifacts\tmp\standalone-test-repro\<name>\StandaloneTestRepro.csproj -c Release -o artifacts\tmp\standalone-test-repro\<name>\out
+.\dotnet.cmd build artifacts\tmp\standalone-test-repro\<name>\StandaloneTestRepro.csproj -c Release -o artifacts\tmp\standalone-test-repro\<name>\out
 ```
 
 On Unix, use `./dotnet.sh` and Unix path separators.
