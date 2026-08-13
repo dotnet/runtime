@@ -6016,10 +6016,13 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             if (numCount >= MaxBufferLength)
             {
                 // defense in depth. we shouldn't come here though.
-                throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing);
+                ThrowNumberBufferOverflow();
             }
 
             num[numCount++] = value;
+
+            [DoesNotReturn]
+            static void ThrowNumberBufferOverflow() => throw new InvalidOperationException(SR.InvalidOperation_DateTimeParsing);
         }
 
         internal int GetNumber(int index)
