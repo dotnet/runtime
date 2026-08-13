@@ -4,6 +4,12 @@
 # includes. Rewrite them to explicit Clang frontend options that preserve
 # use of the generated PCH while remaining parseable by sccache.
 
+for arg in "$@"; do
+    if [[ "$arg" == "-emit-pch" ]]; then
+        exec "$@"
+    fi
+done
+
 args=()
 skip_xarch=false
 
