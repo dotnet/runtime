@@ -1076,9 +1076,9 @@ bool OptBoolsDsc::optOptimizeCompareChainCondBlock()
     FlowEdge* const retainedEdge = m_b1->GetFalseEdge();
 
     // Will need to re-adjust the likelihoods of the outgoing edges of the combined b1+b2 block
-    const weight_t    removedEdgeLikelihood   = removedEdge->getLikelihood();
-    const weight_t    fallthroughLikelihood   = retainedEdge->getLikelihood();
-    BasicBlock* const b1RemovedTarget         = removedEdge->getDestinationBlock();
+    const weight_t    removedEdgeLikelihood = removedEdge->getLikelihood();
+    const weight_t    fallthroughLikelihood = retainedEdge->getLikelihood();
+    BasicBlock* const b1RemovedTarget       = removedEdge->getDestinationBlock();
 
     // Need to repair b2's profile as b1->b2 flow will be unconditional.
     // "fgCompactBlock" will end up using b2's new profile weight
