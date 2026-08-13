@@ -25,8 +25,16 @@ accumulator instead of building a subtree at all.
 | `GrammarActions.Manifest.cs` | Assembly, module, resource, vtable and typedef directives. |
 | `GrammarActions.Marshalling.Actions.cs` | Synthesized native type and marshalling descriptor actions. |
 | `GrammarActions.Marshalling.cs` | Marshalling visitor wrappers and P/Invoke conversion. |
-| `GrammarActions.Members.cs` | Class member dispatch and conversion. |
-| `GrammarActions.MethodBodies.cs` | Method headers and parser-driven visitor guards. |
+| `GrammarActions.Members.cs` | Parser-driven class member visitor guards. |
+| `GrammarActions.Members.Class.cs` | Class directives, generic parameter annotations and method overrides. |
+| `GrammarActions.Members.Fields.cs` | Field declarations, attributes, layout, constants, marshalling and RVA data. |
+| `GrammarActions.Members.PropertiesEvents.cs` | Property and event headers, bodies and accessors. |
+| `GrammarActions.Members.Values.cs` | Internal synthesized member value model. |
+| `GrammarActions.MethodHeaders.cs` | Method definition and signature materialization. |
+| `GrammarActions.MethodHeaders.Actions.cs` | Method header, attribute, P/Invoke and generic parser actions. |
+| `GrammarActions.MethodHeaders.Generics.cs` | Generic parameter and constraint synthesis and materialization. |
+| `GrammarActions.MethodHeaders.Values.cs` | Internal synthesized method-header value model. |
+| `GrammarActions.MethodBodies.cs` | Parser-driven method-body visitor guards. |
 | `GrammarActions.MethodBodies.Directives.cs` | Direct method-body directives and parameter ownership. |
 | `GrammarActions.MethodBodies.ExceptionHandling.cs` | Lexical scopes and synthesized exception regions. |
 | `GrammarActions.MethodBodies.Values.cs` | Internal method-body directive and exception-region values. |
@@ -53,12 +61,12 @@ ILAssembler entities and signature implementation values remain internal, so gen
 slots use `object` where an internal value or array crosses that boundary and `GrammarActions`
 provides the strongly typed accessors.
 
-All type, signature, reference, marshalling, method-body directive and exception-handling rules
-synthesize values without retaining item or exception-block subtrees. `scopeBlock` records offsets
-under its context key without inspecting children. The remaining `BeginSubtree` islands are
-declaration/member structure (`decl`, `nameSpaceHead`, `classHead`, `classDecl`, and `methodHead`)
-and bounded shared directives such as data, security, source, language, initialization and custom
-attribute declarations.
+All type, signature, reference, marshalling, class-member, method-header, method-body directive and
+exception-handling rules synthesize values without retaining structural subtrees. `scopeBlock`
+records offsets under its context key without inspecting children. The remaining `BeginSubtree`
+islands are `decl`, `nameSpaceHead`, `classHead`, `dataDecl`, `secDecl`, `extSourceSpec`,
+`languageDecl`, `initOpt`, `customAttrDecl`, `customDescr`, `customDescrWithOwner` and
+`customDescrInMethodBody`.
 
 Semantic state that a rule pushes must be released from that rule's `finally` clause and be keyed on
 the owning context, because ANTLR skips `@after` actions and the remainder of an alternative once a

@@ -37,35 +37,6 @@ internal sealed partial class GrammarActions
     public static GrammarResult.Literal<SignatureCallingConvention> VisitCallKind(CILParser.CallKindContext context)
         => new((SignatureCallingConvention)context.Value);
 
-    private BlobBuilder BuildMethodReferenceSignature(
-        CILParser.CallConvContext callConvention,
-        CILParser.TypeContext returnType,
-        CILParser.SigArgsContext signatureArguments,
-        int genericArity)
-    {
-        BlobBuilder signature = new();
-        byte header = VisitCallConv(callConvention).Value;
-        if (genericArity > 0)
-        {
-            header |= (byte)SignatureAttributes.Generic;
-        }
-        signature.WriteByte(header);
-        if (genericArity > 0)
-        {
-            signature.WriteCompressedInteger(genericArity);
-        }
-
-        ImmutableArray<SignatureArg> arguments = VisitSigArgs(signatureArguments).Value;
-        signature.WriteCompressedInteger(arguments.Count(argument => !argument.IsSentinel));
-        VisitType(returnType).Value.WriteContentTo(signature);
-        foreach (SignatureArg argument in arguments)
-        {
-            argument.SignatureBlob.WriteContentTo(signature);
-        }
-
-        return signature;
-    }
-
     GrammarResult ICILVisitor<GrammarResult>.VisitElementType(CILParser.ElementTypeContext context) => VisitElementType(context);
 
     public GrammarResult.FormattedBlob VisitElementType(CILParser.ElementTypeContext context)
@@ -92,49 +63,6 @@ internal sealed partial class GrammarActions
 
     public GrammarResult.Literal<EntityRegistry.EntityBase> VisitMethodRef(CILParser.MethodRefContext context)
         => new(MaterializeMethodReference(GetMethodReferenceValue(context.Value)));
-
-    private EntityRegistry.MemberReferenceEntity CreateExplicitMethodReference(
-        CILParser.CallConvContext callConv,
-        CILParser.TypeContext returnType,
-        CILParser.TypeSpecContext owner,
-        CILParser.MethodNameContext methodName,
-        CILParser.GenArityContext? genericArity,
-        CILParser.SigArgsContext parameterList)
-        => _entityRegistry.CreateLazilyRecordedMemberReference(
-            VisitTypeSpec(owner).Value,
-            VisitMethodName(methodName).Value,
-            CreateExplicitMethodSignature(callConv, returnType, genericArity, parameterList));
-
-    private BlobBuilder CreateExplicitMethodSignature(
-        CILParser.CallConvContext callConv,
-        CILParser.TypeContext returnType,
-        CILParser.GenArityContext? genericArity,
-        CILParser.SigArgsContext parameterList)
-    {
-        BlobBuilder signature = new();
-        byte signatureHeader = VisitCallConv(callConv).Value;
-        int arity = genericArity is null ? 0 : VisitGenArity(genericArity).Value;
-        if (arity != 0)
-        {
-            signatureHeader |= (byte)SignatureAttributes.Generic;
-        }
-
-        signature.WriteByte(signatureHeader);
-        if (arity != 0)
-        {
-            signature.WriteCompressedInteger(arity);
-        }
-
-        ImmutableArray<SignatureArg> parameters = VisitSigArgs(parameterList).Value;
-        signature.WriteCompressedInteger(parameters.Count(parameter => !parameter.IsSentinel));
-        VisitType(returnType).Value.WriteContentTo(signature);
-        foreach (SignatureArg parameter in parameters)
-        {
-            parameter.SignatureBlob.WriteContentTo(signature);
-        }
-
-        return signature;
-    }
 
     GrammarResult ICILVisitor<GrammarResult>.VisitParamAttr(CILParser.ParamAttrContext context) => VisitParamAttr(context);
 
@@ -176,12 +104,13 @@ internal sealed partial class GrammarActions
 
     public GrammarResult.Sequence<EntityRegistry.TypeEntity> VisitTypeList(CILParser.TypeListContext context)
     {
-        CILParser.TypeSpecContext[] bounds = context.typeSpec();
+        ImmutableArray<TypeSpecificationValue> bounds =
+            context.Value is ImmutableArray<TypeSpecificationValue> value ? value : [];
         ImmutableArray<EntityRegistry.TypeEntity>.Builder builder =
             ImmutableArray.CreateBuilder<EntityRegistry.TypeEntity>(bounds.Length);
-        foreach (CILParser.TypeSpecContext typeSpec in bounds)
+        foreach (TypeSpecificationValue typeSpec in bounds)
         {
-            builder.Add(VisitTypeSpec(typeSpec).Value);
+            builder.Add(ResolveTypeSpecification(typeSpec));
         }
         return new(builder.MoveToImmutable());
     }
