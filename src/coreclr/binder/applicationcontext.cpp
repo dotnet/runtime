@@ -88,7 +88,7 @@ namespace BINDER_SPACE
         if (m_pTrustedPlatformAssemblyMap != nullptr)
         {
             GO_WITH_HRESULT(S_OK);
-        }
+        _ASSERTE(m_pTrustedPlatformAssemblyMap == nullptr);
 
         //
         // Parse TrustedPlatformAssemblies
