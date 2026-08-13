@@ -759,7 +759,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #if defined(TARGET_WASM)
     CorInfoWasmType abiType = info.compCompHnd->getWasmLowering(clsHnd);
 
-    if (abiType == CORINFO_WASM_TYPE_VOID)
+    // A struct wider than the wasm value it lowers to is split across several of them when
+    // passed, but returned via a hidden buffer like any other aggregate.
+    if ((abiType == CORINFO_WASM_TYPE_VOID) || (structSize > genTypeSize(WasmClassifier::ToJitType(abiType))))
     {
         howToReturnStruct = SPK_ByReference;
         useType           = TYP_UNKNOWN;
@@ -5720,6 +5722,14 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->MonitorAcquiredOffset());
     }
 
+    if (lvaResumedIndicator != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaResumedIndicator);
+        patchpointInfo->SetResumedIndicatorOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- resumed indicator V%02u virtual offset is %d\n", lvaResumedIndicator,
+                patchpointInfo->ResumedIndicatorOffset());
+    }
+
     if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
     {
         LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncThreadObjectVar);
@@ -6035,6 +6045,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Rdm() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Rdm);
+        }
+
+        if (JitConfig.EnableArm64Fp16() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Fp16);
         }
 
         if (JitConfig.EnableArm64Sha1() != 0)
@@ -10421,6 +10436,10 @@ int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
     if (varNum == lvaMonAcquired)
     {
         return info.compPatchpointInfo->MonitorAcquiredOffset();
+    }
+    if (varNum == lvaResumedIndicator)
+    {
+        return info.compPatchpointInfo->ResumedIndicatorOffset();
     }
     if (varNum == lvaAsyncThreadObjectVar)
     {

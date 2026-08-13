@@ -557,13 +557,6 @@ PTR_LoaderHeap Assembly::GetHighFrequencyHeap()
 }
 
 
-PTR_LoaderHeap Assembly::GetStubHeap()
-{
-    WRAPPER_NO_CONTRACT;
-
-    return GetLoaderAllocator()->GetStubHeap();
-}
-
 Module *Assembly::FindModuleByExportedType(mdExportedType mdType,
                                            Loader::LoadFlag loadFlag,
                                            mdTypeDef mdNested,

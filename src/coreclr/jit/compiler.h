@@ -95,6 +95,7 @@ enum class WasmValueType : unsigned;
 #ifdef DEBUG
 struct IndentStack;
 #endif
+struct ContinuationMember;
 
 class Lowering; // defined in lower.h
 
@@ -668,6 +669,9 @@ private:
 
     unsigned char lvIsSpan : 1; // The local is a Span<T>
 
+    unsigned char lvIsVectorPerElementMask           : 1; // The local is known to be a per-element mask
+    unsigned char lvVectorPerElementMaskElemSizeLog2 : 2; // Maximum log2(element size) for the local mask
+
 public:
     union
     {
@@ -868,6 +872,58 @@ public:
     {
         lvIsSpan = value;
     }
+
+#ifdef FEATURE_HW_INTRINSICS
+    // Is this local a per-element mask compatible with the given base type?
+    bool IsVectorPerElementMask(var_types simdBaseType) const
+    {
+        return lvIsVectorPerElementMask &&
+               (GetVectorPerElementMaskElemSizeLog2(simdBaseType) <= lvVectorPerElementMaskElemSizeLog2);
+    }
+
+    // Mark this local as a per-element mask with the given base type.
+    void SetIsVectorPerElementMask(var_types simdBaseType)
+    {
+        unsigned elemSizeLog2 = GetVectorPerElementMaskElemSizeLog2(simdBaseType);
+
+        if (!lvIsVectorPerElementMask || (elemSizeLog2 > lvVectorPerElementMaskElemSizeLog2))
+        {
+            lvVectorPerElementMaskElemSizeLog2 = static_cast<unsigned char>(elemSizeLog2);
+        }
+
+        lvIsVectorPerElementMask = true;
+    }
+
+private:
+    static unsigned GetVectorPerElementMaskElemSizeLog2(var_types simdBaseType)
+    {
+        switch (simdBaseType)
+        {
+            case TYP_BYTE:
+            case TYP_UBYTE:
+                return 0;
+
+            case TYP_SHORT:
+            case TYP_USHORT:
+                return 1;
+
+            case TYP_INT:
+            case TYP_UINT:
+            case TYP_FLOAT:
+                return 2;
+
+            case TYP_LONG:
+            case TYP_ULONG:
+            case TYP_DOUBLE:
+                return 3;
+
+            default:
+                unreached();
+        }
+    }
+
+public:
+#endif // FEATURE_HW_INTRINSICS
 
     /////////////////////
 
@@ -1776,7 +1832,6 @@ struct FuncInfoDsc
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
     unsigned funWasmFrameSize;
     unsigned funWasmExnRefLocalIndex = UINT_MAX;
-    unsigned funWasmImageBaseLocalIndex = UINT_MAX;
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
@@ -4344,6 +4399,7 @@ public:
     unsigned lvaMonAcquired = BAD_VAR_NUM; // boolean variable introduced into in synchronized methods
                              // that tracks whether the lock has been taken
 
+    unsigned lvaResumedIndicator = BAD_VAR_NUM;               // Variable representing "have we resumed?" for async methods
     unsigned lvaAsyncThreadObjectVar = BAD_VAR_NUM;           // Thread local for async methods
     unsigned lvaAsyncExecutionContextVar = BAD_VAR_NUM;       // ExecutionContext local for async methods
     unsigned lvaAsyncSynchronizationContextVar = BAD_VAR_NUM; // SynchronizationContext local for async methods
@@ -4388,9 +4444,6 @@ public:
 
     // Variable representing async continuation argument passed.
     unsigned lvaAsyncContinuationArg = BAD_VAR_NUM;
-
-    // Variable representing "have we resumed?" for async methods
-    unsigned lvaResumedIndicator = BAD_VAR_NUM;
 
 #if defined(DEBUG) && defined(TARGET_XARCH)
 
@@ -5253,6 +5306,14 @@ protected:
                                 unsigned                clsFlags,
                                 bool                    isReadonlyCall);
 
+    void impTryOptimizeAwaitAwaiter(GenTreeCall*              call,
+                                    CORINFO_RESOLVED_TOKEN*   pResolvedToken,
+                                    CORINFO_CALL_INFO*        callInfo,
+                                    CORINFO_METHOD_HANDLE*    methHnd,
+                                    CORINFO_CONTEXT_HANDLE*   exactContextHnd,
+                                    GenTree**                 instParam,
+                                    NamedIntrinsic            ni);
+
     void impSetupAsyncCall(GenTreeCall* call, CORINFO_METHOD_HANDLE methHnd, OPCODE opcode, unsigned prefixFlags, NamedIntrinsic ni, const DebugInfo& callDI);
 
     void impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call);
@@ -5349,6 +5410,13 @@ protected:
 
     NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+    NamedIntrinsic lookupHalfNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+#if defined(FEATURE_HW_INTRINSICS) && (defined(TARGET_XARCH) || defined(TARGET_ARM64))
+    NamedIntrinsic lookupHalfIntrinsic(NamedIntrinsic ni);
+#endif // FEATURE_HW_INTRINSICS && (TARGET_XARCH || TARGET_ARM64)
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+    int lookupHalfRoundingMode(NamedIntrinsic ni);
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -5366,6 +5434,7 @@ protected:
                                         CORINFO_SIG_INFO*     sig
                                         R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                         bool                  mustExpand);
+    GenTree* impRotateHelper(var_types baseType, genTreeOps rotateOper);
 
 #ifdef FEATURE_HW_INTRINSICS
     bool IsValidForShuffle(GenTree* indices,
@@ -6243,6 +6312,11 @@ public:
     bool shouldAlignLoop(FlowGraphNaturalLoop* loop, BasicBlock* top);
     PhaseStatus placeLoopAlignInstructions();
 #endif
+
+    jitstd::vector<ContinuationMember>* m_asyncContinuationMembers = nullptr;
+    size_t GetContinuationMemberIndex(const ContinuationMember& member);
+    size_t GetContinuationMemberCount() const;
+    const ContinuationMember& GetContinuationMember(size_t index);
 
     PhaseStatus SaveAsyncContexts();
     void AddContextArgsToAsyncCalls(BasicBlock* block);
@@ -7483,6 +7557,9 @@ private:
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
+#ifdef DEBUG
+    void fgAsyncStressPrepare(unsigned depth);
+#endif // DEBUG
     bool IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo);
     bool ContextComplexityExceeds(CORINFO_CONTEXT_HANDLE handle, int max);
     bool MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE handle, int& cur, int max);
@@ -10461,7 +10538,7 @@ public:
         return simdType;
     }
 
-    static var_types getIndexTypeForShuffle(var_types simdBaseType)
+    static var_types getUnsignedSimdBaseType(var_types simdBaseType)
     {
         switch (simdBaseType)
         {
@@ -11678,6 +11755,13 @@ public:
         return compStressCompile(STRESS_RANDOM_INLINE, 50);
     }
 
+    // Is general runtime async inlining being stressed, i.e. are async callees inlined
+    // with a decaying random probability? See AsyncStressPolicy.
+    static bool compAsyncInliningStress()
+    {
+        return JitConfig.JitStressAsyncInlining() != 0;
+    }
+
     bool compPromoteFewerStructs(unsigned lclNum);
 
 #endif // DEBUG
@@ -11766,7 +11850,7 @@ public:
         bool compIsVarArgs             : 1; // Does the method have varargs parameters?
         bool compInitMem               : 1; // Is the CORINFO_OPT_INIT_LOCALS bit set in the method info options?
         bool compProfilerCallback      : 1; // JIT inserted a profiler Enter callback
-        bool compPublishStubParam      : 1; // EAX captured in prolog will be available through an intrinsic
+        bool compPublishStubParam      : 1; // Hidden argument captured in prolog will be available through an intrinsic
         bool compHasNextCallRetAddr    : 1; // The NextCallReturnAddress intrinsic is used.
         bool compUsesAsyncContinuation : 1; // The AsyncCallContinuation intrinsic is used.
 

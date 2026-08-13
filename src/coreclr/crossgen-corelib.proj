@@ -72,7 +72,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishReadyToRunContainerFormat)' == 'wasm'">
-    <CrossgenCoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).NotReadyYet.wasm'))</CrossgenCoreLibOutputPath>
+    <CrossgenCoreLibOutputPath>$([MSBuild]::NormalizePath('$(BinDir)', '$(CoreLibAssemblyName).wasm'))</CrossgenCoreLibOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseComposite)' == 'true'">

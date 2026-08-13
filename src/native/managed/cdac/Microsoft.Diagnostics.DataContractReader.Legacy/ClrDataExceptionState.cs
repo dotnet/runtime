@@ -142,10 +142,16 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
                 throw new ArgumentException();
             }
 
-            ulong objectSize = _target.Contracts.Object.GetSize(exceptionObject);
+            IObject objectContract = _target.Contracts.Object;
+            ulong objectSize = objectContract.GetSize(exceptionObject);
+            ITypeHandle typeHandle = _target.Contracts.RuntimeTypeSystem.GetTypeHandle(
+                objectContract.GetMethodTableAddress(exceptionObject));
             value.Interface = new ClrDataValue(
                 _target,
+                _threadAddress,
                 (uint)ClrDataValueFlag.DEFAULT,
+                typeHandle,
+                exceptionObject,
                 [
                     new NativeVarLocation
                     {
