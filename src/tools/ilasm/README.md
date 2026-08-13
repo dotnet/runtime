@@ -20,7 +20,7 @@ accumulator instead of building a subtree at all.
 | `GrammarActions.Debug.cs` | Source and debug directives. |
 | `GrammarActions.Declarations.cs` | Top-level `decl` dispatch and conversion. |
 | `GrammarActions.Instructions.cs` | Tree-free value instruction and method-item actions. |
-| `GrammarActions.Instructions.Islands.cs` | Reference and signature instruction-island conversion. |
+| `GrammarActions.Instructions.References.cs` | Reference and signature instruction actions. |
 | `GrammarActions.Literals.cs` | Literals, names and strings. |
 | `GrammarActions.Manifest.cs` | Assembly, module, resource, vtable and typedef directives. |
 | `GrammarActions.Marshalling.cs` | Native type and marshalling conversion. |
@@ -37,9 +37,10 @@ accumulator instead of building a subtree at all.
 Parser actions in `src/ILAssembler/gen/CIL.g4` must remain thin; they call a single `Actions` method
 and nothing else. Compilation orchestration belongs in the `GrammarActions` partial-class files.
 
-Value instruction forms, composed strings and switch labels run entirely with parse-tree
-construction disabled. Instructions with reference or signature operands temporarily retain only
-their own bounded `instructionIsland` subtree.
+Instruction dispatch and value operands run entirely with parse-tree construction disabled.
+Reference and signature operand roots such as `methodRef`, `fieldRef`, `mdtoken`, `typeSpec`,
+`ownerType` and `calliSignature` temporarily retain only their own bounded subtrees for semantic
+conversion.
 
 Semantic state that a rule pushes must be released from that rule's `finally` clause and be keyed on
 the owning context, because ANTLR skips `@after` actions and the remainder of an alternative once a
