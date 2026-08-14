@@ -20,6 +20,9 @@ namespace System.Net.ServerSentEvents.Tests
         [Fact]
         public void Parse_InvalidArguments_Throws()
         {
+            AssertExtensions.Throws<ArgumentNullException>("sseStream", () => SseParser.Create(null));
+            AssertExtensions.Throws<ArgumentNullException>("sseStream", () => SseParser.Create(null, delegate { return ""; }));
+            AssertExtensions.Throws<ArgumentNullException>("itemParser", () => SseParser.Create<string>(Stream.Null, (SseItemParser<string>)null));
             AssertExtensions.Throws<ArgumentNullException>("itemParser", () => new SseParserOptions<string>(null));
             AssertExtensions.Throws<ArgumentNullException>("sseStream", () => SseParser.Create<string>(null, new SseParserOptions<string>(delegate { return ""; })));
             AssertExtensions.Throws<ArgumentNullException>("options", () => SseParser.Create<string>(Stream.Null, (SseParserOptions<string>)null));
@@ -36,7 +39,7 @@ namespace System.Net.ServerSentEvents.Tests
         [Fact]
         public async Task Parse_Sync_SupportsOnlyOneEnumeration_Throws()
         {
-            SseParser<string> parser = CreateParser(Stream.Null);
+            SseParser<string> parser = SseParser.Create(Stream.Null);
             parser.Enumerate().GetEnumerator().MoveNext();
             var e = parser.Enumerate().GetEnumerator();
             var ea = parser.EnumerateAsync().GetAsyncEnumerator();
@@ -47,7 +50,7 @@ namespace System.Net.ServerSentEvents.Tests
         [Fact]
         public async Task Parse_Async_SupportsOnlyOneEnumeration_Throws()
         {
-            SseParser<string> parser = CreateParser(Stream.Null);
+            SseParser<string> parser = SseParser.Create(Stream.Null);
             await parser.EnumerateAsync().GetAsyncEnumerator().MoveNextAsync();
             var ea = parser.EnumerateAsync().GetAsyncEnumerator();
             var e = parser.Enumerate().GetEnumerator();
@@ -217,7 +220,7 @@ namespace System.Net.ServerSentEvents.Tests
                 $"{newline}",
                 trickle);
 
-            SseParser<string> parser = CreateParser(stream);
+            SseParser<string> parser = SseParser.Create(stream);
             if (useAsync)
             {
                 Assert.Equal(string.Empty, parser.LastEventId);
@@ -273,7 +276,7 @@ namespace System.Net.ServerSentEvents.Tests
                 $"{newline}",
                 trickle);
 
-            SseParser<string> parser = CreateParser(stream);
+            SseParser<string> parser = SseParser.Create(stream);
             if (useAsync)
             {
                 Assert.Equal(string.Empty, parser.LastEventId);
@@ -423,7 +426,7 @@ namespace System.Net.ServerSentEvents.Tests
                 $"{newline}",
                 trickle);
 
-            SseParser<string> parser = CreateParser(stream);
+            SseParser<string> parser = SseParser.Create(stream);
             Assert.Equal(Timeout.InfiniteTimeSpan, parser.ReconnectionInterval);
 
             if (useAsync)
@@ -706,7 +709,7 @@ namespace System.Net.ServerSentEvents.Tests
         {
             using Stream stream = GetStream($"data: hello{newline}{newline}data:world{newline}{newline}", trickle);
 
-            SseParser<string> parser = CreateParser<string>(stream, (eventType, bytes) => throw new FormatException(Encoding.UTF8.GetString(bytes.ToArray())));
+            SseParser<string> parser = SseParser.Create<string>(stream, (eventType, bytes) => throw new FormatException(Encoding.UTF8.GetString(bytes.ToArray())));
 
             FormatException fe;
             if (useAsync)
@@ -730,7 +733,7 @@ namespace System.Net.ServerSentEvents.Tests
         {
             using Stream stream = GetStream($"data: hello\n\ndata:world\n\n", trickle: true);
 
-            SseParser<string> parser = CreateParser(stream);
+            SseParser<string> parser = SseParser.Create(stream);
 
             var cts = new CancellationTokenSource();
             cts.Cancel();
@@ -747,7 +750,7 @@ namespace System.Net.ServerSentEvents.Tests
         {
             using Stream stream = GetStream($"data: hello\n\ndata:world\n\n", trickle: false);
 
-            IEnumerable sse = CreateParser(stream).Enumerate();
+            IEnumerable sse = SseParser.Create(stream).Enumerate();
             IEnumerator e = sse.GetEnumerator();
 
             Assert.True(e.MoveNext());
@@ -814,7 +817,7 @@ namespace System.Net.ServerSentEvents.Tests
             int count = 0;
             if (useAsync)
             {
-                foreach (var e in CreateParser(stream, itemParser).Enumerate())
+                foreach (var e in SseParser.Create(stream, itemParser).Enumerate())
                 {
                     try
                     {
@@ -833,7 +836,7 @@ namespace System.Net.ServerSentEvents.Tests
             }
             else
             {
-                await foreach (var e in CreateParser(stream, itemParser).EnumerateAsync())
+                await foreach (var e in SseParser.Create(stream, itemParser).EnumerateAsync())
                 {
                     try
                     {
@@ -882,7 +885,7 @@ namespace System.Net.ServerSentEvents.Tests
             int count = 0;
             if (useAsync)
             {
-                foreach (var e in CreateParser(stream, itemParser).Enumerate())
+                foreach (var e in SseParser.Create(stream, itemParser).Enumerate())
                 {
                     if ("[DONE]"u8.SequenceEqual(e.Data.Span))
                     {
@@ -893,7 +896,7 @@ namespace System.Net.ServerSentEvents.Tests
             }
             else
             {
-                await foreach (var e in CreateParser(stream, itemParser).EnumerateAsync())
+                await foreach (var e in SseParser.Create(stream, itemParser).EnumerateAsync())
                 {
                     if ("[DONE]"u8.SequenceEqual(e.Data.Span))
                     {
@@ -962,18 +965,18 @@ namespace System.Net.ServerSentEvents.Tests
 
         private static List<SseItem<string>> ReadAllEvents(Stream stream)
         {
-            return new List<SseItem<string>>(CreateParser(stream).Enumerate());
+            return new List<SseItem<string>>(SseParser.Create(stream).Enumerate());
         }
 
         private static List<SseItem<T>> ReadAllEvents<T>(Stream stream, SseItemParser<T> parser)
         {
-            return new List<SseItem<T>>(CreateParser(stream, parser).Enumerate());
+            return new List<SseItem<T>>(SseParser.Create(stream, parser).Enumerate());
         }
 
         private static async Task<List<SseItem<T>>> ReadAllEventsAsync<T>(Stream stream, SseItemParser<T> parser)
         {
             var list = new List<SseItem<T>>();
-            await foreach (SseItem<T> item in CreateParser(stream, parser).EnumerateAsync())
+            await foreach (SseItem<T> item in SseParser.Create(stream, parser).EnumerateAsync())
             {
                 list.Add(item);
             }
@@ -984,19 +987,13 @@ namespace System.Net.ServerSentEvents.Tests
         private static async Task<List<SseItem<string>>> ReadAllEventsAsync(Stream stream)
         {
             var list = new List<SseItem<string>>();
-            await foreach (SseItem<string> item in CreateParser(stream).EnumerateAsync())
+            await foreach (SseItem<string> item in SseParser.Create(stream).EnumerateAsync())
             {
                 list.Add(item);
             }
 
             return list;
         }
-
-        private static SseParser<string> CreateParser(Stream stream) =>
-            CreateParser(stream, static (_, bytes) => Encoding.UTF8.GetString(bytes.ToArray()));
-
-        private static SseParser<T> CreateParser<T>(Stream stream, SseItemParser<T> itemParser) =>
-            SseParser.Create(stream, new SseParserOptions<T>(itemParser));
 
         /// <summary>Stream where each read reads at most one byte and where every asynchronous operation yields.</summary>
         private sealed class TrickleStream : MemoryStream

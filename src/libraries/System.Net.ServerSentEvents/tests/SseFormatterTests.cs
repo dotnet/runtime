@@ -176,7 +176,7 @@ namespace System.Net.ServerSentEvents.Tests
 
             memoryStream.Position = 0;
             int count = 0;
-            foreach (SseItem<byte[]> item in SseParser.Create(memoryStream, new SseParserOptions<byte[]>((eventType, data) => data.ToArray())).Enumerate())
+            foreach (SseItem<byte[]> item in SseParser.Create(memoryStream, (eventType, data) => data.ToArray()).Enumerate())
             {
                 Assert.Equal(expected, item.Data);
                 count++;
@@ -201,7 +201,7 @@ namespace System.Net.ServerSentEvents.Tests
             await SseFormatter.WriteAsync(GetItemsAsync(), stream, FormatJson);
 
             stream.Position = 0;
-            SseParser<MyPoco> parser = SseParser.Create(stream, new SseParserOptions<MyPoco>(ParseJson));
+            SseParser<MyPoco> parser = SseParser.Create(stream, ParseJson);
             await ValidateParseResults(parser.EnumerateAsync());
 
             async IAsyncEnumerable<SseItem<MyPoco>> GetItemsAsync()

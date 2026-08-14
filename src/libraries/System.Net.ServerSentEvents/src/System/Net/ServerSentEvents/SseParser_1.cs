@@ -108,7 +108,7 @@ namespace System.Net.ServerSentEvents
             // Rent a line buffer. This will grow as needed. The line buffer is what's passed to the stream,
             // so we want it to be large enough to reduce the number of reads we need to do when data is
             // arriving quickly. (In debug, we use a smaller buffer to stress the growth and shifting logic.)
-            _lineBuffer = ArrayPool<byte>.Shared.Rent(DefaultArrayPoolRentSize);
+            _lineBuffer = ArrayPool<byte>.Shared.Rent(Math.Min(DefaultArrayPoolRentSize, _maxBufferSize));
             try
             {
                 // Spec: "Event streams in this format must always be encoded as UTF-8".
@@ -188,7 +188,7 @@ namespace System.Net.ServerSentEvents
             // Rent a line buffer. This will grow as needed. The line buffer is what's passed to the stream,
             // so we want it to be large enough to reduce the number of reads we need to do when data is
             // arriving quickly. (In debug, we use a smaller buffer to stress the growth and shifting logic.)
-            _lineBuffer = ArrayPool<byte>.Shared.Rent(DefaultArrayPoolRentSize);
+            _lineBuffer = ArrayPool<byte>.Shared.Rent(Math.Min(DefaultArrayPoolRentSize, _maxBufferSize));
             try
             {
                 // Spec: "Event streams in this format must always be encoded as UTF-8".
@@ -310,6 +310,11 @@ namespace System.Net.ServerSentEvents
                 }
                 else if (_lineLength == _lineBuffer.Length)
                 {
+                    if (_lineLength >= _maxBufferSize)
+                    {
+                        throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+                    }
+
                     int newLength;
                     try
                     {
@@ -317,7 +322,12 @@ namespace System.Net.ServerSentEvents
                     }
                     catch (OverflowException)
                     {
-                        throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+                        newLength = int.MaxValue;
+                    }
+
+                    if (newLength > _maxBufferSize)
+                    {
+                        newLength = _maxBufferSize;
                     }
 
                     GrowBuffer(ref _lineBuffer, newLength);
@@ -511,6 +521,10 @@ namespace System.Net.ServerSentEvents
             if (bytesRead > 0)
             {
                 _lineLength += bytesRead;
+                if (_lineLength > _maxBufferSize)
+                {
+                    throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+                }
             }
             else
             {
@@ -532,6 +546,10 @@ namespace System.Net.ServerSentEvents
             if (bytesRead > 0)
             {
                 _lineLength += bytesRead;
+                if (_lineLength > _maxBufferSize)
+                {
+                    throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+                }
             }
             else
             {
