@@ -7824,11 +7824,13 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
             }
 
             // Calls from non-async into async go through thunks that are passed the
-            // continuation explicitly, so they cannot be inlined.
+            // continuation explicitly, so they cannot be inlined. This is a property of
+            // the root method being compiled, not of the callee, which inlines fine into
+            // an async root.
             if (!impInlineRoot()->compIsAsync())
             {
                 JITDUMP("Cannot inline an await into a non-async root method\n");
-                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_AWAIT_IN_NON_ASYNC_ROOT);
                 return;
             }
 
@@ -7853,10 +7855,13 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
             // try-fault wrapped around its whole body by SaveAsyncContexts, which by
             // this point has run both for the caller and for every frame it was inlined
             // into, so those clauses must be ignored.
+            //
+            // This is a property of the call site, not of the callee: the same callee
+            // inlines fine at a call site outside a protected region.
             BasicBlock* const callSiteBlock = impInlineInfo->iciBlock;
             if (impInlineInfo->InlinerCompiler->ehIsInsideNonAsyncContextRestoreRegion(callSiteBlock))
             {
-                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT_IN_TRY);
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_AWAIT_IN_TRY_REGION);
                 return;
             }
 
