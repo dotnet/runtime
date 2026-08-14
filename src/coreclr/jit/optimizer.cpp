@@ -5964,7 +5964,9 @@ void Compiler::optRemoveRedundantZeroInits()
                             }
                         }
 
-                        if (!removedExplicitZeroInit && isEntire &&
+                        // For async methods we may skip an explicit init through the resumption path
+                        //
+                        if (!removedExplicitZeroInit && isEntire && !compIsAsync() &&
                             (!hasImplicitControlFlow || (lclDsc->lvTracked && !lclDsc->IsLiveInOutOfHandler())))
                         {
                             // If compMethodRequiresPInvokeFrame() returns true, lower may later
