@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     using Aes = System.Security.Cryptography.Aes;
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class KeyWrapTests_AesCreate_KeyProp : KeyWrapTests
+    public sealed class KeyWrapPaddedTests_AesCreate_KeyProp : KeyWrapPaddedTests
     {
         protected override Aes CreateKey(byte[] key)
         {
@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public sealed class KeyWrapTests_AesCreate_SetKey : KeyWrapTests
+    public sealed class KeyWrapPaddedTests_AesCreate_SetKey : KeyWrapPaddedTests
     {
         protected override Aes CreateKey(byte[] key)
         {
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     }
 
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class KeyWrapTests_AesCryptoServiceProvider
+    public static class KeyWrapPaddedTests_AesCryptoServiceProvider
     {
         [Fact]
         public static void NotValidForAesCsp()
@@ -48,7 +48,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
     }
 
     [PlatformSpecific(TestPlatforms.Windows)]
-    public sealed class KeyWrapTests_AesCng : KeyWrapTests
+    public sealed class KeyWrapPaddedTests_AesCng : KeyWrapPaddedTests
     {
         protected override Aes CreateKey(byte[] key)
         {
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
     }
 
-    public static class KeyWrapContractTests
+    public static class KeyWrapPaddedContractTests
     {
         [Theory]
         [InlineData(1, 16)]
@@ -598,7 +598,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
     }
 
-    public abstract class KeyWrapTests
+    public abstract class KeyWrapPaddedTests
     {
         protected abstract Aes CreateKey(byte[] key);
 
