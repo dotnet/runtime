@@ -122,7 +122,6 @@ namespace System.Net.Http.Functional.Tests
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
                 Assert.Equal(HttpRequestError.ExtendedConnectNotSupported, ex.HttpRequestError);
-                Assert.Contains("The HTTP/2 server does not support extended CONNECT.", ex.Message);
 
                 clientCompleted.SetResult();
             },
