@@ -243,6 +243,12 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitVtfixupAttr([NotNull] CILParser.VtfixupAttrContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.vtfixupAttrElement"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitVtfixupAttrElement([NotNull] CILParser.VtfixupAttrElementContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.vtableDecl"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -1156,6 +1162,12 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <return>The visitor result.</return>
 	Result VisitExportHead([NotNull] CILParser.ExportHeadContext context);
 	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.exptAttrs"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitExptAttrs([NotNull] CILParser.ExptAttrsContext context);
+	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.exptAttr"/>.
 	/// </summary>
 	/// <param name="context">The parse tree.</param>
@@ -1185,6 +1197,12 @@ public interface ICILVisitor<Result> : IParseTreeVisitor<Result> {
 	/// <param name="context">The parse tree.</param>
 	/// <return>The visitor result.</return>
 	Result VisitManifestResHead([NotNull] CILParser.ManifestResHeadContext context);
+	/// <summary>
+	/// Visit a parse tree produced by <see cref="CILParser.manresAttrs"/>.
+	/// </summary>
+	/// <param name="context">The parse tree.</param>
+	/// <return>The visitor result.</return>
+	Result VisitManresAttrs([NotNull] CILParser.ManresAttrsContext context);
 	/// <summary>
 	/// Visit a parse tree produced by <see cref="CILParser.manresAttr"/>.
 	/// </summary>

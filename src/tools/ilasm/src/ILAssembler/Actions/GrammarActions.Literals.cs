@@ -302,7 +302,7 @@ namespace ILAssembler
         }
 
         GrammarResult ICILVisitor<GrammarResult>.VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => VisitIntOrWildcard(context);
-        public GrammarResult.Literal<int?> VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => context.int32() is {} int32 ? new(VisitInt32(int32).Value) : new(null);
+        public static GrammarResult.Literal<int?> VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => new(context.Value);
 
         GrammarResult ICILVisitor<GrammarResult>.VisitSlashedName(CILParser.SlashedNameContext context)
         {

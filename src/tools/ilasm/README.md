@@ -26,7 +26,15 @@ an accumulator instead of building a subtree at all.
 | `GrammarActions.Instructions.cs` | Tree-free value instruction and method-item actions. |
 | `GrammarActions.Instructions.References.cs` | Reference and signature instruction actions. |
 | `GrammarActions.Literals.cs` | Literals, names and strings. |
-| `GrammarActions.Manifest.cs` | Assembly, module, resource, vtable and typedef directives. |
+| `GrammarActions.Manifest.cs` | Module and image-header visitor guards. |
+| `GrammarActions.Manifest.Assembly.cs` | Assembly definitions, identity, keys, security and attributes. |
+| `GrammarActions.Manifest.ExportedTypes.cs` | Exported-type headers, implementations and attributes. |
+| `GrammarActions.Manifest.Files.cs` | Assembly file declarations and entry points. |
+| `GrammarActions.Manifest.References.cs` | Assembly references, identities, keys and hashes. |
+| `GrammarActions.Manifest.Resources.cs` | Embedded and external manifest resources. |
+| `GrammarActions.Manifest.Typedefs.cs` | Type, member and custom-attribute aliases. |
+| `GrammarActions.Manifest.Values.cs` | Internal synthesized manifest value model and list frames. |
+| `GrammarActions.Manifest.VTable.cs` | Vtable fixup declarations and flags. |
 | `GrammarActions.Marshalling.Actions.cs` | Synthesized native type and marshalling descriptor actions. |
 | `GrammarActions.Marshalling.cs` | Marshalling visitor wrappers and P/Invoke conversion. |
 | `GrammarActions.Members.cs` | Parser-driven class member visitor guards. |
@@ -54,7 +62,7 @@ an accumulator instead of building a subtree at all.
 | `GrammarActions.Types.Headers.Values.cs` | Internal synthesized type-header value model. |
 | `GrammarActions.Types.References.cs` | Type-name synthesis and resolution. |
 
-`CILParser.Actions.cs` holds the parse-tree mode helpers the grammar calls.
+`CILParser.Actions.cs` holds the streaming parse-tree mode helper the grammar calls.
 
 ## Rules for grammar actions
 
@@ -69,21 +77,19 @@ slots use `object` where an internal value or array crosses that boundary and `G
 provides the strongly typed accessors.
 
 All namespace, type-header, top-level, type, signature, reference, marshalling, class-member,
-method-header, method-body directive, exception-handling, data, security, source and language
-structure is action-driven. `scopeBlock` records offsets under its context key without inspecting
-children. The remaining `BeginSubtree` islands are the manifest-family roots `assemblyBlock`,
-`assemblyRefBlock`, `exptypeBlock`, `manifestResBlock`, `fileDecl`, `vtableDecl`, `vtfixupDecl` and
-`typedefDecl`.
+method-header, method-body directive, exception-handling, data, security, source, language,
+assembly, manifest, vtable and typedef structure is action-driven. `scopeBlock` records offsets
+under its context key without inspecting children. Normal parsing keeps `BuildParseTree` disabled;
+there are no `BeginSubtree` islands.
 
 Semantic state that a rule pushes must be released from that rule's `finally` clause and be keyed on
 the owning context, because ANTLR skips `@after` actions and the remainder of an alternative once a
 rule reports a syntax error. Inline actions placed after a subrule reference are not a substitute:
 they run only when the alternative completes.
 
-Only the parser actions walk the structural rules. The recursive `ICILVisitor` entry points for
-`decl`, `decls`, `nameSpaceHead`, `classHead`, their synthesized dependency rules, `classDecls`,
-`methodDecls`, `scopeBlock` and the SEH rules throw `UnreachableException` so that there is exactly
-one live traversal algorithm.
+Only parser actions walk structural rules. Their recursive `ICILVisitor` entry points either
+materialize a synthesized value or throw `UnreachableException`, so there is exactly one live
+algorithm and no child walker.
 
 ## Build
 
