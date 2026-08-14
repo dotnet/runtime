@@ -144,10 +144,8 @@ namespace ILAssembler
         internal double ParseFloat64Bits(IToken token)
             => BitConverter.Int64BitsToDouble(ParseInt64(token));
 
-        public static GrammarResult.String VisitId(CILParser.IdContext context)
-        {
-            return new GrammarResult.String(ParseIdentifier(context.Start));
-        }
+        internal static string GetIdentifier(CILParser.IdContext context)
+            => ParseIdentifier(context.Start);
 
         private static string ParseIdentifier(IToken token)
         {

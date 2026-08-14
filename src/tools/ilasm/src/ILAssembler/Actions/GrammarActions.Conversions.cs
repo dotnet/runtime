@@ -21,23 +21,6 @@ using Antlr4.Runtime.Misc;
 
 namespace ILAssembler
 {
-    internal abstract record GrammarResult
-    {
-        protected GrammarResult() { }
-
-        public sealed record String(string Value) : GrammarResult;
-
-        public sealed record Literal<T>(T Value) : GrammarResult;
-
-        public sealed record SentinelValue
-        {
-            public static SentinelValue Instance { get; } = new();
-
-            public static Literal<SentinelValue> Result { get; } = new(Instance);
-        }
-    }
-
-#pragma warning disable CA1822 // Mark members as static
     internal sealed partial class GrammarActions
     {
         private readonly ImmutableArray<Diagnostic>.Builder _diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();

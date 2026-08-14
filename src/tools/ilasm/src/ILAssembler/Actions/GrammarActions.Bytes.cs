@@ -29,10 +29,10 @@ internal sealed partial class GrammarActions
     /// Starts accumulating the bytes of a <c>bytearray</c> literal.
     /// </summary>
     /// <remarks>
-    /// The <c>bytes</c> rule disables parse-tree construction for its children, so the individual
-    /// <c>hexbyte</c> contexts and terminals are collectable as soon as they are matched. The bytes
-    /// themselves stream into this accumulator, which keeps a single byte array alive instead of a
-    /// context and a terminal node per byte.
+    /// Parse-tree construction is disabled for the entire parse, so the individual <c>hexbyte</c>
+    /// contexts and terminals are collectable as soon as they are matched. The bytes themselves
+    /// stream into this accumulator, which keeps a single byte array alive instead of a context and
+    /// a terminal node per byte.
     /// </remarks>
     internal void BeginBytes() => _byteAccumulator = ImmutableArray.CreateBuilder<byte>();
 

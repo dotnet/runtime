@@ -290,21 +290,21 @@ internal sealed partial class GrammarActions
         return descriptor.Owner is null ? attribute : null;
     }
 
-    public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity?> VisitCustomAttrDecl(
+    internal EntityRegistry.CustomAttributeEntity? MaterializeCustomAttributeDeclaration(
         CILParser.CustomAttrDeclContext context)
-        => new(MaterializeCustomAttributeDeclaration(context.Value, context.Start));
+        => MaterializeCustomAttributeDeclaration(context.Value, context.Start);
 
-    public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity> VisitCustomDescr(
+    internal EntityRegistry.CustomAttributeEntity MaterializeCustomAttributeDescriptor(
         CILParser.CustomDescrContext context)
-        => new(MaterializeCustomAttribute(
+        => MaterializeCustomAttribute(
             GetCustomAttributeDescriptorValue(context.Value),
-            context.Start));
+            context.Start);
 
-    public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity?> VisitCustomDescrInMethodBody(
+    internal EntityRegistry.CustomAttributeEntity? MaterializeMethodBodyCustomAttributeDeclaration(
         CILParser.CustomDescrInMethodBodyContext context)
-        => new(MaterializeCustomAttributeDeclaration(context.Value, context.Start));
+        => MaterializeCustomAttributeDeclaration(context.Value, context.Start);
 
-    public GrammarResult.Literal<EntityRegistry.EntityBase> VisitOwnerType(
+    internal EntityRegistry.EntityBase MaterializeOwnerType(
         CILParser.OwnerTypeContext context)
-        => new(MaterializeOwnerType(GetOwnerTypeValue(context.Value)));
+        => MaterializeOwnerType(GetOwnerTypeValue(context.Value));
 }
