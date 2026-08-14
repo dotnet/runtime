@@ -208,15 +208,15 @@ namespace System.Net
         internal void AddHeader(string header)
         {
             int colon = header.IndexOf(':');
-            if (colon == -1 || colon == 0)
+            if (colon <= 0)
             {
                 _context.ErrorMessage = HttpStatusDescription.Get(400);
                 _context.ErrorStatus = 400;
                 return;
             }
 
-            string name = header.AsSpan(0, colon).Trim().ToString();
-            string val = header.AsSpan(colon + 1).Trim().ToString();
+            string name = header.AsSpan(0, colon).ToString();
+            string val = header.AsSpan(colon + 1).Trim(" \t").ToString();
             if (name.Equals("content-length", StringComparison.OrdinalIgnoreCase))
             {
                 // To match Windows behavior:
