@@ -6651,6 +6651,40 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 }
 
 //
+// This does the work of the Unwind and Continue Hanlder inside the catch clause of that handler. The stack has not
+// been unwound when this is called. Keep that in mind when deciding where to put new code :)
+//
+void UnwindAndContinueRethrowHelperInsideQcallCatch(Frame* pEntryFrame, Exception* pException, QCallException qCallException)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    Thread* pThread = GetThread();
+
+    GCX_COOP();
+
+    LOG((LF_EH, LL_INFO1000, "UNWIND_AND_CONTINUE inside catch, unwinding frame chain\n"));
+
+    // This SetFrame is OK because we will not have frames that require ExceptionUnwind in strictly unmanaged EE
+    // code chunks which is all that an UnC handler can guard.
+    //
+    // @todo: we'd rather use UnwindFrameChain, but there is a concern: some of the ExceptionUnwind methods on some
+    // of the Frame types do a great deal of work; load classes, throw exceptions, etc. We need to decide on some
+    // policy here. Do we want to let such functions throw, etc.? Right now, we believe that there are no such
+    // frames on the stack to be unwound, so the SetFrame is alright (see the first comment above.) At the very
+    // least, we should add some way to assert that.
+    pThread->SetFrame(pEntryFrame);
+
+    // Call CLRException::GetThrowableFromException to force us to retrieve the THROWABLE
+    // while we are still within the context of the catch block. This will help diagnose
+    // cases where the last thrown object is NULL.
+    OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
+    CONSISTENCY_CHECK(orThrowable != NULL);
+    qCallException.SetThrowable(orThrowable);
+}
+
+//
 // This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been
 // unwound by the time this is called. Keep that in mind when deciding where to put new code :)
 //

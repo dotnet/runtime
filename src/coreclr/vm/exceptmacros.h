@@ -202,7 +202,20 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable);
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX
 #else // DACCESS_COMPILE
 
+struct QCallException
+{
+private:
+    OBJECTREF* m_throwable;
+
+    QCallException() : m_throwable(nullptr) {}
+
+public:
+    void SetThrowable(OBJECTREF throwable);
+};
+
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
+void UnwindAndContinueRethrowHelperInsideQcallCatch(Frame* pEntryFrame, Exception* pException, QCallException qCallException);
+
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);
 
 #ifdef FEATURE_INTERPRETER
@@ -318,6 +331,36 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
             UNREACHABLE();                                                                          \
         }
 
+
+#define INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER    \
+    {                                                                                       \
+        MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
+        Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
+        PAL_CPP_TRY {
+
+#define UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
+        }                                           \
+        PAL_CPP_CATCH_NON_DERIVED (PAL_SEHException&, ex)                \
+        {                                           \
+            GCX_COOP();                             \
+            OBJECTREF throwable = ExInfo::CreateThrowable(ex.GetExceptionRecord(), FALSE); \
+            qcallError.SetThrowable(throwable);     \
+        }                                           \
+        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
+        {                                                                                   \
+            __pUnCException = Exception::GetOOMException();                                 \
+            UnwindAndContinueRethrowHelperInsideQcallCatch(__pUnCEntryFrame, __pUnCException, qcallError);   \
+        }                                                                                   \
+        PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
+        {                                                                                   \
+            CONSISTENCY_CHECK(NULL != __pException);                                        \
+            __pUnCException = __pException;                                                 \
+            UnwindAndContinueRethrowHelperInsideQcallCatch(__pUnCEntryFrame, __pUnCException, qcallError);   \
+        }                                                                                   \
+        PAL_CPP_ENDTRY                                                                      \
+    }
+
+
 #elif defined(TARGET_X86) && defined(TARGET_WINDOWS)
 
 #define INSTALL_MANAGED_EXCEPTION_DISPATCHER
@@ -403,6 +446,37 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER                                               \
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX(false);
+
+
+#if !defined(TARGET_UNIX)
+    // The Windows implementation of the INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER is very similar
+    // to the unix one, but the major distinction is that the Windows version allows for an existing
+    // eh which has been converted into SEH, to flow directly into managed code. The unix version
+    // catches the PAL_SEHException and converts it into a managed exception before it hits managed code.
+
+#define INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER    \
+    {                                                                                       \
+        MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
+        Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
+        PAL_CPP_TRY {                                                                       \
+        INSTALL_UNWIND_AND_CONTINUE_HANDLER
+
+#define UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
+        }                                           \
+        PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
+        {                                                                                   \
+            __pUnCException = Exception::GetOOMException();                                 \
+            UnwindAndContinueRethrowHelperInsideQcallCatch(__pUnCEntryFrame, __pUnCException, qcallError);   \
+        }                                                                                   \
+        PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
+        {                                                                                   \
+            CONSISTENCY_CHECK(NULL != __pException);                                        \
+            __pUnCException = __pException;                                                 \
+            UnwindAndContinueRethrowHelperInsideQcallCatch(__pUnCEntryFrame, __pUnCException, qcallError);   \
+        }                                                                                   \
+        PAL_CPP_ENDTRY                                                                      \
+    }
+#endif
 
 #endif // DACCESS_COMPILE
 

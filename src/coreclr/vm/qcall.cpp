@@ -7,6 +7,13 @@
 
 #include "common.h"
 
+void QCallException::SetThrowable(OBJECTREF throwable)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    SetObjectReference(m_throwable, throwable);
+}
+
 //
 // Helpers for returning managed string from QCall
 //
