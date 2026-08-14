@@ -143,6 +143,22 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal("10.0.0.2", record.Address.ToString());
         }
 
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsOSX))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CustomServer_OSX_UsesManagedResolverWithoutSystemFallback(bool async)
+        {
+            const string Name = "www.microsoft.com";
+            _server.AddResponse(Name, DnsRecordType.A, b => b.Answer(new byte[] { 192, 0, 2, 42 }, ttl: 120));
+
+            DnsResult<AddressRecord> result =
+                await ResolveAddresses(async, Resolver, Name, AddressFamily.InterNetwork);
+
+            Assert.Equal(DnsResponseCode.NoError, result.ResponseCode);
+            AddressRecord record = Assert.Single(result.Records);
+            Assert.Equal(IPAddress.Parse("192.0.2.42"), record.Address);
+        }
+
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]

@@ -43,6 +43,10 @@ namespace System.Net
             public object SocketTypeStream = null!;
             public object ProtocolTypeUdp = null!;
             public object ProtocolTypeTcp = null!;
+            public ConstructorInfo SafeSocketHandleConstructor = null!;
+            public ConstructorInfo SocketFromSafeHandleConstructor = null!;
+            public MethodInfo ReceiveAsyncWithFlagsMethod = null!;
+            public object SocketFlagsPeek = null!;
         }
 
         private static readonly SocketReflection s_reflection = CreateReflection();
@@ -64,11 +68,15 @@ namespace System.Net
 
         [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicProperties,
             "System.Net.Sockets.Socket", "System.Net.Sockets")]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors,
+            "System.Net.Sockets.SafeSocketHandle", "System.Net.Sockets")]
         private static SocketReflection CreateReflection()
         {
             Type socketType = Type.GetType("System.Net.Sockets.Socket, System.Net.Sockets", throwOnError: true)!;
             Type socketTypeEnum = Type.GetType("System.Net.Sockets.SocketType, System.Net.Sockets", throwOnError: true)!;
             Type protocolTypeEnum = Type.GetType("System.Net.Sockets.ProtocolType, System.Net.Sockets", throwOnError: true)!;
+            Type safeSocketHandleType = Type.GetType("System.Net.Sockets.SafeSocketHandle, System.Net.Sockets", throwOnError: true)!;
+            Type socketFlagsEnum = Type.GetType("System.Net.Sockets.SocketFlags, System.Net.Sockets", throwOnError: true)!;
 
             return new SocketReflection
             {
@@ -88,6 +96,10 @@ namespace System.Net
                 DisposeMethod = socketType.GetMethod("Dispose", Type.EmptyTypes)!,
                 SetSendTimeoutMethod = socketType.GetProperty("SendTimeout")!.GetSetMethod()!,
                 SetReceiveTimeoutMethod = socketType.GetProperty("ReceiveTimeout")!.GetSetMethod()!,
+                SafeSocketHandleConstructor = safeSocketHandleType.GetConstructor(new[] { typeof(IntPtr), typeof(bool) })!,
+                SocketFromSafeHandleConstructor = socketType.GetConstructor(new[] { safeSocketHandleType })!,
+                ReceiveAsyncWithFlagsMethod = socketType.GetMethod("ReceiveAsync", new[] { typeof(Memory<byte>), socketFlagsEnum, typeof(CancellationToken) })!,
+                SocketFlagsPeek = Enum.Parse(socketFlagsEnum, "Peek"),
             };
         }
 
@@ -163,5 +175,51 @@ namespace System.Net
         }
 
         public void Dispose() => _dispose();
+
+        // Awaits real readability on a caller-owned fd. On Unix, an empty-buffer
+        // Socket.ReceiveAsync completes synchronously with 0 bytes without ever waiting
+        // for POLLIN, so we peek 1 byte instead; SocketFlags.Peek leaves the byte in the
+        // socket for the subsequent DNSServiceProcessResult to consume. The wrapped
+        // SafeSocketHandle is created with ownsHandle: false so disposing the scratch
+        // Socket does not close the fd — the caller (mDNSResponder client library)
+        // continues to own it.
+        public static async ValueTask WaitReadableAsync(IntPtr fileDescriptor, CancellationToken cancellationToken)
+        {
+            SocketReflection reflection = s_reflection;
+            object safeHandle;
+            object socket;
+            try
+            {
+                safeHandle = reflection.SafeSocketHandleConstructor.Invoke(new object[] { fileDescriptor, false })!;
+                socket = reflection.SocketFromSafeHandleConstructor.Invoke(new object[] { safeHandle })!;
+            }
+            catch (TargetInvocationException e) when (e.InnerException is not null)
+            {
+                ExceptionDispatchInfo.Throw(e.InnerException);
+                throw; // Unreachable.
+            }
+
+            try
+            {
+                object result;
+                try
+                {
+                    result = reflection.ReceiveAsyncWithFlagsMethod.Invoke(
+                        socket,
+                        new object[] { (Memory<byte>)new byte[1], reflection.SocketFlagsPeek, cancellationToken })!;
+                }
+                catch (TargetInvocationException e) when (e.InnerException is not null)
+                {
+                    ExceptionDispatchInfo.Throw(e.InnerException);
+                    throw; // Unreachable.
+                }
+
+                await ((ValueTask<int>)result).ConfigureAwait(false);
+            }
+            finally
+            {
+                ((IDisposable)socket).Dispose();
+            }
+        }
     }
 }
