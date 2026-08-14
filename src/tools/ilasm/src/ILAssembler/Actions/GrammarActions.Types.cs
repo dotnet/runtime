@@ -98,40 +98,5 @@ internal sealed partial class GrammarActions
         public GrammarResult.Literal<EntityRegistry.TypeEntity> VisitClassName(CILParser.ClassNameContext context)
             => new(ResolveClassName(GetClassNameValue(context.Value)));
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitClassSeq(CILParser.ClassSeqContext context) => VisitClassSeq(context);
-        public GrammarResult.FormattedBlob VisitClassSeq(CILParser.ClassSeqContext context)
-        {
-            BlobBuilder objSeqBlob = new(0);
-            foreach (var item in context.classSeqElement())
-            {
-                objSeqBlob.LinkSuffix(VisitClassSeqElement(item).Value);
-            }
-            return new(objSeqBlob);
-        }
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitClassSeqElement(CILParser.ClassSeqElementContext context) => VisitClassSeqElement(context);
-
-        public GrammarResult.FormattedBlob VisitClassSeqElement(CILParser.ClassSeqElementContext context)
-        {
-            BlobBuilder blob = new();
-            if (context.className() is CILParser.ClassNameContext className)
-            {
-                if (VisitClassName(className).Value is EntityRegistry.IHasReflectionNotation notation)
-                {
-                    blob.WriteSerializedString(notation.ReflectionNotation);
-                }
-                else
-                {
-                    blob.WriteSerializedString("");
-                }
-                return new(blob);
-            }
-
-            blob.WriteSerializedString(
-                context.SQSTRING() is { } stringNode
-                    ? StringHelpers.ParseQuotedString(stringNode.Symbol.Text)
-                    : null);
-            return new(blob);
-        }
 #pragma warning restore CA1822 // Mark members as static
 }
