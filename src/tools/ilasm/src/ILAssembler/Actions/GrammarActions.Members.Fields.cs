@@ -194,22 +194,6 @@ internal sealed partial class GrammarActions
     internal string GetFieldDataOffset(IToken token)
         => ParseInt32(token).ToString(CultureInfo.InvariantCulture);
 
-    internal void BeginFieldInitializer(CILParser.InitOptContext context)
-    {
-        BeginSemanticRoot(context);
-        context.Value = NoConstantSentinel.Instance;
-    }
-
-    internal void SetFieldInitializer(
-        CILParser.InitOptContext context,
-        CILParser.FieldInitContext initializer)
-    {
-        context.Value = VisitFieldInit(initializer).Value;
-    }
-
-    internal bool EndFieldInitializer(CILParser.InitOptContext context)
-        => EndSemanticRoot(context);
-
     internal void SetFieldOffset(CILParser.RepeatOptContext context, IToken token)
     {
         context.Value = ParseInt32(token);
@@ -236,42 +220,12 @@ internal sealed partial class GrammarActions
     GrammarResult ICILVisitor<GrammarResult>.VisitFieldDecl(CILParser.FieldDeclContext context)
         => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitFieldInit(CILParser.FieldInitContext context)
-        => VisitFieldInit(context);
-
-    public GrammarResult.Literal<object?> VisitFieldInit(CILParser.FieldInitContext context)
-    {
-        if (context.NULLREF() is not null)
-        {
-            return new(null);
-        }
-        if (context.compQstring() is { } composedString)
-        {
-            return new(VisitCompQstring(composedString).Value);
-        }
-        if (context.fieldSerInit() is { } serializedInitializer)
-        {
-            return new(ExtractConstantFromSerInit(VisitFieldSerInit(serializedInitializer).Value));
-        }
-
-        return new(null);
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitFieldOrProp(CILParser.FieldOrPropContext context)
-        => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
-
     GrammarResult ICILVisitor<GrammarResult>.VisitFieldRef(CILParser.FieldRefContext context)
         => VisitFieldRef(context);
 
     public GrammarResult.Literal<EntityRegistry.EntityBase> VisitFieldRef(
         CILParser.FieldRefContext context)
         => new(MaterializeFieldReference(GetFieldReferenceValue(context.Value)));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitInitOpt(CILParser.InitOptContext context)
-        => VisitInitOpt(context);
-
-    public static GrammarResult.Literal<object?> VisitInitOpt(CILParser.InitOptContext context)
-        => new(context.Value);
 
     GrammarResult ICILVisitor<GrammarResult>.VisitMemberRef(CILParser.MemberRefContext context)
         => VisitMemberRef(context);

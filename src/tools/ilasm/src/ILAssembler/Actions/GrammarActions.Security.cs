@@ -48,6 +48,44 @@ namespace ILAssembler
                 _ => throw new UnreachableException()
             };
         }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitCaValue(CILParser.CaValueContext context) => VisitCaValue(context);
+        public GrammarResult.FormattedBlob VisitCaValue(CILParser.CaValueContext context)
+        {
+            BlobBuilder blob = new();
+            if (context.truefalse() is CILParser.TruefalseContext truefalse)
+            {
+                blob.WriteByte((byte)SerializationTypeCode.Boolean);
+                blob.WriteBoolean(VisitTruefalse(truefalse).Value);
+            }
+            else if (context.compQstring() is CILParser.CompQstringContext str)
+            {
+                blob.WriteUTF8(VisitCompQstring(str).Value);
+                blob.WriteByte(0);
+            }
+            else if (context.className() is CILParser.ClassNameContext className)
+            {
+                EntityRegistry.TypeEntity name = VisitClassName(className).Value;
+                blob.WriteByte((byte)SerializationTypeCode.Enum);
+                blob.WriteUTF8(
+                    (name as EntityRegistry.IHasReflectionNotation)?.ReflectionNotation ?? string.Empty);
+                blob.WriteByte(0);
+                byte size = context.INT8() is not null
+                    ? (byte)1
+                    : context.INT16() is not null
+                        ? (byte)2
+                        : (byte)4;
+                blob.WriteByte(size);
+                blob.WriteInt32(VisitInt32(context.int32()).Value);
+            }
+            else
+            {
+                blob.WriteByte((byte)SerializationTypeCode.Int32);
+                blob.WriteInt32(VisitInt32(context.int32()).Value);
+            }
+
+            return new(blob);
+        }
         GrammarResult ICILVisitor<GrammarResult>.VisitSecAttrBlob(CILParser.SecAttrBlobContext context) => VisitSecAttrBlob(context);
         public GrammarResult.FormattedBlob VisitSecAttrBlob(CILParser.SecAttrBlobContext context)
         {
@@ -117,6 +155,20 @@ namespace ILAssembler
             }
             return new(_entityRegistry.CreateDeclarativeSecurityAttribute(action, value));
         }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitNameValPair(CILParser.NameValPairContext context) => VisitNameValPair(context);
+        public GrammarResult.Literal<KeyValuePair<string, BlobBuilder>> VisitNameValPair(CILParser.NameValPairContext context)
+        {
+            return new(new(
+                VisitCompQstring(context.compQstring()).Value,
+                VisitCaValue(context.caValue()).Value));
+        }
+
+        GrammarResult ICILVisitor<GrammarResult>.VisitNameValPairs(CILParser.NameValPairsContext context) => VisitNameValPairs(context);
+        public GrammarResult.Sequence<KeyValuePair<string, BlobBuilder>> VisitNameValPairs(CILParser.NameValPairsContext context)
+            => new(context.nameValPair()
+                .Select(pair => VisitNameValPair(pair).Value)
+                .ToImmutableArray());
 
     }
 }
