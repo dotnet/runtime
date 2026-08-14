@@ -96,6 +96,7 @@ namespace System.Xml.Serialization
         private bool _isMixed;
         private int _weight;
         private Exception? _exception;
+        private CollectionBuilderInfo? _collectionBuilder;
 
         internal TypeDesc(string name, string fullName, XmlSchemaType? dataType, TypeKind kind, TypeDesc? baseTypeDesc, TypeFlags flags, string? formatterName)
         {
@@ -273,6 +274,21 @@ namespace System.Xml.Serialization
             get { return !HasDefaultConstructor || ConstructorInaccessible; }
         }
 
+        /// <summary>
+        /// The collection builder to create this collection with, for collections that cannot be
+        /// populated in place. Null for every other type.
+        /// </summary>
+        internal CollectionBuilderInfo? CollectionBuilder
+        {
+            get { return _collectionBuilder; }
+            set { _collectionBuilder = value; }
+        }
+
+        internal bool UsesCollectionBuilder
+        {
+            get { return _collectionBuilder != null; }
+        }
+
         internal bool IsAbstract
         {
             get { return (_flags & TypeFlags.Abstract) != 0; }
@@ -387,7 +403,7 @@ namespace System.Xml.Serialization
 
         internal void CheckNeedConstructor()
         {
-            if (!IsValueType && !IsAbstract && !HasDefaultConstructor)
+            if (!IsValueType && !IsAbstract && !HasDefaultConstructor && !UsesCollectionBuilder)
             {
                 _flags |= TypeFlags.Unsupported;
                 _exception = new InvalidOperationException(SR.Format(SR.XmlConstructorInaccessible, FullName));
@@ -822,6 +838,7 @@ namespace System.Xml.Serialization
             Type? baseType = null;
             TypeFlags flags = 0;
             Exception? exception = null;
+            CollectionBuilderInfo? collectionBuilder = null;
 
             if (!type.IsVisible)
             {
@@ -875,8 +892,51 @@ namespace System.Xml.Serialization
             else if (typeof(ICollection).IsAssignableFrom(type) && !IsArraySegment(type))
             {
                 kind = TypeKind.Collection;
-                arrayElementType = GetCollectionElementType(type, memberInfo == null ? null : $"{memberInfo.DeclaringType!.FullName}.{memberInfo.Name}");
                 flags |= GetConstructorFlags(type);
+
+                string? memberName = memberInfo == null ? null : $"{memberInfo.DeclaringType!.FullName}.{memberInfo.Name}";
+                ThrowIfUnsupportedDictionary(type, memberName);
+
+                PropertyInfo? indexer = FindDefaultIndexer(type);
+                bool canAppend = indexer != null && type.GetMethod("Add", new Type[] { indexer.PropertyType }) != null;
+                bool cannotNew = CannotNew(flags);
+
+                // A collection we cannot construct, or cannot append to, may still be deserializable if it
+                // opts in to a collection builder. Elements are then accumulated separately and the real
+                // collection is created from them once it has been read in full.
+                if (cannotNew || !canAppend)
+                {
+                    collectionBuilder = GetCollectionBuilder(type);
+                }
+
+                if (collectionBuilder != null)
+                {
+                    arrayElementType = collectionBuilder.ElementType;
+
+                    if (indexer == null)
+                    {
+                        // Collections are written through their default indexer, which a type like
+                        // ImmutableHashSet<T> does not have. Those are written through their enumerator instead.
+                        if (FindEnumeratorMethod(type, ref flags) == null)
+                        {
+                            throw new InvalidOperationException(SR.Format(SR.XmlNoDefaultAccessors, type.FullName));
+                        }
+
+                        kind = TypeKind.Enumerable;
+                    }
+                }
+                else if (indexer == null)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.XmlNoDefaultAccessors, type.FullName));
+                }
+                else if (!canAppend)
+                {
+                    throw new InvalidOperationException(SR.Format(SR.XmlNoAddMethod, type.FullName, indexer.PropertyType, "ICollection"));
+                }
+                else
+                {
+                    arrayElementType = indexer.PropertyType;
+                }
             }
             else if (type == typeof(XmlQualifiedName))
             {
@@ -966,16 +1026,18 @@ namespace System.Xml.Serialization
             {
                 if (typeof(IEnumerable).IsAssignableFrom(type) && !IsArraySegment(type))
                 {
-                    arrayElementType = GetEnumeratorElementType(type, ref flags);
-                    kind = TypeKind.Enumerable;
-
                     // GetEnumeratorElementType checks for the security attributes on the GetEnumerator(), Add() methods and Current property,
                     // we need to check the MoveNext() and ctor methods for the security attribues
                     flags |= GetConstructorFlags(type);
+
+                    bool cannotNew = CannotNew(flags);
+                    arrayElementType = GetEnumeratorElementType(type, ref flags, cannotNew, out collectionBuilder);
+                    kind = TypeKind.Enumerable;
                 }
             }
             typeDesc = new TypeDesc(type, CodeIdentifier.MakeValid(TypeName(type)), type.ToString(), kind, null, flags, null);
             typeDesc.Exception = exception;
+            typeDesc.CollectionBuilder = collectionBuilder;
 
             if (directReference && (typeDesc.IsClass || kind == TypeKind.Serializable))
                 typeDesc.CheckNeedConstructor();
@@ -1079,7 +1141,8 @@ namespace System.Xml.Serialization
             else if (typeof(IEnumerable).IsAssignableFrom(type))
             {
                 TypeFlags flags = TypeFlags.None;
-                return GetEnumeratorElementType(type, ref flags);
+                // The same test ImportTypeDesc applies, so that both paths agree on the element type.
+                return GetEnumeratorElementType(type, ref flags, CannotNew(GetConstructorFlags(type)), out _);
             }
             else
                 return null;
@@ -1329,69 +1392,135 @@ namespace System.Xml.Serialization
             return 0;
         }
 
+        /// <summary>
+        /// Whether the constructor flags describe a type <see cref="XmlSerializer"/> cannot create an
+        /// instance of, which is one of the reasons a collection needs a collection builder.
+        /// </summary>
+        private static bool CannotNew(TypeFlags flags) =>
+            (flags & TypeFlags.HasDefaultConstructor) == 0 || (flags & TypeFlags.CtorInaccessible) != 0;
+
+        /// <summary>
+        /// Locates the <c>GetEnumerator</c> method to walk <paramref name="type"/> with, setting the flags
+        /// that describe how it needs to be called. Returns null when the type cannot be enumerated.
+        /// </summary>
         [RequiresUnreferencedCode("Needs to mark members on the return type of the GetEnumerator method")]
-        private static Type? GetEnumeratorElementType(Type type, ref TypeFlags flags)
+        private static MethodInfo? FindEnumeratorMethod(Type type, ref TypeFlags flags)
         {
-            if (typeof(IEnumerable).IsAssignableFrom(type))
-            {
-                MethodInfo? enumerator = type.GetMethod("GetEnumerator", Type.EmptyTypes);
-
-                if (enumerator == null || !typeof(IEnumerator).IsAssignableFrom(enumerator.ReturnType))
-                {
-                    // try generic implementation
-                    enumerator = null;
-                    foreach (MemberInfo member in type.GetMember("System.Collections.Generic.IEnumerable<*", BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
-                    {
-                        enumerator = member as MethodInfo;
-                        if (enumerator != null && typeof(IEnumerator).IsAssignableFrom(enumerator.ReturnType))
-                        {
-                            // use the first one we find
-                            flags |= TypeFlags.GenericInterface;
-                            break;
-                        }
-                        else
-                        {
-                            enumerator = null;
-                        }
-                    }
-                    if (enumerator == null)
-                    {
-                        // and finally private interface implementation
-                        flags |= TypeFlags.UsePrivateImplementation;
-                        enumerator = type.GetMethod("System.Collections.IEnumerable.GetEnumerator", BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic, Type.EmptyTypes);
-                    }
-                }
-                if (enumerator == null || !typeof(IEnumerator).IsAssignableFrom(enumerator.ReturnType))
-                {
-                    return null;
-                }
-                XmlAttributes methodAttrs = new XmlAttributes(enumerator);
-                if (methodAttrs.XmlIgnore) return null;
-
-                PropertyInfo? p = enumerator.ReturnType.GetProperty("Current");
-                Type currentType = (p == null ? typeof(object) : p.PropertyType);
-
-                MethodInfo? addMethod = type.GetMethod("Add", new Type[] { currentType });
-
-                if (addMethod == null && currentType != typeof(object))
-                {
-                    currentType = typeof(object);
-                    addMethod = type.GetMethod("Add", new Type[] { currentType });
-                }
-                if (addMethod == null)
-                {
-                    throw new InvalidOperationException(SR.Format(SR.XmlNoAddMethod, type.FullName, currentType, "IEnumerable"));
-                }
-                return currentType;
-            }
-            else
+            if (!typeof(IEnumerable).IsAssignableFrom(type))
             {
                 return null;
             }
+
+            MethodInfo? enumerator = type.GetMethod("GetEnumerator", Type.EmptyTypes);
+
+            if (enumerator == null || !typeof(IEnumerator).IsAssignableFrom(enumerator.ReturnType))
+            {
+                // try generic implementation
+                enumerator = null;
+                foreach (MemberInfo member in type.GetMember("System.Collections.Generic.IEnumerable<*", BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic))
+                {
+                    enumerator = member as MethodInfo;
+                    if (enumerator != null && typeof(IEnumerator).IsAssignableFrom(enumerator.ReturnType))
+                    {
+                        // use the first one we find
+                        flags |= TypeFlags.GenericInterface;
+                        break;
+                    }
+                    else
+                    {
+                        enumerator = null;
+                    }
+                }
+                if (enumerator == null)
+                {
+                    // and finally private interface implementation
+                    flags |= TypeFlags.UsePrivateImplementation;
+                    enumerator = type.GetMethod("System.Collections.IEnumerable.GetEnumerator", BindingFlags.Public | BindingFlags.Instance | BindingFlags.NonPublic, Type.EmptyTypes);
+                }
+            }
+            if (enumerator == null || !typeof(IEnumerator).IsAssignableFrom(enumerator.ReturnType))
+            {
+                return null;
+            }
+            XmlAttributes methodAttrs = new XmlAttributes(enumerator);
+            if (methodAttrs.XmlIgnore) return null;
+
+            return enumerator;
         }
 
-        internal static PropertyInfo GetDefaultIndexer(
-            [DynamicallyAccessedMembers(TrimmerConstants.PublicMembers)] Type type, string? memberInfo)
+        [RequiresUnreferencedCode("Needs to mark members on the return type of the GetEnumerator method")]
+        private static Type? GetEnumeratorElementType(Type type, ref TypeFlags flags, bool cannotNew, out CollectionBuilderInfo? collectionBuilder)
+        {
+            collectionBuilder = null;
+
+            MethodInfo? enumerator = FindEnumeratorMethod(type, ref flags);
+            if (enumerator == null)
+            {
+                return null;
+            }
+
+            PropertyInfo? p = enumerator.ReturnType.GetProperty("Current");
+            Type currentType = (p == null ? typeof(object) : p.PropertyType);
+
+            MethodInfo? addMethod = type.GetMethod("Add", new Type[] { currentType });
+
+            if (addMethod == null && currentType != typeof(object))
+            {
+                currentType = typeof(object);
+                addMethod = type.GetMethod("Add", new Type[] { currentType });
+            }
+
+            // A collection builder creates the collection from elements gathered elsewhere, so neither an
+            // accessible constructor nor an Add method is needed. Immutable collections in particular do
+            // often have an Add, but one that returns a new collection instead of modifying this one.
+            if (addMethod == null || cannotNew)
+            {
+                collectionBuilder = GetCollectionBuilder(type);
+                if (collectionBuilder != null)
+                {
+                    return collectionBuilder.ElementType;
+                }
+            }
+
+            if (addMethod == null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.XmlNoAddMethod, type.FullName, currentType, "IEnumerable"));
+            }
+
+            return currentType;
+        }
+
+        /// <summary>
+        /// Returns the collection builder <paramref name="type"/> opts in to, or null when it has none that
+        /// XmlSerializer can use.
+        /// </summary>
+        [RequiresUnreferencedCode("Resolves the factory method named by CollectionBuilderAttribute.")]
+        private static CollectionBuilderInfo? GetCollectionBuilder(Type type)
+        {
+            // Dictionaries are not serializable by XmlSerializer, and a collection builder does not change that.
+            if (typeof(IDictionary).IsAssignableFrom(type) || ImplementsGenericDictionary(type))
+            {
+                return null;
+            }
+
+            return CollectionBuilderInfo.Find(type);
+        }
+
+        [RequiresUnreferencedCode("Enumerates the interfaces implemented by the type.")]
+        private static bool ImplementsGenericDictionary(Type type)
+        {
+            foreach (Type interfaceType in type.GetInterfaces())
+            {
+                if (interfaceType.IsGenericType && interfaceType.GetGenericTypeDefinition() == typeof(IDictionary<,>))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void ThrowIfUnsupportedDictionary(Type type, string? memberInfo)
         {
             if (typeof(IDictionary).IsAssignableFrom(type))
             {
@@ -1404,7 +1533,15 @@ namespace System.Xml.Serialization
                     throw new NotSupportedException(SR.Format(SR.XmlUnsupportedIDictionaryDetails, memberInfo, type.FullName));
                 }
             }
+        }
 
+        /// <summary>
+        /// Locates the <c>this[int]</c> indexer that collections are read and written through, or null when
+        /// <paramref name="type"/> does not have one.
+        /// </summary>
+        private static PropertyInfo? FindDefaultIndexer(
+            [DynamicallyAccessedMembers(TrimmerConstants.PublicMembers)] Type type)
+        {
             MemberInfo[] defaultMembers = type.GetDefaultMembers();
             PropertyInfo? indexer = null;
             if (defaultMembers != null && defaultMembers.Length > 0)
@@ -1429,6 +1566,16 @@ namespace System.Xml.Serialization
                     if (indexer != null) break;
                 }
             }
+
+            return indexer;
+        }
+
+        internal static PropertyInfo GetDefaultIndexer(
+            [DynamicallyAccessedMembers(TrimmerConstants.PublicMembers)] Type type, string? memberInfo)
+        {
+            ThrowIfUnsupportedDictionary(type, memberInfo);
+
+            PropertyInfo? indexer = FindDefaultIndexer(type);
             if (indexer == null)
             {
                 throw new InvalidOperationException(SR.Format(SR.XmlNoDefaultAccessors, type.FullName));
@@ -1440,11 +1587,42 @@ namespace System.Xml.Serialization
             }
             return indexer;
         }
+        /// <summary>
+        /// Returns the type of the elements of a collection, which is normally the type its default indexer
+        /// exposes. A collection that has to be created through a collection builder takes its element type
+        /// from the builder's factory method instead, the same way <see cref="ImportTypeDesc"/> does.
+        /// </summary>
+        [RequiresUnreferencedCode("Resolves the factory method named by CollectionBuilderAttribute.")]
         private static Type GetCollectionElementType(
             [DynamicallyAccessedMembers(TrimmerConstants.PublicMembers)] Type type,
             string? memberInfo)
         {
-            return GetDefaultIndexer(type, memberInfo).PropertyType;
+            ThrowIfUnsupportedDictionary(type, memberInfo);
+
+            PropertyInfo? indexer = FindDefaultIndexer(type);
+            bool canAppend = indexer != null && type.GetMethod("Add", new Type[] { indexer.PropertyType }) != null;
+
+            if (canAppend && !CannotNew(GetConstructorFlags(type)))
+            {
+                return indexer!.PropertyType;
+            }
+
+            CollectionBuilderInfo? collectionBuilder = GetCollectionBuilder(type);
+            if (collectionBuilder != null)
+            {
+                return collectionBuilder.ElementType;
+            }
+
+            if (indexer == null)
+            {
+                throw new InvalidOperationException(SR.Format(SR.XmlNoDefaultAccessors, type.FullName));
+            }
+            if (!canAppend)
+            {
+                throw new InvalidOperationException(SR.Format(SR.XmlNoAddMethod, type.FullName, indexer.PropertyType, "ICollection"));
+            }
+
+            return indexer.PropertyType;
         }
 
         internal static XmlQualifiedName ParseWsdlArrayType(string type, out string dims, XmlSchemaObject? parent)
