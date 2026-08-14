@@ -338,7 +338,9 @@ namespace Internal.Runtime.Augments
 
         public static unsafe object GetThreadStaticBase(IntPtr cookie)
         {
-            return ThreadStatics.GetThreadStaticBaseForType(*(TypeManagerSlot**)cookie, (int)*((IntPtr*)(cookie) + 1));
+            TypeThreadStaticIndex* index = (TypeThreadStaticIndex*)cookie;
+
+            return ThreadStatics.GetThreadStaticBaseForType(index->TypeManagerSlot, (int)index->ClassIndex);
         }
 
         public static int GetHighestStaticThreadStaticIndex(TypeManagerHandle typeManager)
