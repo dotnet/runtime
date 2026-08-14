@@ -193,33 +193,12 @@ bool emitter::emitInsIsStore(instruction ins)
 }
 
 //------------------------------------------------------------------------
-// emitImageBaseGlobal: Emit the module base onto the stack, reading the imageBase global.
-//
-void emitter::emitImageBaseGlobal()
-{
-    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
-              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
-}
-
-//------------------------------------------------------------------------
 // emitImageBase: Emit the module base (imageBase global) onto the stack.
-//
-// Notes:
-//   When this function caches the image base in a wasm local, read it from there instead. The
-//   local is initialized in the prolog, which dominates every use.
 //
 void emitter::emitImageBase()
 {
-    FuncInfoDsc* const func = m_compiler->funCurrentFunc();
-
-    if (func->funWasmImageBaseLocalIndex != UINT_MAX)
-    {
-        emitIns_I(INS_local_get, EA_PTRSIZE, func->funWasmImageBaseLocalIndex);
-    }
-    else
-    {
-        emitImageBaseGlobal();
-    }
+    emitIns_I(INS_global_get, EA_HANDLE_CNS_RELOC,
+              (cnsval_ssize_t)(size_t)m_compiler->eeGetWasmWellKnownGlobals()->imageBase);
 }
 
 //------------------------------------------------------------------------

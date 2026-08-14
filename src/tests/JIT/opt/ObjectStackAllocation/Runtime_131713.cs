@@ -3,66 +3,92 @@
 
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Xml;
-using System.Xml.Serialization;
 using Xunit;
-using TestLibrary;
 
 public class Runtime_131713
 {
-    [ActiveIssue("needs triage", TestRuntimes.Mono)]
     [Fact]
     public static void Test()
     {
-        // The bug needs the serializer's methods to reach tier-1 with PGO data, so give
-        // the background compilations time to land in between calls.
-        for (int i = 0; i < 100; i++)
+        CustomList<Bar> bars = [new Bar(), new Bar(), new Bar()];
+        CustomList<Foo> foos = [new Foo(), new Foo()];
+
+        int expected = Count(bars, foos);
+
+        // Count must reach tier-1 with PGO data.
+        for (int i = 0; i < 50; i++)
         {
-            Serialize();
-            Thread.Sleep(15);
+            for (int j = 0; j < 1000; j++)
+            {
+                int actual = Count(bars, foos);
+                if (actual != expected)
+                {
+                    Assert.Fail($"expected {expected}, got {actual}");
+                }
+            }
+
+            Thread.Sleep(5);
         }
     }
 
-    private static void Serialize()
+    // The repro needs all of the following:
+    //
+    //  * one non-generic IEnumerator local, shared by two loops, so that the
+    //    enumerator var has two defining GDVs,
+    //  * each def coming directly from a GetEnumerator that returns a boxed
+    //    struct enumerator, and
+    //  * a null check on the enumerator in that same block, which is what makes
+    //    the allocation block conditional.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int Count(CustomList<Bar> bars, CustomList<Foo> foos)
     {
-        Foo model = new()
+        int n = 0;
+
+        IEnumerator e = bars.GetEnumerator();
+        if (e != null)
         {
-            Foos =
-            [
-                new Foo
+            while (e.MoveNext())
+            {
+                if (e.Current is Bar)
                 {
-                    Bars = [new Bar()]
+                    n += 1;
                 }
-            ]
-        };
+            }
+        }
 
-        XmlSerializer serializer = new(typeof(Foo));
-        using StringWriter stringWriter = new();
-        using XmlWriter xmlWriter = XmlWriter.Create(stringWriter);
-        serializer.Serialize(xmlWriter, model);
+        e = foos.GetEnumerator();
+        if (e != null)
+        {
+            while (e.MoveNext())
+            {
+                if (e.Current is Foo)
+                {
+                    n += 100;
+                }
+            }
+        }
+
+        return n;
     }
-}
 
-public class Foo
-{
-    public CustomList<Bar> Bars { get; set; } = [];
+    public class Foo
+    {
+    }
 
-    public CustomList<Foo> Foos { get; set; } = [];
-}
+    public class Bar
+    {
+    }
 
-public class Bar
-{
-}
+    public class CustomList<T> : IEnumerable<T>
+    {
+        private readonly List<T> _innerList = [];
 
-public class CustomList<T> : IEnumerable<T>
-{
-    private readonly List<T> _innerList = [];
+        public void Add(T item) => _innerList.Add(item);
 
-    public void Add(T item) => _innerList.Add(item);
+        public IEnumerator<T> GetEnumerator() => _innerList.GetEnumerator();
 
-    public IEnumerator<T> GetEnumerator() => _innerList.GetEnumerator();
-
-    IEnumerator IEnumerable.GetEnumerator() => _innerList.GetEnumerator();
+        IEnumerator IEnumerable.GetEnumerator() => _innerList.GetEnumerator();
+    }
 }
