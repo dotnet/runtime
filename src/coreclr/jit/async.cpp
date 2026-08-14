@@ -2845,8 +2845,12 @@ void AsyncTransformation::StoreAsyncAwaiter(BasicBlock*               callBlock,
 
     ClassLayout* awaiterLayout = awaiterArg->GetSignatureLayout();
     assert(awaiterLayout != nullptr);
-    size_t memberIndex =
-        m_compiler->GetContinuationMemberIndex(ContinuationMember::CustomAwaiterOfLayout(awaiterLayout));
+    // Layout is fixed at this point, so this is expected not to add new entries.
+    size_t memberIndex = 0;
+    bool   isRegistered =
+        m_compiler->TryGetContinuationMemberIndex(ContinuationMember::CustomAwaiterOfLayout(awaiterLayout),
+                                                  &memberIndex);
+    assert(isRegistered);
     assert(memberIndex < layout.ContinuationMemberOffsets.size());
     assert(layout.ContinuationMemberOffsets[memberIndex] != UINT_MAX);
 
@@ -3605,7 +3609,10 @@ BasicBlock* AsyncTransformation::CreateInlinedFrameSuspensionTail(BasicBlock*   
 GenTree* AsyncTransformation::ContinuationMemberAddress(const ContinuationLayout& layout,
                                                         const ContinuationMember& member)
 {
-    size_t const memberIndex = m_compiler->GetContinuationMemberIndex(member);
+    // Layout is fixed at this point, so this is expected not to add new entries.
+    size_t memberIndex  = 0;
+    bool   isRegistered = m_compiler->TryGetContinuationMemberIndex(member, &memberIndex);
+    assert(isRegistered);
     assert(memberIndex < layout.ContinuationMemberOffsets.size());
     assert(layout.ContinuationMemberOffsets[memberIndex] != UINT_MAX);
 
