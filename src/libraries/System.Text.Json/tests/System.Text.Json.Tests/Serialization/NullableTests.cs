@@ -494,7 +494,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public static void NullableStructProperty_StreamWithContinuationAfterNullToken()
         {
-            string json = """{"Value":{"Total":0,"a":null,"b":0}}""";
+            string json = """{"Value":{"Total":1,"a":null,"b":0}}""";
             byte[] bytes = Encoding.UTF8.GetBytes(json);
             var options = new JsonSerializerOptions { DefaultBufferSize = 32 };
 
@@ -502,7 +502,7 @@ namespace System.Text.Json.Serialization.Tests
             var fromStream = JsonSerializer.Deserialize<MyPoco>(stream, options)!;
             Assert.NotNull(fromStream);
             Assert.NotNull(fromStream.Value);
-            Assert.Equal(0, fromStream.Value.Value.Total);
+            Assert.Equal(1, fromStream.Value.Value.Total);
         }
 
         public class MyPoco
