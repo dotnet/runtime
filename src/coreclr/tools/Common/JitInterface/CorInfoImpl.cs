@@ -4027,6 +4027,15 @@ namespace Internal.JitInterface
             }
 #endif
 
+            // A type split across several wasm parameters reports the slot type it splits into;
+            // the JIT derives the count from the struct's size.
+            if (WasmLowering.TryGetMultiSegmentLayout(type, out WasmValueType multiSlotType, out _))
+            {
+                return multiSlotType == WasmValueType.I64
+                    ? CorInfoWasmType.CORINFO_WASM_TYPE_I64
+                    : CorInfoWasmType.CORINFO_WASM_TYPE_V128;
+            }
+
             TypeDesc abiType = WasmLowering.LowerToAbiType(type);
 
             if (abiType == null)
