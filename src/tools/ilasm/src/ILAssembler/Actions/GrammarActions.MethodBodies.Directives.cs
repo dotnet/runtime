@@ -238,7 +238,7 @@ internal sealed partial class GrammarActions
         }
 
         EntityRegistry.ParameterEntity parameterEntity = _currentMethod.Definition.Parameters[index];
-        object? constantValue = VisitInitOpt(context.initializer).Value;
+        object? constantValue = GetInitializerValue(context.initializer);
         if (constantValue is not NoConstantSentinel)
         {
             parameterEntity.ConstantValue = constantValue;
@@ -247,7 +247,7 @@ internal sealed partial class GrammarActions
 
         foreach (CILParser.CustomAttrDeclContext attributeContext in frame.CustomAttributes)
         {
-            EntityRegistry.CustomAttributeEntity? attribute = VisitCustomAttrDecl(attributeContext).Value;
+            EntityRegistry.CustomAttributeEntity? attribute = MaterializeCustomAttributeDeclaration(attributeContext);
             if (attribute is not null)
             {
                 attribute.Owner = parameterEntity;
@@ -296,7 +296,7 @@ internal sealed partial class GrammarActions
     {
         foreach (CILParser.CustomAttrDeclContext attributeContext in attributeContexts)
         {
-            EntityRegistry.CustomAttributeEntity? attribute = VisitCustomAttrDecl(attributeContext).Value;
+            EntityRegistry.CustomAttributeEntity? attribute = MaterializeCustomAttributeDeclaration(attributeContext);
             if (attribute is not null)
             {
                 attribute.Owner = owner;
@@ -316,7 +316,7 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        EntityRegistry.DeclarativeSecurityAttributeEntity? security = VisitSecDecl(context).Value;
+        EntityRegistry.DeclarativeSecurityAttributeEntity? security = MaterializeSecurityDeclaration(context);
         security?.Parent = _currentMethod.Definition;
     }
 
@@ -335,7 +335,7 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        EntityRegistry.CustomAttributeEntity? attribute = VisitCustomDescrInMethodBody(context).Value;
+        EntityRegistry.CustomAttributeEntity? attribute = MaterializeMethodBodyCustomAttributeDeclaration(context);
         if (attribute is not null)
         {
             attribute.Owner = _currentMethod.Definition;

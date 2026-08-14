@@ -442,6 +442,6 @@ internal sealed partial class GrammarActions
         return (ILOpCode)Enum.Parse(typeof(ILOpCode), normalized, ignoreCase: true);
     }
 
-    public GrammarResult.Literal<EntityRegistry.EntityBase> VisitMdtoken(CILParser.MdtokenContext context)
-        => new(ResolveMetadataToken(context.Value));
+    internal EntityRegistry.EntityBase ResolveMetadataToken(CILParser.MdtokenContext context)
+        => ResolveMetadataToken(context.Value);
 }
