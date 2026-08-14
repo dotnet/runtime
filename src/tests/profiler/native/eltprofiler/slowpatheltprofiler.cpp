@@ -97,7 +97,8 @@ HRESULT SlowPathELTProfiler::Initialize(IUnknown* pICorProfilerInfoUnk)
     if (FAILED(hr = pCorProfilerInfo->SetEventMask2(COR_PRF_MONITOR_ENTERLEAVE
                                                     | COR_PRF_ENABLE_FUNCTION_ARGS
                                                     | COR_PRF_ENABLE_FUNCTION_RETVAL
-                                                    | COR_PRF_ENABLE_FRAME_INFO,
+                                                    | COR_PRF_ENABLE_FRAME_INFO
+                                                    | COR_PRF_ENABLE_STACK_SNAPSHOT,
                                                     0)))
     {
         wcout << L"FAIL: IpCorProfilerInfo::SetEventMask2() failed hr=0x" << std::hex << hr << endl;
@@ -163,6 +164,8 @@ HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::EnterCallback(FunctionIDOrClientI
     {
         return S_OK;
     }
+
+    TestHookRestrictions();
 
     COR_PRF_FRAME_INFO frameInfo;
     ULONG pcbArgumentInfo = 0;
@@ -422,12 +425,59 @@ HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::EnterCallback(FunctionIDOrClientI
     return hr;
 }
 
+HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::StackSnapshotCallback(
+    FunctionID functionId,
+    UINT_PTR instructionPointer,
+    COR_PRF_FRAME_INFO frameInfo,
+    ULONG32 contextSize,
+    BYTE context[],
+    void *clientData)
+{
+    bool *sawManagedFrame = reinterpret_cast<bool *>(clientData);
+    *sawManagedFrame |= functionId != 0;
+    return S_OK;
+}
+
+void SlowPathELTProfiler::TestHookRestrictions()
+{
+    if (_testedHookRestrictions.exchange(true))
+    {
+        return;
+    }
+
+#ifndef WIN32
+    bool sawManagedFrame = false;
+    HRESULT hr = pCorProfilerInfo->DoStackSnapshot(
+        0,
+        StackSnapshotCallback,
+        COR_PRF_SNAPSHOT_DEFAULT,
+        &sawManagedFrame,
+        nullptr,
+        0);
+    if (hr != S_OK || !sawManagedFrame)
+    {
+        wcout << L"DoStackSnapshot from ELT hook failed hr=0x" << std::hex << hr
+              << L" sawManagedFrame=" << sawManagedFrame << endl;
+        _failures++;
+    }
+#endif // WIN32
+
+    HRESULT forceGCHr = pCorProfilerInfo->ForceGC();
+    if (forceGCHr != CORPROF_E_UNSUPPORTED_CALL_SEQUENCE)
+    {
+        wcout << L"ForceGC from ELT hook returned unexpected hr=0x" << std::hex << forceGCHr << endl;
+        _failures++;
+    }
+}
+
 HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::LeaveCallback(FunctionIDOrClientID functionIdOrClientID, COR_PRF_ELT_INFO eltInfo)
 {
     if (_testType != TestType::LeaveHooks)
     {
         return S_OK;
     }
+
+    TestHookRestrictions();
 
     COR_PRF_FRAME_INFO frameInfo;
     COR_PRF_FUNCTION_ARGUMENT_RANGE * pRetvalRange = new COR_PRF_FUNCTION_ARGUMENT_RANGE;

@@ -127,7 +127,7 @@ class SlowPathELTProfiler : public Profiler
 public:
     static std::shared_ptr<SlowPathELTProfiler> s_profiler;
 
-    SlowPathELTProfiler() : Profiler(), _failures(0), _testType(TestType::Unknown)
+    SlowPathELTProfiler() : Profiler(), _failures(0), _testedHookRestrictions(false), _testType(TestType::Unknown)
     {
         _sawFuncEnter[L"SimpleArgsFunc"] = false;
         _sawFuncEnter[L"MixedStructFunc"] = false;
@@ -185,11 +185,21 @@ private:
     };
 
     std::atomic<int> _failures;
+    std::atomic<bool> _testedHookRestrictions;
     std::unordered_map<std::wstring, bool> _sawFuncEnter;
     std::unordered_map<std::wstring, bool> _sawFuncLeave;
 
     TestType _testType;
 
+    static HRESULT STDMETHODCALLTYPE StackSnapshotCallback(
+        FunctionID functionId,
+        UINT_PTR instructionPointer,
+        COR_PRF_FRAME_INFO frameInfo,
+        ULONG32 contextSize,
+        BYTE context[],
+        void *clientData);
+
+    void TestHookRestrictions();
     void PrintBytes(const BYTE *bytes, size_t length);
 
     bool ValidateInt(UINT_PTR ptr, int expected);
