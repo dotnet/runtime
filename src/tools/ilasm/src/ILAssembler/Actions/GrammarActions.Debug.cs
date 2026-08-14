@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using Antlr4.Runtime;
 
 namespace ILAssembler;
@@ -222,31 +221,4 @@ internal sealed partial class GrammarActions
     private bool CanApplySharedDirective(ParserRuleContext context)
         => context.Parent is not CILParser.MethodDeclContext || _currentMethod is not null;
 
-    public GrammarResult VisitCompControl(CILParser.CompControlContext context)
-    {
-        // Compilation control directives that require handling are consumed by the preprocessor.
-        return GrammarResult.SentinelValue.Result;
-    }
-
-#pragma warning disable CA1822 // Parser actions own these directive side effects.
-    GrammarResult ICILVisitor<GrammarResult>.VisitEsHead(CILParser.EsHeadContext context)
-        => VisitEsHead(context);
-
-    public static GrammarResult.Literal<bool> VisitEsHead(CILParser.EsHeadContext context)
-        => new(context.AutoIncrement);
-
-    public GrammarResult VisitExtSourceSpec(CILParser.ExtSourceSpecContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitLanguageDecl(CILParser.LanguageDeclContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitLanguageString(
-        CILParser.LanguageStringContext context)
-        => VisitLanguageString(context);
-
-    public static GrammarResult.String VisitLanguageString(
-        CILParser.LanguageStringContext context)
-        => new(context.Value ?? string.Empty);
-#pragma warning restore CA1822
 }

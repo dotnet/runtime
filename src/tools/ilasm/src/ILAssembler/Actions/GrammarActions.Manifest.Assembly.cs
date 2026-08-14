@@ -202,28 +202,6 @@ internal sealed partial class GrammarActions
         }
     }
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitAsmAttr(CILParser.AsmAttrContext context)
-        => VisitAsmAttr(context);
-
-    public static GrammarResult.Literal<AssemblyFlags> VisitAsmAttr(
-        CILParser.AsmAttrContext context)
-        => new(context.Value);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitAsmAttrAny(
-        CILParser.AsmAttrAnyContext context)
-        => VisitAsmAttrAny(context);
-
-    public static GrammarResult.Flag<AssemblyFlags> VisitAsmAttrAny(
-        CILParser.AsmAttrAnyContext context)
-        => new(context.Value, context.Mask);
-
-    public GrammarResult VisitAsmOrRefDecl(CILParser.AsmOrRefDeclContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitAssemblyBlock(
-        CILParser.AssemblyBlockContext context)
-        => VisitAssemblyBlock(context);
-
     public GrammarResult VisitAssemblyBlock(CILParser.AssemblyBlockContext context)
     {
         if (context.Value is AssemblyDefinitionValue definition)
@@ -233,10 +211,4 @@ internal sealed partial class GrammarActions
 
         return GrammarResult.SentinelValue.Result;
     }
-
-    public GrammarResult VisitAssemblyDecl(CILParser.AssemblyDeclContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitAssemblyDecls(CILParser.AssemblyDeclsContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 }

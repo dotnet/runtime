@@ -4,7 +4,8 @@ ILAssembler compiles declarations while ANTLR parses the input. The parser uses
 `UnbufferedTokenStream` with parse-tree construction disabled. Namespace, type, top-level,
 class-member, method-body and shared-directive structure is action-driven. A complete document,
 declaration body or method body is never retained. Rules such as `bytes` stream their content into
-an accumulator instead of building a subtree at all.
+an accumulator instead of building a subtree at all. The generator emits neither listeners nor
+visitors; parser actions own traversal.
 
 `GrammarActions` is a single `internal sealed partial class` split across
 `src/ILAssembler/Actions/GrammarActions.*.cs`:
@@ -14,19 +15,17 @@ an accumulator instead of building a subtree at all.
 | `GrammarActions.cs` | Per-document lifecycle. |
 | `GrammarActions.BuildImage.cs` | PE and portable PDB construction. |
 | `GrammarActions.Bytes.cs` | `bytearray` accumulation. |
-| `GrammarActions.Conversions.cs` | `GrammarResult`, shared state and core visitor plumbing. |
+| `GrammarActions.Conversions.cs` | `GrammarResult`, diagnostics and shared state. |
 | `GrammarActions.CustomAttributes.Actions.cs` | Custom attribute descriptors, declarations and blob lists. |
 | `GrammarActions.CustomAttributes.Sequences.cs` | Custom attribute scalar-array sequence synthesis. |
 | `GrammarActions.CustomAttributes.Serialization.cs` | Serialized attribute values and field/parameter initializers. |
 | `GrammarActions.CustomAttributes.Values.cs` | Internal synthesized custom attribute value model. |
 | `GrammarActions.Data.cs` | Streaming mapped-data declarations, labels and reference fixups. |
 | `GrammarActions.Debug.cs` | Direct source-location, document and language directives. |
-| `GrammarActions.Declarations.cs` | Parser-driven top-level declaration visitor guards. |
 | `GrammarActions.Declarations.Actions.cs` | Direct top-level declarations and shared-directive dispatch. |
 | `GrammarActions.Instructions.cs` | Tree-free value instruction and method-item actions. |
 | `GrammarActions.Instructions.References.cs` | Reference and signature instruction actions. |
 | `GrammarActions.Literals.cs` | Literals, names and strings. |
-| `GrammarActions.Manifest.cs` | Module and image-header visitor guards. |
 | `GrammarActions.Manifest.Assembly.cs` | Assembly definitions, identity, keys, security and attributes. |
 | `GrammarActions.Manifest.ExportedTypes.cs` | Exported-type headers, implementations and attributes. |
 | `GrammarActions.Manifest.Files.cs` | Assembly file declarations and entry points. |
@@ -36,8 +35,6 @@ an accumulator instead of building a subtree at all.
 | `GrammarActions.Manifest.Values.cs` | Internal synthesized manifest value model and list frames. |
 | `GrammarActions.Manifest.VTable.cs` | Vtable fixup declarations and flags. |
 | `GrammarActions.Marshalling.Actions.cs` | Synthesized native type and marshalling descriptor actions. |
-| `GrammarActions.Marshalling.cs` | Marshalling visitor wrappers and P/Invoke conversion. |
-| `GrammarActions.Members.cs` | Parser-driven class member visitor guards. |
 | `GrammarActions.Members.Class.cs` | Class directives, generic parameter annotations and method overrides. |
 | `GrammarActions.Members.Fields.cs` | Field declarations, attributes, layout, constants, marshalling and RVA data. |
 | `GrammarActions.Members.PropertiesEvents.cs` | Property and event headers, bodies and accessors. |
@@ -46,18 +43,18 @@ an accumulator instead of building a subtree at all.
 | `GrammarActions.MethodHeaders.Actions.cs` | Method header, attribute, P/Invoke and generic parser actions. |
 | `GrammarActions.MethodHeaders.Generics.cs` | Generic parameter and constraint synthesis and materialization. |
 | `GrammarActions.MethodHeaders.Values.cs` | Internal synthesized method-header value model. |
-| `GrammarActions.MethodBodies.cs` | Parser-driven method-body visitor guards. |
+| `GrammarActions.MethodBodies.cs` | Label validation and method-name parsing. |
 | `GrammarActions.MethodBodies.Directives.cs` | Direct method-body directives and parameter ownership. |
 | `GrammarActions.MethodBodies.ExceptionHandling.cs` | Lexical scopes and synthesized exception regions. |
 | `GrammarActions.MethodBodies.Values.cs` | Internal method-body directive and exception-region values. |
 | `GrammarActions.Security.cs` | Synthesized declarative-security values and permission sets. |
-| `GrammarActions.Signatures.cs` | Signature visitor compatibility wrappers. |
+| `GrammarActions.Signatures.cs` | Member and type signature materialization helpers. |
 | `GrammarActions.Signatures.Actions.cs` | Signature grammar actions and repetition frames. |
 | `GrammarActions.Signatures.References.cs` | Member-reference synthesis and materialization. |
 | `GrammarActions.Signatures.Types.cs` | Type-signature materialization and encoding. |
 | `GrammarActions.Signatures.Values.cs` | Internal synthesized signature value model. |
 | `GrammarActions.Types.cs` | Namespace and type scope ownership and shared type conversion. |
-| `GrammarActions.Types.Headers.cs` | Namespace and type-header materialization and visitor guards. |
+| `GrammarActions.Types.Headers.cs` | Namespace and type-header materialization. |
 | `GrammarActions.Types.Headers.Actions.cs` | Namespace, type attribute, base and interface parser actions. |
 | `GrammarActions.Types.Headers.Values.cs` | Internal synthesized type-header value model. |
 | `GrammarActions.Types.References.cs` | Type-name synthesis and resolution. |
@@ -87,9 +84,9 @@ the owning context, because ANTLR skips `@after` actions and the remainder of an
 rule reports a syntax error. Inline actions placed after a subrule reference are not a substitute:
 they run only when the alternative completes.
 
-Only parser actions walk structural rules. Their recursive `ICILVisitor` entry points either
-materialize a synthesized value or throw `UnreachableException`, so there is exactly one live
-algorithm and no child walker.
+Only parser actions walk structural rules. ANTLR visitors and listeners are not generated.
+Ordinary `VisitX` methods are semantic helpers called directly by actions or materializers, not
+parse-tree visitor entry points. There is no child walker.
 
 ## Build
 
@@ -109,3 +106,5 @@ After modifying `CIL.g4`, regenerate the checked-in ANTLR output before building
 ```
 
 Do not edit generated `CIL*.cs` or `.interp` files manually.
+Regeneration produces `CILLexer.cs` and `CILParser.cs`; it does not produce visitor or listener
+types.
