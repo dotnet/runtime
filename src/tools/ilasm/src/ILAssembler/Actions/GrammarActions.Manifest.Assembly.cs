@@ -202,13 +202,11 @@ internal sealed partial class GrammarActions
         }
     }
 
-    public GrammarResult VisitAssemblyBlock(CILParser.AssemblyBlockContext context)
+    internal void MaterializeAssemblyDefinition(CILParser.AssemblyBlockContext context)
     {
         if (context.Value is AssemblyDefinitionValue definition)
         {
             MaterializeAssemblyDefinition(definition);
         }
-
-        return GrammarResult.SentinelValue.Result;
     }
 }

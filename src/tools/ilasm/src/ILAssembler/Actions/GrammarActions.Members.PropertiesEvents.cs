@@ -181,7 +181,7 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        if (VisitCustomAttrDecl(attribute).Value is { } customAttribute)
+        if (MaterializeCustomAttributeDeclaration(attribute) is { } customAttribute)
         {
             customAttribute.Owner = property;
         }
@@ -305,7 +305,7 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        if (VisitCustomAttrDecl(attribute).Value is { } customAttribute)
+        if (MaterializeCustomAttributeDeclaration(attribute) is { } customAttribute)
         {
             customAttribute.Owner = @event;
         }

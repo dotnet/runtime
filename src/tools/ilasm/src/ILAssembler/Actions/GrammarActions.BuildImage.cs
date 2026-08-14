@@ -21,7 +21,6 @@ using Antlr4.Runtime.Misc;
 
 namespace ILAssembler
 {
-#pragma warning disable CA1822 // Mark members as static
     internal sealed partial class GrammarActions
     {
         public (ImmutableArray<Diagnostic> Diagnostics, CompilationResult? Image) BuildImage()

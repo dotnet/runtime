@@ -18,7 +18,7 @@ internal sealed partial class GrammarActions
     {
         if (!context.HasSyntaxError)
         {
-            _ = VisitVtableDecl(context);
+            MaterializeVTable(context);
         }
     }
 
@@ -26,7 +26,7 @@ internal sealed partial class GrammarActions
     {
         if (!context.HasSyntaxError)
         {
-            _ = VisitVtfixupDecl(context);
+            MaterializeVTableFixup(context);
         }
     }
 
@@ -37,7 +37,7 @@ internal sealed partial class GrammarActions
     {
         if (!context.HasSyntaxError)
         {
-            _ = VisitFileDecl(context);
+            _ = MaterializeFileDeclaration(context);
         }
     }
 
@@ -45,7 +45,7 @@ internal sealed partial class GrammarActions
     {
         if (!context.HasSyntaxError)
         {
-            _ = VisitAssemblyBlock(context);
+            MaterializeAssemblyDefinition(context);
         }
     }
 
@@ -53,7 +53,7 @@ internal sealed partial class GrammarActions
     {
         if (!context.HasSyntaxError)
         {
-            _ = VisitAssemblyRefBlock(context);
+            MaterializeAssemblyReference(context);
         }
     }
 
@@ -61,7 +61,7 @@ internal sealed partial class GrammarActions
     {
         if (!context.HasSyntaxError)
         {
-            _ = VisitExptypeBlock(context);
+            MaterializeExportedType(context);
         }
     }
 
@@ -69,7 +69,7 @@ internal sealed partial class GrammarActions
     {
         if (!context.HasSyntaxError)
         {
-            _ = VisitManifestResBlock(context);
+            MaterializeManifestResource(context);
         }
     }
 
@@ -111,7 +111,7 @@ internal sealed partial class GrammarActions
         if (!context.HasSyntaxError)
         {
             EntityRegistry.DeclarativeSecurityAttributeEntity? security =
-                VisitSecDecl(context).Value;
+                MaterializeSecurityDeclaration(context);
             security?.Parent = _entityRegistry.Assembly;
         }
     }
@@ -119,7 +119,7 @@ internal sealed partial class GrammarActions
     internal void ProcessTopLevelCustomAttribute(CILParser.CustomAttrDeclContext context)
     {
         if (!context.HasSyntaxError &&
-            VisitCustomAttrDecl(context).Value is { } customAttribute)
+            MaterializeCustomAttributeDeclaration(context) is { } customAttribute)
         {
             customAttribute.Owner =
                 (EntityRegistry.EntityBase?)_lastFieldDefinition ?? _entityRegistry.Module;
@@ -158,7 +158,7 @@ internal sealed partial class GrammarActions
     {
         if (!context.HasSyntaxError)
         {
-            _ = VisitTypedefDecl(context);
+            MaterializeTypedef(context);
         }
     }
 

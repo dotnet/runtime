@@ -253,7 +253,7 @@ internal sealed partial class GrammarActions
             attributes,
             GetTypeValue(type),
             GetMarshallingDescriptorValue(marshalling),
-            name is null ? null : VisitId(name).Value);
+            name is null ? null : GetIdentifier(name));
 
     internal void BeginParameterAttributes(CILParser.ParamAttrContext context)
         => _parameterAttributesFrames.Push(new(context));

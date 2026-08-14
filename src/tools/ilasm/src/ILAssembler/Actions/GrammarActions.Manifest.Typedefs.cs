@@ -58,14 +58,12 @@ internal sealed partial class GrammarActions
         }
     }
 
-    public GrammarResult VisitTypedefDecl(CILParser.TypedefDeclContext context)
+    internal void MaterializeTypedef(CILParser.TypedefDeclContext context)
     {
         if (context.Value is TypedefDeclarationValue declaration)
         {
             MaterializeTypedef(declaration);
         }
-
-        return GrammarResult.SentinelValue.Result;
     }
 
     private EntityRegistry.TypeEntity? TryResolveTypedefAsType(string alias)
