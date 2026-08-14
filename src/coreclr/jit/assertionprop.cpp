@@ -3748,6 +3748,12 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
         return nullptr;
     }
 
+    if (lclVarDsc->lvOnlyUsedOnSynchronousPath || copyVarDsc->lvOnlyUsedOnSynchronousPath)
+    {
+        // Do not touch these -- it will likely cause us to unnecessarily save state to the continuation.
+        return nullptr;
+    }
+
     tree->SetLclNum(copyLclNum);
 
     // The copied var also needs multi-reg, if set

@@ -36,11 +36,26 @@ WELL_KNOWN_ARG(SwiftSelf,                   "swift self",     true,    false)
 WELL_KNOWN_ARG(X86TailCallSpecialArg,       "tail call",      false,   false)
 WELL_KNOWN_ARG(StackArrayLocal,             "&lcl arr",       false,   false)
 WELL_KNOWN_ARG(RuntimeMethodHandle,         "meth hnd",       false,   false)
+
+// Custom awaiter of a call the importer rewrote into an UnsafeAwaitAwaiter* form. Stored
+// into the continuation on suspension.
 WELL_KNOWN_ARG(AsyncAwaiter,                "awaiter",        false,   false)
+
+// Contexts of the frame's caller, captured on entry. Restored onto the Thread
+// object as the frame suspends, as if it had returned. When inlining there can
+// be multiple sets of these, one for each inlined frame, in order from
+// innermost inlinee out to the root.
 WELL_KNOWN_ARG(AsyncExecutionContext,       "exec ctx",       false,   false)
 WELL_KNOWN_ARG(AsyncSynchronizationContext, "sync ctx",       false,   false)
+// Value of the frame's resumed indicator. The restore above only happens on
+// the first suspension in the method, implemented by checking this value. Like
+// the contexts there is one for every frame of inlining.
 WELL_KNOWN_ARG(AsyncResumedUse,             "resumed",        false,   false)
+
+// Address of that same indicator. The resumption path stores 1 through it to record that
+// the frame resumed.
 WELL_KNOWN_ARG(AsyncResumedDef,             "resumed def",    false,   false)
+
 WELL_KNOWN_ARG(WasmShadowStackPointer,      "wasm sp",        false,   false)
 WELL_KNOWN_ARG(WasmPortableEntryPoint,      "wasm pep",       false,   false)
 

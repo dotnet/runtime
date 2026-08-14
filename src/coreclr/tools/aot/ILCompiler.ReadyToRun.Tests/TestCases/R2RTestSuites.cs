@@ -1183,11 +1183,6 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskNoAwait", "ReturnTaskNoAwait", out diag), diag);
             Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskPrimitiveNoAwait", "ReturnTaskPrimitiveNoAwait", out diag), diag);
             Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskClassNoAwait", "ReturnTaskClassNoAwait", out diag), diag);
-
-            // Async candidates that contain a real await: cannot be inlined by the JIT.
-            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskWithAwait", "ReturnTaskWithAwait", out diag), diag);
-            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskPrimitiveWithAwait", "ReturnTaskPrimitiveWithAwait", out diag), diag);
-            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskClassWithAwait", "ReturnTaskClassWithAwait", out diag), diag);
         }
     }
 
