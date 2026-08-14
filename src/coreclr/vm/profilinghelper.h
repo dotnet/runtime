@@ -136,4 +136,15 @@ private:
     DWORD      m_dwOriginalFullState;
 };
 
+class ProfilerELTContextHolder
+{
+public:
+    ProfilerELTContextHolder(T_CONTEXT *pContext);
+    ~ProfilerELTContextHolder();
+
+private:
+    Thread *   m_pThread;
+    T_CONTEXT *m_pOriginalContext;
+};
+
 #endif //__PROFILING_HELPER_H__

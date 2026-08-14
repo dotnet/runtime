@@ -46,6 +46,36 @@ FORCEINLINE SetCallbackStateFlagsHolder::~SetCallbackStateFlagsHolder()
     }
 }
 
+FORCEINLINE ProfilerELTContextHolder::ProfilerELTContextHolder(T_CONTEXT *pContext)
+{
+    m_pThread = (pContext != nullptr) ? GetThreadNULLOk() : nullptr;
+    if (m_pThread != nullptr)
+    {
+        m_pOriginalContext = m_pThread->GetProfilerELTContext();
+        m_pThread->SetProfilerELTContext(pContext);
+    }
+    else
+    {
+        m_pOriginalContext = nullptr;
+    }
+}
+
+FORCEINLINE ProfilerELTContextHolder::~ProfilerELTContextHolder()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (m_pThread != nullptr)
+    {
+        m_pThread->SetProfilerELTContext(m_pOriginalContext);
+    }
+}
+
 #ifdef ENABLE_CONTRACTS
 //---------------------------------------------------------------------------------------
 //

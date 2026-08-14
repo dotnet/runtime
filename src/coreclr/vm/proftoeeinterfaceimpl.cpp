@@ -123,6 +123,7 @@
 #include "generics.h"
 #include "gcinfo.h"
 #include "safemath.h"
+#include "stacktrace.h"
 #include "threadsuspend.h"
 #include "inlinetracking.h"
 #include "frozenobjectheap.h"
@@ -8578,6 +8579,8 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
     CONTEXT ctxCurrent;
     memset(&ctxCurrent, 0, sizeof(ctxCurrent));
 
+    CONTEXT ctxELT;
+
     REGDISPLAY rd;
 
     PROFILER_STACK_WALK_DATA data;
@@ -8714,6 +8717,17 @@ HRESULT ProfToEEInterfaceImpl::DoStackSnapshot(ThreadID thread,
             goto Cleanup;
         }
 #endif // !PLATFORM_SUPPORTS_SAFE_THREADSUSPEND
+    }
+
+    if ((pctxSeed == nullptr) && (pThreadToSnapshot == pCurrentThread))
+    {
+        T_CONTEXT *pELTContext = pCurrentThread->GetProfilerELTContext();
+        if (pELTContext != nullptr)
+        {
+            CopyOSContext(&ctxELT, pELTContext);
+            Thread::VirtualUnwindToFirstManagedCallFrame(&ctxELT);
+            pctxSeed = &ctxELT;
+        }
     }
 
     // If target thread is in pre-emptive mode, the profiler's seed context is unnecessary
@@ -10694,6 +10708,21 @@ void __stdcall ProfilerUnmanagedToManagedTransitionMD(MethodDesc *pMD,
 // These do a lot of work for us, setting up Frames, gathering arg info and resolving generics.
   //*******************************************************************************************
 
+#ifdef PROFILING_SUPPORTED
+static void CaptureProfilerELTContext(T_CONTEXT *pContext)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    ClrCaptureContext(pContext);
+}
+#endif // PROFILING_SUPPORTED
+
 HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecificHandle)
 {
     FCALL_CONTRACT;
@@ -10740,6 +10769,14 @@ HCIMPL2(EXTERN_C void, ProfileEnter, UINT_PTR clientData, void * platformSpecifi
     // This means that we cannot trigger a GC.
     SetCallbackStateFlagsHolder csf(
         COR_PRF_CALLBACKSTATE_INCALLBACK);
+
+    T_CONTEXT *pProfilerELTContext = nullptr;
+    if (CORProfilerStackSnapshotEnabled())
+    {
+        pProfilerELTContext = static_cast<T_CONTEXT *>(_alloca(sizeof(T_CONTEXT)));
+        CaptureProfilerELTContext(pProfilerELTContext);
+    }
+    ProfilerELTContextHolder contextHolder(pProfilerELTContext);
 
     COR_PRF_ELT_INFO_INTERNAL eltInfo;
     eltInfo.platformSpecificHandle = platformSpecificHandle;
@@ -10908,6 +10945,14 @@ HCIMPL2(EXTERN_C void, ProfileLeave, UINT_PTR clientData, void * platformSpecifi
     SetCallbackStateFlagsHolder csf(
         COR_PRF_CALLBACKSTATE_INCALLBACK);
 
+    T_CONTEXT *pProfilerELTContext = nullptr;
+    if (CORProfilerStackSnapshotEnabled())
+    {
+        pProfilerELTContext = static_cast<T_CONTEXT *>(_alloca(sizeof(T_CONTEXT)));
+        CaptureProfilerELTContext(pProfilerELTContext);
+    }
+    ProfilerELTContextHolder contextHolder(pProfilerELTContext);
+
     COR_PRF_ELT_INFO_INTERNAL eltInfo;
     eltInfo.platformSpecificHandle = platformSpecificHandle;
 
@@ -11032,6 +11077,14 @@ HCIMPL2(EXTERN_C void, ProfileTailcall, UINT_PTR clientData, void * platformSpec
     // This means that we cannot trigger a GC.
     SetCallbackStateFlagsHolder csf(
         COR_PRF_CALLBACKSTATE_INCALLBACK);
+
+    T_CONTEXT *pProfilerELTContext = nullptr;
+    if (CORProfilerStackSnapshotEnabled())
+    {
+        pProfilerELTContext = static_cast<T_CONTEXT *>(_alloca(sizeof(T_CONTEXT)));
+        CaptureProfilerELTContext(pProfilerELTContext);
+    }
+    ProfilerELTContextHolder contextHolder(pProfilerELTContext);
 
     COR_PRF_ELT_INFO_INTERNAL eltInfo;
     eltInfo.platformSpecificHandle = platformSpecificHandle;

@@ -1283,6 +1283,7 @@ Thread::Thread()
     }
 
     m_pProfilerFilterContext = NULL;
+    m_pProfilerELTContext = nullptr;
 #endif // PROFILING_SUPPORTED
 
     m_CacheStackBase = 0;

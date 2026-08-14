@@ -2747,6 +2747,12 @@ private:
     T_CONTEXT *m_pProfilerFilterContext;
 
     //---------------------------------------------------------------
+    // Native context captured before invoking an ELT profiler callback.
+    // DoStackSnapshot may unwind it to seed a same-thread stack walk.
+    //---------------------------------------------------------------
+    T_CONTEXT *m_pProfilerELTContext;
+
+    //---------------------------------------------------------------
     // Bitmask to remember per-thread state useful for the profiler API.  See
     // COR_PRF_CALLBACKSTATE_* flags in clr\src\inc\ProfilePriv.h for bit values.
     //---------------------------------------------------------------
@@ -2834,6 +2840,20 @@ public:
         LIMITED_METHOD_CONTRACT;
 
         m_pProfilerFilterContext = pContext;
+    }
+
+    void SetProfilerELTContext(T_CONTEXT *pContext)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        m_pProfilerELTContext = pContext;
+    }
+
+    T_CONTEXT *GetProfilerELTContext()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_pProfilerELTContext;
     }
 
     FORCEINLINE DWORD GetProfilerEvacuationCounter(size_t slot)
