@@ -116,28 +116,6 @@ void CodeGen::genBeginFnProlog()
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
     }
-
-    genInitImageBaseLocal(func);
-}
-
-//------------------------------------------------------------------------
-// genInitImageBaseLocal: initialize the wasm local caching the image base, if this
-//   function has one.
-//
-// Arguments:
-//   func - the function or funclet whose prolog is being generated
-//
-// Notes:
-//   Emitted in the prolog, which dominates every use. The imageBase global is immutable,
-//   so the cached value never needs refreshing.
-//
-void CodeGen::genInitImageBaseLocal(FuncInfoDsc* func)
-{
-    if (func->funWasmImageBaseLocalIndex != UINT_MAX)
-    {
-        GetEmitter()->emitImageBaseGlobal();
-        GetEmitter()->emitIns_I(INS_local_set, EA_PTRSIZE, func->funWasmImageBaseLocalIndex);
-    }
 }
 
 //------------------------------------------------------------------------
@@ -468,8 +446,6 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
         GetEmitter()->emitIns_I_Ty(INS_local_decl, decl.Count, decl.Type, localsCount);
         localsCount += decl.Count;
     }
-
-    genInitImageBaseLocal(func);
 
     // All the funclet params are used from their home registers, so nothing
     // needs homing here.
@@ -1522,10 +1498,9 @@ void CodeGen::genIntCastOverflowCheck(GenTreeCast* cast, const GenIntCastDesc& d
 //
 void CodeGen::genFloatToIntCast(GenTree* tree)
 {
-    if (tree->gtOverflow())
-    {
-        NYI_WASM("Overflow checks");
-    }
+    // Overflow checks for floating->integral should be handled on import
+    // by converting to helper calls like CORINFO_HELP_DBL2*_OVF (see fgCastRequiresHelper).
+    assert(!tree->gtOverflow());
 
     var_types   toType     = tree->TypeGet();
     var_types   fromType   = tree->AsCast()->CastOp()->TypeGet();
@@ -2715,7 +2690,11 @@ void CodeGen::genCodeForLclAddr(GenTreeLclFld* lclAddrNode)
     unsigned lclOffset = lclAddrNode->GetLclOffs();
 
     GetEmitter()->emitIns_I(INS_local_get, EA_PTRSIZE, GetFramePointerRegIndex());
-    if ((lclOffset != 0) || (m_compiler->lvaFrameAddress(lclNum, &FPBased) != 0))
+
+    // A folded address contributes its frame offset to the user's memarg instead.
+    //
+    if (((lclAddrNode->gtLIRFlags & LIR::Flags::FoldedAddr) == LIR::Flags::None) &&
+        ((lclOffset != 0) || (m_compiler->lvaFrameAddress(lclNum, &FPBased) != 0)))
     {
         GetEmitter()->emitIns_S(INS_I_const, EA_PTRSIZE, lclNum, lclOffset);
         GetEmitter()->emitIns(INS_I_add);
@@ -2936,6 +2915,35 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* tree)
 }
 
 //------------------------------------------------------------------------
+// genWasmMemargOffset: Get the offset an indirection folds into its memarg.
+//
+// Arguments:
+//    addr - the address node of the indirection
+//
+// Return Value:
+//    The offset to encode in the memarg, or zero if the address carries no folded offset.
+//
+cnsval_ssize_t CodeGen::genWasmMemargOffset(GenTree* addr)
+{
+    if (addr->isContained() && addr->OperIs(GT_LEA))
+    {
+        return addr->AsAddrMode()->Offset();
+    }
+
+    if (addr->OperIs(GT_LCL_ADDR) && ((addr->gtLIRFlags & LIR::Flags::FoldedAddr) != LIR::Flags::None))
+    {
+        bool      FPBased;
+        const int offset = m_compiler->lvaFrameAddress(addr->AsLclFld()->GetLclNum(), &FPBased) +
+                           static_cast<int>(addr->AsLclFld()->GetLclOffs());
+        noway_assert(offset >= 0); // WASM address modes are unsigned.
+        assert(FPBased);
+        return offset;
+    }
+
+    return 0;
+}
+
+//------------------------------------------------------------------------
 // genCodeForIndir: Produce code for a GT_IND node.
 //
 // Arguments:
@@ -2959,13 +2967,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
 
     // TODO-WASM: Memory barriers
 
-    if (addr->isContained() && addr->OperIs(GT_LEA))
-    {
-        // The contained address mode's offset folds into the memarg; its base is already pushed.
-        //
-        GetEmitter()->emitIns_I(ins_Load(type), emitActualTypeSize(type), addr->AsAddrMode()->Offset());
-    }
-    else if (addr->isContained())
+    if (addr->isContained() && !addr->OperIs(GT_LEA))
     {
         // A contained address constant folds into the memarg offset, so emit just the image base here.
         //
@@ -2981,7 +2983,9 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     }
     else
     {
-        GetEmitter()->emitIns_I(ins_Load(type), emitActualTypeSize(type), 0);
+        // A contained address mode's offset or a folded local's frame offset supplies the memarg.
+        //
+        GetEmitter()->emitIns_I(ins_Load(type), emitActualTypeSize(type), genWasmMemargOffset(addr));
     }
 
     WasmProduceReg(tree);
@@ -2998,10 +3002,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree* data = tree->Data();
     GenTree* addr = tree->Addr();
 
-    // Only a contained address mode is expected; its offset folds into the memarg below.
+    // A contained address mode's offset or a folded local's frame offset supplies the memarg.
     //
     assert(!addr->isContained() || addr->OperIs(GT_LEA));
-    const cnsval_ssize_t offset = addr->isContained() ? addr->AsAddrMode()->Offset() : 0;
+    const cnsval_ssize_t offset = genWasmMemargOffset(addr);
 
     // We must consume the operands in the proper execution order,
     // so that liveness is updated appropriately.
@@ -3063,12 +3067,12 @@ void CodeGen::genCall(GenTreeCall* call)
 
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
-        genConsumeReg(arg.GetEarlyNode());
+        genConsumeRegs(arg.GetEarlyNode());
     }
 
     for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        genConsumeReg(arg.GetLateNode());
+        genConsumeRegs(arg.GetLateNode());
     }
 
     if (call->NeedsNullCheck())
@@ -3118,7 +3122,13 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
     }
     else if (callRetType == TYP_STRUCT)
     {
-        typeStack.Push(m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd));
+        CorInfoWasmType retWasmType = m_compiler->info.compCompHnd->getWasmLowering(call->gtRetClsHnd);
+        // A struct wider than the wasm value it lowers to is returned through a hidden buffer,
+        // so it must have been handled by the retbuf branch above.
+        assert(retWasmType != CORINFO_WASM_TYPE_VOID);
+        assert(m_compiler->info.compCompHnd->getClassSize(call->gtRetClsHnd) <=
+               genTypeSize(WasmClassifier::ToJitType(retWasmType)));
+        typeStack.Push(retWasmType);
     }
     else
     {
@@ -4039,11 +4049,6 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 }
 #endif
 
-void CodeGen::genSpillVar(GenTree* tree)
-{
-    NYI_WASM("Put all spillng to memory under '#if HAS_FIXED_REGISTER_SET'");
-}
-
 //------------------------------------------------------------------------
 // genLoadLocalIntoReg: set the register to "load(local on stack)".
 //
@@ -4494,11 +4499,6 @@ int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
     NYI_WASM("genCallerSPtoInitialSPdelta");
     return 0;
-}
-
-void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
-{
-    NYI_WASM("Move genUpdateVarReg from codegenlinear.cpp to codegencommon.cpp shared code");
 }
 
 void RegSet::verifyRegUsed(regNumber reg)

@@ -501,6 +501,9 @@
   <data name="net_http_content_write_larger_than_content_length" xml:space="preserve">
     <value>Unable to write content to request stream; content would exceed Content-Length.</value>
   </data>
+  <data name="net_http_qpack_invalid_index" xml:space="preserve">
+    <value>The HTTP/3 server attempted to reference the static table index {0}, which does not exist.</value>
+  </data>
   <data name="net_http_qpack_no_dynamic_table" xml:space="preserve">
     <value>The HTTP/3 server attempted to reference a dynamic table index that does not exist.</value>
   </data>

@@ -81,8 +81,8 @@ init_sync_log_stats()
         gc_during_log = 0;
         gc_lock_contended = 0;
 
-        log_start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
-        log_start_hires = GCToOSInterface::QueryPerformanceCounter();
+        log_start_tick = minipal_lowres_ticks();
+        log_start_hires = minipal_hires_ticks();
     }
     gc_count_during_log++;
 #endif //SYNCHRONIZATION_STATS
@@ -208,7 +208,7 @@ HRESULT GCHeap::Initialize()
 #endif
     HRESULT hr = S_OK;
 
-    qpf = (uint64_t)GCToOSInterface::QueryPerformanceFrequency();
+    qpf = (uint64_t)minipal_hires_tick_frequency();
     qpf_ms = 1000.0 / (double)qpf;
     qpf_us = 1000.0 * 1000.0 / (double)qpf;
 

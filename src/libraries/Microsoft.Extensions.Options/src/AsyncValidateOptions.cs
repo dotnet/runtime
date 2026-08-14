@@ -11,7 +11,10 @@ namespace Microsoft.Extensions.Options
     /// Implementation of <see cref="IAsyncValidateOptions{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions">The options type to validate.</typeparam>
-    public class AsyncValidateOptions<TOptions> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions> :
+        IAsyncValidateOptions<TOptions>,
+        IOptionsValidatorNameMetadata
+        where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions}"/>.
@@ -44,6 +47,27 @@ namespace Microsoft.Extensions.Options
         public string FailureMessage { get; }
 
         /// <summary>
+        /// Attempts to validate a specific named options instance synchronously.
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            // null name is used to configure all named options
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            // ignored if not validating this instance
+            return ValidateOptionsResult.Skip;
+        }
+
+        /// <summary>
         /// Asynchronously validates a specific named options instance (or all when <paramref name="name"/> is null).
         /// </summary>
         /// <param name="name">The name of the options instance being validated.</param>
@@ -73,7 +97,10 @@ namespace Microsoft.Extensions.Options
     /// </summary>
     /// <typeparam name="TOptions">The options type to validate.</typeparam>
     /// <typeparam name="TDep">Dependency type.</typeparam>
-    public class AsyncValidateOptions<TOptions, TDep> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions, TDep> :
+        IAsyncValidateOptions<TOptions>,
+        IOptionsValidatorNameMetadata
+        where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions, TDep}"/>.
@@ -112,6 +139,25 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public string FailureMessage { get; }
 
+        /// <summary>
+        /// Attempts to validate a specific named options instance synchronously.
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            return ValidateOptionsResult.Skip;
+        }
+
         /// <inheritdoc/>
         public async Task<ValidateOptionsResult> ValidateAsync(string? name, TOptions options, CancellationToken cancellationToken = default)
         {
@@ -135,7 +181,10 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TOptions">The options type to validate.</typeparam>
     /// <typeparam name="TDep1">First dependency type.</typeparam>
     /// <typeparam name="TDep2">Second dependency type.</typeparam>
-    public class AsyncValidateOptions<TOptions, TDep1, TDep2> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions, TDep1, TDep2> :
+        IAsyncValidateOptions<TOptions>,
+        IOptionsValidatorNameMetadata
+        where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions, TDep1, TDep2}"/>.
@@ -181,6 +230,25 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public string FailureMessage { get; }
 
+        /// <summary>
+        /// Attempts to validate a specific named options instance synchronously.
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            return ValidateOptionsResult.Skip;
+        }
+
         /// <inheritdoc/>
         public async Task<ValidateOptionsResult> ValidateAsync(string? name, TOptions options, CancellationToken cancellationToken = default)
         {
@@ -205,7 +273,10 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TDep1">First dependency type.</typeparam>
     /// <typeparam name="TDep2">Second dependency type.</typeparam>
     /// <typeparam name="TDep3">Third dependency type.</typeparam>
-    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3> :
+        IAsyncValidateOptions<TOptions>,
+        IOptionsValidatorNameMetadata
+        where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions, TDep1, TDep2, TDep3}"/>.
@@ -258,6 +329,25 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public string FailureMessage { get; }
 
+        /// <summary>
+        /// Attempts to validate a specific named options instance synchronously.
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            return ValidateOptionsResult.Skip;
+        }
+
         /// <inheritdoc/>
         public async Task<ValidateOptionsResult> ValidateAsync(string? name, TOptions options, CancellationToken cancellationToken = default)
         {
@@ -283,7 +373,10 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TDep2">Second dependency type.</typeparam>
     /// <typeparam name="TDep3">Third dependency type.</typeparam>
     /// <typeparam name="TDep4">Fourth dependency type.</typeparam>
-    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4> :
+        IAsyncValidateOptions<TOptions>,
+        IOptionsValidatorNameMetadata
+        where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions, TDep1, TDep2, TDep3, TDep4}"/>.
@@ -343,6 +436,25 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         public string FailureMessage { get; }
 
+        /// <summary>
+        /// Attempts to validate a specific named options instance synchronously.
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            return ValidateOptionsResult.Skip;
+        }
+
         /// <inheritdoc/>
         public async Task<ValidateOptionsResult> ValidateAsync(string? name, TOptions options, CancellationToken cancellationToken = default)
         {
@@ -369,7 +481,10 @@ namespace Microsoft.Extensions.Options
     /// <typeparam name="TDep3">Third dependency type.</typeparam>
     /// <typeparam name="TDep4">Fourth dependency type.</typeparam>
     /// <typeparam name="TDep5">Fifth dependency type.</typeparam>
-    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> : IAsyncValidateOptions<TOptions> where TOptions : class
+    public class AsyncValidateOptions<TOptions, TDep1, TDep2, TDep3, TDep4, TDep5> :
+        IAsyncValidateOptions<TOptions>,
+        IOptionsValidatorNameMetadata
+        where TOptions : class
     {
         /// <summary>
         /// Initializes a new instance of <see cref="AsyncValidateOptions{TOptions, TDep1, TDep2, TDep3, TDep4, TDep5}"/>.
@@ -435,6 +550,25 @@ namespace Microsoft.Extensions.Options
         /// Gets the error to return when validation fails.
         /// </summary>
         public string FailureMessage { get; }
+
+        /// <summary>
+        /// Attempts to validate a specific named options instance synchronously.
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>
+        /// <see cref="ValidateOptionsResult.Skip"/> when the configured name does not match; otherwise, a failed
+        /// result indicating that synchronous validation is unsupported.
+        /// </returns>
+        public ValidateOptionsResult Validate(string? name, TOptions options)
+        {
+            if (Name is null || name == Name)
+            {
+                return ValidateOptionsResult.Fail(SR.Format(SR.AsyncValidatorSyncValidationUnsupported, typeof(TOptions)));
+            }
+
+            return ValidateOptionsResult.Skip;
+        }
 
         /// <inheritdoc/>
         public async Task<ValidateOptionsResult> ValidateAsync(string? name, TOptions options, CancellationToken cancellationToken = default)

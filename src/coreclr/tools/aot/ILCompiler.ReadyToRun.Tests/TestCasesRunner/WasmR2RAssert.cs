@@ -14,36 +14,26 @@ internal static class WasmR2RAssert
 {
     /// <summary>
     /// Returns true if any WASM function body in the image contains a <c>global.get</c> of the
-    /// given ABI well-known-global index, emitted as a maximally padded 5-byte
-    /// <c>WASM_GLOBAL_INDEX_LEB</c> reference (the <c>global.get</c> opcode <c>0x23</c> followed
-    /// by the 5-byte padded ULEB128 of the index).
+    /// given ABI well-known-global index (the <c>global.get</c> opcode <c>0x23</c> followed
+    /// by the minimally encoded ULEB128 index).
     /// </summary>
     /// <remarks>
     /// The wasm JIT references only the three ABI well-known globals (0 = stack pointer, 1 = image base,
-    /// 2 = table base) in this padded form; ordinary <c>global.get</c> instructions use the minimal
-    /// LEB128 encoding. The R2R object writer self-resolves the relocation in place, so after
-    /// compilation the padded slot holds the fixed index, e.g. image base -&gt;
-    /// <c>23 81 80 80 80 00</c> and table base -&gt; <c>23 82 80 80 80 00</c>. This is a regression
-    /// smoke check for that self-resolution: it scans raw instruction bytes and does not decode
-    /// wasm instruction boundaries.
+    /// 2 = table base) through padded relocations. The R2R object writer self-resolves and shrinks those
+    /// relocations, so after compilation the instruction contains the fixed index in its minimal form,
+    /// e.g. image base -&gt; <c>23 01</c> and table base -&gt; <c>23 02</c>. This is a regression smoke
+    /// check for that self-resolution: it scans raw instruction bytes and does not decode wasm
+    /// instruction boundaries.
     /// </remarks>
     public static bool WasmImageContainsWellKnownGlobalGet(WebcilImageReader reader, int wellKnownGlobalIndex)
     {
-        // The well-known globals are 0/1/2, which all fit in a single ULEB128 payload byte. The padded
-        // encoding below only writes that single payload byte, so it is correct for indices <= 0x7F.
+        // The well-known globals are 0/1/2, which all fit in a single ULEB128 byte.
         Debug.Assert((uint)wellKnownGlobalIndex <= 0x7F,
             $"Only single-byte well-known-global indices are supported; got {wellKnownGlobalIndex}.");
 
-        // global.get (0x23) followed by the 5-byte padded ULEB128 of wellKnownGlobalIndex. Padding sets
-        // the continuation bit on the first four bytes and clears the last, so a small index N
-        // encodes as (N | 0x80), 0x80, 0x80, 0x80, 0x00.
-        Span<byte> pattern = stackalloc byte[6];
+        Span<byte> pattern = stackalloc byte[2];
         pattern[0] = 0x23;
-        pattern[1] = (byte)((wellKnownGlobalIndex & 0x7F) | 0x80);
-        pattern[2] = 0x80;
-        pattern[3] = 0x80;
-        pattern[4] = 0x80;
-        pattern[5] = 0x00;
+        pattern[1] = (byte)wellKnownGlobalIndex;
 
         for (int functionIndex = 0; ; functionIndex++)
         {

@@ -41,6 +41,7 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
 #
 # Android arm64 devices and x64 emulators
@@ -72,3 +73,4 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}

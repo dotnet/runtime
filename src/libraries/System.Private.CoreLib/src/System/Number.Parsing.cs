@@ -380,13 +380,14 @@ namespace System
                 }
                 else
                 {
-                    value = value.Slice(index);
-                    index = 0;
+                    // Slice a copy rather than reassigning value, so that index (and thus the number
+                    // of elements reported as consumed) stays relative to the original input.
+                    ReadOnlySpan<TChar> remaining = value.Slice(index);
 
                     ReadOnlySpan<TChar> positiveSign = info.PositiveSignTChar<TChar>();
                     ReadOnlySpan<TChar> negativeSign = info.NegativeSignTChar<TChar>();
 
-                    if (!positiveSign.IsEmpty && value.StartsWith(positiveSign))
+                    if (!positiveSign.IsEmpty && remaining.StartsWith(positiveSign))
                     {
                         index += positiveSign.Length;
 
@@ -396,7 +397,7 @@ namespace System
                         }
                         num = TChar.CastToUInt32(value[index]);
                     }
-                    else if (!negativeSign.IsEmpty && value.StartsWith(negativeSign))
+                    else if (!negativeSign.IsEmpty && remaining.StartsWith(negativeSign))
                     {
                         isNegative = true;
                         index += negativeSign.Length;

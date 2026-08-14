@@ -1305,7 +1305,7 @@ void gc_heap::garbage_collect (int n)
         gc1();
     }
 #ifndef MULTIPLE_HEAPS
-    allocation_running_time = GCToOSInterface::GetLowPrecisionTimeStamp();
+    allocation_running_time = minipal_lowres_ticks();
     allocation_running_amount = dd_new_allocation (dynamic_data_of (0));
     fgn_last_alloc = dd_new_allocation (dynamic_data_of (0));
 #endif //MULTIPLE_HEAPS
