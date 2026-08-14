@@ -79,7 +79,7 @@ internal sealed partial class GrammarActions
         instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
         instruction.Method.Definition.MethodBody.Token(
             _entityRegistry.GetOrCreateStandaloneSignature(
-                MaterializeCalliSignature(GetCalliSignatureValue(context.Value))).Handle);
+                MaterializeCalliSignature(context.Value)).Handle);
     }
 
     internal void EmitOwnerTokenInstruction(IToken opcodeToken, CILParser.OwnerTypeContext context)

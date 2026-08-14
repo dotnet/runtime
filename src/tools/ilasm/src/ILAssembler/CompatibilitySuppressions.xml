@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- https://learn.microsoft.com/dotnet/fundamentals/package-validation/diagnostic-ids -->
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <!-- Generated ANTLR implementation details are intentionally excluded from the supported contract. -->
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:ILAssembler.CILLexer</Target>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:ILAssembler.CILParser</Target>
+  </Suppression>
+  <!-- Public only so implementation tests can exercise preprocessing directly. -->
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:ILAssembler.PreprocessedTokenSource</Target>
+  </Suppression>
+  <!-- Public only so implementation tests can exercise IL literal parsing directly. -->
+  <Suppression>
+    <DiagnosticId>CP0001</DiagnosticId>
+    <Target>T:ILAssembler.StringHelpers</Target>
+  </Suppression>
+</Suppressions>

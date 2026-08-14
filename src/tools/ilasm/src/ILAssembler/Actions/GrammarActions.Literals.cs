@@ -24,91 +24,28 @@ namespace ILAssembler
 #pragma warning disable CA1822 // Mark members as static
     internal sealed partial class GrammarActions
     {
-        private CILParser.CompQstringContext? _composedStringOwner;
-        private StringBuilder? _composedStringAccumulator;
-        private readonly Stack<DottedNameFrame> _dottedNameFrames = new();
+        internal void AddComposedStringPart(StringBuilder builder, IToken token)
+            => builder.Append(StringHelpers.ParseQuotedString(token.Text));
 
-        private sealed class DottedNameFrame
+        internal string EndComposedString(StringBuilder builder)
+            => builder.ToString();
+
+        internal void AddDottedNamePart(CILParser.DottedNameBuilder builder, string value)
         {
-            public DottedNameFrame(CILParser.DottedNameContext owner)
+            if (builder.HasPart)
             {
-                Owner = owner;
+                builder.Value.Append('.');
             }
 
-            public CILParser.DottedNameContext Owner { get; }
-
-            public string? FirstPart { get; set; }
-
-            public StringBuilder? Builder { get; set; }
+            builder.Value.Append(value);
+            builder.HasPart = true;
         }
 
-        internal void BeginComposedString(CILParser.CompQstringContext context)
-        {
-            Debug.Assert(_composedStringOwner is null);
-            Debug.Assert(_composedStringAccumulator is null);
-            _composedStringOwner = context;
-            _composedStringAccumulator = new StringBuilder();
-        }
+        internal void AddDottedNameToken(CILParser.DottedNameBuilder builder, IToken token)
+            => AddDottedNamePart(builder, ParseIdentifier(token));
 
-        internal void AddComposedStringPart(CILParser.CompQstringContext context, IToken token)
-        {
-            if (ReferenceEquals(_composedStringOwner, context) &&
-                _composedStringAccumulator is { } accumulator)
-            {
-                accumulator.Append(StringHelpers.ParseQuotedString(token.Text));
-            }
-        }
-
-        internal string EndComposedString(CILParser.CompQstringContext context)
-        {
-            if (!ReferenceEquals(_composedStringOwner, context))
-            {
-                return string.Empty;
-            }
-
-            string value = _composedStringAccumulator?.ToString() ?? string.Empty;
-            _composedStringOwner = null;
-            _composedStringAccumulator = null;
-
-            return value;
-        }
-
-        internal void BeginDottedName(CILParser.DottedNameContext context)
-            => _dottedNameFrames.Push(new(context));
-
-        internal void AddDottedNamePart(CILParser.DottedNameContext context, string value)
-        {
-            Debug.Assert(_dottedNameFrames.Count > 0);
-            DottedNameFrame frame = _dottedNameFrames.Peek();
-            Debug.Assert(ReferenceEquals(frame.Owner, context));
-            if (!ReferenceEquals(frame.Owner, context))
-            {
-                return;
-            }
-
-            if (frame.FirstPart is null)
-            {
-                frame.FirstPart = value;
-                return;
-            }
-
-            frame.Builder ??= new StringBuilder(frame.FirstPart);
-            frame.Builder.Append('.');
-            frame.Builder.Append(value);
-        }
-
-        internal void AddDottedNameToken(CILParser.DottedNameContext context, IToken token)
-            => AddDottedNamePart(context, ParseIdentifier(token));
-
-        internal string EndDottedName(CILParser.DottedNameContext context)
-        {
-            Debug.Assert(_dottedNameFrames.Count > 0);
-            DottedNameFrame frame = _dottedNameFrames.Pop();
-            Debug.Assert(ReferenceEquals(frame.Owner, context));
-            return ReferenceEquals(frame.Owner, context)
-                ? frame.Builder?.ToString() ?? frame.FirstPart ?? string.Empty
-                : string.Empty;
-        }
+        internal string EndDottedName(CILParser.DottedNameBuilder builder)
+            => builder.Value.ToString();
 
         internal string ParseDottedNamePart(IToken token)
             => token.Text.Length >= 2 && token.Text[0] == '\''

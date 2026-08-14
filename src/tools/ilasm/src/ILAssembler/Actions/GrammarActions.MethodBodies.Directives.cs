@@ -13,9 +13,13 @@ namespace ILAssembler;
 
 internal sealed partial class GrammarActions
 {
-    internal void EndLocalsDirective(CILParser.LocalsDeclContext context)
+    internal void EndLocalsDirective(
+        CILParser.LocalsDeclContext context,
+        int initialSyntaxErrorCount)
     {
-        bool hasSyntaxError = EndSemanticRoot(context);
+        bool hasSyntaxError =
+            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
+            context.exception is not null;
         if (hasSyntaxError || _currentMethod is null || context.arguments is null)
         {
             return;
@@ -38,7 +42,7 @@ internal sealed partial class GrammarActions
         }
 
         ImmutableArray<SignatureArg> locals =
-            MaterializeSignatureArguments(GetSignatureArgumentsValue(context.arguments.Value));
+            MaterializeSignatureArguments(context.arguments.Value);
         foreach (SignatureArg local in locals)
         {
             if (local.Name is not null)
@@ -50,9 +54,13 @@ internal sealed partial class GrammarActions
         }
     }
 
-    internal void EndExportDirective(CILParser.ExportDeclContext context)
+    internal void EndExportDirective(
+        CILParser.ExportDeclContext context,
+        int initialSyntaxErrorCount)
     {
-        bool hasSyntaxError = EndSemanticRoot(context);
+        bool hasSyntaxError =
+            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
+            context.exception is not null;
         if (hasSyntaxError || _currentMethod is null || context.ordinal is null)
         {
             return;
@@ -63,9 +71,13 @@ internal sealed partial class GrammarActions
             context.alias is null ? null : ParseIdentifier(context.alias.Start);
     }
 
-    internal void EndVTableEntryDirective(CILParser.VtentryDeclContext context)
+    internal void EndVTableEntryDirective(
+        CILParser.VtentryDeclContext context,
+        int initialSyntaxErrorCount)
     {
-        bool hasSyntaxError = EndSemanticRoot(context);
+        bool hasSyntaxError =
+            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
+            context.exception is not null;
         if (hasSyntaxError || _currentMethod is null || context.table is null || context.slot is null)
         {
             return;
@@ -75,9 +87,13 @@ internal sealed partial class GrammarActions
         _currentMethod.Definition.VTableSlot = ParseInt32(context.slot.Start);
     }
 
-    internal void EndOverrideDirective(CILParser.OverrideDeclContext context)
+    internal void EndOverrideDirective(
+        CILParser.OverrideDeclContext context,
+        int initialSyntaxErrorCount)
     {
-        bool hasSyntaxError = EndSemanticRoot(context);
+        bool hasSyntaxError =
+            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
+            context.exception is not null;
         if (hasSyntaxError ||
             _currentMethod is null ||
             context.owner is null ||
@@ -103,7 +119,7 @@ internal sealed partial class GrammarActions
         }
 
         EntityRegistry.TypeEntity owner =
-            ResolveTypeSpecification(GetTypeSpecificationValue(context.owner.Value));
+            ResolveTypeSpecification(context.owner.Value);
         EntityRegistry.MemberReferenceEntity declaration =
             _entityRegistry.CreateLazilyRecordedMemberReference(owner, context.name.Value, signature);
         currentType.MethodImplementations.Add(
@@ -112,9 +128,9 @@ internal sealed partial class GrammarActions
 
     private BlobBuilder BuildOverrideSignature(
         byte callingConvention,
-        object? returnType,
+        TypeValue returnType,
         int genericArity,
-        object? signatureArguments)
+        ImmutableArray<SignatureArgumentValue> signatureArguments)
     {
         BlobBuilder signature = new();
         byte header = callingConvention;
@@ -130,9 +146,9 @@ internal sealed partial class GrammarActions
         }
 
         ImmutableArray<SignatureArg> arguments =
-            MaterializeSignatureArguments(GetSignatureArgumentsValue(signatureArguments));
+            MaterializeSignatureArguments(signatureArguments);
         signature.WriteCompressedInteger(arguments.Length);
-        MaterializeType(GetTypeValue(returnType)).WriteContentTo(signature);
+        MaterializeType(returnType).WriteContentTo(signature);
         foreach (SignatureArg argument in arguments)
         {
             argument.SignatureBlob.WriteContentTo(signature);
@@ -141,42 +157,25 @@ internal sealed partial class GrammarActions
         return signature;
     }
 
-    internal void BeginParameterDirective(CILParser.ParameterDeclContext context)
-    {
-        BeginSemanticRoot(context);
-        _parameterDirectiveFrames.Push(new(context));
-    }
-
-    internal void AddParameterCustomAttribute(
-        CILParser.ParameterDeclContext context,
+#pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
+    internal void AddCustomAttributeApplication(
+        ImmutableArray<CustomAttributeApplicationValue>.Builder attributes,
         CILParser.CustomAttrDeclContext attribute)
+        => attributes.Add(new(
+            attribute.Value,
+            attribute.Start,
+            attribute.HasSyntaxError));
+#pragma warning restore CA1822
+
+    internal void EndParameterDirective(
+        CILParser.ParameterDeclContext context,
+        ImmutableArray<CustomAttributeApplicationValue> attributes,
+        int initialSyntaxErrorCount)
     {
-        Debug.Assert(_parameterDirectiveFrames.Count > 0);
-        if (_parameterDirectiveFrames.Count == 0)
-        {
-            return;
-        }
-
-        ParameterDirectiveFrame frame = _parameterDirectiveFrames.Peek();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        if (ReferenceEquals(frame.Owner, context))
-        {
-            frame.CustomAttributes.Add(attribute);
-        }
-    }
-
-    internal void EndParameterDirective(CILParser.ParameterDeclContext context)
-    {
-        ParameterDirectiveFrame? frame = null;
-        Debug.Assert(_parameterDirectiveFrames.Count > 0);
-        if (_parameterDirectiveFrames.Count > 0 &&
-            ReferenceEquals(_parameterDirectiveFrames.Peek().Owner, context))
-        {
-            frame = _parameterDirectiveFrames.Pop();
-        }
-
-        bool hasSyntaxError = EndSemanticRoot(context);
-        if (hasSyntaxError || frame is null || _currentMethod is null)
+        bool hasSyntaxError =
+            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
+            context.exception is not null;
+        if (hasSyntaxError || _currentMethod is null)
         {
             return;
         }
@@ -189,7 +188,7 @@ internal sealed partial class GrammarActions
                 context);
             if (parameter is not null)
             {
-                ApplyCustomAttributes(frame.CustomAttributes, parameter);
+                ApplyCustomAttributes(attributes, parameter);
             }
 
             return;
@@ -207,7 +206,7 @@ internal sealed partial class GrammarActions
             }
 
             EntityRegistry.TypeEntity baseType =
-                ResolveTypeSpecification(GetTypeSpecificationValue(context.constraintType.Value));
+                ResolveTypeSpecification(context.constraintType.Value);
             EntityRegistry.GenericParameterConstraintEntity? constraint =
                 parameter.Constraints.FirstOrDefault(candidate => candidate.BaseType == baseType);
             if (constraint is null)
@@ -218,7 +217,7 @@ internal sealed partial class GrammarActions
                 _currentMethod.Definition.GenericParameterConstraints.Add(constraint);
             }
 
-            ApplyCustomAttributes(frame.CustomAttributes, constraint);
+            ApplyCustomAttributes(attributes, constraint);
             return;
         }
 
@@ -238,16 +237,22 @@ internal sealed partial class GrammarActions
         }
 
         EntityRegistry.ParameterEntity parameterEntity = _currentMethod.Definition.Parameters[index];
-        object? constantValue = GetInitializerValue(context.initializer);
-        if (constantValue is not NoConstantSentinel)
+        FieldInitializerValue initializer = GetInitializerValue(context.initializer);
+        if (initializer.HasValue)
         {
-            parameterEntity.ConstantValue = constantValue;
+            parameterEntity.ConstantValue = initializer.ConstantValue;
             parameterEntity.HasConstant = true;
         }
 
-        foreach (CILParser.CustomAttrDeclContext attributeContext in frame.CustomAttributes)
+        foreach (CustomAttributeApplicationValue application in attributes)
         {
-            EntityRegistry.CustomAttributeEntity? attribute = MaterializeCustomAttributeDeclaration(attributeContext);
+            if (application.HasSyntaxError)
+            {
+                continue;
+            }
+
+            EntityRegistry.CustomAttributeEntity? attribute =
+                MaterializeCustomAttributeDeclaration(application.Value, application.Location);
             if (attribute is not null)
             {
                 attribute.Owner = parameterEntity;
@@ -291,12 +296,18 @@ internal sealed partial class GrammarActions
     }
 
     private void ApplyCustomAttributes(
-        List<CILParser.CustomAttrDeclContext> attributeContexts,
+        ImmutableArray<CustomAttributeApplicationValue> attributes,
         EntityRegistry.EntityBase owner)
     {
-        foreach (CILParser.CustomAttrDeclContext attributeContext in attributeContexts)
+        foreach (CustomAttributeApplicationValue application in attributes)
         {
-            EntityRegistry.CustomAttributeEntity? attribute = MaterializeCustomAttributeDeclaration(attributeContext);
+            if (application.HasSyntaxError)
+            {
+                continue;
+            }
+
+            EntityRegistry.CustomAttributeEntity? attribute =
+                MaterializeCustomAttributeDeclaration(application.Value, application.Location);
             if (attribute is not null)
             {
                 attribute.Owner = owner;

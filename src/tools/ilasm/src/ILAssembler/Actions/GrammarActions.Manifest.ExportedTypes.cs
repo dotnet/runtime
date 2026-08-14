@@ -13,9 +13,6 @@ namespace ILAssembler;
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
 {
-    private readonly Stack<ManifestValueListFrame<CILParser.ExptypeDeclsContext>>
-        _exportedTypeDeclarationFrames = new();
-
     internal void SetExportedTypeAttribute(CILParser.ExptAttrContext context)
     {
         string attribute = context.Start.Text == "nested"
@@ -44,57 +41,57 @@ internal sealed partial class GrammarActions
         TypeAttributes mask)
         => mask == 0 ? attributes | value : (attributes & ~mask) | value;
 
-    internal object CreateExportedTypeHeader(
+    internal ExportedTypeHeaderValue CreateExportedTypeHeader(
         TypeAttributes attributes,
         string name,
         IToken location)
-        => new ExportedTypeHeaderValue(attributes, name, location);
+        => new ExportedTypeHeaderValue(true, attributes, name, location);
 
-    internal void BeginExportedTypeDeclarations(CILParser.ExptypeDeclsContext context)
-        => _exportedTypeDeclarationFrames.Push(new(context));
-
-    internal void AddExportedTypeDeclaration(
-        CILParser.ExptypeDeclsContext context,
-        object? value)
-        => AddManifestValue(_exportedTypeDeclarationFrames, context, value);
-
-    internal object EndExportedTypeDeclarations(CILParser.ExptypeDeclsContext context)
-        => EndManifestValues(_exportedTypeDeclarationFrames, context);
-
-    internal object CreateExportedType(
-        object? header,
-        object? declarations,
-        IToken location)
+    internal ExportedTypeValue CreateExportedType(
+        ExportedTypeHeaderValue header,
+        ImmutableArray<ExportedTypeDeclarationValue> declarations)
         => new ExportedTypeValue(
-            GetExportedTypeHeader(header, location),
-            GetManifestValues(declarations));
+            header,
+            declarations);
 
-    internal object CreateExportedTypeFileDeclaration(string name, IToken location)
+    internal ExportedTypeDeclarationValue CreateExportedTypeFileDeclaration(
+        string name,
+        IToken location)
         => new ExportedTypeFileDirectiveValue(name, location);
 
-    internal object CreateNestedExportedTypeDeclaration(object? name, IToken location)
-        => new NestedExportedTypeDirectiveValue(GetTypeNameValue(name), location);
+    internal ExportedTypeDeclarationValue CreateNestedExportedTypeDeclaration(
+        TypeName name,
+        IToken location)
+        => new NestedExportedTypeDirectiveValue(name, location);
 
-    internal object CreateExportedTypeAssemblyDeclaration(string name, IToken location)
+    internal ExportedTypeDeclarationValue CreateExportedTypeAssemblyDeclaration(
+        string name,
+        IToken location)
         => new ExportedTypeAssemblyDirectiveValue(name, location);
 
-    internal object CreateExportedTypeMetadataTokenDeclaration(int token, IToken location)
+    internal ExportedTypeDeclarationValue CreateExportedTypeMetadataTokenDeclaration(
+        int token,
+        IToken location)
         => new ExportedTypeMetadataTokenDirectiveValue(token, location);
 
-    internal object CreateExportedTypeDefinitionIdDeclaration(IToken value)
+    internal ExportedTypeDeclarationValue CreateExportedTypeDefinitionIdDeclaration(
+        IToken value)
         => new ExportedTypeDefinitionIdDirectiveValue(ParseInt32(value));
 
-    internal object CreateExportedTypeCustomAttributeDeclaration(object? value, IToken location)
-        => new ExportedTypeCustomAttributeDirectiveValue(value, location);
-
-    private static ExportedTypeHeaderValue GetExportedTypeHeader(
-        object? value,
+    internal ExportedTypeDeclarationValue CreateExportedTypeCustomAttributeDeclaration(
+        CustomAttributeDeclarationValue? value,
         IToken location)
-        => value as ExportedTypeHeaderValue ?? new(0, string.Empty, location);
+        => new ExportedTypeCustomAttributeDirectiveValue(value, location);
 
     private void MaterializeExportedType(ExportedTypeValue value)
     {
         ExportedTypeHeaderValue header = value.Header;
+        if (!header.IsValid ||
+            header.Location is not IToken location)
+        {
+            return;
+        }
+
         (string typeNamespace, string name) =
             NameHelpers.SplitDottedNameToNamespaceAndName(header.Name);
         (
@@ -110,7 +107,7 @@ internal sealed partial class GrammarActions
                 string.Format(
                     DiagnosticMessageTemplates.MissingExportedTypeImplementation,
                     header.Name),
-                header.Location);
+                location);
             return;
         }
 
@@ -134,14 +131,15 @@ internal sealed partial class GrammarActions
         EntityRegistry.EntityBase? Implementation,
         int TypeDefinitionId,
         ImmutableArray<EntityRegistry.CustomAttributeEntity> CustomAttributes
-    ) MaterializeExportedTypeDeclarations(ImmutableArray<object> declarations)
+    ) MaterializeExportedTypeDeclarations(
+        ImmutableArray<ExportedTypeDeclarationValue> declarations)
     {
         EntityRegistry.EntityBase? implementation = null;
         int typeDefinitionId = 0;
         ImmutableArray<EntityRegistry.CustomAttributeEntity>.Builder customAttributes =
             ImmutableArray.CreateBuilder<EntityRegistry.CustomAttributeEntity>();
 
-        foreach (object declaration in declarations)
+        foreach (ExportedTypeDeclarationValue declaration in declarations)
         {
             switch (declaration)
             {
