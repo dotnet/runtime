@@ -94,9 +94,6 @@ namespace ILAssembler
         private readonly Stack<SemanticRootFrame> _semanticRootFrames = new();
         private int _syntaxErrorCount;
 
-        // Typedef aliases - maps alias name to the resolved entity
-        private readonly Dictionary<string, TypedefEntry> _typedefs = new();
-
         // Debug info tracking
         private Guid _currentLanguageGuid = Guid.Empty;
         private Guid _currentLanguageVendorGuid = Guid.Empty;
@@ -105,26 +102,12 @@ namespace ILAssembler
         private readonly Dictionary<string, DocumentHandle> _documentHandles = new();
         private readonly MetadataBuilder _pdbBuilder = new();
 
-        // VTable fixup tracking - uses types from VTableFixupSupport
-        private readonly List<VTableFixupSupport.VTableFixupEntry> _vtableFixups = new();
-
         internal GrammarActions(IReadOnlyDictionary<string, SourceText> documents, Options options, Func<string, byte[]> resourceLocator)
         {
             _documents = documents;
             _options = options;
             _resourceLocator = resourceLocator;
         }
-        /// <summary>
-        /// Represents a typedef alias entry.
-        /// </summary>
-        private abstract record TypedefEntry
-        {
-            public sealed record Type(EntityRegistry.TypeEntity Entity) : TypedefEntry;
-            public sealed record TypeBlob(BlobBuilder Blob) : TypedefEntry;
-            public sealed record Member(EntityRegistry.EntityBase Entity) : TypedefEntry;
-            public sealed record CustomAttribute(EntityRegistry.EntityBase Constructor, BlobBuilder Value) : TypedefEntry;
-        }
-
         private void ReportDiagnostic(DiagnosticSeverity severity, string id, string message, Antlr4.Runtime.ParserRuleContext context)
         {
             var location = Location.From(context.Start, _documents);
@@ -187,8 +170,6 @@ namespace ILAssembler
         }
 
         public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
-
-        private EntityRegistry.AssemblyOrRefEntity? _currentAssemblyOrRef;
 
         public GrammarResult VisitChildren(IRuleNode node)
         {
