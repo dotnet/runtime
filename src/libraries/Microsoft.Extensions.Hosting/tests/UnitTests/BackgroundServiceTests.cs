@@ -11,6 +11,9 @@ namespace Microsoft.Extensions.Hosting.Tests
 {
     public class BackgroundServiceTests
     {
+        public static bool IsThreadingAndRemoteExecutorSupported =>
+            PlatformDetection.IsMultithreadingSupported && RemoteExecutor.IsSupported;
+
         [Fact]
         public void StartReturnsCompletedTask()
         {
@@ -150,7 +153,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             await service.WaitForEndExecuteTask;
         }
 
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(typeof(BackgroundServiceTests), nameof(IsThreadingAndRemoteExecutorSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public void ExecuteAsyncRunsWhenImmediatelyStoppedOrDisposed(bool dispose)
