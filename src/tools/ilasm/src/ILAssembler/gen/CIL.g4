@@ -5,6 +5,10 @@ The .NET Foundation licenses this file to you under the MIT license.
 
 grammar CIL;
 
+@parser::header {
+#nullable enable annotations
+}
+
 @parser::members {
     internal GrammarActions Actions { get; set; } = null!;
 }
@@ -413,16 +417,18 @@ id:
 	| INSTANCE
 	| SQSTRING;
 dottedName returns [string Value]
-@init {Actions.BeginDottedName(_localctx);}
+locals [CILParser.DottedNameBuilder Builder]
+@init {_localctx.Builder = new CILParser.DottedNameBuilder();}
 :
-	direct = DOTTEDNAME {Actions.AddDottedNameToken(_localctx, $direct);}
-	| ((part = dottedNamePart {Actions.AddDottedNamePart(_localctx, $part.Value);} '.')*
-		tail = dottedNamePart {Actions.AddDottedNamePart(_localctx, $tail.Value);})
-	| quoted = SQSTRING {Actions.AddDottedNameToken(_localctx, $quoted);}
+	direct = DOTTEDNAME {Actions.AddDottedNameToken(_localctx.Builder, $direct);}
+	| ((part = dottedNamePart {Actions.AddDottedNamePart(_localctx.Builder, $part.Value);} '.')*
+		tail = dottedNamePart {Actions.AddDottedNamePart(_localctx.Builder, $tail.Value);})
+	| quoted = SQSTRING {Actions.AddDottedNameToken(_localctx.Builder, $quoted);}
 ;
-finally {_localctx.Value = Actions.EndDottedName(_localctx);}
+finally {_localctx.Value = Actions.EndDottedName(_localctx.Builder);}
 
 dottedNamePart returns [string Value]
+@init {_localctx.Value = string.Empty;}
 @after {_localctx.Value = Actions.ParseDottedNamePart(_localctx.Start);}
 :
 	ID
@@ -433,12 +439,13 @@ dottedNamePart returns [string Value]
 	| 'volatile'
 ;
 compQstring returns [string Value]
-@init {Actions.BeginComposedString(_localctx);}
+locals [System.Text.StringBuilder Builder]
+@init {_localctx.Builder = new System.Text.StringBuilder();}
 :
-	(head = QSTRING {Actions.AddComposedStringPart(_localctx, $head);} PLUS)*
-	tail = QSTRING {Actions.AddComposedStringPart(_localctx, $tail);}
+	(head = QSTRING {Actions.AddComposedStringPart(_localctx.Builder, $head);} PLUS)*
+	tail = QSTRING {Actions.AddComposedStringPart(_localctx.Builder, $tail);}
 ;
-finally {_localctx.Value = Actions.EndComposedString(_localctx);}
+finally {_localctx.Value = Actions.EndComposedString(_localctx.Builder);}
 
 
 WS: [ \t\r\n] -> skip;
@@ -512,20 +519,30 @@ imagebase:
 stackreserve:
 	'.stackreserve' value = int64 {Actions.ProcessTopLevelStackReserve($value.start);};
 
-assemblyBlock returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+assemblyBlock returns [CILParser.AssemblyDefinitionValue? Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	'.assembly' attributes = asmAttr name = dottedName '{' declarations = assemblyDecls '}'
 		{_localctx.Value = Actions.CreateAssemblyDefinition(
 			$attributes.Value,
 			$name.Value,
 			$declarations.Value);};
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+	if (_localctx.HasSyntaxError)
+	{
+		_localctx.Value = null;
+	}
+}
 
 mscorlib: '.mscorlib';
 
-languageDecl returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+languageDecl returns [CILParser.LanguageDirectiveValue? Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	'.language' language = languageString
 		{_localctx.Value = Actions.CreateLanguageDirective($language.Value);}
@@ -533,9 +550,10 @@ languageDecl returns [object Value, bool HasSyntaxError]
 		{_localctx.Value = Actions.CreateLanguageDirective($language.Value, $vendor.Value);}
 	| '.language' language = languageString ',' vendor = languageString ',' documentType = languageString
 		{_localctx.Value = Actions.CreateLanguageDirective($language.Value, $vendor.Value, $documentType.Value);};
-finally {Actions.EndLanguageDirective(_localctx);}
+finally {Actions.EndLanguageDirective(_localctx, _localctx.InitialSyntaxErrorCount);}
 
 languageString returns [string Value]
+@init {_localctx.Value = string.Empty;}
 @after {_localctx.Value = Actions.ParseLanguageString(_localctx.Start);}
 :
 	SQSTRING
@@ -577,8 +595,12 @@ compControl:
 
 
 /*  Aliasing of types, type specs, methods, fields and custom attributes */
-typedefDecl returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+typedefDecl returns [CILParser.TypedefDeclarationValue Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.TypedefDeclarationValue.Error;
+}
 :
 	'.typedef' signature = type 'as' alias = dottedName
 		{_localctx.Value = Actions.CreateTypeSignatureTypedef($signature.Value, $alias.Value);}
@@ -596,11 +618,19 @@ typedefDecl returns [object Value, bool HasSyntaxError]
 			$ownedAttribute.Value,
 			$ownedAttribute.start,
 			$alias.Value);};
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
 /* Custom attribute declarations  */
-customDescr returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+customDescr returns [CILParser.CustomAttributeDescriptorValue Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.CustomAttributeDescriptorValue.Error;
+}
 :
 	'.custom' constructor = customType
 		{_localctx.Value = Actions.CreateDefaultCustomAttribute($constructor.Value);}
@@ -610,10 +640,18 @@ customDescr returns [object Value, bool HasSyntaxError]
 		{_localctx.Value = Actions.CreateStructuredCustomAttribute($constructor.Value, $structuredValue.Value);}
 	| '.custom' constructor = customType '=' '(' rawValue = bytes ')'
 		{_localctx.Value = Actions.CreateRawCustomAttribute($constructor.Value, $rawValue.Value);};
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
-customDescrWithOwner returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+customDescrWithOwner returns [CILParser.CustomAttributeDescriptorValue Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.CustomAttributeDescriptorValue.Error;
+}
 :
 	'.custom' '(' owner = ownerType ')' constructor = customType
 		{_localctx.Value = Actions.CreateDefaultOwnedCustomAttribute($owner.Value, $constructor.Value);}
@@ -623,56 +661,77 @@ customDescrWithOwner returns [object Value, bool HasSyntaxError]
 		{_localctx.Value = Actions.CreateStructuredOwnedCustomAttribute($owner.Value, $constructor.Value, $structuredValue.Value);}
 	| '.custom' '(' owner = ownerType ')' constructor = customType '=' '(' rawValue = bytes ')'
 		{_localctx.Value = Actions.CreateRawOwnedCustomAttribute($owner.Value, $constructor.Value, $rawValue.Value);};
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
-customType returns [object Value]:
+customType returns [CILParser.MethodReferenceValue Value]
+@init {_localctx.Value = CILParser.MethodReferenceValue.Error;}
+:
 	constructor = methodRef {_localctx.Value = Actions.CreateCustomAttributeType($constructor.Value);};
 
 ownerType
-returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+returns [CILParser.OwnerTypeValue Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.OwnerTypeValue.Error;
+}
 :
 	typeValue = typeSpec {_localctx.Value = Actions.CreateTypeOwner($typeValue.Value);}
 	| member = memberRef {_localctx.Value = Actions.CreateMemberOwner($member.Value);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
 /*  Verbal description of custom attribute initialization blob  */
-customBlobDescr returns [object Value]:
+customBlobDescr returns [CILParser.CustomAttributeBlobValue Value]
+@init {_localctx.Value = CILParser.CustomAttributeBlobValue.Error;}
+:
 	arguments = customBlobArgs namedArguments = customBlobNVPairs
 		{_localctx.Value = Actions.CreateCustomAttributeBlob($arguments.Value, $namedArguments.Value);};
 
-customBlobArgs returns [object Value]
-@init {Actions.BeginCustomBlobArguments(_localctx);}
+customBlobArgs returns [System.Collections.Immutable.ImmutableArray<CILParser.SerializedInitializerValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.SerializedInitializerValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.SerializedInitializerValue>();}
 :
-	(argument = serInit {Actions.AddCustomBlobArgument(_localctx, $argument.Value);} | compControl)*
+	(argument = serInit {_localctx.Builder.Add($argument.Value);} | compControl)*
 ;
-finally {_localctx.Value = Actions.EndCustomBlobArguments(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-customBlobNVPairs returns [object Value]
-@init {Actions.BeginCustomBlobNamedArguments(_localctx);}
+customBlobNVPairs returns [System.Collections.Immutable.ImmutableArray<CILParser.CustomAttributeNamedArgumentValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.CustomAttributeNamedArgumentValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.CustomAttributeNamedArgumentValue>();}
 :
 	(
 		kind = fieldOrProp argumentType = serializType name = dottedName '=' value = serInit
-			{Actions.AddCustomBlobNamedArgument(
-				_localctx,
+			{_localctx.Builder.Add(Actions.CreateCustomBlobNamedArgument(
 				$kind.Value,
 				$argumentType.Value,
 				$name.Value,
-				$value.Value);}
+				$value.Value));}
 		| compControl
 	)*
 ;
-finally {_localctx.Value = Actions.EndCustomBlobNamedArguments(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
 fieldOrProp returns [byte Value]:
 	kind = ('field' | 'property') {_localctx.Value = Actions.GetCustomAttributeNamedArgumentKind($kind);};
 
-serializType returns [object Value]:
+serializType returns [CILParser.SerializationTypeValue Value]
+@init {_localctx.Value = CILParser.SerializationTypeValue.Error;}
+:
 	element = serializTypeElement array = ARRAY_TYPE_NO_BOUNDS?
 		{_localctx.Value = Actions.CreateSerializationType($element.Value, $array);};
 
-serializTypeElement returns [object Value]:
+serializTypeElement returns [CILParser.SerializationTypeValue Value]
+@init {_localctx.Value = CILParser.SerializationTypeValue.Error;}
+:
 	primitive = simpleType {_localctx.Value = Actions.CreatePrimitiveSerializationType($primitive.Value);}
 	| alias = dottedName {_localctx.Value = Actions.CreateSerializationTypeTypedef(_localctx, $alias.Value);} /* typedef */
 	| simpleTypeToken = TYPE {_localctx.Value = Actions.CreateSimpleSerializationType($simpleTypeToken);}
@@ -681,7 +740,9 @@ serializTypeElement returns [object Value]:
 	| ENUM classNameValue = className {_localctx.Value = Actions.CreateEnumSerializationType($classNameValue.Value);};
 
 /*  Module declaration */
-moduleHead returns [string Value, bool HasName, bool IsExternal]:
+moduleHead returns [string? Value, bool HasName, bool IsExternal]
+@init {_localctx.Value = null;}
+:
 	MODULE 'extern' name = dottedName
 		{Actions.SetModuleHeader(_localctx, $name.Value, true);}
 	| MODULE name = dottedName
@@ -690,8 +751,9 @@ moduleHead returns [string Value, bool HasName, bool IsExternal]:
 		{Actions.SetEmptyModuleHeader(_localctx);};
 
 /*  VTable Fixup table declaration  */
-vtfixupDecl returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+vtfixupDecl returns [CILParser.VTableFixupValue? Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	'.vtfixup' '[' count = int32 ']' attributes = vtfixupAttr 'at' label = id
 		{_localctx.Value = Actions.CreateVTableFixup(
@@ -699,7 +761,15 @@ vtfixupDecl returns [object Value, bool HasSyntaxError]
 			$attributes.Value,
 			$label.start);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+	if (_localctx.HasSyntaxError)
+	{
+		_localctx.Value = null;
+	}
+}
 
 vtfixupAttr returns [ushort Value]
 @init {_localctx.Value = 0;}
@@ -718,42 +788,63 @@ vtfixupAttrElement returns [ushort Value]
 	| 'callmostderived'
 	| 'retainappdomain';
 
-vtableDecl returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+vtableDecl returns [CILParser.RawVTableValue? Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	'.vtable' '=' '(' value = bytes ')'
 		{_localctx.Value = Actions.CreateRawVTable($value.Value);} /* deprecated */
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+	if (_localctx.HasSyntaxError)
+	{
+		_localctx.Value = null;
+	}
+}
 
 /*  Namespace and class declaration  */
 nameSpaceHead returns [string Value]
-@init {Actions.BeginNamespaceHeader(_localctx);}
-@after {Actions.BeginNamespace(_localctx, _localctx.Value);}
+locals [int InitialSyntaxErrorCount]
+@init {
+	Actions.PrepareNamespaceHeader();
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = string.Empty;
+}
+@after {Actions.BeginNamespace(_localctx, _localctx.Value, _localctx.InitialSyntaxErrorCount);}
 :
 	'.namespace' name = dottedName {_localctx.Value = $name.Value;}
 ;
-finally {Actions.EndNamespaceHeader(_localctx);}
 
-classHead returns [object Value]
-@init {Actions.BeginClassHeader(_localctx);}
+classHead returns [CILParser.ClassHeaderValue Value]
+locals [int InitialSyntaxErrorCount, CILParser.ClassHeaderBuilder Builder]
+@init {
+	_localctx.Builder = Actions.PrepareClassHeader();
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.ClassHeaderValue.Error;
+}
 @after {Actions.BeginType(_localctx, _localctx.Value);}
 :
 	'.class'
-	(attribute = classAttr {Actions.AddClassHeaderAttribute(_localctx, $attribute.Value);})*
+	(attribute = classAttr {Actions.AddClassHeaderAttribute(_localctx.Builder, $attribute.Value);})*
 	name = dottedName genericParameters = typarsClause baseType = extendsClause interfaces = implClause
 		{_localctx.Value = Actions.CreateClassHeader(
 			_localctx,
+			_localctx.Builder,
+			_localctx.InitialSyntaxErrorCount,
 			$name.stop,
 			$name.Value,
 			$genericParameters.Value,
 			$baseType.Value,
 			$interfaces.Value);}
 ;
-finally {Actions.EndClassHeader(_localctx);}
 
 
-classAttr returns [object Value]:
+classAttr returns [CILParser.ClassAttributeValue Value]
+@init {_localctx.Value = CILParser.ClassAttributeValue.Empty;}
+:
 	attribute = 'public' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
 	| attribute = 'private' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
 	| attribute = VALUE {_localctx.Value = Actions.CreateClassAttribute($attribute);}
@@ -782,14 +873,14 @@ classAttr returns [object Value]:
 	| attribute = 'rtspecialname' {_localctx.Value = Actions.CreateClassAttribute($attribute);}
 	| 'flags' '(' flags = int32 ')' {_localctx.Value = Actions.CreateRawClassAttribute($flags.start);};
 
-extendsClause returns [object Value]
+extendsClause returns [CILParser.TypeSpecificationValue? Value]
 @init {_localctx.Value = Actions.CreateEmptyClassBase();}
 :
 	/* EMPTY */
 	| 'extends' baseType = typeSpec {_localctx.Value = Actions.CreateClassBase($baseType.Value);}
 ;
 
-implClause returns [object Value]
+implClause returns [System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue> Value]
 @init {_localctx.Value = Actions.CreateEmptyInterfaceList();}
 :
 	/* EMPTY */
@@ -801,13 +892,14 @@ classDecls
     classDecl*
 ;
 
-implList returns [object Value]
-@init {Actions.BeginInterfaceList(_localctx);}
+implList returns [System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.TypeSpecificationValue>();}
 :
-	(interfaceType = typeSpec {Actions.AddInterfaceType(_localctx, $interfaceType.Value);} ',')*
-	lastInterfaceType = typeSpec {Actions.AddInterfaceType(_localctx, $lastInterfaceType.Value);}
+	(interfaceType = typeSpec {_localctx.Builder.Add($interfaceType.Value);} ',')*
+	lastInterfaceType = typeSpec {_localctx.Builder.Add($lastInterfaceType.Value);}
 ;
-finally {_localctx.Value = Actions.EndInterfaceList(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
 /*  External source declarations  */
 esHead returns [bool AutoIncrement]
@@ -816,8 +908,9 @@ esHead returns [bool AutoIncrement]
 	'.line'
 	| '#line';
 
-extSourceSpec returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+extSourceSpec returns [CILParser.SourceDirectiveValue? Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	head = esHead line = int32 path = (SQSTRING | QSTRING)?
 		{_localctx.Value = Actions.CreateSourceLine($head.AutoIncrement, $line.start, $path);}
@@ -846,20 +939,24 @@ extSourceSpec returns [object Value, bool HasSyntaxError]
 			$startColumn.start,
 			$endColumn.start,
 			$path);};
-finally {Actions.EndSourceDirective(_localctx);}
+finally {Actions.EndSourceDirective(_localctx, _localctx.InitialSyntaxErrorCount);}
 
 /*  Manifest declarations  */
-fileDecl returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginFileDeclaration(_localctx);}
+fileDecl returns [CILParser.FileDeclarationValue? Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount, CILParser.FileDeclarationBuilder Builder]
+@init {
+	_localctx.Builder = new CILParser.FileDeclarationBuilder();
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+}
 :
 	'.file'
-		(attribute = fileAttr {Actions.AddFileAttribute(_localctx, $attribute.Value);})*
-		name = dottedName {Actions.SetFileName(_localctx, $name.Value);}
-		entry = fileEntry {Actions.AddFileEntry(_localctx, $entry.Value);}
-		(HASH '=' '(' hash = bytes ')' {Actions.SetFileHash(_localctx, $hash.Value);}
-			trailingEntry = fileEntry {Actions.AddFileEntry(_localctx, $trailingEntry.Value);})?
+		(attribute = fileAttr {Actions.AddFileAttribute(_localctx.Builder, $attribute.Value);})*
+		name = dottedName {Actions.SetFileName(_localctx.Builder, $name.Value);}
+		entry = fileEntry {Actions.AddFileEntry(_localctx.Builder, $entry.Value);}
+		(HASH '=' '(' hash = bytes ')' {Actions.SetFileHash(_localctx.Builder, $hash.Value);}
+			trailingEntry = fileEntry {Actions.AddFileEntry(_localctx.Builder, $trailingEntry.Value);})?
 ;
-finally {Actions.EndFileDeclaration(_localctx);}
+finally {Actions.EndFileDeclaration(_localctx, _localctx.Builder, _localctx.InitialSyntaxErrorCount);}
 
 fileAttr returns [bool Value]
 @after {_localctx.Value = Actions.ParseFileAttribute(_localctx.Start);}
@@ -906,7 +1003,8 @@ instr:
 ;
 
 simpleInstr
-@after {Actions.CompleteSimpleInstruction(_localctx);}
+locals [CILParser.SwitchInstructionBuilder SwitchBuilder]
+@after {Actions.CompleteSwitchInstruction(_localctx.SwitchBuilder);}
 :
 	op = INSTR_NONE {Actions.EmitNoOperandInstruction($op);}
 	| op = INSTR_VAR index = int32 {Actions.EmitVariableIndexInstruction($op, $index.start);}
@@ -923,57 +1021,72 @@ simpleInstr
 	| op = INSTR_STRING ANSI '(' ansiString = compQstring ')' {Actions.EmitAnsiStringInstruction($op, $ansiString.Value);}
 	| op = INSTR_STRING 'bytearray' '(' rawString = bytes ')' {Actions.EmitRawStringInstruction($op, $rawString.Value);}
 	| op = INSTR_TOK rawToken = int32 {Actions.EmitRawTokenInstruction($op, $rawToken.start);}
-	| op = INSTR_SWITCH {Actions.BeginSwitchInstruction(_localctx, $op);} ('(' labels ')' | '()')
+	| op = INSTR_SWITCH {_localctx.SwitchBuilder = Actions.CreateSwitchInstruction($op);}
+		('(' labels[_localctx.SwitchBuilder] ')' | '()')
 ;
-finally {Actions.EndSwitchInstruction(_localctx);}
 
 calliSignature
-returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+returns [CILParser.CalliSignatureValue Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.CalliSignatureValue.Error;
+}
 :
 	convention = callConv returnType = type arguments = sigArgs
 		{_localctx.Value = Actions.CreateCalliSignature($convention.Value, $returnType.Value, $arguments.Value);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
-labels:
+labels [CILParser.SwitchInstructionBuilder Builder]:
 	/* empty */
-	| ((headLabel = id {Actions.AddSwitchLabel($headLabel.start);} | headOffset = int32 {Actions.AddSwitchOffset($headOffset.start);}) ',')*
-	  (tailLabel = id {Actions.AddSwitchLabel($tailLabel.start);} | tailOffset = int32 {Actions.AddSwitchOffset($tailOffset.start);});
+	| ((headLabel = id {Actions.AddSwitchLabel($Builder, $headLabel.start);} | headOffset = int32 {Actions.AddSwitchOffset($Builder, $headOffset.start);}) ',')*
+	  (tailLabel = id {Actions.AddSwitchLabel($Builder, $tailLabel.start);} | tailOffset = int32 {Actions.AddSwitchOffset($Builder, $tailOffset.start);});
 
-typeArgs returns [object Value]
-@init {Actions.BeginTypeArguments(_localctx);}
+typeArgs returns [System.Collections.Immutable.ImmutableArray<CILParser.TypeValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.TypeValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.TypeValue>();}
 :
-	'<' (argument = type {Actions.AddTypeArgument(_localctx, $argument.Value);} ',')*
-		lastArgument = type {Actions.AddTypeArgument(_localctx, $lastArgument.Value);} '>'
+	'<' (argument = type {_localctx.Builder.Add($argument.Value);} ',')*
+		lastArgument = type {_localctx.Builder.Add($lastArgument.Value);} '>'
 ;
-finally {_localctx.Value = Actions.EndTypeArguments(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-bounds returns [object Value]
-@init {Actions.BeginBounds(_localctx);}
+bounds returns [System.Collections.Immutable.ImmutableArray<CILParser.ArrayBoundValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.ArrayBoundValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.ArrayBoundValue>();}
 :
-	'[' (item = bound {Actions.AddBound(_localctx, $item.ctx);} ',')*
-		lastItem = bound {Actions.AddBound(_localctx, $lastItem.ctx);} ']'
+	'[' (item = bound {_localctx.Builder.Add(Actions.CreateArrayBound($item.ctx));} ',')*
+		lastItem = bound {_localctx.Builder.Add(Actions.CreateArrayBound($lastItem.ctx));} ']'
 ;
-finally {_localctx.Value = Actions.EndBounds(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-sigArgs returns [object Value]
-@init {Actions.BeginSignatureArguments(_localctx);}
+sigArgs returns [System.Collections.Immutable.ImmutableArray<CILParser.SignatureArgumentValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.SignatureArgumentValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.SignatureArgumentValue>();}
 :
-	'(' (argument = sigArg {Actions.AddSignatureArgument(_localctx, $argument.Value);} ',')*
-		lastArgument = sigArg {Actions.AddSignatureArgument(_localctx, $lastArgument.Value);} ')'
+	'(' (argument = sigArg {_localctx.Builder.Add($argument.Value);} ',')*
+		lastArgument = sigArg {_localctx.Builder.Add($lastArgument.Value);} ')'
 	| '()'
 ;
-finally {_localctx.Value = Actions.EndSignatureArguments(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-sigArg returns [object Value]:
+sigArg returns [CILParser.SignatureArgumentValue Value]
+@init {_localctx.Value = CILParser.SignatureArgumentValue.Error;}
+:
 	ELLIPSIS {_localctx.Value = Actions.CreateSentinelSignatureArgument();}
 	| attributes = paramAttr argumentType = type marshalling = marshalClause name = id?
 		{_localctx.Value = Actions.CreateSignatureArgument($attributes.Value, $argumentType.Value, $marshalling.Value, $name.ctx);};
 
 /*  Class referencing  */
 
-className returns [object Value]:
+className returns [CILParser.ClassNameValue Value]
+@init {_localctx.Value = CILParser.ClassNameValue.Error;}
+:
 	'[' assemblyName = dottedName ']' typeName = slashedName
 		{_localctx.Value = Actions.CreateAssemblyQualifiedClassName($assemblyName.Value, $typeName.Value);}
 	| '[' scopeToken = mdtoken ']' typeName = slashedName
@@ -988,23 +1101,24 @@ className returns [object Value]:
 	| BASE {_localctx.Value = Actions.CreateBaseClassName(_localctx.Start);}
 	| NESTER {_localctx.Value = Actions.CreateNesterClassName(_localctx.Start);};
 
-slashedName returns [object Value]
-@init {Actions.BeginSlashedName(_localctx);}
+slashedName returns [CILParser.TypeName Value]
+locals [CILParser.TypeName CurrentName]
 :
-	(part = dottedName {Actions.AddSlashedNamePart(_localctx, $part.Value);} '/')*
-	lastPart = dottedName {Actions.AddSlashedNamePart(_localctx, $lastPart.Value);}
+	(part = dottedName {_localctx.CurrentName = Actions.AddSlashedNamePart(_localctx.CurrentName, $part.Value);} '/')*
+	lastPart = dottedName {_localctx.CurrentName = Actions.AddSlashedNamePart(_localctx.CurrentName, $lastPart.Value);}
 ;
-finally {_localctx.Value = Actions.EndSlashedName(_localctx);}
+finally {_localctx.Value = _localctx.CurrentName ?? new CILParser.TypeName(null, string.Empty);}
 
-assemblyDecls returns [object Value]
-@init {Actions.BeginAssemblyDeclarations(_localctx);}
+assemblyDecls returns [System.Collections.Immutable.ImmutableArray<CILParser.AssemblyDeclarationValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.AssemblyDeclarationValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.AssemblyDeclarationValue>();}
 :
 	(declaration = assemblyDecl
-		{Actions.AddAssemblyDeclaration(_localctx, $declaration.Value);})*
+		{if ($declaration.Value is not null) _localctx.Builder.Add($declaration.Value);})*
 ;
-finally {_localctx.Value = Actions.EndAssemblyDeclarations(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-assemblyDecl returns [object Value]:
+assemblyDecl returns [CILParser.AssemblyDeclarationValue? Value]:
 	HASH 'algorithm' algorithm = int32
 		{_localctx.Value = Actions.CreateAssemblyHashAlgorithmDeclaration($algorithm.start);}
 	| security = secDecl
@@ -1014,27 +1128,38 @@ assemblyDecl returns [object Value]:
 	| shared = asmOrRefDecl {_localctx.Value = $shared.Value;};
 
 typeSpec
-returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+returns [CILParser.TypeSpecificationValue Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.TypeSpecificationValue.Error;
+}
 :
 	classType = className {_localctx.Value = Actions.CreateClassTypeSpecification($classType.Value);}
 	| '[' assemblyName = dottedName ']' {_localctx.Value = Actions.CreateAssemblyTypeSpecification($assemblyName.Value);}
 	| '[' MODULE moduleName = dottedName ']' {_localctx.Value = Actions.CreateModuleTypeSpecification($moduleName.Value);}
 	| signatureType = type {_localctx.Value = Actions.CreateSignatureTypeSpecification($signatureType.Value);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
 /*  Native types for marshaling signatures  */
-nativeType returns [object Value]
-@init {Actions.BeginNativeType(_localctx);}
+nativeType returns [CILParser.NativeTypeValue Value]
+locals [CILParser.NativeTypeBuilder Builder]
+@init {_localctx.Builder = new CILParser.NativeTypeBuilder();}
 :
 	/* EMPTY */
-	| element = nativeTypeElement {Actions.SetNativeTypeElement(_localctx, $element.Value);}
-		(info = nativeTypeArrayPointerInfo {Actions.AddNativeTypeArrayPointerInfo(_localctx, $info.Value);})*
+	| element = nativeTypeElement {Actions.SetNativeTypeElement(_localctx.Builder, $element.Value);}
+		(info = nativeTypeArrayPointerInfo {Actions.AddNativeTypeArrayPointerInfo(_localctx.Builder, $info.Value);})*
 ;
-finally {_localctx.Value = Actions.EndNativeType(_localctx);}
+finally {_localctx.Value = Actions.CreateNativeType(_localctx.Start, _localctx.Builder);}
 
-nativeTypeArrayPointerInfo returns [object Value]:
+nativeTypeArrayPointerInfo returns [CILParser.NativeTypeArrayPointerInfoValue Value]
+@init {_localctx.Value = Actions.CreatePointerNativeType();}
+:
 	PTR {_localctx.Value = Actions.CreatePointerNativeType();} # PointerNativeType
 	| ARRAY_TYPE_NO_BOUNDS {_localctx.Value = Actions.CreatePointerArrayTypeNoSizeData();} # PointerArrayTypeNoSizeData
 	| '[' size = int32 ']' {_localctx.Value = Actions.CreatePointerArrayTypeSize($size.start);} # PointerArrayTypeSize
@@ -1044,7 +1169,9 @@ nativeTypeArrayPointerInfo returns [object Value]:
 		{_localctx.Value = Actions.CreatePointerArrayTypeParamIndex($parameterIndex.start);} # PointerArrayTypeParamIndex
     ;
 
-nativeTypeElement returns [object Value]:
+nativeTypeElement returns [CILParser.NativeTypeElementValue Value]
+@init {_localctx.Value = CILParser.EmptyNativeTypeElementValue.Instance;}
+:
 	/* EMPTY */ {_localctx.Value = Actions.CreateEmptyNativeType();}
 	| marshalType = CUSTOM '(' guid = compQstring ',' nativeTypeName = compQstring ','
 		marshallerType = compQstring ',' cookie = compQstring ')'
@@ -1103,20 +1230,25 @@ nativeTypeElement returns [object Value]:
 	| 'as' marshalType = ANY {_localctx.Value = Actions.CreateSimpleNativeType($marshalType);}
 	| alias = dottedName {_localctx.Value = Actions.CreateNativeTypeTypedef(_localctx, $alias.Value);} /* typedef */;
 
-iidParamIndex returns [object Value]:
+iidParamIndex returns [CILParser.IidParamIndexValue Value]
+@init {_localctx.Value = CILParser.IidParamIndexValue.Empty;}
+:
 	/* EMPTY */
 	| '(' 'iidparam' '=' index = int32 ')' {_localctx.Value = Actions.GetIidParamIndex($index.start);};
 
-variantType returns [object Value]
-@init {Actions.BeginVariantType(_localctx);}
+variantType returns [CILParser.VariantTypeValue Value]
+locals [CILParser.VariantTypeBuilder Builder]
+@init {_localctx.Builder = new CILParser.VariantTypeBuilder();}
 :
 	/*EMPTY */
-	| element = variantTypeElement {Actions.SetVariantTypeElement(_localctx, $element.Value);}
-		(modifier = (ARRAY_TYPE_NO_BOUNDS | VECTOR | REF) {Actions.AddVariantTypeModifier(_localctx, $modifier);})*
+	| element = variantTypeElement {Actions.SetVariantTypeElement(_localctx.Builder, $element.Value);}
+		(modifier = (ARRAY_TYPE_NO_BOUNDS | VECTOR | REF) {Actions.AddVariantTypeModifier(_localctx.Builder, $modifier);})*
 ;
-finally {_localctx.Value = Actions.EndVariantType(_localctx);}
+finally {_localctx.Value = Actions.CreateVariantType(_localctx.Builder);}
 
-variantTypeElement returns [object Value]:
+variantTypeElement returns [CILParser.VariantTypeElementValue Value]
+@init {_localctx.Value = CILParser.VariantTypeElementValue.Error;}
+:
 	value = NULL {_localctx.Value = Actions.GetVariantTypeElement($value);}
 	| value = VARIANT {_localctx.Value = Actions.GetVariantTypeElement($value);}
 	| value = CURRENCY {_localctx.Value = Actions.GetVariantTypeElement($value);}
@@ -1159,15 +1291,24 @@ variantTypeElement returns [object Value]:
 	| value = CLSID {_localctx.Value = Actions.GetVariantTypeElement($value);};
 
 /*  Managed types for signatures  */
-type returns [object Value]
-@init {Actions.BeginTypeSignature(_localctx);}
+type returns [CILParser.TypeValue Value]
+locals [
+	CILParser.ElementTypeValue ElementType,
+	System.Collections.Immutable.ImmutableArray<CILParser.TypeModifierValue>.Builder Modifiers
+]
+@init {
+	_localctx.ElementType = CILParser.ElementTypeValue.Error;
+	_localctx.Modifiers = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.TypeModifierValue>();
+}
 :
-	element = elementType {Actions.SetTypeSignatureElement(_localctx, $element.Value);}
-	(modifier = typeModifiers {Actions.AddTypeSignatureModifier(_localctx, $modifier.Value);})*
+	element = elementType {_localctx.ElementType = $element.Value;}
+	(modifier = typeModifiers {_localctx.Modifiers.Add($modifier.Value);})*
 ;
-finally {_localctx.Value = Actions.EndTypeSignature(_localctx);}
+finally {_localctx.Value = new CILParser.TypeValue(_localctx.ElementType, _localctx.Modifiers.ToImmutable());}
 
-typeModifiers returns [object Value]:
+typeModifiers returns [CILParser.TypeModifierValue Value]
+@init {_localctx.Value = CILParser.TypeModifierValue.Error;}
+:
 	ARRAY_TYPE_NO_BOUNDS {_localctx.Value = Actions.CreateSzArrayTypeModifier();} # SZArrayModifier
 	| '[' ']' {_localctx.Value = Actions.CreateSzArrayTypeModifier();} # SZArrayModifier
 	| arrayBounds = bounds {_localctx.Value = Actions.CreateArrayTypeModifier($arrayBounds.Value);} # ArrayModifier
@@ -1178,7 +1319,9 @@ typeModifiers returns [object Value]:
 	| 'modopt' '(' modifierType = typeSpec ')' {_localctx.Value = Actions.CreateCustomTypeModifier($modifierType.Value, false);} # OptionalModifier
 	| arguments = typeArgs {_localctx.Value = Actions.CreateGenericArgumentsModifier($arguments.Value);} # GenericArgumentsModifier;
 
-elementType returns [object Value]:
+elementType returns [CILParser.ElementTypeValue Value]
+@init {_localctx.Value = CILParser.ElementTypeValue.Error;}
+:
 	'class' classType = className {_localctx.Value = Actions.CreateClassElementType($classType.Value, false);}
 	| OBJECT {_localctx.Value = Actions.CreateObjectElementType();}
 	| VALUE 'class' valueClassType = className {_localctx.Value = Actions.CreateClassElementType($valueClassType.Value, true);}
@@ -1234,8 +1377,9 @@ nativeUint returns [byte Value]:
 	'native' ('unsigned' INT | UINT) {_localctx.Value = Actions.GetNativeUIntType();};
 
 /*  Security declarations  */
-secDecl returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+secDecl returns [CILParser.SecurityDeclarationValue? Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	PERMISSION action = secAction permissionType = typeSpec '(' pairs = nameValPairs ')'
 		{_localctx.Value = Actions.CreateNamedPermissionDeclaration(
@@ -1257,32 +1401,38 @@ secDecl returns [object Value, bool HasSyntaxError]
 		{_localctx.Value = Actions.CreateStringPermissionSetDeclaration($action.Value, $textValue.Value);}
 	| PERMISSIONSET action = secAction '=' '{' attributes = secAttrSetBlob '}'
 		{_localctx.Value = Actions.CreateAttributePermissionSetDeclaration($action.Value, $attributes.Value);};
-finally {Actions.EndSecurityDeclaration(_localctx);}
+finally {Actions.EndSecurityDeclaration(_localctx, _localctx.InitialSyntaxErrorCount);}
 
-secAttrSetBlob returns [object Value]
-@init {Actions.BeginSecurityAttributeSet(_localctx);}
+secAttrSetBlob returns [System.Collections.Immutable.ImmutableArray<CILParser.SecurityAttributeValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.SecurityAttributeValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.SecurityAttributeValue>();}
 :
 	/* EMPTY */
-	| (attribute = secAttrBlob {Actions.AddSecurityAttribute(_localctx, $attribute.Value);} ',')*
-		tail = secAttrBlob {Actions.AddSecurityAttribute(_localctx, $tail.Value);}
+	| (attribute = secAttrBlob {_localctx.Builder.Add($attribute.Value);} ',')*
+		tail = secAttrBlob {_localctx.Builder.Add($tail.Value);}
 ;
-finally {_localctx.Value = Actions.EndSecurityAttributeSet(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-secAttrBlob returns [object Value]:
+secAttrBlob returns [CILParser.SecurityAttributeValue Value]
+@init {_localctx.Value = CILParser.SecurityAttributeValue.Error;}
+:
 	'class' name = SQSTRING '=' '{' arguments = customBlobNVPairs '}'
 		{_localctx.Value = Actions.CreateNamedSecurityAttribute($name, $arguments.Value);}
 	| securityType = typeSpec '=' '{' arguments = customBlobNVPairs '}'
 		{_localctx.Value = Actions.CreateTypedSecurityAttribute($securityType.Value, $arguments.Value);};
 
-nameValPairs returns [object Value]
-@init {Actions.BeginSecurityNameValuePairs(_localctx);}
+nameValPairs returns [System.Collections.Immutable.ImmutableArray<CILParser.SecurityNameValuePairValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.SecurityNameValuePairValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.SecurityNameValuePairValue>();}
 :
-	(pair = nameValPair {Actions.AddSecurityNameValuePair(_localctx, $pair.Value);} ',')*
-	tail = nameValPair {Actions.AddSecurityNameValuePair(_localctx, $tail.Value);}
+	(pair = nameValPair {_localctx.Builder.Add($pair.Value);} ',')*
+	tail = nameValPair {_localctx.Builder.Add($tail.Value);}
 ;
-finally {_localctx.Value = Actions.EndSecurityNameValuePairs(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-nameValPair returns [object Value]:
+nameValPair returns [CILParser.SecurityNameValuePairValue Value]
+@init {_localctx.Value = CILParser.SecurityNameValuePairValue.Error;}
+:
 	name = compQstring '=' value = caValue
 		{_localctx.Value = Actions.CreateSecurityNameValuePair($name.Value, $value.Value);};
 
@@ -1292,7 +1442,9 @@ truefalse returns [bool Value]
 	'true'
 	| 'false';
 
-caValue returns [object Value]:
+caValue returns [CILParser.SecurityCaValue Value]
+@init {_localctx.Value = CILParser.SecurityCaValue.Error;}
+:
 	booleanValue = truefalse {_localctx.Value = Actions.CreateSecurityBooleanValue($booleanValue.Value);}
 	| integerValue = int32 {_localctx.Value = Actions.CreateSecurityInt32Value($integerValue.start);}
 	| INT32_ '(' integerValue = int32 ')' {_localctx.Value = Actions.CreateSecurityInt32Value($integerValue.start);}
@@ -1327,21 +1479,29 @@ secAction returns [System.Reflection.DeclarativeSecurityAction Value]
 
 /*  Method referencing  */
 methodRef
-returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+returns [CILParser.MethodReferenceValue Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.MethodReferenceValue.Error;
+}
 :
 	convention = callConv returnType = type owner = typeSpec '::' name = methodName genericArguments = typeArgs? arguments = sigArgs
-		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, $owner.Value, $name.Value, $genericArguments.ctx, null, $arguments.Value);}
+		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, $owner.Value, $name.Value, $genericArguments.ctx is null ? null : $genericArguments.Value, null, $arguments.Value);}
 	| convention = callConv returnType = type owner = typeSpec '::' name = methodName genericArity = genArityNotEmpty arguments = sigArgs
 		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, $owner.Value, $name.Value, null, $genericArity.Value, $arguments.Value);}
 	| convention = callConv returnType = type name = methodName genericArguments = typeArgs? arguments = sigArgs
-		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, null, $name.Value, $genericArguments.ctx, null, $arguments.Value);}
+		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, null, $name.Value, $genericArguments.ctx is null ? null : $genericArguments.Value, null, $arguments.Value);}
 	| convention = callConv returnType = type name = methodName genericArity = genArityNotEmpty arguments = sigArgs
 		{_localctx.Value = Actions.CreateMethodReference(_localctx.Start, $convention.Value, $returnType.Value, null, $name.Value, null, $genericArity.Value, $arguments.Value);}
 	| token = mdtoken {_localctx.Value = Actions.CreateTokenMethodReference($token.Value);}
 	| alias = dottedName {_localctx.Value = Actions.CreateTypedefMethodReference(_localctx.Start, $alias.Value);} /* typeDef */
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
 callConv returns [byte Value]:
 	INSTANCE inner = callConv {_localctx.Value = Actions.AddInstanceCallingConvention($inner.Value);}
@@ -1364,20 +1524,31 @@ callKind returns [byte Value]
 
 mdtoken
 returns [int Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	'mdtoken' '(' token = int32 ')' {_localctx.Value = Actions.ParseInt32($token.start);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
-memberRef returns [object Value]:
+memberRef returns [CILParser.MemberReferenceValue Value]
+@init {_localctx.Value = CILParser.MemberReferenceValue.Error;}
+:
 	'method' method = methodRef {_localctx.Value = Actions.CreateMethodMemberReference($method.Value);}
 	| 'field' field = fieldRef {_localctx.Value = Actions.CreateFieldMemberReference($field.Value);}
 	| token = mdtoken {_localctx.Value = Actions.CreateTokenMemberReference($token.Value);};
 
 fieldRef
-returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+returns [CILParser.FieldReferenceValue Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.FieldReferenceValue.Error;
+}
 :
 	fieldType = type owner = typeSpec '::' name = dottedName
 		{_localctx.Value = Actions.CreateFieldReference($fieldType.Value, $owner.Value, $name.Value);}
@@ -1385,25 +1556,32 @@ returns [object Value, bool HasSyntaxError]
 		{_localctx.Value = Actions.CreateFieldReference($fieldType.Value, null, $name.Value);}
 	| alias = dottedName {_localctx.Value = Actions.CreateTypedefFieldReference(_localctx.Start, $alias.Value);} // typedef
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
 /* Generic type parameters declaration  */
-typeList returns [object Value]
-@init {Actions.BeginGenericTypeList(_localctx);}
+typeList returns [System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.TypeSpecificationValue>();}
 :
-	(item = typeSpec {Actions.AddGenericType(_localctx, $item.Value);} ',')*
-	tail = typeSpec {Actions.AddGenericType(_localctx, $tail.Value);}
+	(item = typeSpec {_localctx.Builder.Add($item.Value);} ',')*
+	tail = typeSpec {_localctx.Builder.Add($tail.Value);}
 ;
-finally {_localctx.Value = Actions.EndGenericTypeList(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-typarsClause returns [object Value]
-@init {_localctx.Value = Actions.CreateEmptyGenericParameterList();}
+typarsClause returns [System.Collections.Immutable.ImmutableArray<CILParser.GenericParameterDeclarationValue> Value]
+@init {_localctx.Value = System.Collections.Immutable.ImmutableArray<CILParser.GenericParameterDeclarationValue>.Empty;}
 :
 	/* EMPTY */
 	| '<' parameters = typars '>' {_localctx.Value = $parameters.Value;}
 ;
 
-typarAttrib returns [object Value]:
+typarAttrib returns [CILParser.AttributeValue<System.Reflection.GenericParameterAttributes> Value]
+@init {_localctx.Value = CILParser.AttributeValue<System.Reflection.GenericParameterAttributes>.Empty;}
+:
 	covariant = PLUS {_localctx.Value = Actions.CreateGenericParameterAttribute($covariant);}
 	| contravariant = '-' {_localctx.Value = Actions.CreateGenericParameterAttribute($contravariant);}
 	| class = 'class' {_localctx.Value = Actions.CreateGenericParameterAttribute($class);}
@@ -1412,26 +1590,31 @@ typarAttrib returns [object Value]:
 	| ctor = '.ctor' {_localctx.Value = Actions.CreateGenericParameterAttribute($ctor);}
 	| 'flags' '(' flags = int32 ')' {_localctx.Value = Actions.CreateRawGenericParameterAttribute($flags.start);};
 
-typarAttribs returns [object Value]
-@init {Actions.BeginGenericParameterAttributes(_localctx);}
+typarAttribs returns [System.Reflection.GenericParameterAttributes Value]
+@init {_localctx.Value = 0;}
 :
-	(attribute = typarAttrib {Actions.AddGenericParameterAttribute(_localctx, $attribute.Value);})*
+	(attribute = typarAttrib
+		{_localctx.Value = Actions.AddGenericParameterAttribute(_localctx.Value, $attribute.Value);})*
 ;
-finally {_localctx.Value = Actions.EndGenericParameterAttributes(_localctx);}
 
-typar returns [object Value]:
+typar returns [CILParser.GenericParameterDeclarationValue Value]
+@init {_localctx.Value = CILParser.GenericParameterDeclarationValue.Error;}
+:
 	attributes = typarAttribs constraints = tyBound? name = dottedName
 		{_localctx.Value = Actions.CreateGenericParameterDeclaration($attributes.Value, $constraints.ctx, $name.Value);};
 
-typars returns [object Value]
-@init {Actions.BeginGenericParameters(_localctx);}
+typars returns [System.Collections.Immutable.ImmutableArray<CILParser.GenericParameterDeclarationValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.GenericParameterDeclarationValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.GenericParameterDeclarationValue>();}
 :
-	(parameter = typar {Actions.AddGenericParameter(_localctx, $parameter.Value);} ',')*
-	tail = typar {Actions.AddGenericParameter(_localctx, $tail.Value);}
+	(parameter = typar {_localctx.Builder.Add($parameter.Value);} ',')*
+	tail = typar {_localctx.Builder.Add($tail.Value);}
 ;
-finally {_localctx.Value = Actions.EndGenericParameters(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-tyBound returns [object Value]:
+tyBound returns [System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue> Value]
+@init {_localctx.Value = System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue>.Empty;}
+:
 	'(' constraints = typeList ')' {_localctx.Value = $constraints.Value;};
 
 genArity returns [int Value]:
@@ -1442,11 +1625,18 @@ genArityNotEmpty returns [int Value]:
 
 /*  Class body declarations  */
 classDecl
+locals [
+	CILParser.PropertyBodyValue PropertyBody,
+	CILParser.EventBodyValue EventBody,
+	CILParser.CustomAttributeOwnerValue AttributeOwner
+]
 :
 	methodHead '{' methodDecls '}'
 	| classHead '{' classDecls '}'
-	| eventHeader = eventHead {Actions.BeginEvent(_localctx, $eventHeader.Value);} '{' eventDecls '}'
-	| property = propHead {Actions.BeginProperty(_localctx, $property.Value);} '{' propDecls '}'
+	| eventHeader = eventHead {_localctx.EventBody = Actions.BeginEvent($eventHeader.Value);}
+		'{' eventDecls[_localctx.EventBody] '}'
+	| property = propHead {_localctx.PropertyBody = Actions.BeginProperty($property.Value);}
+		'{' propDecls[_localctx.PropertyBody] '}'
 	| fieldDecl
 	| data = dataDecl {Actions.ProcessClassDataDeclaration($data.ctx);}
 	| security = secDecl {Actions.ProcessClassSecurityDeclaration($security.ctx);}
@@ -1491,44 +1681,52 @@ classDecl
 	| language = languageDecl {Actions.ProcessClassLanguageDirective($language.ctx);}
 	| compControl {Actions.ProcessClassCompilerControl();}
 	| PARAM TYPE '[' parameterIndex = int32 ']'
-		{Actions.BeginClassGenericParameterDirective(_localctx, $parameterIndex.start);}
-		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx, $attribute.ctx);})*
+		{_localctx.AttributeOwner = Actions.BeginClassGenericParameterDirective(_localctx, $parameterIndex.start);}
+		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx.AttributeOwner, $attribute.ctx);})*
 	| PARAM TYPE parameterName = dottedName
-		{Actions.BeginClassGenericParameterDirective(_localctx, $parameterName.Value);}
-		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx, $attribute.ctx);})*
+		{_localctx.AttributeOwner = Actions.BeginClassGenericParameterDirective($parameterName.Value);}
+		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx.AttributeOwner, $attribute.ctx);})*
 	| PARAM CONSTRAINT '[' parameterIndex = int32 ']' ',' constraintType = typeSpec
-		{Actions.BeginClassGenericConstraintDirective(_localctx, $parameterIndex.start, $constraintType.Value);}
-		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx, $attribute.ctx);})*
+		{_localctx.AttributeOwner = Actions.BeginClassGenericConstraintDirective(_localctx, $parameterIndex.start, $constraintType.Value);}
+		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx.AttributeOwner, $attribute.ctx);})*
 	| PARAM CONSTRAINT parameterName = dottedName ',' constraintType = typeSpec
-		{Actions.BeginClassGenericConstraintDirective(_localctx, $parameterName.Value, $constraintType.Value);}
-		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx, $attribute.ctx);})*
+		{_localctx.AttributeOwner = Actions.BeginClassGenericConstraintDirective($parameterName.Value, $constraintType.Value);}
+		(attribute = customAttrDecl {Actions.AddClassGenericDirectiveAttribute(_localctx.AttributeOwner, $attribute.ctx);})*
 	| '.interfaceimpl' TYPE interfaceType = typeSpec interfaceAttribute = customDescr
 		{Actions.AddInterfaceImplementationAttribute(_localctx, $interfaceType.Value, $interfaceAttribute.ctx);}
 ;
 finally {Actions.EndClassDeclaration(_localctx);}
 
 /*  Field declaration  */
-fieldDecl returns [object Value]
-@init {Actions.BeginFieldDeclaration(_localctx);}
+fieldDecl returns [CILParser.FieldDeclarationValue Value]
+locals [int InitialSyntaxErrorCount, CILParser.FieldDeclarationBuilder Builder]
+@init {
+	_localctx.Builder = Actions.PrepareFieldDeclaration();
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.FieldDeclarationValue.Error;
+}
 @after {Actions.DefineField(_localctx, _localctx.Value);}
 :
 	'.field' offset = repeatOpt
 	(
-		attribute = fieldAttr {Actions.AddFieldAttribute(_localctx, $attribute.Value);}
-		| 'marshal' '(' marshalling = marshalBlob ')' {Actions.SetFieldMarshalling(_localctx, $marshalling.Value);}
+		attribute = fieldAttr {Actions.AddFieldAttribute(_localctx.Builder, $attribute.Value);}
+		| 'marshal' '(' marshalling = marshalBlob ')' {Actions.SetFieldMarshalling(_localctx.Builder, $marshalling.Value);}
 	)*
 	fieldType = type name = dottedName data = atOpt initializer = initOpt
 		{_localctx.Value = Actions.CreateFieldDeclaration(
 			_localctx,
+			_localctx.Builder,
+			_localctx.InitialSyntaxErrorCount,
 			$offset.ctx,
 			$fieldType.Value,
 			$name.Value,
 			$data.Value,
 			$initializer.Value);}
 ;
-finally {Actions.EndFieldDeclaration(_localctx);}
 
-fieldAttr returns [object Value]:
+fieldAttr returns [CILParser.AttributeValue<System.Reflection.FieldAttributes> Value]
+@init {_localctx.Value = CILParser.AttributeValue<System.Reflection.FieldAttributes>.Empty;}
+:
 	attribute = 'static' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
 	| attribute = 'public' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
 	| attribute = 'private' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
@@ -1545,107 +1743,147 @@ fieldAttr returns [object Value]:
 	| attribute = 'volatile' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
 	| 'flags' '(' flags = int32 ')' {_localctx.Value = Actions.CreateRawFieldAttribute($flags.start);};
 
-atOpt returns [string Value]:
+atOpt returns [string? Value]
+@init {_localctx.Value = null;}
+:
 	/* EMPTY */
 	| 'at' name = id {_localctx.Value = Actions.GetFieldDataName($name.start);}
 	| 'at' offset = int32 {_localctx.Value = Actions.GetFieldDataOffset($offset.start);};
 
-initOpt returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginFieldInitializer(_localctx);}
+initOpt returns [CILParser.FieldInitializerValue Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.FieldInitializerValue.Empty;
+}
 :
 	/* EMPTY */
-	| '=' initializer = fieldInit {Actions.SetFieldInitializer(_localctx, $initializer.Value);}
+	| '=' initializer = fieldInit {_localctx.Value = $initializer.Value;}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndFieldInitializer(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
 repeatOpt returns [int Value, bool HasValue]:
 	/* EMPTY */
 	| '[' offset = int32 ']' {Actions.SetFieldOffset(_localctx, $offset.start);};
 
 /*  Event declaration  */
-eventHead returns [object Value]
-@init {Actions.BeginEventHeader(_localctx);}
+eventHead returns [CILParser.EventHeaderValue Value]
+locals [int InitialSyntaxErrorCount, CILParser.EventHeaderBuilder Builder]
+@init {
+	_localctx.Builder = new CILParser.EventHeaderBuilder();
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.EventHeaderValue.Error;
+}
 :
 	'.event'
-	(attribute = eventAttr {Actions.AddEventAttribute(_localctx, $attribute.Value);})*
+	(attribute = eventAttr {Actions.AddEventAttribute(_localctx.Builder, $attribute.Value);})*
 	eventType = typeSpec name = dottedName
-		{_localctx.Value = Actions.CreateEventHeader(_localctx, $eventType.Value, $name.Value);}
+		{_localctx.Value = Actions.CreateEventHeader(
+			_localctx,
+			_localctx.Builder,
+			_localctx.InitialSyntaxErrorCount,
+			$eventType.Value,
+			$name.Value);}
 	| '.event'
-	(attribute = eventAttr {Actions.AddEventAttribute(_localctx, $attribute.Value);})*
+	(attribute = eventAttr {Actions.AddEventAttribute(_localctx.Builder, $attribute.Value);})*
 	name = dottedName
-		{_localctx.Value = Actions.CreateEventHeader(_localctx, null, $name.Value);}
+		{_localctx.Value = Actions.CreateEventHeader(
+			_localctx,
+			_localctx.Builder,
+			_localctx.InitialSyntaxErrorCount,
+			null,
+			$name.Value);}
 ;
-finally {Actions.EndEventHeader(_localctx);}
 
-eventAttr returns [object Value]:
+eventAttr returns [CILParser.AttributeValue<System.Reflection.EventAttributes> Value]
+@init {_localctx.Value = CILParser.AttributeValue<System.Reflection.EventAttributes>.Empty;}
+:
 	attribute = 'rtspecialname' {_localctx.Value = Actions.CreateEventAttribute($attribute);}
 	| attribute = 'specialname' {_localctx.Value = Actions.CreateEventAttribute($attribute);};
 
-eventDecls: eventDecl*;
+eventDecls [CILParser.EventBodyValue Body]: eventDecl[$Body]*;
 
-eventDecl:
-	'.addon' accessor = methodRef {Actions.AddEventAdder(_localctx, $accessor.Value);}
-	| '.removeon' accessor = methodRef {Actions.AddEventRemover(_localctx, $accessor.Value);}
-	| '.fire' accessor = methodRef {Actions.AddEventRaiser(_localctx, $accessor.Value);}
-	| '.other' accessor = methodRef {Actions.AddEventOther(_localctx, $accessor.Value);}
-	| source = extSourceSpec {Actions.ProcessEventSourceDirective($source.ctx);}
-	| attribute = customAttrDecl {Actions.AddEventCustomAttribute(_localctx, $attribute.ctx);}
-	| language = languageDecl {Actions.ProcessEventLanguageDirective($language.ctx);}
+eventDecl [CILParser.EventBodyValue Body]:
+	'.addon' accessor = methodRef {Actions.AddEventAdder($Body, $accessor.Value);}
+	| '.removeon' accessor = methodRef {Actions.AddEventRemover($Body, $accessor.Value);}
+	| '.fire' accessor = methodRef {Actions.AddEventRaiser($Body, $accessor.Value);}
+	| '.other' accessor = methodRef {Actions.AddEventOther($Body, $accessor.Value);}
+	| source = extSourceSpec {Actions.ProcessEventSourceDirective($Body, $source.ctx);}
+	| attribute = customAttrDecl {Actions.AddEventCustomAttribute($Body, $attribute.ctx);}
+	| language = languageDecl {Actions.ProcessEventLanguageDirective($Body, $language.ctx);}
 	| compControl;
 
 /*  Property declaration  */
-propHead returns [object Value]
-@init {Actions.BeginPropertyHeader(_localctx);}
+propHead returns [CILParser.PropertyHeaderValue Value]
+locals [int InitialSyntaxErrorCount, CILParser.PropertyHeaderBuilder Builder]
+@init {
+	_localctx.Builder = new CILParser.PropertyHeaderBuilder();
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.PropertyHeaderValue.Error;
+}
 :
 	'.property'
-	(attribute = propAttr {Actions.AddPropertyAttribute(_localctx, $attribute.Value);})*
+	(attribute = propAttr {Actions.AddPropertyAttribute(_localctx.Builder, $attribute.Value);})*
 	convention = callConv propertyType = type name = dottedName arguments = sigArgs initializer = initOpt
 		{_localctx.Value = Actions.CreatePropertyHeader(
 			_localctx,
+			_localctx.Builder,
+			_localctx.InitialSyntaxErrorCount,
 			$convention.Value,
 			$propertyType.Value,
 			$name.Value,
 			$arguments.Value,
 			$initializer.Value);}
 ;
-finally {Actions.EndPropertyHeader(_localctx);}
 
-propAttr returns [object Value]:
+propAttr returns [CILParser.AttributeValue<System.Reflection.PropertyAttributes> Value]
+@init {_localctx.Value = CILParser.AttributeValue<System.Reflection.PropertyAttributes>.Empty;}
+:
 	attribute = 'rtspecialname' {_localctx.Value = Actions.CreatePropertyAttribute($attribute);}
 	| attribute = 'specialname' {_localctx.Value = Actions.CreatePropertyAttribute($attribute);};
 
-propDecls: propDecl*;
+propDecls [CILParser.PropertyBodyValue Body]: propDecl[$Body]*;
 
-propDecl:
-	'.set' accessor = methodRef {Actions.AddPropertySetter(_localctx, $accessor.Value);}
-	| '.get' accessor = methodRef {Actions.AddPropertyGetter(_localctx, $accessor.Value);}
-	| '.other' accessor = methodRef {Actions.AddPropertyOther(_localctx, $accessor.Value);}
-	| attribute = customAttrDecl {Actions.AddPropertyCustomAttribute(_localctx, $attribute.ctx);}
-	| source = extSourceSpec {Actions.ProcessPropertySourceDirective($source.ctx);}
-	| language = languageDecl {Actions.ProcessPropertyLanguageDirective($language.ctx);}
+propDecl [CILParser.PropertyBodyValue Body]:
+	'.set' accessor = methodRef {Actions.AddPropertySetter($Body, $accessor.Value);}
+	| '.get' accessor = methodRef {Actions.AddPropertyGetter($Body, $accessor.Value);}
+	| '.other' accessor = methodRef {Actions.AddPropertyOther($Body, $accessor.Value);}
+	| attribute = customAttrDecl {Actions.AddPropertyCustomAttribute($Body, $attribute.ctx);}
+	| source = extSourceSpec {Actions.ProcessPropertySourceDirective($Body, $source.ctx);}
+	| language = languageDecl {Actions.ProcessPropertyLanguageDirective($Body, $language.ctx);}
 	| compControl;
 
 /*  Method declaration  */
 
-marshalClause returns [object Value]:
+marshalClause returns [CILParser.MarshallingDescriptorValue Value]
+@init {_localctx.Value = CILParser.MarshallingDescriptorValue.Empty;}
+:
 	/* EMPTY */ {_localctx.Value = Actions.CreateEmptyMarshallingDescriptor();}
 	| 'marshal' '(' value = marshalBlob ')' {_localctx.Value = Actions.CompleteMarshalClause($value.Value);}
 ;
 
-marshalBlob returns [object Value]
-@init {Actions.BeginMarshalBlob(_localctx);}
+marshalBlob returns [CILParser.MarshallingDescriptorValue Value]
+locals [CILParser.MarshalBlobBuilder Builder]
+@init {_localctx.Builder = new CILParser.MarshalBlobBuilder();}
 :
-	nativeValue = nativeType {Actions.SetMarshalBlobNativeType(_localctx, $nativeValue.Value);}
-	| '{' (rawByte = hexbyte {Actions.AddMarshalBlobByte(_localctx, $rawByte.Value);})+ '}'
+	nativeValue = nativeType {Actions.SetMarshalBlobNativeType(_localctx.Builder, $nativeValue.Value);}
+	| '{' (rawByte = hexbyte {Actions.AddMarshalBlobByte(_localctx.Builder, $rawByte.Value);})+ '}'
 ;
-finally {_localctx.Value = Actions.EndMarshalBlob(_localctx);}
+finally {_localctx.Value = Actions.CreateMarshallingDescriptor(_localctx.Builder);}
 
 paramAttr returns [int Value]
-@init {Actions.BeginParameterAttributes(_localctx);}
+@init {_localctx.Value = 0;}
 :
-	(element = paramAttrElement {Actions.AddParameterAttribute(_localctx, $element.ctx);})*
+	(element = paramAttrElement
+		{_localctx.Value = Actions.AddParameterAttribute(
+			_localctx.Value,
+			$element.Value,
+			$element.ShouldAppend);})*
 ;
-finally {_localctx.Value = Actions.EndParameterAttributes(_localctx);}
 
 paramAttrElement returns [int Value, bool ShouldAppend]:
 	'[' attribute = 'in' ']' {Actions.SetParameterAttributeElement(_localctx, $attribute);}
@@ -1654,20 +1892,27 @@ paramAttrElement returns [int Value, bool ShouldAppend]:
 	| '[' raw = int32 ']' {Actions.SetRawParameterAttributeElement(_localctx, $raw.start);};
 
 methodHead
-returns [object Value]
-@init {Actions.BeginMethodHeader(_localctx);}
+returns [CILParser.MethodHeaderValue Value]
+locals [int InitialSyntaxErrorCount, CILParser.MethodHeaderBuilder Builder]
+@init {
+	_localctx.Builder = Actions.PrepareMethodHeader();
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.MethodHeaderValue.Error;
+}
 @after {Actions.BeginMethod(_localctx, _localctx.Value);}
 :
 	'.method'
 	(
-		attribute = methAttr {Actions.AddMethodAttribute(_localctx, $attribute.Value);}
-		| pInvoke = pinvImpl {Actions.AddPInvoke(_localctx, $pInvoke.Value);}
+		attribute = methAttr {Actions.AddMethodAttribute(_localctx.Builder, $attribute.Value);}
+		| pInvoke = pinvImpl {Actions.AddPInvoke(_localctx.Builder, $pInvoke.Value);}
 	)*
 	convention = callConv returnAttributes = paramAttr returnType = type returnMarshalling = marshalClause
 	name = methodName genericParameters = typarsClause arguments = sigArgs
-	(implementation = implAttr {Actions.AddMethodImplementationAttribute(_localctx, $implementation.Value);})*
+	(implementation = implAttr {Actions.AddMethodImplementationAttribute(_localctx.Builder, $implementation.Value);})*
 		{_localctx.Value = Actions.CreateMethodHeader(
 			_localctx,
+			_localctx.Builder,
+			_localctx.InitialSyntaxErrorCount,
 			$convention.Value,
 			$returnAttributes.Value,
 			$returnType.Value,
@@ -1676,9 +1921,10 @@ returns [object Value]
 			$genericParameters.Value,
 			$arguments.Value);}
 ;
-finally {Actions.EndMethodHeader(_localctx);}
 
-methAttr returns [object Value]:
+methAttr returns [CILParser.AttributeValue<System.Reflection.MethodAttributes> Value]
+@init {_localctx.Value = CILParser.AttributeValue<System.Reflection.MethodAttributes>.Empty;}
+:
 	attribute = 'static' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
 	| attribute = 'public' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
 	| attribute = 'private' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
@@ -1699,19 +1945,22 @@ methAttr returns [object Value]:
 	| attribute = 'reqsecobj' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
 	| 'flags' '(' flags = int32 ')' {_localctx.Value = Actions.CreateRawMethodAttribute($flags.start);};
 
-pinvImpl returns [object Value]
-@init {Actions.BeginPInvoke(_localctx);}
+pinvImpl returns [CILParser.PInvokeValue Value]
+locals [CILParser.PInvokeBuilder Builder]
+@init {_localctx.Builder = new CILParser.PInvokeBuilder();}
 :
 	'pinvokeimpl' '('
-		(module = compQstring {Actions.SetPInvokeModule(_localctx, $module.Value);}
-			('as' entryPoint = compQstring {Actions.SetPInvokeEntryPoint(_localctx, $entryPoint.Value);})?)?
-		(attribute = pinvAttr {Actions.AddPInvokeAttribute(_localctx, $attribute.Value);})*
+		(module = compQstring {Actions.SetPInvokeModule(_localctx.Builder, $module.Value);}
+			('as' entryPoint = compQstring {Actions.SetPInvokeEntryPoint(_localctx.Builder, $entryPoint.Value);})?)?
+		(attribute = pinvAttr {Actions.AddPInvokeAttribute(_localctx.Builder, $attribute.Value);})*
 	')'
 	| 'pinvokeimpl' '()'
 ;
-finally {_localctx.Value = Actions.EndPInvoke(_localctx);}
+finally {_localctx.Value = Actions.CreatePInvoke(_localctx.Builder);}
 
-pinvAttr returns [object Value]:
+pinvAttr returns [CILParser.AttributeValue<System.Reflection.MethodImportAttributes> Value]
+@init {_localctx.Value = CILParser.AttributeValue<System.Reflection.MethodImportAttributes>.Empty;}
+:
 	attribute = 'nomangle' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
 	| attribute = 'ansi' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
 	| attribute = 'unicode' {_localctx.Value = Actions.CreatePInvokeAttribute($attribute);}
@@ -1728,12 +1977,16 @@ pinvAttr returns [object Value]:
 	| 'charmaperror' ':' setting = 'off' {_localctx.Value = Actions.CreateCharMapErrorPInvokeAttribute($setting);}
 	| 'flags' '(' flags = int32 ')' {_localctx.Value = Actions.CreateRawPInvokeAttribute($flags.start);};
 
-methodName returns [string Value]:
+methodName returns [string Value]
+@init {_localctx.Value = string.Empty;}
+:
 	ctorName = '.ctor' {_localctx.Value = Actions.GetMethodName($ctorName);}
 	| cctorName = '.cctor' {_localctx.Value = Actions.GetMethodName($cctorName);}
 	| dotted = dottedName {_localctx.Value = $dotted.Value;};
 
-implAttr returns [object Value]:
+implAttr returns [CILParser.AttributeValue<System.Reflection.MethodImplAttributes> Value]
+@init {_localctx.Value = CILParser.AttributeValue<System.Reflection.MethodImplAttributes>.Empty;}
+:
 	attribute = 'native' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
 	| attribute = 'cil' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
 	| attribute = 'il' {_localctx.Value = Actions.CreateMethodImplementationAttribute($attribute);}
@@ -1789,58 +2042,80 @@ methodDecl:
 ;
 
 localsDecl
-@init {Actions.BeginSemanticRoot(_localctx);}
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	LOCALS initialize = 'init'? arguments = sigArgs
 ;
-finally {Actions.EndLocalsDirective(_localctx);}
+finally {Actions.EndLocalsDirective(_localctx, _localctx.InitialSyntaxErrorCount);}
 
 exportDecl
-@init {Actions.BeginSemanticRoot(_localctx);}
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	EXPORT '[' ordinal = int32 ']' ('as' alias = id)?
 ;
-finally {Actions.EndExportDirective(_localctx);}
+finally {Actions.EndExportDirective(_localctx, _localctx.InitialSyntaxErrorCount);}
 
 vtentryDecl
-@init {Actions.BeginSemanticRoot(_localctx);}
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	VTENTRY table = int32 ':' slot = int32
 ;
-finally {Actions.EndVTableEntryDirective(_localctx);}
+finally {Actions.EndVTableEntryDirective(_localctx, _localctx.InitialSyntaxErrorCount);}
 
 overrideDecl
-@init {Actions.BeginSemanticRoot(_localctx);}
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	OVERRIDE owner = typeSpec '::' name = methodName
 	| OVERRIDE 'method' convention = callConv returnType = type owner = typeSpec '::' name = methodName
 		arity = genArity arguments = sigArgs
 ;
-finally {Actions.EndOverrideDirective(_localctx);}
+finally {Actions.EndOverrideDirective(_localctx, _localctx.InitialSyntaxErrorCount);}
 
 parameterDecl
-@init {Actions.BeginParameterDirective(_localctx);}
+locals [
+	int InitialSyntaxErrorCount,
+	System.Collections.Immutable.ImmutableArray<CILParser.CustomAttributeApplicationValue>.Builder Attributes
+]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Attributes = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.CustomAttributeApplicationValue>();
+}
 :
-	PARAM TYPE '[' genericIndex = int32 ']' (attribute = customAttrDecl {Actions.AddParameterCustomAttribute(_localctx, $attribute.ctx);})*
-	| PARAM TYPE genericName = dottedName (attribute = customAttrDecl {Actions.AddParameterCustomAttribute(_localctx, $attribute.ctx);})*
+	PARAM TYPE '[' genericIndex = int32 ']' (attribute = customAttrDecl {Actions.AddCustomAttributeApplication(_localctx.Attributes, $attribute.ctx);})*
+	| PARAM TYPE genericName = dottedName (attribute = customAttrDecl {Actions.AddCustomAttributeApplication(_localctx.Attributes, $attribute.ctx);})*
 	| PARAM CONSTRAINT '[' constraintIndex = int32 ']' ',' constraintType = typeSpec
-		(attribute = customAttrDecl {Actions.AddParameterCustomAttribute(_localctx, $attribute.ctx);})*
+		(attribute = customAttrDecl {Actions.AddCustomAttributeApplication(_localctx.Attributes, $attribute.ctx);})*
 	| PARAM CONSTRAINT constraintName = dottedName ',' constraintType = typeSpec
-		(attribute = customAttrDecl {Actions.AddParameterCustomAttribute(_localctx, $attribute.ctx);})*
+		(attribute = customAttrDecl {Actions.AddCustomAttributeApplication(_localctx.Attributes, $attribute.ctx);})*
 	| PARAM '[' parameterIndex = int32 ']' initializer = initOpt
-		(attribute = customAttrDecl {Actions.AddParameterCustomAttribute(_localctx, $attribute.ctx);})*
+		(attribute = customAttrDecl {Actions.AddCustomAttributeApplication(_localctx.Attributes, $attribute.ctx);})*
 ;
-finally {Actions.EndParameterDirective(_localctx);}
+finally {Actions.EndParameterDirective(
+	_localctx,
+	_localctx.Attributes.ToImmutable(),
+	_localctx.InitialSyntaxErrorCount);}
 
 labelDecl:
 	name = id ':' {Actions.DefineLabel($name.start);};
 
-customDescrInMethodBody returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+customDescrInMethodBody returns [CILParser.CustomAttributeDeclarationValue Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.CustomAttributeDeclarationValue.Error;
+}
 :
 	directAttribute = customDescr {_localctx.Value = Actions.CreateCustomAttributeDeclaration($directAttribute.Value);}
 	| ownedAttribute = customDescrWithOwner {_localctx.Value = Actions.CreateCustomAttributeDeclaration($ownedAttribute.Value);};
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
 scopeBlock
 @init {Actions.BeginScope(_localctx);}
@@ -1851,27 +2126,33 @@ finally {Actions.EndScope(_localctx);}
 
 /* Structured exception handling directives  */
 sehBlock
-@init {Actions.BeginExceptionBlock(_localctx);}
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	tryRange = tryBlock clauses = sehClauses
 ;
-finally {Actions.EndExceptionBlock(_localctx);}
+finally {Actions.EndExceptionBlock(_localctx, _localctx.InitialSyntaxErrorCount);}
 
-sehClauses returns [object Value]
-@init {Actions.BeginExceptionClauses(_localctx);}
+sehClauses returns [System.Collections.Immutable.ImmutableArray<CILParser.ExceptionClauseValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.ExceptionClauseValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.ExceptionClauseValue>();}
 :
-	(clause = sehClause {Actions.AddExceptionClause(_localctx, $clause.Value);})+
+	(clause = sehClause {_localctx.Builder.Add($clause.Value);})+
 ;
-finally {_localctx.Value = Actions.EndExceptionClauses(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-tryBlock returns [object Value]:
+tryBlock returns [CILParser.ExceptionRangeValue Value]
+@init {_localctx.Value = CILParser.ExceptionRangeValue.Invalid;}
+:
 	'.try' body = scopeBlock {_localctx.Value = Actions.CreateScopeExceptionRange($body.ctx);}
 	| '.try' startLabel = id 'to' endLabel = id
 		{_localctx.Value = Actions.CreateLabelExceptionRange($startLabel.start, $endLabel.start);}
 	| '.try' startOffset = int32 'to' endOffset = int32
 		{_localctx.Value = Actions.CreateOffsetExceptionRange($startOffset.start, $endOffset.start);};
 
-sehClause returns [object Value]:
+sehClause returns [CILParser.ExceptionClauseValue Value]
+@init {_localctx.Value = CILParser.ExceptionClauseValue.Invalid;}
+:
 	caught = catchClause handler = handlerBlock
 		{_localctx.Value = Actions.CreateCatchExceptionClause($caught.Value, $handler.Value);}
 	| filtered = filterClause handler = handlerBlock
@@ -1881,24 +2162,32 @@ sehClause returns [object Value]:
 	| faultClause handler = handlerBlock
 		{_localctx.Value = Actions.CreateFaultExceptionClause($handler.Value);};
 
-filterClause returns [object Value]:
+filterClause returns [CILParser.ExceptionFilterValue Value]
+@init {_localctx.Value = CILParser.ExceptionFilterValue.Invalid;}
+:
 	'filter' body = scopeBlock {_localctx.Value = Actions.CreateScopeFilter($body.ctx);}
 	| 'filter' label = id {_localctx.Value = Actions.CreateLabelFilter($label.start);}
 	| 'filter' offset = int32 {_localctx.Value = Actions.CreateOffsetFilter($offset.start);};
 
 catchClause
-returns [object Value]
-@init {Actions.BeginCatchClause(_localctx);}
+returns [CILParser.CatchTypeValue Value]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.CatchTypeValue.Invalid;
+}
 :
 	'catch' catchType = typeSpec
 ;
-finally {_localctx.Value = Actions.EndCatchClause(_localctx);}
+finally {_localctx.Value = Actions.EndCatchClause(_localctx, _localctx.InitialSyntaxErrorCount);}
 
 finallyClause: 'finally';
 
 faultClause: 'fault';
 
-handlerBlock returns [object Value]:
+handlerBlock returns [CILParser.ExceptionRangeValue Value]
+@init {_localctx.Value = CILParser.ExceptionRangeValue.Invalid;}
+:
 	body = scopeBlock {_localctx.Value = Actions.CreateScopeExceptionRange($body.ctx);}
 	| 'handler' startLabel = id 'to' endLabel = id
 		{_localctx.Value = Actions.CreateLabelExceptionRange($startLabel.start, $endLabel.start);}
@@ -1907,17 +2196,21 @@ handlerBlock returns [object Value]:
 
 /*  Data declaration  */
 dataDecl returns [bool HasSyntaxError]
-@init {Actions.BeginDataDeclaration(_localctx);}
+locals [int InitialSyntaxErrorCount, CILParser.DataDeclarationBuilder Builder]
+@init {
+	_localctx.Builder = Actions.CreateDataDeclaration(_localctx);
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+}
 :
-	ddHead ddBody
+	ddHead[_localctx.Builder] ddBody[_localctx.Builder]
 ;
-finally {Actions.EndDataDeclaration(_localctx);}
+finally {Actions.EndDataDeclaration(_localctx, _localctx.Builder, _localctx.InitialSyntaxErrorCount);}
 
-ddHead:
+ddHead [CILParser.DataDeclarationBuilder Builder]:
 	'.data' section = tls name = id '='
-		{Actions.SetDataDeclarationHeader(_localctx, $section.Value, $name.start);}
+		{Actions.SetDataDeclarationHeader($Builder, $section.Value, $name.start);}
 	| '.data' section = tls
-		{Actions.SetAnonymousDataDeclarationHeader(_localctx, $section.Value);};
+		{Actions.SetAnonymousDataDeclarationHeader($Builder, $section.Value);};
 
 tls returns [byte Value]
 @init {_localctx.Value = Actions.GetMappedDataSection();}
@@ -1926,9 +2219,11 @@ tls returns [byte Value]
 	| 'tls' {_localctx.Value = Actions.GetTlsDataSection(_localctx);}
 	| 'cil' {_localctx.Value = Actions.GetCilDataSection();};
 
-ddBody: '{' ddItemList '}' | ddItem+;
+ddBody [CILParser.DataDeclarationBuilder Builder]:
+	'{' ddItemList[$Builder] '}' | ddItem[$Builder]+;
 
-ddItemList: (ddItem ',')* ddItem;
+ddItemList [CILParser.DataDeclarationBuilder Builder]:
+	(ddItem[$Builder] ',')* ddItem[$Builder];
 
 ddItemCount returns [int Value]
 @init {_localctx.Value = 1;}
@@ -1936,19 +2231,19 @@ ddItemCount returns [int Value]
 	/* EMPTY */
 	| '[' count = int32 ']' {_localctx.Value = Actions.ParseDataItemCount($count.start);};
 
-ddItem:
-	CHAR PTR '(' stringValue = compQstring ')' {Actions.AddDataString(_localctx, $stringValue.Value);}
-	| REF '(' target = id ')' {Actions.AddDataReference(_localctx, $target.start);}
-	| REF target = id {Actions.AddDataReference(_localctx, $target.start);}
-	| 'bytearray' '(' byteValue = bytes ')' {Actions.AddDataBytes(_localctx, $byteValue.Value);}
+ddItem [CILParser.DataDeclarationBuilder Builder]:
+	CHAR PTR '(' stringValue = compQstring ')' {Actions.AddDataString($Builder, $stringValue.Value);}
+	| REF '(' target = id ')' {Actions.AddDataReference($Builder, $target.start);}
+	| REF target = id {Actions.AddDataReference($Builder, $target.start);}
+	| 'bytearray' '(' byteValue = bytes ')' {Actions.AddDataBytes($Builder, $byteValue.Value);}
 	| kind = (FLOAT32 | FLOAT64_) '(' floatingValue = float64 ')' count = ddItemCount
-		{Actions.AddFloatingPointData(_localctx, $kind, $floatingValue.Value, $count.Value);}
+		{Actions.AddFloatingPointData($Builder, $kind, $floatingValue.Value, $count.Value);}
 	| kind = INT64_ '(' int64Value = int64 ')' count = ddItemCount
-		{Actions.AddInt64Data(_localctx, $kind, $int64Value.start, $count.Value);}
+		{Actions.AddInt64Data($Builder, $kind, $int64Value.start, $count.Value);}
 	| kind = (INT32_ | INT16 | INT8) '(' integerValue = int32 ')' count = ddItemCount
-		{Actions.AddIntegerData(_localctx, $kind, $integerValue.start, $count.Value);}
+		{Actions.AddIntegerData($Builder, $kind, $integerValue.start, $count.Value);}
 	| kind = (FLOAT32 | FLOAT64_ | INT64_ | INT32_ | INT16 | INT8) count = ddItemCount
-		{Actions.AddZeroData(_localctx, $kind, $count.Value);};
+		{Actions.AddZeroData($Builder, $kind, $count.Value);};
 
 /*  Default values declaration for fields, parameters and verbal form of CA blob description  */
 fieldSerInit returns [System.Reflection.Metadata.BlobBuilder Value]:
@@ -1986,11 +2281,12 @@ finally {_localctx.Value ??= new System.Reflection.Metadata.BlobBuilder();}
 
 bytes
 returns [System.Collections.Immutable.ImmutableArray<byte> Value]
-@init {Actions.BeginBytes();}
+locals [System.Collections.Immutable.ImmutableArray<byte>.Builder Builder]
+@init {_localctx.Builder = Actions.CreateByteAccumulator();}
 :
-	(b = hexbyte {Actions.AddByte($b.Value);})*
+	(b = hexbyte {Actions.AddByte(_localctx.Builder, $b.Value);})*
 ;
-finally {_localctx.Value = Actions.EndBytes();}
+finally {_localctx.Value = Actions.EndBytes(_localctx.Builder);}
 
 hexbyte
 returns [byte Value]
@@ -2001,13 +2297,17 @@ returns [byte Value]
 	| HEXBYTE
 ;
 /*  Field/parameter initialization  */
-fieldInit returns [object Value]:
+fieldInit returns [CILParser.FieldInitializerValue Value]
+@init {_localctx.Value = CILParser.FieldInitializerValue.Empty;}
+:
 	serializedValue = fieldSerInit {_localctx.Value = Actions.CreateFieldInitializer($serializedValue.Value);}
 	| stringValue = compQstring {_localctx.Value = Actions.CreateFieldInitializer($stringValue.Value);}
 	| NULLREF {_localctx.Value = Actions.CreateNullFieldInitializer();};
 
 /*  Values for verbal form of CA blob description  */
-serInit returns [object Value]:
+serInit returns [CILParser.SerializedInitializerValue Value]
+@init {_localctx.Value = CILParser.SerializedInitializerValue.Error;}
+:
 	scalarValue = fieldSerInit
 		{_localctx.Value = Actions.CreateScalarSerializedValue(_localctx, $scalarValue.ctx, $scalarValue.Value);}
 	| STRING '(' NULLREF ')' {_localctx.Value = Actions.CreateStringSerializedValue();}
@@ -2048,93 +2348,113 @@ serInit returns [object Value]:
 		{_localctx.Value = Actions.CreateArraySerializedValue($objectElementToken, $objectLength.start, $objectValues.Value);};
 
 f32seq returns [System.Reflection.Metadata.BlobBuilder Value]
-@init {Actions.BeginSerializationSequence(_localctx);}
+locals [System.Reflection.Metadata.BlobBuilder Builder]
+@init {_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();}
 :
-	(floatingValue = float64 {Actions.AddFloat32SequenceValue(_localctx, $floatingValue.Value);}
-	| integerValue = int32 {Actions.AddFloat32SequenceValue(_localctx, $integerValue.start);})*
+	(floatingValue = float64 {Actions.AddFloat32SequenceValue(_localctx.Builder, $floatingValue.Value);}
+	| integerValue = int32 {Actions.AddFloat32SequenceValue(_localctx.Builder, $integerValue.start);})*
 ;
-finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+finally {_localctx.Value = _localctx.Builder;}
 
 f64seq returns [System.Reflection.Metadata.BlobBuilder Value]
-@init {Actions.BeginSerializationSequence(_localctx);}
+locals [System.Reflection.Metadata.BlobBuilder Builder]
+@init {_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();}
 :
-	(floatingValue = float64 {Actions.AddFloat64SequenceValue(_localctx, $floatingValue.Value);}
-	| integerValue = int64 {Actions.AddFloat64SequenceValue(_localctx, $integerValue.start);})*
+	(floatingValue = float64 {Actions.AddFloat64SequenceValue(_localctx.Builder, $floatingValue.Value);}
+	| integerValue = int64 {Actions.AddFloat64SequenceValue(_localctx.Builder, $integerValue.start);})*
 ;
-finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+finally {_localctx.Value = _localctx.Builder;}
 
 i64seq returns [System.Reflection.Metadata.BlobBuilder Value]
-@init {Actions.BeginSerializationSequence(_localctx);}
+locals [System.Reflection.Metadata.BlobBuilder Builder]
+@init {_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();}
 :
-	(value = int64 {Actions.AddInt64SequenceValue(_localctx, $value.start);})*
+	(value = int64 {Actions.AddInt64SequenceValue(_localctx.Builder, $value.start);})*
 ;
-finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+finally {_localctx.Value = _localctx.Builder;}
 
 i32seq returns [System.Reflection.Metadata.BlobBuilder Value]
-@init {Actions.BeginSerializationSequence(_localctx);}
+locals [System.Reflection.Metadata.BlobBuilder Builder]
+@init {_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();}
 :
-	(value = int32 {Actions.AddInt32SequenceValue(_localctx, $value.start);})*
+	(value = int32 {Actions.AddInt32SequenceValue(_localctx.Builder, $value.start);})*
 ;
-finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+finally {_localctx.Value = _localctx.Builder;}
 
 i16seq returns [System.Reflection.Metadata.BlobBuilder Value]
-@init {Actions.BeginSerializationSequence(_localctx);}
+locals [System.Reflection.Metadata.BlobBuilder Builder]
+@init {_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();}
 :
-	(value = int32 {Actions.AddInt16SequenceValue(_localctx, $value.start);})*
+	(value = int32 {Actions.AddInt16SequenceValue(_localctx.Builder, $value.start);})*
 ;
-finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+finally {_localctx.Value = _localctx.Builder;}
 
 i8seq returns [System.Reflection.Metadata.BlobBuilder Value]
-@init {Actions.BeginSerializationSequence(_localctx);}
+locals [System.Reflection.Metadata.BlobBuilder Builder]
+@init {_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();}
 :
-	(value = int32 {Actions.AddInt8SequenceValue(_localctx, $value.start);})*
+	(value = int32 {Actions.AddInt8SequenceValue(_localctx.Builder, $value.start);})*
 ;
-finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+finally {_localctx.Value = _localctx.Builder;}
 
 boolSeq returns [System.Reflection.Metadata.BlobBuilder Value]
-@init {Actions.BeginSerializationSequence(_localctx);}
+locals [System.Reflection.Metadata.BlobBuilder Builder]
+@init {_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();}
 :
-	(value = truefalse {Actions.AddBooleanSequenceValue(_localctx, $value.Value);})*
+	(value = truefalse {Actions.AddBooleanSequenceValue(_localctx.Builder, $value.Value);})*
 ;
-finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+finally {_localctx.Value = _localctx.Builder;}
 
 sqstringSeq returns [System.Reflection.Metadata.BlobBuilder Value]
-@init {Actions.BeginSerializationSequence(_localctx);}
+locals [System.Reflection.Metadata.BlobBuilder Builder]
+@init {_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();}
 :
-	(nullValue = NULLREF {Actions.AddStringSequenceValue(_localctx, $nullValue);}
-	| stringValue = SQSTRING {Actions.AddStringSequenceValue(_localctx, $stringValue);})*
+	(nullValue = NULLREF {Actions.AddStringSequenceValue(_localctx.Builder, $nullValue);}
+	| stringValue = SQSTRING {Actions.AddStringSequenceValue(_localctx.Builder, $stringValue);})*
 ;
-finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+finally {_localctx.Value = _localctx.Builder;}
 
-classSeq returns [object Value]
-@init {Actions.BeginSerializationSequence(_localctx);}
+classSeq returns [CILParser.SerializedSequenceValue Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.ClassSequenceElementValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.ClassSequenceElementValue>();}
 :
-	(value = classSeqElement {Actions.AddClassSequenceValue(_localctx, $value.Value);})*
+	(value = classSeqElement {_localctx.Builder.Add($value.Value);})*
 ;
-finally {_localctx.Value = Actions.EndClassSerializationSequence(_localctx);}
+finally {_localctx.Value = new CILParser.ClassSerializedSequenceValue(_localctx.Builder.ToImmutable());}
 
-classSeqElement returns [object Value]:
+classSeqElement returns [CILParser.ClassSequenceElementValue Value]
+@init {_localctx.Value = CILParser.ClassSequenceElementValue.Error;}
+:
 	NULLREF {_localctx.Value = Actions.CreateNullClassSequenceValue();}
 	| 'class' quotedValue = SQSTRING {_localctx.Value = Actions.CreateQuotedClassSequenceValue($quotedValue);}
 	| typeValue = className {_localctx.Value = Actions.CreateClassSequenceValue($typeValue.Value);};
 
-objSeq returns [object Value]
-@init {Actions.BeginSerializationSequence(_localctx);}
+objSeq returns [CILParser.SerializedSequenceValue Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.SerializedInitializerValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.SerializedInitializerValue>();}
 :
-	(value = serInit {Actions.AddObjectSequenceValue(_localctx, $value.Value);})*
+	(value = serInit {_localctx.Builder.Add($value.Value);})*
 ;
-finally {_localctx.Value = Actions.EndObjectSerializationSequence(_localctx);}
+finally {_localctx.Value = new CILParser.ObjectSerializedSequenceValue(_localctx.Builder.ToImmutable());}
 
-customAttrDecl returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+customAttrDecl returns [CILParser.CustomAttributeDeclarationValue Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {
+	_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+	_localctx.Value = CILParser.CustomAttributeDeclarationValue.Error;
+}
 :
 	directAttribute = customDescr {_localctx.Value = Actions.CreateCustomAttributeDeclaration($directAttribute.Value);}
 	| ownedAttribute = customDescrWithOwner {_localctx.Value = Actions.CreateCustomAttributeDeclaration($ownedAttribute.Value);}
 	| alias = dottedName {_localctx.Value = Actions.CreateCustomAttributeTypedef($alias.Value);};
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+}
 
 /* Assembly References */
-asmOrRefDecl returns [object Value]:
+asmOrRefDecl returns [CILParser.AssemblyDeclarationValue? Value]:
 	('.publickey' | '.publicKey') '=' '(' key = bytes ')'
 		{_localctx.Value = Actions.CreateAssemblyPublicKeyDeclaration($key.Value);}
 	| '.ver' major = intOrWildcard ':' minor = intOrWildcard ':' build = intOrWildcard ':' revision = intOrWildcard
@@ -2153,17 +2473,28 @@ asmOrRefDecl returns [object Value]:
 			$attribute.start);}
 	| compControl;
 
-assemblyRefBlock returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+assemblyRefBlock returns [CILParser.AssemblyReferenceValue? Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	header = assemblyRefHead '{' declarations = assemblyRefDecls '}'
 		{_localctx.Value = Actions.CreateAssemblyReference(
 			$header.Value,
 			$declarations.Value);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+	if (_localctx.HasSyntaxError)
+	{
+		_localctx.Value = null;
+	}
+}
 
-assemblyRefHead returns [object Value]:
+assemblyRefHead returns [CILParser.AssemblyReferenceHeaderValue Value]
+@init {_localctx.Value = CILParser.AssemblyReferenceHeaderValue.Error;}
+:
 	'.assembly' 'extern' attributes = asmAttr name = dottedName
 		{_localctx.Value = Actions.CreateAssemblyReferenceHeader(
 			$attributes.Value,
@@ -2175,15 +2506,16 @@ assemblyRefHead returns [object Value]:
 			$name.Value,
 			$alias.Value);};
 
-assemblyRefDecls returns [object Value]
-@init {Actions.BeginAssemblyReferenceDeclarations(_localctx);}
+assemblyRefDecls returns [System.Collections.Immutable.ImmutableArray<CILParser.AssemblyDeclarationValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.AssemblyDeclarationValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.AssemblyDeclarationValue>();}
 :
 	(declaration = assemblyRefDecl
-		{Actions.AddAssemblyReferenceDeclaration(_localctx, $declaration.Value);})*
+		{if ($declaration.Value is not null) _localctx.Builder.Add($declaration.Value);})*
 ;
-finally {_localctx.Value = Actions.EndAssemblyReferenceDeclarations(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-assemblyRefDecl returns [object Value]:
+assemblyRefDecl returns [CILParser.AssemblyDeclarationValue? Value]:
 	'.hash' '=' '(' hash = bytes ')'
 		{_localctx.Value = Actions.CreateAssemblyReferenceHashDeclaration($hash.Value);}
 	| shared = asmOrRefDecl {_localctx.Value = $shared.Value;}
@@ -2191,25 +2523,37 @@ assemblyRefDecl returns [object Value]:
 		{_localctx.Value = Actions.CreateAssemblyReferencePublicKeyTokenDeclaration($token.Value);}
 	| 'auto' {_localctx.Value = Actions.CreateAssemblyReferenceAutoDeclaration();};
 
-exptypeBlock returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+exptypeBlock returns [CILParser.ExportedTypeValue? Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	header = exptypeHead '{' declarations = exptypeDecls '}'
 		{_localctx.Value = Actions.CreateExportedType(
 			$header.Value,
-			$declarations.Value,
-			$header.start);}
+			$declarations.Value);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+	if (_localctx.HasSyntaxError)
+	{
+		_localctx.Value = null;
+	}
+}
 
-exptypeHead returns [object Value]:
+exptypeHead returns [CILParser.ExportedTypeHeaderValue Value]
+@init {_localctx.Value = CILParser.ExportedTypeHeaderValue.Error;}
+:
 	head = '.class' 'extern' attributes = exptAttrs name = dottedName
 		{_localctx.Value = Actions.CreateExportedTypeHeader(
 			$attributes.Value,
 			$name.Value,
 			$head);};
 
-exportHead returns [object Value]:
+exportHead returns [CILParser.ExportedTypeHeaderValue Value]
+@init {_localctx.Value = CILParser.ExportedTypeHeaderValue.Error;}
+:
 	head = '.export' attributes = exptAttrs name = dottedName
 		{_localctx.Value = Actions.CreateExportedTypeHeader(
 			$attributes.Value,
@@ -2239,15 +2583,16 @@ exptAttr returns [System.Reflection.TypeAttributes Value, System.Reflection.Type
 	| 'nested' 'famandassem'
 	| 'nested' 'famorassem';
 
-exptypeDecls returns [object Value]
-@init {Actions.BeginExportedTypeDeclarations(_localctx);}
+exptypeDecls returns [System.Collections.Immutable.ImmutableArray<CILParser.ExportedTypeDeclarationValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.ExportedTypeDeclarationValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.ExportedTypeDeclarationValue>();}
 :
 	(declaration = exptypeDecl
-		{Actions.AddExportedTypeDeclaration(_localctx, $declaration.Value);})*
+		{if ($declaration.Value is not null) _localctx.Builder.Add($declaration.Value);})*
 ;
-finally {_localctx.Value = Actions.EndExportedTypeDeclarations(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-exptypeDecl returns [object Value]:
+exptypeDecl returns [CILParser.ExportedTypeDeclarationValue? Value]:
 	location = '.file' name = dottedName
 		{_localctx.Value = Actions.CreateExportedTypeFileDeclaration(
 			$name.Value,
@@ -2273,18 +2618,28 @@ exptypeDecl returns [object Value]:
 			$attribute.start);}
 	| compControl;
 
-manifestResBlock returns [object Value, bool HasSyntaxError]
-@init {Actions.BeginSemanticRoot(_localctx);}
+manifestResBlock returns [CILParser.ManifestResourceValue? Value, bool HasSyntaxError]
+locals [int InitialSyntaxErrorCount]
+@init {_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;}
 :
 	header = manifestResHead '{' declarations = manifestResDecls '}'
 		{_localctx.Value = Actions.CreateManifestResource(
 			$header.Value,
-			$declarations.Value,
-			$header.start);}
+			$declarations.Value);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
+finally {
+	_localctx.HasSyntaxError =
+		Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+		_localctx.exception is not null;
+	if (_localctx.HasSyntaxError)
+	{
+		_localctx.Value = null;
+	}
+}
 
-manifestResHead returns [object Value]:
+manifestResHead returns [CILParser.ManifestResourceHeaderValue Value]
+@init {_localctx.Value = CILParser.ManifestResourceHeaderValue.Error;}
+:
 	head = MRESOURCE attributes = manresAttrs name = dottedName
 		{_localctx.Value = Actions.CreateManifestResourceHeader(
 			$attributes.Value,
@@ -2313,15 +2668,16 @@ manresAttr returns [System.Reflection.ManifestResourceAttributes Value]
 	'public'
 	| 'private';
 
-manifestResDecls returns [object Value]
-@init {Actions.BeginManifestResourceDeclarations(_localctx);}
+manifestResDecls returns [System.Collections.Immutable.ImmutableArray<CILParser.ManifestResourceDeclarationValue> Value]
+locals [System.Collections.Immutable.ImmutableArray<CILParser.ManifestResourceDeclarationValue>.Builder Builder]
+@init {_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.ManifestResourceDeclarationValue>();}
 :
 	(declaration = manifestResDecl
-		{Actions.AddManifestResourceDeclaration(_localctx, $declaration.Value);})*
+		{if ($declaration.Value is not null) _localctx.Builder.Add($declaration.Value);})*
 ;
-finally {_localctx.Value = Actions.EndManifestResourceDeclarations(_localctx);}
+finally {_localctx.Value = _localctx.Builder.ToImmutable();}
 
-manifestResDecl returns [object Value]:
+manifestResDecl returns [CILParser.ManifestResourceDeclarationValue? Value]:
 	location = '.file' name = dottedName 'at' offset = int32
 		{_localctx.Value = Actions.CreateManifestResourceFileDeclaration(
 			$name.Value,

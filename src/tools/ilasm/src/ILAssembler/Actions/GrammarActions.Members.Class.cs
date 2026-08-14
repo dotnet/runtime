@@ -12,14 +12,9 @@ namespace ILAssembler;
 
 internal sealed partial class GrammarActions
 {
-    private readonly Stack<ClassGenericDirectiveFrame> _classGenericDirectiveFrames = new();
     private readonly Dictionary<
         EntityRegistry.TypeDefinitionEntity,
         List<PendingClassMethodOverride>> _pendingClassMethodOverrides = new();
-
-    private sealed record ClassGenericDirectiveFrame(
-        CILParser.ClassDeclContext Owner,
-        EntityRegistry.EntityBase? AttributeOwner);
 
     private sealed record PendingClassMethodOverride(
         EntityRegistry.MemberReferenceEntity Declaration,
@@ -112,13 +107,13 @@ internal sealed partial class GrammarActions
 
     internal void AddClassMethodOverride(
         CILParser.ClassDeclContext context,
-        object? declarationOwner,
+        TypeSpecificationValue declarationOwner,
         string declarationName,
         byte bodyCallingConvention,
-        object? bodyReturnType,
-        object? bodyOwner,
+        TypeValue bodyReturnType,
+        TypeSpecificationValue bodyOwner,
         string bodyName,
-        object? bodyArguments)
+        ImmutableArray<SignatureArgumentValue> bodyArguments)
     {
         PrepareClassMember();
         AddClassMethodOverrideCore(
@@ -140,17 +135,17 @@ internal sealed partial class GrammarActions
     internal void AddClassMethodOverride(
         CILParser.ClassDeclContext context,
         byte declarationCallingConvention,
-        object? declarationReturnType,
-        object? declarationOwner,
+        TypeValue declarationReturnType,
+        TypeSpecificationValue declarationOwner,
         string declarationName,
         int declarationArity,
-        object? declarationArguments,
+        ImmutableArray<SignatureArgumentValue> declarationArguments,
         byte bodyCallingConvention,
-        object? bodyReturnType,
-        object? bodyOwner,
+        TypeValue bodyReturnType,
+        TypeSpecificationValue bodyOwner,
         string bodyName,
         int bodyArity,
-        object? bodyArguments)
+        ImmutableArray<SignatureArgumentValue> bodyArguments)
     {
         PrepareClassMember();
         AddClassMethodOverrideCore(
@@ -172,17 +167,17 @@ internal sealed partial class GrammarActions
     private void AddClassMethodOverrideCore(
         CILParser.ClassDeclContext context,
         byte declarationCallingConvention,
-        object? declarationReturnType,
-        object? declarationOwner,
+        TypeValue declarationReturnType,
+        TypeSpecificationValue declarationOwner,
         string declarationName,
         int declarationArity,
-        object? declarationArguments,
+        ImmutableArray<SignatureArgumentValue> declarationArguments,
         byte bodyCallingConvention,
-        object? bodyReturnType,
-        object? bodyOwner,
+        TypeValue bodyReturnType,
+        TypeSpecificationValue bodyOwner,
         string bodyName,
         int bodyArity,
-        object? bodyArguments)
+        ImmutableArray<SignatureArgumentValue> bodyArguments)
     {
         if (_currentTypeDefinition.PeekOrDefault() is not { } currentType)
         {
@@ -202,11 +197,11 @@ internal sealed partial class GrammarActions
 
         EntityRegistry.MemberReferenceEntity declaration =
             _entityRegistry.CreateLazilyRecordedMemberReference(
-                ResolveTypeSpecification(GetTypeSpecificationValue(declarationOwner)),
+                ResolveTypeSpecification(declarationOwner),
                 declarationName,
                 declarationSignature);
         EntityRegistry.TypeEntity resolvedBodyOwner =
-            ResolveTypeSpecification(GetTypeSpecificationValue(bodyOwner));
+            ResolveTypeSpecification(bodyOwner);
         EntityRegistry.MemberReferenceEntity? referencedBody =
             ReferenceEquals(resolvedBodyOwner, currentType)
                 ? null
@@ -291,8 +286,8 @@ internal sealed partial class GrammarActions
 
     private BlobBuilder BuildClassMethodOverrideSignature(
         byte callingConvention,
-        object? returnType,
-        object? arguments,
+        TypeValue returnType,
+        ImmutableArray<SignatureArgumentValue> arguments,
         int genericArity)
     {
         BlobBuilder signature = new();
@@ -307,10 +302,8 @@ internal sealed partial class GrammarActions
             signature.WriteCompressedInteger(genericArity);
         }
 
-        ImmutableArray<SignatureArgumentValue> argumentValues =
-            GetSignatureArgumentsValue(arguments);
         ImmutableArray<SignatureArg> materializedArguments =
-            MaterializeSignatureArguments(argumentValues);
+            MaterializeSignatureArguments(arguments);
         int parameterCount = 0;
         foreach (SignatureArg argument in materializedArguments)
         {
@@ -320,7 +313,7 @@ internal sealed partial class GrammarActions
             }
         }
         signature.WriteCompressedInteger(parameterCount);
-        MaterializeType(GetTypeValue(returnType)).WriteContentTo(signature);
+        MaterializeType(returnType).WriteContentTo(signature);
         foreach (SignatureArg argument in materializedArguments)
         {
             argument.SignatureBlob.WriteContentTo(signature);
@@ -329,64 +322,58 @@ internal sealed partial class GrammarActions
         return signature;
     }
 
-    internal void BeginClassGenericParameterDirective(
+    internal CILParser.CustomAttributeOwnerValue BeginClassGenericParameterDirective(
         CILParser.ClassDeclContext context,
         IToken index)
     {
         PrepareClassMember();
-        BeginClassGenericDirective(context, FindClassGenericParameter(context, ParseInt32(index)));
+        return BeginClassGenericDirective(
+            FindClassGenericParameter(context, ParseInt32(index)));
     }
 
-    internal void BeginClassGenericParameterDirective(
-        CILParser.ClassDeclContext context,
+    internal CILParser.CustomAttributeOwnerValue BeginClassGenericParameterDirective(
         string name)
     {
         PrepareClassMember();
-        BeginClassGenericDirective(context, FindClassGenericParameter(name));
+        return BeginClassGenericDirective(FindClassGenericParameter(name));
     }
 
-    internal void BeginClassGenericConstraintDirective(
+    internal CILParser.CustomAttributeOwnerValue BeginClassGenericConstraintDirective(
         CILParser.ClassDeclContext context,
         IToken index,
-        object? constraintType)
+        TypeSpecificationValue constraintType)
     {
         PrepareClassMember();
-        BeginClassGenericDirective(
-            context,
+        return BeginClassGenericDirective(
             FindOrCreateClassGenericConstraint(
                 FindClassGenericParameter(context, ParseInt32(index)),
                 constraintType));
     }
 
-    internal void BeginClassGenericConstraintDirective(
-        CILParser.ClassDeclContext context,
+    internal CILParser.CustomAttributeOwnerValue BeginClassGenericConstraintDirective(
         string name,
-        object? constraintType)
+        TypeSpecificationValue constraintType)
     {
         PrepareClassMember();
-        BeginClassGenericDirective(
-            context,
+        return BeginClassGenericDirective(
             FindOrCreateClassGenericConstraint(
                 FindClassGenericParameter(name),
                 constraintType));
     }
 
-    private void BeginClassGenericDirective(
-        CILParser.ClassDeclContext context,
+    private CILParser.CustomAttributeOwnerValue BeginClassGenericDirective(
         EntityRegistry.EntityBase? owner)
     {
         _pendingClassCustomAttributeOwner = owner;
-        _classGenericDirectiveFrames.Push(new(context, owner));
+        return new CILParser.CustomAttributeOwnerValue(owner);
     }
 
     internal void AddClassGenericDirectiveAttribute(
-        CILParser.ClassDeclContext context,
+        CILParser.CustomAttributeOwnerValue ownerValue,
         CILParser.CustomAttrDeclContext attribute)
     {
         if (attribute.HasSyntaxError ||
-            _classGenericDirectiveFrames.Count == 0 ||
-            !ReferenceEquals(_classGenericDirectiveFrames.Peek().Owner, context) ||
-            _classGenericDirectiveFrames.Peek().AttributeOwner is not { } owner)
+            ownerValue.Owner is not { } owner)
         {
             return;
         }
@@ -437,7 +424,7 @@ internal sealed partial class GrammarActions
 
     private EntityRegistry.GenericParameterConstraintEntity? FindOrCreateClassGenericConstraint(
         EntityRegistry.GenericParameterEntity? parameter,
-        object? constraintType)
+        TypeSpecificationValue constraintType)
     {
         if (parameter is null ||
             _currentTypeDefinition.PeekOrDefault() is not { } currentType)
@@ -446,7 +433,7 @@ internal sealed partial class GrammarActions
         }
 
         EntityRegistry.TypeEntity baseType =
-            ResolveTypeSpecification(GetTypeSpecificationValue(constraintType));
+            ResolveTypeSpecification(constraintType);
         foreach (EntityRegistry.GenericParameterConstraintEntity constraint in parameter.Constraints)
         {
             if (constraint.BaseType == baseType)
@@ -465,7 +452,7 @@ internal sealed partial class GrammarActions
 
     internal void AddInterfaceImplementationAttribute(
         CILParser.ClassDeclContext context,
-        object? interfaceType,
+        TypeSpecificationValue interfaceType,
         CILParser.CustomDescrContext attribute)
     {
         PrepareClassMember();
@@ -476,7 +463,7 @@ internal sealed partial class GrammarActions
         }
 
         EntityRegistry.TypeEntity resolvedInterface =
-            ResolveTypeSpecification(GetTypeSpecificationValue(interfaceType));
+            ResolveTypeSpecification(interfaceType);
         EntityRegistry.InterfaceImplementationEntity? implementation = null;
         foreach (EntityRegistry.InterfaceImplementationEntity candidate in currentType.InterfaceImplementations)
         {
@@ -498,12 +485,4 @@ internal sealed partial class GrammarActions
         _ = context;
     }
 
-    private void EndClassGenericDirective(CILParser.ClassDeclContext context)
-    {
-        if (_classGenericDirectiveFrames.Count > 0 &&
-            ReferenceEquals(_classGenericDirectiveFrames.Peek().Owner, context))
-        {
-            _classGenericDirectiveFrames.Pop();
-        }
-    }
 }

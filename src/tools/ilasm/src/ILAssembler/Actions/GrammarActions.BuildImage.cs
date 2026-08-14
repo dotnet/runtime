@@ -288,7 +288,7 @@ namespace ILAssembler
                 ImmutableArray.CreateBuilder<VTableExportPEBuilder.DataLabelFixup>(
                     _mappedFieldDataReferenceFixups.Count);
 
-            foreach (DataLabelReference reference in _mappedFieldDataReferenceFixups)
+            foreach (CILParser.DataLabelReferenceValue reference in _mappedFieldDataReferenceFixups)
             {
                 if (!_mappedFieldDataNames.TryGetValue(reference.TargetLabel, out int targetOffset))
                 {
@@ -297,7 +297,7 @@ namespace ILAssembler
                         string.Format(
                             DiagnosticMessageTemplates.LabelNotFound,
                             reference.TargetLabel),
-                        reference.Context);
+                        reference.Location);
                     continue;
                 }
 
@@ -476,7 +476,7 @@ namespace ILAssembler
             return validatedExports.ToImmutable();
         }
 
-        private ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos(
+        private static ImmutableArray<VTableExportPEBuilder.VTableFixupInfo> BuildVTableFixupInfos(
             ImmutableArray<ValidatedVTableFixup> validatedVTableFixups,
             ImmutableArray<ValidatedVTableAssociation> validatedVTableAssociations)
         {

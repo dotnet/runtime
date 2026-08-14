@@ -12,21 +12,27 @@ internal sealed partial class GrammarActions
 {
     private readonly Dictionary<string, TypedefEntry> _typedefs = new();
 
-    internal object CreateTypeSignatureTypedef(object? type, string alias)
-        => new TypeSignatureTypedefDeclarationValue(GetTypeValue(type), alias);
+    internal TypedefDeclarationValue CreateTypeSignatureTypedef(
+        TypeValue type,
+        string alias)
+        => new TypeSignatureTypedefDeclarationValue(type, alias);
 
-    internal object CreateClassTypedef(object? type, string alias)
-        => new ClassTypedefDeclarationValue(GetClassNameValue(type), alias);
+    internal TypedefDeclarationValue CreateClassTypedef(
+        ClassNameValue type,
+        string alias)
+        => new ClassTypedefDeclarationValue(type, alias);
 
-    internal object CreateMemberTypedef(object? member, string alias)
-        => new MemberTypedefDeclarationValue(GetMemberReferenceValue(member), alias);
+    internal TypedefDeclarationValue CreateMemberTypedef(
+        MemberReferenceValue member,
+        string alias)
+        => new MemberTypedefDeclarationValue(member, alias);
 
-    internal object CreateCustomAttributeTypedefDeclaration(
-        object? attribute,
+    internal TypedefDeclarationValue CreateCustomAttributeTypedefDeclaration(
+        CustomAttributeDescriptorValue attribute,
         IToken location,
         string alias)
         => new CustomAttributeTypedefDeclarationValue(
-            GetCustomAttributeDescriptorValue(attribute),
+            attribute,
             location,
             alias);
 

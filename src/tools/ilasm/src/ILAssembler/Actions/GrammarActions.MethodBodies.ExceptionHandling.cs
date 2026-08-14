@@ -15,19 +15,16 @@ namespace ILAssembler;
 internal sealed partial class GrammarActions
 {
     private readonly Dictionary<CILParser.ScopeBlockContext, (int Start, int End)> _scopeRanges = new();
+    // Method scopes nest while IL and local declarations are emitted, so their live offsets and
+    // local-scope depth must be restored when each lexical scope exits.
     private readonly Stack<ScopeFrame> _scopeStack = new();
     private RuleContext? _methodOwner;
 
     private void EndMethod()
     {
         Debug.Assert(
-            _scopeStack.Count == 0 &&
-            _parameterDirectiveFrames.Count == 0 &&
-            _exceptionBlockFrames.Count == 0 &&
-            _exceptionClauseListFrames.Count == 0 &&
-            _catchClauseFrames.Count == 0 &&
-            _semanticRootFrames.Count == 0,
-            "Method-body frames must be released by their owning rules.");
+            _scopeStack.Count == 0,
+            "Lexical scope state must be released by its owning rule.");
 
         _methodOwner = null;
         if (_currentMethod is not null)
@@ -59,10 +56,6 @@ internal sealed partial class GrammarActions
     {
         _scopeRanges.Clear();
         _scopeStack.Clear();
-        _parameterDirectiveFrames.Clear();
-        _exceptionBlockFrames.Clear();
-        _exceptionClauseListFrames.Clear();
-        _catchClauseFrames.Clear();
     }
 
     internal void BeginScope(CILParser.ScopeBlockContext context)
@@ -92,21 +85,12 @@ internal sealed partial class GrammarActions
         _scopeRanges[context] = (frame.Start, CurrentMethodBodyOffset);
     }
 
-    internal void BeginExceptionBlock(CILParser.SehBlockContext context)
-        => _exceptionBlockFrames.Push(new(context, _syntaxErrorCount));
-
-    internal void EndExceptionBlock(CILParser.SehBlockContext context)
+    internal void EndExceptionBlock(
+        CILParser.SehBlockContext context,
+        int initialSyntaxErrorCount)
     {
-        Debug.Assert(_exceptionBlockFrames.Count > 0);
-        if (_exceptionBlockFrames.Count == 0 ||
-            !ReferenceEquals(_exceptionBlockFrames.Peek().Owner, context))
-        {
-            return;
-        }
-
-        ExceptionBlockFrame frame = _exceptionBlockFrames.Pop();
         if (_currentMethod is null ||
-            frame.InitialSyntaxErrorCount != _syntaxErrorCount ||
+            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
             context.exception is not null ||
             context.tryRange is null ||
             context.clauses is null)
@@ -114,14 +98,14 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        ExceptionRangeValue tryRangeValue = GetExceptionRangeValue(context.tryRange.Value);
+        ExceptionRangeValue tryRangeValue = context.tryRange.Value;
         (LabelHandle Start, LabelHandle End)? tryRange = ResolveExceptionRange(tryRangeValue);
         if (tryRange is null)
         {
             return;
         }
 
-        foreach (ExceptionClauseValue clause in GetExceptionClausesValue(context.clauses.Value))
+        foreach (ExceptionClauseValue clause in context.clauses.Value)
         {
             (LabelHandle Start, LabelHandle End)? handlerRange = ResolveExceptionRange(clause.Handler);
             if (handlerRange is null)
@@ -166,52 +150,12 @@ internal sealed partial class GrammarActions
         }
     }
 
-    internal void BeginExceptionClauses(CILParser.SehClausesContext context)
-        => _exceptionClauseListFrames.Push(new(context));
-
-    internal void AddExceptionClause(CILParser.SehClausesContext context, object? clause)
+    internal CatchTypeValue EndCatchClause(
+        CILParser.CatchClauseContext context,
+        int initialSyntaxErrorCount)
     {
-        Debug.Assert(_exceptionClauseListFrames.Count > 0);
-        if (_exceptionClauseListFrames.Count == 0)
-        {
-            return;
-        }
-
-        ExceptionClauseListFrame frame = _exceptionClauseListFrames.Peek();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        if (ReferenceEquals(frame.Owner, context))
-        {
-            frame.Clauses.Add(GetExceptionClauseValue(clause));
-        }
-    }
-
-    internal object EndExceptionClauses(CILParser.SehClausesContext context)
-    {
-        Debug.Assert(_exceptionClauseListFrames.Count > 0);
-        if (_exceptionClauseListFrames.Count == 0 ||
-            !ReferenceEquals(_exceptionClauseListFrames.Peek().Owner, context))
-        {
-            return ImmutableArray<ExceptionClauseValue>.Empty;
-        }
-
-        return _exceptionClauseListFrames.Pop().Clauses.ToImmutable();
-    }
-
-    internal void BeginCatchClause(CILParser.CatchClauseContext context)
-        => _catchClauseFrames.Push(new(context, _syntaxErrorCount));
-
-    internal object EndCatchClause(CILParser.CatchClauseContext context)
-    {
-        Debug.Assert(_catchClauseFrames.Count > 0);
-        if (_catchClauseFrames.Count == 0 ||
-            !ReferenceEquals(_catchClauseFrames.Peek().Owner, context))
-        {
-            return CatchTypeValue.Invalid;
-        }
-
-        CatchClauseFrame frame = _catchClauseFrames.Pop();
         if (_currentMethod is null ||
-            frame.InitialSyntaxErrorCount != _syntaxErrorCount ||
+            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
             context.exception is not null ||
             context.catchType is null ||
             context.catchType.HasSyntaxError)
@@ -220,43 +164,47 @@ internal sealed partial class GrammarActions
         }
 
         EntityRegistry.TypeEntity catchType =
-            ResolveTypeSpecification(GetTypeSpecificationValue(context.catchType.Value));
-        return new CatchTypeValue(catchType, IsValid: true);
+            ResolveTypeSpecification(context.catchType.Value);
+        return new CatchTypeValue(catchType, isValid: true);
     }
 
-    internal object CreateScopeExceptionRange(CILParser.ScopeBlockContext scope)
+    internal ExceptionRangeValue CreateScopeExceptionRange(CILParser.ScopeBlockContext scope)
         => new ScopeExceptionRangeValue(scope);
 
-    internal object CreateLabelExceptionRange(IToken start, IToken end)
+    internal ExceptionRangeValue CreateLabelExceptionRange(IToken start, IToken end)
         => new LabelExceptionRangeValue(ParseIdentifier(start), ParseIdentifier(end));
 
-    internal object CreateOffsetExceptionRange(IToken start, IToken end)
+    internal ExceptionRangeValue CreateOffsetExceptionRange(IToken start, IToken end)
         => new OffsetExceptionRangeValue(ParseInt32(start), ParseInt32(end));
 
-    internal object CreateScopeFilter(CILParser.ScopeBlockContext scope)
+    internal ExceptionFilterValue CreateScopeFilter(CILParser.ScopeBlockContext scope)
         => new ScopeExceptionFilterValue(scope);
 
-    internal object CreateLabelFilter(IToken label)
+    internal ExceptionFilterValue CreateLabelFilter(IToken label)
         => new LabelExceptionFilterValue(ParseIdentifier(label));
 
-    internal object CreateOffsetFilter(IToken offset)
+    internal ExceptionFilterValue CreateOffsetFilter(IToken offset)
         => new OffsetExceptionFilterValue(ParseInt32(offset));
 
-    internal object CreateCatchExceptionClause(object? catchType, object? handler)
+    internal ExceptionClauseValue CreateCatchExceptionClause(
+        CatchTypeValue catchType,
+        ExceptionRangeValue handler)
         => new CatchExceptionClauseValue(
-            GetCatchTypeValue(catchType),
-            GetExceptionRangeValue(handler));
+            catchType,
+            handler);
 
-    internal object CreateFilterExceptionClause(object? filter, object? handler)
+    internal ExceptionClauseValue CreateFilterExceptionClause(
+        ExceptionFilterValue filter,
+        ExceptionRangeValue handler)
         => new FilterExceptionClauseValue(
-            GetExceptionFilterValue(filter),
-            GetExceptionRangeValue(handler));
+            filter,
+            handler);
 
-    internal object CreateFinallyExceptionClause(object? handler)
-        => new FinallyExceptionClauseValue(GetExceptionRangeValue(handler));
+    internal ExceptionClauseValue CreateFinallyExceptionClause(ExceptionRangeValue handler)
+        => new FinallyExceptionClauseValue(handler);
 
-    internal object CreateFaultExceptionClause(object? handler)
-        => new FaultExceptionClauseValue(GetExceptionRangeValue(handler));
+    internal ExceptionClauseValue CreateFaultExceptionClause(ExceptionRangeValue handler)
+        => new FaultExceptionClauseValue(handler);
 
     private void AddExceptionRegion(EntityRegistry.ExceptionRegion region)
     {

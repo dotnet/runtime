@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
@@ -17,9 +16,6 @@ namespace ILAssembler;
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
 {
-    private readonly Stack<ManifestValueListFrame<CILParser.AssemblyDeclsContext>>
-        _assemblyDeclarationFrames = new();
-
     internal void SetAssemblyAttribute(CILParser.AsmAttrAnyContext context)
     {
         (AssemblyFlags value, AssemblyFlags mask) = context.Start.Text switch
@@ -45,33 +41,25 @@ internal sealed partial class GrammarActions
         AssemblyFlags mask)
         => mask == 0 ? attributes | value : (attributes & ~mask) | value;
 
-    internal void BeginAssemblyDeclarations(CILParser.AssemblyDeclsContext context)
-        => _assemblyDeclarationFrames.Push(new(context));
-
-    internal void AddAssemblyDeclaration(
-        CILParser.AssemblyDeclsContext context,
-        object? value)
-        => AddManifestValue(_assemblyDeclarationFrames, context, value);
-
-    internal object EndAssemblyDeclarations(CILParser.AssemblyDeclsContext context)
-        => EndManifestValues(_assemblyDeclarationFrames, context);
-
-    internal object CreateAssemblyDefinition(
+    internal AssemblyDefinitionValue CreateAssemblyDefinition(
         AssemblyFlags attributes,
         string name,
-        object? declarations)
-        => new AssemblyDefinitionValue(attributes, name, GetManifestValues(declarations));
+        ImmutableArray<AssemblyDeclarationValue> declarations)
+        => new(attributes, name, declarations);
 
-    internal object CreateAssemblyHashAlgorithmDeclaration(IToken value)
+    internal AssemblyDeclarationValue CreateAssemblyHashAlgorithmDeclaration(IToken value)
         => new AssemblyHashAlgorithmDirectiveValue((AssemblyHashAlgorithm)ParseInt32(value));
 
-    internal object CreateAssemblySecurityDeclaration(object? value, IToken location)
+    internal AssemblyDeclarationValue CreateAssemblySecurityDeclaration(
+        SecurityDeclarationValue? value,
+        IToken location)
         => new AssemblySecurityDirectiveValue(value, location);
 
-    internal object CreateAssemblyPublicKeyDeclaration(ImmutableArray<byte> value)
+    internal AssemblyDeclarationValue CreateAssemblyPublicKeyDeclaration(
+        ImmutableArray<byte> value)
         => new AssemblyPublicKeyDirectiveValue(value);
 
-    internal object CreateAssemblyVersionDeclaration(
+    internal AssemblyDeclarationValue CreateAssemblyVersionDeclaration(
         int? major,
         int? minor,
         int? build,
@@ -82,13 +70,16 @@ internal sealed partial class GrammarActions
             build ?? 0,
             revision ?? 0));
 
-    internal object CreateAssemblyLocaleDeclaration(string value)
+    internal AssemblyDeclarationValue CreateAssemblyLocaleDeclaration(string value)
         => new AssemblyLocaleDirectiveValue(value);
 
-    internal object CreateAssemblyLocaleDeclaration(ImmutableArray<byte> value)
+    internal AssemblyDeclarationValue CreateAssemblyLocaleDeclaration(
+        ImmutableArray<byte> value)
         => new AssemblyLocaleDirectiveValue(Encoding.Unicode.GetString(value.AsSpan()));
 
-    internal object CreateAssemblyCustomAttributeDeclaration(object? value, IToken location)
+    internal AssemblyDeclarationValue CreateAssemblyCustomAttributeDeclaration(
+        CustomAttributeDeclarationValue? value,
+        IToken location)
         => new AssemblyCustomAttributeDirectiveValue(value, location);
 
     private static AssemblyFlags GetFlagForArch(ProcessorArchitecture architecture)
@@ -110,7 +101,7 @@ internal sealed partial class GrammarActions
         (assembly.ProcessorArchitecture, assembly.Flags) =
             GetArchAndFlags(definition.Attributes);
 
-        foreach (object declaration in definition.Declarations)
+        foreach (AssemblyDeclarationValue declaration in definition.Declarations)
         {
             switch (declaration)
             {
@@ -118,7 +109,7 @@ internal sealed partial class GrammarActions
                     assembly.HashAlgorithm = hashAlgorithm.Value;
                     break;
                 case AssemblySecurityDirectiveValue security:
-                    if (security.Value is SecurityDeclarationValue securityValue &&
+                    if (security.Value is { } securityValue &&
                         MaterializeSecurityDeclaration(securityValue, security.Location) is { } entity)
                     {
                         entity.Parent = assembly;
@@ -138,7 +129,7 @@ internal sealed partial class GrammarActions
 
     private void ApplyAssemblyOrReferenceDirective(
         EntityRegistry.AssemblyOrRefEntity target,
-        object declaration)
+        AssemblyDeclarationValue declaration)
     {
         switch (declaration)
         {
