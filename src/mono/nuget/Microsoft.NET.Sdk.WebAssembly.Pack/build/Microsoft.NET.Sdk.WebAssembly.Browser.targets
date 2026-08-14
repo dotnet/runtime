@@ -421,7 +421,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     Inputs="@(_WasmDllBuildCandidates);$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath);$(_WebAssemblySdkTasksAssembly)"
     Outputs="@(_WasmDllBuildCandidates->'%(WebcilOutputPath)')">
 
-    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
+    <ConvertDllsToWebcil Candidates="@(_WasmDllBuildCandidates)" IntermediateOutputPath="$(_WasmBuildTmpWebcilPath)" OutputPath="$(_WasmBuildWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectories="$(_WasmBuildPrebuiltR2RDirectories)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
       <Output TaskParameter="FileWrites" ItemName="_WasmConvertedWebcilOutputs" />
     </ConvertDllsToWebcil>
@@ -1010,7 +1010,7 @@ Copyright (c) .NET Foundation. All rights reserved.
       <_WasmPublishTmpWebcilPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'tmp-webcil', 'publish'))</_WasmPublishTmpWebcilPath>
     </PropertyGroup>
 
-    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)">
+    <ConvertDllsToWebcil Candidates="@(_NewWasmPublishStaticWebAssets)" IntermediateOutputPath="$(_WasmPublishTmpWebcilPath)" OutputPath="$(_WasmPublishWebcilPath)" IsEnabled="$(_WasmEnableWebcil)" WebcilVersion="$(_WasmWebcilVersion)" PrebuiltR2RDirectories="$(_WasmPublishPrebuiltR2RDirectories)">
       <Output TaskParameter="WebcilCandidates" ItemName="_NewWebcilPublishStaticWebAssetsCandidates" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ConvertDllsToWebcil>
@@ -1357,4 +1357,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       <TrimmerRootAssembly Include="$(AssemblyName)" RootMode="all" />
     </ItemGroup>
   </Target>
+
+  <!-- CoreCLR browser-wasm R2R, isolated from Mono. '== false' (not '!= true'): Mono apps leave UseMonoRuntime unset. -->
+  <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.targets"
+          Condition="'$(UseMonoRuntime)' == 'false'" />
 </Project>

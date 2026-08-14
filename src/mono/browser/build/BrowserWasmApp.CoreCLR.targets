@@ -623,6 +623,15 @@
       <_WasmManagedAssemblies Include="@(WasmAssembliesToBundle->Distinct())" />
     </ItemGroup>
 
+    <!-- With R2R the published .dll are webcil-in-wasm images MetadataLoadContext can't parse; scan the
+         trimmed IL (same closure crossgen used) instead. Gated on the linker dir only, because the nested
+         WasmNestedPublishApp build where this runs doesn't carry PublishReadyToRun. -->
+    <ItemGroup Condition="'$(IntermediateLinkDir)' != ''">
+      <_WasmManagedAssembliesR2RRemap Include="@(_WasmManagedAssemblies)" Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
+      <_WasmManagedAssemblies Remove="@(_WasmManagedAssembliesR2RRemap)" />
+      <_WasmManagedAssemblies Include="@(_WasmManagedAssembliesR2RRemap->'$(IntermediateLinkDir)%(FileName)%(Extension)')" />
+    </ItemGroup>
+
     <!-- Locate System.Private.CoreLib in runtime pack if not already bundled -->
     <PropertyGroup>
       <_HasCoreLib Condition="'%(_WasmManagedAssemblies.FileName)%(_WasmManagedAssemblies.Extension)' == 'System.Private.CoreLib.dll'">true</_HasCoreLib>

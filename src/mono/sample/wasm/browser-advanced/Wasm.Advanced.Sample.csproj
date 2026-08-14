@@ -21,6 +21,7 @@
     <_ExtraTrimmerArgs>$(_ExtraTrimmerArgs) --dump-dependencies</_ExtraTrimmerArgs>
 
     <!-- 
+    <PublishReadyToRun>true</PublishReadyToRun>
     <RunAOTCompilation>true</RunAOTCompilation>
     <WasmNativeDebugSymbols>true</WasmNativeDebugSymbols>
     <WasmNativeStrip>false</WasmNativeStrip>
