@@ -13,6 +13,7 @@
 
 #include "common.h"
 #include "assemblybindercommon.hpp"
+#include "hostinformation.h"
 #include "assemblyname.hpp"
 #include "assembly.hpp"
 #include "applicationcontext.hpp"
@@ -897,11 +898,35 @@ namespace BINDER_SPACE
             // Is assembly on TPA list?
             SimpleNameToFileNameMap * tpaMap = pApplicationContext->GetTpaList();
             const SimpleNameToFileNameMapEntry *pTpaEntry = tpaMap->LookupPtr(simpleName.GetUnicode());
+            SString fileName;
             if (pTpaEntry != nullptr)
             {
-                _ASSERTE(pTpaEntry->m_wszILFileName != nullptr);
-                SString fileName(pTpaEntry->m_wszILFileName);
+                if (pTpaEntry->m_wszILFileName != nullptr)
+                {
+                    fileName.Set(pTpaEntry->m_wszILFileName);
+                }
+                else
+                {
+                    SString tpaSimpleName(pTpaEntry->m_wszSimpleName);
+                    HostInformation::ResolveAssemblyToPath(tpaSimpleName, fileName);
+                    if (!fileName.IsEmpty())
+                    {
+                        LPWSTR wszFileName = new WCHAR[fileName.GetCount() + 1];
+                        if (wszFileName == nullptr)
+                        {
+                            GO_WITH_HRESULT(E_OUTOFMEMORY);
+                        }
+                        wcscpy_s(wszFileName, fileName.GetCount() + 1, fileName.GetUnicode());
 
+                        SimpleNameToFileNameMapEntry* mutableTpaEntry =
+                            const_cast<SimpleNameToFileNameMapEntry*>(pTpaEntry);
+                        mutableTpaEntry->m_wszILFileName = wszFileName;
+                    }
+                }
+            }
+
+            if (!fileName.IsEmpty())
+            {
                 ReleaseHolder<Assembly> pAssembly;
                 SString getAssemblyDiag;
                 hr = GetAssembly(fileName,
@@ -1349,5 +1374,3 @@ BOOL AssemblyBinderCommon::IsValidArchitecture(PEKIND kArchitecture)
 
 #endif // !defined(DACCESS_COMPILE)
 };
-
-

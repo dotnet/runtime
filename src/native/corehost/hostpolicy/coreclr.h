@@ -54,7 +54,6 @@ private:
 
 enum class common_property
 {
-    TrustedPlatformAssemblies,
     NativeDllSearchDirectories,
     PlatformResourceRoots,
     AppContextBaseDirectory,

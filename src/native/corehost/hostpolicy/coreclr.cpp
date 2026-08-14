@@ -155,7 +155,6 @@ namespace
 {
     const pal::char_t *PropertyNameMapping[] =
     {
-        _X("TRUSTED_PLATFORM_ASSEMBLIES"),
         _X("NATIVE_DLL_SEARCH_DIRECTORIES"),
         _X("PLATFORM_RESOURCE_ROOTS"),
         _X("APP_CONTEXT_BASE_DIRECTORY"),

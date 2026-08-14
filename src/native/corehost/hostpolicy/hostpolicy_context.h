@@ -28,8 +28,9 @@ public:
     coreclr_property_bag_t coreclr_properties;
 
     std::unique_ptr<coreclr_t> coreclr;
-
     host_runtime_contract host_contract;
+    std::vector<const char*> trusted_platform_assembly_names;
+    std::unordered_map<std::string, std::string> trusted_platform_assembly_paths;
 
     int initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs);
 

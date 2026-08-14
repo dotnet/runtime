@@ -19,7 +19,7 @@
 // Probe paths to be resolved for ordering
 struct probe_paths_t
 {
-    pal::string_t tpa;
+    std::vector<pal::string_t> tpa;
     pal::string_t native;
     pal::string_t resources;
     pal::string_t coreclr;
@@ -230,7 +230,7 @@ private:
 private:
     // Resolve order for TPA lookup.
     bool resolve_tpa_list(
-        pal::string_t* output,
+        std::vector<pal::string_t>* output,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies);
 

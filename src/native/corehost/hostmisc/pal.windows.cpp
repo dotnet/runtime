@@ -689,6 +689,22 @@ bool pal::pal_utf8string(const pal::string_t& str, std::vector<char>* out)
     return ::WideCharToMultiByte(CP_UTF8, 0, str.c_str(), -1, out->data(), static_cast<uint32_t>(out->size()), nullptr, nullptr) != 0;
 }
 
+std::string pal::pal_utf8string(const pal::string_t& str)
+{
+    if (str.empty())
+        return {};
+
+    int size = ::WideCharToMultiByte(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), nullptr, 0, nullptr, nullptr);
+    if (size == 0)
+        return {};
+
+    std::string out(static_cast<size_t>(size), '\0');
+    if (::WideCharToMultiByte(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), out.data(), size, nullptr, nullptr) == 0)
+        return {};
+
+    return out;
+}
+
 bool pal::pal_clrstring(const pal::string_t& str, std::vector<char>* out)
 {
     return pal_utf8string(str, out);

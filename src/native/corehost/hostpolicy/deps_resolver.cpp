@@ -408,7 +408,7 @@ bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continu
  *  Resolve the TPA assembly locations
  */
 bool deps_resolver_t::resolve_tpa_list(
-        pal::string_t* output,
+        std::vector<pal::string_t>* output,
         std::unordered_set<pal::string_t>* breadcrumb,
         bool ignore_missing_assemblies)
 {
@@ -565,11 +565,10 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     }
 
-    // Convert the paths into a string and return it
-    for (const auto& item : items)
+    output->reserve(output->size() + items.size());
+    for (auto& item : items)
     {
-        output->append(item.second.resolved_path);
-        output->push_back(PATH_SEPARATOR);
+        output->push_back(std::move(item.second.resolved_path));
     }
 
     return true;

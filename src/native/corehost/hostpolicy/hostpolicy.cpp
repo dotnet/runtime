@@ -979,19 +979,26 @@ SHARED_API int HOSTPOLICY_CALLTYPE corehost_resolve_component_dependencies(
         return StatusCode::ResolverResolveFailure;
     }
 
+    pal::string_t tpa;
+    for (const pal::string_t& entry : probe_paths.tpa)
+    {
+        tpa.append(entry);
+        tpa.push_back(PATH_SEPARATOR);
+    }
+
     if (trace::is_enabled())
     {
         trace::info(_X("corehost_resolve_component_dependencies results: {"));
-        trace::info(_X("  assembly_paths: '%s'"), probe_paths.tpa.data());
-        trace::info(_X("  native_search_paths: '%s'"), probe_paths.native.data());
-        trace::info(_X("  resource_search_paths: '%s'"), probe_paths.resources.data());
+        trace::info(_X("  assembly_paths: '%s'"), tpa.c_str());
+        trace::info(_X("  native_search_paths: '%s'"), probe_paths.native.c_str());
+        trace::info(_X("  resource_search_paths: '%s'"), probe_paths.resources.c_str());
         trace::info(_X("}"));
     }
 
     result(
-        probe_paths.tpa.data(),
-        probe_paths.native.data(),
-        probe_paths.resources.data());
+        tpa.c_str(),
+        probe_paths.native.c_str(),
+        probe_paths.resources.c_str());
 
     return 0;
 }
