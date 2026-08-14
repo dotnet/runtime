@@ -124,12 +124,12 @@ internal sealed partial class GrammarActions
         return entity;
     }
 
-    public GrammarResult.Literal<EntityRegistry.FileEntity> VisitFileDecl(
+    internal EntityRegistry.FileEntity MaterializeFileDeclaration(
         CILParser.FileDeclContext context)
     {
         Debug.Assert(context.Value is FileDeclarationValue);
         FileDeclarationValue declaration = context.Value as FileDeclarationValue
             ?? new(string.Empty, HasMetadata: true, IsEntryPoint: false, Hash: null);
-        return new(MaterializeFileDeclaration(declaration));
+        return MaterializeFileDeclaration(declaration);
     }
 }

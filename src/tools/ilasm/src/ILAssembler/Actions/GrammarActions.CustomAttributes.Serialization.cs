@@ -397,6 +397,6 @@ internal sealed partial class GrammarActions
             : Encoding.UTF8.GetString(bytes.Slice(bytesRead, length));
     }
 
-    public static GrammarResult.Literal<object?> VisitInitOpt(CILParser.InitOptContext context)
-        => new(context.Value);
+    internal static object? GetInitializerValue(CILParser.InitOptContext context)
+        => context.Value;
 }

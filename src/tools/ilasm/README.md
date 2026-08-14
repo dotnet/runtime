@@ -15,7 +15,7 @@ visitors; parser actions own traversal.
 | `GrammarActions.cs` | Per-document lifecycle. |
 | `GrammarActions.BuildImage.cs` | PE and portable PDB construction. |
 | `GrammarActions.Bytes.cs` | `bytearray` accumulation. |
-| `GrammarActions.Conversions.cs` | `GrammarResult`, diagnostics and shared state. |
+| `GrammarActions.Conversions.cs` | Diagnostics and shared state. |
 | `GrammarActions.CustomAttributes.Actions.cs` | Custom attribute descriptors, declarations and blob lists. |
 | `GrammarActions.CustomAttributes.Sequences.cs` | Custom attribute scalar-array sequence synthesis. |
 | `GrammarActions.CustomAttributes.Serialization.cs` | Serialized attribute values and field/parameter initializers. |
@@ -59,34 +59,29 @@ visitors; parser actions own traversal.
 | `GrammarActions.Types.Headers.Values.cs` | Internal synthesized type-header value model. |
 | `GrammarActions.Types.References.cs` | Type-name synthesis and resolution. |
 
-`CILParser.Actions.cs` holds the streaming parse-tree mode helper the grammar calls.
-
 ## Rules for grammar actions
 
 Parser actions in `src/ILAssembler/gen/CIL.g4` must remain thin; they call a single `Actions` method
 and nothing else. Compilation orchestration belongs in the `GrammarActions` partial-class files.
 
-Instruction dispatch and every operand root run with parse-tree construction disabled.
-Type, signature and reference rules synthesize compact semantic values that their existing
-`VisitX(context).Value` wrappers materialize. The generated ANTLR context classes are public, while
-ILAssembler entities and signature implementation values remain internal, so generated return
-slots use `object` where an internal value or array crosses that boundary and `GrammarActions`
-provides the strongly typed accessors.
+`DocumentCompiler` disables parse-tree construction when it creates the parser, and no parser action
+changes that setting. ANTLR generates neither listeners nor visitors. All semantics come from parser
+actions and compact synthesized values. The generated ANTLR context classes are public, while
+ILAssembler entities and signature implementation values remain internal, so generated return slots
+use `object` where an internal value or array crosses that boundary and `GrammarActions` provides the
+strongly typed accessors and materializers.
 
 All namespace, type-header, top-level, type, signature, reference, marshalling, class-member,
 method-header, method-body directive, exception-handling, data, security, source, language,
 assembly, manifest, vtable and typedef structure is action-driven. `scopeBlock` records offsets
-under its context key without inspecting children. Normal parsing keeps `BuildParseTree` disabled;
-there are no `BeginSubtree` islands.
+under its context key without inspecting children. `BuildParseTree` remains disabled throughout.
 
 Semantic state that a rule pushes must be released from that rule's `finally` clause and be keyed on
 the owning context, because ANTLR skips `@after` actions and the remainder of an alternative once a
 rule reports a syntax error. Inline actions placed after a subrule reference are not a substitute:
 they run only when the alternative completes.
 
-Only parser actions walk structural rules. ANTLR visitors and listeners are not generated.
-Ordinary `VisitX` methods are semantic helpers called directly by actions or materializers, not
-parse-tree visitor entry points. There is no child walker.
+Only parser actions process structural rules. There is no parse-tree walker or mode toggling.
 
 ## Build
 

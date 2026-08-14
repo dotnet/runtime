@@ -61,7 +61,6 @@ public sealed class DocumentCompiler
             ImmutableArray<Diagnostic>.Builder parserDiagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
             parser.AddErrorListener(new ParserErrorListener(parserDiagnostics, loadedDocuments, actions.RecordSyntaxError));
             _ = parser.decls();
-            parser.VerifyParseTreeModesBalanced();
 
             // Add parser diagnostics to the main list
             diagnostics.AddRange(parserDiagnostics);

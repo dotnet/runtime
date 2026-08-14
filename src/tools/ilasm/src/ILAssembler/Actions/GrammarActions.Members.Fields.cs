@@ -200,9 +200,9 @@ internal sealed partial class GrammarActions
         context.HasValue = true;
     }
 
-    public GrammarResult.Literal<EntityRegistry.EntityBase> VisitFieldRef(
+    internal EntityRegistry.EntityBase MaterializeFieldReference(
         CILParser.FieldRefContext context)
-        => new(MaterializeFieldReference(GetFieldReferenceValue(context.Value)));
+        => MaterializeFieldReference(GetFieldReferenceValue(context.Value));
 
     private FieldDeclarationFrame? TryGetFieldDeclarationFrame(CILParser.FieldDeclContext context)
     {

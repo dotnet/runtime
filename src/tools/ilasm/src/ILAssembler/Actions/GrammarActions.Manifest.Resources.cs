@@ -161,14 +161,12 @@ internal sealed partial class GrammarActions
         return (implementation, offset, customAttributes.ToImmutable());
     }
 
-    public GrammarResult VisitManifestResBlock(CILParser.ManifestResBlockContext context)
+    internal void MaterializeManifestResource(CILParser.ManifestResBlockContext context)
     {
         if (context.Value is ManifestResourceValue value)
         {
             MaterializeManifestResource(value);
         }
-
-        return GrammarResult.SentinelValue.Result;
     }
 
 }
