@@ -1,0 +1,54 @@
+# TEMP (wasm-aot-131537-validation): validate that the src/tests regression test
+# Loader/classloader/generics/regressions/131537 actually runs under the Mono
+# wasm-AOT configuration that reproduces #131537 (AOT'd corelib + force-interpreted
+# test assembly). Scoped to just that one test via `-tree`, AOT'd locally, run on
+# Chrome. Delete this file (and its reference in runtime-extra-platforms-wasm.yml)
+# before merging anything real.
+
+parameters:
+  alwaysRun: false
+  isExtraPlatformsBuild: false
+  isWasmOnlyBuild: false
+  platforms: []
+  extraBuildArgs: ''
+  useHelixMonitor: false
+
+jobs:
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: Release
+    runtimeFlavor: mono
+    platforms: ${{ parameters.platforms }}
+    variables:
+      - name: alwaysRunVar
+        value: ${{ parameters.alwaysRun }}
+      - name: timeoutPerTestInMinutes
+        value: 20
+      - name: timeoutPerTestCollectionInMinutes
+        value: 200
+    jobParameters:
+      testGroup: innerloop
+      isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
+      nameSuffix: AllSubsets_Mono_RuntimeTests_AOT_131537
+      # No runtimeVariant (i.e. not monointerpreter): we want corelib AOT'd, and
+      # the test csproj force-interprets only test131537.dll via
+      # _AOT_InternalForceInterpretAssemblies — reproducing the failing config.
+      buildArgs: -s mono+libs -c $(_BuildConfig) /p:MonoEnableAssertMessages=true /p:InstallV8ForTests=false ${{ parameters.extraBuildArgs }}
+      timeoutInMinutes: 180
+      condition: eq(variables['alwaysRunVar'], true)
+      postBuildSteps:
+        - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
+          parameters:
+            creator: dotnet-bot
+            testRunNamePrefixSuffix: Mono_$(_BuildConfig)_AOT_131537
+            # Scope the runtime-test build to just this one test, and AOT it locally
+            # (RunAOTCompilation=true) so corelib is AOT'd in the produced wasm app.
+            testBuildArgs: tree Loader/classloader/generics/regressions/131537 /p:RunAOTCompilation=true /p:InstallV8ForTests=false
+            scenarios:
+              - WasmTestOnChrome
+            useHelixMonitor: ${{ parameters.useHelixMonitor }}
+      extraVariablesTemplates:
+        - template: /eng/pipelines/common/templates/runtimes/test-variables.yml

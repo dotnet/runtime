@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CLRTestPriority>1</CLRTestPriority>
+    <!-- TEMP (wasm-aot-131537-validation): Pri0 so the innerloop wasm runtime-tests lanes include it. Revert to 1. -->
+    <CLRTestPriority>0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test131537.cs" />

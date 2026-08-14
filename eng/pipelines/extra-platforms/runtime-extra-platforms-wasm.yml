@@ -249,6 +249,18 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
+  # TEMP (wasm-aot-131537-validation): Mono AOT + Chrome runtime-test lane scoped to
+  # Loader/classloader/generics/regressions/131537 only. Remove before merging.
+  - template: /eng/pipelines/common/templates/wasm-aot-runtime-test-131537.yml
+    parameters:
+      platforms:
+        - browser_wasm
+      extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+      isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
+      isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
+
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
     parameters:
