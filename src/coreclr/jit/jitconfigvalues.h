@@ -621,6 +621,12 @@ OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
 // a continuation is being reused.
 OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAnalysisRange")
 
+// Enable general inlining of runtime async calls, i.e. inlining of async
+// callees that may suspend. When zero, only the restricted cases are inlined:
+// callees without any awaits, async versions of synchronous methods, and tail
+// awaits.
+RELEASE_CONFIG_INTEGER(JitAsyncInlining, "JitAsyncInlining", 0)
+
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
 RELEASE_CONFIG_INTEGER(JitOptRepeatCount, "JitOptRepeatCount", 2) // Number of times to repeat opts when repeating

@@ -250,11 +250,11 @@ inline void FATAL_GC_ERROR()
 #ifdef SYNCHRONIZATION_STATS
 #define BEGIN_TIMING(x) \
     int64_t x##_start; \
-    x##_start = GCToOSInterface::QueryPerformanceCounter()
+    x##_start = minipal_hires_ticks()
 
 #define END_TIMING(x) \
     int64_t x##_end; \
-    x##_end = GCToOSInterface::QueryPerformanceCounter(); \
+    x##_end = minipal_hires_ticks(); \
     x += x##_end - x##_start
 
 #else //SYNCHRONIZATION_STATS
@@ -1112,7 +1112,7 @@ struct static_data
     float fragmentation_burden_limit;
     float limit;
     float max_limit;
-    uint64_t time_clock; // time after which to collect generation, in performance counts (see QueryPerformanceCounter)
+    uint64_t time_clock; // time after which to collect generation, in performance counts (see minipal_hires_ticks)
     size_t gc_clock; // number of gcs after which to collect generation
 };
 
@@ -3940,7 +3940,7 @@ private:
 #ifdef MULTIPLE_HEAPS
 #else //MULTIPLE_HEAPS
     // Used in the allocator code paths to decide if we should trigger GCs
-    PER_HEAP_FIELD_ALLOC uint64_t allocation_running_time;
+    PER_HEAP_FIELD_ALLOC int64_t allocation_running_time;
     PER_HEAP_FIELD_ALLOC size_t allocation_running_amount;
 #endif //MULTIPLE_HEAPS
 

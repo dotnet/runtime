@@ -1004,7 +1004,7 @@ void add_to_hb_numa (
     bool set_ideal_p)
 {
     int tid = (int)GCToOSInterface::GetCurrentThreadIdForLogging ();
-    uint64_t timestamp = RawGetHighPrecisionTimeStamp ();
+    int64_t timestamp = minipal_hires_ticks ();
 
     int saved_proc_no = proc_no;
     int numa_no = -1;
@@ -1314,7 +1314,7 @@ bool gc_heap::new_allocation_allowed (int gen_number)
         if ((allocation_running_amount - dd_new_allocation (dd0)) >
             dd_min_size (dd0))
         {
-            uint64_t ctime = GCToOSInterface::GetLowPrecisionTimeStamp();
+            int64_t ctime = minipal_lowres_ticks();
             if ((ctime - allocation_running_time) > 1000)
             {
                 dprintf (2, (">1s since last gen0 gc"));
@@ -3921,7 +3921,7 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
     GCSpinLock* msl = loh_p ? &more_space_lock_uoh : &more_space_lock_soh;
 
 #ifdef SYNCHRONIZATION_STATS
-    int64_t msl_acquire_start = GCToOSInterface::QueryPerformanceCounter();
+    int64_t msl_acquire_start = minipal_hires_ticks();
 #endif //SYNCHRONIZATION_STATS
 
     msl_status = enter_spin_lock_msl (msl);
@@ -3930,7 +3930,7 @@ allocation_state gc_heap::try_allocate_more_space (alloc_context* acontext, size
     add_saved_spinlock_info (loh_p, me_acquire, mt_try_alloc, msl_status);
     dprintf (SPINLOCK_LOG, ("[%d]Emsl for alloc", heap_number));
 #ifdef SYNCHRONIZATION_STATS
-    int64_t msl_acquire = GCToOSInterface::QueryPerformanceCounter() - msl_acquire_start;
+    int64_t msl_acquire = minipal_hires_ticks() - msl_acquire_start;
     total_msl_acquire += msl_acquire;
     num_msl_acquired++;
     if (msl_acquire > 200)
