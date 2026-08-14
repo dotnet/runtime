@@ -397,53 +397,6 @@ internal sealed partial class GrammarActions
             : Encoding.UTF8.GetString(bytes.Slice(bytesRead, length));
     }
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitFieldInit(CILParser.FieldInitContext context)
-        => VisitFieldInit(context);
-
-    public static GrammarResult.Literal<object?> VisitFieldInit(
-        CILParser.FieldInitContext context)
-        => new(context.Value);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitFieldOrProp(CILParser.FieldOrPropContext context)
-        => VisitFieldOrProp(context);
-
-    public static GrammarResult.Literal<CustomAttributeNamedArgumentKind> VisitFieldOrProp(
-        CILParser.FieldOrPropContext context)
-        => new((CustomAttributeNamedArgumentKind)context.Value);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitFieldSerInit(
-        CILParser.FieldSerInitContext context)
-        => VisitFieldSerInit(context);
-
-    public static GrammarResult.FormattedBlob VisitFieldSerInit(
-        CILParser.FieldSerInitContext context)
-        => new(context.Value ?? new BlobBuilder());
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitInitOpt(CILParser.InitOptContext context)
-        => VisitInitOpt(context);
-
     public static GrammarResult.Literal<object?> VisitInitOpt(CILParser.InitOptContext context)
         => new(context.Value);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitSerializType(
-        CILParser.SerializTypeContext context)
-        => VisitSerializType(context);
-
-    public GrammarResult.FormattedBlob VisitSerializType(
-        CILParser.SerializTypeContext context)
-        => new(MaterializeSerializationType(GetSerializationTypeValue(context.Value)));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitSerializTypeElement(
-        CILParser.SerializTypeElementContext context)
-        => VisitSerializTypeElement(context);
-
-    public GrammarResult.FormattedBlob VisitSerializTypeElement(
-        CILParser.SerializTypeElementContext context)
-        => new(MaterializeSerializationType(GetSerializationTypeValue(context.Value)));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitSerInit(CILParser.SerInitContext context)
-        => VisitSerInit(context);
-
-    public GrammarResult.FormattedBlob VisitSerInit(CILParser.SerInitContext context)
-        => new(MaterializeSerializedInitializer(GetSerializedInitializerValue(context.Value)));
 }

@@ -38,9 +38,6 @@ internal sealed partial class GrammarActions
     private static TypeName GetTypeNameValue(object? value)
         => value as TypeName ?? new TypeName(null, string.Empty);
 
-    private static TypeName GetSlashedNameValue(CILParser.SlashedNameContext context)
-        => GetTypeNameValue(context.Value);
-
     private static ClassNameValue GetClassNameValue(object? value)
         => GetSemanticValue(value, ClassNameValue.Error);
 

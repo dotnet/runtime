@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection.Metadata;
 using Antlr4.Runtime;
 
@@ -90,13 +89,4 @@ internal sealed partial class GrammarActions
         _pendingClassCustomAttributeOwner = null;
     }
 
-#pragma warning disable CA1822 // Mark members as static
-        public GrammarResult VisitClassDecls(CILParser.ClassDeclsContext context) => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitClassName(CILParser.ClassNameContext context) => VisitClassName(context);
-
-        public GrammarResult.Literal<EntityRegistry.TypeEntity> VisitClassName(CILParser.ClassNameContext context)
-            => new(ResolveClassName(GetClassNameValue(context.Value)));
-
-#pragma warning restore CA1822 // Mark members as static
 }

@@ -271,32 +271,4 @@ internal sealed partial class GrammarActions
         return null;
     }
 
-#pragma warning disable CA1822 // Structural rules are driven by parser actions.
-    public GrammarResult VisitDataDecl(CILParser.DataDeclContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitDdHead(CILParser.DdHeadContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitDdBody(CILParser.DdBodyContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitDdItemList(CILParser.DdItemListContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitDdItem(CILParser.DdItemContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitDdItemCount(CILParser.DdItemCountContext context)
-        => VisitDdItemCount(context);
-
-    public static GrammarResult.Literal<int> VisitDdItemCount(CILParser.DdItemCountContext context)
-        => new(context.Value);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitTls(CILParser.TlsContext context)
-        => VisitTls(context);
-
-    public static GrammarResult.Literal<byte> VisitTls(CILParser.TlsContext context)
-        => new(context.Value);
-#pragma warning restore CA1822
 }

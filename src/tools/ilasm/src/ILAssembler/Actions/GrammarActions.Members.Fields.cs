@@ -200,45 +200,9 @@ internal sealed partial class GrammarActions
         context.HasValue = true;
     }
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitAtOpt(CILParser.AtOptContext context)
-        => VisitAtOpt(context);
-
-    public static GrammarResult.Literal<string?> VisitAtOpt(CILParser.AtOptContext context)
-        => new(context.Value);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitFieldAttr(CILParser.FieldAttrContext context)
-        => VisitFieldAttr(context);
-
-    public static GrammarResult.Flag<FieldAttributes> VisitFieldAttr(
-        CILParser.FieldAttrContext context)
-    {
-        AttributeValue<FieldAttributes> attribute =
-            GetAttributeValue<FieldAttributes>(context.Value);
-        return new(attribute.Value, attribute.ShouldAppend, attribute.GroupMask);
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitFieldDecl(CILParser.FieldDeclContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitFieldRef(CILParser.FieldRefContext context)
-        => VisitFieldRef(context);
-
     public GrammarResult.Literal<EntityRegistry.EntityBase> VisitFieldRef(
         CILParser.FieldRefContext context)
         => new(MaterializeFieldReference(GetFieldReferenceValue(context.Value)));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitMemberRef(CILParser.MemberRefContext context)
-        => VisitMemberRef(context);
-
-    public GrammarResult.Literal<EntityRegistry.EntityBase> VisitMemberRef(
-        CILParser.MemberRefContext context)
-        => new(MaterializeMemberReference(GetMemberReferenceValue(context.Value)));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitRepeatOpt(CILParser.RepeatOptContext context)
-        => VisitRepeatOpt(context);
-
-    public static GrammarResult.Literal<int?> VisitRepeatOpt(CILParser.RepeatOptContext context)
-        => new(context.HasValue ? context.Value : null);
 
     private FieldDeclarationFrame? TryGetFieldDeclarationFrame(CILParser.FieldDeclContext context)
     {

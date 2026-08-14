@@ -332,46 +332,6 @@ internal sealed partial class GrammarActions
         }
     }
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitEventAttr(CILParser.EventAttrContext context)
-        => VisitEventAttr(context);
-
-    public static GrammarResult.Flag<EventAttributes> VisitEventAttr(
-        CILParser.EventAttrContext context)
-    {
-        AttributeValue<EventAttributes> attribute =
-            GetAttributeValue<EventAttributes>(context.Value);
-        return new(attribute.Value, attribute.ShouldAppend, attribute.GroupMask);
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitEventDecl(CILParser.EventDeclContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitEventDecls(CILParser.EventDeclsContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitEventHead(CILParser.EventHeadContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitPropAttr(CILParser.PropAttrContext context)
-        => VisitPropAttr(context);
-
-    public static GrammarResult.Flag<PropertyAttributes> VisitPropAttr(
-        CILParser.PropAttrContext context)
-    {
-        AttributeValue<PropertyAttributes> attribute =
-            GetAttributeValue<PropertyAttributes>(context.Value);
-        return new(attribute.Value, attribute.ShouldAppend, attribute.GroupMask);
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitPropDecl(CILParser.PropDeclContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitPropDecls(CILParser.PropDeclsContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitPropHead(CILParser.PropHeadContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
     private PropertyHeaderFrame? TryGetPropertyHeaderFrame(CILParser.PropHeadContext context)
     {
         Debug.Assert(_propertyHeaderFrames.Count > 0);

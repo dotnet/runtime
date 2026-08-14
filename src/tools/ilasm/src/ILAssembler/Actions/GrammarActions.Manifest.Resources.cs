@@ -171,48 +171,4 @@ internal sealed partial class GrammarActions
         return GrammarResult.SentinelValue.Result;
     }
 
-    public GrammarResult VisitManifestResDecl(CILParser.ManifestResDeclContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitManifestResDecls(
-        CILParser.ManifestResDeclsContext context)
-        => VisitManifestResDecls(context);
-
-    public GrammarResult.Literal<(
-        EntityRegistry.EntityBase? implementation,
-        uint offset,
-        ImmutableArray<EntityRegistry.CustomAttributeEntity> attributes)>
-        VisitManifestResDecls(CILParser.ManifestResDeclsContext context)
-        => new(MaterializeManifestResourceDeclarations(GetManifestValues(context.Value)));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitManifestResHead(
-        CILParser.ManifestResHeadContext context)
-        => VisitManifestResHead(context);
-
-    public static GrammarResult.Literal<(
-        string name,
-        string alias,
-        ManifestResourceAttributes attr)> VisitManifestResHead(
-            CILParser.ManifestResHeadContext context)
-    {
-        ManifestResourceHeaderValue header =
-            GetManifestResourceHeader(context.Value, context.Start);
-        return new((header.Name, header.Alias, header.Attributes));
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitManresAttr(
-        CILParser.ManresAttrContext context)
-        => VisitManresAttr(context);
-
-    public static GrammarResult.Flag<ManifestResourceAttributes> VisitManresAttr(
-        CILParser.ManresAttrContext context)
-        => new(context.Value);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitManresAttrs(
-        CILParser.ManresAttrsContext context)
-        => VisitManresAttrs(context);
-
-    public static GrammarResult.Literal<ManifestResourceAttributes> VisitManresAttrs(
-        CILParser.ManresAttrsContext context)
-        => new(context.Value);
 }

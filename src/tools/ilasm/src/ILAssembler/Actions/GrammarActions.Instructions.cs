@@ -442,14 +442,6 @@ internal sealed partial class GrammarActions
         return (ILOpCode)Enum.Parse(typeof(ILOpCode), normalized, ignoreCase: true);
     }
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitInstr(CILParser.InstrContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitSimpleInstr(CILParser.SimpleInstrContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitMdtoken(CILParser.MdtokenContext context) => VisitMdtoken(context);
-
     public GrammarResult.Literal<EntityRegistry.EntityBase> VisitMdtoken(CILParser.MdtokenContext context)
         => new(ResolveMetadataToken(context.Value));
 }

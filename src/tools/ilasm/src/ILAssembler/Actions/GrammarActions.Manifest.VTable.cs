@@ -47,26 +47,6 @@ internal sealed partial class GrammarActions
         => throw new NotImplementedException(
             "raw vtable fixups blob (.vtable) not supported - use .vtfixup instead");
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitVtfixupAttr(
-        CILParser.VtfixupAttrContext context)
-        => VisitVtfixupAttr(context);
-
-    public static GrammarResult.Literal<ushort> VisitVtfixupAttr(
-        CILParser.VtfixupAttrContext context)
-        => new(context.Value);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitVtfixupAttrElement(
-        CILParser.VtfixupAttrElementContext context)
-        => VisitVtfixupAttrElement(context);
-
-    public static GrammarResult.Literal<ushort> VisitVtfixupAttrElement(
-        CILParser.VtfixupAttrElementContext context)
-        => new(context.Value);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitVtfixupDecl(
-        CILParser.VtfixupDeclContext context)
-        => VisitVtfixupDecl(context);
-
     public GrammarResult VisitVtfixupDecl(CILParser.VtfixupDeclContext context)
     {
         if (context.Value is VTableFixupValue value)

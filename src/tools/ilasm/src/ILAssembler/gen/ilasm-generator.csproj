@@ -21,6 +21,7 @@
   <ItemGroup>
     <Antlr4 Include="CIL.g4">
       <Listener>false</Listener>
+      <Visitor>false</Visitor>
       <GAtn>false</GAtn>
       <Package>ILAssembler</Package>
       <AntOutDir>$(ProjectDir)</AntOutDir>
