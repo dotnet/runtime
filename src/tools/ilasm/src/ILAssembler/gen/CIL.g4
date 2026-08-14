@@ -441,6 +441,8 @@ finally {_localctx.Value = Actions.EndComposedString(_localctx); EndParseTreeMod
 WS: [ \t\r\n] -> skip;
 SINGLE_LINE_COMMENT: '//' ~[\r\n]* -> skip;
 COMMENT: '/*' .*? '*/' -> skip;
+PERMISSION: '.permission';
+PERMISSIONSET: '.permissionset';
 
 decls
 @init {BeginStreaming();}
@@ -518,15 +520,22 @@ finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParse
 
 mscorlib: '.mscorlib';
 
-languageDecl returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+languageDecl returns [object Value, bool HasSyntaxError]
+@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
 :
-	'.language' languageString
-	| '.language' languageString ',' languageString
-	| '.language' languageString ',' languageString ',' languageString;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+	'.language' language = languageString
+		{_localctx.Value = Actions.CreateLanguageDirective($language.Value);}
+	| '.language' language = languageString ',' vendor = languageString
+		{_localctx.Value = Actions.CreateLanguageDirective($language.Value, $vendor.Value);}
+	| '.language' language = languageString ',' vendor = languageString ',' documentType = languageString
+		{_localctx.Value = Actions.CreateLanguageDirective($language.Value, $vendor.Value, $documentType.Value);};
+finally {Actions.EndLanguageDirective(_localctx); EndParseTreeMode();}
 
-languageString: SQSTRING | QSTRING;
+languageString returns [string Value]
+@after {_localctx.Value = Actions.ParseLanguageString(_localctx.Start);}
+:
+	SQSTRING
+	| QSTRING;
 
 typelist
 @init {Actions.BeginTopLevelTypeList();}
@@ -772,27 +781,43 @@ implList returns [object Value]
 finally {_localctx.Value = Actions.EndInterfaceList(_localctx);}
 
 /*  External source declarations  */
-esHead: '.line' | '#line';
-
-extSourceSpec returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+esHead returns [bool AutoIncrement]
+@after {_localctx.AutoIncrement = Actions.IsAutoIncrementSourceDirective(_localctx.Start);}
 :
-	esHead int32 SQSTRING
-	| esHead int32
-	| esHead int32 ':' int32 SQSTRING
-	| esHead int32 ':' int32
-	| esHead int32 ':' int32 ',' int32 SQSTRING
-	| esHead int32 ':' int32 ',' int32
-	| esHead int32 ',' int32 ':' int32 SQSTRING
-	| esHead int32 ',' int32 ':' int32
-	| esHead int32 ',' int32 ':' int32 ',' int32 SQSTRING
-	| esHead int32 ',' int32 ':' int32 ',' int32
-	| esHead int32 QSTRING
-	| esHead int32 ':' int32 QSTRING
-	| esHead int32 ':' int32 ',' int32 QSTRING
-	| esHead int32 ',' int32 ':' int32 QSTRING
-	| esHead int32 ',' int32 ':' int32 ',' int32 QSTRING;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+	'.line'
+	| '#line';
+
+extSourceSpec returns [object Value, bool HasSyntaxError]
+@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+:
+	head = esHead line = int32 path = (SQSTRING | QSTRING)?
+		{_localctx.Value = Actions.CreateSourceLine($head.AutoIncrement, $line.start, $path);}
+	| head = esHead line = int32 ':' column = int32 path = (SQSTRING | QSTRING)?
+		{_localctx.Value = Actions.CreateSourceColumn($head.AutoIncrement, $line.start, $column.start, $path);}
+	| head = esHead line = int32 ':' startColumn = int32 ',' endColumn = int32 path = (SQSTRING | QSTRING)?
+		{_localctx.Value = Actions.CreateSourceColumnRange(
+			$head.AutoIncrement,
+			$line.start,
+			$startColumn.start,
+			$endColumn.start,
+			$path);}
+	| head = esHead startLine = int32 ',' endLine = int32 ':' column = int32 path = (SQSTRING | QSTRING)?
+		{_localctx.Value = Actions.CreateSourceLineRange(
+			$head.AutoIncrement,
+			$startLine.start,
+			$endLine.start,
+			$column.start,
+			$path);}
+	| head = esHead startLine = int32 ',' endLine = int32 ':' startColumn = int32 ',' endColumn = int32
+		path = (SQSTRING | QSTRING)?
+		{_localctx.Value = Actions.CreateSourceRange(
+			$head.AutoIncrement,
+			$startLine.start,
+			$endLine.start,
+			$startColumn.start,
+			$endColumn.start,
+			$path);};
+finally {Actions.EndSourceDirective(_localctx); EndParseTreeMode();}
 
 /*  Manifest declarations  */
 fileDecl returns [bool HasSyntaxError]
@@ -1146,30 +1171,57 @@ nativeUint returns [byte Value]:
 	'native' ('unsigned' INT | UINT) {_localctx.Value = Actions.GetNativeUIntType();};
 
 /*  Security declarations  */
-secDecl returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+secDecl returns [object Value, bool HasSyntaxError]
+@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
 :
-	PERMISSION secAction typeSpec '(' nameValPairs ')'
-	| PERMISSION secAction typeSpec '=' '{' customBlobDescr '}'
-	| PERMISSION secAction typeSpec
-	| PERMISSIONSET secAction '=' 'bytearray'? '(' bytes ')'
-	| PERMISSIONSET secAction 'bytearray' '(' bytes ')'
-	| PERMISSIONSET secAction compQstring
-	| PERMISSIONSET secAction '=' '{' secAttrSetBlob '}';
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+	PERMISSION action = secAction permissionType = typeSpec '(' pairs = nameValPairs ')'
+		{_localctx.Value = Actions.CreateNamedPermissionDeclaration(
+			$action.Value,
+			$permissionType.Value,
+			$pairs.Value);}
+	| PERMISSION action = secAction permissionType = typeSpec '=' '{' structuredValue = customBlobDescr '}'
+		{_localctx.Value = Actions.CreateStructuredPermissionDeclaration(
+			$action.Value,
+			$permissionType.Value,
+			$structuredValue.Value);}
+	| PERMISSION action = secAction permissionType = typeSpec
+		{_localctx.Value = Actions.CreateEmptyPermissionDeclaration($action.Value, $permissionType.Value);}
+	| PERMISSIONSET action = secAction '=' 'bytearray'? '(' rawValue = bytes ')'
+		{_localctx.Value = Actions.CreateRawPermissionSetDeclaration($action.Value, $rawValue.Value);}
+	| PERMISSIONSET action = secAction 'bytearray' '(' rawValue = bytes ')'
+		{_localctx.Value = Actions.CreateRawPermissionSetDeclaration($action.Value, $rawValue.Value);}
+	| PERMISSIONSET action = secAction textValue = compQstring
+		{_localctx.Value = Actions.CreateStringPermissionSetDeclaration($action.Value, $textValue.Value);}
+	| PERMISSIONSET action = secAction '=' '{' attributes = secAttrSetBlob '}'
+		{_localctx.Value = Actions.CreateAttributePermissionSetDeclaration($action.Value, $attributes.Value);};
+finally {Actions.EndSecurityDeclaration(_localctx); EndParseTreeMode();}
 
-	PERMISSION: '.permission';
-	PERMISSIONSET: '.permissionset';
+secAttrSetBlob returns [object Value]
+@init {Actions.BeginSecurityAttributeSet(_localctx);}
+:
+	/* EMPTY */
+	| (attribute = secAttrBlob {Actions.AddSecurityAttribute(_localctx, $attribute.Value);} ',')*
+		tail = secAttrBlob {Actions.AddSecurityAttribute(_localctx, $tail.Value);}
+;
+finally {_localctx.Value = Actions.EndSecurityAttributeSet(_localctx);}
 
-	secAttrSetBlob: | (secAttrBlob ',')* secAttrBlob;
+secAttrBlob returns [object Value]:
+	'class' name = SQSTRING '=' '{' arguments = customBlobNVPairs '}'
+		{_localctx.Value = Actions.CreateNamedSecurityAttribute($name, $arguments.Value);}
+	| securityType = typeSpec '=' '{' arguments = customBlobNVPairs '}'
+		{_localctx.Value = Actions.CreateTypedSecurityAttribute($securityType.Value, $arguments.Value);};
 
-secAttrBlob:
-	'class' SQSTRING '=' '{' customBlobNVPairs '}'
-	| typeSpec '=' '{' customBlobNVPairs '}';
+nameValPairs returns [object Value]
+@init {Actions.BeginSecurityNameValuePairs(_localctx);}
+:
+	(pair = nameValPair {Actions.AddSecurityNameValuePair(_localctx, $pair.Value);} ',')*
+	tail = nameValPair {Actions.AddSecurityNameValuePair(_localctx, $tail.Value);}
+;
+finally {_localctx.Value = Actions.EndSecurityNameValuePairs(_localctx);}
 
-nameValPairs: (nameValPair ',')* nameValPair;
-
-nameValPair: compQstring '=' caValue;
+nameValPair returns [object Value]:
+	name = compQstring '=' value = caValue
+		{_localctx.Value = Actions.CreateSecurityNameValuePair($name.Value, $value.Value);};
 
 truefalse returns [bool Value]
 @after {_localctx.Value = Actions.ParseBoolean(_localctx.Start);}
@@ -1177,17 +1229,23 @@ truefalse returns [bool Value]
 	'true'
 	| 'false';
 
-caValue:
-	truefalse
-	| int32
-	| INT32_ '(' int32 ')'
-	| compQstring
-	| className '(' INT8 ':' int32 ')'
-	| className '(' INT16 ':' int32 ')'
-	| className '(' INT32_ ':' int32 ')'
-	| className '(' int32 ')';
+caValue returns [object Value]:
+	booleanValue = truefalse {_localctx.Value = Actions.CreateSecurityBooleanValue($booleanValue.Value);}
+	| integerValue = int32 {_localctx.Value = Actions.CreateSecurityInt32Value($integerValue.start);}
+	| INT32_ '(' integerValue = int32 ')' {_localctx.Value = Actions.CreateSecurityInt32Value($integerValue.start);}
+	| textValue = compQstring {_localctx.Value = Actions.CreateSecurityStringValue($textValue.Value);}
+	| enumType = className '(' kind = INT8 ':' enumValue = int32 ')'
+		{_localctx.Value = Actions.CreateSecurityEnumValue($enumType.Value, $kind, $enumValue.start);}
+	| enumType = className '(' kind = INT16 ':' enumValue = int32 ')'
+		{_localctx.Value = Actions.CreateSecurityEnumValue($enumType.Value, $kind, $enumValue.start);}
+	| enumType = className '(' kind = INT32_ ':' enumValue = int32 ')'
+		{_localctx.Value = Actions.CreateSecurityEnumValue($enumType.Value, $kind, $enumValue.start);}
+	| enumType = className '(' enumValue = int32 ')'
+		{_localctx.Value = Actions.CreateSecurityEnumValue($enumType.Value, $enumValue.start);};
 
-secAction:
+secAction returns [System.Reflection.DeclarativeSecurityAction Value]
+@after {_localctx.Value = Actions.ParseSecurityAction(_localctx.Start);}
+:
 	'request'
 	| 'demand'
 	| 'assert'
@@ -1789,39 +1847,48 @@ handlerBlock returns [object Value]:
 
 /*  Data declaration  */
 dataDecl returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+@init {BeginStreaming(); Actions.BeginDataDeclaration(_localctx);}
 :
 	ddHead ddBody
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+finally {Actions.EndDataDeclaration(_localctx); EndParseTreeMode();}
 
-ddHead: '.data' tls id '=' | '.data' tls;
+ddHead:
+	'.data' section = tls name = id '='
+		{Actions.SetDataDeclarationHeader(_localctx, $section.Value, $name.start);}
+	| '.data' section = tls
+		{Actions.SetAnonymousDataDeclarationHeader(_localctx, $section.Value);};
 
-tls: /* EMPTY */ | 'tls' | 'cil';
+tls returns [byte Value]
+@init {_localctx.Value = Actions.GetMappedDataSection();}
+:
+	/* EMPTY */
+	| 'tls' {_localctx.Value = Actions.GetTlsDataSection();}
+	| 'cil' {_localctx.Value = Actions.GetCilDataSection();};
 
 ddBody: '{' ddItemList '}' | ddItem+;
 
 ddItemList: (ddItem ',')* ddItem;
 
-ddItemCount: /* EMPTY */ | '[' int32 ']';
+ddItemCount returns [int Value]
+@init {_localctx.Value = 1;}
+:
+	/* EMPTY */
+	| '[' count = int32 ']' {_localctx.Value = Actions.ParseDataItemCount($count.start);};
 
 ddItem:
-	CHAR PTR '(' compQstring ')'
-	| REF '(' id ')'
-	| REF id
-	| 'bytearray' '(' bytes ')'
-	| FLOAT32 '(' float64 ')' ddItemCount
-	| FLOAT64_ '(' float64 ')' ddItemCount
-	| INT64_ '(' int64 ')' ddItemCount
-	| INT32_ '(' int32 ')' ddItemCount
-	| INT16 '(' int32 ')' ddItemCount
-	| INT8 '(' int32 ')' ddItemCount
-	| FLOAT32 ddItemCount
-	| FLOAT64_ ddItemCount
-	| INT64_ ddItemCount
-	| INT32_ ddItemCount
-	| INT16 ddItemCount
-	| INT8 ddItemCount;
+	CHAR PTR '(' stringValue = compQstring ')' {Actions.AddDataString(_localctx, $stringValue.Value);}
+	| REF '(' target = id ')' {Actions.AddDataReference(_localctx, $target.start);}
+	| REF target = id {Actions.AddDataReference(_localctx, $target.start);}
+	| 'bytearray' '(' byteValue = bytes ')' {Actions.AddDataBytes(_localctx, $byteValue.Value);}
+	| kind = (FLOAT32 | FLOAT64_) '(' floatingValue = float64 ')' count = ddItemCount
+		{Actions.AddFloatingPointData(_localctx, $kind, $floatingValue.Value, $count.Value);}
+	| kind = INT64_ '(' int64Value = int64 ')' count = ddItemCount
+		{Actions.AddInt64Data(_localctx, $kind, $int64Value.start, $count.Value);}
+	| kind = (INT32_ | INT16 | INT8) '(' integerValue = int32 ')' count = ddItemCount
+		{Actions.AddIntegerData(_localctx, $kind, $integerValue.start, $count.Value);}
+	| kind = (FLOAT32 | FLOAT64_ | INT64_ | INT32_ | INT16 | INT8) count = ddItemCount
+		{Actions.AddZeroData(_localctx, $kind, $count.Value);};
 
 /*  Default values declaration for fields, parameters and verbal form of CA blob description  */
 fieldSerInit returns [System.Reflection.Metadata.BlobBuilder Value]:

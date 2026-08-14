@@ -304,13 +304,10 @@ internal sealed partial class GrammarActions
         }
     }
 
+#pragma warning disable CA1822 // Parser actions own these directive side effects.
     internal void ProcessMethodDataDeclaration(CILParser.DataDeclContext context)
-    {
-        if (_currentMethod is not null && !context.HasSyntaxError)
-        {
-            _ = VisitDataDecl(context);
-        }
-    }
+        => _ = context;
+#pragma warning restore CA1822
 
     internal void ProcessMethodSecurityDeclaration(CILParser.SecDeclContext context)
     {
@@ -323,21 +320,13 @@ internal sealed partial class GrammarActions
         security?.Parent = _currentMethod.Definition;
     }
 
+#pragma warning disable CA1822 // Parser actions own these directive side effects.
     internal void ProcessMethodSourceDirective(CILParser.ExtSourceSpecContext context)
-    {
-        if (_currentMethod is not null && !context.HasSyntaxError)
-        {
-            _ = VisitExtSourceSpec(context);
-        }
-    }
+        => _ = context;
 
     internal void ProcessMethodLanguageDirective(CILParser.LanguageDeclContext context)
-    {
-        if (_currentMethod is not null && !context.HasSyntaxError)
-        {
-            _ = VisitLanguageDecl(context);
-        }
-    }
+        => _ = context;
+#pragma warning restore CA1822
 
     internal void ProcessMethodCustomAttribute(CILParser.CustomDescrInMethodBodyContext context)
     {
