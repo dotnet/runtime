@@ -1260,7 +1260,9 @@ See the big block comment at the start of [src\inc\contract.h][contract.h].
 
 The C and C++ standard headers are available for usage in the CoreCLR code-base. However, there are restrictions on using the standard-provided APIs for code that will run as part of CoreCLR.
 
-Code that will only run in other processes, such as `createdump` or other extraneous tools, do not have the same set of restrictions.
+Code that will only run in other processes, such as `createdump` or other extraneous tools, have less restrictions.
+
+For Linux builds, we build against an older C++ runtime to support older Linux distributions, but we bundle a newer C++ Standard Library implementation. This means CoreCLR code can use new C++ library features, but there may be some corners where particular features are not supported and fail at link time. Those features are not supported in CoreCLR code and should be avoided.
 
 ### <a name="2.11.1"></a> 2.11.1 Do not use wchar_t
 
@@ -1276,13 +1278,11 @@ For example, `std::vector<T>::at()` should not be used as it may throw an `std::
 
 The POSIX API `setenv` is not thread safe with `getenv` and can lead to crashes. CoreCLR provides a `PAL_getenv` API that is thread-safe. This API should be used instead when on non-Windows platforms.
 
-### <a name="2.11.4"></a> 2.11.4 Limit usage of standard template types in shipping executables
+### <a name="2.11.4"></a> 2.11.4 Do not use C++ Standard Library types
 
-For Linux x64 and amd64 platforms, we build against a very old libstdc++, the version that shipped with Ubuntu 16.04. As a result, we strive to reduce our usage of template types (where code from the headers will be inserted into our binaries) in shipping executables and libraries.
+Using types and algorithms from the C++ standard is supported within the CoreCLR code base; however, we do not support it in our DAC/cDAC tooling. Do not use C++ Standard-defined containers, smart pointers, etc. for any fields accessed by the DAC or cDAC. Only use our collections that have cDAC contracts when you need to expose them for diagnostic tooling.
 
-This rule applies to both `coreclr` as well as shipping external executables like `createdump`.
-
-For non-shipping native code, like the `superpmi` tools suite, standard headers can be used without limitation.
+For cases where diagnostic tooling integration is not required, you may use C++ Standard-defined types and algorithms meeting the C++ standard version CoreCLR builds with (defined in [eng/native/configurecompiler.cmake](../../eng/native/configurecompiler.cmake)).
 
 ## <a name="2.12"></a>2.12 Is your code DAC compliant?
 
