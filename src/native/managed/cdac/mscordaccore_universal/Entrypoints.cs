@@ -471,7 +471,7 @@ internal static class Entrypoints
         // Without a legacy implementation to absorb individually-unimplemented APIs, validate
         // the complete data-access contract set before publishing the interface.
         if (legacyImpl is null)
-            Contracts.CoreCLRContracts.ValidateForDataAccess(target, apiLock);
+            Contracts.CoreCLRContracts.ValidateForDataAccess(target);
 
         Legacy.SOSDacImpl impl = new(target, legacyImpl, apiLock);
         void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);

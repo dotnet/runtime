@@ -99,9 +99,9 @@ public static class CoreCLRContracts
     /// <see cref="ContractObsoleteException"/> / <see cref="CdacHResults.CDAC_E_CONTRACT_UNSUPPORTED"/>
     /// if the advertised version is recognized but intentionally unimplemented.
     /// </exception>
-    public static void ValidateForDataAccess(Target target, Lock apiLock)
+    public static void ValidateForDataAccess(Target target, Lock? apiLock = null)
     {
-        using Lock.Scope scope = apiLock.EnterScope();
+        using Lock.Scope scope = apiLock is null ? default : apiLock.EnterScope();
         ContractRegistry registry = target.Contracts;
 
         // In-box (main-descriptor) contract accesses across the ISOSDac* and IXCLRData* surface that
