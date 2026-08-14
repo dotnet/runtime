@@ -743,7 +743,7 @@ namespace Microsoft.Extensions.Options.Generators
             }
 
             GenModelSelfValidationIfNecessary(modelToValidate);
-            OutLn($"return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();");
+            GenValidateOptionsResultReturn("builder");
             OutCloseBrace();
         }
 
@@ -881,7 +881,7 @@ namespace Microsoft.Extensions.Options.Generators
 
             GenAsyncModelSelfValidationIfNecessary(modelToValidate);
 
-            OutLn($"return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();");
+            GenValidateOptionsResultReturn("builder");
             OutCloseBrace();
 
             if (!willAwait)
@@ -945,7 +945,7 @@ namespace Microsoft.Extensions.Options.Generators
                     GenAsyncEnumerationValidation(vm, ref staticValidatorsDict, builderVar);
                 }
 
-                OutLn($"return {builderVar} is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : {builderVar}.Build();");
+                GenValidateOptionsResultReturn(builderVar);
                 OutCloseBrace();
 
                 if (!memberHasAwait)
@@ -973,6 +973,11 @@ namespace Microsoft.Extensions.Options.Generators
                 OutLn($"(builder ??= new()).AddResult(memberResults[{i}]);");
                 OutCloseBrace();
             }
+        }
+
+        private void GenValidateOptionsResultReturn(string builderVariable)
+        {
+            OutLn($"return {builderVariable} is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : {builderVariable}.Build();");
         }
 
         private void GenAsyncMemberValidation(
