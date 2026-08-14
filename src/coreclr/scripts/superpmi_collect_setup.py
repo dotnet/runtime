@@ -469,7 +469,7 @@ def main(main_args):
             if arch == "arm64": # public windows_arm64
                 helix_queue = "Windows.11.Arm64.Open"
             else: # public windows_x64
-                helix_queue = "Windows.Amd64.Open"
+                helix_queue = "Windows.Amd64.Open.rt"
         elif platform_name == "linux":
             if arch == "arm": # public linux_arm
                 helix_queue = "(Debian.12.Arm32.Open)Ubuntu.2204.ArmArch.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:debian-12-helix-arm32v7"
