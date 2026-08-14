@@ -151,17 +151,7 @@ namespace System
                 t_deliveringFirstChanceNotification = true;
                 try
                 {
-                    FirstChanceExceptionEventArgs args;
-                    try
-                    {
-                        args = new(e);
-                    }
-                    catch
-                    {
-                        // If we fail to create the event args while delivering a first-chance
-                        // notification, skip delivering this notification.
-                        return;
-                    }
+                    FirstChanceExceptionEventArgs args = new(e);
 
                     foreach (EventHandler<FirstChanceExceptionEventArgs> handler in Delegate.EnumerateInvocationList(handlers))
                     {
