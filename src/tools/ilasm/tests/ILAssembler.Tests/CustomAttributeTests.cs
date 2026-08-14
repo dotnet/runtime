@@ -815,6 +815,138 @@ namespace ILAssembler.Tests
                 });
         }
 
+        [Fact]
+        public void CustomAttribute_ObjectArrayWithNestedArrays_DecodesProperly()
+        {
+            string source = """
+                .assembly extern mscorlib { }
+                .assembly test { }
+                .class public auto ansi sealed ObjArrAttribute extends [mscorlib]System.Attribute
+                {
+                    .method public specialname rtspecialname instance void .ctor(object[] values) cil managed
+                    {
+                        ldarg.0
+                        call instance void [mscorlib]System.Attribute::.ctor()
+                        ret
+                    }
+                }
+                .class public auto ansi Test extends [mscorlib]System.Object
+                {
+                    .custom instance void ObjArrAttribute::.ctor(object[]) = {
+                        object[2](int32[2](1 2) object(string[2]('alpha' nullref)))
+                    }
+                }
+                """;
+
+            using var pe = DocumentCompilerTestHelpers.CompileAndGetReader(source, new Options());
+            var reader = pe.GetMetadataReader();
+            var testType = reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Test");
+            var attribute = reader.GetCustomAttribute(Assert.Single(reader.GetCustomAttributes(testType)));
+            CustomAttributeValue<string> value = attribute.DecodeValue(DocumentCompilerTestHelpers.Decoder);
+            ImmutableArray<CustomAttributeTypedArgument<string>> elements =
+                Assert.IsType<ImmutableArray<CustomAttributeTypedArgument<string>>>(
+                    Assert.Single(value.FixedArguments).Value);
+
+            Assert.Collection(
+                elements,
+                element =>
+                {
+                    Assert.Equal("int32[]", element.Type);
+                    AssertArrayValue(element.Value, 1, 2);
+                },
+                element =>
+                {
+                    Assert.Equal("string[]", element.Type);
+                    AssertArrayValue(element.Value, "alpha", null);
+                });
+        }
+
+        [Theory]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi Test extends [mscorlib]System.Object
+            {
+                .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor(int32) = {
+                    float32('a')
+                }
+            }
+            """)]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi Test extends [mscorlib]System.Object
+            {
+                .field public static literal float32 F = float32('a')
+            }
+            """)]
+        [InlineData("""
+            .assembly extern mscorlib { }
+            .assembly test { }
+            .class public auto ansi Test extends [mscorlib]System.Object
+            {
+                .method public static void M(float32 value) cil managed
+                {
+                    .param [1] = float32('a')
+                    ret
+                }
+            }
+            """)]
+        public void MalformedScalarInitializer_ReportsDiagnosticsInsteadOfThrowing(string source)
+        {
+            ImmutableArray<Diagnostic> diagnostics =
+                DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+        }
+
+        [Fact]
+        public void MalformedNestedCustomAttributeSequence_DoesNotLeakFramesIntoNextDocument()
+        {
+            ImmutableArray<SourceText> documents =
+            [
+                new SourceText("""
+                    .assembly extern mscorlib { }
+                    .assembly test { }
+                    .class public auto ansi Broken extends [mscorlib]System.Object
+                    {
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor(object[]) = {
+                            object[2](type[1]([Discarded]Namespace.Type)
+                    """, "broken.il"),
+                new SourceText("""
+                    .class public auto ansi Following extends [mscorlib]System.Object
+                    {
+                        .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = { }
+                    }
+                    """, "following.il")
+            ];
+
+            DocumentCompiler compiler = new();
+            var (diagnostics, result) = compiler.Compile(
+                documents,
+                _ => { Assert.Fail("Expected no includes"); return default; },
+                _ => { Assert.Fail("Expected no resources"); return default; },
+                new Options { ErrorTolerant = true });
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+            Assert.NotNull(result);
+
+            BlobBuilder image = new();
+            result!.Serialize(image);
+            using PEReader pe = new(image.ToImmutableArray());
+            MetadataReader reader = pe.GetMetadataReader();
+            TypeDefinitionHandle followingHandle = reader.TypeDefinitions
+                .Single(handle => reader.GetString(reader.GetTypeDefinition(handle).Name) == "Following");
+
+            Assert.DoesNotContain(
+                reader.AssemblyReferences.Select(reader.GetAssemblyReference),
+                reference => reader.GetString(reference.Name) == "Discarded");
+            AssertCustomAttributeBlob(
+                reader,
+                Assert.Single(reader.GetCustomAttributes(followingHandle)));
+        }
+
         private static string TypeWithAttribute(string attributeType, string constructor = ".ctor()", string value = "( 01 00 00 00 )") => $$"""
             .assembly extern mscorlib { }
             .assembly test { }
