@@ -188,20 +188,10 @@ internal sealed partial class GrammarActions
     }
 
     internal void ProcessPropertySourceDirective(CILParser.ExtSourceSpecContext context)
-    {
-        if (!context.HasSyntaxError)
-        {
-            _ = VisitExtSourceSpec(context);
-        }
-    }
+        => _ = context;
 
     internal void ProcessPropertyLanguageDirective(CILParser.LanguageDeclContext context)
-    {
-        if (!context.HasSyntaxError)
-        {
-            _ = VisitLanguageDecl(context);
-        }
-    }
+        => _ = context;
 
     internal void BeginEventHeader(CILParser.EventHeadContext context)
         => _eventHeaderFrames.Push(new(context, _syntaxErrorCount));
@@ -322,20 +312,10 @@ internal sealed partial class GrammarActions
     }
 
     internal void ProcessEventSourceDirective(CILParser.ExtSourceSpecContext context)
-    {
-        if (!context.HasSyntaxError)
-        {
-            _ = VisitExtSourceSpec(context);
-        }
-    }
+        => _ = context;
 
     internal void ProcessEventLanguageDirective(CILParser.LanguageDeclContext context)
-    {
-        if (!context.HasSyntaxError)
-        {
-            _ = VisitLanguageDecl(context);
-        }
-    }
+        => _ = context;
 
     private void EndPropertyAndEventBodies(CILParser.ClassDeclContext context)
     {

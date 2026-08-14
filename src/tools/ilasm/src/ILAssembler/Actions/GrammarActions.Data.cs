@@ -1,157 +1,302 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
 using Antlr4.Runtime;
-using Antlr4.Runtime.Misc;
-using Antlr4.Runtime.Tree;
 
-namespace ILAssembler
+namespace ILAssembler;
+
+internal sealed partial class GrammarActions
 {
-#pragma warning disable CA1822 // Mark members as static
-    internal sealed partial class GrammarActions : ICILVisitor<GrammarResult>
+    private readonly Stack<DataDeclarationFrame> _dataDeclarationFrames = new();
+
+    private sealed class DataDeclarationFrame
     {
-        public GrammarResult VisitDataDecl(CILParser.DataDeclContext context)
+        public DataDeclarationFrame(CILParser.DataDeclContext owner, bool shouldCommit)
         {
-            _ = VisitDdHead(context.ddHead());
-            _ = VisitDdBody(context.ddBody());
-            return GrammarResult.SentinelValue.Result;
-        }
-        public GrammarResult VisitDdBody(CILParser.DdBodyContext context)
-        {
-            if (context.ddItemList() is CILParser.DdItemListContext ddItemList)
-            {
-                _ = VisitDdItemList(ddItemList);
-            }
-            else
-            {
-                foreach (var item in context.ddItem())
-                {
-                    _ = VisitDdItem(item);
-                }
-            }
-            return GrammarResult.SentinelValue.Result;
-        }
-        public GrammarResult VisitDdHead(CILParser.DdHeadContext context)
-        {
-            _ = VisitTls(context.tls());
-            if (context.id() is CILParser.IdContext id)
-            {
-                string name = VisitId(id).Value;
-                if (!_mappedFieldDataNames.ContainsKey(name))
-                {
-                    _mappedFieldDataNames.Add(name, _mappedFieldData.Count);
-                }
-            }
-            return GrammarResult.SentinelValue.Result;
-        }
-        public GrammarResult VisitDdItem(CILParser.DdItemContext context)
-        {
-            if (context.compQstring() is CILParser.CompQstringContext str)
-            {
-                var value = VisitCompQstring(str).Value;
-                _mappedFieldData.WriteUTF16(value);
-                return GrammarResult.SentinelValue.Result;
-            }
-            else if (context.id() is CILParser.IdContext id)
-            {
-                // Reference to another data label - this will be patched with the target's RVA
-                // during PE serialization by VTableExportPEBuilder.ApplyDataLabelFixups()
-                string name = VisitId(id).Value;
-                if (!_mappedFieldDataReferenceFixups.TryGetValue(name, out var fixups))
-                {
-                    _mappedFieldDataReferenceFixups[name] = fixups = new();
-                }
-
-                // Reserve 4 bytes for the RVA that will be patched later
-                fixups.Add(_mappedFieldData.ReserveBytes(4));
-                return GrammarResult.SentinelValue.Result;
-            }
-            else if (context.bytes() is CILParser.BytesContext bytes)
-            {
-                _mappedFieldData.WriteBytes(VisitBytes(bytes));
-                return GrammarResult.SentinelValue.Result;
-            }
-
-            int itemCount = VisitDdItemCount(context.ddItemCount()).Value;
-
-            if (context.INT8() is not null)
-            {
-                _mappedFieldData.WriteBytes(context.int32() is CILParser.Int32Context int32 ? (byte)VisitInt32(int32).Value : (byte)0, itemCount);
-            }
-            else if (context.INT16() is not null)
-            {
-                for (int i = 0; i < itemCount; i++)
-                {
-                    _mappedFieldData.WriteInt16(context.int32() is CILParser.Int32Context int32 ? (short)VisitInt32(int32).Value : (short)0);
-                }
-            }
-            else if (context.INT32_() is not null)
-            {
-                for (int i = 0; i < itemCount; i++)
-                {
-                    _mappedFieldData.WriteInt32(context.int32() is CILParser.Int32Context int32 ? VisitInt32(int32).Value : 0);
-                }
-            }
-            else if (context.INT64_() is not null)
-            {
-                for (int i = 0; i < itemCount; i++)
-                {
-                    _mappedFieldData.WriteInt64(context.int64() is CILParser.Int64Context int64 ? VisitInt64(int64).Value : 0);
-                }
-            }
-            else if (context.FLOAT32() is not null)
-            {
-                for (int i = 0; i < itemCount; i++)
-                {
-                    _mappedFieldData.WriteSingle(context.float64() is CILParser.Float64Context float64 ? (float)VisitFloat64(float64).Value : 0);
-                }
-            }
-            else if (context.FLOAT64_() is not null)
-            {
-                for (int i = 0; i < itemCount; i++)
-                {
-                    _mappedFieldData.WriteDouble(context.float64() is CILParser.Float64Context float64 ? VisitFloat64(float64).Value : 0);
-                }
-            }
-            return GrammarResult.SentinelValue.Result;
-        }
-        GrammarResult ICILVisitor<GrammarResult>.VisitDdItemCount(CILParser.DdItemCountContext context) => VisitDdItemCount(context);
-        public GrammarResult.Literal<int> VisitDdItemCount(CILParser.DdItemCountContext context) => new(context.int32() is CILParser.Int32Context ? VisitInt32(context.int32()).Value : 1);
-        public GrammarResult VisitDdItemList(CILParser.DdItemListContext context)
-        {
-            foreach (var item in context.ddItem())
-            {
-                VisitDdItem(item);
-            }
-            return GrammarResult.SentinelValue.Result;
-        }
-        public GrammarResult VisitTls(CILParser.TlsContext context)
-        {
-            if (context.GetText() == "tls")
-            {
-                ReportError(
-                    DiagnosticIds.UnsupportedTlsData,
-                    DiagnosticMessageTemplates.UnsupportedTlsData,
-                    context);
-            }
-
-            return GrammarResult.SentinelValue.Result;
+            Owner = owner;
+            ShouldCommit = shouldCommit;
         }
 
+        public CILParser.DataDeclContext Owner { get; }
+
+        public bool ShouldCommit { get; }
+
+        public BlobBuilder Data { get; } = new();
+
+        public Dictionary<string, List<Blob>>? ReferenceFixups { get; set; }
+
+        public string? Name { get; set; }
+
+        public byte Section { get; set; }
     }
+
+    internal void BeginDataDeclaration(CILParser.DataDeclContext context)
+    {
+        BeginSemanticRoot(context);
+        _dataDeclarationFrames.Push(new(
+            context,
+            context.Parent is not CILParser.MethodDeclContext || _currentMethod is not null));
+    }
+
+    internal void EndDataDeclaration(CILParser.DataDeclContext context)
+    {
+        bool hasSyntaxError = EndSemanticRoot(context);
+        context.HasSyntaxError = hasSyntaxError;
+
+        DataDeclarationFrame? frame = TryGetDataDeclarationFrame(context);
+        if (frame is null)
+        {
+            return;
+        }
+
+        _dataDeclarationFrames.Pop();
+        if (hasSyntaxError || !frame.ShouldCommit)
+        {
+            return;
+        }
+
+        int declarationOffset = _mappedFieldData.Count;
+        if (frame.Name is not null && !_mappedFieldDataNames.ContainsKey(frame.Name))
+        {
+            _mappedFieldDataNames.Add(frame.Name, declarationOffset);
+        }
+
+        _mappedFieldData.LinkSuffix(frame.Data);
+        if (frame.ReferenceFixups is null)
+        {
+            return;
+        }
+
+        foreach ((string target, List<Blob> declarationFixups) in frame.ReferenceFixups)
+        {
+            if (!_mappedFieldDataReferenceFixups.TryGetValue(target, out List<Blob>? fixups))
+            {
+                _mappedFieldDataReferenceFixups.Add(target, fixups = new());
+            }
+
+            fixups.AddRange(declarationFixups);
+        }
+    }
+
+    internal void SetDataDeclarationHeader(
+        CILParser.DdHeadContext context,
+        byte section,
+        IToken name)
+    {
+        if (TryGetDataDeclarationFrame(context) is { } frame)
+        {
+            frame.Section = section;
+            frame.Name = ParseIdentifier(name);
+        }
+    }
+
+    internal void SetAnonymousDataDeclarationHeader(CILParser.DdHeadContext context, byte section)
+    {
+        if (TryGetDataDeclarationFrame(context) is { } frame)
+        {
+            frame.Section = section;
+        }
+    }
+
+#pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
+    internal byte GetMappedDataSection() => 0;
+
+    internal byte GetTlsDataSection(CILParser.TlsContext context)
+    {
+        ReportError(
+            DiagnosticIds.UnsupportedTlsData,
+            DiagnosticMessageTemplates.UnsupportedTlsData,
+            context);
+        return 1;
+    }
+
+    internal byte GetCilDataSection() => 2;
+#pragma warning restore CA1822
+
+    internal int ParseDataItemCount(IToken token) => ParseInt32(token);
+
+    internal void AddDataString(CILParser.DdItemContext context, string value)
+    {
+        TryGetDataDeclarationFrame(context)?.Data.WriteUTF16(value);
+    }
+
+    internal void AddDataReference(CILParser.DdItemContext context, IToken targetToken)
+    {
+        if (TryGetDataDeclarationFrame(context) is not { } frame)
+        {
+            return;
+        }
+
+        string target = ParseIdentifier(targetToken);
+        Dictionary<string, List<Blob>> fixups =
+            frame.ReferenceFixups ??= new Dictionary<string, List<Blob>>();
+        if (!fixups.TryGetValue(target, out List<Blob>? targetFixups))
+        {
+            fixups.Add(target, targetFixups = new());
+        }
+
+        targetFixups.Add(frame.Data.ReserveBytes(sizeof(int)));
+    }
+
+    internal void AddDataBytes(
+        CILParser.DdItemContext context,
+        ImmutableArray<byte> value)
+    {
+        TryGetDataDeclarationFrame(context)?.Data.WriteBytes(value);
+    }
+
+    internal void AddFloatingPointData(
+        CILParser.DdItemContext context,
+        IToken kind,
+        double value,
+        int count)
+    {
+        if (count <= 0 || TryGetDataDeclarationFrame(context) is not { } frame)
+        {
+            return;
+        }
+
+        if (kind.Text == "float32")
+        {
+            float single = (float)value;
+            for (int i = 0; i < count; i++)
+            {
+                frame.Data.WriteSingle(single);
+            }
+        }
+        else
+        {
+            Debug.Assert(kind.Text == "float64");
+            for (int i = 0; i < count; i++)
+            {
+                frame.Data.WriteDouble(value);
+            }
+        }
+    }
+
+    internal void AddInt64Data(
+        CILParser.DdItemContext context,
+        IToken kind,
+        IToken value,
+        int count)
+    {
+        Debug.Assert(kind.Text == "int64");
+        if (count <= 0 || TryGetDataDeclarationFrame(context) is not { } frame)
+        {
+            return;
+        }
+
+        long parsedValue = ParseInt64(value);
+        for (int i = 0; i < count; i++)
+        {
+            frame.Data.WriteInt64(parsedValue);
+        }
+    }
+
+    internal void AddIntegerData(
+        CILParser.DdItemContext context,
+        IToken kind,
+        IToken value,
+        int count)
+    {
+        if (count <= 0 || TryGetDataDeclarationFrame(context) is not { } frame)
+        {
+            return;
+        }
+
+        int parsedValue = ParseInt32(value);
+        switch (kind.Text)
+        {
+            case "int8":
+                frame.Data.WriteBytes((byte)parsedValue, count);
+                break;
+            case "int16":
+                for (int i = 0; i < count; i++)
+                {
+                    frame.Data.WriteInt16((short)parsedValue);
+                }
+                break;
+            default:
+                Debug.Assert(kind.Text == "int32");
+                for (int i = 0; i < count; i++)
+                {
+                    frame.Data.WriteInt32(parsedValue);
+                }
+                break;
+        }
+    }
+
+    internal void AddZeroData(CILParser.DdItemContext context, IToken kind, int count)
+    {
+        if (count <= 0 || TryGetDataDeclarationFrame(context) is not { } frame)
+        {
+            return;
+        }
+
+        int elementSize = kind.Text switch
+        {
+            "int8" => sizeof(byte),
+            "int16" => sizeof(short),
+            "int32" or "float32" => sizeof(int),
+            "int64" or "float64" => sizeof(long),
+            _ => throw new UnreachableException(),
+        };
+        frame.Data.WriteBytes(0, checked(elementSize * count));
+    }
+
+    private DataDeclarationFrame? TryGetDataDeclarationFrame(ParserRuleContext context)
+    {
+        Debug.Assert(_dataDeclarationFrames.Count > 0);
+        DataDeclarationFrame? frame =
+            _dataDeclarationFrames.Count == 0 ? null : _dataDeclarationFrames.Peek();
+        CILParser.DataDeclContext? owner = FindDataDeclarationOwner(context);
+        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, owner));
+        return frame is not null && ReferenceEquals(frame.Owner, owner) ? frame : null;
+    }
+
+    private static CILParser.DataDeclContext? FindDataDeclarationOwner(RuleContext context)
+    {
+        for (RuleContext? current = context; current is not null; current = current.Parent)
+        {
+            if (current is CILParser.DataDeclContext declaration)
+            {
+                return declaration;
+            }
+        }
+
+        return null;
+    }
+
+#pragma warning disable CA1822 // Structural rules are driven by parser actions.
+    public GrammarResult VisitDataDecl(CILParser.DataDeclContext context)
+        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
+
+    public GrammarResult VisitDdHead(CILParser.DdHeadContext context)
+        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
+
+    public GrammarResult VisitDdBody(CILParser.DdBodyContext context)
+        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
+
+    public GrammarResult VisitDdItemList(CILParser.DdItemListContext context)
+        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
+
+    public GrammarResult VisitDdItem(CILParser.DdItemContext context)
+        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
+
+    GrammarResult ICILVisitor<GrammarResult>.VisitDdItemCount(CILParser.DdItemCountContext context)
+        => VisitDdItemCount(context);
+
+    public static GrammarResult.Literal<int> VisitDdItemCount(CILParser.DdItemCountContext context)
+        => new(context.Value);
+
+    GrammarResult ICILVisitor<GrammarResult>.VisitTls(CILParser.TlsContext context)
+        => VisitTls(context);
+
+    public static GrammarResult.Literal<byte> VisitTls(CILParser.TlsContext context)
+        => new(context.Value);
+#pragma warning restore CA1822
 }
