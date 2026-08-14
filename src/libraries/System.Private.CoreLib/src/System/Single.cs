@@ -903,7 +903,32 @@ namespace System
         public static float Log(float x, float newBase) => MathF.Log(x, newBase);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
-        public static float LogP1(float x) => MathF.Log(x + 1);
+        public static float LogP1(float x)
+        {
+            if (MathF.Abs(x) >= 0.5f)
+            {
+                return MathF.Log(1.0f + x);
+            }
+
+            float onePlusX = 1.0f + x;
+
+            if (onePlusX == 1.0f)
+            {
+                return x;
+            }
+
+            float result = MathF.Log(onePlusX);
+
+            if (!IsFinite(result))
+            {
+                return result;
+            }
+
+            // Recover the low-order bits lost when onePlusX was rounded.
+            float roundingError = (onePlusX - 1.0f) - x;
+
+            return roundingError == 0.0f ? result : result - (roundingError / onePlusX);
+        }
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
         [Intrinsic]

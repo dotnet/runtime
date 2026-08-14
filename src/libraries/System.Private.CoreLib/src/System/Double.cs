@@ -906,7 +906,32 @@ namespace System
         public static double Log(double x, double newBase) => Math.Log(x, newBase);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
-        public static double LogP1(double x) => Math.Log(x + 1);
+        public static double LogP1(double x)
+        {
+            if (Math.Abs(x) >= 0.5)
+            {
+                return Math.Log(1.0 + x);
+            }
+
+            double onePlusX = 1.0 + x;
+
+            if (onePlusX == 1.0)
+            {
+                return x;
+            }
+
+            double result = Math.Log(onePlusX);
+
+            if (!IsFinite(result))
+            {
+                return result;
+            }
+
+            // Recover the low-order bits lost when onePlusX was rounded.
+            double roundingError = (onePlusX - 1.0) - x;
+
+            return roundingError == 0.0 ? result : result - (roundingError / onePlusX);
+        }
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
         public static double Log2P1(double x) => Math.Log2(x + 1);

@@ -1336,8 +1336,12 @@ namespace System.Tests
         [InlineData(-0.506931309f,           -0.707106781f,           CrossPlatformMachineEpsilon)]       // expected: -(1 / sqrt(2))
         [InlineData(-0.5f,                   -0.693147181f,           CrossPlatformMachineEpsilon)]       // expected: -(ln(2))
         [InlineData(-0.470922192f,           -0.636619772f,           CrossPlatformMachineEpsilon)]       // expected: -(2 / pi)
-        [InlineData(-0.0f,                    0.0f,                   0.0f)]
+        [InlineData(-1.23e-8f,               -1.23e-8f,                0.0f)]
+        [InlineData(-float.Epsilon,          -float.Epsilon,           0.0f)]
+        [InlineData(-0.0f,                   -0.0f,                     0.0f)]
         [InlineData( 0.0f,                    0.0f,                   0.0f)]
+        [InlineData( float.Epsilon,           float.Epsilon,           0.0f)]
+        [InlineData( 1.23e-8f,                1.23e-8f,                 0.0f)]
         [InlineData( 0.374802227f,            0.318309886f,           CrossPlatformMachineEpsilon)]       // expected:  (1 / pi)
         [InlineData( 0.543873444f,            0.434294482f,           CrossPlatformMachineEpsilon)]       // expected:  (log10(e))
         [InlineData( 0.890081165f,            0.636619772f,           CrossPlatformMachineEpsilon)]       // expected:  (2 / pi)

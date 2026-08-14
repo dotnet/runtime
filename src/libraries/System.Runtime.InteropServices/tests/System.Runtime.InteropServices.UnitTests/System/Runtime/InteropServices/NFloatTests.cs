@@ -1339,8 +1339,12 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(-0.506931309f,           -0.707106781f,           CrossPlatformMachineEpsilon32)]       // expected: -(1 / sqrt(2))
         [InlineData(-0.5f,                   -0.693147181f,           CrossPlatformMachineEpsilon32)]       // expected: -(ln(2))
         [InlineData(-0.470922192f,           -0.636619772f,           CrossPlatformMachineEpsilon32)]       // expected: -(2 / pi)
-        [InlineData(-0.0f,                    0.0f,                   0.0f)]
+        [InlineData(-1.23e-8f,               -1.23e-8f,                0.0f)]
+        [InlineData(-float.Epsilon,          -float.Epsilon,           0.0f)]
+        [InlineData(-0.0f,                   -0.0f,                     0.0f)]
         [InlineData( 0.0f,                    0.0f,                   0.0f)]
+        [InlineData( float.Epsilon,           float.Epsilon,           0.0f)]
+        [InlineData( 1.23e-8f,                1.23e-8f,                 0.0f)]
         [InlineData( 0.374802227f,            0.318309886f,           CrossPlatformMachineEpsilon32)]       // expected:  (1 / pi)
         [InlineData( 0.543873444f,            0.434294482f,           CrossPlatformMachineEpsilon32)]       // expected:  (log10(e))
         [InlineData( 0.890081165f,            0.636619772f,           CrossPlatformMachineEpsilon32)]       // expected:  (2 / pi)
@@ -2015,8 +2019,13 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(-0.50693130860476021,    -0.70710678118654752,      CrossPlatformMachineEpsilon64)]       // expected: -(1 / sqrt(2))
         [InlineData(-0.5,                    -0.69314718055994531,      CrossPlatformMachineEpsilon64)]       // expected: -(ln(2))
         [InlineData(-0.47092219173226465,    -0.63661977236758134,      CrossPlatformMachineEpsilon64)]       // expected: -(2 / pi)
-        [InlineData(-0.0,                     0.0,                      0.0)]
+        [InlineData(-1.23e-20,               -1.23e-20,                 0.0)]
+        [InlineData(-double.Epsilon,         -double.Epsilon,           0.0)]
+        [InlineData(-0.0,                    -0.0,                       0.0)]
         [InlineData( 0.0,                     0.0,                      0.0)]
+        [InlineData( double.Epsilon,          double.Epsilon,           0.0)]
+        [InlineData( 1.23e-20,                1.23e-20,                  0.0)]
+        [InlineData( 1.23e-15,                1.2299999999999993e-15,   1e-30)]
         [InlineData( 0.37480222743935863,     0.31830988618379067,      CrossPlatformMachineEpsilon64)]       // expected:  (1 / pi)
         [InlineData( 0.54387344397118114,     0.43429448190325183,      CrossPlatformMachineEpsilon64)]       // expected:  (log10(e))
         [InlineData( 0.89008116457222198,     0.63661977236758134,      CrossPlatformMachineEpsilon64)]       // expected:  (2 / pi)

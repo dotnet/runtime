@@ -1876,7 +1876,7 @@ namespace System.Tests
             yield return new object[] { (Half)(-0.506931309f),  (Half)(-0.707106781f),  CrossPlatformMachineEpsilon };             // expected: -(1 / sqrt(2))
             yield return new object[] { (Half)(-0.5f),          (Half)(-0.693147181f),  CrossPlatformMachineEpsilon };             // expected: -(ln(2))
             yield return new object[] { (Half)(-0.470922192f),  (Half)(-0.636619772f),  CrossPlatformMachineEpsilon };             // expected: -(2 / pi)
-            yield return new object[] { (Half)(-0.0f),          (Half)( 0.0f),          0.0f };
+            yield return new object[] { (Half)(-0.0f),          (Half)(-0.0f),          0.0f };
             yield return new object[] { (Half)( 0.0f),          (Half)( 0.0f),          0.0f };
             yield return new object[] { (Half)( 0.374802227f),  (Half)( 0.318309886f),  CrossPlatformMachineEpsilon };             // expected:  (1 / pi)
             yield return new object[] { (Half)( 0.543873444f),  (Half)( 0.434294482f),  CrossPlatformMachineEpsilon };             // expected:  (log10(e))
