@@ -137,6 +137,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             }
             catch (TypeSystemException)
             {
+                // TODO: https://github.com/dotnet/runtime/issues/132338 - Gate this recovery on --resilient and report a warning.
             }
 
             return result;
