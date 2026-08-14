@@ -14,14 +14,5 @@ internal sealed partial class GrammarActions
     public GrammarResult VisitDecls(CILParser.DeclsContext context)
         => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
 
-    public GrammarResult VisitAssemblyRefBlock(CILParser.AssemblyRefBlockContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitExptypeBlock(CILParser.ExptypeBlockContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitManifestResBlock(CILParser.ManifestResBlockContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
 #pragma warning restore CA1822
 }

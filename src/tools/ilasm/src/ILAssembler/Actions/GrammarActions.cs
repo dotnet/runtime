@@ -20,7 +20,6 @@ internal sealed partial class GrammarActions
     {
         Debug.Assert(
             _currentMethod is null
-                && _currentAssemblyOrRef is null
                 && _typeOwners.Count == 0
                 && _namespaceOwners.Count == 0
                 && _scopeStack.Count == 0
@@ -57,13 +56,16 @@ internal sealed partial class GrammarActions
                 && _customBlobNamedArgumentFrames.Count == 0
                 && _serializationSequenceFrames.Count == 0
                 && _dataDeclarationFrames.Count == 0
+                && _assemblyDeclarationFrames.Count == 0
+                && _assemblyReferenceDeclarationFrames.Count == 0
+                && _fileDeclarationFrames.Count == 0
+                && _exportedTypeDeclarationFrames.Count == 0
+                && _manifestResourceDeclarationFrames.Count == 0
                 && _securityAttributeSetFrames.Count == 0
                 && _securityNameValuePairFrames.Count == 0
                 && _pendingClassMethodOverrides.Count == 0,
             "Per-document semantic state must be released by the owning rule's finally block.");
-
         EndMethod();
-        _currentAssemblyOrRef = null;
         ResetTypeScopes();
         ClearPendingCustomAttributeOwners();
         _semanticRootFrames.Clear();
@@ -95,6 +97,11 @@ internal sealed partial class GrammarActions
         _customBlobNamedArgumentFrames.Clear();
         _serializationSequenceFrames.Clear();
         _dataDeclarationFrames.Clear();
+        _assemblyDeclarationFrames.Clear();
+        _assemblyReferenceDeclarationFrames.Clear();
+        _fileDeclarationFrames.Clear();
+        _exportedTypeDeclarationFrames.Clear();
+        _manifestResourceDeclarationFrames.Clear();
         _securityAttributeSetFrames.Clear();
         _securityNameValuePairFrames.Clear();
         _pendingClassMethodOverrides.Clear();

@@ -239,14 +239,14 @@ internal sealed partial class GrammarActions
 
     private EntityRegistry.DeclarativeSecurityAttributeEntity? MaterializeSecurityDeclaration(
         SecurityDeclarationValue value,
-        CILParser.SecDeclContext context)
+        IToken location)
     {
         if (value is PermissionDeclarationValue)
         {
             ReportError(
                 DiagnosticIds.UnsupportedSecurityDeclaration,
                 DiagnosticMessageTemplates.UnsupportedSecurityDeclaration,
-                context);
+                location);
             return null;
         }
 
@@ -383,7 +383,7 @@ internal sealed partial class GrammarActions
         CILParser.SecDeclContext context)
         => new(
             context.Value is SecurityDeclarationValue value
-                ? MaterializeSecurityDeclaration(value, context)
+                ? MaterializeSecurityDeclaration(value, context.Start)
                 : null);
 
     GrammarResult ICILVisitor<GrammarResult>.VisitSecAttrSetBlob(
