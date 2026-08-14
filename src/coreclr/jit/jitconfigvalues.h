@@ -442,6 +442,7 @@ RELEASE_CONFIG_INTEGER(EnableArm64Crc32,            "EnableArm64Crc32",         
 RELEASE_CONFIG_INTEGER(EnableArm64Cssc,             "EnableArm64Cssc",           1) // Allows Arm64 Cssc+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Dczva,            "EnableArm64Dczva",          1) // Allows Arm64 Dczva+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Dp,               "EnableArm64Dp",             1) // Allows Arm64 Dp+ hardware intrinsics to be disabled
+RELEASE_CONFIG_INTEGER(EnableArm64Fp16,             "EnableArm64Fp16",           1) // Allows Arm64 Fp16+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Rdm,              "EnableArm64Rdm",            1) // Allows Arm64 Rdm+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sha1,             "EnableArm64Sha1",           1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
 RELEASE_CONFIG_INTEGER(EnableArm64Sha256,           "EnableArm64Sha256",         1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
@@ -620,12 +621,6 @@ OPT_CONFIG_STRING(JitAsyncDefaultValueAnalysisRange,
 // a continuation is being reused.
 OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAnalysisRange")
 
-// Enable continuation reuse based on method hash range
-OPT_CONFIG_STRING(JitAsyncReuseContinuationsRange, "JitAsyncReuseContinuationsRange")
-// Save and reuse continuation instances in runtime async functions. Also
-// implies use of shared continuation layouts for all suspension points.
-RELEASE_CONFIG_INTEGER(JitAsyncReuseContinuations, "JitAsyncReuseContinuations", 1)
-
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods
 RELEASE_CONFIG_INTEGER(JitOptRepeatCount, "JitOptRepeatCount", 2) // Number of times to repeat opts when repeating
@@ -685,6 +680,15 @@ CONFIG_INTEGER(JitInlinePolicyRandom, "JitInlinePolicyRandom", 0) // nonzero ena
 CONFIG_INTEGER(JitInlinePolicyReplay, "JitInlinePolicyReplay", 0)
 CONFIG_STRING(JitNoInlineRange, "JitNoInlineRange")
 CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
+
+// Stress general runtime async inlining: forcibly inline async callees that may suspend,
+// with a probability that decays with inline depth. Nonzero enables; the value is the
+// external random seed. See AsyncStressPolicy.
+CONFIG_INTEGER(JitStressAsyncInlining, "JitStressAsyncInlining", 0)
+CONFIG_INTEGER(JitStressAsyncInliningMaxDepth, "JitStressAsyncInliningMaxDepth", 8)
+// Probability, in percent, that the first async candidate of a body at depth 1 is inlined.
+// The n'th candidate of a body at depth d is inlined with probability (pct/100)^(d + n).
+CONFIG_INTEGER(JitStressAsyncInliningPct, "JitStressAsyncInliningPct", 75)
 
 // Extended version of DefaultPolicy that includes a more precise IL scan,
 // relies on PGO if it exists and generally is more aggressive.

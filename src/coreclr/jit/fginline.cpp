@@ -9,6 +9,75 @@
 
 // Flowgraph Inline Support
 
+#ifdef DEBUG
+
+//------------------------------------------------------------------------
+// fgAsyncStressPrepare: pick the async inline candidates of this method body
+//   for async inlining stress.
+//
+// Arguments:
+//    depth - inline depth the body's candidates would be inlined at; the
+//            candidates of the root method are at depth 1
+//
+// Notes:
+//    Called once per body, before any of its candidates is inlined, so the IR
+//    holds the complete set and every call in it has its final async-ness. The
+//    candidates are shuffled and numbered here; AsyncStressPolicy then turns the
+//    number into a probability.
+//
+//    Shuffling is what makes the choice vary between seeds. Without it the
+//    decay would always favor the first call site in a body.
+//
+//    Candidates created after this runs, such as ones from late devirtualization,
+//    keep the default index and are left to the normal policy.
+//
+void Compiler::fgAsyncStressPrepare(unsigned depth)
+{
+    assert(compAsyncInliningStress());
+
+    ArrayStack<InlineCandidateInfo*> candidates(getAllocator(CMK_Inlining));
+
+    for (BasicBlock* const block : Blocks())
+    {
+        for (Statement* const stmt : block->Statements())
+        {
+            GenTree* const expr = stmt->GetRootNode();
+
+            // The importer makes every inline candidate its own statement.
+            //
+            if (expr->IsCall() && expr->AsCall()->IsAsync() && expr->AsCall()->IsInlineCandidate() &&
+                !expr->AsCall()->IsGuardedDevirtualizationCandidate())
+            {
+                candidates.Push(expr->AsCall()->GetSingleInlineCandidateInfo());
+            }
+        }
+    }
+
+    if (candidates.Height() <= 0)
+    {
+        return;
+    }
+
+    CLRRandom* const random = impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
+
+    // Fisher-Yates.
+    for (int i = candidates.Height() - 1; i > 0; i--)
+    {
+        int j = random->Next(i + 1);
+        std::swap(candidates.BottomRef(i), candidates.BottomRef(j));
+    }
+
+    for (int i = 0; i < candidates.Height(); i++)
+    {
+        candidates.Bottom(i)->asyncStressIndex = i;
+    }
+
+    JITDUMP("Async inlining stress: %d async candidate(s) in this body, to be inlined at depth %u\n",
+            candidates.Height(), depth);
+}
+
+#endif // DEBUG
+
 //------------------------------------------------------------------------
 // fgCheckInlineDepthAndRecursion: compute depth of the candidate, and
 // check for recursion.
@@ -845,6 +914,13 @@ PhaseStatus Compiler::fgInline()
 
     noway_assert(fgFirstBB != nullptr);
 
+#ifdef DEBUG
+    if (compAsyncInliningStress())
+    {
+        fgAsyncStressPrepare(1);
+    }
+#endif // DEBUG
+
     BasicBlock*                                 block = fgFirstBB;
     SubstitutePlaceholdersAndDevirtualizeWalker walker(this);
     bool                                        madeChanges = false;
@@ -1503,6 +1579,17 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
 
     // We've successfully obtained the list of inlinee's basic blocks.
     // Let's insert it to inliner's basic block list.
+
+#ifdef DEBUG
+    // The inlinee's own async candidates are all in its IR now, and this inline can no
+    // longer fail, so this is the point where its body's group is complete.
+    //
+    if (compAsyncInliningStress())
+    {
+        InlineeCompiler->fgAsyncStressPrepare(inlineDepth + 1);
+    }
+#endif // DEBUG
+
     fgInsertInlineeBlocks(&inlineInfo);
 
 #ifdef DEBUG

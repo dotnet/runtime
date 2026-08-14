@@ -11,6 +11,8 @@ trigger: none
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -25,6 +27,11 @@ extends:
     stages:
     - stage: Build
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 720
+          allowNoHelixJobs: true
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -42,6 +49,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   extraHelixArguments: /maxcpucount:10
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   scenarios:
                     # Disable gcstress0x3 for now; it causes lots of test timeouts. Investigate this after
                     # gcstress0xc runs are clean. Tracking issue: https://github.com/dotnet/runtime/issues/38903.

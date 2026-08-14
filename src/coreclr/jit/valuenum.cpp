@@ -13465,6 +13465,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
 
             case GT_CATCH_ARG:
             case GT_ASYNC_CONTINUATION:
+            case GT_CONTINUATION_MEMBER_OFFSET:
             case GT_SWIFT_ERROR:
                 // We know nothing about the value of these.
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
@@ -16409,12 +16410,14 @@ void ValueNumStore::PeelOffsets(ValueNum* vn, target_ssize_t* offset)
 
         if (IsVNConstantNonHandle(app.GetArg(0)) && (app.GetArg(0) != VNForNull()))
         {
-            *offset += ConstantValue<target_ssize_t>(app.GetArg(0));
+            // Ref/byref constants are stored as host size_t; GetConstantInt64 reads them as such.
+            //
+            *offset += (target_ssize_t)GetConstantInt64(app.GetArg(0));
             *vn = app.GetArg(1);
         }
         else if (IsVNConstantNonHandle(app.GetArg(1)) && (app.GetArg(1) != VNForNull()))
         {
-            *offset += ConstantValue<target_ssize_t>(app.GetArg(1));
+            *offset += (target_ssize_t)GetConstantInt64(app.GetArg(1));
             *vn = app.GetArg(0);
         }
         else

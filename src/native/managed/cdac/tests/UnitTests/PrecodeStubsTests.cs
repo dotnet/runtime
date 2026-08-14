@@ -127,14 +127,14 @@ public class PrecodeStubsTests
     {
         foreach (var data in PrecodeTestDescriptorData())
         {
-            yield return new object[]{data[0], "c3"};
+            yield return new object[]{data[0], "c1"};
         }
     }
 
-    public static IEnumerable<object[]> PrecodeTestDescriptorDataVersion3()
+    public static IEnumerable<object[]> PrecodeTestDescriptorDataVersion1()
     {
         foreach (object[] data in PrecodeTestDescriptorData())
-            yield return [data[0], "c3"];
+            yield return [data[0], "c1"];
     }
 
     internal struct AllocationRange
@@ -456,8 +456,8 @@ public class PrecodeStubsTests
     }
 
     [Theory]
-    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
-    public void GetInterpreterCode_Version3_ReturnsByteCodeAddress(
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion1))]
+    public void GetInterpreterCode_Version1_ReturnsByteCodeAddress(
         PrecodeTestDescriptor test,
         string contractVersion)
     {
@@ -479,8 +479,8 @@ public class PrecodeStubsTests
     }
 
     [Theory]
-    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
-    public void GetInterpreterCode_Version3NonInterpreter_ReturnsOriginalAddress(
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion1))]
+    public void GetInterpreterCode_Version1NonInterpreter_ReturnsOriginalAddress(
         PrecodeTestDescriptor test,
         string contractVersion)
     {
@@ -500,8 +500,8 @@ public class PrecodeStubsTests
     }
 
     [Theory]
-    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
-    public void GetInterpreterCode_Version3NullByteCodeAddress_ReturnsOriginalAddress(
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion1))]
+    public void GetInterpreterCode_Version1NullByteCodeAddress_ReturnsOriginalAddress(
         PrecodeTestDescriptor test,
         string contractVersion)
     {
@@ -524,8 +524,8 @@ public class PrecodeStubsTests
     }
 
     [Theory]
-    [MemberData(nameof(PrecodeTestDescriptorDataVersion3))]
-    public void GetInterpreterCode_Version3UnreadableAddress_ReturnsOriginalAddress(
+    [MemberData(nameof(PrecodeTestDescriptorDataVersion1))]
+    public void GetInterpreterCode_Version1UnreadableAddress_ReturnsOriginalAddress(
         PrecodeTestDescriptor test,
         string contractVersion)
     {

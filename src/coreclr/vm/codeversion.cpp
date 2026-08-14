@@ -2099,7 +2099,16 @@ HRESULT CodeVersionManager::EnumerateClosedMethodDescs(
 
     if (redirectAsyncThunk && pMD->IsAsyncThunkMethod())
     {
-        pMD = pMD->GetAsyncVariantNoCreate();
+        EX_TRY
+        {
+            pMD = pMD->GetAsyncVariantNoCreate();
+        }
+        EX_CATCH_HRESULT(hr);
+
+        if (FAILED(hr))
+        {
+            return hr;
+        }
     }
     if (pMD == NULL)
     {
