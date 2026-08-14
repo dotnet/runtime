@@ -11,6 +11,7 @@ using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -29,7 +30,7 @@ public readonly struct NativeVarLocation
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 {
-    private readonly object _apiLock;
+    private readonly Lock _apiLock;
     private readonly Target _target;
     private readonly TargetPointer _threadAddress;
     private readonly IXCLRDataValue? _legacyImpl;
@@ -47,7 +48,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         TargetPointer baseAddress,
         NativeVarLocation[] locations,
         IXCLRDataValue? legacyImpl,
-        object apiLock)
+        Lock apiLock)
     {
         _apiLock = apiLock;
         _target = target;
@@ -74,7 +75,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.GetFlags(uint* flags)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -101,7 +102,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.GetAddress(ClrDataAddress* address)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -134,7 +135,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.GetSize(ulong* size)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -167,7 +168,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.GetBytes(uint bufLen, uint* dataSize, byte* buffer)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -235,14 +236,14 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.SetBytes(uint bufLen, uint* dataSize, byte* buffer)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataValue.GetType(DacComNullableByRef<IXCLRDataTypeInstance> typeInstance)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         IXCLRDataTypeInstance? legacyType = null;
         int hrLocal = HResults.S_OK;
@@ -285,7 +286,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.GetNumFields(uint* numFields)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
@@ -298,14 +299,14 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         char* nameBuf,
         uint* token)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataValue.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -349,7 +350,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.GetNumFields2(uint flags, IXCLRDataTypeInstance? fromType, uint* numFields)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -380,7 +381,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.StartEnumFields(uint flags, IXCLRDataTypeInstance? fromType, ulong* handle)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return StartEnumFields(null, (uint)CLRDataByNameFlag.CLRDATA_BYNAME_CASE_SENSITIVE, flags, fromType, handle);
     }
@@ -393,35 +394,35 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         char* nameBuf,
         uint* token)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return EnumField(handle, field, nameBufLen, nameLen, nameBuf, token, byName: false);
     }
 
     int IXCLRDataValue.EndEnumFields(ulong handle)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return EndEnumFields(handle, byName: false);
     }
 
     int IXCLRDataValue.StartEnumFieldsByName(char* name, uint nameFlags, uint fieldFlags, IXCLRDataTypeInstance? fromType, ulong* handle)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return StartEnumFields(name is null ? null : new string(name), nameFlags, fieldFlags, fromType, handle);
     }
 
     int IXCLRDataValue.EnumFieldByName(ulong* handle, DacComNullableByRef<IXCLRDataValue> field, uint* token)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return EnumField(handle, field, 0, null, null, token, byName: true);
     }
 
     int IXCLRDataValue.EndEnumFieldsByName(ulong handle)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return EndEnumFields(handle, byName: true);
     }
@@ -433,14 +434,14 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         uint* nameLen,
         char* nameBuf)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataValue.GetAssociatedValue(DacComNullableByRef<IXCLRDataValue> assocValue)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         IXCLRDataValue? legacyValue = null;
         int hrLocal = HResults.S_OK;
@@ -490,7 +491,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.GetAssociatedType(DacComNullableByRef<IXCLRDataTypeInstance> assocType)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         IXCLRDataTypeInstance? legacyType = null;
         int hrLocal = HResults.S_OK;
@@ -536,7 +537,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.GetString(uint bufLen, uint* strLen, char* str)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -577,7 +578,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.GetArrayProperties(uint* rank, uint* totalElements, uint numDim, [Out, MarshalUsing(CountElementName = nameof(numDim))] uint[] dims, uint numBases, [Out, MarshalUsing(CountElementName = nameof(numBases))] int[] bases)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -627,7 +628,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.GetArrayElement(uint numInd, [In, MarshalUsing(CountElementName = nameof(numInd))] int[] indices, DacComNullableByRef<IXCLRDataValue> value)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         IXCLRDataValue? legacyValue = null;
         int hrLocal = HResults.S_OK;
@@ -1096,7 +1097,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         DacComNullableByRef<IXCLRDataModule> tokenScope,
         uint* token)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
@@ -1107,7 +1108,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         DacComNullableByRef<IXCLRDataModule> tokenScope,
         uint* token)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
@@ -1120,14 +1121,14 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
         uint* nameLen,
         char* nameBuf)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataValue.GetNumLocations(uint* numLocs)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -1154,7 +1155,7 @@ public sealed unsafe partial class ClrDataValue : IXCLRDataValue
 
     int IXCLRDataValue.GetLocationByIndex(uint loc, uint* flags, ClrDataAddress* arg)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {

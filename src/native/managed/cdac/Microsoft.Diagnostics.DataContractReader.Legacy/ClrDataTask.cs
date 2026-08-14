@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -12,12 +13,12 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 {
-    private readonly object _apiLock;
+    private readonly Lock _apiLock;
     private readonly TargetPointer _address;
     private readonly Target _target;
     private readonly IXCLRDataTask? _legacyImpl;
 
-    public ClrDataTask(TargetPointer address, Target target, IXCLRDataTask? legacyImpl, object apiLock)
+    public ClrDataTask(TargetPointer address, Target target, IXCLRDataTask? legacyImpl, Lock apiLock)
     {
         _apiLock = apiLock;
         _address = address;
@@ -27,13 +28,13 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 
     int IXCLRDataTask.GetProcess(/*IXCLRDataProcess*/ void** process)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataTask.GetCurrentAppDomain(DacComNullableByRef<IXCLRDataAppDomain> appDomain)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataAppDomain? legacyAppDomain = null;
 
@@ -62,44 +63,44 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
     }
     int IXCLRDataTask.GetUniqueID(ulong* id)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataTask.GetFlags(uint* flags)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataTask.IsSameObject(IXCLRDataTask* task)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataTask.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataTask.GetDesiredExecutionState(uint* state)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataTask.SetDesiredExecutionState(uint state)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataTask.CreateStackWalk(CLRDataStackWalkFlag flags, DacComNullableByRef<IXCLRDataStackWalk> stackWalk)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         Contracts.ThreadData threadData = _target.Contracts.Thread.GetThreadData(_address);
         if (threadData.State.HasFlag(Contracts.ThreadState.Unstarted))
             return HResults.E_FAIL;
@@ -120,26 +121,26 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 
     int IXCLRDataTask.GetOSThreadID(uint* id)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataTask.GetContext(uint contextFlags, uint contextBufSize, uint* contextSize, byte* contextBuffer)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataTask.SetContext(uint contextSize, byte* context)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataTask.GetCurrentExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataExceptionState? legacyExceptionState = null;
 
@@ -177,7 +178,7 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
 
     int IXCLRDataTask.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -220,13 +221,13 @@ public sealed unsafe partial class ClrDataTask : IXCLRDataTask
     }
     int IXCLRDataTask.GetName(uint bufLen, uint* nameLen, char* nameBuffer)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int IXCLRDataTask.GetLastExceptionState(DacComNullableByRef<IXCLRDataExceptionState> exception)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataExceptionState? legacyExceptionState = null;
 

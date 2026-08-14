@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -11,7 +12,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionState
 {
-    private readonly object _apiLock;
+    private readonly Lock _apiLock;
     private readonly Target _target;
     private readonly TargetPointer _threadAddress;
     private readonly uint _flags;
@@ -28,7 +29,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
         TargetPointer thrownObjectHandle,
         TargetPointer previousExInfoAddress,
         IXCLRDataExceptionState? legacyImpl,
-        object apiLock)
+        Lock apiLock)
     {
         _apiLock = apiLock;
         _target = target;
@@ -42,7 +43,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.GetFlags(uint* flags)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -73,7 +74,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.GetPrevious(DacComNullableByRef<IXCLRDataExceptionState> exState)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataExceptionState? legacyPrevious = null;
 
@@ -123,7 +124,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataValue? legacyValue = null;
 
@@ -186,21 +187,21 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.GetBaseType(/*CLRDataBaseExceptionType*/ uint* type)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataExceptionState.GetCode(uint* code)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
 
     int IXCLRDataExceptionState.GetString(uint bufLen, uint* strLen, char* str)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -262,7 +263,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.E_INVALIDARG;
 
         if (reqCode == (uint)CLRDataGeneralRequest.CLRDATA_REQUEST_REVISION)
@@ -296,7 +297,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.IsSameState(EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = IsSameState2((uint)CLRDataExceptionSameFlag.CLRDATA_EXSAME_SECOND_CHANCE, exRecord);
 #if DEBUG
         if (_legacyImpl is not null)
@@ -310,7 +311,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.IsSameState2(uint flags, EXCEPTION_RECORD64* exRecord, uint contextSize, byte* cxRecord)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = IsSameState2(flags, exRecord);
 #if DEBUG
         if (_legacyImpl is not null)
@@ -374,7 +375,7 @@ public sealed unsafe partial class ClrDataExceptionState : IXCLRDataExceptionSta
 
     int IXCLRDataExceptionState.GetTask(DacComNullableByRef<IXCLRDataTask> task)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK, hrLocal = HResults.S_OK;
         IXCLRDataTask? legacyTask = null;
 

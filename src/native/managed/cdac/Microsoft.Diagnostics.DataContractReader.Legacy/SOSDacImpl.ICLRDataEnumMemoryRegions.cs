@@ -3,6 +3,7 @@
 
 using System;
 
+using System.Threading;
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
 /// <summary>
@@ -13,7 +14,7 @@ public sealed unsafe partial class SOSDacImpl : ICLRDataEnumMemoryRegions
 {
     int ICLRDataEnumMemoryRegions.EnumMemoryRegions(void* callback, uint miniDumpFlags, int clrFlags)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return LegacyFallbackHelper.CanFallback() && _legacyEnumMemory is not null ? _legacyEnumMemory.EnumMemoryRegions(callback, miniDumpFlags, clrFlags) : HResults.E_NOTIMPL;
     }

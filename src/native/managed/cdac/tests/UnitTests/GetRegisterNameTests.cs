@@ -21,7 +21,7 @@ public unsafe class GetRegisterNameTests
             .AddContract<IRuntimeInfo>(version: "c1")
             .Build();
 
-        return new SOSDacImpl(target, legacyObj: null, new object());
+        return new SOSDacImpl(target, legacyObj: null, new());
     }
 
     public static IEnumerable<object[]> BasicRegisterNameData()

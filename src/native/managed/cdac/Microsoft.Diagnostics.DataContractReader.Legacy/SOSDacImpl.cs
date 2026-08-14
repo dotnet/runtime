@@ -16,6 +16,7 @@ using Microsoft.Diagnostics.DataContractReader.Contracts.Extensions;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
+using System.Threading;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 
@@ -37,7 +38,7 @@ public sealed unsafe partial class SOSDacImpl
 {
     private const uint DefaultAppDomainId = 1;
 
-    private readonly object _apiLock;
+    private readonly Lock _apiLock;
     private readonly Target _target;
 
     private readonly ulong _rcwMask = 1UL;
@@ -62,7 +63,7 @@ public sealed unsafe partial class SOSDacImpl
     private readonly IXCLRDataProcess2? _legacyProcess2;
     private readonly ICLRDataEnumMemoryRegions? _legacyEnumMemory;
 
-    public SOSDacImpl(Target target, object? legacyObj, object apiLock)
+    public SOSDacImpl(Target target, object? legacyObj, Lock apiLock)
     {
         _apiLock = apiLock;
         _target = target;
@@ -97,7 +98,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface
     int ISOSDacInterface.GetAppDomainConfigFile(ClrDataAddress appDomain, int count, char* configFile, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         // Method is not supported on CoreCLR
         int hr = HResults.E_FAIL;
 
@@ -115,7 +116,7 @@ public sealed unsafe partial class SOSDacImpl
     // addr is ignored, only one AppDomain exists in CoreCLR.
     int ISOSDacInterface.GetAppDomainData(ClrDataAddress addr, DacpAppDomainData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -182,7 +183,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetAppDomainList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -223,7 +224,7 @@ public sealed unsafe partial class SOSDacImpl
     // addr is ignored -- only one AppDomain exists in CoreCLR.
     int ISOSDacInterface.GetAppDomainName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -293,7 +294,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetAppDomainStoreData(void* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         DacpAppDomainStoreData* appDomainStoreData = (DacpAppDomainStoreData*)data;
         int hr = HResults.S_OK;
         try
@@ -324,7 +325,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetApplicationBase(ClrDataAddress appDomain, int count, char* appBase, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         // Method is not supported on CoreCLR
         int hr = HResults.E_FAIL;
 
@@ -341,7 +342,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetAssemblyData(ClrDataAddress domain, ClrDataAddress assembly, DacpAssemblyData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -400,7 +401,7 @@ public sealed unsafe partial class SOSDacImpl
     // addr is ignored, only one AppDomain exists in CoreCLR.
     int ISOSDacInterface.GetAssemblyList(ClrDataAddress addr, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? values, int* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -477,13 +478,13 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetAssemblyLocation(ClrDataAddress assembly, int count, char* location, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int ISOSDacInterface.GetAssemblyModuleList(ClrDataAddress assembly, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? modules, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -530,7 +531,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetAssemblyName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -579,7 +580,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetCCWData(ClrDataAddress ccw, DacpCCWData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -649,7 +650,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetCCWInterfaces(ClrDataAddress ccw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 #if DEBUG
         int numWritten = 0;
@@ -733,7 +734,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetClrWatsonBuckets(ClrDataAddress thread, void* pGenericModeBlock)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         byte[] buckets = Array.Empty<byte>();
         try
@@ -781,7 +782,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetCodeHeaderData(ClrDataAddress ip, DacpCodeHeaderData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -866,7 +867,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetCodeHeapList(ClrDataAddress jitManager, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpJitCodeHeapInfo[]? codeHeaps, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         // returns the code heap list from the single global EEJitManager.
         int hr = HResults.S_OK;
         try
@@ -950,13 +951,13 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetDacModuleHandle(void* phModule)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int ISOSDacInterface.GetDomainFromContext(ClrDataAddress context, ClrDataAddress* domain)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -984,7 +985,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetDomainLocalModuleData(ClrDataAddress addr, void* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         // CoreCLR does not use domain local modules anymore
         int hr = HResults.E_NOTIMPL;
 
@@ -1001,7 +1002,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetDomainLocalModuleDataFromAppDomain(ClrDataAddress appDomainAddr, int moduleID, void* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         // CoreCLR does not support multi-appdomain shared assembly loading. Thus, a non-pointer sized moduleID cannot exist.
         int hr = HResults.E_INVALIDARG;
 
@@ -1017,7 +1018,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetDomainLocalModuleDataFromModule(ClrDataAddress moduleAddr, void* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         // CoreCLR does not use domain local modules anymore
         int hr = HResults.E_NOTIMPL;
 
@@ -1033,25 +1034,25 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetFailedAssemblyData(ClrDataAddress assembly, uint* pContext, int* pResult)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int ISOSDacInterface.GetFailedAssemblyDisplayName(ClrDataAddress assembly, uint count, char* name, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int ISOSDacInterface.GetFailedAssemblyList(ClrDataAddress appDomain, int count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] values, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int ISOSDacInterface.GetFailedAssemblyLocation(ClrDataAddress assembly, uint count, char* location, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -1090,7 +1091,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetFieldDescData(ClrDataAddress fieldDesc, DacpFieldDescData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -1221,7 +1222,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetFrameName(ClrDataAddress vtable, uint count, char* frameName, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -1271,7 +1272,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetGCHeapData(DacpGcHeapData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -1318,7 +1319,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetGCHeapList(uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[] heaps, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -1381,7 +1382,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetGCHeapDetails(ClrDataAddress heap, DacpGcHeapDetails* details)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -1515,7 +1516,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetGCHeapStaticData(DacpGcHeapDetails* details)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -1650,13 +1651,13 @@ public sealed unsafe partial class SOSDacImpl
     [GeneratedComClass]
     internal sealed unsafe partial class SOSHandleEnum : ISOSHandleEnum
     {
-        private readonly object _apiLock;
+        private readonly Lock _apiLock;
         private readonly Target _target;
         private readonly SOSHandleData[] _handles;
         private readonly ISOSHandleEnum? _legacyHandleEnum;
         private uint _index;
 
-        public SOSHandleEnum(Target target, HandleType[] types, ISOSHandleEnum? legacyHandleEnum, object apiLock)
+        public SOSHandleEnum(Target target, HandleType[] types, ISOSHandleEnum? legacyHandleEnum, Lock apiLock)
         {
             _apiLock = apiLock;
             _target = target;
@@ -1694,7 +1695,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSHandleEnum.Next(uint count, SOSHandleData[] handles, uint* pNeeded)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             int hr = HResults.S_OK;
             try
             {
@@ -1741,7 +1742,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.Skip(uint count)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _index += count;
 #if DEBUG
             _legacyHandleEnum?.Skip(count);
@@ -1750,7 +1751,7 @@ public sealed unsafe partial class SOSDacImpl
         }
         int ISOSEnum.Reset()
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _index = 0;
 #if DEBUG
             _legacyHandleEnum?.Reset();
@@ -1759,7 +1760,7 @@ public sealed unsafe partial class SOSDacImpl
         }
         int ISOSEnum.GetCount(uint* pCount)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             if (pCount is null) return HResults.E_POINTER;
             *pCount = (uint)_handles.Length;
 #if DEBUG
@@ -1777,12 +1778,12 @@ public sealed unsafe partial class SOSDacImpl
     [GeneratedComClass]
     internal sealed unsafe partial class SOSMemoryEnum : ISOSMemoryEnum
     {
-        private readonly object _apiLock;
+        private readonly Lock _apiLock;
         private readonly SOSMemoryRegion[] _regions;
         private readonly ISOSMemoryEnum? _legacyMemoryEnum;
         private uint _index;
 
-        public SOSMemoryEnum(Target target, IReadOnlyList<GCMemoryRegionData> regions, ISOSMemoryEnum? legacyMemoryEnum, object apiLock)
+        public SOSMemoryEnum(Target target, IReadOnlyList<GCMemoryRegionData> regions, ISOSMemoryEnum? legacyMemoryEnum, Lock apiLock)
         {
             _apiLock = apiLock;
             _legacyMemoryEnum = legacyMemoryEnum;
@@ -1799,7 +1800,7 @@ public sealed unsafe partial class SOSDacImpl
             }
         }
 
-        public SOSMemoryEnum(SOSMemoryRegion[] regions, ISOSMemoryEnum? legacyMemoryEnum, object apiLock)
+        public SOSMemoryEnum(SOSMemoryRegion[] regions, ISOSMemoryEnum? legacyMemoryEnum, Lock apiLock)
         {
             _apiLock = apiLock;
             _regions = regions;
@@ -1808,7 +1809,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSMemoryEnum.Next(uint count, SOSMemoryRegion[] memRegions, uint* pNeeded)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             int hr = HResults.S_OK;
             try
             {
@@ -1851,7 +1852,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.Skip(uint count)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _index += count;
 #if DEBUG
             _legacyMemoryEnum?.Skip(count);
@@ -1861,7 +1862,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.Reset()
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _index = 0;
 #if DEBUG
             _legacyMemoryEnum?.Reset();
@@ -1871,7 +1872,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.GetCount(uint* pCount)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             if (pCount is null)
                 return HResults.E_POINTER;
             *pCount = (uint)_regions.Length;
@@ -1889,7 +1890,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetHandleEnum(DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -1915,13 +1916,13 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetHandleEnumForGC(uint gen, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int ISOSDacInterface.GetHandleEnumForTypes([In, MarshalUsing(CountElementName = "count")] uint[] types, uint count, DacComNullableByRef<ISOSHandleEnum> ppHandleEnum)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -1947,13 +1948,13 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetHeapAllocData(uint count, void* data, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
 
         return HResults.E_NOTIMPL;
     }
     int ISOSDacInterface.GetHeapAnalyzeData(ClrDataAddress addr, DacpGcHeapAnalyzeData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -1999,7 +2000,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetHeapAnalyzeStaticData(DacpGcHeapAnalyzeData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2046,7 +2047,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetHeapSegmentData(ClrDataAddress seg, DacpHeapSegmentData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2116,7 +2117,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetHillClimbingLogEntry(ClrDataAddress addr, void* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         // This API is not implemented by the legacy DAC
         int hr = HResults.E_NOTIMPL;
 
@@ -2132,7 +2133,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetILForModule(ClrDataAddress moduleAddr, int rva, ClrDataAddress* il)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2165,7 +2166,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetJitHelperFunctionName(ClrDataAddress ip, uint count, byte* name, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2206,7 +2207,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetJitManagerList(uint count, DacpJitManagerInfo* managers, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2275,7 +2276,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetJumpThunkTarget(void* ctx, ClrDataAddress* targetIP, ClrDataAddress* targetMD)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2326,7 +2327,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetMethodDescData(ClrDataAddress addr, ClrDataAddress ip, DacpMethodDescData* data, uint cRevertedRejitVersions, DacpReJitData* rgRevertedRejitData, uint* pcNeededRevertedRejitData)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2627,7 +2628,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetMethodDescFromToken(ClrDataAddress moduleAddr, uint token, ClrDataAddress* methodDesc)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2675,7 +2676,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetMethodDescName(ClrDataAddress addr, uint count, char* name, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         if (pNeeded != null)
             *pNeeded = 0;
@@ -2765,7 +2766,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetMethodDescPtrFromFrame(ClrDataAddress frameAddr, ClrDataAddress* ppMD)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2801,7 +2802,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetMethodDescPtrFromIP(ClrDataAddress ip, ClrDataAddress* ppMD)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.E_NOTIMPL;
 
         try
@@ -2854,7 +2855,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetMethodDescTransparencyData(ClrDataAddress methodDesc, DacpMethodDescTransparencyData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2877,7 +2878,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetMethodTableData(ClrDataAddress mt, DacpMethodTableData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2949,7 +2950,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetMethodTableFieldData(ClrDataAddress mt, DacpMethodTableFieldData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -2992,7 +2993,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetMethodTableForEEClass(ClrDataAddress eeClassReallyCanonMT, ClrDataAddress* value)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3022,7 +3023,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetMethodTableName(ClrDataAddress mt, uint count, char* mtName, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3092,7 +3093,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetMethodTableSlot(ClrDataAddress mt, uint slot, ClrDataAddress* value)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         IRuntimeTypeSystem rts = _target.Contracts.RuntimeTypeSystem;
@@ -3163,7 +3164,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetMethodTableTransparencyData(ClrDataAddress mt, DacpMethodTableTransparencyData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3186,7 +3187,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetModule(ClrDataAddress addr, DacComNullableByRef<IXCLRDataModule> mod)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         IXCLRDataModule? legacyModule = null;
         if (_legacyImpl is not null)
         {
@@ -3204,7 +3205,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetModuleData(ClrDataAddress moduleAddr, DacpModuleData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3295,7 +3296,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetNestedExceptionData(ClrDataAddress exception, ClrDataAddress* exceptionObject, ClrDataAddress* nextNestedException)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3333,7 +3334,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetObjectClassName(ClrDataAddress obj, uint count, char* className, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3407,7 +3408,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetObjectData(ClrDataAddress objAddr, DacpObjectData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3518,7 +3519,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetObjectStringData(ClrDataAddress obj, uint count, char* stringData, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3565,7 +3566,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetOOMData(ClrDataAddress oomAddr, DacpOomData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3617,7 +3618,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetOOMStaticData(DacpOomData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3668,7 +3669,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetPEFileBase(ClrDataAddress addr, ClrDataAddress* peBase)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3707,7 +3708,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetPEFileName(ClrDataAddress addr, uint count, char* fileName, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3756,7 +3757,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetPrivateBinPaths(ClrDataAddress appDomain, int count, char* paths, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         // Method is not supported on CoreCLR
         int hr = HResults.E_NOTIMPL;
 
@@ -3772,7 +3773,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetRCWData(ClrDataAddress addr, DacpRCWData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -3830,7 +3831,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetRCWInterfaces(ClrDataAddress rcw, uint count, [In, MarshalUsing(CountElementName = nameof(count)), Out] DacpCOMInterfacePointerData[]? interfaces, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 #if DEBUG
         int numWritten = 0;
@@ -3918,7 +3919,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetRegisterName(int regName, uint count, char* buffer, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -4035,7 +4036,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetStackLimits(ClrDataAddress threadPtr, ClrDataAddress* lower, ClrDataAddress* upper, ClrDataAddress* fp)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -4080,11 +4081,11 @@ public sealed unsafe partial class SOSDacImpl
     [GeneratedComClass]
     internal sealed unsafe partial class SOSStackRefEnum : ISOSStackRefEnum
     {
-        private readonly object _apiLock;
+        private readonly Lock _apiLock;
         private readonly SOSStackRefData[] _refs;
         private uint _index;
 
-        public SOSStackRefEnum(SOSStackRefData[] refs, object apiLock)
+        public SOSStackRefEnum(SOSStackRefData[] refs, Lock apiLock)
         {
             _apiLock = apiLock;
             _refs = refs;
@@ -4092,7 +4093,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSStackRefEnum.Next(uint count, SOSStackRefData[] refs, uint* pFetched)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             int hr = HResults.S_OK;
             try
             {
@@ -4120,27 +4121,27 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSStackRefEnum.EnumerateErrors(DacComNullableByRef<ISOSStackRefErrorEnum> ppEnum)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             return HResults.E_NOTIMPL;
         }
 
         int ISOSEnum.Skip(uint count)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _index = Math.Min(_index + count, (uint)_refs.Length);
             return HResults.S_OK;
         }
 
         int ISOSEnum.Reset()
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _index = 0;
             return HResults.S_OK;
         }
 
         int ISOSEnum.GetCount(uint* pCount)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             if (pCount is null) return HResults.E_POINTER;
             *pCount = (uint)_refs.Length;
             return HResults.S_OK;
@@ -4149,7 +4150,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetStackReferences(int osThreadID, DacComNullableByRef<ISOSStackRefEnum> ppEnum)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -4221,7 +4222,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetStressLogAddress(ClrDataAddress* stressLog)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         ulong stressLogAddress = _target.ReadGlobalPointer(Constants.Globals.StressLog);
 
 #if DEBUG
@@ -4238,7 +4239,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetSyncBlockCleanupData(ClrDataAddress addr, DacpSyncBlockCleanupData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -4299,7 +4300,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetSyncBlockData(uint number, DacpSyncBlockData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -4379,7 +4380,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetThreadAllocData(ClrDataAddress thread, DacpAllocData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -4416,7 +4417,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetThreadData(ClrDataAddress thread, DacpThreadData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -4482,7 +4483,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetThreadFromThinlockID(uint thinLockId, ClrDataAddress* pThread)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -4511,7 +4512,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetThreadLocalModuleData(ClrDataAddress thread, uint index, void* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         // CoreCLR does not use thread local modules anymore
         int hr = HResults.E_NOTIMPL;
 
@@ -4528,7 +4529,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetThreadpoolData(void* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         // This API is not implemented by the legacy DAC
         int hr = HResults.E_NOTIMPL;
 
@@ -4545,7 +4546,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetThreadStoreData(DacpThreadStoreData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -4596,7 +4597,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetTLSIndex(uint* pIndex)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -4627,7 +4628,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.GetUsefulGlobals(DacpUsefulGlobalsData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -4680,7 +4681,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.GetWorkRequestData(ClrDataAddress addrWorkRequest, void* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         // This API is not implemented by the legacy DAC
         int hr = HResults.E_NOTIMPL;
 
@@ -4747,7 +4748,7 @@ public sealed unsafe partial class SOSDacImpl
 #endif
     int ISOSDacInterface.TraverseEHInfo(ClrDataAddress ip, delegate* unmanaged<uint, uint, DACEHInfo*, void*, int> pCallback, void* token)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 #if DEBUG
         List<DACEHInfo> clausesLocal = new();
@@ -4899,7 +4900,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = TraverseLoaderHeapCore(loaderHeapAddr.ToTargetPointer(_target), pCallback);
 #if DEBUG
         if (_legacyImpl is not null)
@@ -4937,7 +4938,7 @@ public sealed unsafe partial class SOSDacImpl
 #endif
     int ISOSDacInterface.TraverseModuleMap(ModuleMapType mmt, ClrDataAddress moduleAddr, delegate* unmanaged<uint, ulong, void*, void> pCallback, void* token)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         IEnumerable<(TargetPointer Address, uint Index)> elements = Enumerable.Empty<(TargetPointer, uint)>();
         try
@@ -5003,7 +5004,7 @@ public sealed unsafe partial class SOSDacImpl
 #endif
     int ISOSDacInterface.TraverseRCWCleanupList(ClrDataAddress cleanupListPtr, delegate* unmanaged<ulong, ulong, ulong, Interop.BOOL, void*, Interop.BOOL> pCallback, void* token)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         IEnumerable<Contracts.RCWCleanupInfo> cleanupInfos = Enumerable.Empty<Contracts.RCWCleanupInfo>();
         try
@@ -5048,7 +5049,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface.TraverseVirtCallStubHeap(ClrDataAddress pAppDomain, VCSHeapType heaptype, delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -5103,7 +5104,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface2
     int ISOSDacInterface2.GetObjectExceptionData(ClrDataAddress objectAddress, DacpExceptionObjectData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         try
         {
             Contracts.IException contract = _target.Contracts.Exception;
@@ -5127,7 +5128,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface2.IsRCWDCOMProxy(ClrDataAddress rcwAddress, int* inDCOMProxy)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -5165,7 +5166,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface3
     int ISOSDacInterface3.GetGCInterestingInfoData(ClrDataAddress interestingInfoAddr, DacpGCInterestingInfoData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -5208,7 +5209,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface3.GetGCInterestingInfoStaticData(DacpGCInterestingInfoData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -5316,7 +5317,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface3.GetGCGlobalMechanisms(nuint* globalMechanisms)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -5371,7 +5372,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface4
     int ISOSDacInterface4.GetClrNotification(ClrDataAddress[] arguments, int count, int* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         _target.TryReadGlobal<uint>(Constants.Globals.MaxClrNotificationArgs, out uint? maxArgs);
         uint MaxClrNotificationArgs = maxArgs ?? 0;
@@ -5420,7 +5421,7 @@ public sealed unsafe partial class SOSDacImpl
         int cNativeCodeAddrs,
         int* pcNativeCodeAddrs)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -5552,7 +5553,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface6
     int ISOSDacInterface6.GetMethodTableCollectibleData(ClrDataAddress mt, DacpMethodTableCollectibleData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -5598,7 +5599,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface7
     int ISOSDacInterface7.GetPendingReJITID(ClrDataAddress methodDesc, int* pRejitId)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -5643,7 +5644,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface7.GetReJITInformation(ClrDataAddress methodDesc, int rejitId, DacpReJitData2* pRejitData)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -5704,7 +5705,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface7.GetProfilerModifiedILInformation(ClrDataAddress methodDesc, DacpProfilerILData* pILData)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -5765,7 +5766,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface7.GetMethodsWithProfilerModifiedIL(ClrDataAddress mod, ClrDataAddress* methodDescs, int cMethodDescs, int* pcMethodDescs)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -5839,7 +5840,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface8
     int ISOSDacInterface8.GetNumberGenerations(uint* pGenerations)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -5875,7 +5876,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface8.GetGenerationTable(uint cGenerations, DacpGenerationData* pGenerationData, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -5945,7 +5946,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface8.GetFinalizationFillPointers(uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6008,7 +6009,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface8.GetGenerationTableSvr(ClrDataAddress heapAddr, uint cGenerations, DacpGenerationData* pGenerationData, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6078,7 +6079,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface8.GetFinalizationFillPointersSvr(ClrDataAddress heapAddr, uint cFillPointers, ClrDataAddress* pFinalizationFillPointers, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6142,7 +6143,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface8.GetAssemblyLoadContext(ClrDataAddress methodTable, ClrDataAddress* assemblyLoadContext)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6179,7 +6180,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface9
     int ISOSDacInterface9.GetBreakingChangeVersion()
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int version = _target.ReadGlobal<byte>(Constants.Globals.SOSBreakingChangeVersion);
 
 #if DEBUG
@@ -6195,7 +6196,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface10
     int ISOSDacInterface10.GetObjectComWrappersData(ClrDataAddress objAddr, ClrDataAddress* rcw, uint count, [In, MarshalUsing(CountElementName = "count"), Out] ClrDataAddress[]? mowList, uint* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_FALSE;
         try
         {
@@ -6269,7 +6270,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface10.IsComWrappersCCW(ClrDataAddress ccw, Interop.BOOL* isComWrappersCCW)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6304,7 +6305,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface10.GetComWrappersCCWData(ClrDataAddress ccw, ClrDataAddress* managedObject, int* refCount)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6349,7 +6350,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface10.IsComWrappersRCW(ClrDataAddress rcw, Interop.BOOL* isComWrappersRCW)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6388,7 +6389,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface10.GetComWrappersRCWData(ClrDataAddress rcw, ClrDataAddress* identity)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6426,7 +6427,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface11
     int ISOSDacInterface11.IsTrackedType(ClrDataAddress objAddr, Interop.BOOL* isTrackedType, Interop.BOOL* hasTaggedMemory)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6480,7 +6481,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface11.GetTaggedMemory(ClrDataAddress objAddr, ClrDataAddress* taggedMemory, nuint* taggedMemorySizeInBytes)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_FALSE;
         try
         {
@@ -6527,7 +6528,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface12
     int ISOSDacInterface12.GetGlobalAllocationContext(ClrDataAddress* allocPtr, ClrDataAddress* allocLimit)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6566,7 +6567,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface13.TraverseLoaderHeap(ClrDataAddress loaderHeapAddr, /*LoaderHeapKind*/ int kind, /*VISITHEAP*/ delegate* unmanaged<ulong, nuint, Interop.BOOL, void> pCallback)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = TraverseLoaderHeapCore(loaderHeapAddr.ToTargetPointer(_target), pCallback);
 #if DEBUG
         if (_legacyImpl13 is not null)
@@ -6588,7 +6589,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface13.GetDomainLoaderAllocator(ClrDataAddress domainAddress, ClrDataAddress* pLoaderAllocator)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6683,7 +6684,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface13.GetLoaderAllocatorHeapNames(int count, char** ppNames, int* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6732,7 +6733,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface13.GetLoaderAllocatorHeaps(ClrDataAddress loaderAllocator, int count, ClrDataAddress* pLoaderHeaps, /*LoaderHeapKind*/ int* pKinds, int* pNeeded)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6794,7 +6795,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface13.GetHandleTableMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6820,7 +6821,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface13.GetGCBookkeepingMemoryRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6846,7 +6847,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface13.GetGCFreeRegions(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6872,7 +6873,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface13.LockedFlush()
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         _target.Flush(FlushScope.All);
 
         // As long as any part of cDAC falls back to the legacy DAC, we need to propagate the Flush call
@@ -6886,7 +6887,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface14
     int ISOSDacInterface14.GetStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6926,7 +6927,7 @@ public sealed unsafe partial class SOSDacImpl
     }
     int ISOSDacInterface14.GetThreadStaticBaseAddress(ClrDataAddress methodTable, ClrDataAddress thread, ClrDataAddress* nonGCStaticsAddress, ClrDataAddress* GCStaticsAddress)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -6982,7 +6983,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface14.GetMethodTableInitializationFlags(ClrDataAddress methodTable, MethodTableInitializationFlags* initializationStatus)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -7024,7 +7025,7 @@ public sealed unsafe partial class SOSDacImpl
     [GeneratedComClass]
     internal sealed unsafe partial class SOSMethodEnum : ISOSMethodEnum
     {
-        private readonly object _apiLock;
+        private readonly Lock _apiLock;
         private readonly Target _target;
         private readonly IRuntimeTypeSystem _rts;
         private readonly ITypeHandle _methodTable;
@@ -7034,7 +7035,7 @@ public sealed unsafe partial class SOSDacImpl
         private uint _iteratorIndex;
         private List<SOSMethodData> _methods = [];
 
-        public SOSMethodEnum(Target target, ITypeHandle methodTable, ISOSMethodEnum? legacyMethodEnum, object apiLock)
+        public SOSMethodEnum(Target target, ITypeHandle methodTable, ISOSMethodEnum? legacyMethodEnum, Lock apiLock)
         {
             _apiLock = apiLock;
             _target = target;
@@ -7111,7 +7112,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSMethodEnum.Next(uint count, [In, Out, MarshalUsing(CountElementName = nameof(count))] SOSMethodData[] values, uint* pNeeded)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             int hr = HResults.S_OK;
             try
             {
@@ -7164,7 +7165,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.Skip(uint count)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _iteratorIndex += count;
 #if DEBUG
             _legacyMethodEnum?.Skip(count);
@@ -7174,7 +7175,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.Reset()
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _iteratorIndex = 0;
 #if DEBUG
             _legacyMethodEnum?.Reset();
@@ -7184,7 +7185,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.GetCount(uint* pCount)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             int hr = HResults.S_OK;
             try
             {
@@ -7210,7 +7211,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface15.GetMethodTableSlotEnumerator(ClrDataAddress mt, DacComNullableByRef<ISOSMethodEnum> enumerator)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -7246,7 +7247,7 @@ public sealed unsafe partial class SOSDacImpl
     #region ISOSDacInterface16
     int ISOSDacInterface16.GetGCDynamicAdaptationMode(int* pDynamicAdaptationMode)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
 
         try
@@ -7291,11 +7292,11 @@ public sealed unsafe partial class SOSDacImpl
     [GeneratedComClass]
     internal sealed unsafe partial class SOSStressLogThreadEnum : ISOSStressLogThreadEnum
     {
-        private readonly object _apiLock;
+        private readonly Lock _apiLock;
         private readonly SOSThreadStressLogData[] _threads;
         private uint _index;
 
-        public SOSStressLogThreadEnum(SOSThreadStressLogData[] threads, object apiLock)
+        public SOSStressLogThreadEnum(SOSThreadStressLogData[] threads, Lock apiLock)
         {
             _apiLock = apiLock;
             _threads = threads;
@@ -7303,7 +7304,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSStressLogThreadEnum.Next(uint count, SOSThreadStressLogData[] values, uint* pFetched)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             int hr = HResults.S_OK;
             try
             {
@@ -7329,21 +7330,21 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.Skip(uint count)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _index = Math.Min(_index + count, (uint)_threads.Length);
             return HResults.S_OK;
         }
 
         int ISOSEnum.Reset()
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _index = 0;
             return HResults.S_OK;
         }
 
         int ISOSEnum.GetCount(uint* pCount)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             if (pCount is null) return HResults.E_POINTER;
             *pCount = (uint)_threads.Length;
             return HResults.S_OK;
@@ -7353,14 +7354,14 @@ public sealed unsafe partial class SOSDacImpl
     [GeneratedComClass]
     internal sealed unsafe partial class SOSStressLogMsgEnum : ISOSStressLogMsgEnum
     {
-        private readonly object _apiLock;
+        private readonly Lock _apiLock;
         private readonly Target _target;
         private readonly Contracts.StressMsgData[] _messages;
         private uint _index;
         private uint _lastBatchStart;
         private uint _lastBatchCount;
 
-        public SOSStressLogMsgEnum(Target target, IEnumerable<Contracts.StressMsgData> messages, object apiLock)
+        public SOSStressLogMsgEnum(Target target, IEnumerable<Contracts.StressMsgData> messages, Lock apiLock)
         {
             _apiLock = apiLock;
             _target = target;
@@ -7369,7 +7370,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSStressLogMsgEnum.Next(uint count, SOSStressMsgData[] values, uint* pFetched)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             int hr = HResults.S_OK;
             try
             {
@@ -7408,7 +7409,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSStressLogMsgEnum.GetArguments(uint messageIndex, uint argCount, ClrDataAddress[] args, uint* pFetched)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             if (pFetched is null || args is null)
                 return HResults.E_POINTER;
 
@@ -7430,14 +7431,14 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.Skip(uint count)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _index = Math.Min(_index + count, (uint)_messages.Length);
             return HResults.S_OK;
         }
 
         int ISOSEnum.Reset()
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             _index = 0;
             _lastBatchStart = 0;
             _lastBatchCount = 0;
@@ -7446,7 +7447,7 @@ public sealed unsafe partial class SOSDacImpl
 
         int ISOSEnum.GetCount(uint* pCount)
         {
-            using ComInterfaceLock comLockScope = new(_apiLock);
+            using Lock.Scope scope = _apiLock.EnterScope();
             if (pCount is null) return HResults.E_POINTER;
             *pCount = (uint)_messages.Length;
             return HResults.S_OK;
@@ -7455,7 +7456,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface17.GetStressLogData(SOSStressLogData* data)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -7488,7 +7489,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface17.GetStressLogThreadEnumerator(DacComNullableByRef<ISOSStressLogThreadEnum> ppEnum)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -7519,7 +7520,7 @@ public sealed unsafe partial class SOSDacImpl
         ClrDataAddress threadStressLogAddress,
         DacComNullableByRef<ISOSStressLogMsgEnum> ppEnum)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -7541,7 +7542,7 @@ public sealed unsafe partial class SOSDacImpl
 
     int ISOSDacInterface17.GetStressLogMemoryRanges(DacComNullableByRef<ISOSMemoryEnum> ppEnum)
     {
-        using ComInterfaceLock comLockScope = new(_apiLock);
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {

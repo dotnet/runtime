@@ -34,7 +34,7 @@ public unsafe class SOSDacInterface8Tests
                 })
                 .Build(),
             legacyObj: null,
-            new object());
+            new());
     }
 
     private static ISOSDacInterface8 CreateSvrDac8(MockTarget.Architecture arch, out ulong heapAddr)
@@ -48,7 +48,7 @@ public unsafe class SOSDacInterface8Tests
                 }, out heapAddr)
                 .Build(),
             legacyObj: null,
-            new object());
+            new());
     }
 
     private static ulong SignExtend(ulong value, MockTarget.Architecture arch)
@@ -93,7 +93,7 @@ public unsafe class SOSDacInterface8Tests
                 })
                 .Build(),
             legacyObj: null,
-            new object());
+            new());
 
         uint numGenerations;
         int hr = dac8.GetNumberGenerations(&numGenerations);
