@@ -58,7 +58,9 @@ public enum CodeKind : uint
     Jitted = 11,
     ReadyToRun = 12,
     Interpreter = 13,
-    ThePreStub = 14
+    ThePreStub = 14,
+    WrapperStub = 15,
+    ShuffleThunk = 16
 }
 
 public interface ICodeHeapInfo

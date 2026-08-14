@@ -2336,18 +2336,6 @@ void AppDomain::LoadAssembly(Assembly *pAssembly,
 
 thread_local LoadLevelLimiter* LoadLevelLimiter::t_currentLoadLevelLimiter = nullptr;
 
-namespace
-{
-    FileLoadLevel GetCurrentFileLoadLevel()
-    {
-        WRAPPER_NO_CONTRACT;
-        if (LoadLevelLimiter::GetCurrent() == NULL)
-            return FILE_ACTIVE;
-        else
-            return (FileLoadLevel)(LoadLevelLimiter::GetCurrent()->GetLoadLevel()-1);
-    }
-}
-
 Assembly *AppDomain::LoadAssembly(AssemblySpec* pSpec,
                                   PEAssembly * pPEAssembly,
                                   FileLoadLevel targetLevel)
@@ -2504,9 +2492,6 @@ Assembly *AppDomain::LoadAssemblyInternal(AssemblySpec* pIdentity,
         GetAppDomain()->AddAssemblyToCache(pIdentity, result);
     }
 
-    _ASSERTE(result->GetLoadLevel() >= GetCurrentFileLoadLevel()
-        || result->GetLoadLevel() >= targetLevel);
-    _ASSERTE(result->CheckNoError(targetLevel));
     return result;
 } // AppDomain::LoadAssembly
 
@@ -2532,9 +2517,6 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
 
         pAssembly->ThrowIfError(targetLevel);
 
-        _ASSERTE(pAssembly->CheckNoError(targetLevel));
-        _ASSERTE(pAssembly->GetLoadLevel() >= GetCurrentFileLoadLevel()
-            || pAssembly->GetLoadLevel() >= targetLevel);
         return pAssembly;
     }
 
@@ -2626,9 +2608,6 @@ Assembly *AppDomain::LoadAssembly(FileLoadLock *pLock, FileLoadLevel targetLevel
     // specify the minimum load level acceptable and throw if not reached.)
 
     pAssembly->RequireLoadLevel((FileLoadLevel)(immediateTargetLevel-1));
-    _ASSERTE(pAssembly->GetLoadLevel() >= GetCurrentFileLoadLevel()
-        || pAssembly->GetLoadLevel() >= targetLevel);
-    _ASSERTE(pAssembly->CheckNoError(targetLevel));
     return pAssembly;
 }
 
@@ -3069,33 +3048,20 @@ void AppDomain::GetParentAssemblyChain(Assembly *pStartAssembly, SString &chain,
     }
 }
 
-PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec, BOOL fThrow /*=TRUE*/)
+PEAssembly* AppDomain::FindCachedFile(AssemblySpec* pSpec)
 {
-    CONTRACTL
-    {
-        if (fThrow) {
-            GC_TRIGGERS;
-            THROWS;
-        }
-        else {
-            GC_NOTRIGGER;
-            NOTHROW;
-        }
-        MODE_ANY;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pSpec != NULL);
 
     // Check to see if this fits our rather loose idea of a reference to CoreLib.
     // If so, don't use fusion to bind it - do it ourselves.
-    if (fThrow && pSpec->IsCoreLib())
+    if (pSpec->IsCoreLib())
     {
         CONSISTENCY_CHECK(SystemDomain::System()->SystemAssembly() != NULL);
-        PEAssembly * pPEAssembly = SystemDomain::System()->SystemPEAssembly();
-        pPEAssembly->AddRef();
-        return pPEAssembly;
+        return SystemDomain::System()->SystemPEAssembly();
     }
 
-    return m_AssemblyCache.LookupFile(pSpec, fThrow);
+    return m_AssemblyCache.LookupFile(pSpec, /* fThrow */ TRUE);
 }
 
 
@@ -3151,7 +3117,6 @@ PEAssembly * AppDomain::BindAssemblySpec(
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
     PRECONDITION(CheckPointer(pSpec));
-    PRECONDITION(pSpec->GetAppDomain() == this);
     PRECONDITION(this==::GetAppDomain());
 
     GCX_PREEMP();
@@ -3161,7 +3126,8 @@ PEAssembly * AppDomain::BindAssemblySpec(
     BinderTracing::AssemblyBindOperation bindOperation(pSpec);
 
     HRESULT hrBindResult = S_OK;
-    PEAssemblyHolder result;
+    // Retain the lifetime of the non-cached PEAssembly until the caller has a chance to add it to the cache.
+    PEAssemblyHolder nonCachedLifetime;
     StackSString bindDiagnosticInfo;
 
     bool isCached = false;
@@ -3170,10 +3136,10 @@ PEAssembly * AppDomain::BindAssemblySpec(
         isCached = IsCached(pSpec);
         if (!isCached)
         {
-
+            PEAssembly* result = NULL;
             {
                 ReleaseHolder<BINDER_SPACE::Assembly> boundAssembly;
-                hrBindResult = pSpec->Bind(this, &boundAssembly, &bindDiagnosticInfo);
+                hrBindResult = pSpec->Bind(&boundAssembly, &bindDiagnosticInfo);
 
                 if (boundAssembly)
                 {
@@ -3181,12 +3147,12 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     {
                         // Avoid rebinding to another copy of CoreLib
                         result = SystemDomain::SystemPEAssembly();
-                        result.SuppressRelease(); // Didn't get a refcount
                     }
                     else
                     {
                         // IsSystem on the PEAssembly should be false, even for CoreLib satellites
                         result = PEAssembly::Open(boundAssembly);
+                        nonCachedLifetime = result;
                     }
 
                     // Setup the reference to the binder, which performed the bind, into the AssemblySpec
@@ -3208,7 +3174,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     if (!pSpec->IsCoreLibSatellite())
                     {
                         // Trigger the resolve event also for non-throw situation.
-                        AssemblySpec NewSpec(this);
+                        AssemblySpec NewSpec;
                         AssemblySpec *pFailedSpec = NULL;
 
                         fForceReThrow = TRUE; // Managed resolve event handler can throw
@@ -3228,7 +3194,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
     {
         Exception *ex = GET_EXCEPTION();
 
-        AssemblySpec NewSpec(this);
+        AssemblySpec NewSpec;
         AssemblySpec *pFailedSpec = NULL;
 
         // Let transient exceptions or managed resolve event handler exceptions propagate
@@ -3312,16 +3278,15 @@ PEAssembly * AppDomain::BindAssemblySpec(
     EX_END_CATCH
 
     // Now, if it's a cacheable bind we need to re-fetch the result from the cache, as we may have been racing with another
-    // thread to store our result.  Note that we may throw from here, if there is a cached exception.
-    // This will release the refcount of the current result holder (if any), and will replace
-    // it with a non-addref'ed result
-    result = FindCachedFile(pSpec);
-
+    // thread to store our result. Note that we may throw from here, if there is a cached exception.
+    // Note the non-cached result holder above may be released (if any).
+    // Returned cached files are not AddRef'd, so we call AddRef in order to retain it.
+    PEAssemblyHolder result{ FindCachedFile(pSpec) };
     if (result != NULL)
         result->AddRef();
 
-    bindOperation.SetResult(result.GetValue(), isCached);
-    return result.Extract();
+    bindOperation.SetResult(result, isCached);
+    return result.Detach();
 } // AppDomain::BindAssemblySpec
 
 

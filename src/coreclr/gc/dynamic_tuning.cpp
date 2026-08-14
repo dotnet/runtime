@@ -1745,7 +1745,7 @@ void gc_heap::init_static_data()
 
 bool gc_heap::init_dynamic_data()
 {
-    uint64_t now_raw_ts = RawGetHighPrecisionTimeStamp ();
+    int64_t now_raw_ts = minipal_hires_ticks ();
 #ifdef HEAP_BALANCE_INSTRUMENTATION
     start_raw_ts = now_raw_ts;
 #endif //HEAP_BALANCE_INSTRUMENTATION

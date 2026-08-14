@@ -291,7 +291,7 @@ class t_join
     // remember join id and last thread to arrive so restart can use these
     int thd;
     // we want to print statistics every 10 seconds - this is to remember the start of the 10 sec interval
-    uint64_t start_tick;
+    int64_t start_tick;
     // counters for joins, in 1000's of clock cycles
     uint64_t elapsed_total[gc_join_max], wake_total[gc_join_max], seq_loss_total[gc_join_max], par_loss_total[gc_join_max], in_join_total[gc_join_max];
 #endif //JOIN_STATS
@@ -325,7 +325,7 @@ public:
         flavor = f;
 
 #ifdef JOIN_STATS
-        start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+        start_tick = minipal_lowres_ticks();
 #endif //JOIN_STATS
 
         return TRUE;
@@ -512,7 +512,7 @@ respin:
 #ifdef JOIN_STATS
     uint64_t get_ts()
     {
-        return GCToOSInterface::QueryPerformanceCounter();
+        return minipal_hires_ticks();
     }
 
     void start_ts (gc_heap* gch)
@@ -559,7 +559,7 @@ respin:
         par_loss_total[id] += par_loss;
 
         // every 10 seconds, print a summary of the time spent in each type of join
-        if (GCToOSInterface::GetLowPrecisionTimeStamp() - start_tick > 10*1000)
+        if (minipal_lowres_ticks() - start_tick > 10*1000)
         {
             printf("**** summary *****\n");
             for (int i = 0; i < 16; i++)
@@ -573,7 +573,7 @@ respin:
                    ts_scale*in_join_total[i]);
                 elapsed_total[i] = wake_total[i] = seq_loss_total[i] = par_loss_total[i] = in_join_total[i] = 0;
             }
-            start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+            start_tick = minipal_lowres_ticks();
         }
 #endif //JOIN_STATS
 
@@ -1915,8 +1915,6 @@ extern const size_t min_segment_size_hard_limit;
 extern const size_t low_latency_alloc;
 extern gc_reason gc_trigger_reason;
 extern double qpf_us;
-
-uint64_t RawGetHighPrecisionTimeStamp();
 
 #ifdef WRITE_WATCH
 #ifdef BACKGROUND_GC

@@ -21,6 +21,15 @@ bool WrapICorJitInfo::isIntrinsic(
     return temp;
 }
 
+bool WrapICorJitInfo::canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    API_ENTER(canValueClassInstancePointerEscape);
+    bool temp = wrapHnd->canValueClassInstancePointerEscape(ftn);
+    API_LEAVE(canValueClassInstancePointerEscape);
+    return temp;
+}
+
 bool WrapICorJitInfo::notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -1187,6 +1196,19 @@ CORINFO_METHOD_HANDLE WrapICorJitInfo::getAwaitReturnCall(
     API_ENTER(getAwaitReturnCall);
     CORINFO_METHOD_HANDLE temp = wrapHnd->getAwaitReturnCall(callerHandle, contextHandle, instArg);
     API_LEAVE(getAwaitReturnCall);
+    return temp;
+}
+
+CORINFO_METHOD_HANDLE WrapICorJitInfo::getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    API_ENTER(getAwaitAwaiterInContinuationCall);
+    CORINFO_METHOD_HANDLE temp = wrapHnd->getAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
+    API_LEAVE(getAwaitAwaiterInContinuationCall);
     return temp;
 }
 

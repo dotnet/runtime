@@ -313,6 +313,10 @@ partial interface IRuntimeTypeSystem : IContract
     // or AsyncMethodFlags.None if the method has no async method data.
     public virtual AsyncMethodFlags GetAsyncMethodFlags(MethodDescHandle methodDesc);
 
+    // Returns the loaded non-return-dropping async variant with the same slot,
+    // or TargetPointer.Null if the variant is not loaded.
+    public virtual TargetPointer GetAsyncVariant(MethodDescHandle methodDesc);
+
     // Return true if the method is a wrapper stub (unboxing or instantiating).
     public virtual bool IsWrapperStub(MethodDescHandle methodDesc);
 
@@ -581,7 +585,6 @@ static class RuntimeTypeSystem_1_Helpers
 | `LoaderAllocator` | `ObjectHandle` | `ObjectHandle` | Handle to the managed loader allocator object |
 | `LoaderAllocator` | `ReferenceCount` | `uint32` | Reference count of the loader allocator |
 | `LoaderAllocator` | `StaticsHeap` | `pointer` | Heap containing statics-related allocations |
-| `LoaderAllocator` | `StubHeap` | `pointer` | Heap containing runtime stubs |
 | `LoaderAllocator` | `VirtualCallStubManager` | `pointer` | Pointer to the virtual-call stub manager |
 | `MethodDesc` | *(type size)* | `uint32` | Base size for mcIL classification |
 | `MethodDesc` | `ChunkIndex` | `uint8` | Offset of this MethodDesc relative to the end of its containing MethodDescChunk - in multiples of MethodDescAlignment |
@@ -1996,6 +1999,33 @@ Reading a method's Runtime Async flags:
         if ((raw & AsyncMethodFlags_1.ReturnDroppingThunk) != 0)
             result |= AsyncMethodFlags.ReturnDroppingThunk;
         return result;
+    }
+```
+
+Resolving the loaded async variant of an async thunk method:
+
+```csharp
+    public TargetPointer GetAsyncVariant(MethodDescHandle methodDescHandle)
+    {
+        MethodDesc methodDesc = _methodDescs[methodDescHandle.Address];
+        ITypeHandle methodTable = GetTypeHandle(methodDesc.MethodTable);
+        ITypeHandle canonicalMethodTable = GetTypeHandle(GetCanonicalMethodTable(methodTable));
+
+        foreach (MethodDescHandle candidateHandle in GetIntroducedMethods(canonicalMethodTable))
+        {
+            MethodDesc candidate = _methodDescs[candidateHandle.Address];
+            if (candidate.Slot != methodDesc.Slot)
+                continue;
+
+            AsyncMethodFlags flags = GetAsyncMethodFlags(candidateHandle);
+            if (flags.HasFlag(AsyncMethodFlags.IsAsyncVariant) &&
+                !flags.HasFlag(AsyncMethodFlags.ReturnDroppingThunk))
+            {
+                return candidateHandle.Address;
+            }
+        }
+
+        return TargetPointer.Null;
     }
 ```
 

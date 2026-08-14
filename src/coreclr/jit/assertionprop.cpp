@@ -80,6 +80,68 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
     return Limit(Limit::keUnknown);
 }
 
+#if defined(FEATURE_HW_INTRINSICS)
+//----------------------------------------------------------------------------------------------
+// optAssertionProp_HWIntrinsic: Propagate VN-derived facts to local var metadata.
+//
+// Arguments:
+//    comp - The compiler instance
+//    tree - The hwintrinsic node
+//
+static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tree)
+{
+    NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
+
+    if (intrinsic != NI_Vector_ExtractMostSignificantBits)
+    {
+        return;
+    }
+
+    assert(tree->GetOperandCount() == 1);
+
+    GenTree* op1 = tree->Op(1);
+
+    if (!op1->OperIs(GT_LCL_VAR))
+    {
+        return;
+    }
+
+    LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVar());
+
+    if (!varDsc->lvSingleDef)
+    {
+        return;
+    }
+
+    ValueNum op1VN = comp->vnStore->VNConservativeNormalValue(op1->gtVNPair);
+
+    auto vnVisitor = [comp, tree](ValueNum vn) -> ValueNumStore::VNVisit {
+        if (vn == ValueNumStore::NoVN)
+        {
+            return ValueNumStore::VNVisit::Abort;
+        }
+
+        vn                 = comp->vnStore->VNNormalValue(vn);
+        var_types type     = comp->vnStore->TypeOfVN(vn);
+        unsigned  simdSize = tree->GetSimdSize();
+
+        if (!varTypeIsSIMD(type) || (genTypeSize(type) != simdSize))
+        {
+            return ValueNumStore::VNVisit::Abort;
+        }
+
+        return comp->vnStore->IsVectorPerElementMask(vn, tree->GetSimdBaseType(), simdSize)
+                   ? ValueNumStore::VNVisit::Continue
+                   : ValueNumStore::VNVisit::Abort;
+    };
+
+    if (comp->vnStore->VNVisitReachingVNs(op1VN, vnVisitor) == ValueNumStore::VNVisit::Continue)
+    {
+        varDsc->SetIsVectorPerElementMask(tree->GetSimdBaseType());
+    }
+}
+#endif // FEATURE_HW_INTRINSICS
+
 //------------------------------------------------------------------------
 // SymbolicToRealValue: Convert a symbolic value to a 64-bit signed integer.
 //
@@ -3399,12 +3461,17 @@ GenTree* Compiler::optConstantAssertionProp(const AssertionDsc&  curAssertion,
             {
                 return nullptr;
             }
-            assert(genTypeSize(tree->TypeGet()) == curAssertion.GetOp2().GetSimdSize());
+            unsigned simdSize = genTypeSize(tree->TypeGet());
+#if defined(TARGET_ARM64)
+            if (tree->TypeIs(TYP_SIMD))
+            {
+                simdSize = sizeof(simdscalable_t);
+            }
+#endif // TARGET_ARM64
+            assert(simdSize == curAssertion.GetOp2().GetSimdSize());
 
             // We can't bash a LCL_VAR into a GenTreeVecCon (different node size), so allocate a fresh node.
-            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-            memcpy(&vecCon->gtSimdVal, curAssertion.GetOp2().GetSimdConstant(), genTypeSize(tree->TypeGet()));
-            newTree = vecCon;
+            newTree = gtNewVconNode(tree->TypeGet(), curAssertion.GetOp2().GetSimdConstant());
             break;
         }
 #endif // FEATURE_HW_INTRINSICS
@@ -3678,6 +3745,12 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
     // does not support whole-local uses, such as GT_FIELD_LIST.
     if (tree->OperIs(GT_LCL_VAR) && varTypeIsSIMD(tree) && copyVarDsc->lvPromoted && !copyVarDsc->lvDoNotEnregister)
     {
+        return nullptr;
+    }
+
+    if (lclVarDsc->lvOnlyUsedOnSynchronousPath || copyVarDsc->lvOnlyUsedOnSynchronousPath)
+    {
+        // Do not touch these -- it will likely cause us to unnecessarily save state to the continuation.
         return nullptr;
     }
 
@@ -5486,8 +5559,8 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
             (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            CallArg* castToCallArg = call->gtArgs.GetArgByIndex(0);
-            CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
+            CallArg* castToCallArg = call->gtArgs.GetUserArgByIndex(0);
+            CallArg* objCallArg    = call->gtArgs.GetUserArgByIndex(1);
             GenTree* castToArg     = castToCallArg->GetNode();
             GenTree* objArg        = objCallArg->GetNode();
             ValueNum objVN         = optConservativeNormalVN(objArg);
@@ -5841,6 +5914,12 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_CALL:
             return optAssertionProp_Call(assertions, tree->AsCall(), stmt);
+
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+            optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            return nullptr;
+#endif // FEATURE_HW_INTRINSICS
 
         case GT_EQ:
         case GT_NE:

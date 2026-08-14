@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <!-- For collectible ALC -->
     <RequiresProcessIsolation>True</RequiresProcessIsolation>

@@ -81,8 +81,8 @@ init_sync_log_stats()
         gc_during_log = 0;
         gc_lock_contended = 0;
 
-        log_start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
-        log_start_hires = GCToOSInterface::QueryPerformanceCounter();
+        log_start_tick = minipal_lowres_ticks();
+        log_start_hires = minipal_hires_ticks();
     }
     gc_count_during_log++;
 #endif //SYNCHRONIZATION_STATS
@@ -208,7 +208,7 @@ HRESULT GCHeap::Initialize()
 #endif
     HRESULT hr = S_OK;
 
-    qpf = (uint64_t)GCToOSInterface::QueryPerformanceFrequency();
+    qpf = (uint64_t)minipal_hires_tick_frequency();
     qpf_ms = 1000.0 / (double)qpf;
     qpf_us = 1000.0 * 1000.0 / (double)qpf;
 
@@ -2023,7 +2023,7 @@ uint64_t GCHeap::GetTotalAllocatedBytes()
 {
 #ifdef MULTIPLE_HEAPS
     uint64_t total_alloc_bytes = 0;
-    for (int i = 0; i < gc_heap::n_heaps; i++)
+    for (int i = 0; i < gc_heap::n_max_heaps; i++)
     {
         gc_heap* hp = gc_heap::g_heaps[i];
         total_alloc_bytes += hp->total_alloc_bytes_soh;
@@ -2073,7 +2073,6 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
     generation* gen = pGenGCHeap->generation_of (0);
     size_t gen0_frag = generation_free_list_space (gen) + generation_free_obj_space (gen);
     uint8_t* current_alloc_allocated = pGenGCHeap->alloc_allocated;
-    heap_segment* current_eph_seg = pGenGCHeap->ephemeral_heap_segment;
     size_t gen0_size = 0;
 #ifdef USE_REGIONS
     heap_segment* gen0_seg = generation_start_segment (gen);
@@ -2083,19 +2082,17 @@ size_t GCHeap::ApproxTotalBytesInUse(BOOL small_heap_only)
                        current_alloc_allocated : heap_segment_allocated (gen0_seg);
         gen0_size += end - heap_segment_mem (gen0_seg);
 
-        if (gen0_seg == current_eph_seg)
-        {
-            break;
-        }
-
         gen0_seg = heap_segment_next (gen0_seg);
     }
 #else //USE_REGIONS
     // For segments ephemeral seg does not change.
+    heap_segment* current_eph_seg = pGenGCHeap->ephemeral_heap_segment;
     gen0_size = current_alloc_allocated - heap_segment_mem (current_eph_seg);
 #endif //USE_REGIONS
 
-    totsize = gen0_size - gen0_frag;
+    // Defense-in-depth clamp: gen0 frag counters are updated by the allocator under a different lock.
+    // This read can observe a transiently inconsistent snapshot; avoid underflow.
+    totsize = (gen0_size > gen0_frag) ? (gen0_size - gen0_frag) : 0;
 
     int stop_gen_index = max_generation;
 
