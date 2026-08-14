@@ -74,6 +74,7 @@ namespace System.Security.Cryptography
 
                 if (written != destination.Length)
                 {
+                    Debug.Fail($"CryptoKit wrote {written} bytes; expected {destination.Length}.");
                     throw new CryptographicException();
                 }
             }
@@ -103,6 +104,7 @@ namespace System.Security.Cryptography
 
                 if (written != destination.Length)
                 {
+                    Debug.Fail($"CryptoKit wrote {written} bytes; expected {destination.Length}.");
                     throw new CryptographicException();
                 }
 
