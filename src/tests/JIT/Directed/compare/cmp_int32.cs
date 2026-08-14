@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+namespace JitTest_Directed_compare_cmp_int32;
+
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -100,6 +102,7 @@ public static class CompareTestInt
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool NeMin((int, float) x) => (x.Item1 != int.MinValue);
 
+    [OuterLoop]
     [Fact]
     public static void Test()
     {
@@ -232,6 +235,7 @@ public static class CompareTestUint
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static bool NeMax((uint, float) x) => (x.Item1 != uint.MaxValue);
 
+    [OuterLoop]
     [Fact]
     public static void Test()
     {

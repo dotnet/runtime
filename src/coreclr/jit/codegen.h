@@ -237,7 +237,9 @@ protected:
     void genEmitEndBlock(BasicBlock* block);
 
 public:
+#if HAS_FIXED_REGISTER_SET
     void genSpillVar(GenTree* tree);
+#endif // HAS_FIXED_REGISTER_SET
 
     void genEmitCallWithCurrentGC(EmitCallParams& callParams);
 
@@ -619,9 +621,6 @@ protected:
     void genReserveEpilog(BasicBlock* block);
     void genFnProlog();
     void genBeginFnProlog();
-#ifdef TARGET_WASM
-    void genInitImageBaseLocal(FuncInfoDsc* func);
-#endif
     void genFnEpilog(BasicBlock* block);
 
     void genReserveFuncletProlog(BasicBlock* block);
@@ -1205,7 +1204,8 @@ protected:
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
 #ifdef TARGET_WASM
-    void genCodeForFrameSize(GenTree* tree);
+    void           genCodeForFrameSize(GenTree* tree);
+    cnsval_ssize_t genWasmMemargOffset(GenTree* addr);
 #endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
@@ -1671,6 +1671,7 @@ public:
 
     void instGen_MemoryBarrier(BarrierKind barrierKind = BARRIER_FULL);
 
+#ifdef HAS_FIXED_REGISTER_SET
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 
     void instGen_Set_Reg_To_Base_Plus_Imm(emitAttr  size,
@@ -1685,6 +1686,7 @@ public:
                                 ssize_t   imm,
                                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
                                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+#endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_AMD64)
     void instGen_Push2Pop2Ppx(instruction ins, regNumber reg1, regNumber reg2);

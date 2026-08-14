@@ -257,7 +257,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 int currentOffset = offsets[i];
 
-                if (isIndirectStructArg[i])
+                if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                {
+                    // Passed by value across several wasm locals — stash each one.
+                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
+                    for (int slot = 0; slot < slotCount; slot++)
+                    {
+                        expressions.Add(Local.Get(0));
+                        expressions.Add(Local.Get(wasmLocalIndex));
+                        ulong slotOffset = (ulong)(currentOffset + (slot * slotSize));
+                        expressions.Add(slotType == WasmValueType.I64 ? I64.Store(slotOffset) : V128.Store(slotOffset));
+                        wasmLocalIndex++;
+                    }
+                }
+                else if (isIndirectStructArg[i])
                 {
                     // Indirect struct — zero-fill the transition block slot instead of copying the byref pointer.
                     int structSize = paramType.GetElementSize().AsInt;
@@ -386,7 +399,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     continue;
                 }
 
-                if (isIndirectStructArg[i])
+                if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                {
+                    // Passed by value across several wasm locals — reload each one.
+                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
+                    int slotBase = offsets[i];
+                    for (int slot = 0; slot < slotCount; slot++)
+                    {
+                        expressions.Add(Local.Get(0));
+                        ulong slotOffset = (ulong)(slotBase + (slot * slotSize));
+                        expressions.Add(slotType == WasmValueType.I64 ? I64.Load(slotOffset) : V128.Load(slotOffset));
+                        wasmLocalIndex++;
+                    }
+                }
+                else if (isIndirectStructArg[i])
                 {
                     // Indirect struct — pass the original byref pointer from the caller
                     expressions.Add(Local.Get(wasmLocalIndex));

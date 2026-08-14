@@ -1832,7 +1832,6 @@ struct FuncInfoDsc
     jitstd::vector<WasmLocalsDecl>* funWasmLocalDecls;
     unsigned funWasmFrameSize;
     unsigned funWasmExnRefLocalIndex = UINT_MAX;
-    unsigned funWasmImageBaseLocalIndex = UINT_MAX;
     bool needsUnwindableFrame;
     emitLocation* startLoc;
     emitLocation* endLoc;
@@ -5435,6 +5434,7 @@ protected:
                                         CORINFO_SIG_INFO*     sig
                                         R2RARG(CORINFO_CONST_LOOKUP* entryPoint),
                                         bool                  mustExpand);
+    GenTree* impRotateHelper(var_types baseType, genTreeOps rotateOper);
 
 #ifdef FEATURE_HW_INTRINSICS
     bool IsValidForShuffle(GenTree* indices,
@@ -7557,6 +7557,9 @@ private:
 #endif // !FEATURE_FIXED_OUT_ARGS
 
     unsigned fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo);
+#ifdef DEBUG
+    void fgAsyncStressPrepare(unsigned depth);
+#endif // DEBUG
     bool IsDisallowedRecursiveInline(InlineContext* ancestor, InlineInfo* inlineInfo);
     bool ContextComplexityExceeds(CORINFO_CONTEXT_HANDLE handle, int max);
     bool MethodInstantiationComplexityExceeds(CORINFO_METHOD_HANDLE handle, int& cur, int max);
@@ -11750,6 +11753,13 @@ public:
     bool compRandomInlineStress()
     {
         return compStressCompile(STRESS_RANDOM_INLINE, 50);
+    }
+
+    // Is general runtime async inlining being stressed, i.e. are async callees inlined
+    // with a decaying random probability? See AsyncStressPolicy.
+    static bool compAsyncInliningStress()
+    {
+        return JitConfig.JitStressAsyncInlining() != 0;
     }
 
     bool compPromoteFewerStructs(unsigned lclNum);

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="fr" original="../Strings.resx">
     <body>
@@ -83,8 +83,8 @@
         <note />
       </trans-unit>
       <trans-unit id="BidirectionalMissingRequiredMarshaller">
-        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">Le paramètre spécifié doit être marshalé de managé à non managé et non managé à managé, mais le type marshaleur « {0} » ne le prend pas en charge.</target>
+        <source>The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="CallerAllocFromManagedMustHaveBufferSizeDescription">
@@ -175,6 +175,11 @@
       <trans-unit id="ComMethodReturningIntWillBeOutParameterTitle">
         <source>The return value in the managed definition will be converted to an additional 'out' parameter at the end of the parameter list when calling the unmanaged COM method.</source>
         <target state="translated">La valeur de retour dans la définition managée est convertie en paramètre 'out' supplémentaire à la fin de la liste de paramètres lors de l’appel de la méthode COM non managée.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ComObjectWrapperNotSpecifiedReason">
+        <source> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</source>
+        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ComObjectWrapper' so no COM object wrapper (RCW) is generated. Marshalling this interface from unmanaged code to managed code will not work.</target>
         <note />
       </trans-unit>
       <trans-unit id="ConfigurationNotSupportedDescriptionCom">
@@ -802,9 +807,14 @@
         <target state="translated">Le type '{0}' spécifie qu’il prend en charge le mode marshal '{1}', mais il ne fournit pas de 'GetManagedValuesDestination' qui prend un 'int' et retourne 'Span&lt;&gt;' et une méthode 'GetUnmanagedValuesSource' qui prend un 'int' et retourne un 'ReadOnlySpan&lt;&gt;'</target>
         <note />
       </trans-unit>
+      <trans-unit id="ManagedObjectWrapperNotSpecifiedReason">
+        <source> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</source>
+        <target state="new"> The interface '{0}' does not specify 'ComInterfaceOptions.ManagedObjectWrapper' so no COM object wrapper (CCW) is generated. Marshalling this interface from managed code to unmanaged code will not work.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
-        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">Le paramètre spécifié doit être marshalé de managé à non managé, mais le type marshaleur « {0} » ne le prend pas en charge.</target>
+        <source>The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</source>
+        <target state="new">The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type '{0}' does not support it.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedTypeMustBeClosedOrMatchArityDescription">
@@ -1059,17 +1069,17 @@
       </trans-unit>
       <trans-unit id="RequiresExplicitSafetyModifierDescriptionLibraryImport">
         <source>Under the updated memory safety rules, calling into native code is a safety contract that the compiler cannot verify. Mark the method 'unsafe' to require callers to audit the call, or 'safe' after auditing the interop boundary. This matches the requirement the language places on 'extern' members.</source>
-        <target state="new">Under the updated memory safety rules, calling into native code is a safety contract that the compiler cannot verify. Mark the method 'unsafe' to require callers to audit the call, or 'safe' after auditing the interop boundary. This matches the requirement the language places on 'extern' members.</target>
+        <target state="translated">Selon les règles mises à jour de sécurité de la mémoire, l’appel au code natif est un contrat de sécurité que le compilateur ne peut pas vérifier. Marquez la méthode comme « unsafe » pour obliger les appelants à auditer l’appel ou comme « safe » après avoir audité la frontière d’interopérabilité. Cela correspond à l’exigence que le langage impose aux membres « extern ».</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresExplicitSafetyModifierMessageLibraryImport">
         <source>Method '{0}' with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
-        <target state="new">Method '{0}' with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</target>
+        <target state="translated">La méthode « {0} » avec « LibraryImportAttribute » doit être marquée comme « safe » ou « unsafe »</target>
         <note />
       </trans-unit>
       <trans-unit id="RequiresExplicitSafetyModifierTitleLibraryImport">
         <source>Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</source>
-        <target state="new">Method with 'LibraryImportAttribute' must be marked 'safe' or 'unsafe'</target>
+        <target state="translated">La méthode avec « LibraryImportAttribute » doit être marquée comme « safe » ou « unsafe »</target>
         <note />
       </trans-unit>
       <trans-unit id="ReturnTypeMustBeExpectedTypeDescription">
@@ -1350,8 +1360,8 @@
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">
-        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.</source>
-        <target state="translated">Le paramètre spécifié doit être marshalé de non managé à managé, mais le type marshaleur « {0} » ne le prend pas en charge.</target>
+        <source>The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</source>
+        <target state="new">The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type '{0}' does not support it.{1}</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryMarshallingInfoDescription">
