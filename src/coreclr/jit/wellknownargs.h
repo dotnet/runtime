@@ -48,7 +48,8 @@ WELL_KNOWN_ARG(AsyncAwaiter,                "awaiter",        false,   false)
 WELL_KNOWN_ARG(AsyncExecutionContext,       "exec ctx",       false,   false)
 WELL_KNOWN_ARG(AsyncSynchronizationContext, "sync ctx",       false,   false)
 // Value of the frame's resumed indicator. The restore above only happens on
-// the first suspension in the method, implemented by checking this value.
+// the first suspension in the method, implemented by checking this value. Like
+// the contexts there is one for every frame of inlining.
 WELL_KNOWN_ARG(AsyncResumedUse,             "resumed",        false,   false)
 
 // Address of that same indicator. The resumption path stores 1 through it to record that
