@@ -35,7 +35,6 @@ namespace ILAssembler
         private readonly Dictionary<string, int> _mappedFieldDataNames = new();
         private readonly Dictionary<string, List<Blob>> _mappedFieldDataReferenceFixups = new();
         private readonly BlobBuilder _manifestResources = new();
-        private readonly Stack<SemanticRootFrame> _semanticRootFrames = new();
         private int _syntaxErrorCount;
 
         // Debug info tracking
@@ -82,19 +81,29 @@ namespace ILAssembler
                 Location.From(token, _documents)));
         }
 
-        private sealed record SemanticRootFrame(ParserRuleContext Owner, int InitialSyntaxErrorCount);
-
         internal void RecordSyntaxError() => _syntaxErrorCount++;
 
-        internal void BeginSemanticRoot(ParserRuleContext context)
-            => _semanticRootFrames.Push(new(context, _syntaxErrorCount));
+        internal int SyntaxErrorCount => _syntaxErrorCount;
 
-        internal bool EndSemanticRoot(ParserRuleContext context)
+        internal bool HasSyntaxErrorsSince(int initialSyntaxErrorCount)
+            => initialSyntaxErrorCount != _syntaxErrorCount;
+
+        private static T ApplyAttribute<T>(
+            T current,
+            CILParser.AttributeValue<T> attribute)
+            where T : struct, Enum
         {
-            Debug.Assert(_semanticRootFrames.Count > 0);
-            SemanticRootFrame frame = _semanticRootFrames.Pop();
-            Debug.Assert(ReferenceEquals(frame.Owner, context));
-            return frame.InitialSyntaxErrorCount != _syntaxErrorCount || context.exception is not null;
+            if (!attribute.ShouldAppend)
+            {
+                return attribute.Value;
+            }
+
+            int currentValue = Convert.ToInt32(current);
+            int groupMask = Convert.ToInt32(attribute.GroupMask);
+            int attributeValue = Convert.ToInt32(attribute.Value);
+            return (T)Enum.ToObject(
+                typeof(T),
+                (currentValue & ~groupMask) | attributeValue);
         }
 
         private static bool IsRecoverableError(string diagnosticId)
@@ -147,16 +156,9 @@ namespace ILAssembler
 
         private const ushort CustomAttributeBlobFormatVersion = 1;
 
+        // These stacks are the active nested compiler scopes, not parser-value accumulators.
         private readonly Stack<string> _currentNamespace = new();
-
         private readonly Stack<EntityRegistry.TypeDefinitionEntity> _currentTypeDefinition = new();
-
-        // Sentinel to distinguish "no constant" from "constant is null"
-        private sealed class NoConstantSentinel
-        {
-            public static readonly NoConstantSentinel Instance = new();
-            private NoConstantSentinel() { }
-        }
 
         private bool _expectInstance;
         private Subsystem _subsystem = Subsystem.WindowsCui;

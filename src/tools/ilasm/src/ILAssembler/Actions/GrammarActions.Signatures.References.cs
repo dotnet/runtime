@@ -11,54 +11,57 @@ namespace ILAssembler;
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
 {
-    internal object CreateMethodReference(
+    internal MethodReferenceValue CreateMethodReference(
         IToken token,
         byte callingConvention,
-        object? returnType,
-        object? owner,
+        TypeValue returnType,
+        TypeSpecificationValue? owner,
         string name,
-        CILParser.TypeArgsContext? genericArguments,
+        ImmutableArray<TypeValue>? genericArguments,
         int? genericArity,
-        object? arguments)
+        ImmutableArray<SignatureArgumentValue> arguments)
         => new ParsedMethodReferenceValue(
             token,
             callingConvention,
-            GetTypeValue(returnType),
-            owner is null ? null : GetTypeSpecificationValue(owner),
+            returnType,
+            owner,
             name,
-            genericArguments is null ? null : GetTypeArgumentsValue(genericArguments.Value),
+            genericArguments,
             genericArity.GetValueOrDefault(),
-            GetSignatureArgumentsValue(arguments));
+            arguments);
 
-    internal object CreateTokenMethodReference(int token)
+    internal MethodReferenceValue CreateTokenMethodReference(int token)
         => new TokenMethodReferenceValue(token);
 
-    internal object CreateTypedefMethodReference(IToken token, string alias)
+    internal MethodReferenceValue CreateTypedefMethodReference(IToken token, string alias)
         => new TypedefMethodReferenceValue(token, alias);
 
-    internal object CreateFieldReference(object? fieldType, object? owner, string name)
+    internal FieldReferenceValue CreateFieldReference(
+        TypeValue fieldType,
+        TypeSpecificationValue? owner,
+        string name)
         => new ParsedFieldReferenceValue(
-            GetTypeValue(fieldType),
-            owner is null ? null : GetTypeSpecificationValue(owner),
+            fieldType,
+            owner,
             name);
 
-    internal object CreateTypedefFieldReference(IToken token, string alias)
+    internal FieldReferenceValue CreateTypedefFieldReference(IToken token, string alias)
         => new TypedefFieldReferenceValue(token, alias);
 
-    internal object CreateMethodMemberReference(object? method)
-        => new MethodMemberReferenceValue(GetMethodReferenceValue(method));
+    internal MemberReferenceValue CreateMethodMemberReference(MethodReferenceValue method)
+        => new MethodMemberReferenceValue(method);
 
-    internal object CreateFieldMemberReference(object? field)
-        => new FieldMemberReferenceValue(GetFieldReferenceValue(field));
+    internal MemberReferenceValue CreateFieldMemberReference(FieldReferenceValue field)
+        => new FieldMemberReferenceValue(field);
 
-    internal object CreateTokenMemberReference(int token)
+    internal MemberReferenceValue CreateTokenMemberReference(int token)
         => new TokenMemberReferenceValue(token);
 
-    internal object CreateTypeOwner(object? type)
-        => new TypeOwnerValue(GetTypeSpecificationValue(type));
+    internal OwnerTypeValue CreateTypeOwner(TypeSpecificationValue type)
+        => new TypeOwnerValue(type);
 
-    internal object CreateMemberOwner(object? member)
-        => new MemberOwnerValue(GetMemberReferenceValue(member));
+    internal OwnerTypeValue CreateMemberOwner(MemberReferenceValue member)
+        => new MemberOwnerValue(member);
 
     private EntityRegistry.EntityBase MaterializeMethodReference(MethodReferenceValue methodReference)
     {
@@ -75,17 +78,11 @@ internal sealed partial class GrammarActions
                     DiagnosticIds.TypedefNotFound,
                     string.Format(DiagnosticMessageTemplates.TypedefNotFound, typedef.Alias),
                     typedef.Token);
-                return _entityRegistry.CreateLazilyRecordedMemberReference(
-                    _entityRegistry.ModuleType,
-                    typedef.Alias,
-                    new BlobBuilder());
+                return CreateErrorMethodReference(typedef.Alias);
             case ParsedMethodReferenceValue parsed:
                 return MaterializeParsedMethodReference(parsed);
             default:
-                return _entityRegistry.CreateLazilyRecordedMemberReference(
-                    _entityRegistry.ModuleType,
-                    "<error>",
-                    new BlobBuilder());
+                return CreateErrorMethodReference("<error>");
         }
     }
 
@@ -158,10 +155,7 @@ internal sealed partial class GrammarActions
                     DiagnosticIds.TypedefNotFound,
                     string.Format(DiagnosticMessageTemplates.TypedefNotFound, typedef.Alias),
                     typedef.Token);
-                return _entityRegistry.CreateLazilyRecordedMemberReference(
-                    _entityRegistry.ModuleType,
-                    typedef.Alias,
-                    new BlobBuilder());
+                return CreateErrorFieldReference(typedef.Alias);
             case ParsedFieldReferenceValue parsed:
                 BlobBuilder fieldType = MaterializeType(parsed.FieldType);
                 EntityRegistry.TypeEntity owner = parsed.Owner is null
@@ -172,10 +166,7 @@ internal sealed partial class GrammarActions
                 fieldType.WriteContentTo(signature);
                 return _entityRegistry.CreateLazilyRecordedMemberReference(owner, parsed.Name, signature);
             default:
-                return _entityRegistry.CreateLazilyRecordedMemberReference(
-                    _entityRegistry.ModuleType,
-                    "<error>",
-                    new BlobBuilder());
+                return CreateErrorFieldReference("<error>");
         }
     }
 
@@ -185,11 +176,31 @@ internal sealed partial class GrammarActions
             MethodMemberReferenceValue method => MaterializeMethodReference(method.Method),
             FieldMemberReferenceValue field => MaterializeFieldReference(field.Field),
             TokenMemberReferenceValue token => ResolveMetadataToken(token.Token),
-            _ => _entityRegistry.CreateLazilyRecordedMemberReference(
-                _entityRegistry.ModuleType,
-                "<error>",
-                new BlobBuilder())
+            _ => CreateErrorMethodReference("<error>")
         };
+
+    private EntityRegistry.MemberReferenceEntity CreateErrorMethodReference(string name)
+    {
+        BlobBuilder signature = new(3);
+        signature.WriteByte((byte)SignatureCallingConvention.Default);
+        signature.WriteCompressedInteger(0);
+        signature.WriteByte((byte)SignatureTypeCode.Void);
+        return _entityRegistry.CreateLazilyRecordedMemberReference(
+            _entityRegistry.ModuleType,
+            name,
+            signature);
+    }
+
+    private EntityRegistry.MemberReferenceEntity CreateErrorFieldReference(string name)
+    {
+        BlobBuilder signature = new(2);
+        signature.WriteByte((byte)SignatureKind.Field);
+        signature.WriteByte((byte)SignatureTypeCode.Object);
+        return _entityRegistry.CreateLazilyRecordedMemberReference(
+            _entityRegistry.ModuleType,
+            name,
+            signature);
+    }
 
     private EntityRegistry.EntityBase MaterializeOwnerType(OwnerTypeValue owner)
         => owner switch

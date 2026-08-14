@@ -164,8 +164,8 @@ internal sealed partial class GrammarActions
 
     internal void BeginTopLevelTypeList() => PrepareTopLevelDeclaration();
 
-    internal void ProcessTopLevelTypeListEntry(object? value)
-        => _ = ResolveClassName(GetClassNameValue(value));
+    internal void ProcessTopLevelTypeListEntry(ClassNameValue value)
+        => _ = ResolveClassName(value);
 
     private void PrepareTopLevelDeclaration() => ClearPendingCustomAttributeOwners();
 }

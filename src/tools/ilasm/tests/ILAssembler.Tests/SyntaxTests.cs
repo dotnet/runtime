@@ -250,6 +250,137 @@ namespace ILAssembler.Tests
             Assert.Contains(diagnostics, diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
         }
 
+        [Theory]
+        [InlineData(".assembly extern { }")]
+        [InlineData(".mresource public { }")]
+        [InlineData(".class public auto ansi Test { .event { } }")]
+        [InlineData(".class public auto ansi Test { .property { } }")]
+        [InlineData("""
+            .class public auto ansi Test
+            {
+                .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor(string) = { string( }
+            }
+            """)]
+        [InlineData("""
+            .class public auto ansi Test
+            {
+                .method public static void M(int32,) cil managed
+                {
+                    ret
+                }
+            }
+            """)]
+        [InlineData(".class public auto ansi Test { .field public }")]
+        [InlineData(".typedef")]
+        [InlineData(".custom")]
+        [InlineData(".class flags( public Test { }")]
+        [InlineData(".class public auto ansi Test<+> { }")]
+        [InlineData(".class public auto ansi Test { .field marshal( int32 F }")]
+        [InlineData(".class public auto ansi Test { .field public int32 F = bytearray( }")]
+        [InlineData("""
+            .class public auto ansi Test
+            {
+                .method pinvokeimpl( public static void M() cil managed
+                {
+                    ret
+                }
+            }
+            """)]
+        [InlineData("""
+            .class public auto ansi Test
+            {
+                .method public static void M(,) cil managed
+                {
+                    ret
+                }
+            }
+            """)]
+        [InlineData("""
+            .class public auto ansi Test
+            {
+                .method public static void M() cil managed
+                {
+                    .custom
+                    ret
+                }
+            }
+            """)]
+        [InlineData(".permission demand class X (Name = )")]
+        [InlineData(".class extern { }")]
+        [InlineData(".class public auto ansi Test { .export public { } }")]
+        [InlineData(".assembly extern Name { .ver : }")]
+        public void MalformedTypedGrammarValues_ReportParserDiagnosticsInsteadOfThrowing(string source)
+        {
+            var diagnostics = DocumentCompilerTestHelpers.CompileAndGetDiagnostics(source, new Options());
+
+            Assert.Contains(diagnostics, diagnostic => diagnostic.Id == "Parser");
+        }
+
+        public static TheoryData<string, bool> TruncatedDirectiveMutations
+        {
+            get
+            {
+                string[] sources =
+                [
+                    ".assembly extern Dependency { .publickeytoken = (01 02 03 04) .ver 1:2:3:4 }",
+                    ".mresource public Resource { .assembly extern Dependency }",
+                    ".class extern public Exported { .assembly extern Dependency }",
+                    ".typedef method instance void [mscorlib]System.Object::.ctor() as Constructor",
+                    ".permission demand [mscorlib]System.Security.Permissions.SecurityPermissionAttribute = { }",
+                    """
+                    .class public auto ansi Test<T> extends [mscorlib]System.Object implements [mscorlib]System.IDisposable
+                    {
+                        .field public marshal(int32) int32 F = int32(1)
+                        .event specialname [mscorlib]System.EventHandler E { }
+                        .property specialname int32 P() { }
+                        .method public static void M(int32 value) cil managed
+                        {
+                            .custom instance void [mscorlib]System.ObsoleteAttribute::.ctor() = (01 00 00 00)
+                            ret
+                        }
+                    }
+                    """
+                ];
+
+                HashSet<string> uniqueMutations = new(StringComparer.Ordinal);
+                TheoryData<string, bool> mutations = new();
+                foreach (string source in sources)
+                {
+                    for (int i = 1; i < source.Length; i++)
+                    {
+                        if (!char.IsWhiteSpace(source[i - 1]) &&
+                            char.IsWhiteSpace(source[i]))
+                        {
+                            string mutation = source.Substring(0, i);
+                            if (uniqueMutations.Add(mutation))
+                            {
+                                mutations.Add(mutation, false);
+                                mutations.Add(mutation, true);
+                            }
+                        }
+                    }
+                }
+
+                return mutations;
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TruncatedDirectiveMutations))]
+        public void TruncatedDirectiveMutationCorpus_ReportsDiagnosticsInsteadOfThrowing(
+            string source,
+            bool errorTolerant)
+        {
+            ImmutableArray<Diagnostic> diagnostics =
+                DocumentCompilerTestHelpers.CompileAndGetDiagnostics(
+                    source,
+                    new Options { ErrorTolerant = errorTolerant });
+
+            Assert.Contains(
+                diagnostics,
+                diagnostic => diagnostic.Severity == DiagnosticSeverity.Error);
+        }
+
         [Fact]
         public void ParserErrorListener_ReportsSyntaxErrors()
         {

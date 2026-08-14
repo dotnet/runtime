@@ -38,10 +38,14 @@ internal sealed partial class GrammarActions
             : attributes;
     }
 
-    internal object CreateVTableFixup(IToken slotCount, ushort flags, IToken dataLabel)
+    internal VTableFixupValue CreateVTableFixup(
+        IToken slotCount,
+        ushort flags,
+        IToken dataLabel)
         => new VTableFixupValue(ParseInt32(slotCount), flags, ParseIdentifier(dataLabel));
 
-    internal object CreateRawVTable(ImmutableArray<byte> value) => new RawVTableValue(value);
+    internal RawVTableValue CreateRawVTable(ImmutableArray<byte> value)
+        => new(value);
 
     internal void MaterializeVTable(CILParser.VtableDeclContext context)
         => throw new NotImplementedException(

@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection.Metadata;
 using Antlr4.Runtime;
 
@@ -12,103 +10,87 @@ namespace ILAssembler;
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
 {
-    private readonly Stack<CustomBlobArgumentsFrame> _customBlobArgumentFrames = new();
-    private readonly Stack<CustomBlobNamedArgumentsFrame> _customBlobNamedArgumentFrames = new();
+    internal MethodReferenceValue CreateCustomAttributeType(MethodReferenceValue constructor)
+        => constructor;
 
-    private sealed class CustomBlobArgumentsFrame
-    {
-        public CustomBlobArgumentsFrame(CILParser.CustomBlobArgsContext owner)
-        {
-            Owner = owner;
-        }
-
-        public CILParser.CustomBlobArgsContext Owner { get; }
-
-        public ImmutableArray<SerializedInitializerValue>.Builder? Values { get; set; }
-    }
-
-    private sealed class CustomBlobNamedArgumentsFrame
-    {
-        public CustomBlobNamedArgumentsFrame(CILParser.CustomBlobNVPairsContext owner)
-        {
-            Owner = owner;
-        }
-
-        public CILParser.CustomBlobNVPairsContext Owner { get; }
-
-        public ImmutableArray<CustomAttributeNamedArgumentValue>.Builder? Values { get; set; }
-    }
-
-    internal object CreateCustomAttributeType(object? constructor)
-        => GetMethodReferenceValue(constructor);
-
-    internal object CreateDefaultCustomAttribute(object? constructor)
+    internal CustomAttributeDescriptorValue CreateDefaultCustomAttribute(
+        MethodReferenceValue constructor)
         => CreateCustomAttributeDescriptor(
             constructor,
             new RawCustomAttributeBlobValue(CreateDefaultCustomAttributeBlob()),
             null);
 
-    internal object CreateStringCustomAttribute(object? constructor, string value)
+    internal CustomAttributeDescriptorValue CreateStringCustomAttribute(
+        MethodReferenceValue constructor,
+        string value)
         => CreateCustomAttributeDescriptor(
             constructor,
             new RawCustomAttributeBlobValue(CreateStringBlob(value)),
             null);
 
-    internal object CreateStructuredCustomAttribute(object? constructor, object? value)
+    internal CustomAttributeDescriptorValue CreateStructuredCustomAttribute(
+        MethodReferenceValue constructor,
+        CustomAttributeBlobValue value)
         => CreateCustomAttributeDescriptor(
             constructor,
-            value as CustomAttributeBlobValue
-                ?? new RawCustomAttributeBlobValue(new BlobBuilder()),
+            value,
             null);
 
-    internal object CreateRawCustomAttribute(object? constructor, ImmutableArray<byte> value)
-        => CreateCustomAttributeDescriptor(
-            constructor,
-            new RawCustomAttributeBlobValue(CreateRawBlob(value)),
-            null);
-
-    internal object CreateDefaultOwnedCustomAttribute(object? owner, object? constructor)
-        => CreateCustomAttributeDescriptor(
-            constructor,
-            new RawCustomAttributeBlobValue(CreateDefaultCustomAttributeBlob()),
-            GetOwnerTypeValue(owner));
-
-    internal object CreateStringOwnedCustomAttribute(object? owner, object? constructor, string value)
-        => CreateCustomAttributeDescriptor(
-            constructor,
-            new RawCustomAttributeBlobValue(CreateStringBlob(value)),
-            GetOwnerTypeValue(owner));
-
-    internal object CreateStructuredOwnedCustomAttribute(
-        object? owner,
-        object? constructor,
-        object? value)
-        => CreateCustomAttributeDescriptor(
-            constructor,
-            value as CustomAttributeBlobValue
-                ?? new RawCustomAttributeBlobValue(new BlobBuilder()),
-            GetOwnerTypeValue(owner));
-
-    internal object CreateRawOwnedCustomAttribute(
-        object? owner,
-        object? constructor,
+    internal CustomAttributeDescriptorValue CreateRawCustomAttribute(
+        MethodReferenceValue constructor,
         ImmutableArray<byte> value)
         => CreateCustomAttributeDescriptor(
             constructor,
             new RawCustomAttributeBlobValue(CreateRawBlob(value)),
-            GetOwnerTypeValue(owner));
+            null);
 
-    internal object CreateCustomAttributeDeclaration(object? value)
-        => GetCustomAttributeDescriptorValue(value);
+    internal CustomAttributeDescriptorValue CreateDefaultOwnedCustomAttribute(
+        OwnerTypeValue owner,
+        MethodReferenceValue constructor)
+        => CreateCustomAttributeDescriptor(
+            constructor,
+            new RawCustomAttributeBlobValue(CreateDefaultCustomAttributeBlob()),
+            owner);
 
-    internal object CreateCustomAttributeTypedef(string alias)
+    internal CustomAttributeDescriptorValue CreateStringOwnedCustomAttribute(
+        OwnerTypeValue owner,
+        MethodReferenceValue constructor,
+        string value)
+        => CreateCustomAttributeDescriptor(
+            constructor,
+            new RawCustomAttributeBlobValue(CreateStringBlob(value)),
+            owner);
+
+    internal CustomAttributeDescriptorValue CreateStructuredOwnedCustomAttribute(
+        OwnerTypeValue owner,
+        MethodReferenceValue constructor,
+        CustomAttributeBlobValue value)
+        => CreateCustomAttributeDescriptor(
+            constructor,
+            value,
+            owner);
+
+    internal CustomAttributeDescriptorValue CreateRawOwnedCustomAttribute(
+        OwnerTypeValue owner,
+        MethodReferenceValue constructor,
+        ImmutableArray<byte> value)
+        => CreateCustomAttributeDescriptor(
+            constructor,
+            new RawCustomAttributeBlobValue(CreateRawBlob(value)),
+            owner);
+
+    internal CustomAttributeDeclarationValue CreateCustomAttributeDeclaration(
+        CustomAttributeDescriptorValue value)
+        => value;
+
+    internal CustomAttributeDeclarationValue CreateCustomAttributeTypedef(string alias)
         => new CustomAttributeTypedefValue(alias);
 
     private static CustomAttributeDescriptorValue CreateCustomAttributeDescriptor(
-        object? constructor,
+        MethodReferenceValue constructor,
         CustomAttributeBlobValue value,
         OwnerTypeValue? owner)
-        => new(GetMethodReferenceValue(constructor), value, owner);
+        => new(constructor, value, owner);
 
     private static BlobBuilder CreateStringBlob(string value)
     {
@@ -124,94 +106,25 @@ internal sealed partial class GrammarActions
         return blob;
     }
 
-    internal object CreateCustomAttributeBlob(object? arguments, object? namedArguments)
-        => new StructuredCustomAttributeBlobValue(
-            arguments is ImmutableArray<SerializedInitializerValue> argumentValues
-                ? argumentValues
-                : [],
-            namedArguments is ImmutableArray<CustomAttributeNamedArgumentValue> namedArgumentValues
-                ? namedArgumentValues
-                : []);
-
-    internal void BeginCustomBlobArguments(CILParser.CustomBlobArgsContext context)
-        => _customBlobArgumentFrames.Push(new(context));
-
-    internal void AddCustomBlobArgument(CILParser.CustomBlobArgsContext context, object? value)
+    private static BlobBuilder CreateDefaultCustomAttributeBlob()
     {
-        if (TryGetCustomBlobArgumentsFrame(context) is { } frame)
-        {
-            (frame.Values ??=
-                ImmutableArray.CreateBuilder<SerializedInitializerValue>())
-                .Add(GetSerializedInitializerValue(value));
-        }
+        BlobBuilder value = new();
+        value.WriteUInt16(CustomAttributeBlobFormatVersion);
+        value.WriteUInt16(0);
+        return value;
     }
 
-    internal object EndCustomBlobArguments(CILParser.CustomBlobArgsContext context)
-    {
-        if (TryGetCustomBlobArgumentsFrame(context) is not { } frame)
-        {
-            return ImmutableArray<SerializedInitializerValue>.Empty;
-        }
+    internal CustomAttributeBlobValue CreateCustomAttributeBlob(
+        ImmutableArray<SerializedInitializerValue> arguments,
+        ImmutableArray<CustomAttributeNamedArgumentValue> namedArguments)
+        => new StructuredCustomAttributeBlobValue(arguments, namedArguments);
 
-        _customBlobArgumentFrames.Pop();
-        return frame.Values?.ToImmutable() ?? ImmutableArray<SerializedInitializerValue>.Empty;
-    }
-
-    internal void BeginCustomBlobNamedArguments(CILParser.CustomBlobNVPairsContext context)
-        => _customBlobNamedArgumentFrames.Push(new(context));
-
-    internal void AddCustomBlobNamedArgument(
-        CILParser.CustomBlobNVPairsContext context,
+    internal CustomAttributeNamedArgumentValue CreateCustomBlobNamedArgument(
         byte kind,
-        object? type,
+        SerializationTypeValue type,
         string name,
-        object? value)
-    {
-        if (TryGetCustomBlobNamedArgumentsFrame(context) is not { } frame)
-        {
-            return;
-        }
-
-        (frame.Values ??=
-            ImmutableArray.CreateBuilder<CustomAttributeNamedArgumentValue>())
-            .Add(new(
-                kind,
-                GetSerializationTypeValue(type),
-                name,
-                GetSerializedInitializerValue(value)));
-    }
-
-    internal object EndCustomBlobNamedArguments(CILParser.CustomBlobNVPairsContext context)
-    {
-        if (TryGetCustomBlobNamedArgumentsFrame(context) is not { } frame)
-        {
-            return ImmutableArray<CustomAttributeNamedArgumentValue>.Empty;
-        }
-
-        _customBlobNamedArgumentFrames.Pop();
-        return frame.Values?.ToImmutable()
-            ?? ImmutableArray<CustomAttributeNamedArgumentValue>.Empty;
-    }
-
-    private CustomBlobArgumentsFrame? TryGetCustomBlobArgumentsFrame(
-        CILParser.CustomBlobArgsContext context)
-    {
-        Debug.Assert(_customBlobArgumentFrames.Count > 0);
-        CustomBlobArgumentsFrame? frame =
-            _customBlobArgumentFrames.Count == 0 ? null : _customBlobArgumentFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context) ? frame : null;
-    }
-
-    private CustomBlobNamedArgumentsFrame? TryGetCustomBlobNamedArgumentsFrame(
-        CILParser.CustomBlobNVPairsContext context)
-    {
-        Debug.Assert(_customBlobNamedArgumentFrames.Count > 0);
-        CustomBlobNamedArgumentsFrame? frame =
-            _customBlobNamedArgumentFrames.Count == 0 ? null : _customBlobNamedArgumentFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context) ? frame : null;
-    }
+        SerializedInitializerValue value)
+        => new(kind, type, name, value);
 
     private BlobBuilder MaterializeCustomAttributeBlob(CustomAttributeBlobValue value)
     {
@@ -220,8 +133,11 @@ internal sealed partial class GrammarActions
             return raw.Value;
         }
 
-        StructuredCustomAttributeBlobValue structured =
-            (StructuredCustomAttributeBlobValue)value;
+        if (value is not StructuredCustomAttributeBlobValue structured)
+        {
+            return new BlobBuilder();
+        }
+
         BlobBuilder result = new();
         result.WriteUInt16(CustomAttributeBlobFormatVersion);
         foreach (SerializedInitializerValue argument in structured.Arguments)
@@ -265,7 +181,7 @@ internal sealed partial class GrammarActions
     }
 
     private EntityRegistry.CustomAttributeEntity? MaterializeCustomAttributeDeclaration(
-        object? value,
+        CustomAttributeDeclarationValue? value,
         IToken location)
     {
         if (value is CustomAttributeTypedefValue typedef)
@@ -296,9 +212,7 @@ internal sealed partial class GrammarActions
 
     internal EntityRegistry.CustomAttributeEntity MaterializeCustomAttributeDescriptor(
         CILParser.CustomDescrContext context)
-        => MaterializeCustomAttribute(
-            GetCustomAttributeDescriptorValue(context.Value),
-            context.Start);
+        => MaterializeCustomAttribute(context.Value, context.Start);
 
     internal EntityRegistry.CustomAttributeEntity? MaterializeMethodBodyCustomAttributeDeclaration(
         CILParser.CustomDescrInMethodBodyContext context)
@@ -306,5 +220,5 @@ internal sealed partial class GrammarActions
 
     internal EntityRegistry.EntityBase MaterializeOwnerType(
         CILParser.OwnerTypeContext context)
-        => MaterializeOwnerType(GetOwnerTypeValue(context.Value));
+        => MaterializeOwnerType(context.Value);
 }

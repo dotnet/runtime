@@ -15,23 +15,6 @@ namespace ILAssembler;
 
 internal sealed partial class GrammarActions
 {
-    private sealed class SwitchInstructionAccumulator
-    {
-        internal SwitchInstructionAccumulator(CILParser.SimpleInstrContext owner, IToken opcodeToken)
-        {
-            Owner = owner;
-            OpcodeToken = opcodeToken;
-        }
-
-        internal CILParser.SimpleInstrContext Owner { get; }
-
-        internal IToken OpcodeToken { get; }
-
-        internal List<(IToken Token, bool IsOffset)> Operands { get; } = new();
-    }
-
-    private SwitchInstructionAccumulator? _switchInstructionAccumulator;
-
     internal void EmitNoOperandInstruction(IToken opcodeToken)
     {
         if (StartInstruction(opcodeToken) is not { } instruction)
@@ -307,31 +290,29 @@ internal sealed partial class GrammarActions
         method.Definition.MethodBody.MarkLabel(label);
     }
 
-    internal void BeginSwitchInstruction(CILParser.SimpleInstrContext context, IToken opcodeToken)
+#pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
+    internal CILParser.SwitchInstructionBuilder CreateSwitchInstruction(IToken opcodeToken)
+        => new(opcodeToken);
+
+    internal void AddSwitchLabel(CILParser.SwitchInstructionBuilder builder, IToken labelToken)
+        => builder.Operands.Add((labelToken, false));
+
+    internal void AddSwitchOffset(CILParser.SwitchInstructionBuilder builder, IToken offsetToken)
+        => builder.Operands.Add((offsetToken, true));
+#pragma warning restore CA1822
+
+    internal void CompleteSwitchInstruction(CILParser.SwitchInstructionBuilder? builder)
     {
-        Debug.Assert(_switchInstructionAccumulator is null);
-        _switchInstructionAccumulator = new SwitchInstructionAccumulator(context, opcodeToken);
-    }
-
-    internal void AddSwitchLabel(IToken labelToken)
-        => _switchInstructionAccumulator?.Operands.Add((labelToken, false));
-
-    internal void AddSwitchOffset(IToken offsetToken)
-        => _switchInstructionAccumulator?.Operands.Add((offsetToken, true));
-
-    internal void CompleteSimpleInstruction(CILParser.SimpleInstrContext context)
-    {
-        if (_switchInstructionAccumulator is not { } accumulator ||
-            !ReferenceEquals(accumulator.Owner, context) ||
-            StartInstruction(accumulator.OpcodeToken) is not { } instruction)
+        if (builder is null ||
+            StartInstruction(builder.OpcodeToken) is not { } instruction)
         {
             return;
         }
 
         Debug.Assert(instruction.OpCode == ILOpCode.Switch);
         CurrentMethodContext method = instruction.Method;
-        List<(LabelHandle Label, int? Offset)> labels = new(accumulator.Operands.Count);
-        foreach ((IToken token, bool isOffset) in accumulator.Operands)
+        List<(LabelHandle Label, int? Offset)> labels = new(builder.Operands.Count);
+        foreach ((IToken token, bool isOffset) in builder.Operands)
         {
             if (isOffset)
             {
@@ -344,7 +325,7 @@ internal sealed partial class GrammarActions
             {
                 label = method.Definition.MethodBody.DefineLabel();
                 method.Labels[labelName] = label;
-                method.UndefinedLabelReferences.TryAdd(labelName, accumulator.OpcodeToken);
+                method.UndefinedLabelReferences.TryAdd(labelName, builder.OpcodeToken);
             }
 
             labels.Add((label, null));
@@ -370,14 +351,6 @@ internal sealed partial class GrammarActions
             {
                 method.Definition.MethodBody.MarkLabel(label, method.Definition.MethodBody.Offset + value);
             }
-        }
-    }
-
-    internal void EndSwitchInstruction(CILParser.SimpleInstrContext context)
-    {
-        if (ReferenceEquals(_switchInstructionAccumulator?.Owner, context))
-        {
-            _switchInstructionAccumulator = null;
         }
     }
 

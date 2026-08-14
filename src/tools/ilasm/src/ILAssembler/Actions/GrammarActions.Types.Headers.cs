@@ -9,11 +9,12 @@ namespace ILAssembler;
 
 internal sealed partial class GrammarActions
 {
-    internal void BeginNamespace(CILParser.NameSpaceHeadContext context, string? namespaceName)
+    internal void BeginNamespace(
+        CILParser.NameSpaceHeadContext context,
+        string? namespaceName,
+        int initialSyntaxErrorCount)
     {
-        if (_namespaceHeaderFrames.Count == 0 ||
-            !ReferenceEquals(_namespaceHeaderFrames.Peek().Owner, context) ||
-            _namespaceHeaderFrames.Peek().InitialSyntaxErrorCount != _syntaxErrorCount ||
+        if (HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
             context.exception is not null ||
             namespaceName is null)
         {
@@ -28,15 +29,14 @@ internal sealed partial class GrammarActions
         _namespaceOwners.Push(context.Parent);
     }
 
-    internal void BeginType(CILParser.ClassHeadContext context, object? value)
+    internal void BeginType(CILParser.ClassHeadContext context, ClassHeaderValue value)
     {
-        ClassHeaderValue header = GetClassHeaderValue(value);
-        if (!header.IsValid)
+        if (!value.IsValid)
         {
             return;
         }
 
-        EntityRegistry.TypeDefinitionEntity typeDefinition = MaterializeClassHeader(context, header);
+        EntityRegistry.TypeDefinitionEntity typeDefinition = MaterializeClassHeader(context, value);
         _currentTypeDefinition.Push(typeDefinition);
         _typeOwners.Push(context.Parent);
     }
@@ -110,7 +110,7 @@ internal sealed partial class GrammarActions
                 fallbackBase = classAttribute.FallbackBase;
             }
 
-            AttributeValue<TypeAttributes> attribute = classAttribute.Attribute;
+            CILParser.AttributeValue<TypeAttributes> attribute = classAttribute.Attribute;
             if (!attribute.ShouldAppend)
             {
                 attributes = attribute.Value;
@@ -179,7 +179,7 @@ internal sealed partial class GrammarActions
         TypeAttributes attributes = typeDefinition.Attributes;
         foreach (ClassAttributeValue classAttribute in header.Attributes)
         {
-            AttributeValue<TypeAttributes> attribute = classAttribute.Attribute;
+            CILParser.AttributeValue<TypeAttributes> attribute = classAttribute.Attribute;
             if (!attribute.ShouldAppend)
             {
                 attributes = attribute.Value;

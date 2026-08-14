@@ -18,28 +18,29 @@ internal sealed partial class GrammarActions
             ? CustomAttributeNamedArgumentKind.Field
             : CustomAttributeNamedArgumentKind.Property);
 
-    internal object CreateSerializationType(object? element, IToken? array)
+    internal SerializationTypeValue CreateSerializationType(
+        SerializationTypeValue element,
+        IToken? array)
     {
-        SerializationTypeValue value = GetSerializationTypeValue(element);
-        return array is null ? value : new ArraySerializationTypeValue(value);
+        return array is null ? element : new ArraySerializationTypeValue(element);
     }
 
-    internal object CreatePrimitiveSerializationType(byte type)
+    internal SerializationTypeValue CreatePrimitiveSerializationType(byte type)
         => new SimpleSerializationTypeValue((SerializationTypeCode)type);
 
-    internal object CreateSerializationTypeTypedef(
+    internal SerializationTypeValue CreateSerializationTypeTypedef(
         CILParser.SerializTypeElementContext context,
         string alias)
         => new TypedefSerializationTypeValue(context.Start, alias);
 
-    internal object CreateSimpleSerializationType(IToken type)
+    internal SerializationTypeValue CreateSimpleSerializationType(IToken type)
         => new SimpleSerializationTypeValue(GetSerializationTypeCode(type.Type));
 
-    internal object CreateEnumSerializationType(IToken name)
+    internal SerializationTypeValue CreateEnumSerializationType(IToken name)
         => new StringEnumSerializationTypeValue(StringHelpers.ParseQuotedString(name.Text));
 
-    internal object CreateEnumSerializationType(object? className)
-        => new ClassEnumSerializationTypeValue(GetClassNameValue(className));
+    internal SerializationTypeValue CreateEnumSerializationType(ClassNameValue className)
+        => new ClassEnumSerializationTypeValue(className);
 
     internal BlobBuilder CreateFloat32SerializedInitializer(
         CILParser.Float64Context context,
@@ -140,26 +141,16 @@ internal sealed partial class GrammarActions
         return blob;
     }
 
-    internal object? CreateFieldInitializer(BlobBuilder value)
-        => ExtractConstantFromSerInit(value);
+    internal FieldInitializerValue CreateFieldInitializer(BlobBuilder value)
+        => new(true, ExtractConstantFromSerInit(value));
 
-    internal object CreateFieldInitializer(string value) => value;
+    internal FieldInitializerValue CreateFieldInitializer(string value)
+        => new(true, value);
 
-    internal object? CreateNullFieldInitializer() => null;
+    internal FieldInitializerValue CreateNullFieldInitializer()
+        => new(true, null);
 
-    internal void BeginFieldInitializer(CILParser.InitOptContext context)
-    {
-        BeginSemanticRoot(context);
-        context.Value = NoConstantSentinel.Instance;
-    }
-
-    internal void SetFieldInitializer(CILParser.InitOptContext context, object? value)
-        => context.Value = value;
-
-    internal bool EndFieldInitializer(CILParser.InitOptContext context)
-        => EndSemanticRoot(context);
-
-    internal object CreateScalarSerializedValue(
+    internal SerializedInitializerValue CreateScalarSerializedValue(
         CILParser.SerInitContext context,
         CILParser.FieldSerInitContext initializer,
         BlobBuilder value)
@@ -182,23 +173,23 @@ internal sealed partial class GrammarActions
         return new RawSerializedInitializerValue(type, serializedValue);
     }
 
-    internal object CreateStringSerializedValue()
+    internal SerializedInitializerValue CreateStringSerializedValue()
         => CreateSerializedStringValue(SerializationTypeCode.String, null);
 
-    internal object CreateStringSerializedValue(IToken value)
+    internal SerializedInitializerValue CreateStringSerializedValue(IToken value)
         => CreateSerializedStringValue(
             SerializationTypeCode.String,
             StringHelpers.ParseQuotedString(value.Text));
 
-    internal object CreateTypeSerializedValue(IToken value)
+    internal SerializedInitializerValue CreateTypeSerializedValue(IToken value)
         => CreateSerializedStringValue(
             SerializationTypeCode.Type,
             StringHelpers.ParseQuotedString(value.Text));
 
-    internal object CreateTypeSerializedValue(object? className)
-        => new ClassNameSerializedInitializerValue(GetClassNameValue(className));
+    internal SerializedInitializerValue CreateTypeSerializedValue(ClassNameValue className)
+        => new ClassNameSerializedInitializerValue(className);
 
-    internal object CreateNullTypeSerializedValue()
+    internal SerializedInitializerValue CreateNullTypeSerializedValue()
         => CreateSerializedStringValue(SerializationTypeCode.Type, null);
 
     private static RawSerializedInitializerValue CreateSerializedStringValue(
@@ -212,18 +203,28 @@ internal sealed partial class GrammarActions
             serializedValue);
     }
 
-    internal object CreateObjectSerializedValue(object? value)
-        => new ObjectSerializedInitializerValue(GetSerializedInitializerValue(value));
+    internal SerializedInitializerValue CreateObjectSerializedValue(
+        SerializedInitializerValue value)
+        => new ObjectSerializedInitializerValue(value);
 
-    internal object CreateArraySerializedValue(
+    internal SerializedInitializerValue CreateArraySerializedValue(
         IToken elementType,
         IToken length,
-        object? values)
+        SerializedSequenceValue values)
         => new ArraySerializedInitializerValue(
             new ArraySerializationTypeValue(
                 new SimpleSerializationTypeValue(GetSerializationTypeCode(elementType.Type))),
             ParseInt32(length),
-            GetSerializedSequenceValue(values));
+            values);
+
+    internal SerializedInitializerValue CreateArraySerializedValue(
+        IToken elementType,
+        IToken length,
+        BlobBuilder values)
+        => CreateArraySerializedValue(
+            elementType,
+            length,
+            new RawSerializedSequenceValue(values));
 
     private BlobBuilder MaterializeSerializationType(SerializationTypeValue value)
     {
@@ -397,6 +398,6 @@ internal sealed partial class GrammarActions
             : Encoding.UTF8.GetString(bytes.Slice(bytesRead, length));
     }
 
-    internal static object? GetInitializerValue(CILParser.InitOptContext context)
+    internal static FieldInitializerValue GetInitializerValue(CILParser.InitOptContext context)
         => context.Value;
 }
