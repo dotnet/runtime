@@ -681,6 +681,15 @@ CONFIG_INTEGER(JitInlinePolicyReplay, "JitInlinePolicyReplay", 0)
 CONFIG_STRING(JitNoInlineRange, "JitNoInlineRange")
 CONFIG_STRING(JitInlineReplayFile, "JitInlineReplayFile")
 
+// Stress general runtime async inlining: forcibly inline async callees that may suspend,
+// with a probability that decays with inline depth. Nonzero enables; the value is the
+// external random seed. See AsyncStressPolicy.
+CONFIG_INTEGER(JitStressAsyncInlining, "JitStressAsyncInlining", 0)
+CONFIG_INTEGER(JitStressAsyncInliningMaxDepth, "JitStressAsyncInliningMaxDepth", 8)
+// Probability, in percent, that the first async candidate of a body at depth 1 is inlined.
+// The n'th candidate of a body at depth d is inlined with probability (pct/100)^(d + n).
+CONFIG_INTEGER(JitStressAsyncInliningPct, "JitStressAsyncInliningPct", 75)
+
 // Extended version of DefaultPolicy that includes a more precise IL scan,
 // relies on PGO if it exists and generally is more aggressive.
 RELEASE_CONFIG_INTEGER(JitExtDefaultPolicy, "JitExtDefaultPolicy", 1)
