@@ -2,10 +2,9 @@
 
 ILAssembler compiles declarations while ANTLR parses the input. The parser uses
 `UnbufferedTokenStream` with parse-tree construction disabled. Namespace, type, top-level,
-class-member and method-body structure is action-driven, while shared directives retain bounded
-subtrees for their existing visitors. A complete document, declaration body or method body is
-never retained. Rules such as `bytes` stream their content into an accumulator instead of building
-a subtree at all.
+class-member, method-body and shared-directive structure is action-driven. A complete document,
+declaration body or method body is never retained. Rules such as `bytes` stream their content into
+an accumulator instead of building a subtree at all.
 
 `GrammarActions` is a single `internal sealed partial class` split across
 `src/ILAssembler/Actions/GrammarActions.*.cs`:
@@ -20,8 +19,8 @@ a subtree at all.
 | `GrammarActions.CustomAttributes.Sequences.cs` | Custom attribute scalar-array sequence synthesis. |
 | `GrammarActions.CustomAttributes.Serialization.cs` | Serialized attribute values and field/parameter initializers. |
 | `GrammarActions.CustomAttributes.Values.cs` | Internal synthesized custom attribute value model. |
-| `GrammarActions.Data.cs` | Data and blob declarations. |
-| `GrammarActions.Debug.cs` | Source and debug directives. |
+| `GrammarActions.Data.cs` | Streaming mapped-data declarations, labels and reference fixups. |
+| `GrammarActions.Debug.cs` | Direct source-location, document and language directives. |
 | `GrammarActions.Declarations.cs` | Parser-driven top-level declaration visitor guards. |
 | `GrammarActions.Declarations.Actions.cs` | Direct top-level declarations and shared-directive dispatch. |
 | `GrammarActions.Instructions.cs` | Tree-free value instruction and method-item actions. |
@@ -43,7 +42,7 @@ a subtree at all.
 | `GrammarActions.MethodBodies.Directives.cs` | Direct method-body directives and parameter ownership. |
 | `GrammarActions.MethodBodies.ExceptionHandling.cs` | Lexical scopes and synthesized exception regions. |
 | `GrammarActions.MethodBodies.Values.cs` | Internal method-body directive and exception-region values. |
-| `GrammarActions.Security.cs` | Declarative security conversion. |
+| `GrammarActions.Security.cs` | Synthesized declarative-security values and permission sets. |
 | `GrammarActions.Signatures.cs` | Signature visitor compatibility wrappers. |
 | `GrammarActions.Signatures.Actions.cs` | Signature grammar actions and repetition frames. |
 | `GrammarActions.Signatures.References.cs` | Member-reference synthesis and materialization. |
@@ -70,11 +69,11 @@ slots use `object` where an internal value or array crosses that boundary and `G
 provides the strongly typed accessors.
 
 All namespace, type-header, top-level, type, signature, reference, marshalling, class-member,
-method-header, method-body directive and exception-handling structure is action-driven.
-`scopeBlock` records offsets under its context key without inspecting children. The remaining
-`BeginSubtree` islands are the bounded shared roots `assemblyBlock`, `assemblyRefBlock`,
-`exptypeBlock`, `manifestResBlock`, `dataDecl`, `fileDecl`, `vtableDecl`, `vtfixupDecl`, `secDecl`,
-`extSourceSpec`, `languageDecl` and `typedefDecl`.
+method-header, method-body directive, exception-handling, data, security, source and language
+structure is action-driven. `scopeBlock` records offsets under its context key without inspecting
+children. The remaining `BeginSubtree` islands are the manifest-family roots `assemblyBlock`,
+`assemblyRefBlock`, `exptypeBlock`, `manifestResBlock`, `fileDecl`, `vtableDecl`, `vtfixupDecl` and
+`typedefDecl`.
 
 Semantic state that a rule pushes must be released from that rule's `finally` clause and be keyed on
 the owning context, because ANTLR skips `@after` actions and the remainder of an alternative once a
