@@ -2865,12 +2865,9 @@ namespace System.Xml.Serialization
             ilg.Call(XmlSerializationReader_ShrinkArray);
             ilg.ConvertValue(XmlSerializationReader_ShrinkArray.ReturnType, elementType.MakeArrayType());
 
-            if (collectionBuilder.FactoryTakesSpan)
-            {
-                ilg.Call(collectionBuilder.SpanConversion);
-            }
-            ilg.Call(collectionBuilder.Factory);
-            ilg.ConvertValue(collectionBuilder.Factory.ReturnType, typeDesc.Type!);
+            ilg.Call(collectionBuilder.SpanConversion);
+            ilg.Call(collectionBuilder.SpanFactory);
+            ilg.ConvertValue(collectionBuilder.SpanFactory.ReturnType, typeDesc.Type!);
         }
 
         private void WriteSourceBeginTyped(string source)

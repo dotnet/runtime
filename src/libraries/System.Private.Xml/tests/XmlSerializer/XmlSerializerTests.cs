@@ -456,42 +456,44 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.ImmutableArrayField, roundTripped.ImmutableArrayField);
     }
 
-    [Fact]
-    public static void Xml_ReadOnlyCollectionAsMember_NilBecomesEmpty()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public static void Xml_CollectionAsMember_NilOrAbsentBecomesEmpty(bool nil)
     {
-        // A collection that is absent or nil in the document still comes back as an empty collection, which is how
-        // XmlSerializer has always treated collections it populates in place.
-        var serializer = new XmlSerializer(typeof(TypeWithReadOnlyCollections));
-        var roundTripped = (TypeWithReadOnlyCollections)Deserialize(serializer, WithXmlHeader(
-            "<TypeWithReadOnlyCollections xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"><ImmutableArray xsi:nil=\"true\" /></TypeWithReadOnlyCollections>"));
-
-        Assert.False(roundTripped.ImmutableArray.IsDefault);
-        Assert.Empty(roundTripped.ImmutableArray);
-        Assert.Empty(roundTripped.ImmutableList);
-        Assert.Empty(roundTripped.ReadOnlyCollection);
-        Assert.Empty(roundTripped.FrozenSet);
-        Assert.Empty(roundTripped.ImmutableQueue);
-        Assert.False(roundTripped.ImmutableArrayField.IsDefault);
-        Assert.Empty(roundTripped.ImmutableArrayField);
-    }
-
-    [Fact]
-    public static void Xml_MutableCollectionAsMember_NilOrAbsentBecomesEmpty()
-    {
-        // The behavior that read-only collections are expected to match. A collection member is never left null,
-        // but an array member is.
-        var serializer = new XmlSerializer(typeof(TypeWithMutableCollectionMembers));
+        // A collection member is never left null, whether the document says it is nil or leaves it out entirely,
+        // which is how XmlSerializer has always treated the collections it populates in place. Collections created
+        // from their complete contents have to match that.
         const string Ns = " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"";
 
-        var nil = (TypeWithMutableCollectionMembers)Deserialize(serializer, WithXmlHeader(
-            $"<TypeWithMutableCollectionMembers{Ns}><List xsi:nil=\"true\" /><Array xsi:nil=\"true\" /></TypeWithMutableCollectionMembers>"));
-        Assert.Empty(nil.List);
-        Assert.Null(nil.Array);
+        string readOnlyBody = nil
+            ? "<ImmutableArray xsi:nil=\"true\" /><ImmutableList xsi:nil=\"true\" /><ReadOnlyCollection xsi:nil=\"true\" />" +
+              "<FrozenSet xsi:nil=\"true\" /><ImmutableQueue xsi:nil=\"true\" /><ImmutableArrayField xsi:nil=\"true\" />"
+            : "";
 
-        var absent = (TypeWithMutableCollectionMembers)Deserialize(serializer, WithXmlHeader(
-            $"<TypeWithMutableCollectionMembers{Ns} />"));
-        Assert.Empty(absent.List);
-        Assert.Null(absent.Array);
+        var readOnly = (TypeWithReadOnlyCollections)Deserialize(
+            new XmlSerializer(typeof(TypeWithReadOnlyCollections)),
+            WithXmlHeader($"<TypeWithReadOnlyCollections{Ns}>{readOnlyBody}</TypeWithReadOnlyCollections>"));
+
+        Assert.False(readOnly.ImmutableArray.IsDefault);
+        Assert.Empty(readOnly.ImmutableArray);
+        Assert.Empty(readOnly.ImmutableList);
+        Assert.Empty(readOnly.ReadOnlyCollection);
+        Assert.Empty(readOnly.FrozenSet);
+        Assert.Empty(readOnly.ImmutableQueue);
+        Assert.False(readOnly.ImmutableArrayField.IsDefault);
+        Assert.Empty(readOnly.ImmutableArrayField);
+
+        // The mutable behavior above is expected to match. A collection member is never left null, but an array
+        // member is.
+        string mutableBody = nil ? "<List xsi:nil=\"true\" /><Array xsi:nil=\"true\" />" : "";
+
+        var mutable = (TypeWithMutableCollectionMembers)Deserialize(
+            new XmlSerializer(typeof(TypeWithMutableCollectionMembers)),
+            WithXmlHeader($"<TypeWithMutableCollectionMembers{Ns}>{mutableBody}</TypeWithMutableCollectionMembers>"));
+
+        Assert.Empty(mutable.List);
+        Assert.Null(mutable.Array);
     }
 
     [Fact]
@@ -504,11 +506,13 @@ public static partial class XmlSerializerTests
         var roundTripped = (TypeWithGetOnlyReadOnlyCollections)Deserialize(serializer, WithXmlHeader(
             "<TypeWithGetOnlyReadOnlyCollections><ImmutableList><string>read</string></ImmutableList>" +
             "<ReadOnlyCollection><int>7</int></ReadOnlyCollection>" +
-            "<ImmutableArray><string>read</string></ImmutableArray></TypeWithGetOnlyReadOnlyCollections>"));
+            "<ImmutableArray><string>read</string></ImmutableArray>" +
+            "<Flat>21</Flat><Flat>22</Flat></TypeWithGetOnlyReadOnlyCollections>"));
 
         Assert.Equal(new[] { "initial" }, roundTripped.ImmutableList);
         Assert.Equal(new[] { 42 }, roundTripped.ReadOnlyCollection);
         Assert.True(roundTripped.ImmutableArray.IsDefault);
+        Assert.Equal(new[] { 13 }, roundTripped.Flat);
     }
 
 #if !XMLSERIALIZERGENERATORTESTS

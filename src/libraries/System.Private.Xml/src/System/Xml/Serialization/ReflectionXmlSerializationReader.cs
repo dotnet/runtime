@@ -1600,14 +1600,10 @@ namespace System.Xml.Serialization
             object? memberSource = getSource();
             if (memberSource == null)
             {
-                if (readOnly)
-                {
-                    throw CreateReadOnlyCollectionException(typeDesc.CSharpName);
-                }
-
-                // Encoded serialization populates collections through a fixup once the referenced items have
-                // been read, which a collection that has to be created from its complete contents cannot do.
-                if (typeDesc.UsesCollectionBuilder)
+                // Encoded serialization populates a collection through a fixup once the referenced items have been
+                // read, which neither a read-only member nor a collection that has to be created from its complete
+                // contents can do.
+                if (readOnly || typeDesc.UsesCollectionBuilder)
                 {
                     throw CreateReadOnlyCollectionException(typeDesc.CSharpName);
                 }
@@ -1964,10 +1960,10 @@ namespace System.Xml.Serialization
                         // collection instance returned by the getter. This matches what the IL-based serializer does.
                         if (memberInfo is PropertyInfo pi && pi.GetSetMethod(nonPublic: true) == null)
                         {
-                            // A collection built from its complete contents cannot be added to, and with no setter
-                            // there is nowhere to put the collection we would create. Leave whatever the getter
-                            // returns alone, which is how a get-only collection that cannot be added to has always
-                            // behaved.
+                            // A collection built from its complete contents cannot be added to: the Add below would
+                            // throw for it, or silently discard the new collection it returns. With no setter there
+                            // is nowhere to put a collection we created either, so the elements read are dropped and
+                            // the getter's value survives, as it does for any collection that cannot be added to.
                             if (member.Mapping.TypeDesc!.UsesCollectionBuilder)
                             {
                                 continue;

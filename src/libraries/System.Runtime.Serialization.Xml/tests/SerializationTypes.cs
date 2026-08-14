@@ -1853,4 +1853,9 @@ public class TypeWithGetOnlyReadOnlyCollections
     // Left uninitialized so the getter returns a default struct, which no collection built from its complete
     // contents can be added to.
     public ImmutableArray<string> ImmutableArray { get; }
+
+    // Repeated elements rather than a wrapped array, which the reflection based reader accumulates and assigns
+    // through a different path than the wrapped shape above.
+    [XmlElement("Flat")]
+    public ImmutableList<int> Flat { get; } = System.Collections.Immutable.ImmutableList.Create(13);
 }
