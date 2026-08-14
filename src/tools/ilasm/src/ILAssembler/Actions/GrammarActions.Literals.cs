@@ -314,10 +314,10 @@ namespace ILAssembler
 
         GrammarResult ICILVisitor<GrammarResult>.VisitTruefalse(CILParser.TruefalseContext context) => VisitTruefalse(context);
 
+        internal bool ParseBoolean(IToken token) => bool.Parse(token.Text);
+
         public static GrammarResult.Literal<bool> VisitTruefalse(CILParser.TruefalseContext context)
-        {
-            return new(bool.Parse(context.GetText()));
-        }
+            => new(context.Value);
 
     }
 }
