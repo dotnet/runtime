@@ -447,6 +447,8 @@ enum BasicBlockFlags : uint64_t
     BBF_ASYNC_RESUMPTION               = MAKE_BBFLAG(36), // Block is a resumption block in an async method
     BBF_CATCH_RESUMPTION               = MAKE_BBFLAG(37), // Block is a resumption from a catch
     BBF_THROW_HELPER                   = MAKE_BBFLAG(38), // Block is a call to a throw helper
+    BBF_STALE_PREDICATE                = MAKE_BBFLAG(39), // Block's branch condition VN only describes flow that
+                                                         // actually passes through the block (set/used by RBO)
 
     // The following are sets of flags.
 
