@@ -1341,10 +1341,6 @@ namespace System.Runtime.InteropServices
                 // the golden ratio) mixes every input bit into the high half of the product, which is then masked
                 // to produce the index. The whole sequence lowers to a multiply, a shift and a mask, which is
                 // negligible next to the lookup that follows.
-                //
-                // The multiply is sized to the pointer width, so that a 32-bit process doesn't pay for a 64-bit
-                // multiply that the hardware has to emulate. Either way the high half leaves far more bits than
-                // the mask below consumes, as there is one bucket per processor.
                 uint hash = sizeof(nint) == 8
                     ? (uint)(((ulong)(nuint)comPointer * 0x9E3779B97F4A7C15) >> 32)
                     : ((uint)(nuint)comPointer * 0x9E3779B9) >> 16;
