@@ -443,6 +443,7 @@ public static partial class XmlSerializerTests
             ReadOnlyCollection = new ReadOnlyCollection<int>(new int[] { 4, 5 }),
             FrozenSet = FrozenSet.Create(6),
             ImmutableQueue = ImmutableQueue.Create(7, 8),
+            ImmutableArrayField = ImmutableArray.Create("nine", "ten"),
         };
 
         var roundTripped = SerializeAndDeserialize(value, null, skipStringCompare: true);
@@ -452,6 +453,7 @@ public static partial class XmlSerializerTests
         Assert.Equal(value.ReadOnlyCollection, roundTripped.ReadOnlyCollection);
         Assert.Equal(value.FrozenSet, roundTripped.FrozenSet);
         Assert.Equal(value.ImmutableQueue, roundTripped.ImmutableQueue);
+        Assert.Equal(value.ImmutableArrayField, roundTripped.ImmutableArrayField);
     }
 
     [Fact]
@@ -469,6 +471,8 @@ public static partial class XmlSerializerTests
         Assert.Empty(roundTripped.ReadOnlyCollection);
         Assert.Empty(roundTripped.FrozenSet);
         Assert.Empty(roundTripped.ImmutableQueue);
+        Assert.False(roundTripped.ImmutableArrayField.IsDefault);
+        Assert.Empty(roundTripped.ImmutableArrayField);
     }
 
     [Fact]

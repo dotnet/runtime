@@ -1830,6 +1830,9 @@ public class TypeWithReadOnlyCollections
     public ReadOnlyCollection<int> ReadOnlyCollection { get; set; }
     public FrozenSet<int> FrozenSet { get; set; }
     public ImmutableQueue<int> ImmutableQueue { get; set; }
+
+    // A field rather than a property, which the serializers assign through a different path.
+    public ImmutableArray<string> ImmutableArrayField;
 }
 
 // The mutable counterpart of TypeWithReadOnlyCollections, used to verify that collections created from their

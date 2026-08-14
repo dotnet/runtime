@@ -1871,9 +1871,17 @@ namespace System.Xml.Serialization
                         // This is an odd legacy behavior, but it's what the old serializers did.
                         if (isList && member.Source != null)
                         {
+                            // A collection that is a struct, such as ImmutableArray<T>, is uninitialized when it holds its
+                            // default value rather than when it is null, and a boxed default is never null. Capture that
+                            // default so an absent member ends up empty here too, matching the other serializers.
+                            object? uninitialized = mapping.TypeDesc.UsesCollectionBuilder && mapping.TypeDesc.Type!.IsValueType
+                                ? RuntimeHelpers.GetUninitializedObject(mapping.TypeDesc.Type)
+                                : null;
+
                             member.EnsureCollection = (obj) =>
                             {
-                                if (GetMemberValue(obj, mapping.MemberInfo!) == null)
+                                object? current = GetMemberValue(obj, mapping.MemberInfo!);
+                                if (current == null || current.Equals(uninitialized))
                                 {
                                     var empty = ReflectionCreateCollection(mapping.TypeDesc);
                                     member.Source(empty);
