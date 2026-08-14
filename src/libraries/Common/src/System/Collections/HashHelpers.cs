@@ -129,7 +129,7 @@ namespace System.Collections
             int increment = remainder == 1 ? 4 : 2;
             int limit = (int)Math.Sqrt(candidate);
             long nextLimitSquared = (long)(limit + 1) * (limit + 1);
-            while (candidate < int.MaxValue)
+            while (true)
             {
                 while (nextLimitSquared <= candidate)
                 {
@@ -145,8 +145,6 @@ namespace System.Collections
                 candidate += increment;
                 increment = 6 - increment;
             }
-
-            return min;
         }
 
         // Returns the size of the hashtable to grow to.
