@@ -27,6 +27,12 @@ InlinePolicy* InlinePolicy::GetPolicy(Compiler* compiler, bool isPrejitRoot)
 {
 #if defined(DEBUG)
 
+    // Optionally install the AsyncStressPolicy.
+    if (JitConfig.JitStressAsyncInlining() != 0)
+    {
+        return new (compiler, CMK_Inlining) AsyncStressPolicy(compiler, isPrejitRoot);
+    }
+
     const bool useRandomPolicyForStress = compiler->compRandomInlineStress();
     const bool useRandomPolicy          = (JitConfig.JitInlinePolicyRandom() != 0);
 
@@ -3317,6 +3323,200 @@ void FullPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
     }
 
     return;
+}
+
+//------------------------------------------------------------------------
+// NoteBool: handle a boolean observation with non-fatal impact
+//
+// Arguments:
+//    obs      - the current observation
+//    value    - the value of the observation
+//
+void AsyncStressPolicy::NoteBool(InlineObservation obs, bool value)
+{
+    if (obs == InlineObservation::CALLEE_IS_ASYNC)
+    {
+        m_IsAsyncCall = value;
+        return;
+    }
+
+    ExtendedDefaultPolicy::NoteBool(obs, value);
+}
+
+//------------------------------------------------------------------------
+// NoteInt: handle an observed integer value
+//
+// Arguments:
+//    obs      - the current observation
+//    value    - the value being observed
+//
+// Notes:
+//    The size based rejections are deferred for every callee: they are SetNever,
+//    which would also mark the callee NOINLINE for every other call site, and the
+//    sizes are observed long before it is known whether the stress mode picked this
+//    call. DetermineProfitability makes them for the callees it did not pick.
+//
+//    CALLEE_MAXSTACK is deliberately not among them: stack heavy callees are
+//    left on the normal policy rather than being forced in.
+//
+void AsyncStressPolicy::NoteInt(InlineObservation obs, int value)
+{
+    switch (obs)
+    {
+        case InlineObservation::CALLSITE_ASYNC_STRESS_INDEX:
+        {
+            m_AsyncStressIndex = value;
+            return;
+        }
+
+        case InlineObservation::CALLEE_IL_CODE_SIZE:
+        {
+            assert(m_IsForceInlineKnown);
+            assert(value != 0);
+            m_CodeSize = static_cast<unsigned>(value);
+
+            unsigned alwaysInlineSize = InlineStrategy::ALWAYS_INLINE_SIZE;
+            if (m_InsideThrowBlock)
+            {
+                alwaysInlineSize /= 2;
+            }
+
+            if (m_CodeSize > InlineStrategy::IMPLEMENTATION_MAX_INLINE_SIZE)
+            {
+                SetNever(InlineObservation::CALLEE_TOO_MUCH_IL);
+            }
+            else if (m_IsForceInline)
+            {
+                SetCandidate(InlineObservation::CALLEE_IS_FORCE_INLINE);
+            }
+            else if (m_CodeSize <= alwaysInlineSize)
+            {
+                SetCandidate(InlineObservation::CALLEE_BELOW_ALWAYS_INLINE_SIZE);
+            }
+            else
+            {
+                SetCandidate(InlineObservation::CALLEE_IS_DISCRETIONARY_INLINE);
+            }
+
+            return;
+        }
+
+        case InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS:
+        {
+            m_BasicBlockCount = static_cast<unsigned>(value);
+
+            // Keep rejecting callees that do not return; that is not a size limit.
+            //
+            if (!m_IsForceInline && m_IsNoReturn && (value == 1))
+            {
+                SetNever(InlineObservation::CALLEE_DOES_NOT_RETURN);
+            }
+
+            return;
+        }
+
+        default:
+            break;
+    }
+
+    ExtendedDefaultPolicy::NoteInt(obs, value);
+}
+
+//------------------------------------------------------------------------
+// BudgetCheck: see if this inline would exceed the current budget
+//
+// Returns:
+//   True if inline would exceed the budget.
+//
+bool AsyncStressPolicy::BudgetCheck() const
+{
+    // Async inlines are the point of this policy, so the ones the stress mode picked
+    // ignore the budget. Everything else stays on the normal budget so that the stress
+    // mode does not turn into a general "inline everything" mode.
+    //
+    if (IsStressPicked())
+    {
+        return false;
+    }
+
+    return ExtendedDefaultPolicy::BudgetCheck();
+}
+
+//------------------------------------------------------------------------
+// DetermineProfitability: determine if this inline is profitable
+//
+// Arguments:
+//    methodInfo -- method info for the callee
+//
+// Notes:
+//    The n'th candidate (0 based) of a body, in the order fgAsyncStressPrepare
+//    shuffled them into, is inlined with probability pct^(depth + n). The decay
+//    keeps a body with many async calls from inlining all of them, which would
+//    make compile times explode and bury the interesting cases.
+//
+//    The roll can go either way against what the normal policy would have done:
+//    it inlines callees the ExtendedDefaultPolicy would have rejected as too big
+//    or unprofitable, and it rejects ones it would have accepted. Force inlines
+//    and callees below the always inline size are the exception. Those are never
+//    discretionary candidates, so this is not even reached for them and the stress
+//    mode cannot take them away.
+//
+void AsyncStressPolicy::DetermineProfitability(CORINFO_METHOD_INFO* methodInfo)
+{
+    if (!IsStressPicked())
+    {
+        // Not an async call, or an async candidate the stress mode did not pick, such as
+        // one created by late devirtualization. Make the size based rejections NoteInt
+        // deferred, then leave it to the normal heuristics.
+        //
+        ExtendedDefaultPolicy::NoteInt(InlineObservation::CALLEE_IL_CODE_SIZE, static_cast<int>(m_CodeSize));
+
+        if (InlDecisionIsFailure(m_Decision))
+        {
+            return;
+        }
+
+        ExtendedDefaultPolicy::NoteInt(InlineObservation::CALLEE_NUMBER_OF_BASIC_BLOCKS,
+                                       static_cast<int>(m_BasicBlockCount));
+
+        if (InlDecisionIsFailure(m_Decision))
+        {
+            return;
+        }
+
+        ExtendedDefaultPolicy::DetermineProfitability(methodInfo);
+        return;
+    }
+
+    if (m_IsPrejitRoot)
+    {
+        // The prejit root has no call site, so there is nothing to decay by. Leave it a
+        // candidate so that the call sites in the methods that inline it get the choice.
+        SetCandidate(InlineObservation::CALLEE_IS_PROFITABLE_INLINE);
+        return;
+    }
+
+    assert(m_CallsiteDepth > 0);
+
+    if (m_CallsiteDepth > (unsigned)JitConfig.JitStressAsyncInliningMaxDepth())
+    {
+        SetFailure(InlineObservation::CALLSITE_RANDOM_REJECT);
+        return;
+    }
+
+    const double pct         = (double)JitConfig.JitStressAsyncInliningPct() / 100.0;
+    const double probability = pow(pct, (double)(m_CallsiteDepth + (unsigned)m_AsyncStressIndex));
+
+    CLRRandom* const random = m_RootCompiler->m_inlineStrategy->GetRandom(JitConfig.JitStressAsyncInlining());
+
+    if (random->NextDouble() < probability)
+    {
+        SetCandidate(InlineObservation::CALLSITE_RANDOM_ACCEPT);
+    }
+    else
+    {
+        SetFailure(InlineObservation::CALLSITE_RANDOM_REJECT);
+    }
 }
 
 //------------------------------------------------------------------------/
