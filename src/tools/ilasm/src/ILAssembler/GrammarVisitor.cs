@@ -1127,7 +1127,10 @@ namespace ILAssembler
             bool isStandaloneCustomAttribute =
                 context.customAttrDecl().Length == 1 &&
                 context.PARAM() is null;
-            if (!isStandaloneCustomAttribute)
+            bool isTrailingCustomAttribute =
+                isStandaloneCustomAttribute &&
+                context.customAttrDecl()[0].dottedName() is null;
+            if (!isTrailingCustomAttribute)
             {
                 _pendingClassCustomAttributeOwner = null;
             }
@@ -1137,7 +1140,7 @@ namespace ILAssembler
                 _currentTypeDefinition.Push(VisitClassHead(classHead).Value);
                 VisitClassDecls(context.classDecls());
                 _currentTypeDefinition.Pop();
-                _lastFieldDefinition = null;
+                _pendingClassCustomAttributeOwner = null;
             }
             else if (context.methodHead() is CILParser.MethodHeadContext methodHead)
             {
@@ -1229,31 +1232,45 @@ namespace ILAssembler
                                 ? VisitGenArity(genericArities[bodySignatureIndex]).Value
                                 : 0);
 
+                    EntityRegistry.TypeEntity bodyOwner = VisitTypeSpec(typeSpecs[1]).Value;
                     string bodyName = VisitMethodName(methodNames[1]).Value;
-                    EntityRegistry.MethodDefinitionEntity[] bodyMethods = currentType.Methods
-                        .Where(method =>
-                            method.Name == bodyName &&
-                            method.MethodSignature is not null &&
-                            method.MethodSignature.ContentEquals(bodySignature))
-                        .Take(2)
-                        .ToArray();
-                    if (bodyMethods.Length != 1)
-                    {
-                        ReportError(
-                            DiagnosticIds.InvalidMetadataToken,
-                            $"Override body method '{bodyName}' could not be resolved uniquely",
-                            context);
-                        return GrammarResult.SentinelValue.Result;
-                    }
-
-                    EntityRegistry.MethodDefinitionEntity bodyMethod = bodyMethods[0];
                     EntityRegistry.MemberReferenceEntity declaration =
                         _entityRegistry.CreateLazilyRecordedMemberReference(
                             VisitTypeSpec(typeSpecs[0]).Value,
                             VisitMethodName(methodNames[0]).Value,
                             declarationSignature);
-                    currentType.MethodImplementations.Add(
-                        EntityRegistry.CreateUnrecordedMethodImplementation(bodyMethod, declaration));
+
+                    if (ReferenceEquals(bodyOwner, currentType))
+                    {
+                        EntityRegistry.MethodDefinitionEntity[] bodyMethods = currentType.Methods
+                            .Where(method =>
+                                method.Name == bodyName &&
+                                method.MethodSignature is not null &&
+                                method.MethodSignature.ContentEquals(bodySignature))
+                            .Take(2)
+                            .ToArray();
+                        if (bodyMethods.Length != 1)
+                        {
+                            ReportError(
+                                DiagnosticIds.InvalidMetadataToken,
+                                $"Override body method '{bodyName}' could not be resolved uniquely",
+                                context);
+                            return GrammarResult.SentinelValue.Result;
+                        }
+
+                        currentType.MethodImplementations.Add(
+                            EntityRegistry.CreateUnrecordedMethodImplementation(bodyMethods[0], declaration));
+                    }
+                    else
+                    {
+                        EntityRegistry.MemberReferenceEntity body =
+                            _entityRegistry.CreateLazilyRecordedMemberReference(
+                                bodyOwner,
+                                bodyName,
+                                bodySignature);
+                        currentType.MethodImplementations.Add(
+                            EntityRegistry.CreateUnrecordedMethodImplementation(currentType, body, declaration));
+                    }
                 }
             }
             else if (context.int32() is {} int32)
@@ -1502,7 +1519,31 @@ namespace ILAssembler
             return signature;
         }
 
-        public GrammarResult VisitClassDecls(CILParser.ClassDeclsContext context) => VisitChildren(context);
+        public GrammarResult VisitClassDecls(CILParser.ClassDeclsContext context)
+        {
+            CILParser.ClassDeclContext[] declarations = context.classDecl();
+            foreach (CILParser.ClassDeclContext declaration in declarations)
+            {
+                if (declaration.OVERRIDE() is null)
+                {
+                    VisitClassDecl(declaration);
+                }
+                else
+                {
+                    _pendingClassCustomAttributeOwner = null;
+                }
+            }
+
+            foreach (CILParser.ClassDeclContext declaration in declarations)
+            {
+                if (declaration.OVERRIDE() is not null)
+                {
+                    VisitClassDecl(declaration);
+                }
+            }
+
+            return GrammarResult.SentinelValue.Result;
+        }
 
 
         GrammarResult ICILVisitor<GrammarResult>.VisitClassHead(CILParser.ClassHeadContext context) => VisitClassHead(context);
@@ -2212,10 +2253,12 @@ namespace ILAssembler
 
         public GrammarResult VisitDecl(CILParser.DeclContext context)
         {
-            bool isTrailingCustomAttribute = context.customAttrDecl() is not null;
+            bool isTrailingCustomAttribute =
+                context.customAttrDecl() is { } customAttribute &&
+                customAttribute.dottedName() is null;
             if (context.fieldDecl() is null && !isTrailingCustomAttribute)
             {
-                _lastFieldDefinition = null;
+                _pendingClassCustomAttributeOwner = null;
             }
 
             if (context.nameSpaceHead() is CILParser.NameSpaceHeadContext ns)
@@ -2225,7 +2268,7 @@ namespace ILAssembler
                 _currentNamespace.Push(string.IsNullOrEmpty(outer) ? namespaceName : $"{outer}.{namespaceName}");
                 VisitDecls(context.decls());
                 _currentNamespace.Pop();
-                _lastFieldDefinition = null;
+                _pendingClassCustomAttributeOwner = null;
                 return GrammarResult.SentinelValue.Result;
             }
             if (context.classHead() is CILParser.ClassHeadContext classHead)
@@ -2233,7 +2276,7 @@ namespace ILAssembler
                 _currentTypeDefinition.Push(VisitClassHead(classHead).Value);
                 VisitClassDecls(context.classDecls());
                 _currentTypeDefinition.Pop();
-                _lastFieldDefinition = null;
+                _pendingClassCustomAttributeOwner = null;
                 return GrammarResult.SentinelValue.Result;
             }
             if (context.methodHead() is CILParser.MethodHeadContext methodHead)
@@ -2399,7 +2442,7 @@ namespace ILAssembler
                 // Top-level custom attribute owned by the module (matching native ilasm behavior)
                 if (VisitCustomAttrDecl(topLevelCustomAttr).Value is { } customAttr)
                 {
-                    customAttr.Owner = (EntityRegistry.EntityBase?)_lastFieldDefinition ?? _entityRegistry.Module;
+                    customAttr.Owner = (EntityRegistry.EntityBase?)_pendingClassCustomAttributeOwner ?? _entityRegistry.Module;
                 }
             }
             if (context.secDecl() is { } topSecDecl)
@@ -3057,7 +3100,7 @@ namespace ILAssembler
             fieldType.WriteContentTo(signature.Builder);
 
             var field = EntityRegistry.CreateUnrecordedFieldDefinition(fieldAttrs, _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType, name, signature.Builder);
-            _lastFieldDefinition = field;
+            _pendingClassCustomAttributeOwner = field;
 
             if (field is not null)
             {
