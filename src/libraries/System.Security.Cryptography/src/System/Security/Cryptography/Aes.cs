@@ -292,14 +292,75 @@ namespace System.Security.Cryptography
             return true;
         }
 
+        /// <summary>
+        ///   Unwraps a key that was wrapped using the IETF RFC 3394 AES Key Wrap algorithm.
+        /// </summary>
+        /// <param name="source">The data to unwrap.</param>
+        /// <param name="destination">The buffer to receive the unwrapped key.</param>
+        /// <returns>The number of bytes in the unwrapped key.</returns>
+        /// <exception cref="CryptographicException">
+        ///   <para>The unwrap algorithm failed to unwrap the ciphertext.</para>
+        ///   <para>-or-</para>
+        ///   <para>An error occurred during the cryptographic operation.</para>
+        /// </exception>
+        /// <remarks>
+        ///   <para>
+        ///     When called by the base class,
+        ///     <paramref name="source"/> is pre-validated to be at least 24 bytes long and a multiple of 8 bytes.
+        ///   </para>
+        ///   <para>
+        ///     When called by the base class,
+        ///     <paramref name="destination"/> will always be exactly 8 bytes shorter than <paramref name="source"/>,
+        ///     so any valid value will always fit.
+        ///   </para>
+        /// </remarks>
         protected virtual int DecryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            throw new NotImplementedException();
+            ulong a0 = Rfc3394Unwrap(
+                source,
+                destination,
+                this,
+                static (self, source, destination) => self.DecryptEcb(source, destination, PaddingMode.None));
+
+            // Check that a0 is equal to 0xA6A6A6A6A6A6A6A6UL using 32-bit branchless checks only.
+            uint hiCheck = (uint)(a0 >> 32) ^ 0xA6A6A6A6U;
+            uint loCheck = (uint)a0 ^ 0xA6A6A6A6U;
+
+            if ((hiCheck | loCheck) != 0)
+            {
+                throw new CryptographicException(SR.Cryptography_KeyWrap_DecryptFailed);
+            }
+
+            return source.Length - 8;
         }
 
+        /// <summary>
+        ///   Wraps a key using the IETF RFC 3394 AES Key Wrap algorithm,
+        ///   writing the result to a specified buffer.
+        /// </summary>
+        /// <param name="source">The data to wrap.</param>
+        /// <param name="destination">The buffer to receive the wrapped data.</param>
+        /// <exception cref="CryptographicException">An error occurred during the cryptographic operation.</exception>
+        /// <remarks>
+        ///   <para>
+        ///     When called by the base class,
+        ///     <paramref name="source"/> is pre-validated to be at least 16 bytes long and a multiple of 8 bytes.
+        ///   </para>
+        ///   <para>
+        ///     When called by the base class,
+        ///     <paramref name="destination"/> is pre-validated to be exactly the length returned by
+        ///     <see cref="GetKeyWrapLength"/> for the given input.
+        ///   </para>
+        /// </remarks>
         protected virtual void EncryptKeyWrapCore(ReadOnlySpan<byte> source, Span<byte> destination)
         {
-            throw new NotImplementedException();
+            const ulong DefaultInitialValue = 0xA6A6A6A6A6A6A6A6UL;
+            Rfc3394Wrap(
+                DefaultInitialValue,
+                source,
+                destination,
+                this,
+                static (self, source, destination) => self.EncryptEcb(source, destination, PaddingMode.None));
         }
 
         /// <summary>
@@ -757,7 +818,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(source.Length % 8 == 0);
             Debug.Assert(source.Length >= 16);
-            Debug.Assert(destination.Length == GetKeyWrapPaddedLength(source.Length));
+            Debug.Assert(destination.Length == source.Length + 8);
 
             Span<byte> B = stackalloc byte[16];
             Span<byte> A = B.Slice(0, 8);
