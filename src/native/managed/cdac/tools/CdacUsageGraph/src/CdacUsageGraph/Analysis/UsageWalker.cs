@@ -168,7 +168,7 @@ internal sealed class UsageWalker
             return false;
 
         _collector.RecordDependencies(label, dataType, dependencies);
-        return true;
+        return !_attributes.IsCustomInitializer(method);
     }
 
     private bool TryHandleStaticReference(

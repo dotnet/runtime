@@ -102,6 +102,10 @@ bool pal_readdir_onlydirectories(const pal_char_t* path, pal_readdir_callback_t 
 #if HAVE_DIRENT_D_TYPE
         int entry_type = entry->d_type;
 #else
+#define DT_UNKNOWN 0
+#define DT_DIR 4
+#define DT_REG 8
+#define DT_LNK 10
         int entry_type = DT_UNKNOWN;
 #endif
 
@@ -309,15 +313,53 @@ pal_char_t* pal_get_default_installation_dir(void)
 #endif
 }
 
-static bool is_path_fully_qualified(const pal_char_t* path)
+bool pal_is_path_fully_qualified(const pal_char_t* path)
 {
-    return path[0] == DIR_SEPARATOR;
+    return path != NULL && path[0] == DIR_SEPARATOR;
 }
 
-// Two-level stringize so PATH_MAX's value (not its name) can be used as an
-// explicit sscanf field width below.
-#define PROC_MAPS_STR2(x) #x
-#define PROC_MAPS_STR(x) PROC_MAPS_STR2(x)
+bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
+{
+    *dll = dlopen(path, RTLD_LAZY);
+    if (*dll == NULL)
+    {
+        trace_error(_X("Failed to load %s, error: %s"), path, dlerror());
+        return false;
+    }
+    return true;
+}
+
+void pal_unload_library(pal_dll_t library)
+{
+    if (dlclose(library) != 0)
+    {
+        trace_warning(_X("Failed to unload library, error: %s"), dlerror());
+    }
+}
+
+pal_proc_t pal_get_symbol(pal_dll_t library, const char* name)
+{
+    void* result = dlsym(library, name);
+    if (result == NULL)
+    {
+        trace_info(_X("Probed for and did not find library symbol %s, error: %s"), name, dlerror());
+    }
+    return result;
+}
+
+bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len)
+{
+    // On Unix pal_char_t is char and the input is already UTF-8, so this is a
+    // length-checked copy rather than an encoding conversion.
+    size_t required = strlen(utf8) + 1;
+    if (required > out_len)
+    {
+        return false;
+    }
+
+    memcpy(out, utf8, required);
+    return true;
+}
 
 // dlopen on some systems only finds a loaded library when given its full path.
 // As a fallback, scan /proc/self/maps for a mapped file whose name contains
@@ -335,8 +377,12 @@ static bool get_loaded_library_from_proc_maps(const pal_char_t* library_name, pa
     char found_path[PATH_MAX + 1];
     while (getline(&line, &line_cap, file) != -1)
     {
+        // Build the sscanf format dynamically to safely handle parenthesized PATH_MAX values on some platforms (like Haiku)
+        char fmt[64];
+        snprintf(fmt, sizeof(fmt), "%%*p-%%*p %%*[-rwxsp] %%*p %%*[:0-9a-f] %%*d %%%ds\n", PATH_MAX);
+
         char buf[PATH_MAX + 1]; // + 1 for the NUL terminator
-        if (sscanf(line, "%*p-%*p %*[-rwxsp] %*p %*[:0-9a-f] %*d %" PROC_MAPS_STR(PATH_MAX) "s\n", buf) == 1)
+        if (sscanf(line, fmt, buf) == 1)
         {
             const char* last_sep = strrchr(buf, DIR_SEPARATOR);
             if (last_sep == NULL)
@@ -384,7 +430,7 @@ bool pal_get_loaded_library(
     const pal_char_t* lookup_name = library_name;
 #if defined(TARGET_OSX)
     pal_char_t* rpath_name = NULL;
-    if (!is_path_fully_qualified(library_name))
+    if (!pal_is_path_fully_qualified(library_name))
     {
         size_t cap = STRING_LENGTH(_X("@rpath/")) + pal_strlen(library_name) + 1;
         rpath_name = (pal_char_t*)malloc(cap * sizeof(pal_char_t));
@@ -403,7 +449,7 @@ bool pal_get_loaded_library(
 
     if (dll_maybe == NULL)
     {
-        if (is_path_fully_qualified(library_name))
+        if (pal_is_path_fully_qualified(library_name))
             return false;
 
         return get_loaded_library_from_proc_maps(library_name, dll, out_path);
@@ -436,4 +482,22 @@ bool pal_get_loaded_library(
     *dll = dll_maybe;
     *out_path = path_copy;
     return true;
+}
+
+void pal_err_print_line(const pal_char_t* message)
+{
+    fputs(message, stderr);
+    fputc('\n', stderr);
+}
+
+void pal_file_vprintf(FILE* f, const pal_char_t* format, va_list vl)
+{
+    vfprintf(f, format, vl);
+    fputc('\n', f);
+}
+
+void pal_out_vprint_line(const pal_char_t* format, va_list vl)
+{
+    vfprintf(stdout, format, vl);
+    fputc('\n', stdout);
 }

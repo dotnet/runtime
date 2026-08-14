@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include <locale.h>
 
 #include <minipal/utils.h>
 
@@ -205,30 +206,6 @@ static bool is_dir_separator(pal_char_t c)
     return c == DIR_SEPARATOR || c == ALT_DIR_SEPARATOR;
 }
 
-// Returns true if the path is relative to the current drive or working
-// directory (i.e. not rooted at a specific drive or UNC share), and therefore
-// must be canonicalized before it can be reliably used.
-static bool is_path_not_fully_qualified(const pal_char_t* path)
-{
-    size_t len = pal_strlen(path);
-
-    // Too short to encode a drive ("X:") or UNC ("\\") root.
-    if (len < 2)
-        return true;
-
-    // Starts with a separator: fully qualified only if it's a UNC path,
-    // i.e. the second character is also a separator ("\\server\share").
-    if (is_dir_separator(path[0]))
-        return !is_dir_separator(path[1]);
-
-    // Otherwise it must be a drive-rooted path of the form "X:\": at least
-    // three characters, a volume separator at index 1, and a directory
-    // separator at index 2.
-    return len < 3
-        || path[1] != VOLUME_SEPARATOR
-        || !is_dir_separator(path[2]);
-}
-
 // Returns true if the path needs normalization (canonicalization, and the \\?\
 // prefix for long paths): it isn't already normalized and is either not fully
 // qualified or at least MAX_PATH characters long.
@@ -237,7 +214,7 @@ static bool should_normalize_path(const pal_char_t* path)
     if (is_path_normalized(path))
         return false;
 
-    if (!is_path_not_fully_qualified(path) && pal_strlen(path) < MAX_PATH)
+    if (pal_is_path_fully_qualified(path) && pal_strlen(path) < MAX_PATH)
         return false;
 
     return true;
@@ -518,6 +495,121 @@ pal_char_t* pal_get_default_installation_dir(void)
     return result;
 }
 
+bool pal_is_path_fully_qualified(const pal_char_t* path)
+{
+    if (path == NULL)
+        return false;
+
+    size_t len = pal_strlen(path);
+    if (len < 2)
+        return false;
+
+    // UNC and DOS device paths (e.g. \\server\share or \\?\C:\).
+    if (is_dir_separator(path[0]))
+        return path[1] == _X('?') || is_dir_separator(path[1]);
+
+    // Drive absolute path (e.g. C:\).
+    return len >= 3 && path[1] == VOLUME_SEPARATOR && is_dir_separator(path[2]);
+}
+
+bool pal_load_library(const pal_char_t* path, pal_dll_t* dll)
+{
+    *dll = NULL;
+
+    pal_char_t* full = NULL;
+    const pal_char_t* load_path = path;
+
+    // LoadLibraryEx with the search flags below requires a fully-qualified path.
+    if (!pal_is_path_fully_qualified(path))
+    {
+        full = pal_fullpath(path, false);
+        if (full == NULL)
+        {
+            trace_error(_X("Failed to load [%s], HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
+            return false;
+        }
+        load_path = full;
+    }
+
+    HMODULE library = LoadLibraryExW(load_path, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+    if (library == NULL)
+    {
+        DWORD error_code = GetLastError();
+        trace_error(_X("Failed to load [%s], HRESULT: 0x%X"), load_path, HRESULT_FROM_WIN32(error_code));
+        if (error_code == ERROR_BAD_EXE_FORMAT)
+        {
+            trace_error(_X("  - Ensure the library matches the current process architecture: ") _STRINGIFY(CURRENT_ARCH_NAME));
+        }
+        free(full);
+        return false;
+    }
+
+    // Pin the module so it is never unloaded (pal_unload_library is a no-op on Windows).
+    HMODULE pinned;
+    if (!GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, load_path, &pinned))
+    {
+        trace_error(_X("Failed to pin library [%s] in [pal_load_library]"), load_path);
+        FreeLibrary(library);
+        free(full);
+        return false;
+    }
+
+    if (trace_is_enabled())
+    {
+        DWORD name_size = MAX_PATH / 2;
+        pal_char_t* name = NULL;
+        DWORD name_written = 0;
+        do
+        {
+            name_size *= 2;
+            pal_char_t* new_name = (pal_char_t*)realloc(name, name_size * sizeof(pal_char_t));
+            if (new_name == NULL)
+            {
+                free(name);
+                name = NULL;
+                break;
+            }
+            name = new_name;
+            name_written = GetModuleFileNameW(library, name, name_size);
+        } while (name_written == name_size);
+
+        if (name != NULL && name_written != 0)
+            trace_info(_X("Loaded library from %s"), name);
+
+        free(name);
+    }
+
+    *dll = library;
+    free(full);
+    return true;
+}
+
+void pal_unload_library(pal_dll_t library)
+{
+    // No-op. On Windows the host pins loaded libraries so they are not unloaded.
+    (void)library;
+}
+
+pal_proc_t pal_get_symbol(pal_dll_t library, const char* name)
+{
+    FARPROC proc = GetProcAddress(library, name);
+    if (proc == NULL)
+    {
+        trace_info(_X("Probed for and did not resolve library symbol %S"), name);
+        return NULL;
+    }
+    return proc;
+}
+
+bool pal_utf8_to_palstr(const char* utf8, pal_char_t* out, size_t out_len)
+{
+    int required = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+    if (required <= 0 || (size_t)required > out_len)
+        return false;
+
+    return MultiByteToWideChar(CP_UTF8, 0, utf8, -1, out, (int)out_len) > 0;
+}
+
 bool pal_get_loaded_library(
     const pal_char_t* library_name,
     const char* symbol_name,
@@ -539,4 +631,57 @@ bool pal_get_loaded_library(
     *dll = dll_maybe;
     *out_path = path;
     return true;
+}
+
+static void print_line_to_handle(const pal_char_t* message, HANDLE handle, FILE* fallback_file)
+{
+    // String functions like fwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
+    // In order to properly print UTF-8 and GB18030 characters to the console without requiring the user to use chcp to a compatible locale, we use WriteConsoleW.
+    // However, WriteConsoleW will fail if the output is redirected to a file - in that case we write to the fallback file using a UTF-8 locale.
+    DWORD mode;
+    // GetConsoleMode returns FALSE when the output is redirected to a file.
+    if (GetConsoleMode(handle, &mode) == FALSE)
+    {
+        _locale_t loc = _create_locale(LC_ALL, ".utf8");
+        _fwprintf_l(fallback_file, _X("%s\n"), loc, message);
+        _free_locale(loc);
+    }
+    else
+    {
+        WriteConsoleW(handle, message, (DWORD)wcslen(message), NULL, NULL);
+        WriteConsoleW(handle, _X("\n"), 1, NULL, NULL);
+    }
+}
+
+void pal_err_print_line(const pal_char_t* message)
+{
+    print_line_to_handle(message, GetStdHandle(STD_ERROR_HANDLE), stderr);
+}
+
+void pal_file_vprintf(FILE* f, const pal_char_t* format, va_list vl)
+{
+    // String functions like vfwprintf convert wide to multi-byte characters as if wcrtomb were called - that is, using the current C locale (LC_TYPE).
+    // In order to properly print UTF-8 and GB18030 characters, we need to use the version of vfwprintf that takes a locale.
+    _locale_t loc = _create_locale(LC_ALL, ".utf8");
+    _vfwprintf_l(f, format, loc, vl);
+    fputwc(_X('\n'), f);
+    _free_locale(loc);
+}
+
+void pal_out_vprint_line(const pal_char_t* format, va_list vl)
+{
+    va_list vl_copy;
+    va_copy(vl_copy, vl);
+    int len = 1 + pal_strlen_vprintf(format, vl_copy);
+    va_end(vl_copy);
+    if (len <= 0)
+        return;
+
+    pal_char_t* buffer = (pal_char_t*)malloc((size_t)len * sizeof(pal_char_t));
+    if (buffer == NULL)
+        return;
+
+    pal_str_vprintf(buffer, len, format, vl);
+    print_line_to_handle(buffer, GetStdHandle(STD_OUTPUT_HANDLE), stdout);
+    free(buffer);
 }

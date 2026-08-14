@@ -4098,6 +4098,8 @@ private:
     RSExtSmartPtr<ICorDebugMetaDataLocator>   m_pMetaDataLocator;
 
     IDacDbiInterface *  m_pDacPrimitives;
+    // Keeps the native fallback DAC alive until the managed cDAC has been released.
+    IUnknown *           m_pLegacyDac;
 
     IDacDbiInterface::TargetInfo m_cachedTargetInfo;
     bool                m_fHasCachedTargetInfo;

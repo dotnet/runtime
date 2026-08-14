@@ -1929,10 +1929,13 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 				ainfo->size = size;
 				continue;
 			} else if (klass == swift_error || klass == swift_error_ptr) {
-				if (sig->pinvoke)
+				if (sig->pinvoke) {
 					ainfo->reg = ARMREG_R21;
-				else
+					ainfo->swift_error_in_reg = TRUE;
+				} else {
 					add_param (cinfo, ainfo, sig->params [pindex], FALSE);
+					ainfo->swift_error_in_reg = ainfo->storage == ArgInIReg;
+				}
 				ainfo->storage = ArgSwiftError;
 				continue;
 			}
@@ -2996,7 +2999,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		case ArgSwiftError: {
 			ins->flags |= MONO_INST_VOLATILE;
 			ins->opcode = OP_REGOFFSET;
-			if (ainfo->offset) {
+			if (!ainfo->swift_error_in_reg) {
 				g_assert (cfg->arch.args_reg);
 				ins->inst_basereg = cfg->arch.args_reg;
 				ins->inst_offset = ainfo->offset;
@@ -6162,7 +6165,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				break;
 			case ArgSwiftError:
 				if (cfg->method->wrapper_type == MONO_WRAPPER_MANAGED_TO_NATIVE) {
-					if (ainfo->offset == 0) {
+					if (ainfo->swift_error_in_reg) {
 						code = emit_strx (code, ainfo->reg, cfg->arch.swift_error_var->inst_basereg, GTMREG_TO_INT (cfg->arch.swift_error_var->inst_offset));
 					}
 				} else if (cfg->method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED) {

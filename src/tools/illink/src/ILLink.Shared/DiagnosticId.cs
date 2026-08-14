@@ -223,6 +223,7 @@ namespace ILLink.Shared
         // Memory safety migration diagnostic ids.
         UnsafeMemberMissingSafetyDocumentation = 5005,
         PointerSignatureRequiresUnsafe = 5006,
+        LibraryImportRequiresExplicitSafety = 5007,
     }
 
     public static class DiagnosticIdExtensions
@@ -255,7 +256,7 @@ namespace ILLink.Shared
             {
                 > 2000 and < 3000 => DiagnosticCategory.Trimming,
                 >= 3000 and < 3050 => DiagnosticCategory.SingleFile,
-                5005 or 5006 => DiagnosticCategory.Safety,
+                5005 or 5006 or 5007 => DiagnosticCategory.Safety,
                 >= 3050 and <= 6000 => DiagnosticCategory.AOT,
                 _ => throw new ArgumentException($"The provided diagnostic id '{diagnosticId}' does not fall into the range of supported warning codes 2001 to 6000 (inclusive).")
             };

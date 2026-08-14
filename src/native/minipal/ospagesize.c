@@ -13,8 +13,13 @@
 
 uint32_t minipal_getpagesize(void)
 {
+#if defined(TARGET_HAIKU) && defined(__clang__)
+    static _Atomic uint32_t cached_page_size = 0;
+    uint32_t page_size = __c11_atomic_load(&cached_page_size, memory_order_relaxed);
+#else
     static atomic_uint cached_page_size = 0;
     uint32_t page_size = atomic_load_explicit(&cached_page_size, memory_order_relaxed);
+#endif
     if (page_size == 0)
     {
         long sc = sysconf(_SC_PAGESIZE);
@@ -25,7 +30,11 @@ uint32_t minipal_getpagesize(void)
             abort();
         }
         page_size = (uint32_t)sc;
+#if defined(TARGET_HAIKU) && defined(__clang__)
+        __c11_atomic_store(&cached_page_size, page_size, memory_order_relaxed);
+#else
         atomic_store_explicit(&cached_page_size, page_size, memory_order_relaxed);
+#endif
     }
     return page_size;
 }
