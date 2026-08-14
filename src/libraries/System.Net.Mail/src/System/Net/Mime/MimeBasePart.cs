@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Specialized;
 using System.Net.Mail;
 using System.Text;
@@ -12,6 +13,17 @@ namespace System.Net.Mime
     internal abstract class MimeBasePart
     {
         internal const string DefaultCharSet = "utf-8";
+
+        // RFC 2047 encoded-word token: any printable ASCII except SPACE, CTLs, and especials
+        // (especials = "(" / ")" / "<" / ">" / "@" / "," / ";" / ":" /
+        //              "\" / <"> / "/" / "[" / "]" / "?" / "." / "=").
+        private static readonly SearchValues<char> s_encodedWordTokenChars =
+            SearchValues.Create("!#$%&'*+-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz{|}~");
+
+        // Valid characters inside the encoded-text section of an RFC 2047 encoded-word:
+        // any printable ASCII except SPACE and '?' (which terminates the section).
+        private static readonly SearchValues<char> s_encodedWordDataChars =
+            SearchValues.Create("!\"#$%&'()*+,-./0123456789:;<=>@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~");
 
         protected ContentType? _contentType;
         protected ContentDisposition? _contentDisposition;
@@ -121,8 +133,8 @@ namespace System.Net.Mime
                 }
                 ReadOnlySpan<char> charSet = remainder.Slice(2, charSetLength);
 
-                // Validate charset is an RFC 2047 token (no whitespace, controls, or tspecials).
-                if (!IsValidEncodedWordToken(charSet))
+                // Validate charset is an RFC 2047 token (no whitespace, controls, or especials).
+                if (charSet.ContainsAnyExcept(s_encodedWordTokenChars))
                 {
                     return null;
                 }
@@ -138,28 +150,16 @@ namespace System.Net.Mime
                     return null;
                 }
 
-                // Encoded text: terminated by "?=", and must not contain '?', whitespace,
-                // or any non-printable ASCII (per RFC 2047).
+                // Encoded text: terminated by "?=", and must not contain whitespace or any
+                // non-printable ASCII (per RFC 2047).
                 int dataStart = encodingPos + 2;
-                int dataEnd = -1;
-                for (int i = dataStart; i < remainder.Length - 1; i++)
+                int terminator = remainder.Slice(dataStart).IndexOf("?=");
+                if (terminator < 0)
                 {
-                    char c = remainder[i];
-                    if (c == '?')
-                    {
-                        if (remainder[i + 1] == '=')
-                        {
-                            dataEnd = i;
-                            break;
-                        }
-                        return null;
-                    }
-                    if (c <= ' ' || c >= 127)
-                    {
-                        return null;
-                    }
+                    return null;
                 }
-                if (dataEnd < 0)
+                ReadOnlySpan<char> data = remainder.Slice(dataStart, terminator);
+                if (data.ContainsAnyExcept(s_encodedWordDataChars))
                 {
                     return null;
                 }
@@ -169,7 +169,7 @@ namespace System.Net.Mime
                     firstCharSet = charSet;
                 }
 
-                remainder = remainder.Slice(dataEnd + 2);
+                remainder = remainder.Slice(dataStart + terminator + 2);
                 if (remainder.IsEmpty)
                 {
                     break;
@@ -199,41 +199,6 @@ namespace System.Net.Mime
             }
 
             return Encoding.GetEncoding(firstCharSet.ToString());
-        }
-
-        private static bool IsValidEncodedWordToken(ReadOnlySpan<char> token)
-        {
-            foreach (char c in token)
-            {
-                // RFC 2047 token: any CHAR except SPACE, CTLs, and especials
-                // (especials = "(" / ")" / "<" / ">" / "@" / "," / ";" / ":" /
-                //              "\" / <"> / "/" / "[" / "]" / "?" / "." / "=").
-                if (c <= ' ' || c >= 127)
-                {
-                    return false;
-                }
-                switch (c)
-                {
-                    case '(':
-                    case ')':
-                    case '<':
-                    case '>':
-                    case '@':
-                    case ',':
-                    case ';':
-                    case ':':
-                    case '\\':
-                    case '"':
-                    case '/':
-                    case '[':
-                    case ']':
-                    case '?':
-                    case '.':
-                    case '=':
-                        return false;
-                }
-            }
-            return true;
         }
 
         internal static bool IsAscii(string value, bool permitCROrLF)
