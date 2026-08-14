@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
@@ -12,72 +11,22 @@ namespace ILAssembler;
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
 {
-    private readonly Stack<PropertyHeaderFrame> _propertyHeaderFrames = new();
-    private readonly Stack<EventHeaderFrame> _eventHeaderFrames = new();
-    private readonly Stack<PropertyBodyFrame> _propertyBodyFrames = new();
-    private readonly Stack<EventBodyFrame> _eventBodyFrames = new();
+    internal void AddPropertyAttribute(
+        CILParser.PropertyHeaderBuilder builder,
+        CILParser.AttributeValue<PropertyAttributes> value)
+        => builder.Attributes = ApplyAttribute(builder.Attributes, value);
 
-    private sealed class PropertyHeaderFrame
-    {
-        public PropertyHeaderFrame(CILParser.PropHeadContext owner, int initialSyntaxErrorCount)
-        {
-            Owner = owner;
-            InitialSyntaxErrorCount = initialSyntaxErrorCount;
-        }
-
-        public CILParser.PropHeadContext Owner { get; }
-
-        public int InitialSyntaxErrorCount { get; }
-
-        public PropertyAttributes Attributes { get; set; }
-    }
-
-    private sealed class EventHeaderFrame
-    {
-        public EventHeaderFrame(CILParser.EventHeadContext owner, int initialSyntaxErrorCount)
-        {
-            Owner = owner;
-            InitialSyntaxErrorCount = initialSyntaxErrorCount;
-        }
-
-        public CILParser.EventHeadContext Owner { get; }
-
-        public int InitialSyntaxErrorCount { get; }
-
-        public EventAttributes Attributes { get; set; }
-    }
-
-    private sealed record PropertyBodyFrame(
-        CILParser.ClassDeclContext Owner,
-        EntityRegistry.PropertyEntity? Property);
-
-    private sealed record EventBodyFrame(
-        CILParser.ClassDeclContext Owner,
-        EntityRegistry.EventEntity? Event);
-
-    internal void BeginPropertyHeader(CILParser.PropHeadContext context)
-        => _propertyHeaderFrames.Push(new(context, _syntaxErrorCount));
-
-    internal void AddPropertyAttribute(CILParser.PropHeadContext context, object? value)
-    {
-        if (TryGetPropertyHeaderFrame(context) is { } frame)
-        {
-            frame.Attributes = ApplyAttribute(
-                frame.Attributes,
-                GetAttributeValue<PropertyAttributes>(value));
-        }
-    }
-    internal object CreatePropertyHeader(
+    internal PropertyHeaderValue CreatePropertyHeader(
         CILParser.PropHeadContext context,
+        CILParser.PropertyHeaderBuilder builder,
+        int initialSyntaxErrorCount,
         byte callingConvention,
-        object? propertyType,
+        TypeValue propertyType,
         string name,
-        object? arguments,
-        object? initializer)
+        System.Collections.Immutable.ImmutableArray<SignatureArgumentValue> arguments,
+        FieldInitializerValue initializer)
     {
-        PropertyHeaderFrame? frame = TryGetPropertyHeaderFrame(context);
-        if (frame is null ||
-            frame.InitialSyntaxErrorCount != _syntaxErrorCount ||
+        if (HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
             context.exception is not null)
         {
             return PropertyHeaderValue.Error;
@@ -85,61 +34,45 @@ internal sealed partial class GrammarActions
 
         return new PropertyHeaderValue(
             true,
-            frame.Attributes,
+            builder.Attributes,
             callingConvention,
-            GetTypeValue(propertyType),
+            propertyType,
             name,
-            GetSignatureArgumentsValue(arguments),
+            arguments,
             initializer);
     }
 
-    internal void EndPropertyHeader(CILParser.PropHeadContext context)
-    {
-        if (_propertyHeaderFrames.Count == 0)
-        {
-            return;
-        }
-
-        PropertyHeaderFrame frame = _propertyHeaderFrames.Peek();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        if (ReferenceEquals(frame.Owner, context))
-        {
-            _propertyHeaderFrames.Pop();
-        }
-    }
-
-    internal object CreatePropertyAttribute(IToken token)
+    internal CILParser.AttributeValue<PropertyAttributes> CreatePropertyAttribute(IToken token)
         => token.Text switch
         {
-            "specialname" => new AttributeValue<PropertyAttributes>(
+            "specialname" => new CILParser.AttributeValue<PropertyAttributes>(
                 PropertyAttributes.SpecialName,
                 0,
                 true),
-            "rtspecialname" => new AttributeValue<PropertyAttributes>(0, 0, true),
+            "rtspecialname" => new CILParser.AttributeValue<PropertyAttributes>(0, 0, true),
             _ => throw new UnreachableException(),
         };
 
-    internal void BeginProperty(CILParser.ClassDeclContext context, object? value)
+    internal CILParser.PropertyBodyValue BeginProperty(PropertyHeaderValue value)
     {
         PrepareClassMember();
-        PropertyHeaderValue header = GetPropertyHeaderValue(value);
         EntityRegistry.PropertyEntity? property = null;
-        if (header.IsValid && _currentTypeDefinition.PeekOrDefault() is { } currentType)
+        if (value.IsValid && _currentTypeDefinition.PeekOrDefault() is { } currentType)
         {
             BlobBuilder signature = new();
             signature.WriteByte(
-                (byte)(header.CallingConvention | (byte)SignatureKind.Property));
-            signature.WriteCompressedInteger(header.Arguments.Length);
-            MaterializeType(header.PropertyType).WriteContentTo(signature);
-            foreach (SignatureArgumentValue argument in header.Arguments)
+                (byte)(value.CallingConvention | (byte)SignatureKind.Property));
+            signature.WriteCompressedInteger(value.Arguments.Length);
+            MaterializeType(value.PropertyType).WriteContentTo(signature);
+            foreach (SignatureArgumentValue argument in value.Arguments)
             {
                 MaterializeSignatureArgument(argument).SignatureBlob.WriteContentTo(signature);
             }
 
-            property = new EntityRegistry.PropertyEntity(header.Attributes, signature, header.Name);
-            if (header.ConstantValue is not NoConstantSentinel)
+            property = new EntityRegistry.PropertyEntity(value.Attributes, signature, value.Name);
+            if (value.Initializer.HasValue)
             {
-                property.ConstantValue = header.ConstantValue;
+                property.ConstantValue = value.Initializer.ConstantValue;
                 property.HasConstant = true;
                 property.Attributes |= PropertyAttributes.HasDefault;
             }
@@ -147,36 +80,42 @@ internal sealed partial class GrammarActions
             currentType.Properties.Add(property);
         }
 
-        _propertyBodyFrames.Push(new(context, property));
+        return new CILParser.PropertyBodyValue(property);
     }
 
-    internal void AddPropertySetter(CILParser.PropDeclContext context, object? value)
-        => AddPropertyAccessor(context, MethodSemanticsAttributes.Setter, value);
+    internal void AddPropertySetter(
+        CILParser.PropertyBodyValue body,
+        MethodReferenceValue value)
+        => AddPropertyAccessor(body, MethodSemanticsAttributes.Setter, value);
 
-    internal void AddPropertyGetter(CILParser.PropDeclContext context, object? value)
-        => AddPropertyAccessor(context, MethodSemanticsAttributes.Getter, value);
+    internal void AddPropertyGetter(
+        CILParser.PropertyBodyValue body,
+        MethodReferenceValue value)
+        => AddPropertyAccessor(body, MethodSemanticsAttributes.Getter, value);
 
-    internal void AddPropertyOther(CILParser.PropDeclContext context, object? value)
-        => AddPropertyAccessor(context, MethodSemanticsAttributes.Other, value);
+    internal void AddPropertyOther(
+        CILParser.PropertyBodyValue body,
+        MethodReferenceValue value)
+        => AddPropertyAccessor(body, MethodSemanticsAttributes.Other, value);
 
     private void AddPropertyAccessor(
-        CILParser.PropDeclContext context,
+        CILParser.PropertyBodyValue body,
         MethodSemanticsAttributes semantics,
-        object? value)
+        MethodReferenceValue value)
     {
-        if (TryGetPropertyBodyFrame(context) is { Property: { } property })
+        if (body.Property is { } property)
         {
             property.Accessors.Add(
-                (semantics, MaterializeMethodReference(GetMethodReferenceValue(value))));
+                (semantics, MaterializeMethodReference(value)));
         }
     }
 
     internal void AddPropertyCustomAttribute(
-        CILParser.PropDeclContext context,
+        CILParser.PropertyBodyValue body,
         CILParser.CustomAttrDeclContext attribute)
     {
         if (attribute.HasSyntaxError ||
-            TryGetPropertyBodyFrame(context) is not { Property: { } property })
+            body.Property is not { } property)
         {
             return;
         }
@@ -187,33 +126,35 @@ internal sealed partial class GrammarActions
         }
     }
 
-    internal void ProcessPropertySourceDirective(CILParser.ExtSourceSpecContext context)
-        => _ = context;
-
-    internal void ProcessPropertyLanguageDirective(CILParser.LanguageDeclContext context)
-        => _ = context;
-
-    internal void BeginEventHeader(CILParser.EventHeadContext context)
-        => _eventHeaderFrames.Push(new(context, _syntaxErrorCount));
-
-    internal void AddEventAttribute(CILParser.EventHeadContext context, object? value)
+    internal void ProcessPropertySourceDirective(
+        CILParser.PropertyBodyValue body,
+        CILParser.ExtSourceSpecContext context)
     {
-        if (TryGetEventHeaderFrame(context) is { } frame)
-        {
-            frame.Attributes = ApplyAttribute(
-                frame.Attributes,
-                GetAttributeValue<EventAttributes>(value));
-        }
+        _ = body;
+        _ = context;
     }
 
-    internal object CreateEventHeader(
+    internal void ProcessPropertyLanguageDirective(
+        CILParser.PropertyBodyValue body,
+        CILParser.LanguageDeclContext context)
+    {
+        _ = body;
+        _ = context;
+    }
+
+    internal void AddEventAttribute(
+        CILParser.EventHeaderBuilder builder,
+        CILParser.AttributeValue<EventAttributes> value)
+        => builder.Attributes = ApplyAttribute(builder.Attributes, value);
+
+    internal EventHeaderValue CreateEventHeader(
         CILParser.EventHeadContext context,
-        object? eventType,
+        CILParser.EventHeaderBuilder builder,
+        int initialSyntaxErrorCount,
+        TypeSpecificationValue? eventType,
         string name)
     {
-        EventHeaderFrame? frame = TryGetEventHeaderFrame(context);
-        if (frame is null ||
-            frame.InitialSyntaxErrorCount != _syntaxErrorCount ||
+        if (HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
             context.exception is not null)
         {
             return EventHeaderValue.Error;
@@ -221,86 +162,70 @@ internal sealed partial class GrammarActions
 
         return new EventHeaderValue(
             true,
-            frame.Attributes,
-            eventType is null ? null : GetTypeSpecificationValue(eventType),
+            builder.Attributes,
+            eventType,
             name);
     }
 
-    internal void EndEventHeader(CILParser.EventHeadContext context)
-    {
-        if (_eventHeaderFrames.Count == 0)
-        {
-            return;
-        }
-
-        EventHeaderFrame frame = _eventHeaderFrames.Peek();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        if (ReferenceEquals(frame.Owner, context))
-        {
-            _eventHeaderFrames.Pop();
-        }
-    }
-
-    internal object CreateEventAttribute(IToken token)
+    internal CILParser.AttributeValue<EventAttributes> CreateEventAttribute(IToken token)
         => token.Text switch
         {
-            "specialname" => new AttributeValue<EventAttributes>(
+            "specialname" => new CILParser.AttributeValue<EventAttributes>(
                 EventAttributes.SpecialName,
                 0,
                 true),
-            "rtspecialname" => new AttributeValue<EventAttributes>(0, 0, true),
+            "rtspecialname" => new CILParser.AttributeValue<EventAttributes>(0, 0, true),
             _ => throw new UnreachableException(),
         };
 
-    internal void BeginEvent(CILParser.ClassDeclContext context, object? value)
+    internal CILParser.EventBodyValue BeginEvent(EventHeaderValue value)
     {
         PrepareClassMember();
-        EventHeaderValue header = GetEventHeaderValue(value);
         EntityRegistry.EventEntity? @event = null;
-        if (header.IsValid && _currentTypeDefinition.PeekOrDefault() is { } currentType)
+        if (value.IsValid && _currentTypeDefinition.PeekOrDefault() is { } currentType)
         {
             @event = new EntityRegistry.EventEntity(
-                header.Attributes,
-                header.EventType is null
+                value.Attributes,
+                value.EventType is null
                     ? null
-                    : ResolveTypeSpecification(header.EventType),
-                header.Name);
+                    : ResolveTypeSpecification(value.EventType),
+                value.Name);
             currentType.Events.Add(@event);
         }
 
-        _eventBodyFrames.Push(new(context, @event));
+        return new CILParser.EventBodyValue(@event);
     }
 
-    internal void AddEventAdder(CILParser.EventDeclContext context, object? value)
-        => AddEventAccessor(context, MethodSemanticsAttributes.Adder, value);
+    internal void AddEventAdder(CILParser.EventBodyValue body, MethodReferenceValue value)
+        => AddEventAccessor(body, MethodSemanticsAttributes.Adder, value);
 
-    internal void AddEventRemover(CILParser.EventDeclContext context, object? value)
-        => AddEventAccessor(context, MethodSemanticsAttributes.Remover, value);
+    internal void AddEventRemover(CILParser.EventBodyValue body, MethodReferenceValue value)
+        => AddEventAccessor(body, MethodSemanticsAttributes.Remover, value);
 
-    internal void AddEventRaiser(CILParser.EventDeclContext context, object? value)
-        => AddEventAccessor(context, MethodSemanticsAttributes.Raiser, value);
+    internal void AddEventRaiser(CILParser.EventBodyValue body, MethodReferenceValue value)
+        => AddEventAccessor(body, MethodSemanticsAttributes.Raiser, value);
 
-    internal void AddEventOther(CILParser.EventDeclContext context, object? value)
-        => AddEventAccessor(context, MethodSemanticsAttributes.Other, value);
+    internal void AddEventOther(CILParser.EventBodyValue body, MethodReferenceValue value)
+        => AddEventAccessor(body, MethodSemanticsAttributes.Other, value);
 
     private void AddEventAccessor(
-        CILParser.EventDeclContext context,
+        CILParser.EventBodyValue body,
         MethodSemanticsAttributes semantics,
-        object? value)
+        MethodReferenceValue value)
     {
-        if (TryGetEventBodyFrame(context) is { Event: { } @event })
+        if (body.Event is { } @event)
         {
             @event.Accessors.Add(
-                (semantics, MaterializeMethodReference(GetMethodReferenceValue(value))));
+                (semantics, MaterializeMethodReference(value)));
         }
     }
 
     internal void AddEventCustomAttribute(
-        CILParser.EventDeclContext context,
+        CILParser.EventBodyValue body,
         CILParser.CustomAttrDeclContext attribute)
     {
         if (attribute.HasSyntaxError ||
-            TryGetEventBodyFrame(context) is not { Event: { } @event })
+            body.Event is not { } @event)
         {
             return;
         }
@@ -311,58 +236,19 @@ internal sealed partial class GrammarActions
         }
     }
 
-    internal void ProcessEventSourceDirective(CILParser.ExtSourceSpecContext context)
-        => _ = context;
-
-    internal void ProcessEventLanguageDirective(CILParser.LanguageDeclContext context)
-        => _ = context;
-
-    private void EndPropertyAndEventBodies(CILParser.ClassDeclContext context)
+    internal void ProcessEventSourceDirective(
+        CILParser.EventBodyValue body,
+        CILParser.ExtSourceSpecContext context)
     {
-        if (_propertyBodyFrames.Count > 0 &&
-            ReferenceEquals(_propertyBodyFrames.Peek().Owner, context))
-        {
-            _propertyBodyFrames.Pop();
-        }
-
-        if (_eventBodyFrames.Count > 0 &&
-            ReferenceEquals(_eventBodyFrames.Peek().Owner, context))
-        {
-            _eventBodyFrames.Pop();
-        }
+        _ = body;
+        _ = context;
     }
 
-    private PropertyHeaderFrame? TryGetPropertyHeaderFrame(CILParser.PropHeadContext context)
+    internal void ProcessEventLanguageDirective(
+        CILParser.EventBodyValue body,
+        CILParser.LanguageDeclContext context)
     {
-        Debug.Assert(_propertyHeaderFrames.Count > 0);
-        PropertyHeaderFrame? frame =
-            _propertyHeaderFrames.Count == 0 ? null : _propertyHeaderFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context) ? frame : null;
-    }
-
-    private EventHeaderFrame? TryGetEventHeaderFrame(CILParser.EventHeadContext context)
-    {
-        Debug.Assert(_eventHeaderFrames.Count > 0);
-        EventHeaderFrame? frame =
-            _eventHeaderFrames.Count == 0 ? null : _eventHeaderFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context) ? frame : null;
-    }
-
-    private PropertyBodyFrame? TryGetPropertyBodyFrame(CILParser.PropDeclContext context)
-    {
-        PropertyBodyFrame? frame =
-            _propertyBodyFrames.Count == 0 ? null : _propertyBodyFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context.Parent?.Parent));
-        return frame is not null && ReferenceEquals(frame.Owner, context.Parent?.Parent) ? frame : null;
-    }
-
-    private EventBodyFrame? TryGetEventBodyFrame(CILParser.EventDeclContext context)
-    {
-        EventBodyFrame? frame =
-            _eventBodyFrames.Count == 0 ? null : _eventBodyFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context.Parent?.Parent));
-        return frame is not null && ReferenceEquals(frame.Owner, context.Parent?.Parent) ? frame : null;
+        _ = body;
+        _ = context;
     }
 }

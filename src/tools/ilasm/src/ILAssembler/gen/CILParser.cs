@@ -20,6 +20,9 @@
 #pragma warning disable 419
 
 namespace ILAssembler {
+
+#nullable enable annotations
+
 using System;
 using System.IO;
 using System.Text;
@@ -347,6 +350,7 @@ public partial class CILParser : Parser {
 
 	public partial class DottedNameContext : ParserRuleContext {
 		public string Value;
+		public CILParser.DottedNameBuilder Builder;
 		public IToken direct;
 		public DottedNamePartContext part;
 		public DottedNamePartContext tail;
@@ -374,7 +378,7 @@ public partial class CILParser : Parser {
 	public DottedNameContext dottedName() {
 		DottedNameContext _localctx = new DottedNameContext(Context, State);
 		EnterRule(_localctx, 2, RULE_dottedName);
-		Actions.BeginDottedName(_localctx);
+		_localctx.Builder = new CILParser.DottedNameBuilder();
 		try {
 			int _alt;
 			State = 388;
@@ -385,7 +389,7 @@ public partial class CILParser : Parser {
 				{
 				State = 372;
 				_localctx.direct = Match(DOTTEDNAME);
-				Actions.AddDottedNameToken(_localctx, _localctx.direct);
+				Actions.AddDottedNameToken(_localctx.Builder, _localctx.direct);
 				}
 				break;
 			case 2:
@@ -401,7 +405,7 @@ public partial class CILParser : Parser {
 						{
 						State = 374;
 						_localctx.part = dottedNamePart();
-						Actions.AddDottedNamePart(_localctx, _localctx.part.Value);
+						Actions.AddDottedNamePart(_localctx.Builder, _localctx.part.Value);
 						State = 376;
 						Match(DOT);
 						}
@@ -413,7 +417,7 @@ public partial class CILParser : Parser {
 				}
 				State = 383;
 				_localctx.tail = dottedNamePart();
-				Actions.AddDottedNamePart(_localctx, _localctx.tail.Value);
+				Actions.AddDottedNamePart(_localctx.Builder, _localctx.tail.Value);
 				}
 				}
 				break;
@@ -422,7 +426,7 @@ public partial class CILParser : Parser {
 				{
 				State = 386;
 				_localctx.quoted = Match(SQSTRING);
-				Actions.AddDottedNameToken(_localctx, _localctx.quoted);
+				Actions.AddDottedNameToken(_localctx.Builder, _localctx.quoted);
 				}
 				break;
 			}
@@ -433,7 +437,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndDottedName(_localctx);
+			_localctx.Value = Actions.EndDottedName(_localctx.Builder);
 			ExitRule();
 		}
 		return _localctx;
@@ -457,6 +461,7 @@ public partial class CILParser : Parser {
 	public DottedNamePartContext dottedNamePart() {
 		DottedNamePartContext _localctx = new DottedNamePartContext(Context, State);
 		EnterRule(_localctx, 4, RULE_dottedNamePart);
+		_localctx.Value = string.Empty;
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -487,6 +492,7 @@ public partial class CILParser : Parser {
 
 	public partial class CompQstringContext : ParserRuleContext {
 		public string Value;
+		public System.Text.StringBuilder Builder;
 		public IToken head;
 		public IToken tail;
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode[] QSTRING() { return GetTokens(CILParser.QSTRING); }
@@ -508,7 +514,7 @@ public partial class CILParser : Parser {
 	public CompQstringContext compQstring() {
 		CompQstringContext _localctx = new CompQstringContext(Context, State);
 		EnterRule(_localctx, 6, RULE_compQstring);
-		Actions.BeginComposedString(_localctx);
+		_localctx.Builder = new System.Text.StringBuilder();
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -522,7 +528,7 @@ public partial class CILParser : Parser {
 					{
 					State = 392;
 					_localctx.head = Match(QSTRING);
-					Actions.AddComposedStringPart(_localctx, _localctx.head);
+					Actions.AddComposedStringPart(_localctx.Builder, _localctx.head);
 					State = 394;
 					Match(PLUS);
 					}
@@ -534,7 +540,7 @@ public partial class CILParser : Parser {
 			}
 			State = 400;
 			_localctx.tail = Match(QSTRING);
-			Actions.AddComposedStringPart(_localctx, _localctx.tail);
+			Actions.AddComposedStringPart(_localctx.Builder, _localctx.tail);
 			}
 		}
 		catch (RecognitionException re) {
@@ -543,7 +549,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndComposedString(_localctx);
+			_localctx.Value = Actions.EndComposedString(_localctx.Builder);
 			ExitRule();
 		}
 		return _localctx;
@@ -1151,8 +1157,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class AssemblyBlockContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AssemblyDefinitionValue? Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public AsmAttrContext attributes;
 		public DottedNameContext name;
 		public AssemblyDeclsContext declarations;
@@ -1176,7 +1183,7 @@ public partial class CILParser : Parser {
 	public AssemblyBlockContext assemblyBlock() {
 		AssemblyBlockContext _localctx = new AssemblyBlockContext(Context, State);
 		EnterRule(_localctx, 22, RULE_assemblyBlock);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -1204,7 +1211,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+				if (_localctx.HasSyntaxError)
+				{
+					_localctx.Value = null;
+				}
+
 			ExitRule();
 		}
 		return _localctx;
@@ -1241,8 +1256,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class LanguageDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.LanguageDirectiveValue? Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public LanguageStringContext language;
 		public LanguageStringContext vendor;
 		public LanguageStringContext documentType;
@@ -1263,7 +1279,7 @@ public partial class CILParser : Parser {
 	public LanguageDeclContext languageDecl() {
 		LanguageDeclContext _localctx = new LanguageDeclContext(Context, State);
 		EnterRule(_localctx, 26, RULE_languageDecl);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		try {
 			State = 546;
 			ErrorHandler.Sync(this);
@@ -1318,7 +1334,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndLanguageDirective(_localctx);
+			Actions.EndLanguageDirective(_localctx, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
@@ -1339,6 +1355,7 @@ public partial class CILParser : Parser {
 	public LanguageStringContext languageString() {
 		LanguageStringContext _localctx = new LanguageStringContext(Context, State);
 		EnterRule(_localctx, 28, RULE_languageString);
+		_localctx.Value = string.Empty;
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -1764,8 +1781,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class TypedefDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.TypedefDeclarationValue Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public TypeContext signature;
 		public DottedNameContext alias;
 		public ClassNameContext classType;
@@ -1801,7 +1819,10 @@ public partial class CILParser : Parser {
 	public TypedefDeclContext typedefDecl() {
 		TypedefDeclContext _localctx = new TypedefDeclContext(Context, State);
 		EnterRule(_localctx, 42, RULE_typedefDecl);
-		Actions.BeginSemanticRoot(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.TypedefDeclarationValue.Error;
+
 		try {
 			State = 644;
 			ErrorHandler.Sync(this);
@@ -1890,15 +1911,20 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class CustomDescrContext : ParserRuleContext {
-		public object Value;
+		public CILParser.CustomAttributeDescriptorValue Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public CustomTypeContext constructor;
 		public CompQstringContext stringValue;
 		public CustomBlobDescrContext structuredValue;
@@ -1926,7 +1952,10 @@ public partial class CILParser : Parser {
 	public CustomDescrContext customDescr() {
 		CustomDescrContext _localctx = new CustomDescrContext(Context, State);
 		EnterRule(_localctx, 44, RULE_customDescr);
-		Actions.BeginSemanticRoot(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.CustomAttributeDescriptorValue.Error;
+
 		try {
 			State = 672;
 			ErrorHandler.Sync(this);
@@ -1999,15 +2028,20 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class CustomDescrWithOwnerContext : ParserRuleContext {
-		public object Value;
+		public CILParser.CustomAttributeDescriptorValue Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public OwnerTypeContext owner;
 		public CustomTypeContext constructor;
 		public CompQstringContext stringValue;
@@ -2039,7 +2073,10 @@ public partial class CILParser : Parser {
 	public CustomDescrWithOwnerContext customDescrWithOwner() {
 		CustomDescrWithOwnerContext _localctx = new CustomDescrWithOwnerContext(Context, State);
 		EnterRule(_localctx, 46, RULE_customDescrWithOwner);
-		Actions.BeginSemanticRoot(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.CustomAttributeDescriptorValue.Error;
+
 		try {
 			State = 712;
 			ErrorHandler.Sync(this);
@@ -2136,14 +2173,18 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class CustomTypeContext : ParserRuleContext {
-		public object Value;
+		public CILParser.MethodReferenceValue Value;
 		public MethodRefContext constructor;
 		[System.Diagnostics.DebuggerNonUserCode] public MethodRefContext methodRef() {
 			return GetRuleContext<MethodRefContext>(0);
@@ -2159,6 +2200,7 @@ public partial class CILParser : Parser {
 	public CustomTypeContext customType() {
 		CustomTypeContext _localctx = new CustomTypeContext(Context, State);
 		EnterRule(_localctx, 48, RULE_customType);
+		_localctx.Value = CILParser.MethodReferenceValue.Error;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -2179,8 +2221,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class OwnerTypeContext : ParserRuleContext {
-		public object Value;
+		public CILParser.OwnerTypeValue Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public TypeSpecContext typeValue;
 		public MemberRefContext member;
 		[System.Diagnostics.DebuggerNonUserCode] public TypeSpecContext typeSpec() {
@@ -2200,7 +2243,10 @@ public partial class CILParser : Parser {
 	public OwnerTypeContext ownerType() {
 		OwnerTypeContext _localctx = new OwnerTypeContext(Context, State);
 		EnterRule(_localctx, 50, RULE_ownerType);
-		Actions.BeginSemanticRoot(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.OwnerTypeValue.Error;
+
 		try {
 			State = 723;
 			ErrorHandler.Sync(this);
@@ -2229,14 +2275,18 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class CustomBlobDescrContext : ParserRuleContext {
-		public object Value;
+		public CILParser.CustomAttributeBlobValue Value;
 		public CustomBlobArgsContext arguments;
 		public CustomBlobNVPairsContext namedArguments;
 		[System.Diagnostics.DebuggerNonUserCode] public CustomBlobArgsContext customBlobArgs() {
@@ -2256,6 +2306,7 @@ public partial class CILParser : Parser {
 	public CustomBlobDescrContext customBlobDescr() {
 		CustomBlobDescrContext _localctx = new CustomBlobDescrContext(Context, State);
 		EnterRule(_localctx, 52, RULE_customBlobDescr);
+		_localctx.Value = CILParser.CustomAttributeBlobValue.Error;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -2278,7 +2329,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class CustomBlobArgsContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.SerializedInitializerValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.SerializedInitializerValue>.Builder Builder;
 		public SerInitContext argument;
 		[System.Diagnostics.DebuggerNonUserCode] public CompControlContext[] compControl() {
 			return GetRuleContexts<CompControlContext>();
@@ -2303,7 +2355,7 @@ public partial class CILParser : Parser {
 	public CustomBlobArgsContext customBlobArgs() {
 		CustomBlobArgsContext _localctx = new CustomBlobArgsContext(Context, State);
 		EnterRule(_localctx, 54, RULE_customBlobArgs);
-		Actions.BeginCustomBlobArguments(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.SerializedInitializerValue>();
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -2336,7 +2388,7 @@ public partial class CILParser : Parser {
 						{
 						State = 729;
 						_localctx.argument = serInit();
-						Actions.AddCustomBlobArgument(_localctx, _localctx.argument.Value);
+						_localctx.Builder.Add(_localctx.argument.Value);
 						}
 						break;
 					case T__31:
@@ -2369,14 +2421,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndCustomBlobArguments(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class CustomBlobNVPairsContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.CustomAttributeNamedArgumentValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.CustomAttributeNamedArgumentValue>.Builder Builder;
 		public FieldOrPropContext kind;
 		public SerializTypeContext argumentType;
 		public DottedNameContext name;
@@ -2422,7 +2475,7 @@ public partial class CILParser : Parser {
 	public CustomBlobNVPairsContext customBlobNVPairs() {
 		CustomBlobNVPairsContext _localctx = new CustomBlobNVPairsContext(Context, State);
 		EnterRule(_localctx, 56, RULE_customBlobNVPairs);
-		Actions.BeginCustomBlobNamedArguments(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.CustomAttributeNamedArgumentValue>();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -2448,12 +2501,11 @@ public partial class CILParser : Parser {
 					Match(T__35);
 					State = 742;
 					_localctx.value = serInit();
-					Actions.AddCustomBlobNamedArgument(
-									_localctx,
+					_localctx.Builder.Add(Actions.CreateCustomBlobNamedArgument(
 									_localctx.kind.Value,
 									_localctx.argumentType.Value,
 									_localctx.name.Value,
-									_localctx.value.Value);
+									_localctx.value.Value));
 					}
 					break;
 				case T__31:
@@ -2485,7 +2537,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndCustomBlobNamedArguments(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
@@ -2534,7 +2586,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class SerializTypeContext : ParserRuleContext {
-		public object Value;
+		public CILParser.SerializationTypeValue Value;
 		public SerializTypeElementContext element;
 		public IToken array;
 		[System.Diagnostics.DebuggerNonUserCode] public SerializTypeElementContext serializTypeElement() {
@@ -2552,6 +2604,7 @@ public partial class CILParser : Parser {
 	public SerializTypeContext serializType() {
 		SerializTypeContext _localctx = new SerializTypeContext(Context, State);
 		EnterRule(_localctx, 60, RULE_serializType);
+		_localctx.Value = CILParser.SerializationTypeValue.Error;
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -2583,7 +2636,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class SerializTypeElementContext : ParserRuleContext {
-		public object Value;
+		public CILParser.SerializationTypeValue Value;
 		public SimpleTypeContext primitive;
 		public DottedNameContext alias;
 		public IToken simpleTypeToken;
@@ -2613,6 +2666,7 @@ public partial class CILParser : Parser {
 	public SerializTypeElementContext serializTypeElement() {
 		SerializTypeElementContext _localctx = new SerializTypeElementContext(Context, State);
 		EnterRule(_localctx, 62, RULE_serializTypeElement);
+		_localctx.Value = CILParser.SerializationTypeValue.Error;
 		try {
 			State = 778;
 			ErrorHandler.Sync(this);
@@ -2685,7 +2739,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ModuleHeadContext : ParserRuleContext {
-		public string Value;
+		public string? Value;
 		public bool HasName;
 		public bool IsExternal;
 		public DottedNameContext name;
@@ -2704,6 +2758,7 @@ public partial class CILParser : Parser {
 	public ModuleHeadContext moduleHead() {
 		ModuleHeadContext _localctx = new ModuleHeadContext(Context, State);
 		EnterRule(_localctx, 64, RULE_moduleHead);
+		_localctx.Value = null;
 		try {
 			State = 791;
 			ErrorHandler.Sync(this);
@@ -2752,8 +2807,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class VtfixupDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.VTableFixupValue? Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public Int32Context count;
 		public VtfixupAttrContext attributes;
 		public IdContext label;
@@ -2777,7 +2833,7 @@ public partial class CILParser : Parser {
 	public VtfixupDeclContext vtfixupDecl() {
 		VtfixupDeclContext _localctx = new VtfixupDeclContext(Context, State);
 		EnterRule(_localctx, 66, RULE_vtfixupDecl);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -2807,7 +2863,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+				if (_localctx.HasSyntaxError)
+				{
+					_localctx.Value = null;
+				}
+
 			ExitRule();
 		}
 		return _localctx;
@@ -2911,8 +2975,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class VtableDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.RawVTableValue? Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public BytesContext value;
 		[System.Diagnostics.DebuggerNonUserCode] public BytesContext bytes() {
 			return GetRuleContext<BytesContext>(0);
@@ -2928,7 +2993,7 @@ public partial class CILParser : Parser {
 	public VtableDeclContext vtableDecl() {
 		VtableDeclContext _localctx = new VtableDeclContext(Context, State);
 		EnterRule(_localctx, 72, RULE_vtableDecl);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -2951,7 +3016,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+				if (_localctx.HasSyntaxError)
+				{
+					_localctx.Value = null;
+				}
+
 			ExitRule();
 		}
 		return _localctx;
@@ -2959,6 +3032,7 @@ public partial class CILParser : Parser {
 
 	public partial class NameSpaceHeadContext : ParserRuleContext {
 		public string Value;
+		public int InitialSyntaxErrorCount;
 		public DottedNameContext name;
 		[System.Diagnostics.DebuggerNonUserCode] public DottedNameContext dottedName() {
 			return GetRuleContext<DottedNameContext>(0);
@@ -2974,7 +3048,11 @@ public partial class CILParser : Parser {
 	public NameSpaceHeadContext nameSpaceHead() {
 		NameSpaceHeadContext _localctx = new NameSpaceHeadContext(Context, State);
 		EnterRule(_localctx, 74, RULE_nameSpaceHead);
-		Actions.BeginNamespaceHeader(_localctx);
+
+			Actions.PrepareNamespaceHeader();
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = string.Empty;
+
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -2985,7 +3063,7 @@ public partial class CILParser : Parser {
 			_localctx.Value = _localctx.name.Value;
 			}
 			Context.Stop = TokenStream.LT(-1);
-			Actions.BeginNamespace(_localctx, _localctx.Value);
+			Actions.BeginNamespace(_localctx, _localctx.Value, _localctx.InitialSyntaxErrorCount);
 		}
 		catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -2993,14 +3071,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndNamespaceHeader(_localctx);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class ClassHeadContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ClassHeaderValue Value;
+		public int InitialSyntaxErrorCount;
+		public CILParser.ClassHeaderBuilder Builder;
 		public ClassAttrContext attribute;
 		public DottedNameContext name;
 		public TyparsClauseContext genericParameters;
@@ -3035,7 +3114,11 @@ public partial class CILParser : Parser {
 	public ClassHeadContext classHead() {
 		ClassHeadContext _localctx = new ClassHeadContext(Context, State);
 		EnterRule(_localctx, 76, RULE_classHead);
-		Actions.BeginClassHeader(_localctx);
+
+			_localctx.Builder = Actions.PrepareClassHeader();
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.ClassHeaderValue.Error;
+
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -3051,7 +3134,7 @@ public partial class CILParser : Parser {
 					{
 					State = 826;
 					_localctx.attribute = classAttr();
-					Actions.AddClassHeaderAttribute(_localctx, _localctx.attribute.Value);
+					Actions.AddClassHeaderAttribute(_localctx.Builder, _localctx.attribute.Value);
 					}
 					} 
 				}
@@ -3069,6 +3152,8 @@ public partial class CILParser : Parser {
 			_localctx.interfaces = implClause();
 			_localctx.Value = Actions.CreateClassHeader(
 						_localctx,
+						_localctx.Builder,
+						_localctx.InitialSyntaxErrorCount,
 						(_localctx.name!=null?(_localctx.name.Stop):null),
 						_localctx.name.Value,
 						_localctx.genericParameters.Value,
@@ -3084,14 +3169,13 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndClassHeader(_localctx);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class ClassAttrContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ClassAttributeValue Value;
 		public IToken attribute;
 		public IToken visibility;
 		public Int32Context flags;
@@ -3114,6 +3198,7 @@ public partial class CILParser : Parser {
 	public ClassAttrContext classAttr() {
 		ClassAttrContext _localctx = new ClassAttrContext(Context, State);
 		EnterRule(_localctx, 78, RULE_classAttr);
+		_localctx.Value = CILParser.ClassAttributeValue.Empty;
 		try {
 			State = 904;
 			ErrorHandler.Sync(this);
@@ -3366,7 +3451,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ExtendsClauseContext : ParserRuleContext {
-		public object Value;
+		public CILParser.TypeSpecificationValue? Value;
 		public TypeSpecContext baseType;
 		[System.Diagnostics.DebuggerNonUserCode] public TypeSpecContext typeSpec() {
 			return GetRuleContext<TypeSpecContext>(0);
@@ -3419,7 +3504,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ImplClauseContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue> Value;
 		public ImplListContext interfaces;
 		[System.Diagnostics.DebuggerNonUserCode] public ImplListContext implList() {
 			return GetRuleContext<ImplListContext>(0);
@@ -3520,7 +3605,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ImplListContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue>.Builder Builder;
 		public TypeSpecContext interfaceType;
 		public TypeSpecContext lastInterfaceType;
 		[System.Diagnostics.DebuggerNonUserCode] public TypeSpecContext[] typeSpec() {
@@ -3540,7 +3626,7 @@ public partial class CILParser : Parser {
 	public ImplListContext implList() {
 		ImplListContext _localctx = new ImplListContext(Context, State);
 		EnterRule(_localctx, 86, RULE_implList);
-		Actions.BeginInterfaceList(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.TypeSpecificationValue>();
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -3554,7 +3640,7 @@ public partial class CILParser : Parser {
 					{
 					State = 926;
 					_localctx.interfaceType = typeSpec();
-					Actions.AddInterfaceType(_localctx, _localctx.interfaceType.Value);
+					_localctx.Builder.Add(_localctx.interfaceType.Value);
 					State = 928;
 					Match(T__27);
 					}
@@ -3566,7 +3652,7 @@ public partial class CILParser : Parser {
 			}
 			State = 935;
 			_localctx.lastInterfaceType = typeSpec();
-			Actions.AddInterfaceType(_localctx, _localctx.lastInterfaceType.Value);
+			_localctx.Builder.Add(_localctx.lastInterfaceType.Value);
 			}
 		}
 		catch (RecognitionException re) {
@@ -3575,7 +3661,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndInterfaceList(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
@@ -3623,8 +3709,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ExtSourceSpecContext : ParserRuleContext {
-		public object Value;
+		public CILParser.SourceDirectiveValue? Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public EsHeadContext head;
 		public Int32Context line;
 		public IToken path;
@@ -3655,7 +3742,7 @@ public partial class CILParser : Parser {
 	public ExtSourceSpecContext extSourceSpec() {
 		ExtSourceSpecContext _localctx = new ExtSourceSpecContext(Context, State);
 		EnterRule(_localctx, 90, RULE_extSourceSpec);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		int _la;
 		try {
 			State = 991;
@@ -3857,15 +3944,17 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndSourceDirective(_localctx);
+			Actions.EndSourceDirective(_localctx, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class FileDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.FileDeclarationValue? Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
+		public CILParser.FileDeclarationBuilder Builder;
 		public FileAttrContext attribute;
 		public DottedNameContext name;
 		public FileEntryContext entry;
@@ -3901,7 +3990,10 @@ public partial class CILParser : Parser {
 	public FileDeclContext fileDecl() {
 		FileDeclContext _localctx = new FileDeclContext(Context, State);
 		EnterRule(_localctx, 92, RULE_fileDecl);
-		Actions.BeginFileDeclaration(_localctx);
+
+			_localctx.Builder = new CILParser.FileDeclarationBuilder();
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -3916,7 +4008,7 @@ public partial class CILParser : Parser {
 				{
 				State = 994;
 				_localctx.attribute = fileAttr();
-				Actions.AddFileAttribute(_localctx, _localctx.attribute.Value);
+				Actions.AddFileAttribute(_localctx.Builder, _localctx.attribute.Value);
 				}
 				}
 				State = 1001;
@@ -3925,10 +4017,10 @@ public partial class CILParser : Parser {
 			}
 			State = 1002;
 			_localctx.name = dottedName();
-			Actions.SetFileName(_localctx, _localctx.name.Value);
+			Actions.SetFileName(_localctx.Builder, _localctx.name.Value);
 			State = 1004;
 			_localctx.entry = fileEntry();
-			Actions.AddFileEntry(_localctx, _localctx.entry.Value);
+			Actions.AddFileEntry(_localctx.Builder, _localctx.entry.Value);
 			State = 1015;
 			ErrorHandler.Sync(this);
 			_la = TokenStream.LA(1);
@@ -3944,10 +4036,10 @@ public partial class CILParser : Parser {
 				_localctx.hash = bytes();
 				State = 1010;
 				Match(T__30);
-				Actions.SetFileHash(_localctx, _localctx.hash.Value);
+				Actions.SetFileHash(_localctx.Builder, _localctx.hash.Value);
 				State = 1012;
 				_localctx.trailingEntry = fileEntry();
-				Actions.AddFileEntry(_localctx, _localctx.trailingEntry.Value);
+				Actions.AddFileEntry(_localctx.Builder, _localctx.trailingEntry.Value);
 				}
 			}
 
@@ -3959,7 +4051,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndFileDeclaration(_localctx);
+			Actions.EndFileDeclaration(_localctx, _localctx.Builder, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
@@ -4313,6 +4405,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class SimpleInstrContext : ParserRuleContext {
+		public CILParser.SwitchInstructionBuilder SwitchBuilder;
 		public IToken op;
 		public Int32Context index;
 		public IdContext name;
@@ -4548,7 +4641,7 @@ public partial class CILParser : Parser {
 				{
 				State = 1130;
 				_localctx.op = Match(INSTR_SWITCH);
-				Actions.BeginSwitchInstruction(_localctx, _localctx.op);
+				_localctx.SwitchBuilder = Actions.CreateSwitchInstruction(_localctx.op);
 				State = 1137;
 				ErrorHandler.Sync(this);
 				switch (TokenStream.LA(1)) {
@@ -4557,7 +4650,7 @@ public partial class CILParser : Parser {
 					State = 1132;
 					Match(T__29);
 					State = 1133;
-					labels();
+					labels(_localctx.SwitchBuilder);
 					State = 1134;
 					Match(T__30);
 					}
@@ -4575,7 +4668,7 @@ public partial class CILParser : Parser {
 				break;
 			}
 			Context.Stop = TokenStream.LT(-1);
-			Actions.CompleteSimpleInstruction(_localctx);
+			Actions.CompleteSwitchInstruction(_localctx.SwitchBuilder);
 		}
 		catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -4583,15 +4676,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndSwitchInstruction(_localctx);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class CalliSignatureContext : ParserRuleContext {
-		public object Value;
+		public CILParser.CalliSignatureValue Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public CallConvContext convention;
 		public TypeContext returnType;
 		public SigArgsContext arguments;
@@ -4615,7 +4708,10 @@ public partial class CILParser : Parser {
 	public CalliSignatureContext calliSignature() {
 		CalliSignatureContext _localctx = new CalliSignatureContext(Context, State);
 		EnterRule(_localctx, 106, RULE_calliSignature);
-		Actions.BeginSemanticRoot(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.CalliSignatureValue.Error;
+
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -4634,13 +4730,18 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class LabelsContext : ParserRuleContext {
+		public CILParser.SwitchInstructionBuilder Builder;
 		public IdContext headLabel;
 		public Int32Context headOffset;
 		public IdContext tailLabel;
@@ -4657,16 +4758,18 @@ public partial class CILParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public Int32Context int32(int i) {
 			return GetRuleContext<Int32Context>(i);
 		}
-		public LabelsContext(ParserRuleContext parent, int invokingState)
+		public LabelsContext(ParserRuleContext parent, int invokingState) : base(parent, invokingState) { }
+		public LabelsContext(ParserRuleContext parent, int invokingState, CILParser.SwitchInstructionBuilder Builder)
 			: base(parent, invokingState)
 		{
+			this.Builder = Builder;
 		}
 		public override int RuleIndex { get { return RULE_labels; } }
 	}
 
 	[RuleVersion(0)]
-	public LabelsContext labels() {
-		LabelsContext _localctx = new LabelsContext(Context, State);
+	public LabelsContext labels(CILParser.SwitchInstructionBuilder Builder) {
+		LabelsContext _localctx = new LabelsContext(Context, State, Builder);
 		EnterRule(_localctx, 108, RULE_labels);
 		try {
 			int _alt;
@@ -4734,14 +4837,14 @@ public partial class CILParser : Parser {
 							{
 							State = 1147;
 							_localctx.headLabel = id();
-							Actions.AddSwitchLabel((_localctx.headLabel!=null?(_localctx.headLabel.Start):null));
+							Actions.AddSwitchLabel(_localctx.Builder, (_localctx.headLabel!=null?(_localctx.headLabel.Start):null));
 							}
 							break;
 						case INT32:
 							{
 							State = 1150;
 							_localctx.headOffset = int32();
-							Actions.AddSwitchOffset((_localctx.headOffset!=null?(_localctx.headOffset.Start):null));
+							Actions.AddSwitchOffset(_localctx.Builder, (_localctx.headOffset!=null?(_localctx.headOffset.Start):null));
 							}
 							break;
 						default:
@@ -4782,14 +4885,14 @@ public partial class CILParser : Parser {
 					{
 					State = 1162;
 					_localctx.tailLabel = id();
-					Actions.AddSwitchLabel((_localctx.tailLabel!=null?(_localctx.tailLabel.Start):null));
+					Actions.AddSwitchLabel(_localctx.Builder, (_localctx.tailLabel!=null?(_localctx.tailLabel.Start):null));
 					}
 					break;
 				case INT32:
 					{
 					State = 1165;
 					_localctx.tailOffset = int32();
-					Actions.AddSwitchOffset((_localctx.tailOffset!=null?(_localctx.tailOffset.Start):null));
+					Actions.AddSwitchOffset(_localctx.Builder, (_localctx.tailOffset!=null?(_localctx.tailOffset.Start):null));
 					}
 					break;
 				default:
@@ -4813,7 +4916,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class TypeArgsContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.TypeValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.TypeValue>.Builder Builder;
 		public TypeContext argument;
 		public TypeContext lastArgument;
 		[System.Diagnostics.DebuggerNonUserCode] public TypeContext[] type() {
@@ -4833,7 +4937,7 @@ public partial class CILParser : Parser {
 	public TypeArgsContext typeArgs() {
 		TypeArgsContext _localctx = new TypeArgsContext(Context, State);
 		EnterRule(_localctx, 110, RULE_typeArgs);
-		Actions.BeginTypeArguments(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.TypeValue>();
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -4849,7 +4953,7 @@ public partial class CILParser : Parser {
 					{
 					State = 1173;
 					_localctx.argument = type();
-					Actions.AddTypeArgument(_localctx, _localctx.argument.Value);
+					_localctx.Builder.Add(_localctx.argument.Value);
 					State = 1175;
 					Match(T__27);
 					}
@@ -4861,7 +4965,7 @@ public partial class CILParser : Parser {
 			}
 			State = 1182;
 			_localctx.lastArgument = type();
-			Actions.AddTypeArgument(_localctx, _localctx.lastArgument.Value);
+			_localctx.Builder.Add(_localctx.lastArgument.Value);
 			State = 1184;
 			Match(T__86);
 			}
@@ -4872,14 +4976,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndTypeArguments(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class BoundsContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.ArrayBoundValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.ArrayBoundValue>.Builder Builder;
 		public BoundContext item;
 		public BoundContext lastItem;
 		[System.Diagnostics.DebuggerNonUserCode] public BoundContext[] bound() {
@@ -4899,7 +5004,7 @@ public partial class CILParser : Parser {
 	public BoundsContext bounds() {
 		BoundsContext _localctx = new BoundsContext(Context, State);
 		EnterRule(_localctx, 112, RULE_bounds);
-		Actions.BeginBounds(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.ArrayBoundValue>();
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -4915,7 +5020,7 @@ public partial class CILParser : Parser {
 					{
 					State = 1187;
 					_localctx.item = bound();
-					Actions.AddBound(_localctx, _localctx.item);
+					_localctx.Builder.Add(Actions.CreateArrayBound(_localctx.item));
 					State = 1189;
 					Match(T__27);
 					}
@@ -4927,7 +5032,7 @@ public partial class CILParser : Parser {
 			}
 			State = 1196;
 			_localctx.lastItem = bound();
-			Actions.AddBound(_localctx, _localctx.lastItem);
+			_localctx.Builder.Add(Actions.CreateArrayBound(_localctx.lastItem));
 			State = 1198;
 			Match(T__42);
 			}
@@ -4938,14 +5043,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndBounds(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class SigArgsContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.SignatureArgumentValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.SignatureArgumentValue>.Builder Builder;
 		public SigArgContext argument;
 		public SigArgContext lastArgument;
 		[System.Diagnostics.DebuggerNonUserCode] public SigArgContext[] sigArg() {
@@ -4965,7 +5071,7 @@ public partial class CILParser : Parser {
 	public SigArgsContext sigArgs() {
 		SigArgsContext _localctx = new SigArgsContext(Context, State);
 		EnterRule(_localctx, 114, RULE_sigArgs);
-		Actions.BeginSignatureArguments(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.SignatureArgumentValue>();
 		try {
 			int _alt;
 			State = 1215;
@@ -4985,7 +5091,7 @@ public partial class CILParser : Parser {
 						{
 						State = 1201;
 						_localctx.argument = sigArg();
-						Actions.AddSignatureArgument(_localctx, _localctx.argument.Value);
+						_localctx.Builder.Add(_localctx.argument.Value);
 						State = 1203;
 						Match(T__27);
 						}
@@ -4997,7 +5103,7 @@ public partial class CILParser : Parser {
 				}
 				State = 1210;
 				_localctx.lastArgument = sigArg();
-				Actions.AddSignatureArgument(_localctx, _localctx.lastArgument.Value);
+				_localctx.Builder.Add(_localctx.lastArgument.Value);
 				State = 1212;
 				Match(T__30);
 				}
@@ -5019,14 +5125,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSignatureArguments(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class SigArgContext : ParserRuleContext {
-		public object Value;
+		public CILParser.SignatureArgumentValue Value;
 		public ParamAttrContext attributes;
 		public TypeContext argumentType;
 		public MarshalClauseContext marshalling;
@@ -5055,6 +5161,7 @@ public partial class CILParser : Parser {
 	public SigArgContext sigArg() {
 		SigArgContext _localctx = new SigArgContext(Context, State);
 		EnterRule(_localctx, 116, RULE_sigArg);
+		_localctx.Value = CILParser.SignatureArgumentValue.Error;
 		int _la;
 		try {
 			State = 1227;
@@ -5104,7 +5211,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ClassNameContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ClassNameValue Value;
 		public DottedNameContext assemblyName;
 		public SlashedNameContext typeName;
 		public MdtokenContext scopeToken;
@@ -5135,6 +5242,7 @@ public partial class CILParser : Parser {
 	public ClassNameContext className() {
 		ClassNameContext _localctx = new ClassNameContext(Context, State);
 		EnterRule(_localctx, 118, RULE_className);
+		_localctx.Value = CILParser.ClassNameValue.Error;
 		try {
 			State = 1266;
 			ErrorHandler.Sync(this);
@@ -5251,7 +5359,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class SlashedNameContext : ParserRuleContext {
-		public object Value;
+		public CILParser.TypeName Value;
+		public CILParser.TypeName CurrentName;
 		public DottedNameContext part;
 		public DottedNameContext lastPart;
 		[System.Diagnostics.DebuggerNonUserCode] public DottedNameContext[] dottedName() {
@@ -5271,7 +5380,6 @@ public partial class CILParser : Parser {
 	public SlashedNameContext slashedName() {
 		SlashedNameContext _localctx = new SlashedNameContext(Context, State);
 		EnterRule(_localctx, 120, RULE_slashedName);
-		Actions.BeginSlashedName(_localctx);
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -5285,7 +5393,7 @@ public partial class CILParser : Parser {
 					{
 					State = 1268;
 					_localctx.part = dottedName();
-					Actions.AddSlashedNamePart(_localctx, _localctx.part.Value);
+					_localctx.CurrentName = Actions.AddSlashedNamePart(_localctx.CurrentName, _localctx.part.Value);
 					State = 1270;
 					Match(T__87);
 					}
@@ -5297,7 +5405,7 @@ public partial class CILParser : Parser {
 			}
 			State = 1277;
 			_localctx.lastPart = dottedName();
-			Actions.AddSlashedNamePart(_localctx, _localctx.lastPart.Value);
+			_localctx.CurrentName = Actions.AddSlashedNamePart(_localctx.CurrentName, _localctx.lastPart.Value);
 			}
 		}
 		catch (RecognitionException re) {
@@ -5306,14 +5414,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSlashedName(_localctx);
+			_localctx.Value = _localctx.CurrentName ?? new CILParser.TypeName(null, string.Empty);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class AssemblyDeclsContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.AssemblyDeclarationValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.AssemblyDeclarationValue>.Builder Builder;
 		public AssemblyDeclContext declaration;
 		[System.Diagnostics.DebuggerNonUserCode] public AssemblyDeclContext[] assemblyDecl() {
 			return GetRuleContexts<AssemblyDeclContext>();
@@ -5332,7 +5441,7 @@ public partial class CILParser : Parser {
 	public AssemblyDeclsContext assemblyDecls() {
 		AssemblyDeclsContext _localctx = new AssemblyDeclsContext(Context, State);
 		EnterRule(_localctx, 122, RULE_assemblyDecls);
-		Actions.BeginAssemblyDeclarations(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.AssemblyDeclarationValue>();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -5345,7 +5454,7 @@ public partial class CILParser : Parser {
 				{
 				State = 1280;
 				_localctx.declaration = assemblyDecl();
-				Actions.AddAssemblyDeclaration(_localctx, _localctx.declaration.Value);
+				if (_localctx.declaration.Value is not null) _localctx.Builder.Add(_localctx.declaration.Value);
 				}
 				}
 				State = 1287;
@@ -5360,14 +5469,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndAssemblyDeclarations(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class AssemblyDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AssemblyDeclarationValue? Value;
 		public Int32Context algorithm;
 		public SecDeclContext security;
 		public AsmOrRefDeclContext shared;
@@ -5461,8 +5570,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class TypeSpecContext : ParserRuleContext {
-		public object Value;
+		public CILParser.TypeSpecificationValue Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public ClassNameContext classType;
 		public DottedNameContext assemblyName;
 		public DottedNameContext moduleName;
@@ -5488,7 +5598,10 @@ public partial class CILParser : Parser {
 	public TypeSpecContext typeSpec() {
 		TypeSpecContext _localctx = new TypeSpecContext(Context, State);
 		EnterRule(_localctx, 126, RULE_typeSpec);
-		Actions.BeginSemanticRoot(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.TypeSpecificationValue.Error;
+
 		try {
 			State = 1318;
 			ErrorHandler.Sync(this);
@@ -5543,14 +5656,19 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class NativeTypeContext : ParserRuleContext {
-		public object Value;
+		public CILParser.NativeTypeValue Value;
+		public CILParser.NativeTypeBuilder Builder;
 		public NativeTypeElementContext element;
 		public NativeTypeArrayPointerInfoContext info;
 		[System.Diagnostics.DebuggerNonUserCode] public NativeTypeElementContext nativeTypeElement() {
@@ -5573,7 +5691,7 @@ public partial class CILParser : Parser {
 	public NativeTypeContext nativeType() {
 		NativeTypeContext _localctx = new NativeTypeContext(Context, State);
 		EnterRule(_localctx, 128, RULE_nativeType);
-		Actions.BeginNativeType(_localctx);
+		_localctx.Builder = new CILParser.NativeTypeBuilder();
 		try {
 			int _alt;
 			State = 1331;
@@ -5589,7 +5707,7 @@ public partial class CILParser : Parser {
 				{
 				State = 1321;
 				_localctx.element = nativeTypeElement();
-				Actions.SetNativeTypeElement(_localctx, _localctx.element.Value);
+				Actions.SetNativeTypeElement(_localctx.Builder, _localctx.element.Value);
 				State = 1328;
 				ErrorHandler.Sync(this);
 				_alt = Interpreter.AdaptivePredict(TokenStream,56,Context);
@@ -5599,7 +5717,7 @@ public partial class CILParser : Parser {
 						{
 						State = 1323;
 						_localctx.info = nativeTypeArrayPointerInfo();
-						Actions.AddNativeTypeArrayPointerInfo(_localctx, _localctx.info.Value);
+						Actions.AddNativeTypeArrayPointerInfo(_localctx.Builder, _localctx.info.Value);
 						}
 						} 
 					}
@@ -5617,14 +5735,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndNativeType(_localctx);
+			_localctx.Value = Actions.CreateNativeType(_localctx.Start, _localctx.Builder);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class NativeTypeArrayPointerInfoContext : ParserRuleContext {
-		public object Value;
+		public CILParser.NativeTypeArrayPointerInfoValue Value;
 		public NativeTypeArrayPointerInfoContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
 		{
@@ -5677,6 +5795,7 @@ public partial class CILParser : Parser {
 	public NativeTypeArrayPointerInfoContext nativeTypeArrayPointerInfo() {
 		NativeTypeArrayPointerInfoContext _localctx = new NativeTypeArrayPointerInfoContext(Context, State);
 		EnterRule(_localctx, 130, RULE_nativeTypeArrayPointerInfo);
+		_localctx.Value = Actions.CreatePointerNativeType();
 		try {
 			State = 1355;
 			ErrorHandler.Sync(this);
@@ -5758,7 +5877,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class NativeTypeElementContext : ParserRuleContext {
-		public object Value;
+		public CILParser.NativeTypeElementValue Value;
 		public IToken marshalType;
 		public CompQstringContext guid;
 		public CompQstringContext nativeTypeName;
@@ -5844,6 +5963,7 @@ public partial class CILParser : Parser {
 	public NativeTypeElementContext nativeTypeElement() {
 		NativeTypeElementContext _localctx = new NativeTypeElementContext(Context, State);
 		EnterRule(_localctx, 132, RULE_nativeTypeElement);
+		_localctx.Value = CILParser.EmptyNativeTypeElementValue.Instance;
 		try {
 			State = 1502;
 			ErrorHandler.Sync(this);
@@ -6329,7 +6449,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class IidParamIndexContext : ParserRuleContext {
-		public object Value;
+		public CILParser.IidParamIndexValue Value;
 		public Int32Context index;
 		[System.Diagnostics.DebuggerNonUserCode] public Int32Context int32() {
 			return GetRuleContext<Int32Context>(0);
@@ -6345,6 +6465,7 @@ public partial class CILParser : Parser {
 	public IidParamIndexContext iidParamIndex() {
 		IidParamIndexContext _localctx = new IidParamIndexContext(Context, State);
 		EnterRule(_localctx, 134, RULE_iidParamIndex);
+		_localctx.Value = CILParser.IidParamIndexValue.Empty;
 		try {
 			State = 1512;
 			ErrorHandler.Sync(this);
@@ -6389,7 +6510,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class VariantTypeContext : ParserRuleContext {
-		public object Value;
+		public CILParser.VariantTypeValue Value;
+		public CILParser.VariantTypeBuilder Builder;
 		public VariantTypeElementContext element;
 		public IToken modifier;
 		[System.Diagnostics.DebuggerNonUserCode] public VariantTypeElementContext variantTypeElement() {
@@ -6418,7 +6540,7 @@ public partial class CILParser : Parser {
 	public VariantTypeContext variantType() {
 		VariantTypeContext _localctx = new VariantTypeContext(Context, State);
 		EnterRule(_localctx, 136, RULE_variantType);
-		Actions.BeginVariantType(_localctx);
+		_localctx.Builder = new CILParser.VariantTypeBuilder();
 		int _la;
 		try {
 			int _alt;
@@ -6435,7 +6557,7 @@ public partial class CILParser : Parser {
 				{
 				State = 1515;
 				_localctx.element = variantTypeElement();
-				Actions.SetVariantTypeElement(_localctx, _localctx.element.Value);
+				Actions.SetVariantTypeElement(_localctx.Builder, _localctx.element.Value);
 				State = 1521;
 				ErrorHandler.Sync(this);
 				_alt = Interpreter.AdaptivePredict(TokenStream,61,Context);
@@ -6453,7 +6575,7 @@ public partial class CILParser : Parser {
 							ErrorHandler.ReportMatch(this);
 						    Consume();
 						}
-						Actions.AddVariantTypeModifier(_localctx, _localctx.modifier);
+						Actions.AddVariantTypeModifier(_localctx.Builder, _localctx.modifier);
 						}
 						} 
 					}
@@ -6471,14 +6593,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndVariantType(_localctx);
+			_localctx.Value = Actions.CreateVariantType(_localctx.Builder);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class VariantTypeElementContext : ParserRuleContext {
-		public object Value;
+		public CILParser.VariantTypeElementValue Value;
 		public IToken value;
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode NULL() { return GetToken(CILParser.NULL, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode VARIANT() { return GetToken(CILParser.VARIANT, 0); }
@@ -6531,6 +6653,7 @@ public partial class CILParser : Parser {
 	public VariantTypeElementContext variantTypeElement() {
 		VariantTypeElementContext _localctx = new VariantTypeElementContext(Context, State);
 		EnterRule(_localctx, 138, RULE_variantTypeElement);
+		_localctx.Value = CILParser.VariantTypeElementValue.Error;
 		try {
 			State = 1606;
 			ErrorHandler.Sync(this);
@@ -6871,7 +6994,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class TypeContext : ParserRuleContext {
-		public object Value;
+		public CILParser.TypeValue Value;
+		public CILParser.ElementTypeValue ElementType;
+		public System.Collections.Immutable.ImmutableArray<CILParser.TypeModifierValue>.Builder Modifiers;
 		public ElementTypeContext element;
 		public TypeModifiersContext modifier;
 		[System.Diagnostics.DebuggerNonUserCode] public ElementTypeContext elementType() {
@@ -6894,14 +7019,17 @@ public partial class CILParser : Parser {
 	public TypeContext type() {
 		TypeContext _localctx = new TypeContext(Context, State);
 		EnterRule(_localctx, 140, RULE_type);
-		Actions.BeginTypeSignature(_localctx);
+
+			_localctx.ElementType = CILParser.ElementTypeValue.Error;
+			_localctx.Modifiers = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.TypeModifierValue>();
+
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
 			{
 			State = 1608;
 			_localctx.element = elementType();
-			Actions.SetTypeSignatureElement(_localctx, _localctx.element.Value);
+			_localctx.ElementType = _localctx.element.Value;
 			State = 1615;
 			ErrorHandler.Sync(this);
 			_alt = Interpreter.AdaptivePredict(TokenStream,64,Context);
@@ -6911,7 +7039,7 @@ public partial class CILParser : Parser {
 					{
 					State = 1610;
 					_localctx.modifier = typeModifiers();
-					Actions.AddTypeSignatureModifier(_localctx, _localctx.modifier.Value);
+					_localctx.Modifiers.Add(_localctx.modifier.Value);
 					}
 					} 
 				}
@@ -6927,14 +7055,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndTypeSignature(_localctx);
+			_localctx.Value = new CILParser.TypeValue(_localctx.ElementType, _localctx.Modifiers.ToImmutable());
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class TypeModifiersContext : ParserRuleContext {
-		public object Value;
+		public CILParser.TypeModifierValue Value;
 		public TypeModifiersContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
 		{
@@ -6995,6 +7123,7 @@ public partial class CILParser : Parser {
 	public TypeModifiersContext typeModifiers() {
 		TypeModifiersContext _localctx = new TypeModifiersContext(Context, State);
 		EnterRule(_localctx, 142, RULE_typeModifiers);
+		_localctx.Value = CILParser.TypeModifierValue.Error;
 		try {
 			State = 1647;
 			ErrorHandler.Sync(this);
@@ -7108,7 +7237,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ElementTypeContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ElementTypeValue Value;
 		public ClassNameContext classType;
 		public ClassNameContext valueClassType;
 		public ClassNameContext valueType;
@@ -7170,6 +7299,7 @@ public partial class CILParser : Parser {
 	public ElementTypeContext elementType() {
 		ElementTypeContext _localctx = new ElementTypeContext(Context, State);
 		EnterRule(_localctx, 144, RULE_elementType);
+		_localctx.Value = CILParser.ElementTypeValue.Error;
 		try {
 			State = 1707;
 			ErrorHandler.Sync(this);
@@ -7705,8 +7835,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class SecDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.SecurityDeclarationValue? Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public SecActionContext action;
 		public TypeSpecContext permissionType;
 		public NameValPairsContext pairs;
@@ -7748,7 +7879,7 @@ public partial class CILParser : Parser {
 	public SecDeclContext secDecl() {
 		SecDeclContext _localctx = new SecDeclContext(Context, State);
 		EnterRule(_localctx, 154, RULE_secDecl);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		int _la;
 		try {
 			State = 1831;
@@ -7894,14 +8025,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndSecurityDeclaration(_localctx);
+			Actions.EndSecurityDeclaration(_localctx, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class SecAttrSetBlobContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.SecurityAttributeValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.SecurityAttributeValue>.Builder Builder;
 		public SecAttrBlobContext attribute;
 		public SecAttrBlobContext tail;
 		[System.Diagnostics.DebuggerNonUserCode] public SecAttrBlobContext[] secAttrBlob() {
@@ -7921,7 +8053,7 @@ public partial class CILParser : Parser {
 	public SecAttrSetBlobContext secAttrSetBlob() {
 		SecAttrSetBlobContext _localctx = new SecAttrSetBlobContext(Context, State);
 		EnterRule(_localctx, 156, RULE_secAttrSetBlob);
-		Actions.BeginSecurityAttributeSet(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.SecurityAttributeValue>();
 		try {
 			int _alt;
 			State = 1846;
@@ -7978,7 +8110,7 @@ public partial class CILParser : Parser {
 						{
 						State = 1834;
 						_localctx.attribute = secAttrBlob();
-						Actions.AddSecurityAttribute(_localctx, _localctx.attribute.Value);
+						_localctx.Builder.Add(_localctx.attribute.Value);
 						State = 1836;
 						Match(T__27);
 						}
@@ -7990,7 +8122,7 @@ public partial class CILParser : Parser {
 				}
 				State = 1843;
 				_localctx.tail = secAttrBlob();
-				Actions.AddSecurityAttribute(_localctx, _localctx.tail.Value);
+				_localctx.Builder.Add(_localctx.tail.Value);
 				}
 				break;
 			default:
@@ -8003,14 +8135,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSecurityAttributeSet(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class SecAttrBlobContext : ParserRuleContext {
-		public object Value;
+		public CILParser.SecurityAttributeValue Value;
 		public IToken name;
 		public CustomBlobNVPairsContext arguments;
 		public TypeSpecContext securityType;
@@ -8032,6 +8164,7 @@ public partial class CILParser : Parser {
 	public SecAttrBlobContext secAttrBlob() {
 		SecAttrBlobContext _localctx = new SecAttrBlobContext(Context, State);
 		EnterRule(_localctx, 158, RULE_secAttrBlob);
+		_localctx.Value = CILParser.SecurityAttributeValue.Error;
 		try {
 			State = 1863;
 			ErrorHandler.Sync(this);
@@ -8084,7 +8217,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class NameValPairsContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.SecurityNameValuePairValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.SecurityNameValuePairValue>.Builder Builder;
 		public NameValPairContext pair;
 		public NameValPairContext tail;
 		[System.Diagnostics.DebuggerNonUserCode] public NameValPairContext[] nameValPair() {
@@ -8104,7 +8238,7 @@ public partial class CILParser : Parser {
 	public NameValPairsContext nameValPairs() {
 		NameValPairsContext _localctx = new NameValPairsContext(Context, State);
 		EnterRule(_localctx, 160, RULE_nameValPairs);
-		Actions.BeginSecurityNameValuePairs(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.SecurityNameValuePairValue>();
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -8118,7 +8252,7 @@ public partial class CILParser : Parser {
 					{
 					State = 1865;
 					_localctx.pair = nameValPair();
-					Actions.AddSecurityNameValuePair(_localctx, _localctx.pair.Value);
+					_localctx.Builder.Add(_localctx.pair.Value);
 					State = 1867;
 					Match(T__27);
 					}
@@ -8130,7 +8264,7 @@ public partial class CILParser : Parser {
 			}
 			State = 1874;
 			_localctx.tail = nameValPair();
-			Actions.AddSecurityNameValuePair(_localctx, _localctx.tail.Value);
+			_localctx.Builder.Add(_localctx.tail.Value);
 			}
 		}
 		catch (RecognitionException re) {
@@ -8139,14 +8273,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSecurityNameValuePairs(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class NameValPairContext : ParserRuleContext {
-		public object Value;
+		public CILParser.SecurityNameValuePairValue Value;
 		public CompQstringContext name;
 		public CaValueContext value;
 		[System.Diagnostics.DebuggerNonUserCode] public CompQstringContext compQstring() {
@@ -8166,6 +8300,7 @@ public partial class CILParser : Parser {
 	public NameValPairContext nameValPair() {
 		NameValPairContext _localctx = new NameValPairContext(Context, State);
 		EnterRule(_localctx, 162, RULE_nameValPair);
+		_localctx.Value = CILParser.SecurityNameValuePairValue.Error;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -8231,7 +8366,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class CaValueContext : ParserRuleContext {
-		public object Value;
+		public CILParser.SecurityCaValue Value;
 		public TruefalseContext booleanValue;
 		public Int32Context integerValue;
 		public CompQstringContext textValue;
@@ -8264,6 +8399,7 @@ public partial class CILParser : Parser {
 	public CaValueContext caValue() {
 		CaValueContext _localctx = new CaValueContext(Context, State);
 		EnterRule(_localctx, 166, RULE_caValue);
+		_localctx.Value = CILParser.SecurityCaValue.Error;
 		try {
 			State = 1929;
 			ErrorHandler.Sync(this);
@@ -8429,8 +8565,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class MethodRefContext : ParserRuleContext {
-		public object Value;
+		public CILParser.MethodReferenceValue Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public CallConvContext convention;
 		public TypeContext returnType;
 		public TypeSpecContext owner;
@@ -8479,7 +8616,10 @@ public partial class CILParser : Parser {
 	public MethodRefContext methodRef() {
 		MethodRefContext _localctx = new MethodRefContext(Context, State);
 		EnterRule(_localctx, 170, RULE_methodRef);
-		Actions.BeginSemanticRoot(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.MethodReferenceValue.Error;
+
 		int _la;
 		try {
 			State = 1975;
@@ -8510,7 +8650,7 @@ public partial class CILParser : Parser {
 
 				State = 1941;
 				_localctx.arguments = sigArgs();
-				_localctx.Value = Actions.CreateMethodReference(_localctx.Start, _localctx.convention.Value, _localctx.returnType.Value, _localctx.owner.Value, _localctx.name.Value, _localctx.genericArguments, null, _localctx.arguments.Value);
+				_localctx.Value = Actions.CreateMethodReference(_localctx.Start, _localctx.convention.Value, _localctx.returnType.Value, _localctx.owner.Value, _localctx.name.Value, _localctx.genericArguments is null ? null : _localctx.genericArguments.Value, null, _localctx.arguments.Value);
 				}
 				break;
 			case 2:
@@ -8554,7 +8694,7 @@ public partial class CILParser : Parser {
 
 				State = 1959;
 				_localctx.arguments = sigArgs();
-				_localctx.Value = Actions.CreateMethodReference(_localctx.Start, _localctx.convention.Value, _localctx.returnType.Value, null, _localctx.name.Value, _localctx.genericArguments, null, _localctx.arguments.Value);
+				_localctx.Value = Actions.CreateMethodReference(_localctx.Start, _localctx.convention.Value, _localctx.returnType.Value, null, _localctx.name.Value, _localctx.genericArguments is null ? null : _localctx.genericArguments.Value, null, _localctx.arguments.Value);
 				}
 				break;
 			case 4:
@@ -8597,7 +8737,11 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
@@ -8800,6 +8944,7 @@ public partial class CILParser : Parser {
 	public partial class MdtokenContext : ParserRuleContext {
 		public int Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public Int32Context token;
 		[System.Diagnostics.DebuggerNonUserCode] public Int32Context int32() {
 			return GetRuleContext<Int32Context>(0);
@@ -8815,7 +8960,7 @@ public partial class CILParser : Parser {
 	public MdtokenContext mdtoken() {
 		MdtokenContext _localctx = new MdtokenContext(Context, State);
 		EnterRule(_localctx, 176, RULE_mdtoken);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -8836,14 +8981,18 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class MemberRefContext : ParserRuleContext {
-		public object Value;
+		public CILParser.MemberReferenceValue Value;
 		public MethodRefContext method;
 		public FieldRefContext field;
 		public MdtokenContext token;
@@ -8868,6 +9017,7 @@ public partial class CILParser : Parser {
 	public MemberRefContext memberRef() {
 		MemberRefContext _localctx = new MemberRefContext(Context, State);
 		EnterRule(_localctx, 178, RULE_memberRef);
+		_localctx.Value = CILParser.MemberReferenceValue.Error;
 		try {
 			State = 2034;
 			ErrorHandler.Sync(this);
@@ -8916,8 +9066,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class FieldRefContext : ParserRuleContext {
-		public object Value;
+		public CILParser.FieldReferenceValue Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public TypeContext fieldType;
 		public TypeSpecContext owner;
 		public DottedNameContext name;
@@ -8943,7 +9094,10 @@ public partial class CILParser : Parser {
 	public FieldRefContext fieldRef() {
 		FieldRefContext _localctx = new FieldRefContext(Context, State);
 		EnterRule(_localctx, 180, RULE_fieldRef);
-		Actions.BeginSemanticRoot(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.FieldReferenceValue.Error;
+
 		try {
 			State = 2049;
 			ErrorHandler.Sync(this);
@@ -8988,14 +9142,19 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class TypeListContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue>.Builder Builder;
 		public TypeSpecContext item;
 		public TypeSpecContext tail;
 		[System.Diagnostics.DebuggerNonUserCode] public TypeSpecContext[] typeSpec() {
@@ -9015,7 +9174,7 @@ public partial class CILParser : Parser {
 	public TypeListContext typeList() {
 		TypeListContext _localctx = new TypeListContext(Context, State);
 		EnterRule(_localctx, 182, RULE_typeList);
-		Actions.BeginGenericTypeList(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.TypeSpecificationValue>();
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -9029,7 +9188,7 @@ public partial class CILParser : Parser {
 					{
 					State = 2051;
 					_localctx.item = typeSpec();
-					Actions.AddGenericType(_localctx, _localctx.item.Value);
+					_localctx.Builder.Add(_localctx.item.Value);
 					State = 2053;
 					Match(T__27);
 					}
@@ -9041,7 +9200,7 @@ public partial class CILParser : Parser {
 			}
 			State = 2060;
 			_localctx.tail = typeSpec();
-			Actions.AddGenericType(_localctx, _localctx.tail.Value);
+			_localctx.Builder.Add(_localctx.tail.Value);
 			}
 		}
 		catch (RecognitionException re) {
@@ -9050,14 +9209,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndGenericTypeList(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class TyparsClauseContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.GenericParameterDeclarationValue> Value;
 		public TyparsContext parameters;
 		[System.Diagnostics.DebuggerNonUserCode] public TyparsContext typars() {
 			return GetRuleContext<TyparsContext>(0);
@@ -9073,7 +9232,7 @@ public partial class CILParser : Parser {
 	public TyparsClauseContext typarsClause() {
 		TyparsClauseContext _localctx = new TyparsClauseContext(Context, State);
 		EnterRule(_localctx, 184, RULE_typarsClause);
-		_localctx.Value = Actions.CreateEmptyGenericParameterList();
+		_localctx.Value = System.Collections.Immutable.ImmutableArray<CILParser.GenericParameterDeclarationValue>.Empty;
 		try {
 			State = 2069;
 			ErrorHandler.Sync(this);
@@ -9115,7 +9274,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class TyparAttribContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AttributeValue<System.Reflection.GenericParameterAttributes> Value;
 		public IToken covariant;
 		public IToken contravariant;
 		public IToken @class;
@@ -9139,6 +9298,7 @@ public partial class CILParser : Parser {
 	public TyparAttribContext typarAttrib() {
 		TyparAttribContext _localctx = new TyparAttribContext(Context, State);
 		EnterRule(_localctx, 186, RULE_typarAttrib);
+		_localctx.Value = CILParser.AttributeValue<System.Reflection.GenericParameterAttributes>.Empty;
 		try {
 			State = 2089;
 			ErrorHandler.Sync(this);
@@ -9221,7 +9381,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class TyparAttribsContext : ParserRuleContext {
-		public object Value;
+		public System.Reflection.GenericParameterAttributes Value;
 		public TyparAttribContext attribute;
 		[System.Diagnostics.DebuggerNonUserCode] public TyparAttribContext[] typarAttrib() {
 			return GetRuleContexts<TyparAttribContext>();
@@ -9240,7 +9400,7 @@ public partial class CILParser : Parser {
 	public TyparAttribsContext typarAttribs() {
 		TyparAttribsContext _localctx = new TyparAttribsContext(Context, State);
 		EnterRule(_localctx, 188, RULE_typarAttribs);
-		Actions.BeginGenericParameterAttributes(_localctx);
+		_localctx.Value = 0;
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -9253,7 +9413,7 @@ public partial class CILParser : Parser {
 				{
 				State = 2091;
 				_localctx.attribute = typarAttrib();
-				Actions.AddGenericParameterAttribute(_localctx, _localctx.attribute.Value);
+				_localctx.Value = Actions.AddGenericParameterAttribute(_localctx.Value, _localctx.attribute.Value);
 				}
 				}
 				State = 2098;
@@ -9268,14 +9428,13 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndGenericParameterAttributes(_localctx);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class TyparContext : ParserRuleContext {
-		public object Value;
+		public CILParser.GenericParameterDeclarationValue Value;
 		public TyparAttribsContext attributes;
 		public TyBoundContext constraints;
 		public DottedNameContext name;
@@ -9299,6 +9458,7 @@ public partial class CILParser : Parser {
 	public TyparContext typar() {
 		TyparContext _localctx = new TyparContext(Context, State);
 		EnterRule(_localctx, 190, RULE_typar);
+		_localctx.Value = CILParser.GenericParameterDeclarationValue.Error;
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -9332,7 +9492,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class TyparsContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.GenericParameterDeclarationValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.GenericParameterDeclarationValue>.Builder Builder;
 		public TyparContext parameter;
 		public TyparContext tail;
 		[System.Diagnostics.DebuggerNonUserCode] public TyparContext[] typar() {
@@ -9352,7 +9513,7 @@ public partial class CILParser : Parser {
 	public TyparsContext typars() {
 		TyparsContext _localctx = new TyparsContext(Context, State);
 		EnterRule(_localctx, 192, RULE_typars);
-		Actions.BeginGenericParameters(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.GenericParameterDeclarationValue>();
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -9366,7 +9527,7 @@ public partial class CILParser : Parser {
 					{
 					State = 2106;
 					_localctx.parameter = typar();
-					Actions.AddGenericParameter(_localctx, _localctx.parameter.Value);
+					_localctx.Builder.Add(_localctx.parameter.Value);
 					State = 2108;
 					Match(T__27);
 					}
@@ -9378,7 +9539,7 @@ public partial class CILParser : Parser {
 			}
 			State = 2115;
 			_localctx.tail = typar();
-			Actions.AddGenericParameter(_localctx, _localctx.tail.Value);
+			_localctx.Builder.Add(_localctx.tail.Value);
 			}
 		}
 		catch (RecognitionException re) {
@@ -9387,14 +9548,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndGenericParameters(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class TyBoundContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue> Value;
 		public TypeListContext constraints;
 		[System.Diagnostics.DebuggerNonUserCode] public TypeListContext typeList() {
 			return GetRuleContext<TypeListContext>(0);
@@ -9410,6 +9571,7 @@ public partial class CILParser : Parser {
 	public TyBoundContext tyBound() {
 		TyBoundContext _localctx = new TyBoundContext(Context, State);
 		EnterRule(_localctx, 194, RULE_tyBound);
+		_localctx.Value = System.Collections.Immutable.ImmutableArray<CILParser.TypeSpecificationValue>.Empty;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -9523,6 +9685,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ClassDeclContext : ParserRuleContext {
+		public CILParser.PropertyBodyValue PropertyBody;
+		public CILParser.EventBodyValue EventBody;
+		public CILParser.CustomAttributeOwnerValue AttributeOwner;
 		public EventHeadContext eventHeader;
 		public PropHeadContext property;
 		public DataDeclContext data;
@@ -9709,11 +9874,11 @@ public partial class CILParser : Parser {
 				{
 				State = 2145;
 				_localctx.eventHeader = eventHead();
-				Actions.BeginEvent(_localctx, _localctx.eventHeader.Value);
+				_localctx.EventBody = Actions.BeginEvent(_localctx.eventHeader.Value);
 				State = 2147;
 				Match(T__16);
 				State = 2148;
-				eventDecls();
+				eventDecls(_localctx.EventBody);
 				State = 2149;
 				Match(T__17);
 				}
@@ -9723,11 +9888,11 @@ public partial class CILParser : Parser {
 				{
 				State = 2151;
 				_localctx.property = propHead();
-				Actions.BeginProperty(_localctx, _localctx.property.Value);
+				_localctx.PropertyBody = Actions.BeginProperty(_localctx.property.Value);
 				State = 2153;
 				Match(T__16);
 				State = 2154;
-				propDecls();
+				propDecls(_localctx.PropertyBody);
 				State = 2155;
 				Match(T__17);
 				}
@@ -9925,7 +10090,7 @@ public partial class CILParser : Parser {
 				_localctx.parameterIndex = int32();
 				State = 2227;
 				Match(T__42);
-				Actions.BeginClassGenericParameterDirective(_localctx, (_localctx.parameterIndex!=null?(_localctx.parameterIndex.Start):null));
+				_localctx.AttributeOwner = Actions.BeginClassGenericParameterDirective(_localctx, (_localctx.parameterIndex!=null?(_localctx.parameterIndex.Start):null));
 				State = 2234;
 				ErrorHandler.Sync(this);
 				_alt = Interpreter.AdaptivePredict(TokenStream,91,Context);
@@ -9935,7 +10100,7 @@ public partial class CILParser : Parser {
 						{
 						State = 2229;
 						_localctx.attribute = customAttrDecl();
-						Actions.AddClassGenericDirectiveAttribute(_localctx, _localctx.attribute);
+						Actions.AddClassGenericDirectiveAttribute(_localctx.AttributeOwner, _localctx.attribute);
 						}
 						} 
 					}
@@ -9954,7 +10119,7 @@ public partial class CILParser : Parser {
 				Match(TYPE);
 				State = 2239;
 				_localctx.parameterName = dottedName();
-				Actions.BeginClassGenericParameterDirective(_localctx, _localctx.parameterName.Value);
+				_localctx.AttributeOwner = Actions.BeginClassGenericParameterDirective(_localctx.parameterName.Value);
 				State = 2246;
 				ErrorHandler.Sync(this);
 				_alt = Interpreter.AdaptivePredict(TokenStream,92,Context);
@@ -9964,7 +10129,7 @@ public partial class CILParser : Parser {
 						{
 						State = 2241;
 						_localctx.attribute = customAttrDecl();
-						Actions.AddClassGenericDirectiveAttribute(_localctx, _localctx.attribute);
+						Actions.AddClassGenericDirectiveAttribute(_localctx.AttributeOwner, _localctx.attribute);
 						}
 						} 
 					}
@@ -9991,7 +10156,7 @@ public partial class CILParser : Parser {
 				Match(T__27);
 				State = 2255;
 				_localctx.constraintType = typeSpec();
-				Actions.BeginClassGenericConstraintDirective(_localctx, (_localctx.parameterIndex!=null?(_localctx.parameterIndex.Start):null), _localctx.constraintType.Value);
+				_localctx.AttributeOwner = Actions.BeginClassGenericConstraintDirective(_localctx, (_localctx.parameterIndex!=null?(_localctx.parameterIndex.Start):null), _localctx.constraintType.Value);
 				State = 2262;
 				ErrorHandler.Sync(this);
 				_alt = Interpreter.AdaptivePredict(TokenStream,93,Context);
@@ -10001,7 +10166,7 @@ public partial class CILParser : Parser {
 						{
 						State = 2257;
 						_localctx.attribute = customAttrDecl();
-						Actions.AddClassGenericDirectiveAttribute(_localctx, _localctx.attribute);
+						Actions.AddClassGenericDirectiveAttribute(_localctx.AttributeOwner, _localctx.attribute);
 						}
 						} 
 					}
@@ -10024,7 +10189,7 @@ public partial class CILParser : Parser {
 				Match(T__27);
 				State = 2269;
 				_localctx.constraintType = typeSpec();
-				Actions.BeginClassGenericConstraintDirective(_localctx, _localctx.parameterName.Value, _localctx.constraintType.Value);
+				_localctx.AttributeOwner = Actions.BeginClassGenericConstraintDirective(_localctx.parameterName.Value, _localctx.constraintType.Value);
 				State = 2276;
 				ErrorHandler.Sync(this);
 				_alt = Interpreter.AdaptivePredict(TokenStream,94,Context);
@@ -10034,7 +10199,7 @@ public partial class CILParser : Parser {
 						{
 						State = 2271;
 						_localctx.attribute = customAttrDecl();
-						Actions.AddClassGenericDirectiveAttribute(_localctx, _localctx.attribute);
+						Actions.AddClassGenericDirectiveAttribute(_localctx.AttributeOwner, _localctx.attribute);
 						}
 						} 
 					}
@@ -10073,7 +10238,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class FieldDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.FieldDeclarationValue Value;
+		public int InitialSyntaxErrorCount;
+		public CILParser.FieldDeclarationBuilder Builder;
 		public RepeatOptContext offset;
 		public FieldAttrContext attribute;
 		public MarshalBlobContext marshalling;
@@ -10119,7 +10286,11 @@ public partial class CILParser : Parser {
 	public FieldDeclContext fieldDecl() {
 		FieldDeclContext _localctx = new FieldDeclContext(Context, State);
 		EnterRule(_localctx, 202, RULE_fieldDecl);
-		Actions.BeginFieldDeclaration(_localctx);
+
+			_localctx.Builder = Actions.PrepareFieldDeclaration();
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.FieldDeclarationValue.Error;
+
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -10155,7 +10326,7 @@ public partial class CILParser : Parser {
 						{
 						State = 2289;
 						_localctx.attribute = fieldAttr();
-						Actions.AddFieldAttribute(_localctx, _localctx.attribute.Value);
+						Actions.AddFieldAttribute(_localctx.Builder, _localctx.attribute.Value);
 						}
 						break;
 					case T__121:
@@ -10168,7 +10339,7 @@ public partial class CILParser : Parser {
 						_localctx.marshalling = marshalBlob();
 						State = 2295;
 						Match(T__30);
-						Actions.SetFieldMarshalling(_localctx, _localctx.marshalling.Value);
+						Actions.SetFieldMarshalling(_localctx.Builder, _localctx.marshalling.Value);
 						}
 						break;
 					default:
@@ -10190,6 +10361,8 @@ public partial class CILParser : Parser {
 			_localctx.initializer = initOpt();
 			_localctx.Value = Actions.CreateFieldDeclaration(
 						_localctx,
+						_localctx.Builder,
+						_localctx.InitialSyntaxErrorCount,
 						_localctx.offset,
 						_localctx.fieldType.Value,
 						_localctx.name.Value,
@@ -10205,14 +10378,13 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndFieldDeclaration(_localctx);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class FieldAttrContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AttributeValue<System.Reflection.FieldAttributes> Value;
 		public IToken attribute;
 		public Int32Context flags;
 		[System.Diagnostics.DebuggerNonUserCode] public Int32Context int32() {
@@ -10229,6 +10401,7 @@ public partial class CILParser : Parser {
 	public FieldAttrContext fieldAttr() {
 		FieldAttrContext _localctx = new FieldAttrContext(Context, State);
 		EnterRule(_localctx, 204, RULE_fieldAttr);
+		_localctx.Value = CILParser.AttributeValue<System.Reflection.FieldAttributes>.Empty;
 		try {
 			State = 2343;
 			ErrorHandler.Sync(this);
@@ -10375,7 +10548,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class AtOptContext : ParserRuleContext {
-		public string Value;
+		public string? Value;
 		public IdContext name;
 		public Int32Context offset;
 		[System.Diagnostics.DebuggerNonUserCode] public IdContext id() {
@@ -10395,6 +10568,7 @@ public partial class CILParser : Parser {
 	public AtOptContext atOpt() {
 		AtOptContext _localctx = new AtOptContext(Context, State);
 		EnterRule(_localctx, 206, RULE_atOpt);
+		_localctx.Value = null;
 		try {
 			State = 2354;
 			ErrorHandler.Sync(this);
@@ -10438,8 +10612,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class InitOptContext : ParserRuleContext {
-		public object Value;
+		public CILParser.FieldInitializerValue Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public FieldInitContext initializer;
 		[System.Diagnostics.DebuggerNonUserCode] public FieldInitContext fieldInit() {
 			return GetRuleContext<FieldInitContext>(0);
@@ -10455,7 +10630,10 @@ public partial class CILParser : Parser {
 	public InitOptContext initOpt() {
 		InitOptContext _localctx = new InitOptContext(Context, State);
 		EnterRule(_localctx, 208, RULE_initOpt);
-		Actions.BeginFieldInitializer(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.FieldInitializerValue.Empty;
+
 		try {
 			State = 2361;
 			ErrorHandler.Sync(this);
@@ -10555,7 +10733,7 @@ public partial class CILParser : Parser {
 				Match(T__35);
 				State = 2358;
 				_localctx.initializer = fieldInit();
-				Actions.SetFieldInitializer(_localctx, _localctx.initializer.Value);
+				_localctx.Value = _localctx.initializer.Value;
 				}
 				break;
 			default:
@@ -10568,7 +10746,11 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndFieldInitializer(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
@@ -10673,7 +10855,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class EventHeadContext : ParserRuleContext {
-		public object Value;
+		public CILParser.EventHeaderValue Value;
+		public int InitialSyntaxErrorCount;
+		public CILParser.EventHeaderBuilder Builder;
 		public EventAttrContext attribute;
 		public TypeSpecContext eventType;
 		public DottedNameContext name;
@@ -10700,7 +10884,11 @@ public partial class CILParser : Parser {
 	public EventHeadContext eventHead() {
 		EventHeadContext _localctx = new EventHeadContext(Context, State);
 		EnterRule(_localctx, 212, RULE_eventHead);
-		Actions.BeginEventHeader(_localctx);
+
+			_localctx.Builder = new CILParser.EventHeaderBuilder();
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.EventHeaderValue.Error;
+
 		int _la;
 		try {
 			State = 2396;
@@ -10719,7 +10907,7 @@ public partial class CILParser : Parser {
 					{
 					State = 2372;
 					_localctx.attribute = eventAttr();
-					Actions.AddEventAttribute(_localctx, _localctx.attribute.Value);
+					Actions.AddEventAttribute(_localctx.Builder, _localctx.attribute.Value);
 					}
 					}
 					State = 2379;
@@ -10730,7 +10918,12 @@ public partial class CILParser : Parser {
 				_localctx.eventType = typeSpec();
 				State = 2381;
 				_localctx.name = dottedName();
-				_localctx.Value = Actions.CreateEventHeader(_localctx, _localctx.eventType.Value, _localctx.name.Value);
+				_localctx.Value = Actions.CreateEventHeader(
+							_localctx,
+							_localctx.Builder,
+							_localctx.InitialSyntaxErrorCount,
+							_localctx.eventType.Value,
+							_localctx.name.Value);
 				}
 				break;
 			case 2:
@@ -10746,7 +10939,7 @@ public partial class CILParser : Parser {
 					{
 					State = 2385;
 					_localctx.attribute = eventAttr();
-					Actions.AddEventAttribute(_localctx, _localctx.attribute.Value);
+					Actions.AddEventAttribute(_localctx.Builder, _localctx.attribute.Value);
 					}
 					}
 					State = 2392;
@@ -10755,7 +10948,12 @@ public partial class CILParser : Parser {
 				}
 				State = 2393;
 				_localctx.name = dottedName();
-				_localctx.Value = Actions.CreateEventHeader(_localctx, null, _localctx.name.Value);
+				_localctx.Value = Actions.CreateEventHeader(
+							_localctx,
+							_localctx.Builder,
+							_localctx.InitialSyntaxErrorCount,
+							null,
+							_localctx.name.Value);
 				}
 				break;
 			}
@@ -10766,14 +10964,13 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndEventHeader(_localctx);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class EventAttrContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AttributeValue<System.Reflection.EventAttributes> Value;
 		public IToken attribute;
 		public EventAttrContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
@@ -10786,6 +10983,7 @@ public partial class CILParser : Parser {
 	public EventAttrContext eventAttr() {
 		EventAttrContext _localctx = new EventAttrContext(Context, State);
 		EnterRule(_localctx, 214, RULE_eventAttr);
+		_localctx.Value = CILParser.AttributeValue<System.Reflection.EventAttributes>.Empty;
 		try {
 			State = 2402;
 			ErrorHandler.Sync(this);
@@ -10822,22 +11020,25 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class EventDeclsContext : ParserRuleContext {
+		public CILParser.EventBodyValue Body;
 		[System.Diagnostics.DebuggerNonUserCode] public EventDeclContext[] eventDecl() {
 			return GetRuleContexts<EventDeclContext>();
 		}
 		[System.Diagnostics.DebuggerNonUserCode] public EventDeclContext eventDecl(int i) {
 			return GetRuleContext<EventDeclContext>(i);
 		}
-		public EventDeclsContext(ParserRuleContext parent, int invokingState)
+		public EventDeclsContext(ParserRuleContext parent, int invokingState) : base(parent, invokingState) { }
+		public EventDeclsContext(ParserRuleContext parent, int invokingState, CILParser.EventBodyValue Body)
 			: base(parent, invokingState)
 		{
+			this.Body = Body;
 		}
 		public override int RuleIndex { get { return RULE_eventDecls; } }
 	}
 
 	[RuleVersion(0)]
-	public EventDeclsContext eventDecls() {
-		EventDeclsContext _localctx = new EventDeclsContext(Context, State);
+	public EventDeclsContext eventDecls(CILParser.EventBodyValue Body) {
+		EventDeclsContext _localctx = new EventDeclsContext(Context, State, Body);
 		EnterRule(_localctx, 216, RULE_eventDecls);
 		int _la;
 		try {
@@ -10850,7 +11051,7 @@ public partial class CILParser : Parser {
 				{
 				{
 				State = 2404;
-				eventDecl();
+				eventDecl(_localctx.Body);
 				}
 				}
 				State = 2409;
@@ -10871,6 +11072,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class EventDeclContext : ParserRuleContext {
+		public CILParser.EventBodyValue Body;
 		public MethodRefContext accessor;
 		public ExtSourceSpecContext source;
 		public CustomAttrDeclContext attribute;
@@ -10890,16 +11092,18 @@ public partial class CILParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public CompControlContext compControl() {
 			return GetRuleContext<CompControlContext>(0);
 		}
-		public EventDeclContext(ParserRuleContext parent, int invokingState)
+		public EventDeclContext(ParserRuleContext parent, int invokingState) : base(parent, invokingState) { }
+		public EventDeclContext(ParserRuleContext parent, int invokingState, CILParser.EventBodyValue Body)
 			: base(parent, invokingState)
 		{
+			this.Body = Body;
 		}
 		public override int RuleIndex { get { return RULE_eventDecl; } }
 	}
 
 	[RuleVersion(0)]
-	public EventDeclContext eventDecl() {
-		EventDeclContext _localctx = new EventDeclContext(Context, State);
+	public EventDeclContext eventDecl(CILParser.EventBodyValue Body) {
+		EventDeclContext _localctx = new EventDeclContext(Context, State, Body);
 		EnterRule(_localctx, 218, RULE_eventDecl);
 		try {
 			State = 2436;
@@ -10912,7 +11116,7 @@ public partial class CILParser : Parser {
 				Match(T__128);
 				State = 2411;
 				_localctx.accessor = methodRef();
-				Actions.AddEventAdder(_localctx, _localctx.accessor.Value);
+				Actions.AddEventAdder(_localctx.Body, _localctx.accessor.Value);
 				}
 				break;
 			case T__129:
@@ -10922,7 +11126,7 @@ public partial class CILParser : Parser {
 				Match(T__129);
 				State = 2415;
 				_localctx.accessor = methodRef();
-				Actions.AddEventRemover(_localctx, _localctx.accessor.Value);
+				Actions.AddEventRemover(_localctx.Body, _localctx.accessor.Value);
 				}
 				break;
 			case T__130:
@@ -10932,7 +11136,7 @@ public partial class CILParser : Parser {
 				Match(T__130);
 				State = 2419;
 				_localctx.accessor = methodRef();
-				Actions.AddEventRaiser(_localctx, _localctx.accessor.Value);
+				Actions.AddEventRaiser(_localctx.Body, _localctx.accessor.Value);
 				}
 				break;
 			case T__131:
@@ -10942,7 +11146,7 @@ public partial class CILParser : Parser {
 				Match(T__131);
 				State = 2423;
 				_localctx.accessor = methodRef();
-				Actions.AddEventOther(_localctx, _localctx.accessor.Value);
+				Actions.AddEventOther(_localctx.Body, _localctx.accessor.Value);
 				}
 				break;
 			case T__72:
@@ -10951,7 +11155,7 @@ public partial class CILParser : Parser {
 				{
 				State = 2426;
 				_localctx.source = extSourceSpec();
-				Actions.ProcessEventSourceDirective(_localctx.source);
+				Actions.ProcessEventSourceDirective(_localctx.Body, _localctx.source);
 				}
 				break;
 			case T__15:
@@ -10965,7 +11169,7 @@ public partial class CILParser : Parser {
 				{
 				State = 2429;
 				_localctx.attribute = customAttrDecl();
-				Actions.AddEventCustomAttribute(_localctx, _localctx.attribute);
+				Actions.AddEventCustomAttribute(_localctx.Body, _localctx.attribute);
 				}
 				break;
 			case T__26:
@@ -10973,7 +11177,7 @@ public partial class CILParser : Parser {
 				{
 				State = 2432;
 				_localctx.language = languageDecl();
-				Actions.ProcessEventLanguageDirective(_localctx.language);
+				Actions.ProcessEventLanguageDirective(_localctx.Body, _localctx.language);
 				}
 				break;
 			case T__31:
@@ -11006,7 +11210,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class PropHeadContext : ParserRuleContext {
-		public object Value;
+		public CILParser.PropertyHeaderValue Value;
+		public int InitialSyntaxErrorCount;
+		public CILParser.PropertyHeaderBuilder Builder;
 		public PropAttrContext attribute;
 		public CallConvContext convention;
 		public TypeContext propertyType;
@@ -11045,7 +11251,11 @@ public partial class CILParser : Parser {
 	public PropHeadContext propHead() {
 		PropHeadContext _localctx = new PropHeadContext(Context, State);
 		EnterRule(_localctx, 220, RULE_propHead);
-		Actions.BeginPropertyHeader(_localctx);
+
+			_localctx.Builder = new CILParser.PropertyHeaderBuilder();
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.PropertyHeaderValue.Error;
+
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -11060,7 +11270,7 @@ public partial class CILParser : Parser {
 				{
 				State = 2439;
 				_localctx.attribute = propAttr();
-				Actions.AddPropertyAttribute(_localctx, _localctx.attribute.Value);
+				Actions.AddPropertyAttribute(_localctx.Builder, _localctx.attribute.Value);
 				}
 				}
 				State = 2446;
@@ -11079,6 +11289,8 @@ public partial class CILParser : Parser {
 			_localctx.initializer = initOpt();
 			_localctx.Value = Actions.CreatePropertyHeader(
 						_localctx,
+						_localctx.Builder,
+						_localctx.InitialSyntaxErrorCount,
 						_localctx.convention.Value,
 						_localctx.propertyType.Value,
 						_localctx.name.Value,
@@ -11092,14 +11304,13 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndPropertyHeader(_localctx);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class PropAttrContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AttributeValue<System.Reflection.PropertyAttributes> Value;
 		public IToken attribute;
 		public PropAttrContext(ParserRuleContext parent, int invokingState)
 			: base(parent, invokingState)
@@ -11112,6 +11323,7 @@ public partial class CILParser : Parser {
 	public PropAttrContext propAttr() {
 		PropAttrContext _localctx = new PropAttrContext(Context, State);
 		EnterRule(_localctx, 222, RULE_propAttr);
+		_localctx.Value = CILParser.AttributeValue<System.Reflection.PropertyAttributes>.Empty;
 		try {
 			State = 2458;
 			ErrorHandler.Sync(this);
@@ -11148,22 +11360,25 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class PropDeclsContext : ParserRuleContext {
+		public CILParser.PropertyBodyValue Body;
 		[System.Diagnostics.DebuggerNonUserCode] public PropDeclContext[] propDecl() {
 			return GetRuleContexts<PropDeclContext>();
 		}
 		[System.Diagnostics.DebuggerNonUserCode] public PropDeclContext propDecl(int i) {
 			return GetRuleContext<PropDeclContext>(i);
 		}
-		public PropDeclsContext(ParserRuleContext parent, int invokingState)
+		public PropDeclsContext(ParserRuleContext parent, int invokingState) : base(parent, invokingState) { }
+		public PropDeclsContext(ParserRuleContext parent, int invokingState, CILParser.PropertyBodyValue Body)
 			: base(parent, invokingState)
 		{
+			this.Body = Body;
 		}
 		public override int RuleIndex { get { return RULE_propDecls; } }
 	}
 
 	[RuleVersion(0)]
-	public PropDeclsContext propDecls() {
-		PropDeclsContext _localctx = new PropDeclsContext(Context, State);
+	public PropDeclsContext propDecls(CILParser.PropertyBodyValue Body) {
+		PropDeclsContext _localctx = new PropDeclsContext(Context, State, Body);
 		EnterRule(_localctx, 224, RULE_propDecls);
 		int _la;
 		try {
@@ -11176,7 +11391,7 @@ public partial class CILParser : Parser {
 				{
 				{
 				State = 2460;
-				propDecl();
+				propDecl(_localctx.Body);
 				}
 				}
 				State = 2465;
@@ -11197,6 +11412,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class PropDeclContext : ParserRuleContext {
+		public CILParser.PropertyBodyValue Body;
 		public MethodRefContext accessor;
 		public CustomAttrDeclContext attribute;
 		public ExtSourceSpecContext source;
@@ -11216,16 +11432,18 @@ public partial class CILParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public CompControlContext compControl() {
 			return GetRuleContext<CompControlContext>(0);
 		}
-		public PropDeclContext(ParserRuleContext parent, int invokingState)
+		public PropDeclContext(ParserRuleContext parent, int invokingState) : base(parent, invokingState) { }
+		public PropDeclContext(ParserRuleContext parent, int invokingState, CILParser.PropertyBodyValue Body)
 			: base(parent, invokingState)
 		{
+			this.Body = Body;
 		}
 		public override int RuleIndex { get { return RULE_propDecl; } }
 	}
 
 	[RuleVersion(0)]
-	public PropDeclContext propDecl() {
-		PropDeclContext _localctx = new PropDeclContext(Context, State);
+	public PropDeclContext propDecl(CILParser.PropertyBodyValue Body) {
+		PropDeclContext _localctx = new PropDeclContext(Context, State, Body);
 		EnterRule(_localctx, 226, RULE_propDecl);
 		try {
 			State = 2488;
@@ -11238,7 +11456,7 @@ public partial class CILParser : Parser {
 				Match(T__133);
 				State = 2467;
 				_localctx.accessor = methodRef();
-				Actions.AddPropertySetter(_localctx, _localctx.accessor.Value);
+				Actions.AddPropertySetter(_localctx.Body, _localctx.accessor.Value);
 				}
 				break;
 			case T__134:
@@ -11248,7 +11466,7 @@ public partial class CILParser : Parser {
 				Match(T__134);
 				State = 2471;
 				_localctx.accessor = methodRef();
-				Actions.AddPropertyGetter(_localctx, _localctx.accessor.Value);
+				Actions.AddPropertyGetter(_localctx.Body, _localctx.accessor.Value);
 				}
 				break;
 			case T__131:
@@ -11258,7 +11476,7 @@ public partial class CILParser : Parser {
 				Match(T__131);
 				State = 2475;
 				_localctx.accessor = methodRef();
-				Actions.AddPropertyOther(_localctx, _localctx.accessor.Value);
+				Actions.AddPropertyOther(_localctx.Body, _localctx.accessor.Value);
 				}
 				break;
 			case T__15:
@@ -11272,7 +11490,7 @@ public partial class CILParser : Parser {
 				{
 				State = 2478;
 				_localctx.attribute = customAttrDecl();
-				Actions.AddPropertyCustomAttribute(_localctx, _localctx.attribute);
+				Actions.AddPropertyCustomAttribute(_localctx.Body, _localctx.attribute);
 				}
 				break;
 			case T__72:
@@ -11281,7 +11499,7 @@ public partial class CILParser : Parser {
 				{
 				State = 2481;
 				_localctx.source = extSourceSpec();
-				Actions.ProcessPropertySourceDirective(_localctx.source);
+				Actions.ProcessPropertySourceDirective(_localctx.Body, _localctx.source);
 				}
 				break;
 			case T__26:
@@ -11289,7 +11507,7 @@ public partial class CILParser : Parser {
 				{
 				State = 2484;
 				_localctx.language = languageDecl();
-				Actions.ProcessPropertyLanguageDirective(_localctx.language);
+				Actions.ProcessPropertyLanguageDirective(_localctx.Body, _localctx.language);
 				}
 				break;
 			case T__31:
@@ -11322,7 +11540,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class MarshalClauseContext : ParserRuleContext {
-		public object Value;
+		public CILParser.MarshallingDescriptorValue Value;
 		public MarshalBlobContext value;
 		[System.Diagnostics.DebuggerNonUserCode] public MarshalBlobContext marshalBlob() {
 			return GetRuleContext<MarshalBlobContext>(0);
@@ -11338,6 +11556,7 @@ public partial class CILParser : Parser {
 	public MarshalClauseContext marshalClause() {
 		MarshalClauseContext _localctx = new MarshalClauseContext(Context, State);
 		EnterRule(_localctx, 228, RULE_marshalClause);
+		_localctx.Value = CILParser.MarshallingDescriptorValue.Empty;
 		try {
 			State = 2497;
 			ErrorHandler.Sync(this);
@@ -11403,7 +11622,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class MarshalBlobContext : ParserRuleContext {
-		public object Value;
+		public CILParser.MarshallingDescriptorValue Value;
+		public CILParser.MarshalBlobBuilder Builder;
 		public NativeTypeContext nativeValue;
 		public HexbyteContext rawByte;
 		[System.Diagnostics.DebuggerNonUserCode] public NativeTypeContext nativeType() {
@@ -11426,7 +11646,7 @@ public partial class CILParser : Parser {
 	public MarshalBlobContext marshalBlob() {
 		MarshalBlobContext _localctx = new MarshalBlobContext(Context, State);
 		EnterRule(_localctx, 230, RULE_marshalBlob);
-		Actions.BeginMarshalBlob(_localctx);
+		_localctx.Builder = new CILParser.MarshalBlobBuilder();
 		int _la;
 		try {
 			State = 2512;
@@ -11486,7 +11706,7 @@ public partial class CILParser : Parser {
 				{
 				State = 2499;
 				_localctx.nativeValue = nativeType();
-				Actions.SetMarshalBlobNativeType(_localctx, _localctx.nativeValue.Value);
+				Actions.SetMarshalBlobNativeType(_localctx.Builder, _localctx.nativeValue.Value);
 				}
 				break;
 			case T__16:
@@ -11502,7 +11722,7 @@ public partial class CILParser : Parser {
 					{
 					State = 2503;
 					_localctx.rawByte = hexbyte();
-					Actions.AddMarshalBlobByte(_localctx, _localctx.rawByte.Value);
+					Actions.AddMarshalBlobByte(_localctx.Builder, _localctx.rawByte.Value);
 					}
 					}
 					State = 2508;
@@ -11523,7 +11743,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndMarshalBlob(_localctx);
+			_localctx.Value = Actions.CreateMarshallingDescriptor(_localctx.Builder);
 			ExitRule();
 		}
 		return _localctx;
@@ -11549,7 +11769,7 @@ public partial class CILParser : Parser {
 	public ParamAttrContext paramAttr() {
 		ParamAttrContext _localctx = new ParamAttrContext(Context, State);
 		EnterRule(_localctx, 232, RULE_paramAttr);
-		Actions.BeginParameterAttributes(_localctx);
+		_localctx.Value = 0;
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -11562,7 +11782,10 @@ public partial class CILParser : Parser {
 				{
 				State = 2514;
 				_localctx.element = paramAttrElement();
-				Actions.AddParameterAttribute(_localctx, _localctx.element);
+				_localctx.Value = Actions.AddParameterAttribute(
+							_localctx.Value,
+							_localctx.element.Value,
+							_localctx.element.ShouldAppend);
 				}
 				}
 				State = 2521;
@@ -11577,7 +11800,6 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndParameterAttributes(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -11668,7 +11890,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class MethodHeadContext : ParserRuleContext {
-		public object Value;
+		public CILParser.MethodHeaderValue Value;
+		public int InitialSyntaxErrorCount;
+		public CILParser.MethodHeaderBuilder Builder;
 		public MethAttrContext attribute;
 		public PinvImplContext pInvoke;
 		public CallConvContext convention;
@@ -11729,7 +11953,11 @@ public partial class CILParser : Parser {
 	public MethodHeadContext methodHead() {
 		MethodHeadContext _localctx = new MethodHeadContext(Context, State);
 		EnterRule(_localctx, 236, RULE_methodHead);
-		Actions.BeginMethodHeader(_localctx);
+
+			_localctx.Builder = Actions.PrepareMethodHeader();
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.MethodHeaderValue.Error;
+
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -11766,14 +11994,14 @@ public partial class CILParser : Parser {
 					{
 					State = 2542;
 					_localctx.attribute = methAttr();
-					Actions.AddMethodAttribute(_localctx, _localctx.attribute.Value);
+					Actions.AddMethodAttribute(_localctx.Builder, _localctx.attribute.Value);
 					}
 					break;
 				case T__146:
 					{
 					State = 2545;
 					_localctx.pInvoke = pinvImpl();
-					Actions.AddPInvoke(_localctx, _localctx.pInvoke.Value);
+					Actions.AddPInvoke(_localctx.Builder, _localctx.pInvoke.Value);
 					}
 					break;
 				default:
@@ -11806,7 +12034,7 @@ public partial class CILParser : Parser {
 				{
 				State = 2560;
 				_localctx.implementation = implAttr();
-				Actions.AddMethodImplementationAttribute(_localctx, _localctx.implementation.Value);
+				Actions.AddMethodImplementationAttribute(_localctx.Builder, _localctx.implementation.Value);
 				}
 				}
 				State = 2567;
@@ -11815,6 +12043,8 @@ public partial class CILParser : Parser {
 			}
 			_localctx.Value = Actions.CreateMethodHeader(
 						_localctx,
+						_localctx.Builder,
+						_localctx.InitialSyntaxErrorCount,
 						_localctx.convention.Value,
 						_localctx.returnAttributes.Value,
 						_localctx.returnType.Value,
@@ -11832,14 +12062,13 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndMethodHeader(_localctx);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class MethAttrContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AttributeValue<System.Reflection.MethodAttributes> Value;
 		public IToken attribute;
 		public Int32Context flags;
 		[System.Diagnostics.DebuggerNonUserCode] public Int32Context int32() {
@@ -11856,6 +12085,7 @@ public partial class CILParser : Parser {
 	public MethAttrContext methAttr() {
 		MethAttrContext _localctx = new MethAttrContext(Context, State);
 		EnterRule(_localctx, 238, RULE_methAttr);
+		_localctx.Value = CILParser.AttributeValue<System.Reflection.MethodAttributes>.Empty;
 		try {
 			State = 2612;
 			ErrorHandler.Sync(this);
@@ -12034,7 +12264,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class PinvImplContext : ParserRuleContext {
-		public object Value;
+		public CILParser.PInvokeValue Value;
+		public CILParser.PInvokeBuilder Builder;
 		public CompQstringContext module;
 		public CompQstringContext entryPoint;
 		public PinvAttrContext attribute;
@@ -12061,7 +12292,7 @@ public partial class CILParser : Parser {
 	public PinvImplContext pinvImpl() {
 		PinvImplContext _localctx = new PinvImplContext(Context, State);
 		EnterRule(_localctx, 240, RULE_pinvImpl);
-		Actions.BeginPInvoke(_localctx);
+		_localctx.Builder = new CILParser.PInvokeBuilder();
 		int _la;
 		try {
 			State = 2637;
@@ -12081,7 +12312,7 @@ public partial class CILParser : Parser {
 					{
 					State = 2616;
 					_localctx.module = compQstring();
-					Actions.SetPInvokeModule(_localctx, _localctx.module.Value);
+					Actions.SetPInvokeModule(_localctx.Builder, _localctx.module.Value);
 					State = 2622;
 					ErrorHandler.Sync(this);
 					_la = TokenStream.LA(1);
@@ -12091,7 +12322,7 @@ public partial class CILParser : Parser {
 						Match(T__33);
 						State = 2619;
 						_localctx.entryPoint = compQstring();
-						Actions.SetPInvokeEntryPoint(_localctx, _localctx.entryPoint.Value);
+						Actions.SetPInvokeEntryPoint(_localctx.Builder, _localctx.entryPoint.Value);
 						}
 					}
 
@@ -12106,7 +12337,7 @@ public partial class CILParser : Parser {
 					{
 					State = 2626;
 					_localctx.attribute = pinvAttr();
-					Actions.AddPInvokeAttribute(_localctx, _localctx.attribute.Value);
+					Actions.AddPInvokeAttribute(_localctx.Builder, _localctx.attribute.Value);
 					}
 					}
 					State = 2633;
@@ -12134,14 +12365,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndPInvoke(_localctx);
+			_localctx.Value = Actions.CreatePInvoke(_localctx.Builder);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class PinvAttrContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AttributeValue<System.Reflection.MethodImportAttributes> Value;
 		public IToken attribute;
 		public IToken setting;
 		public Int32Context flags;
@@ -12164,6 +12395,7 @@ public partial class CILParser : Parser {
 	public PinvAttrContext pinvAttr() {
 		PinvAttrContext _localctx = new PinvAttrContext(Context, State);
 		EnterRule(_localctx, 242, RULE_pinvAttr);
+		_localctx.Value = CILParser.AttributeValue<System.Reflection.MethodImportAttributes>.Empty;
 		try {
 			State = 2681;
 			ErrorHandler.Sync(this);
@@ -12342,6 +12574,7 @@ public partial class CILParser : Parser {
 	public MethodNameContext methodName() {
 		MethodNameContext _localctx = new MethodNameContext(Context, State);
 		EnterRule(_localctx, 244, RULE_methodName);
+		_localctx.Value = string.Empty;
 		try {
 			State = 2690;
 			ErrorHandler.Sync(this);
@@ -12391,7 +12624,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ImplAttrContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AttributeValue<System.Reflection.MethodImplAttributes> Value;
 		public IToken attribute;
 		public Int32Context flags;
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode UNMANAGED() { return GetToken(CILParser.UNMANAGED, 0); }
@@ -12409,6 +12642,7 @@ public partial class CILParser : Parser {
 	public ImplAttrContext implAttr() {
 		ImplAttrContext _localctx = new ImplAttrContext(Context, State);
 		EnterRule(_localctx, 246, RULE_implAttr);
+		_localctx.Value = CILParser.AttributeValue<System.Reflection.MethodImplAttributes>.Empty;
 		try {
 			State = 2730;
 			ErrorHandler.Sync(this);
@@ -12895,6 +13129,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class LocalsDeclContext : ParserRuleContext {
+		public int InitialSyntaxErrorCount;
 		public IToken initialize;
 		public SigArgsContext arguments;
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode LOCALS() { return GetToken(CILParser.LOCALS, 0); }
@@ -12912,7 +13147,7 @@ public partial class CILParser : Parser {
 	public LocalsDeclContext localsDecl() {
 		LocalsDeclContext _localctx = new LocalsDeclContext(Context, State);
 		EnterRule(_localctx, 252, RULE_localsDecl);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -12939,13 +13174,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndLocalsDirective(_localctx);
+			Actions.EndLocalsDirective(_localctx, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class ExportDeclContext : ParserRuleContext {
+		public int InitialSyntaxErrorCount;
 		public Int32Context ordinal;
 		public IdContext alias;
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode EXPORT() { return GetToken(CILParser.EXPORT, 0); }
@@ -12966,7 +13202,7 @@ public partial class CILParser : Parser {
 	public ExportDeclContext exportDecl() {
 		ExportDeclContext _localctx = new ExportDeclContext(Context, State);
 		EnterRule(_localctx, 254, RULE_exportDecl);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -12999,13 +13235,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndExportDirective(_localctx);
+			Actions.EndExportDirective(_localctx, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class VtentryDeclContext : ParserRuleContext {
+		public int InitialSyntaxErrorCount;
 		public Int32Context table;
 		public Int32Context slot;
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode VTENTRY() { return GetToken(CILParser.VTENTRY, 0); }
@@ -13026,7 +13263,7 @@ public partial class CILParser : Parser {
 	public VtentryDeclContext vtentryDecl() {
 		VtentryDeclContext _localctx = new VtentryDeclContext(Context, State);
 		EnterRule(_localctx, 256, RULE_vtentryDecl);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -13046,13 +13283,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndVTableEntryDirective(_localctx);
+			Actions.EndVTableEntryDirective(_localctx, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class OverrideDeclContext : ParserRuleContext {
+		public int InitialSyntaxErrorCount;
 		public TypeSpecContext owner;
 		public MethodNameContext name;
 		public CallConvContext convention;
@@ -13091,7 +13329,7 @@ public partial class CILParser : Parser {
 	public OverrideDeclContext overrideDecl() {
 		OverrideDeclContext _localctx = new OverrideDeclContext(Context, State);
 		EnterRule(_localctx, 258, RULE_overrideDecl);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		try {
 			State = 2811;
 			ErrorHandler.Sync(this);
@@ -13140,13 +13378,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndOverrideDirective(_localctx);
+			Actions.EndOverrideDirective(_localctx, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class ParameterDeclContext : ParserRuleContext {
+		public int InitialSyntaxErrorCount;
+		public System.Collections.Immutable.ImmutableArray<CILParser.CustomAttributeApplicationValue>.Builder Attributes;
 		public Int32Context genericIndex;
 		public CustomAttrDeclContext attribute;
 		public DottedNameContext genericName;
@@ -13187,7 +13427,10 @@ public partial class CILParser : Parser {
 	public ParameterDeclContext parameterDecl() {
 		ParameterDeclContext _localctx = new ParameterDeclContext(Context, State);
 		EnterRule(_localctx, 260, RULE_parameterDecl);
-		Actions.BeginParameterDirective(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Attributes = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.CustomAttributeApplicationValue>();
+
 		try {
 			int _alt;
 			State = 2878;
@@ -13215,7 +13458,7 @@ public partial class CILParser : Parser {
 						{
 						State = 2818;
 						_localctx.attribute = customAttrDecl();
-						Actions.AddParameterCustomAttribute(_localctx, _localctx.attribute);
+						Actions.AddCustomAttributeApplication(_localctx.Attributes, _localctx.attribute);
 						}
 						} 
 					}
@@ -13243,7 +13486,7 @@ public partial class CILParser : Parser {
 						{
 						State = 2829;
 						_localctx.attribute = customAttrDecl();
-						Actions.AddParameterCustomAttribute(_localctx, _localctx.attribute);
+						Actions.AddCustomAttributeApplication(_localctx.Attributes, _localctx.attribute);
 						}
 						} 
 					}
@@ -13279,7 +13522,7 @@ public partial class CILParser : Parser {
 						{
 						State = 2844;
 						_localctx.attribute = customAttrDecl();
-						Actions.AddParameterCustomAttribute(_localctx, _localctx.attribute);
+						Actions.AddCustomAttributeApplication(_localctx.Attributes, _localctx.attribute);
 						}
 						} 
 					}
@@ -13311,7 +13554,7 @@ public partial class CILParser : Parser {
 						{
 						State = 2857;
 						_localctx.attribute = customAttrDecl();
-						Actions.AddParameterCustomAttribute(_localctx, _localctx.attribute);
+						Actions.AddCustomAttributeApplication(_localctx.Attributes, _localctx.attribute);
 						}
 						} 
 					}
@@ -13343,7 +13586,7 @@ public partial class CILParser : Parser {
 						{
 						State = 2870;
 						_localctx.attribute = customAttrDecl();
-						Actions.AddParameterCustomAttribute(_localctx, _localctx.attribute);
+						Actions.AddCustomAttributeApplication(_localctx.Attributes, _localctx.attribute);
 						}
 						} 
 					}
@@ -13361,7 +13604,10 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndParameterDirective(_localctx);
+			Actions.EndParameterDirective(
+				_localctx,
+				_localctx.Attributes.ToImmutable(),
+				_localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
@@ -13405,8 +13651,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class CustomDescrInMethodBodyContext : ParserRuleContext {
-		public object Value;
+		public CILParser.CustomAttributeDeclarationValue Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public CustomDescrContext directAttribute;
 		public CustomDescrWithOwnerContext ownedAttribute;
 		[System.Diagnostics.DebuggerNonUserCode] public CustomDescrContext customDescr() {
@@ -13426,7 +13673,10 @@ public partial class CILParser : Parser {
 	public CustomDescrInMethodBodyContext customDescrInMethodBody() {
 		CustomDescrInMethodBodyContext _localctx = new CustomDescrInMethodBodyContext(Context, State);
 		EnterRule(_localctx, 264, RULE_customDescrInMethodBody);
-		Actions.BeginSemanticRoot(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.CustomAttributeDeclarationValue.Error;
+
 		try {
 			State = 2890;
 			ErrorHandler.Sync(this);
@@ -13455,7 +13705,11 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
@@ -13501,6 +13755,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class SehBlockContext : ParserRuleContext {
+		public int InitialSyntaxErrorCount;
 		public TryBlockContext tryRange;
 		public SehClausesContext clauses;
 		[System.Diagnostics.DebuggerNonUserCode] public TryBlockContext tryBlock() {
@@ -13520,7 +13775,7 @@ public partial class CILParser : Parser {
 	public SehBlockContext sehBlock() {
 		SehBlockContext _localctx = new SehBlockContext(Context, State);
 		EnterRule(_localctx, 268, RULE_sehBlock);
-		Actions.BeginExceptionBlock(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -13536,14 +13791,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndExceptionBlock(_localctx);
+			Actions.EndExceptionBlock(_localctx, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class SehClausesContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.ExceptionClauseValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.ExceptionClauseValue>.Builder Builder;
 		public SehClauseContext clause;
 		[System.Diagnostics.DebuggerNonUserCode] public SehClauseContext[] sehClause() {
 			return GetRuleContexts<SehClauseContext>();
@@ -13562,7 +13818,7 @@ public partial class CILParser : Parser {
 	public SehClausesContext sehClauses() {
 		SehClausesContext _localctx = new SehClausesContext(Context, State);
 		EnterRule(_localctx, 270, RULE_sehClauses);
-		Actions.BeginExceptionClauses(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.ExceptionClauseValue>();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -13575,7 +13831,7 @@ public partial class CILParser : Parser {
 				{
 				State = 2899;
 				_localctx.clause = sehClause();
-				Actions.AddExceptionClause(_localctx, _localctx.clause.Value);
+				_localctx.Builder.Add(_localctx.clause.Value);
 				}
 				}
 				State = 2904;
@@ -13590,14 +13846,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndExceptionClauses(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class TryBlockContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ExceptionRangeValue Value;
 		public ScopeBlockContext body;
 		public IdContext startLabel;
 		public IdContext endLabel;
@@ -13629,6 +13885,7 @@ public partial class CILParser : Parser {
 	public TryBlockContext tryBlock() {
 		TryBlockContext _localctx = new TryBlockContext(Context, State);
 		EnterRule(_localctx, 272, RULE_tryBlock);
+		_localctx.Value = CILParser.ExceptionRangeValue.Invalid;
 		try {
 			State = 2922;
 			ErrorHandler.Sync(this);
@@ -13685,7 +13942,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class SehClauseContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ExceptionClauseValue Value;
 		public CatchClauseContext caught;
 		public HandlerBlockContext handler;
 		public FilterClauseContext filtered;
@@ -13715,6 +13972,7 @@ public partial class CILParser : Parser {
 	public SehClauseContext sehClause() {
 		SehClauseContext _localctx = new SehClauseContext(Context, State);
 		EnterRule(_localctx, 274, RULE_sehClause);
+		_localctx.Value = CILParser.ExceptionClauseValue.Invalid;
 		try {
 			State = 2940;
 			ErrorHandler.Sync(this);
@@ -13775,7 +14033,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class FilterClauseContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ExceptionFilterValue Value;
 		public ScopeBlockContext body;
 		public IdContext label;
 		public Int32Context offset;
@@ -13799,6 +14057,7 @@ public partial class CILParser : Parser {
 	public FilterClauseContext filterClause() {
 		FilterClauseContext _localctx = new FilterClauseContext(Context, State);
 		EnterRule(_localctx, 276, RULE_filterClause);
+		_localctx.Value = CILParser.ExceptionFilterValue.Invalid;
 		try {
 			State = 2954;
 			ErrorHandler.Sync(this);
@@ -13847,7 +14106,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class CatchClauseContext : ParserRuleContext {
-		public object Value;
+		public CILParser.CatchTypeValue Value;
+		public int InitialSyntaxErrorCount;
 		public TypeSpecContext catchType;
 		[System.Diagnostics.DebuggerNonUserCode] public TypeSpecContext typeSpec() {
 			return GetRuleContext<TypeSpecContext>(0);
@@ -13863,7 +14123,10 @@ public partial class CILParser : Parser {
 	public CatchClauseContext catchClause() {
 		CatchClauseContext _localctx = new CatchClauseContext(Context, State);
 		EnterRule(_localctx, 278, RULE_catchClause);
-		Actions.BeginCatchClause(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.CatchTypeValue.Invalid;
+
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -13879,7 +14142,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndCatchClause(_localctx);
+			_localctx.Value = Actions.EndCatchClause(_localctx, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
@@ -13946,7 +14209,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class HandlerBlockContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ExceptionRangeValue Value;
 		public ScopeBlockContext body;
 		public IdContext startLabel;
 		public IdContext endLabel;
@@ -13978,6 +14241,7 @@ public partial class CILParser : Parser {
 	public HandlerBlockContext handlerBlock() {
 		HandlerBlockContext _localctx = new HandlerBlockContext(Context, State);
 		EnterRule(_localctx, 284, RULE_handlerBlock);
+		_localctx.Value = CILParser.ExceptionRangeValue.Invalid;
 		try {
 			State = 2978;
 			ErrorHandler.Sync(this);
@@ -14033,6 +14297,8 @@ public partial class CILParser : Parser {
 
 	public partial class DataDeclContext : ParserRuleContext {
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
+		public CILParser.DataDeclarationBuilder Builder;
 		[System.Diagnostics.DebuggerNonUserCode] public DdHeadContext ddHead() {
 			return GetRuleContext<DdHeadContext>(0);
 		}
@@ -14050,14 +14316,17 @@ public partial class CILParser : Parser {
 	public DataDeclContext dataDecl() {
 		DataDeclContext _localctx = new DataDeclContext(Context, State);
 		EnterRule(_localctx, 286, RULE_dataDecl);
-		Actions.BeginDataDeclaration(_localctx);
+
+			_localctx.Builder = Actions.CreateDataDeclaration(_localctx);
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
 			State = 2980;
-			ddHead();
+			ddHead(_localctx.Builder);
 			State = 2981;
-			ddBody();
+			ddBody(_localctx.Builder);
 			}
 		}
 		catch (RecognitionException re) {
@@ -14066,13 +14335,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndDataDeclaration(_localctx);
+			Actions.EndDataDeclaration(_localctx, _localctx.Builder, _localctx.InitialSyntaxErrorCount);
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class DdHeadContext : ParserRuleContext {
+		public CILParser.DataDeclarationBuilder Builder;
 		public TlsContext section;
 		public IdContext name;
 		[System.Diagnostics.DebuggerNonUserCode] public TlsContext tls() {
@@ -14081,16 +14351,18 @@ public partial class CILParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public IdContext id() {
 			return GetRuleContext<IdContext>(0);
 		}
-		public DdHeadContext(ParserRuleContext parent, int invokingState)
+		public DdHeadContext(ParserRuleContext parent, int invokingState) : base(parent, invokingState) { }
+		public DdHeadContext(ParserRuleContext parent, int invokingState, CILParser.DataDeclarationBuilder Builder)
 			: base(parent, invokingState)
 		{
+			this.Builder = Builder;
 		}
 		public override int RuleIndex { get { return RULE_ddHead; } }
 	}
 
 	[RuleVersion(0)]
-	public DdHeadContext ddHead() {
-		DdHeadContext _localctx = new DdHeadContext(Context, State);
+	public DdHeadContext ddHead(CILParser.DataDeclarationBuilder Builder) {
+		DdHeadContext _localctx = new DdHeadContext(Context, State, Builder);
 		EnterRule(_localctx, 288, RULE_ddHead);
 		try {
 			State = 2993;
@@ -14107,7 +14379,7 @@ public partial class CILParser : Parser {
 				_localctx.name = id();
 				State = 2986;
 				Match(T__35);
-				Actions.SetDataDeclarationHeader(_localctx, _localctx.section.Value, (_localctx.name!=null?(_localctx.name.Start):null));
+				Actions.SetDataDeclarationHeader(_localctx.Builder, _localctx.section.Value, (_localctx.name!=null?(_localctx.name.Start):null));
 				}
 				break;
 			case 2:
@@ -14117,7 +14389,7 @@ public partial class CILParser : Parser {
 				Match(T__164);
 				State = 2990;
 				_localctx.section = tls();
-				Actions.SetAnonymousDataDeclarationHeader(_localctx, _localctx.section.Value);
+				Actions.SetAnonymousDataDeclarationHeader(_localctx.Builder, _localctx.section.Value);
 				}
 				break;
 			}
@@ -14186,6 +14458,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class DdBodyContext : ParserRuleContext {
+		public CILParser.DataDeclarationBuilder Builder;
 		[System.Diagnostics.DebuggerNonUserCode] public DdItemListContext ddItemList() {
 			return GetRuleContext<DdItemListContext>(0);
 		}
@@ -14195,16 +14468,18 @@ public partial class CILParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public DdItemContext ddItem(int i) {
 			return GetRuleContext<DdItemContext>(i);
 		}
-		public DdBodyContext(ParserRuleContext parent, int invokingState)
+		public DdBodyContext(ParserRuleContext parent, int invokingState) : base(parent, invokingState) { }
+		public DdBodyContext(ParserRuleContext parent, int invokingState, CILParser.DataDeclarationBuilder Builder)
 			: base(parent, invokingState)
 		{
+			this.Builder = Builder;
 		}
 		public override int RuleIndex { get { return RULE_ddBody; } }
 	}
 
 	[RuleVersion(0)]
-	public DdBodyContext ddBody() {
-		DdBodyContext _localctx = new DdBodyContext(Context, State);
+	public DdBodyContext ddBody(CILParser.DataDeclarationBuilder Builder) {
+		DdBodyContext _localctx = new DdBodyContext(Context, State, Builder);
 		EnterRule(_localctx, 292, RULE_ddBody);
 		int _la;
 		try {
@@ -14217,7 +14492,7 @@ public partial class CILParser : Parser {
 				State = 3002;
 				Match(T__16);
 				State = 3003;
-				ddItemList();
+				ddItemList(_localctx.Builder);
 				State = 3004;
 				Match(T__17);
 				}
@@ -14240,7 +14515,7 @@ public partial class CILParser : Parser {
 					{
 					{
 					State = 3006;
-					ddItem();
+					ddItem(_localctx.Builder);
 					}
 					}
 					State = 3009;
@@ -14265,22 +14540,25 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class DdItemListContext : ParserRuleContext {
+		public CILParser.DataDeclarationBuilder Builder;
 		[System.Diagnostics.DebuggerNonUserCode] public DdItemContext[] ddItem() {
 			return GetRuleContexts<DdItemContext>();
 		}
 		[System.Diagnostics.DebuggerNonUserCode] public DdItemContext ddItem(int i) {
 			return GetRuleContext<DdItemContext>(i);
 		}
-		public DdItemListContext(ParserRuleContext parent, int invokingState)
+		public DdItemListContext(ParserRuleContext parent, int invokingState) : base(parent, invokingState) { }
+		public DdItemListContext(ParserRuleContext parent, int invokingState, CILParser.DataDeclarationBuilder Builder)
 			: base(parent, invokingState)
 		{
+			this.Builder = Builder;
 		}
 		public override int RuleIndex { get { return RULE_ddItemList; } }
 	}
 
 	[RuleVersion(0)]
-	public DdItemListContext ddItemList() {
-		DdItemListContext _localctx = new DdItemListContext(Context, State);
+	public DdItemListContext ddItemList(CILParser.DataDeclarationBuilder Builder) {
+		DdItemListContext _localctx = new DdItemListContext(Context, State, Builder);
 		EnterRule(_localctx, 294, RULE_ddItemList);
 		try {
 			int _alt;
@@ -14294,7 +14572,7 @@ public partial class CILParser : Parser {
 					{
 					{
 					State = 3013;
-					ddItem();
+					ddItem(_localctx.Builder);
 					State = 3014;
 					Match(T__27);
 					}
@@ -14305,7 +14583,7 @@ public partial class CILParser : Parser {
 				_alt = Interpreter.AdaptivePredict(TokenStream,149,Context);
 			}
 			State = 3021;
-			ddItem();
+			ddItem(_localctx.Builder);
 			}
 		}
 		catch (RecognitionException re) {
@@ -14467,6 +14745,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class DdItemContext : ParserRuleContext {
+		public CILParser.DataDeclarationBuilder Builder;
 		public CompQstringContext stringValue;
 		public IdContext target;
 		public BytesContext byteValue;
@@ -14505,16 +14784,18 @@ public partial class CILParser : Parser {
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode INT32_() { return GetToken(CILParser.INT32_, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode INT16() { return GetToken(CILParser.INT16, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode INT8() { return GetToken(CILParser.INT8, 0); }
-		public DdItemContext(ParserRuleContext parent, int invokingState)
+		public DdItemContext(ParserRuleContext parent, int invokingState) : base(parent, invokingState) { }
+		public DdItemContext(ParserRuleContext parent, int invokingState, CILParser.DataDeclarationBuilder Builder)
 			: base(parent, invokingState)
 		{
+			this.Builder = Builder;
 		}
 		public override int RuleIndex { get { return RULE_ddItem; } }
 	}
 
 	[RuleVersion(0)]
-	public DdItemContext ddItem() {
-		DdItemContext _localctx = new DdItemContext(Context, State);
+	public DdItemContext ddItem(CILParser.DataDeclarationBuilder Builder) {
+		DdItemContext _localctx = new DdItemContext(Context, State, Builder);
 		EnterRule(_localctx, 298, RULE_ddItem);
 		int _la;
 		try {
@@ -14534,7 +14815,7 @@ public partial class CILParser : Parser {
 				_localctx.stringValue = compQstring();
 				State = 3035;
 				Match(T__30);
-				Actions.AddDataString(_localctx, _localctx.stringValue.Value);
+				Actions.AddDataString(_localctx.Builder, _localctx.stringValue.Value);
 				}
 				break;
 			case 2:
@@ -14548,7 +14829,7 @@ public partial class CILParser : Parser {
 				_localctx.target = id();
 				State = 3041;
 				Match(T__30);
-				Actions.AddDataReference(_localctx, (_localctx.target!=null?(_localctx.target.Start):null));
+				Actions.AddDataReference(_localctx.Builder, (_localctx.target!=null?(_localctx.target.Start):null));
 				}
 				break;
 			case 3:
@@ -14558,7 +14839,7 @@ public partial class CILParser : Parser {
 				Match(REF);
 				State = 3045;
 				_localctx.target = id();
-				Actions.AddDataReference(_localctx, (_localctx.target!=null?(_localctx.target.Start):null));
+				Actions.AddDataReference(_localctx.Builder, (_localctx.target!=null?(_localctx.target.Start):null));
 				}
 				break;
 			case 4:
@@ -14572,7 +14853,7 @@ public partial class CILParser : Parser {
 				_localctx.byteValue = bytes();
 				State = 3051;
 				Match(T__30);
-				Actions.AddDataBytes(_localctx, _localctx.byteValue.Value);
+				Actions.AddDataBytes(_localctx.Builder, _localctx.byteValue.Value);
 				}
 				break;
 			case 5:
@@ -14596,7 +14877,7 @@ public partial class CILParser : Parser {
 				Match(T__30);
 				State = 3058;
 				_localctx.count = ddItemCount();
-				Actions.AddFloatingPointData(_localctx, _localctx.kind, _localctx.floatingValue.Value, _localctx.count.Value);
+				Actions.AddFloatingPointData(_localctx.Builder, _localctx.kind, _localctx.floatingValue.Value, _localctx.count.Value);
 				}
 				break;
 			case 6:
@@ -14612,7 +14893,7 @@ public partial class CILParser : Parser {
 				Match(T__30);
 				State = 3065;
 				_localctx.count = ddItemCount();
-				Actions.AddInt64Data(_localctx, _localctx.kind, (_localctx.int64Value!=null?(_localctx.int64Value.Start):null), _localctx.count.Value);
+				Actions.AddInt64Data(_localctx.Builder, _localctx.kind, (_localctx.int64Value!=null?(_localctx.int64Value.Start):null), _localctx.count.Value);
 				}
 				break;
 			case 7:
@@ -14636,7 +14917,7 @@ public partial class CILParser : Parser {
 				Match(T__30);
 				State = 3072;
 				_localctx.count = ddItemCount();
-				Actions.AddIntegerData(_localctx, _localctx.kind, (_localctx.integerValue!=null?(_localctx.integerValue.Start):null), _localctx.count.Value);
+				Actions.AddIntegerData(_localctx.Builder, _localctx.kind, (_localctx.integerValue!=null?(_localctx.integerValue.Start):null), _localctx.count.Value);
 				}
 				break;
 			case 8:
@@ -14654,7 +14935,7 @@ public partial class CILParser : Parser {
 				}
 				State = 3076;
 				_localctx.count = ddItemCount();
-				Actions.AddZeroData(_localctx, _localctx.kind, _localctx.count.Value);
+				Actions.AddZeroData(_localctx.Builder, _localctx.kind, _localctx.count.Value);
 				}
 				break;
 			}
@@ -14965,6 +15246,7 @@ public partial class CILParser : Parser {
 
 	public partial class BytesContext : ParserRuleContext {
 		public System.Collections.Immutable.ImmutableArray<byte> Value;
+		public System.Collections.Immutable.ImmutableArray<byte>.Builder Builder;
 		public HexbyteContext b;
 		[System.Diagnostics.DebuggerNonUserCode] public HexbyteContext[] hexbyte() {
 			return GetRuleContexts<HexbyteContext>();
@@ -14983,7 +15265,7 @@ public partial class CILParser : Parser {
 	public BytesContext bytes() {
 		BytesContext _localctx = new BytesContext(Context, State);
 		EnterRule(_localctx, 302, RULE_bytes);
-		Actions.BeginBytes();
+		_localctx.Builder = Actions.CreateByteAccumulator();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -14996,7 +15278,7 @@ public partial class CILParser : Parser {
 				{
 				State = 3173;
 				_localctx.b = hexbyte();
-				Actions.AddByte(_localctx.b.Value);
+				Actions.AddByte(_localctx.Builder, _localctx.b.Value);
 				}
 				}
 				State = 3180;
@@ -15011,7 +15293,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndBytes();
+			_localctx.Value = Actions.EndBytes(_localctx.Builder);
 			ExitRule();
 		}
 		return _localctx;
@@ -15062,7 +15344,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class FieldInitContext : ParserRuleContext {
-		public object Value;
+		public CILParser.FieldInitializerValue Value;
 		public FieldSerInitContext serializedValue;
 		public CompQstringContext stringValue;
 		[System.Diagnostics.DebuggerNonUserCode] public FieldSerInitContext fieldSerInit() {
@@ -15083,6 +15365,7 @@ public partial class CILParser : Parser {
 	public FieldInitContext fieldInit() {
 		FieldInitContext _localctx = new FieldInitContext(Context, State);
 		EnterRule(_localctx, 306, RULE_fieldInit);
+		_localctx.Value = CILParser.FieldInitializerValue.Empty;
 		try {
 			State = 3191;
 			ErrorHandler.Sync(this);
@@ -15139,7 +15422,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class SerInitContext : ParserRuleContext {
-		public object Value;
+		public CILParser.SerializedInitializerValue Value;
 		public FieldSerInitContext scalarValue;
 		public IToken stringToken;
 		public IToken typeToken;
@@ -15260,6 +15543,7 @@ public partial class CILParser : Parser {
 	public SerInitContext serInit() {
 		SerInitContext _localctx = new SerInitContext(Context, State);
 		EnterRule(_localctx, 308, RULE_serInit);
+		_localctx.Value = CILParser.SerializedInitializerValue.Error;
 		try {
 			State = 3364;
 			ErrorHandler.Sync(this);
@@ -15673,6 +15957,7 @@ public partial class CILParser : Parser {
 
 	public partial class F32seqContext : ParserRuleContext {
 		public System.Reflection.Metadata.BlobBuilder Value;
+		public System.Reflection.Metadata.BlobBuilder Builder;
 		public Float64Context floatingValue;
 		public Int32Context integerValue;
 		[System.Diagnostics.DebuggerNonUserCode] public Float64Context[] float64() {
@@ -15698,7 +15983,7 @@ public partial class CILParser : Parser {
 	public F32seqContext f32seq() {
 		F32seqContext _localctx = new F32seqContext(Context, State);
 		EnterRule(_localctx, 310, RULE_f32seq);
-		Actions.BeginSerializationSequence(_localctx);
+		_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -15715,14 +16000,14 @@ public partial class CILParser : Parser {
 					{
 					State = 3366;
 					_localctx.floatingValue = float64();
-					Actions.AddFloat32SequenceValue(_localctx, _localctx.floatingValue.Value);
+					Actions.AddFloat32SequenceValue(_localctx.Builder, _localctx.floatingValue.Value);
 					}
 					break;
 				case 2:
 					{
 					State = 3369;
 					_localctx.integerValue = int32();
-					Actions.AddFloat32SequenceValue(_localctx, (_localctx.integerValue!=null?(_localctx.integerValue.Start):null));
+					Actions.AddFloat32SequenceValue(_localctx.Builder, (_localctx.integerValue!=null?(_localctx.integerValue.Start):null));
 					}
 					break;
 				}
@@ -15739,7 +16024,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSerializationSequence(_localctx);
+			_localctx.Value = _localctx.Builder;
 			ExitRule();
 		}
 		return _localctx;
@@ -15747,6 +16032,7 @@ public partial class CILParser : Parser {
 
 	public partial class F64seqContext : ParserRuleContext {
 		public System.Reflection.Metadata.BlobBuilder Value;
+		public System.Reflection.Metadata.BlobBuilder Builder;
 		public Float64Context floatingValue;
 		public Int64Context integerValue;
 		[System.Diagnostics.DebuggerNonUserCode] public Float64Context[] float64() {
@@ -15772,7 +16058,7 @@ public partial class CILParser : Parser {
 	public F64seqContext f64seq() {
 		F64seqContext _localctx = new F64seqContext(Context, State);
 		EnterRule(_localctx, 312, RULE_f64seq);
-		Actions.BeginSerializationSequence(_localctx);
+		_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -15789,14 +16075,14 @@ public partial class CILParser : Parser {
 					{
 					State = 3377;
 					_localctx.floatingValue = float64();
-					Actions.AddFloat64SequenceValue(_localctx, _localctx.floatingValue.Value);
+					Actions.AddFloat64SequenceValue(_localctx.Builder, _localctx.floatingValue.Value);
 					}
 					break;
 				case 2:
 					{
 					State = 3380;
 					_localctx.integerValue = int64();
-					Actions.AddFloat64SequenceValue(_localctx, (_localctx.integerValue!=null?(_localctx.integerValue.Start):null));
+					Actions.AddFloat64SequenceValue(_localctx.Builder, (_localctx.integerValue!=null?(_localctx.integerValue.Start):null));
 					}
 					break;
 				}
@@ -15813,7 +16099,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSerializationSequence(_localctx);
+			_localctx.Value = _localctx.Builder;
 			ExitRule();
 		}
 		return _localctx;
@@ -15821,6 +16107,7 @@ public partial class CILParser : Parser {
 
 	public partial class I64seqContext : ParserRuleContext {
 		public System.Reflection.Metadata.BlobBuilder Value;
+		public System.Reflection.Metadata.BlobBuilder Builder;
 		public Int64Context value;
 		[System.Diagnostics.DebuggerNonUserCode] public Int64Context[] int64() {
 			return GetRuleContexts<Int64Context>();
@@ -15839,7 +16126,7 @@ public partial class CILParser : Parser {
 	public I64seqContext i64seq() {
 		I64seqContext _localctx = new I64seqContext(Context, State);
 		EnterRule(_localctx, 314, RULE_i64seq);
-		Actions.BeginSerializationSequence(_localctx);
+		_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -15852,7 +16139,7 @@ public partial class CILParser : Parser {
 				{
 				State = 3388;
 				_localctx.value = int64();
-				Actions.AddInt64SequenceValue(_localctx, (_localctx.value!=null?(_localctx.value.Start):null));
+				Actions.AddInt64SequenceValue(_localctx.Builder, (_localctx.value!=null?(_localctx.value.Start):null));
 				}
 				}
 				State = 3395;
@@ -15867,7 +16154,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSerializationSequence(_localctx);
+			_localctx.Value = _localctx.Builder;
 			ExitRule();
 		}
 		return _localctx;
@@ -15875,6 +16162,7 @@ public partial class CILParser : Parser {
 
 	public partial class I32seqContext : ParserRuleContext {
 		public System.Reflection.Metadata.BlobBuilder Value;
+		public System.Reflection.Metadata.BlobBuilder Builder;
 		public Int32Context value;
 		[System.Diagnostics.DebuggerNonUserCode] public Int32Context[] int32() {
 			return GetRuleContexts<Int32Context>();
@@ -15893,7 +16181,7 @@ public partial class CILParser : Parser {
 	public I32seqContext i32seq() {
 		I32seqContext _localctx = new I32seqContext(Context, State);
 		EnterRule(_localctx, 316, RULE_i32seq);
-		Actions.BeginSerializationSequence(_localctx);
+		_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -15906,7 +16194,7 @@ public partial class CILParser : Parser {
 				{
 				State = 3396;
 				_localctx.value = int32();
-				Actions.AddInt32SequenceValue(_localctx, (_localctx.value!=null?(_localctx.value.Start):null));
+				Actions.AddInt32SequenceValue(_localctx.Builder, (_localctx.value!=null?(_localctx.value.Start):null));
 				}
 				}
 				State = 3403;
@@ -15921,7 +16209,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSerializationSequence(_localctx);
+			_localctx.Value = _localctx.Builder;
 			ExitRule();
 		}
 		return _localctx;
@@ -15929,6 +16217,7 @@ public partial class CILParser : Parser {
 
 	public partial class I16seqContext : ParserRuleContext {
 		public System.Reflection.Metadata.BlobBuilder Value;
+		public System.Reflection.Metadata.BlobBuilder Builder;
 		public Int32Context value;
 		[System.Diagnostics.DebuggerNonUserCode] public Int32Context[] int32() {
 			return GetRuleContexts<Int32Context>();
@@ -15947,7 +16236,7 @@ public partial class CILParser : Parser {
 	public I16seqContext i16seq() {
 		I16seqContext _localctx = new I16seqContext(Context, State);
 		EnterRule(_localctx, 318, RULE_i16seq);
-		Actions.BeginSerializationSequence(_localctx);
+		_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -15960,7 +16249,7 @@ public partial class CILParser : Parser {
 				{
 				State = 3404;
 				_localctx.value = int32();
-				Actions.AddInt16SequenceValue(_localctx, (_localctx.value!=null?(_localctx.value.Start):null));
+				Actions.AddInt16SequenceValue(_localctx.Builder, (_localctx.value!=null?(_localctx.value.Start):null));
 				}
 				}
 				State = 3411;
@@ -15975,7 +16264,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSerializationSequence(_localctx);
+			_localctx.Value = _localctx.Builder;
 			ExitRule();
 		}
 		return _localctx;
@@ -15983,6 +16272,7 @@ public partial class CILParser : Parser {
 
 	public partial class I8seqContext : ParserRuleContext {
 		public System.Reflection.Metadata.BlobBuilder Value;
+		public System.Reflection.Metadata.BlobBuilder Builder;
 		public Int32Context value;
 		[System.Diagnostics.DebuggerNonUserCode] public Int32Context[] int32() {
 			return GetRuleContexts<Int32Context>();
@@ -16001,7 +16291,7 @@ public partial class CILParser : Parser {
 	public I8seqContext i8seq() {
 		I8seqContext _localctx = new I8seqContext(Context, State);
 		EnterRule(_localctx, 320, RULE_i8seq);
-		Actions.BeginSerializationSequence(_localctx);
+		_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -16014,7 +16304,7 @@ public partial class CILParser : Parser {
 				{
 				State = 3412;
 				_localctx.value = int32();
-				Actions.AddInt8SequenceValue(_localctx, (_localctx.value!=null?(_localctx.value.Start):null));
+				Actions.AddInt8SequenceValue(_localctx.Builder, (_localctx.value!=null?(_localctx.value.Start):null));
 				}
 				}
 				State = 3419;
@@ -16029,7 +16319,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSerializationSequence(_localctx);
+			_localctx.Value = _localctx.Builder;
 			ExitRule();
 		}
 		return _localctx;
@@ -16037,6 +16327,7 @@ public partial class CILParser : Parser {
 
 	public partial class BoolSeqContext : ParserRuleContext {
 		public System.Reflection.Metadata.BlobBuilder Value;
+		public System.Reflection.Metadata.BlobBuilder Builder;
 		public TruefalseContext value;
 		[System.Diagnostics.DebuggerNonUserCode] public TruefalseContext[] truefalse() {
 			return GetRuleContexts<TruefalseContext>();
@@ -16055,7 +16346,7 @@ public partial class CILParser : Parser {
 	public BoolSeqContext boolSeq() {
 		BoolSeqContext _localctx = new BoolSeqContext(Context, State);
 		EnterRule(_localctx, 322, RULE_boolSeq);
-		Actions.BeginSerializationSequence(_localctx);
+		_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -16068,7 +16359,7 @@ public partial class CILParser : Parser {
 				{
 				State = 3420;
 				_localctx.value = truefalse();
-				Actions.AddBooleanSequenceValue(_localctx, _localctx.value.Value);
+				Actions.AddBooleanSequenceValue(_localctx.Builder, _localctx.value.Value);
 				}
 				}
 				State = 3427;
@@ -16083,7 +16374,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSerializationSequence(_localctx);
+			_localctx.Value = _localctx.Builder;
 			ExitRule();
 		}
 		return _localctx;
@@ -16091,6 +16382,7 @@ public partial class CILParser : Parser {
 
 	public partial class SqstringSeqContext : ParserRuleContext {
 		public System.Reflection.Metadata.BlobBuilder Value;
+		public System.Reflection.Metadata.BlobBuilder Builder;
 		public IToken nullValue;
 		public IToken stringValue;
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode[] NULLREF() { return GetTokens(CILParser.NULLREF); }
@@ -16112,7 +16404,7 @@ public partial class CILParser : Parser {
 	public SqstringSeqContext sqstringSeq() {
 		SqstringSeqContext _localctx = new SqstringSeqContext(Context, State);
 		EnterRule(_localctx, 324, RULE_sqstringSeq);
-		Actions.BeginSerializationSequence(_localctx);
+		_localctx.Builder = new System.Reflection.Metadata.BlobBuilder();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -16129,14 +16421,14 @@ public partial class CILParser : Parser {
 					{
 					State = 3428;
 					_localctx.nullValue = Match(NULLREF);
-					Actions.AddStringSequenceValue(_localctx, _localctx.nullValue);
+					Actions.AddStringSequenceValue(_localctx.Builder, _localctx.nullValue);
 					}
 					break;
 				case SQSTRING:
 					{
 					State = 3430;
 					_localctx.stringValue = Match(SQSTRING);
-					Actions.AddStringSequenceValue(_localctx, _localctx.stringValue);
+					Actions.AddStringSequenceValue(_localctx.Builder, _localctx.stringValue);
 					}
 					break;
 				default:
@@ -16155,14 +16447,15 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndSerializationSequence(_localctx);
+			_localctx.Value = _localctx.Builder;
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class ClassSeqContext : ParserRuleContext {
-		public object Value;
+		public CILParser.SerializedSequenceValue Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.ClassSequenceElementValue>.Builder Builder;
 		public ClassSeqElementContext value;
 		[System.Diagnostics.DebuggerNonUserCode] public ClassSeqElementContext[] classSeqElement() {
 			return GetRuleContexts<ClassSeqElementContext>();
@@ -16181,7 +16474,7 @@ public partial class CILParser : Parser {
 	public ClassSeqContext classSeq() {
 		ClassSeqContext _localctx = new ClassSeqContext(Context, State);
 		EnterRule(_localctx, 326, RULE_classSeq);
-		Actions.BeginSerializationSequence(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.ClassSequenceElementValue>();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -16194,7 +16487,7 @@ public partial class CILParser : Parser {
 				{
 				State = 3437;
 				_localctx.value = classSeqElement();
-				Actions.AddClassSequenceValue(_localctx, _localctx.value.Value);
+				_localctx.Builder.Add(_localctx.value.Value);
 				}
 				}
 				State = 3444;
@@ -16209,14 +16502,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndClassSerializationSequence(_localctx);
+			_localctx.Value = new CILParser.ClassSerializedSequenceValue(_localctx.Builder.ToImmutable());
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class ClassSeqElementContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ClassSequenceElementValue Value;
 		public IToken quotedValue;
 		public ClassNameContext typeValue;
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode NULLREF() { return GetToken(CILParser.NULLREF, 0); }
@@ -16235,6 +16528,7 @@ public partial class CILParser : Parser {
 	public ClassSeqElementContext classSeqElement() {
 		ClassSeqElementContext _localctx = new ClassSeqElementContext(Context, State);
 		EnterRule(_localctx, 328, RULE_classSeqElement);
+		_localctx.Value = CILParser.ClassSequenceElementValue.Error;
 		try {
 			State = 3453;
 			ErrorHandler.Sync(this);
@@ -16291,7 +16585,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ObjSeqContext : ParserRuleContext {
-		public object Value;
+		public CILParser.SerializedSequenceValue Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.SerializedInitializerValue>.Builder Builder;
 		public SerInitContext value;
 		[System.Diagnostics.DebuggerNonUserCode] public SerInitContext[] serInit() {
 			return GetRuleContexts<SerInitContext>();
@@ -16310,7 +16605,7 @@ public partial class CILParser : Parser {
 	public ObjSeqContext objSeq() {
 		ObjSeqContext _localctx = new ObjSeqContext(Context, State);
 		EnterRule(_localctx, 330, RULE_objSeq);
-		Actions.BeginSerializationSequence(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.SerializedInitializerValue>();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -16323,7 +16618,7 @@ public partial class CILParser : Parser {
 				{
 				State = 3455;
 				_localctx.value = serInit();
-				Actions.AddObjectSequenceValue(_localctx, _localctx.value.Value);
+				_localctx.Builder.Add(_localctx.value.Value);
 				}
 				}
 				State = 3462;
@@ -16338,15 +16633,16 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndObjectSerializationSequence(_localctx);
+			_localctx.Value = new CILParser.ObjectSerializedSequenceValue(_localctx.Builder.ToImmutable());
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class CustomAttrDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.CustomAttributeDeclarationValue Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public CustomDescrContext directAttribute;
 		public CustomDescrWithOwnerContext ownedAttribute;
 		public DottedNameContext alias;
@@ -16370,7 +16666,10 @@ public partial class CILParser : Parser {
 	public CustomAttrDeclContext customAttrDecl() {
 		CustomAttrDeclContext _localctx = new CustomAttrDeclContext(Context, State);
 		EnterRule(_localctx, 332, RULE_customAttrDecl);
-		Actions.BeginSemanticRoot(_localctx);
+
+			_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
+			_localctx.Value = CILParser.CustomAttributeDeclarationValue.Error;
+
 		try {
 			State = 3472;
 			ErrorHandler.Sync(this);
@@ -16407,14 +16706,18 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class AsmOrRefDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AssemblyDeclarationValue? Value;
 		public BytesContext key;
 		public IntOrWildcardContext major;
 		public IntOrWildcardContext minor;
@@ -16563,8 +16866,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class AssemblyRefBlockContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AssemblyReferenceValue? Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public AssemblyRefHeadContext header;
 		public AssemblyRefDeclsContext declarations;
 		[System.Diagnostics.DebuggerNonUserCode] public AssemblyRefHeadContext assemblyRefHead() {
@@ -16584,7 +16888,7 @@ public partial class CILParser : Parser {
 	public AssemblyRefBlockContext assemblyRefBlock() {
 		AssemblyRefBlockContext _localctx = new AssemblyRefBlockContext(Context, State);
 		EnterRule(_localctx, 336, RULE_assemblyRefBlock);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -16607,14 +16911,22 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+				if (_localctx.HasSyntaxError)
+				{
+					_localctx.Value = null;
+				}
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class AssemblyRefHeadContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AssemblyReferenceHeaderValue Value;
 		public AsmAttrContext attributes;
 		public DottedNameContext name;
 		public DottedNameContext alias;
@@ -16638,6 +16950,7 @@ public partial class CILParser : Parser {
 	public AssemblyRefHeadContext assemblyRefHead() {
 		AssemblyRefHeadContext _localctx = new AssemblyRefHeadContext(Context, State);
 		EnterRule(_localctx, 338, RULE_assemblyRefHead);
+		_localctx.Value = CILParser.AssemblyReferenceHeaderValue.Error;
 		try {
 			State = 3528;
 			ErrorHandler.Sync(this);
@@ -16694,7 +17007,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class AssemblyRefDeclsContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.AssemblyDeclarationValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.AssemblyDeclarationValue>.Builder Builder;
 		public AssemblyRefDeclContext declaration;
 		[System.Diagnostics.DebuggerNonUserCode] public AssemblyRefDeclContext[] assemblyRefDecl() {
 			return GetRuleContexts<AssemblyRefDeclContext>();
@@ -16713,7 +17027,7 @@ public partial class CILParser : Parser {
 	public AssemblyRefDeclsContext assemblyRefDecls() {
 		AssemblyRefDeclsContext _localctx = new AssemblyRefDeclsContext(Context, State);
 		EnterRule(_localctx, 340, RULE_assemblyRefDecls);
-		Actions.BeginAssemblyReferenceDeclarations(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.AssemblyDeclarationValue>();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -16726,7 +17040,7 @@ public partial class CILParser : Parser {
 				{
 				State = 3530;
 				_localctx.declaration = assemblyRefDecl();
-				Actions.AddAssemblyReferenceDeclaration(_localctx, _localctx.declaration.Value);
+				if (_localctx.declaration.Value is not null) _localctx.Builder.Add(_localctx.declaration.Value);
 				}
 				}
 				State = 3537;
@@ -16741,14 +17055,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndAssemblyReferenceDeclarations(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class AssemblyRefDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.AssemblyDeclarationValue? Value;
 		public BytesContext hash;
 		public AsmOrRefDeclContext shared;
 		public BytesContext token;
@@ -16856,8 +17170,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ExptypeBlockContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ExportedTypeValue? Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public ExptypeHeadContext header;
 		public ExptypeDeclsContext declarations;
 		[System.Diagnostics.DebuggerNonUserCode] public ExptypeHeadContext exptypeHead() {
@@ -16877,7 +17192,7 @@ public partial class CILParser : Parser {
 	public ExptypeBlockContext exptypeBlock() {
 		ExptypeBlockContext _localctx = new ExptypeBlockContext(Context, State);
 		EnterRule(_localctx, 344, RULE_exptypeBlock);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -16891,8 +17206,7 @@ public partial class CILParser : Parser {
 			Match(T__17);
 			_localctx.Value = Actions.CreateExportedType(
 						_localctx.header.Value,
-						_localctx.declarations.Value,
-						(_localctx.header!=null?(_localctx.header.Start):null));
+						_localctx.declarations.Value);
 			}
 		}
 		catch (RecognitionException re) {
@@ -16901,14 +17215,22 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+				if (_localctx.HasSyntaxError)
+				{
+					_localctx.Value = null;
+				}
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class ExptypeHeadContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ExportedTypeHeaderValue Value;
 		public IToken head;
 		public ExptAttrsContext attributes;
 		public DottedNameContext name;
@@ -16929,6 +17251,7 @@ public partial class CILParser : Parser {
 	public ExptypeHeadContext exptypeHead() {
 		ExptypeHeadContext _localctx = new ExptypeHeadContext(Context, State);
 		EnterRule(_localctx, 346, RULE_exptypeHead);
+		_localctx.Value = CILParser.ExportedTypeHeaderValue.Error;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -16958,7 +17281,7 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ExportHeadContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ExportedTypeHeaderValue Value;
 		public IToken head;
 		public ExptAttrsContext attributes;
 		public DottedNameContext name;
@@ -16980,6 +17303,7 @@ public partial class CILParser : Parser {
 	public ExportHeadContext exportHead() {
 		ExportHeadContext _localctx = new ExportHeadContext(Context, State);
 		EnterRule(_localctx, 348, RULE_exportHead);
+		_localctx.Value = CILParser.ExportedTypeHeaderValue.Error;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -17171,7 +17495,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ExptypeDeclsContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.ExportedTypeDeclarationValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.ExportedTypeDeclarationValue>.Builder Builder;
 		public ExptypeDeclContext declaration;
 		[System.Diagnostics.DebuggerNonUserCode] public ExptypeDeclContext[] exptypeDecl() {
 			return GetRuleContexts<ExptypeDeclContext>();
@@ -17190,7 +17515,7 @@ public partial class CILParser : Parser {
 	public ExptypeDeclsContext exptypeDecls() {
 		ExptypeDeclsContext _localctx = new ExptypeDeclsContext(Context, State);
 		EnterRule(_localctx, 354, RULE_exptypeDecls);
-		Actions.BeginExportedTypeDeclarations(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.ExportedTypeDeclarationValue>();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -17203,7 +17528,7 @@ public partial class CILParser : Parser {
 				{
 				State = 3601;
 				_localctx.declaration = exptypeDecl();
-				Actions.AddExportedTypeDeclaration(_localctx, _localctx.declaration.Value);
+				if (_localctx.declaration.Value is not null) _localctx.Builder.Add(_localctx.declaration.Value);
 				}
 				}
 				State = 3608;
@@ -17218,14 +17543,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndExportedTypeDeclarations(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class ExptypeDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ExportedTypeDeclarationValue? Value;
 		public IToken location;
 		public DottedNameContext name;
 		public SlashedNameContext nestedName;
@@ -17358,8 +17683,9 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ManifestResBlockContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ManifestResourceValue? Value;
 		public bool HasSyntaxError;
+		public int InitialSyntaxErrorCount;
 		public ManifestResHeadContext header;
 		public ManifestResDeclsContext declarations;
 		[System.Diagnostics.DebuggerNonUserCode] public ManifestResHeadContext manifestResHead() {
@@ -17379,7 +17705,7 @@ public partial class CILParser : Parser {
 	public ManifestResBlockContext manifestResBlock() {
 		ManifestResBlockContext _localctx = new ManifestResBlockContext(Context, State);
 		EnterRule(_localctx, 358, RULE_manifestResBlock);
-		Actions.BeginSemanticRoot(_localctx);
+		_localctx.InitialSyntaxErrorCount = Actions.SyntaxErrorCount;
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -17393,8 +17719,7 @@ public partial class CILParser : Parser {
 			Match(T__17);
 			_localctx.Value = Actions.CreateManifestResource(
 						_localctx.header.Value,
-						_localctx.declarations.Value,
-						(_localctx.header!=null?(_localctx.header.Start):null));
+						_localctx.declarations.Value);
 			}
 		}
 		catch (RecognitionException re) {
@@ -17403,14 +17728,22 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
+
+				_localctx.HasSyntaxError =
+					Actions.HasSyntaxErrorsSince(_localctx.InitialSyntaxErrorCount) ||
+					_localctx.exception is not null;
+				if (_localctx.HasSyntaxError)
+				{
+					_localctx.Value = null;
+				}
+
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class ManifestResHeadContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ManifestResourceHeaderValue Value;
 		public IToken head;
 		public ManresAttrsContext attributes;
 		public DottedNameContext name;
@@ -17436,6 +17769,7 @@ public partial class CILParser : Parser {
 	public ManifestResHeadContext manifestResHead() {
 		ManifestResHeadContext _localctx = new ManifestResHeadContext(Context, State);
 		EnterRule(_localctx, 360, RULE_manifestResHead);
+		_localctx.Value = CILParser.ManifestResourceHeaderValue.Error;
 		try {
 			State = 3654;
 			ErrorHandler.Sync(this);
@@ -17586,7 +17920,8 @@ public partial class CILParser : Parser {
 	}
 
 	public partial class ManifestResDeclsContext : ParserRuleContext {
-		public object Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.ManifestResourceDeclarationValue> Value;
+		public System.Collections.Immutable.ImmutableArray<CILParser.ManifestResourceDeclarationValue>.Builder Builder;
 		public ManifestResDeclContext declaration;
 		[System.Diagnostics.DebuggerNonUserCode] public ManifestResDeclContext[] manifestResDecl() {
 			return GetRuleContexts<ManifestResDeclContext>();
@@ -17605,7 +17940,7 @@ public partial class CILParser : Parser {
 	public ManifestResDeclsContext manifestResDecls() {
 		ManifestResDeclsContext _localctx = new ManifestResDeclsContext(Context, State);
 		EnterRule(_localctx, 366, RULE_manifestResDecls);
-		Actions.BeginManifestResourceDeclarations(_localctx);
+		_localctx.Builder = System.Collections.Immutable.ImmutableArray.CreateBuilder<CILParser.ManifestResourceDeclarationValue>();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -17618,7 +17953,7 @@ public partial class CILParser : Parser {
 				{
 				State = 3666;
 				_localctx.declaration = manifestResDecl();
-				Actions.AddManifestResourceDeclaration(_localctx, _localctx.declaration.Value);
+				if (_localctx.declaration.Value is not null) _localctx.Builder.Add(_localctx.declaration.Value);
 				}
 				}
 				State = 3673;
@@ -17633,14 +17968,14 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndManifestResourceDeclarations(_localctx);
+			_localctx.Value = _localctx.Builder.ToImmutable();
 			ExitRule();
 		}
 		return _localctx;
 	}
 
 	public partial class ManifestResDeclContext : ParserRuleContext {
-		public object Value;
+		public CILParser.ManifestResourceDeclarationValue? Value;
 		public IToken location;
 		public DottedNameContext name;
 		public Int32Context offset;

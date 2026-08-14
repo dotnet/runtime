@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
@@ -12,89 +11,31 @@ namespace ILAssembler;
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
 {
-    private readonly Stack<NamespaceHeaderFrame> _namespaceHeaderFrames = new();
-    private readonly Stack<ClassHeaderFrame> _classHeaderFrames = new();
-    private readonly Stack<InterfaceListFrame> _interfaceListFrames = new();
+    internal void PrepareNamespaceHeader()
+        => ClearPendingCustomAttributeOwners();
 
-    private sealed record NamespaceHeaderFrame(
-        CILParser.NameSpaceHeadContext Owner,
-        int InitialSyntaxErrorCount);
-
-    private sealed class ClassHeaderFrame
-    {
-        public ClassHeaderFrame(CILParser.ClassHeadContext owner, int initialSyntaxErrorCount)
-        {
-            Owner = owner;
-            InitialSyntaxErrorCount = initialSyntaxErrorCount;
-        }
-
-        public CILParser.ClassHeadContext Owner { get; }
-
-        public int InitialSyntaxErrorCount { get; }
-
-        public ImmutableArray<ClassAttributeValue>.Builder Attributes { get; } =
-            ImmutableArray.CreateBuilder<ClassAttributeValue>();
-    }
-
-    private sealed class InterfaceListFrame
-    {
-        public InterfaceListFrame(CILParser.ImplListContext owner)
-        {
-            Owner = owner;
-        }
-
-        public CILParser.ImplListContext Owner { get; }
-
-        public ImmutableArray<TypeSpecificationValue>.Builder Interfaces { get; } =
-            ImmutableArray.CreateBuilder<TypeSpecificationValue>();
-    }
-
-    internal void BeginNamespaceHeader(CILParser.NameSpaceHeadContext context)
+    internal CILParser.ClassHeaderBuilder PrepareClassHeader()
     {
         ClearPendingCustomAttributeOwners();
-        _namespaceHeaderFrames.Push(new(context, _syntaxErrorCount));
+        return new CILParser.ClassHeaderBuilder();
     }
 
-    internal void EndNamespaceHeader(CILParser.NameSpaceHeadContext context)
-    {
-        if (_namespaceHeaderFrames.Count == 0)
-        {
-            return;
-        }
+    internal void AddClassHeaderAttribute(
+        CILParser.ClassHeaderBuilder builder,
+        ClassAttributeValue value)
+        => builder.Attributes.Add(value);
 
-        NamespaceHeaderFrame frame = _namespaceHeaderFrames.Peek();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        if (ReferenceEquals(frame.Owner, context))
-        {
-            _namespaceHeaderFrames.Pop();
-        }
-    }
-
-    internal void BeginClassHeader(CILParser.ClassHeadContext context)
-    {
-        ClearPendingCustomAttributeOwners();
-        _classHeaderFrames.Push(new(context, _syntaxErrorCount));
-    }
-
-    internal void AddClassHeaderAttribute(CILParser.ClassHeadContext context, object? value)
-    {
-        if (TryGetClassHeaderFrame(context) is { } frame)
-        {
-            frame.Attributes.Add(GetClassAttributeValue(value));
-        }
-    }
-
-    internal object CreateClassHeader(
+    internal ClassHeaderValue CreateClassHeader(
         CILParser.ClassHeadContext context,
+        CILParser.ClassHeaderBuilder builder,
+        int initialSyntaxErrorCount,
         IToken nameToken,
         string fullName,
-        object? genericParameters,
-        object? baseType,
-        object? interfaces)
+        ImmutableArray<GenericParameterDeclarationValue> genericParameters,
+        TypeSpecificationValue? baseType,
+        ImmutableArray<TypeSpecificationValue> interfaces)
     {
-        ClassHeaderFrame? frame = TryGetClassHeaderFrame(context);
-        if (frame is null ||
-            frame.InitialSyntaxErrorCount != _syntaxErrorCount ||
+        if (HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
             context.exception is not null)
         {
             return ClassHeaderValue.Error;
@@ -104,28 +45,13 @@ internal sealed partial class GrammarActions
             true,
             nameToken,
             fullName,
-            frame.Attributes.ToImmutable(),
-            GetGenericParameterDeclarations(genericParameters),
-            baseType as TypeSpecificationValue,
-            GetInterfaceTypes(interfaces));
+            builder.Attributes.ToImmutable(),
+            genericParameters,
+            baseType,
+            interfaces);
     }
 
-    internal void EndClassHeader(CILParser.ClassHeadContext context)
-    {
-        if (_classHeaderFrames.Count == 0)
-        {
-            return;
-        }
-
-        ClassHeaderFrame frame = _classHeaderFrames.Peek();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        if (ReferenceEquals(frame.Owner, context))
-        {
-            _classHeaderFrames.Pop();
-        }
-    }
-
-    internal object CreateClassAttribute(IToken token)
+    internal ClassAttributeValue CreateClassAttribute(IToken token)
     {
         return token.Text switch
         {
@@ -170,7 +96,7 @@ internal sealed partial class GrammarActions
         };
     }
 
-    internal object CreateNestedClassAttribute(IToken visibility)
+    internal ClassAttributeValue CreateNestedClassAttribute(IToken visibility)
     {
         TypeAttributes attribute = visibility.Text switch
         {
@@ -185,7 +111,7 @@ internal sealed partial class GrammarActions
         return CreateClassAttribute(attribute, TypeAttributes.VisibilityMask);
     }
 
-    internal object CreateRawClassAttribute(IToken token)
+    internal ClassAttributeValue CreateRawClassAttribute(IToken token)
     {
         int value = ParseInt32(token);
         bool requireSealed = false;
@@ -207,63 +133,19 @@ internal sealed partial class GrammarActions
             requireSealed);
     }
 
-    internal object? CreateEmptyClassBase() => null;
+    internal TypeSpecificationValue? CreateEmptyClassBase() => null;
 
-    internal object CreateClassBase(object? value) => GetTypeSpecificationValue(value);
+    internal TypeSpecificationValue CreateClassBase(TypeSpecificationValue value)
+        => value;
 
-    internal object CreateEmptyInterfaceList() => ImmutableArray<TypeSpecificationValue>.Empty;
-
-    internal void BeginInterfaceList(CILParser.ImplListContext context)
-        => _interfaceListFrames.Push(new(context));
-
-    internal void AddInterfaceType(CILParser.ImplListContext context, object? value)
-    {
-        if (TryGetInterfaceListFrame(context) is { } frame)
-        {
-            frame.Interfaces.Add(GetTypeSpecificationValue(value));
-        }
-    }
-
-    internal object EndInterfaceList(CILParser.ImplListContext context)
-    {
-        if (_interfaceListFrames.Count == 0)
-        {
-            return ImmutableArray<TypeSpecificationValue>.Empty;
-        }
-
-        InterfaceListFrame frame = _interfaceListFrames.Peek();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        if (!ReferenceEquals(frame.Owner, context))
-        {
-            return ImmutableArray<TypeSpecificationValue>.Empty;
-        }
-
-        _interfaceListFrames.Pop();
-        return frame.Interfaces.ToImmutable();
-    }
+    internal ImmutableArray<TypeSpecificationValue> CreateEmptyInterfaceList()
+        => [];
 
     private static ClassAttributeValue CreateClassAttribute(
         TypeAttributes value,
         TypeAttributes groupMask = 0,
         EntityRegistry.WellKnownBaseType? fallbackBase = null,
         bool requireSealed = false)
-        => new(new(value, groupMask, true), fallbackBase, requireSealed);
-
-    private ClassHeaderFrame? TryGetClassHeaderFrame(CILParser.ClassHeadContext context)
-    {
-        Debug.Assert(_classHeaderFrames.Count > 0);
-        ClassHeaderFrame? frame = _classHeaderFrames.Count == 0 ? null : _classHeaderFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context) ? frame : null;
-    }
-
-    private InterfaceListFrame? TryGetInterfaceListFrame(CILParser.ImplListContext context)
-    {
-        Debug.Assert(_interfaceListFrames.Count > 0);
-        InterfaceListFrame? frame =
-            _interfaceListFrames.Count == 0 ? null : _interfaceListFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context) ? frame : null;
-    }
+        => new(new CILParser.AttributeValue<TypeAttributes>(value, groupMask, true), fallbackBase, requireSealed);
 }
 #pragma warning restore CA1822

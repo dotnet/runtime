@@ -12,69 +12,37 @@ namespace ILAssembler;
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
 {
-    private readonly Stack<SlashedNameFrame> _slashedNameFrames = new();
+    internal TypeName AddSlashedNamePart(TypeName? containingTypeName, string name)
+        => new(containingTypeName, name);
 
-    private sealed class SlashedNameFrame
-    {
-        public SlashedNameFrame(CILParser.SlashedNameContext owner)
-        {
-            Owner = owner;
-        }
+    internal ClassNameValue CreateUnqualifiedClassName(TypeName name)
+        => new UnqualifiedClassNameValue(name);
 
-        public CILParser.SlashedNameContext Owner { get; }
+    internal ClassNameValue CreateAssemblyQualifiedClassName(string assemblyName, TypeName name)
+        => new AssemblyQualifiedClassNameValue(assemblyName, name);
 
-        public TypeName? Name { get; set; }
-    }
+    internal ClassNameValue CreateModuleQualifiedClassName(
+        IToken token,
+        string moduleName,
+        TypeName name)
+        => new ModuleQualifiedClassNameValue(token, moduleName, name);
 
-    internal void BeginSlashedName(CILParser.SlashedNameContext context)
-        => _slashedNameFrames.Push(new(context));
+    internal ClassNameValue CreateTokenQualifiedClassName(int scopeToken, TypeName name)
+        => new TokenQualifiedClassNameValue(scopeToken, name);
 
-    internal void AddSlashedNamePart(CILParser.SlashedNameContext context, string name)
-    {
-        Debug.Assert(_slashedNameFrames.Count > 0);
-        SlashedNameFrame frame = _slashedNameFrames.Peek();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        if (ReferenceEquals(frame.Owner, context))
-        {
-            frame.Name = new TypeName(frame.Name, name);
-        }
-    }
+    internal ClassNameValue CreatePointerQualifiedClassName(TypeName name)
+        => new PointerQualifiedClassNameValue(name);
 
-    internal object EndSlashedName(CILParser.SlashedNameContext context)
-    {
-        Debug.Assert(_slashedNameFrames.Count > 0);
-        SlashedNameFrame frame = _slashedNameFrames.Pop();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        return ReferenceEquals(frame.Owner, context) && frame.Name is not null
-            ? frame.Name
-            : new TypeName(null, string.Empty);
-    }
-
-    internal object CreateUnqualifiedClassName(object? name)
-        => new UnqualifiedClassNameValue(GetTypeNameValue(name));
-
-    internal object CreateAssemblyQualifiedClassName(string assemblyName, object? name)
-        => new AssemblyQualifiedClassNameValue(assemblyName, GetTypeNameValue(name));
-
-    internal object CreateModuleQualifiedClassName(IToken token, string moduleName, object? name)
-        => new ModuleQualifiedClassNameValue(token, moduleName, GetTypeNameValue(name));
-
-    internal object CreateTokenQualifiedClassName(int scopeToken, object? name)
-        => new TokenQualifiedClassNameValue(scopeToken, GetTypeNameValue(name));
-
-    internal object CreatePointerQualifiedClassName(object? name)
-        => new PointerQualifiedClassNameValue(GetTypeNameValue(name));
-
-    internal object CreateTokenClassName(int typeToken)
+    internal ClassNameValue CreateTokenClassName(int typeToken)
         => new TokenClassNameValue(typeToken);
 
-    internal object CreateThisClassName(IToken token)
+    internal ClassNameValue CreateThisClassName(IToken token)
         => new SpecialClassNameValue(token, SpecialClassNameKind.This);
 
-    internal object CreateBaseClassName(IToken token)
+    internal ClassNameValue CreateBaseClassName(IToken token)
         => new SpecialClassNameValue(token, SpecialClassNameKind.Base);
 
-    internal object CreateNesterClassName(IToken token)
+    internal ClassNameValue CreateNesterClassName(IToken token)
         => new SpecialClassNameValue(token, SpecialClassNameKind.Nester);
 
     private EntityRegistry.TypeEntity ResolveClassName(ClassNameValue className)

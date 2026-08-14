@@ -76,6 +76,9 @@ internal sealed partial class GrammarActions
         BlobBuilder blob = new(5);
         switch (elementType)
         {
+            case CILParser.ErrorElementTypeValue:
+                blob.WriteByte((byte)SignatureTypeCode.Object);
+                break;
             case PrimitiveElementTypeValue primitive:
                 blob.WriteByte(primitive.TypeCode);
                 break;
