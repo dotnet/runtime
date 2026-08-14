@@ -151,7 +151,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 AssertExtensions.Throws<ArgumentException>(
                     "ciphertext",
-                    () => key.DecryptKeyWrap(ReadOnlySpan<byte>.Empty, output));
+                    () => key.DecryptKeyWrap(Array.Empty<byte>()));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "ciphertext",
@@ -725,11 +725,21 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
             using (Aes key = CreateKey(kek))
             {
                 byte[] dest = new byte[ciphertext.Length];
+                int plaintextLength = ciphertext.Length - 8;
+                const byte PreFill = 0xB5;
 
                 Assert.ThrowsAny<CryptographicException>(() => key.DecryptKeyWrap(ciphertext));
                 Assert.ThrowsAny<CryptographicException>(() => key.DecryptKeyWrap(new ReadOnlySpan<byte>(ciphertext)));
+
+                Array.Fill(dest, PreFill);
                 Assert.ThrowsAny<CryptographicException>(() => key.DecryptKeyWrap(ciphertext, dest));
+                AssertExtensions.TrueExpression(dest.AsSpan(0, plaintextLength).IndexOfAnyExcept((byte)0) == -1);
+                AssertExtensions.TrueExpression(dest.AsSpan(plaintextLength).IndexOfAnyExcept(PreFill) == -1);
+
+                Array.Fill(dest, PreFill);
                 Assert.ThrowsAny<CryptographicException>(() => key.TryDecryptKeyWrap(ciphertext, dest, out _));
+                AssertExtensions.TrueExpression(dest.AsSpan(0, plaintextLength).IndexOfAnyExcept((byte)0) == -1);
+                AssertExtensions.TrueExpression(dest.AsSpan(plaintextLength).IndexOfAnyExcept(PreFill) == -1);
             }
         }
 
