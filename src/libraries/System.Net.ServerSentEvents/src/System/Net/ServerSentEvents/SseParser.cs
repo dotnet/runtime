@@ -11,7 +11,7 @@ namespace System.Net.ServerSentEvents
         /// <summary>The default <see cref="SseItem{T}.EventType"/> ("message") for an event that did not explicitly specify a type.</summary>
         public const string EventTypeDefault = "message";
 
-        /// <summary>Creates a parser for parsing a <paramref name="sseStream"/> of server-sent events into a sequence of <see cref="SseItem{T}"/> values.</summary>
+        /// <summary>Creates a parser for parsing a <paramref name="sseStream"/> of server-sent events into a sequence of <see cref="SseItem{String}"/> values.</summary>
         /// <param name="sseStream">The stream containing the data to parse.</param>
         /// <returns>
         /// The enumerable of strings, which can be enumerated synchronously or asynchronously. The strings

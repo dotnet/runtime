@@ -40,6 +40,7 @@ namespace System.Net.ServerSentEvents
 #else
             1024;
 #endif
+
         /// <summary>The maximum amount of data buffered by default.</summary>
         private const int DefaultMaxBufferSize = 1024 * 1024 * 1024;
 
