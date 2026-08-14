@@ -453,6 +453,7 @@ private:
 #ifdef TARGET_WASM
     static void      SetMultiplyUsed(GenTree* node DEBUGARG(const char* reason));
     GenTreeAddrMode* GetFoldableAddrMode(GenTreeIndir* indirNode);
+    void             TryFoldLclAddrOffset(GenTreeIndir* indirNode);
     GenTree*         LowerNeg(GenTreeOp* node);
     void             LowerIndexAddr(GenTreeIndexAddr* indexAddr);
     void             LowerCkfinite(GenTreeOp* node);

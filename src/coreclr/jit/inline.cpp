@@ -655,6 +655,15 @@ InlineResult::InlineResult(
     const bool isPrejitRoot = false;
     m_Policy                = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
 
+#ifdef DEBUG
+    if (Compiler::compAsyncInliningStress() && call->IsAsync() && call->IsInlineCandidate() &&
+        !call->IsGuardedDevirtualizationCandidate())
+    {
+        m_Policy->NoteInt(InlineObservation::CALLSITE_ASYNC_STRESS_INDEX,
+                          call->GetSingleInlineCandidateInfo()->asyncStressIndex);
+    }
+#endif // DEBUG
+
     // Pass along some optional information to the policy.
     if (stmt != nullptr)
     {

@@ -28,7 +28,7 @@ namespace System
         public static void Exit(int exitCode) => _Exit(exitCode);
 
         /// <safety>Runtime FCall get/set of the process-wide exit code (an int); it accesses no caller-supplied memory.</safety>
-        public static safe extern int ExitCode
+        public static extern safe int ExitCode
         {
             [MethodImpl(MethodImplOptions.InternalCall)]
             get;
