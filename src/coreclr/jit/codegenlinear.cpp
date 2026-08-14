@@ -1009,7 +1009,7 @@ void CodeGen::genRecordAsyncResume(GenTreeVal* asyncResume)
     asyncResumeInfo->Locations()[index] = emitLocation(GetEmitter());
 }
 
-#ifndef TARGET_WASM
+#if HAS_FIXED_REGISTER_SET
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
@@ -1120,23 +1120,7 @@ void CodeGen::genSpillVar(GenTree* tree)
     }
 }
 
-//------------------------------------------------------------------------
-// genUpdateVarReg: Update the current register location for a multi-reg lclVar
-//
-// Arguments:
-//    varDsc   - the LclVarDsc for the lclVar
-//    tree     - the lclVar node
-//    regIndex - the index of the register in the node
-//
-// inline
-void CodeGenInterface::genUpdateVarReg(LclVarDsc* varDsc, GenTree* tree, int regIndex)
-{
-    // This should only be called for multireg lclVars.
-    assert(m_compiler->lvaEnregMultiRegVars);
-    assert(tree->IsMultiRegLclVar() || tree->OperIs(GT_COPY));
-    varDsc->SetRegNum(tree->GetRegByIndex(regIndex));
-}
-#endif // !TARGET_WASM
+#endif // HAS_FIXED_REGISTER_SET
 
 //------------------------------------------------------------------------
 // genUpdateVarReg: Update the current register location for a lclVar
@@ -1760,6 +1744,7 @@ void CodeGen::genConsumeRegs(GenTree* tree)
             genConsumeRegs(tree->gtGetOp1());
             genConsumeRegs(tree->gtGetOp2());
         }
+#endif
         else if (tree->OperIsFieldList())
         {
             for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
@@ -1768,7 +1753,6 @@ void CodeGen::genConsumeRegs(GenTree* tree)
                 genConsumeRegs(fieldNode);
             }
         }
-#endif
         else if (tree->OperIsLocalRead())
         {
             // A contained lcl var must be living on stack and marked as reg optional, or not be a

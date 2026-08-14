@@ -1056,6 +1056,15 @@ namespace System.Tests
 
             // Stop at null character
             yield return new object[] { "123\0abc", NumberStyles.Integer, null, 123, 4 };
+
+            // Leading whitespace is counted as consumed even when the signs aren't the invariant "+"/"-"
+            NumberFormatInfo nonInvariantSignFormat = new NumberFormatInfo() { NegativeSign = "\u2212" };
+            yield return new object[] { " 5", NumberStyles.Integer, nonInvariantSignFormat, 5, 2 };
+            yield return new object[] { "  123abc", NumberStyles.Integer, nonInvariantSignFormat, 123, 5 };
+            yield return new object[] { "  +123abc", NumberStyles.Integer, nonInvariantSignFormat, 123, 6 };
+            yield return new object[] { "  \u2212456xyz", NumberStyles.Integer, nonInvariantSignFormat, -456, 6 };
+            yield return new object[] { "  \u2212456", NumberStyles.Integer, nonInvariantSignFormat, -456, 6 };
+            yield return new object[] { "  123  abc", NumberStyles.Integer, nonInvariantSignFormat, 123, 7 };
         }
 
         [Theory]

@@ -37,6 +37,8 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -45,6 +47,11 @@ extends:
     stages:
     - stage: Build
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
 
       #
       # CoreCLR NativeAOT release build and libraries tests
@@ -79,6 +86,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       #
       # CoreCLR NativeAOT release build (checked runtime) and libraries tests
@@ -104,6 +112,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       #
       # CoreCLR NativeAOT release build (checked runtime) - SizeOpt and libraries tests
@@ -129,6 +138,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_SizeOpt_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       #
       # CoreCLR NativeAOT release build (checked runtime) - SpeedOpt and libraries tests
@@ -154,6 +164,7 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   testRunNamePrefixSuffix: NativeAOT_Checked_SpeedOpt_$(_BuildConfig)
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
       #
       # CoreCLR NativeAOT checked build and Pri1 tests
@@ -184,6 +195,7 @@ extends:
                   creator: dotnet-bot
                   testBuildArgs: 'nativeaot /p:IlcUseServerGc=false'
                   liveLibrariesBuildConfig: Release
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testRunNamePrefixSuffix: NativeAOT_Pri1_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
@@ -218,6 +230,7 @@ extends:
                   creator: dotnet-bot
                   testBuildArgs: 'nativeaot /p:IlcUseServerGc=false /p:ControlFlowGuard=Guard'
                   liveLibrariesBuildConfig: Release
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testRunNamePrefixSuffix: NativeAOT_Pri0_CET_CFG_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
@@ -251,6 +264,7 @@ extends:
                   creator: dotnet-bot
                   testBuildArgs: 'nativeaot /p:IlcUseServerGc=false /p:ControlFlowGuard=Guard'
                   liveLibrariesBuildConfig: Release
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testRunNamePrefixSuffix: NativeAOT_Pri0_CFG_$(_BuildConfig)
             extraVariablesTemplates:
               - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
