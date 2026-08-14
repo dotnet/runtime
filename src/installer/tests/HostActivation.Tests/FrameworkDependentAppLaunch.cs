@@ -192,7 +192,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .DotNetRoot(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildArchitecture)
-                .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -210,7 +209,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .CaptureStdOut()
                 .DotNetRoot(HostTestContext.BuiltDotNet.BinPath, HostTestContext.BuildArchitecture)
-                .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World")
@@ -265,7 +263,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             Command.Create(appExe)
                 .DotNetRoot(HostTestContext.BuiltDotNet.BinPath)
                 .EnableTracingAndCaptureOutputs()
-                .MultilevelLookup(false)
                 .Execute()
                 .Should().Pass()
                 .And.HaveStdOutContaining("Hello World");
@@ -298,7 +295,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             }
 
             command.EnableTracingAndCaptureOutputs()
-                .MultilevelLookup(false)
                 .Execute()
                 .Should().Fail()
                 .And.HaveStdErrContaining($"The library '{Binaries.HostPolicy.FileName}' required to execute the application was not found")
@@ -402,7 +398,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 CommandResult result = Command.Create(sharedTestState.App.AppExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(invalidDotNet.Location)
-                    .MultilevelLookup(false)
                     .Execute();
 
                 result.Should().Fail()
@@ -433,7 +428,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Command command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(invalidDotNet.Location)
-                    .MultilevelLookup(false)
                     .Start();
 
                 WindowsUtils.WaitForPopupFromProcess(command.Process);
@@ -463,7 +457,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 var command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(invalidDotNet.Location)
-                    .MultilevelLookup(false)
                     .Start();
 
                 WindowsUtils.WaitForPopupFromProcess(command.Process);
@@ -498,7 +491,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Command command = Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(dotnet.BinPath, HostTestContext.BuildArchitecture)
-                    .MultilevelLookup(false)
                     .Start();
 
                 WindowsUtils.WaitForPopupFromProcess(command.Process);
@@ -527,7 +519,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 Command.Create(appExe)
                     .EnableTracingAndCaptureOutputs()
                     .DotNetRoot(invalidDotNet.Location)
-                    .MultilevelLookup(false)
                     .EnvironmentVariable(Constants.DisableGuiErrors.EnvironmentVariable, "1")
                     .Execute()
                     .Should().Fail()

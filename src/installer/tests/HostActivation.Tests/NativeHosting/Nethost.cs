@@ -324,7 +324,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             string traceFilePath;
             CommandResult result = Command.Create(sharedState.NativeHostPath, $"{GetHostFxrPath} false nullptr x")
                 .EnableHostTracingToFile(out traceFilePath)
-                .MultilevelLookup(true)
                 .DotNetRoot(null)
                 .Execute();
 
