@@ -1980,7 +1980,7 @@ gc_heap::mark_steal()
 
 #ifdef SNOOP_STATS
         dprintf (SNOOP_LOG, ("(GC%d)heap%d: start snooping %d", settings.gc_index, heap_number, (heap_number+1)%n_heaps));
-        uint64_t begin_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+        int64_t begin_tick = minipal_lowres_ticks();
 #endif //SNOOP_STATS
 
     int idle_loop_count = 0;
@@ -2080,18 +2080,18 @@ gc_heap::mark_steal()
                 {
 
 #ifdef SNOOP_STATS
-                    dprintf (SNOOP_LOG, ("heap%d: marking %zx from %d [%d] tl:%dms",
+                    dprintf (SNOOP_LOG, ("heap%d: marking %zx from %d [%d] tl:%I64dms",
                             heap_number, (size_t)o, (heap_number+1)%n_heaps, level,
-                            (GCToOSInterface::GetLowPrecisionTimeStamp()-begin_tick)));
-                    uint64_t start_tick = GCToOSInterface::GetLowPrecisionTimeStamp();
+                            (minipal_lowres_ticks()-begin_tick)));
+                    int64_t start_tick = minipal_lowres_ticks();
 #endif //SNOOP_STATS
 
                     mark_object_simple1 (o, start, heap_number);
 
 #ifdef SNOOP_STATS
-                    dprintf (SNOOP_LOG, ("heap%d: done marking %zx from %d [%d] %dms tl:%dms",
+                    dprintf (SNOOP_LOG, ("heap%d: done marking %zx from %d [%d] %I64dms tl:%I64dms",
                             heap_number, (size_t)o, (heap_number+1)%n_heaps, level,
-                            (GCToOSInterface::GetLowPrecisionTimeStamp()-start_tick),(GCToOSInterface::GetLowPrecisionTimeStamp()-begin_tick)));
+                            (minipal_lowres_ticks()-start_tick),(minipal_lowres_ticks()-begin_tick)));
 #endif //SNOOP_STATS
 
                     mark_stack_busy() = 0;
