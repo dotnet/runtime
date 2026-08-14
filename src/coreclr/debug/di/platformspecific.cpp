@@ -22,22 +22,16 @@
 #endif
 
 #if TARGET_X86
-#include "i386/cordbregisterset.cpp"
 #include "i386/primitives.cpp"
 #elif TARGET_AMD64
-#include "amd64/cordbregisterset.cpp"
 #include "amd64/primitives.cpp"
 #elif TARGET_ARM
-#include "arm/cordbregisterset.cpp"
 #include "arm/primitives.cpp"
 #elif TARGET_ARM64
-#include "arm64/cordbregisterset.cpp"
 #include "arm64/primitives.cpp"
 #elif TARGET_LOONGARCH64
-#include "loongarch64/cordbregisterset.cpp"
 #include "loongarch64/primitives.cpp"
 #elif TARGET_RISCV64
-#include "riscv64/cordbregisterset.cpp"
 #include "riscv64/primitives.cpp"
 #else
 #error Unsupported platform

@@ -10,7 +10,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
 /// <summary>
 /// LoongArch64-specific thread context.
 /// </summary>
-[StructLayout(LayoutKind.Explicit, Pack = 1)]
+[StructLayout(LayoutKind.Explicit, Pack = 1, Size = 0x520)]
 internal struct LoongArch64Context : IPlatformContext
 {
     [Flags]
@@ -34,7 +34,7 @@ internal struct LoongArch64Context : IPlatformContext
         CONTEXT_AREA_MASK = 0xFFFF,
     }
 
-    public readonly uint Size => 0x320;
+    public readonly uint Size => 0x520;
 
     public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
 
@@ -105,7 +105,7 @@ internal struct LoongArch64Context : IPlatformContext
         if (name.Equals("s7", StringComparison.OrdinalIgnoreCase)) { S7 = value.Value; return true; }
         if (name.Equals("s8", StringComparison.OrdinalIgnoreCase)) { S8 = value.Value; return true; }
         if (name.Equals("pc", StringComparison.OrdinalIgnoreCase)) { Pc = value.Value; return true; }
-        if (name.Equals("fcc", StringComparison.OrdinalIgnoreCase)) { Fcc = (uint)value.Value; return true; }
+        if (name.Equals("fcc", StringComparison.OrdinalIgnoreCase)) { Fcc = value.Value; return true; }
         if (name.Equals("fcsr", StringComparison.OrdinalIgnoreCase)) { Fcsr = (uint)value.Value; return true; }
         return false;
     }
@@ -231,6 +231,60 @@ internal struct LoongArch64Context : IPlatformContext
         }
     }
 
+    // F0-F31 hold the 256-bit LASX vector registers, a 32-byte stride within the context.
+    private const int FRegisterCount = 32;
+    private const int FRegisterStride = 32;
+
+    public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
+        => SimdRegisterAccess.TryReadRegister(context, (int)Marshal.OffsetOf<LoongArch64Context>(nameof(F)), FRegisterStride, FRegisterCount, index, out value);
+
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
+        => SimdRegisterAccess.TryWriteRegister(context, (int)Marshal.OffsetOf<LoongArch64Context>(nameof(F)), FRegisterStride, FRegisterCount, index, value);
+
+    public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
+    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
+
+    private static readonly (uint Flag, string Name)[] s_scalarRegisters =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "ra"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "sp"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "fp"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "pc"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a0"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a1"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a2"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a3"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a4"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a5"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a6"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "a7"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t0"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t1"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t2"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t3"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t4"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t5"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t6"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t7"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "t8"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "x0"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s0"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s1"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s2"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s3"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s4"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s5"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s6"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s7"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "s8"),
+    ];
+
+    private static readonly (uint Flag, int Start, int End)[] s_wideSpans =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
+            (int)Marshal.OffsetOf<LoongArch64Context>(nameof(F)), (int)Marshal.OffsetOf<LoongArch64Context>(nameof(Fcsr)) + sizeof(uint)),
+    ];
+
     // Control flags
 
     [FieldOffset(0x0)]
@@ -238,19 +292,17 @@ internal struct LoongArch64Context : IPlatformContext
 
     #region General registers
 
-    [Register(RegisterType.General)]
     [FieldOffset(0x8)]
     public ulong R0;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0x10)]
     public ulong Ra;
 
-    [Register(RegisterType.General)]
     [FieldOffset(0x18)]
     public ulong Tp;
 
-    [Register(RegisterType.General | RegisterType.StackPointer)]
+    [Register(RegisterType.Control | RegisterType.StackPointer)]
     [FieldOffset(0x20)]
     public ulong Sp;
 
@@ -326,7 +378,7 @@ internal struct LoongArch64Context : IPlatformContext
     [FieldOffset(0xb0)]
     public ulong X0;
 
-    [Register(RegisterType.General | RegisterType.FramePointer)]
+    [Register(RegisterType.Control | RegisterType.FramePointer)]
     [FieldOffset(0xb8)]
     public ulong Fp;
 
@@ -380,14 +432,14 @@ internal struct LoongArch64Context : IPlatformContext
 
     [Register(RegisterType.FloatingPoint)]
     [FieldOffset(0x110)]
-    public unsafe fixed ulong F[32];
+    public unsafe fixed ulong F[4 * 32];
 
     [Register(RegisterType.FloatingPoint)]
-    [FieldOffset(0x210)]
-    public uint Fcc;
+    [FieldOffset(0x510)]
+    public ulong Fcc;
 
     [Register(RegisterType.FloatingPoint)]
-    [FieldOffset(0x214)]
+    [FieldOffset(0x518)]
     public uint Fcsr;
 
     #endregion

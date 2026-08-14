@@ -72,19 +72,19 @@ inline CorDebugRegister ConvertRegNumToCorDebugRegister(ICorDebugInfo::RegNum re
 //
 // inline function to access/modify the CONTEXT
 //
-inline LPVOID CORDbgGetIP(DT_CONTEXT *context) {
+inline LPVOID CORDbgGetIP(T_CONTEXT *context) {
     LIMITED_METHOD_CONTRACT;
 
     return (LPVOID)(size_t)(context->Eip);
 }
 
-inline void CORDbgSetIP(DT_CONTEXT *context, LPVOID eip) {
+inline void CORDbgSetIP(T_CONTEXT *context, LPVOID eip) {
     LIMITED_METHOD_CONTRACT;
 
     context->Eip = (UINT32)(size_t)eip;
 }
 
-inline CORDB_ADDRESS CORDbgGetSP(const DT_CONTEXT * context) {
+inline CORDB_ADDRESS CORDbgGetSP(const T_CONTEXT * context) {
     LIMITED_METHOD_CONTRACT;
 
     return (CORDB_ADDRESS)(context->Esp);
@@ -163,7 +163,7 @@ inline void CORDbgSetInstruction(CORDB_ADDRESS_TYPE* address,
 // After a breakpoint exception, the CPU points to _after_ the break instruction.
 // Adjust the IP so that it points at the break instruction. This lets us patch that
 // opcode and re-execute what was underneath the bp.
-inline void CORDbgAdjustPCForBreakInstruction(DT_CONTEXT* pContext)
+inline void CORDbgAdjustPCForBreakInstruction(T_CONTEXT* pContext)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -178,14 +178,14 @@ inline bool AddressIsBreakpoint(CORDB_ADDRESS_TYPE* address)
 }
 
 // Set the hardware trace flag.
-inline void SetSSFlag(DT_CONTEXT *context)
+inline void SetSSFlag(T_CONTEXT *context)
 {
     _ASSERTE(context != NULL);
     context->EFlags |= 0x100;
 }
 
 // Unset the hardware trace flag.
-inline void UnsetSSFlag(DT_CONTEXT *context)
+inline void UnsetSSFlag(T_CONTEXT *context)
 {
     SUPPORTS_DAC;
     _ASSERTE(context != NULL);
@@ -193,7 +193,7 @@ inline void UnsetSSFlag(DT_CONTEXT *context)
 }
 
 // return true if the hardware trace flag applied.
-inline bool IsSSFlagEnabled(DT_CONTEXT * context)
+inline bool IsSSFlagEnabled(T_CONTEXT * context)
 {
     _ASSERTE(context != NULL);
     return (context->EFlags & 0x100) != 0;

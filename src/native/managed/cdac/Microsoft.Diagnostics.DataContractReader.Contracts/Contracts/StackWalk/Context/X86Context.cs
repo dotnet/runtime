@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Buffers.Binary;
 using Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers.X86;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts.StackWalkHelpers;
@@ -38,6 +39,10 @@ public struct X86Context : IPlatformContext
     }
 
     public readonly uint Size => 0x2cc;
+
+    public readonly uint SizeWithoutExtendedRegisters => 0xcc;
+
+    public readonly uint ExtendedRegistersFlag => (uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS;
 
     public readonly uint ContextControlFlags => (uint)ContextFlagsValues.CONTEXT_CONTROL;
 
@@ -176,6 +181,94 @@ public struct X86Context : IPlatformContext
             default: value = default; return false;
         }
     }
+
+    // The x87 FP stack exposes 8 logical registers ST(0)-ST(7); each occupies a 10-byte
+    // 80-bit slot in the FloatSave register area.
+    private const int X87RegisterCount = 8;
+
+    private static int Float80Size
+        => (int)Marshal.OffsetOf<X86Context>(nameof(ST1)) - (int)Marshal.OffsetOf<X86Context>(nameof(ST0));
+
+    public readonly bool TryReadFloatingPointRegister(ReadOnlySpan<byte> context, int index, out double value)
+    {
+        value = 0.0;
+        if ((uint)index >= X87RegisterCount)
+            return false;
+
+        // The availability mask exposes all 8 slots even when the live stack is shallower;
+        // out-of-depth slots read as 0.
+        if (!TryGetX87SlotOffset(context, index, out int offset))
+            return true;
+
+        if (offset + Float80Size <= context.Length)
+            value = FloatConversion.X87ExtendedToDouble(context.Slice(offset, Float80Size));
+        return true;
+    }
+
+    public readonly bool TryWriteFloatingPointRegister(Span<byte> context, int index, ReadOnlySpan<byte> value)
+    {
+        if ((uint)index >= X87RegisterCount)
+            return false;
+
+        // Writing an out-of-depth (or otherwise unresolvable) slot is not supported.
+        if (!TryGetX87SlotOffset(context, index, out int offset) || offset + Float80Size > context.Length)
+            return false;
+
+        double d = value.Length == sizeof(float)
+            ? BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(value))
+            : BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(value));
+        FloatConversion.X87DoubleToExtended(d, context.Slice(offset, Float80Size));
+        return true;
+    }
+
+    // Resolves the byte offset of the 80-bit slot backing logical register ST(<paramref name="logicalIndex"/>).
+    // REGISTER_X86_FPSTACK_0 names the bottom of the logical stack: ST(i) with i = top - logicalIndex.
+    // Returns false when logicalIndex is beyond the live stack depth.
+    private static bool TryGetX87SlotOffset(ReadOnlySpan<byte> context, int logicalIndex, out int offset)
+    {
+        offset = 0;
+        uint statusWord = BinaryPrimitives.ReadUInt32LittleEndian(context.Slice((int)Marshal.OffsetOf<X86Context>(nameof(StatusWord))));
+        uint rawTop = (statusWord >> 11) & 0x7;
+        uint floatStackTop = 7 - rawTop;
+        if ((uint)logicalIndex > floatStackTop)
+            return false;
+        uint physIdx = (rawTop + (floatStackTop - (uint)logicalIndex)) & 0x7;
+        offset = (int)Marshal.OffsetOf<X86Context>(nameof(ST0)) + ((int)physIdx * Float80Size);
+        return true;
+    }
+
+    public readonly (uint Flag, string Name)[] GetScalarRegisters() => s_scalarRegisters;
+    public readonly (uint Flag, int Start, int End)[] GetWideSpans() => s_wideSpans;
+
+    private static readonly (uint Flag, string Name)[] s_scalarRegisters =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "ebp"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "eip"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "cs"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "eflags"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "esp"),
+        ((uint)ContextFlagsValues.CONTEXT_CONTROL, "ss"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "edi"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "esi"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "ebx"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "edx"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "ecx"),
+        ((uint)ContextFlagsValues.CONTEXT_INTEGER, "eax"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "gs"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "fs"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "es"),
+        ((uint)ContextFlagsValues.CONTEXT_SEGMENTS, "ds"),
+    ];
+
+    private static readonly (uint Flag, int Start, int End)[] s_wideSpans =
+    [
+        ((uint)ContextFlagsValues.CONTEXT_DEBUG_REGISTERS,
+            (int)Marshal.OffsetOf<X86Context>(nameof(Dr0)), (int)Marshal.OffsetOf<X86Context>(nameof(ControlWord))),
+        ((uint)ContextFlagsValues.CONTEXT_FLOATING_POINT,
+            (int)Marshal.OffsetOf<X86Context>(nameof(ControlWord)), (int)Marshal.OffsetOf<X86Context>(nameof(Gs))),
+        ((uint)ContextFlagsValues.CONTEXT_EXTENDED_REGISTERS,
+            (int)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters)), (int)Marshal.OffsetOf<X86Context>(nameof(ExtendedRegisters)) + 512),
+    ];
 
     // Control flags
 
@@ -336,11 +429,11 @@ public struct X86Context : IPlatformContext
     [FieldOffset(0xb8)]
     public uint Eip;
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0xbc)]
     public uint Cs;
 
-    [Register(RegisterType.General)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0xc0)]
     public uint EFlags;
 
@@ -348,12 +441,13 @@ public struct X86Context : IPlatformContext
     [FieldOffset(0xc4)]
     public uint Esp;
 
-    [Register(RegisterType.Segments)]
+    [Register(RegisterType.Control)]
     [FieldOffset(0xc8)]
     public uint Ss;
 
     #endregion
 
+    [Register(RegisterType.Extended)]
     [FieldOffset(0xcc)]
     public unsafe fixed byte ExtendedRegisters[512];
 }

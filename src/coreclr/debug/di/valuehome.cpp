@@ -37,144 +37,25 @@ void RegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // RegValueHome::SetContextRegister
 // This will update a register in a given context, and in the regdisplay of a given frame.
 // Arguments:
-//     input:  pContext - context from which the register comes
+// updates a register in a given context buffer using the DAC.
+// Arguments:
+//     input:  contextBuffer - context buffer in which the register is to be updated
 //             regnum   - enumeration constant indicating which register is to be updated
 //             newVal   - the new value for the register contents
-//     output: no out parameters, but the new value will be written to the context and the frame
-// Notes:  We don't take a data target here because we are directly writing process memory and passing
-//         in a context, which has the location to update.
-//         Throws
-void RegValueHome::SetContextRegister(DT_CONTEXT *     pContext,
+//     output: no out parameters, but the new value will be written to the context buffer
+void RegValueHome::SetContextRegister(ContextBuffer    contextBuffer,
                                       CorDebugRegister regNum,
                                       SIZE_T           newVal)
 {
-    LPVOID rdRegAddr;
-
-#define _UpdateFrame() \
-    if (m_pFrame != NULL) \
-    { \
-        rdRegAddr = m_pFrame->GetAddressOfRegister(regNum); \
-        *(SIZE_T *)rdRegAddr = newVal; \
-    }
-
-    switch(regNum)
+    IDacDbiInterface * pDAC = m_pFrame->GetProcess()->GetDAC();
+    TADDR value = (TADDR)newVal;
+    HRESULT hr = pDAC->WriteRegistersToContext(
+        contextBuffer,
+        &regNum,
+        1,
+        &value);
+    if (FAILED(hr))
     {
-    case REGISTER_INSTRUCTION_POINTER:  CORDbgSetIP(pContext, (LPVOID)newVal); break;
-    case REGISTER_STACK_POINTER:        CORDbgSetSP(pContext, (LPVOID)newVal); break;
-
-#if defined(TARGET_X86)
-    case REGISTER_FRAME_POINTER:        CORDbgSetFP(pContext, (LPVOID)newVal);
-                                          _UpdateFrame();                         break;
-
-    case REGISTER_X86_EAX:              pContext->Eax = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_X86_ECX:              pContext->Ecx = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_X86_EDX:              pContext->Edx = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_X86_EBX:              pContext->Ebx = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_X86_ESI:              pContext->Esi = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_X86_EDI:              pContext->Edi = newVal;
-                                        _UpdateFrame();                        break;
-
-#elif defined(TARGET_AMD64)
-    case REGISTER_AMD64_RBP:            pContext->Rbp = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_RAX:            pContext->Rax = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_RCX:            pContext->Rcx = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_RDX:            pContext->Rdx = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_RBX:            pContext->Rbx = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_RSI:            pContext->Rsi = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_RDI:            pContext->Rdi = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_R8:             pContext->R8 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_R9:             pContext->R9 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_R10:            pContext->R10 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_R11:            pContext->R11 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_R12:            pContext->R12 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_R13:            pContext->R13 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_R14:            pContext->R14 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_AMD64_R15:            pContext->R15 = newVal;
-                                        _UpdateFrame();                        break;
-#elif defined(TARGET_ARM)
-    case REGISTER_ARM_R0:               pContext->R0 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R1:               pContext->R1 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R2:               pContext->R2 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R3:               pContext->R3 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R4:               pContext->R4 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R5:               pContext->R5 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R6:               pContext->R6 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R7:               pContext->R7 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R8:               pContext->R8 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R9:               pContext->R9 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R10:               pContext->R10 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R11:               pContext->R11 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_R12:               pContext->R12 = newVal;
-                                        _UpdateFrame();                        break;
-    case REGISTER_ARM_LR:               pContext->Lr = newVal;
-                                        _UpdateFrame();                        break;
-#elif defined(TARGET_ARM64)
-    case REGISTER_ARM64_X0:
-    case REGISTER_ARM64_X1:
-    case REGISTER_ARM64_X2:
-    case REGISTER_ARM64_X3:
-    case REGISTER_ARM64_X4:
-    case REGISTER_ARM64_X5:
-    case REGISTER_ARM64_X6:
-    case REGISTER_ARM64_X7:
-    case REGISTER_ARM64_X8:
-    case REGISTER_ARM64_X9:
-    case REGISTER_ARM64_X10:
-    case REGISTER_ARM64_X11:
-    case REGISTER_ARM64_X12:
-    case REGISTER_ARM64_X13:
-    case REGISTER_ARM64_X14:
-    case REGISTER_ARM64_X15:
-    case REGISTER_ARM64_X16:
-    case REGISTER_ARM64_X17:
-    case REGISTER_ARM64_X18:
-    case REGISTER_ARM64_X19:
-    case REGISTER_ARM64_X20:
-    case REGISTER_ARM64_X21:
-    case REGISTER_ARM64_X22:
-    case REGISTER_ARM64_X23:
-    case REGISTER_ARM64_X24:
-    case REGISTER_ARM64_X25:
-    case REGISTER_ARM64_X26:
-    case REGISTER_ARM64_X27:
-    case REGISTER_ARM64_X28:            pContext->X[regNum - REGISTER_ARM64_X0] = newVal;
-                                        _UpdateFrame();                        break;
-
-    case REGISTER_ARM64_LR:             pContext->Lr = newVal;
-                                        _UpdateFrame();                        break;
-#endif
-    default:
         _ASSERTE(!"Invalid register number!");
         ThrowHR(E_FAIL);
     }
@@ -183,7 +64,7 @@ void RegValueHome::SetContextRegister(DT_CONTEXT *     pContext,
 // RegValueHome::SetEnregisteredValue
 // set a remote enregistered location to a new value (see code:EnregisteredValueHome::SetEnregisteredValue
 // for full header comment)
-void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned)
+void RegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
 {
     SIZE_T extendedVal = 0;
 
@@ -229,7 +110,7 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
         }
     }
 
-    SetContextRegister(pContext, m_reg1Info.m_kRegNumber, extendedVal); // throws
+    SetContextRegister(contextBuffer, m_reg1Info.m_kRegNumber, extendedVal); // throws
 } // RegValueHome::SetEnregisteredValue
 
 // RegValueHome::GetEnregisteredValue
@@ -237,11 +118,13 @@ void RegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pCont
 // for full header comment)
 void RegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
-    UINT_PTR* reg = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    _ASSERTE(reg != NULL);
-    _ASSERTE(sizeof(*reg) == valueOutBuffer.Size());
+    _ASSERTE(sizeof(TADDR) == valueOutBuffer.Size());
 
-    memcpy(valueOutBuffer.StartAddress(), reg, sizeof(*reg));
+    TADDR value = 0;
+    HRESULT hr = m_pFrame->ReadContextRegister(m_reg1Info.m_kRegNumber, &value);
+    IfFailThrow(hr);
+
+    memcpy(valueOutBuffer.StartAddress(), &value, sizeof(value));
 } // RegValueHome::GetEnregisteredValue
 
 
@@ -266,7 +149,7 @@ void RegRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // RegRegValueHome::SetEnregisteredValue
 // set a remote enregistered location to a new value (see EnregisteredValueHome::SetEnregisteredValue
 // for full header comment)
-void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned)
+void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
 {
     // A two-register value occupies more than one register's worth of space
     // and at most two registers' worth. On x86 this is 8 bytes (2*4), on
@@ -290,23 +173,10 @@ void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pC
         memcpy(&highPart, (BYTE *)newValue.StartAddress() + REG_SIZE, newValue.Size() - REG_SIZE);
     }
 
-    // Update the proper registers.
-    SetContextRegister(pContext, m_reg1Info.m_kRegNumber, highPart); // throws
-    SetContextRegister(pContext, m_reg2Info.m_kRegNumber, lowPart); // throws
-
-    // Update the frame's register display for each register individually.
-    // We must not do a single memcpy of the full value into reg1's address
-    // because the two registers may not be contiguous in the CONTEXT layout.
-    UINT_PTR * pReg1 = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    UINT_PTR * pReg2 = m_pFrame->GetAddressOfRegister(m_reg2Info.m_kRegNumber);
-    if (pReg1 != NULL)
-    {
-        *pReg1 = highPart;
-    }
-    if (pReg2 != NULL)
-    {
-        *pReg2 = lowPart;
-    }
+    // Update the proper registers. SetContextRegister writes through to the
+    // active CONTEXT - which is the only source of truth now that REGDISPLAY is gone.
+    SetContextRegister(contextBuffer, m_reg1Info.m_kRegNumber, highPart); // throws
+    SetContextRegister(contextBuffer, m_reg2Info.m_kRegNumber, lowPart); // throws
 } // RegRegValueHome::SetEnregisteredValue
 
 // RegRegValueHome::GetEnregisteredValue
@@ -314,26 +184,29 @@ void RegRegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pC
 // for full header comment)
 void RegRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
-    UINT_PTR* highWordAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    _ASSERTE(highWordAddr != NULL);
-
-    UINT_PTR* lowWordAddr = m_pFrame->GetAddressOfRegister(m_reg2Info.m_kRegNumber);
-    _ASSERTE(lowWordAddr != NULL);
+    TADDR highWord = 0;
+    TADDR lowWord = 0;
+    IfFailThrow(m_pFrame->ReadContextRegister(m_reg1Info.m_kRegNumber, &highWord));
+    IfFailThrow(m_pFrame->ReadContextRegister(m_reg2Info.m_kRegNumber, &lowWord));
 
     // The low half occupies the first register-sized chunk; the high half the second.
     // The out buffer may be smaller than two registers (e.g. a 12-byte struct returned
     // in two 8-byte registers), so clamp each copy to the bytes that actually remain.
-    const SIZE_T cbReg = sizeof(*lowWordAddr);
+    const SIZE_T cbReg = sizeof(lowWord);
     const SIZE_T cbTotal = valueOutBuffer.Size();
     _ASSERTE(cbTotal <= 2 * cbReg);
+    if (cbTotal > 2 * cbReg)
+    {
+        ThrowHR(E_INVALIDARG);
+    }
 
     const SIZE_T cbLow = (cbTotal < cbReg) ? cbTotal : cbReg;
-    memcpy(valueOutBuffer.StartAddress(), lowWordAddr, cbLow);
+    memcpy(valueOutBuffer.StartAddress(), &lowWord, cbLow);
 
     if (cbTotal > cbReg)
     {
         const SIZE_T cbHigh = cbTotal - cbReg;
-        memcpy((BYTE *)valueOutBuffer.StartAddress() + cbReg, highWordAddr, cbHigh);
+        memcpy((BYTE *)valueOutBuffer.StartAddress() + cbReg, &highWord, cbHigh);
     }
 
 } // RegRegValueHome::GetEnregisteredValue
@@ -375,7 +248,7 @@ void RegMemValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // RegMemValueHome::SetEnregisteredValue
 // set a remote enregistered location to a new value (see EnregisteredValueHome::SetEnregisteredValue
 // for full header comment)
-void RegMemValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned)
+void RegMemValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
 {
     _ASSERTE(newValue.Size() == REG_SIZE >> 1); // make sure we have bytes for two registers
     _ASSERTE(REG_SIZE == sizeof(void*));
@@ -388,7 +261,7 @@ void RegMemValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pC
     memcpy(&highPart, (BYTE *)newValue.StartAddress() + REG_SIZE, REG_SIZE);
 
     // Update the proper registers.
-    SetContextRegister(pContext, m_reg1Info.m_kRegNumber, highPart); // throws
+    SetContextRegister(contextBuffer, m_reg1Info.m_kRegNumber, highPart); // throws
 
     _ASSERTE(REG_SIZE == sizeof(lowPart));
     HRESULT hr = m_pFrame->GetProcess()->SafeReadStruct(m_memAddr, &lowPart);
@@ -402,18 +275,18 @@ void RegMemValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pC
 void RegMemValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
 {
     // Read the high bits from the register...
-    UINT_PTR* highBitsAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    _ASSERTE(highBitsAddr != NULL);
+    TADDR highBits = 0;
+    IfFailThrow(m_pFrame->ReadContextRegister(m_reg1Info.m_kRegNumber, &highBits));
 
     // ... and the low bits from the remote process
     DWORD lowBits;
     HRESULT hr = m_pFrame->GetProcess()->SafeReadStruct(m_memAddr, &lowBits);
     IfFailThrow(hr);
 
-    _ASSERTE(sizeof(lowBits)+sizeof(*highBitsAddr) == valueOutBuffer.Size());
+    _ASSERTE(sizeof(lowBits) + sizeof(highBits) == valueOutBuffer.Size());
 
     memcpy(valueOutBuffer.StartAddress(), &lowBits, sizeof(lowBits));
-    memcpy((BYTE *)valueOutBuffer.StartAddress() + sizeof(lowBits), highBitsAddr, sizeof(*highBitsAddr));
+    memcpy((BYTE *)valueOutBuffer.StartAddress() + sizeof(lowBits), &highBits, sizeof(highBits));
 
 } // RegMemValueHome::GetEnregisteredValue
 
@@ -437,7 +310,7 @@ void MemRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 // MemRegValueHome::SetEnregisteredValue
 // set a remote enregistered location to a new value (see EnregisteredValueHome::SetEnregisteredValue
 // for full header comment)
-void MemRegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned)
+void MemRegValueHome::SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
 {
     _ASSERTE(newValue.Size() == REG_SIZE << 1); // make sure we have bytes for two registers
     _ASSERTE(REG_SIZE == sizeof(void *));
@@ -450,7 +323,7 @@ void MemRegValueHome::SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pC
     memcpy(&highPart, (BYTE *)newValue.StartAddress() + REG_SIZE, REG_SIZE);
 
     // Update the proper registers.
-    SetContextRegister(pContext, m_reg1Info.m_kRegNumber, lowPart); // throws
+    SetContextRegister(contextBuffer, m_reg1Info.m_kRegNumber, lowPart); // throws
 
     _ASSERTE(REG_SIZE == sizeof(highPart));
     HRESULT hr = m_pFrame->GetProcess()->SafeWriteStruct(m_memAddr, &highPart);
@@ -467,15 +340,14 @@ void MemRegValueHome::GetEnregisteredValue(MemoryRange valueOutBuffer)
     HRESULT hr = m_pFrame->GetProcess()->SafeReadStruct(m_memAddr, &highBits);
     IfFailThrow(hr);
 
-
     // and the low bits from a register
-    UINT_PTR* lowBitsAddr = m_pFrame->GetAddressOfRegister(m_reg1Info.m_kRegNumber);
-    _ASSERTE(lowBitsAddr != NULL);
+    TADDR lowBits = 0;
+    IfFailThrow(m_pFrame->ReadContextRegister(m_reg1Info.m_kRegNumber, &lowBits));
 
-    _ASSERTE(sizeof(*lowBitsAddr)+sizeof(highBits) == valueOutBuffer.Size());
+    _ASSERTE(sizeof(lowBits) + sizeof(highBits) == valueOutBuffer.Size());
 
-    memcpy(valueOutBuffer.StartAddress(), lowBitsAddr, sizeof(*lowBitsAddr));
-    memcpy((BYTE *)valueOutBuffer.StartAddress() + sizeof(*lowBitsAddr), &highBits, sizeof(highBits));
+    memcpy(valueOutBuffer.StartAddress(), &lowBits, sizeof(lowBits));
+    memcpy((BYTE *)valueOutBuffer.StartAddress() + sizeof(lowBits), &highBits, sizeof(highBits));
 
 } // MemRegValueHome::GetEnregisteredValue
 
@@ -495,130 +367,24 @@ void FloatRegValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 } // FloatRegValueHome::CopyToIPCEType
 
 // FloatValueHome::SetEnregisteredValue
-// set a remote enregistered location to a new value (see EnregisteredValueHome::SetEnregisteredValue
-// for full header comment)
+// set a remote enregistered location to a new value.
 void FloatRegValueHome::SetEnregisteredValue(MemoryRange newValue,
-                                             DT_CONTEXT * pContext,
+                                             ContextBuffer contextBuffer,
                                              bool        fIsSigned)
 {
     _ASSERTE((newValue.Size() == 4) || (newValue.Size() == 8));
 
-    // Convert the input to a double.
-    double newVal = 0.0;
-
-    memcpy(&newVal, newValue.StartAddress(), newValue.Size());
-
-#if defined(TARGET_X86)
-
-    // What a pain, on X86 take the floating
-    // point state in the context and make it our current FP
-    // state, set the value into the current FP state, then
-    // save out the FP state into the context again and
-    // restore our original state.
-    DT_FLOATING_SAVE_AREA currentFPUState;
-
-    #ifdef _MSC_VER
-    __asm fnsave currentFPUState // save the current FPU state.
-    #else
-    __asm__ __volatile__
-    (
-        "  fnsave %0\n" \
-        : "=m"(currentFPUState)
-    );
-    #endif
-
-    // Copy the state out of the context.
-    DT_FLOATING_SAVE_AREA floatarea = pContext->FloatSave;
-    floatarea.StatusWord &= 0xFF00; // remove any error codes.
-    floatarea.ControlWord |= 0x3F; // mask all exceptions.
-
-    #ifdef _MSC_VER
-    __asm
+    IDacDbiInterface * pDAC = m_pFrame->GetProcess()->GetDAC();
+    HRESULT hr = pDAC->WriteFloatRegisterToContext(
+        contextBuffer,
+        m_regNum,
+        (const BYTE *)newValue.StartAddress(),
+        (ULONG32)newValue.Size());
+    if (FAILED(hr))
     {
-        fninit
-        frstor floatarea          ;; reload the threads FPU state.
+        _ASSERTE(!"Failed to write floating point register to context");
+        ThrowHR(E_FAIL);
     }
-    #else
-    __asm__
-    (
-        "  fninit\n" \
-        "  frstor %0\n" \
-        : /* no outputs */
-        : "m"(floatarea)
-    );
-    #endif
-
-    double td; // temp double
-    double popArea[DebuggerIPCE_FloatCount];
-
-    // Pop off until we reach the value we want to change.
-    DWORD i = 0;
-
-    while (i <= m_floatIndex)
-    {
-        #ifdef _MSC_VER
-        __asm fstp td
-        #else
-        __asm("fstpl %0" : "=m" (td));
-        #endif
-        popArea[i++] = td;
-    }
-
-    #ifdef _MSC_VER
-    __asm fld newVal; // push on the new value.
-    #else
-    __asm("fldl %0" : "=m" (newVal));
-    #endif
-
-    // Push any values that we popled off back onto the stack,
-    // _except_ the last one, which was the one we changed.
-    i--;
-
-    while (i > 0)
-    {
-        td = popArea[--i];
-        #ifdef _MSC_VER
-        __asm fld td
-        #else
-        __asm("fldl %0" : "=m" (td));
-        #endif
-    }
-
-    // Save out the modified float area.
-    #ifdef _MSC_VER
-    __asm fnsave floatarea
-    #else
-    __asm__ __volatile__
-    (
-        "  fnsave %0\n" \
-        : "=m"(floatarea)
-    );
-    #endif
-
-    // Put it into the context.
-    pContext->FloatSave= floatarea;
-
-    // Restore our FPU state
-    #ifdef _MSC_VER
-    __asm
-    {
-        fninit
-        frstor currentFPUState    ;; restore our saved FPU state.
-    }
-    #else
-    __asm__
-    (
-        "  fninit\n" \
-        "  frstor %0\n" \
-        : /* no outputs */
-        : "m"(currentFPUState)
-    );
-    #endif
-#endif // TARGET_X86
-
-    // update the thread's floating point stack
-    void * valueAddress = (void *) &(m_pFrame->m_pThread->m_floatValues[m_floatIndex]);
-    memcpy(valueAddress, newValue.StartAddress(), newValue.Size());
 } // FloatValueHome::SetEnregisteredValue
 
 // FloatRegValueHome::GetEnregisteredValue
@@ -852,8 +618,6 @@ void RegisterValueHome::CopyToIPCEType(RemoteAddress * pRegAddr)
 void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
 {
     _ASSERTE(m_pRemoteRegAddr != NULL);
-    // Get the thread's context so we can update it.
-    DT_CONTEXT * cTemp = NULL;
     const CordbNativeFrame * frame = m_pRemoteRegAddr->GetFrame();
 
     // Can't set an enregistered value unless the frame the value was
@@ -865,11 +629,15 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
         ThrowHR(CORDBG_E_SET_VALUE_NOT_ALLOWED_ON_NONLEAF_FRAME);
     }
 
+    ULONG32 cbCtx = frame->GetProcess()->GetTargetContextSize();
+
+    // Get the thread's context so we can update it.
+    ContextBuffer contextBuffer = {};
     HRESULT hr = S_OK;
     EX_TRY
     {
         // This may throw, in which case we want to return our own HRESULT.
-        hr = frame->m_pThread->GetManagedContext(&cTemp);
+        hr = frame->m_pThread->GetManagedContext(&contextBuffer);
     }
     EX_CATCH_HRESULT(hr);
     if (FAILED(hr))
@@ -877,15 +645,23 @@ void RegisterValueHome::SetEnregisteredValue(MemoryRange src, bool fIsSigned)
         // If we failed to get the context, then we must not be in a leaf frame.
         ThrowHR(CORDBG_E_SET_VALUE_NOT_ALLOWED_ON_NONLEAF_FRAME);
     }
+    if (contextBuffer.contextSize < cbCtx)
+    {
+        ThrowHR(E_INVALIDARG);
+    }
 
-    // Its important to copy this context that we're given a ptr to.
-    DT_CONTEXT c;
-    c = *cTemp;
+    // Work on a local copy so failures in the chain below don't corrupt the
+    // thread's cached context. The subclass mutates this buffer to apply the
+    // new register value, and SetManagedContext then ships it to the LS and
+    // updates the cache.
+    NewArrayHolder<BYTE> ctxBuf(new BYTE[cbCtx]);
+    memcpy(ctxBuf, contextBuffer.pContextBytes, cbCtx);
+    ContextBuffer updatedContext = { ctxBuf, cbCtx };
 
-    m_pRemoteRegAddr->SetEnregisteredValue(src, &c, fIsSigned);
+    m_pRemoteRegAddr->SetEnregisteredValue(src, updatedContext, fIsSigned);
 
     // Set the thread's modified context.
-    IfFailThrow(frame->m_pThread->SetManagedContext(&c));
+    IfFailThrow(frame->m_pThread->SetManagedContext(updatedContext));
 } // RegisterValueHome::SetEnregisteredValue
 
 
@@ -1145,4 +921,3 @@ RefValueHome::RefValueHome(CordbProcess *                pProcess,
 
 
 } // RefValueHome::RefValueHome
-

@@ -1055,7 +1055,7 @@ public:
     //    we don't have a filter CONTEXT on the LS anymore.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE GetManagedStoppedContext(VMPTR_Thread vmThread, OUT VMPTR_CONTEXT * pRetVal) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetManagedStoppedContext(VMPTR_Thread vmThread, OUT CORDB_ADDRESS * pRetVal) = 0;
 
     typedef enum
     {
@@ -1078,7 +1078,7 @@ public:
     //
     // Arguments:
     //    vmThread               - the specified thread
-    //    pInternalContextBuffer - a CONTEXT buffer for the stackwalker to work with
+    //    contextBuffer          - a CONTEXT buffer for the stackwalker to work with
     //    ppSFIHandle            - out parameter; return a handle to the stackwalker
     //
     // Notes:
@@ -1086,7 +1086,7 @@ public:
     //    This is a special case that violates the 'no state' tenant.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE CreateStackWalk(VMPTR_Thread vmThread, DT_CONTEXT * pInternalContextBuffer, OUT StackWalkHandle * ppSFIHandle) = 0;
+    virtual HRESULT STDMETHODCALLTYPE CreateStackWalk(VMPTR_Thread vmThread, ContextBuffer contextBuffer, OUT StackWalkHandle * ppSFIHandle) = 0;
 
     // Delete the stackwalk object created from CreateStackWalk.
     virtual HRESULT STDMETHODCALLTYPE DeleteStackWalk(StackWalkHandle ppSFIHandle) = 0;
@@ -1096,10 +1096,10 @@ public:
     //
     // Arguments:
     //    pSFIHandle - the handle to the stackwalker
-    //    pContext   - OUT: the CONTEXT to be filled out. The context control flags are ignored.
+    //    contextBuffer - OUT: the CONTEXT to be filled out. The context control flags are ignored.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE GetStackWalkCurrentContext(StackWalkHandle pSFIHandle, DT_CONTEXT * pContext) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetStackWalkCurrentContext(StackWalkHandle pSFIHandle, ContextBuffer contextBuffer) = 0;
 
     //
     // Set the stackwalker to the given CONTEXT.  The CorDebugSetContextFlag indicates whether
@@ -1110,10 +1110,10 @@ public:
     //    vmThread   - the current thread
     //    pSFIHandle - the handle to the stackwalker
     //    flag       - flag to indicate whether the specified CONTEXT is "active"
-    //    pContext   - the specified CONTEXT. This may make correctional adjustments to the context's IP.
+    //    contextBuffer - the specified CONTEXT. This may make correctional adjustments to the context's IP.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE SetStackWalkCurrentContext(VMPTR_Thread vmThread, StackWalkHandle pSFIHandle, CorDebugSetContextFlag flag, DT_CONTEXT * pContext) = 0;
+    virtual HRESULT STDMETHODCALLTYPE SetStackWalkCurrentContext(VMPTR_Thread vmThread, StackWalkHandle pSFIHandle, CorDebugSetContextFlag flag, ContextBuffer contextBuffer) = 0;
 
     //
     // Unwind the stackwalker to the next frame.  The next frame could be any actual stack frame,
@@ -1136,14 +1136,13 @@ public:
     //
     // Arguments:
     //    vmThread   - the specified thread
-    //    pContext   - the CONTEXT to be checked
+    //    contextBuffer - the CONTEXT to be checked
     //
     // Return Value:
     //    S_OK on success; otherwise, an appropriate failure HRESULT.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE CheckContext(VMPTR_Thread       vmThread,
-                         const DT_CONTEXT * pContext) = 0;
+    virtual HRESULT STDMETHODCALLTYPE CheckContext(VMPTR_Thread vmThread, ContextBuffer contextBuffer) = 0;
 
     //
     // Fill in the Debugger_STRData structure with information about the current frame
@@ -1224,7 +1223,7 @@ public:
     //
     // Arguments:
     //    vmThread  - the specified thread
-    //    pContext  - the CONTEXT to check
+    //    contextBuffer - the CONTEXT to check
     //    pResult - [out] TRUE if the specified CONTEXT is the leaf CONTEXT.
     //
     // Return Value:
@@ -1235,15 +1234,15 @@ public:
     //    This will be deprecated in V3.
     //
 
-    virtual HRESULT STDMETHODCALLTYPE IsLeafFrame(VMPTR_Thread vmThread, const DT_CONTEXT * pContext, OUT BOOL * pResult) = 0;
+    virtual HRESULT STDMETHODCALLTYPE IsLeafFrame(VMPTR_Thread vmThread, ContextBuffer contextBuffer, OUT BOOL * pResult) = 0;
 
     // Get the context for a particular thread of the target process.
     // Arguments:
     //     input:  vmThread       - the thread for which the context is required
-    //     output: pContextBuffer - the address of the CONTEXT to be initialized.
-    //                              The memory for this belongs to the caller. It must not be NULL.
+    //     output: contextBuffer  - the CONTEXT buffer to be initialized.
+    //                              The memory for this belongs to the caller.
     // Note: returns an appropriate failure HRESULT on error
-    virtual HRESULT STDMETHODCALLTYPE GetContext(VMPTR_Thread vmThread, DT_CONTEXT * pContextBuffer) = 0;
+    virtual HRESULT STDMETHODCALLTYPE GetContext(VMPTR_Thread vmThread, ContextBuffer contextBuffer) = 0;
 
     typedef enum
     {
@@ -2223,6 +2222,60 @@ public:
     //    serialized metadata size.
     virtual HRESULT STDMETHODCALLTYPE FillReadWriteMetadata(VMPTR_Module vmModule, BYTE * pBuffer, ULONG32 cbBuffer) = 0;
 
+    virtual HRESULT STDMETHODCALLTYPE GetTargetContextSize(ULONG32 contextFlags, OUT ULONG32 * pSize) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE WriteRegistersToContext(
+        IN ContextBuffer contextBuffer,
+        IN const CorDebugRegister * regs,
+        IN ULONG32 nRegs,
+        IN const TADDR * values) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE ReadRegistersFromContext(
+        IN ContextBuffer contextBuffer,
+        IN const CorDebugRegister * regs,
+        IN ULONG32 nRegs,
+        OUT CORDB_REGISTER * pValues) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE GetAvailableRegistersMask(
+        IN BOOL fActive,
+        IN BOOL fQuickUnwind,
+        IN ULONG32 regCount,
+        OUT BYTE pAvailable[]) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE ConvertJitRegNumToCorDebugRegister(
+        IN ULONG32 jitRegNum,
+        OUT CorDebugRegister * pReg) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE WriteFloatRegisterToContext(
+        IN  ContextBuffer contextBuffer,
+        IN  CorDebugRegister reg,
+        IN  const BYTE * pValue,
+        IN  ULONG32 valueSize) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE ContextHasExtendedRegisters(
+        IN ContextBuffer contextBuffer,
+        OUT BOOL * pResult) = 0;
+
+    virtual HRESULT STDMETHODCALLTYPE CompareControlRegisters(
+        IN ContextBuffer contextBuffer1,
+        IN ContextBuffer contextBuffer2,
+        OUT BOOL * pResult) = 0;
+
+    typedef enum
+    {
+        kCopyContextPreserveDestinationFlags = 0,
+        kCopyContextMergeSourceFlags,
+        kCopyContextUseExplicitFlags,
+    } ContextCopyMode;
+
+    // Copies sourceContext into destinationContext, respecting the ContextFlags
+    // selected by copyMode. flags supplies the destination ContextFlags when
+    // copyMode is kCopyContextUseExplicitFlags.
+    virtual HRESULT STDMETHODCALLTYPE CopyContext(
+        IN ContextBuffer destinationContext,
+        IN ContextBuffer sourceContext,
+        IN ContextCopyMode copyMode,
+        IN ULONG32 flags) = 0;
     // The following tag tells the DD-marshalling tool to stop scanning.
     // END_MARSHAL
 

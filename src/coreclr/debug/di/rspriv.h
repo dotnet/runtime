@@ -3583,8 +3583,9 @@ public:
     void AddToLeftSideResourceCleanupList(CordbBase * pObject);
 
     // Routines to read and write thread context records between the processes safely.
-    HRESULT SafeReadThreadContext(LSPTR_CONTEXT pRemoteContext, DT_CONTEXT * pCtx);
-    HRESULT SafeWriteThreadContext(LSPTR_CONTEXT pRemoteContext, const DT_CONTEXT * pCtx);
+    HRESULT SafeReadThreadContext(CORDB_ADDRESS remoteContextAddr, ContextBuffer contextBuffer);
+    HRESULT SafeWriteThreadContext(CORDB_ADDRESS remoteContextAddr, ContextBuffer contextBuffer);
+    HRESULT SafeWriteThreadContext(CORDB_ADDRESS remoteContextAddr, T_CONTEXT * pCtx);
 
 #ifdef FEATURE_INTEROP_DEBUGGING
     // Record a win32 event for debugging purposes.
@@ -3597,6 +3598,8 @@ public:
 
     // Get the DAC interface.
     IDacDbiInterface * GetDAC();
+
+    HRESULT ConvertJitRegNumToCorDebugRegister(ULONG32 jitRegNum, CorDebugRegister * pReg);
 
     // Get the data-target, which provides access to the debuggee.
     ICorDebugDataTarget * GetDataTarget();
@@ -4003,6 +4006,7 @@ public:
 #endif // FEATURE_INTEROP_DEBUGGING
 
     bool  IsBreakOpcodeAtAddress(const void * address);
+    ULONG32 GetTargetContextSize();
 
 private:
     //
@@ -4099,6 +4103,7 @@ private:
 
     // controls how metadata updated in the target is handled
     WriteableMetadataUpdateMode m_writableMetadataUpdateMode;
+    ULONG32 m_ctxSize;
 
     COM_METHOD GetObjectInternal(CORDB_ADDRESS addr, ICorDebugObjectValue **pObject);
 
@@ -6078,21 +6083,6 @@ public:
     void MarkStackFramesDirty();
 
 
-#if defined(TARGET_X86)
-    // Converts the values in the floating point register area of the context to real number values.
-    void Get32bitFPRegisters(CONTEXT * pContext);
-
-#elif defined(TARGET_AMD64) ||  defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_RISCV64) || defined(TARGET_LOONGARCH64)
-    // Converts the values in the floating point register area of the context to real number values.
-    void Get64bitFPRegisters(FPRegister64 * rgContextFPRegisters, int start, int nRegisters);
-
-#endif // TARGET_X86
-
-   // Initializes the float state members of this instance of CordbThread. This function gets the context and
-   // converts the floating point values from their context representation to real number values.
-   void LoadFloatState();
-
-
     HRESULT SetIP(  bool fCanSetIPOnly,
                     CordbNativeCode * pNativeCode,
                     SIZE_T offset,
@@ -6135,8 +6125,8 @@ public:
     //
     //
     //////////////////////////////////////////////////////////////////////////
-    HRESULT GetManagedContext( DT_CONTEXT ** ppContext );
-    HRESULT SetManagedContext( DT_CONTEXT * pContext );
+    HRESULT GetManagedContext(ContextBuffer * pContextBuffer);
+    HRESULT SetManagedContext(ContextBuffer contextBuffer);
 
     // API to retrieve the thread handle from the LS.
     void InternalGetHandle(HANDLE * phThread);
@@ -6179,7 +6169,7 @@ public:
     BOOL IsThreadExceptionManaged();
 
     // This is a private hook for the shim to create a CordbRegisterSet for a ShimChain.
-   void CreateCordbRegisterSet(DT_CONTEXT *            pContext,
+   void CreateCordbRegisterSet(ContextBuffer           contextBuffer,
                                BOOL                    fActive,
                                CorDebugChainReason     reason,
                                ICorDebugRegisterSet ** ppRegSet);
@@ -6195,15 +6185,14 @@ public:
 
 public:
     // RS Cache for LS context.
-    // NULL if we haven't allocated memory for a Right side context
-    DT_CONTEXT *          m_pContext;
+    NewArrayHolder<BYTE>  m_pContext;
 
     // Set to the CONTEXT pointer in the LS if this LS thread is
     // stopped in managed code. This may be either stopped for execution control
     // (breakpoint / single-step exception) or hijacked w/ a redirected frame because
     // another thread synced the LS.
     // This context is used by the RS to set enregistered vars.
-    VMPTR_CONTEXT         m_vmLeftSideContext;
+    CORDB_ADDRESS         m_vmLeftSideContext;
 
     // indicates whether m_pContext is up-to-date
     bool                  m_fContextFresh;
@@ -6234,10 +6223,6 @@ public:
     //  We don't clear the cache in CleanupStack() because we don't refresh the cache every time we stop.
     //  Instead, we mark m_fFramesFresh in CleanupStack() and clear the cache only when it is used next time.
     CDynArray<CordbFrame *> m_stackFrames;
-
-    bool                  m_fFloatStateValid;
-    unsigned int          m_floatStackTop;
-    double                m_floatValues[DebuggerIPCE_FloatCount];
 
 private:
     // True for the window after an Exception callback, but before it's been continued.
@@ -6370,14 +6355,15 @@ private:
     // unwind the frame and update m_context with the new context
     BOOL UnwindStackFrame();
 
+    ContextBuffer GetContextBuffer() const { return { m_pContextBuffer, GetProcess()->GetTargetContextSize() }; }
+
     // the thread on which this CordbStackWalk is created
     CordbThread * m_pCordbThread;
 
     // This is the same iterator used by the runtime itself.
     IDacDbiInterface::StackWalkHandle m_pSFIHandle;
 
-    // buffers used for stackwalking
-    DT_CONTEXT m_context;
+    NewArrayHolder<BYTE> m_pContextBuffer;
 
     //  Used to figure out if we have to refresh any reference objects
     //  on the left side.  We set it to CordbProcess::m_flushCounter on
@@ -6476,7 +6462,14 @@ public:
     // This is basically a complicated cast function.  We are casting from an ICorDebugFrame to a CordbFrame.
     static CordbFrame* GetCordbFrameFromInterface(ICorDebugFrame *pFrame);
 
-    virtual const DT_CONTEXT * GetContext() const { return NULL; }
+    virtual const ContextBuffer GetContext() const { return ContextBuffer{}; }
+
+    // Reads an integer register from this frame's CONTEXT buffer via the DAC.
+    HRESULT ReadContextRegister(CorDebugRegister reg, TADDR * pValue) const;
+
+    // Reads a floating-point / SIMD register's scalar value (as a double bit
+    // pattern) from this frame's CONTEXT buffer via the DAC.
+    HRESULT ReadFloatContextRegister(CorDebugRegister reg, double * pValue) const;
 
 public:
     // this represents the IL offset for a CordbJITILFrame, the native offset for a CordbNativeFrame,
@@ -6673,7 +6666,7 @@ public:
     CordbRuntimeUnwindableFrame(CordbThread *    pThread,
                                 FramePointer     fp,
                                 CordbAppDomain * pCurrentAppDomain,
-                                DT_CONTEXT *     pContext);
+                                ContextBuffer    contextBuffer);
 
     virtual void Neuter();
 
@@ -6755,10 +6748,11 @@ public:
         return NULL;
     }
 
-    virtual const DT_CONTEXT * GetContext() const;
+    virtual const ContextBuffer GetContext() const;
 
 private:
-    DT_CONTEXT m_context;
+    NewArrayHolder<BYTE> m_pContextBuffer;
+
 };
 
 // Function signature for retrieving a value at a specific index
@@ -6845,7 +6839,7 @@ public:
                      TADDR                addrAmbientESP,
                      CordbAppDomain *     pCurrentAppDomain,
                      CordbMiscFrame *     pMisc = NULL,
-                     DT_CONTEXT *         pContext = NULL);
+                     ContextBuffer        contextBuffer = {});
     virtual ~CordbNativeFrame();
     virtual void Neuter();
 
@@ -6956,7 +6950,7 @@ public:
 
     CordbFunction * GetFunction();
     CordbNativeCode * GetNativeCode();
-    virtual const DT_CONTEXT * GetContext() const;
+    virtual const ContextBuffer GetContext() const;
 
     // Given the native variable information of a variable, return its value.
     // This function assumes that the value is either in a register or on the stack
@@ -6984,7 +6978,6 @@ public:
                                            CorDebugRegister lowWordRegister,
                                            CordbType * pType,
                                            ICorDebugValue **ppValue);
-    UINT_PTR * GetAddressOfRegister(CorDebugRegister regNum) const;
     CORDB_ADDRESS GetLeftSideAddressOfRegister(CorDebugRegister regNum) const;
     HRESULT GetLocalFloatingPointValue(DWORD index,
                                             CordbType * pType,
@@ -7002,6 +6995,12 @@ public:
                                             bool highIsFloat,
                                             CordbType * pType,
                                             ICorDebugValue **ppValue);
+
+    HRESULT ReadJitRegFromContext(ULONG32 jitRegNum, TADDR * pValue) const;
+
+    CorDebugRegister ConvertJitRegToCorDebugRegister(ULONG32 jitRegNum) const;
+
+    CORDB_ADDRESS GetStackPointer() const;
 
 
     CORDB_ADDRESS GetLSStackAddress(ICorDebugInfo::RegNum regNum, signed offset);
@@ -7022,7 +7021,6 @@ public:
     SIZE_T    GetParentIP();
 
     TADDR GetAmbientESP() { return m_taAmbientESP; }
-    TADDR GetReturnRegisterValue();
 
     // accessor for the shim private hook code:CordbThread::ConvertFrameForILMethodWithoutMetadata
     BOOL ConvertNativeFrameForILMethodWithoutMetadata(ICorDebugInternalFrame2 ** ppInternalFrame2);
@@ -7032,7 +7030,6 @@ public:
     //-----------------------------------------------------------
 
 public:
-
     // each CordbNativeFrame corresponds to exactly one CordbJITILFrame and one CordbNativeCode
     RSSmartPtr<CordbJITILFrame> m_JITILFrame;
     RSSmartPtr<CordbNativeCode> m_nativeCode;
@@ -7044,8 +7041,7 @@ private:
     // the ambient SP value only used on x86 to retrieve sp-relative local variables
     // (most likely in a frameless method)
     TADDR    m_taAmbientESP;
-
-    DT_CONTEXT  m_context;
+    NewArrayHolder<BYTE> m_pContextBuffer;
 };
 
 
@@ -7067,10 +7063,11 @@ private:
 class CordbRegisterSet : public CordbBase, public ICorDebugRegisterSet, public ICorDebugRegisterSet2
 {
 public:
-    CordbRegisterSet(CordbThread *        pThread,
-                     DT_CONTEXT *         pContext,
+    CordbRegisterSet(ContextBuffer         contextBuffer,
+                     CordbThread *        pThread,
                      bool fActive,
-                     bool fQuickUnwind);
+                     bool fQuickUnwind,
+                     bool fTakeOwnershipOfContext = false);
 
 
     ~CordbRegisterSet();
@@ -7166,15 +7163,12 @@ public:
     }
 
 protected:
-
-    // Adapters to impl v2.0 interfaces on top of v1.0 interfaces.
-    HRESULT GetRegistersAvailableAdapter(ULONG32 regCount, BYTE pAvailable[]);
-    HRESULT GetRegistersAdapter(ULONG32 maskCount, BYTE mask[], ULONG32 regCount, CORDB_REGISTER regBuffer[]);
-
-    DT_CONTEXT          m_context;
+    ContextBuffer       m_contextBuffer;
     CordbThread         *m_thread;
     bool                m_active; // true if we're the leafmost register set.
     bool                m_quickUnwind;
+
+    bool                m_fOwnsContext;
 } ;
 
 
@@ -7721,7 +7715,7 @@ public:
     // set a remote enregistered location to a new value
     // Arguments:
     //     input:  pNewValue - buffer containing the new value along with its size
-    //             pContext  - context from which the value comes
+    //             contextBuffer - context from which the value comes
     //             fIsSigned - indicates whether the value is signed or not. The value provided may be smaller than
     //                         a register, in which case we'll need to extend it to a full register width. To do this
     //                         correctly, we need to know whether to sign extend or zero extend. Currently, only
@@ -7731,7 +7725,7 @@ public:
     // Note: Throws E_FAIL for invalid input or various HRESULTs from an
     //                         unsuccessful call to WriteProcessMemory
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned) = 0;
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned) = 0;
 
     // Gets an enregistered value and returns it to the caller
     // Arguments:
@@ -7783,7 +7777,7 @@ public:
         EnregisteredValueHome(pFrame),
         m_reg1Info(regNum,
                    pFrame->GetLeftSideAddressOfRegister(regNum),
-                   *(pFrame->GetAddressOfRegister(regNum)))
+                   ReadFrameRegister(pFrame, regNum))
     {};
 
     // copy constructor
@@ -7800,14 +7794,13 @@ public:
     virtual
     RegValueHome * Clone() const { return new RegValueHome(*this); };
 
-    // updates a register in a given context, and in the regdisplay of a given frame.
-    void SetContextRegister(DT_CONTEXT *     pContext,
+    void SetContextRegister(ContextBuffer    contextBuffer,
                             CorDebugRegister regNum,
                             SIZE_T           newVal);
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -7816,6 +7809,15 @@ public:
     // instance of a derived class of RegValueHome
     virtual
     void CopyToIPCEType(RemoteAddress * pRegAddr);
+
+protected:
+    static SIZE_T ReadFrameRegister(const CordbNativeFrame * pFrame, CorDebugRegister regNum)
+    {
+        TADDR v = 0;
+        HRESULT hr = pFrame->ReadContextRegister(regNum, &v);
+        IfFailThrow(hr);
+        return (SIZE_T)v;
+    }
 
     //-------------------------------------
     // data members
@@ -7848,7 +7850,7 @@ public:
         RegValueHome(pFrame, reg1Num),
         m_reg2Info(reg2Num,
                    pFrame->GetLeftSideAddressOfRegister(reg2Num),
-                   *(pFrame->GetAddressOfRegister(reg2Num)))
+                   ReadFrameRegister(pFrame, reg2Num))
     {};
 
     // copy constructor
@@ -7867,7 +7869,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -7890,7 +7892,7 @@ protected:
 // EnregisteredValueHome for a value that lives in two registers where at least one is a
 // floating-point register (e.g. a 16-byte struct returned in XMM0+XMM1 on Unix x64, or a
 // mixed int/fp multi-register return).
-// Floating-point register contents are not reachable through the integer register display, so
+// Floating-point register contents are stored separately from the frame's integer context, so
 // rather than referencing live registers this home captures a snapshot of the 16-byte value
 // (low 8 bytes followed by high 8 bytes) when it is created. The snapshot is used to populate
 // the value's local object copy and is cloned for field access. Writing back to a
@@ -7927,7 +7929,7 @@ public:
 
     // writing back to a multi-register return value is not supported
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned)
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned)
     {
         ThrowHR(CORDBG_E_SET_VALUE_NOT_ALLOWED_ON_NONLEAF_FRAME);
     };
@@ -7989,7 +7991,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * DT_pContext, bool fIsSigned) = 0;
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned) = 0;
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -8047,7 +8049,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -8097,7 +8099,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -8119,11 +8121,14 @@ public:
     // Arguments:
     //     input:  pFrame - frame to which the value belongs
     //             index  - index into the floating point stack where the value resides
+    //             regNum - CorDebugRegister naming the fp / SIMD register
     //     output: no out parameters, but the instance has been initialized
     FloatRegValueHome(const CordbNativeFrame *      pFrame,
-                      DWORD                         index):
+                      DWORD                         index,
+                      CorDebugRegister              regNum):
         EnregisteredValueHome(pFrame),
-        m_floatIndex(index)
+        m_floatIndex(index),
+        m_regNum(regNum)
     {};
 
     // copy constructor
@@ -8133,7 +8138,8 @@ public:
     //     output: no out parameters, but the instance has been initialized
     FloatRegValueHome(const FloatRegValueHome * pRemoteRegAddr):
         EnregisteredValueHome(pRemoteRegAddr->m_pFrame),
-        m_floatIndex(pRemoteRegAddr->m_floatIndex)
+        m_floatIndex(pRemoteRegAddr->m_floatIndex),
+        m_regNum(pRemoteRegAddr->m_regNum)
     {};
 
     // make a copy of this instance of FloatRegValueHome
@@ -8142,7 +8148,7 @@ public:
 
     // set the value of a remote enregistered value
     virtual
-    void SetEnregisteredValue(MemoryRange newValue, DT_CONTEXT * pContext, bool fIsSigned);
+    void SetEnregisteredValue(MemoryRange newValue, ContextBuffer contextBuffer, bool fIsSigned);
 
     // Gets an enregistered value and returns it to the caller
     virtual
@@ -8160,6 +8166,10 @@ public:
 protected:
     // index into the FP registers for the register in which the floating point value resides
     const DWORD            m_floatIndex;
+
+    // CorDebugRegister naming the fp / SIMD register, used to write the value
+    // back into the target CONTEXT via the DAC.
+    const CorDebugRegister m_regNum;
  }; // class FloatRegValueHome
 
 // ----------------------------------------------------------------------------
@@ -10435,8 +10445,8 @@ public:
 
     // These are wrappers for the OS calls which hide
     // the effects of hijacking and internal SS flag usage
-    HRESULT GetThreadContext(DT_CONTEXT * pContext);
-    HRESULT SetThreadContext(DT_CONTEXT * pContext);
+    HRESULT GetThreadContext(T_CONTEXT * pContext);
+    HRESULT SetThreadContext(T_CONTEXT * pContext);
 
     // Turns on and off the internal usage of the SS flag
     VOID BeginStepping();
@@ -10444,7 +10454,7 @@ public:
 
     // An accessor for &m_context, this value generally stores
     // a context we may need to restore after a hijack completes
-    DT_CONTEXT * GetHijackCtx();
+    T_CONTEXT * GetHijackCtx();
 
 private:
     CORDB_ADDRESS m_stackBase;
@@ -10481,9 +10491,7 @@ public:
     }
     void ClearState(CordbUnmanagedThreadState state) {LIMITED_METHOD_CONTRACT;  m_state = (CordbUnmanagedThreadState)(m_state & ~state); }
 
-    void HijackToRaiseException();
     void RestoreFromRaiseExceptionHijack();
-    void SaveRaiseExceptionEntryContext();
     void ClearRaiseExceptionEntryContext();
     BOOL IsExceptionFromLastRaiseException(const EXCEPTION_RECORD* pExceptionRecord);
 
@@ -10502,9 +10510,6 @@ public:
     // Restores the thread's leaf SEH handler from the previously saved value
     HRESULT RestoreLeafSeh();
 #endif
-
-    // Logs basic data about a context to the debugging log
-    static VOID LogContext(DT_CONTEXT* pContext);
 
 public:
     HANDLE                     m_handle;
@@ -10533,10 +10538,7 @@ public:
 private:
     // Spare context used for various purposes.
     // See CordbUnmanagedThread::GetThreadContext for details
-    DT_CONTEXT                 m_context;
-
-    // The context of the thread the last time it called into kernel32!RaiseException
-    DT_CONTEXT                 m_raiseExceptionEntryContext;
+    T_CONTEXT                  m_context;
 
     DWORD                      m_raiseExceptionExceptionCode;
     DWORD                      m_raiseExceptionExceptionFlags;
