@@ -205,9 +205,10 @@
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=1;__SkipRestorePackages=1" />
     <!-- ActiveIssue https://github.com/dotnet/runtime/issues/114123
     The groups 2..n are disabled for browser target because they get OOM kill in CI.
+    TEMP (wasm-aot-131537-validation): _BuildAllTestGroupsForBrowser opts a tree-scoped build back into groups 2..n on browser CI (safe because only one test is in scope).
     -->
     <MSBuild Projects="$(MSBuildThisFileFullPath)" Targets="BuildManagedTestGroup" Properties="__TestGroupToBuild=%(_GroupStartsWith.GroupNumber);__SkipRestorePackages=1"
-        Condition="'$(TargetOS)' != 'browser' or '$(ContinuousIntegrationBuild)' != 'true'"
+        Condition="'$(TargetOS)' != 'browser' or '$(ContinuousIntegrationBuild)' != 'true' or '$(_BuildAllTestGroupsForBrowser)' == 'true'"
     />
   </Target>
 

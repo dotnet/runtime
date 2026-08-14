@@ -49,7 +49,9 @@ jobs:
             buildAllTestsAsStandalone: true
             # Scope the runtime-test build to just this one test, and AOT it locally
             # (RunAOTCompilation=true) so corelib is AOT'd in the produced wasm app.
-            testBuildArgs: tree Loader/classloader/generics/regressions/131537 /p:RunAOTCompilation=true /p:InstallV8ForTests=false
+            # _BuildAllTestGroupsForBrowser: this test is in group 3 (Pri0), and browser CI
+            # otherwise builds only group 1 (#114123); safe here since only one test is scoped.
+            testBuildArgs: tree Loader/classloader/generics/regressions/131537 /p:RunAOTCompilation=true /p:InstallV8ForTests=false /p:_BuildAllTestGroupsForBrowser=true
             scenarios:
               - WasmTestOnChrome
             useHelixMonitor: ${{ parameters.useHelixMonitor }}
