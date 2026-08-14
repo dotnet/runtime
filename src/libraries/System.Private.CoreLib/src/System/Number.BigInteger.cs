@@ -320,6 +320,11 @@ namespace System
             private int _length;
             private BlocksBuffer _blocks;
 
+            // _blocks spans MaxBlockCount uints and only the first _length of them are ever read, so the
+            // out parameters below use Unsafe.SkipInit rather than `= default` to avoid zero-filling the
+            // whole buffer. Measured on the double.Parse slow path, `= default` costs 10-30%
+            // (267ns -> 340ns for 50 digits, 1456ns -> 1650ns for 408 digits).
+
             public static void Add(scoped ref BigInteger lhs, scoped ref BigInteger rhs, out BigInteger result)
             {
                 Unsafe.SkipInit(out result);
@@ -512,7 +517,11 @@ namespace System
                 else
                 {
                     int quoLength = lhsLength - rhsLength + 1;
-                    SetValue(out rem, ref lhs);
+
+                    // rem is an out parameter and so is not scoped, which means it cannot be passed
+                    // by ref alongside the scoped rhs below. Compute into a local and copy out at the
+                    // end instead. This was only a warning while Number was an unsafe context.
+                    SetValue(out BigInteger remValue, ref lhs);
                     int remLength = lhsLength;
 
                     // Executes the "grammar-school" algorithm for computing q = a / b.
@@ -544,10 +553,10 @@ namespace System
                     for (int i = lhsLength; i >= rhsLength; i--)
                     {
                         int n = i - rhsLength;
-                        uint t = i < lhsLength ? rem._blocks[i] : 0;
+                        uint t = i < lhsLength ? remValue._blocks[i] : 0;
 
-                        ulong valHi = ((ulong)t << 32) | rem._blocks[i - 1];
-                        uint valLo = i > 1 ? rem._blocks[i - 2] : 0;
+                        ulong valHi = ((ulong)t << 32) | remValue._blocks[i - 1];
+                        uint valLo = i > 1 ? remValue._blocks[i - 2] : 0;
 
                         // We shifted the divisor, we shift the dividend too
                         if (shiftLeft > 0)
@@ -557,7 +566,7 @@ namespace System
 
                             if (i > 2)
                             {
-                                valLo |= rem._blocks[i - 3] >> shiftRight;
+                                valLo |= remValue._blocks[i - 3] >> shiftRight;
                             }
                         }
 
@@ -584,14 +593,14 @@ namespace System
                             // https://github.com/dotnet/roslyn/issues/64393
 #pragma warning disable CS9080
                             // Now it's time to subtract our current quotient
-                            uint carry = SubtractDivisor(ref rem, n, ref rhs, digit);
+                            uint carry = SubtractDivisor(ref remValue, n, ref rhs, digit);
 
                             if (carry != t)
                             {
                                 Debug.Assert(carry == t + 1);
 
                                 // Our guess was still exactly one too high
-                                carry = AddDivisor(ref rem, n, ref rhs);
+                                carry = AddDivisor(ref remValue, n, ref rhs);
                                 digit--;
 
                                 Debug.Assert(carry == 1);
@@ -624,7 +633,7 @@ namespace System
 
                     for (int i = remLength - 1; i >= 0; i--)
                     {
-                        if (rem._blocks[i] == 0)
+                        if (remValue._blocks[i] == 0)
                         {
                             remLength--;
                         }
@@ -635,7 +644,8 @@ namespace System
                         }
                     }
 
-                    rem._length = remLength;
+                    remValue._length = remLength;
+                    SetValue(out rem, ref remValue);
                 }
             }
 
