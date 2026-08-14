@@ -294,23 +294,6 @@ internal sealed partial class GrammarActions
         return string.Join("/", names);
     }
 
-    public GrammarResult VisitExportHead(CILParser.ExportHeadContext context)
-        => throw new NotImplementedException("Obsolete syntax");
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitExptAttr(CILParser.ExptAttrContext context)
-        => VisitExptAttr(context);
-
-    public static GrammarResult.Flag<TypeAttributes> VisitExptAttr(
-        CILParser.ExptAttrContext context)
-        => new(context.Value, context.Mask);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitExptAttrs(CILParser.ExptAttrsContext context)
-        => VisitExptAttrs(context);
-
-    public static GrammarResult.Literal<TypeAttributes> VisitExptAttrs(
-        CILParser.ExptAttrsContext context)
-        => new(context.Value);
-
     public GrammarResult VisitExptypeBlock(CILParser.ExptypeBlockContext context)
     {
         if (context.Value is ExportedTypeValue value)
@@ -321,29 +304,4 @@ internal sealed partial class GrammarActions
         return GrammarResult.SentinelValue.Result;
     }
 
-    public GrammarResult VisitExptypeDecl(CILParser.ExptypeDeclContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitExptypeDecls(
-        CILParser.ExptypeDeclsContext context)
-        => VisitExptypeDecls(context);
-
-    public GrammarResult.Literal<(
-        EntityRegistry.EntityBase? implementation,
-        int typedefId,
-        ImmutableArray<EntityRegistry.CustomAttributeEntity> attrs)> VisitExptypeDecls(
-            CILParser.ExptypeDeclsContext context)
-        => new(MaterializeExportedTypeDeclarations(GetManifestValues(context.Value)));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitExptypeHead(
-        CILParser.ExptypeHeadContext context)
-        => VisitExptypeHead(context);
-
-    public static GrammarResult.Literal<(TypeAttributes attrs, string dottedName)>
-        VisitExptypeHead(CILParser.ExptypeHeadContext context)
-    {
-        ExportedTypeHeaderValue header =
-            GetExportedTypeHeader(context.Value, context.Start);
-        return new((header.Attributes, header.Name));
-    }
 }

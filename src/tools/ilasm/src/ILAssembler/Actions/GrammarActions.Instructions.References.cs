@@ -111,6 +111,4 @@ internal sealed partial class GrammarActions
         }
     }
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitCalliSignature(CILParser.CalliSignatureContext context)
-        => new GrammarResult.FormattedBlob(MaterializeCalliSignature(GetCalliSignatureValue(context.Value)));
 }

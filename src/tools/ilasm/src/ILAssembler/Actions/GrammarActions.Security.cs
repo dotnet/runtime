@@ -305,40 +305,6 @@ internal sealed partial class GrammarActions
         return blob;
     }
 
-    private BlobBuilder MaterializeSecurityCaValue(SecurityCaValue value)
-    {
-        BlobBuilder blob = new();
-        switch (value)
-        {
-            case SecurityBooleanValue boolean:
-                blob.WriteByte((byte)SerializationTypeCode.Boolean);
-                blob.WriteBoolean(boolean.Value);
-                break;
-            case SecurityInt32Value integer:
-                blob.WriteByte((byte)SerializationTypeCode.Int32);
-                blob.WriteInt32(integer.Value);
-                break;
-            case SecurityStringValue text:
-                blob.WriteUTF8(text.Value);
-                blob.WriteByte(0);
-                break;
-            case SecurityEnumValue enumeration:
-                blob.WriteByte((byte)SerializationTypeCode.Enum);
-                EntityRegistry.TypeEntity enumType = ResolveClassName(enumeration.Type);
-                blob.WriteUTF8(
-                    (enumType as EntityRegistry.IHasReflectionNotation)?.ReflectionNotation
-                        ?? string.Empty);
-                blob.WriteByte(0);
-                blob.WriteByte(enumeration.Size);
-                blob.WriteInt32(enumeration.Value);
-                break;
-            default:
-                throw new UnreachableException();
-        }
-
-        return blob;
-    }
-
     private static ImmutableArray<SecurityAttributeValue> GetSecurityAttributes(object? value)
         => value is ImmutableArray<SecurityAttributeValue> attributes ? attributes : [];
 
@@ -369,16 +335,6 @@ internal sealed partial class GrammarActions
         return frame is not null && ReferenceEquals(frame.Owner, context) ? frame : null;
     }
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitSecAction(CILParser.SecActionContext context)
-        => VisitSecAction(context);
-
-    public static GrammarResult.Literal<DeclarativeSecurityAction> VisitSecAction(
-        CILParser.SecActionContext context)
-        => new(context.Value);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitSecDecl(CILParser.SecDeclContext context)
-        => VisitSecDecl(context);
-
     public GrammarResult.Literal<EntityRegistry.DeclarativeSecurityAttributeEntity?> VisitSecDecl(
         CILParser.SecDeclContext context)
         => new(
@@ -386,57 +342,5 @@ internal sealed partial class GrammarActions
                 ? MaterializeSecurityDeclaration(value, context.Start)
                 : null);
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitSecAttrSetBlob(
-        CILParser.SecAttrSetBlobContext context)
-        => VisitSecAttrSetBlob(context);
-
-    public GrammarResult.FormattedBlob VisitSecAttrSetBlob(
-        CILParser.SecAttrSetBlobContext context)
-        => new(MaterializeSecurityAttributeSet(GetSecurityAttributes(context.Value)));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitSecAttrBlob(CILParser.SecAttrBlobContext context)
-        => VisitSecAttrBlob(context);
-
-    public GrammarResult.FormattedBlob VisitSecAttrBlob(CILParser.SecAttrBlobContext context)
-        => new(
-            MaterializeSecurityAttribute(
-                context.Value as SecurityAttributeValue
-                    ?? new SecurityAttributeValue(string.Empty, null, [])));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitNameValPairs(CILParser.NameValPairsContext context)
-        => VisitNameValPairs(context);
-
-    public GrammarResult.Sequence<KeyValuePair<string, BlobBuilder>> VisitNameValPairs(
-        CILParser.NameValPairsContext context)
-    {
-        ImmutableArray<SecurityNameValuePairValue> values =
-            context.Value is ImmutableArray<SecurityNameValuePairValue> pairs ? pairs : [];
-        ImmutableArray<KeyValuePair<string, BlobBuilder>>.Builder result =
-            ImmutableArray.CreateBuilder<KeyValuePair<string, BlobBuilder>>(values.Length);
-        foreach (SecurityNameValuePairValue pair in values)
-        {
-            result.Add(new(pair.Name, MaterializeSecurityCaValue(pair.Value)));
-        }
-
-        return new(result.MoveToImmutable());
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitNameValPair(CILParser.NameValPairContext context)
-        => VisitNameValPair(context);
-
-    public GrammarResult.Literal<KeyValuePair<string, BlobBuilder>> VisitNameValPair(
-        CILParser.NameValPairContext context)
-    {
-        SecurityNameValuePairValue value =
-            context.Value as SecurityNameValuePairValue
-                ?? new SecurityNameValuePairValue(string.Empty, new SecurityInt32Value(0));
-        return new(new(value.Name, MaterializeSecurityCaValue(value.Value)));
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitCaValue(CILParser.CaValueContext context)
-        => VisitCaValue(context);
-
-    public GrammarResult.FormattedBlob VisitCaValue(CILParser.CaValueContext context)
-        => new(MaterializeSecurityCaValue(GetSecurityCaValue(context.Value)));
 }
 #pragma warning restore CA1822
