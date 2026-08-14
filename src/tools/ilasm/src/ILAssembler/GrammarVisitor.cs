@@ -2152,7 +2152,7 @@ namespace ILAssembler
             }
             if (context.customAttrDecl() is { } topLevelCustomAttr)
             {
-                // Top-level custom attribute — owned by the module (matching native ilasm behavior)
+                // Top-level custom attribute owned by the module (matching native ilasm behavior)
                 if (VisitCustomAttrDecl(topLevelCustomAttr).Value is { } customAttr)
                 {
                     customAttr.Owner = _entityRegistry.Module;
@@ -3084,15 +3084,15 @@ namespace ILAssembler
                 int intValue = VisitInt32(int32).Value;
                 if (context.FLOAT32() is not null)
                 {
-                    // FLOAT32 '(' int32 ')' — hex bits reinterpreted as float32
+                    // FLOAT32 '(' int32 ')': hex bits reinterpreted as float32
                     return new(BitConverter.Int32BitsToSingle(intValue));
                 }
-                // int32 or int32 '.' — plain integer or trailing-dot float
+                // int32 or int32 '.': plain integer or trailing-dot float
                 return new((double)intValue);
             }
             else if (context.int64() is CILParser.Int64Context int64)
             {
-                // FLOAT64_ '(' int64 ')' — hex bits reinterpreted as float64
+                // FLOAT64_ '(' int64 ')': hex bits reinterpreted as float64
                 long value = VisitInt64(int64).Value;
                 return new(BitConverter.Int64BitsToDouble(value));
             }
@@ -3729,7 +3729,7 @@ namespace ILAssembler
             bool success = long.TryParse(value.ToString(), parseStyle, CultureInfo.InvariantCulture, out result);
             if (!success)
             {
-                // Try parsing as unsigned — handles values like:
+                // Try parsing as unsigned to handle values like:
                 // - Decimal overflow with negation: 9223372036854775808 (= -Int64.MinValue)
                 // - Large unsigned decimal: 18444492274432737280
                 if (ulong.TryParse(value.ToString(), parseStyle, CultureInfo.InvariantCulture, out ulong uresult))

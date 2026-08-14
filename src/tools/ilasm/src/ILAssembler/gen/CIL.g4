@@ -59,7 +59,7 @@ IDISPATCH: 'idispatch';
 STRUCT: 'struct';
 INTERFACE: 'interface';
 SAFEARRAY: 'safearray';
-// NESTEDSTRUCT, VARIANTBOOL, ANSIBSTR are now parser rules to handle whitespace
+// NESTEDSTRUCT, VARIANTBOOL, ANSIBSTR are parser rules to handle whitespace
 BYVALSTR: 'byvalstr';
 ANSI: 'ansi';
 TBSTR: 'tbstr';
@@ -92,8 +92,7 @@ FASTCALL: 'fastcall';
 TYPE_PARAMETER: '!';
 METHOD_TYPE_PARAMETER: '!' '!';
 TYPEDREF: 'typedref' | 'refany';
-// NATIVE_INT and NATIVE_UINT are now parser rules (nativeInt, nativeUint)
-// to handle whitespace between 'native' and 'int'/'uint'.
+// NATIVE_INT and NATIVE_UINT are parser rules (nativeInt, nativeUint)
 PARAM: '.param';
 CONSTRAINT: 'constraint';
 

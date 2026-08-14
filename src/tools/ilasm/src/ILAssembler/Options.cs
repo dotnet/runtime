@@ -124,13 +124,13 @@ namespace ILAssembler
         /// <summary>
         /// Optimize long instructions to short.
         /// </summary>
-        /// <remarks>Not yet implemented — accepted for CLI compatibility with native ilasm.</remarks>
+        /// <remarks>Not yet implemented; accepted for CLI compatibility with native ilasm.</remarks>
         public bool Optimize { get; set; }
 
         /// <summary>
         /// Fold identical method bodies into one.
         /// </summary>
-        /// <remarks>Not yet implemented — accepted for CLI compatibility with native ilasm.</remarks>
+        /// <remarks>Not yet implemented; accepted for CLI compatibility with native ilasm.</remarks>
         public bool Fold { get; set; }
 
         /// <summary>

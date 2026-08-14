@@ -141,6 +141,19 @@ public class CommandLineTests
     }
 
     [Theory]
+    [InlineData("-OUT:x.exe", "--output", "x.exe")]
+    [InlineData("-OUT:C:\\Temp\\test.exe", "--output", "C:\\Temp\\test.exe")]
+    public void NativeValueOption_HandlesColonSeparatedValue(
+        string argument,
+        string expectedOption,
+        string expectedValue)
+    {
+        Assert.Equal(
+            [expectedOption, expectedValue],
+            NativeCommandLine.Normalize([argument], allowSlashOptions: false));
+    }
+
+    [Theory]
     [InlineData("-out:")]
     [InlineData("-key:  ")]
     [InlineData("-subsystem=")]

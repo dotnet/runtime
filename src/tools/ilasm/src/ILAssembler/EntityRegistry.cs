@@ -341,7 +341,7 @@ namespace ILAssembler
                 int bodyOffset = -1;
                 if (methodDef.MethodBody.CodeBuilder.Count != 0)
                 {
-                    // Add deferred exception regions now that TypeRef→TypeDef resolution is complete.
+                    // Add deferred exception regions now that TypeRef-to-TypeDef resolution is complete.
                     // Catch clause type handles are read here, after resolution has set the real handle.
                     foreach (var region in methodDef.ExceptionRegions)
                     {
@@ -1231,7 +1231,7 @@ namespace ILAssembler
                 return false;
             }
 
-            // Resolution scope is module-level (ModuleEntity/ModuleReferenceEntity) — local type.
+            // Resolution scope is module-level (ModuleEntity/ModuleReferenceEntity) for a local type.
             if (resolutionScope is ModuleEntity or ModuleReferenceEntity)
             {
                 var typeDef = FindTypeDefinition(null, typeRef.Namespace, typeRef.Name);
@@ -1901,7 +1901,7 @@ namespace ILAssembler
             /// <summary>
             /// Deferred exception regions. Registered during parsing but added to
             /// <see cref="InstructionEncoder.ControlFlowBuilder"/> during emission
-            /// so that TypeRef→TypeDef resolution has completed before catch type
+            /// so that TypeRef-to-TypeDef resolution has completed before catch type
             /// handles are read.
             /// </summary>
             public List<ExceptionRegion> ExceptionRegions { get; } = new();
@@ -2152,7 +2152,7 @@ namespace ILAssembler
 
         /// <summary>
         /// A deferred exception region entry. Stored during parsing and applied to the
-        /// <see cref="ControlFlowBuilder"/> during emission, after TypeRef→TypeDef resolution.
+        /// <see cref="ControlFlowBuilder"/> during emission, after TypeRef-to-TypeDef resolution.
         /// </summary>
         internal abstract record ExceptionRegion(LabelHandle TryStart, LabelHandle TryEnd, LabelHandle HandlerStart, LabelHandle HandlerEnd)
         {
