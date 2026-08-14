@@ -1200,5 +1200,70 @@ namespace System.Tests
                 }
             }
         }
+
+        private sealed class GcRootBox
+        {
+            public int Value;
+            public GcRootBox Self;
+            public byte[] Payload;
+
+            public GcRootBox(int v)
+            {
+                Value = v;
+                Self = this;
+                Payload = new byte[16];
+                Payload[0] = (byte)v;
+            }
+
+            public bool IsIntact(int expected) =>
+                Value == expected && ReferenceEquals(Self, this) && Payload is not null && Payload[0] == (byte)expected;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static GcRootBox MakeGcRootBox(int v) => new GcRootBox(v);
+
+        // Taking the address forces the caller's local to be an address-taken variable.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void TouchGcRootBox(ref GcRootBox b)
+        {
+            if (b is null)
+            {
+                throw new InvalidOperationException();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void CollectAndScribble()
+        {
+            GC.Collect();
+            byte[] scribble = new byte[64];
+            scribble[0] = 1;
+            GC.KeepAlive(scribble);
+        }
+
+        // Regression test for https://github.com/dotnet/runtime/issues/130592. On the Mono
+        // wasm LLVM-AOT backend a ref OP_MOVE alias of an address-taken local could be left
+        // rooted nowhere once the local was reassigned, letting the aliased object be collected
+        // while a live local still referenced it. The invariant -- an object reachable through a
+        // live local survives a collection -- holds on every runtime, so this only has teeth on
+        // wasm AOT (it must be in the browser Mono smoke set to run there).
+        [Fact]
+        public static void MovedAliasOfAddressTakenLocalIsRootedAcrossGC()
+        {
+            GcRootBox cur = MakeGcRootBox(0);
+            TouchGcRootBox(ref cur);
+
+            for (int i = 1; i <= 128; i++)
+            {
+                GcRootBox alias = cur;      // ref MOVE; sole remaining reference to box (i - 1)
+                cur = MakeGcRootBox(i);     // overwrites cur's stack slot
+                TouchGcRootBox(ref cur);
+                CollectAndScribble();
+
+                Assert.True(alias.IsIntact(i - 1),
+                    $"object referenced by a live local was lost across GC at iteration {i} (read Value={alias.Value})");
+                GC.KeepAlive(alias);
+            }
+        }
     }
 }
