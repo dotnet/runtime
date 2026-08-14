@@ -1236,9 +1236,14 @@ namespace System.Tests
         private static void CollectAndScribble()
         {
             GC.Collect();
-            byte[] scribble = new byte[64];
-            scribble[0] = 1;
-            GC.KeepAlive(scribble);
+            // Reclaim and overwrite any just-freed slot with same-sized objects so that an
+            // object lost across the collection is observable (it reads a filler's Value = -1).
+            GcRootBox[] filler = new GcRootBox[64];
+            for (int j = 0; j < filler.Length; j++)
+            {
+                filler[j] = new GcRootBox(-1);
+            }
+            GC.KeepAlive(filler);
         }
 
         // Regression test for https://github.com/dotnet/runtime/issues/130592. On the Mono
