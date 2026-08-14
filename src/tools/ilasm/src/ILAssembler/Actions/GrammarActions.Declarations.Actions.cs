@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Immutable;
-using System.Reflection;
 using System.Reflection.PortableExecutable;
 using Antlr4.Runtime;
 
@@ -53,104 +51,25 @@ internal sealed partial class GrammarActions
 
     internal void ProcessTopLevelAssemblyReference(CILParser.AssemblyRefBlockContext context)
     {
-        if (context.HasSyntaxError)
+        if (!context.HasSyntaxError)
         {
-            return;
-        }
-
-        _currentAssemblyOrRef = VisitAssemblyRefHead(context.assemblyRefHead()).Value;
-        try
-        {
-            foreach (CILParser.AssemblyRefDeclContext declaration in
-                context.assemblyRefDecls().assemblyRefDecl())
-            {
-                _ = VisitAssemblyRefDecl(declaration);
-            }
-        }
-        finally
-        {
-            _currentAssemblyOrRef = null;
+            _ = VisitAssemblyRefBlock(context);
         }
     }
 
     internal void ProcessTopLevelExportedType(CILParser.ExptypeBlockContext context)
     {
-        if (context.HasSyntaxError)
+        if (!context.HasSyntaxError)
         {
-            return;
-        }
-
-        (System.Reflection.TypeAttributes attributes, string dottedName) =
-            VisitExptypeHead(context.exptypeHead()).Value;
-        (string typeNamespace, string name) =
-            NameHelpers.SplitDottedNameToNamespaceAndName(dottedName);
-        (EntityRegistry.EntityBase? implementation, int typeDefinitionId,
-            ImmutableArray<EntityRegistry.CustomAttributeEntity> customAttributes) =
-            VisitExptypeDecls(context.exptypeDecls()).Value;
-        if (implementation is null)
-        {
-            ReportWarning(
-                DiagnosticIds.MissingExportedTypeImplementation,
-                string.Format(
-                    DiagnosticMessageTemplates.MissingExportedTypeImplementation,
-                    dottedName),
-                context.exptypeHead());
-            return;
-        }
-
-        EntityRegistry.ExportedTypeEntity exportedType =
-            _entityRegistry.GetOrCreateExportedType(
-                implementation,
-                typeNamespace,
-                name,
-                entity =>
-                {
-                    entity.Attributes = attributes;
-                    entity.TypeDefinitionId = typeDefinitionId;
-                });
-        foreach (EntityRegistry.CustomAttributeEntity attribute in customAttributes)
-        {
-            attribute.Owner = exportedType;
+            _ = VisitExptypeBlock(context);
         }
     }
 
     internal void ProcessTopLevelManifestResource(CILParser.ManifestResBlockContext context)
     {
-        if (context.HasSyntaxError)
+        if (!context.HasSyntaxError)
         {
-            return;
-        }
-
-        (string name, string alias, ManifestResourceAttributes attributes) =
-            VisitManifestResHead(context.manifestResHead()).Value;
-        (EntityRegistry.EntityBase? implementation, uint offset,
-            ImmutableArray<EntityRegistry.CustomAttributeEntity> customAttributes) =
-            VisitManifestResDecls(context.manifestResDecls()).Value;
-        if (implementation is null)
-        {
-            offset = (uint)_manifestResources.Count;
-            byte[] resourceData = _resourceLocator(alias);
-            if (resourceData is null)
-            {
-                ReportError(
-                    DiagnosticIds.FileNotFound,
-                    string.Format(DiagnosticMessageTemplates.FileNotFound, alias),
-                    context);
-            }
-            else
-            {
-                _manifestResources.WriteInt32(resourceData.Length);
-                _manifestResources.WriteBytes(resourceData);
-            }
-        }
-
-        EntityRegistry.ManifestResourceEntity resource =
-            _entityRegistry.CreateManifestResource(name, offset);
-        resource.Attributes = attributes;
-        resource.Implementation = implementation;
-        foreach (EntityRegistry.CustomAttributeEntity attribute in customAttributes)
-        {
-            attribute.Owner = resource;
+            _ = VisitManifestResBlock(context);
         }
     }
 

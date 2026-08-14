@@ -511,10 +511,14 @@ imagebase:
 stackreserve:
 	'.stackreserve' value = int64 {Actions.ProcessTopLevelStackReserve($value.start);};
 
-assemblyBlock returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+assemblyBlock returns [object Value, bool HasSyntaxError]
+@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
 :
-	'.assembly' asmAttr dottedName '{' assemblyDecls '}';
+	'.assembly' attributes = asmAttr name = dottedName '{' declarations = assemblyDecls '}'
+		{_localctx.Value = Actions.CreateAssemblyDefinition(
+			$attributes.Value,
+			$name.Value,
+			$declarations.Value);};
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 mscorlib: '.mscorlib';
@@ -554,7 +558,9 @@ float64 returns [double Value]:
 	| FLOAT32 '(' singleBits = int32 ')' {_localctx.Value = Actions.ParseFloat32Bits($singleBits.start);}
 	| FLOAT64_ '(' doubleBits = int64 ')' {_localctx.Value = Actions.ParseFloat64Bits($doubleBits.start);};
 
-intOrWildcard: int32 | PTR;
+intOrWildcard returns [int? Value]:
+	value = int32 {_localctx.Value = Actions.ParseInt32($value.start);}
+	| PTR {_localctx.Value = null;};
 
 /* This is handled in the PreprocessedTokenSource lexer. We have this in the grammar just for completeness */
 compControl:
@@ -570,14 +576,25 @@ compControl:
 
 
 /*  Aliasing of types, type specs, methods, fields and custom attributes */
-typedefDecl returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+typedefDecl returns [object Value, bool HasSyntaxError]
+@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
 :
-	'.typedef' type 'as' dottedName
-	| '.typedef' className 'as' dottedName
-	| '.typedef' memberRef 'as' dottedName
-	| '.typedef' customDescr 'as' dottedName
-	| '.typedef' customDescrWithOwner 'as' dottedName;
+	'.typedef' signature = type 'as' alias = dottedName
+		{_localctx.Value = Actions.CreateTypeSignatureTypedef($signature.Value, $alias.Value);}
+	| '.typedef' classType = className 'as' alias = dottedName
+		{_localctx.Value = Actions.CreateClassTypedef($classType.Value, $alias.Value);}
+	| '.typedef' member = memberRef 'as' alias = dottedName
+		{_localctx.Value = Actions.CreateMemberTypedef($member.Value, $alias.Value);}
+	| '.typedef' attribute = customDescr 'as' alias = dottedName
+		{_localctx.Value = Actions.CreateCustomAttributeTypedefDeclaration(
+			$attribute.Value,
+			$attribute.start,
+			$alias.Value);}
+	| '.typedef' ownedAttribute = customDescrWithOwner 'as' alias = dottedName
+		{_localctx.Value = Actions.CreateCustomAttributeTypedefDeclaration(
+			$ownedAttribute.Value,
+			$ownedAttribute.start,
+			$alias.Value);};
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 /* Custom attribute declarations  */
@@ -672,25 +689,39 @@ moduleHead returns [string Value, bool HasName, bool IsExternal]:
 		{Actions.SetEmptyModuleHeader(_localctx);};
 
 /*  VTable Fixup table declaration  */
-vtfixupDecl returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+vtfixupDecl returns [object Value, bool HasSyntaxError]
+@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
 :
-	'.vtfixup' '[' int32 ']' vtfixupAttr 'at' id
+	'.vtfixup' '[' count = int32 ']' attributes = vtfixupAttr 'at' label = id
+		{_localctx.Value = Actions.CreateVTableFixup(
+			$count.start,
+			$attributes.Value,
+			$label.start);}
 ;
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
-vtfixupAttr:
-	/* EMPTY */
-	| vtfixupAttr INT32_
-	| vtfixupAttr INT64_
-	| vtfixupAttr 'fromunmanaged'
-	| vtfixupAttr 'callmostderived'
-	| vtfixupAttr 'retainappdomain';
-
-vtableDecl returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+vtfixupAttr returns [ushort Value]
+@init {_localctx.Value = 0;}
 :
-	'.vtable' '=' '(' bytes ')' /* deprecated */
+	(attribute = vtfixupAttrElement
+		{_localctx.Value = Actions.AddVTableFixupAttribute(_localctx.Value, $attribute.Value);})*
+	{_localctx.Value = Actions.CompleteVTableFixupAttributes(_localctx.Value);}
+;
+
+vtfixupAttrElement returns [ushort Value]
+@after {_localctx.Value = Actions.ParseVTableFixupAttribute(_localctx.Start);}
+:
+	INT32_
+	| INT64_
+	| 'fromunmanaged'
+	| 'callmostderived'
+	| 'retainappdomain';
+
+vtableDecl returns [object Value, bool HasSyntaxError]
+@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+:
+	'.vtable' '=' '(' value = bytes ')'
+		{_localctx.Value = Actions.CreateRawVTable($value.Value);} /* deprecated */
 ;
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
@@ -819,18 +850,32 @@ extSourceSpec returns [object Value, bool HasSyntaxError]
 finally {Actions.EndSourceDirective(_localctx); EndParseTreeMode();}
 
 /*  Manifest declarations  */
-fileDecl returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+fileDecl returns [object Value, bool HasSyntaxError]
+@init {BeginStreaming(); Actions.BeginFileDeclaration(_localctx);}
 :
-	'.file' fileAttr* dottedName fileEntry HASH '=' '(' bytes ')' fileEntry
-	| '.file' fileAttr* dottedName fileEntry;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+	'.file'
+		(attribute = fileAttr {Actions.AddFileAttribute(_localctx, $attribute.Value);})*
+		name = dottedName {Actions.SetFileName(_localctx, $name.Value);}
+		entry = fileEntry {Actions.AddFileEntry(_localctx, $entry.Value);}
+		(HASH '=' '(' hash = bytes ')' {Actions.SetFileHash(_localctx, $hash.Value);}
+			trailingEntry = fileEntry {Actions.AddFileEntry(_localctx, $trailingEntry.Value);})?
+;
+finally {Actions.EndFileDeclaration(_localctx); EndParseTreeMode();}
 
-fileAttr: 'nometadata';
+fileAttr returns [bool Value]
+@after {_localctx.Value = Actions.ParseFileAttribute(_localctx.Start);}
+:
+	'nometadata';
 
-fileEntry: /* EMPTY */ | '.entrypoint';
+fileEntry returns [bool Value]
+@init {_localctx.Value = false;}
+:
+	/* EMPTY */
+	| entry = '.entrypoint' {_localctx.Value = Actions.ParseFileEntry($entry);};
 
-asmAttrAny:
+asmAttrAny returns [System.Reflection.AssemblyFlags Value, System.Reflection.AssemblyFlags Mask]
+@after {Actions.SetAssemblyAttribute(_localctx);}
+:
 	'retargetable'
 	| 'windowsruntime'
 	| 'noplatform'
@@ -841,7 +886,14 @@ asmAttrAny:
 	| 'arm'
 	| 'arm64';
 
-asmAttr: asmAttrAny*;
+asmAttr returns [System.Reflection.AssemblyFlags Value]
+@init {_localctx.Value = 0;}
+:
+	(attribute = asmAttrAny
+		{_localctx.Value = Actions.AddAssemblyAttribute(
+			_localctx.Value,
+			$attribute.Value,
+			$attribute.Mask);})*;
 
 /*  IL instructions and associated definitions  */
 instr:
@@ -945,9 +997,22 @@ slashedName returns [object Value]
 ;
 finally {_localctx.Value = Actions.EndSlashedName(_localctx);}
 
-assemblyDecls: assemblyDecl*;
+assemblyDecls returns [object Value]
+@init {Actions.BeginAssemblyDeclarations(_localctx);}
+:
+	(declaration = assemblyDecl
+		{Actions.AddAssemblyDeclaration(_localctx, $declaration.Value);})*
+;
+finally {_localctx.Value = Actions.EndAssemblyDeclarations(_localctx);}
 
-assemblyDecl: (HASH 'algorithm' int32) | secDecl | asmOrRefDecl;
+assemblyDecl returns [object Value]:
+	HASH 'algorithm' algorithm = int32
+		{_localctx.Value = Actions.CreateAssemblyHashAlgorithmDeclaration($algorithm.start);}
+	| security = secDecl
+		{_localctx.Value = Actions.CreateAssemblySecurityDeclaration(
+			$security.Value,
+			$security.start);}
+	| shared = asmOrRefDecl {_localctx.Value = $shared.Value;};
 
 typeSpec
 returns [object Value, bool HasSyntaxError]
@@ -2073,45 +2138,101 @@ customAttrDecl returns [object Value, bool HasSyntaxError]
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 /* Assembly References */
-asmOrRefDecl:
-	('.publickey' | '.publicKey') '=' '(' bytes ')'
-	| '.ver' intOrWildcard ':' intOrWildcard ':' intOrWildcard ':' intOrWildcard
-	| '.locale' compQstring
-	| '.locale' '=' '(' bytes ')'
-	| customAttrDecl
+asmOrRefDecl returns [object Value]:
+	('.publickey' | '.publicKey') '=' '(' key = bytes ')'
+		{_localctx.Value = Actions.CreateAssemblyPublicKeyDeclaration($key.Value);}
+	| '.ver' major = intOrWildcard ':' minor = intOrWildcard ':' build = intOrWildcard ':' revision = intOrWildcard
+		{_localctx.Value = Actions.CreateAssemblyVersionDeclaration(
+			$major.Value,
+			$minor.Value,
+			$build.Value,
+			$revision.Value);}
+	| '.locale' locale = compQstring
+		{_localctx.Value = Actions.CreateAssemblyLocaleDeclaration($locale.Value);}
+	| '.locale' '=' '(' localeBytes = bytes ')'
+		{_localctx.Value = Actions.CreateAssemblyLocaleDeclaration($localeBytes.Value);}
+	| attribute = customAttrDecl
+		{_localctx.Value = Actions.CreateAssemblyCustomAttributeDeclaration(
+			$attribute.Value,
+			$attribute.start);}
 	| compControl;
 
-assemblyRefBlock returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+assemblyRefBlock returns [object Value, bool HasSyntaxError]
+@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
 :
-	assemblyRefHead '{' assemblyRefDecls '}'
+	header = assemblyRefHead '{' declarations = assemblyRefDecls '}'
+		{_localctx.Value = Actions.CreateAssemblyReference(
+			$header.Value,
+			$declarations.Value);}
 ;
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
-assemblyRefHead:
-	'.assembly' 'extern' asmAttr dottedName
-	| '.assembly' 'extern' asmAttr dottedName 'as' dottedName;
+assemblyRefHead returns [object Value]:
+	'.assembly' 'extern' attributes = asmAttr name = dottedName
+		{_localctx.Value = Actions.CreateAssemblyReferenceHeader(
+			$attributes.Value,
+			$name.Value,
+			$name.Value);}
+	| '.assembly' 'extern' attributes = asmAttr name = dottedName 'as' alias = dottedName
+		{_localctx.Value = Actions.CreateAssemblyReferenceHeader(
+			$attributes.Value,
+			$name.Value,
+			$alias.Value);};
 
-assemblyRefDecls: assemblyRefDecl*;
-
-assemblyRefDecl:
-	'.hash' '=' '(' bytes ')'
-	| asmOrRefDecl
-	| '.publickeytoken' '=' '(' bytes ')'
-	| 'auto';
-
-exptypeBlock returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+assemblyRefDecls returns [object Value]
+@init {Actions.BeginAssemblyReferenceDeclarations(_localctx);}
 :
-	exptypeHead '{' exptypeDecls '}'
+	(declaration = assemblyRefDecl
+		{Actions.AddAssemblyReferenceDeclaration(_localctx, $declaration.Value);})*
+;
+finally {_localctx.Value = Actions.EndAssemblyReferenceDeclarations(_localctx);}
+
+assemblyRefDecl returns [object Value]:
+	'.hash' '=' '(' hash = bytes ')'
+		{_localctx.Value = Actions.CreateAssemblyReferenceHashDeclaration($hash.Value);}
+	| shared = asmOrRefDecl {_localctx.Value = $shared.Value;}
+	| '.publickeytoken' '=' '(' token = bytes ')'
+		{_localctx.Value = Actions.CreateAssemblyReferencePublicKeyTokenDeclaration($token.Value);}
+	| 'auto' {_localctx.Value = Actions.CreateAssemblyReferenceAutoDeclaration();};
+
+exptypeBlock returns [object Value, bool HasSyntaxError]
+@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+:
+	header = exptypeHead '{' declarations = exptypeDecls '}'
+		{_localctx.Value = Actions.CreateExportedType(
+			$header.Value,
+			$declarations.Value,
+			$header.start);}
 ;
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
-exptypeHead: '.class' 'extern' exptAttr* dottedName;
+exptypeHead returns [object Value]:
+	head = '.class' 'extern' attributes = exptAttrs name = dottedName
+		{_localctx.Value = Actions.CreateExportedTypeHeader(
+			$attributes.Value,
+			$name.Value,
+			$head);};
 
-exportHead: '.export' exptAttr* dottedName;
+exportHead returns [object Value]:
+	head = '.export' attributes = exptAttrs name = dottedName
+		{_localctx.Value = Actions.CreateExportedTypeHeader(
+			$attributes.Value,
+			$name.Value,
+			$head);};
 
-exptAttr:
+exptAttrs returns [System.Reflection.TypeAttributes Value]
+@init {_localctx.Value = 0;}
+:
+	(attribute = exptAttr
+		{_localctx.Value = Actions.AddExportedTypeAttribute(
+			_localctx.Value,
+			$attribute.Value,
+			$attribute.Mask);})*
+;
+
+exptAttr returns [System.Reflection.TypeAttributes Value, System.Reflection.TypeAttributes Mask]
+@after {Actions.SetExportedTypeAttribute(_localctx);}
+:
 	'private'
 	| 'public'
 	| 'forwarder'
@@ -2122,34 +2243,98 @@ exptAttr:
 	| 'nested' 'famandassem'
 	| 'nested' 'famorassem';
 
-exptypeDecls: exptypeDecl*;
+exptypeDecls returns [object Value]
+@init {Actions.BeginExportedTypeDeclarations(_localctx);}
+:
+	(declaration = exptypeDecl
+		{Actions.AddExportedTypeDeclaration(_localctx, $declaration.Value);})*
+;
+finally {_localctx.Value = Actions.EndExportedTypeDeclarations(_localctx);}
 
-exptypeDecl:
-	'.file' dottedName
-	| '.class' 'extern' slashedName
-	| '.assembly' 'extern' dottedName
-	| mdtoken
-	| '.class' int32
-	| customAttrDecl
+exptypeDecl returns [object Value]:
+	location = '.file' name = dottedName
+		{_localctx.Value = Actions.CreateExportedTypeFileDeclaration(
+			$name.Value,
+			$location);}
+	| location = '.class' 'extern' nestedName = slashedName
+		{_localctx.Value = Actions.CreateNestedExportedTypeDeclaration(
+			$nestedName.Value,
+			$location);}
+	| location = '.assembly' 'extern' assemblyName = dottedName
+		{_localctx.Value = Actions.CreateExportedTypeAssemblyDeclaration(
+			$assemblyName.Value,
+			$location);}
+	| token = mdtoken
+		{_localctx.Value = Actions.CreateExportedTypeMetadataTokenDeclaration(
+			$token.Value,
+			$token.start);}
+	| '.class' typeDefinitionId = int32
+		{_localctx.Value = Actions.CreateExportedTypeDefinitionIdDeclaration(
+			$typeDefinitionId.start);}
+	| attribute = customAttrDecl
+		{_localctx.Value = Actions.CreateExportedTypeCustomAttributeDeclaration(
+			$attribute.Value,
+			$attribute.start);}
 	| compControl;
 
-manifestResBlock returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+manifestResBlock returns [object Value, bool HasSyntaxError]
+@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
 :
-	manifestResHead '{' manifestResDecls '}'
+	header = manifestResHead '{' declarations = manifestResDecls '}'
+		{_localctx.Value = Actions.CreateManifestResource(
+			$header.Value,
+			$declarations.Value,
+			$header.start);}
 ;
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
-manifestResHead:
-	MRESOURCE manresAttr* dottedName
-	| MRESOURCE manresAttr* dottedName 'as' dottedName;
+manifestResHead returns [object Value]:
+	head = MRESOURCE attributes = manresAttrs name = dottedName
+		{_localctx.Value = Actions.CreateManifestResourceHeader(
+			$attributes.Value,
+			$name.Value,
+			$name.Value,
+			$head);}
+	| head = MRESOURCE attributes = manresAttrs name = dottedName 'as' alias = dottedName
+		{_localctx.Value = Actions.CreateManifestResourceHeader(
+			$attributes.Value,
+			$name.Value,
+			$alias.Value,
+			$head);};
 
-manresAttr: 'public' | 'private';
+manresAttrs returns [System.Reflection.ManifestResourceAttributes Value]
+@init {_localctx.Value = 0;}
+:
+	(attribute = manresAttr
+		{_localctx.Value = Actions.AddManifestResourceAttribute(
+			_localctx.Value,
+			$attribute.Value);})*
+;
 
-manifestResDecls: manifestResDecl*;
+manresAttr returns [System.Reflection.ManifestResourceAttributes Value]
+@after {_localctx.Value = Actions.ParseManifestResourceAttribute(_localctx.Start);}
+:
+	'public'
+	| 'private';
 
-manifestResDecl:
-	'.file' dottedName 'at' int32
-	| '.assembly' 'extern' dottedName
-	| customAttrDecl
+manifestResDecls returns [object Value]
+@init {Actions.BeginManifestResourceDeclarations(_localctx);}
+:
+	(declaration = manifestResDecl
+		{Actions.AddManifestResourceDeclaration(_localctx, $declaration.Value);})*
+;
+finally {_localctx.Value = Actions.EndManifestResourceDeclarations(_localctx);}
+
+manifestResDecl returns [object Value]:
+	location = '.file' name = dottedName 'at' offset = int32
+		{_localctx.Value = Actions.CreateManifestResourceFileDeclaration(
+			$name.Value,
+			$offset.start,
+			$location);}
+	| '.assembly' 'extern' name = dottedName
+		{_localctx.Value = Actions.CreateManifestResourceAssemblyDeclaration($name.Value);}
+	| attribute = customAttrDecl
+		{_localctx.Value = Actions.CreateManifestResourceCustomAttributeDeclaration(
+			$attribute.Value,
+			$attribute.start);}
 	| compControl;
