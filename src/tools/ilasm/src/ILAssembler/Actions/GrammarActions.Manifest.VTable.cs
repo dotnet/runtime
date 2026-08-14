@@ -28,7 +28,10 @@ internal sealed partial class GrammarActions
 
     internal ushort CompleteVTableFixupAttributes(ushort attributes) => attributes;
 
-    internal object CreateVTableFixup(IToken slotCount, ushort flags, IToken dataLabel)
+    internal VTableFixupValue CreateVTableFixup(
+        IToken slotCount,
+        ushort flags,
+        IToken dataLabel)
     {
         int diagnosticCount = _diagnostics.Count;
         int count = ParseInt32(slotCount);
@@ -52,7 +55,8 @@ internal sealed partial class GrammarActions
             hasValidSlotCount);
     }
 
-    internal object CreateRawVTable(ImmutableArray<byte> value) => new RawVTableValue(value);
+    internal RawVTableValue CreateRawVTable(ImmutableArray<byte> value)
+        => new(value);
 
     internal void MaterializeVTable(CILParser.VtableDeclContext context)
         => throw new NotImplementedException(

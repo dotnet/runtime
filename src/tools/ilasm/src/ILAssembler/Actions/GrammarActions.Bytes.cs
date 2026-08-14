@@ -1,49 +1,24 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Buffers.Binary;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Globalization;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Reflection.Metadata;
-using System.Reflection.Metadata.Ecma335;
-using System.Reflection.PortableExecutable;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
 using Antlr4.Runtime;
-using Antlr4.Runtime.Misc;
 
 namespace ILAssembler;
 
 internal sealed partial class GrammarActions
 {
-    private ImmutableArray<byte>.Builder? _byteAccumulator;
+#pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
+    internal ImmutableArray<byte>.Builder CreateByteAccumulator()
+        => ImmutableArray.CreateBuilder<byte>();
 
-    /// <summary>
-    /// Starts accumulating the bytes of a <c>bytearray</c> literal.
-    /// </summary>
-    /// <remarks>
-    /// Parse-tree construction is disabled for the entire parse, so the individual <c>hexbyte</c>
-    /// contexts and terminals are collectable as soon as they are matched. The bytes themselves
-    /// stream into this accumulator, which keeps a single byte array alive instead of a context and
-    /// a terminal node per byte.
-    /// </remarks>
-    internal void BeginBytes() => _byteAccumulator = ImmutableArray.CreateBuilder<byte>();
+    internal void AddByte(ImmutableArray<byte>.Builder accumulator, byte value)
+        => accumulator.Add(value);
 
-    internal void AddByte(byte value) => _byteAccumulator?.Add(value);
-
-    internal ImmutableArray<byte> EndBytes()
-    {
-        ImmutableArray<byte>.Builder? accumulator = _byteAccumulator;
-        _byteAccumulator = null;
-        return accumulator?.DrainToImmutable() ?? ImmutableArray<byte>.Empty;
-    }
+    internal ImmutableArray<byte> EndBytes(ImmutableArray<byte>.Builder accumulator)
+        => accumulator.DrainToImmutable();
+#pragma warning restore CA1822
 
     /// <summary>
     /// Parses a single <c>hexbyte</c> token.

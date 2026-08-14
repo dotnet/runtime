@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
@@ -13,72 +12,6 @@ namespace ILAssembler;
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
 {
-    private readonly Stack<SecurityAttributeSetFrame> _securityAttributeSetFrames = new();
-    private readonly Stack<SecurityNameValuePairsFrame> _securityNameValuePairFrames = new();
-
-    private abstract record SecurityDeclarationValue(DeclarativeSecurityAction Action);
-
-    private sealed record PermissionDeclarationValue(
-        DeclarativeSecurityAction Action,
-        object PermissionType,
-        object? Value) : SecurityDeclarationValue(Action);
-
-    private sealed record RawPermissionSetValue(
-        DeclarativeSecurityAction Action,
-        ImmutableArray<byte> Value) : SecurityDeclarationValue(Action);
-
-    private sealed record StringPermissionSetValue(
-        DeclarativeSecurityAction Action,
-        string Value) : SecurityDeclarationValue(Action);
-
-    private sealed record AttributePermissionSetValue(
-        DeclarativeSecurityAction Action,
-        ImmutableArray<SecurityAttributeValue> Attributes) : SecurityDeclarationValue(Action);
-
-    private sealed record SecurityAttributeValue(
-        string? Name,
-        TypeSpecificationValue? Type,
-        ImmutableArray<CustomAttributeNamedArgumentValue> Arguments);
-
-    private sealed record SecurityNameValuePairValue(string Name, SecurityCaValue Value);
-
-    private abstract record SecurityCaValue;
-
-    private sealed record SecurityBooleanValue(bool Value) : SecurityCaValue;
-
-    private sealed record SecurityInt32Value(int Value) : SecurityCaValue;
-
-    private sealed record SecurityStringValue(string Value) : SecurityCaValue;
-
-    private sealed record SecurityEnumValue(
-        ClassNameValue Type,
-        byte Size,
-        int Value) : SecurityCaValue;
-
-    private sealed class SecurityAttributeSetFrame
-    {
-        public SecurityAttributeSetFrame(CILParser.SecAttrSetBlobContext owner)
-        {
-            Owner = owner;
-        }
-
-        public CILParser.SecAttrSetBlobContext Owner { get; }
-
-        public ImmutableArray<SecurityAttributeValue>.Builder? Attributes { get; set; }
-    }
-
-    private sealed class SecurityNameValuePairsFrame
-    {
-        public SecurityNameValuePairsFrame(CILParser.NameValPairsContext owner)
-        {
-            Owner = owner;
-        }
-
-        public CILParser.NameValPairsContext Owner { get; }
-
-        public ImmutableArray<SecurityNameValuePairValue>.Builder? Pairs { get; set; }
-    }
-
     internal DeclarativeSecurityAction ParseSecurityAction(IToken token)
         => token.Text switch
         {
@@ -100,131 +33,95 @@ internal sealed partial class GrammarActions
             _ => throw new UnreachableException(),
         };
 
-    internal object CreateNamedPermissionDeclaration(
+    internal SecurityDeclarationValue CreateNamedPermissionDeclaration(
         DeclarativeSecurityAction action,
-        object? permissionType,
-        object? pairs)
-        => new PermissionDeclarationValue(
+        TypeSpecificationValue permissionType,
+        ImmutableArray<SecurityNameValuePairValue> pairs)
+        => new NamedPermissionDeclarationValue(
             action,
-            GetTypeSpecificationValue(permissionType),
+            permissionType,
             pairs);
 
-    internal object CreateStructuredPermissionDeclaration(
+    internal SecurityDeclarationValue CreateStructuredPermissionDeclaration(
         DeclarativeSecurityAction action,
-        object? permissionType,
-        object? value)
-        => new PermissionDeclarationValue(
+        TypeSpecificationValue permissionType,
+        CustomAttributeBlobValue value)
+        => new StructuredPermissionDeclarationValue(
             action,
-            GetTypeSpecificationValue(permissionType),
+            permissionType,
             value);
 
-    internal object CreateEmptyPermissionDeclaration(
+    internal SecurityDeclarationValue CreateEmptyPermissionDeclaration(
         DeclarativeSecurityAction action,
-        object? permissionType)
-        => new PermissionDeclarationValue(
+        TypeSpecificationValue permissionType)
+        => new EmptyPermissionDeclarationValue(
             action,
-            GetTypeSpecificationValue(permissionType),
-            null);
+            permissionType);
 
-    internal object CreateRawPermissionSetDeclaration(
+    internal SecurityDeclarationValue CreateRawPermissionSetDeclaration(
         DeclarativeSecurityAction action,
         ImmutableArray<byte> value)
         => new RawPermissionSetValue(action, value);
 
-    internal object CreateStringPermissionSetDeclaration(
+    internal SecurityDeclarationValue CreateStringPermissionSetDeclaration(
         DeclarativeSecurityAction action,
         string value)
         => new StringPermissionSetValue(action, value);
 
-    internal object CreateAttributePermissionSetDeclaration(
+    internal SecurityDeclarationValue CreateAttributePermissionSetDeclaration(
         DeclarativeSecurityAction action,
-        object? value)
-        => new AttributePermissionSetValue(action, GetSecurityAttributes(value));
+        ImmutableArray<SecurityAttributeValue> value)
+        => new AttributePermissionSetValue(action, value);
 
-    internal void EndSecurityDeclaration(CILParser.SecDeclContext context)
+    internal void EndSecurityDeclaration(
+        CILParser.SecDeclContext context,
+        int initialSyntaxErrorCount)
     {
-        context.HasSyntaxError = EndSemanticRoot(context);
+        context.HasSyntaxError =
+            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
+            context.exception is not null;
         if (context.HasSyntaxError)
         {
             context.Value = null;
         }
     }
 
-    internal void BeginSecurityAttributeSet(CILParser.SecAttrSetBlobContext context)
-        => _securityAttributeSetFrames.Push(new(context));
-
-    internal void AddSecurityAttribute(
-        CILParser.SecAttrSetBlobContext context,
-        object? value)
-    {
-        if (TryGetSecurityAttributeSetFrame(context) is { } frame &&
-            value is SecurityAttributeValue attribute)
-        {
-            (frame.Attributes ??= ImmutableArray.CreateBuilder<SecurityAttributeValue>())
-                .Add(attribute);
-        }
-    }
-
-    internal object EndSecurityAttributeSet(CILParser.SecAttrSetBlobContext context)
-    {
-        if (TryGetSecurityAttributeSetFrame(context) is not { } frame)
-        {
-            return ImmutableArray<SecurityAttributeValue>.Empty;
-        }
-
-        _securityAttributeSetFrames.Pop();
-        return frame.Attributes?.ToImmutable() ?? ImmutableArray<SecurityAttributeValue>.Empty;
-    }
-
-    internal object CreateNamedSecurityAttribute(IToken name, object? arguments)
+    internal SecurityAttributeValue CreateNamedSecurityAttribute(
+        IToken name,
+        ImmutableArray<CustomAttributeNamedArgumentValue> arguments)
         => new SecurityAttributeValue(
             StringHelpers.ParseQuotedString(name.Text),
             null,
-            GetSecurityAttributeArguments(arguments));
+            arguments);
 
-    internal object CreateTypedSecurityAttribute(object? type, object? arguments)
+    internal SecurityAttributeValue CreateTypedSecurityAttribute(
+        TypeSpecificationValue type,
+        ImmutableArray<CustomAttributeNamedArgumentValue> arguments)
         => new SecurityAttributeValue(
             null,
-            GetTypeSpecificationValue(type),
-            GetSecurityAttributeArguments(arguments));
+            type,
+            arguments);
 
-    internal void BeginSecurityNameValuePairs(CILParser.NameValPairsContext context)
-        => _securityNameValuePairFrames.Push(new(context));
+    internal SecurityNameValuePairValue CreateSecurityNameValuePair(
+        string name,
+        SecurityCaValue value)
+        => new(name, value);
 
-    internal void AddSecurityNameValuePair(CILParser.NameValPairsContext context, object? value)
-    {
-        if (TryGetSecurityNameValuePairsFrame(context) is { } frame &&
-            value is SecurityNameValuePairValue pair)
-        {
-            (frame.Pairs ??= ImmutableArray.CreateBuilder<SecurityNameValuePairValue>())
-                .Add(pair);
-        }
-    }
+    internal SecurityCaValue CreateSecurityBooleanValue(bool value)
+        => new SecurityBooleanValue(value);
 
-    internal object EndSecurityNameValuePairs(CILParser.NameValPairsContext context)
-    {
-        if (TryGetSecurityNameValuePairsFrame(context) is not { } frame)
-        {
-            return ImmutableArray<SecurityNameValuePairValue>.Empty;
-        }
-
-        _securityNameValuePairFrames.Pop();
-        return frame.Pairs?.ToImmutable() ?? ImmutableArray<SecurityNameValuePairValue>.Empty;
-    }
-
-    internal object CreateSecurityNameValuePair(string name, object? value)
-        => new SecurityNameValuePairValue(name, GetSecurityCaValue(value));
-
-    internal object CreateSecurityBooleanValue(bool value) => new SecurityBooleanValue(value);
-
-    internal object CreateSecurityInt32Value(IToken value)
+    internal SecurityCaValue CreateSecurityInt32Value(IToken value)
         => new SecurityInt32Value(ParseInt32(value));
 
-    internal object CreateSecurityStringValue(string value) => new SecurityStringValue(value);
+    internal SecurityCaValue CreateSecurityStringValue(string value)
+        => new SecurityStringValue(value);
 
-    internal object CreateSecurityEnumValue(object? type, IToken kind, IToken value)
+    internal SecurityCaValue CreateSecurityEnumValue(
+        ClassNameValue type,
+        IToken kind,
+        IToken value)
         => new SecurityEnumValue(
-            GetClassNameValue(type),
+            type,
             kind.Text switch
             {
                 "int8" => 1,
@@ -234,8 +131,10 @@ internal sealed partial class GrammarActions
             },
             ParseInt32(value));
 
-    internal object CreateSecurityEnumValue(object? type, IToken value)
-        => new SecurityEnumValue(GetClassNameValue(type), 4, ParseInt32(value));
+    internal SecurityCaValue CreateSecurityEnumValue(
+        ClassNameValue type,
+        IToken value)
+        => new SecurityEnumValue(type, 4, ParseInt32(value));
 
     private EntityRegistry.DeclarativeSecurityAttributeEntity? MaterializeSecurityDeclaration(
         SecurityDeclarationValue value,
@@ -303,36 +202,6 @@ internal sealed partial class GrammarActions
         blob.WriteSerializedString(attributeName);
         WriteCustomBlobNamedArguments(blob, attribute.Arguments);
         return blob;
-    }
-
-    private static ImmutableArray<SecurityAttributeValue> GetSecurityAttributes(object? value)
-        => value is ImmutableArray<SecurityAttributeValue> attributes ? attributes : [];
-
-    private static ImmutableArray<CustomAttributeNamedArgumentValue> GetSecurityAttributeArguments(
-        object? value)
-        => value is ImmutableArray<CustomAttributeNamedArgumentValue> arguments ? arguments : [];
-
-    private static SecurityCaValue GetSecurityCaValue(object? value)
-        => value as SecurityCaValue ?? new SecurityInt32Value(0);
-
-    private SecurityAttributeSetFrame? TryGetSecurityAttributeSetFrame(
-        CILParser.SecAttrSetBlobContext context)
-    {
-        Debug.Assert(_securityAttributeSetFrames.Count > 0);
-        SecurityAttributeSetFrame? frame =
-            _securityAttributeSetFrames.Count == 0 ? null : _securityAttributeSetFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context) ? frame : null;
-    }
-
-    private SecurityNameValuePairsFrame? TryGetSecurityNameValuePairsFrame(
-        CILParser.NameValPairsContext context)
-    {
-        Debug.Assert(_securityNameValuePairFrames.Count > 0);
-        SecurityNameValuePairsFrame? frame =
-            _securityNameValuePairFrames.Count == 0 ? null : _securityNameValuePairFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context) ? frame : null;
     }
 
     internal EntityRegistry.DeclarativeSecurityAttributeEntity? MaterializeSecurityDeclaration(

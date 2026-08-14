@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyName>ILAssembler</AssemblyName>
+    <BuildOutputTargetFolder>ref</BuildOutputTargetFolder>
+    <Nullable>enable</Nullable>
+    <RootNamespace>ILAssembler</RootNamespace>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+  </PropertyGroup>
+
+</Project>
