@@ -559,7 +559,7 @@ namespace System.Net.ServerSentEvents
         /// <summary>Grows the buffer, returning the existing one to the ArrayPool and renting an ArrayPool replacement.</summary>
         private void GrowBuffer([NotNull] ref byte[]? buffer, int minimumLength)
         {
-            if (_maxBufferSize >= 0 && minimumLength > _maxBufferSize)
+            if (minimumLength > _maxBufferSize)
             {
                 throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
             }
