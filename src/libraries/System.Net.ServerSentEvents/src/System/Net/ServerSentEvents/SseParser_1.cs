@@ -511,11 +511,12 @@ namespace System.Net.ServerSentEvents
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
+            int count = GetLineBufferReadCount(_lineBuffer.Length - offset);
             int bytesRead = _stream.Read(
 #if NET
-                _lineBuffer.AsSpan(offset));
+                _lineBuffer.AsSpan(offset, count));
 #else
-                _lineBuffer, offset, _lineBuffer.Length - offset);
+                _lineBuffer, offset, count);
 #endif
 
             if (bytesRead > 0)
@@ -541,7 +542,7 @@ namespace System.Net.ServerSentEvents
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
-            int bytesRead = await _stream.ReadAsync(_lineBuffer.AsMemory(offset), cancellationToken).ConfigureAwait(false);
+            int bytesRead = await _stream.ReadAsync(_lineBuffer.AsMemory(offset, GetLineBufferReadCount(_lineBuffer.Length - offset)), cancellationToken).ConfigureAwait(false);
 
             if (bytesRead > 0)
             {
@@ -558,6 +559,12 @@ namespace System.Net.ServerSentEvents
             }
 
             return bytesRead;
+        }
+
+        private int GetLineBufferReadCount(int available)
+        {
+            int remainingAllowed = _maxBufferSize - _lineLength;
+            return remainingAllowed < available ? remainingAllowed + 1 : available;
         }
 
         /// <summary>Gets the UTF8 BOM.</summary>
@@ -584,7 +591,7 @@ namespace System.Net.ServerSentEvents
             }
 
             byte[]? toReturn = buffer;
-            buffer = ArrayPool<byte>.Shared.Rent(Math.Max(minimumLength, DefaultArrayPoolRentSize));
+            buffer = ArrayPool<byte>.Shared.Rent(Math.Max(minimumLength, Math.Min(DefaultArrayPoolRentSize, _maxBufferSize)));
             if (toReturn is not null)
             {
                 Array.Copy(toReturn, buffer, toReturn.Length);

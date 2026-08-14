@@ -938,6 +938,61 @@ namespace System.Net.ServerSentEvents.Tests
             }
         }
 
+        [Theory]
+        [InlineData(false, 127)]
+        [InlineData(true, 127)]
+        public async Task Parse_MaxBufferSize_AllowsConfiguredLimit(bool useAsync, int maxBufferSize)
+        {
+            using Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', maxBufferSize)));
+            var options = new SseParserOptions<string>(static (_, bytes) => Encoding.UTF8.GetString(bytes.ToArray()))
+            {
+                MaxBufferSize = maxBufferSize
+            };
+            var parser = SseParser.Create(stream, options);
+
+            if (useAsync)
+            {
+                int count = 0;
+                await foreach (SseItem<string> _ in parser.EnumerateAsync())
+                {
+                    count++;
+                }
+
+                Assert.Equal(0, count);
+            }
+            else
+            {
+                Assert.Empty(parser.Enumerate());
+            }
+        }
+
+        [Theory]
+        [InlineData(false, 127)]
+        [InlineData(true, 127)]
+        public async Task Parse_MaxBufferSize_ThrowsAfterConfiguredLimit(bool useAsync, int maxBufferSize)
+        {
+            using Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', maxBufferSize + 1)));
+            var options = new SseParserOptions<string>(static (_, bytes) => Encoding.UTF8.GetString(bytes.ToArray()))
+            {
+                MaxBufferSize = maxBufferSize
+            };
+            var parser = SseParser.Create(stream, options);
+
+            if (useAsync)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(async () =>
+                {
+                    await foreach (SseItem<string> _ in parser.EnumerateAsync())
+                    {
+                    }
+                });
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => parser.Enumerate().ToArray());
+            }
+        }
+
         private static void AssertSseItemEqual<T>(SseItem<T> left, SseItem<T> right)
         {
             Assert.Equal(left.EventType, right.EventType);
