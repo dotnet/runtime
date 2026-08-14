@@ -1817,6 +1817,10 @@ namespace ILCompiler.Reflection.ReadyToRun
                     builder.Append("GET_RUNTIME_TYPE_HANDLE");
                     break;
 
+                case ReadyToRunHelper.GetRuntimeTypeHandleMaybeNull:
+                    builder.Append("GET_RUNTIME_TYPE_HANDLE_MAYBENULL");
+                    break;
+
                 case ReadyToRunHelper.GetRuntimeMethodHandle:
                     builder.Append("GET_RUNTIME_METHOD_HANDLE");
                     break;

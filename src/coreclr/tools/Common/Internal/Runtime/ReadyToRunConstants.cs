@@ -278,6 +278,7 @@ namespace Internal.ReadyToRunConstants
         GetRuntimeTypeHandle        = 0x54,
         GetRuntimeMethodHandle      = 0x55,
         GetRuntimeFieldHandle       = 0x56,
+        GetRuntimeTypeHandleMaybeNull = 0x57,
 
         Box                         = 0x58,
         Box_Nullable                = 0x59,

@@ -97,6 +97,11 @@ public class R2RTestSuites
             List<ReadyToRunMethod> methods = R2RAssert.GetAllMethods(reader);
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("AddIntegers", StringComparison.Ordinal)));
+            Assert.True(R2RAssert.HasCompiledMethod(
+                reader,
+                "Webcil.WasmWebcilModule",
+                "GetTypedReferenceType",
+                out string typedReferenceDiagnostic), typedReferenceDiagnostic);
             // Reads static data, so the JIT materializes the image base via a well-known-global global.get.
             Assert.True(methods.Exists(method =>
                 method.SignatureString.Contains("SumStaticData", StringComparison.Ordinal)));

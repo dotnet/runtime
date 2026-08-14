@@ -20,7 +20,7 @@
 // If you update this, ensure you run `git grep MINIMUM_READYTORUN_MAJOR_VERSION`
 // and handle pending work.
 #define READYTORUN_MAJOR_VERSION 26
-#define READYTORUN_MINOR_VERSION 0x0001
+#define READYTORUN_MINOR_VERSION 0x0002
 
 #define MINIMUM_READYTORUN_MAJOR_VERSION 26
 
@@ -67,6 +67,7 @@
 // R2R Version 25 renames runtime async infrastructure members, makes thunk-used members NonVersionable, and frees up a flag in CorInfoContinuationFlags
 // R2R Version 26 changes ARM64 NativeVarInfo register encoding to include V0-V31
 // R2R Version 26.1 adds READYTORUN_FIXUP_StoreMultiCallableAddrOfCode for storing a method's MultiCallableAddrOfCode into a location in the R2R image (used on WebAssembly)
+// R2R Version 26.2 adds READYTORUN_HELPER_GetRuntimeTypeHandleMaybeNull
 
 struct READYTORUN_CORE_HEADER
 {
@@ -403,6 +404,7 @@ enum ReadyToRunHelper
     READYTORUN_HELPER_GetRuntimeTypeHandle      = 0x54,
     READYTORUN_HELPER_GetRuntimeMethodHandle    = 0x55,
     READYTORUN_HELPER_GetRuntimeFieldHandle     = 0x56,
+    READYTORUN_HELPER_GetRuntimeTypeHandleMaybeNull = 0x57,
 
     READYTORUN_HELPER_Box                       = 0x58,
     READYTORUN_HELPER_Box_Nullable              = 0x59,
