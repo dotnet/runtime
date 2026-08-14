@@ -3543,6 +3543,16 @@ TailCall:
         return entry.Result;
     }
 
+    // If it's recursive, stop the recursion. This must be checked before the
+    // budget check below: an outer invocation is in the process of computing a
+    // value for this same selection, so we cannot assign (and cache) an
+    // independent value number for it here.
+    if (SelectIsBeingEvaluatedRecursively(map, index))
+    {
+        *pUsedRecursiveVN = true;
+        return RecursiveVN;
+    }
+
     // Give up if we've run out of budget.
     if (*pBudget == 0)
     {
@@ -3557,13 +3567,6 @@ TailCall:
 
     // Reduce our budget by one
     (*pBudget)--;
-
-    // If it's recursive, stop the recursion.
-    if (SelectIsBeingEvaluatedRecursively(map, index))
-    {
-        *pUsedRecursiveVN = true;
-        return RecursiveVN;
-    }
 
     SmallValueNumSet recMemoryDependencies;
 
