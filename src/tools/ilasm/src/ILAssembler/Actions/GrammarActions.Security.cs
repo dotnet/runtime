@@ -335,12 +335,11 @@ internal sealed partial class GrammarActions
         return frame is not null && ReferenceEquals(frame.Owner, context) ? frame : null;
     }
 
-    public GrammarResult.Literal<EntityRegistry.DeclarativeSecurityAttributeEntity?> VisitSecDecl(
+    internal EntityRegistry.DeclarativeSecurityAttributeEntity? MaterializeSecurityDeclaration(
         CILParser.SecDeclContext context)
-        => new(
-            context.Value is SecurityDeclarationValue value
-                ? MaterializeSecurityDeclaration(value, context.Start)
-                : null);
+        => context.Value is SecurityDeclarationValue value
+            ? MaterializeSecurityDeclaration(value, context.Start)
+            : null;
 
 }
 #pragma warning restore CA1822

@@ -291,6 +291,9 @@ public partial class CILParser : Parser {
 		}
 	}
 
+
+	    internal GrammarActions Actions { get; set; } = null!;
+
 		public CILParser(ITokenStream input) : this(input, Console.Out, Console.Error) { }
 
 		public CILParser(ITokenStream input, TextWriter output, TextWriter errorOutput)
@@ -505,7 +508,7 @@ public partial class CILParser : Parser {
 	public CompQstringContext compQstring() {
 		CompQstringContext _localctx = new CompQstringContext(Context, State);
 		EnterRule(_localctx, 6, RULE_compQstring);
-		BeginStreaming(); Actions.BeginComposedString(_localctx);
+		Actions.BeginComposedString(_localctx);
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -540,7 +543,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndComposedString(_localctx); EndParseTreeMode();
+			_localctx.Value = Actions.EndComposedString(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -564,7 +567,6 @@ public partial class CILParser : Parser {
 	public DeclsContext decls() {
 		DeclsContext _localctx = new DeclsContext(Context, State);
 		EnterRule(_localctx, 8, RULE_decls);
-		BeginStreaming();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -591,7 +593,6 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			EndParseTreeMode();
 			ExitRule();
 		}
 		return _localctx;
@@ -710,7 +711,6 @@ public partial class CILParser : Parser {
 	public DeclContext decl() {
 		DeclContext _localctx = new DeclContext(Context, State);
 		EnterRule(_localctx, 10, RULE_decl);
-		BeginStreaming();
 		try {
 			State = 495;
 			ErrorHandler.Sync(this);
@@ -957,7 +957,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			EndParseTreeMode(); Actions.EndDeclaration(_localctx);
+			Actions.EndDeclaration(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -1176,7 +1176,7 @@ public partial class CILParser : Parser {
 	public AssemblyBlockContext assemblyBlock() {
 		AssemblyBlockContext _localctx = new AssemblyBlockContext(Context, State);
 		EnterRule(_localctx, 22, RULE_assemblyBlock);
-		BeginStreaming(); Actions.BeginSemanticRoot(_localctx);
+		Actions.BeginSemanticRoot(_localctx);
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -1204,7 +1204,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();
+			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -1263,7 +1263,7 @@ public partial class CILParser : Parser {
 	public LanguageDeclContext languageDecl() {
 		LanguageDeclContext _localctx = new LanguageDeclContext(Context, State);
 		EnterRule(_localctx, 26, RULE_languageDecl);
-		BeginStreaming(); Actions.BeginSemanticRoot(_localctx);
+		Actions.BeginSemanticRoot(_localctx);
 		try {
 			State = 546;
 			ErrorHandler.Sync(this);
@@ -1318,7 +1318,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndLanguageDirective(_localctx); EndParseTreeMode();
+			Actions.EndLanguageDirective(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -1801,7 +1801,7 @@ public partial class CILParser : Parser {
 	public TypedefDeclContext typedefDecl() {
 		TypedefDeclContext _localctx = new TypedefDeclContext(Context, State);
 		EnterRule(_localctx, 42, RULE_typedefDecl);
-		BeginStreaming(); Actions.BeginSemanticRoot(_localctx);
+		Actions.BeginSemanticRoot(_localctx);
 		try {
 			State = 644;
 			ErrorHandler.Sync(this);
@@ -1890,7 +1890,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();
+			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -2777,7 +2777,7 @@ public partial class CILParser : Parser {
 	public VtfixupDeclContext vtfixupDecl() {
 		VtfixupDeclContext _localctx = new VtfixupDeclContext(Context, State);
 		EnterRule(_localctx, 66, RULE_vtfixupDecl);
-		BeginStreaming(); Actions.BeginSemanticRoot(_localctx);
+		Actions.BeginSemanticRoot(_localctx);
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -2807,7 +2807,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();
+			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -2928,7 +2928,7 @@ public partial class CILParser : Parser {
 	public VtableDeclContext vtableDecl() {
 		VtableDeclContext _localctx = new VtableDeclContext(Context, State);
 		EnterRule(_localctx, 72, RULE_vtableDecl);
-		BeginStreaming(); Actions.BeginSemanticRoot(_localctx);
+		Actions.BeginSemanticRoot(_localctx);
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -2951,7 +2951,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();
+			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -2974,7 +2974,7 @@ public partial class CILParser : Parser {
 	public NameSpaceHeadContext nameSpaceHead() {
 		NameSpaceHeadContext _localctx = new NameSpaceHeadContext(Context, State);
 		EnterRule(_localctx, 74, RULE_nameSpaceHead);
-		BeginStreaming(); Actions.BeginNamespaceHeader(_localctx);
+		Actions.BeginNamespaceHeader(_localctx);
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -2993,7 +2993,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndNamespaceHeader(_localctx); EndParseTreeMode();
+			Actions.EndNamespaceHeader(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -3035,7 +3035,7 @@ public partial class CILParser : Parser {
 	public ClassHeadContext classHead() {
 		ClassHeadContext _localctx = new ClassHeadContext(Context, State);
 		EnterRule(_localctx, 76, RULE_classHead);
-		BeginStreaming(); Actions.BeginClassHeader(_localctx);
+		Actions.BeginClassHeader(_localctx);
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -3084,7 +3084,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndClassHeader(_localctx); EndParseTreeMode();
+			Actions.EndClassHeader(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -3488,7 +3488,6 @@ public partial class CILParser : Parser {
 	public ClassDeclsContext classDecls() {
 		ClassDeclsContext _localctx = new ClassDeclsContext(Context, State);
 		EnterRule(_localctx, 84, RULE_classDecls);
-		BeginStreaming();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -3515,7 +3514,6 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			EndParseTreeMode();
 			ExitRule();
 		}
 		return _localctx;
@@ -3657,7 +3655,7 @@ public partial class CILParser : Parser {
 	public ExtSourceSpecContext extSourceSpec() {
 		ExtSourceSpecContext _localctx = new ExtSourceSpecContext(Context, State);
 		EnterRule(_localctx, 90, RULE_extSourceSpec);
-		BeginStreaming(); Actions.BeginSemanticRoot(_localctx);
+		Actions.BeginSemanticRoot(_localctx);
 		int _la;
 		try {
 			State = 991;
@@ -3859,7 +3857,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndSourceDirective(_localctx); EndParseTreeMode();
+			Actions.EndSourceDirective(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -3903,7 +3901,7 @@ public partial class CILParser : Parser {
 	public FileDeclContext fileDecl() {
 		FileDeclContext _localctx = new FileDeclContext(Context, State);
 		EnterRule(_localctx, 92, RULE_fileDecl);
-		BeginStreaming(); Actions.BeginFileDeclaration(_localctx);
+		Actions.BeginFileDeclaration(_localctx);
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -3961,7 +3959,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndFileDeclaration(_localctx); EndParseTreeMode();
+			Actions.EndFileDeclaration(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -7750,7 +7748,7 @@ public partial class CILParser : Parser {
 	public SecDeclContext secDecl() {
 		SecDeclContext _localctx = new SecDeclContext(Context, State);
 		EnterRule(_localctx, 154, RULE_secDecl);
-		BeginStreaming(); Actions.BeginSemanticRoot(_localctx);
+		Actions.BeginSemanticRoot(_localctx);
 		int _la;
 		try {
 			State = 1831;
@@ -7896,7 +7894,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndSecurityDeclaration(_localctx); EndParseTreeMode();
+			Actions.EndSecurityDeclaration(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -9675,7 +9673,6 @@ public partial class CILParser : Parser {
 	public ClassDeclContext classDecl() {
 		ClassDeclContext _localctx = new ClassDeclContext(Context, State);
 		EnterRule(_localctx, 200, RULE_classDecl);
-		BeginStreaming();
 		try {
 			int _alt;
 			State = 2285;
@@ -10069,7 +10066,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			EndParseTreeMode(); Actions.EndClassDeclaration(_localctx);
+			Actions.EndClassDeclaration(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -10122,7 +10119,7 @@ public partial class CILParser : Parser {
 	public FieldDeclContext fieldDecl() {
 		FieldDeclContext _localctx = new FieldDeclContext(Context, State);
 		EnterRule(_localctx, 202, RULE_fieldDecl);
-		BeginStreaming(); Actions.BeginFieldDeclaration(_localctx);
+		Actions.BeginFieldDeclaration(_localctx);
 		try {
 			int _alt;
 			EnterOuterAlt(_localctx, 1);
@@ -10208,7 +10205,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndFieldDeclaration(_localctx); EndParseTreeMode();
+			Actions.EndFieldDeclaration(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -11732,7 +11729,7 @@ public partial class CILParser : Parser {
 	public MethodHeadContext methodHead() {
 		MethodHeadContext _localctx = new MethodHeadContext(Context, State);
 		EnterRule(_localctx, 236, RULE_methodHead);
-		BeginStreaming(); Actions.BeginMethodHeader(_localctx);
+		Actions.BeginMethodHeader(_localctx);
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -11835,7 +11832,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndMethodHeader(_localctx); EndParseTreeMode();
+			Actions.EndMethodHeader(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -12591,7 +12588,6 @@ public partial class CILParser : Parser {
 	public MethodDeclsContext methodDecls() {
 		MethodDeclsContext _localctx = new MethodDeclsContext(Context, State);
 		EnterRule(_localctx, 248, RULE_methodDecls);
-		BeginStreaming();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -12618,7 +12614,6 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			EndParseTreeMode();
 			ExitRule();
 		}
 		return _localctx;
@@ -14055,7 +14050,7 @@ public partial class CILParser : Parser {
 	public DataDeclContext dataDecl() {
 		DataDeclContext _localctx = new DataDeclContext(Context, State);
 		EnterRule(_localctx, 286, RULE_dataDecl);
-		BeginStreaming(); Actions.BeginDataDeclaration(_localctx);
+		Actions.BeginDataDeclaration(_localctx);
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -14071,7 +14066,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			Actions.EndDataDeclaration(_localctx); EndParseTreeMode();
+			Actions.EndDataDeclaration(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -14988,7 +14983,7 @@ public partial class CILParser : Parser {
 	public BytesContext bytes() {
 		BytesContext _localctx = new BytesContext(Context, State);
 		EnterRule(_localctx, 302, RULE_bytes);
-		BeginStreaming(); Actions.BeginBytes();
+		Actions.BeginBytes();
 		int _la;
 		try {
 			EnterOuterAlt(_localctx, 1);
@@ -15016,7 +15011,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.Value = Actions.EndBytes(); EndParseTreeMode();
+			_localctx.Value = Actions.EndBytes();
 			ExitRule();
 		}
 		return _localctx;
@@ -16589,7 +16584,7 @@ public partial class CILParser : Parser {
 	public AssemblyRefBlockContext assemblyRefBlock() {
 		AssemblyRefBlockContext _localctx = new AssemblyRefBlockContext(Context, State);
 		EnterRule(_localctx, 336, RULE_assemblyRefBlock);
-		BeginStreaming(); Actions.BeginSemanticRoot(_localctx);
+		Actions.BeginSemanticRoot(_localctx);
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -16612,7 +16607,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();
+			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -16882,7 +16877,7 @@ public partial class CILParser : Parser {
 	public ExptypeBlockContext exptypeBlock() {
 		ExptypeBlockContext _localctx = new ExptypeBlockContext(Context, State);
 		EnterRule(_localctx, 344, RULE_exptypeBlock);
-		BeginStreaming(); Actions.BeginSemanticRoot(_localctx);
+		Actions.BeginSemanticRoot(_localctx);
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -16906,7 +16901,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();
+			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
 			ExitRule();
 		}
 		return _localctx;
@@ -17384,7 +17379,7 @@ public partial class CILParser : Parser {
 	public ManifestResBlockContext manifestResBlock() {
 		ManifestResBlockContext _localctx = new ManifestResBlockContext(Context, State);
 		EnterRule(_localctx, 358, RULE_manifestResBlock);
-		BeginStreaming(); Actions.BeginSemanticRoot(_localctx);
+		Actions.BeginSemanticRoot(_localctx);
 		try {
 			EnterOuterAlt(_localctx, 1);
 			{
@@ -17408,7 +17403,7 @@ public partial class CILParser : Parser {
 			ErrorHandler.Recover(this, re);
 		}
 		finally {
-			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();
+			_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);
 			ExitRule();
 		}
 		return _localctx;

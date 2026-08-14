@@ -294,14 +294,12 @@ internal sealed partial class GrammarActions
         return string.Join("/", names);
     }
 
-    public GrammarResult VisitExptypeBlock(CILParser.ExptypeBlockContext context)
+    internal void MaterializeExportedType(CILParser.ExptypeBlockContext context)
     {
         if (context.Value is ExportedTypeValue value)
         {
             MaterializeExportedType(value);
         }
-
-        return GrammarResult.SentinelValue.Result;
     }
 
 }
