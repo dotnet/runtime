@@ -681,12 +681,12 @@ IDacDbiInterface * CordbProcess::GetDAC()
     return m_pDacPrimitives;
 }
 
-HRESULT CordbProcess::ConvertJitRegNumToCorDebugRegister(ULONG32 jitRegNum, CorDebugRegister * pReg)
+HRESULT CordbProcess::ConvertJitRegNumToCorDebugRegister(ULONG32 jitRegNum, CorDebugRegister * pReg, BOOL * pIsAmbientSP)
 {
     if (pReg == NULL)
         return E_INVALIDARG;
 
-    return GetDAC()->ConvertJitRegNumToCorDebugRegister(jitRegNum, pReg);
+    return GetDAC()->ConvertJitRegNumToCorDebugRegister(jitRegNum, pReg, pIsAmbientSP);
 }
 
 //---------------------------------------------------------------------------------------

@@ -6367,12 +6367,23 @@ HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::CopyContext(
 
 HRESULT STDMETHODCALLTYPE DacDbiInterfaceImpl::ConvertJitRegNumToCorDebugRegister(
     IN ULONG32 jitRegNum,
-    OUT CorDebugRegister * pReg)
+    OUT CorDebugRegister * pReg,
+    OUT BOOL * pIsAmbientSP)
 {
     DD_ENTER_MAY_THROW;
 
     if (pReg == NULL)
         return E_INVALIDARG;
+
+    BOOL isAmbientSP = jitRegNum == static_cast<ULONG32>(ICorDebugInfo::REGNUM_AMBIENT_SP);
+    if (pIsAmbientSP != NULL)
+        *pIsAmbientSP = isAmbientSP;
+
+    if (isAmbientSP)
+    {
+        *pReg = REGISTER_STACK_POINTER;
+        return S_OK;
+    }
     if (jitRegNum >= ARRAY_SIZE(g_JITToCorDbgReg))
         return E_INVALIDARG;
 

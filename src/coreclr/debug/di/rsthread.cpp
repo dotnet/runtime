@@ -5421,8 +5421,13 @@ CORDB_ADDRESS CordbNativeFrame::GetLSStackAddress(
     signed offset)
 {
     CORDB_ADDRESS pRemoteValue;
+    CorDebugRegister reg;
+    BOOL isAmbientSP;
+    HRESULT hr = GetProcess()->ConvertJitRegNumToCorDebugRegister(regNum, &reg, &isAmbientSP);
+    _ASSERTE(SUCCEEDED(hr));
+    IfFailThrow(hr);
 
-    if (regNum != DBG_TARGET_REGNUM_AMBIENT_SP)
+    if (!isAmbientSP)
     {
         // Even if we're inside a funclet, variables (in both x64 and ARM) are still
         // relative to the frame pointer or stack pointer, which are accurate in the
@@ -5431,8 +5436,7 @@ CORDB_ADDRESS CordbNativeFrame::GetLSStackAddress(
         // current native frame.
 
         TADDR regVal = 0;
-        HRESULT hr = this->ReadJitRegFromContext(regNum, &regVal);
-        // This should never fail as long as regNum is a member of the RegNum enum.
+        hr = ReadContextRegister(reg, &regVal);
         _ASSERTE(SUCCEEDED(hr));
         IfFailThrow(hr);
 
@@ -7591,7 +7595,7 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
         // AMD64/ARM64 enumerate the FP registers in the debug RegNum enum
         // (XMM0-15 / V0-31), so g_JITToCorDbgReg maps vlrReg directly to the
         // corresponding CorDebugRegister.
-        hr = m_nativeFrame->GetLocalFloatingPointValue(ConvertRegNumToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg),
+        hr = m_nativeFrame->GetLocalFloatingPointValue(m_nativeFrame->ConvertJitRegToCorDebugRegister(pNativeVarInfo->loc.vlReg.vlrReg),
                                                        type, ppValue);
 #elif defined(TARGET_LOONGARCH64)
         hr = m_nativeFrame->GetLocalFloatingPointValue(pNativeVarInfo->loc.vlReg.vlrReg + REGISTER_LOONGARCH64_F0,
@@ -7642,10 +7646,10 @@ HRESULT CordbJITILFrame::GetNativeVariable(CordbType *type,
                 // indices for GetLocalTwoRegisterValue are 0-based.
                 hr = m_nativeFrame->GetLocalTwoRegisterValue(
                     lowIsFloat ? (CorDebugRegister)(REGISTER_AMD64_XMM0 + (lowReg - ICorDebugInfo::REGNUM_FP_FIRST))
-                               : ConvertRegNumToCorDebugRegister(lowReg),
+                               : m_nativeFrame->ConvertJitRegToCorDebugRegister(lowReg),
                     lowIsFloat,
                     highIsFloat ? (CorDebugRegister)(REGISTER_AMD64_XMM0 + (highReg - ICorDebugInfo::REGNUM_FP_FIRST))
-                                : ConvertRegNumToCorDebugRegister(highReg),
+                                : m_nativeFrame->ConvertJitRegToCorDebugRegister(highReg),
                     highIsFloat,
                     type,
                     ppValue);

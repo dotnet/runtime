@@ -3599,7 +3599,7 @@ public:
     // Get the DAC interface.
     IDacDbiInterface * GetDAC();
 
-    HRESULT ConvertJitRegNumToCorDebugRegister(ULONG32 jitRegNum, CorDebugRegister * pReg);
+    HRESULT ConvertJitRegNumToCorDebugRegister(ULONG32 jitRegNum, CorDebugRegister * pReg, BOOL * pIsAmbientSP = NULL);
 
     // Get the data-target, which provides access to the debuggee.
     ICorDebugDataTarget * GetDataTarget();

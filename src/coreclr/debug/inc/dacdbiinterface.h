@@ -2244,7 +2244,8 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE ConvertJitRegNumToCorDebugRegister(
         IN ULONG32 jitRegNum,
-        OUT CorDebugRegister * pReg) = 0;
+        OUT CorDebugRegister * pReg,
+        OUT BOOL * pIsAmbientSP) = 0;
 
     virtual HRESULT STDMETHODCALLTYPE WriteFloatRegisterToContext(
         IN  ContextBuffer contextBuffer,

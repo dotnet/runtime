@@ -1118,7 +1118,7 @@ public unsafe partial interface IDacDbiInterface
     int GetAvailableRegistersMask(Interop.BOOL fActive, Interop.BOOL fQuickUnwind, uint regCount, byte* pAvailable);
 
     [PreserveSig]
-    int ConvertJitRegNumToCorDebugRegister(uint jitRegNum, CorDebugRegister* pReg);
+    int ConvertJitRegNumToCorDebugRegister(uint jitRegNum, CorDebugRegister* pReg, Interop.BOOL* pIsAmbientSP);
 
     [PreserveSig]
     int WriteFloatRegisterToContext(ContextBuffer contextBuffer, CorDebugRegister reg, byte* pValue, uint valueSize);

@@ -6836,7 +6836,7 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
         return hr;
     }
 
-    public int ConvertJitRegNumToCorDebugRegister(uint jitRegNum, CorDebugRegister* pReg)
+    public int ConvertJitRegNumToCorDebugRegister(uint jitRegNum, CorDebugRegister* pReg, Interop.BOOL* pIsAmbientSP)
     {
         int hr = HResults.S_OK;
         try
@@ -6845,25 +6845,38 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
                 throw new ArgumentNullException(nameof(pReg));
 
             RuntimeInfoArchitecture arch = _target.Contracts.RuntimeInfo.GetTargetArchitecture();
-            CorDebugRegister? reg = MapJitRegNumToCorDebugRegister(arch, jitRegNum);
+            bool isAmbientSP = IsAmbientStackPointer(arch, jitRegNum);
+            CorDebugRegister? reg = isAmbientSP ? CorDebugRegister.REGISTER_STACK_POINTER : MapJitRegNumToCorDebugRegister(arch, jitRegNum);
             if (reg is null)
                 throw new ArgumentException($"Unsupported JIT register {jitRegNum}", nameof(jitRegNum));
 
             *pReg = reg.Value;
+            if (pIsAmbientSP is not null)
+                *pIsAmbientSP = isAmbientSP ? Interop.BOOL.TRUE : Interop.BOOL.FALSE;
         }
         catch (System.Exception ex)
         {
             hr = ex.HResult;
             if (pReg is not null) *pReg = default;
+            if (pIsAmbientSP is not null) *pIsAmbientSP = Interop.BOOL.FALSE;
         }
 #if DEBUG
         if (_legacy is not null)
         {
             CorDebugRegister regLocal;
-            int hrLocal = _legacy.ConvertJitRegNumToCorDebugRegister(jitRegNum, &regLocal);
+            Interop.BOOL isAmbientSPLocal;
+            Interop.BOOL* pIsAmbientSPLocal = pIsAmbientSP is null ? null : &isAmbientSPLocal;
+            int hrLocal = _legacy.ConvertJitRegNumToCorDebugRegister(jitRegNum, &regLocal, pIsAmbientSPLocal);
             Debug.ValidateHResult(hr, hrLocal);
             if (hr == HResults.S_OK)
+            {
                 Debug.Assert(*pReg == regLocal, $"cDAC: {(int)(*pReg)}, DAC: {(int)regLocal}");
+                if (pIsAmbientSP is not null)
+                {
+                    Debug.Assert(*pIsAmbientSP == isAmbientSPLocal,
+                        $"cDAC: {*pIsAmbientSP}, DAC: {isAmbientSPLocal}");
+                }
+            }
         }
 #endif
         return hr;
@@ -7089,6 +7102,20 @@ public sealed unsafe partial class DacDbiImpl : IDacDbiInterface
             default:
                 return null;
         }
+    }
+
+    private static bool IsAmbientStackPointer(RuntimeInfoArchitecture arch, uint jitRegNum)
+    {
+        return arch switch
+        {
+            RuntimeInfoArchitecture.X86 => jitRegNum == 9,
+            RuntimeInfoArchitecture.X64 => jitRegNum == 33,
+            RuntimeInfoArchitecture.Arm => jitRegNum == 17,
+            RuntimeInfoArchitecture.Arm64 => jitRegNum == 66,
+            RuntimeInfoArchitecture.LoongArch64 => jitRegNum == 34,
+            RuntimeInfoArchitecture.RiscV64 => jitRegNum == 34,
+            _ => false,
+        };
     }
 
     private static string? MapToCdacName(RuntimeInfoArchitecture arch, CorDebugRegister reg)
