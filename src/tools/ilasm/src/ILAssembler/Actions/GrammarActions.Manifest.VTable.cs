@@ -54,11 +54,11 @@ internal sealed partial class GrammarActions
 
     internal object CreateRawVTable(ImmutableArray<byte> value) => new RawVTableValue(value);
 
-    public GrammarResult VisitVtableDecl(CILParser.VtableDeclContext context)
+    internal void MaterializeVTable(CILParser.VtableDeclContext context)
         => throw new NotImplementedException(
             "raw vtable fixups blob (.vtable) not supported - use .vtfixup instead");
 
-    public GrammarResult VisitVtfixupDecl(CILParser.VtfixupDeclContext context)
+    internal void MaterializeVTableFixup(CILParser.VtfixupDeclContext context)
     {
         if (context.Value is VTableFixupValue value)
         {
@@ -70,7 +70,5 @@ internal sealed partial class GrammarActions
                 context,
                 value.HasValidSlotCount));
         }
-
-        return GrammarResult.SentinelValue.Result;
     }
 }

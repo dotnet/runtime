@@ -24,7 +24,7 @@ internal sealed partial class GrammarActions
         try
         {
             method.Definition.MethodBody.OpCode(opcode);
-            WriteInstructionToken(method, VisitMethodRef(context).Value);
+            WriteInstructionToken(method, MaterializeMethodReference(context));
         }
         finally
         {
@@ -43,7 +43,7 @@ internal sealed partial class GrammarActions
         }
 
         instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
-        WriteInstructionToken(instruction.Method, VisitFieldRef(context).Value);
+        WriteInstructionToken(instruction.Method, MaterializeFieldReference(context));
     }
 
     internal void EmitMetadataTokenInstruction(IToken opcodeToken, CILParser.MdtokenContext context)
@@ -54,7 +54,7 @@ internal sealed partial class GrammarActions
         }
 
         instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
-        WriteInstructionToken(instruction.Method, VisitMdtoken(context).Value);
+        WriteInstructionToken(instruction.Method, ResolveMetadataToken(context));
     }
 
     internal void EmitTypeReferenceInstruction(IToken opcodeToken, CILParser.TypeSpecContext context)
@@ -65,7 +65,7 @@ internal sealed partial class GrammarActions
         }
 
         instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
-        WriteInstructionToken(instruction.Method, VisitTypeSpec(context).Value);
+        WriteInstructionToken(instruction.Method, ResolveTypeSpecification(context));
     }
 
     internal void EmitCalliInstruction(IToken opcodeToken, CILParser.CalliSignatureContext context)
@@ -90,7 +90,7 @@ internal sealed partial class GrammarActions
         }
 
         instruction.Method.Definition.MethodBody.OpCode(instruction.OpCode);
-        WriteInstructionToken(instruction.Method, VisitOwnerType(context).Value);
+        WriteInstructionToken(instruction.Method, MaterializeOwnerType(context));
     }
 
     private static void WriteInstructionToken(CurrentMethodContext method, EntityRegistry.EntityBase entity)

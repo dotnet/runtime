@@ -83,14 +83,12 @@ internal sealed partial class GrammarActions
     private static AssemblyReferenceHeaderValue GetAssemblyReferenceHeader(object? value)
         => value as AssemblyReferenceHeaderValue ?? new(0, string.Empty, string.Empty);
 
-    public GrammarResult VisitAssemblyRefBlock(CILParser.AssemblyRefBlockContext context)
+    internal void MaterializeAssemblyReference(CILParser.AssemblyRefBlockContext context)
     {
         if (context.Value is AssemblyReferenceValue reference)
         {
             MaterializeAssemblyReference(reference);
         }
-
-        return GrammarResult.SentinelValue.Result;
     }
 
 }

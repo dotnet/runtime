@@ -47,7 +47,7 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        EntityRegistry.DeclarativeSecurityAttributeEntity? security = VisitSecDecl(context).Value;
+        EntityRegistry.DeclarativeSecurityAttributeEntity? security = MaterializeSecurityDeclaration(context);
         security?.Parent = _currentTypeDefinition.PeekOrDefault();
     }
 
@@ -70,7 +70,7 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        if (VisitCustomAttrDecl(context).Value is { } customAttribute)
+        if (MaterializeCustomAttributeDeclaration(context) is { } customAttribute)
         {
             customAttribute.Owner =
                 _pendingClassCustomAttributeOwner ??
@@ -391,7 +391,7 @@ internal sealed partial class GrammarActions
             return;
         }
 
-        if (VisitCustomAttrDecl(attribute).Value is { } customAttribute)
+        if (MaterializeCustomAttributeDeclaration(attribute) is { } customAttribute)
         {
             customAttribute.Owner = owner;
         }
@@ -494,7 +494,7 @@ internal sealed partial class GrammarActions
             currentType.InterfaceImplementations.Add(implementation);
         }
 
-        VisitCustomDescr(attribute).Value.Owner = implementation;
+        MaterializeCustomAttributeDescriptor(attribute).Owner = implementation;
         _ = context;
     }
 

@@ -5,6 +5,10 @@ The .NET Foundation licenses this file to you under the MIT license.
 
 grammar CIL;
 
+@parser::members {
+    internal GrammarActions Actions { get; set; } = null!;
+}
+
 tokens { IncludedFileEof, SyntheticIncludedFileEof }
 
 INT32: '-'? ('0x' [0-9A-Fa-f]+ | [0-9]+);
@@ -429,12 +433,12 @@ dottedNamePart returns [string Value]
 	| 'volatile'
 ;
 compQstring returns [string Value]
-@init {BeginStreaming(); Actions.BeginComposedString(_localctx);}
+@init {Actions.BeginComposedString(_localctx);}
 :
 	(head = QSTRING {Actions.AddComposedStringPart(_localctx, $head);} PLUS)*
 	tail = QSTRING {Actions.AddComposedStringPart(_localctx, $tail);}
 ;
-finally {_localctx.Value = Actions.EndComposedString(_localctx); EndParseTreeMode();}
+finally {_localctx.Value = Actions.EndComposedString(_localctx);}
 
 
 WS: [ \t\r\n] -> skip;
@@ -444,14 +448,11 @@ PERMISSION: '.permission';
 PERMISSIONSET: '.permissionset';
 
 decls
-@init {BeginStreaming();}
 :
     decl*
 ;
-finally {EndParseTreeMode();}
 
 decl
-@init {BeginStreaming();}
 :
 	classHead '{' classDecls '}'
 	| nameSpaceHead '{' decls '}'
@@ -494,7 +495,7 @@ decl
 	| {Actions.BeginTopLevelDirective();} compControl
 	| typelist
 	| {Actions.BeginTopLevelDirective();} mscorlib;
-finally {EndParseTreeMode(); Actions.EndDeclaration(_localctx);}
+finally {Actions.EndDeclaration(_localctx);}
 
 subsystem:
 	'.subsystem' value = int32 {Actions.ProcessTopLevelSubsystem($value.start);};
@@ -512,19 +513,19 @@ stackreserve:
 	'.stackreserve' value = int64 {Actions.ProcessTopLevelStackReserve($value.start);};
 
 assemblyBlock returns [object Value, bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
 	'.assembly' attributes = asmAttr name = dottedName '{' declarations = assemblyDecls '}'
 		{_localctx.Value = Actions.CreateAssemblyDefinition(
 			$attributes.Value,
 			$name.Value,
 			$declarations.Value);};
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 mscorlib: '.mscorlib';
 
 languageDecl returns [object Value, bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
 	'.language' language = languageString
 		{_localctx.Value = Actions.CreateLanguageDirective($language.Value);}
@@ -532,7 +533,7 @@ languageDecl returns [object Value, bool HasSyntaxError]
 		{_localctx.Value = Actions.CreateLanguageDirective($language.Value, $vendor.Value);}
 	| '.language' language = languageString ',' vendor = languageString ',' documentType = languageString
 		{_localctx.Value = Actions.CreateLanguageDirective($language.Value, $vendor.Value, $documentType.Value);};
-finally {Actions.EndLanguageDirective(_localctx); EndParseTreeMode();}
+finally {Actions.EndLanguageDirective(_localctx);}
 
 languageString returns [string Value]
 @after {_localctx.Value = Actions.ParseLanguageString(_localctx.Start);}
@@ -577,7 +578,7 @@ compControl:
 
 /*  Aliasing of types, type specs, methods, fields and custom attributes */
 typedefDecl returns [object Value, bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
 	'.typedef' signature = type 'as' alias = dottedName
 		{_localctx.Value = Actions.CreateTypeSignatureTypedef($signature.Value, $alias.Value);}
@@ -595,7 +596,7 @@ typedefDecl returns [object Value, bool HasSyntaxError]
 			$ownedAttribute.Value,
 			$ownedAttribute.start,
 			$alias.Value);};
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 /* Custom attribute declarations  */
 customDescr returns [object Value, bool HasSyntaxError]
@@ -690,7 +691,7 @@ moduleHead returns [string Value, bool HasName, bool IsExternal]:
 
 /*  VTable Fixup table declaration  */
 vtfixupDecl returns [object Value, bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
 	'.vtfixup' '[' count = int32 ']' attributes = vtfixupAttr 'at' label = id
 		{_localctx.Value = Actions.CreateVTableFixup(
@@ -698,7 +699,7 @@ vtfixupDecl returns [object Value, bool HasSyntaxError]
 			$attributes.Value,
 			$label.start);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 vtfixupAttr returns [ushort Value]
 @init {_localctx.Value = 0;}
@@ -718,24 +719,24 @@ vtfixupAttrElement returns [ushort Value]
 	| 'retainappdomain';
 
 vtableDecl returns [object Value, bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
 	'.vtable' '=' '(' value = bytes ')'
 		{_localctx.Value = Actions.CreateRawVTable($value.Value);} /* deprecated */
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 /*  Namespace and class declaration  */
 nameSpaceHead returns [string Value]
-@init {BeginStreaming(); Actions.BeginNamespaceHeader(_localctx);}
+@init {Actions.BeginNamespaceHeader(_localctx);}
 @after {Actions.BeginNamespace(_localctx, _localctx.Value);}
 :
 	'.namespace' name = dottedName {_localctx.Value = $name.Value;}
 ;
-finally {Actions.EndNamespaceHeader(_localctx); EndParseTreeMode();}
+finally {Actions.EndNamespaceHeader(_localctx);}
 
 classHead returns [object Value]
-@init {BeginStreaming(); Actions.BeginClassHeader(_localctx);}
+@init {Actions.BeginClassHeader(_localctx);}
 @after {Actions.BeginType(_localctx, _localctx.Value);}
 :
 	'.class'
@@ -749,7 +750,7 @@ classHead returns [object Value]
 			$baseType.Value,
 			$interfaces.Value);}
 ;
-finally {Actions.EndClassHeader(_localctx); EndParseTreeMode();}
+finally {Actions.EndClassHeader(_localctx);}
 
 
 classAttr returns [object Value]:
@@ -796,11 +797,9 @@ implClause returns [object Value]
 ;
 
 classDecls
-@init {BeginStreaming();}
 :
     classDecl*
 ;
-finally {EndParseTreeMode();}
 
 implList returns [object Value]
 @init {Actions.BeginInterfaceList(_localctx);}
@@ -818,7 +817,7 @@ esHead returns [bool AutoIncrement]
 	| '#line';
 
 extSourceSpec returns [object Value, bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
 	head = esHead line = int32 path = (SQSTRING | QSTRING)?
 		{_localctx.Value = Actions.CreateSourceLine($head.AutoIncrement, $line.start, $path);}
@@ -847,11 +846,11 @@ extSourceSpec returns [object Value, bool HasSyntaxError]
 			$startColumn.start,
 			$endColumn.start,
 			$path);};
-finally {Actions.EndSourceDirective(_localctx); EndParseTreeMode();}
+finally {Actions.EndSourceDirective(_localctx);}
 
 /*  Manifest declarations  */
 fileDecl returns [object Value, bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginFileDeclaration(_localctx);}
+@init {Actions.BeginFileDeclaration(_localctx);}
 :
 	'.file'
 		(attribute = fileAttr {Actions.AddFileAttribute(_localctx, $attribute.Value);})*
@@ -860,7 +859,7 @@ fileDecl returns [object Value, bool HasSyntaxError]
 		(HASH '=' '(' hash = bytes ')' {Actions.SetFileHash(_localctx, $hash.Value);}
 			trailingEntry = fileEntry {Actions.AddFileEntry(_localctx, $trailingEntry.Value);})?
 ;
-finally {Actions.EndFileDeclaration(_localctx); EndParseTreeMode();}
+finally {Actions.EndFileDeclaration(_localctx);}
 
 fileAttr returns [bool Value]
 @after {_localctx.Value = Actions.ParseFileAttribute(_localctx.Start);}
@@ -1236,7 +1235,7 @@ nativeUint returns [byte Value]:
 
 /*  Security declarations  */
 secDecl returns [object Value, bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
 	PERMISSION action = secAction permissionType = typeSpec '(' pairs = nameValPairs ')'
 		{_localctx.Value = Actions.CreateNamedPermissionDeclaration(
@@ -1258,7 +1257,7 @@ secDecl returns [object Value, bool HasSyntaxError]
 		{_localctx.Value = Actions.CreateStringPermissionSetDeclaration($action.Value, $textValue.Value);}
 	| PERMISSIONSET action = secAction '=' '{' attributes = secAttrSetBlob '}'
 		{_localctx.Value = Actions.CreateAttributePermissionSetDeclaration($action.Value, $attributes.Value);};
-finally {Actions.EndSecurityDeclaration(_localctx); EndParseTreeMode();}
+finally {Actions.EndSecurityDeclaration(_localctx);}
 
 secAttrSetBlob returns [object Value]
 @init {Actions.BeginSecurityAttributeSet(_localctx);}
@@ -1443,7 +1442,6 @@ genArityNotEmpty returns [int Value]:
 
 /*  Class body declarations  */
 classDecl
-@init {BeginStreaming();}
 :
 	methodHead '{' methodDecls '}'
 	| classHead '{' classDecls '}'
@@ -1507,11 +1505,11 @@ classDecl
 	| '.interfaceimpl' TYPE interfaceType = typeSpec interfaceAttribute = customDescr
 		{Actions.AddInterfaceImplementationAttribute(_localctx, $interfaceType.Value, $interfaceAttribute.ctx);}
 ;
-finally {EndParseTreeMode(); Actions.EndClassDeclaration(_localctx);}
+finally {Actions.EndClassDeclaration(_localctx);}
 
 /*  Field declaration  */
 fieldDecl returns [object Value]
-@init {BeginStreaming(); Actions.BeginFieldDeclaration(_localctx);}
+@init {Actions.BeginFieldDeclaration(_localctx);}
 @after {Actions.DefineField(_localctx, _localctx.Value);}
 :
 	'.field' offset = repeatOpt
@@ -1528,7 +1526,7 @@ fieldDecl returns [object Value]
 			$data.Value,
 			$initializer.Value);}
 ;
-finally {Actions.EndFieldDeclaration(_localctx); EndParseTreeMode();}
+finally {Actions.EndFieldDeclaration(_localctx);}
 
 fieldAttr returns [object Value]:
 	attribute = 'static' {_localctx.Value = Actions.CreateFieldAttribute($attribute);}
@@ -1657,7 +1655,7 @@ paramAttrElement returns [int Value, bool ShouldAppend]:
 
 methodHead
 returns [object Value]
-@init {BeginStreaming(); Actions.BeginMethodHeader(_localctx);}
+@init {Actions.BeginMethodHeader(_localctx);}
 @after {Actions.BeginMethod(_localctx, _localctx.Value);}
 :
 	'.method'
@@ -1678,7 +1676,7 @@ returns [object Value]
 			$genericParameters.Value,
 			$arguments.Value);}
 ;
-finally {Actions.EndMethodHeader(_localctx); EndParseTreeMode();}
+finally {Actions.EndMethodHeader(_localctx);}
 
 methAttr returns [object Value]:
 	attribute = 'static' {_localctx.Value = Actions.CreateMethodAttribute($attribute);}
@@ -1764,11 +1762,9 @@ OVERRIDE: '.override';
 VTENTRY: '.vtentry';
 
 methodDecls
-@init {BeginStreaming();}
 :
     methodDecl*
 ;
-finally {EndParseTreeMode();}
 
 methodDecl:
 	instr
@@ -1911,11 +1907,11 @@ handlerBlock returns [object Value]:
 
 /*  Data declaration  */
 dataDecl returns [bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginDataDeclaration(_localctx);}
+@init {Actions.BeginDataDeclaration(_localctx);}
 :
 	ddHead ddBody
 ;
-finally {Actions.EndDataDeclaration(_localctx); EndParseTreeMode();}
+finally {Actions.EndDataDeclaration(_localctx);}
 
 ddHead:
 	'.data' section = tls name = id '='
@@ -1990,11 +1986,11 @@ finally {_localctx.Value ??= new System.Reflection.Metadata.BlobBuilder();}
 
 bytes
 returns [System.Collections.Immutable.ImmutableArray<byte> Value]
-@init {BeginStreaming(); Actions.BeginBytes();}
+@init {Actions.BeginBytes();}
 :
 	(b = hexbyte {Actions.AddByte($b.Value);})*
 ;
-finally {_localctx.Value = Actions.EndBytes(); EndParseTreeMode();}
+finally {_localctx.Value = Actions.EndBytes();}
 
 hexbyte
 returns [byte Value]
@@ -2158,14 +2154,14 @@ asmOrRefDecl returns [object Value]:
 	| compControl;
 
 assemblyRefBlock returns [object Value, bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
 	header = assemblyRefHead '{' declarations = assemblyRefDecls '}'
 		{_localctx.Value = Actions.CreateAssemblyReference(
 			$header.Value,
 			$declarations.Value);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 assemblyRefHead returns [object Value]:
 	'.assembly' 'extern' attributes = asmAttr name = dottedName
@@ -2196,7 +2192,7 @@ assemblyRefDecl returns [object Value]:
 	| 'auto' {_localctx.Value = Actions.CreateAssemblyReferenceAutoDeclaration();};
 
 exptypeBlock returns [object Value, bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
 	header = exptypeHead '{' declarations = exptypeDecls '}'
 		{_localctx.Value = Actions.CreateExportedType(
@@ -2204,7 +2200,7 @@ exptypeBlock returns [object Value, bool HasSyntaxError]
 			$declarations.Value,
 			$header.start);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 exptypeHead returns [object Value]:
 	head = '.class' 'extern' attributes = exptAttrs name = dottedName
@@ -2278,7 +2274,7 @@ exptypeDecl returns [object Value]:
 	| compControl;
 
 manifestResBlock returns [object Value, bool HasSyntaxError]
-@init {BeginStreaming(); Actions.BeginSemanticRoot(_localctx);}
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
 	header = manifestResHead '{' declarations = manifestResDecls '}'
 		{_localctx.Value = Actions.CreateManifestResource(
@@ -2286,7 +2282,7 @@ manifestResBlock returns [object Value, bool HasSyntaxError]
 			$declarations.Value,
 			$header.start);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 manifestResHead returns [object Value]:
 	head = MRESOURCE attributes = manresAttrs name = dottedName
