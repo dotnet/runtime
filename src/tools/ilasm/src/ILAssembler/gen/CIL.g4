@@ -572,25 +572,34 @@ typedefDecl returns [bool HasSyntaxError]
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
 
 /* Custom attribute declarations  */
-customDescr returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+customDescr returns [object Value, bool HasSyntaxError]
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
-	'.custom' customType
-	| '.custom' customType '=' compQstring
-	| '.custom' customType '=' '{' customBlobDescr '}'
-	| '.custom' customType '=' '(' bytes ')';
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+	'.custom' constructor = customType
+		{_localctx.Value = Actions.CreateDefaultCustomAttribute($constructor.Value);}
+	| '.custom' constructor = customType '=' stringValue = compQstring
+		{_localctx.Value = Actions.CreateStringCustomAttribute($constructor.Value, $stringValue.Value);}
+	| '.custom' constructor = customType '=' '{' structuredValue = customBlobDescr '}'
+		{_localctx.Value = Actions.CreateStructuredCustomAttribute($constructor.Value, $structuredValue.Value);}
+	| '.custom' constructor = customType '=' '(' rawValue = bytes ')'
+		{_localctx.Value = Actions.CreateRawCustomAttribute($constructor.Value, $rawValue.Value);};
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
-customDescrWithOwner returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+customDescrWithOwner returns [object Value, bool HasSyntaxError]
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
-	'.custom' '(' ownerType ')' customType
-	| '.custom' '(' ownerType ')' customType '=' compQstring
-	| '.custom' '(' ownerType ')' customType '=' '{' customBlobDescr '}'
-	| '.custom' '(' ownerType ')' customType '=' '(' bytes ')';
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+	'.custom' '(' owner = ownerType ')' constructor = customType
+		{_localctx.Value = Actions.CreateDefaultOwnedCustomAttribute($owner.Value, $constructor.Value);}
+	| '.custom' '(' owner = ownerType ')' constructor = customType '=' stringValue = compQstring
+		{_localctx.Value = Actions.CreateStringOwnedCustomAttribute($owner.Value, $constructor.Value, $stringValue.Value);}
+	| '.custom' '(' owner = ownerType ')' constructor = customType '=' '{' structuredValue = customBlobDescr '}'
+		{_localctx.Value = Actions.CreateStructuredOwnedCustomAttribute($owner.Value, $constructor.Value, $structuredValue.Value);}
+	| '.custom' '(' owner = ownerType ')' constructor = customType '=' '(' rawValue = bytes ')'
+		{_localctx.Value = Actions.CreateRawOwnedCustomAttribute($owner.Value, $constructor.Value, $rawValue.Value);};
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
-customType: methodRef;
+customType returns [object Value]:
+	constructor = methodRef {_localctx.Value = Actions.CreateCustomAttributeType($constructor.Value);};
 
 ownerType
 returns [object Value, bool HasSyntaxError]
@@ -602,26 +611,47 @@ returns [object Value, bool HasSyntaxError]
 finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 /*  Verbal description of custom attribute initialization blob  */
-customBlobDescr: customBlobArgs customBlobNVPairs;
+customBlobDescr returns [object Value]:
+	arguments = customBlobArgs namedArguments = customBlobNVPairs
+		{_localctx.Value = Actions.CreateCustomAttributeBlob($arguments.Value, $namedArguments.Value);};
 
-customBlobArgs: (serInit | compControl)*;
+customBlobArgs returns [object Value]
+@init {Actions.BeginCustomBlobArguments(_localctx);}
+:
+	(argument = serInit {Actions.AddCustomBlobArgument(_localctx, $argument.Value);} | compControl)*
+;
+finally {_localctx.Value = Actions.EndCustomBlobArguments(_localctx);}
 
-customBlobNVPairs: (
-		fieldOrProp serializType dottedName '=' serInit
+customBlobNVPairs returns [object Value]
+@init {Actions.BeginCustomBlobNamedArguments(_localctx);}
+:
+	(
+		kind = fieldOrProp argumentType = serializType name = dottedName '=' value = serInit
+			{Actions.AddCustomBlobNamedArgument(
+				_localctx,
+				$kind.Value,
+				$argumentType.Value,
+				$name.Value,
+				$value.Value);}
 		| compControl
-	)*;
+	)*
+;
+finally {_localctx.Value = Actions.EndCustomBlobNamedArguments(_localctx);}
 
-fieldOrProp: 'field' | 'property';
+fieldOrProp returns [byte Value]:
+	kind = ('field' | 'property') {_localctx.Value = Actions.GetCustomAttributeNamedArgumentKind($kind);};
 
-serializType: serializTypeElement (ARRAY_TYPE_NO_BOUNDS)?;
+serializType returns [object Value]:
+	element = serializTypeElement array = ARRAY_TYPE_NO_BOUNDS?
+		{_localctx.Value = Actions.CreateSerializationType($element.Value, $array);};
 
-serializTypeElement:
-	simpleType
-	| dottedName /* typedef */
-	| TYPE
-	| OBJECT
-	| ENUM 'class' SQSTRING
-	| ENUM className;
+serializTypeElement returns [object Value]:
+	primitive = simpleType {_localctx.Value = Actions.CreatePrimitiveSerializationType($primitive.Value);}
+	| alias = dottedName {_localctx.Value = Actions.CreateSerializationTypeTypedef(_localctx, $alias.Value);} /* typedef */
+	| simpleTypeToken = TYPE {_localctx.Value = Actions.CreateSimpleSerializationType($simpleTypeToken);}
+	| simpleTypeToken = OBJECT {_localctx.Value = Actions.CreateSimpleSerializationType($simpleTypeToken);}
+	| ENUM 'class' quotedName = SQSTRING {_localctx.Value = Actions.CreateEnumSerializationType($quotedName);}
+	| ENUM classNameValue = className {_localctx.Value = Actions.CreateEnumSerializationType($classNameValue.Value);};
 
 /*  Module declaration */
 moduleHead returns [string Value, bool HasName, bool IsExternal]:
@@ -1140,7 +1170,11 @@ nameValPairs: (nameValPair ',')* nameValPair;
 
 nameValPair: compQstring '=' caValue;
 
-truefalse: 'true' | 'false';
+truefalse returns [bool Value]
+@after {_localctx.Value = Actions.ParseBoolean(_localctx.Start);}
+:
+	'true'
+	| 'false';
 
 caValue:
 	truefalse
@@ -1396,12 +1430,12 @@ atOpt returns [string Value]:
 	| 'at' offset = int32 {_localctx.Value = Actions.GetFieldDataOffset($offset.start);};
 
 initOpt returns [object Value, bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginFieldInitializer(_localctx);}
+@init {Actions.BeginFieldInitializer(_localctx);}
 :
 	/* EMPTY */
-	| '=' initializer = fieldInit {Actions.SetFieldInitializer(_localctx, $initializer.ctx);}
+	| '=' initializer = fieldInit {Actions.SetFieldInitializer(_localctx, $initializer.Value);}
 ;
-finally {_localctx.HasSyntaxError = Actions.EndFieldInitializer(_localctx); EndParseTreeMode();}
+finally {_localctx.HasSyntaxError = Actions.EndFieldInitializer(_localctx);}
 
 repeatOpt returns [int Value, bool HasValue]:
 	/* EMPTY */
@@ -1682,12 +1716,12 @@ finally {Actions.EndParameterDirective(_localctx);}
 labelDecl:
 	name = id ':' {Actions.DefineLabel($name.start);};
 
-customDescrInMethodBody returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+customDescrInMethodBody returns [object Value, bool HasSyntaxError]
+@init {Actions.BeginSemanticRoot(_localctx);}
 :
-	customDescr
-	| customDescrWithOwner;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+	directAttribute = customDescr {_localctx.Value = Actions.CreateCustomAttributeDeclaration($directAttribute.Value);}
+	| ownedAttribute = customDescrWithOwner {_localctx.Value = Actions.CreateCustomAttributeDeclaration($ownedAttribute.Value);};
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 scopeBlock
 @init {Actions.BeginScope(_localctx);}
@@ -1789,22 +1823,38 @@ ddItem:
 	| INT8 ddItemCount;
 
 /*  Default values declaration for fields, parameters and verbal form of CA blob description  */
-fieldSerInit:
-	FLOAT32 '(' float64 ')'
-	| FLOAT64_ '(' float64 ')'
-	| FLOAT32 '(' int32 ')'
-	| FLOAT64_ '(' int64 ')'
-	| INT64_ '(' int64 ')'
-	| INT32_ '(' int32 ')'
-	| INT16 '(' int32 ')'
-	| INT8 '(' int32 ')'
-	| UINT64 '(' int64 ')'
-	| UINT32 '(' int32 ')'
-	| UINT16 '(' int32 ')'
-	| UINT8 '(' int32 ')'
-	| CHAR '(' int32 ')'
-	| BOOL '(' truefalse ')'
-	| 'bytearray' '(' bytes ')';
+fieldSerInit returns [System.Reflection.Metadata.BlobBuilder Value]:
+	FLOAT32 '(' float32Value = float64 ')'
+		{_localctx.Value = Actions.CreateFloat32SerializedInitializer($float32Value.ctx, $float32Value.Value);}
+	| FLOAT64_ '(' float64Value = float64 ')'
+		{_localctx.Value = Actions.CreateFloat64SerializedInitializer($float64Value.ctx, $float64Value.Value);}
+	| FLOAT32 '(' float32Bits = int32 ')'
+		{_localctx.Value = Actions.CreateFloat32BitsSerializedInitializer($float32Bits.start);}
+	| FLOAT64_ '(' float64Bits = int64 ')'
+		{_localctx.Value = Actions.CreateFloat64BitsSerializedInitializer($float64Bits.start);}
+	| int64Type = INT64_ '(' int64Value = int64 ')'
+		{_localctx.Value = Actions.CreateIntegerSerializedInitializer($int64Type, $int64Value.start);}
+	| int32Type = INT32_ '(' int32Value = int32 ')'
+		{_localctx.Value = Actions.CreateIntegerSerializedInitializer($int32Type, $int32Value.start);}
+	| int16Type = INT16 '(' int16Value = int32 ')'
+		{_localctx.Value = Actions.CreateIntegerSerializedInitializer($int16Type, $int16Value.start);}
+	| int8Type = INT8 '(' int8Value = int32 ')'
+		{_localctx.Value = Actions.CreateIntegerSerializedInitializer($int8Type, $int8Value.start);}
+	| uint64Type = UINT64 '(' uint64Value = int64 ')'
+		{_localctx.Value = Actions.CreateIntegerSerializedInitializer($uint64Type, $uint64Value.start);}
+	| uint32Type = UINT32 '(' uint32Value = int32 ')'
+		{_localctx.Value = Actions.CreateIntegerSerializedInitializer($uint32Type, $uint32Value.start);}
+	| uint16Type = UINT16 '(' uint16Value = int32 ')'
+		{_localctx.Value = Actions.CreateIntegerSerializedInitializer($uint16Type, $uint16Value.start);}
+	| uint8Type = UINT8 '(' uint8Value = int32 ')'
+		{_localctx.Value = Actions.CreateIntegerSerializedInitializer($uint8Type, $uint8Value.start);}
+	| charType = CHAR '(' charValue = int32 ')'
+		{_localctx.Value = Actions.CreateIntegerSerializedInitializer($charType, $charValue.start);}
+	| boolType = BOOL '(' boolValue = truefalse ')'
+		{_localctx.Value = Actions.CreateBooleanSerializedInitializer($boolType, $boolValue.Value);}
+	| 'bytearray' '(' byteArrayValue = bytes ')'
+		{_localctx.Value = Actions.CreateByteArraySerializedInitializer($byteArrayValue.Value);};
+finally {_localctx.Value ??= new System.Reflection.Metadata.BlobBuilder();}
 
 bytes
 returns [System.Collections.Immutable.ImmutableArray<byte> Value]
@@ -1823,62 +1873,137 @@ returns [byte Value]
 	| HEXBYTE
 ;
 /*  Field/parameter initialization  */
-fieldInit: fieldSerInit | compQstring | NULLREF;
+fieldInit returns [object Value]:
+	serializedValue = fieldSerInit {_localctx.Value = Actions.CreateFieldInitializer($serializedValue.Value);}
+	| stringValue = compQstring {_localctx.Value = Actions.CreateFieldInitializer($stringValue.Value);}
+	| NULLREF {_localctx.Value = Actions.CreateNullFieldInitializer();};
 
 /*  Values for verbal form of CA blob description  */
-serInit:
-	fieldSerInit
-	| STRING '(' NULLREF ')'
-	| STRING '(' SQSTRING ')'
-	| TYPE '(' 'class' SQSTRING ')'
-	| TYPE '(' className ')'
-	| TYPE '(' NULLREF ')'
-	| OBJECT '(' serInit ')'
-	| FLOAT32 '[' int32 ']' '(' f32seq ')'
-	| FLOAT64_ '[' int32 ']' '(' f64seq ')'
-	| INT64_ '[' int32 ']' '(' i64seq ')'
-	| INT32_ '[' int32 ']' '(' i32seq ')'
-	| INT16 '[' int32 ']' '(' i16seq ')'
-	| INT8 '[' int32 ']' '(' i8seq ')'
-	| UINT64 '[' int32 ']' '(' i64seq ')'
-	| UINT32 '[' int32 ']' '(' i32seq ')'
-	| UINT16 '[' int32 ']' '(' i16seq ')'
-	| UINT8 '[' int32 ']' '(' i8seq ')'
-	| CHAR '[' int32 ']' '(' i16seq ')'
-	| BOOL '[' int32 ']' '(' boolSeq ')'
-	| STRING '[' int32 ']' '(' sqstringSeq ')'
-	| TYPE '[' int32 ']' '(' classSeq ')'
-	| OBJECT '[' int32 ']' '(' objSeq ')';
+serInit returns [object Value]:
+	scalarValue = fieldSerInit
+		{_localctx.Value = Actions.CreateScalarSerializedValue(_localctx, $scalarValue.ctx, $scalarValue.Value);}
+	| STRING '(' NULLREF ')' {_localctx.Value = Actions.CreateStringSerializedValue();}
+	| STRING '(' stringToken = SQSTRING ')' {_localctx.Value = Actions.CreateStringSerializedValue($stringToken);}
+	| TYPE '(' 'class' typeToken = SQSTRING ')' {_localctx.Value = Actions.CreateTypeSerializedValue($typeToken);}
+	| TYPE '(' typeName = className ')' {_localctx.Value = Actions.CreateTypeSerializedValue($typeName.Value);}
+	| TYPE '(' NULLREF ')' {_localctx.Value = Actions.CreateNullTypeSerializedValue();}
+	| OBJECT '(' objectValue = serInit ')' {_localctx.Value = Actions.CreateObjectSerializedValue($objectValue.Value);}
+	| f32ElementToken = FLOAT32 '[' f32Length = int32 ']' '(' f32Values = f32seq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($f32ElementToken, $f32Length.start, $f32Values.Value);}
+	| f64ElementToken = FLOAT64_ '[' f64Length = int32 ']' '(' f64Values = f64seq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($f64ElementToken, $f64Length.start, $f64Values.Value);}
+	| i64ElementToken = INT64_ '[' i64Length = int32 ']' '(' i64Values = i64seq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($i64ElementToken, $i64Length.start, $i64Values.Value);}
+	| i32ElementToken = INT32_ '[' i32Length = int32 ']' '(' i32Values = i32seq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($i32ElementToken, $i32Length.start, $i32Values.Value);}
+	| i16ElementToken = INT16 '[' i16Length = int32 ']' '(' i16Values = i16seq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($i16ElementToken, $i16Length.start, $i16Values.Value);}
+	| i8ElementToken = INT8 '[' i8Length = int32 ']' '(' i8Values = i8seq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($i8ElementToken, $i8Length.start, $i8Values.Value);}
+	| u64ElementToken = UINT64 '[' u64Length = int32 ']' '(' u64Values = i64seq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($u64ElementToken, $u64Length.start, $u64Values.Value);}
+	| u32ElementToken = UINT32 '[' u32Length = int32 ']' '(' u32Values = i32seq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($u32ElementToken, $u32Length.start, $u32Values.Value);}
+	| u16ElementToken = UINT16 '[' u16Length = int32 ']' '(' u16Values = i16seq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($u16ElementToken, $u16Length.start, $u16Values.Value);}
+	| u8ElementToken = UINT8 '[' u8Length = int32 ']' '(' u8Values = i8seq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($u8ElementToken, $u8Length.start, $u8Values.Value);}
+	| charElementToken = CHAR '[' charLength = int32 ']' '(' charValues = i16seq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($charElementToken, $charLength.start, $charValues.Value);}
+	| boolElementToken = BOOL '[' boolLength = int32 ']' '(' boolValues = boolSeq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($boolElementToken, $boolLength.start, $boolValues.Value);}
+	| stringElementToken = STRING '[' stringLength = int32 ']' '(' stringValues = sqstringSeq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($stringElementToken, $stringLength.start, $stringValues.Value);}
+	| typeElementToken = TYPE '[' typeLength = int32 ']' '(' typeValues = classSeq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($typeElementToken, $typeLength.start, $typeValues.Value);}
+	| objectElementToken = OBJECT '[' objectLength = int32 ']' '(' objectValues = objSeq ')'
+		{_localctx.Value = Actions.CreateArraySerializedValue($objectElementToken, $objectLength.start, $objectValues.Value);};
 
-f32seq: (float64 | int32)*;
-
-f64seq: (float64 | int64)*;
-
-i64seq: int64*;
-
-i32seq: int32*;
-
-i16seq: int32*;
-
-i8seq: int32*;
-
-boolSeq: truefalse*;
-
-sqstringSeq: (NULLREF | SQSTRING)*;
-
-classSeq: classSeqElement*;
-
-classSeqElement: NULLREF | 'class' SQSTRING | className;
-
-objSeq: serInit*;
-
-customAttrDecl returns [bool HasSyntaxError]
-@init {BeginSubtree(); Actions.BeginSemanticRoot(_localctx);}
+f32seq returns [System.Reflection.Metadata.BlobBuilder Value]
+@init {Actions.BeginSerializationSequence(_localctx);}
 :
-	customDescr
-	| customDescrWithOwner
-	| dottedName /* typedef */;
-finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx); EndParseTreeMode();}
+	(floatingValue = float64 {Actions.AddFloat32SequenceValue(_localctx, $floatingValue.Value);}
+	| integerValue = int32 {Actions.AddFloat32SequenceValue(_localctx, $integerValue.start);})*
+;
+finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+
+f64seq returns [System.Reflection.Metadata.BlobBuilder Value]
+@init {Actions.BeginSerializationSequence(_localctx);}
+:
+	(floatingValue = float64 {Actions.AddFloat64SequenceValue(_localctx, $floatingValue.Value);}
+	| integerValue = int64 {Actions.AddFloat64SequenceValue(_localctx, $integerValue.start);})*
+;
+finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+
+i64seq returns [System.Reflection.Metadata.BlobBuilder Value]
+@init {Actions.BeginSerializationSequence(_localctx);}
+:
+	(value = int64 {Actions.AddInt64SequenceValue(_localctx, $value.start);})*
+;
+finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+
+i32seq returns [System.Reflection.Metadata.BlobBuilder Value]
+@init {Actions.BeginSerializationSequence(_localctx);}
+:
+	(value = int32 {Actions.AddInt32SequenceValue(_localctx, $value.start);})*
+;
+finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+
+i16seq returns [System.Reflection.Metadata.BlobBuilder Value]
+@init {Actions.BeginSerializationSequence(_localctx);}
+:
+	(value = int32 {Actions.AddInt16SequenceValue(_localctx, $value.start);})*
+;
+finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+
+i8seq returns [System.Reflection.Metadata.BlobBuilder Value]
+@init {Actions.BeginSerializationSequence(_localctx);}
+:
+	(value = int32 {Actions.AddInt8SequenceValue(_localctx, $value.start);})*
+;
+finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+
+boolSeq returns [System.Reflection.Metadata.BlobBuilder Value]
+@init {Actions.BeginSerializationSequence(_localctx);}
+:
+	(value = truefalse {Actions.AddBooleanSequenceValue(_localctx, $value.Value);})*
+;
+finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+
+sqstringSeq returns [System.Reflection.Metadata.BlobBuilder Value]
+@init {Actions.BeginSerializationSequence(_localctx);}
+:
+	(nullValue = NULLREF {Actions.AddStringSequenceValue(_localctx, $nullValue);}
+	| stringValue = SQSTRING {Actions.AddStringSequenceValue(_localctx, $stringValue);})*
+;
+finally {_localctx.Value = Actions.EndSerializationSequence(_localctx);}
+
+classSeq returns [object Value]
+@init {Actions.BeginSerializationSequence(_localctx);}
+:
+	(value = classSeqElement {Actions.AddClassSequenceValue(_localctx, $value.Value);})*
+;
+finally {_localctx.Value = Actions.EndClassSerializationSequence(_localctx);}
+
+classSeqElement returns [object Value]:
+	NULLREF {_localctx.Value = Actions.CreateNullClassSequenceValue();}
+	| 'class' quotedValue = SQSTRING {_localctx.Value = Actions.CreateQuotedClassSequenceValue($quotedValue);}
+	| typeValue = className {_localctx.Value = Actions.CreateClassSequenceValue($typeValue.Value);};
+
+objSeq returns [object Value]
+@init {Actions.BeginSerializationSequence(_localctx);}
+:
+	(value = serInit {Actions.AddObjectSequenceValue(_localctx, $value.Value);})*
+;
+finally {_localctx.Value = Actions.EndObjectSerializationSequence(_localctx);}
+
+customAttrDecl returns [object Value, bool HasSyntaxError]
+@init {Actions.BeginSemanticRoot(_localctx);}
+:
+	directAttribute = customDescr {_localctx.Value = Actions.CreateCustomAttributeDeclaration($directAttribute.Value);}
+	| ownedAttribute = customDescrWithOwner {_localctx.Value = Actions.CreateCustomAttributeDeclaration($ownedAttribute.Value);}
+	| alias = dottedName {_localctx.Value = Actions.CreateCustomAttributeTypedef($alias.Value);};
+finally {_localctx.HasSyntaxError = Actions.EndSemanticRoot(_localctx);}
 
 /* Assembly References */
 asmOrRefDecl:

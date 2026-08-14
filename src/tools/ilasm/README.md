@@ -16,7 +16,10 @@ a subtree at all.
 | `GrammarActions.BuildImage.cs` | PE and portable PDB construction. |
 | `GrammarActions.Bytes.cs` | `bytearray` accumulation. |
 | `GrammarActions.Conversions.cs` | `GrammarResult`, shared state and core visitor plumbing. |
-| `GrammarActions.CustomAttributes.cs` | Custom attribute values and serialization. |
+| `GrammarActions.CustomAttributes.Actions.cs` | Custom attribute descriptors, declarations and blob lists. |
+| `GrammarActions.CustomAttributes.Sequences.cs` | Custom attribute scalar-array sequence synthesis. |
+| `GrammarActions.CustomAttributes.Serialization.cs` | Serialized attribute values and field/parameter initializers. |
+| `GrammarActions.CustomAttributes.Values.cs` | Internal synthesized custom attribute value model. |
 | `GrammarActions.Data.cs` | Data and blob declarations. |
 | `GrammarActions.Debug.cs` | Source and debug directives. |
 | `GrammarActions.Declarations.cs` | Parser-driven top-level declaration visitor guards. |
@@ -71,8 +74,7 @@ method-header, method-body directive and exception-handling structure is action-
 `scopeBlock` records offsets under its context key without inspecting children. The remaining
 `BeginSubtree` islands are the bounded shared roots `assemblyBlock`, `assemblyRefBlock`,
 `exptypeBlock`, `manifestResBlock`, `dataDecl`, `fileDecl`, `vtableDecl`, `vtfixupDecl`, `secDecl`,
-`extSourceSpec`, `languageDecl`, `typedefDecl`, `initOpt`, `customAttrDecl`, `customDescr`,
-`customDescrWithOwner` and `customDescrInMethodBody`.
+`extSourceSpec`, `languageDecl` and `typedefDecl`.
 
 Semantic state that a rule pushes must be released from that rule's `finally` clause and be keyed on
 the owning context, because ANTLR skips `@after` actions and the remainder of an alternative once a
