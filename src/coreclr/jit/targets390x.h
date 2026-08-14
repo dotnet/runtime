@@ -28,10 +28,10 @@
   #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
   #define FEATURE_STRUCT_CLASSIFIER     0  // Uses a classifier function to determine is structs are passed/returned in more than one register
   #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (16-byte vector).
-  #define MAX_PASS_MULTIREG_BYTES      16  // Maximum size of a struct that could be passed in more than one register (max is 4 16-byte vectors using an HVA)
-  #define MAX_RET_MULTIREG_BYTES       16  // Maximum size of a struct that could be returned in more than one register (Max is an HVA of 4 16-byte vectors)
-  #define MAX_ARG_REG_COUNT             2  // Maximum registers used to pass a single argument in multiple registers. (max is 4 128-bit vectors using an HVA)
-  #define MAX_RET_REG_COUNT             2  // Maximum registers used to return a value.
+  #define MAX_PASS_MULTIREG_BYTES       0  // Maximum size of a struct that could be passed in more than one register (max is 4 16-byte vectors using an HVA)
+  #define MAX_RET_MULTIREG_BYTES        0  // Maximum size of a struct that could be returned in more than one register (Max is an HVA of 4 16-byte vectors)
+  #define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass a single argument in multiple registers. (max is 4 128-bit vectors using an HVA)
+  #define MAX_RET_REG_COUNT             1  // Maximum registers used to return a value.
 
   #define MAX_MULTIREG_COUNT            2  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.

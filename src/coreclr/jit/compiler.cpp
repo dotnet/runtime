@@ -739,7 +739,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
                     useType         = TYP_UNKNOWN;
                 }
 
-#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) ||defined (TARGET_S390X)
+#elif defined(TARGET_X86) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
                 // Otherwise we pass this struct by value on the stack
                 // setup wbPassType and useType indicate that this is passed by value according to the X86/ARM32 ABI
@@ -766,7 +766,7 @@ var_types Compiler::getArgTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
             howToPassStruct = SPK_ByValue;
             useType         = TYP_STRUCT;
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64) || defined(TARGET_S390X)
 
             // Otherwise we pass this struct by reference to a copy
             // setup wbPassType and useType indicate that this is passed using one register (by reference to a copy)

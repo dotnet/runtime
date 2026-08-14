@@ -1199,6 +1199,7 @@ protected:
                 case INS_nr:
                 case INS_or:
                 case INS_xr:
+                case INS_break:
                     size = 2;
                     break;
                 case INS_lgfi:

@@ -729,11 +729,18 @@ void CodeGen::genCodeForBBlist()
                 }
 
                 break;
-
+//TODO s390x: HAS TO BE UNCOMMENTED LATER
             case BBJ_CALLFINALLY:
+#if !defined(TARGET_S390X)
                 block = genCallFinally(block);
+#endif
                 break;
 
+#if defined(TARGET_S390X)
+//TODO s390x: THIS WHOLE CASE HAS TO BE REMOVED LATER
+            case BBJ_CALLFINALLYRET:
+                break;
+#endif
             case BBJ_EHCATCHRET:
                 assert(compiler->UsesFunclets());
                 genEHCatchRet(block);

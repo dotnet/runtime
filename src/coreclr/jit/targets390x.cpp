@@ -103,15 +103,12 @@ ABIPassingInformation S390xClassifier::Classify(Compiler*    comp,
     if (varTypeIsStruct(type))
     {
         unsigned size = structLayout->GetSize();
-        if (size > 16)
+        slots      = 1;
+        passedSize = size;
+//TODO -S390X : PASS BY VALUE FOR STRUCTS WITH SINGLE VECTOR MEMBER SHOULD BE HANDLED.
+        if (size > TARGET_POINTER_SIZE)
         {
-            slots      = 1; // Passed by implicit byref
             passedSize = TARGET_POINTER_SIZE;
-        }
-        else
-        {
-            slots      = (size + TARGET_POINTER_SIZE - 1) / TARGET_POINTER_SIZE;
-            passedSize = size;
         }
     }
     else

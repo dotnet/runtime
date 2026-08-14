@@ -396,7 +396,12 @@ unsigned Compiler::eeGetArgSize(CorInfoType corInfoType, CORINFO_CLASS_HANDLE ty
         // For each target that supports passing struct args in multiple registers
         // apply the target specific rules for them here:
 
-#if FEATURE_MULTIREG_ARGS
+#if defined(TARGET_S390X)
+        if (structSize > MAX_PASS_SINGLEREG_BYTES)
+        {
+            return TARGET_POINTER_SIZE;
+        }
+#elif FEATURE_MULTIREG_ARGS
 #if defined(TARGET_ARM64)
         // Any structs that are larger than MAX_PASS_MULTIREG_BYTES are always passed by reference
         if (structSize > MAX_PASS_MULTIREG_BYTES)
