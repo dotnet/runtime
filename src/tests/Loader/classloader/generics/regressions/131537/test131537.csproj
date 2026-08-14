@@ -2,12 +2,12 @@
   <PropertyGroup>
     <!-- TEMP (wasm-aot-131537-validation): Pri0 so the innerloop wasm runtime-tests lanes include it. Revert to 1. -->
     <CLRTestPriority>0</CLRTestPriority>
+    <!-- TEMP (wasm-aot-131537-validation): self-contained merged runner so it produces a wasm Helix work item
+         (non-merged Loader tests have no wasm work-item path). Mirrors GC/.../largearraytest.csproj. -->
+    <HasMergedInTests>true</HasMergedInTests>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="test131537.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="$(TestLibraryProjectPath)" />
   </ItemGroup>
   <ItemGroup>
     <!-- Reproduce the WasmTestOnChrome-MONO-ST configuration from #131537:
@@ -16,4 +16,6 @@
          This item is ignored on non-wasm-AOT runtimes. -->
     <_AOT_InternalForceInterpretAssemblies Include="test131537.dll" />
   </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
 </Project>
