@@ -213,17 +213,15 @@ WriteWatchForGCHeapEnd$name
         ; Calculate region generations
             ldr  x17, JIT_WriteBarrier_Offset_RegionToGeneration + start$name
             ldr  w12, JIT_WriteBarrier_Offset_RegionShr + start$name
-            lsr  x15, x15, x12
-            add  x15, x15, x17 ; x15 = (RHS >> wbs_region_shr) + wbs_region_to_generation_table
-            lsr  x12, x14, x12
-            add  x12, x12, x17 ; x12 = (LHS >> wbs_region_shr) + wbs_region_to_generation_table
+            lsr  x15, x15, x12 ; x15 = RHS >> wbs_region_shr
+            lsr  x12, x14, x12 ; x12 = LHS >> wbs_region_shr
 
         ; Check whether the region we are storing into is gen 0 - nothing to do in this case
-            ldrb w12, [x12]
+            ldrb w12, [x17, x12]
             cbz  w12, exit$name
 
         ; Return if the new reference is not from old to young
-            ldrb w15, [x15]
+            ldrb w15, [x17, x15]
             cmp  w15, w12
             bhs  exit$name
     MEND
@@ -231,10 +229,9 @@ WriteWatchForGCHeapEnd$name
     MACRO
         WRITE_BARRIER_CHECK_BIT_REGIONS_CARD_TABLE_STUB $name
         ; Check if we need to update the card table
-            lsr w17, w14, 8
-            and w17, w17, 7
+            ubfx w17, w14, #8, #3
             movz w15, 1
-            lsl w17, w15, w17  ; w17 = 1 << (LHS >> 8 && 7)
+            lsl w17, w15, w17  ; w17 = 1 << ((LHS >> 8) & 7)
             ldr  x12, JIT_WriteBarrier_Offset_CardTable + start$name
             add  x15, x12, x14, lsr #11
             ldrb w12, [x15]  ; w12 = [(LHS >> 11) + g_card_table]

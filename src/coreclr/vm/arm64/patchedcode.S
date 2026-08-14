@@ -83,9 +83,7 @@ WRITE_BARRIER_ENTRY JIT_CheckedWriteBarrier
     ldr  x17,  LOCAL_LABEL(wbs_highest_address)
     cmp  x14,  x12
     ccmp x14,  x17, #0x2, hs
-    bhs  LOCAL_LABEL(NotInHeap)
-
-    b C_FUNC(JIT_WriteBarrier)
+    blo  C_FUNC(JIT_WriteBarrier)
 
 LOCAL_LABEL(NotInHeap):
     str  x15, [x14]
@@ -250,17 +248,15 @@ LOCAL_LABEL(WriteWatchForGCHeapEnd\@):
     // Calculate region generations
     ldr  x17, JIT_WriteBarrier_Offset_RegionToGeneration + FIXUP_LABEL(\start)
     ldr  w12, JIT_WriteBarrier_Offset_RegionShr + FIXUP_LABEL(\start)
-    lsr  x15, x15, x12
-    add  x15, x15, x17 // x15 = (RHS >> wbs_region_shr) + wbs_region_to_generation_table
-    lsr  x12, x14, x12
-    add  x12, x12, x17 // x12 = (LHS >> wbs_region_shr) + wbs_region_to_generation_table
+    lsr  x15, x15, x12 // x15 = RHS >> wbs_region_shr
+    lsr  x12, x14, x12 // x12 = LHS >> wbs_region_shr
 
     // Check whether the region we are storing into is gen 0 - nothing to do in this case
-    ldrb w12, [x12]
+    ldrb w12, [x17, x12]
     cbz  w12, LOCAL_LABEL(\exit)
 
     // Return if the new reference is not from old to young
-    ldrb w15, [x15]
+    ldrb w15, [x17, x15]
     cmp  w15, w12
     bhs  LOCAL_LABEL(\exit)
 .endm
@@ -268,10 +264,9 @@ LOCAL_LABEL(WriteWatchForGCHeapEnd\@):
 
 .macro WRITE_BARRIER_CHECK_BIT_REGIONS_CARD_TABLE_STUB start, exit
     // Check if we need to update the card table
-    lsr w17, w14, 8
-    and w17, w17, 7
+    ubfx w17, w14, #8, #3
     movz w15, 1
-    lsl w17, w15, w17  // w17 = 1 << (LHS >> 8 && 7)
+    lsl w17, w15, w17  // w17 = 1 << ((LHS >> 8) & 7)
     ldr  x12, JIT_WriteBarrier_Offset_CardTable + FIXUP_LABEL(\start)
     add  x15, x12, x14, lsr #11
     ldrb w12, [x15]  // w12 = [(LHS >> 11) + g_card_table]

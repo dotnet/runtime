@@ -14,11 +14,7 @@
 
 #define JIT_WriteBarrier_Size					   0x3a0
 
-#ifdef TARGET_WINDOWS
 #define JIT_WriteBarrier_Table_Offset              (0x3c + JIT_WriteBarrier_Size)
-#else
-#define JIT_WriteBarrier_Table_Offset              (0x38 + JIT_WriteBarrier_Size)
-#endif
 
 #define JIT_WriteBarrier_Offset_CardTable          (0x0  + JIT_WriteBarrier_Table_Offset)
 #define JIT_WriteBarrier_Offset_CardBundleTable    (0x8  + JIT_WriteBarrier_Table_Offset)
