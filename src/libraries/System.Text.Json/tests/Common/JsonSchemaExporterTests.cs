@@ -294,8 +294,11 @@ namespace System.Text.Json.Schema.Tests
             public string SingleValueGetSet { get; set; } = "value";
             [JsonInclude]
             public readonly string NonNullableReadonlyField = "value";
+
+#pragma warning disable CS0649 // field never assigned to
             [JsonInclude]
             public readonly string? NullableReadonlyField;
+#pragma warning restore CS0649
         }
 
         [JsonSerializable(typeof(PocoWithProperty))]
