@@ -373,7 +373,7 @@ namespace System.Net.Tests
             {
                 using ClientWebSocket client = new ClientWebSocket();
                 HttpListenerWebSocketContext context = await GetWebSocketContext(client);
-                using WebSocket server = context.WebSocket;
+                WebSocket server = context.WebSocket;
 
                 // The pending receive makes a separate thread process the close frame sent by the client.
                 Task serverReceiveTask = IgnoreExpectedExceptionsAsync(
@@ -390,6 +390,8 @@ namespace System.Net.Tests
 
                 Task allTasks = Task.WhenAll(serverReceiveTask, clientCloseTask, serverCloseTask);
                 await allTasks.WaitAsync(TimeSpan.FromSeconds(30));
+
+                server.Dispose();
             }
 
             static async Task IgnoreExpectedExceptionsAsync(Task task)
