@@ -41,8 +41,10 @@ WELL_KNOWN_ARG(RuntimeMethodHandle,         "meth hnd",       false,   false)
 // into the continuation on suspension.
 WELL_KNOWN_ARG(AsyncAwaiter,                "awaiter",        false,   false)
 
-// Contexts of the frame's caller, captured on entry. Restored onto the Thread object as
-// the frame suspends, as if it had returned.
+// Contexts of the frame's caller, captured on entry. Restored onto the Thread
+// object as the frame suspends, as if it had returned. When inlining there can
+// be multiple sets of these, one for each inlined frame, in order from
+// innermost inlinee out to the root.
 WELL_KNOWN_ARG(AsyncExecutionContext,       "exec ctx",       false,   false)
 WELL_KNOWN_ARG(AsyncSynchronizationContext, "sync ctx",       false,   false)
 // Value of the frame's resumed indicator. The restore above only happens on

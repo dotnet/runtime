@@ -214,6 +214,10 @@ bool ContinuationMember::AreCompatible(const ContinuationMember& a, const Contin
 }
 
 #ifdef DEBUG
+//------------------------------------------------------------------------
+// ContinuationMember::Print:
+//   Print a description of this continuation member.
+//
 void ContinuationMember::Print() const
 {
     switch (Type)
@@ -261,6 +265,16 @@ static void CollectWellKnownArgs(GenTreeCall* call, WellKnownArg wka, ArrayStack
     }
 }
 
+//------------------------------------------------------------------------
+// Compiler::GetContinuationMemberIndex:
+//   Find or add a continuation member and return its index.
+//
+// Parameters:
+//   member - Continuation member to find or add.
+//
+// Returns:
+//   The member's index in m_asyncContinuationMembers.
+//
 size_t Compiler::GetContinuationMemberIndex(const ContinuationMember& member)
 {
     Compiler* const root = impInlineRoot();
@@ -322,12 +336,29 @@ bool Compiler::TryGetContinuationMemberIndex(const ContinuationMember& member, s
     return false;
 }
 
+//------------------------------------------------------------------------
+// Compiler::GetContinuationMemberCount:
+//   Get the number of continuation members registered by the compiler.
+//
+// Returns:
+//   The number of registered continuation members.
+//
 size_t Compiler::GetContinuationMemberCount()
 {
     Compiler* const root = impInlineRoot();
     return root->m_asyncContinuationMembers == nullptr ? 0 : root->m_asyncContinuationMembers->size();
 }
 
+//------------------------------------------------------------------------
+// Compiler::GetContinuationMember:
+//   Get a registered continuation member by index.
+//
+// Parameters:
+//   index - Index of the continuation member.
+//
+// Returns:
+//   The continuation member at the specified index.
+//
 const ContinuationMember& Compiler::GetContinuationMember(size_t index)
 {
     Compiler* const root = impInlineRoot();

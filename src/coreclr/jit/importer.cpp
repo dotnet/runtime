@@ -12016,6 +12016,8 @@ bool Compiler::impWrapTopOfStackInAwait()
             awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
         }
 #endif
+
+        awaitCall->SetIsAsync(asyncInfo);
     }
     else
     {
@@ -12033,11 +12035,6 @@ bool Compiler::impWrapTopOfStackInAwait()
         // frame depth, which lives in the async call info.
         awaitCall->SetIsAsync(asyncInfo);
         impInheritAsyncContextsFromInliner(awaitCall);
-    }
-
-    if (!awaitCall->IsAsync())
-    {
-        awaitCall->SetIsAsync(asyncInfo);
     }
 
     if (awaitCall->IsInlineCandidate())
