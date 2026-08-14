@@ -44,6 +44,9 @@ jobs:
           parameters:
             creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_$(_BuildConfig)_AOT_131537
+            # Build the single scoped test as a standalone wasm app (not merged) so it
+            # yields its own Helix work item; merged mode drops a lone test (0 in group).
+            buildAllTestsAsStandalone: true
             # Scope the runtime-test build to just this one test, and AOT it locally
             # (RunAOTCompilation=true) so corelib is AOT'd in the produced wasm app.
             testBuildArgs: tree Loader/classloader/generics/regressions/131537 /p:RunAOTCompilation=true /p:InstallV8ForTests=false
