@@ -779,9 +779,7 @@ bool CodeHeapIterator::Next()
             if (m_stubCodeBlockKind == STUB_CODE_BLOCK_JUMPSTUB)
             {
                 JumpStubBlockHeader* jumpStubBlock = (JumpStubBlockHeader*)m_pCurrentCode;
-                size_t jumpStubBlockSize =
-                    sizeof(JumpStubBlockHeader) +
-                    (size_t)jumpStubBlock->m_allocated * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
+                size_t jumpStubBlockSize = jumpStubBlock->GetBlockSize();
                 _ASSERTE(jumpStubBlockSize <= boundedCodeSize);
                 boundedCodeSize = jumpStubBlockSize;
             }
@@ -2326,6 +2324,26 @@ BOOL EEJitManager::LoadJIT()
 
 //**************************************************************************
 
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
+static void SendCodeHeapStubBlockEvent(
+    void* start,
+    size_t size,
+    StubCodeBlockKind kind,
+    DWORD eventOptions)
+{
+    WRAPPER_NO_CONTRACT;
+
+    if (FitsInU4(size))
+    {
+        ETW::MethodLog::SendHelperEvent(
+            reinterpret_cast<ULONGLONG>(start),
+            static_cast<ULONG>(size),
+            GetStubCodeBlockKindStringW(kind),
+            eventOptions);
+    }
+}
+#endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE
+
 static void ReportCodeHeapStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 {
     WRAPPER_NO_CONTRACT;
@@ -2333,14 +2351,11 @@ static void ReportCodeHeapStubBlock(void* start, size_t size, StubCodeBlockKind 
     ReportStubBlock(start, size, kind);
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
-    if (FitsInU4(size))
-    {
-        ETW::MethodLog::SendHelperEvent(
-            reinterpret_cast<ULONGLONG>(start),
-            static_cast<ULONG>(size),
-            GetStubCodeBlockKindStringW(kind),
-            ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
-    }
+    SendCodeHeapStubBlockEvent(
+        start,
+        size,
+        kind,
+        ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
 #endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE
 }
 
@@ -4262,6 +4277,24 @@ bool EECodeGenManager::TryFreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* 
         // If we are in the middle of an enumeration, we cannot destroy code heap memory.
         return false;
     }
+
+#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
+    CodeHeader* pCodeHeader = (CodeHeader*)((BYTE*)codeStart - sizeof(CodeHeader));
+    if (pCodeHeader->IsStubCodeBlock())
+    {
+        StubCodeBlockKind kind = pCodeHeader->GetStubCodeBlockKind();
+        _ASSERTE(kind == STUB_CODE_BLOCK_JUMPSTUB);
+        if (kind == STUB_CODE_BLOCK_JUMPSTUB)
+        {
+            JumpStubBlockHeader* jumpStubBlock = (JumpStubBlockHeader*)codeStart;
+            SendCodeHeapStubBlockEvent(
+                codeStart,
+                jumpStubBlock->GetBlockSize(),
+                kind,
+                ETW::EnumerationLog::EnumerationStructs::JitMethodUnload);
+        }
+    }
+#endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE
 
     FreeHostCodeHeapMemoryWorker(pCodeHeap, codeStart);
     return true;

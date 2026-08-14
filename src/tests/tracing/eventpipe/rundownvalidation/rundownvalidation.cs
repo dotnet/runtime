@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.IO;
 using System.Linq;
@@ -10,20 +12,54 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using Microsoft.Diagnostics.Tracing;
-using Tracing.Tests.Common;
 using Microsoft.Diagnostics.NETCore.Client;
+using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Parsers;
 using Microsoft.Diagnostics.Tracing.Parsers.Clr;
-using Xunit;
 using TestLibrary;
+using Tracing.Tests.Common;
+using Xunit;
 
 namespace Tracing.Tests.RundownValidation
 {
+    [EventSource(Name = "RundownValidationEventSource")]
+    internal sealed class RundownValidationEventSource : EventSource
+    {
+        public static readonly RundownValidationEventSource Log = new RundownValidationEventSource();
+
+        private RundownValidationEventSource()
+        {
+        }
+
+        [Event(1)]
+        public void JumpStubAllocationStart()
+        {
+            WriteEvent(1);
+        }
+
+        [Event(2)]
+        public void JumpStubAllocationStop()
+        {
+            WriteEvent(2);
+        }
+
+        [Event(3)]
+        public void JumpStubCollectionStart()
+        {
+            WriteEvent(3);
+        }
+
+        [Event(4)]
+        public void JumpStubCollectionStop()
+        {
+            WriteEvent(4);
+        }
+    }
 
     public class RundownValidation
     {
+        private const string LcgJumpStubChildEnvironmentVariable = "RundownValidation_LcgJumpStubChild";
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/83051: not supported in net8", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [ActiveIssue("Can't find file dotnet-diagnostic-{pid}-*-socket", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsRiscv64Process))]
         [SkipOnCoreClr("This test is sensitive to JIT optimizations.", RuntimeTestModes.AnyJitOptimizationStress)]
@@ -31,6 +67,34 @@ namespace Tracing.Tests.RundownValidation
         [Fact]
         public static int TestEntryPoint()
         {
+            if (Environment.GetEnvironmentVariable(LcgJumpStubChildEnvironmentVariable) == "1")
+            {
+                RundownValidationEventSource.Log.JumpStubAllocationStart();
+                try
+                {
+                    GenerateLcgJumpStubActivity();
+                }
+                finally
+                {
+                    RundownValidationEventSource.Log.JumpStubAllocationStop();
+                }
+
+                RundownValidationEventSource.Log.JumpStubCollectionStart();
+                try
+                {
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                }
+                finally
+                {
+                    RundownValidationEventSource.Log.JumpStubCollectionStop();
+                }
+
+                return 100;
+            }
+
             // This test validates that the rundown events are present
             // and that the rundown contains the necessary events to get
             // symbols in a nettrace file.
@@ -44,7 +108,25 @@ namespace Tracing.Tests.RundownValidation
                     (long)ClrTraceEventParser.Keywords.Jit)
             };
 
-            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, _DoesRundownContainMethodEvents);
+            int result = IpcTraceTest.RunAndValidateEventCounts(
+                _expectedEventCounts,
+                _eventGeneratingAction,
+                providers,
+                1024,
+                _DoesRundownContainMethodEvents);
+
+            if (result != 100 ||
+                !PlatformDetection.IsCoreCLR ||
+                !RuntimeFeature.IsDynamicCodeCompiled ||
+                !OperatingSystem.IsWindows() ||
+                !PlatformDetection.Is64BitProcess ||
+                (!TestLibrary.CoreClrConfigurationDetection.IsDebugRuntime &&
+                    !TestLibrary.CoreClrConfigurationDetection.IsCheckedRuntime))
+            {
+                return result;
+            }
+
+            return ValidateLcgJumpStubUnloadEvents();
         }
 
         private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
@@ -135,7 +217,18 @@ namespace Tracing.Tests.RundownValidation
                 eventData.MethodStartAddress,
                 eventData.MethodSize,
                 eventData.MethodToken,
-                eventData.MethodName));
+                eventData.MethodName,
+                eventData.TimeStampRelativeMSec));
+        }
+
+        private static List<HelperEvent> GetEventsInRange(
+            List<HelperEvent> helperEvents,
+            double startTime,
+            double stopTime)
+        {
+            return helperEvents
+                .Where(e => e.TimeStampRelativeMSec >= startTime && e.TimeStampRelativeMSec <= stopTime)
+                .ToList();
         }
 
         private static bool ValidateHelperEvents(List<HelperEvent> helperEvents)
@@ -171,9 +264,23 @@ namespace Tracing.Tests.RundownValidation
         private static bool HaveMatchingStubBlocks(List<HelperEvent> liveStubBlocks, List<HelperEvent> rundownStubBlocks)
         {
             return liveStubBlocks.Any(live =>
-                rundownStubBlocks.Any(rundown =>
-                    rundown.StartAddress == live.StartAddress &&
-                    rundown.Name == live.Name));
+                rundownStubBlocks.Any(rundown => AreMatchingStubBlocks(live, rundown)));
+        }
+
+        private static bool HaveMatchingUnloadForEveryLoad(
+            List<HelperEvent> loadedStubBlocks,
+            List<HelperEvent> unloadedStubBlocks)
+        {
+            return loadedStubBlocks.Count != 0 &&
+                loadedStubBlocks.All(load =>
+                    unloadedStubBlocks.Any(unload => AreMatchingStubBlocks(load, unload)));
+        }
+
+        private static bool AreMatchingStubBlocks(HelperEvent first, HelperEvent second)
+        {
+            return first.StartAddress == second.StartAddress &&
+                first.Size == second.Size &&
+                first.Name == second.Name;
         }
 
         private static bool IsStubBlockName(string name)
@@ -184,6 +291,11 @@ namespace Tracing.Tests.RundownValidation
                 "VSD_ResolveStub" or
                 "VSD_LookupStub" or
                 "VSD_VTableStub";
+        }
+
+        private static bool IsJumpStubBlockName(string name)
+        {
+            return name == "JumpStub";
         }
 
         private static bool IsWriteBarrierName(string name)
@@ -266,6 +378,119 @@ namespace Tracing.Tests.RundownValidation
             }
         }
 
+        private static int ValidateLcgJumpStubUnloadEvents()
+        {
+            string outputPathPattern = Path.Combine(
+                AppContext.BaseDirectory,
+                $"rundownvalidation-lcg-{Stopwatch.GetTimestamp()}-{{pid}}.nettrace");
+
+            using var process = new Process();
+            process.StartInfo.FileName = Environment.ProcessPath;
+            process.StartInfo.ArgumentList.Add(
+                Path.Combine(
+                    AppContext.BaseDirectory,
+                    typeof(RundownValidation).Assembly.GetName().Name + ".dll"));
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.Environment[LcgJumpStubChildEnvironmentVariable] = "1";
+            process.StartInfo.Environment["DOTNET_EnableEventPipe"] = "1";
+            process.StartInfo.Environment["DOTNET_EventPipeConfig"] =
+                "Microsoft-Windows-DotNETRuntime:4c14fccbd:5,RundownValidationEventSource:0:5";
+            process.StartInfo.Environment["DOTNET_EventPipeOutputPath"] = outputPathPattern;
+            process.StartInfo.Environment["DOTNET_EventPipeRundown"] = "0";
+            process.StartInfo.Environment["DOTNET_TieredCompilation"] = "0";
+            process.StartInfo.Environment["COMPlus_ForceRelocs"] = "1";
+
+            process.Start();
+            string tracePath = outputPathPattern.Replace("{pid}", process.Id.ToString());
+            try
+            {
+                if (!process.WaitForExit(5 * 60 * 1000))
+                {
+                    process.Kill();
+                    process.WaitForExit();
+                    Logger.logger.Log("LCG jump-stub child process timed out.");
+                    return -1;
+                }
+
+                if (process.ExitCode != 100 || !File.Exists(tracePath))
+                {
+                    Logger.logger.Log($"LCG jump-stub child exited with {process.ExitCode}; trace exists: {File.Exists(tracePath)}.");
+                    return -1;
+                }
+
+                var loadedJumpStubBlocks = new List<HelperEvent>();
+                var unloadedJumpStubBlocks = new List<HelperEvent>();
+                double allocationStart = double.NaN;
+                double allocationStop = double.NaN;
+                double collectionStart = double.NaN;
+                double collectionStop = double.NaN;
+                using (var source = new EventPipeEventSource(tracePath))
+                {
+                    source.Dynamic.All += (eventData) =>
+                    {
+                        if (eventData.ProviderName != "RundownValidationEventSource")
+                        {
+                            return;
+                        }
+
+                        if (eventData.EventName == "JumpStubAllocation/Start")
+                        {
+                            allocationStart = eventData.TimeStampRelativeMSec;
+                        }
+                        else if (eventData.EventName == "JumpStubAllocation/Stop")
+                        {
+                            allocationStop = eventData.TimeStampRelativeMSec;
+                        }
+                        else if (eventData.EventName == "JumpStubCollection/Start")
+                        {
+                            collectionStart = eventData.TimeStampRelativeMSec;
+                        }
+                        else if (eventData.EventName == "JumpStubCollection/Stop")
+                        {
+                            collectionStop = eventData.TimeStampRelativeMSec;
+                        }
+                    };
+
+                    var parser = new ClrTraceEventParser(source);
+                    parser.MethodLoadVerbose += (eventData) =>
+                        AddHelperEvent(eventData, loadedJumpStubBlocks, IsJumpStubBlockName);
+                    parser.MethodUnloadVerbose += (eventData) =>
+                        AddHelperEvent(eventData, unloadedJumpStubBlocks, IsJumpStubBlockName);
+                    source.Process();
+                }
+
+                List<HelperEvent> allocatedJumpStubBlocks =
+                    GetEventsInRange(loadedJumpStubBlocks, allocationStart, allocationStop);
+                List<HelperEvent> reclaimedJumpStubBlocks =
+                    GetEventsInRange(unloadedJumpStubBlocks, collectionStart, collectionStop);
+                Logger.logger.Log("LCG jump-stub loads: " + allocatedJumpStubBlocks.Count);
+                Logger.logger.Log("LCG jump-stub unloads: " + reclaimedJumpStubBlocks.Count);
+                return ValidateHelperEvents(allocatedJumpStubBlocks) &&
+                    ValidateHelperEvents(reclaimedJumpStubBlocks) &&
+                    HaveMatchingUnloadForEveryLoad(allocatedJumpStubBlocks, reclaimedJumpStubBlocks)
+                    ? 100
+                    : -1;
+            }
+            finally
+            {
+                if (File.Exists(tracePath))
+                {
+                    File.Delete(tracePath);
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void GenerateLcgJumpStubActivity()
+        {
+            DynamicMethod dynamicMethod = new DynamicMethod("JumpStubMethod", typeof(object), null);
+            ILGenerator ilGenerator = dynamicMethod.GetILGenerator();
+            ilGenerator.Emit(OpCodes.Newobj, typeof(object).GetConstructor(Type.EmptyTypes));
+            ilGenerator.Emit(OpCodes.Ret);
+            var dynamicMethodDelegate = (Func<object>)dynamicMethod.CreateDelegate(typeof(Func<object>));
+            dynamicMethodDelegate();
+        }
+
         private readonly struct HelperEvent
         {
             public HelperEvent(
@@ -274,7 +499,8 @@ namespace Tracing.Tests.RundownValidation
                 ulong startAddress,
                 int size,
                 int methodToken,
-                string name)
+                string name,
+                double timeStampRelativeMSec)
             {
                 MethodId = methodId;
                 ModuleId = moduleId;
@@ -282,6 +508,7 @@ namespace Tracing.Tests.RundownValidation
                 Size = size;
                 MethodToken = methodToken;
                 Name = name;
+                TimeStampRelativeMSec = timeStampRelativeMSec;
             }
 
             public long MethodId { get; }
@@ -290,6 +517,7 @@ namespace Tracing.Tests.RundownValidation
             public int Size { get; }
             public int MethodToken { get; }
             public string Name { get; }
+            public double TimeStampRelativeMSec { get; }
         }
     }
 }

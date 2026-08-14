@@ -2131,6 +2131,13 @@ struct JumpStubBlockHeader
     UINT32                 m_used;
     UINT32                 m_allocated;
 
+    size_t GetBlockSize() const
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return sizeof(JumpStubBlockHeader) +
+            static_cast<size_t>(m_allocated) * BACK_TO_BACK_JUMP_ALLOCATE_SIZE;
+    }
+
     LoaderAllocator* GetLoaderAllocator()
     {
         _ASSERTE(m_zero == 0);
