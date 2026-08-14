@@ -198,7 +198,7 @@ internal static class Entrypoints
             // Without a legacy implementation to absorb individually-unimplemented APIs, validate
             // the complete data-access contract set before publishing the interface.
             if (legacyImpl is null)
-                Contracts.CoreCLRContracts.ValidateForDataAccess(cdacHandle.Target);
+                Contracts.CoreCLRContracts.ValidateForDataAccess(cdacHandle.Target, cdacHandle.ApiLock);
 
             Legacy.SOSDacImpl impl = new(cdacHandle.Target, legacyImpl, cdacHandle.ApiLock);
             nint ptr = (nint)ComInterfaceMarshaller<ISOSDacInterface>.ConvertToUnmanaged(impl);
@@ -471,7 +471,7 @@ internal static class Entrypoints
         // Without a legacy implementation to absorb individually-unimplemented APIs, validate
         // the complete data-access contract set before publishing the interface.
         if (legacyImpl is null)
-            Contracts.CoreCLRContracts.ValidateForDataAccess(target);
+            Contracts.CoreCLRContracts.ValidateForDataAccess(target, apiLock);
 
         Legacy.SOSDacImpl impl = new(target, legacyImpl, apiLock);
         void* ccw = ComInterfaceMarshaller<IXCLRDataProcess>.ConvertToUnmanaged(impl);
