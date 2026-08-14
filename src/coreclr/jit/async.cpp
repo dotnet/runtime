@@ -2191,7 +2191,7 @@ ContinuationLayout* ContinuationLayoutBuilder::Create(ArrayStack<GenTree*>& cont
             while (end < endOfObjRefs && *end)
                 end++;
 
-            printf("    [%3u..%3u) obj refs\n", (start - objRefs) * TARGET_POINTER_SIZE,
+            printf("    [%3zu..%3zu) obj refs\n", (start - objRefs) * TARGET_POINTER_SIZE,
                    (end - objRefs) * TARGET_POINTER_SIZE);
             start = end;
         }
@@ -2472,7 +2472,8 @@ bool AsyncTransformation::IsReusableSuspension(const AsyncState*          state,
     if (asyncInfoThis.ContinuationContextHandling != asyncInfoOther.ContinuationContextHandling)
     {
         JITDUMP("    No; disagreement on continuation context handling (%u vs %u)\n",
-                asyncInfoThis.ContinuationContextHandling, asyncInfoOther.ContinuationContextHandling);
+                static_cast<unsigned>(asyncInfoThis.ContinuationContextHandling),
+                static_cast<unsigned>(asyncInfoOther.ContinuationContextHandling));
         return false;
     }
 
