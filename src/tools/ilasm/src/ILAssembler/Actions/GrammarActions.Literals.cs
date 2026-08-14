@@ -18,12 +18,11 @@ using System.Security.Cryptography;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
-using Antlr4.Runtime.Tree;
 
 namespace ILAssembler
 {
 #pragma warning disable CA1822 // Mark members as static
-    internal sealed partial class GrammarActions : ICILVisitor<GrammarResult>
+    internal sealed partial class GrammarActions
     {
         private CILParser.CompQstringContext? _composedStringOwner;
         private StringBuilder? _composedStringAccumulator;
@@ -41,11 +40,6 @@ namespace ILAssembler
             public string? FirstPart { get; set; }
 
             public StringBuilder? Builder { get; set; }
-        }
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitCompQstring(CILParser.CompQstringContext context)
-        {
-            return VisitCompQstring(context);
         }
 
         internal void BeginComposedString(CILParser.CompQstringContext context)
@@ -77,14 +71,6 @@ namespace ILAssembler
             _composedStringAccumulator = null;
 
             return value;
-        }
-
-        private static GrammarResult.String VisitCompQstring(CILParser.CompQstringContext context)
-            => new(context.Value ?? string.Empty);
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitDottedName(CILParser.DottedNameContext context)
-        {
-            return VisitDottedName(context);
         }
 
         internal void BeginDottedName(CILParser.DottedNameContext context)
@@ -124,12 +110,6 @@ namespace ILAssembler
                 : string.Empty;
         }
 
-        public static GrammarResult.String VisitDottedName(CILParser.DottedNameContext context)
-            => new(context.Value ?? string.Empty);
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitDottedNamePart(CILParser.DottedNamePartContext context)
-            => new GrammarResult.String(context.Value ?? string.Empty);
-
         internal string ParseDottedNamePart(IToken token)
             => token.Text.Length >= 2 && token.Text[0] == '\''
                 ? StringHelpers.ParseQuotedString(token.Text)
@@ -164,12 +144,6 @@ namespace ILAssembler
         internal double ParseFloat64Bits(IToken token)
             => BitConverter.Int64BitsToDouble(ParseInt64(token));
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitFloat64(CILParser.Float64Context context) => VisitFloat64(context);
-
-        public static GrammarResult.Literal<double> VisitFloat64(CILParser.Float64Context context)
-            => new(context.Value);
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitId(CILParser.IdContext context) => VisitId(context);
         public static GrammarResult.String VisitId(CILParser.IdContext context)
         {
             return new GrammarResult.String(ParseIdentifier(context.Start));
@@ -247,16 +221,6 @@ namespace ILAssembler
             return true;
         }
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitInt32(CILParser.Int32Context context)
-        {
-            return VisitInt32(context);
-        }
-
-        public GrammarResult.Literal<int> VisitInt32(CILParser.Int32Context context)
-        {
-            return new(ParseInt32(context.INT32().Symbol));
-        }
-
         internal int ParseInt32(IToken token)
         {
             ReadOnlySpan<char> value = token.Text.AsSpan();
@@ -269,16 +233,6 @@ namespace ILAssembler
             return (int)num;
         }
 
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitInt64(CILParser.Int64Context context)
-        {
-            return VisitInt64(context);
-        }
-
-        public GrammarResult.Literal<long> VisitInt64(CILParser.Int64Context context)
-        {
-            return new(ParseInt64(context.Start));
-        }
 
         private long ParseInt64(IToken token)
         {
@@ -301,23 +255,7 @@ namespace ILAssembler
                 Location.From(token, _documents)));
         }
 
-        GrammarResult ICILVisitor<GrammarResult>.VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => VisitIntOrWildcard(context);
-        public static GrammarResult.Literal<int?> VisitIntOrWildcard(CILParser.IntOrWildcardContext context) => new(context.Value);
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitSlashedName(CILParser.SlashedNameContext context)
-        {
-            return VisitSlashedName(context);
-        }
-
-        public static GrammarResult.Literal<TypeName> VisitSlashedName(CILParser.SlashedNameContext context)
-            => new(GetSlashedNameValue(context));
-
-        GrammarResult ICILVisitor<GrammarResult>.VisitTruefalse(CILParser.TruefalseContext context) => VisitTruefalse(context);
-
         internal bool ParseBoolean(IToken token) => bool.Parse(token.Text);
-
-        public static GrammarResult.Literal<bool> VisitTruefalse(CILParser.TruefalseContext context)
-            => new(context.Value);
 
     }
 }

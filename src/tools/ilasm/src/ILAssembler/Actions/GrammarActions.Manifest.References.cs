@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection;
 
 namespace ILAssembler;
@@ -94,17 +93,4 @@ internal sealed partial class GrammarActions
         return GrammarResult.SentinelValue.Result;
     }
 
-    public GrammarResult VisitAssemblyRefDecl(CILParser.AssemblyRefDeclContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitAssemblyRefDecls(CILParser.AssemblyRefDeclsContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitAssemblyRefHead(
-        CILParser.AssemblyRefHeadContext context)
-        => VisitAssemblyRefHead(context);
-
-    public GrammarResult.Literal<EntityRegistry.AssemblyReferenceEntity> VisitAssemblyRefHead(
-        CILParser.AssemblyRefHeadContext context)
-        => new(MaterializeAssemblyReferenceHeader(GetAssemblyReferenceHeader(context.Value)));
 }
