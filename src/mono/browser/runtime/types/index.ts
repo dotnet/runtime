@@ -220,7 +220,6 @@ export interface Assets {
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
 
-    jsModuleWorker?: JsAsset[];
     jsModuleDiagnostics?: JsAsset[];
     jsModuleNative: JsAsset[];
     jsModuleRuntime: JsAsset[];
@@ -399,10 +398,6 @@ export type SingleAssetBehaviors =
      * The javascript module for loader.
      */
     | "js-module-dotnet"
-    /**
-     * The javascript module for threads.
-     */
-    | "js-module-threads"
     /**
      * The javascript module for diagnostic server and client.
      */

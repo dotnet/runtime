@@ -11,8 +11,6 @@ namespace System.Runtime.InteropServices.ObjectiveC
     public static unsafe partial class ObjectiveCMarshal
     {
         private static readonly IntPtr[] s_ObjcMessageSendFunctions = new IntPtr[(int)MessageSendFunction.MsgSendSuperStret + 1];
-        private static bool s_initialized;
-        private static readonly ConditionalWeakTable<object, ObjcTrackingInformation> s_objects = new();
         private static delegate* unmanaged[SuppressGCTransition]<void*, int> s_IsTrackedReferenceCallback;
         private static delegate* unmanaged[SuppressGCTransition]<void*, void> s_OnEnteredFinalizerQueueCallback;
 
@@ -116,94 +114,13 @@ namespace System.Runtime.InteropServices.ObjectiveC
 
             s_IsTrackedReferenceCallback = (delegate* unmanaged[SuppressGCTransition]<void*, int>)isReferencedCallback;
             s_OnEnteredFinalizerQueueCallback = (delegate* unmanaged[SuppressGCTransition]<void*, void>)trackedObjectEnteredFinalization;
-            s_initialized = true;
-
             return true;
         }
 
-        private static IntPtr CreateReferenceTrackingHandleInternal(
-            object obj,
-            out int memInSizeT,
-            out IntPtr mem)
-        {
-            // Rely on GetOrCreateReferenceTrackingMemoryInternal for state checking.
-            GetOrCreateReferenceTrackingMemoryInternal(obj, out memInSizeT, out mem);
-            return RuntimeImports.RhHandleAllocRefCounted(obj);
-        }
+        private static IntPtr AllocateReferenceTrackingHandle(object obj)
+            => RuntimeImports.RhHandleAllocRefCounted(obj);
 
-        private static void GetOrCreateReferenceTrackingMemoryInternal(
-            object obj,
-            out int memInSizeT,
-            out IntPtr mem)
-        {
-            if (!s_initialized)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCMarshalNotInitialized);
-            }
-
-            if (!obj.GetMethodTable()->IsTrackedReferenceWithFinalizer)
-            {
-                throw new InvalidOperationException(SR.InvalidOperation_ObjectiveCTypeNoFinalizer);
-            }
-
-            var trackerInfo = s_objects.GetOrAdd(obj, static o => new ObjcTrackingInformation());
-            trackerInfo.EnsureInitialized(obj);
-            trackerInfo.GetTaggedMemory(out memInSizeT, out mem);
-        }
-
-        internal class ObjcTrackingInformation
-        {
-            // This matches the CoreCLR implementation. See
-            // InteropSyncBlockInfo::m_taggedAlloc in syncblk.h .
-            private const int TAGGED_MEMORY_SIZE_IN_POINTERS = 2;
-
-            internal IntPtr _memory;
-            private IntPtr _longWeakHandle;
-
-            public ObjcTrackingInformation()
-            {
-                _memory = (IntPtr)NativeMemory.AllocZeroed(TAGGED_MEMORY_SIZE_IN_POINTERS * (nuint)IntPtr.Size);
-            }
-
-            public void GetTaggedMemory(out int memInSizeT, out IntPtr mem)
-            {
-                memInSizeT = TAGGED_MEMORY_SIZE_IN_POINTERS;
-                mem = _memory;
-            }
-
-            public void EnsureInitialized(object o)
-            {
-                if (_longWeakHandle != IntPtr.Zero)
-                {
-                    return;
-                }
-
-                IntPtr newHandle = RuntimeImports.RhHandleAlloc(o, GCHandleType.WeakTrackResurrection);
-                if (Interlocked.CompareExchange(ref _longWeakHandle, newHandle, IntPtr.Zero) != IntPtr.Zero)
-                {
-                    RuntimeImports.RhHandleFree(newHandle);
-                }
-            }
-
-            ~ObjcTrackingInformation()
-            {
-                if (_longWeakHandle != IntPtr.Zero && RuntimeImports.RhHandleGet(_longWeakHandle) != null)
-                {
-                    GC.ReRegisterForFinalize(this);
-                    return;
-                }
-
-                if (_memory != IntPtr.Zero)
-                {
-                    NativeMemory.Free((void*)_memory);
-                    _memory = IntPtr.Zero;
-                }
-                if (_longWeakHandle != IntPtr.Zero)
-                {
-                    RuntimeImports.RhHandleFree(_longWeakHandle);
-                    _longWeakHandle = IntPtr.Zero;
-                }
-            }
-        }
+        private static bool IsTrackedReferenceWithFinalizer(object obj)
+            => RuntimeHelpers.GetMethodTable(obj)->IsTrackedReferenceWithFinalizer;
     }
 }

@@ -34,6 +34,8 @@
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetsAppleMobile)' == 'true'">
+    <!-- ASP.NET Core development certificate generation can block Apple Helix work items before XHarness starts. -->
+    <HelixPreCommand Include="export DOTNET_GENERATE_ASPNET_CERTIFICATE=false" />
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>

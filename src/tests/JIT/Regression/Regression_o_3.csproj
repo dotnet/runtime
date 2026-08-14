@@ -50,6 +50,7 @@
     <Compile Include="JitBlue\Runtime_72763\Runtime_72763.cs" />
     <Compile Include="JitBlue\Runtime_72767\Runtime_72767.cs" />
     <Compile Include="JitBlue\Runtime_72768\Runtime_72768.cs" />
+    <Compile Include="JitBlue\Runtime_72808\Runtime_72808.cs" />
     <Compile Include="JitBlue\Runtime_73559\Runtime_73559.cs" />
     <Compile Include="JitBlue\Runtime_73681\Runtime_73681.cs" />
     <Compile Include="JitBlue\Runtime_73804\Runtime_73804.cs" />
@@ -90,6 +91,7 @@
     <Compile Include="JitBlue\Runtime_83387\Runtime_83387.cs" />
     <Compile Include="JitBlue\Runtime_83941\Runtime_83941.cs" />
     <Compile Include="JitBlue\Runtime_84693\Runtime_84693.cs" />
+    <Compile Include="JitBlue\Runtime_84697\Runtime_84697.cs" />
     <Compile Include="JitBlue\Runtime_85225\Runtime_85225.cs" />
     <Compile Include="JitBlue\Runtime_85226\Runtime_85226.cs" />
     <Compile Include="JitBlue\Runtime_85382\Runtime_85382.cs" />

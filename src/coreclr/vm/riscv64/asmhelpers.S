@@ -315,7 +315,7 @@ C_FUNC(ThePreStubPatchLabel):
     ret
 LEAF_END ThePreStubPatch, _TEXT
 
-NESTED_ENTRY TheUMEntryPrestub, _TEXT, UnhandledExceptionHandlerUnix
+NESTED_ENTRY TheUMEntryPrestub, _TEXT, NoHandler
     // Save arguments and return address
     PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 0xa0
     //PROLOG_SAVE_REG  gp, 16

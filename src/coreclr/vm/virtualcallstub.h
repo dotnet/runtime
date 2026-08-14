@@ -112,8 +112,8 @@ private:
     // In these cases all calls are made by the platform equivalent of "call [addr]".
     //
     // DelegateCallSite are particular in that they can come in a variety of forms:
-    // a direct delegate call has a sequence defined by the jit but a multicast or wrapper delegate
-    // are defined in a stub and have a different shape
+    // a direct delegate call has a sequence defined by the jit but a multicast delegate
+    // is defined in a stub and has a different shape
     //
     PTR_PCODE       m_siteAddr;     // Stores the address of an indirection cell
     PCODE           m_returnAddr;
@@ -577,13 +577,13 @@ private:
     // This methods returns the a cell from ppList. It returns NULL if the list is empty.
     BYTE * GetOneIndCell(BYTE ** ppList)
     {
-        CONTRACT (BYTE*) {
+        CONTRACTL {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(CheckPointer(ppList));
             PRECONDITION(m_indCellLock.OwnedByCurrentThread());
-        } CONTRACT_END;
+        } CONTRACTL_END;
 
         BYTE * temp = *ppList;
 
@@ -591,10 +591,10 @@ private:
         {
             BYTE * pNext = *((BYTE **)temp);
             *ppList = pNext;
-            RETURN temp;
+            return temp;
         }
 
-        RETURN NULL;
+        return NULL;
     }
 
     // insert a linked list of indirection cells at the beginning of m_FreeIndCellList

@@ -16,10 +16,10 @@ namespace Internal.IL.Stubs
     {
         public static MethodIL EmitIL(MethodDesc method)
         {
-            Debug.Assert(((MetadataType)method.OwningType).Name.SequenceEqual("Stream"u8));
+            Debug.Assert(((MetadataType)method.OwningType).Name == "Stream"u8);
 
-            bool isRead = method.Name.SequenceEqual("HasOverriddenBeginEndRead"u8);
-            if (!isRead && !method.Name.SequenceEqual("HasOverriddenBeginEndWrite"u8))
+            bool isRead = method.Name == "HasOverriddenBeginEndRead"u8;
+            if (!isRead && method.Name != "HasOverriddenBeginEndWrite"u8)
                 return null;
 
             TypeDesc streamClass = method.OwningType;

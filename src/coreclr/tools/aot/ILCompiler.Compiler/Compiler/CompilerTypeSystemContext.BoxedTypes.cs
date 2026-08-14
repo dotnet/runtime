@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 
 using Internal;
+using Internal.Text;
 using Internal.TypeSystem;
 using Internal.IL;
 using Internal.IL.Stubs;
@@ -231,8 +232,8 @@ namespace ILCompiler
 
             public override ModuleDesc Module { get; }
 
-            public override ReadOnlySpan<byte> Name => "Boxed_"u8.Append(ValueTypeRepresented.Name);
-            public override ReadOnlySpan<byte> Namespace => ValueTypeRepresented.Namespace;
+            public override Utf8Span Name => "Boxed_"u8.Append(ValueTypeRepresented.Name);
+            public override Utf8Span Namespace => ValueTypeRepresented.Namespace;
             public override string DiagnosticName => "Boxed_" + ValueTypeRepresented.DiagnosticName;
             public override string DiagnosticNamespace => ValueTypeRepresented.DiagnosticNamespace;
             public override Instantiation Instantiation => ValueTypeRepresented.Instantiation;
@@ -273,9 +274,9 @@ namespace ILCompiler
             public override ClassLayoutMetadata GetClassLayout() => default(ClassLayoutMetadata);
             public override bool HasCustomAttribute(string attributeNamespace, string attributeName) => false;
             public override IEnumerable<MetadataType> GetNestedTypes() => Array.Empty<MetadataType>();
-            public override MetadataType GetNestedType(ReadOnlySpan<byte> name) => null;
+            public override MetadataType GetNestedType(Utf8Span name) => null;
             protected override MethodImplRecord[] ComputeVirtualMethodImplsForType() => Array.Empty<MethodImplRecord>();
-            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(ReadOnlySpan<byte> name) => Array.Empty<MethodImplRecord>();
+            public override MethodImplRecord[] FindMethodsImplWithMatchingDeclName(Utf8Span name) => Array.Empty<MethodImplRecord>();
 
             public override int GetHashCode() => VersionResilientHashCode.NameHashCode(Namespace, Name);
 
@@ -299,7 +300,7 @@ namespace ILCompiler
                 return flags;
             }
 
-            public override FieldDesc GetField(ReadOnlySpan<byte> name)
+            public override FieldDesc GetField(Utf8Span name)
             {
                 return null;
             }
@@ -369,7 +370,7 @@ namespace ILCompiler
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override ReadOnlySpan<byte> Name
+            public override Utf8Span Name
             {
                 get
                 {
@@ -458,7 +459,7 @@ namespace ILCompiler
 
             public MethodDesc TargetMethod => _targetMethod;
 
-            public override ReadOnlySpan<byte> Name
+            public override Utf8Span Name
             {
                 get
                 {

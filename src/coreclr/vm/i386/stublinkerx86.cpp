@@ -821,20 +821,20 @@ VOID StubLinkerCPU::X86EmitEspOffset(BYTE opcode,
 // Get X86Reg indexes of argument registers based on offset into ArgumentRegister
 X86Reg GetX86ArgumentRegisterFromOffset(size_t ofs)
 {
-    CONTRACT(X86Reg)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
 
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
-    #define ARGUMENT_REGISTER(reg) if (ofs == offsetof(ArgumentRegisters, reg)) RETURN  k##reg ;
+    #define ARGUMENT_REGISTER(reg) if (ofs == offsetof(ArgumentRegisters, reg)) return  k##reg ;
     ENUM_ARGUMENT_REGISTERS();
     #undef ARGUMENT_REGISTER
 
     _ASSERTE(0);//Can't get here.
-    RETURN kEBP;
+    return kEBP;
 }
 
 
@@ -871,6 +871,7 @@ bool StubLinkerCPU::EmitUnboxMethodStub(MethodDesc* pUnboxMD)
     //
     X86EmitAddReg(THIS_kREG, sizeof(void*));
     EmitTailJumpToMethod(pUnboxMD);
+    SetTargetMethod(pUnboxMD);
     return true;
 }
 
@@ -944,6 +945,7 @@ bool StubLinkerCPU::EmitInstantiatingMethodStub(MethodDesc* pMD, void* extra)
     }
 
     EmitTailJumpToMethod(pMD);
+    SetTargetMethod(pMD);
 
     return true;
 #endif // UNIX_X86_ABI

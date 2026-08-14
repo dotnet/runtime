@@ -59,6 +59,34 @@ namespace System.IO.Tests
             Assert.Equal(FileHandleType.Pipe, clientHandle.Type);
         }
 
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void FileStream_WriteOnlyNamedPipe_CanSeek_IsAsync(bool isAsync)
+        {
+            int openMode = (int)Interop.Kernel32.PipeOptions.PIPE_ACCESS_OUTBOUND;
+            if (isAsync)
+            {
+                openMode |= Interop.Kernel32.FileOperations.FILE_FLAG_OVERLAPPED;
+            }
+
+            Interop.Kernel32.SECURITY_ATTRIBUTES securityAttributes = Interop.Kernel32.SECURITY_ATTRIBUTES.Create();
+            using SafeFileHandle handle = Interop.Kernel32.CreateNamedPipeFileHandle(
+                $@"\\.\pipe\{Guid.NewGuid():N}",
+                openMode,
+                pipeMode: (int)Interop.Kernel32.PipeOptions.PIPE_TYPE_BYTE,
+                maxInstances: 1,
+                outBufferSize: 0,
+                inBufferSize: 0,
+                defaultTimeout: 0,
+                ref securityAttributes);
+            Assert.False(handle.IsInvalid);
+
+            using FileStream stream = new(handle, FileAccess.Write, bufferSize: 4096, isAsync);
+            Assert.False(stream.CanSeek);
+            Assert.Equal(isAsync, stream.IsAsync);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void GetFileType_ConsoleInput()
         {

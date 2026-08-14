@@ -98,19 +98,20 @@ enum StubCodeBlockKind : int
 {
     STUB_CODE_BLOCK_UNKNOWN = 0,
     STUB_CODE_BLOCK_JUMPSTUB = 1,
-    UNUSED = 2,
-    STUB_CODE_BLOCK_DYNAMICHELPER = 3,
-    STUB_CODE_BLOCK_STUBPRECODE = 4,
-    STUB_CODE_BLOCK_FIXUPPRECODE = 5,
+    STUB_CODE_BLOCK_DYNAMICHELPER = 2,
+    STUB_CODE_BLOCK_STUBPRECODE = 3,
+    STUB_CODE_BLOCK_FIXUPPRECODE = 4,
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH
-    STUB_CODE_BLOCK_VSD_DISPATCH_STUB = 6,
-    STUB_CODE_BLOCK_VSD_RESOLVE_STUB = 7,
-    STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 8,
-    STUB_CODE_BLOCK_VSD_VTABLE_STUB = 9,
+    STUB_CODE_BLOCK_VSD_DISPATCH_STUB = 5,
+    STUB_CODE_BLOCK_VSD_RESOLVE_STUB = 6,
+    STUB_CODE_BLOCK_VSD_LOOKUP_STUB = 7,
+    STUB_CODE_BLOCK_VSD_VTABLE_STUB = 8,
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
 #ifdef FEATURE_TIERED_COMPILATION
-    STUB_CODE_BLOCK_CALLCOUNTING = 0xA,
+    STUB_CODE_BLOCK_CALLCOUNTING = 9,
 #endif // FEATURE_TIERED_COMPILATION
+    STUB_CODE_BLOCK_WRAPPER_STUB = 0xA,
+    STUB_CODE_BLOCK_SHUFFLE_THUNK = 0xB,
     // Last valid value. Note that the definition is duplicated in debug\daccess\fntableaccess.cpp
     STUB_CODE_BLOCK_LAST = 0xF,
     // Placeholder used by ReadyToRun images
@@ -123,12 +124,6 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     {
     case STUB_CODE_BLOCK_JUMPSTUB:
         return "JumpStub";
-    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
-        return "MethodCallThunk";
-#ifdef FEATURE_TIERED_COMPILATION
-    case STUB_CODE_BLOCK_CALLCOUNTING:
-        return "CallCountingStub";
-#endif
     case STUB_CODE_BLOCK_DYNAMICHELPER:
         return "MethodCallThunk";
     case STUB_CODE_BLOCK_FIXUPPRECODE:
@@ -143,6 +138,16 @@ inline const char *GetStubCodeBlockKindString(StubCodeBlockKind kind)
     case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
         return "VSD_VTableStub";
 #endif // FEATURE_VIRTUAL_STUB_DISPATCH
+#ifdef FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_CALLCOUNTING:
+        return "CallCountingStub";
+#endif // FEATURE_TIERED_COMPILATION
+    case STUB_CODE_BLOCK_WRAPPER_STUB:
+        return "WrapperStub";
+    case STUB_CODE_BLOCK_SHUFFLE_THUNK:
+        return "ShuffleThunk";
+    case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+        return "MethodCallThunk";
     default:
         return "Unknown";
     }
@@ -152,6 +157,12 @@ void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind);
 #ifndef FEATURE_PERFMAP
 inline void ReportStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 {
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
 }
 #endif
 
@@ -593,9 +604,7 @@ public:
 
 typedef DPTR(class UnwindInfoTable) PTR_UnwindInfoTable;
 // On Windows x64, publish OS UnwindInfo (accessed from RUNTIME_FUNCTION
-// structures) to support the ability unwind the stack. Unfortunately the pre-Win8
-// APIs defined a callback API for publishing this data dynamically that ETW does
-// not use (and really can't because the walk happens in the kernel). In Win8
+// structures) to support the ability to unwind the stack. In Win8 and above
 // new APIs were defined that allow incremental publishing via a table.
 //
 // UnwindInfoTable is a class that wraps the OS APIs that we use to publish
@@ -615,8 +624,6 @@ public:
     static void PublishUnwindInfoForMethod(TADDR baseAddress, T_RUNTIME_FUNCTION* methodUnwindData, int methodUnwindDataCount);
     static void UnpublishUnwindInfoForMethod(TADDR entryPoint);
 
-    static void Initialize();
-
 #if defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 private:
     // These are lower level functions that assume you have found the list of UnwindInfoTable entries
@@ -633,7 +640,8 @@ private:
     UnwindInfoTable(ULONG_PTR rangeStart, ULONG_PTR rangeEnd);
 
 private:
-    void FlushPendingEntries();
+    void FlushPendingEntries(LONG waitForSeq);
+    LONG FlushPendingEntriesUnderGate();
 
     PVOID               hHandle;          // OS handle for a published RUNTIME_FUNCTION table
     ULONG_PTR           iRangeStart;      // Start of memory described by this table
@@ -649,6 +657,26 @@ private:
     static const ULONG  cPendingMaxCount = 32;
     T_RUNTIME_FUNCTION  pendingTable[cPendingMaxCount];
     ULONG               cPendingCount;
+
+    // Per-table locks. Each UnwindInfoTable corresponds to one RangeSection, and
+    // independent RangeSections can publish/unpublish concurrently.
+    Crst                m_publishLock; // Protects the main table and OS registration.
+    Crst                m_pendingLock; // Protects the pending table only.
+
+    Volatile<LONG>      m_flushInProgress;
+
+    // Sequence counters used to ensure callers wait until their entries are
+    // published to the OS before returning.
+    // m_flushLock + m_flushCV form a lightweight condition variable pair.
+    Volatile<LONG>      m_pendingSeq;
+    LONG                m_publishedSeq;   // Protected by m_flushLock.
+    SRWLOCK             m_flushLock;
+    CONDITION_VARIABLE  m_flushCV;
+
+    // Whether initial OS registration failed, used to return early in AddToUnwindInfoTable.
+    // We cannot just check if hHandle is null because it's temporarily set to NULL
+    // during the flusher's merge path.
+    Volatile<bool>      m_registrationFailed;
 #endif // defined(TARGET_AMD64) && defined(TARGET_WINDOWS)
 };
 
@@ -2521,6 +2549,8 @@ public:
     // then compute and return the virtual IP for that the entrypoint for that function
     // (which may require a walk back to find the main function if functionIndex represents a funclet)
     static TADDR          GetWasmVirtualIPFromFunctionTableIndex(DWORD functionIndex);
+    static BOOL           IsFuncletFunctionIndex(DWORD functionIndex);
+    static TADDR          GetWasmFunctionTableIndexFromVirtualIP(TADDR virtualIP);
 #endif // TARGET_WASM
 
     static void           DeleteRange(TADDR StartRange);
@@ -2705,7 +2735,21 @@ struct cdac_data<ExecutionManager>
 {
     static constexpr void* const CodeRangeMapAddress = (void*)&ExecutionManager::g_codeRangeMap.Data[0];
     static constexpr PTR_EEJitManager* EEJitManagerAddress = &ExecutionManager::m_pEEJitManager;
+#ifdef TARGET_WASM
+    static constexpr FunctionTableIndexRangeSection** FunctionTableIndexRangeListAddress = &ExecutionManager::s_pFunctionTableIndexRangeList;
+#endif // TARGET_WASM
 };
+
+#ifdef TARGET_WASM
+template<>
+struct cdac_data<FunctionTableIndexRangeSection>
+{
+    static constexpr size_t MinFunctionTableIndex = offsetof(FunctionTableIndexRangeSection, minFunctionTableIndex);
+    static constexpr size_t NumRuntimeFunctions = offsetof(FunctionTableIndexRangeSection, numRuntimeFunctions);
+    static constexpr size_t R2RModule = offsetof(FunctionTableIndexRangeSection, pR2RModule);
+    static constexpr size_t Next = offsetof(FunctionTableIndexRangeSection, pNext);
+};
+#endif // TARGET_WASM
 #endif
 
 inline CodeHeader * EEJitManager::GetCodeHeader(const METHODTOKEN& MethodToken)

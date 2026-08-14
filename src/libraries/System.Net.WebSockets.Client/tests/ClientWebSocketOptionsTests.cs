@@ -45,6 +45,7 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [OuterLoop]
+        [SkipOnPlatform(TestPlatforms.Browser, "Proxy not supported on browser")]
         [ConditionalTheory(typeof(ClientWebSocketOptionsTests), nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task Proxy_SetNull_ConnectsSuccessfully(Uri server)
         {

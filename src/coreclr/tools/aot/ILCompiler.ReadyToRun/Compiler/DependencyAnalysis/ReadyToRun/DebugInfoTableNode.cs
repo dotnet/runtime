@@ -254,9 +254,17 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
             foreach (var nativeVarInfo in varInfos)
             {
-                writer.WriteUInt(nativeVarInfo.startOffset);
-                writer.WriteUInt(nativeVarInfo.endOffset - nativeVarInfo.startOffset);
                 writer.WriteUInt((uint)(nativeVarInfo.varNumber - (int)ILNum.MAX_ILNUM));
+                writer.WriteUInt(nativeVarInfo.startOffset);
+
+                if (nativeVarInfo.varNumber == unchecked((uint)ILNum.CALL_RETURN_ILNUM))
+                {
+                    writer.WriteUInt(nativeVarInfo.callReturnValueILOffset);
+                }
+                else
+                {
+                    writer.WriteUInt(nativeVarInfo.endOffset - nativeVarInfo.startOffset);
+                }
 
                 VarLocType varLocType = nativeVarInfo.varLoc.LocationType;
 

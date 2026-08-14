@@ -163,8 +163,6 @@ template <typename TRAITS>
 class EMPTY_BASES SHash : public TRAITS
                              , private noncopyable
 {
-    friend class VerifyLayoutsMD;  // verifies class layout doesn't accidentally change
-
   public:
     // explicitly declare local typedefs for these traits types, otherwise
     // the compiler may get confused
@@ -705,51 +703,6 @@ private:
     static size_t _hash(WCHAR const *str)
     {
         return HashString(str);
-    }
-
-public:
-    static size_t compare(str_t left, str_t right)
-    {
-        return _strcmp(left, right);
-    }
-
-    size_t operator()(str_t left, str_t right)
-    {
-        return compare(left, right);
-    }
-
-    static size_t hash(str_t str)
-    {
-        return _hash(str);
-    }
-
-    size_t operator()(str_t str)
-    {
-        return hash(str);
-    }
-};
-
-// Provides case-insensitive comparison and hashing functionality through static
-// and functor object methods. Can be instantiated with CHAR or WCHAR.
-template <typename CharT>
-struct CaseInsensitiveStringCompareHash
-{
-private:
-    typedef CharT const * str_t;
-
-    static size_t _strcmp(str_t left, str_t right)
-    {
-        return ::SString::_tstricmp(left, right);
-    }
-
-    static size_t _hash(CHAR const *str)
-    {
-        return HashiStringA(str);
-    }
-
-    static size_t _hash(WCHAR const *str)
-    {
-        return HashiString(str);
     }
 
 public:

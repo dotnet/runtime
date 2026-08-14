@@ -52,7 +52,7 @@ namespace Internal.IL
         {
             if (method.Instantiation.Length == 1
                 && method.Signature.Length == 0
-                && method.Name.SequenceEqual("CreateInstance"u8))
+                && method.Name == "CreateInstance"u8)
             {
                 TypeDesc type = method.Instantiation[0];
                 if (type.IsValueType && type.GetParameterlessConstructor() == null)
@@ -77,17 +77,17 @@ namespace Internal.IL
             if (mdType == null)
                 return null;
 
-            if (mdType.Name.SequenceEqual("RuntimeHelpers"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+            if (mdType.Name == "RuntimeHelpers"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
             {
                 return RuntimeHelpersIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name.SequenceEqual("Unsafe"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+            if (mdType.Name == "Unsafe"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
             {
                 return UnsafeIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name.SequenceEqual("InstanceCalliHelper"u8) && mdType.Namespace.SequenceEqual("System.Reflection"u8))
+            if (mdType.Name == "InstanceCalliHelper"u8 && mdType.Namespace == "System.Reflection"u8)
             {
                 return InstanceCalliHelperIntrinsics.EmitIL(method);
             }
@@ -106,31 +106,31 @@ namespace Internal.IL
             if (mdType == null)
                 return null;
 
-            if (mdType.Name.SequenceEqual("RuntimeHelpers"u8) && mdType.Namespace.SequenceEqual("System.Runtime.CompilerServices"u8))
+            if (mdType.Name == "RuntimeHelpers"u8 && mdType.Namespace == "System.Runtime.CompilerServices"u8)
             {
                 return RuntimeHelpersIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name.SequenceEqual("Activator"u8) && mdType.Namespace.SequenceEqual("System"u8))
+            if (mdType.Name == "Activator"u8 && mdType.Namespace == "System"u8)
             {
                 return TryGetIntrinsicMethodILForActivator(method);
             }
 
-            if (mdType.Name.SequenceEqual("Interlocked"u8) && mdType.Namespace.SequenceEqual("System.Threading"u8))
+            if (mdType.Name == "Interlocked"u8 && mdType.Namespace == "System.Threading"u8)
             {
                 return InterlockedIntrinsics.EmitIL(_compilationModuleGroup, method);
             }
 
-            if (mdType.Namespace.SequenceEqual("System.Collections.Generic"u8))
+            if (mdType.Namespace == "System.Collections.Generic"u8)
             {
-                if (mdType.Name.SequenceEqual("Comparer`1"u8))
+                if (mdType.Name == "Comparer`1"u8)
                 {
-                    if (method.Name.SequenceEqual("Create"u8))
+                    if (method.Name == "Create"u8)
                         return ComparerIntrinsics.EmitComparerCreate(method);
                 }
-                else if (mdType.Name.SequenceEqual("EqualityComparer`1"u8))
+                else if (mdType.Name == "EqualityComparer`1"u8)
                 {
-                    if (method.Name.SequenceEqual("Create"u8))
+                    if (method.Name == "Create"u8)
                         return ComparerIntrinsics.EmitEqualityComparerCreate(method);
                 }
             }
@@ -195,14 +195,6 @@ namespace Internal.IL
             return false;
         }
 
-        private static bool NeedsAsyncThunk(MethodDesc method)
-        {
-            Debug.Assert(method.IsTypicalMethodDefinition);
-            if (method is not AsyncMethodVariant)
-                return false;
-            return !method.IsAsync;
-        }
-
         private MethodIL GetMethodILForAsyncMethod(MethodDesc method)
         {
             Debug.Assert(method.IsAsync && method is EcmaMethod);
@@ -245,9 +237,14 @@ namespace Internal.IL
                 if (_manifestModuleWrappedMethods.TryGetValue(amv, out var methodIL))
                     return methodIL;
 
-                return NeedsAsyncThunk(amv) ?
-                    AsyncThunkILEmitter.EmitAsyncMethodThunk(amv, amv.Target)
-                    : new AsyncEcmaMethodIL(amv, EcmaMethodIL.Create(amv.Target));
+                MethodIL asyncTargetMethodIL = amv.IsAsync
+                    ? EcmaMethodIL.Create(amv.Target)
+                    : GetMethodIL(amv.Target);
+
+                if (asyncTargetMethodIL == null)
+                    return null;
+
+                return new AsyncMethodIL(amv, asyncTargetMethodIL);
             }
             else if (method is MethodForInstantiatedType || method is InstantiatedMethod)
             {
@@ -380,27 +377,27 @@ namespace Internal.IL
             }
         }
 
-        public sealed class AsyncEcmaMethodIL : MethodIL, IEcmaMethodIL
+        public sealed class AsyncMethodIL : MethodIL, IEcmaMethodIL
         {
             private readonly AsyncMethodVariant _variant;
-            private readonly EcmaMethodIL _ecmaIL;
+            private readonly MethodIL _methodIL;
 
-            public AsyncEcmaMethodIL(AsyncMethodVariant variant, EcmaMethodIL ecmaIL)
-                => (_variant, _ecmaIL) = (variant, ecmaIL);
+            public AsyncMethodIL(AsyncMethodVariant variant, MethodIL methodIL)
+                => (_variant, _methodIL) = (variant, methodIL);
 
             // This is the reason we need this class - the method that owns the IL is the variant.
             public override MethodDesc OwningMethod => _variant;
 
-            // Everything else dispatches to EcmaMethodIL
-            public override MethodDebugInformation GetDebugInfo() => _ecmaIL.GetDebugInfo();
-            public override ILExceptionRegion[] GetExceptionRegions() => _ecmaIL.GetExceptionRegions();
-            public override byte[] GetILBytes() => _ecmaIL.GetILBytes();
-            public override LocalVariableDefinition[] GetLocals() => _ecmaIL.GetLocals();
-            public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _ecmaIL.GetObject(token, notFoundBehavior);
-            public override bool IsInitLocals => _ecmaIL.IsInitLocals;
-            public override int MaxStack => _ecmaIL.MaxStack;
+            // Everything else dispatches to the wrapped IL
+            public override MethodDebugInformation GetDebugInfo() => _methodIL.GetDebugInfo();
+            public override ILExceptionRegion[] GetExceptionRegions() => _methodIL.GetExceptionRegions();
+            public override byte[] GetILBytes() => _methodIL.GetILBytes();
+            public override LocalVariableDefinition[] GetLocals() => _methodIL.GetLocals();
+            public override object GetObject(int token, NotFoundBehavior notFoundBehavior = NotFoundBehavior.Throw) => _methodIL.GetObject(token, notFoundBehavior);
+            public override bool IsInitLocals => _methodIL.IsInitLocals;
+            public override int MaxStack => _methodIL.MaxStack;
 
-            public IEcmaModule Module => _ecmaIL.Module;
+            public IEcmaModule Module => ((EcmaType)(_variant.OwningType)).Module;
         }
     }
 }

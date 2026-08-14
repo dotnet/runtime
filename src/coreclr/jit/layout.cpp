@@ -568,7 +568,28 @@ ClassLayout* ClassLayout::Create(Compiler* compiler, const ClassLayoutBuilder& b
 }
 
 //------------------------------------------------------------------------
-// HasGCByRef: //   Check if this classlayout has a TYP_BYREF GC pointer in it.
+// GetAlignmentRequirement: Get the alignment required for a layout.
+//
+// Parameters:
+//   comp - The compiler instance.
+//
+// Return value:
+//   Alignment requirement.
+//
+unsigned ClassLayout::GetAlignmentRequirement(Compiler* comp) const
+{
+    if (IsCustomLayout())
+    {
+        return HasGCPtr() ? TARGET_POINTER_SIZE : 1;
+    }
+    else
+    {
+        return comp->info.compCompHnd->getClassAlignmentRequirement(GetClassHandle());
+    }
+}
+
+//------------------------------------------------------------------------
+// HasGCByRef: Check if this classlayout has a TYP_BYREF GC pointer in it.
 //
 // Return value:
 //   True if so.
@@ -696,6 +717,58 @@ const SegmentList& ClassLayout::GetNonPadding(Compiler* comp)
     }
 
     return *m_nonPadding;
+}
+
+//------------------------------------------------------------------------
+// SliceLayout:
+//   Slice this class layout into the specified range.
+//
+// Parameters:
+//   compiler - The compiler instance
+//   offset   - Start offset of the slice
+//   size     - Size of the slice
+//
+// Returns:
+//   New layout of size 'size'
+//
+ClassLayout* ClassLayout::SliceLayout(Compiler* compiler, unsigned offset, unsigned size)
+{
+    if (offset == 0 && size == GetSize())
+    {
+        return this;
+    }
+
+    ClassLayoutBuilder builder(compiler, size);
+    INDEBUG(builder.SetName(compiler->printfAlloc("%s[%03u..%03u)", GetClassName(), offset, offset + size),
+                            compiler->printfAlloc("%s[%03u..%03u)", GetShortClassName(), offset, offset + size)));
+
+    if (((offset % TARGET_POINTER_SIZE) == 0) && ((size % TARGET_POINTER_SIZE) == 0) && HasGCPtr())
+    {
+        for (unsigned i = 0; i < size; i += TARGET_POINTER_SIZE)
+        {
+            builder.SetGCPtrType(i / TARGET_POINTER_SIZE, GetGCPtrType((offset + i) / TARGET_POINTER_SIZE));
+        }
+    }
+    else
+    {
+        assert(!HasGCPtr());
+    }
+
+    builder.AddPadding(SegmentList::Segment(0, size));
+
+    for (const SegmentList::Segment& nonPadding : GetNonPadding(compiler))
+    {
+        if ((nonPadding.End <= offset) || (nonPadding.Start >= offset + size))
+        {
+            continue;
+        }
+
+        unsigned start = nonPadding.Start <= offset ? 0 : (nonPadding.Start - offset);
+        unsigned end   = nonPadding.End >= (offset + size) ? size : (nonPadding.End - offset);
+
+        builder.RemovePadding(SegmentList::Segment(start, end));
+    }
+    return compiler->typGetCustomLayout(builder);
 }
 
 //------------------------------------------------------------------------

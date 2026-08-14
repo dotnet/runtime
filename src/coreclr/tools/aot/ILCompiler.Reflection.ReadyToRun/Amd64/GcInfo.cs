@@ -166,8 +166,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                 ReversePInvokeFrameStackSlot = imageReader.DecodeVarLengthSigned(_gcInfoTypes.REVERSE_PINVOKE_FRAME_ENCBASE, ref bitOffset);
             }
 
-            // FIXED_STACK_PARAMETER_SCRATCH_AREA (this macro is always defined in _gcInfoTypes.h)
-            if (!_slimHeader)
+            if (_gcInfoTypes.HAS_FIXED_STACK_PARAMETER_SCRATCH_AREA && !_slimHeader)
             {
                 SizeOfStackOutgoingAndScratchArea = _gcInfoTypes.DenormalizeSizeOfStackArea(imageReader.DecodeVarLengthUnsigned(_gcInfoTypes.SIZE_OF_STACK_AREA_ENCBASE, ref bitOffset));
             }

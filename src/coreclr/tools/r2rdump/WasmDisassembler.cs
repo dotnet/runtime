@@ -212,10 +212,30 @@ namespace R2RDump
                 case 0x23:
                 {
                     uint globalIdx = ReadU32();
-                    isImageBaseGet = globalIdx == 1;
-                    return $"global.get {globalIdx}";
+                    isImageBaseGet = globalIdx == WasmGlobalImports.ImageBaseGlobalIndex;
+                    string name = globalIdx switch
+                    {
+                        WasmGlobalImports.StackPointerGlobalIndex      => " // stackPointer",
+                        WasmGlobalImports.ImageBaseGlobalIndex         => " // imageBase",
+                        WasmGlobalImports.TableBaseGlobalIndex         => " // tableBase",
+                        WasmGlobalImports.AsyncContinuationGlobalIndex => " // asyncContinuation",
+                        _                                              => "",
+                    };
+                    return $"global.get {globalIdx}{name}";
                 }
-                case 0x24: return $"global.set {ReadU32()}";
+                case 0x24:
+                {
+                    uint globalIdx = ReadU32();
+                    string name = globalIdx switch
+                    {
+                        WasmGlobalImports.StackPointerGlobalIndex      => " // stackPointer",
+                        WasmGlobalImports.ImageBaseGlobalIndex         => " // imageBase",
+                        WasmGlobalImports.TableBaseGlobalIndex         => " // tableBase",
+                        WasmGlobalImports.AsyncContinuationGlobalIndex => " // asyncContinuation",
+                        _                                              => "",
+                    };
+                    return $"global.set {globalIdx}{name}";
+                }
 
                 // Table instructions
                 case 0x25: return $"table.get {ReadU32()}";

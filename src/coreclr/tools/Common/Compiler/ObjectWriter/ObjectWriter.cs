@@ -668,15 +668,20 @@ namespace ILCompiler.ObjectWriter
 
         private void EmitChecksums(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations)
         {
-            MemoryStream originalOutputStream = new();
-            outputFileStream.Seek(0, SeekOrigin.Begin);
-            outputFileStream.CopyTo(originalOutputStream);
-            byte[] originalOutput = originalOutputStream.ToArray();
-            EmitChecksumsForObject(outputFileStream, checksumRelocations, originalOutput);
+            // Defer writing the computed values until all checksums are computed so each one is
+            // calculated over the original image and not a value written by an earlier checksum.
+            List<(long Offset, byte[] Value)> pendingWrites = ComputeChecksums(outputFileStream, checksumRelocations);
+
+            foreach ((long offset, byte[] value) in pendingWrites)
+            {
+                outputFileStream.Seek(offset, SeekOrigin.Begin);
+                outputFileStream.Write(value);
+            }
         }
 
-        private protected virtual void EmitChecksumsForObject(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations, ReadOnlySpan<byte> originalOutput)
+        private protected virtual List<(long Offset, byte[] Value)> ComputeChecksums(Stream outputFileStream, List<ChecksumsToCalculate> checksumRelocations)
         {
+            List<(long Offset, byte[] Value)> pendingWrites = [];
             foreach (var block in checksumRelocations)
             {
                 foreach (var reloc in block.ChecksumRelocations)
@@ -684,13 +689,15 @@ namespace ILCompiler.ObjectWriter
                     IChecksumNode checksum = (IChecksumNode)reloc.Target;
 
                     byte[] checksumValue = new byte[checksum.ChecksumSize];
-                    checksum.EmitChecksum(originalOutput, checksumValue);
+                    outputFileStream.Seek(0, SeekOrigin.Begin);
+                    checksum.EmitChecksum(outputFileStream, checksumValue);
 
                     var checksumOffset = (long)_outputSectionLayout[block.SectionIndex].FilePosition + block.Offset + reloc.Offset;
-                    outputFileStream.Seek(checksumOffset, SeekOrigin.Begin);
-                    outputFileStream.Write(checksumValue);
+                    pendingWrites.Add((checksumOffset, checksumValue));
                 }
             }
+
+            return pendingWrites;
         }
 
         partial void HandleControlFlowForRelocation(ISymbolNode relocTarget, Utf8String relocSymbolName);

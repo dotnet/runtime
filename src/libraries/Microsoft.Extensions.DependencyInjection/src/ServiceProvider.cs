@@ -42,11 +42,11 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static bool DisableDynamicEngine { get; } =
             AppContext.TryGetSwitch("Microsoft.Extensions.DependencyInjection.DisableDynamicEngine", out bool disableDynamicEngine) ? disableDynamicEngine : false;
 
-        internal static bool VerifyAotCompatibility =>
+        internal static bool IsDynamicCodeSupported =>
 #if NETFRAMEWORK || NETSTANDARD2_0
-            false;
+            true;
 #else
-            !RuntimeFeature.IsDynamicCodeSupported;
+            RuntimeFeature.IsDynamicCodeSupported;
 #endif
 
         internal ServiceProvider(ICollection<ServiceDescriptor> serviceDescriptors, ServiceProviderOptions options)
@@ -330,7 +330,22 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             public List<ServiceDescriptor> ServiceDescriptors => new List<ServiceDescriptor>(_serviceProvider.Root.RootProvider.CallSiteFactory.Descriptors);
-            public List<object> Disposables => new List<object>(_serviceProvider.Root.Disposables);
+            public List<object> Disposables
+            {
+                get
+                {
+                    IList<object?> source = _serviceProvider.Root.Disposables;
+                    var result = new List<object>(source.Count);
+                    for (int i = 0; i < source.Count; i++)
+                    {
+                        if (source[i] is object item)
+                        {
+                            result.Add(item);
+                        }
+                    }
+                    return result;
+                }
+            }
             public bool Disposed => _serviceProvider.Root.Disposed;
             public bool IsScope => !_serviceProvider.Root.IsRootScope;
         }

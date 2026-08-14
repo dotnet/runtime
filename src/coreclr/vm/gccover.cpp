@@ -24,7 +24,6 @@
 #include "gccover.h"
 #include "virtualcallstub.h"
 #include "threadsuspend.h"
-#include "cdacstress.h"
 
 #if defined(TARGET_AMD64) || defined(TARGET_ARM)
 #include "gcinfodecoder.h"
@@ -203,7 +202,7 @@ void SetupGcCoverage(NativeCodeVersion nativeCodeVersion, BYTE* methodStartPtr)
 FORCEINLINE void UpdateGCStressInstructionWithoutGC ()
 {
     ThreadSuspend::SuspendEE(ThreadSuspend::SUSPEND_OTHER);
-    ThreadSuspend::RestartEE(TRUE, TRUE);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 }
 
 #if defined(TARGET_X86)
@@ -888,8 +887,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     // Do the actual stress work
     //
 
-    CdacStress::MaybeVerify<cdac_on_instr>(pThread, regs);
-
     // BUG(github #10318) - when not using allocation contexts, the alloc lock
     // must be acquired here. Until fixed, this assert prevents random heap corruption.
     assert(GCHeapUtilities::UseThreadAllocationContexts());
@@ -1197,8 +1194,6 @@ void DoGcStress (PCONTEXT regs, NativeCodeVersion nativeCodeVersion)
     //-------------------------------------------------------------------------
     // Do the actual stress work
     //
-
-    CdacStress::MaybeVerify<cdac_on_instr>(pThread, regs);
 
     // BUG(github #10318)- when not using allocation contexts, the alloc lock
     // must be acquired here. Until fixed, this assert prevents random heap corruption.

@@ -1007,6 +1007,22 @@ namespace System
                         format = dtfi.FullDateTimePattern;
                         break;
 
+                    // For invariant DateTime ToString("G"), the expanded pattern is
+                    // "MM/dd/yyyy HH:mm:ss" which is exactly what TryFormatInvariantG
+                    // produces in the NullOffset case. Take the same fast path that
+                    // ToString(InvariantCulture) (null format) already uses.
+                    case 'G':
+                        dtfi = DateTimeFormatInfo.GetInstance(provider);
+                        if (offset.Ticks == NullOffset && ReferenceEquals(dtfi, DateTimeFormatInfo.InvariantInfo))
+                        {
+                            str = string.FastAllocateString(FormatInvariantGMinLength);
+                            TryFormatInvariantG(dateTime, offset, new Span<char>(ref str.GetRawStringData(), str.Length), out charsWritten);
+                            Debug.Assert(charsWritten == FormatInvariantGMinLength);
+                            return str;
+                        }
+                        format = dtfi.GeneralLongTimePattern;
+                        break;
+
                     // All other standard formats
                     default:
                         dtfi = DateTimeFormatInfo.GetInstance(provider);
@@ -1096,6 +1112,19 @@ namespace System
                         dtfi = DateTimeFormatInfo.GetInstance(provider);
                         PrepareFormatU(ref dateTime, ref dtfi, offset);
                         format = dtfi.FullDateTimePattern;
+                        break;
+
+                    // For invariant DateTime ToString("G"), the expanded pattern is
+                    // "MM/dd/yyyy HH:mm:ss" which is exactly what TryFormatInvariantG
+                    // produces in the NullOffset case. Take the same fast path that
+                    // ToString(InvariantCulture) (null format) already uses.
+                    case 'G':
+                        dtfi = DateTimeFormatInfo.GetInstance(provider);
+                        if (offset.Ticks == NullOffset && ReferenceEquals(dtfi, DateTimeFormatInfo.InvariantInfo))
+                        {
+                            return TryFormatInvariantG(dateTime, offset, destination, out charsWritten);
+                        }
+                        format = dtfi.GeneralLongTimePattern;
                         break;
 
                     // All other standard formats

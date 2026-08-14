@@ -3000,7 +3000,7 @@ bool Promotion::IsCandidateForPhysicalPromotion(LclVarDsc* dsc)
 //   Find the effective user given an ancestor stack.
 //
 // Returns:
-//   The user, or null if all users are commas.
+//   The user of the value or null if nothing uses the value.
 //
 GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
 {
@@ -3010,9 +3010,14 @@ GenTree* Promotion::EffectiveUser(Compiler::GenTreeStack& ancestors)
         GenTree* ancestor = ancestors.Top(userIndex);
         GenTree* child    = ancestors.Top(userIndex - 1);
 
-        if (!ancestor->OperIs(GT_COMMA) || (ancestor->gtGetOp2() != child))
+        if (!ancestor->OperIs(GT_COMMA))
         {
             return ancestor;
+        }
+
+        if (ancestor->gtGetOp1() == child)
+        {
+            return nullptr;
         }
 
         userIndex++;

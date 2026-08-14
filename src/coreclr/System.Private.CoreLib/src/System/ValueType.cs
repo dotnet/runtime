@@ -141,6 +141,7 @@ namespace System
 
                     case ValueTypeHashCodeStrategy.ValueTypeOverride:
                         Debug.Assert(fieldMT != null);
+                        Debug.Assert(!fieldMT->IsSharedByGenericInstantiations);
                         // Box the field to handle complicated cases like mutable method and shared generic
                         hashCode.Add(RuntimeHelpers.Box(fieldMT, ref Unsafe.AddByteOffset(ref rawData, fieldOffset))?.GetHashCode() ?? 0);
                         break;
