@@ -1792,7 +1792,15 @@ void ComCallWrapper::ClearHandle()
     OBJECTHANDLE pThis = m_ppThis;
     if (InterlockedCompareExchangeT(&m_ppThis, NULL, pThis) == pThis)
     {
-        DestroyRefcountedHandle(pThis);
+        if (GetThreadNULLOk() != NULL)
+        {
+            GCX_COOP();
+            DestroyRefcountedHandle(pThis);
+        }
+        else
+        {
+            DestroyHandleInPreemptiveMode(pThis, HNDTYPE_REFCOUNTED);
+        }
     }
 }
 
