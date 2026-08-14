@@ -18,7 +18,6 @@ using System.Security.Cryptography;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
-using Antlr4.Runtime.Tree;
 
 namespace ILAssembler
 {
@@ -30,55 +29,17 @@ namespace ILAssembler
 
         public sealed record Literal<T>(T Value) : GrammarResult;
 
-        public sealed record Sequence<T>(ImmutableArray<T> Value) : GrammarResult;
-
-        /// <summary>
-        /// A formatted blob of bytes.
-        /// </summary>
-        /// <param name="Value">The bytes of the blob.</param>
-        public sealed record FormattedBlob(BlobBuilder Value) : GrammarResult;
-
         public sealed record SentinelValue
         {
             public static SentinelValue Instance { get; } = new();
 
             public static Literal<SentinelValue> Result { get; } = new(Instance);
         }
-
-        public sealed record Flag<T>(T Value, bool ShouldAppend = true) : GrammarResult
-            where T : struct, Enum
-        {
-            private readonly T _groupMask;
-            public Flag(T value, bool shouldAppend, T groupMask)
-                : this(value, shouldAppend)
-            {
-                _groupMask = groupMask;
-            }
-            public Flag(T value, T groupMask)
-                : this(value)
-            {
-                _groupMask = groupMask;
-            }
-
-            public static T operator |(T lhs, Flag<T> rhs)
-            {
-                if (!rhs.ShouldAppend)
-                {
-                    return rhs.Value;
-                }
-                int lhsInt = Convert.ToInt32(lhs);
-                int maskInt = Convert.ToInt32(rhs._groupMask);
-                int valueInt = Convert.ToInt32(rhs.Value);
-                return (T)Enum.ToObject(typeof(T), (lhsInt & ~maskInt) | valueInt);
-            }
-        }
     }
 
 #pragma warning disable CA1822 // Mark members as static
-    internal sealed partial class GrammarActions : ICILVisitor<GrammarResult>
+    internal sealed partial class GrammarActions
     {
-        private const string NodeShouldNeverBeDirectlyVisited = "This node should never be directly visited. It should be directly processed by its parent node.";
-        private const string StructuralNodeIsDrivenByParserActions = "This node is processed incrementally by the parser semantic actions and must never be visited recursively.";
         private readonly ImmutableArray<Diagnostic>.Builder _diagnostics = ImmutableArray.CreateBuilder<Diagnostic>();
         private readonly EntityRegistry _entityRegistry = new();
         private readonly IReadOnlyDictionary<string, SourceText> _documents;
@@ -169,17 +130,6 @@ namespace ILAssembler
                 or DiagnosticIds.MissingInstanceCallConv;
         }
 
-        public GrammarResult Visit(IParseTree tree) => tree.Accept(this);
-
-        public GrammarResult VisitChildren(IRuleNode node)
-        {
-            for (int i = 0; i < node.ChildCount; i++)
-            {
-                node.GetChild(i).Accept(this);
-            }
-            return GrammarResult.SentinelValue.Result;
-        }
-
         private sealed class CurrentMethodContext
         {
             public CurrentMethodContext(EntityRegistry.MethodDefinitionEntity definition)
@@ -218,8 +168,6 @@ namespace ILAssembler
 
         private readonly Stack<EntityRegistry.TypeDefinitionEntity> _currentTypeDefinition = new();
 
-        public GrammarResult VisitErrorNode(IErrorNode node) => throw new UnreachableException(NodeShouldNeverBeDirectlyVisited);
-
         // Sentinel to distinguish "no constant" from "constant is null"
         private sealed class NoConstantSentinel
         {
@@ -234,6 +182,5 @@ namespace ILAssembler
         private long _imageBase = 0x00400000;
         private long _stackReserve;
 
-        public GrammarResult VisitTerminal(ITerminalNode node) => throw new UnreachableException();
     }
 }

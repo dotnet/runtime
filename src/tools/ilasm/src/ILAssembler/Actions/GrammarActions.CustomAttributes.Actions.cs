@@ -290,61 +290,9 @@ internal sealed partial class GrammarActions
         return descriptor.Owner is null ? attribute : null;
     }
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitCustomAttrDecl(
-        CILParser.CustomAttrDeclContext context)
-        => VisitCustomAttrDecl(context);
-
     public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity?> VisitCustomAttrDecl(
         CILParser.CustomAttrDeclContext context)
         => new(MaterializeCustomAttributeDeclaration(context.Value, context.Start));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitCustomBlobArgs(
-        CILParser.CustomBlobArgsContext context)
-        => VisitCustomBlobArgs(context);
-
-    public GrammarResult.FormattedBlob VisitCustomBlobArgs(
-        CILParser.CustomBlobArgsContext context)
-    {
-        BlobBuilder result = new();
-        if (context.Value is ImmutableArray<SerializedInitializerValue> arguments)
-        {
-            foreach (SerializedInitializerValue argument in arguments)
-            {
-                MaterializeSerializedInitializer(argument).WriteContentTo(result);
-            }
-        }
-
-        return new(result);
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitCustomBlobDescr(
-        CILParser.CustomBlobDescrContext context)
-        => VisitCustomBlobDescr(context);
-
-    public GrammarResult.FormattedBlob VisitCustomBlobDescr(
-        CILParser.CustomBlobDescrContext context)
-        => new(MaterializeCustomAttributeBlob(
-            context.Value as CustomAttributeBlobValue
-                ?? new RawCustomAttributeBlobValue(new BlobBuilder())));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitCustomBlobNVPairs(
-        CILParser.CustomBlobNVPairsContext context)
-        => VisitCustomBlobNVPairs(context);
-
-    public GrammarResult.FormattedBlob VisitCustomBlobNVPairs(
-        CILParser.CustomBlobNVPairsContext context)
-    {
-        BlobBuilder result = new();
-        WriteCustomBlobNamedArguments(
-            result,
-            context.Value is ImmutableArray<CustomAttributeNamedArgumentValue> values
-                ? values
-                : []);
-        return new(result);
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitCustomDescr(CILParser.CustomDescrContext context)
-        => VisitCustomDescr(context);
 
     public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity> VisitCustomDescr(
         CILParser.CustomDescrContext context)
@@ -352,33 +300,9 @@ internal sealed partial class GrammarActions
             GetCustomAttributeDescriptorValue(context.Value),
             context.Start));
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitCustomDescrInMethodBody(
-        CILParser.CustomDescrInMethodBodyContext context)
-        => VisitCustomDescrInMethodBody(context);
-
     public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity?> VisitCustomDescrInMethodBody(
         CILParser.CustomDescrInMethodBodyContext context)
         => new(MaterializeCustomAttributeDeclaration(context.Value, context.Start));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitCustomDescrWithOwner(
-        CILParser.CustomDescrWithOwnerContext context)
-        => VisitCustomDescrWithOwner(context);
-
-    public GrammarResult.Literal<EntityRegistry.CustomAttributeEntity> VisitCustomDescrWithOwner(
-        CILParser.CustomDescrWithOwnerContext context)
-        => new(MaterializeCustomAttribute(
-            GetCustomAttributeDescriptorValue(context.Value),
-            context.Start));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitCustomType(CILParser.CustomTypeContext context)
-        => VisitCustomType(context);
-
-    public GrammarResult.Literal<EntityRegistry.EntityBase> VisitCustomType(
-        CILParser.CustomTypeContext context)
-        => new(MaterializeMethodReference(GetMethodReferenceValue(context.Value)));
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitOwnerType(CILParser.OwnerTypeContext context)
-        => VisitOwnerType(context);
 
     public GrammarResult.Literal<EntityRegistry.EntityBase> VisitOwnerType(
         CILParser.OwnerTypeContext context)

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Metadata;
 
@@ -173,47 +172,4 @@ internal sealed partial class GrammarActions
         method.MethodImportInformation = pInvokeInformation;
     }
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitImplAttr(CILParser.ImplAttrContext context)
-        => VisitImplAttr(context);
-
-    public static GrammarResult.Flag<MethodImplAttributes> VisitImplAttr(CILParser.ImplAttrContext context)
-    {
-        AttributeValue<MethodImplAttributes> attribute =
-            GetAttributeValue<MethodImplAttributes>(context.Value);
-        return new(attribute.Value, attribute.ShouldAppend, attribute.GroupMask);
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitMethAttr(CILParser.MethAttrContext context)
-        => VisitMethAttr(context);
-
-    public static GrammarResult.Flag<MethodAttributes> VisitMethAttr(CILParser.MethAttrContext context)
-    {
-        AttributeValue<MethodAttributes> attribute = GetAttributeValue<MethodAttributes>(context.Value);
-        return new(attribute.Value, attribute.ShouldAppend, attribute.GroupMask);
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitMethodHead(CILParser.MethodHeadContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitPinvAttr(CILParser.PinvAttrContext context)
-        => VisitPinvAttr(context);
-
-    public static GrammarResult.Flag<MethodImportAttributes> VisitPinvAttr(CILParser.PinvAttrContext context)
-    {
-        AttributeValue<MethodImportAttributes> attribute =
-            GetAttributeValue<MethodImportAttributes>(context.Value);
-        return new(attribute.Value, attribute.ShouldAppend, attribute.GroupMask);
-    }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitPinvImpl(CILParser.PinvImplContext context)
-        => VisitPinvImpl(context);
-
-    public static GrammarResult.Literal<(
-        string? ModuleName,
-        string? EntryPointName,
-        MethodImportAttributes Attributes)> VisitPinvImpl(CILParser.PinvImplContext context)
-    {
-        PInvokeValue value = GetPInvokeValue(context.Value);
-        return new((value.ModuleName, value.EntryPointName, value.Attributes));
-    }
 }

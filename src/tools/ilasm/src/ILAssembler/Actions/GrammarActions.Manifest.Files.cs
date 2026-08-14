@@ -124,15 +124,6 @@ internal sealed partial class GrammarActions
         return entity;
     }
 
-    GrammarResult ICILVisitor<GrammarResult>.VisitFileAttr(CILParser.FileAttrContext context)
-        => VisitFileAttr(context);
-
-    public static GrammarResult.Literal<bool> VisitFileAttr(CILParser.FileAttrContext context)
-        => new(context.Value);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitFileDecl(CILParser.FileDeclContext context)
-        => VisitFileDecl(context);
-
     public GrammarResult.Literal<EntityRegistry.FileEntity> VisitFileDecl(
         CILParser.FileDeclContext context)
     {
@@ -141,10 +132,4 @@ internal sealed partial class GrammarActions
             ?? new(string.Empty, HasMetadata: true, IsEntryPoint: false, Hash: null);
         return new(MaterializeFileDeclaration(declaration));
     }
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitFileEntry(CILParser.FileEntryContext context)
-        => VisitFileEntry(context);
-
-    public static GrammarResult.Literal<bool> VisitFileEntry(CILParser.FileEntryContext context)
-        => new(context.Value);
 }

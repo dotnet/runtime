@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Reflection;
 using Antlr4.Runtime;
 
@@ -242,43 +241,4 @@ internal sealed partial class GrammarActions
                     ResolveTypeSpecification(interfaceType)));
         }
     }
-
-#pragma warning disable CA1822 // Structural rules are driven by parser actions.
-    GrammarResult ICILVisitor<GrammarResult>.VisitClassAttr(CILParser.ClassAttrContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitClassAttr(CILParser.ClassAttrContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitClassHead(CILParser.ClassHeadContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitClassHead(CILParser.ClassHeadContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitExtendsClause(CILParser.ExtendsClauseContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitExtendsClause(CILParser.ExtendsClauseContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitImplClause(CILParser.ImplClauseContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitImplClause(CILParser.ImplClauseContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitImplList(CILParser.ImplListContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitImplList(CILParser.ImplListContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    GrammarResult ICILVisitor<GrammarResult>.VisitNameSpaceHead(
-        CILParser.NameSpaceHeadContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-
-    public GrammarResult VisitNameSpaceHead(CILParser.NameSpaceHeadContext context)
-        => throw new UnreachableException(StructuralNodeIsDrivenByParserActions);
-#pragma warning restore CA1822
 }
