@@ -310,12 +310,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_id; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitId(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -371,12 +365,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_dottedName; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitDottedName(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -460,12 +448,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_dottedNamePart; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitDottedNamePart(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -517,12 +499,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_compQstring; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCompQstring(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -582,12 +558,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_decls; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitDecls(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -734,12 +704,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_decl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1009,12 +973,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_subsystem; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSubsystem(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1052,12 +1010,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_corflags; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCorflags(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1095,12 +1047,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_alignment; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAlignment(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1140,12 +1086,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_imagebase; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitImagebase(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1183,12 +1123,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_stackreserve; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitStackreserve(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1236,12 +1170,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_assemblyBlock; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAssemblyBlock(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1288,12 +1216,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_mscorlib; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitMscorlib(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1335,12 +1257,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_languageDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitLanguageDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1417,12 +1333,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_languageString; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitLanguageString(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1470,12 +1380,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_typelist; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTypelist(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1528,12 +1432,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_int32; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitInt32(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1566,12 +1464,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_int64; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitInt64(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1626,12 +1518,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_float64; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFloat64(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1721,12 +1607,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_intOrWildcard; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitIntOrWildcard(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1783,12 +1663,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_compControl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCompControl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -1921,12 +1795,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_typedefDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTypedefDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2052,12 +1920,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_customDescr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCustomDescr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2171,12 +2033,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_customDescrWithOwner; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCustomDescrWithOwner(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2297,12 +2153,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_customType; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCustomType(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2344,12 +2194,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_ownerType; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitOwnerType(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2406,12 +2250,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_customBlobDescr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCustomBlobDescr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2459,12 +2297,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_customBlobArgs; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCustomBlobArgs(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2584,12 +2416,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_customBlobNVPairs; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCustomBlobNVPairs(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2673,12 +2499,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_fieldOrProp; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFieldOrProp(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2726,12 +2546,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_serializType; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSerializType(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2793,12 +2607,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_serializTypeElement; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSerializTypeElement(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2890,12 +2698,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_moduleHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitModuleHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -2969,12 +2771,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_vtfixupDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitVtfixupDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3031,12 +2827,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_vtfixupAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitVtfixupAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3086,12 +2876,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_vtfixupAttrElement; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitVtfixupAttrElement(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3138,12 +2922,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_vtableDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitVtableDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3190,12 +2968,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_nameSpaceHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitNameSpaceHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3257,12 +3029,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_classHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitClassHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3342,12 +3108,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_classAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitClassAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3616,12 +3376,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_extendsClause; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitExtendsClause(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3675,12 +3429,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_implClause; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitImplClause(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3734,12 +3482,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_classDecls; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitClassDecls(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3794,12 +3536,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_implList; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitImplList(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3854,12 +3590,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_esHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitEsHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -3921,12 +3651,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_extSourceSpec; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitExtSourceSpec(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -4173,12 +3897,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_fileDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFileDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -4256,12 +3974,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_fileAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFileAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -4297,12 +4009,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_fileEntry; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFileEntry(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -4389,12 +4095,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_asmAttrAny; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAsmAttrAny(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -4443,12 +4143,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_asmAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAsmAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -4530,12 +4224,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_instr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitInstr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -4677,12 +4365,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_simpleInstr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSimpleInstr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -4929,12 +4611,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_calliSignature; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCalliSignature(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -4988,12 +4664,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_labels; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitLabels(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -5159,12 +4829,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_typeArgs; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTypeArgs(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -5231,12 +4895,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_bounds; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitBounds(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -5303,12 +4961,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_sigArgs; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSigArgs(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -5399,12 +5051,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_sigArg; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSigArg(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -5485,12 +5131,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_className; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitClassName(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -5627,12 +5267,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_slashedName; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSlashedName(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -5694,12 +5328,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_assemblyDecls; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAssemblyDecls(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -5760,12 +5388,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_assemblyDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAssemblyDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -5862,12 +5484,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_typeSpec; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTypeSpec(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -5953,12 +5569,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_nativeType; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitNativeType(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -6035,12 +5645,6 @@ public partial class CILParser : Parser {
 			return GetRuleContext<Int32Context>(0);
 		}
 		public PointerArrayTypeSizeContext(NativeTypeArrayPointerInfoContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPointerArrayTypeSize(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 	public partial class PointerArrayTypeParamIndexContext : NativeTypeArrayPointerInfoContext {
 		public Int32Context parameterIndex;
@@ -6049,22 +5653,10 @@ public partial class CILParser : Parser {
 			return GetRuleContext<Int32Context>(0);
 		}
 		public PointerArrayTypeParamIndexContext(NativeTypeArrayPointerInfoContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPointerArrayTypeParamIndex(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 	public partial class PointerNativeTypeContext : NativeTypeArrayPointerInfoContext {
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode PTR() { return GetToken(CILParser.PTR, 0); }
 		public PointerNativeTypeContext(NativeTypeArrayPointerInfoContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPointerNativeType(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 	public partial class PointerArrayTypeSizeParamIndexContext : NativeTypeArrayPointerInfoContext {
 		public Int32Context size;
@@ -6077,22 +5669,10 @@ public partial class CILParser : Parser {
 			return GetRuleContext<Int32Context>(i);
 		}
 		public PointerArrayTypeSizeParamIndexContext(NativeTypeArrayPointerInfoContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPointerArrayTypeSizeParamIndex(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 	public partial class PointerArrayTypeNoSizeDataContext : NativeTypeArrayPointerInfoContext {
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode ARRAY_TYPE_NO_BOUNDS() { return GetToken(CILParser.ARRAY_TYPE_NO_BOUNDS, 0); }
 		public PointerArrayTypeNoSizeDataContext(NativeTypeArrayPointerInfoContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPointerArrayTypeNoSizeData(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -6260,12 +5840,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_nativeTypeElement; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitNativeTypeElement(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -6767,12 +6341,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_iidParamIndex; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitIidParamIndex(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -6846,12 +6414,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_variantType; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitVariantType(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -6965,12 +6527,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_variantTypeElement; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitVariantTypeElement(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -7334,12 +6890,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_type; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitType(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -7405,22 +6955,10 @@ public partial class CILParser : Parser {
 			return GetRuleContext<TypeSpecContext>(0);
 		}
 		public OptionalModifierContext(TypeModifiersContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitOptionalModifier(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 	public partial class SZArrayModifierContext : TypeModifiersContext {
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode ARRAY_TYPE_NO_BOUNDS() { return GetToken(CILParser.ARRAY_TYPE_NO_BOUNDS, 0); }
 		public SZArrayModifierContext(TypeModifiersContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSZArrayModifier(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 	public partial class RequiredModifierContext : TypeModifiersContext {
 		public TypeSpecContext modifierType;
@@ -7428,31 +6966,13 @@ public partial class CILParser : Parser {
 			return GetRuleContext<TypeSpecContext>(0);
 		}
 		public RequiredModifierContext(TypeModifiersContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitRequiredModifier(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 	public partial class PtrModifierContext : TypeModifiersContext {
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode PTR() { return GetToken(CILParser.PTR, 0); }
 		public PtrModifierContext(TypeModifiersContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPtrModifier(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 	public partial class PinnedModifierContext : TypeModifiersContext {
 		public PinnedModifierContext(TypeModifiersContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPinnedModifier(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 	public partial class GenericArgumentsModifierContext : TypeModifiersContext {
 		public TypeArgsContext arguments;
@@ -7460,22 +6980,10 @@ public partial class CILParser : Parser {
 			return GetRuleContext<TypeArgsContext>(0);
 		}
 		public GenericArgumentsModifierContext(TypeModifiersContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitGenericArgumentsModifier(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 	public partial class ByRefModifierContext : TypeModifiersContext {
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode REF() { return GetToken(CILParser.REF, 0); }
 		public ByRefModifierContext(TypeModifiersContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitByRefModifier(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 	public partial class ArrayModifierContext : TypeModifiersContext {
 		public BoundsContext arrayBounds;
@@ -7483,12 +6991,6 @@ public partial class CILParser : Parser {
 			return GetRuleContext<BoundsContext>(0);
 		}
 		public ArrayModifierContext(TypeModifiersContext context) { CopyFrom(context); }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitArrayModifier(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -7664,12 +7166,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_elementType; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitElementType(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -7868,12 +7364,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_simpleType; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSimpleType(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -8061,12 +7551,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_bound; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitBound(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -8141,12 +7625,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_nativeInt; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitNativeInt(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -8183,12 +7661,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_nativeUint; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitNativeUint(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -8272,12 +7744,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_secDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSecDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -8451,12 +7917,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_secAttrSetBlob; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSecAttrSetBlob(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -8568,12 +8028,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_secAttrBlob; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSecAttrBlob(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -8646,12 +8100,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_nameValPairs; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitNameValPairs(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -8714,12 +8162,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_nameValPair; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitNameValPair(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -8756,12 +8198,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_truefalse; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTruefalse(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -8824,12 +8260,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_caValue; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCaValue(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -8966,12 +8396,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_secAction; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSecAction(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9051,12 +8475,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_methodRef; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitMethodRef(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9208,12 +8626,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_callConv; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCallConv(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9294,12 +8706,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_callKind; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCallKind(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9405,12 +8811,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_mdtoken; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitMdtoken(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9464,12 +8864,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_memberRef; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitMemberRef(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9545,12 +8939,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_fieldRef; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFieldRef(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9623,12 +9011,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_typeList; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTypeList(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9687,12 +9069,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_typarsClause; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTyparsClause(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9759,12 +9135,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_typarAttrib; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTyparAttrib(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9866,12 +9236,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_typarAttribs; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTyparAttribs(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9931,12 +9295,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_typar; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTypar(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -9990,12 +9348,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_typars; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTypars(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -10054,12 +9406,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_tyBound; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTyBound(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -10100,12 +9446,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_genArity; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitGenArity(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -10151,12 +9491,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_genArityNotEmpty; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitGenArityNotEmpty(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -10335,12 +9669,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_classDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitClassDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -10788,12 +10116,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_fieldDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFieldDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -10904,12 +10226,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_fieldAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFieldAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -11076,12 +10392,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_atOpt; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAtOpt(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -11142,12 +10452,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_initOpt; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitInitOpt(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -11285,12 +10589,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_repeatOpt; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitRepeatOpt(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -11399,12 +10697,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_eventHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitEventHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -11491,12 +10783,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_eventAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitEventAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -11550,12 +10836,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_eventDecls; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitEventDecls(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -11618,12 +10898,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_eventDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitEventDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -11768,12 +11042,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_propHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPropHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -11841,12 +11109,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_propAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPropAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -11900,12 +11162,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_propDecls; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPropDecls(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -11968,12 +11224,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_propDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPropDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -12085,12 +11335,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_marshalClause; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitMarshalClause(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -12179,12 +11423,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_marshalBlob; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitMarshalBlob(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -12308,12 +11546,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_paramAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitParamAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -12367,12 +11599,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_paramAttrElement; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitParamAttrElement(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -12500,12 +11726,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_methodHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitMethodHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -12633,12 +11853,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_methAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitMethAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -12844,12 +12058,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_pinvImpl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPinvImpl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -12953,12 +12161,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_pinvAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitPinvAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -13137,12 +12339,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_methodName; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitMethodName(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -13210,12 +12406,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_implAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitImplAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -13395,12 +12585,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_methodDecls; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitMethodDecls(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -13504,12 +12688,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_methodDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitMethodDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -13733,12 +12911,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_localsDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitLocalsDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -13793,12 +12965,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_exportDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitExportDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -13859,12 +13025,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_vtentryDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitVtentryDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -13930,12 +13090,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_overrideDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitOverrideDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14032,12 +13186,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_parameterDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitParameterDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14234,12 +13382,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_labelDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitLabelDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14283,12 +13425,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_customDescrInMethodBody; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCustomDescrInMethodBody(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14339,12 +13475,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_scopeBlock; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitScopeBlock(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14389,12 +13519,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_sehBlock; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSehBlock(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14437,12 +13561,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_sehClauses; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSehClauses(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14510,12 +13628,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_tryBlock; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTryBlock(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14602,12 +13714,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_sehClause; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSehClause(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14692,12 +13798,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_filterClause; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFilterClause(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14762,12 +13862,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_catchClause; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCatchClause(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14802,12 +13896,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_finallyClause; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFinallyClause(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14838,12 +13926,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_faultClause; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFaultClause(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14895,12 +13977,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_handlerBlock; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitHandlerBlock(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -14973,12 +14049,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_dataDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitDataDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -15021,12 +14091,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_ddHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitDdHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -15081,12 +14145,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_tls; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitTls(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -15147,12 +14205,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_ddBody; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitDdBody(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -15229,12 +14281,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_ddItemList; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitDdItemList(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -15289,12 +14335,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_ddItemCount; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitDdItemCount(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -15475,12 +14515,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_ddItem; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitDdItem(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -15700,12 +14734,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_fieldSerInit; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFieldSerInit(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -15954,12 +14982,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_bytes; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitBytes(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -16010,12 +15032,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_hexbyte; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitHexbyte(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -16066,12 +15082,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_fieldInit; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitFieldInit(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -16249,12 +15259,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_serInit; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSerInit(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -16693,12 +15697,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_f32seq; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitF32seq(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -16773,12 +15771,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_f64seq; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitF64seq(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -16846,12 +15838,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_i64seq; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitI64seq(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -16906,12 +15892,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_i32seq; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitI32seq(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -16966,12 +15946,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_i16seq; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitI16seq(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17026,12 +16000,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_i8seq; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitI8seq(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17086,12 +16054,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_boolSeq; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitBoolSeq(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17149,12 +16111,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_sqstringSeq; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitSqstringSeq(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17224,12 +16180,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_classSeq; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitClassSeq(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17284,12 +16234,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_classSeqElement; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitClassSeqElement(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17365,12 +16309,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_objSeq; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitObjSeq(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17431,12 +16369,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_customAttrDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitCustomAttrDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17519,12 +16451,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_asmOrRefDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAsmOrRefDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17657,12 +16583,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_assemblyRefBlock; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAssemblyRefBlock(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17717,12 +16637,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_assemblyRefHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAssemblyRefHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17798,12 +16712,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_assemblyRefDecls; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAssemblyRefDecls(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17861,12 +16769,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_assemblyRefDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitAssemblyRefDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -17974,12 +16876,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_exptypeBlock; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitExptypeBlock(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18032,12 +16928,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_exptypeHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitExptypeHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18089,12 +16979,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_exportHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitExportHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18141,12 +17025,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_exptAttrs; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitExptAttrs(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18197,12 +17075,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_exptAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitExptAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18317,12 +17189,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_exptypeDecls; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitExptypeDecls(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18395,12 +17261,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_exptypeDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitExptypeDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18518,12 +17378,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_manifestResBlock; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitManifestResBlock(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18581,12 +17435,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_manifestResHead; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitManifestResHead(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18660,12 +17508,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_manresAttrs; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitManresAttrs(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18714,12 +17556,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_manresAttr; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitManresAttr(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18768,12 +17604,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_manifestResDecls; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitManifestResDecls(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]
@@ -18837,12 +17667,6 @@ public partial class CILParser : Parser {
 		{
 		}
 		public override int RuleIndex { get { return RULE_manifestResDecl; } }
-		[System.Diagnostics.DebuggerNonUserCode]
-		public override TResult Accept<TResult>(IParseTreeVisitor<TResult> visitor) {
-			ICILVisitor<TResult> typedVisitor = visitor as ICILVisitor<TResult>;
-			if (typedVisitor != null) return typedVisitor.VisitManifestResDecl(this);
-			else return visitor.VisitChildren(this);
-		}
 	}
 
 	[RuleVersion(0)]

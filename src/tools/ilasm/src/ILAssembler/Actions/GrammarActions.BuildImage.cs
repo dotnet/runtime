@@ -18,12 +18,11 @@ using System.Security.Cryptography;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
-using Antlr4.Runtime.Tree;
 
 namespace ILAssembler
 {
 #pragma warning disable CA1822 // Mark members as static
-    internal sealed partial class GrammarActions : ICILVisitor<GrammarResult>
+    internal sealed partial class GrammarActions
     {
         public (ImmutableArray<Diagnostic> Diagnostics, CompilationResult? Image) BuildImage()
         {
