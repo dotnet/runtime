@@ -9,6 +9,8 @@ namespace ILAssembler;
 
 internal sealed partial class GrammarActions
 {
+    // Active namespace and type scopes are paired with their owning declaration so a rule's
+    // finally block can unwind real compiler state after syntax-error recovery.
     private readonly Stack<RuleContext> _namespaceOwners = new();
     private readonly Stack<RuleContext> _typeOwners = new();
 
@@ -29,8 +31,6 @@ internal sealed partial class GrammarActions
     /// </summary>
     internal void EndClassDeclaration(CILParser.ClassDeclContext context)
     {
-        EndClassGenericDirective(context);
-        EndPropertyAndEventBodies(context);
         EndScopesOwnedBy(context);
     }
 

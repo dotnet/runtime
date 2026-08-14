@@ -6,8 +6,8 @@ namespace ILAssembler;
 internal sealed partial class GrammarActions
 {
     internal EntityRegistry.EntityBase MaterializeMethodReference(CILParser.MethodRefContext context)
-        => MaterializeMethodReference(GetMethodReferenceValue(context.Value));
+        => MaterializeMethodReference(context.Value);
 
     internal EntityRegistry.TypeEntity ResolveTypeSpecification(CILParser.TypeSpecContext context)
-        => ResolveTypeSpecification(GetTypeSpecificationValue(context.Value));
+        => ResolveTypeSpecification(context.Value);
 }

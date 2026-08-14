@@ -9,14 +9,15 @@ namespace ILAssembler;
 
 internal sealed partial class GrammarActions
 {
-    internal void BeginMethod(CILParser.MethodHeadContext context, object? value)
+    internal void BeginMethod(CILParser.MethodHeadContext context, MethodHeaderValue value)
     {
-        MethodHeaderValue header = GetMethodHeaderValue(value);
         ResetMethodBodyState();
-        if (!header.IsValid)
+        if (!value.IsValid)
         {
             return;
         }
+
+        MethodHeaderValue header = value;
 
         EntityRegistry.TypeDefinitionEntity containingType =
             _currentTypeDefinition.PeekOrDefault() ?? _entityRegistry.ModuleType;

@@ -9,30 +9,20 @@ namespace ILAssembler;
 
 internal sealed partial class GrammarActions
 {
-    private sealed record SourceDirectiveValue(
-        bool AutoIncrement,
-        int StartLine,
-        int StartColumn,
-        int EndLine,
-        int EndColumn,
-        string? DocumentPath);
-
-    private sealed record LanguageDirectiveValue(
-        string Language,
-        string? Vendor,
-        string? DocumentType);
-
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
     internal bool IsAutoIncrementSourceDirective(IToken token) => token.Text == "#line";
 #pragma warning restore CA1822
 
-    internal object CreateSourceLine(bool autoIncrement, IToken line, IToken? path)
+    internal SourceDirectiveValue CreateSourceLine(
+        bool autoIncrement,
+        IToken line,
+        IToken? path)
     {
         int lineNumber = ParseInt32(line);
         return CreateSourceDirective(autoIncrement, lineNumber, 0, lineNumber, 0, path);
     }
 
-    internal object CreateSourceColumn(
+    internal SourceDirectiveValue CreateSourceColumn(
         bool autoIncrement,
         IToken line,
         IToken column,
@@ -49,7 +39,7 @@ internal sealed partial class GrammarActions
             path);
     }
 
-    internal object CreateSourceColumnRange(
+    internal SourceDirectiveValue CreateSourceColumnRange(
         bool autoIncrement,
         IToken line,
         IToken startColumn,
@@ -66,7 +56,7 @@ internal sealed partial class GrammarActions
             path);
     }
 
-    internal object CreateSourceLineRange(
+    internal SourceDirectiveValue CreateSourceLineRange(
         bool autoIncrement,
         IToken startLine,
         IToken endLine,
@@ -83,7 +73,7 @@ internal sealed partial class GrammarActions
             path);
     }
 
-    internal object CreateSourceRange(
+    internal SourceDirectiveValue CreateSourceRange(
         bool autoIncrement,
         IToken startLine,
         IToken endLine,
@@ -113,11 +103,15 @@ internal sealed partial class GrammarActions
             endColumn,
             path is null ? null : StringHelpers.ParseQuotedString(path.Text));
 
-    internal void EndSourceDirective(CILParser.ExtSourceSpecContext context)
+    internal void EndSourceDirective(
+        CILParser.ExtSourceSpecContext context,
+        int initialSyntaxErrorCount)
     {
-        context.HasSyntaxError = EndSemanticRoot(context);
+        context.HasSyntaxError =
+            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
+            context.exception is not null;
         if (context.HasSyntaxError ||
-            context.Value is not SourceDirectiveValue value ||
+            context.Value is not { } value ||
             !CanApplySharedDirective(context))
         {
             context.Value = null;
@@ -179,24 +173,28 @@ internal sealed partial class GrammarActions
     internal string ParseLanguageString(IToken token)
         => StringHelpers.ParseQuotedString(token.Text);
 
-    internal object CreateLanguageDirective(string language)
+    internal LanguageDirectiveValue CreateLanguageDirective(string language)
         => new LanguageDirectiveValue(language, null, null);
 
-    internal object CreateLanguageDirective(string language, string vendor)
+    internal LanguageDirectiveValue CreateLanguageDirective(string language, string vendor)
         => new LanguageDirectiveValue(language, vendor, null);
 
-    internal object CreateLanguageDirective(
+    internal LanguageDirectiveValue CreateLanguageDirective(
         string language,
         string vendor,
         string documentType)
         => new LanguageDirectiveValue(language, vendor, documentType);
 #pragma warning restore CA1822
 
-    internal void EndLanguageDirective(CILParser.LanguageDeclContext context)
+    internal void EndLanguageDirective(
+        CILParser.LanguageDeclContext context,
+        int initialSyntaxErrorCount)
     {
-        context.HasSyntaxError = EndSemanticRoot(context);
+        context.HasSyntaxError =
+            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
+            context.exception is not null;
         if (context.HasSyntaxError ||
-            context.Value is not LanguageDirectiveValue value ||
+            context.Value is not { } value ||
             !CanApplySharedDirective(context))
         {
             context.Value = null;

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Reflection;
@@ -12,9 +11,6 @@ namespace ILAssembler;
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
 {
-    private readonly Stack<ManifestValueListFrame<CILParser.ManifestResDeclsContext>>
-        _manifestResourceDeclarationFrames = new();
-
     internal ManifestResourceAttributes AddManifestResourceAttribute(
         ManifestResourceAttributes attributes,
         ManifestResourceAttributes value)
@@ -28,54 +24,44 @@ internal sealed partial class GrammarActions
             _ => throw new UnreachableException()
         };
 
-    internal object CreateManifestResourceHeader(
+    internal ManifestResourceHeaderValue CreateManifestResourceHeader(
         ManifestResourceAttributes attributes,
         string name,
         string alias,
         IToken location)
-        => new ManifestResourceHeaderValue(attributes, name, alias, location);
+        => new ManifestResourceHeaderValue(true, attributes, name, alias, location);
 
-    internal void BeginManifestResourceDeclarations(CILParser.ManifestResDeclsContext context)
-        => _manifestResourceDeclarationFrames.Push(new(context));
-
-    internal void AddManifestResourceDeclaration(
-        CILParser.ManifestResDeclsContext context,
-        object? value)
-        => AddManifestValue(_manifestResourceDeclarationFrames, context, value);
-
-    internal object EndManifestResourceDeclarations(CILParser.ManifestResDeclsContext context)
-        => EndManifestValues(_manifestResourceDeclarationFrames, context);
-
-    internal object CreateManifestResource(
-        object? header,
-        object? declarations,
-        IToken location)
+    internal ManifestResourceValue CreateManifestResource(
+        ManifestResourceHeaderValue header,
+        ImmutableArray<ManifestResourceDeclarationValue> declarations)
         => new ManifestResourceValue(
-            GetManifestResourceHeader(header, location),
-            GetManifestValues(declarations));
+            header,
+            declarations);
 
-    internal object CreateManifestResourceFileDeclaration(
+    internal ManifestResourceDeclarationValue CreateManifestResourceFileDeclaration(
         string name,
         IToken offset,
         IToken location)
         => new ManifestResourceFileDirectiveValue(name, (uint)ParseInt32(offset), location);
 
-    internal object CreateManifestResourceAssemblyDeclaration(string name)
+    internal ManifestResourceDeclarationValue CreateManifestResourceAssemblyDeclaration(
+        string name)
         => new ManifestResourceAssemblyDirectiveValue(name);
 
-    internal object CreateManifestResourceCustomAttributeDeclaration(
-        object? value,
+    internal ManifestResourceDeclarationValue CreateManifestResourceCustomAttributeDeclaration(
+        CustomAttributeDeclarationValue? value,
         IToken location)
         => new ManifestResourceCustomAttributeDirectiveValue(value, location);
 
-    private static ManifestResourceHeaderValue GetManifestResourceHeader(
-        object? value,
-        IToken location)
-        => value as ManifestResourceHeaderValue
-            ?? new(0, string.Empty, string.Empty, location);
-
     private void MaterializeManifestResource(ManifestResourceValue value)
     {
+        ManifestResourceHeaderValue header = value.Header;
+        if (!header.IsValid ||
+            header.Location is not IToken location)
+        {
+            return;
+        }
+
         (
             EntityRegistry.EntityBase? implementation,
             uint offset,
@@ -85,15 +71,15 @@ internal sealed partial class GrammarActions
         if (implementation is null)
         {
             offset = (uint)_manifestResources.Count;
-            byte[] resourceData = _resourceLocator(value.Header.Alias);
+            byte[] resourceData = _resourceLocator(header.Alias);
             if (resourceData is null)
             {
                 ReportError(
                     DiagnosticIds.FileNotFound,
                     string.Format(
                         DiagnosticMessageTemplates.FileNotFound,
-                        value.Header.Alias),
-                    value.Header.Location);
+                        header.Alias),
+                    location);
             }
             else
             {
@@ -103,8 +89,8 @@ internal sealed partial class GrammarActions
         }
 
         EntityRegistry.ManifestResourceEntity resource =
-            _entityRegistry.CreateManifestResource(value.Header.Name, offset);
-        resource.Attributes = value.Header.Attributes;
+            _entityRegistry.CreateManifestResource(header.Name, offset);
+        resource.Attributes = header.Attributes;
         resource.Implementation = implementation;
         foreach (EntityRegistry.CustomAttributeEntity customAttribute in customAttributes)
         {
@@ -116,14 +102,15 @@ internal sealed partial class GrammarActions
         EntityRegistry.EntityBase? Implementation,
         uint Offset,
         ImmutableArray<EntityRegistry.CustomAttributeEntity> CustomAttributes
-    ) MaterializeManifestResourceDeclarations(ImmutableArray<object> declarations)
+    ) MaterializeManifestResourceDeclarations(
+        ImmutableArray<ManifestResourceDeclarationValue> declarations)
     {
         EntityRegistry.EntityBase? implementation = null;
         uint offset = 0;
         ImmutableArray<EntityRegistry.CustomAttributeEntity>.Builder customAttributes =
             ImmutableArray.CreateBuilder<EntityRegistry.CustomAttributeEntity>();
 
-        foreach (object declaration in declarations)
+        foreach (ManifestResourceDeclarationValue declaration in declarations)
         {
             switch (declaration)
             {

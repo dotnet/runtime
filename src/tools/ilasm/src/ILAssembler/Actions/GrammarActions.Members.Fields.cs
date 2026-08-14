@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
@@ -14,67 +13,39 @@ namespace ILAssembler;
 #pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
 internal sealed partial class GrammarActions
 {
-    private readonly Stack<FieldDeclarationFrame> _fieldDeclarationFrames = new();
-
-    private sealed class FieldDeclarationFrame
-    {
-        public FieldDeclarationFrame(CILParser.FieldDeclContext owner, int initialSyntaxErrorCount)
-        {
-            Owner = owner;
-            InitialSyntaxErrorCount = initialSyntaxErrorCount;
-        }
-
-        public CILParser.FieldDeclContext Owner { get; }
-
-        public int InitialSyntaxErrorCount { get; }
-
-        public FieldAttributes Attributes { get; set; }
-
-        public MarshallingDescriptorValue Marshalling { get; set; } =
-            GetMarshallingDescriptorValue(null);
-    }
-
-    internal void BeginFieldDeclaration(CILParser.FieldDeclContext context)
+    internal CILParser.FieldDeclarationBuilder PrepareFieldDeclaration()
     {
         ClearPendingCustomAttributeOwners();
-        _fieldDeclarationFrames.Push(new(context, _syntaxErrorCount));
+        return new CILParser.FieldDeclarationBuilder();
     }
 
-    internal void AddFieldAttribute(CILParser.FieldDeclContext context, object? value)
-    {
-        if (TryGetFieldDeclarationFrame(context) is { } frame)
-        {
-            frame.Attributes = ApplyAttribute(
-                frame.Attributes,
-                GetAttributeValue<FieldAttributes>(value));
-        }
-    }
+    internal void AddFieldAttribute(
+        CILParser.FieldDeclarationBuilder builder,
+        CILParser.AttributeValue<FieldAttributes> value)
+        => builder.Attributes = ApplyAttribute(builder.Attributes, value);
 
-    internal void SetFieldMarshalling(CILParser.FieldDeclContext context, object? value)
-    {
-        if (TryGetFieldDeclarationFrame(context) is { } frame)
-        {
-            frame.Marshalling = GetMarshallingDescriptorValue(value);
-        }
-    }
+    internal void SetFieldMarshalling(
+        CILParser.FieldDeclarationBuilder builder,
+        MarshallingDescriptorValue value)
+        => builder.Marshalling = value;
 
-    internal object CreateFieldDeclaration(
+    internal FieldDeclarationValue CreateFieldDeclaration(
         CILParser.FieldDeclContext context,
+        CILParser.FieldDeclarationBuilder builder,
+        int initialSyntaxErrorCount,
         CILParser.RepeatOptContext offset,
-        object? fieldType,
+        TypeValue fieldType,
         string name,
         string? dataDeclarationName,
-        object? initializer)
+        FieldInitializerValue initializer)
     {
-        FieldDeclarationFrame? frame = TryGetFieldDeclarationFrame(context);
-        if (frame is null ||
-            frame.InitialSyntaxErrorCount != _syntaxErrorCount ||
+        if (HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
             context.exception is not null)
         {
             return FieldDeclarationValue.Error;
         }
 
-        FieldAttributes attributes = frame.Attributes;
+        FieldAttributes attributes = builder.Attributes;
         if (attributes.HasFlag(FieldAttributes.RTSpecialName))
         {
             attributes |= FieldAttributes.SpecialName;
@@ -83,22 +54,25 @@ internal sealed partial class GrammarActions
         return new FieldDeclarationValue(
             true,
             attributes,
-            GetTypeValue(fieldType),
+            fieldType,
             name,
-            frame.Marshalling,
+            builder.Marshalling,
             dataDeclarationName,
             offset.HasValue ? offset.Value : null,
             initializer);
     }
 
-    internal void DefineField(CILParser.FieldDeclContext context, object? value)
+    internal void DefineField(
+        CILParser.FieldDeclContext context,
+        FieldDeclarationValue value)
     {
         _ = context;
-        FieldDeclarationValue declaration = GetFieldDeclarationValue(value);
-        if (!declaration.IsValid)
+        if (!value.IsValid)
         {
             return;
         }
+
+        FieldDeclarationValue declaration = value;
 
         BlobBuilder signature = new();
         _ = new BlobEncoder(signature).Field();
@@ -121,72 +95,58 @@ internal sealed partial class GrammarActions
         field.MarshallingDescriptor = MaterializeMarshallingDescriptor(declaration.Marshalling);
         field.DataDeclarationName = declaration.DataDeclarationName;
         field.Offset = declaration.Offset;
-        if (declaration.ConstantValue is not NoConstantSentinel)
+        if (declaration.Initializer.HasValue)
         {
-            field.ConstantValue = declaration.ConstantValue;
+            field.ConstantValue = declaration.Initializer.ConstantValue;
             field.HasConstant = true;
         }
     }
-    internal void EndFieldDeclaration(CILParser.FieldDeclContext context)
-    {
-        if (_fieldDeclarationFrames.Count == 0)
-        {
-            return;
-        }
 
-        FieldDeclarationFrame frame = _fieldDeclarationFrames.Peek();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        if (ReferenceEquals(frame.Owner, context))
-        {
-            _fieldDeclarationFrames.Pop();
-        }
-    }
-
-    internal object CreateFieldAttribute(IToken token)
+    internal CILParser.AttributeValue<FieldAttributes> CreateFieldAttribute(IToken token)
         => token.Text switch
         {
-            "static" => new AttributeValue<FieldAttributes>(FieldAttributes.Static, 0, true),
-            "public" => new AttributeValue<FieldAttributes>(
+            "static" => new CILParser.AttributeValue<FieldAttributes>(FieldAttributes.Static, 0, true),
+            "public" => new CILParser.AttributeValue<FieldAttributes>(
                 FieldAttributes.Public,
                 FieldAttributes.FieldAccessMask,
                 true),
-            "private" => new AttributeValue<FieldAttributes>(
+            "private" => new CILParser.AttributeValue<FieldAttributes>(
                 FieldAttributes.Private,
                 FieldAttributes.FieldAccessMask,
                 true),
-            "family" => new AttributeValue<FieldAttributes>(
+            "family" => new CILParser.AttributeValue<FieldAttributes>(
                 FieldAttributes.Family,
                 FieldAttributes.FieldAccessMask,
                 true),
-            "initonly" => new AttributeValue<FieldAttributes>(FieldAttributes.InitOnly, 0, true),
-            "rtspecialname" => new AttributeValue<FieldAttributes>(FieldAttributes.RTSpecialName, 0, true),
-            "specialname" => new AttributeValue<FieldAttributes>(FieldAttributes.SpecialName, 0, true),
-            "assembly" => new AttributeValue<FieldAttributes>(
+            "initonly" => new CILParser.AttributeValue<FieldAttributes>(FieldAttributes.InitOnly, 0, true),
+            "rtspecialname" => new CILParser.AttributeValue<FieldAttributes>(FieldAttributes.RTSpecialName, 0, true),
+            "specialname" => new CILParser.AttributeValue<FieldAttributes>(FieldAttributes.SpecialName, 0, true),
+            "assembly" => new CILParser.AttributeValue<FieldAttributes>(
                 FieldAttributes.Assembly,
                 FieldAttributes.FieldAccessMask,
                 true),
-            "famandassem" => new AttributeValue<FieldAttributes>(
+            "famandassem" => new CILParser.AttributeValue<FieldAttributes>(
                 FieldAttributes.FamANDAssem,
                 FieldAttributes.FieldAccessMask,
                 true),
-            "famorassem" => new AttributeValue<FieldAttributes>(
+            "famorassem" => new CILParser.AttributeValue<FieldAttributes>(
                 FieldAttributes.FamORAssem,
                 FieldAttributes.FieldAccessMask,
                 true),
-            "privatescope" => new AttributeValue<FieldAttributes>(
+            "privatescope" => new CILParser.AttributeValue<FieldAttributes>(
                 FieldAttributes.PrivateScope,
                 FieldAttributes.FieldAccessMask,
                 true),
-            "literal" => new AttributeValue<FieldAttributes>(FieldAttributes.Literal, 0, true),
+            "literal" => new CILParser.AttributeValue<FieldAttributes>(FieldAttributes.Literal, 0, true),
 #pragma warning disable SYSLIB0050
-            "notserialized" => new AttributeValue<FieldAttributes>(FieldAttributes.NotSerialized, 0, true),
+            "notserialized" => new CILParser.AttributeValue<FieldAttributes>(FieldAttributes.NotSerialized, 0, true),
 #pragma warning restore SYSLIB0050
-            "volatile" => new AttributeValue<FieldAttributes>(0, 0, true),
+            "volatile" => new CILParser.AttributeValue<FieldAttributes>(0, 0, true),
             _ => throw new UnreachableException(),
         };
 
-    internal object CreateRawFieldAttribute(IToken token)
-        => new AttributeValue<FieldAttributes>((FieldAttributes)ParseInt32(token), 0, false);
+    internal CILParser.AttributeValue<FieldAttributes> CreateRawFieldAttribute(IToken token)
+        => new((FieldAttributes)ParseInt32(token), 0, false);
 
     internal string GetFieldDataName(IToken token)
         => ParseIdentifier(token);
@@ -202,14 +162,5 @@ internal sealed partial class GrammarActions
 
     internal EntityRegistry.EntityBase MaterializeFieldReference(
         CILParser.FieldRefContext context)
-        => MaterializeFieldReference(GetFieldReferenceValue(context.Value));
-
-    private FieldDeclarationFrame? TryGetFieldDeclarationFrame(CILParser.FieldDeclContext context)
-    {
-        Debug.Assert(_fieldDeclarationFrames.Count > 0);
-        FieldDeclarationFrame? frame =
-            _fieldDeclarationFrames.Count == 0 ? null : _fieldDeclarationFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context) ? frame : null;
-    }
+        => MaterializeFieldReference(context.Value);
 }

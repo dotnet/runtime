@@ -11,67 +11,40 @@ namespace ILAssembler;
 
 internal sealed partial class GrammarActions
 {
-    private readonly Stack<DataDeclarationFrame> _dataDeclarationFrames = new();
+    internal CILParser.DataDeclarationBuilder CreateDataDeclaration(
+        CILParser.DataDeclContext context)
+        => new(
+            context.Parent is not CILParser.MethodDeclContext ||
+            _currentMethod is not null);
 
-    private sealed class DataDeclarationFrame
+    internal void EndDataDeclaration(
+        CILParser.DataDeclContext context,
+        CILParser.DataDeclarationBuilder builder,
+        int initialSyntaxErrorCount)
     {
-        public DataDeclarationFrame(CILParser.DataDeclContext owner, bool shouldCommit)
-        {
-            Owner = owner;
-            ShouldCommit = shouldCommit;
-        }
-
-        public CILParser.DataDeclContext Owner { get; }
-
-        public bool ShouldCommit { get; }
-
-        public BlobBuilder Data { get; } = new();
-
-        public Dictionary<string, List<Blob>>? ReferenceFixups { get; set; }
-
-        public string? Name { get; set; }
-
-        public byte Section { get; set; }
-    }
-
-    internal void BeginDataDeclaration(CILParser.DataDeclContext context)
-    {
-        BeginSemanticRoot(context);
-        _dataDeclarationFrames.Push(new(
-            context,
-            context.Parent is not CILParser.MethodDeclContext || _currentMethod is not null));
-    }
-
-    internal void EndDataDeclaration(CILParser.DataDeclContext context)
-    {
-        bool hasSyntaxError = EndSemanticRoot(context);
+        bool hasSyntaxError =
+            HasSyntaxErrorsSince(initialSyntaxErrorCount) ||
+            context.exception is not null;
         context.HasSyntaxError = hasSyntaxError;
 
-        DataDeclarationFrame? frame = TryGetDataDeclarationFrame(context);
-        if (frame is null)
-        {
-            return;
-        }
-
-        _dataDeclarationFrames.Pop();
-        if (hasSyntaxError || !frame.ShouldCommit)
+        if (hasSyntaxError || !builder.ShouldCommit)
         {
             return;
         }
 
         int declarationOffset = _mappedFieldData.Count;
-        if (frame.Name is not null && !_mappedFieldDataNames.ContainsKey(frame.Name))
+        if (builder.Name is not null && !_mappedFieldDataNames.ContainsKey(builder.Name))
         {
-            _mappedFieldDataNames.Add(frame.Name, declarationOffset);
+            _mappedFieldDataNames.Add(builder.Name, declarationOffset);
         }
 
-        _mappedFieldData.LinkSuffix(frame.Data);
-        if (frame.ReferenceFixups is null)
+        _mappedFieldData.LinkSuffix(builder.Data);
+        if (builder.ReferenceFixups is null)
         {
             return;
         }
 
-        foreach ((string target, List<Blob> declarationFixups) in frame.ReferenceFixups)
+        foreach ((string target, List<Blob> declarationFixups) in builder.ReferenceFixups)
         {
             if (!_mappedFieldDataReferenceFixups.TryGetValue(target, out List<Blob>? fixups))
             {
@@ -82,27 +55,24 @@ internal sealed partial class GrammarActions
         }
     }
 
+#pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
     internal void SetDataDeclarationHeader(
-        CILParser.DdHeadContext context,
+        CILParser.DataDeclarationBuilder builder,
         byte section,
         IToken name)
     {
-        if (TryGetDataDeclarationFrame(context) is { } frame)
-        {
-            frame.Section = section;
-            frame.Name = ParseIdentifier(name);
-        }
+        _ = section;
+        builder.Name = ParseIdentifier(name);
     }
 
-    internal void SetAnonymousDataDeclarationHeader(CILParser.DdHeadContext context, byte section)
+    internal void SetAnonymousDataDeclarationHeader(
+        CILParser.DataDeclarationBuilder builder,
+        byte section)
     {
-        if (TryGetDataDeclarationFrame(context) is { } frame)
-        {
-            frame.Section = section;
-        }
+        _ = builder;
+        _ = section;
     }
 
-#pragma warning disable CA1822 // Parser actions are invoked through the per-parser GrammarActions instance.
     internal byte GetMappedDataSection() => 0;
 
     internal byte GetTlsDataSection(CILParser.TlsContext context)
@@ -115,47 +85,38 @@ internal sealed partial class GrammarActions
     }
 
     internal byte GetCilDataSection() => 2;
-#pragma warning restore CA1822
-
     internal int ParseDataItemCount(IToken token) => ParseInt32(token);
 
-    internal void AddDataString(CILParser.DdItemContext context, string value)
-    {
-        TryGetDataDeclarationFrame(context)?.Data.WriteUTF16(value);
-    }
+    internal void AddDataString(CILParser.DataDeclarationBuilder builder, string value)
+        => builder.Data.WriteUTF16(value);
 
-    internal void AddDataReference(CILParser.DdItemContext context, IToken targetToken)
+    internal void AddDataReference(
+        CILParser.DataDeclarationBuilder builder,
+        IToken targetToken)
     {
-        if (TryGetDataDeclarationFrame(context) is not { } frame)
-        {
-            return;
-        }
-
         string target = ParseIdentifier(targetToken);
         Dictionary<string, List<Blob>> fixups =
-            frame.ReferenceFixups ??= new Dictionary<string, List<Blob>>();
+            builder.ReferenceFixups ??= new Dictionary<string, List<Blob>>();
         if (!fixups.TryGetValue(target, out List<Blob>? targetFixups))
         {
             fixups.Add(target, targetFixups = new());
         }
 
-        targetFixups.Add(frame.Data.ReserveBytes(sizeof(int)));
+        targetFixups.Add(builder.Data.ReserveBytes(sizeof(int)));
     }
 
     internal void AddDataBytes(
-        CILParser.DdItemContext context,
+        CILParser.DataDeclarationBuilder builder,
         ImmutableArray<byte> value)
-    {
-        TryGetDataDeclarationFrame(context)?.Data.WriteBytes(value);
-    }
+        => builder.Data.WriteBytes(value);
 
     internal void AddFloatingPointData(
-        CILParser.DdItemContext context,
+        CILParser.DataDeclarationBuilder builder,
         IToken kind,
         double value,
         int count)
     {
-        if (count <= 0 || TryGetDataDeclarationFrame(context) is not { } frame)
+        if (count <= 0)
         {
             return;
         }
@@ -165,7 +126,7 @@ internal sealed partial class GrammarActions
             float single = (float)value;
             for (int i = 0; i < count; i++)
             {
-                frame.Data.WriteSingle(single);
+                builder.Data.WriteSingle(single);
             }
         }
         else
@@ -173,19 +134,19 @@ internal sealed partial class GrammarActions
             Debug.Assert(kind.Text == "float64");
             for (int i = 0; i < count; i++)
             {
-                frame.Data.WriteDouble(value);
+                builder.Data.WriteDouble(value);
             }
         }
     }
 
     internal void AddInt64Data(
-        CILParser.DdItemContext context,
+        CILParser.DataDeclarationBuilder builder,
         IToken kind,
         IToken value,
         int count)
     {
         Debug.Assert(kind.Text == "int64");
-        if (count <= 0 || TryGetDataDeclarationFrame(context) is not { } frame)
+        if (count <= 0)
         {
             return;
         }
@@ -193,17 +154,17 @@ internal sealed partial class GrammarActions
         long parsedValue = ParseInt64(value);
         for (int i = 0; i < count; i++)
         {
-            frame.Data.WriteInt64(parsedValue);
+            builder.Data.WriteInt64(parsedValue);
         }
     }
 
     internal void AddIntegerData(
-        CILParser.DdItemContext context,
+        CILParser.DataDeclarationBuilder builder,
         IToken kind,
         IToken value,
         int count)
     {
-        if (count <= 0 || TryGetDataDeclarationFrame(context) is not { } frame)
+        if (count <= 0)
         {
             return;
         }
@@ -212,27 +173,30 @@ internal sealed partial class GrammarActions
         switch (kind.Text)
         {
             case "int8":
-                frame.Data.WriteBytes((byte)parsedValue, count);
+                builder.Data.WriteBytes((byte)parsedValue, count);
                 break;
             case "int16":
                 for (int i = 0; i < count; i++)
                 {
-                    frame.Data.WriteInt16((short)parsedValue);
+                    builder.Data.WriteInt16((short)parsedValue);
                 }
                 break;
             default:
                 Debug.Assert(kind.Text == "int32");
                 for (int i = 0; i < count; i++)
                 {
-                    frame.Data.WriteInt32(parsedValue);
+                    builder.Data.WriteInt32(parsedValue);
                 }
                 break;
         }
     }
 
-    internal void AddZeroData(CILParser.DdItemContext context, IToken kind, int count)
+    internal void AddZeroData(
+        CILParser.DataDeclarationBuilder builder,
+        IToken kind,
+        int count)
     {
-        if (count <= 0 || TryGetDataDeclarationFrame(context) is not { } frame)
+        if (count <= 0)
         {
             return;
         }
@@ -245,30 +209,9 @@ internal sealed partial class GrammarActions
             "int64" or "float64" => sizeof(long),
             _ => throw new UnreachableException(),
         };
-        frame.Data.WriteBytes(0, checked(elementSize * count));
+        builder.Data.WriteBytes(0, checked(elementSize * count));
     }
+#pragma warning restore CA1822
 
-    private DataDeclarationFrame? TryGetDataDeclarationFrame(ParserRuleContext context)
-    {
-        Debug.Assert(_dataDeclarationFrames.Count > 0);
-        DataDeclarationFrame? frame =
-            _dataDeclarationFrames.Count == 0 ? null : _dataDeclarationFrames.Peek();
-        CILParser.DataDeclContext? owner = FindDataDeclarationOwner(context);
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, owner));
-        return frame is not null && ReferenceEquals(frame.Owner, owner) ? frame : null;
-    }
-
-    private static CILParser.DataDeclContext? FindDataDeclarationOwner(RuleContext context)
-    {
-        for (RuleContext? current = context; current is not null; current = current.Parent)
-        {
-            if (current is CILParser.DataDeclContext declaration)
-            {
-                return declaration;
-            }
-        }
-
-        return null;
-    }
 
 }

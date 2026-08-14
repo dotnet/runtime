@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using Antlr4.Runtime;
@@ -25,241 +24,71 @@ internal sealed partial class GrammarActions
     private const byte NativeTypeNestedStruct = 0x21;
     private const byte NativeTypeMax = 0x50;
 
-    private readonly Stack<MarshalBlobFrame> _marshalBlobFrames = new();
-    private readonly Stack<NativeTypeFrame> _nativeTypeFrames = new();
-    private readonly Stack<VariantTypeFrame> _variantTypeFrames = new();
+    internal MarshallingDescriptorValue CreateEmptyMarshallingDescriptor()
+        => MarshallingDescriptorValue.Empty;
 
-    private sealed class MarshalBlobFrame
-    {
-        public MarshalBlobFrame(CILParser.MarshalBlobContext owner)
-        {
-            Owner = owner;
-        }
+    internal MarshallingDescriptorValue CompleteMarshalClause(
+        MarshallingDescriptorValue value)
+        => value;
 
-        public CILParser.MarshalBlobContext Owner { get; }
+    internal void SetMarshalBlobNativeType(
+        CILParser.MarshalBlobBuilder builder,
+        NativeTypeValue value)
+        => builder.NativeType = value;
 
-        public NativeTypeValue? NativeType { get; set; }
+    internal void AddMarshalBlobByte(CILParser.MarshalBlobBuilder builder, byte value)
+        => (builder.RawBytes ??= new BlobBuilder()).WriteByte(value);
 
-        public BlobBuilder? RawBytes { get; set; }
-    }
+    internal MarshallingDescriptorValue CreateMarshallingDescriptor(
+        CILParser.MarshalBlobBuilder builder)
+        => new(builder.RawBytes, builder.NativeType);
 
-    private sealed class NativeTypeFrame
-    {
-        public NativeTypeFrame(CILParser.NativeTypeContext owner)
-        {
-            Owner = owner;
-        }
+    internal void SetNativeTypeElement(
+        CILParser.NativeTypeBuilder builder,
+        NativeTypeElementValue value)
+        => builder.Element = value;
 
-        public CILParser.NativeTypeContext Owner { get; }
+    internal void AddNativeTypeArrayPointerInfo(
+        CILParser.NativeTypeBuilder builder,
+        NativeTypeArrayPointerInfoValue value)
+        => (builder.ArrayPointerInfo ??= new List<NativeTypeArrayPointerInfoValue>())
+            .Add(value);
 
-        public NativeTypeElementValue? Element { get; set; }
+    internal NativeTypeValue CreateNativeType(
+        IToken token,
+        CILParser.NativeTypeBuilder builder)
+        => new(
+            token,
+            builder.Element,
+            builder.ArrayPointerInfo?.ToImmutableArray() ?? []);
 
-        public List<NativeTypeArrayPointerInfoValue>? ArrayPointerInfo { get; set; }
-    }
-
-    private sealed class VariantTypeFrame
-    {
-        public VariantTypeFrame(CILParser.VariantTypeContext owner)
-        {
-            Owner = owner;
-        }
-
-        public CILParser.VariantTypeContext Owner { get; }
-
-        public VariantTypeElementValue? Element { get; set; }
-
-        public VarEnum Modifiers { get; set; }
-    }
-
-    private sealed record MarshallingDescriptorValue(BlobBuilder? RawBytes, NativeTypeValue? NativeType);
-
-    private sealed record NativeTypeValue(
-        IToken? Token,
-        NativeTypeElementValue? Element,
-        ImmutableArray<NativeTypeArrayPointerInfoValue> ArrayPointerInfo)
-    {
-        public static NativeTypeValue Empty { get; } = new(null, null, []);
-    }
-
-    private abstract record NativeTypeElementValue;
-
-    private sealed record EmptyNativeTypeElementValue : NativeTypeElementValue
-    {
-        public static EmptyNativeTypeElementValue Instance { get; } = new();
-    }
-
-    private sealed record CustomMarshallerNativeTypeElementValue(
-        IToken? Token,
-        string? Guid,
-        string? NativeTypeName,
-        string MarshallerType,
-        string Cookie) : NativeTypeElementValue;
-
-    private sealed record FixedSysStringNativeTypeElementValue(IToken Size) : NativeTypeElementValue;
-
-    private sealed record FixedArrayNativeTypeElementValue(IToken Size, NativeTypeValue Element) : NativeTypeElementValue;
-
-    private sealed record DeprecatedNativeTypeElementValue(IToken Token, int TokenType) : NativeTypeElementValue;
-
-    private sealed record SimpleNativeTypeElementValue(int TokenType) : NativeTypeElementValue;
-
-    private sealed record IidNativeTypeElementValue(
-        int TokenType,
-        IidParamIndexValue IidParamIndex) : NativeTypeElementValue;
-
-    private sealed record SafeArrayNativeTypeElementValue(
-        VariantTypeValue VariantType,
-        string? UserDefinedType) : NativeTypeElementValue;
-
-    private sealed record UnsignedNativeTypeElementValue(int TokenType) : NativeTypeElementValue;
-
-    private sealed record NestedStructNativeTypeElementValue(IToken Token) : NativeTypeElementValue;
-
-    private sealed record AnsiBstrNativeTypeElementValue : NativeTypeElementValue
-    {
-        public static AnsiBstrNativeTypeElementValue Instance { get; } = new();
-    }
-
-    private sealed record VariantBoolNativeTypeElementValue : NativeTypeElementValue
-    {
-        public static VariantBoolNativeTypeElementValue Instance { get; } = new();
-    }
-
-    private sealed record NativeTypeTypedefValue(IToken Token, string Alias) : NativeTypeElementValue;
-
-    private enum NativeTypeArrayPointerInfoKind
-    {
-        Pointer,
-        ArrayNoSizeData,
-        ArraySize,
-        ArraySizeParamIndex,
-        ArrayParamIndex
-    }
-
-    private sealed record NativeTypeArrayPointerInfoValue(
-        NativeTypeArrayPointerInfoKind Kind,
-        IToken? Size = null,
-        IToken? ParameterIndex = null);
-
-    private sealed record IidParamIndexValue(IToken? Index)
-    {
-        public static IidParamIndexValue Empty { get; } = new((IToken?)null);
-    }
-
-    private sealed record VariantTypeValue(VariantTypeElementValue? Element, VarEnum Modifiers)
-    {
-        public static VariantTypeValue Empty { get; } = new(null, 0);
-    }
-
-    private sealed record VariantTypeElementValue(int TokenType);
-
-    internal object CreateEmptyMarshallingDescriptor()
-        => new MarshallingDescriptorValue(new BlobBuilder(0), null);
-
-    internal object CompleteMarshalClause(object? value)
-        => GetMarshallingDescriptorValue(value);
-
-    internal void BeginMarshalBlob(CILParser.MarshalBlobContext context)
-        => _marshalBlobFrames.Push(new(context));
-
-    internal void SetMarshalBlobNativeType(CILParser.MarshalBlobContext context, object? value)
-    {
-        if (TryGetMarshalBlobFrame(context, out MarshalBlobFrame? frame))
-        {
-            frame.NativeType = GetNativeTypeValue(value);
-        }
-    }
-
-    internal void AddMarshalBlobByte(CILParser.MarshalBlobContext context, byte value)
-    {
-        if (TryGetMarshalBlobFrame(context, out MarshalBlobFrame? frame))
-        {
-            (frame.RawBytes ??= new BlobBuilder()).WriteByte(value);
-        }
-    }
-
-    internal object EndMarshalBlob(CILParser.MarshalBlobContext context)
-    {
-        Debug.Assert(_marshalBlobFrames.Count > 0);
-        if (_marshalBlobFrames.Count == 0)
-        {
-            return CreateEmptyMarshallingDescriptor();
-        }
-
-        MarshalBlobFrame frame = _marshalBlobFrames.Pop();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        if (!ReferenceEquals(frame.Owner, context))
-        {
-            return CreateEmptyMarshallingDescriptor();
-        }
-
-        return new MarshallingDescriptorValue(frame.RawBytes, frame.NativeType);
-    }
-
-    internal void BeginNativeType(CILParser.NativeTypeContext context)
-        => _nativeTypeFrames.Push(new(context));
-
-    internal void SetNativeTypeElement(CILParser.NativeTypeContext context, object? value)
-    {
-        if (TryGetNativeTypeFrame(context, out NativeTypeFrame? frame))
-        {
-            frame.Element = GetNativeTypeElementValue(value);
-        }
-    }
-
-    internal void AddNativeTypeArrayPointerInfo(CILParser.NativeTypeContext context, object? value)
-    {
-        if (TryGetNativeTypeFrame(context, out NativeTypeFrame? frame) &&
-            value is NativeTypeArrayPointerInfoValue arrayPointerInfo)
-        {
-            (frame.ArrayPointerInfo ??= new List<NativeTypeArrayPointerInfoValue>()).Add(arrayPointerInfo);
-        }
-    }
-
-    internal object EndNativeType(CILParser.NativeTypeContext context)
-    {
-        Debug.Assert(_nativeTypeFrames.Count > 0);
-        if (_nativeTypeFrames.Count == 0)
-        {
-            return NativeTypeValue.Empty;
-        }
-
-        NativeTypeFrame frame = _nativeTypeFrames.Pop();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        if (!ReferenceEquals(frame.Owner, context))
-        {
-            return NativeTypeValue.Empty;
-        }
-
-        return new NativeTypeValue(
-            context.Start,
-            frame.Element,
-            frame.ArrayPointerInfo?.ToImmutableArray() ?? []);
-    }
-
-    internal object CreatePointerNativeType()
+    internal NativeTypeArrayPointerInfoValue CreatePointerNativeType()
         => new NativeTypeArrayPointerInfoValue(NativeTypeArrayPointerInfoKind.Pointer);
 
-    internal object CreatePointerArrayTypeNoSizeData()
+    internal NativeTypeArrayPointerInfoValue CreatePointerArrayTypeNoSizeData()
         => new NativeTypeArrayPointerInfoValue(NativeTypeArrayPointerInfoKind.ArrayNoSizeData);
 
-    internal object CreatePointerArrayTypeSize(IToken size)
+    internal NativeTypeArrayPointerInfoValue CreatePointerArrayTypeSize(IToken size)
         => new NativeTypeArrayPointerInfoValue(NativeTypeArrayPointerInfoKind.ArraySize, Size: size);
 
-    internal object CreatePointerArrayTypeSizeParamIndex(IToken size, IToken parameterIndex)
+    internal NativeTypeArrayPointerInfoValue CreatePointerArrayTypeSizeParamIndex(
+        IToken size,
+        IToken parameterIndex)
         => new NativeTypeArrayPointerInfoValue(
             NativeTypeArrayPointerInfoKind.ArraySizeParamIndex,
             size,
             parameterIndex);
 
-    internal object CreatePointerArrayTypeParamIndex(IToken parameterIndex)
+    internal NativeTypeArrayPointerInfoValue CreatePointerArrayTypeParamIndex(
+        IToken parameterIndex)
         => new NativeTypeArrayPointerInfoValue(
             NativeTypeArrayPointerInfoKind.ArrayParamIndex,
             ParameterIndex: parameterIndex);
 
-    internal object CreateEmptyNativeType() => EmptyNativeTypeElementValue.Instance;
+    internal NativeTypeElementValue CreateEmptyNativeType()
+        => EmptyNativeTypeElementValue.Instance;
 
-    internal object CreateDeprecatedCustomMarshallerNativeType(
+    internal NativeTypeElementValue CreateDeprecatedCustomMarshallerNativeType(
         CILParser.NativeTypeElementContext context,
         string guid,
         string nativeTypeName,
@@ -272,7 +101,9 @@ internal sealed partial class GrammarActions
             marshallerType,
             cookie);
 
-    internal object CreateCustomMarshallerNativeType(string marshallerType, string cookie)
+    internal NativeTypeElementValue CreateCustomMarshallerNativeType(
+        string marshallerType,
+        string cookie)
         => new CustomMarshallerNativeTypeElementValue(
             null,
             null,
@@ -280,65 +111,63 @@ internal sealed partial class GrammarActions
             marshallerType,
             cookie);
 
-    internal object CreateFixedSysStringNativeType(IToken size)
+    internal NativeTypeElementValue CreateFixedSysStringNativeType(IToken size)
         => new FixedSysStringNativeTypeElementValue(size);
 
-    internal object CreateFixedArrayNativeType(IToken size, object? element)
-        => new FixedArrayNativeTypeElementValue(size, GetNativeTypeValue(element));
+    internal NativeTypeElementValue CreateFixedArrayNativeType(
+        IToken size,
+        NativeTypeValue element)
+        => new FixedArrayNativeTypeElementValue(size, element);
 
-    internal object CreateDeprecatedNativeType(
+    internal NativeTypeElementValue CreateDeprecatedNativeType(
         CILParser.NativeTypeElementContext context,
         IToken nativeType)
         => new DeprecatedNativeTypeElementValue(context.Start, nativeType.Type);
 
-    internal object CreateSimpleNativeType(IToken nativeType)
+    internal NativeTypeElementValue CreateSimpleNativeType(IToken nativeType)
         => new SimpleNativeTypeElementValue(nativeType.Type);
 
-    internal object CreateIidNativeType(IToken nativeType, object? index)
-        => new IidNativeTypeElementValue(nativeType.Type, GetIidParamIndexValue(index));
+    internal NativeTypeElementValue CreateIidNativeType(
+        IToken nativeType,
+        IidParamIndexValue index)
+        => new IidNativeTypeElementValue(nativeType.Type, index);
 
-    internal object CreateSafeArrayNativeType(object? variantType, string? userDefinedType)
-        => new SafeArrayNativeTypeElementValue(
-            GetVariantTypeValue(variantType),
-            userDefinedType);
+    internal NativeTypeElementValue CreateSafeArrayNativeType(
+        VariantTypeValue variantType,
+        string? userDefinedType)
+        => new SafeArrayNativeTypeElementValue(variantType, userDefinedType);
 
-    internal object CreateUnsignedNativeType(IToken nativeType)
+    internal NativeTypeElementValue CreateUnsignedNativeType(IToken nativeType)
         => new UnsignedNativeTypeElementValue(nativeType.Type);
 
-    internal object CreateNestedStructNativeType(CILParser.NativeTypeElementContext context)
+    internal NativeTypeElementValue CreateNestedStructNativeType(
+        CILParser.NativeTypeElementContext context)
         => new NestedStructNativeTypeElementValue(context.Start);
 
-    internal object CreateAnsiBstrNativeType() => AnsiBstrNativeTypeElementValue.Instance;
+    internal NativeTypeElementValue CreateAnsiBstrNativeType()
+        => AnsiBstrNativeTypeElementValue.Instance;
 
-    internal object CreateVariantBoolNativeType() => VariantBoolNativeTypeElementValue.Instance;
+    internal NativeTypeElementValue CreateVariantBoolNativeType()
+        => VariantBoolNativeTypeElementValue.Instance;
 
-    internal object CreateNativeTypeTypedef(
+    internal NativeTypeElementValue CreateNativeTypeTypedef(
         CILParser.NativeTypeElementContext context,
         string alias)
         => new NativeTypeTypedefValue(context.Start, alias);
 
-    internal object GetIidParamIndex(IToken index) => new IidParamIndexValue(index);
+    internal IidParamIndexValue GetIidParamIndex(IToken index)
+        => new(index);
 
-    internal void BeginVariantType(CILParser.VariantTypeContext context)
-        => _variantTypeFrames.Push(new(context));
+    internal void SetVariantTypeElement(
+        CILParser.VariantTypeBuilder builder,
+        VariantTypeElementValue value)
+        => builder.Element = value;
 
-    internal void SetVariantTypeElement(CILParser.VariantTypeContext context, object? value)
+    internal void AddVariantTypeModifier(
+        CILParser.VariantTypeBuilder builder,
+        IToken modifier)
     {
-        if (TryGetVariantTypeFrame(context, out VariantTypeFrame? frame) &&
-            value is VariantTypeElementValue element)
-        {
-            frame.Element = element;
-        }
-    }
-
-    internal void AddVariantTypeModifier(CILParser.VariantTypeContext context, IToken modifier)
-    {
-        if (!TryGetVariantTypeFrame(context, out VariantTypeFrame? frame))
-        {
-            return;
-        }
-
-        frame.Modifiers |= modifier.Type switch
+        builder.Modifiers |= modifier.Type switch
         {
             CILParser.ARRAY_TYPE_NO_BOUNDS => VarEnum.VT_ARRAY,
             CILParser.VECTOR => VarEnum.VT_VECTOR,
@@ -347,22 +176,10 @@ internal sealed partial class GrammarActions
         };
     }
 
-    internal object EndVariantType(CILParser.VariantTypeContext context)
-    {
-        Debug.Assert(_variantTypeFrames.Count > 0);
-        if (_variantTypeFrames.Count == 0)
-        {
-            return VariantTypeValue.Empty;
-        }
+    internal VariantTypeValue CreateVariantType(CILParser.VariantTypeBuilder builder)
+        => new(builder.Element, builder.Modifiers);
 
-        VariantTypeFrame frame = _variantTypeFrames.Pop();
-        Debug.Assert(ReferenceEquals(frame.Owner, context));
-        return ReferenceEquals(frame.Owner, context)
-            ? new VariantTypeValue(frame.Element, frame.Modifiers)
-            : VariantTypeValue.Empty;
-    }
-
-    internal object GetVariantTypeElement(IToken variantType)
+    internal VariantTypeElementValue GetVariantTypeElement(IToken variantType)
         => new VariantTypeElementValue(variantType.Type);
 
     private BlobBuilder MaterializeMarshallingDescriptor(MarshallingDescriptorValue? value)
@@ -585,6 +402,7 @@ internal sealed partial class GrammarActions
     private static VarEnum MaterializeVariantTypeElement(VariantTypeElementValue value)
         => value.TokenType switch
         {
+            CILParser.NULL => VarEnum.VT_EMPTY,
             CILParser.VARIANT => VarEnum.VT_VARIANT,
             CILParser.CURRENCY => VarEnum.VT_CY,
             CILParser.VOID => VarEnum.VT_VOID,
@@ -624,6 +442,7 @@ internal sealed partial class GrammarActions
             CILParser.BLOB_OBJECT => VarEnum.VT_BLOB_OBJECT,
             CILParser.CF => VarEnum.VT_CF,
             CILParser.CLSID => VarEnum.VT_CLSID,
+            TokenConstants.InvalidType => VarEnum.VT_EMPTY,
             _ => throw new UnreachableException()
         };
 
@@ -685,48 +504,4 @@ internal sealed partial class GrammarActions
     private int ParseMarshallingInt32(IToken? token)
         => token is null ? 0 : ParseInt32(token);
 
-    private static MarshallingDescriptorValue GetMarshallingDescriptorValue(object? value)
-        => value as MarshallingDescriptorValue ?? new MarshallingDescriptorValue(new BlobBuilder(), null);
-
-    private static NativeTypeValue GetNativeTypeValue(object? value)
-        => value as NativeTypeValue ?? NativeTypeValue.Empty;
-
-    private static NativeTypeElementValue GetNativeTypeElementValue(object? value)
-        => value as NativeTypeElementValue ?? EmptyNativeTypeElementValue.Instance;
-
-    private static IidParamIndexValue GetIidParamIndexValue(object? value)
-        => value as IidParamIndexValue ?? IidParamIndexValue.Empty;
-
-    private static VariantTypeValue GetVariantTypeValue(object? value)
-        => value as VariantTypeValue ?? VariantTypeValue.Empty;
-
-    private bool TryGetMarshalBlobFrame(
-        CILParser.MarshalBlobContext context,
-        [NotNullWhen(true)] out MarshalBlobFrame? frame)
-    {
-        Debug.Assert(_marshalBlobFrames.Count > 0);
-        frame = _marshalBlobFrames.Count == 0 ? null : _marshalBlobFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context);
-    }
-
-    private bool TryGetNativeTypeFrame(
-        CILParser.NativeTypeContext context,
-        [NotNullWhen(true)] out NativeTypeFrame? frame)
-    {
-        Debug.Assert(_nativeTypeFrames.Count > 0);
-        frame = _nativeTypeFrames.Count == 0 ? null : _nativeTypeFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context);
-    }
-
-    private bool TryGetVariantTypeFrame(
-        CILParser.VariantTypeContext context,
-        [NotNullWhen(true)] out VariantTypeFrame? frame)
-    {
-        Debug.Assert(_variantTypeFrames.Count > 0);
-        frame = _variantTypeFrames.Count == 0 ? null : _variantTypeFrames.Peek();
-        Debug.Assert(frame is null || ReferenceEquals(frame.Owner, context));
-        return frame is not null && ReferenceEquals(frame.Owner, context);
-    }
 }

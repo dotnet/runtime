@@ -45,9 +45,13 @@
     <Move SourceFiles="%(_AntlrGeneratedFiles.Identity).tmp" DestinationFiles="%(_AntlrGeneratedFiles.Identity)" />
   </Target>
 
-  <Target Name="RemoveGeneratedParserCompileItems" BeforeTargets="CoreCompile">
+  <Target
+    Name="RemoveGeneratedParserCompileItems"
+    AfterTargets="Antlr4CompileAddFilesGenerated"
+    BeforeTargets="CoreCompile">
     <ItemGroup>
       <Compile Remove="CIL*.cs" />
+      <Compile Remove="CILBaseVisitor.cs;CILVisitor.cs" />
     </ItemGroup>
   </Target>
 
