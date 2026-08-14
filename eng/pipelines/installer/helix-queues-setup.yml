@@ -1,26 +1,23 @@
 parameters:
-  jobTemplate: ''
-  variables: []
+  archType: ''
+  condition: always()
+  creator: ''
+  includeAllPlatforms: false
+  isExtraPlatformsBuild: false
   osGroup: ''
   osSubgroup: ''
-  archType: ''
-  container: ''
-  pool: ''
   platform: ''
-  shouldContinueOnError: false
-  jobParameters: {}
+  useHelixMonitor: false
 
-jobs:
-- template: ${{ parameters.jobTemplate }}
+steps:
+- template: /eng/pipelines/installer/helix.yml
   parameters:
-    variables: ${{ parameters.variables }}
+    archType: ${{ parameters.archType }}
+    condition: ${{ parameters.condition }}
+    creator: ${{ parameters.creator }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
-    archType: ${{ parameters.archType }}
-    container: ${{ parameters.container }}
-    pool: ${{ parameters.pool }}
-    platform: ${{ parameters.platform }}
-    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
+    useHelixMonitor: ${{ parameters.useHelixMonitor }}
     helixQueues:
 
     # Linux arm
@@ -36,7 +33,7 @@ jobs:
       - (Alpine.324.Amd64.Open)AzureLinux.3.Amd64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-amd64@sha256:240788457ec91460a35f6aa8d70bc1aaa7d1347d211fc5f5c0b35f648a33d7bd
 
     # Linux musl arm64
-    - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.jobParameters.isExtraPlatformsBuild, true), eq(parameters.jobParameters.includeAllPlatforms, true))) }}:
+    - ${{ if and(eq(parameters.platform, 'linux_musl_arm64'), or(eq(parameters.isExtraPlatformsBuild, true), eq(parameters.includeAllPlatforms, true))) }}:
       - (Alpine.324.Arm64.Open)AzureLinux.3.Arm64.Open@mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.24-helix-arm64v8@sha256:c0651a184147638e54b2f6a3c8f040274b1bf2deb0bf3e5c4513824598497ae0
 
     # Linux x64
@@ -62,5 +59,3 @@ jobs:
     # windows arm64
     - ${{ if eq(parameters.platform, 'windows_arm64') }}:
       - Windows.11.Arm64.Open
-
-    ${{ insert }}: ${{ parameters.jobParameters }}
