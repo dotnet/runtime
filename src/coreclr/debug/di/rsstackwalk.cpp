@@ -250,32 +250,28 @@ HRESULT CordbStackWalk::GetContext(ULONG32   contextFlags,
     {
         RefreshIfNeeded();
 
+        IDacDbiInterface * pDAC = nullptr;
+        ULONG32 requiredContextSize = 0;
+        if ((pContextSize != NULL) || ((contextBufSize != 0) && (pbContextBuf != NULL)))
+        {
+            pDAC = GetProcess()->GetDAC();
+            IfFailThrow(pDAC->GetTargetContextSize(contextFlags, &requiredContextSize));
+        }
+
         // set the required size for the CONTEXT buffer
         if (pContextSize != NULL)
         {
-            *pContextSize = ContextSizeForFlags(contextFlags);
+            *pContextSize = requiredContextSize;
         }
 
         // If all the user wants to know is the CONTEXT size, then we are done.
         if ((contextBufSize != 0) && (pbContextBuf != NULL))
         {
-            if (contextBufSize < 4)
-            {
-                ThrowWin32(ERROR_INSUFFICIENT_BUFFER);
-            }
-
-            DT_CONTEXT * pContext = reinterpret_cast<DT_CONTEXT *>(pbContextBuf);
-
-            // Some helper functions that examine the context expect the flags to be initialized.
-            pContext->ContextFlags = contextFlags;
-
             // check the size of the incoming buffer
-            if (!CheckContextSizeForBuffer(contextBufSize, pbContextBuf))
+            if (contextBufSize < requiredContextSize)
             {
                 ThrowWin32(ERROR_INSUFFICIENT_BUFFER);
             }
-
-            IDacDbiInterface * pDAC = GetProcess()->GetDAC();
 
             // We have to call the DDI.
             IDacDbiInterface::FrameType ft;
