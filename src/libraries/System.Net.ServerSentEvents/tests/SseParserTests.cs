@@ -22,7 +22,7 @@ namespace System.Net.ServerSentEvents.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("itemParser", () => new SseParserOptions<string>(null));
             AssertExtensions.Throws<ArgumentNullException>("sseStream", () => SseParser.Create<string>(null, new SseParserOptions<string>(delegate { return ""; })));
-            AssertExtensions.Throws<ArgumentNullException>("options", () => SseParser.Create<string>(Stream.Null, null));
+            AssertExtensions.Throws<ArgumentNullException>("options", () => SseParser.Create<string>(Stream.Null, (SseParserOptions<string>)null));
         }
 
         [Fact]
