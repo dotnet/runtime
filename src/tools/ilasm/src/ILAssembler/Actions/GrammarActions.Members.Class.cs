@@ -36,10 +36,7 @@ internal sealed partial class GrammarActions
     internal void ProcessClassDataDeclaration(CILParser.DataDeclContext context)
     {
         PrepareClassMember();
-        if (!context.HasSyntaxError)
-        {
-            _ = VisitDataDecl(context);
-        }
+        _ = context;
     }
 
     internal void ProcessClassSecurityDeclaration(CILParser.SecDeclContext context)
@@ -57,19 +54,13 @@ internal sealed partial class GrammarActions
     internal void ProcessClassSourceDirective(CILParser.ExtSourceSpecContext context)
     {
         PrepareClassMember();
-        if (!context.HasSyntaxError)
-        {
-            _ = VisitExtSourceSpec(context);
-        }
+        _ = context;
     }
 
     internal void ProcessClassLanguageDirective(CILParser.LanguageDeclContext context)
     {
         PrepareClassMember();
-        if (!context.HasSyntaxError)
-        {
-            _ = VisitLanguageDecl(context);
-        }
+        _ = context;
     }
 
     internal void ProcessClassCustomAttribute(CILParser.CustomAttrDeclContext context)
