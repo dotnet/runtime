@@ -2196,7 +2196,9 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
     }
     else
     {
-        if (emitter::emitIns_valid_imm_for_mov(imm, size))
+        emitAttr immSize = EA_SIZE(size);
+
+        if (emitter::emitIns_valid_imm_for_mov(imm, immSize))
         {
             GetEmitter()->emitIns_R_I(INS_mov, size, reg, imm, INS_OPTS_NONE,
                                       INS_SCALABLE_OPTS_NONE DEBUGARG(targetHandle) DEBUGARG(gtFlags));
@@ -2214,7 +2216,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             // Determine whether movn or movz will require the fewest instructions to populate the immediate
             int preferMovn = 0;
 
-            for (int i = (size == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
+            for (int i = (immSize == EA_8BYTE) ? 48 : 16; i >= 0; i -= 16)
             {
                 if (uint16_t(imm >> i) == 0xffff)
                     ++preferMovn; // a single movk 0xffff could be skipped if movn was used
@@ -2229,7 +2231,7 @@ void CodeGen::instGen_Set_Reg_To_Imm(emitAttr       size,
             // This can allow skipping filling a halfword
             uint16_t skipVal = (preferMovn > 0) ? 0xffff : 0;
 
-            unsigned bits = (size == EA_8BYTE) ? 64 : 32;
+            unsigned bits = (immSize == EA_8BYTE) ? 64 : 32;
 
             // Iterate over imm examining 16 bits at a time
             for (unsigned i = 0; i < bits; i += 16)
