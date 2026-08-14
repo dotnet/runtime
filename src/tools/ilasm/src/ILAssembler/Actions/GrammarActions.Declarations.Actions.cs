@@ -14,12 +14,7 @@ internal sealed partial class GrammarActions
     internal void BeginTopLevelDirective() => PrepareTopLevelDeclaration();
 
     internal void ProcessTopLevelDataDeclaration(CILParser.DataDeclContext context)
-    {
-        if (!context.HasSyntaxError)
-        {
-            _ = VisitDataDecl(context);
-        }
-    }
+        => _ = context;
 
     internal void ProcessTopLevelVTableDeclaration(CILParser.VtableDeclContext context)
     {
@@ -38,12 +33,7 @@ internal sealed partial class GrammarActions
     }
 
     internal void ProcessTopLevelSourceDirective(CILParser.ExtSourceSpecContext context)
-    {
-        if (!context.HasSyntaxError)
-        {
-            _ = VisitExtSourceSpec(context);
-        }
-    }
+        => _ = context;
 
     internal void ProcessTopLevelFileDeclaration(CILParser.FileDeclContext context)
     {
@@ -243,12 +233,7 @@ internal sealed partial class GrammarActions
     }
 
     internal void ProcessTopLevelLanguageDirective(CILParser.LanguageDeclContext context)
-    {
-        if (!context.HasSyntaxError)
-        {
-            _ = VisitLanguageDecl(context);
-        }
-    }
+        => _ = context;
 
     internal void ProcessTopLevelTypedef(CILParser.TypedefDeclContext context)
     {
