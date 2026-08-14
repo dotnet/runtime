@@ -128,7 +128,7 @@ namespace ILAssembler
             bool success = long.TryParse(value.ToString(), parseStyle, CultureInfo.InvariantCulture, out result);
             if (!success)
             {
-                // Try parsing as unsigned — handles values like:
+                // Try parsing as unsigned to handle values like:
                 // - Decimal overflow with negation: 9223372036854775808 (= -Int64.MinValue)
                 // - Large unsigned decimal: 18444492274432737280
                 if (ulong.TryParse(value.ToString(), parseStyle, CultureInfo.InvariantCulture, out ulong uresult))
