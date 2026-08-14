@@ -1315,7 +1315,7 @@ namespace System.Runtime.InteropServices
                 // Use as many buckets as there are processors, matching the default concurrency level of
                 // 'ConcurrentDictionary'. The count is rounded up to a power of two so that the bucket for a
                 // given COM instance can be selected with a mask rather than a division.
-                int bucketCount = (int)BitOperations.RoundUpToPowerOf2((uint)Environment.ProcessorCount);
+                uint bucketCount = BitOperations.RoundUpToPowerOf2((uint)Environment.ProcessorCount);
                 Bucket[] buckets = new Bucket[bucketCount];
 
                 for (int i = 0; i < buckets.Length; i++)
@@ -1331,18 +1331,25 @@ namespace System.Runtime.InteropServices
             /// </summary>
             /// <param name="comPointer">The com instance to get the bucket for.</param>
             /// <returns>The bucket owning the entries for <paramref name="comPointer"/>.</returns>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            private ref readonly Bucket GetBucket(IntPtr comPointer)
+            private unsafe ref readonly Bucket GetBucket(IntPtr comPointer)
             {
                 Bucket[] buckets = _buckets;
 
-                // COM instances are heap allocated, so they're always at least pointer aligned (and 16-byte aligned
-                // in practice). That means their low bits are constant and can't be used to select a bucket directly.
-                // Multiplying by a large odd constant (2^64 divided by the golden ratio) mixes every input bit into
-                // the high half of the product, which is then masked to produce the index. The whole sequence lowers
-                // to a multiply, a shift and a mask, which is negligible next to the lookup that follows.
-                ulong hash = (ulong)(nuint)comPointer * 0x9E3779B97F4A7C15;
-                uint index = (uint)(hash >> 32) & (uint)(buckets.Length - 1);
+                // COM instances are heap allocated, so they're always at least pointer aligned, and in practice
+                // more than that. Their low bits are therefore constant and can't be used to select a bucket
+                // directly. Multiplying by a large odd constant (2 raised to the width of a pointer, divided by
+                // the golden ratio) mixes every input bit into the high half of the product, which is then masked
+                // to produce the index. The whole sequence lowers to a multiply, a shift and a mask, which is
+                // negligible next to the lookup that follows.
+                //
+                // The multiply is sized to the pointer width, so that a 32-bit process doesn't pay for a 64-bit
+                // multiply that the hardware has to emulate. Either way the high half leaves far more bits than
+                // the mask below consumes, as there is one bucket per processor.
+                uint hash = sizeof(nint) == 8
+                    ? (uint)(((ulong)(nuint)comPointer * 0x9E3779B97F4A7C15) >> 32)
+                    : ((uint)(nuint)comPointer * 0x9E3779B9) >> 16;
+
+                uint index = hash & (uint)(buckets.Length - 1);
 
                 // Return the bucket by reference, so that it's addressed in place in the array rather than copied
                 return ref buckets[index];

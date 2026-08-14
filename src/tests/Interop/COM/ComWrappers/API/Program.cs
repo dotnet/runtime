@@ -1125,8 +1125,9 @@ namespace ComWrappersTests
                     });
                     thread.Start();
 
-                    // The result is recorded and asserted by the caller, rather than asserted here, as this
-                    // callback is invoked through the COM ABI, which a managed exception can't propagate through.
+                    // The result is recorded and asserted by the caller, rather than asserted here, because this
+                    // callback is invoked from native code, and propagating a managed exception back out through a
+                    // native frame is only supported on CoreCLR on Windows (see PlatformDetection.IsExceptionInteropSupported).
                     NestedCallCompleted = thread.Join(TimeSpan.FromSeconds(20)); // 20 seconds should be more than long enough for the thread to complete
                 }
 
