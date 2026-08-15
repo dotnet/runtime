@@ -1311,13 +1311,6 @@ namespace System.Runtime.InteropServices
             /// <summary>
             /// The most buckets to partition the cache into, regardless of how many processors there are.
             /// </summary>
-            /// <remarks>
-            /// Every bucket costs a lock and a dictionary for the lifetime of the <see cref="ComWrappers"/>
-            /// instance, so the count can't just track the processor count upwards. Past this point the added
-            /// buckets stop paying for themselves: going from 16 to 32 on a 32 processor machine only improves
-            /// a heavily contended lookup by about a fifth, while doubling what an instance costs and making
-            /// the uncontended lookup slower, as the buckets no longer sit as close together in memory.
-            /// </remarks>
             private const int MaxBucketCount = 16;
 
             private readonly Bucket[] _buckets;
