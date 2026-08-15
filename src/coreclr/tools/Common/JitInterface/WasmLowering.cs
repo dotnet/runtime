@@ -411,13 +411,14 @@ namespace Internal.JitInterface
 
         private static int ParseStructSize(string sig, ref int pos)
         {
-            Debug.Assert(sig[pos] == 'S');
-            pos++; // skip 'S'
+            Debug.Assert(sig[pos] is 'S' or 'A');
+            pos++; // skip 'S'/'A'
             int start = pos;
             while (pos < sig.Length && char.IsDigit(sig[pos]))
             {
                 pos++;
             }
+
             return int.Parse(sig.AsSpan(start, pos - start));
         }
 
@@ -496,11 +497,16 @@ namespace Internal.JitInterface
                     parameters.Add(((CompilerTypeSystemContext)context).GetWasmElevatedType(c, elevation));
                     pos += 2;
                 }
-                else if (c == 'S')
+                else if (c is 'S' or 'A')
                 {
+                    bool isAlignedStruct = c == 'A';
                     int structSize = ParseStructSize(sig, ref pos);
-                    TypeDesc cachedStruct = ((CompilerTypeSystemContext)context).GetCachedStructOfSize(structSize);
-                    Debug.Assert(cachedStruct is not null, $"No cached struct of size {structSize} for parameter in signature '{sig}'");
+                    CompilerTypeSystemContext compilerContext = (CompilerTypeSystemContext)context;
+                    TypeDesc cachedStruct = isAlignedStruct
+                        ? compilerContext.GetCachedAlignedStructOfSize(structSize)
+                        : compilerContext.GetCachedStructOfSize(structSize);
+                    Debug.Assert(cachedStruct is not null,
+                        $"No cached {(isAlignedStruct ? "aligned " : "")}struct of size {structSize} for parameter in signature '{sig}'");
                     parameters.Add(cachedStruct);
                 }
                 else
@@ -622,7 +628,8 @@ namespace Internal.JitInterface
                     returnContext.CacheReturnStructBySize(returnType);
                     if (!TryGetMultiSegmentLayout(returnType, out _, out _))
                     {
-                        returnContext.CacheStructBySize(returnType);
+                        int returnAlignment = CorInfoImpl.GetClassAlignmentRequirementStatic((DefType)returnType);
+                        returnContext.CacheStruct(returnType, returnAlignment > 8);
                     }
                 }
             }
@@ -719,9 +726,12 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        sigBuilder.Append('S');
+                        Debug.Assert(paramType is DefType);
+                        int paramAlignment = CorInfoImpl.GetClassAlignmentRequirementStatic((DefType)paramType);
+                        bool requiresAlignedSlot = paramAlignment > 8;
+                        sigBuilder.Append(requiresAlignedSlot ? 'A' : 'S');
                         sigBuilder.Append(paramSize);
-                        ((CompilerTypeSystemContext)paramType.Context).CacheStructBySize(paramType);
+                        ((CompilerTypeSystemContext)paramType.Context).CacheStruct(paramType, requiresAlignedSlot);
                         result.Add(pointerType);
                     }
                 }
