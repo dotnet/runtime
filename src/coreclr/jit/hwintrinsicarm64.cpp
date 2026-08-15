@@ -728,7 +728,13 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         // Note we must use simdBaseType rather than retType here: the latter has been widened to
         // TYP_INT for the byte and halfword forms, which would give us an access of the wrong size.
         assert(simdSize == 0);
-        assert(varTypeIsIntegral(simdBaseType) && (genTypeSize(simdBaseType) <= TARGET_POINTER_SIZE));
+
+        // These are internal helpers with a contract the callers in Interlocked have to honor (see
+        // Lse.cs). Because they are generic, an unsupported type argument would otherwise silently
+        // produce an atomic access of the wrong width, so fail the compilation instead. Note this
+        // already rejects floating point, object references and anything larger than a pointer,
+        // none of which are integral.
+        noway_assert(varTypeIsIntegral(simdBaseType) && (genTypeSize(simdBaseType) <= TARGET_POINTER_SIZE));
 
         genTreeOps oper;
         switch (intrinsic)
@@ -753,7 +759,7 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         // Only "cas" and "swp" have byte and halfword forms.
-        assert(!varTypeIsSmall(simdBaseType) || (oper == GT_CMPXCHG) || (oper == GT_XCHG));
+        noway_assert(!varTypeIsSmall(simdBaseType) || (oper == GT_CMPXCHG) || (oper == GT_XCHG));
 
         GenTree* comparand = nullptr;
         if (oper == GT_CMPXCHG)

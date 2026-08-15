@@ -16,9 +16,9 @@ namespace System.Runtime.Intrinsics.Arm
     /// whose baseline is typically armv8-a.
     ///
     /// Unlike the Interlocked APIs these never fall back to an ldaxr/stlxr retry loop, so they may
-    /// only be called when <see cref="IsSupported"/> is true. The type argument must be a primitive
-    /// integer type; sizes of 1 and 2 bytes are only supported by <see cref="CompareAndSwap{T}"/>
-    /// and <see cref="Swap{T}"/>.
+    /// only be called when <see cref="IsSupported"/> is true. The type argument must be an integer
+    /// (or an enum over one) no wider than a pointer; sizes of 1 and 2 bytes are only supported by
+    /// <see cref="CompareAndSwap{T}"/> and <see cref="Swap{T}"/>. Anything else fails to compile.
     /// </remarks>
     [Intrinsic]
     internal abstract class Lse : ArmBase

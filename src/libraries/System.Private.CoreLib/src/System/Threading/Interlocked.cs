@@ -584,6 +584,7 @@ namespace System.Threading
         public static int And(ref int location1, int value)
         {
 #if TARGET_ARM64
+            // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
                 return Lse.LoadClear(ref location1, value);
@@ -622,6 +623,7 @@ namespace System.Threading
         public static long And(ref long location1, long value)
         {
 #if TARGET_ARM64
+            // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
                 return Lse.LoadClear(ref location1, value);
@@ -739,6 +741,7 @@ namespace System.Threading
         public static int Or(ref int location1, int value)
         {
 #if TARGET_ARM64
+            // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
                 return Lse.LoadSet(ref location1, value);
@@ -777,6 +780,7 @@ namespace System.Threading
         public static long Or(ref long location1, long value)
         {
 #if TARGET_ARM64
+            // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
                 return Lse.LoadSet(ref location1, value);

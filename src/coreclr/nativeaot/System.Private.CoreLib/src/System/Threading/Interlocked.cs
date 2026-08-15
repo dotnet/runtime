@@ -19,6 +19,7 @@ namespace System.Threading
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
 #if TARGET_ARM64
+            // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
                 return Lse.CompareAndSwap(ref location1, value, comparand);
@@ -55,6 +56,7 @@ namespace System.Threading
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
 #if TARGET_ARM64
+            // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
                 return Lse.CompareAndSwap(ref location1, value, comparand);
@@ -87,6 +89,7 @@ namespace System.Threading
         public static int Exchange(ref int location1, int value)
         {
 #if TARGET_ARM64
+            // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
                 return Lse.Swap(ref location1, value);
@@ -110,6 +113,7 @@ namespace System.Threading
         public static long Exchange(ref long location1, long value)
         {
 #if TARGET_ARM64
+            // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
                 return Lse.Swap(ref location1, value);
@@ -192,6 +196,7 @@ namespace System.Threading
         private static int ExchangeAdd(ref int location1, int value)
         {
 #if TARGET_ARM64
+            // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
                 return Lse.LoadAdd(ref location1, value);
@@ -212,6 +217,7 @@ namespace System.Threading
         private static long ExchangeAdd(ref long location1, long value)
         {
 #if TARGET_ARM64
+            // Outlined on AOT, where LSE may not be in the baseline instruction set.
             if (Lse.IsSupported)
             {
                 return Lse.LoadAdd(ref location1, value);
