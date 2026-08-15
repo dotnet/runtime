@@ -119,6 +119,10 @@ internal static partial class Interop
             BCRYPT_COMPOSITE_MLDSA_PUBLIC_MAGIC = 0x4B504D43,
             BCRYPT_COMPOSITE_MLDSA_PRIVATE_MAGIC = 0x4B534D43,
 
+            BCRYPT_COMPOSITE_MLKEM_PUBLIC_MAGIC = 0x504B4D43, // CMKP
+            BCRYPT_COMPOSITE_MLKEM_PRIVATE_MAGIC = 0x524B4D43, // CMKR
+            BCRYPT_COMPOSITE_MLKEM_PRIVATE_IRTF_SEED_MAGIC = 0x534B4D43, // CMKS
+
             BCRYPT_MLDSA_PUBLIC_MAGIC = 0x4B505344,
             BCRYPT_MLDSA_PRIVATE_MAGIC = 0x4B535344,
             BCRYPT_MLDSA_PRIVATE_SEED_MAGIC = 0x53535344,
@@ -162,6 +166,10 @@ internal static partial class Interop
             internal const string BCRYPT_MLKEM_PRIVATE_SEED_BLOB = "MLKEMPRIVATESEEDBLOB";
             internal const string BCRYPT_MLKEM_PRIVATE_BLOB = "MLKEMPRIVATEBLOB";
             internal const string BCRYPT_MLKEM_PUBLIC_BLOB = "MLKEMPUBLICBLOB";
+
+            internal const string BCRYPT_COMPOSITE_MLKEM_PUBLIC_BLOB = "COMPMLKEMPUBLICBLOB";
+            internal const string BCRYPT_COMPOSITE_MLKEM_PRIVATE_BLOB = "COMPMLKEMPRIVATELAMPSBLOB";
+            internal const string BCRYPT_COMPOSITE_MLKEM_PRIVATE_IRTF_SEED_BLOB = "COMPMLKEMPRIVATEIRTFSEEDBLOB";
         }
 
         /// <summary>
@@ -298,6 +306,18 @@ internal static partial class Interop
             internal KeyBlobMagicNumber dwMagic;
             internal uint cbParameterSet;
             internal uint cbKey;
+            // WCHAR parameterSet[cbParameterSet / sizeof(WCHAR)];  // Including \0-terminated
+            // BYTE key[cbKey];                                     // Key material
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        internal struct BCRYPT_COMPOSITE_MLKEM_KEY_BLOB
+        {
+            internal KeyBlobMagicNumber dwMagic;
+            internal uint cbParameterSet;   // Byte size of parameterSet[]
+            internal uint cbKey;            // Byte size of key[]
+            // WCHAR parameterSet[cbParameterSet / sizeof(WCHAR)];  // Including \0-terminated
+            // BYTE key[cbKey];                                     // Key material
         }
 
         /// <summary>

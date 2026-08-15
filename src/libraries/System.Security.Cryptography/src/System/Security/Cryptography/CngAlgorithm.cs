@@ -240,6 +240,9 @@ namespace System.Security.Cryptography
         public static CngAlgorithm CompositeMLDsa =>
             field ??= new CngAlgorithm("Composite-ML-DSA"); // BCRYPT_COMPOSITE_MLDSA_ALGORITHM
 
+        internal static CngAlgorithm CompositeMLKem =>
+            field ??= new CngAlgorithm("Composite-ML-KEM"); // BCRYPT_COMPOSITE_MLKEM_ALGORITHM
+
         private static CngAlgorithm? s_ecdh;
         private static CngAlgorithm? s_ecdhp256;
         private static CngAlgorithm? s_ecdhp384;

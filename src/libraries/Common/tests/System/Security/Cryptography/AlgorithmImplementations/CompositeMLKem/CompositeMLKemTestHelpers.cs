@@ -11,7 +11,7 @@ using Xunit.Sdk;
 
 namespace System.Security.Cryptography.Tests
 {
-    internal static class CompositeMLKemTestHelpers
+    internal static partial class CompositeMLKemTestHelpers
     {
         private delegate AsnWriter WriteEncryptedPkcs8<T>(ReadOnlySpan<T> password, AsnWriter writer, PbeParameters pbeParameters);
 
@@ -19,6 +19,9 @@ namespace System.Security.Cryptography.Tests
         internal static readonly ReadOnlyMemory<byte> s_derBitStringFoo = new byte[] { 0x03, 0x04, 0x00, 0x66, 0x6f, 0x6f };
         private static readonly WriteEncryptedPkcs8<char> s_writeEncryptedPkcs8Char = GetWriteEncryptedPkcs8<char>();
         private static readonly WriteEncryptedPkcs8<byte> s_writeEncryptedPkcs8Byte = GetWriteEncryptedPkcs8<byte>();
+
+        public static bool IsImplementationSupported =>
+            CompositeMLKem.IsAlgorithmSupported(CompositeMLKemAlgorithm.MLKem768WithECDiffieHellmanP256);
 
         internal static void AssertImportEncapsulationKey(
             Action<Func<CompositeMLKem>> test,

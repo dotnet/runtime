@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Formats.Asn1;
 using System.Linq;
+using System.Security.Cryptography.Rsa.Tests;
 using Test.Cryptography;
 using Xunit;
 
@@ -82,8 +83,13 @@ namespace System.Security.Cryptography.Tests
             using (CompositeMLKem encapsKey = ImportEncapsulationKey(vector.Algorithm, vector.EncapsulationKey))
             {
                 encapsKey.Encapsulate(out byte[] ct, out byte[] expectedSs);
-                AssertExtensions.Throws<CryptographicException>(() => encapsKey.Decapsulate(ct));
+                AssertDecapsulationWithEncapsulationKeyFails(() => encapsKey.Decapsulate(ct));
             }
+        }
+
+        protected virtual void AssertDecapsulationWithEncapsulationKeyFails(Action test)
+        {
+            Assert.Throws<CryptographicException>(test);
         }
 
         [Theory]
@@ -595,7 +601,12 @@ namespace System.Security.Cryptography.Tests
 
             using (RSA rsa = RSA.Create())
             {
+#if NETFRAMEWORK
+                rsa.ImportParameters(RSATestHelpers.DecodeRsaPublicKey(rsaPublicKey));
+                int bytesRead = rsaPublicKey.Length;
+#else
                 rsa.ImportRSAPublicKey(rsaPublicKey, out int bytesRead);
+#endif
                 Assert.Equal(rsaPublicKey.Length, bytesRead);
                 rsaCiphertext = rsa.Encrypt(new byte[sharedSecretSizeInBytes], RSAEncryptionPadding.OaepSHA256);
             }
@@ -622,7 +633,11 @@ namespace System.Security.Cryptography.Tests
 
             using (RSA rsa = RSA.Create(wrongKeySizeInBits))
             {
+#if NETFRAMEWORK
+                traditionalKey = RSATestHelpers.EncodeRsaKey(rsa.ExportParameters(includePrivateKey), includePrivateKey);
+#else
                 traditionalKey = includePrivateKey ? rsa.ExportRSAPrivateKey() : rsa.ExportRSAPublicKey();
+#endif
             }
 
             MLKemAlgorithm mlKemAlgorithm = CompositeMLKemTestData.GetMLKemAlgorithm(vector.Algorithm);
@@ -643,7 +658,12 @@ namespace System.Security.Cryptography.Tests
 
             using (RSA rsa = RSA.Create())
             {
+#if NETFRAMEWORK
+                rsa.ImportParameters(RSATestHelpers.DecodeRsaPrivateKey(rsaPrivateKey));
+                int bytesRead = rsaPrivateKey.Length;
+#else
                 rsa.ImportRSAPrivateKey(rsaPrivateKey, out int bytesRead);
+#endif
                 Assert.Equal(rsaPrivateKey.Length, bytesRead);
                 parameters = rsa.ExportParameters(includePrivateParameters: true);
             }
@@ -676,7 +696,13 @@ namespace System.Security.Cryptography.Tests
                 CompositeMLKemTestData.ExpectedEncapsulationKeySizeLowerBound(algorithm),
                 CompositeMLKemTestData.ExpectedEncapsulationKeySizeUpperBound(algorithm));
 
-            Assert.Throws<CryptographicException>(() => ImportEncapsulationKey(algorithm, encapsulationKey));
+            Action test = () => ImportEncapsulationKey(algorithm, encapsulationKey);
+
+            CompositeMLKemTestData.ExecuteComponentAction(
+                algorithm,
+                rsa => Assert.Throws<CryptographicException>(test),
+                ecdh => AssertECDHCompositeImportFailure(test),
+                xdh => Assert.Throws<CryptographicException>(test));
         }
 
         private void AssertCorrectlySizedDecapsulationKeyImportFails(CompositeMLKemAlgorithm algorithm, byte[] decapsulationKey)
@@ -687,7 +713,18 @@ namespace System.Security.Cryptography.Tests
                 CompositeMLKemTestData.ExpectedDecapsulationKeySizeLowerBound(algorithm),
                 CompositeMLKemTestData.ExpectedDecapsulationKeySizeUpperBound(algorithm));
 
-            Assert.Throws<CryptographicException>(() => ImportDecapsulationKey(algorithm, decapsulationKey));
+            Action test = () => ImportDecapsulationKey(algorithm, decapsulationKey);
+
+            CompositeMLKemTestData.ExecuteComponentAction(
+                algorithm,
+                rsa => Assert.Throws<CryptographicException>(test),
+                ecdh => AssertECDHCompositeImportFailure(test),
+                xdh => Assert.Throws<CryptographicException>(test));
+        }
+
+        protected virtual void AssertECDHCompositeImportFailure(Action test)
+        {
+            Assert.Throws<CryptographicException>(test);
         }
 
         private byte[] ChangeTraditionalEncapsulationKeyComponent(CompositeMLKemTestVector vector, byte[] tradKey)
