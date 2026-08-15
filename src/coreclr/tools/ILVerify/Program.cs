@@ -7,6 +7,7 @@ using System.CommandLine;
 using System.IO;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -243,6 +244,9 @@ namespace ILVerify
             VerifyMethods(peReader, module, path, ref numErrors, ref verifiedMethodCounter, ref methodCounter);
             VerifyTypes(peReader, module, path, ref numErrors, ref verifiedTypeCounter, ref typeCounter);
 
+            if (Get(_command.VerifyAllDependencies))
+                VerifyMetadataReferences(peReader, path, ref numErrors);
+
             if (numErrors > 0)
                 WriteLine(numErrors + " Error(s) Verifying " + path);
             else
@@ -258,6 +262,52 @@ namespace ILVerify
             }
 
             return numErrors;
+        }
+
+        private void VerifyMetadataReferences(PEReader peReader, string path, ref int numErrors)
+        {
+            foreach (VerificationResult result in _verifier.VerifyMetadataReferences(peReader))
+            {
+                if (ShouldIgnoreVerificationResult(result))
+                {
+                    if (_verbose)
+                    {
+                        Write("Ignoring ");
+                        PrintVerifyMetadataReferencesResult(result, path);
+                    }
+                }
+                else
+                {
+                    PrintVerifyMetadataReferencesResult(result, path);
+                    numErrors++;
+                }
+            }
+        }
+
+        private void PrintVerifyMetadataReferencesResult(VerificationResult result, string path)
+        {
+            Write("[MD]: Error [");
+            if (result.Code != VerifierError.None)
+            {
+                Write(result.Code);
+            }
+            else
+            {
+                Write(result.ExceptionID);
+            }
+            Write("]: [");
+            Write(path);
+            Write("]");
+
+            if (Get(_command.Tokens))
+            {
+                Write("[token 0x");
+                Write(MetadataTokens.GetToken(result.MetadataHandle).ToString("X8"));
+                Write("]");
+            }
+
+            Write(" ");
+            WriteLine(result.Message);
         }
 
         private void VerifyMethods(PEReader peReader, EcmaModule module, string path, ref int numErrors, ref int verifiedMethodCounter, ref int methodCounter)

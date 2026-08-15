@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Resources;
 using Internal.IL;
@@ -153,6 +154,177 @@ namespace ILVerify
                 yield return result;
             }
         }
+
+        internal IEnumerable<VerificationResult> VerifyMetadataReferences(PEReader peReader)
+        {
+            EcmaModule module = GetModule(peReader);
+            MetadataReader reader = module.MetadataReader;
+
+            foreach (EntityHandle handle in EnumerateReferenceHandles(reader))
+            {
+                VerificationResult result = TryResolveMetadataHandle(module, handle);
+                if (result != null)
+                {
+                    yield return result;
+                }
+            }
+        }
+
+        private static IEnumerable<EntityHandle> EnumerateReferenceHandles(MetadataReader reader)
+        {
+            foreach (AssemblyReferenceHandle handle in reader.AssemblyReferences)
+            {
+                yield return handle;
+            }
+
+            // ModuleRef is also used as ImplMap.ImportScope to store unmanaged library names for
+            // P/Invoke. Do not try to resolve those entries as managed netmodules.
+            HashSet<ModuleReferenceHandle> pInvokeModuleReferences = GetPInvokeModuleReferences(reader);
+            for (int row = 1;
+                 row <= reader.GetTableRowCount(TableIndex.ModuleRef);
+                 row++)
+            {
+                ModuleReferenceHandle handle = MetadataTokens.ModuleReferenceHandle(row);
+                if (!pInvokeModuleReferences.Contains(handle))
+                {
+                    yield return handle;
+                }
+            }
+
+            foreach (TypeReferenceHandle handle in reader.TypeReferences)
+            {
+                yield return handle;
+            }
+
+            foreach (MemberReferenceHandle handle in reader.MemberReferences)
+            {
+                yield return handle;
+            }
+
+            foreach (ExportedTypeHandle handle in reader.ExportedTypes)
+            {
+                yield return handle;
+            }
+
+            for (int row = 1;
+                 row <= reader.GetTableRowCount(TableIndex.TypeSpec);
+                 row++)
+            {
+                yield return MetadataTokens.TypeSpecificationHandle(row);
+            }
+
+            for (int row = 1;
+                 row <= reader.GetTableRowCount(TableIndex.MethodSpec);
+                 row++)
+            {
+                yield return MetadataTokens.MethodSpecificationHandle(row);
+            }
+
+            for (int row = 1;
+                 row <= reader.GetTableRowCount(TableIndex.StandAloneSig);
+                 row++)
+            {
+                yield return MetadataTokens.StandaloneSignatureHandle(row);
+            }
+        }
+
+        private static HashSet<ModuleReferenceHandle> GetPInvokeModuleReferences(MetadataReader reader)
+        {
+            var moduleReferences = new HashSet<ModuleReferenceHandle>();
+
+            foreach (MethodDefinitionHandle handle in reader.MethodDefinitions)
+            {
+                ModuleReferenceHandle module = reader.GetMethodDefinition(handle).GetImport().Module;
+                if (!module.IsNil)
+                {
+                    moduleReferences.Add(module);
+                }
+            }
+
+            return moduleReferences;
+        }
+
+        private static VerificationResult TryResolveMetadataHandle(EcmaModule module, EntityHandle handle)
+        {
+            try
+            {
+                if (handle.Kind == HandleKind.StandaloneSignature)
+                {
+                    ResolveStandaloneSignature(module, (StandaloneSignatureHandle)handle);
+                }
+                else
+                {
+                    module.GetObject(handle);
+                }
+
+                return null;
+            }
+            catch (TypeSystemException e)
+            {
+                return createVerificationResult(e.Message, e.StringID);
+            }
+            catch (BadImageFormatException e)
+            {
+                return createVerificationResult(e.Message);
+            }
+            catch (InvalidProgramException e)
+            {
+                return createVerificationResult(e.Message);
+            }
+            catch (VerifierException e)
+            {
+                return createVerificationResult(e.Message, code: e.Code);
+            }
+            catch (NotImplementedException e)
+            {
+                return new VerificationResult
+                {
+                    Code = VerifierError.TokenResolve,
+                    MetadataHandle = handle,
+                    ErrorArguments = Array.Empty<ErrorArgument>(),
+                    Message = $"Unable to validate metadata reference ({handle.Kind}) because this metadata form is not supported: {e.Message}"
+                };
+            }
+
+            VerificationResult createVerificationResult(
+                string message,
+                ExceptionStringID? exceptionID = null,
+                VerifierError code = VerifierError.None)
+            {
+                if (code == VerifierError.None && exceptionID == null)
+                {
+                    code = VerifierError.TokenResolve;
+                }
+
+                return new VerificationResult
+                {
+                    Code = code,
+                    ExceptionID = exceptionID,
+                    MetadataHandle = handle,
+                    ErrorArguments = Array.Empty<ErrorArgument>(),
+                    Message = $"Unable to resolve metadata reference ({handle.Kind}): {message}"
+                };
+            }
+        }
+
+        private static void ResolveStandaloneSignature(EcmaModule module, StandaloneSignatureHandle handle)
+        {
+            MetadataReader reader = module.MetadataReader;
+            StandaloneSignature signature = reader.GetStandaloneSignature(handle);
+
+            if (signature.GetKind() == StandaloneSignatureKind.LocalVariables)
+            {
+                // Local-variable signature
+                var parser = new EcmaSignatureParser(module, reader.GetBlobReader(signature.Signature), NotFoundBehavior.Throw);
+                parser.ParseLocalsSignature();
+            }
+            else
+            {
+                // Method signature (calli)
+                module.GetObject(handle);
+            }
+        }
+
 
         private IEnumerable<VerificationResult> VerifyMethods(EcmaModule module, IEnumerable<MethodDefinitionHandle> methodHandles)
         {
