@@ -5,6 +5,9 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if TARGET_ARM64
+using System.Runtime.Intrinsics.Arm;
+#endif
 
 namespace System.Threading
 {
@@ -580,6 +583,12 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int And(ref int location1, int value)
         {
+#if TARGET_ARM64
+            if (Lse.IsSupported)
+            {
+                return Lse.LoadClear(ref location1, value);
+            }
+#endif
             int current = location1;
             while (true)
             {
@@ -612,6 +621,12 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long And(ref long location1, long value)
         {
+#if TARGET_ARM64
+            if (Lse.IsSupported)
+            {
+                return Lse.LoadClear(ref location1, value);
+            }
+#endif
             long current = location1;
             while (true)
             {
@@ -723,6 +738,12 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Or(ref int location1, int value)
         {
+#if TARGET_ARM64
+            if (Lse.IsSupported)
+            {
+                return Lse.LoadSet(ref location1, value);
+            }
+#endif
             int current = location1;
             while (true)
             {
@@ -755,6 +776,12 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Or(ref long location1, long value)
         {
+#if TARGET_ARM64
+            if (Lse.IsSupported)
+            {
+                return Lse.LoadSet(ref location1, value);
+            }
+#endif
             long current = location1;
             while (true)
             {
