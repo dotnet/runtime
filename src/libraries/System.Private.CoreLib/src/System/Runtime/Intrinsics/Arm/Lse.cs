@@ -18,7 +18,8 @@ namespace System.Runtime.Intrinsics.Arm
     /// Unlike the Interlocked APIs these never fall back to an ldaxr/stlxr retry loop, so they may
     /// only be called when <see cref="IsSupported"/> is true. The type argument must be an integer
     /// (or an enum over one) no wider than a pointer; sizes of 1 and 2 bytes are only supported by
-    /// <see cref="CompareAndSwap{T}"/> and <see cref="Swap{T}"/>. Anything else fails to compile.
+    /// <see cref="CompareAndSwap{T}"/> and <see cref="Swap{T}"/>. Any other type argument compiles
+    /// into a throw.
     /// </remarks>
     [Intrinsic]
     internal abstract class Lse : ArmBase
@@ -27,28 +28,23 @@ namespace System.Runtime.Intrinsics.Arm
 
         public static new bool IsSupported { get => IsSupported; }
 
-        // Note these are deliberately not the usual recursive intrinsic stubs. They are generic, and
-        // R2R compiles the uninstantiated definition of a generic method, which would then try to
-        // intrinsify a self-call whose type argument is still a signature method variable. Throwing
-        // keeps that body trivial, and is also what a caller that ignores the contract deserves.
-
         /// <summary>Compare and swap: <c>casal</c>.</summary>
         public static T CompareAndSwap<T>(ref T location, T value, T comparand) =>
-            throw new PlatformNotSupportedException();
+            CompareAndSwap(ref location, value, comparand);
 
         /// <summary>Atomic add, returning the original value: <c>ldaddal</c>.</summary>
-        public static T LoadAdd<T>(ref T location, T value) => throw new PlatformNotSupportedException();
+        public static T LoadAdd<T>(ref T location, T value) => LoadAdd(ref location, value);
 
         /// <summary>Atomically clears the bits of <paramref name="location"/> that are not set in
         /// <paramref name="value"/> - that is, an atomic "and" - and returns the original value.</summary>
         /// <remarks>Lowers to <c>mvn</c> followed by <c>ldclral</c>, since <c>ldclral</c> itself clears the
         /// bits that <em>are</em> set in its operand.</remarks>
-        public static T LoadClear<T>(ref T location, T value) => throw new PlatformNotSupportedException();
+        public static T LoadClear<T>(ref T location, T value) => LoadClear(ref location, value);
 
         /// <summary>Atomic bit set, returning the original value: <c>ldsetal</c>.</summary>
-        public static T LoadSet<T>(ref T location, T value) => throw new PlatformNotSupportedException();
+        public static T LoadSet<T>(ref T location, T value) => LoadSet(ref location, value);
 
         /// <summary>Atomic exchange: <c>swpal</c>.</summary>
-        public static T Swap<T>(ref T location, T value) => throw new PlatformNotSupportedException();
+        public static T Swap<T>(ref T location, T value) => Swap(ref location, value);
     }
 }
