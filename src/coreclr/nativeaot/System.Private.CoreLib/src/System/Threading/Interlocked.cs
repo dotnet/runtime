@@ -16,6 +16,7 @@ namespace System.Threading
         #region CompareExchange
 
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int CompareExchange(ref int location1, int value, int comparand)
         {
 #if TARGET_ARM64
@@ -86,6 +87,7 @@ namespace System.Threading
         #region Exchange
 
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int Exchange(ref int location1, int value)
         {
 #if TARGET_ARM64
@@ -110,6 +112,7 @@ namespace System.Threading
         }
 
         [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static long Exchange(ref long location1, long value)
         {
 #if TARGET_ARM64
