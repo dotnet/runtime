@@ -1335,12 +1335,12 @@ namespace System.Runtime.InteropServices
             {
                 Bucket[] buckets = _buckets;
 
-                // COM instances are heap allocated, so they're always at least pointer aligned, and in practice
-                // more than that. Their low bits are therefore constant and can't be used to select a bucket
-                // directly. Multiplying by a large odd constant (2 raised to the width of a pointer, divided by
-                // the golden ratio) mixes every input bit into the high half of the product, which is then masked
-                // to produce the index. The whole sequence lowers to a multiply, a shift and a mask, which is
-                // negligible next to the lookup that follows.
+                // COM instances are always at least pointer aligned, and in practice more than that. Their low
+                // bits are therefore constant and can't be used to select a bucket directly. Multiplying by a
+                // large odd constant (2 raised to the width of a pointer, divided by the golden ratio) mixes
+                // every input bit into the high half of the product, which is then masked to produce the index.
+                // The whole sequence lowers to a multiply, a shift and a mask, which is negligible next to the
+                // lookup that follows.
                 uint hash = sizeof(nint) == 8
                     ? (uint)(((ulong)(nuint)comPointer * 0x9E3779B97F4A7C15) >> 32)
                     : ((uint)(nuint)comPointer * 0x9E3779B9) >> 16;
