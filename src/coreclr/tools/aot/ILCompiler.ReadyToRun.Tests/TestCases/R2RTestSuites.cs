@@ -1183,11 +1183,6 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskNoAwait", "ReturnTaskNoAwait", out diag), diag);
             Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskPrimitiveNoAwait", "ReturnTaskPrimitiveNoAwait", out diag), diag);
             Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskClassNoAwait", "ReturnTaskClassNoAwait", out diag), diag);
-
-            // Async candidates that contain a real await: cannot be inlined by the JIT.
-            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskWithAwait", "ReturnTaskWithAwait", out diag), diag);
-            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskPrimitiveWithAwait", "ReturnTaskPrimitiveWithAwait", out diag), diag);
-            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskClassWithAwait", "ReturnTaskClassWithAwait", out diag), diag);
         }
     }
 
@@ -1878,6 +1873,38 @@ public class R2RTestSuites
             // The generic type instantiation is reached only through a GenericLookupSignature
             // fixup, so its virtual method must still be discovered and compiled.
             Assert.True(R2RAssert.HasCompiledMethod(reader, "TestA`2<__Canon,int>", "TestMethod", out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void MissingVirtualSignature()
+    {
+        var missingDependency = new CompiledAssembly
+        {
+            AssemblyName = nameof(MissingVirtualSignature) + "Dependency",
+            SourceResourceNames = ["MissingVirtualSignature/Dependency.cs"],
+        };
+        var input = new CompiledAssembly
+        {
+            AssemblyName = nameof(MissingVirtualSignature),
+            SourceResourceNames = ["MissingVirtualSignature/Input.cs"],
+            References = [missingDependency],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(MissingVirtualSignature),
+            [
+                new(nameof(MissingVirtualSignature), [new CrossgenAssembly(input)])
+                {
+                    AdditionalArgs = ["--parallelism", "1"],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "EntryPoints", "CompilableMethod", out string diag), diag);
+            Assert.False(R2RAssert.HasCompiledMethod(reader, "IMissingSignature`1<__Canon>", "GetMissingType", out diag), diag);
         }
     }
 }

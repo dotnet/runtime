@@ -4539,6 +4539,12 @@ struct AsyncCallInfo
     // records that behavior.
     ::ContinuationContextHandling ContinuationContextHandling = ContinuationContextHandling::None;
 
+    // Continuation context handling of the inlined frames enclosing this call, innermost
+    // first: one entry per frame that logically returns to its caller when this call
+    // suspends, i.e. the handling of the call that inlined that frame. The root method's
+    // frame has no entry since it never transitions.
+    jitstd::vector<::ContinuationContextHandling>* InlineFrameContextHandling = nullptr;
+
     // Is this 'await valueTask.AsTask()'? These come with special semantics as
     // they no longer transparently forward continuation context handling to an
     // underlying IValueTaskSource, if present.
@@ -5268,6 +5274,12 @@ struct GenTreeCall final : public GenTree
     bool IsAsync() const;
 
     const AsyncCallInfo& GetAsyncInfo() const
+    {
+        assert(IsAsync());
+        return *asyncInfo;
+    }
+
+    AsyncCallInfo& GetAsyncInfo()
     {
         assert(IsAsync());
         return *asyncInfo;
