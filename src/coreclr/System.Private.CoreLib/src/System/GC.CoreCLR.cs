@@ -121,26 +121,26 @@ namespace System
 
         /// <safety>FCall that returns the maximum supported generation number as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static safe extern int GetMaxGeneration();
+        private static extern safe int GetMaxGeneration();
 
         /// <safety>The GC indexes its per-generation tables with <paramref name="generation"/> and the runtime only
         /// asserts that it is non-negative, so the caller must not pass a negative value.
         /// <see cref="CollectionCount(int)"/> is the audited entry point that validates it.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static unsafe extern int _CollectionCount(int generation, int getSpecialGCCount);
+        private static extern unsafe int _CollectionCount(int generation, int getSpecialGCCount);
 
         /// <safety>FCall that returns the GC segment size as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static safe extern ulong GetSegmentSize();
+        internal static extern safe ulong GetSegmentSize();
 
         /// <safety>FCall that returns a percentage as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static safe extern int GetLastGCPercentTimeInGC();
+        internal static extern safe int GetLastGCPercentTimeInGC();
 
         /// <safety>The GC indexes its generation-size table with <paramref name="gen"/> without bounds-checking it, so
         /// the caller must pass an existing generation number.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static unsafe extern ulong GetGenerationSize(int gen);
+        internal static extern unsafe ulong GetGenerationSize(int gen);
 
         /// <safety>QCall that records added memory pressure from a scalar byte count; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_AddMemoryPressure")]
@@ -441,7 +441,7 @@ namespace System
 
         /// <safety>FCall that returns the current thread's allocated byte count as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern long GetAllocatedBytesForCurrentThread();
+        public static extern safe long GetAllocatedBytesForCurrentThread();
 
 
         /// <summary>
@@ -452,7 +452,7 @@ namespace System
 
         /// <safety>FCall that returns an approximate process-wide allocated byte count as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static safe extern long GetTotalAllocatedBytesApproximate();
+        private static extern safe long GetTotalAllocatedBytesApproximate();
 
         /// <safety>QCall that returns a precise process-wide allocated byte count as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_GetTotalAllocatedBytesPrecise")]
@@ -460,11 +460,11 @@ namespace System
 
         /// <safety>FCall that enables full-GC notifications from scalar percentage arguments and returns a status flag; it accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static safe extern bool _RegisterForFullGCNotification(int maxGenerationPercentage, int largeObjectHeapPercentage);
+        private static extern safe bool _RegisterForFullGCNotification(int maxGenerationPercentage, int largeObjectHeapPercentage);
 
         /// <safety>FCall that cancels full-GC notifications and returns a status flag; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static safe extern bool _CancelFullGCNotification();
+        private static extern safe bool _CancelFullGCNotification();
 
         /// <safety>QCall that waits for an approaching full GC using a scalar timeout and returns a status code; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "GCInterface_WaitForFullGCApproach")]
@@ -623,7 +623,7 @@ namespace System
 
         /// <safety>FCall that returns the current memory load percentage as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static safe extern uint GetMemoryLoad();
+        internal static extern safe uint GetMemoryLoad();
 
         private static bool InvokeMemoryLoadChangeNotifications()
         {
@@ -888,7 +888,7 @@ namespace System
 
         /// <safety>FCall that returns the cumulative GC pause duration as a scalar; it takes no arguments and accesses no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static safe extern long _GetTotalPauseDuration();
+        private static extern safe long _GetTotalPauseDuration();
 
         /// <summary>
         /// Gets the total amount of time paused in GC since the beginning of the process.

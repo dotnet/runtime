@@ -325,9 +325,10 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     NamedIntrinsic ni = NI_Illegal;
 
     CORINFO_SIG_INFO calliSig;
-    GenTree*         varArgsCookie     = nullptr;
-    GenTree*         instParam         = nullptr;
-    GenTree*         asyncContinuation = nullptr;
+    GenTree*         varArgsCookie            = nullptr;
+    GenTree*         instParam                = nullptr;
+    GenTree*         asyncContinuation        = nullptr;
+    bool             asyncCallUsesOwnContexts = false;
 
     // Swift calls that might throw use a SwiftError* arg that requires additional IR to handle,
     // so if we're importing a Swift call, look for this type in the signature
@@ -630,7 +631,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (sig->isAsyncCall())
                 {
-                    impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di);
+                    impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di, &asyncCallUsesOwnContexts);
 
                     if (compDonotInline())
                     {
@@ -642,7 +643,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 if (call->AsCall()->IsAsync())
                 {
-                    impInsertAsyncArgsForLdvirtftnCall(call->AsCall());
+                    impInsertAsyncArgsForLdvirtftnCall(call->AsCall(), asyncCallUsesOwnContexts);
                 }
 
                 GenTree* thisPtr = impPopStack().val;
@@ -952,7 +953,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (sig->isAsyncCall())
     {
-        impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di);
+        impSetupAsyncCall(call->AsCall(), methHnd, opcode, prefixFlags, ni, di, &asyncCallUsesOwnContexts);
 
         if (compDonotInline())
         {
@@ -1113,7 +1114,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         }
     }
 
-    if (asyncContinuation != nullptr)
+    if ((asyncContinuation != nullptr) && !asyncCallUsesOwnContexts)
     {
         impInheritAsyncContextsFromInliner(call->AsCall());
     }
@@ -1933,7 +1934,7 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
     JITDUMP("%u likely values:\n", valuesCount)
     for (UINT32 i = 0; i < valuesCount; i++)
     {
-        JITDUMP("  %u) %u - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
+        JITDUMP("  %u) %zd - %u%%\n", i, likelyValues[i].value, likelyValues[i].likelihood)
     }
 
     // For now, we only do a single guess, but it's pretty straightforward to
@@ -1984,7 +1985,7 @@ GenTree* Compiler::impDuplicateWithProfiledArg(GenTreeCall* call, IL_OFFSET ilOf
 
         if ((profiledValue >= minValue) && (profiledValue <= maxValue))
         {
-            JITDUMP("Duplicating for popular value = %u\n", profiledValue)
+            JITDUMP("Duplicating for popular value = %zd\n", profiledValue)
             DISPTREE(call)
 
             if (call->gtArgs.GetUserArgByIndex(argNum)->GetNode()->OperIsConst())
@@ -2601,7 +2602,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
             }
             else
             {
-                JITDUMP("  Argument %d of type %s must be passed as %d primitive(s)\n", argIndex,
+                JITDUMP("  Argument %d of type %s must be passed as %zu primitive(s)\n", argIndex,
                         typGetObjLayout(arg->GetSignatureClassHandle())->GetClassName(), lowering->numLoweredElements);
                 for (size_t i = 0; i < lowering->numLoweredElements; i++)
                 {
@@ -2734,7 +2735,7 @@ void Compiler::impPopArgsForSwiftCall(GenTreeCall* call, CORINFO_SIG_INFO* sig, 
         }
         else
         {
-            printf("  Call returns %s as %d primitive(s) in registers\n",
+            printf("  Call returns %s as %zu primitive(s) in registers\n",
                    typGetObjLayout(sig->retTypeClass)->GetClassName(), lowering->numLoweredElements);
             for (size_t i = 0; i < lowering->numLoweredElements; i++)
             {
@@ -7759,21 +7760,28 @@ void Compiler::impCheckForPInvokeCall(
 //   Register a call as being async and set up context handling information depending on the IL.
 //
 // Arguments:
-//    call        - The call
-//    methHnd     - Method handle being called
-//    opcode      - The IL opcode for the call
-//    prefixFlags - Flags containing context handling information from IL
-//    ni          - Named intrinsic recognized for the callee (or NI_Illegal)
-//    callDI      - Debug info for the async call
+//    call            - The call
+//    methHnd         - Method handle being called
+//    opcode          - The IL opcode for the call
+//    prefixFlags     - Flags containing context handling information from IL
+//    ni              - Named intrinsic recognized for the callee (or NI_Illegal)
+//    callDI          - Debug info for the async call
+//    usesOwnContexts - [out] Set to true if the call gets the contexts of the frame it is
+//                      in, which is the case for an await that may suspend in an inlinee's
+//                      own frame. Set to false if it should instead inherit the inlining
+//                      call's contexts, which the caller does via
+//                      impInheritAsyncContextsFromInliner.
 //
 void Compiler::impSetupAsyncCall(GenTreeCall*          call,
                                  CORINFO_METHOD_HANDLE methHnd,
                                  OPCODE                opcode,
                                  unsigned              prefixFlags,
                                  NamedIntrinsic        ni,
-                                 const DebugInfo&      callDI)
+                                 const DebugInfo&      callDI,
+                                 bool*                 usesOwnContexts)
 {
     AsyncCallInfo asyncInfo;
+    *usesOwnContexts = false;
 
     // Some async helpers always suspend when called. For these we can skip the
     // check for a null continuation after the call and suspend unconditionally.
@@ -7791,38 +7799,100 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
 
     if (compIsForInlining())
     {
-        if (!m_nextAwaitIsTail && !compIsAsyncVersion())
-        {
-            compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
-            return;
-        }
+        // Two cases are inlined cheaply: async versions of synchronous methods, where
+        // all async calls are in tail position, and explicit tail awaits. In both the
+        // inlinee's tail can run in the caller's context, so we can inherit all context
+        // handling from the inlining call and no logical frame transition is needed when
+        // the inlinee returns.
+        bool inheritsCallerContexts = m_nextAwaitIsTail || compIsAsyncVersion();
 
-        // We cannot inline if the callee returns valueTask.AsTask() in an
-        // async version. We need to preserve the continuation in this case to
-        // be able to mark it with CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK.
+        // We cannot inline if the callee returns valueTask.AsTask(). We need to preserve
+        // the continuation in this case to be able to mark it with
+        // CORINFO_CONTINUATION_VALUETASK_ADAPTED_TO_TASK.
         if ((prefixFlags & PREFIX_IS_ADAPTED_FROM_VALUETASK) != 0)
         {
             compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
             return;
         }
 
-        // For async versions of synchronous methods all async calls are in
-        // tail position. Inlining is simple for these cases: we can just
-        // inherit all context handling from the inlining call.
-        assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
+        if (!inheritsCallerContexts)
+        {
+            if (!generalAsyncInliningEnabled())
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT);
+                return;
+            }
 
-        GenTreeCall* inlCall = impInlineInfo->iciCall;
-        JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+            // Calls from non-async into async go through thunks that are passed the
+            // continuation explicitly, so they cannot be inlined. This is a property of
+            // the root method being compiled, not of the callee, which inlines fine into
+            // an async root.
+            if (!impInlineRoot()->compIsAsync())
+            {
+                JITDUMP("Cannot inline an await into a non-async root method\n");
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_AWAIT_IN_NON_ASYNC_ROOT);
+                return;
+            }
 
-        assert(inlCall->IsAsync());
+            // General case: this is a real await inside the inlinee that may suspend. It
+            // gets its own context handling below, exactly like an await in a non-inlined
+            // method, and the inlinee's own contexts (created by its SaveAsyncContexts)
+            // are used rather than the caller's.
 
-        asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
-        // Validate that below code won't override the handling
-        assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+            // The inlined frame must not end up inside a protected region of the caller.
+            // An exception unwinding out of it skips the post-inline handling, and getting
+            // back onto the caller's continuation context cannot be recovered from a
+            // handler because it may suspend. A user 'catch' between the frame and the
+            // resumption would then run on the wrong continuation context. Doing this
+            // correctly needs the catch-and-rethrow expansion described in
+            // docs/design/coreclr/jit/runtime-async-inlining.md, which is not implemented
+            // yet.
+            //
+            // This covers nesting as well: a caller that is itself inlined into a
+            // protected region was rejected by this same check.
+            //
+            // Only user EH matters here. Every async frame has a context restore
+            // try-fault wrapped around its whole body by SaveAsyncContexts, which by
+            // this point has run both for the caller and for every frame it was inlined
+            // into, so those clauses must be ignored.
+            //
+            // This is a property of the call site, not of the callee: the same callee
+            // inlines fine at a call site outside a protected region.
+            BasicBlock* const callSiteBlock = impInlineInfo->iciBlock;
+            if (impInlineInfo->InlinerCompiler->ehIsInsideNonAsyncContextRestoreRegion(callSiteBlock))
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLSITE_AWAIT_IN_TRY_REGION);
+                return;
+            }
 
-        asyncInfo.IsTailAwait =
-            inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
-        m_nextAwaitIsTail = false;
+            // Suspending inside a protected region of the inlinee itself is not handled
+            // yet either.
+            if ((compCurBB != nullptr) && (compCurBB->hasTryIndex() || compCurBB->hasHndIndex()))
+            {
+                compInlineResult->NoteFatal(InlineObservation::CALLEE_AWAIT_IN_TRY);
+                return;
+            }
+
+            JITDUMP("Call [%06u] is an await in an inlinee that may suspend\n", dspTreeID(call));
+            *usesOwnContexts = true;
+        }
+        else
+        {
+            assert(!compIsAsyncVersion() || ((prefixFlags & PREFIX_IS_ASYNC_VERSION_TAIL_AWAIT) != 0));
+
+            GenTreeCall* inlCall = impInlineInfo->iciCall;
+            JITDUMP("Call [%06u] is to function with a tail async call [%06u]\n", dspTreeID(inlCall), dspTreeID(call));
+
+            assert(inlCall->IsAsync());
+
+            asyncInfo.ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+            // Validate that below code won't override the handling
+            assert((prefixFlags & PREFIX_IS_TASK_AWAIT) == 0);
+
+            asyncInfo.IsTailAwait =
+                inlCall->GetAsyncInfo().IsTailAwait && (m_nextAwaitIsTail || (call->gtReturnType == info.compRetType));
+            m_nextAwaitIsTail = false;
+        }
     }
     else
     {
@@ -7896,9 +7966,14 @@ void Compiler::impSetupAsyncCall(GenTreeCall*          call,
 //   call - The async call
 //
 // Remarks:
-//   Currently we only allow inlining of async calls when all awaits are tail
-//   awaits. In that case inlining is simplified as we can just inherit
-//   everything from the inlining call.
+//   For an await that runs in the inlining call's frame rather than a frame of its own,
+//   which is the case for a tail await of the inlinee and for the transparent await an
+//   async version forwards through. Such an await has no contexts to use, so it takes the
+//   inlining call's: a suspension in it then runs exactly the handling that the frame it
+//   ended up in would have run.
+//
+//   Awaits that may suspend in a frame of their own instead get their own contexts, from
+//   that frame's SaveAsyncContexts, and are skipped here.
 //
 void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 {
@@ -7921,12 +7996,8 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
         return;
     }
 
-    // We are inlining an async call that does not save contexts into a call
-    // that does. We currently allow this only in cases where the tail of the
-    // inlinee can run in the caller's context, and hence we propagate the
-    // caller's context here. It means we do not need to worry about switching
-    // into the caller's context when the inlinee is returning to the caller
-    // after the await.
+    // Take the values as they appear in the inlining call, so a suspension restores and
+    // captures exactly what the frame this await ended up in would have.
     assert(resumedUseArg->GetNode()->OperIs(GT_LCL_VAR) && resumedDefArg->GetNode()->OperIs(GT_LCL_ADDR) &&
            execArg->GetNode()->OperIs(GT_LCL_VAR) && syncArg->GetNode()->OperIs(GT_LCL_VAR));
     JITDUMP("Inheriting resumed use [%06u], resumed def [%06u], and contexts [%06u] and [%06u] from caller node\n",
@@ -7939,8 +8010,42 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
     GenTree* syncNode       = gtCloneExpr(syncArg->GetNode());
     call->gtArgs.PushFront(this, NewCallArg::Primitive(syncNode).WellKnown(WellKnownArg::AsyncSynchronizationContext));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(execNode).WellKnown(WellKnownArg::AsyncExecutionContext));
-    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
     call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedUseNode).WellKnown(WellKnownArg::AsyncResumedUse));
+    call->gtArgs.PushFront(this, NewCallArg::Primitive(resumedDefNode).WellKnown(WellKnownArg::AsyncResumedDef));
+
+    // The inlining call may carry further sets describing the frames enclosing it, which
+    // this call inherits as well: it ends up in the same frame, so a suspension in it has
+    // to run the same chain of frame transitions. Dropping them would silently lose the
+    // handling for every frame outside the immediate one.
+    bool skippedFirst = false;
+    for (CallArg& arg : inlCall->gtArgs.Args())
+    {
+        WellKnownArg wka = arg.GetWellKnownArg();
+        if ((wka != WellKnownArg::AsyncResumedUse) && (wka != WellKnownArg::AsyncExecutionContext) &&
+            (wka != WellKnownArg::AsyncSynchronizationContext))
+        {
+            continue;
+        }
+
+        if ((wka == WellKnownArg::AsyncResumedUse) && !skippedFirst)
+        {
+            // Already inherited above, along with the resumed def that only the innermost
+            // frame has.
+            skippedFirst = true;
+            continue;
+        }
+
+        if (&arg == execArg || &arg == syncArg)
+        {
+            continue;
+        }
+
+        call->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(arg.GetNode())).WellKnown(wka));
+    }
+
+    // This call ends up in the same frame as the inlining call, so it hands off through
+    // the same chain of frames in the same way.
+    call->GetAsyncInfo().InlineFrameContextHandling = inlCall->GetAsyncInfo().InlineFrameContextHandling;
 }
 
 //------------------------------------------------------------------------
@@ -7949,13 +8054,15 @@ void Compiler::impInheritAsyncContextsFromInliner(GenTreeCall* call)
 //   ldvirtftn.
 //
 // Arguments:
-//    call - The call
+//    call            - The call
+//    usesOwnContexts - Whether the call is an await in an inlinee that gets its own
+//                      contexts, as reported by impSetupAsyncCall
 //
 // Remarks:
 //   Should be called before the 'this' arg is inserted, but after other IL args
 //   have been inserted.
 //
-void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call)
+void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call, bool usesOwnContexts)
 {
     assert(call->AsCall()->IsAsync());
 
@@ -7970,7 +8077,10 @@ void Compiler::impInsertAsyncArgsForLdvirtftnCall(GenTreeCall* call)
                                                   .WellKnown(WellKnownArg::AsyncContinuation));
     }
 
-    impInheritAsyncContextsFromInliner(call);
+    if (!usesOwnContexts)
+    {
+        impInheritAsyncContextsFromInliner(call);
+    }
 }
 
 //------------------------------------------------------------------------
@@ -8178,7 +8288,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
         for (UINT32 i = 0; i < numberOfClasses; i++)
         {
             const char* className = eeGetClassName((CORINFO_CLASS_HANDLE)likelyClasses[i].handle);
-            JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, likelyClasses[i].handle, className,
+            JITDUMP("  %u) %p (%s) [likelihood:%u%%]\n", i + 1, (void*)likelyClasses[i].handle, className,
                     likelyClasses[i].likelihood);
         }
     }

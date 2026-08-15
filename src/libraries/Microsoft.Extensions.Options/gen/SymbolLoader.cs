@@ -8,6 +8,7 @@ namespace Microsoft.Extensions.Options.Generators
     internal static class SymbolLoader
     {
         public const string OptionsValidatorAttribute = "Microsoft.Extensions.Options.OptionsValidatorAttribute";
+        internal const string AsyncValidationAttributeType = "System.ComponentModel.DataAnnotations.AsyncValidationAttribute";
         internal const string ValidationAttribute = "System.ComponentModel.DataAnnotations.ValidationAttribute";
         internal const string MaxLengthAttribute = "System.ComponentModel.DataAnnotations.MaxLengthAttribute";
         internal const string MinLengthAttribute = "System.ComponentModel.DataAnnotations.MinLengthAttribute";
@@ -24,6 +25,10 @@ namespace Microsoft.Extensions.Options.Generators
         internal const string ValidateEnumeratedItemsAttribute = "Microsoft.Extensions.Options.ValidateEnumeratedItemsAttribute";
         internal const string GenericIEnumerableType = "System.Collections.Generic.IEnumerable`1";
         internal const string UnconditionalSuppressMessageAttributeType = "System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute";
+        internal const string IAsyncValidatableObjectType = "System.ComponentModel.DataAnnotations.IAsyncValidatableObject";
+        internal const string IAsyncValidateOptionsType = "Microsoft.Extensions.Options.IAsyncValidateOptions`1";
+        internal const string CancellationTokenType = "System.Threading.CancellationToken";
+        internal const string ValidatorType = "System.ComponentModel.DataAnnotations.Validator";
 
         public static bool TryLoad(Compilation compilation, out SymbolHolder? symbolHolder)
         {
@@ -46,6 +51,7 @@ namespace Microsoft.Extensions.Options.Generators
             var timeSpanSymbol = GetSymbol(TimeSpanType);
             var validateObjectMembersAttribute = GetSymbol(ValidateObjectMembersAttribute);
             var validateEnumeratedItemsAttribute = GetSymbol(ValidateEnumeratedItemsAttribute);
+            var cancellationTokenSymbol = GetSymbol(CancellationTokenType);
             var unconditionalSuppressMessageAttributeSymbol = GetSymbol(UnconditionalSuppressMessageAttributeType);
             if (unconditionalSuppressMessageAttributeSymbol is not null)
             {
@@ -74,12 +80,21 @@ namespace Microsoft.Extensions.Options.Generators
                 typeSymbol == null ||
                 timeSpanSymbol == null ||
                 validateObjectMembersAttribute == null ||
-                validateEnumeratedItemsAttribute == null)
+                validateEnumeratedItemsAttribute == null ||
+                cancellationTokenSymbol == null)
             {
                 symbolHolder = default;
                 return false;
             }
     #pragma warning restore S1067 // Expressions should not be too complex
+
+            // IAsyncValidateOptions is available on every package TFM, while the asynchronous
+            // DataAnnotations APIs are available only on .NET 11 and later.
+            var iAsyncValidatableObjectSymbol = GetSymbol(IAsyncValidatableObjectType);
+            var asyncValidateOptionsSymbol = GetSymbol(IAsyncValidateOptionsType);
+            var asyncValidationAttributeSymbol = GetSymbol(AsyncValidationAttributeType);
+            var validatorSymbol = GetSymbol(ValidatorType);
+            bool hasTryValidateValueAsyncMethod = validatorSymbol?.GetMembers("TryValidateValueAsync").Length > 0;
 
             symbolHolder = new(
                 optionsValidatorSymbol,
@@ -98,7 +113,12 @@ namespace Microsoft.Extensions.Options.Generators
                 typeSymbol,
                 timeSpanSymbol,
                 validateObjectMembersAttribute,
-                validateEnumeratedItemsAttribute);
+                validateEnumeratedItemsAttribute,
+                cancellationTokenSymbol,
+                iAsyncValidatableObjectSymbol,
+                hasTryValidateValueAsyncMethod,
+                asyncValidateOptionsSymbol,
+                asyncValidationAttributeSymbol);
 
             return true;
         }
