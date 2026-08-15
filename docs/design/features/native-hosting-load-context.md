@@ -18,7 +18,7 @@ When a component loads into the default ALC, framework assemblies win, so it can
 The load context parameter has one of the following values:
 
 - `NULL` (`0`): Default ALC (`AssemblyLoadContext.Default`)
-- `(void*)-1`: a new isolated ALC (COM and C++/CLI only)
+- `ISOLATED_CONTEXT` (`(void*)-1`): a new isolated ALC (COM and C++/CLI only)
 - any other value: pointer to a `load_context` struct
 
 ```C
@@ -42,10 +42,10 @@ Components specify a runtime host property with an identifier for the load conte
 <ItemGroup>
   <!-- COM component -->
   <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.COM.LoadContextIdentifier"
-                                  Value="MySharedContext" />
+                                  Value="MyCompany.MyApp.Plugins" />
   <!-- C++/CLI component -->
   <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.CppCLI.LoadContextIdentifier"
-                                  Value="MySharedContext" />
+                                  Value="MyCompany.MyApp.Plugins" />
 </ItemGroup>
 ```
 
@@ -56,14 +56,14 @@ Setting `LoadComponentInDefaultContext` (COM) / `LoadComponentInIsolatedContext`
 A custom native host can pass a load context parameter to hosting APIs.
 
 ```C
-struct load_context context = { sizeof(context), _X("MySharedContext") };
+struct load_context context = { sizeof(context), _X("MyCompany.MyApp.Plugins") };
 load_assembly(_X("plugin.dll"), &context, NULL);
 get_function_pointer(_X("Plugin.Entry, plugin"), _X("Run"), NULL, &context, NULL, &fn);
 ```
 
 ## Determining the load context
 
-The runtime keeps a mapping from `identifier` to context, tracking only contexts created via native hosting. If a load context parameter specifies an `identifier` for which no ALC exists yet, a new one is created and tracked.
+The runtime keeps a mapping from `identifier` to context, tracking only contexts created via native hosting. If a load context parameter specifies an `identifier` for which no ALC exists yet, a new one is created and tracked. The `identifier` string is compared with ordinal equality. Since the mapping is process-wide, an `identifier` should be namespaced for the application or use case to avoid colliding with unrelated components in the same process.
 
 Resolution happens in the context's `Load` override, such that it occurs before any fallback to the default ALC's resolution. When a component is loaded into a context, it adds an `AssemblyDependencyResolver` (corresponding to the component's path) to that resolution logic. Resolvers are queried in the component load order — the first one wins.
 
