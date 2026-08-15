@@ -1308,14 +1308,26 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         private readonly struct RcwCache
         {
+            /// <summary>
+            /// The most buckets to partition the cache into, regardless of how many processors there are.
+            /// </summary>
+            /// <remarks>
+            /// Every bucket costs a lock and a dictionary for the lifetime of the <see cref="ComWrappers"/>
+            /// instance, so the count can't just track the processor count upwards. Past this point the added
+            /// buckets stop paying for themselves: going from 16 to 32 on a 32 processor machine only improves
+            /// a heavily contended lookup by about a fifth, while doubling what an instance costs and making
+            /// the uncontended lookup slower, as the buckets no longer sit as close together in memory.
+            /// </remarks>
+            private const int MaxBucketCount = 16;
+
             private readonly Bucket[] _buckets;
 
             public RcwCache()
             {
                 // Use as many buckets as there are processors, matching the default concurrency level of
-                // 'ConcurrentDictionary'. The count is rounded up to a power of two so that the bucket for a
-                // given COM instance can be selected with a mask rather than a division.
-                uint bucketCount = BitOperations.RoundUpToPowerOf2((uint)Environment.ProcessorCount);
+                // 'ConcurrentDictionary', up to the cap above. The count is rounded up to a power of two so that
+                // the bucket for a given COM instance can be selected with a mask rather than a division.
+                uint bucketCount = BitOperations.RoundUpToPowerOf2((uint)Math.Min(Environment.ProcessorCount, MaxBucketCount));
                 Bucket[] buckets = new Bucket[bucketCount];
 
                 for (int i = 0; i < buckets.Length; i++)
