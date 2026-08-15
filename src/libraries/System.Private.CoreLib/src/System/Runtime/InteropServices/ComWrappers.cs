@@ -594,21 +594,28 @@ namespace System.Runtime.InteropServices
                 _inner = inner;
                 _comWrappers = comWrappers;
                 _uniqueInstance = flags.HasFlag(CreateObjectFlags.UniqueInstance);
-                _proxyHandle = new WeakGCHandle<object>(comProxy);
 
-                // We have a separate handle tracking resurrection as we want to make sure
-                // we clean up the NativeObjectWrapper only after the RCW has been finalized
-                // due to it can access the native object in the finalizer. At the same time,
-                // we want other callers which are using ProxyHandle such as the reference tracker runtime
-                // to see the object as not alive once it is eligible for finalization.
+                // The wrapper's finalizer must not release anything while the RCW is still able to observe the
+                // native object, which is why a handle that tracks resurrection is needed: unlike a plain weak
+                // handle, it stays set until the RCW has actually been collected, rather than merely becoming
+                // unreachable. Callers such as the reference tracker runtime want the opposite, and need to see
+                // the RCW as gone as soon as it is eligible for finalization, which is what 'ProxyHandle' is for.
                 //
-                // If the RCW has no finalizer, it can never observe the native object past the point
-                // where it becomes unreachable, and it can never be resurrected. The extra handle would
-                // therefore always be cleared at the same time as the one above, so we skip allocating it.
-                // This matters because allocating, clearing and freeing GC handles is a substantial part
-                // of the cost of every RCW, and resurrection tracking handles are also more expensive for
-                // the GC to process than plain weak handles.
-                if (RuntimeHelpers.ObjectHasFinalizer(comProxy))
+                // Those two only disagree while the RCW is unreachable but not yet collected. An RCW whose type
+                // declares no finalizer is never in that state on its own account, so a single handle can serve
+                // both purposes, halving the handles every such RCW costs. It can still be put in that state by
+                // something else's finalizer holding on to it, and then resurrecting it, and in that case having
+                // the one handle track resurrection is what keeps this wrapper from tearing down state the
+                // resurrected RCW still needs. Reporting such an RCW as alive is also the honest answer, as it
+                // may well be about to become reachable again.
+                //
+                // An RCW that does declare a finalizer does reach that state on its own, and there the two
+                // meanings genuinely differ, so it pays for both handles.
+                bool proxyHasFinalizer = RuntimeHelpers.ObjectHasFinalizer(comProxy);
+
+                _proxyHandle = new WeakGCHandle<object>(comProxy, trackResurrection: !proxyHasFinalizer);
+
+                if (proxyHasFinalizer)
                 {
                     _proxyHandleTrackingResurrection = new WeakGCHandle<object>(comProxy, trackResurrection: true);
                 }
@@ -657,7 +664,15 @@ namespace System.Runtime.InteropServices
 
             ~NativeObjectWrapper()
             {
-                if (_proxyHandleTrackingResurrection.IsAllocated && _proxyHandleTrackingResurrection.TryGetTarget(out _))
+                // When the RCW declares no finalizer, no second handle was allocated and the proxy handle is
+                // the one tracking resurrection, so it answers this question just as well. Neither is allocated
+                // once this wrapper has been released, which happens eagerly when one loses a registration race,
+                // and then there is nothing left to keep alive for.
+                WeakGCHandle<object> resurrectionHandle = _proxyHandleTrackingResurrection.IsAllocated
+                    ? _proxyHandleTrackingResurrection
+                    : _proxyHandle;
+
+                if (resurrectionHandle.IsAllocated && resurrectionHandle.TryGetTarget(out _))
                 {
                     // The RCW object has not been fully collected, so it still
                     // can make calls on the native object in its finalizer.
