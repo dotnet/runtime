@@ -95,9 +95,11 @@ bool runner_t::locate(const pal::string_t& relative_path, pal::string_t& full_pa
     assert(!entry->is_disabled());
 
     extracted_to_disk = entry->needs_extraction();
-    full_path.assign(extracted_to_disk ? extraction_path() : base_path());
-
-    append_path(&full_path, relative_path.c_str());
+    if (extracted_to_disk)
+    {
+        full_path.assign(extraction_path());
+        append_path(&full_path, relative_path.c_str());
+    }
 
     return true;
 }
