@@ -6802,7 +6802,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case CEE_LDC_I8:
                 cval.lngVal = getI8LittleEndian(codeAddr);
-                JITDUMP(" 0x%016llx", cval.lngVal);
+                JITDUMP(" 0x%016llx", (unsigned long long)cval.lngVal);
                 impPushOnStack(gtNewLconNode(cval.lngVal), typeInfo(TYP_LONG));
                 break;
 
@@ -11999,7 +11999,11 @@ bool Compiler::impWrapTopOfStackInAwait()
 
     AsyncCallInfo* asyncInfo = new (this, CMK_Async) AsyncCallInfo;
 
-    if (impInlineRoot()->compIsAsyncVersion())
+    bool const hasContextHandling =
+        compIsForInlining() &&
+        (impInlineInfo->iciCall->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse) != nullptr);
+
+    if (!hasContextHandling)
     {
         asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
 
@@ -12012,21 +12016,26 @@ bool Compiler::impWrapTopOfStackInAwait()
             awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
         }
 #endif
+
+        awaitCall->SetIsAsync(asyncInfo);
     }
     else
     {
-        // We are inlining into an async method. This means we have a proper
-        // async await, and we require proper handling.
+        // The await runs inside a frame that does context handling, either because we are
+        // inlining into an async method or because a context-owning frame encloses this
+        // one. Either way it is a proper async await and needs that frame's handling.
         assert(compIsForInlining() && impInlineInfo->iciCall->IsAsync());
         GenTreeCall* inlCall = impInlineInfo->iciCall;
 
         JITDUMP("Inheriting continuation handling %d from caller [%06u]\n",
                 (unsigned)inlCall->GetAsyncInfo().ContinuationContextHandling, dspTreeID(inlCall));
         asyncInfo->ContinuationContextHandling = inlCall->GetAsyncInfo().ContinuationContextHandling;
+
+        // Mark the call async first: inheriting the contexts also inherits the inlined
+        // frame depth, which lives in the async call info.
+        awaitCall->SetIsAsync(asyncInfo);
         impInheritAsyncContextsFromInliner(awaitCall);
     }
-
-    awaitCall->SetIsAsync(asyncInfo);
 
     if (awaitCall->IsInlineCandidate())
     {
@@ -12848,7 +12857,7 @@ void Compiler::impImportBlockPending(BasicBlock* block)
 #ifdef DEBUG
     if (verbose && 0)
     {
-        printf("Added PendingDsc - %08p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
+        printf("Added PendingDsc - %p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
     }
 #endif
 }
@@ -12913,7 +12922,7 @@ void Compiler::impReimportBlockPending(BasicBlock* block)
 #ifdef DEBUG
     if (verbose && 0)
     {
-        printf("Added PendingDsc - %08p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
+        printf("Added PendingDsc - %p for " FMT_BB "\n", dspPtr(dsc), block->bbNum);
     }
 #endif
 }

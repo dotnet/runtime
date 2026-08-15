@@ -21,6 +21,16 @@ namespace System.Net.NameResolution.Tests
         private const string TestNsHost = "microsoft.com";
         private const string NonExistentHost = "this-name-definitely-does-not-exist.dotnet-test.invalid";
 
+        // DnsResolver has no implementation on Browser or WASI; every query throws
+        // PlatformNotSupportedException there.
+        public static bool IsDnsResolverUnsupported => PlatformDetection.IsBrowser || PlatformDetection.IsWasi;
+
+        // Android cannot report the system-configured DNS servers, so the parameterless
+        // constructor throws there. Tests that never send a query specify a server explicitly
+        // so that they remain platform independent.
+        private static DnsResolver CreateResolver() =>
+            new DnsResolver(new DnsResolverOptions { Servers = { new IPEndPoint(IPAddress.Loopback, 53) } });
+
         // ---- Cross-platform argument-validation tests ----
 
         [Fact]
@@ -29,17 +39,33 @@ namespace System.Net.NameResolution.Tests
             Assert.Throws<ArgumentNullException>(() => new DnsResolver(null!));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid))]
         public void DnsResolver_Construct_DefaultOptions_DoesNotThrow()
         {
             using DnsResolver r = new DnsResolver();
             Assert.NotNull(r);
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAndroid))]
+        public void DnsResolver_Construct_DefaultOptions_ThrowsPlatformNotSupported()
+        {
+            // Android exposes no readable resolver configuration, so a resolver that would
+            // have to use the system-configured servers cannot be created.
+            Assert.Throws<PlatformNotSupportedException>(() => new DnsResolver());
+            Assert.Throws<PlatformNotSupportedException>(() => Dns.ResolveAddresses(TestHost));
+        }
+
+        [ConditionalFact(nameof(IsDnsResolverUnsupported))]
+        public async Task DnsResolver_UnsupportedPlatform_ThrowsPlatformNotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => Dns.ResolveAddresses(TestHost));
+            await Assert.ThrowsAsync<PlatformNotSupportedException>(() => Dns.ResolveAddressesAsync(TestHost));
+        }
+
         [Fact]
         public async Task DnsResolver_NullName_Throws()
         {
-            using DnsResolver r = new DnsResolver();
+            using DnsResolver r = CreateResolver();
             await Assert.ThrowsAsync<ArgumentNullException>(() => r.ResolveAddressesAsync(null!));
             await Assert.ThrowsAsync<ArgumentNullException>(() => r.ResolveSrvAsync(null!));
             await Assert.ThrowsAsync<ArgumentNullException>(() => r.ResolveMxAsync(null!));
@@ -53,7 +79,7 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public void DnsResolver_NullName_Throws_Sync()
         {
-            using DnsResolver r = new DnsResolver();
+            using DnsResolver r = CreateResolver();
             Assert.Throws<ArgumentNullException>(() => r.ResolveAddresses(null!));
             Assert.Throws<ArgumentNullException>(() => r.ResolveSrv(null!));
             Assert.Throws<ArgumentNullException>(() => r.ResolveMx(null!));
@@ -66,7 +92,7 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public async Task DnsResolver_EmptyName_Throws()
         {
-            using DnsResolver r = new DnsResolver();
+            using DnsResolver r = CreateResolver();
             await Assert.ThrowsAsync<ArgumentException>(() => r.ResolveAddressesAsync(string.Empty));
             Assert.Throws<ArgumentException>(() => r.ResolveAddresses(string.Empty));
         }
@@ -74,7 +100,7 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public async Task DnsResolver_Disposed_Throws()
         {
-            DnsResolver r = new DnsResolver();
+            DnsResolver r = CreateResolver();
             r.Dispose();
             await Assert.ThrowsAsync<ObjectDisposedException>(() => r.ResolveAddressesAsync(TestHost));
             await Assert.ThrowsAsync<ObjectDisposedException>(() => r.ResolveSrvAsync(TestSrv));
@@ -87,7 +113,7 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public async Task DnsResolver_DisposeAsync_ThrowsOnUse()
         {
-            DnsResolver r = new DnsResolver();
+            DnsResolver r = CreateResolver();
             await r.DisposeAsync();
             await Assert.ThrowsAsync<ObjectDisposedException>(() => r.ResolveAddressesAsync(TestHost));
         }
@@ -139,15 +165,22 @@ namespace System.Net.NameResolution.Tests
             };
         }
 
-        // ---- Windows network tests (require outbound DNS) ----
+        // ---- Network tests (require outbound DNS) ----
+        //
+        // DnsResolver is implemented on Windows (DnsQueryEx) and on all Unix-like platforms
+        // (the managed stub resolver); it is unsupported on Browser and WASI. These tests use
+        // the system-configured DNS servers, which the managed resolver reads from
+        // /etc/resolv.conf. Android has no readable resolver configuration (its
+        // IPInterfaceProperties.DnsAddresses throws PlatformNotSupportedException for the same
+        // reason), so it is excluded until the servers can be obtained from the platform.
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         public async Task DnsResolver_PreCanceledToken_ReturnsCanceled()
         {
             using DnsResolver r = new DnsResolver();
             CancellationTokenSource cts = new CancellationTokenSource();
             cts.Cancel();
-            await Assert.ThrowsAsync<TaskCanceledException>(() => r.ResolveAddressesAsync(TestHost, cts.Token));
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => r.ResolveAddressesAsync(TestHost, cts.Token));
         }
 
         // Regression test for the Windows 10 DnsQueryEx bug where an asynchronous query
@@ -189,7 +222,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -206,7 +239,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -221,7 +254,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -234,7 +267,7 @@ namespace System.Net.NameResolution.Tests
             Assert.Empty(result.Records);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -250,7 +283,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -266,7 +299,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -282,7 +315,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -298,7 +331,7 @@ namespace System.Net.NameResolution.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -311,7 +344,7 @@ namespace System.Net.NameResolution.Tests
             Assert.False(string.IsNullOrEmpty(result.Records[0].Name));
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -322,7 +355,7 @@ namespace System.Net.NameResolution.Tests
             Assert.NotEmpty(result.Records);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
@@ -360,6 +393,19 @@ namespace System.Net.NameResolution.Tests
             Assert.Throws<PlatformNotSupportedException>(() => new DnsResolver(opts));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
+        public void DnsResolver_CustomServer_NonStandardPort_IsAccepted()
+        {
+            // The managed resolver talks to each server endpoint directly, so a non-default
+            // port is supported.
+            DnsResolverOptions opts = new DnsResolverOptions
+            {
+                Servers = { new IPEndPoint(IPAddress.Loopback, 5353) }
+            };
+            using DnsResolver r = new DnsResolver(opts);
+            Assert.NotNull(r);
+        }
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
         public void DnsResolver_CustomServers_MixedAddressFamilies_ThrowsArgumentException()
         {
@@ -376,9 +422,26 @@ namespace System.Net.NameResolution.Tests
             Assert.Throws<ArgumentException>(() => new DnsResolver(opts));
         }
 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
+        public void DnsResolver_CustomServers_MixedAddressFamilies_IsAccepted()
+        {
+            // The managed resolver opens a socket matching each server's address family, so a
+            // mixed IPv4/IPv6 server list is supported.
+            DnsResolverOptions opts = new DnsResolverOptions
+            {
+                Servers =
+                {
+                    new IPEndPoint(IPAddress.Loopback, 53),
+                    new IPEndPoint(IPAddress.IPv6Loopback, 53),
+                }
+            };
+            using DnsResolver r = new DnsResolver(opts);
+            Assert.NotNull(r);
+        }
+
         // ---- Reverse-arpa name building (covers both IPv4 and IPv6 paths used by ResolvePtr(IPAddress)) ----
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotAndroid), nameof(PlatformDetection.IsNotBrowser), nameof(PlatformDetection.IsNotWasi))]
         [InlineData(false)]
         [InlineData(true)]
         [OuterLoop]
