@@ -2166,7 +2166,8 @@ public:
                     assert(call->IsVirtualVtable());
                     GenTree* const baseMethodNode = compiler->gtNewIconEmbMethHndNode(call->gtCallMethHnd);
                     methodProfileCallNode =
-                        compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_VTABLEPROFILE32 : CORINFO_HELP_VTABLEPROFILE64,
+                        compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_VTABLEPROFILE32
+                                                           : CORINFO_HELP_VTABLEPROFILE64,
                                                       TYP_VOID, tmpNode, baseMethodNode, methodProfileNode);
                 }
 
