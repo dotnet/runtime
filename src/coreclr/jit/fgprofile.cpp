@@ -1968,7 +1968,9 @@ public:
         ICorJitInfo::PgoInstrumentationSchema schemaElem = {};
         schemaElem.Count                                 = 1;
         schemaElem.Other = isTypeHistogram ? ICorJitInfo::HandleHistogram32::CLASS_FLAG : 0;
-        if (call->IsVirtualStub())
+        if (call->IsVirtualStub() ||
+            (call->IsGenericVirtual(compiler) &&
+             ((call->gtControlExpr->AsCall()->gtCallMoreFlags & GTF_CALL_M_LDVIRTFTN_INTERFACE) != 0)))
         {
             schemaElem.Other |= ICorJitInfo::HandleHistogram32::INTERFACE_FLAG;
         }
@@ -2115,32 +2117,67 @@ public:
 
         if (methodHistogram != nullptr)
         {
-            GenTree* const tmpNode           = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-            GenTree* const methodProfileNode = compiler->gtNewIconNode((ssize_t)methodHistogram, TYP_I_IMPL);
-
-            GenTree* methodProfileCallNode;
-            if (call->IsDelegateInvoke())
+            if (call->IsGenericVirtual(compiler))
             {
-                methodProfileCallNode = compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_DELEGATEPROFILE32
-                                                                           : CORINFO_HELP_DELEGATEPROFILE64,
-                                                                      TYP_VOID, tmpNode, methodProfileNode);
+                GenTreeCall* const lookupCall = call->gtControlExpr->AsCall();
+                assert(lookupCall->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR));
+                assert(!lookupCall->gtArgs.AreArgsComplete());
+
+                CallArg* const methodHandleArg = lookupCall->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
+                assert(methodHandleArg != nullptr);
+                assert(methodHandleArg->GetEarlyNode()->TypeIs(TYP_I_IMPL));
+
+                // Spill the exact instantiated MethodDesc so the profile probe and dispatch lookup
+                // consume the same value without evaluating the method handle expression twice.
+                unsigned const methodTmpNum =
+                    compiler->lvaGrabTemp(true DEBUGARG("generic virtual method profile tmp"));
+                compiler->lvaTable[methodTmpNum].lvType = TYP_I_IMPL;
+
+                GenTree* const storeNode =
+                    compiler->gtNewStoreLclVarNode(methodTmpNum, methodHandleArg->GetEarlyNode());
+                GenTree* const methodHandleNode  = compiler->gtNewLclvNode(methodTmpNum, TYP_I_IMPL);
+                GenTree* const methodProfileNode = compiler->gtNewIconNode((ssize_t)methodHistogram, TYP_I_IMPL);
+                GenTree* const profileCallNode =
+                    compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_GENERICVIRTUALPROFILE32
+                                                       : CORINFO_HELP_GENERICVIRTUALPROFILE64,
+                                                  TYP_VOID, methodHandleNode, methodProfileNode);
+                GenTree* const methodTmpNode = compiler->gtNewLclvNode(methodTmpNum, TYP_I_IMPL);
+                GenTree* const profileCommaNode =
+                    compiler->gtNewOperNode(GT_COMMA, TYP_I_IMPL, profileCallNode, methodTmpNode);
+                GenTree* const storeCommaNode =
+                    compiler->gtNewOperNode(GT_COMMA, TYP_I_IMPL, storeNode, profileCommaNode);
+
+                methodHandleArg->SetEarlyNode(storeCommaNode);
             }
             else
             {
-                assert(call->IsVirtualVtable());
-                GenTree* const baseMethodNode = compiler->gtNewIconEmbMethHndNode(call->gtCallMethHnd);
-                methodProfileCallNode =
-                    compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_VTABLEPROFILE32 : CORINFO_HELP_VTABLEPROFILE64,
-                                                  TYP_VOID, tmpNode, baseMethodNode, methodProfileNode);
-            }
+                GenTree* const tmpNode           = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+                GenTree* const methodProfileNode = compiler->gtNewIconNode((ssize_t)methodHistogram, TYP_I_IMPL);
 
-            if (helperCallNode == nullptr)
-            {
-                helperCallNode = methodProfileCallNode;
-            }
-            else
-            {
-                helperCallNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, methodProfileCallNode);
+                GenTree* methodProfileCallNode;
+                if (call->IsDelegateInvoke())
+                {
+                    methodProfileCallNode = compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_DELEGATEPROFILE32
+                                                                               : CORINFO_HELP_DELEGATEPROFILE64,
+                                                                          TYP_VOID, tmpNode, methodProfileNode);
+                }
+                else
+                {
+                    assert(call->IsVirtualVtable());
+                    GenTree* const baseMethodNode = compiler->gtNewIconEmbMethHndNode(call->gtCallMethHnd);
+                    methodProfileCallNode =
+                        compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_VTABLEPROFILE32 : CORINFO_HELP_VTABLEPROFILE64,
+                                                      TYP_VOID, tmpNode, baseMethodNode, methodProfileNode);
+                }
+
+                if (helperCallNode == nullptr)
+                {
+                    helperCallNode = methodProfileCallNode;
+                }
+                else
+                {
+                    helperCallNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, methodProfileCallNode);
+                }
             }
         }
 
@@ -2599,7 +2636,8 @@ PhaseStatus Compiler::fgPrepareToInstrumentMethod()
     const bool useClassProfiles    = (JitConfig.JitClassProfiling() > 0);
     const bool useDelegateProfiles = (JitConfig.JitDelegateProfiling() > 0);
     const bool useVTableProfiles   = (JitConfig.JitVTableProfiling() > 0);
-    if (!prejit && (useClassProfiles || useDelegateProfiles || useVTableProfiles))
+    const bool useGvmProfiles      = (JitConfig.JitGenericVirtualProfiling() > 0);
+    if (!prejit && (useClassProfiles || useDelegateProfiles || useVTableProfiles || useGvmProfiles))
     {
         fgHistogramInstrumentor = new (this, CMK_Pgo) HandleHistogramProbeInstrumentor(this);
     }

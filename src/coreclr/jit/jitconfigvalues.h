@@ -802,11 +802,12 @@ RELEASE_CONFIG_INTEGER(JitProfileCasts, "JitProfileCasts", 1)   // Profile castc
 RELEASE_CONFIG_INTEGER(JitConsumeProfileForCasts, "JitConsumeProfileForCasts", 1) // Consume profile data (if any)
                                                                                   // for castclass/isinst
 
-RELEASE_CONFIG_INTEGER(JitClassProfiling, "JitClassProfiling", 1)         // Profile virtual and interface calls
-RELEASE_CONFIG_INTEGER(JitDelegateProfiling, "JitDelegateProfiling", 1)   // Profile resolved delegate call targets
-RELEASE_CONFIG_INTEGER(JitVTableProfiling, "JitVTableProfiling", 0)       // Profile resolved vtable call targets
-RELEASE_CONFIG_INTEGER(JitEdgeProfiling, "JitEdgeProfiling", 1)           // Profile edges instead of blocks
-RELEASE_CONFIG_INTEGER(JitCollect64BitCounts, "JitCollect64BitCounts", 0) // Collect counts as 64-bit values.
+RELEASE_CONFIG_INTEGER(JitClassProfiling, "JitClassProfiling", 1)                   // Profile virtual and interface calls
+RELEASE_CONFIG_INTEGER(JitDelegateProfiling, "JitDelegateProfiling", 1)             // Profile resolved delegate call targets
+RELEASE_CONFIG_INTEGER(JitVTableProfiling, "JitVTableProfiling", 0)                 // Profile resolved vtable call targets
+RELEASE_CONFIG_INTEGER(JitGenericVirtualProfiling, "JitGenericVirtualProfiling", 1) // Profile resolved generic virtual call targets
+RELEASE_CONFIG_INTEGER(JitEdgeProfiling, "JitEdgeProfiling", 1)                     // Profile edges instead of blocks
+RELEASE_CONFIG_INTEGER(JitCollect64BitCounts, "JitCollect64BitCounts", 0)           // Collect counts as 64-bit values.
 
 CONFIG_INTEGER(JitInstrumentIfOptimizing, "JitInstrumentIfOptimizing", 0) // 1: Always add instrumentation if optimizing
                                                                           // and not prejitting
