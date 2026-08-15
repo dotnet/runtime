@@ -243,6 +243,10 @@ namespace System.Runtime.InteropServices
 
             _ = ((FindReferenceTargetsCallback.Instance*)pThis)->RootObject.TryGetTarget(out object? sourceObject);
 
+            // The callback is only ever set up with the handle of an RCW that was alive at the time, and
+            // that RCW keeps its wrapper alive, so the handle is expected to still have its target here
+            Debug.Assert(sourceObject is not null);
+
             if (!TryGetObject(referenceTrackerTarget, out object? targetObject))
             {
                 return HResults.S_FALSE;
@@ -254,7 +258,7 @@ namespace System.Runtime.InteropServices
             }
 
             // Notify the runtime a reference path was found.
-            return TrackerObjectManager.AddReferencePath(sourceObject, targetObject) ? HResults.S_OK : HResults.S_FALSE;
+            return TrackerObjectManager.AddReferencePath(sourceObject!, targetObject) ? HResults.S_OK : HResults.S_FALSE;
         }
 
         internal struct ReferenceTargetsVftbl

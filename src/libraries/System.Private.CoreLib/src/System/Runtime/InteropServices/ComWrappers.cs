@@ -601,16 +601,16 @@ namespace System.Runtime.InteropServices
                 // unreachable. Callers such as the reference tracker runtime want the opposite, and need to see
                 // the RCW as gone as soon as it is eligible for finalization, which is what 'ProxyHandle' is for.
                 //
-                // Those two only disagree while the RCW is unreachable but not yet collected. An RCW whose type
-                // declares no finalizer is never in that state on its own account, so a single handle can serve
-                // both purposes, halving the handles every such RCW costs. It can still be put in that state by
+                // Those two only disagree while the RCW is unreachable but not yet collected. An RCW that has
+                // no finalizer is never in that state on its own account, so a single handle can serve both
+                // purposes, halving the handles every such RCW costs. It can still be put in that state by
                 // something else's finalizer holding on to it, and then resurrecting it, and in that case having
                 // the one handle track resurrection is what keeps this wrapper from tearing down state the
                 // resurrected RCW still needs. Reporting such an RCW as alive is also the honest answer, as it
                 // may well be about to become reachable again.
                 //
-                // An RCW that does declare a finalizer does reach that state on its own, and there the two
-                // meanings genuinely differ, so it pays for both handles.
+                // An RCW that does have a finalizer, whether its own or an inherited one, does reach that state
+                // on its own, and there the two meanings genuinely differ, so it pays for both handles.
                 bool proxyHasFinalizer = RuntimeHelpers.ObjectHasFinalizer(comProxy);
 
                 _proxyHandle = new WeakGCHandle<object>(comProxy, trackResurrection: !proxyHasFinalizer);
@@ -664,7 +664,7 @@ namespace System.Runtime.InteropServices
 
             ~NativeObjectWrapper()
             {
-                // When the RCW declares no finalizer, no second handle was allocated and the proxy handle is
+                // When the RCW has no finalizer, no second handle was allocated and the proxy handle is
                 // the one tracking resurrection, so it answers this question just as well. Neither is allocated
                 // once this wrapper has been released, which happens eagerly when one loses a registration race,
                 // and then there is nothing left to keep alive for.

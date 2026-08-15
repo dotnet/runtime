@@ -213,9 +213,9 @@ namespace System.Runtime.CompilerServices
             return GetMethodTable(obj)->HasComponentSize;
         }
 
-        // Returns true iff the type of the object declares a finalizer.
+        // Returns true iff the type of the object requires finalization,
+        // which includes a finalizer inherited from a base type.
         // Callers are required to keep obj alive
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe bool ObjectHasFinalizer(object obj)
         {
             return GetMethodTable(obj)->IsFinalizable;
