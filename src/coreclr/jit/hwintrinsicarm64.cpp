@@ -729,13 +729,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         // TYP_INT for the byte and halfword forms, which would give us an access of the wrong size.
         assert(simdSize == 0);
 
-        // These are internal helpers with a contract the callers in Interlocked have to honor (see
-        // Lse.cs). Because they are generic, an unsupported type argument would otherwise silently
-        // produce an atomic access of the wrong width, so fail the compilation instead. Note this
-        // already rejects floating point, object references and anything larger than a pointer,
-        // none of which are integral.
-        noway_assert(varTypeIsIntegral(simdBaseType) && (genTypeSize(simdBaseType) <= TARGET_POINTER_SIZE));
-
         genTreeOps oper;
         switch (intrinsic)
         {
@@ -759,7 +752,21 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         // Only "cas" and "swp" have byte and halfword forms.
-        noway_assert(!varTypeIsSmall(simdBaseType) || (oper == GT_CMPXCHG) || (oper == GT_XCHG));
+        const bool hasSmallForms = (oper == GT_CMPXCHG) || (oper == GT_XCHG);
+
+        // These are generic, so the type argument has to be checked rather than assumed: only an
+        // integer no wider than a pointer can be encoded. Anything else (floating point, an object
+        // reference, a struct) throws instead of silently accessing memory at the wrong width.
+        //
+        // Note the call is made before any argument is popped, and asks for a throwing expansion
+        // unconditionally: the managed bodies are recursive stubs, so falling back to a real call
+        // would simply recurse forever.
+        if (!varTypeIsIntegral(simdBaseType) || (genTypeSize(simdBaseType) > TARGET_POINTER_SIZE) ||
+            (varTypeIsSmall(simdBaseType) && !hasSmallForms))
+        {
+            return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED, method, sig,
+                                                /* mustExpand */ true);
+        }
 
         GenTree* comparand = nullptr;
         if (oper == GT_CMPXCHG)
