@@ -132,7 +132,7 @@ void Scev::Dump(Compiler* comp)
             }
             else
             {
-                printf("%lld", (int64_t)cns->Value);
+                printf("%lld", (long long)cns->Value);
             }
             break;
         }
