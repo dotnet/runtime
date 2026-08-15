@@ -508,39 +508,6 @@ HHANDLETABLE HndGetHandleTable(OBJECTHANDLE handle)
     return (HHANDLETABLE)pTable;
 }
 
-void HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_MODE_COOPERATIVE;
-
-#if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
-    if (EVENT_ENABLED(SetGCHandle) || EVENT_ENABLED(PrvSetGCHandle))
-    {
-        uint32_t hndType = HandleFetchType(handle);
-        uint32_t generation = value != 0 ? g_theGCHeap->WhichGeneration(value) : 0;
-        FIRE_EVENT(SetGCHandle, (void *)handle, (void *)value, hndType, generation);
-        FIRE_EVENT(PrvSetGCHandle, (void *) handle, (void *)value, hndType, generation);
-
-#ifdef FEATURE_ASYNC_PINNED_HANDLES
-        // Also fire the things pinned by Async pinned handles
-        if (hndType == HNDTYPE_ASYNCPINNED)
-        {
-            GCToEEInterface::WalkAsyncPinned(value, value, [](Object*, Object* to, void* ctx)
-            {
-                Object* overlapped = reinterpret_cast<Object*>(ctx);
-                uint32_t generation = to != nullptr ? g_theGCHeap->WhichGeneration(to) : 0;
-                FIRE_EVENT(SetGCHandle, (void *)overlapped, (void *)to, HNDTYPE_PINNED, generation);
-            });
-        }
-#endif
-    }
-#else
-    UNREFERENCED_PARAMETER(handle);
-    UNREFERENCED_PARAMETER(value);
-#endif
-}
-
 /*
  * HndEnumHandles
  *

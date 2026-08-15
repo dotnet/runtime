@@ -92,11 +92,6 @@ HHANDLETABLE    HndGetHandleTable(OBJECTHANDLE handle);
 void            HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF value);
 
 /*
- * logging an ETW event (for inlined methods)
- */
-void            HndLogSetEvent(OBJECTHANDLE handle, _UNCHECKED_OBJECTREF value);
-
-/*
  * NON-GC handle enumeration
  */
 GC_DAC_VISIBLE_NO_MANGLE
