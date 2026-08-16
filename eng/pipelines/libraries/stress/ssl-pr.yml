@@ -3,8 +3,9 @@ trigger: none
 pr:
   branches:
     include:
-    - main
-    - release/*.0
+    - '*'
+    exclude:
+    - release/*-staging
   paths:
     include:
     - src/libraries/System.Net.Security/tests/StressTests/SslStress/**

@@ -26,6 +26,7 @@
 #include "callhelpers.h"
 #include "appdomain.hpp"
 #include "appdomain.inl"
+#include "threadstatics.h"
 
 #ifndef TARGET_UNIX
 #include "utilcode.h"
@@ -721,6 +722,18 @@ FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
     return (INT32)YieldProcessorNormalization::GetOptimalMaxNormalizedYieldsPerSpinIteration();
 }
 FCIMPLEND
+
+// Returns the address of the current thread's ThreadLocalData (&t_ThreadStatics). Used on wasm to break
+// the thread-static bootstrap recursion in Thread.GetThreadStaticsBase (see the managed counterpart).
+#ifdef TARGET_WASM
+FCIMPL0(void*, ThreadNative::GetThreadStaticsBaseNative)
+{
+    FCALL_CONTRACT;
+
+    return (void*)&t_ThreadStatics;
+}
+FCIMPLEND
+#endif // TARGET_WASM
 
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
 {

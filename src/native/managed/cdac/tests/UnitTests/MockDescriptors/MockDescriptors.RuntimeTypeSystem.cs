@@ -132,6 +132,12 @@ internal sealed class MockEEClass : TypedView
         set => WritePointerField(MethodTableFieldName, value);
     }
 
+    public ulong MethodDescChunk
+    {
+        get => ReadPointerField(MethodDescChunkFieldName);
+        set => WritePointerField(MethodDescChunkFieldName, value);
+    }
+
     public uint CorTypeAttr
     {
         get => ReadUInt32Field(CorTypeAttrFieldName);
@@ -154,6 +160,18 @@ internal sealed class MockEEClass : TypedView
     {
         get => ReadUInt16Field(NumInstanceFieldsFieldName);
         set => WriteUInt16Field(NumInstanceFieldsFieldName, value);
+    }
+
+    public ushort NumStaticFields
+    {
+        get => ReadUInt16Field(NumStaticFieldsFieldName);
+        set => WriteUInt16Field(NumStaticFieldsFieldName, value);
+    }
+
+    public ulong FieldDescList
+    {
+        get => ReadPointerField(FieldDescListFieldName);
+        set => WritePointerField(FieldDescListFieldName, value);
     }
 
     public ushort NumNonVirtualSlots
@@ -311,11 +329,13 @@ internal sealed class MockTypeVarTypeDesc : MockTypeDesc
 {
     private const string ModuleFieldName = nameof(Data.TypeVarTypeDesc.Module);
     private const string TokenFieldName = nameof(Data.TypeVarTypeDesc.Token);
+    private const string IndexFieldName = nameof(Data.TypeVarTypeDesc.Index);
 
     public new static Layout<MockTypeVarTypeDesc> CreateLayout(MockTarget.Architecture architecture)
         => new SequentialLayoutBuilder("TypeVarTypeDesc", architecture, MockTypeDesc.CreateLayout(architecture))
             .AddPointerField(ModuleFieldName)
             .AddUInt32Field(TokenFieldName)
+            .AddUInt32Field(IndexFieldName)
             .Build<MockTypeVarTypeDesc>();
 
     public ulong Module
@@ -328,6 +348,12 @@ internal sealed class MockTypeVarTypeDesc : MockTypeDesc
     {
         get => ReadUInt32Field(TokenFieldName);
         set => WriteUInt32Field(TokenFieldName, value);
+    }
+
+    public uint Index
+    {
+        get => ReadUInt32Field(IndexFieldName);
+        set => WriteUInt32Field(IndexFieldName, value);
     }
 }
 
@@ -539,6 +565,22 @@ internal partial class MockDescriptors
             fieldDesc.DWord1 = memberDef & 0x00ffffff; // low 24 bits hold the token RID
             fieldDesc.DWord2 = ((uint)type << 27) | (offset & 0x07ffffff);
             return fieldDesc;
+        }
+
+        // Allocates `count` FieldDescs contiguously (matching the runtime's packed FieldDesc array), each
+        // recording `mtOfEnclosingClass`, and returns the address of the first one.
+        internal TargetPointer AddFieldDescList(ulong mtOfEnclosingClass, int count)
+        {
+            uint size = (uint)FieldDescLayout.Size;
+            MockMemorySpace.HeapFragment fragment = TypeSystemAllocator.Allocate((ulong)count * size, "FieldDesc array");
+            for (int i = 0; i < count; i++)
+            {
+                MockFieldDesc fieldDesc = FieldDescLayout.Create(
+                    fragment.Data.AsMemory((int)((uint)i * size), (int)size),
+                    fragment.Address + (uint)i * size);
+                fieldDesc.MTOfEnclosingClass = mtOfEnclosingClass;
+            }
+            return fragment.Address;
         }
 
         private TView Add<TView>(Layout<TView> layout, string name)

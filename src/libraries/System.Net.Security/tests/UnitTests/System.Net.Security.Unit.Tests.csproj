@@ -92,6 +92,8 @@
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OCSP.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs"
              Link="Common\Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSsl.cs" />
+    <Compile Include="..\..\src\System\Net\Security\SslAuthenticationOptions.OpenSsl.cs"
+             Link="ProductionCode\System\Net\Security\SslAuthenticationOptions.OpenSsl.cs" />
     <Compile Include="$(CommonPath)System\Net\SafeHandleCache.cs"
              Link="Common\System\Net\SafeHandleCache.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Security.Cryptography.Native\Interop.OpenSslVersion.cs"
@@ -130,6 +132,11 @@
              Link="Common\System\Net\Security\Unix\SafeDeleteSslContext.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SslKeyLogger.cs"
              Link="Common\System\Net\Security\SslKeyLogger.cs" />
+  </ItemGroup>
+
+  <!-- Compiled on desktop only: crashes Apple-mobile CoreCLR at startup due to R2R IL-body stripping. -->
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' or '$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'osx'">
+    <Compile Include="SslAuthenticationOptionsTests.Desktop.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'osx' or '$(TargetPlatformIdentifier)' == 'ios'">

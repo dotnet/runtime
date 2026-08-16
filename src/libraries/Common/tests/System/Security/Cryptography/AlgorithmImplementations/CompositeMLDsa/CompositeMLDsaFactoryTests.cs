@@ -82,8 +82,8 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportBadPrivateKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
-            byte[] key = vector.SecretKey;
-            Array.Resize(ref key, key.Length + 1);
+            byte[] key = new byte[vector.SecretKey.Length + 1];
+            vector.SecretKey.CopyTo(key);
 
             AssertImportBadPrivateKey(vector.Algorithm, key);
         }
@@ -96,13 +96,13 @@ namespace System.Security.Cryptography.Tests
                 CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss);
 
             // But use MLDsa65WithRSA4096Pss
-            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss, differentTradKey.SecretKey);
+            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss, differentTradKey.SecretKey.ToArray());
 
             // And flip
             differentTradKey =
                 CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss);
 
-            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss, differentTradKey.SecretKey);
+            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss, differentTradKey.SecretKey.ToArray());
         }
 
         [Fact]
@@ -113,13 +113,13 @@ namespace System.Security.Cryptography.Tests
                 CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256);
 
             // But use MLDsa65WithECDsaP384
-            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384, differentTradKey.SecretKey);
+            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384, differentTradKey.SecretKey.ToArray());
 
             // And flip
             differentTradKey =
                 CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384);
 
-            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256, differentTradKey.SecretKey);
+            AssertImportBadPrivateKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256, differentTradKey.SecretKey.ToArray());
         }
 
         [Theory]
@@ -383,8 +383,8 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.SupportedAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportBadPublicKey_TrailingData(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
-            byte[] key = vector.PublicKey;
-            Array.Resize(ref key, key.Length + 1);
+            byte[] key = new byte[vector.PublicKey.Length + 1];
+            vector.PublicKey.CopyTo(key);
 
             AssertImportBadPublicKey(vector.Algorithm, key);
         }
@@ -394,7 +394,7 @@ namespace System.Security.Cryptography.Tests
         [MemberData(nameof(CompositeMLDsaTestData.SupportedECDsaAlgorithmIetfVectorsTestData), MemberType = typeof(CompositeMLDsaTestData))]
         public static void ImportBadPublicKey_ECDsa_Uncompressed(CompositeMLDsaTestData.CompositeMLDsaTestVector vector)
         {
-            byte[] key = vector.PublicKey.AsSpan().ToArray();
+            byte[] key = vector.PublicKey.ToArray();
             int formatIndex = CompositeMLDsaTestHelpers.MLDsaAlgorithms[vector.Algorithm].PublicKeySizeInBytes;
 
             // Uncompressed
@@ -421,13 +421,13 @@ namespace System.Security.Cryptography.Tests
                 CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss);
 
             // But use MLDsa65WithRSA4096Pss
-            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss, differentTradKey.PublicKey);
+            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss, differentTradKey.PublicKey.ToArray());
 
             // And flip
             differentTradKey =
                 CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithRSA4096Pss);
 
-            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss, differentTradKey.PublicKey);
+            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithRSA3072Pss, differentTradKey.PublicKey.ToArray());
         }
 
         [Fact]
@@ -438,13 +438,13 @@ namespace System.Security.Cryptography.Tests
                 CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256);
 
             // But use MLDsa65WithECDsaP384
-            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384, differentTradKey.PublicKey);
+            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384, differentTradKey.PublicKey.ToArray());
 
             // And flip
             differentTradKey =
                 CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384);
 
-            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256, differentTradKey.PublicKey);
+            AssertImportBadPublicKey(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP256, differentTradKey.PublicKey.ToArray());
         }
 
         [Theory]
@@ -509,7 +509,7 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void ImportSpki_BerEncoding()
         {
-            byte[] spki = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384).Spki;
+            byte[] spki = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384).Spki.ToArray();
             byte[] berSpki = AsnUtils.ConvertDerToNonDerBer(spki);
 
             CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(import =>
@@ -561,7 +561,7 @@ namespace System.Security.Cryptography.Tests
                     Algorithm = CompositeMLDsaTestHelpers.AlgorithmToOid(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384),
                     Parameters = CompositeMLDsaTestHelpers.s_derBitStringFoo, // <-- Invalid
                 },
-                SubjectPublicKey = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384).PublicKey,
+                SubjectPublicKey = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384).PublicKey.ToArray(),
             };
 
             CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
@@ -588,7 +588,7 @@ namespace System.Security.Cryptography.Tests
                     Algorithm = CompositeMLDsaTestHelpers.AlgorithmToOid(CompositeMLDsaAlgorithm.MLDsa87WithEd448),
                     Parameters = null,
                 },
-                SubjectPublicKey = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa87WithEd448).PublicKey,
+                SubjectPublicKey = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa87WithEd448).PublicKey.ToArray(),
             };
 
             CompositeMLDsaTestHelpers.AssertImportSubjectPublicKeyInfo(
@@ -617,7 +617,7 @@ namespace System.Security.Cryptography.Tests
                     Algorithm = CompositeMLDsaTestHelpers.AlgorithmToOid(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384),
                     Parameters = CompositeMLDsaTestHelpers.s_derBitStringFoo, // <-- Invalid
                 },
-                PrivateKey = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384).SecretKey,
+                PrivateKey = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa65WithECDsaP384).SecretKey.ToArray(),
             };
 
             CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(
@@ -643,7 +643,7 @@ namespace System.Security.Cryptography.Tests
                     Algorithm = CompositeMLDsaTestHelpers.AlgorithmToOid(CompositeMLDsaAlgorithm.MLDsa87WithEd448),
                     Parameters = null,
                 },
-                PrivateKey = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa87WithEd448).SecretKey,
+                PrivateKey = CompositeMLDsaTestData.GetIetfTestVector(CompositeMLDsaAlgorithm.MLDsa87WithEd448).SecretKey.ToArray(),
             };
 
             CompositeMLDsaTestHelpers.AssertImportPkcs8PrivateKey(
@@ -715,12 +715,12 @@ namespace System.Security.Cryptography.Tests
             CompositeMLDsaTestHelpers.AssertImportPublicKey(
                 import => AssertThrowIfNotSupported(() => Assert.Equal(vector.Algorithm, import().Algorithm), vector.Algorithm),
                 vector.Algorithm,
-                vector.PublicKey);
+                vector.PublicKey.ToArray());
 
             CompositeMLDsaTestHelpers.AssertImportPrivateKey(
                 import => AssertThrowIfNotSupported(() => Assert.Equal(vector.Algorithm, import().Algorithm), vector.Algorithm),
                 vector.Algorithm,
-                vector.SecretKey);
+                vector.SecretKey.ToArray());
         }
 
         [Fact]

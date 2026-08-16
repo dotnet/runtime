@@ -599,7 +599,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		amd64_jump_membase (code, AMD64_RSP, rax_offset - sizeof (target_mgreg_t));
 	}
 
-	g_assertf ((code - buf) <= kMaxCodeSize, "%d %d", code, buf, (int)(code - buf), kMaxCodeSize);
+	g_assertf ((code - buf) <= kMaxCodeSize, "code=%p buf=%p size=%d max=%d", code, buf, (int)(code - buf), kMaxCodeSize);
 	g_assert_checked (mono_arch_unwindinfo_validate_size (unwind_ops, MONO_MAX_TRAMPOLINE_UNWINDINFO_SIZE));
 
 	mono_arch_flush_icache (buf, GPTRDIFF_TO_INT (code - buf));

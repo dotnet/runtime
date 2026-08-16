@@ -25,7 +25,38 @@ enum NamedIntrinsic : unsigned short
 
     NI_System_SpanHelpers_Memmove,
 
+    NI_System_Half_FusedMultiplyAdd,
+    NI_System_Half_ReciprocalEstimate,
+    NI_System_Half_ReciprocalSqrtEstimate,
+    NI_System_Half_Round,
+    NI_System_Half_Sqrt,
+
+    NI_System_Half_op_Addition,
+    NI_System_Half_op_Decrement,
+    NI_System_Half_op_Division,
+    NI_System_Half_op_Equality,
     NI_System_Half_op_Explicit,
+    NI_System_Half_op_GreaterThan,
+    NI_System_Half_op_GreaterThanOrEqual,
+    NI_System_Half_op_Increment,
+    NI_System_Half_op_Inequality,
+    NI_System_Half_op_LessThan,
+    NI_System_Half_op_LessThanOrEqual,
+    NI_System_Half_op_Multiply,
+    NI_System_Half_op_Subtraction,
+
+    NI_System_Half_get_MinValue,
+    NI_System_Half_get_MaxValue,
+    NI_System_Half_get_Epsilon,
+    NI_System_Half_get_NaN,
+    NI_System_Half_get_PositiveInfinity,
+    NI_System_Half_get_NegativeInfinity,
+    NI_System_Half_get_One,
+    NI_System_Half_get_Zero,
+
+    NI_System_Half_Ceiling,
+    NI_System_Half_Floor,
+    NI_System_Half_Truncate,
 
     NI_SYSTEM_MATH_START,
     NI_System_Math_Abs,
@@ -124,6 +155,7 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant,
+    NI_System_Runtime_CompilerServices_RuntimeHelpers_IsRuntimeAsync,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable,
     NI_System_Runtime_CompilerServices_RuntimeHelpers_WriteBarrier,
@@ -134,6 +166,10 @@ enum NamedIntrinsic : unsigned short
     NI_System_Runtime_CompilerServices_AsyncHelpers_Await,
     NI_System_Runtime_CompilerServices_AsyncHelpers_AsyncCallContinuation,
     NI_System_Runtime_CompilerServices_AsyncHelpers_TailAwait,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_AwaitAwaiter,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_UnsafeAwaitAwaiter,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_Suspend,
+    NI_System_Runtime_CompilerServices_AsyncHelpers_TransparentSuspend,
 
     NI_System_Runtime_CompilerServices_StaticsHelpers_VolatileReadAsByref,
 
@@ -269,6 +305,10 @@ enum NamedIntrinsic : unsigned short
     NI_PRIMITIVE_PopCount,
     NI_PRIMITIVE_RotateLeft,
     NI_PRIMITIVE_RotateRight,
+    NI_PRIMITIVE_SaturateToInt8,
+    NI_PRIMITIVE_SaturateToInt16,
+    NI_PRIMITIVE_SaturateToUInt8,
+    NI_PRIMITIVE_SaturateToUInt16,
     NI_PRIMITIVE_TrailingZeroCount,
 
     NI_PRIMITIVE_END,
