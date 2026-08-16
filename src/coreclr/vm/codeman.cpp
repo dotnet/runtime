@@ -2324,26 +2324,6 @@ BOOL EEJitManager::LoadJIT()
 
 //**************************************************************************
 
-#if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
-static void SendCodeHeapStubBlockEvent(
-    void* start,
-    size_t size,
-    StubCodeBlockKind kind,
-    DWORD eventOptions)
-{
-    WRAPPER_NO_CONTRACT;
-
-    if (FitsInU4(size))
-    {
-        ETW::MethodLog::SendHelperEvent(
-            reinterpret_cast<ULONGLONG>(start),
-            static_cast<ULONG>(size),
-            GetStubCodeBlockKindStringW(kind),
-            eventOptions);
-    }
-}
-#endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE
-
 static void ReportCodeHeapStubBlock(void* start, size_t size, StubCodeBlockKind kind)
 {
     WRAPPER_NO_CONTRACT;
@@ -2351,11 +2331,13 @@ static void ReportCodeHeapStubBlock(void* start, size_t size, StubCodeBlockKind 
     ReportStubBlock(start, size, kind);
 
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)
-    SendCodeHeapStubBlockEvent(
-        start,
-        size,
-        kind,
-        ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
+    if (FitsInU4(size))
+    {
+        ETW::MethodLog::HelperInitialized(
+            reinterpret_cast<ULONGLONG>(start),
+            static_cast<ULONG>(size),
+            GetStubCodeBlockKindStringW(kind));
+    }
 #endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE
 }
 
@@ -4287,11 +4269,14 @@ bool EECodeGenManager::TryFreeHostCodeHeapMemory(HostCodeHeap* pCodeHeap, void* 
         if (kind == STUB_CODE_BLOCK_JUMPSTUB)
         {
             JumpStubBlockHeader* jumpStubBlock = (JumpStubBlockHeader*)codeStart;
-            SendCodeHeapStubBlockEvent(
-                codeStart,
-                jumpStubBlock->GetBlockSize(),
-                kind,
-                ETW::EnumerationLog::EnumerationStructs::JitMethodUnload);
+            size_t blockSize = jumpStubBlock->GetBlockSize();
+            if (FitsInU4(blockSize))
+            {
+                ETW::MethodLog::HelperDestroyed(
+                    reinterpret_cast<ULONGLONG>(codeStart),
+                    static_cast<ULONG>(blockSize),
+                    GetStubCodeBlockKindStringW(kind));
+            }
         }
     }
 #endif // FEATURE_EVENT_TRACE && !DACCESS_COMPILE

@@ -1154,7 +1154,7 @@ void ReportCopiedWriteBarriersToEventTracing(DWORD eventOptions)
     EnumerateCopiedWriteBarriers([eventOptions](PCODE address, size_t size, const char*, LPCWSTR name)
     {
         _ASSERTE(FitsInU4(size));
-        ETW::MethodLog::SendHelperEvent(address, static_cast<ULONG>(size), name, eventOptions);
+        ETW::MethodLog::SendCopiedWriteBarrierEvent(address, static_cast<ULONG>(size), name, eventOptions);
     });
 }
 #endif // FEATURE_EVENT_TRACE
@@ -1171,7 +1171,15 @@ void InitThreadManagerTracingData()
     ReportCopiedWriteBarriersToPerfMap();
 
 #ifdef FEATURE_EVENT_TRACE
-    ReportCopiedWriteBarriersToEventTracing(ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
+    EnumerateCopiedWriteBarriers([](PCODE address, size_t size, const char*, LPCWSTR name)
+    {
+        _ASSERTE(FitsInU4(size));
+        ETW::MethodLog::SendCopiedWriteBarrierEvent(
+            address,
+            static_cast<ULONG>(size),
+            name,
+            ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
+    });
 #endif // FEATURE_EVENT_TRACE
 #endif // !FEATURE_PORTABLE_HELPERS
 }

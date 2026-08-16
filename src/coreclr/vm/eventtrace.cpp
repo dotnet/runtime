@@ -3606,6 +3606,72 @@ VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, COR_ILMETHOD_DECODER
     } EX_CATCH { } EX_END_CATCH
 }
 
+/**********************************************************************/
+/* This is called by the runtime when a helper is initialized */
+/**********************************************************************/
+VOID ETW::MethodLog::HelperInitialized(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(ullHelperStartAddress != 0);
+        PRECONDITION(ulHelperSize != 0);
+        PRECONDITION(pHelperName != nullptr);
+    } CONTRACTL_END;
+
+    EX_TRY
+    {
+        SendHelperEvent(
+            ullHelperStartAddress,
+            ulHelperSize,
+            pHelperName,
+            ETW::EnumerationLog::EnumerationStructs::JitMethodLoad);
+    } EX_CATCH { } EX_END_CATCH
+}
+
+/**********************************************************************/
+/* This is called by the runtime when a helper is destroyed */
+/**********************************************************************/
+VOID ETW::MethodLog::HelperDestroyed(ULONGLONG ullHelperStartAddress, ULONG ulHelperSize, LPCWSTR pHelperName)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(ullHelperStartAddress != 0);
+        PRECONDITION(ulHelperSize != 0);
+        PRECONDITION(pHelperName != nullptr);
+    } CONTRACTL_END;
+
+    EX_TRY
+    {
+        SendHelperEvent(
+            ullHelperStartAddress,
+            ulHelperSize,
+            pHelperName,
+            ETW::EnumerationLog::EnumerationStructs::JitMethodUnload);
+    } EX_CATCH { } EX_END_CATCH
+}
+
+VOID ETW::MethodLog::SendCopiedWriteBarrierEvent(
+    ULONGLONG ullHelperStartAddress,
+    ULONG ulHelperSize,
+    LPCWSTR pHelperName,
+    DWORD dwEventOptions)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        PRECONDITION(ullHelperStartAddress != 0);
+        PRECONDITION(ulHelperSize != 0);
+        PRECONDITION(pHelperName != nullptr);
+    } CONTRACTL_END;
+
+    EX_TRY
+    {
+        SendHelperEvent(ullHelperStartAddress, ulHelperSize, pHelperName, dwEventOptions);
+    } EX_CATCH { } EX_END_CATCH
+}
+
 /****************************************************************************/
 /* This is called by the runtime when a dynamic method is destroyed */
 /****************************************************************************/
@@ -4897,6 +4963,8 @@ VOID ETW::MethodLog::SendMethodRichDebugInfo(MethodDesc* pMethodDesc, PCODE pNat
     delete[] (BYTE*)mappings;
 }
 
+// Do not explicitly check CLR_JIT_KEYWORD here. These events can be enabled by multiple
+// keywords, and copied write barriers and stubs should be reported when any of them is enabled.
 VOID ETW::MethodLog::SendHelperEvent(
     ULONGLONG ullHelperStartAddress,
     ULONG ulHelperSize,
