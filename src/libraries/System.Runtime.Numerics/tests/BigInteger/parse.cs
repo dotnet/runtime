@@ -1482,6 +1482,11 @@ namespace System.Numerics.Tests
             // Only invalid characters (no valid number)
             yield return new object[] { "abc", NumberStyles.Integer, null };
             yield return new object[] { "xyz", NumberStyles.Integer, null };
+
+            // Values that scan successfully but aren't representable as a BigInteger
+            yield return new object[] { "1.5", NumberStyles.Float, CultureInfo.InvariantCulture };
+            yield return new object[] { "3.14159abc", NumberStyles.Float, CultureInfo.InvariantCulture };
+            yield return new object[] { "1E1000000000", NumberStyles.Float, CultureInfo.InvariantCulture };
         }
 
         [Theory]

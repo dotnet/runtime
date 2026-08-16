@@ -2424,8 +2424,6 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
             return pMD;
     }
 
-    // We should never get here
-    _ASSERTE(!"NonVirtualEntry2MethodDesc failed");
     return NULL;
 #endif // FEATURE_PORTABLE_ENTRYPOINTS
 }

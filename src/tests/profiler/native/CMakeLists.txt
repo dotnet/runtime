@@ -30,6 +30,8 @@ set(SOURCES
     rejitprofiler/ilrewriter.cpp
     rejitprofiler/sigparse.cpp
     releaseondetach/releaseondetach.cpp
+    runtimeasyncapis/runtimeasyncapisprofiler.cpp
+    runtimeasynctypes/runtimeasynctypesprofiler.cpp
     transitions/transitions.cpp
     profiler.def
     profiler.cpp

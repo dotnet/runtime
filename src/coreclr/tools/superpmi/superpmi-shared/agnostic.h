@@ -237,6 +237,10 @@ struct Agnostic_CORINFO_ASYNC_INFO
     DWORDLONG captureContextsMethHnd;
     DWORDLONG restoreContextsMethHnd;
     DWORDLONG restoreContextsOnSuspensionMethHnd;
+    DWORDLONG restoreInlinedFrameContextsMethHnd;
+    DWORDLONG captureInlinedFrameTransitionWithContinuationContextMethHnd;
+    DWORDLONG captureInlinedFrameTransitionNoContinuationContextMethHnd;
+    DWORDLONG captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
     DWORDLONG finishSuspensionNoContinuationContextMethHnd;
     DWORDLONG finishSuspensionWithContinuationContextMethHnd;
 };
@@ -291,6 +295,13 @@ struct Agnostic_CORINFO_RESOLVED_TOKEN
 {
     Agnostic_CORINFO_RESOLVED_TOKENin inValue;
     Agnostic_CORINFO_RESOLVED_TOKENout outValue;
+};
+
+struct Agnostic_GetAwaitAwaiterInContinuationCall
+{
+    DWORDLONG                       callerHnd;
+    Agnostic_CORINFO_RESOLVED_TOKEN ResolvedToken;
+    DWORD                           isUnsafe;
 };
 
 struct Agnostic_GetFieldInfo
