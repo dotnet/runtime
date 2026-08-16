@@ -620,9 +620,6 @@ namespace System.Runtime.InteropServices
                     _proxyHandleTrackingResurrection = new WeakGCHandle<object>(comProxy, trackResurrection: true);
                 }
 
-                // 'ObjectHasFinalizer' reads the MethodTable, which requires the object to be kept alive
-                GC.KeepAlive(comProxy);
-
                 // If this is an aggregation scenario and the identity object
                 // is a managed object wrapper, we need to call Release() to
                 // indicate this external object isn't rooted. In the event the

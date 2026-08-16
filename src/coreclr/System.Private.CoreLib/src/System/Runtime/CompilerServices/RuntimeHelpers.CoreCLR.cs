@@ -451,10 +451,11 @@ namespace System.Runtime.CompilerServices
 
         // Returns true iff the type of the object requires finalization,
         // which includes a finalizer inherited from a base type.
-        // Callers are required to keep obj alive
         internal static unsafe bool ObjectHasFinalizer(object obj)
         {
-            return GetMethodTable(obj)->HasFinalizer;
+            bool hasFinalizer = GetMethodTable(obj)->HasFinalizer;
+            GC.KeepAlive(obj); // Keep MethodTable alive
+            return hasFinalizer;
         }
 
         /// <summary>
