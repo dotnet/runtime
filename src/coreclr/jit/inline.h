@@ -621,11 +621,8 @@ struct InlineCandidateInfo : public HandleHistogramProfileCandidateInfo
     unsigned clsAttr;
     unsigned methAttr;
 
-    // True if the target of this candidate can be inlined.
-    //
-    // Guarded devirtualization candidates are kept around even when the target can't be
-    // inlined (a direct call is still better than a virtual one), so this is what tells
-    // the two apart once the candidate is expanded.
+    // True if the target of this candidate can be inlined. GDV candidates are kept
+    // around even when it can't be, so this is what tells the two apart.
     //
     bool isInlineable;
 

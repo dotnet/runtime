@@ -838,12 +838,8 @@ private:
             }
             else
             {
-                // If there's a spill temp already associated with any of the candidates,
-                // use that instead of allocating a new temp.
-                //
-                // Only candidates that made it through impMarkInlineCandidateHelper get a spill
-                // temp assigned, so we can't just look at candidate 0: it may be a candidate we
-                // kept for devirtualization only while a later one carries the inliner's temp.
+                // Only candidates that made it through impMarkInlineCandidateHelper get a
+                // spill temp, so candidate 0 may not be the one carrying it.
                 //
                 m_returnTemp = BAD_VAR_NUM;
                 for (uint8_t i = 0; i < m_origCall->GetInlineCandidatesCount(); i++)
@@ -851,7 +847,7 @@ private:
                     const unsigned spillTemp = m_origCall->GetGDVCandidateInfo(i)->preexistingSpillTemp;
                     if (spillTemp != BAD_VAR_NUM)
                     {
-                        // All candidates share the same call site, so they must agree.
+                        // Same call site, so all candidates must agree.
                         assert((m_returnTemp == BAD_VAR_NUM) || (m_returnTemp == spillTemp));
                         m_returnTemp = spillTemp;
                     }
@@ -1010,12 +1006,9 @@ private:
             //
             assert(!call->IsVirtual() && !call->IsDelegateInvoke());
 
-            // We won't inline this call if either:
-            //  1. the candidate was kept for devirtualization only (the target isn't inlineable), or
-            //  2. the devirtualizer was unable to transform the call to invoke the unboxed entry,
-            //     in which case the inline info we set up may be invalid.
-            //
-            // In both cases we keep the direct call, we just don't (re-)mark it as a candidate.
+            // Don't inline if the candidate was kept for devirtualization only, or if the
+            // devirtualizer couldn't use the unboxed entry (which invalidates the inline info).
+            // Either way we keep the direct call, we just don't re-mark it as a candidate.
             //
             CORINFO_METHOD_HANDLE unboxedMethodHnd = inlineInfo->guardedMethodUnboxedResolvedToken.hMethod;
             const bool unboxedEntryMismatch        = (unboxedMethodHnd != nullptr) && (methodHnd != unboxedMethodHnd);
@@ -1049,12 +1042,11 @@ private:
             }
             else
             {
-                // If the original call was flagged as one that might inspire enumerator de-abstraction
-                // cloning, move the flag to the devirtualized call.
+                // If the original call was flagged as one that might inspire enumerator
+                // de-abstraction cloning, move the flag to the devirtualized call.
                 //
-                // Note this only pays off if we go on to inline the call, so we deliberately do it here
-                // rather than right after the clone: that way a candidate we're not going to inline
-                // doesn't consume the mapping and hide it from a subsequent candidate we will inline.
+                // Done here rather than right after the clone so a candidate we won't inline
+                // doesn't consume the mapping and hide it from one we will.
                 //
                 if (m_compiler->hasImpEnumeratorGdvLocalMap())
                 {

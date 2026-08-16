@@ -2165,7 +2165,7 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
         // No need to assign a multi-reg struct to a local var if:
         //  - It is a tail call or
         //  - The call is marked for in-lining later or
-        //  - The call is a guarded devirtualization candidate (we defer this until we know its fate)
+        //  - The call is a guarded devirtualization candidate (fate not yet known)
         return impStoreMultiRegValueToVar(call, retClsHnd DEBUGARG(call->GetUnmanagedCallConv()));
     }
     return call;
@@ -9035,9 +9035,8 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     // Gather some information for later. Note we actually allocate InlineCandidateInfo
     // here, as the devirtualized half of this call will likely become an inline candidate.
     //
-    // Value-initialize: a GDV candidate can now survive all the way through the expansion
-    // in fgTransformIndirectCalls without ever being seen by impCheckCanInline, so every
-    // field has to be in a well-defined state from the start.
+    // Value-initialize: the candidate may be expanded without ever going through
+    // impCheckCanInline, so every field has to be in a well-defined state.
     //
     InlineCandidateInfo* pInfo = new (this, CMK_Inlining) InlineCandidateInfo{};
 
@@ -9050,8 +9049,7 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     pInfo->methAttr             = methodAttr;
     pInfo->preexistingSpillTemp = BAD_VAR_NUM;
 
-    // Note: the call node only carries its IL offset in debug builds, and not this early,
-    // so we can't record a meaningful offset here. It is only used for reporting.
+    // The call only carries its IL offset in debug builds, and not this early.
     //
     pInfo->ilOffset = BAD_IL_OFFSET;
 
@@ -9127,13 +9125,8 @@ void Compiler::impConvertToUserCallAndMarkForInlining(GenTreeCall* call)
 //    true if the candidate can be kept just for the sake of devirtualization.
 //
 // Notes:
-//    A direct call is normally cheaper than a virtual/interface call and it unlocks
-//    further optimizations (exact type of 'this', better inlining of the callee's
-//    callees, etc.), so by default we keep such candidates around. There are a few
-//    call sites, however, where the expansion itself is either illegal or would
-//    interfere with a more valuable optimization.
-//
-//    The bail-outs below mirror the call-site legality checks in
+//    A direct call is cheaper than a virtual/interface call, so we keep such candidates
+//    by default. The bail-outs below mirror the call-site checks in
 //    impMarkInlineCandidateHelper; keep the two in sync.
 //
 bool Compiler::canKeepNonInlineableGdvCandidate(GenTreeCall* call)
@@ -9145,8 +9138,7 @@ bool Compiler::canKeepNonInlineableGdvCandidate(GenTreeCall* call)
         return false;
     }
 
-    // For now this is limited to class-based GDV. Method-based (e.g. delegate) GDV keeps
-    // the old behavior of requiring the target to be inlineable.
+    // Class-based GDV only for now; method-based (e.g. delegate) GDV still requires inlining.
     //
     if (call->GetGDVCandidateInfo(0)->guardedClassHandle == NO_CLASS_HANDLE)
     {
@@ -9154,26 +9146,22 @@ bool Compiler::canKeepNonInlineableGdvCandidate(GenTreeCall* call)
     }
 
     // An explicit tail call has to stay a tail call, so don't perturb its shape.
-    // (mirrors CALLSITE_EXPLICIT_TAIL_PREFIX in impMarkInlineCandidateHelper)
-    //
-    // Note implicit tail calls are fine: fgMorphPotentialTailCall knows how to tail call
-    // out of the BBJ_ALWAYS blocks the expansion produces, so both the devirtualized call
-    // and the fallback still end up as tail calls.
+    // Implicit ones are fine: fgMorphPotentialTailCall can tail call out of the
+    // BBJ_ALWAYS blocks the expansion produces.
     //
     if (call->IsTailPrefixedCall())
     {
         return false;
     }
 
-    // Except for recursive ones, where turning the call into a loop is more valuable.
-    // (mirrors CALLSITE_IMPLICIT_REC_TAIL_CALL in impMarkInlineCandidateHelper)
+    // Except recursive ones, where turning the call into a loop is more valuable.
     //
     if (call->IsImplicitTailCall() && gtIsRecursiveCall(call))
     {
         return false;
     }
 
-    // The NextCallReturnAddress intrinsic needs the call to stay exactly where it is.
+    // NextCallReturnAddress needs the call to stay exactly where it is.
     //
     if (info.compHasNextCallRetAddr)
     {
@@ -9194,8 +9182,8 @@ bool Compiler::canKeepNonInlineableGdvCandidate(GenTreeCall* call)
 //
 // Notes:
 //    Mostly a wrapper for impMarkInlineCandidateHelper that also undoes
-//    guarded devirtualization for virtual calls where the guarded devirtualization
-//    itself is not worth doing (or not legal) once we know we can't inline the target.
+//    guarded devirtualization when it's not worth doing (or not legal) once
+//    we know we can't inline the target.
 
 void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                                       CORINFO_CONTEXT_HANDLE exactContextHnd,
@@ -9218,7 +9206,7 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
     {
         assert(call->GetInlineCandidatesCount() > 0);
 
-        // If the target can't be inlined we normally still want to devirtualize it,
+        // We usually still want to devirtualize a target we can't inline,
         // see canKeepNonInlineableGdvCandidate for the exceptions.
         //
         const bool keepNonInlineable = canKeepNonInlineableGdvCandidate(call);
@@ -9242,8 +9230,6 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
                 JITDUMP("Keeping GDV candidate %u of call [%06u] for devirtualization only: target can't be inlined\n",
                         candidateId, dspTreeID(call));
 
-                // We only keep class-based candidates, and only ones we won't inline.
-                //
                 assert(!call->GetGDVCandidateInfo(candidateId)->isInlineable);
                 assert(call->GetGDVCandidateInfo(candidateId)->guardedClassHandle != NO_CLASS_HANDLE);
             }

@@ -745,10 +745,9 @@ RELEASE_CONFIG_INTEGER(JitEnableGuardedDevirtualization, "JitEnableGuardedDevirt
 // Max number is MAX_GDV_TYPE_CHECKS defined above ^. -1 means it's up to JIT to decide
 RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, "JitGuardedDevirtualizationMaxTypeChecks", -1)
 
-// Whether a guarded devirtualization candidate is required to be inlineable.
-// 0 - keep the candidate even if we're not going to inline it: a direct call is still
-//     cheaper than a virtual/interface call and unlocks further optimizations.
-// 1 - drop the candidate if the devirtualized target can't be inlined (legacy behavior).
+// Whether a guarded devirtualization candidate has to be inlineable.
+// 0 - keep it even if we won't inline it, a direct call is still cheaper.
+// 1 - drop it if the target can't be inlined (legacy behavior).
 RELEASE_CONFIG_INTEGER(JitGuardedDevirtualizationRequireInlining, "JitGuardedDevirtualizationRequireInlining", 0)
 
 // Various policies for GuardedDevirtualization (0x4B == 75)
