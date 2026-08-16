@@ -223,9 +223,7 @@ private:
                 {
                     GenTree* node = *use;
 
-                    if ((use == &m_origCall->gtControlExpr) && node->IsCall() &&
-                        (node->AsCall()->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
-                         node->AsCall()->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT)))
+                    if (m_origCall->IsGenericVirtual(m_compiler) && (use == &m_origCall->gtControlExpr))
                     {
                         CallArg* methodHandleArg =
                             node->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
