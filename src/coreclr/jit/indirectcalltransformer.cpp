@@ -103,16 +103,17 @@ private:
 
         for (Statement* const stmt : block->Statements())
         {
-            if (m_compiler->doesMethodHaveFatPointer() && ContainsFatCalli(stmt))
+            // NativeAOT GVM calls may require both transformations. Expand GDV first so that
+            // fat pointer handling is only applied to the residual indirect call.
+            if (m_compiler->doesMethodHaveGuardedDevirtualization() && ContainsGuardedDevirtualizationCandidate(stmt))
             {
-                FatPointerCallTransformer transformer(m_compiler, block, stmt);
+                GuardedDevirtualizationTransformer transformer(m_compiler, block, stmt);
                 transformer.Run();
                 count++;
             }
-            else if (m_compiler->doesMethodHaveGuardedDevirtualization() &&
-                     ContainsGuardedDevirtualizationCandidate(stmt))
+            else if (m_compiler->doesMethodHaveFatPointer() && ContainsFatCalli(stmt))
             {
-                GuardedDevirtualizationTransformer transformer(m_compiler, block, stmt);
+                FatPointerCallTransformer transformer(m_compiler, block, stmt);
                 transformer.Run();
                 count++;
             }
@@ -223,7 +224,8 @@ private:
                     GenTree* node = *use;
 
                     if ((use == &m_origCall->gtControlExpr) && node->IsCall() &&
-                        node->AsCall()->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
+                        (node->AsCall()->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR) ||
+                         node->AsCall()->IsHelperCall(CORINFO_HELP_GVMLOOKUP_FOR_SLOT)))
                     {
                         CallArg* methodHandleArg =
                             node->AsCall()->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
@@ -721,10 +723,10 @@ private:
 
             InlineCandidateInfo* guardedInfo      = m_origCall->GetGDVCandidateInfo(checkIdx);
             GenTree*             runtimeGvmMethod = nullptr;
-            if (m_origCall->IsGenericVirtual(m_compiler))
+            if (m_origCall->IsGenericVirtual(m_compiler) &&
+                m_origCall->gtControlExpr->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR))
             {
                 GenTreeCall* lookupCall = m_origCall->gtControlExpr->AsCall();
-                assert(lookupCall->IsHelperCall(CORINFO_HELP_VIRTUAL_FUNC_PTR));
 
                 CallArg* methodHandleArg = lookupCall->gtArgs.FindWellKnownArg(WellKnownArg::RuntimeMethodHandle);
                 assert(methodHandleArg != nullptr);

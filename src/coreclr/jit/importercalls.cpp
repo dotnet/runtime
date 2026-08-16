@@ -1640,7 +1640,8 @@ DONE_CALL:
                 assert(call == origCall);
 
                 assert(opts.OptEnabled(CLFLG_INLINING));
-                assert(!isFatPointerCandidate); // We should not try to inline calli.
+                // Fat pointer calls can only reach this path as GDV candidates.
+                assert(!isFatPointerCandidate || isGuardedDevirtualizationCandidate);
 
                 // Make the call its own tree (spill the stack if needed).
                 // Do not consume the debug info here. This is particularly
@@ -8992,7 +8993,8 @@ void Compiler::addGuardedDevirtualizationCandidate(GenTreeCall*            call,
     //
     // If transforming these provides a benefit, we could save this off in the same way
     // we save the stub address below.
-    if ((call->gtCallType == CT_INDIRECT) && (call->AsCall()->gtCallCookie != nullptr))
+    if ((call->gtCallType == CT_INDIRECT) && !call->IsGuardedDevirtualizationCandidate() &&
+        (call->AsCall()->gtCallCookie != nullptr))
     {
         JITDUMP("NOT Marking call [%06u] as guarded devirtualization candidate -- CT_INDIRECT with cookie\n",
                 dspTreeID(call));
