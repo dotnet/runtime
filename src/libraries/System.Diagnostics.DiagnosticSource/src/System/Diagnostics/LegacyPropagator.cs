@@ -39,7 +39,7 @@ namespace System.Diagnostics
                 setter(carrier, RequestId, id);
             }
 
-            InjectBaggage(carrier, activity.Baggage, setter);
+            InjectBaggage(carrier, activity, setter);
         }
 
         public override void ExtractTraceIdAndState(object? carrier, PropagatorGetterCallback? getter, out string? traceId, out string? traceState)
