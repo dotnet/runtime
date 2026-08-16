@@ -42,8 +42,8 @@ namespace System.Net.ServerSentEvents
         /// <exception cref="ArgumentNullException"><paramref name="sseStream"/> or <paramref name="options"/> is null.</exception>
         public static SseParser<T> Create<T>(Stream sseStream, SseParserOptions<T> options)
         {
-            ArgumentNullException.ThrowIfNull(sseStream);
-            ArgumentNullException.ThrowIfNull(options);
+            ThrowHelper.ThrowIfNull(sseStream, nameof(sseStream));
+            ThrowHelper.ThrowIfNull(options, nameof(options));
 
             return new SseParser<T>(sseStream, options);
         }

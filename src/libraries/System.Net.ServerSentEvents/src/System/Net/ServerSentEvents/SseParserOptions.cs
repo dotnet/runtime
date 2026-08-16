@@ -12,7 +12,7 @@ namespace System.Net.ServerSentEvents
         /// <exception cref="ArgumentNullException"><paramref name="itemParser"/> is null.</exception>
         public SseParserOptions(SseItemParser<T> itemParser)
         {
-            ArgumentNullException.ThrowIfNull(itemParser);
+            ThrowHelper.ThrowIfNull(itemParser, nameof(itemParser));
 
             ItemParser = itemParser;
         }
@@ -27,7 +27,11 @@ namespace System.Net.ServerSentEvents
             get => _maxBufferSize;
             set
             {
-                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
+                if (value < -1)
+                {
+                    ThrowHelper.ThrowArgumentOutOfRangeException(nameof(value));
+                }
+
                 _maxBufferSize = value;
             }
         }
