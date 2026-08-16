@@ -259,7 +259,7 @@ namespace ILVerify
             else if (metadataOnly)
                 WriteLine("All metadata references in " + path + " resolved.");
             else
-                WriteLine("All Classes and Methods in " + path + " verified.");
+                WriteLine("All types and methods in " + path + " verified.");
 
             if (Get(_command.Statistics))
             {
