@@ -217,9 +217,7 @@ namespace System.Runtime.CompilerServices
         // which includes a finalizer inherited from a base type.
         internal static unsafe bool ObjectHasFinalizer(object obj)
         {
-            bool hasFinalizer = GetMethodTable(obj)->IsFinalizable;
-            GC.KeepAlive(obj); // Keep MethodTable alive
-            return hasFinalizer;
+            return GetMethodTable(obj)->IsFinalizable;
         }
 
         public static void PrepareMethod(RuntimeMethodHandle method)
