@@ -8797,11 +8797,13 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
     {
         CORINFO_CLASS_HANDLE    likelyClass           = likelyClasses[candidateId];
         CORINFO_METHOD_HANDLE   likelyMethod          = likelyMethods[candidateId];
-        CORINFO_METHOD_HANDLE   originalMethod        = call->IsGenericVirtual(this) ? likelyMethod : baseMethod;
         unsigned                likelihood            = likelihoods[candidateId];
         const CORINFO_LOOKUP*   pInstParamLookup      = nullptr;
         CORINFO_RESOLVED_TOKEN* pResolvedToken        = nullptr;
         CORINFO_RESOLVED_TOKEN* pUnboxedResolvedToken = nullptr;
+
+        CORINFO_METHOD_HANDLE originalMethod =
+            call->IsGenericVirtual(this) && (likelyMethod != NO_METHOD_HANDLE) ? likelyMethod : baseMethod;
 
         CORINFO_CONTEXT_HANDLE        likelyContext = originalContext;
         CORINFO_DEVIRTUALIZATION_INFO dvInfo;
