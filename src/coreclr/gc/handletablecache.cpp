@@ -851,35 +851,5 @@ uint32_t TableAllocHandlesFromCache(HandleTable *pTable, uint32_t uType, OBJECTH
 }
 
 
-/*
- * TableFreeHandlesToCache
- *
- * Frees multiple handles of the specified type by repeatedly
- * calling TableFreeSingleHandleToCache.
- *
- */
-void TableFreeHandlesToCache(HandleTable *pTable, uint32_t uType, const OBJECTHANDLE *pHandleBase, uint32_t uCount)
-{
-    WRAPPER_NO_CONTRACT;
-
-    // loop until we have freed all the handles
-    while (uCount)
-    {
-        // get the next handle to free
-        OBJECTHANDLE handle = *pHandleBase;
-
-        // advance our state
-        uCount--;
-        pHandleBase++;
-
-        // sanity
-        _ASSERTE(handle);
-
-        // return the handle to the cache
-        TableFreeSingleHandleToCache(pTable, uType, handle);
-    }
-}
-
 /*--------------------------------------------------------------------------*/
-
 

@@ -754,15 +754,6 @@ void TableFreeSingleHandleToCache(HandleTable *pTable, uint32_t uType, OBJECTHAN
 uint32_t TableAllocHandlesFromCache(HandleTable *pTable, uint32_t uType, OBJECTHANDLE *pHandleBase, uint32_t uCount);
 
 
-/*
- * TableFreeHandlesToCache
- *
- * Frees multiple handles of the specified type by repeatedly
- * calling TableFreeSingleHandleToCache.
- *
- */
-void TableFreeHandlesToCache(HandleTable *pTable, uint32_t uType, const OBJECTHANDLE *pHandleBase, uint32_t uCount);
-
 /*--------------------------------------------------------------------------*/
 
 
