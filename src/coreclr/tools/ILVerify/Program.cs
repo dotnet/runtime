@@ -242,15 +242,16 @@ namespace ILVerify
             int typeCounter = 0;
             bool metadataOnly = Get(_command.MetadataOnly);
 
+            List<VerificationResult> metadataErrors = new(_verifier.VerifyMetadataReferences(peReader));
             int metadataErrorCounter = VerifyMetadataReferences(
-                _verifier.VerifyMetadataReferences(peReader),
+                metadataErrors,
                 path,
                 ref numErrors);
 
             if (!metadataOnly)
             {
-                VerifyMethods(peReader, module, path, ref numErrors, ref verifiedMethodCounter, ref methodCounter);
-                VerifyTypes(peReader, module, path, ref numErrors, ref verifiedTypeCounter, ref typeCounter);
+                VerifyMethods(peReader, module, metadataErrors, path, ref numErrors, ref verifiedMethodCounter, ref methodCounter);
+                VerifyTypes(peReader, module, metadataErrors, path, ref numErrors, ref verifiedTypeCounter, ref typeCounter);
             }
 
             if (numErrors > 0)
@@ -258,12 +259,10 @@ namespace ILVerify
             else if (metadataOnly)
                 WriteLine("All metadata references in " + path + " resolved.");
             else
-                WriteLine("All Classes and Methods in " + path + " Verified.");
+                WriteLine("All Classes and Methods in " + path + " verified.");
 
             if (Get(_command.Statistics))
             {
-                WriteLine($"Metadata errors: {metadataErrorCounter}");
-
                 if (!metadataOnly)
                 {
                     WriteLine($"Types found: {typeCounter}");
@@ -331,7 +330,14 @@ namespace ILVerify
             WriteLine(result.Message);
         }
 
-        private void VerifyMethods(PEReader peReader, EcmaModule module, string path, ref int numErrors, ref int verifiedMethodCounter, ref int methodCounter)
+        private void VerifyMethods(
+            PEReader peReader,
+            EcmaModule module,
+            IReadOnlyCollection<VerificationResult> metadataErrors,
+            string path,
+            ref int numErrors,
+            ref int verifiedMethodCounter,
+            ref int methodCounter)
         {
             verifiedMethodCounter = 0;
             methodCounter = 0;
@@ -351,7 +357,7 @@ namespace ILVerify
 
                 if (verifying)
                 {
-                    var results = _verifier.Verify(peReader, methodHandle, false);
+                    var results = _verifier.Verify(peReader, methodHandle, metadataErrors);
                     foreach (var result in results)
                     {
                         if (ShouldIgnoreVerificationResult(result))
@@ -376,7 +382,14 @@ namespace ILVerify
             }
         }
 
-        private void VerifyTypes(PEReader peReader, EcmaModule module, string path, ref int numErrors, ref int verifiedTypeCounter, ref int typeCounter)
+        private void VerifyTypes(
+            PEReader peReader,
+            EcmaModule module,
+            IReadOnlyCollection<VerificationResult> metadataErrors,
+            string path,
+            ref int numErrors,
+            ref int verifiedTypeCounter,
+            ref int typeCounter)
         {
             MetadataReader metadataReader = peReader.GetMetadataReader();
 
@@ -392,7 +405,7 @@ namespace ILVerify
                 }
                 if (verifying)
                 {
-                    var results = _verifier.Verify(peReader, typeHandle, false, false);
+                    var results = _verifier.Verify(peReader, typeHandle, false, metadataErrors);
                     foreach (VerificationResult result in results)
                     {
                         if (ShouldIgnoreVerificationResult(result))

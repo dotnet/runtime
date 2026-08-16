@@ -37,7 +37,7 @@ namespace ILVerify
         public Option<bool> Tokens { get; } =
             new("--tokens", "-t") { Description = "Include metadata tokens in error messages" };
         public Option<bool> MetadataOnly { get; } =
-            new("--metadata-only") { Description = "Only validate metadata references" };
+            new("--metadata-references-only") { Description = "Only validate metadata references" };
 
         public ParseResult Result;
 

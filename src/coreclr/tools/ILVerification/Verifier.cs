@@ -51,9 +51,11 @@ namespace ILVerify
         }
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader)
-            => Verify(peReader, true);
+            => Verify(peReader, Array.Empty<VerificationResult>());
 
-        internal IEnumerable<VerificationResult> Verify(PEReader peReader, bool reportMetadataResolutionErrors)
+        internal IEnumerable<VerificationResult> Verify(
+            PEReader peReader,
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             if (peReader == null)
             {
@@ -69,7 +71,7 @@ namespace ILVerify
             try
             {
                 EcmaModule module = GetModule(peReader);
-                results = VerifyMethods(module, module.MetadataReader.MethodDefinitions, reportMetadataResolutionErrors);
+                results = VerifyMethods(module, module.MetadataReader.MethodDefinitions, metadataErrors);
             }
             catch (VerifierException e)
             {
@@ -83,13 +85,13 @@ namespace ILVerify
         }
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle, bool verifyMethods = false)
-            => Verify(peReader, typeHandle, verifyMethods, true);
+            => Verify(peReader, typeHandle, verifyMethods, Array.Empty<VerificationResult>());
 
         internal IEnumerable<VerificationResult> Verify(
             PEReader peReader,
             TypeDefinitionHandle typeHandle,
             bool verifyMethods,
-            bool reportMetadataResolutionErrors)
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             if (peReader == null)
             {
@@ -112,12 +114,12 @@ namespace ILVerify
                 EcmaModule module = GetModule(peReader);
                 MetadataReader metadataReader = peReader.GetMetadataReader();
 
-                results = VerifyType(module, typeHandle, reportMetadataResolutionErrors);
+                results = VerifyType(module, typeHandle, metadataErrors);
 
                 if (verifyMethods)
                 {
                     TypeDefinition typeDef = metadataReader.GetTypeDefinition(typeHandle);
-                    results = results.Union(VerifyMethods(module, typeDef.GetMethods(), reportMetadataResolutionErrors));
+                    results = results.Union(VerifyMethods(module, typeDef.GetMethods(), metadataErrors));
                 }
             }
             catch (VerifierException e)
@@ -132,12 +134,12 @@ namespace ILVerify
         }
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader, MethodDefinitionHandle methodHandle)
-            => Verify(peReader, methodHandle, true);
+            => Verify(peReader, methodHandle, Array.Empty<VerificationResult>());
 
         internal IEnumerable<VerificationResult> Verify(
             PEReader peReader,
             MethodDefinitionHandle methodHandle,
-            bool reportMetadataResolutionErrors)
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             if (peReader == null)
             {
@@ -158,7 +160,7 @@ namespace ILVerify
             try
             {
                 EcmaModule module = GetModule(peReader);
-                results = VerifyMethods(module, new[] { methodHandle }, reportMetadataResolutionErrors);
+                results = VerifyMethods(module, new[] { methodHandle }, metadataErrors);
             }
             catch (VerifierException e)
             {
@@ -345,7 +347,7 @@ namespace ILVerify
         private IEnumerable<VerificationResult> VerifyMethods(
             EcmaModule module,
             IEnumerable<MethodDefinitionHandle> methodHandles,
-            bool reportMetadataResolutionErrors)
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             foreach (var methodHandle in methodHandles)
             {
@@ -354,7 +356,7 @@ namespace ILVerify
 
                 if (methodIL != null)
                 {
-                    var results = VerifyMethod(module, methodIL, methodHandle, reportMetadataResolutionErrors);
+                    var results = VerifyMethod(module, methodIL, methodHandle, metadataErrors);
                     foreach (var result in results)
                     {
                         yield return result;
@@ -367,7 +369,7 @@ namespace ILVerify
             EcmaModule module,
             MethodIL methodIL,
             MethodDefinitionHandle methodHandle,
-            bool reportMetadataResolutionErrors)
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             var builder = new ArrayBuilder<VerificationResult>();
             MethodDesc method = methodIL.OwningMethod;
@@ -430,7 +432,7 @@ namespace ILVerify
             }
             catch (TypeSystemException e)
             {
-                if (reportMetadataResolutionErrors)
+                if (!IsDuplicateMetadataResolutionError(e, metadataErrors))
                 {
                     reportTypeSystemException(e);
                 }
@@ -461,7 +463,7 @@ namespace ILVerify
         private IEnumerable<VerificationResult> VerifyType(
             EcmaModule module,
             TypeDefinitionHandle typeHandle,
-            bool reportMetadataResolutionErrors)
+            IReadOnlyCollection<VerificationResult> metadataErrors)
         {
             var builder = new ArrayBuilder<VerificationResult>();
 
@@ -514,7 +516,7 @@ namespace ILVerify
             }
             catch (TypeSystemException e)
             {
-                if (reportMetadataResolutionErrors)
+                if (!IsDuplicateMetadataResolutionError(e, metadataErrors))
                 {
                     reportException(e);
                 }
@@ -530,6 +532,29 @@ namespace ILVerify
                     Message = e.Message
                 });
             }
+        }
+
+        private static bool IsDuplicateMetadataResolutionError(
+            TypeSystemException exception,
+            IReadOnlyCollection<VerificationResult> metadataErrors)
+        {
+            if (exception is not TypeSystemException.TypeLoadException &&
+                exception is not TypeSystemException.MissingMemberException &&
+                exception is not TypeSystemException.FileNotFoundException)
+            {
+                return false;
+            }
+
+            foreach (VerificationResult metadataError in metadataErrors)
+            {
+                if (metadataError.ExceptionID == exception.StringID &&
+                    metadataError.Message.EndsWith(exception.Message, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private void ThrowMissingSystemModule()
