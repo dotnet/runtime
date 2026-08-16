@@ -55,6 +55,40 @@ namespace System.CodeDom.Tests
             Assert.Throws<NullReferenceException>(() => collection.Add(null));
         }
 
+        [Fact]
+        public void IListAdd_Null_ThrowsNullReferenceExceptionAndLeavesCollectionUsable()
+        {
+            IList collection = new CodeNamespaceImportCollection();
+            Assert.Throws<NullReferenceException>(() => collection.Add(null));
+
+            // The failed add must not leave an element behind, otherwise the next
+            // operation throws while rebuilding the namespace keys.
+            collection.Insert(0, new CodeNamespaceImport("Namespace"));
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        public void IListInsert_Null_ThrowsNullReferenceExceptionAndLeavesCollectionUsable()
+        {
+            IList collection = new CodeNamespaceImportCollection();
+            Assert.Throws<NullReferenceException>(() => collection.Insert(0, null));
+
+            collection.Insert(0, new CodeNamespaceImport("Namespace"));
+            Assert.Equal(1, collection.Count);
+        }
+
+        [Fact]
+        public void ItemSet_Null_ThrowsNullReferenceExceptionAndLeavesCollectionUsable()
+        {
+            var collection = new CodeNamespaceImportCollection();
+            collection.Add(new CodeNamespaceImport("Namespace"));
+
+            Assert.Throws<NullReferenceException>(() => collection[0] = null);
+
+            Assert.Equal(1, collection.Count);
+            Assert.Equal("Namespace", collection[0].Namespace);
+        }
+
         public static IEnumerable<object[]> AddRange_TestData()
         {
             yield return new object[] { new CodeNamespaceImport[0] };

@@ -16,7 +16,7 @@ namespace System.CodeDom
             get => (CodeNamespaceImport)_data[index];
             set
             {
-                _data[index] = value;
+                _data[index] = Validated(value);
                 SyncKeys();
             }
         }
@@ -52,6 +52,17 @@ namespace System.CodeDom
             _keys.Clear();
         }
 
+        // Add(CodeNamespaceImport) reads value.Namespace before touching _data, so a null
+        // throws before the collection is modified. The IList members and the indexer setter
+        // store first, which leaves an element behind that SyncKeys() cannot enumerate.
+        // Reading Namespace here reproduces that same NullReferenceException at the same
+        // point, before the store.
+        private static CodeNamespaceImport Validated(CodeNamespaceImport value)
+        {
+            _ = value.Namespace;
+            return value;
+        }
+
         private void SyncKeys()
         {
             _keys.Clear();
@@ -83,7 +94,7 @@ namespace System.CodeDom
 
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        int IList.Add(object value) => _data.Add((CodeNamespaceImport)value);
+        int IList.Add(object value) => _data.Add(Validated((CodeNamespaceImport)value));
 
         void IList.Clear() => Clear();
 
@@ -93,7 +104,7 @@ namespace System.CodeDom
 
         void IList.Insert(int index, object value)
         {
-            _data.Insert(index, (CodeNamespaceImport)value);
+            _data.Insert(index, Validated((CodeNamespaceImport)value));
             SyncKeys();
         }
 
