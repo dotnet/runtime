@@ -44,6 +44,10 @@ namespace System.Net.ServerSentEvents
         /// <summary>The maximum amount of data buffered by default.</summary>
         private const int DefaultMaxBufferSize = 1024 * 1024 * 1024;
 
+        /// <summary>The smallest configurable maximum buffer size.</summary>
+        /// <remarks>Buffers smaller than this don't meaningfully reduce memory usage but can cause excessive I/O and line-buffer churn.</remarks>
+        private const int MinMaxBufferSize = 128;
+
         /// <summary>The stream to be parsed.</summary>
         private readonly Stream _stream;
         /// <summary>The parser delegate used to transform bytes into a <typeparamref name="T"/>.</summary>
@@ -95,7 +99,7 @@ namespace System.Net.ServerSentEvents
         {
             _stream = stream;
             _itemParser = options.ItemParser;
-            _maxBufferSize = options.MaxBufferSize == -1 ? DefaultMaxBufferSize : options.MaxBufferSize;
+            _maxBufferSize = options.MaxBufferSize == -1 ? DefaultMaxBufferSize : Math.Max(options.MaxBufferSize, MinMaxBufferSize);
         }
 
         /// <summary>Gets an enumerable of the server-sent events from this parser.</summary>

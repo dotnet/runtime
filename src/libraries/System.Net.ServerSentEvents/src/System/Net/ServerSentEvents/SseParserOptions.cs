@@ -22,6 +22,7 @@ namespace System.Net.ServerSentEvents
 
         /// <summary>Gets or sets the maximum buffer size, or -1 to use the default limit.</summary>
         /// <exception cref="ArgumentOutOfRangeException">The value set is less than -1.</exception>
+        /// <remarks>Values below an internal minimum are treated as that minimum, as buffers smaller than that don't meaningfully reduce memory usage.</remarks>
         public int MaxBufferSize
         {
             get => _maxBufferSize;
