@@ -133,7 +133,7 @@
     <value>Hashtable's capacity overflowed and went negative. Check load factor, capacity and the current size of the table.</value>
   </data>
   <data name="InvalidOperation_NoValue" xml:space="preserve">
-    <value>Nullable object must have a value.</value>
+    <value>Cannot read the Value property of a Nullable object that has no value. Check HasValue before reading Value.</value>
   </data>
   <data name="RFLCT_Targ_StatFldReqTarg" xml:space="preserve">
     <value>Non-static field requires a target.</value>
