@@ -51,6 +51,9 @@ namespace ILVerify
         }
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader)
+            => Verify(peReader, true);
+
+        internal IEnumerable<VerificationResult> Verify(PEReader peReader, bool reportMetadataResolutionErrors)
         {
             if (peReader == null)
             {
@@ -66,7 +69,7 @@ namespace ILVerify
             try
             {
                 EcmaModule module = GetModule(peReader);
-                results = VerifyMethods(module, module.MetadataReader.MethodDefinitions);
+                results = VerifyMethods(module, module.MetadataReader.MethodDefinitions, reportMetadataResolutionErrors);
             }
             catch (VerifierException e)
             {
@@ -80,6 +83,13 @@ namespace ILVerify
         }
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader, TypeDefinitionHandle typeHandle, bool verifyMethods = false)
+            => Verify(peReader, typeHandle, verifyMethods, true);
+
+        internal IEnumerable<VerificationResult> Verify(
+            PEReader peReader,
+            TypeDefinitionHandle typeHandle,
+            bool verifyMethods,
+            bool reportMetadataResolutionErrors)
         {
             if (peReader == null)
             {
@@ -102,12 +112,12 @@ namespace ILVerify
                 EcmaModule module = GetModule(peReader);
                 MetadataReader metadataReader = peReader.GetMetadataReader();
 
-                results = VerifyType(module, typeHandle);
+                results = VerifyType(module, typeHandle, reportMetadataResolutionErrors);
 
                 if (verifyMethods)
                 {
                     TypeDefinition typeDef = metadataReader.GetTypeDefinition(typeHandle);
-                    results = results.Union(VerifyMethods(module, typeDef.GetMethods()));
+                    results = results.Union(VerifyMethods(module, typeDef.GetMethods(), reportMetadataResolutionErrors));
                 }
             }
             catch (VerifierException e)
@@ -122,6 +132,12 @@ namespace ILVerify
         }
 
         public IEnumerable<VerificationResult> Verify(PEReader peReader, MethodDefinitionHandle methodHandle)
+            => Verify(peReader, methodHandle, true);
+
+        internal IEnumerable<VerificationResult> Verify(
+            PEReader peReader,
+            MethodDefinitionHandle methodHandle,
+            bool reportMetadataResolutionErrors)
         {
             if (peReader == null)
             {
@@ -142,7 +158,7 @@ namespace ILVerify
             try
             {
                 EcmaModule module = GetModule(peReader);
-                results = VerifyMethods(module, new[] { methodHandle });
+                results = VerifyMethods(module, new[] { methodHandle }, reportMetadataResolutionErrors);
             }
             catch (VerifierException e)
             {
@@ -326,7 +342,10 @@ namespace ILVerify
         }
 
 
-        private IEnumerable<VerificationResult> VerifyMethods(EcmaModule module, IEnumerable<MethodDefinitionHandle> methodHandles)
+        private IEnumerable<VerificationResult> VerifyMethods(
+            EcmaModule module,
+            IEnumerable<MethodDefinitionHandle> methodHandles,
+            bool reportMetadataResolutionErrors)
         {
             foreach (var methodHandle in methodHandles)
             {
@@ -335,7 +354,7 @@ namespace ILVerify
 
                 if (methodIL != null)
                 {
-                    var results = VerifyMethod(module, methodIL, methodHandle);
+                    var results = VerifyMethod(module, methodIL, methodHandle, reportMetadataResolutionErrors);
                     foreach (var result in results)
                     {
                         yield return result;
@@ -344,7 +363,11 @@ namespace ILVerify
             }
         }
 
-        private IEnumerable<VerificationResult> VerifyMethod(EcmaModule module, MethodIL methodIL, MethodDefinitionHandle methodHandle)
+        private IEnumerable<VerificationResult> VerifyMethod(
+            EcmaModule module,
+            MethodIL methodIL,
+            MethodDefinitionHandle methodHandle,
+            bool reportMetadataResolutionErrors)
         {
             var builder = new ArrayBuilder<VerificationResult>();
             MethodDesc method = methodIL.OwningMethod;
@@ -407,7 +430,10 @@ namespace ILVerify
             }
             catch (TypeSystemException e)
             {
-                reportTypeSystemException(e);
+                if (reportMetadataResolutionErrors)
+                {
+                    reportTypeSystemException(e);
+                }
             }
 
             return builder.ToArray();
@@ -432,7 +458,10 @@ namespace ILVerify
             }
         }
 
-        private IEnumerable<VerificationResult> VerifyType(EcmaModule module, TypeDefinitionHandle typeHandle)
+        private IEnumerable<VerificationResult> VerifyType(
+            EcmaModule module,
+            TypeDefinitionHandle typeHandle,
+            bool reportMetadataResolutionErrors)
         {
             var builder = new ArrayBuilder<VerificationResult>();
 
@@ -485,7 +514,10 @@ namespace ILVerify
             }
             catch (TypeSystemException e)
             {
-                reportException(e);
+                if (reportMetadataResolutionErrors)
+                {
+                    reportException(e);
+                }
             }
 
             return builder.ToArray();

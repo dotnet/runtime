@@ -240,33 +240,51 @@ namespace ILVerify
             int methodCounter = 0;
             int verifiedTypeCounter = 0;
             int typeCounter = 0;
+            bool metadataOnly = Get(_command.MetadataOnly);
 
-            VerifyMethods(peReader, module, path, ref numErrors, ref verifiedMethodCounter, ref methodCounter);
-            VerifyTypes(peReader, module, path, ref numErrors, ref verifiedTypeCounter, ref typeCounter);
+            int metadataErrorCounter = VerifyMetadataReferences(
+                _verifier.VerifyMetadataReferences(peReader),
+                path,
+                ref numErrors);
 
-            if (Get(_command.VerifyAllDependencies))
-                VerifyMetadataReferences(peReader, path, ref numErrors);
+            if (!metadataOnly)
+            {
+                VerifyMethods(peReader, module, path, ref numErrors, ref verifiedMethodCounter, ref methodCounter);
+                VerifyTypes(peReader, module, path, ref numErrors, ref verifiedTypeCounter, ref typeCounter);
+            }
 
             if (numErrors > 0)
                 WriteLine(numErrors + " Error(s) Verifying " + path);
+            else if (metadataOnly)
+                WriteLine("All metadata references in " + path + " resolved.");
             else
                 WriteLine("All Classes and Methods in " + path + " Verified.");
 
             if (Get(_command.Statistics))
             {
-                WriteLine($"Types found: {typeCounter}");
-                WriteLine($"Types verified: {verifiedTypeCounter}");
+                WriteLine($"Metadata errors: {metadataErrorCounter}");
 
-                WriteLine($"Methods found: {methodCounter}");
-                WriteLine($"Methods verified: {verifiedMethodCounter}");
+                if (!metadataOnly)
+                {
+                    WriteLine($"Types found: {typeCounter}");
+                    WriteLine($"Types verified: {verifiedTypeCounter}");
+
+                    WriteLine($"Methods found: {methodCounter}");
+                    WriteLine($"Methods verified: {verifiedMethodCounter}");
+                }
             }
 
             return numErrors;
         }
 
-        private void VerifyMetadataReferences(PEReader peReader, string path, ref int numErrors)
+        private int VerifyMetadataReferences(
+            IEnumerable<VerificationResult> metadataErrors,
+            string path,
+            ref int numErrors)
         {
-            foreach (VerificationResult result in _verifier.VerifyMetadataReferences(peReader))
+            int metadataErrorCounter = 0;
+
+            foreach (VerificationResult result in metadataErrors)
             {
                 if (ShouldIgnoreVerificationResult(result))
                 {
@@ -280,8 +298,11 @@ namespace ILVerify
                 {
                     PrintVerifyMetadataReferencesResult(result, path);
                     numErrors++;
+                    metadataErrorCounter++;
                 }
             }
+
+            return metadataErrorCounter;
         }
 
         private void PrintVerifyMetadataReferencesResult(VerificationResult result, string path)
@@ -312,7 +333,6 @@ namespace ILVerify
 
         private void VerifyMethods(PEReader peReader, EcmaModule module, string path, ref int numErrors, ref int verifiedMethodCounter, ref int methodCounter)
         {
-            numErrors = 0;
             verifiedMethodCounter = 0;
             methodCounter = 0;
 
@@ -331,7 +351,7 @@ namespace ILVerify
 
                 if (verifying)
                 {
-                    var results = _verifier.Verify(peReader, methodHandle);
+                    var results = _verifier.Verify(peReader, methodHandle, false);
                     foreach (var result in results)
                     {
                         if (ShouldIgnoreVerificationResult(result))
@@ -372,7 +392,7 @@ namespace ILVerify
                 }
                 if (verifying)
                 {
-                    var results = _verifier.Verify(peReader, typeHandle);
+                    var results = _verifier.Verify(peReader, typeHandle, false, false);
                     foreach (VerificationResult result in results)
                     {
                         if (ShouldIgnoreVerificationResult(result))
