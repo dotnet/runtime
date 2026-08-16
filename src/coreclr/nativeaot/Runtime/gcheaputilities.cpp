@@ -33,6 +33,7 @@ bool g_sw_ww_enabled_for_gc_heap = false;
 #endif
 
 IGCHandleManager* g_pGCHandleManager = nullptr;
+IGCHandleStore* g_pGlobalHandleStore = nullptr;
 
 GcDacVars g_gc_dac_vars;
 GPTR_IMPL(GcDacVars, g_gcDacGlobals);
@@ -79,6 +80,7 @@ HRESULT GCHeapUtilities::InitializeDefaultGC()
     {
         g_pGCHeap = heap;
         g_pGCHandleManager = manager;
+        g_pGlobalHandleStore = manager->GetGlobalHandleStore();
         g_gcDacGlobals = &g_gc_dac_vars;
         LOG((LF_GC, LL_INFO100, "GC load successful\n"));
     }

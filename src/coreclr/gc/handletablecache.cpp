@@ -757,66 +757,6 @@ OBJECTHANDLE TableAllocSingleHandleFromCache(HandleTable *pTable, uint32_t uType
 
 
 /*
- * TableFreeSingleHandleToCache
- *
- * Returns a single handle of the specified type to the handle table
- * by trying to store it in the free cache for that handle type.  If the
- * free cache is full, this routine calls TableCacheMissOnFree.
- *
- */
-void TableFreeSingleHandleToCache(HandleTable *pTable, uint32_t uType, OBJECTHANDLE handle)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;         // because of TableCacheMissOnFree
-    }
-    CONTRACTL_END;
-
-#ifdef DEBUG_DestroyedHandleValue
-    *(_UNCHECKED_OBJECTREF *)handle = DEBUG_DestroyedHandleValue;
-#else
-    // zero the handle's object pointer
-    *(_UNCHECKED_OBJECTREF *)handle = NULL;
-#endif
-
-    // if this handle type has user data then clear it - AFTER the referent is cleared!
-    if (TypeHasUserData(pTable, uType))
-        HandleQuickSetUserData(handle, 0L);
-
-    // is there room in the quick cache?
-    if (!pTable->rgQuickCache[uType])
-    {
-        // yup - try to stuff our handle in the slot we saw
-        handle = Interlocked::ExchangePointer(&pTable->rgQuickCache[uType], handle);
-
-        // if we didn't end up with another handle then we're done
-        if (!handle)
-            return;
-    }
-
-    // ok, get the main handle cache for this type
-    HandleTypeCache *pCache = pTable->rgMainCache + uType;
-
-    // try to take a free slot from the main cache
-    int32_t lFreeIndex = Interlocked::Decrement(&pCache->lFreeIndex);
-
-    // did we underflow?
-    if (lFreeIndex < 0)
-    {
-        // yep - we're out of free slots
-        TableCacheMissOnFree(pTable, pCache, uType, handle);
-        return;
-    }
-
-    // we got a slot - save the handle in the free bank
-    pCache->rgFreeBank[lFreeIndex] = handle;
-}
-
-
-/*
  * TableAllocHandlesFromCache
  *
  * Allocates multiple handles of the specified type by repeatedly
