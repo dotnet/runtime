@@ -226,7 +226,6 @@ HRESULT GCHeapUtilities::InitializeStandaloneGC()
             g_gcEventTracingInitialized = TRUE;
         }
         g_pGCHandleManager = manager;
-        g_pGlobalHandleStore = manager->GetGlobalHandleStore();
         g_gcDacGlobals = &g_gc_dac_vars;
         LOG((LF_GC, LL_INFO100, "GC load successful\n"));
     }
