@@ -9153,14 +9153,20 @@ bool Compiler::canKeepNonInlineableGdvCandidate(GenTreeCall* call)
         return false;
     }
 
-    // The expansion moves the call out of the tail position, so leave tail calls alone.
+    // An explicit tail call has to stay a tail call, so don't perturb its shape.
+    // (mirrors CALLSITE_EXPLICIT_TAIL_PREFIX in impMarkInlineCandidateHelper)
+    //
+    // Note implicit tail calls are fine: fgMorphPotentialTailCall knows how to tail call
+    // out of the BBJ_ALWAYS blocks the expansion produces, so both the devirtualized call
+    // and the fallback still end up as tail calls.
     //
     if (call->IsTailPrefixedCall())
     {
         return false;
     }
 
-    // Tail recursion elimination (turning the call into a loop) is more valuable.
+    // Except for recursive ones, where turning the call into a loop is more valuable.
+    // (mirrors CALLSITE_IMPLICIT_REC_TAIL_CALL in impMarkInlineCandidateHelper)
     //
     if (call->IsImplicitTailCall() && gtIsRecursiveCall(call))
     {
