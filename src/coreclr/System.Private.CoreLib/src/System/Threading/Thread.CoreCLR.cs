@@ -606,7 +606,6 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
         internal static partial void CheckForPendingInterrupt();
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private unsafe NativeThread* GetNativeThreadForCurrentThread()
         {
             Debug.Assert(this == CurrentThread);
