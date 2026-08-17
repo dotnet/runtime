@@ -319,23 +319,23 @@ namespace System.Threading
         {
             // This method is called when the thread is about to enter a wait, sleep, or join state.
             // It sets the state in the native layer to indicate that the thread is waiting.
-            SetWaitSleepJoinState();
+            SetWaitSleepJoinStateNative();
         }
 
         internal void ClearWaitSleepJoinState()
         {
             // This method is called when the thread is no longer in a wait, sleep, or join state.
             // It clears the state in the native layer to indicate that the thread is no longer waiting.
-            ClearWaitSleepJoinState();
+            ClearWaitSleepJoinStateNative();
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetWaitSleepJoinState")]
         [SuppressGCTransition]
-        private static partial void SetWaitSleepJoinState();
+        private static partial void SetWaitSleepJoinStateNative();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ClearWaitSleepJoinState")]
         [SuppressGCTransition]
-        private static partial void ClearWaitSleepJoinState();
+        private static partial void ClearWaitSleepJoinStateNative();
 
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
@@ -611,10 +611,10 @@ namespace System.Threading
 
         internal static void CheckForPendingInterrupt()
         {
-            CheckForPendingInterrupt();
+            CheckForPendingInterruptNative();
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
-        private static partial void CheckForPendingInterrupt();
+        private static partial void CheckForPendingInterruptNative();
     }
 }
