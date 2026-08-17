@@ -8509,6 +8509,14 @@ void Compiler::pickGDV(GenTreeCall*           call,
 
     if (numberOfMethods > 0)
     {
+        // GVM can only be GDV'd if we have a class guess;
+        // the method profile only identifies the instantiation.
+        if (call->IsGenericVirtual(this) && (*candidatesCount == 0))
+        {
+            JITDUMP("Not guessing for generic virtual method; no class guess available\n");
+            return;
+        }
+
         // For method guessing we only support a single target for now
         unsigned likelihoodThreshold = 30;
         if (likelyMethods[0].likelihood >= likelihoodThreshold)
