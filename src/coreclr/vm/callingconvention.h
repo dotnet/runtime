@@ -1684,7 +1684,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     {
         // Handle HFAs: packed structures of 1-4 floats, doubles, or short vectors
         // that are passed in FP argument registers if possible.
-        if (thValueType.IsHFA())
+        if (thValueType.IsHFA() && !this->IsVarArg())
         {
             CorInfoHFAElemType type = thValueType.GetHFAType();
 
