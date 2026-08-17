@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -211,6 +212,63 @@ namespace System
                 return "/apex/com.android.tzdata";
             }
 
+            private static string? GetVersionedTimeZoneDataDirectory(string apexTimeDataRoot)
+            {
+                // Android 15+ stores time zone data under versioned/<format-major>.
+                // Use the newest format supported by the running OS; newer releases retain older formats for compatibility.
+                // https://android.googlesource.com/platform/system/timezone/+/0470df3d38d8e08932ebbe08b3d8ec9bbdcd403f/README.android
+                string? formatMajorVersion =
+                    OperatingSystem.IsAndroidVersionAtLeast(36) ? "9" :
+                    OperatingSystem.IsAndroidVersionAtLeast(35) ? "8" :
+                    OperatingSystem.IsAndroidVersionAtLeast(34) ? "7" :
+                    OperatingSystem.IsAndroidVersionAtLeast(33) ? "6" :
+                    OperatingSystem.IsAndroidVersionAtLeast(31) ? "5" :
+                    OperatingSystem.IsAndroidVersionAtLeast(30) ? "4" :
+                    OperatingSystem.IsAndroidVersionAtLeast(29) ? "3" :
+                    null;
+
+                if (formatMajorVersion is null)
+                {
+                    return null;
+                }
+
+                string versionedRoot = Path.Combine(apexTimeDataRoot, "etc/tz/versioned");
+                string preferredDirectory = Path.Combine(versionedRoot, formatMajorVersion);
+                if (File.Exists(Path.Combine(preferredDirectory, TimeZoneFileName)))
+                {
+                    return preferredDirectory;
+                }
+
+                // Compatibility versions are eventually pruned. If the preferred version is gone,
+                // use the newest available data rather than falling back to the non-updatable system copy.
+                string? latestDirectory = null;
+                int latestVersion = -1;
+                try
+                {
+                    foreach (string directory in Directory.EnumerateDirectories(versionedRoot))
+                    {
+                        string directoryName = Path.GetFileName(directory);
+                        if (int.TryParse(directoryName, NumberStyles.None, CultureInfo.InvariantCulture, out int version) &&
+                            version > latestVersion &&
+                            File.Exists(Path.Combine(directory, TimeZoneFileName)))
+                        {
+                            latestDirectory = directory;
+                            latestVersion = version;
+                        }
+                    }
+                }
+                catch (IOException)
+                {
+                    return null;
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return null;
+                }
+
+                return latestDirectory;
+            }
+
             private static string GetApexRuntimeRoot()
             {
                 string? ret = Environment.GetEnvironmentVariable("ANDROID_RUNTIME_ROOT");
@@ -227,12 +285,19 @@ namespace System
                 // On Android, time zone data is found in tzdata
                 // Based on https://github.com/mono/mono/blob/main/mcs/class/corlib/System/TimeZoneInfo.Android.cs
                 // Also follows the locations found at the bottom of https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
-                ReadOnlySpan<string> tzFileDirList = [ GetApexTimeDataRoot() + "/etc/tz/", // Android 10+, TimeData module where the updates land
-                                                       GetApexRuntimeRoot() + "/etc/tz/", // Android 10+, Fallback location if the above isn't found or corrupted
-                                                       Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/",
-                                                       Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory ];
-                foreach (var tzFileDir in tzFileDirList)
+                string apexTimeDataRoot = GetApexTimeDataRoot();
+                ReadOnlySpan<string?> tzFileDirList = [ GetVersionedTimeZoneDataDirectory(apexTimeDataRoot), // Android 15+, versioned TimeData module
+                                                        apexTimeDataRoot + "/etc/tz/", // Android 10+, unversioned TimeData module
+                                                        GetApexRuntimeRoot() + "/etc/tz/", // Android 10+, fallback location if the above isn't found or corrupted
+                                                        Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/",
+                                                        Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory ];
+                foreach (string? tzFileDir in tzFileDirList)
                 {
+                    if (string.IsNullOrEmpty(tzFileDir))
+                    {
+                        continue;
+                    }
+
                     string tzFilePath = Path.Combine(tzFileDir, TimeZoneFileName);
                     if (LoadData(tzFileDir, tzFilePath))
                     {
@@ -272,7 +337,9 @@ namespace System
             {
                 string tzLookupFilePath = Path.Combine(tzFileDir, "tzlookup.xml");
                 if (!File.Exists(tzLookupFilePath))
-                    return null;
+                {
+                    return GetCanonicalLocationTimeZoneIds();
+                }
 
                 HashSet<string>? tzLookupIDs = null;
                 try
@@ -300,12 +367,52 @@ namespace System
                         }
                     }
                 }
-                catch
+                catch (IOException)
+                {
+                    return GetCanonicalLocationTimeZoneIds();
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return GetCanonicalLocationTimeZoneIds();
+                }
+
+                return tzLookupIDs ?? GetCanonicalLocationTimeZoneIds();
+            }
+
+            private static HashSet<string>? GetCanonicalLocationTimeZoneIds()
+            {
+                if (GlobalizationMode.Invariant)
                 {
                     return null;
                 }
 
-                return tzLookupIDs;
+                int bufferLength = Interop.Globalization.GetCanonicalLocationTimeZoneIds(null, 0);
+                if (bufferLength <= 0)
+                {
+                    return null;
+                }
+
+                char[] buffer = new char[bufferLength];
+                if (Interop.Globalization.GetCanonicalLocationTimeZoneIds(buffer, bufferLength) != bufferLength)
+                {
+                    return null;
+                }
+
+                HashSet<string> ids = new HashSet<string>();
+                int index = 0;
+                while (index < bufferLength)
+                {
+                    int idLength = buffer[index++];
+                    if (idLength == 0 || idLength > bufferLength - index)
+                    {
+                        return null;
+                    }
+
+                    ids.Add(new string(buffer, index, idLength));
+                    index += idLength;
+                }
+
+                return ids;
             }
 
             [MemberNotNullWhen(true, nameof(_ids))]
