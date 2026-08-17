@@ -248,6 +248,8 @@ typedef struct {
 	int *gc_var_indexes;
 	int gc_var_indexes_len;
 	Address *gc_pin_area;
+	/* Saturating count (0-2) of definitions per vreg, used to decide if a ref move needs pinning */
+	guint8 *vreg_defcount;
 	LLVMValueRef il_state;
 	LLVMValueRef il_state_ret;
 } EmitContext;
@@ -4010,6 +4012,27 @@ emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 	LLVMValueRef addr = LLVMBuildGEP2 (builder, ctx->gc_pin_area->type, ctx->gc_pin_area->value, indexes, 2, "");
 	emit_store (builder, convert (ctx, ctx->values [vreg], IntPtrType ()), addr, TRUE);
 }
+
+/*
+ * A ref OP_MOVE aliases its source instead of producing a new value, so it only needs a pin
+ * slot of its own when the source can stop being rooted while the alias is still live. A vreg
+ * with a single definition keeps its pin slot for the rest of the method, but an address-taken
+ * variable has no pin slot at all: it lives in a stack slot which this method or a callee can
+ * overwrite at any point.
+ */
+static gboolean
+move_needs_gc_pin (EmitContext *ctx, MonoInst *ins)
+{
+	MonoCompile *cfg = ctx->cfg;
+	MonoInst *var;
+
+	if (!ctx->vreg_defcount || ins->sreg1 < 0 || (guint32)ins->sreg1 >= cfg->next_vreg)
+		return TRUE;
+	if (ctx->vreg_defcount [ins->sreg1] > 1)
+		return TRUE;
+	var = get_vreg_to_inst (cfg, ins->sreg1);
+	return var && (var->flags & (MONO_INST_VOLATILE | MONO_INST_INDIRECT | MONO_INST_IS_DEAD));
+}
 #endif
 
 /*
@@ -4057,6 +4080,17 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	LLVMTypeRef pin_area_type = LLVMArrayType (IntPtrType (), ngc_vars);
 	LLVMValueRef gc_pin_area = build_alloca_llvm_type_name (ctx, pin_area_type, 0, "gc_pin");
 	ctx->gc_pin_area = create_address (ctx, gc_pin_area, pin_area_type);
+
+	/* Runs after the OP_LDADDR pass in emit_method_inner, so MONO_INST_INDIRECT is already set */
+	ctx->vreg_defcount = g_new0 (guint8, cfg->next_vreg);
+	for (MonoBasicBlock *dbb = cfg->bb_entry; dbb; dbb = dbb->next_bb) {
+		for (MonoInst *dins = dbb->code; dins; dins = dins->next) {
+			if (dins->dreg >= 0 && (guint32)dins->dreg < cfg->next_vreg &&
+				LLVM_INS_INFO (dins->opcode) [MONO_INST_DEST] != ' ' &&
+				ctx->vreg_defcount [dins->dreg] < 2)
+				ctx->vreg_defcount [dins->dreg] ++;
+		}
+	}
 #endif
 
 	/*
@@ -12752,7 +12786,18 @@ MONO_RESTORE_WARNING
 				emit_volatile_store (ctx, ins->dreg);
 #ifdef TARGET_WASM
 			//if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg])
-			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_MOVE && ins->opcode != OP_AOTCONST)
+			/*
+			 * OP_MOVE dests need pinning too. A MOVE emits no LLVM instruction, so the dest is an SSA
+			 * alias of the source and used to rely on the source staying rooted. That fails when the
+			 * source is an address-taken variable: emit_gc_pin skips those (they live in their stack
+			 * slot instead), so overwriting the variable drops the only root and leaves the alias
+			 * holding an object rooted nowhere. See dotnet/runtime#130592.
+			 *
+			 * OP_AOTCONST stays excluded - those dests are GOT loads of ldstr literals and type/method
+			 * handles, already rooted by the loader's interned tables.
+			 */
+			if (vreg_is_ref (cfg, ins->dreg) && ctx->values [ins->dreg] && ins->opcode != OP_AOTCONST &&
+				(ins->opcode != OP_MOVE || move_needs_gc_pin (ctx, ins)))
 				emit_gc_pin (ctx, builder, ins->dreg);
 #endif
 		}
@@ -12913,6 +12958,7 @@ free_ctx (EmitContext *ctx)
 	g_free (ctx->is_dead);
 	g_free (ctx->unreachable);
 	g_free (ctx->gc_var_indexes);
+	g_free (ctx->vreg_defcount);
 	g_free (ctx->param_etypes);
 	g_ptr_array_free (ctx->phi_values, TRUE);
 	g_free (ctx->bblocks);
