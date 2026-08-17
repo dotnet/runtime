@@ -181,6 +181,9 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        // TODO: This is a temporary workaround for the fact that we don't yet emit a COMDAT section (or any reloc / linking sections)
+        private protected override bool UsesSubsectionsViaSymbols => true;
+
         private protected override SectionDataEmitter CreateDataSection(
             ObjectNodeSection section,
             int sectionIndex,
@@ -240,6 +243,14 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void WriteExports()
         {
+            // TODO-WASM: Handle exports better (e.g., only export public methods, etc.)
+            IEnumerable<WasmSymbol> functionSymbols = _wasmSymbolManager.GetDefinitions(
+                WasmIndexSpace.Function,
+                Comparer<WasmSymbol>.Create(static (x, y) => x.Name.CompareTo(y.Name)));
+            foreach (WasmSymbol symbol in functionSymbols)
+            {
+                WriteFunctionExport(symbol.Name.ToString(), symbol.Index);
+            }
         }
 
         private protected override void WriteElements()
