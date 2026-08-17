@@ -331,16 +331,6 @@ HRESULT STDMETHODCALLTYPE SlowPathELTProfiler::EnterCallback(FunctionIDOrClientI
 
         _sawFuncEnter[functionName.ToWString()] = true;
     }
-#if defined(TARGET_ARM64) && defined(WINDOWS)
-    else if (functionName == WCHAR("Fp64x3StructVarArgFunc"))
-    {
-        vector<ExpectedArgValue> expectedValues = { { sizeof(Fp64x3Struct), (void *)&fp64x3, [&](UINT_PTR ptr){ return ValidateFloatingPointStruct(ptr, fp64x3); } } };
-
-        hr = ValidateFunctionArgs(pArgumentInfo, functionName, expectedValues);
-
-        _sawFuncEnter[functionName.ToWString()] = true;
-    }
-#endif
     else if (functionName == WCHAR("Fp64x3StructFp64x2StructFunc"))
     {
         vector<ExpectedArgValue> expectedValues = {

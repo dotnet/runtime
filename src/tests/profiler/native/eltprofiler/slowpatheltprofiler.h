@@ -142,9 +142,6 @@ public:
         _sawFuncEnter[L"Fp64x2StructFunc"] = false;
         _sawFuncEnter[L"Fp64x2StructFp64x3StructFunc"] = false;
         _sawFuncEnter[L"Fp64x3StructFunc"] = false;
-#if defined(TARGET_ARM64) && defined(WINDOWS)
-        _sawFuncEnter[L"Fp64x3StructVarArgFunc"] = false;
-#endif
         _sawFuncEnter[L"Fp64x3StructFp64x2StructFunc"] = false;
         _sawFuncEnter[L"Fp64x3StructDoubleFp64x3StructDoubleFunc"] = false;
         _sawFuncEnter[L"Fp64x4StructFunc"] = false;

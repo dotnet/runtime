@@ -2,7 +2,6 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);TARGET_WINDOWS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />

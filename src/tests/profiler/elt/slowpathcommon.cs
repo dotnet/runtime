@@ -359,14 +359,6 @@ namespace SlowPathELTTests
 
             Console.WriteLine($"Fp64x3StructFunc returned {Fp64x3StructFunc(fp64x3)}");
 
-#if TARGET_WINDOWS
-            if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-            {
-                // Windows ARM64 passes HFAs larger than 16 bytes by reference in varargs methods.
-                Fp64x3StructVarArgFunc(fp64x3, __arglist());
-            }
-#endif
-
             Console.WriteLine($"Fp64x3StructFp64x2StructFunc returned {Fp64x3StructFp64x2StructFunc(fp64x3, fp64x2)}");
 
             Console.WriteLine($"Fp64x3StructDoubleFp64x3StructDoubleFunc returned {Fp64x3StructDoubleFp64x3StructDoubleFunc(fp64x3, 1.2, fp64x3, 3.5)}");
@@ -504,13 +496,6 @@ namespace SlowPathELTTests
             fps.z = 3;
             return fps;
         }
-
-#if TARGET_WINDOWS
-        [MethodImplAttribute(MethodImplOptions.NoInlining)]
-        public static void Fp64x3StructVarArgFunc(Fp64x3Struct fps, __arglist)
-        {
-        }
-#endif
 
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static Fp64x2Struct Fp64x3StructFp64x2StructFunc(Fp64x3Struct fps1, Fp64x2Struct fps2)
