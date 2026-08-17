@@ -401,14 +401,14 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetFullyQualifiedName")]
-        private static partial void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString);
+        private static partial void GetFullyQualifiedName(QCallModule module, StringHandleOnStack retString, out QCallException qcallException);
 
         [RequiresAssemblyFiles(UnknownStringMessageInRAF)]
         internal string GetFullyQualifiedName()
         {
             string? fullyQualifiedName = null;
             RuntimeModule thisAsLocal = this;
-            GetFullyQualifiedName(new QCallModule(ref thisAsLocal), new StringHandleOnStack(ref fullyQualifiedName));
+            GetFullyQualifiedName(new QCallModule(ref thisAsLocal), new StringHandleOnStack(ref fullyQualifiedName), out _);
             return fullyQualifiedName!;
         }
 
@@ -416,14 +416,14 @@ namespace System.Reflection
         public override string FullyQualifiedName => GetFullyQualifiedName();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetTypes")]
-        private static partial void GetTypes(QCallModule module, ObjectHandleOnStack retTypes, ObjectHandleOnStack retExceptions);
+        private static partial void GetTypes(QCallModule module, ObjectHandleOnStack retTypes, ObjectHandleOnStack retExceptions, out QCallException qcallException);
 
         internal RuntimeType[] GetDefinedTypes()
         {
             RuntimeType[]? types = null;
             Exception[]? exceptions = null;
             RuntimeModule thisAsLocal = this;
-            GetTypes(new QCallModule(ref thisAsLocal), ObjectHandleOnStack.Create(ref types), ObjectHandleOnStack.Create(ref exceptions));
+            GetTypes(new QCallModule(ref thisAsLocal), ObjectHandleOnStack.Create(ref types), ObjectHandleOnStack.Create(ref exceptions), out _);
 
             if (exceptions is not null)
                 throw new ReflectionTypeLoadException(types, exceptions, SR.ReflectionTypeLoad_LoadFailed);
@@ -482,7 +482,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeModule_GetScopeName")]
-        private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString);
+        private static partial void GetScopeName(QCallModule module, StringHandleOnStack retString, out QCallException qcallException);
 
         public override string ScopeName
         {
@@ -490,7 +490,7 @@ namespace System.Reflection
             {
                 string? scopeName = null;
                 RuntimeModule thisAsLocal = this;
-                GetScopeName(new QCallModule(ref thisAsLocal), new StringHandleOnStack(ref scopeName));
+                GetScopeName(new QCallModule(ref thisAsLocal), new StringHandleOnStack(ref scopeName), out _);
                 return scopeName!;
             }
         }

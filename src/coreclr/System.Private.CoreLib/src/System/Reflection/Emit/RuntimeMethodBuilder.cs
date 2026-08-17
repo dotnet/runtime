@@ -596,14 +596,14 @@ namespace System.Reflection.Emit
             byte[] sigBytes = GetMethodSignature().InternalGetSignature(out int sigLength);
             RuntimeModuleBuilder module = m_module;
 
-            int token = RuntimeTypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataToken, m_strName, sigBytes, sigLength, Attributes);
+            int token = RuntimeTypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataToken, m_strName, sigBytes, sigLength, Attributes, out _);
             m_token = token;
 
             if (m_inst != null)
                 foreach (RuntimeGenericTypeParameterBuilder tb in m_inst)
                     if (!tb.m_type.IsCreated()) tb.m_type.CreateType();
 
-            RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), token, m_dwMethodImplFlags);
+            RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), token, m_dwMethodImplFlags, out _);
 
             return m_token;
         }
@@ -658,7 +658,7 @@ namespace System.Reflection.Emit
             m_dwMethodImplFlags = attributes;
 
             RuntimeModuleBuilder module = m_module;
-            RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
+            RuntimeTypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes, out _);
         }
 
         protected override ILGenerator GetILGeneratorCore(int size)

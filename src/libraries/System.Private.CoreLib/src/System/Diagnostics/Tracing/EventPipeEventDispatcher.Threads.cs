@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,7 +34,13 @@ namespace System.Diagnostics.Tracing
                 {
                     if (!eventsReceived)
                     {
-                        EventPipeInternal.WaitForSessionSignal(sessionID, Timeout.Infinite);
+                        EventPipeInternal.WaitForSessionSignal(sessionID, Timeout.Infinite
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                            , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                        );
                     }
 
                     Thread.Sleep(10);
@@ -50,7 +57,13 @@ namespace System.Diagnostics.Tracing
 
             // Disable the old session. This can happen asynchronously since we aren't using the old session
             // anymore.
-            EventPipeInternal.Disable(sessionID);
+            EventPipeInternal.Disable(sessionID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+            );
         }
     }
 }

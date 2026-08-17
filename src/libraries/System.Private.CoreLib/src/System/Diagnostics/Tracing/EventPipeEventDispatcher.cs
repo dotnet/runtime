@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -40,7 +41,13 @@ namespace System.Diagnostics.Tracing
         private EventPipeEventDispatcher()
         {
             // Get the ID of the runtime provider so that it can be used as a filter when processing events.
-            m_RuntimeProviderID = EventPipeInternal.GetProvider(NativeRuntimeEventSource.EventSourceName);
+            m_RuntimeProviderID = EventPipeInternal.GetProvider(NativeRuntimeEventSource.EventSourceName
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+            );
         }
 
         internal void SendCommand(EventListener eventListener, EventCommand command, bool enable, EventLevel level, EventKeywords matchAnyKeywords)
@@ -111,7 +118,13 @@ namespace System.Diagnostics.Tracing
             EventPipeSessionInfo sessionInfo;
             unsafe
             {
-                if (!EventPipeInternal.GetSessionInfo(sessionID, &sessionInfo))
+                if (!EventPipeInternal.GetSessionInfo(sessionID, &sessionInfo
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                    , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                ))
                 {
                     Debug.Fail("GetSessionInfo returned false.");
                 }
@@ -141,7 +154,13 @@ namespace System.Diagnostics.Tracing
             ulong sessionID = Volatile.Read(ref m_sessionID);
             Debug.Assert(sessionID != 0);
             m_dispatchTaskCancellationSource.Cancel();
-            EventPipeInternal.SignalSession(sessionID);
+            EventPipeInternal.SignalSession(sessionID
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+            );
             Volatile.Write(ref m_sessionID, 0);
         }
 
@@ -153,7 +172,13 @@ namespace System.Diagnostics.Tracing
             EventPipeEventInstanceData instanceData;
 
                 // Get the next event.
-                while (!token.IsCancellationRequested && EventPipeInternal.GetNextEvent(sessionID, &instanceData))
+                while (!token.IsCancellationRequested && EventPipeInternal.GetNextEvent(sessionID, &instanceData
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                    , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                ))
                 {
                     eventsReceived = true;
 

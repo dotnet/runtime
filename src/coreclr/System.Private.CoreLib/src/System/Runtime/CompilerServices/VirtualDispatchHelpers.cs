@@ -59,13 +59,13 @@ internal static unsafe partial class VirtualDispatchHelpers
     private static GenericCache<VirtualResolutionData, IntPtr> s_virtualFunctionPointerCache = new GenericCache<VirtualResolutionData, IntPtr>(InitialCacheSize, MaximumCacheSize);
 
     [LibraryImport(RuntimeHelpers.QCall)]
-    private static unsafe partial IntPtr ResolveVirtualFunctionPointer(ObjectHandleOnStack obj, IntPtr classHandle, IntPtr methodHandle);
+    private static unsafe partial IntPtr ResolveVirtualFunctionPointer(ObjectHandleOnStack obj, IntPtr classHandle, IntPtr methodHandle, out QCallException qcallException);
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     [DebuggerHidden]
     private static IntPtr VirtualFunctionPointerSlow(object obj, IntPtr classHandle, IntPtr methodHandle)
     {
-        IntPtr result = ResolveVirtualFunctionPointer(ObjectHandleOnStack.Create(ref obj), classHandle, methodHandle);
+        IntPtr result = ResolveVirtualFunctionPointer(ObjectHandleOnStack.Create(ref obj), classHandle, methodHandle, out _);
         s_virtualFunctionPointerCache.TrySet(new VirtualResolutionData(RuntimeHelpers.GetMethodTable(obj), classHandle, methodHandle), result);
         GC.KeepAlive(obj);
         return result;

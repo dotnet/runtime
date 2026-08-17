@@ -121,7 +121,11 @@ namespace System.Runtime.InteropServices.ObjectiveC
         {
             // Defer to GetOrCreateReferenceTrackingMemory for argument/state validation.
             taggedMemory = GetOrCreateReferenceTrackingMemory(obj);
-            return GCHandle.FromIntPtr(AllocateReferenceTrackingHandle(obj));
+            return GCHandle.FromIntPtr(AllocateReferenceTrackingHandle(obj
+#if CORECLR
+                , out _
+#endif
+            ));
         }
 
         /// <summary>
@@ -216,7 +220,11 @@ namespace System.Runtime.InteropServices.ObjectiveC
             if (msgSendFunction < MessageSendFunction.MsgSend || msgSendFunction > MessageSendFunction.MsgSendSuperStret)
                 throw new ArgumentOutOfRangeException(nameof(msgSendFunction));
 
-            if (!TrySetGlobalMessageSendCallback(msgSendFunction, func))
+            if (!TrySetGlobalMessageSendCallback(msgSendFunction, func
+#if CORECLR
+                , out _
+#endif
+            ))
                 throw new InvalidOperationException(SR.InvalidOperation_ResetGlobalObjectiveCMsgSend);
         }
 

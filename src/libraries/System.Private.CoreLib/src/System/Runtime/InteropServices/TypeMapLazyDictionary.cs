@@ -88,13 +88,31 @@ namespace System.Runtime.InteropServices
             delegate* unmanaged<CallbackContext*, ProcessAttributesCallbackArg*, Interop.BOOL> newProxyTypeEntry,
             delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedExternalTypeMap,
             delegate* unmanaged<CallbackContext*, Interop.BOOL> newPrecachedProxyTypeMap,
-            CallbackContext* context);
+            CallbackContext* context
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallException qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedExternalTypeMapEntry", StringMarshalling = StringMarshalling.Utf8)]
-        private static unsafe partial IntPtr FindPrecachedExternalTypeMapEntry(QCallModule module, QCallTypeHandle groupType, string key);
+        private static unsafe partial IntPtr FindPrecachedExternalTypeMapEntry(QCallModule module, QCallTypeHandle groupType, string key
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallException qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeMapLazyDictionary_FindPrecachedProxyTypeMapEntry")]
-        private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type);
+        private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+            , out QCallException qcallException
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+        );
 
         public ref struct Utf16SharedBuffer
         {
@@ -264,7 +282,13 @@ namespace System.Runtime.InteropServices
                 newProxyTypeEntry,
                 &NewPrecachedExternalTypeMap,
                 &NewPrecachedProxyTypeMap,
-                &context);
+                &context
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+            );
 
             // If an exception was thrown during the processing of
             // the attributes, rethrow it.
@@ -409,7 +433,13 @@ namespace System.Runtime.InteropServices
 
             protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, string key, [NotNullWhen(true)] out Type? type)
             {
-                IntPtr handle = FindPrecachedExternalTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), key);
+                IntPtr handle = FindPrecachedExternalTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), key
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                    , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                );
                 type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
                 return type != null;
             }
@@ -484,7 +514,13 @@ namespace System.Runtime.InteropServices
             protected override bool TryGetOrLoadTypeFromPreCachedDictionary(RuntimeModule module, Type key, [NotNullWhen(true)] out Type? type)
             {
                 RuntimeType rtKey = (RuntimeType)key;
-                IntPtr handle = FindPrecachedProxyTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), new QCallTypeHandle(ref rtKey));
+                IntPtr handle = FindPrecachedProxyTypeMapEntry(new QCallModule(ref module), new QCallTypeHandle(ref _groupType), new QCallTypeHandle(ref rtKey)
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                    , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                );
                 type = RuntimeTypeHandle.GetRuntimeTypeFromHandleMaybeNull(handle);
                 return type != null;
             }

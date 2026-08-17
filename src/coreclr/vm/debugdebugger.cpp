@@ -38,7 +38,7 @@
 //    Else if a native debugger is attached, this should send a native break event (kernel32!DebugBreak)
 //    Else, this should invoke Watson.
 //
-extern "C" void QCALLTYPE DebugDebugger_Break()
+extern "C" void QCALLTYPE DebugDebugger_Break(QCallException* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -83,24 +83,29 @@ extern "C" void QCALLTYPE DebugDebugger_Break()
 #endif // DEBUGGING_SUPPORTED
 }
 
-extern "C" BOOL QCALLTYPE DebugDebugger_Launch()
+extern "C" BOOL QCALLTYPE DebugDebugger_Launch(QCallException* qcallError)
 {
     QCALL_CONTRACT;
+
+    BOOL ret = FALSE;
+
+    BEGIN_QCALL;
 
 #ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerAttached())
     {
-        return TRUE;
+        ret = TRUE;
     }
-
-    if (g_pDebugInterface != NULL)
+    else if (g_pDebugInterface != NULL)
     {
         HRESULT hr = g_pDebugInterface->LaunchDebuggerForUser(GetThread(), NULL, TRUE, TRUE);
-        return SUCCEEDED(hr);
+        ret = SUCCEEDED(hr);
     }
 #endif // DEBUGGING_SUPPORTED
 
-    return FALSE;
+    END_QCALL;
+
+    return ret;
 }
 
 // Log to managed debugger.
@@ -108,7 +113,7 @@ extern "C" BOOL QCALLTYPE DebugDebugger_Launch()
 // appending a newline to anything.
 // It will also call OutputDebugString() which will send a native debug event. The message
 // string there will be a composite of the two managed string parameters and may include a newline.
-extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage)
+extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage, QCallException* qcallError)
 {
     CONTRACTL
     {
@@ -117,6 +122,8 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
         PRECONDITION(CheckPointer(pwzMessage, NULL_OK));
     }
     CONTRACTL_END;
+
+    BEGIN_QCALL;
 
     // OutputDebugString will log to native/interop debugger.
     if (pwzModule != NULL)
@@ -175,6 +182,8 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     }
 
 #endif // DEBUGGING_SUPPORTED
+
+    END_QCALL;
 }
 
 static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)
@@ -291,7 +300,8 @@ static void GetStackFrames(DebugStackTrace::GetStackFramesData *pData)
 
 extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
     void* diagnosticIP,
-    QCall::ObjectHandleOnStack exception)
+    QCall::ObjectHandleOnStack exception,
+    QCallException* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -319,7 +329,8 @@ extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
 extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     QCall::ObjectHandleOnStack stackFrameHelper,
     BOOL fNeedFileInfo,
-    QCall::ObjectHandleOnStack exception)
+    QCall::ObjectHandleOnStack exception,
+    QCallException* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -822,7 +833,7 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     END_QCALL;
 }
 
-extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip)
+extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip, QCallException* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -861,7 +872,7 @@ using StrongHandleHolder = LifetimeHolder<StrongHandleHolderTraits>;
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
 // Argument: dataUNSAFE - a pointer the custom notification object being sent
-extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data)
+extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data, QCallException* qcallError)
 {
     QCALL_CONTRACT;
 

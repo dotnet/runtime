@@ -15,31 +15,31 @@ namespace System.Runtime.CompilerServices
         internal static int[]? s_table;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThrowInvalidCastException")]
-        private static partial void ThrowInvalidCastExceptionInternal(void* fromTypeHnd, void* toTypeHnd);
+        private static partial void ThrowInvalidCastExceptionInternal(void* fromTypeHnd, void* toTypeHnd, out QCallException qcallException);
 
         [DoesNotReturn]
         internal static void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd)
         {
-            ThrowInvalidCastExceptionInternal(fromTypeHnd, toTypeHnd);
+            ThrowInvalidCastExceptionInternal(fromTypeHnd, toTypeHnd, out _);
             throw null!; // Provide hint to the inliner that this method does not return
         }
 
         [DoesNotReturn]
         internal static void ThrowInvalidCastException(object fromType, void* toTypeHnd)
         {
-            ThrowInvalidCastExceptionInternal(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd);
+            ThrowInvalidCastExceptionInternal(RuntimeHelpers.GetMethodTable(fromType), toTypeHnd, out _);
             GC.KeepAlive(fromType);
             throw null!; // Provide hint to the inliner that this method does not return
         }
 
         [LibraryImport(RuntimeHelpers.QCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj);
+        private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj, out QCallException qcallException);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj)
         {
-            if (IsInstanceOf_NoCacheLookup(toTypeHnd, false, ObjectHandleOnStack.Create(ref obj)))
+            if (IsInstanceOf_NoCacheLookup(toTypeHnd, false, ObjectHandleOnStack.Create(ref obj), out _))
             {
                 return obj;
             }
@@ -49,7 +49,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static object ChkCastAny_NoCacheLookup(void* toTypeHnd, object obj)
         {
-            IsInstanceOf_NoCacheLookup(toTypeHnd, true, ObjectHandleOnStack.Create(ref obj));
+            IsInstanceOf_NoCacheLookup(toTypeHnd, true, ObjectHandleOnStack.Create(ref obj), out _);
             return obj;
         }
 
@@ -577,7 +577,7 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
-            return RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb);
+            return RuntimeHelpers.AreTypesEquivalent(pMTa, pMTb, out _);
         }
 #endif // FEATURE_TYPEEQUIVALENCE
 

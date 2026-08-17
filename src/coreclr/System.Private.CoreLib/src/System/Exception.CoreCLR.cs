@@ -56,7 +56,7 @@ namespace System
         private static extern bool IsImmutableAgileException(Exception e);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetMethodFromStackTrace")]
-        private static partial void GetMethodFromStackTrace(ObjectHandleOnStack stackTrace, ObjectHandleOnStack method);
+        private static partial void GetMethodFromStackTrace(ObjectHandleOnStack stackTrace, ObjectHandleOnStack method, out QCallException qcallException);
 
         private MethodBase? GetExceptionMethodFromStackTrace()
         {
@@ -67,7 +67,7 @@ namespace System
             }
 
             IRuntimeMethodInfo? methodInfo = null;
-            GetMethodFromStackTrace(ObjectHandleOnStack.Create(ref stackTraceLocal), ObjectHandleOnStack.Create(ref methodInfo));
+            GetMethodFromStackTrace(ObjectHandleOnStack.Create(ref stackTraceLocal), ObjectHandleOnStack.Create(ref methodInfo), out _);
             Debug.Assert(methodInfo != null);
 
             return RuntimeType.GetMethodBase(methodInfo);
@@ -209,12 +209,12 @@ namespace System
         internal static string GetMessageFromNativeResources(ExceptionMessageKind kind)
         {
             string? retMesg = null;
-            GetMessageFromNativeResources(kind, new StringHandleOnStack(ref retMesg));
+            GetMessageFromNativeResources(kind, new StringHandleOnStack(ref retMesg), out _);
             return retMesg!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetMessageFromNativeResources")]
-        private static partial void GetMessageFromNativeResources(ExceptionMessageKind kind, StringHandleOnStack retMesg);
+        private static partial void GetMessageFromNativeResources(ExceptionMessageKind kind, StringHandleOnStack retMesg, out QCallException qcallException);
 
         internal readonly struct DispatchState
         {
@@ -237,13 +237,13 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ExceptionNative_GetFrozenStackTrace")]
-        private static partial void GetFrozenStackTrace(ObjectHandleOnStack exception, ObjectHandleOnStack stackTrace);
+        private static partial void GetFrozenStackTrace(ObjectHandleOnStack exception, ObjectHandleOnStack stackTrace, out QCallException qcallException);
 
         internal DispatchState CaptureDispatchState()
         {
             Exception _this = this;
             object? stackTrace = null;
-            GetFrozenStackTrace(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref stackTrace));
+            GetFrozenStackTrace(ObjectHandleOnStack.Create(ref _this), ObjectHandleOnStack.Create(ref stackTrace), out _);
 
             return new DispatchState(stackTrace,
                 _remoteStackTraceString, _ipForWatsonBuckets, _watsonBuckets);

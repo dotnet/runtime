@@ -12,18 +12,18 @@ namespace System.Diagnostics
     public static partial class Debugger
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Break")]
-        private static partial void BreakInternal();
+        private static partial void BreakInternal(out QCallException qcallException);
 
         // Break causes a breakpoint to be signalled to an attached debugger.  If no debugger
         // is attached, the user is asked if they want to attach a debugger. If yes, then the
         // debugger is launched.
         [MethodImpl(MethodImplOptions.NoInlining)]
-        public static void Break() => BreakInternal();
+        public static void Break() => BreakInternal(out _);
 
         // Launch launches & attaches a debugger to the process. If a debugger is already attached,
         // nothing happens.
         //
-        public static bool Launch() => IsAttached || LaunchInternal();
+        public static bool Launch() => IsAttached || LaunchInternal(out _);
 
         // This class implements code:ICustomDebuggerNotification and provides a type to be used to notify
         // the debugger that execution is about to enter a path that involves a cross-thread dependency.
@@ -50,13 +50,13 @@ namespace System.Diagnostics
             static void NotifyOfCrossThreadDependencySlow()
             {
                 var notify = new CrossThreadDependencyNotification();
-                CustomNotification(ObjectHandleOnStack.Create(ref notify));
+                CustomNotification(ObjectHandleOnStack.Create(ref notify), out _);
             }
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Launch")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool LaunchInternal();
+        private static partial bool LaunchInternal(out QCallException qcallException);
 
         // Returns whether or not a managed debugger is attached to the process.
         public static bool IsAttached => IsManagedDebuggerAttached() != 0;
@@ -68,10 +68,10 @@ namespace System.Diagnostics
         // Posts a message for the attached debugger.  If there is no
         // debugger attached, has no effect.  The debugger may or may not
         // report the message depending on its settings.
-        public static void Log(int level, string? category, string? message) => LogInternal(level, category, message);
+        public static void Log(int level, string? category, string? message) => LogInternal(level, category, message, out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Log", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void LogInternal(int level, string? category, string? message);
+        private static partial void LogInternal(int level, string? category, string? message, out QCallException qcallException);
 
         // Checks to see if an attached debugger has logging enabled
         public static bool IsLogging() => IsLoggingInternal() != 0;
@@ -84,7 +84,7 @@ namespace System.Diagnostics
         // debugger attached, has no effect.  The debugger may or may not
         // report the notification depending on its settings.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_CustomNotification")]
-        private static partial void CustomNotification(ObjectHandleOnStack data);
+        private static partial void CustomNotification(ObjectHandleOnStack data, out QCallException qcallException);
 
         // implementation of CORINFO_HELP_USER_BREAKPOINT
         [StackTraceHidden]

@@ -17,13 +17,15 @@ namespace System
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_CreateInstance")]
         private static unsafe partial void InternalCreate(QCallTypeHandle type, int rank, int* pLengths, int* pLowerBounds,
-            [MarshalAs(UnmanagedType.Bool)] bool fromArrayType, ObjectHandleOnStack retArray);
+            [MarshalAs(UnmanagedType.Bool)] bool fromArrayType, ObjectHandleOnStack retArray,
+            out QCallException qcallException);
 
         private static unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds)
         {
             Array? retArray = null;
             InternalCreate(new QCallTypeHandle(ref elementType), rank, pLengths, pLowerBounds,
-                fromArrayType: false, ObjectHandleOnStack.Create(ref retArray));
+                fromArrayType: false, ObjectHandleOnStack.Create(ref retArray),
+                out _);
             return retArray!;
         }
 
@@ -31,12 +33,13 @@ namespace System
         {
             Array? retArray = null;
             InternalCreate(new QCallTypeHandle(ref arrayType), rank, pLengths, pLowerBounds,
-                fromArrayType: true, ObjectHandleOnStack.Create(ref retArray));
+                fromArrayType: true, ObjectHandleOnStack.Create(ref retArray),
+                out _);
             return retArray!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_Ctor")]
-        private static unsafe partial void Ctor(MethodTable* pArrayMT, uint dwNumArgs, int* pArgList, ObjectHandleOnStack retArray);
+        private static unsafe partial void Ctor(MethodTable* pArrayMT, uint dwNumArgs, int* pArgList, ObjectHandleOnStack retArray, out QCallException qcallException);
 
         // implementation of CORINFO_HELP_NEW_MDARR and CORINFO_HELP_NEW_MDARR_RARE.
         [StackTraceHidden]
@@ -45,7 +48,7 @@ namespace System
         internal static unsafe Array Ctor(MethodTable* pArrayMT, uint dwNumArgs, int* pArgList)
         {
             Array? arr = null;
-            Ctor(pArrayMT, dwNumArgs, pArgList, ObjectHandleOnStack.Create(ref arr));
+            Ctor(pArrayMT, dwNumArgs, pArgList, ObjectHandleOnStack.Create(ref arr), out _);
             return arr!;
         }
 
@@ -350,14 +353,14 @@ namespace System
             internal readonly delegate*<ref byte, void> ConstructorEntrypoint;
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Array_GetElementConstructorEntrypoint")]
-            private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType);
+            private static partial delegate*<ref byte, void> GetElementConstructorEntrypoint(QCallTypeHandle arrayType, out QCallException qcallException);
 
             private ArrayInitializeCache(delegate*<ref byte, void> constructorEntrypoint)
             {
                 ConstructorEntrypoint = constructorEntrypoint;
             }
 
-            public static ArrayInitializeCache Create(RuntimeType arrayType) => new(GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType)));
+            public static ArrayInitializeCache Create(RuntimeType arrayType) => new(GetElementConstructorEntrypoint(new QCallTypeHandle(ref arrayType), out _));
             public void InitializeCompositeCache(RuntimeType.CompositeCacheEntry compositeEntry) => compositeEntry._arrayInitializeCache = this;
             public static ref ArrayInitializeCache? GetStorageRef(RuntimeType.CompositeCacheEntry compositeEntry) => ref compositeEntry._arrayInitializeCache;
         }

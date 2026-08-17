@@ -53,7 +53,13 @@ namespace System
             if (IsKnownHostProperty(name))
             {
                 string? value = null;
-                if (TryGetHostPropertyValue(name, new StringHandleOnStack(ref value)))
+                if (TryGetHostPropertyValue(name, new StringHandleOnStack(ref value)
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                    , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                ))
                 {
                     lock (s_dataStore)
                     {

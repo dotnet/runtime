@@ -1185,6 +1185,7 @@ private:
     OBJECTREF     m_SynchronizationContext;
     STRINGREF     m_Name;
     OBJECTREF     m_StartHelper;
+    OBJECTREF     m_QCallException;
 #ifdef TARGET_UNIX
     OBJECTREF     m_WaitInfo;
     OBJECTREF     m_joinEvent;
@@ -1223,6 +1224,15 @@ public:
 
     void SetInternal(Thread *it);
     void ClearInternal();
+
+    void SetQCallException(OBJECTREF throwable)
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        _ASSERTE(throwable != NULL);
+        _ASSERTE(m_QCallException == NULL);
+        SetObjectReference(&m_QCallException, throwable);
+    }
 
     void SetManagedThreadId(INT32 id)
     {

@@ -12,13 +12,13 @@ namespace System.Runtime.CompilerServices
     internal static unsafe partial class InitHelpers
     {
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void InitClassHelper(MethodTable* mt);
+        private static partial void InitClassHelper(MethodTable* mt, out QCallException qcallException);
 
         [DebuggerHidden]
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void InitClassSlow(MethodTable* mt)
         {
-            InitClassHelper(mt);
+            InitClassHelper(mt, out _);
         }
 
         [DebuggerHidden]

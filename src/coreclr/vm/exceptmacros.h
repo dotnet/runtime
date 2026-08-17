@@ -193,6 +193,8 @@ extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExcepti
 
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable);
 
+struct QCallException;
+
 #if defined(DACCESS_COMPILE)
 
 #define INSTALL_UNWIND_AND_CONTINUE_HANDLER
@@ -205,16 +207,14 @@ VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable);
 struct QCallException
 {
 private:
-    OBJECTREF* m_throwable;
-
-    QCallException() : m_throwable(nullptr) {}
+    INT32 m_exceptionPending;
 
 public:
     void SetThrowable(OBJECTREF throwable);
 };
 
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
-void UnwindAndContinueRethrowHelperInsideQcallCatch(Frame* pEntryFrame, Exception* pException, QCallException qCallException);
+void UnwindAndContinueRethrowHelperInsideQcallCatch(Frame* pEntryFrame, Exception* pException, QCallException* pQCallException);
 
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);
 
@@ -335,6 +335,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER    \
     {                                                                                       \
         MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
+        Exception* __pUnCException = NULL;                                                  \
         Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
         PAL_CPP_TRY {
 
@@ -344,7 +345,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         {                                           \
             GCX_COOP();                             \
             OBJECTREF throwable = ExInfo::CreateThrowable(ex.GetExceptionRecord(), FALSE); \
-            qcallError.SetThrowable(throwable);     \
+            qcallError->SetThrowable(throwable);    \
         }                                           \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
         {                                                                                   \
@@ -457,9 +458,9 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 #define INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER    \
     {                                                                                       \
         MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
+        Exception* __pUnCException = NULL;                                                  \
         Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
-        PAL_CPP_TRY {                                                                       \
-        INSTALL_UNWIND_AND_CONTINUE_HANDLER
+        PAL_CPP_TRY {
 
 #define UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
         }                                           \

@@ -117,7 +117,8 @@ namespace System.Reflection.Emit
                                                                  NativeAssemblyNameParts* pAssemblyName,
                                                                  AssemblyHashAlgorithm hashAlgId,
                                                                  AssemblyBuilderAccess access,
-                                                                 ObjectHandleOnStack retAssembly);
+                                                                 ObjectHandleOnStack retAssembly,
+                                                                 out QCallException qcallException);
 
         private static unsafe RuntimeAssembly CreateDynamicAssembly(AssemblyLoadContext assemblyLoadContext, AssemblyName name, AssemblyBuilderAccess access)
         {
@@ -145,7 +146,8 @@ namespace System.Reflection.Emit
                                   &nameParts,
                                   name.HashAlgorithm,
                                   access,
-                                  ObjectHandleOnStack.Create(ref retAssembly));
+                                  ObjectHandleOnStack.Create(ref retAssembly),
+                                  out _);
 #pragma warning restore SYSLIB0037
             }
 

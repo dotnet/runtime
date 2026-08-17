@@ -55,12 +55,12 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExecutingAssembly")]
-        private static partial void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly);
+        private static partial void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly, out QCallException qcallException);
 
         internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
         {
             RuntimeAssembly? retAssembly = null;
-            GetExecutingAssemblyNative(new StackCrawlMarkHandle(ref stackMark), ObjectHandleOnStack.Create(ref retAssembly));
+            GetExecutingAssemblyNative(new StackCrawlMarkHandle(ref stackMark), ObjectHandleOnStack.Create(ref retAssembly), out _);
             return retAssembly!;
         }
 
@@ -86,12 +86,12 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
-        private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly);
+        private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly, out QCallException qcallException);
 
         private static RuntimeAssembly? GetEntryAssemblyInternal()
         {
             RuntimeAssembly? entryAssembly = null;
-            GetEntryAssemblyNative(ObjectHandleOnStack.Create(ref entryAssembly));
+            GetEntryAssemblyNative(ObjectHandleOnStack.Create(ref entryAssembly), out _);
             return entryAssembly;
         }
 

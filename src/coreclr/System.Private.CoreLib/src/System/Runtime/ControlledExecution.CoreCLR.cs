@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.CompilerServices;
@@ -119,7 +119,7 @@ namespace System.Runtime
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_Abort")]
-        private static partial void AbortThread(ThreadHandle thread);
+        private static partial void AbortThread(ThreadHandle thread, out QCallException qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ResetAbort")]
         [SuppressGCTransition]
@@ -142,7 +142,7 @@ namespace System.Runtime
                 try
                 {
                     // Abort the thread executing the action (which may be the current thread).
-                    AbortThread(_thread.GetNativeHandle());
+                    AbortThread(_thread.GetNativeHandle(), out _);
                 }
                 finally
                 {

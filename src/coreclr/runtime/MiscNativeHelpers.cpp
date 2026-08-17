@@ -7,13 +7,21 @@
 #include <minipal/memorybarrierprocesswide.h>
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-extern "C" void QCALLTYPE X86Base_CpuId(int cpuInfo[4], int functionId, int subFunctionId)
+extern "C" void QCALLTYPE X86Base_CpuId(int cpuInfo[4], int functionId, int subFunctionId
+#ifndef TARGET_NATIVEAOT
+    , QCallException* qcallError
+#endif
+)
 {
     __cpuidex(cpuInfo, functionId, subFunctionId);
 }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
-extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide()
+extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide(
+#ifndef TARGET_NATIVEAOT
+    QCallException* qcallError
+#endif
+)
 {
     minipal_memory_barrier_process_wide();
 }

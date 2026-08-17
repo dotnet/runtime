@@ -4,11 +4,23 @@
 #ifndef __MISCNATIVEHELPERS_H__
 #define __MISCNATIVEHELPERS_H__
 
+#ifndef TARGET_NATIVEAOT
+struct QCallException;
+#endif
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-extern "C" void QCALLTYPE X86Base_CpuId(int cpuInfo[4], int functionId, int subFunctionId);
+extern "C" void QCALLTYPE X86Base_CpuId(int cpuInfo[4], int functionId, int subFunctionId
+#ifndef TARGET_NATIVEAOT
+    , QCallException* qcallError
+#endif
+);
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
 
-extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide();
+extern "C" void QCALLTYPE Interlocked_MemoryBarrierProcessWide(
+#ifndef TARGET_NATIVEAOT
+    QCallException* qcallError
+#endif
+);
 
 // WASM-TODO: once we have R2R stack walking working we should be able to set pTransitionBlock to &transitionBlock unconditionally
 

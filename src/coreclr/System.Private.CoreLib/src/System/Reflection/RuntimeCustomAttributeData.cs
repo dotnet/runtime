@@ -1705,7 +1705,8 @@ namespace System.Reflection
             bool result = RuntimeMethodHandle.IsCAVisibleFromDecoratedType(new QCallTypeHandle(ref attributeTypeHandle),
                                                                     ctorWithParameters is not null ? IRuntimeMethodInfo.GetValue(ctorWithParameters) : RuntimeMethodHandleInternal.EmptyHandle,
                                                                     new QCallTypeHandle(ref parentTypeHandle),
-                                                                    new QCallModule(ref decoratedModule)) != Interop.BOOL.FALSE;
+                                                                    new QCallModule(ref decoratedModule),
+                                                                    out _) != Interop.BOOL.FALSE;
 
             GC.KeepAlive(ctorWithParameters);
             return result;
@@ -1868,7 +1869,8 @@ namespace System.Reflection
             ref IntPtr ppBlob,
             IntPtr pEndBlob,
             out int pcNamedArgs,
-            ObjectHandleOnStack instance);
+            ObjectHandleOnStack instance,
+            out QCallException qcallException);
 
         private static object CreateCustomAttributeInstance(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
         {
@@ -1885,7 +1887,8 @@ namespace System.Reflection
                 ref blob,
                 blobEnd,
                 out namedArgs,
-                ObjectHandleOnStack.Create(ref result));
+                ObjectHandleOnStack.Create(ref result),
+                out _);
             return result!;
         }
 
@@ -1897,7 +1900,8 @@ namespace System.Reflection
             StringHandleOnStack name,
             [MarshalAs(UnmanagedType.Bool)] out bool bIsProperty,
             ObjectHandleOnStack type,
-            ObjectHandleOnStack value);
+            ObjectHandleOnStack value,
+            out QCallException qcallException);
 
         private static void GetPropertyOrFieldData(
             RuntimeModule module, ref IntPtr blobStart, IntPtr blobEnd, out string name, out bool isProperty, out RuntimeType? type, out object? value)
@@ -1917,7 +1921,8 @@ namespace System.Reflection
                 new StringHandleOnStack(ref nameLocal),
                 out isProperty,
                 ObjectHandleOnStack.Create(ref typeLocal),
-                ObjectHandleOnStack.Create(ref valueLocal));
+                ObjectHandleOnStack.Create(ref valueLocal),
+                out _);
             name = nameLocal!;
             type = typeLocal;
             value = valueLocal;

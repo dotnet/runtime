@@ -244,7 +244,8 @@ namespace System.Reflection
             out int marshalTypeLength,
             out byte* marshalCookie,
             out int marshalCookieLength,
-            out int iidParamIndex);
+            out int iidParamIndex,
+            out QCallException qcallException);
 
         internal static unsafe MarshalAsAttribute GetMarshalAs(ConstArray nativeType, RuntimeModule scope)
         {
@@ -262,7 +263,8 @@ namespace System.Reflection
                     out int marshalTypeLength,
                     out byte* marshalCookieRaw,
                     out int marshalCookieLength,
-                    out int iidParamIndex))
+                    out int iidParamIndex,
+                    out _))
             {
                 throw new BadImageFormatException();
             }
@@ -334,7 +336,7 @@ namespace System.Reflection
         #endregion
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_Enum")]
-        private static unsafe partial void Enum(IntPtr scope, int type, int parent, ref int length, int* shortResult, ObjectHandleOnStack longResult);
+        private static unsafe partial void Enum(IntPtr scope, int type, int parent, ref int length, int* shortResult, ObjectHandleOnStack longResult, out QCallException qcallException);
 
         public unsafe void Enum(MetadataTokenType type, int parent, out MetadataEnumResult result)
         {
@@ -342,7 +344,7 @@ namespace System.Reflection
             int length = MetadataEnumResult.SmallIntArrayLength;
             fixed (int* p = &result._smallResult.e)
             {
-                Enum(m_metadataImport2, (int)type, parent, ref length, p, ObjectHandleOnStack.Create(ref result._largeResult));
+                Enum(m_metadataImport2, (int)type, parent, ref length, p, ObjectHandleOnStack.Create(ref result._largeResult), out _);
             }
             result._length = length;
         }

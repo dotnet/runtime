@@ -22,10 +22,10 @@ namespace System
         /// <safety>QCall that passes the integer exit code to the runtime to terminate the process; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_Exit")]
         [DoesNotReturn]
-        private static safe partial void _Exit(int exitCode);
+        private static safe partial void _Exit(int exitCode, out QCallException qcallException);
 
         [DoesNotReturn]
-        public static void Exit(int exitCode) => _Exit(exitCode);
+        public static void Exit(int exitCode) => _Exit(exitCode, out _);
 
         /// <safety>Runtime FCall get/set of the process-wide exit code (an int); it accesses no caller-supplied memory.</safety>
         public static extern safe int ExitCode
@@ -82,12 +82,12 @@ namespace System
         [DoesNotReturn]
         private static void FailFast(ref StackCrawlMark mark, string? message, Exception? exception, string? errorMessage)
         {
-            FailFast(new StackCrawlMarkHandle(ref mark), message, ObjectHandleOnStack.Create(ref exception), errorMessage);
+            FailFast(new StackCrawlMarkHandle(ref mark), message, ObjectHandleOnStack.Create(ref exception), errorMessage, out _);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_FailFast", StringMarshalling = StringMarshalling.Utf16)]
         [DoesNotReturn]
-        private static partial void FailFast(StackCrawlMarkHandle mark, string? message, ObjectHandleOnStack exception, string? errorMessage);
+        private static partial void FailFast(StackCrawlMarkHandle mark, string? message, ObjectHandleOnStack exception, string? errorMessage, out QCallException qcallException);
 
         private static unsafe string[] InitializeCommandLineArgs(char* exePath, int argc, char** argv) // invoked from VM
         {
@@ -120,7 +120,7 @@ namespace System
 
         /// <safety>QCall that returns the available processor count as an int; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Environment_GetProcessorCount")]
-        internal static safe partial int GetProcessorCount();
+        internal static safe partial int GetProcessorCount(out QCallException qcallException);
 
         [UnmanagedCallersOnly]
         private static unsafe void GetResourceString(char* pKey, string* pResult, Exception* pException)

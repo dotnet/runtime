@@ -875,7 +875,11 @@ namespace System.Threading
                     // Not using Environment.ProcessorCount here as it involves class construction, and if that property is
                     // already being constructed earlier in the stack on the same thread, it would return the default value
                     // here. Initialize s_isSingleProcessor first, as it may be used by other initialization afterwards.
+#if CORECLR
+                    s_isSingleProcessor = Environment.GetProcessorCount(out _) == 1;
+#else
                     s_isSingleProcessor = Environment.GetProcessorCount() == 1;
+#endif
                     s_maxSpinCount = DetermineMaxSpinCount();
                     s_minSpinCountForAdaptiveSpin = DetermineMinSpinCountForAdaptiveSpin();
                 }

@@ -13,10 +13,10 @@
 #define __DEBUG_DEBUGGER_h__
 #include <object.h>
 
-extern "C" void QCALLTYPE DebugDebugger_Break();
-extern "C" BOOL QCALLTYPE DebugDebugger_Launch();
-extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage);
-extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data);
+extern "C" void QCALLTYPE DebugDebugger_Break(QCallException* qcallError);
+extern "C" BOOL QCALLTYPE DebugDebugger_Launch(QCallException* qcallError);
+extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage, QCallException* qcallError);
+extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data, QCallException* qcallError);
 extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper();
 extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();
 
@@ -133,13 +133,15 @@ public:
 extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     QCall::ObjectHandleOnStack stackFrameHelper,
     BOOL fNeedFileInfo,
-    QCall::ObjectHandleOnStack exception);
+    QCall::ObjectHandleOnStack exception,
+    QCallException* qcallError);
 
 extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
     void* diagnosticIP,
-    QCall::ObjectHandleOnStack exception);
+    QCall::ObjectHandleOnStack exception,
+    QCallException* qcallError);
 
-extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip);
+extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip, QCallException* qcallError);
 
 
 class ILToNativeMapArrays

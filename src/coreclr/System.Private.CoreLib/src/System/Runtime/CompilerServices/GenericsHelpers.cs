@@ -13,7 +13,7 @@ namespace System.Runtime.CompilerServices;
 internal static unsafe partial class GenericsHelpers
 {
     [LibraryImport(RuntimeHelpers.QCall)]
-    private static partial IntPtr GenericHandleWorker(IntPtr pMD, IntPtr pMT, IntPtr signature, uint dictionaryIndexAndSlot, IntPtr pModule);
+    private static partial IntPtr GenericHandleWorker(IntPtr pMD, IntPtr pMT, IntPtr signature, uint dictionaryIndexAndSlot, IntPtr pModule, out QCallException qcallException);
 
     public struct GenericHandleArgs
     {
@@ -25,24 +25,24 @@ internal static unsafe partial class GenericsHelpers
     [DebuggerHidden]
     public static IntPtr Method(IntPtr methodHnd, IntPtr signature)
     {
-        return GenericHandleWorker(methodHnd, IntPtr.Zero, signature, 0xFFFFFFFF, IntPtr.Zero);
+        return GenericHandleWorker(methodHnd, IntPtr.Zero, signature, 0xFFFFFFFF, IntPtr.Zero, out _);
     }
 
     [DebuggerHidden]
     public static IntPtr MethodWithSlotAndModule(IntPtr methodHnd, GenericHandleArgs * pArgs)
     {
-        return GenericHandleWorker(methodHnd, IntPtr.Zero, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
+        return GenericHandleWorker(methodHnd, IntPtr.Zero, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module, out _);
     }
 
     [DebuggerHidden]
     public static IntPtr Class(IntPtr classHnd, IntPtr signature)
     {
-        return GenericHandleWorker(IntPtr.Zero, classHnd, signature, 0xFFFFFFFF, IntPtr.Zero);
+        return GenericHandleWorker(IntPtr.Zero, classHnd, signature, 0xFFFFFFFF, IntPtr.Zero, out _);
     }
 
     [DebuggerHidden]
     public static IntPtr ClassWithSlotAndModule(IntPtr classHnd, GenericHandleArgs * pArgs)
     {
-        return GenericHandleWorker(IntPtr.Zero, classHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module);
+        return GenericHandleWorker(IntPtr.Zero, classHnd, pArgs->signature, pArgs->dictionaryIndexAndSlot, pArgs->module, out _);
     }
 }

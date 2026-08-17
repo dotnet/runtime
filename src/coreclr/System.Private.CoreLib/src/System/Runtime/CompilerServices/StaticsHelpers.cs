@@ -12,10 +12,10 @@ namespace System.Runtime.CompilerServices
     internal static unsafe partial class StaticsHelpers
     {
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetThreadStaticsByIndex(ByteRefOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
+        private static partial void GetThreadStaticsByIndex(ByteRefOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics, out QCallException qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics);
+        private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics, out QCallException qcallException);
 
         [Intrinsic]
         private static ref byte VolatileReadAsByref(ref IntPtr address) => ref VolatileReadAsByref(ref address);
@@ -140,7 +140,7 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetNonGCThreadStaticsByIndexSlow(int index)
         {
             ByteRef result = default;
-            GetThreadStaticsByIndex(ByteRefOnStack.Create(ref result), index, false);
+            GetThreadStaticsByIndex(ByteRefOnStack.Create(ref result), index, false, out _);
             return ref result.Value;
         }
 
@@ -149,7 +149,7 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetGCThreadStaticsByIndexSlow(int index)
         {
             ByteRef result = default;
-            GetThreadStaticsByIndex(ByteRefOnStack.Create(ref result), index, true);
+            GetThreadStaticsByIndex(ByteRefOnStack.Create(ref result), index, true, out _);
             return ref result.Value;
         }
 
@@ -158,7 +158,7 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetNonGCThreadStaticBaseSlow(MethodTable* mt)
         {
             ByteRef result = default;
-            GetThreadStaticsByMethodTable(ByteRefOnStack.Create(ref result), mt, false);
+            GetThreadStaticsByMethodTable(ByteRefOnStack.Create(ref result), mt, false, out _);
             return ref result.Value;
         }
 
@@ -167,7 +167,7 @@ namespace System.Runtime.CompilerServices
         private static ref byte GetGCThreadStaticBaseSlow(MethodTable* mt)
         {
             ByteRef result = default;
-            GetThreadStaticsByMethodTable(ByteRefOnStack.Create(ref result), mt, true);
+            GetThreadStaticsByMethodTable(ByteRefOnStack.Create(ref result), mt, true, out _);
             return ref result.Value;
         }
 

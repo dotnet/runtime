@@ -25,7 +25,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool TrySetGlobalMessageSendCallback(
             MessageSendFunction msgSendFunction,
-            IntPtr func);
+            IntPtr func,
+            out QCallException qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TryInitializeReferenceTracker")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -33,7 +34,8 @@ namespace System.Runtime.InteropServices.ObjectiveC
             delegate* unmanaged<void> beginEndCallback,
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization,
-            ObjectHandleOnStack objectTrackingInfoTable);
+            ObjectHandleOnStack objectTrackingInfoTable,
+            out QCallException qcallException);
 
         private static unsafe bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
@@ -47,14 +49,15 @@ namespace System.Runtime.InteropServices.ObjectiveC
                 beginEndCallback,
                 isReferencedCallback,
                 trackedObjectEnteredFinalization,
-                ObjectHandleOnStack.Create(ref objects));
+                ObjectHandleOnStack.Create(ref objects),
+                out _);
             Debug.Assert(object.ReferenceEquals(objects, s_objects));
 
             return result;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_AllocateReferenceTrackingHandle")]
-        private static partial IntPtr AllocateReferenceTrackingHandle(ObjectHandleOnStack obj);
+        private static partial IntPtr AllocateReferenceTrackingHandle(ObjectHandleOnStack obj, out QCallException qcallException);
 
         private static IntPtr AllocateReferenceTrackingHandle(object obj)
             => AllocateReferenceTrackingHandle(ObjectHandleOnStack.Create(ref obj));

@@ -76,7 +76,13 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(!_gcHandle.IsAllocated);
             _gcHandle = new GCHandle<EventPipeEventProvider>(this);
 
-            _provHandle = EventPipeInternal.CreateProvider(name, &Callback, (void*)GCHandle<EventPipeEventProvider>.ToIntPtr(_gcHandle));
+            _provHandle = EventPipeInternal.CreateProvider(name, &Callback, (void*)GCHandle<EventPipeEventProvider>.ToIntPtr(_gcHandle)
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+            );
             if (_provHandle == 0)
             {
                 // Unable to create the provider.
@@ -93,7 +99,13 @@ namespace System.Diagnostics.Tracing
         {
             if (_provHandle != 0)
             {
-                EventPipeInternal.DeleteProvider(_provHandle);
+                EventPipeInternal.DeleteProvider(_provHandle
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                    , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                );
                 _provHandle = 0;
             }
             _gcHandle.Dispose();
@@ -112,7 +124,13 @@ namespace System.Diagnostics.Tracing
             {
                 if (userDataCount == 0)
                 {
-                    EventPipeInternal.WriteEventData(eventHandle, null, 0, activityId, relatedActivityId);
+                    EventPipeInternal.WriteEventData(eventHandle, null, 0, activityId, relatedActivityId
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                        , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                    );
                     return EventProvider.WriteEventErrorCode.NoError;
                 }
 
@@ -125,7 +143,13 @@ namespace System.Diagnostics.Tracing
                     userDataCount -= 3;
                     Debug.Assert(userDataCount >= 0);
                 }
-                EventPipeInternal.WriteEventData(eventHandle, userData, (uint)userDataCount, activityId, relatedActivityId);
+                EventPipeInternal.WriteEventData(eventHandle, userData, (uint)userDataCount, activityId, relatedActivityId
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                    , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+                );
             }
 
             return EventProvider.WriteEventErrorCode.NoError;
@@ -141,13 +165,25 @@ namespace System.Diagnostics.Tracing
         internal override unsafe IntPtr DefineEventHandle(uint eventID, string eventName, long keywords, uint eventVersion, uint level,
             byte* pMetadata, uint metadataLength)
         {
-            return EventPipeInternal.DefineEvent(_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength);
+            return EventPipeInternal.DefineEvent(_provHandle, eventID, keywords, eventVersion, level, pMetadata, metadataLength
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+            );
         }
 
         // Get or set the per-thread activity ID.
         internal static int EventActivityIdControl(Interop.Advapi32.ActivityControl controlCode, ref Guid activityId)
         {
-            return EventPipeInternal.EventActivityIdControl((uint)controlCode, ref activityId);
+            return EventPipeInternal.EventActivityIdControl((uint)controlCode, ref activityId
+#if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
+                , out _
+#pragma warning restore SA1001, SA1113, SA1115
+#endif
+            );
         }
     }
 }

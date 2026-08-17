@@ -4736,7 +4736,7 @@ static BOOL GetManagedFormatStringForResourceID(UINT32 resId, SString & converte
 //==========================================================================
 // Private helper for TypeLoadException.
 //==========================================================================
-extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString, QCallException* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -4755,7 +4755,7 @@ extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::Strin
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
 
-extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString, QCallException* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -4771,7 +4771,7 @@ extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHa
 //==========================================================================
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
-extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString)
+extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString, QCallException* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -6654,7 +6654,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 // This does the work of the Unwind and Continue Hanlder inside the catch clause of that handler. The stack has not
 // been unwound when this is called. Keep that in mind when deciding where to put new code :)
 //
-void UnwindAndContinueRethrowHelperInsideQcallCatch(Frame* pEntryFrame, Exception* pException, QCallException qCallException)
+void UnwindAndContinueRethrowHelperInsideQcallCatch(Frame* pEntryFrame, Exception* pException, QCallException* pQCallException)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -6681,7 +6681,7 @@ void UnwindAndContinueRethrowHelperInsideQcallCatch(Frame* pEntryFrame, Exceptio
     // cases where the last thrown object is NULL.
     OBJECTREF orThrowable = CLRException::GetThrowableFromException(pException);
     CONSISTENCY_CHECK(orThrowable != NULL);
-    qCallException.SetThrowable(orThrowable);
+    pQCallException->SetThrowable(orThrowable);
 }
 
 //

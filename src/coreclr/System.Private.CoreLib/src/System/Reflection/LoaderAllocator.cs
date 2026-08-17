@@ -28,7 +28,7 @@ namespace System.Reflection
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_Destroy")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool Destroy(IntPtr nativeLoaderAllocator);
+        private static partial bool Destroy(IntPtr nativeLoaderAllocator, out QCallException qcallException);
 
         ~LoaderAllocatorScout()
         {
@@ -36,7 +36,7 @@ namespace System.Reflection
                 return;
 
             // Destroy returns false if the managed LoaderAllocator is still alive.
-            if (!Destroy(m_nativeLoaderAllocator))
+            if (!Destroy(m_nativeLoaderAllocator, out _))
             {
                 // Somebody might have been holding a reference on us via weak handle.
                 // We will keep trying. It will be hopefully released eventually.

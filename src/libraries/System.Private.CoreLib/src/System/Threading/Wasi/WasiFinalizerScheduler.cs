@@ -23,16 +23,32 @@ namespace System.Threading
 #else
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WasiFinalizer_TryClearPending")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool TryClearPendingFinalization();
+        internal static partial bool TryClearPendingFinalization(
+#if CORECLR
+            out QCallException qcallException
+#endif
+        );
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WasiFinalizer_RunWorker")]
-        internal static partial void ExecuteFinalizationCallback();
+        internal static partial void ExecuteFinalizationCallback(
+#if CORECLR
+            out QCallException qcallException
+#endif
+        );
 
         internal static void DrainIfPending()
         {
-            if (TryClearPendingFinalization())
+            if (TryClearPendingFinalization(
+#if CORECLR
+                out _
+#endif
+            ))
             {
-                ExecuteFinalizationCallback();
+                ExecuteFinalizationCallback(
+#if CORECLR
+                    out _
+#endif
+                );
             }
         }
 #endif

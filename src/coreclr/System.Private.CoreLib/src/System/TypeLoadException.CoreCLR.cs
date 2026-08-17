@@ -39,14 +39,14 @@ namespace System
                     _className ??= SR.IO_UnknownFileName;
 
                     string? format = null;
-                    GetTypeLoadExceptionMessage(_resourceId, new StringHandleOnStack(ref format));
+                    GetTypeLoadExceptionMessage(_resourceId, new StringHandleOnStack(ref format), out _);
                     _message = string.Format(format!, _className, _assemblyName, _messageArg);
                 }
             }
         }
 
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString);
+        private static partial void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString, out QCallException qcallException);
 
         [UnmanagedCallersOnly]
         internal static unsafe void Create(char* pClassName, char* pAssemblyName, char* pMessageArg, int resourceId, object* pResult, Exception* pException)

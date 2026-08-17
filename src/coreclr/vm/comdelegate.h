@@ -96,13 +96,13 @@ public:
                              BindToMethodDetails *pBindToMethodDetails);
 };
 
-extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, PCODE method, BindToMethodDetails *pBindToMethodDetails);
+extern "C" void QCALLTYPE Delegate_Construct(MethodTable* pDelegateMT, MethodTable* pTargetMT, PCODE method, BindToMethodDetails *pBindToMethodDetails, QCallException* qcallError);
 
-extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT);
+extern "C" PCODE QCALLTYPE Delegate_GetMulticastInvokeSlow(MethodTable* pDelegateMT, QCallException* qcallError);
 
-extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(MethodTable* pMTTarg, PCODE method);
+extern "C" PCODE QCALLTYPE Delegate_AdjustTarget(MethodTable* pMTTarg, PCODE method, QCallException* qcallError);
 
-extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method);
+extern "C" void QCALLTYPE Delegate_InitializeVirtualCallStub(QCall::ObjectHandleOnStack d, PCODE method, QCallException* qcallError);
 
 // These flags effect the way BindToMethodInfo and BindToMethodName are allowed to bind a delegate to a target method. Their
 // values must be kept in sync with the definition in bcl\system\delegate.cs.
@@ -118,14 +118,16 @@ enum DelegateBindingFlags
 };
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodName(MethodTable* pDelegateMT, MethodTable *pTargetMT,
-    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails);
+    QCall::TypeHandle pMethodType, LPCUTF8 pszMethodName, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails,
+    QCallException* qcallError);
 
 extern "C" BOOL QCALLTYPE Delegate_BindToMethodInfo(MethodTable* pDelegateMT, MethodTable *pTargetMT,
-    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails);
+    MethodDesc * method, QCall::TypeHandle pMethodType, DelegateBindingFlags flags, QCall::ObjectHandleOnStack targetParameter, BindToMethodDetails *pBindToMethodDetails,
+    QCallException* qcallError);
 
-extern "C" void QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCall::ObjectHandleOnStack retMethodInfo);
+extern "C" void QCALLTYPE Delegate_CreateMethodInfo(MethodDesc* methodDesc, QCall::ObjectHandleOnStack retMethodInfo, QCallException* qcallError);
 
-extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnStack instance);
+extern "C" MethodDesc* QCALLTYPE Delegate_GetMethodDesc(QCall::ObjectHandleOnStack instance, QCallException* qcallError);
 
 void DistributeEvent(OBJECTREF *pDelegate,
                      OBJECTREF *pDomain);

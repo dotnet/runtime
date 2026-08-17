@@ -4759,7 +4759,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_CreateMarshaler(MngdSafeArrayMa
     pThis->m_pConvertContentsToManagedCode = pConvertToManaged;
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallException* qcallError)
 {
     CONTRACTL
     {
@@ -4794,7 +4794,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeAr
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCall::ObjectHandleOnStack pOriginalManaged, QCallException* qcallError)
 {
     CONTRACTL
     {
@@ -4837,7 +4837,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToNative(MngdSaf
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallException* qcallError)
 {
     CONTRACTL
     {
@@ -4894,7 +4894,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToManaged(MngdSafeA
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSafeArrayMarshaler* pThis, QCall::ObjectHandleOnStack pManagedHome, void** pNativeHome, QCallException* qcallError)
 {
     CONTRACTL
     {
@@ -4931,7 +4931,7 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertContentsToManaged(MngdSa
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, void** pNativeHome)
+extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarshaler* pThis, void** pNativeHome, QCallException* qcallError)
 {
     QCALL_CONTRACT;
 
