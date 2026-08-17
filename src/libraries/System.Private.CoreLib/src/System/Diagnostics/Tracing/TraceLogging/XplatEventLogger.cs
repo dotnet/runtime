@@ -21,14 +21,18 @@ namespace System.Diagnostics.Tracing
 
         private static unsafe string GetClrConfig(string configName) => new string(EventSource_GetClrConfig(configName
 #if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
             , out _
+#pragma warning restore SA1001, SA1113, SA1115
 #endif
         ));
 
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
         private static unsafe partial char* EventSource_GetClrConfig(string configName
 #if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
             , out QCallException qcallException
+#pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
 
@@ -40,7 +44,9 @@ namespace System.Diagnostics.Tracing
             {
                 if (!initializedPersistentListener && XplatEventLogger.IsEventSourceLoggingEnabled(
 #if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
                     out _
+#pragma warning restore SA1001, SA1113, SA1115
 #endif
                 ))
                 {
@@ -57,14 +63,18 @@ namespace System.Diagnostics.Tracing
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsEventSourceLoggingEnabled(
 #if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
             out QCallException qcallException
+#pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
 
         [LibraryImport(RuntimeHelpers.QCall, StringMarshalling = StringMarshalling.Utf16)]
         private static partial void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload
 #if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
             , out QCallException qcallException
+#pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
 
@@ -217,7 +227,9 @@ namespace System.Diagnostics.Tracing
 
             LogEventSource(eventData.EventId, eventData.EventName, eventData.EventSource.Name, payload
 #if CORECLR
+#pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
                 , out _
+#pragma warning restore SA1001, SA1113, SA1115
 #endif
             );
         }
