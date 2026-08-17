@@ -1034,12 +1034,6 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_UnionCaseWithCustomConverterRequiresClassifier(Type unionType)
-        {
-            ThrowJsonException(SR.Format(SR.UnionCaseWithCustomConverterRequiresClassifier, unionType));
-        }
-
-        [DoesNotReturn]
         public static void ThrowJsonException_UnionJsonTokenTypeNotSupported(Type unionType, JsonTokenType tokenType)
         {
             ThrowJsonException(SR.Format(SR.UnionJsonTokenTypeNotSupported, tokenType, unionType));
@@ -1061,6 +1055,86 @@ namespace System.Text.Json
         public static void ThrowInvalidOperationException_UnionCannotReadValue(Type unionType)
         {
             throw new InvalidOperationException(SR.Format(SR.UnionCannotReadValue, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_UnionTypeStructuralClassifierOnlyForUnions(Type unionType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.UnionTypeStructuralClassifierOnlyForUnions, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierPolymorphicCaseNotSupported(
+            Type unionType,
+            Type caseType)
+        {
+            throw new NotSupportedException(
+                SR.Format(
+                    SR.UnionTypeStructuralClassifierPolymorphicCaseNotSupported,
+                    unionType,
+                    caseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierPreserveReferencesNotSupported(Type unionType)
+        {
+            throw new NotSupportedException(SR.Format(SR.UnionTypeStructuralClassifierPreserveReferencesNotSupported, unionType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierAmbiguousCases(
+            Type unionType,
+            Type conflictingCaseType,
+            Type caseType,
+            JsonValueType valueType)
+        {
+            throw new NotSupportedException(
+                SR.Format(
+                    SR.UnionTypeStructuralClassifierAmbiguousCases,
+                    unionType,
+                    conflictingCaseType,
+                    caseType,
+                    valueType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierMixedObjectCases(
+            Type unionType,
+            Type pocoCaseType,
+            Type nonPocoCaseType)
+        {
+            throw new NotSupportedException(
+                SR.Format(
+                    SR.UnionTypeStructuralClassifierMixedObjectCases,
+                    unionType,
+                    pocoCaseType,
+                    nonPocoCaseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierUnsupportedCase(
+            Type unionType,
+            Type caseType)
+        {
+            throw new NotSupportedException(
+                SR.Format(
+                    SR.UnionTypeStructuralClassifierUnsupportedCase,
+                    unionType,
+                    caseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierUnreachableObjectCase(
+            Type unionType,
+            Type unreachableCaseType,
+            Type shadowingCaseType)
+        {
+            throw new NotSupportedException(
+                SR.Format(
+                    SR.UnionTypeStructuralClassifierUnreachableObjectCase,
+                    unionType,
+                    unreachableCaseType,
+                    shadowingCaseType));
         }
 
         [DoesNotReturn]
