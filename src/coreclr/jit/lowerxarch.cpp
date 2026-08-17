@@ -3063,36 +3063,12 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                     if (!TryInvertMask(maskNode, simdSize, maskBaseType))
                     {
-                        // We weren't able to invert the mask, so we need to do it here, keeping the upper
-                        // n-bits clear. If we have 1 element, then the upper 7-bits need to be cleared. If we have
-                        // 2, then the upper 6-bits, and if we have 4, then the upper 4-bits.
-                        //
-                        // There isn't necessarily a trivial way to do this outside not, shift-left by n,
-                        // shift-right by n. This preserves count bits, while clearing the upper n-bits
-
-                        GenTree* cnsNode;
+                        // We weren't able to invert the mask, so we need to do it here.
+                        // The upper 8 - N bits area cleared during codegen
 
                         maskNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, NI_AVX512_NotMask,
                                                                         maskBaseType, simdSize);
                         BlockRange().InsertBefore(node, maskNode);
-
-                        cnsNode = m_compiler->gtNewIconNode(8 - count);
-                        BlockRange().InsertAfter(maskNode, cnsNode);
-
-                        maskNode =
-                            m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode, NI_AVX512_ShiftLeftMask,
-                                                                 maskBaseType, simdSize);
-                        BlockRange().InsertAfter(cnsNode, maskNode);
-                        LowerNode(maskNode);
-
-                        cnsNode = m_compiler->gtNewIconNode(8 - count);
-                        BlockRange().InsertAfter(maskNode, cnsNode);
-
-                        maskNode =
-                            m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode, NI_AVX512_ShiftRightMask,
-                                                                 maskBaseType, simdSize);
-                        BlockRange().InsertAfter(cnsNode, maskNode);
-                        LowerNode(maskNode);
                     }
                 }
                 else if (cmpOp == GT_EQ)
@@ -6349,11 +6325,8 @@ bool Lowering::TryInvertMask(GenTree* node, unsigned simdSize, var_types simdBas
 
         if (mskIntrin->GetHWIntrinsicId() == NI_AVX512_OrMask)
         {
-            // `~(a | ~b)` is `~a & b`, which is a single `AndNotMask`. Folding it here means we
-            // never materialize the outer `NotMask`, which is both smaller and avoids `knotb`
-            // needing its unused upper bits cleared afterwards.
-            //
-            // `AndNotMask(op1, op2)` computes `~op1 & op2`, so `b` has to end up as op2.
+            // Transform ~(a | ~b) into ~a & b, to enable AndNotMask.
+            // Also has the nice effect of not having to fixup knotb during emit.
 
             unsigned simdBaseTypeSize = genTypeSize(mskIntrin->GetSimdBaseType());
 
