@@ -112,7 +112,7 @@ namespace System.Net.ServerSentEvents
             // Rent a line buffer. This will grow as needed. The line buffer is what's passed to the stream,
             // so we want it to be large enough to reduce the number of reads we need to do when data is
             // arriving quickly. (In debug, we use a smaller buffer to stress the growth and shifting logic.)
-            _lineBuffer = ArrayPool<byte>.Shared.Rent(Math.Min(DefaultArrayPoolRentSize, _maxBufferSize));
+            _lineBuffer = ArrayPool<byte>.Shared.Rent(DefaultArrayPoolRentSize);
             try
             {
                 // Spec: "Event streams in this format must always be encoded as UTF-8".
@@ -192,7 +192,7 @@ namespace System.Net.ServerSentEvents
             // Rent a line buffer. This will grow as needed. The line buffer is what's passed to the stream,
             // so we want it to be large enough to reduce the number of reads we need to do when data is
             // arriving quickly. (In debug, we use a smaller buffer to stress the growth and shifting logic.)
-            _lineBuffer = ArrayPool<byte>.Shared.Rent(Math.Min(DefaultArrayPoolRentSize, _maxBufferSize));
+            _lineBuffer = ArrayPool<byte>.Shared.Rent(DefaultArrayPoolRentSize);
             try
             {
                 // Spec: "Event streams in this format must always be encoded as UTF-8".
