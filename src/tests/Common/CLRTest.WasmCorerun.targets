@@ -36,6 +36,8 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
       Whether the test actually has native code is decided from @(CMakeProjectReference) on the
       hook targets below, because item references are not allowed in an evaluation-time condition.
+      They also run when a corerun is already present, so that a project which drops its native
+      code still gets the chance to clean the stale host out of its output directory.
     -->
     <WasmBuildTestCorerun Condition="'$(WasmBuildTestCorerun)' == '' and '$(CLRTestKind)' != 'BuildOnly'">true</WasmBuildTestCorerun>
     <WasmBuildTestCorerun Condition="'$(WasmBuildTestCorerun)' == ''">false</WasmBuildTestCorerun>
@@ -63,7 +65,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   -->
   <Target Name="_WasmBuildTestCorerunAfterBuild"
           AfterTargets="Build"
-          Condition="'@(CMakeProjectReference)' != '' and
+          Condition="('@(CMakeProjectReference)' != '' or Exists('$(OutDir)corerun.js')) and
                      '$(__CopyNativeTestBinaries)' != '1' and
                      '$(CLRTestBuildAllTargets)' != 'allTargets' and
                      '$(_WillCLRTestProjectBuild)' == 'true'"
@@ -71,7 +73,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
 
   <Target Name="_WasmBuildTestCorerunAfterCopyNative"
           AfterTargets="CopyAllNativeProjectReferenceBinaries"
-          Condition="'@(CMakeProjectReference)' != '' and
+          Condition="('@(CMakeProjectReference)' != '' or Exists('$(OutDir)corerun.js')) and
                      '$(__CopyNativeTestBinaries)' == '1' and
                      '$(CLRTestBuildAllTargets)' != 'allTargets' and
                      '$(_WillCLRTestProjectBuild)' == 'true'"
@@ -104,8 +106,12 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <!-- The corerun has to sit in the directory the test actually runs from, which is the
            project's own output directory only for out-of-process tests, standalone builds, and
            merged runner assemblies (those are the wrapper). A test merged into a wrapper runs from
-           the wrapper's directory instead, and CopyAllNativeProjectReferenceBinaries copies its
-           static library into the wrapper's output directory, so the wrapper's corerun links it. -->
+           the wrapper's directory instead. The wrapper has no CMakeProjectReference of its own, so
+           no corerun is built there and the merged test's native code stays unlinked; the run
+           script then reports __TestNativeAssetsLinked=false and the checks that need those assets
+           skip themselves through PlatformDetection.PlatformDoesNotSupportNativeTestAssets. Giving
+           every such wrapper its own corerun would add one ~7 MB module per wrapper to the Helix
+           payload, so tests that need their native code should set RequiresProcessIsolation. -->
       <_WasmCorerunRunsFromOutDir Condition="'$(RequiresProcessIsolation)' == 'true' or
                                              '$(BuildAsStandalone)' == 'true' or
                                              '$(IsMergedTestRunnerAssembly)' == 'true'">true</_WasmCorerunRunsFromOutDir>
@@ -115,8 +121,8 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunSkip Condition="'$(_WasmCorerunRunsFromOutDir)' != 'true' and '$(InMergedTestDirectory)' == 'true'">true</_WasmCorerunSkip>
 
       <_WasmCorerunSkipReason Condition="'$(WasmBuildTestCorerun)' != 'true'">the project opted out with WasmBuildTestCorerun=false</_WasmCorerunSkipReason>
-      <_WasmCorerunSkipReason Condition="'$(_WasmCorerunSkipReason)' == '' and '@(_WasmCorerunTestLib)' == ''">its CMake project produced no static library in $(OutDir)</_WasmCorerunSkipReason>
-      <_WasmCorerunSkipReason Condition="'$(_WasmCorerunSkipReason)' == '' and '$(_WasmCorerunSkip)' == 'true'">it is merged into a wrapper, whose own corerun links its native code</_WasmCorerunSkipReason>
+      <_WasmCorerunSkipReason Condition="'$(_WasmCorerunSkipReason)' == '' and '@(_WasmCorerunTestLib)' == ''">there is no static library in $(OutDir) to link into it</_WasmCorerunSkipReason>
+      <_WasmCorerunSkipReason Condition="'$(_WasmCorerunSkipReason)' == '' and '$(_WasmCorerunSkip)' == 'true'">it runs from a merged wrapper's directory, which builds no corerun, so its native code stays unlinked and the checks that need it skip themselves</_WasmCorerunSkipReason>
     </PropertyGroup>
 
     <!-- Leave the test on CORE_ROOT/corerun.js. -->
@@ -168,6 +174,9 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunCompileRsp>$(_WasmCorerunDir)corerun-compile.rsp</_WasmCorerunCompileRsp>
       <_WasmCorerunLinkRsp>$(_WasmCorerunDir)corerun-link.rsp</_WasmCorerunLinkRsp>
       <_WasmCorerunJs>$(OutDir)corerun.js</_WasmCorerunJs>
+      <!-- em++ emits the loader and the module as a pair. Both are outputs of the link: tracking
+           only the loader would leave the target up to date after corerun.wasm alone is lost. -->
+      <_WasmCorerunWasm>$(OutDir)corerun.wasm</_WasmCorerunWasm>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_WasmCorerunSkip)' != 'true'">
@@ -256,10 +265,17 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            Text="No framework assemblies found in '$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)'. The 'libs' subset must be built for browser-wasm before building tests that need a test-specific corerun." />
   </Target>
 
+  <!--
+    @(_WasmCorerunTestLib) is an input even though the generator never opens the archives: the
+    module list below is derived from their file names, so adding or renaming one has to force the
+    tables to be regenerated. Without it a native-only change would relink (the link tracks the
+    archives) against tables that still describe the previous set of modules, and every P/Invoke
+    into the new one would throw DllNotFoundException.
+  -->
   <Target Name="_WasmGenerateTestCallHelpers"
           DependsOnTargets="_WasmResolveTestCorerunAssemblies"
           Condition="'$(_WasmCorerunSkip)' != 'true'"
-          Inputs="@(_WasmCorerunAssembly)"
+          Inputs="@(_WasmCorerunAssembly);@(_WasmCorerunTestLib)"
           Outputs="@(_WasmCorerunGeneratedSource)">
     <MakeDir Directories="$(_WasmCorerunDir)" />
 
@@ -335,7 +351,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
           DependsOnTargets="_WasmResolveTestCorerunInputs"
           Condition="'$(_WasmCorerunSkip)' != 'true'"
           Inputs="@(_WasmCorerunGeneratedSource->'%(ObjectFile)');@(_WasmCorerunTestLib);@(_WasmCorerunKitLinkInput);$(_WasmCorerunLinkRsp)"
-          Outputs="$(_WasmCorerunJs)">
+          Outputs="$(_WasmCorerunJs);$(_WasmCorerunWasm)">
     <Message Importance="High" Text="$(MSBuildProjectName) -> $(_WasmCorerunJs)" />
 
     <PropertyGroup>
@@ -347,7 +363,7 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
           EnvironmentVariables="@(_WasmCorerunEmscriptenEnv)" />
 
     <ItemGroup>
-      <FileWrites Include="$(_WasmCorerunJs);$(OutDir)corerun.wasm" />
+      <FileWrites Include="$(_WasmCorerunJs);$(_WasmCorerunWasm)" />
     </ItemGroup>
   </Target>
 
