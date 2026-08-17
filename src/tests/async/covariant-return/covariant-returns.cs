@@ -295,10 +295,11 @@ namespace AsyncInterfaceGenericMethod
     }
 }
 
-// Task and Task<T> are not sealed, so a covariant override may return a type
-// that derives from Task, but is not itself Task or Task<T>. Such an override
-// is not task-returning in the sense the runtime understands, while the
-// overridden method may well be a runtime async method.
+
+// Task and Task<T> are not sealed, so a covariant override may return a type that
+// derives from Task, but is not itself Task or Task<T>. Such an override is not
+// task-returning as far as the runtime is concerned, while the method that it
+// overrides may well be a runtime async method.
 namespace CustomTaskCovariantReturn
 {
     public class Program
@@ -355,8 +356,17 @@ namespace CustomTaskCovariantReturn
             });
         }
 
+        // awaiting the result of the call directly
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async Task<Task> CallM1(Base b)
+        private static async Task CallM1(Base b) => await b.M1();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<int> CallM2(Base b) => await b.M2();
+
+        // the same, but the returned task is observed as an object as well,
+        // so the call itself cannot be a runtime async call.
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<Task> CallM1ViaTask(Base b)
         {
             Task t = b.M1();
             await t;
@@ -364,18 +374,39 @@ namespace CustomTaskCovariantReturn
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static async Task<int> CallM2(Base b) => await b.M2();
+        private static async Task<int> CallM2ViaTask(Base b)
+        {
+            Task<int> t = b.M2();
+            int result = await t;
+            Assert.Equal(typeof(MyTask<int>), t.GetType());
+            return result;
+        }
 
         [Fact]
-        public static void TestCustomTaskOverride()
+        public static void TestCustomTaskOverrideViaTask()
         {
-            Trace = null;
             // check year to not be concerned with devirtualization.
             Base b = DateTime.Now.Year > 0 ? new Derived() : new Base();
 
-            Task t = CallM1(b).GetAwaiter().GetResult();
+            Trace = null;
+            Task t = CallM1ViaTask(b).GetAwaiter().GetResult();
             Assert.Equal("Derived.M1;", Trace);
             Assert.IsType<MyTask>(t);
+
+            Trace = null;
+            Assert.Equal(42, CallM2ViaTask(b).GetAwaiter().GetResult());
+            Assert.Equal("Derived.M2;", Trace);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124238")]
+        public static void TestCustomTaskOverride()
+        {
+            Base b = DateTime.Now.Year > 0 ? new Derived() : new Base();
+
+            Trace = null;
+            CallM1(b).GetAwaiter().GetResult();
+            Assert.Equal("Derived.M1;", Trace);
 
             Trace = null;
             Assert.Equal(42, CallM2(b).GetAwaiter().GetResult());
@@ -383,11 +414,12 @@ namespace CustomTaskCovariantReturn
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124238")]
         public static void TestCustomTaskOverrideOfCustomTaskOverride()
         {
-            Trace = null;
             Base b = DateTime.Now.Year > 0 ? new Derived2() : new Base();
 
+            Trace = null;
             CallM1(b).GetAwaiter().GetResult();
             Assert.Equal("Derived2.M1;Derived.M1;", Trace);
 
@@ -399,17 +431,113 @@ namespace CustomTaskCovariantReturn
         [Fact]
         public static void TestCustomTaskOverrideCalledDirectly()
         {
-            Trace = null;
             Derived d = DateTime.Now.Year > 0 ? new Derived2() : new Derived();
 
-            MyTask t = d.M1();
-            t.GetAwaiter().GetResult();
+            Trace = null;
+            d.M1().GetAwaiter().GetResult();
             Assert.Equal("Derived2.M1;Derived.M1;", Trace);
 
             Trace = null;
-            MyTask<int> t1 = d.M2();
-            Assert.Equal(43, t1.GetAwaiter().GetResult());
+            Assert.Equal(43, d.M2().GetAwaiter().GetResult());
             Assert.Equal("Derived2.M2;Derived.M2;", Trace);
+        }
+    }
+}
+
+// The same as above, but the overridden methods are not runtime async.
+namespace CustomTaskCovariantReturnWithoutRuntimeAsync
+{
+    public class Program
+    {
+        internal static string Trace;
+
+        public class MyTask : Task
+        {
+            public MyTask(Action action) : base(action) => RunSynchronously();
+        }
+
+        public class MyTask<T> : Task<T>
+        {
+            public MyTask(Func<T> func) : base(func) => RunSynchronously();
+        }
+
+        public class Base
+        {
+            [RuntimeAsyncMethodGeneration(false)]
+            public virtual async Task M1()
+            {
+                Trace += "Base.M1;";
+            }
+
+            [RuntimeAsyncMethodGeneration(false)]
+            public virtual async Task<int> M2()
+            {
+                Trace += "Base.M2;";
+                return 1;
+            }
+        }
+
+        public class Derived : Base
+        {
+            public override MyTask M1() => new MyTask(() => Trace += "Derived.M1;");
+
+            public override MyTask<int> M2() => new MyTask<int>(() =>
+            {
+                Trace += "Derived.M2;";
+                return 42;
+            });
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task CallM1(Base b) => await b.M1();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<int> CallM2(Base b) => await b.M2();
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task CallM1ViaTask(Base b)
+        {
+            Task t = b.M1();
+            await t;
+            Assert.Equal(typeof(MyTask), t.GetType());
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<int> CallM2ViaTask(Base b)
+        {
+            Task<int> t = b.M2();
+            int result = await t;
+            Assert.Equal(typeof(MyTask<int>), t.GetType());
+            return result;
+        }
+
+        [Fact]
+        public static void TestCustomTaskOverrideViaTaskWithoutRuntimeAsync()
+        {
+            Base b = DateTime.Now.Year > 0 ? new Derived() : new Base();
+
+            Trace = null;
+            CallM1ViaTask(b).GetAwaiter().GetResult();
+            Assert.Equal("Derived.M1;", Trace);
+
+            Trace = null;
+            Assert.Equal(42, CallM2ViaTask(b).GetAwaiter().GetResult());
+            Assert.Equal("Derived.M2;", Trace);
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/124238")]
+        public static void TestCustomTaskOverrideWithoutRuntimeAsync()
+        {
+            Base b = DateTime.Now.Year > 0 ? new Derived() : new Base();
+
+            Trace = null;
+            CallM1(b).GetAwaiter().GetResult();
+            Assert.Equal("Derived.M1;", Trace);
+
+            Trace = null;
+            Assert.Equal(42, CallM2(b).GetAwaiter().GetResult());
+            Assert.Equal("Derived.M2;", Trace);
         }
     }
 }
