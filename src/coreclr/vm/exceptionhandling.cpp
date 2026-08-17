@@ -3139,6 +3139,7 @@ extern "C" void QCALLTYPE AppendExceptionStackFrame(QCall::ObjectHandleOnStack e
 
     BEGIN_QCALL;
 
+    MAKE_CURRENT_THREAD_AVAILABLE();
     Thread* pThread = GET_THREAD();
 
     {
@@ -3536,6 +3537,7 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
     DWORD_PTR dwResult = 0;
 
     BEGIN_QCALL;
+    MAKE_CURRENT_THREAD_AVAILABLE();
     GCX_COOP();
 
     Thread* pThread = GET_THREAD();
@@ -3704,6 +3706,7 @@ extern "C" CLR_BOOL QCALLTYPE EHEnumNext(EH_CLAUSE_ENUMERATOR* pEHEnum, RhEHClau
 
     BEGIN_QCALL;
 
+    MAKE_CURRENT_THREAD_AVAILABLE();
     Thread* pThread = GET_THREAD();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
@@ -4054,6 +4057,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiInit(StackFrameIterator* pThis, CONTEXT* pStack
     CLR_BOOL result = FALSE;
     BEGIN_QCALL;
 
+    MAKE_CURRENT_THREAD_AVAILABLE();
     Thread* pThread = GET_THREAD();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);
@@ -4376,6 +4380,7 @@ extern "C" CLR_BOOL QCALLTYPE SfiNext(StackFrameIterator* pThis, uint* uExCollid
 
     BEGIN_QCALL;
 
+    MAKE_CURRENT_THREAD_AVAILABLE();
     Thread* pThread = GET_THREAD();
     Frame* pFrame = pThread->GetFrame();
     MarkInlinedCallFrameAsEHHelperCall(pFrame);

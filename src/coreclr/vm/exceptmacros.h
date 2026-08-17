@@ -214,7 +214,9 @@ public:
 };
 
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
-void UnwindAndContinueRethrowHelperInsideQcallCatch(Frame* pEntryFrame, Exception* pException, QCallException* pQCallException);
+void UnwindAndContinueRethrowHelperInsideQcallCatch(
+    Exception* pException,
+    QCallException* pQCallException DEBUG_ARG(Frame* pEntryFrame));
 
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);
 
@@ -334,29 +336,29 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 #define INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER    \
     {                                                                                       \
-        MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
-        Exception* __pUnCException = NULL;                                                  \
-        Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
+        INDEBUG(MAKE_CURRENT_THREAD_AVAILABLE();)                                           \
+        INDEBUG(Frame* __pUnCEntryFrame = CURRENT_THREAD->GetFrame();)                      \
+        _ASSERTE(__pUnCEntryFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame); \
         PAL_CPP_TRY {
 
 #define UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
         }                                           \
         PAL_CPP_CATCH_NON_DERIVED (PAL_SEHException&, ex)                \
         {                                           \
+            _ASSERTE(CURRENT_THREAD->GetFrame() == __pUnCEntryFrame);     \
+            _ASSERTE(CURRENT_THREAD->GetFrame()->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame); \
             GCX_COOP();                             \
             OBJECTREF throwable = ExInfo::CreateThrowable(ex.GetExceptionRecord(), FALSE); \
             qcallError->SetThrowable(throwable);    \
         }                                           \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
         {                                                                                   \
-            __pUnCException = Exception::GetOOMException();                                 \
-            UnwindAndContinueRethrowHelperInsideQcallCatch(__pUnCEntryFrame, __pUnCException, qcallError);   \
+            UnwindAndContinueRethrowHelperInsideQcallCatch(Exception::GetOOMException(), qcallError DEBUG_ARG(__pUnCEntryFrame)); \
         }                                                                                   \
         PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
         {                                                                                   \
             CONSISTENCY_CHECK(NULL != __pException);                                        \
-            __pUnCException = __pException;                                                 \
-            UnwindAndContinueRethrowHelperInsideQcallCatch(__pUnCEntryFrame, __pUnCException, qcallError);   \
+            UnwindAndContinueRethrowHelperInsideQcallCatch(__pException, qcallError DEBUG_ARG(__pUnCEntryFrame)); \
         }                                                                                   \
         PAL_CPP_ENDTRY                                                                      \
     }
@@ -457,23 +459,21 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
 
 #define INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER    \
     {                                                                                       \
-        MAKE_CURRENT_THREAD_AVAILABLE();                                                    \
-        Exception* __pUnCException = NULL;                                                  \
-        Frame*     __pUnCEntryFrame = CURRENT_THREAD->GetFrame();                           \
+        INDEBUG(MAKE_CURRENT_THREAD_AVAILABLE();)                                           \
+        INDEBUG(Frame* __pUnCEntryFrame = CURRENT_THREAD->GetFrame();)                      \
+        _ASSERTE(__pUnCEntryFrame->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame); \
         PAL_CPP_TRY {
 
 #define UNINSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER \
         }                                           \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
         {                                                                                   \
-            __pUnCException = Exception::GetOOMException();                                 \
-            UnwindAndContinueRethrowHelperInsideQcallCatch(__pUnCEntryFrame, __pUnCException, qcallError);   \
+            UnwindAndContinueRethrowHelperInsideQcallCatch(Exception::GetOOMException(), qcallError DEBUG_ARG(__pUnCEntryFrame)); \
         }                                                                                   \
         PAL_CPP_CATCH_DERIVED (Exception, __pException)                                     \
         {                                                                                   \
             CONSISTENCY_CHECK(NULL != __pException);                                        \
-            __pUnCException = __pException;                                                 \
-            UnwindAndContinueRethrowHelperInsideQcallCatch(__pUnCEntryFrame, __pUnCException, qcallError);   \
+            UnwindAndContinueRethrowHelperInsideQcallCatch(__pException, qcallError DEBUG_ARG(__pUnCEntryFrame)); \
         }                                                                                   \
         PAL_CPP_ENDTRY                                                                      \
     }

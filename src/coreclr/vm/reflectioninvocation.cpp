@@ -337,6 +337,7 @@ extern "C" void QCALLTYPE RuntimeMethodHandle_InvokeMethod(
 
     BEGIN_QCALL;
 
+    MAKE_CURRENT_THREAD_AVAILABLE();
     GCX_COOP();
 
     struct

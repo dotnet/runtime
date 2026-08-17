@@ -6654,13 +6654,29 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 // This does the work of the Unwind and Continue Hanlder inside the catch clause of that handler. The stack has not
 // been unwound when this is called. Keep that in mind when deciding where to put new code :)
 //
-void UnwindAndContinueRethrowHelperInsideQcallCatch(Frame* pEntryFrame, Exception* pException, QCallException* pQCallException)
+void UnwindAndContinueRethrowHelperInsideQcallCatch(
+    Exception* pException,
+    QCallException* pQCallException DEBUG_ARG(Frame* pEntryFrame))
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_MODE_ANY;
 
     Thread* pThread = GetThread();
+
+    // The native exception unwind can leave stale entries below the current stack pointer
+    // on the Frame chain. Find the first enclosing InlinedCallFrame without inspecting them.
+    Frame* pCurrentSP = static_cast<Frame*>(GetCurrentSP());
+    Frame* pInlinedCallFrame = pThread->GetFrame();
+    while ((pInlinedCallFrame != FRAME_TOP) &&
+           ((pInlinedCallFrame < pCurrentSP) ||
+            (pInlinedCallFrame->GetFrameIdentifier() != FrameIdentifier::InlinedCallFrame)))
+    {
+        pInlinedCallFrame = pInlinedCallFrame->PtrNextFrame();
+    }
+
+    _ASSERTE(pInlinedCallFrame != FRAME_TOP);
+    _ASSERTE(pInlinedCallFrame == pEntryFrame);
 
     GCX_COOP();
 
@@ -6674,7 +6690,7 @@ void UnwindAndContinueRethrowHelperInsideQcallCatch(Frame* pEntryFrame, Exceptio
     // policy here. Do we want to let such functions throw, etc.? Right now, we believe that there are no such
     // frames on the stack to be unwound, so the SetFrame is alright (see the first comment above.) At the very
     // least, we should add some way to assert that.
-    pThread->SetFrame(pEntryFrame);
+    pThread->SetFrame(pInlinedCallFrame);
 
     // Call CLRException::GetThrowableFromException to force us to retrieve the THROWABLE
     // while we are still within the context of the catch block. This will help diagnose
