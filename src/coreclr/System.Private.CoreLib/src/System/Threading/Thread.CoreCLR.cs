@@ -20,6 +20,8 @@ namespace System.Threading
         {
             _ptr = pThread;
         }
+
+        internal IntPtr Value => _ptr;
     }
 
     public sealed partial class Thread
@@ -315,31 +317,25 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_GetThreadState")]
         private static partial int GetThreadState(ThreadHandle t);
 
-        internal void SetWaitSleepJoinState()
+        internal unsafe void SetWaitSleepJoinState()
         {
             Debug.Assert(this == CurrentThread);
 
             // This method is called when the thread is about to enter a wait, sleep, or join state.
             // It sets the state in the native layer to indicate that the thread is waiting.
-            SetWaitSleepJoinStateNative();
+            NativeThreadClass* nativeThread = (NativeThreadClass*)GetNativeHandle().Value;
+            Interlocked.Or(ref Unsafe.As<NativeThreadState, int>(ref nativeThread->m_State), (int)NativeThreadState.TS_WaitSleepJoin);
         }
 
-        internal void ClearWaitSleepJoinState()
+        internal unsafe void ClearWaitSleepJoinState()
         {
             Debug.Assert(this == CurrentThread);
 
             // This method is called when the thread is no longer in a wait, sleep, or join state.
             // It clears the state in the native layer to indicate that the thread is no longer waiting.
-            ClearWaitSleepJoinStateNative();
+            NativeThreadClass* nativeThread = (NativeThreadClass*)GetNativeHandle().Value;
+            Interlocked.And(ref Unsafe.As<NativeThreadState, int>(ref nativeThread->m_State), ~(int)NativeThreadState.TS_WaitSleepJoin);
         }
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetWaitSleepJoinState")]
-        [SuppressGCTransition]
-        private static partial void SetWaitSleepJoinStateNative();
-
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ClearWaitSleepJoinState")]
-        [SuppressGCTransition]
-        private static partial void ClearWaitSleepJoinStateNative();
 
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
@@ -615,5 +611,23 @@ namespace System.Threading
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
         internal static partial void CheckForPendingInterrupt();
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativeThreadClass
+        {
+            public NativeThreadState m_State;
+        }
+
+        private enum NativeThreadState
+        {
+            None = 0,
+            TS_AbortRequested = 0x00000001, // Abort the thread
+            TS_DebugSuspendPending = 0x00000008, // Is the debugger suspending threads?
+            TS_GCOnTransitions = 0x00000010, // Force a GC on stub transitions (GCStress only)
+            TS_WaitSleepJoin = 0x02000000, // Thread is waiting, sleeping or joining
+
+            // We require (and assert) that the following bits are less than 0x100.
+            TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
+        };
     }
 }

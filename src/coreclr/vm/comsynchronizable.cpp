@@ -427,22 +427,6 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     return res;
 }
 
-extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState()
-{
-    QCALL_CONTRACT_NO_GC_TRANSITION;
-
-    // Set the state bits.
-    GetThread()->SetThreadState(Thread::TS_WaitSleepJoin);
-}
-
-extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState()
-{
-    QCALL_CONTRACT_NO_GC_TRANSITION;
-
-    // Clear the state bits.
-    GetThread()->ResetThreadState(Thread::TS_WaitSleepJoin);
-}
-
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
 
 // Return whether the thread hosts an STA, is a member of the MTA or is not
