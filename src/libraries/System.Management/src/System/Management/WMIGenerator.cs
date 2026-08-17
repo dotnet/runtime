@@ -4246,6 +4246,7 @@ namespace System.Management
 
             ccc.BaseTypes.Add("System.Object");
             ccc.BaseTypes.Add("ICollection");
+            ccc.BaseTypes.Add("System.IDisposable");
             ccc.TypeAttributes = TypeAttributes.NestedPublic;
 
             cf = new CodeMemberField();
@@ -4269,6 +4270,22 @@ namespace System.Management
             cctor.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(strObjectCollection),
                 new CodeVariableReferenceExpression(strobjCollection)));
             ccc.Members.Add(cctor);
+
+            //public void Dispose()
+            //{
+            //    objCollection.Dispose();
+            //}
+
+            cmm = new CodeMemberMethod();
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Override;
+            cmm.Name = "Dispose";
+            cmm.ImplementationTypes.Add("System.IDisposable");
+            cmie = new CodeMethodInvokeExpression(
+                new CodeVariableReferenceExpression(strObjectCollection),
+                "Dispose"
+                );
+            cmm.Statements.Add(new CodeExpressionStatement(cmie));
+            ccc.Members.Add(cmm);
 
 
             //public Int32 Count {
@@ -4426,6 +4443,7 @@ namespace System.Management
 
             ecc.BaseTypes.Add("System.Object");
             ecc.BaseTypes.Add("System.Collections.IEnumerator");
+            ecc.BaseTypes.Add("System.IDisposable");
 
             //private ManagementObjectCollection.ManagementObjectEnumerator ObjectEnumerator;
             cf = new CodeMemberField();
@@ -4451,6 +4469,22 @@ namespace System.Management
             cctor.Statements.Add(new CodeAssignStatement(new CodeVariableReferenceExpression(strObjectEnumerator),
                 new CodeVariableReferenceExpression(strobjEnum)));
             ecc.Members.Add(cctor);
+
+            //public void Dispose()
+            //{
+            //    ObjectEnumerator.Dispose();
+            //}
+
+            cmm = new CodeMemberMethod();
+            cmm.Attributes = MemberAttributes.Public | MemberAttributes.Final | MemberAttributes.Override;
+            cmm.Name = "Dispose";
+            cmm.ImplementationTypes.Add("System.IDisposable");
+            cmie = new CodeMethodInvokeExpression(
+                new CodeVariableReferenceExpression(strObjectEnumerator),
+                "Dispose"
+                );
+            cmm.Statements.Add(new CodeExpressionStatement(cmie));
+            ecc.Members.Add(cmm);
 
             //public Service Current {
             //get {
