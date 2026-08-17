@@ -1624,7 +1624,7 @@ namespace System.Text.Json
                 }
             }
             nextByte = data[i];
-            if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+            if (nextByte is not ((byte)'.' or (byte)'E' or (byte)'e'))
             {
                 _bytePositionInLine += i;
                 ThrowHelper.ThrowJsonReaderException(ref this,
