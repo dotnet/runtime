@@ -118,12 +118,7 @@ void HRMsgException::GetMessage(SString &result)
 
 Exception *Exception::Clone()
 {
-    CONTRACTL
-    {
-        GC_NOTRIGGER;
-        THROWS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     NewHolder<Exception> retExcep(CloneHelper());
     if (m_innerException)
@@ -144,12 +139,7 @@ Exception *Exception::CloneHelper()
 
 Exception *Exception::DomainBoundClone()
 {
-    CONTRACTL
-    {
-        GC_TRIGGERS;
-        THROWS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     NewHolder<Exception> retExcep(DomainBoundCloneHelper());
     if (m_innerException)
@@ -1085,12 +1075,7 @@ void DECLSPEC_NORETURN ThrowOutOfMemory()
 //--------------------------------------------------------------------------------
 Exception *ExThrowWithInnerHelper(Exception *inner)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     // Yes, NULL is a legal case. Makes it easier to author uniform helpers for
     // both wrapped and normal exceptions.

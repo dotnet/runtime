@@ -3161,11 +3161,7 @@ ClassLoader::LoadTypeHandleForTypeKey_Body(
     TypeHandle                        typeHnd,
     ClassLoadLevel                    targetLevel)
 {
-    CONTRACTL
-    {
-        STANDARD_VM_CHECK;
-    }
-    CONTRACTL_END
+    STANDARD_VM_CONTRACT;
 
     if (!pTypeKey->IsConstructed())
     {
