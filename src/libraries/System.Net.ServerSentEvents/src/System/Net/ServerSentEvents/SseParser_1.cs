@@ -595,7 +595,7 @@ namespace System.Net.ServerSentEvents
             }
 
             byte[]? toReturn = buffer;
-            buffer = ArrayPool<byte>.Shared.Rent(Math.Max(minimumLength, Math.Min(DefaultArrayPoolRentSize, _maxBufferSize)));
+            buffer = ArrayPool<byte>.Shared.Rent(Math.Max(minimumLength, DefaultArrayPoolRentSize));
             if (toReturn is not null)
             {
                 Array.Copy(toReturn, buffer, toReturn.Length);
