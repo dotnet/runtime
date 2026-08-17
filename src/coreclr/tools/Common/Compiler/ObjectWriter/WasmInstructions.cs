@@ -201,7 +201,7 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
     // Represents a group of Wasm instructions (expressions) which
     // form a complete expression ending with the 'end' opcode.
-    public class WasmInstructionGroup : IWasmEncodable
+    internal sealed class WasmInstructionGroup : IWasmEncodable
     {
         private readonly WasmExpr[] _wasmExprs;
         public WasmInstructionGroup(WasmExpr[] wasmExprs)
@@ -450,8 +450,8 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
     internal sealed class WasmIndirectCallInstruction : WasmExpr
     {
-        private ISymbolNode _type;
-        private uint _tableIndex;
+        private readonly ISymbolNode _type;
+        private readonly uint _tableIndex;
 
         public WasmIndirectCallInstruction(WasmExprKind kind, ISymbolNode type, uint tableIndex) : base(kind)
         {
@@ -730,17 +730,17 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
 
     internal sealed class WasmRefNullExpr : WasmExpr
     {
-        private WasmAbsHeapType absheaptype;
+        private readonly WasmAbsHeapType _absoluteHeapType;
 
         public WasmRefNullExpr(WasmAbsHeapType heapType) : base(WasmExprKind.RefNull)
         {
-            absheaptype = heapType;
+            _absoluteHeapType = heapType;
         }
 
         public override int Encode(Span<byte> buffer)
         {
             int pos = base.Encode(buffer);
-            buffer[pos++] = (byte)absheaptype;
+            buffer[pos++] = (byte)_absoluteHeapType;
             return pos;
         }
         public override int EncodeSize()
@@ -760,15 +760,17 @@ namespace ILCompiler.ObjectWriter.WasmInstructions
     }
     internal sealed class WasmBlockStartExpr : WasmExpr
     {
-        private WasmBlockType BlockType;
+        private readonly WasmBlockType _blockType;
+
         public WasmBlockStartExpr(WasmExprKind kind, WasmBlockType blockType) : base(kind)
         {
-            BlockType = blockType;
+            _blockType = blockType;
         }
+
         public override int Encode(Span<byte> buffer)
         {
             int pos = base.Encode(buffer);
-            buffer[pos++] = (byte)BlockType;
+            buffer[pos++] = (byte)_blockType;
             return pos;
         }
         public override int EncodeSize()
