@@ -99,10 +99,14 @@ namespace System.Text.Json.Serialization.Tests
                 ReferenceHandler = ReferenceHandler.Preserve
             };
 
-            await Assert.ThrowsAsync<NotSupportedException>(
+            NotSupportedException exception = await Assert.ThrowsAsync<NotSupportedException>(
                 () => Serializer.DeserializeWrapper<PetUnion>(
                     """{"Name":"Rex","Breed":"Labrador"}""",
                     options));
+
+            Assert.Contains(
+                "Reference-preserving deserialization is not supported.",
+                exception.Message);
         }
 
         [Fact]
@@ -192,15 +196,20 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(typeof(PolymorphicOrStringUnion))]
-        [InlineData(typeof(PolymorphicCollectionOrStringUnion))]
-        [InlineData(typeof(CaseSensitiveDiscriminatorUnion))]
-        public async Task StructuralClassifier_DoesNotSupportPolymorphicCaseTypes(Type unionType)
+        [InlineData(typeof(PolymorphicOrStringUnion), nameof(PolyAnimal))]
+        [InlineData(typeof(PolymorphicCollectionOrStringUnion), nameof(PolymorphicIntList))]
+        [InlineData(typeof(CaseSensitiveDiscriminatorUnion), nameof(LowercaseDiscriminatorBase))]
+        public async Task StructuralClassifier_DoesNotSupportPolymorphicCaseTypes(
+            Type unionType,
+            string caseTypeName)
         {
             NotSupportedException exception = await Assert.ThrowsAsync<NotSupportedException>(
                 () => Serializer.DeserializeWrapper("{}", unionType, _options));
 
-            Assert.Contains("Polymorphic union case types are not supported.", exception.Message);
+            Assert.Contains(
+                "Union cases that use polymorphism or are union types are not supported.",
+                exception.Message);
+            Assert.Contains(caseTypeName, exception.Message);
         }
 
         [Fact]
@@ -294,8 +303,13 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task StructuralClassifier_DoesNotRecursivelyClassifyNestedUnions()
         {
-            await Assert.ThrowsAsync<NotSupportedException>(
+            NotSupportedException exception = await Assert.ThrowsAsync<NotSupportedException>(
                 () => Serializer.DeserializeWrapper<OuterNestedUnion>("42", _options));
+
+            Assert.Contains(
+                "Union cases that use polymorphism or are union types are not supported.",
+                exception.Message);
+            Assert.Contains(nameof(InnerScalarUnion), exception.Message);
         }
 
         [Theory]
@@ -317,9 +331,7 @@ namespace System.Text.Json.Serialization.Tests
             NotSupportedException exception = await Assert.ThrowsAsync<NotSupportedException>(
                 () => Serializer.DeserializeWrapper("{}", unionType, _options));
 
-            Assert.Contains(
-                "Cases with and without object property metadata cannot be combined.",
-                exception.Message);
+            Assert.Contains("JSON values of type 'Object'", exception.Message);
         }
 
         [Fact]

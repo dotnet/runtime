@@ -108,10 +108,11 @@ namespace System.Text.Json.Serialization
             if (nonPocoJsonObjectCaseType is not null &&
                 pocoObjectCaseList is { Count: > 0 })
             {
-                ThrowHelper.ThrowNotSupportedException_UnionTypeStructuralClassifierMixedObjectCases(
+                ThrowHelper.ThrowNotSupportedException_UnionTypeStructuralClassifierAmbiguousCases(
                     unionType,
                     pocoObjectCaseList[0].CaseType,
-                    nonPocoJsonObjectCaseType);
+                    nonPocoJsonObjectCaseType,
+                    JsonValueType.Object);
             }
 
             ValidatePocoObjectCases(unionType, pocoObjectCaseList);
@@ -175,14 +176,14 @@ namespace System.Text.Json.Serialization
 
             if (typeInfo.Kind is JsonTypeInfoKind.Union)
             {
-                ThrowHelper.ThrowNotSupportedException_UnionTypeStructuralClassifierUnsupportedCase(
+                ThrowHelper.ThrowNotSupportedException_UnionTypeStructuralClassifierCaseNotSupported(
                     unionType,
                     caseType);
             }
 
             if (typeInfo.PolymorphismOptions is not null)
             {
-                ThrowHelper.ThrowNotSupportedException_UnionTypeStructuralClassifierPolymorphicCaseNotSupported(
+                ThrowHelper.ThrowNotSupportedException_UnionTypeStructuralClassifierCaseNotSupported(
                     unionType,
                     caseType);
             }
