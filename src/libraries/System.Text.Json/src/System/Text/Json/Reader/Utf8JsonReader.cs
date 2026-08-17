@@ -689,7 +689,7 @@ namespace System.Text.Json
         // Otherwise, return false.
         private static bool IsTokenTypeString(JsonTokenType tokenType)
         {
-            return tokenType == JsonTokenType.PropertyName || tokenType == JsonTokenType.String;
+            return tokenType is JsonTokenType.PropertyName or JsonTokenType.String;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
