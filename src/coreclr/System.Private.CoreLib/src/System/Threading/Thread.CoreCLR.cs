@@ -623,7 +623,7 @@ namespace System.Threading
             internal enum ThreadState
             {
                 TS_WaitSleepJoin = 0x02000000, // Thread is waiting, sleeping or joining
-            };
+            }
         }
     }
 }
