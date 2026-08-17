@@ -12,10 +12,6 @@ using Xunit;
 // register, leaving the bits above the lane count set, and nothing cleared
 // them. A following MoveMask handed those stale bits to PopCount, which then
 // over-counted by (8 - laneCount).
-//
-// This is latent in normal codegen because NotMask(CompareEqualMask(a, b)) is
-// folded into CompareNotEqualMask. The stress modes set in the .csproj keep
-// that fold from firing so a bare NotMask reaches codegen.
 
 public class Runtime_124154
 {

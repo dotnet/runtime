@@ -7,6 +7,7 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
     <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+    <!-- Needed to prevent morph from folding away NotMask -->
     <CLRTestEnvironmentVariable Include="DOTNET_JitStressModeNames" Value="STRESS_MIN_OPTS STRESS_SPLIT_TREES_RANDOMLY" />
   </ItemGroup>
 </Project>
