@@ -143,11 +143,11 @@ namespace System.Threading
         [SuppressGCTransition]
         private static partial void SpinWaitInternal(int iterations);
 
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_LongSpinWait")]
-        private static partial void LongSpinWaitInternal(int iterations, out QCallException qcallException);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SpinWait")]
+        private static partial void LongSpinWaitInternal(int iterations);
 
         [MethodImpl(MethodImplOptions.NoInlining)] // Slow path method. Make sure that the caller frame does not pay for PInvoke overhead.
-        private static void LongSpinWait(int iterations) => LongSpinWaitInternal(iterations, out _);
+        private static void LongSpinWait(int iterations) => LongSpinWaitInternal(iterations);
 
         /// <summary>
         /// Wait for a length of time proportional to 'iterations'.  Each iteration is should
@@ -557,7 +557,7 @@ namespace System.Threading
         private static extern bool CatchAtSafePoint();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_PollGC")]
-        private static partial void PollGCInternal(out QCallException qcallException);
+        private static partial void PollGCInternal();
 
         // GC Suspension is done by simply dropping into native code via p/invoke, and we reuse the p/invoke
         // mechanism for suspension. On all architectures we should have the actual stub used for the check be implemented
@@ -570,7 +570,7 @@ namespace System.Threading
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static void PollGCWorker() => PollGCInternal(out _);
+            static void PollGCWorker() => PollGCInternal();
         }
 
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI

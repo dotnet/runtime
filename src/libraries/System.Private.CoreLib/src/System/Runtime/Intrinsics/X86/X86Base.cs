@@ -117,20 +117,13 @@ namespace System.Runtime.Intrinsics.X86
         public static unsafe (int Eax, int Ebx, int Ecx, int Edx) CpuId(int functionId, int subFunctionId)
         {
             int* cpuInfo = stackalloc int[4];
-#if CORECLR
-            CpuId(cpuInfo, functionId, subFunctionId, out _);
-#else
             CpuId(cpuInfo, functionId, subFunctionId);
-#endif
             return (cpuInfo[0], cpuInfo[1], cpuInfo[2], cpuInfo[3]);
         }
 
 #if MONO
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private static extern unsafe void CpuId(int* cpuInfo, int functionId, int subFunctionId);
-#elif CORECLR
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "X86Base_CpuId")]
-        private static unsafe partial void CpuId(int* cpuInfo, int functionId, int subFunctionId, out QCallException qcallException);
 #else
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "X86Base_CpuId")]
         private static unsafe partial void CpuId(int* cpuInfo, int functionId, int subFunctionId);

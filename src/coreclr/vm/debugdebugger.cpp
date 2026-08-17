@@ -83,29 +83,24 @@ extern "C" void QCALLTYPE DebugDebugger_Break(QCallException* qcallError)
 #endif // DEBUGGING_SUPPORTED
 }
 
-extern "C" BOOL QCALLTYPE DebugDebugger_Launch(QCallException* qcallError)
+extern "C" BOOL QCALLTYPE DebugDebugger_Launch()
 {
     QCALL_CONTRACT;
-
-    BOOL ret = FALSE;
-
-    BEGIN_QCALL;
 
 #ifdef DEBUGGING_SUPPORTED
     if (CORDebuggerAttached())
     {
-        ret = TRUE;
+        return TRUE;
     }
-    else if (g_pDebugInterface != NULL)
+
+    if (g_pDebugInterface != NULL)
     {
         HRESULT hr = g_pDebugInterface->LaunchDebuggerForUser(GetThread(), NULL, TRUE, TRUE);
-        ret = SUCCEEDED(hr);
+        return SUCCEEDED(hr);
     }
 #endif // DEBUGGING_SUPPORTED
 
-    END_QCALL;
-
-    return ret;
+    return FALSE;
 }
 
 // Log to managed debugger.
@@ -113,7 +108,7 @@ extern "C" BOOL QCALLTYPE DebugDebugger_Launch(QCallException* qcallError)
 // appending a newline to anything.
 // It will also call OutputDebugString() which will send a native debug event. The message
 // string there will be a composite of the two managed string parameters and may include a newline.
-extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage, QCallException* qcallError)
+extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage)
 {
     CONTRACTL
     {
@@ -122,8 +117,6 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
         PRECONDITION(CheckPointer(pwzMessage, NULL_OK));
     }
     CONTRACTL_END;
-
-    BEGIN_QCALL;
 
     // OutputDebugString will log to native/interop debugger.
     if (pwzModule != NULL)
@@ -182,8 +175,6 @@ extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWST
     }
 
 #endif // DEBUGGING_SUPPORTED
-
-    END_QCALL;
 }
 
 static StackWalkAction GetStackFramesCallback(CrawlFrame* pCf, VOID* data)

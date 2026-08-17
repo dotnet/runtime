@@ -55,7 +55,7 @@ extern "C" BOOL QCALLTYPE ThreadNative_GetIsBackground(QCall::ThreadHandle threa
 extern "C" void QCALLTYPE ThreadNative_SetIsBackground(QCall::ThreadHandle thread, BOOL value, QCallException* qcallError);
 extern "C" void QCALLTYPE ThreadNative_InformThreadNameChange(QCall::ThreadHandle thread, LPCWSTR name, INT32 len, QCallException* qcallError);
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread(QCallException* qcallError);
-extern "C" void QCALLTYPE ThreadNative_PollGC(QCallException* qcallError);
+extern "C" void QCALLTYPE ThreadNative_PollGC();
 extern "C" UINT64 QCALLTYPE ThreadNative_GetCurrentOSThreadId(QCallException* qcallError);
 extern "C" void QCALLTYPE ThreadNative_Initialize(QCall::ObjectHandleOnStack t, QCallException* qcallError);
 extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle thread);
@@ -79,7 +79,6 @@ extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t, QCal
 extern "C" void QCALLTYPE ThreadNative_Abort(QCall::ThreadHandle thread, QCallException* qcallError);
 extern "C" void QCALLTYPE ThreadNative_ResetAbort();
 extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations);
-extern "C" void QCALLTYPE ThreadNative_LongSpinWait(INT32 iterations, QCallException* qcallError);
 #ifdef FEATURE_COMINTEROP
 extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::ThreadHandle thread);
 #endif // FEATURE_COMINTEROP

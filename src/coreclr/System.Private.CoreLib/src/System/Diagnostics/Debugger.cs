@@ -23,7 +23,7 @@ namespace System.Diagnostics
         // Launch launches & attaches a debugger to the process. If a debugger is already attached,
         // nothing happens.
         //
-        public static bool Launch() => IsAttached || LaunchInternal(out _);
+        public static bool Launch() => IsAttached || LaunchInternal();
 
         // This class implements code:ICustomDebuggerNotification and provides a type to be used to notify
         // the debugger that execution is about to enter a path that involves a cross-thread dependency.
@@ -56,7 +56,7 @@ namespace System.Diagnostics
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Launch")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool LaunchInternal(out QCallException qcallException);
+        private static partial bool LaunchInternal();
 
         // Returns whether or not a managed debugger is attached to the process.
         public static bool IsAttached => IsManagedDebuggerAttached() != 0;
@@ -68,10 +68,10 @@ namespace System.Diagnostics
         // Posts a message for the attached debugger.  If there is no
         // debugger attached, has no effect.  The debugger may or may not
         // report the message depending on its settings.
-        public static void Log(int level, string? category, string? message) => LogInternal(level, category, message, out _);
+        public static void Log(int level, string? category, string? message) => LogInternal(level, category, message);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Log", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void LogInternal(int level, string? category, string? message, out QCallException qcallException);
+        private static partial void LogInternal(int level, string? category, string? message);
 
         // Checks to see if an attached debugger has logging enabled
         public static bool IsLogging() => IsLoggingInternal() != 0;

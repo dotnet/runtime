@@ -747,20 +747,6 @@ extern "C" void QCALLTYPE ThreadNative_SpinWait(INT32 iterations)
     YieldProcessorNormalized(iterations);
 }
 
-extern "C" void QCALLTYPE ThreadNative_LongSpinWait(INT32 iterations, QCallException* qcallError)
-{
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
-    if (iterations > 0)
-    {
-        YieldProcessorNormalized(iterations);
-    }
-
-    END_QCALL;
-}
-
 #ifdef TARGET_WINDOWS
 // This service can be called on unstarted and dead threads.  For unstarted ones, the
 // next wait will be interrupted.  For dead ones, this service quietly does nothing.
@@ -806,16 +792,10 @@ extern "C" void QCALLTYPE ThreadNative_DisableComObjectEagerCleanup(QCall::Threa
 }
 #endif //FEATURE_COMINTEROP
 
-extern "C" void QCALLTYPE ThreadNative_PollGC(QCallException* qcallError)
+extern "C" void QCALLTYPE ThreadNative_PollGC()
 {
-    QCALL_CONTRACT;
-
-    BEGIN_QCALL;
-
     // This is an intentional no-op.  The call is made to ensure that the thread goes through a GC transition
     // and is thus marked as a GC safe point, and that the p/invoke rare path will kick in
-
-    END_QCALL;
 }
 
 extern "C" BOOL QCALLTYPE ThreadNative_YieldThread(QCallException* qcallError)

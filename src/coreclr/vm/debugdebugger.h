@@ -14,8 +14,8 @@
 #include <object.h>
 
 extern "C" void QCALLTYPE DebugDebugger_Break(QCallException* qcallError);
-extern "C" BOOL QCALLTYPE DebugDebugger_Launch(QCallException* qcallError);
-extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage, QCallException* qcallError);
+extern "C" BOOL QCALLTYPE DebugDebugger_Launch();
+extern "C" void QCALLTYPE DebugDebugger_Log(INT32 Level, PCWSTR pwzModule, PCWSTR pwzMessage);
 extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data, QCallException* qcallError);
 extern "C" BOOL QCALLTYPE DebugDebugger_IsLoggingHelper();
 extern "C" BOOL QCALLTYPE DebugDebugger_IsManagedDebuggerAttached();

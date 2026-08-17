@@ -244,8 +244,7 @@ namespace System.Reflection
             out int marshalTypeLength,
             out byte* marshalCookie,
             out int marshalCookieLength,
-            out int iidParamIndex,
-            out QCallException qcallException);
+            out int iidParamIndex);
 
         internal static unsafe MarshalAsAttribute GetMarshalAs(ConstArray nativeType, RuntimeModule scope)
         {
@@ -263,8 +262,7 @@ namespace System.Reflection
                     out int marshalTypeLength,
                     out byte* marshalCookieRaw,
                     out int marshalCookieLength,
-                    out int iidParamIndex,
-                    out _))
+                    out int iidParamIndex))
             {
                 throw new BadImageFormatException();
             }

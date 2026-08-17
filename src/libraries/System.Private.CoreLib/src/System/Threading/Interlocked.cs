@@ -868,20 +868,11 @@ namespace System.Threading
 
 #if !MONO
         #region MemoryBarrierProcessWide
-#if CORECLR
-        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
-        private static partial void _MemoryBarrierProcessWide(out QCallException qcallException);
-#else
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Interlocked_MemoryBarrierProcessWide")]
         private static partial void _MemoryBarrierProcessWide();
-#endif
 
         /// <summary>Provides a process-wide memory barrier that ensures that reads and writes from any CPU cannot move across the barrier.</summary>
-#if CORECLR
-        public static void MemoryBarrierProcessWide() => _MemoryBarrierProcessWide(out _);
-#else
         public static void MemoryBarrierProcessWide() => _MemoryBarrierProcessWide();
-#endif
         #endregion
 #endif
     }
