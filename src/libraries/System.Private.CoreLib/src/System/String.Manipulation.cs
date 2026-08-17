@@ -2078,7 +2078,20 @@ namespace System
                 sep0 = separators[0];
                 sep1 = separators.Length > 1 ? separators[1] : sep0;
                 sep2 = separators.Length > 2 ? separators[2] : sep1;
-                MakeSeparatorListFewChars(source, ref sepListBuilder, sep0, sep1, sep2);
+                if (Vector128.IsHardwareAccelerated && source.Length >= Vector128<ushort>.Count * 2)
+                {
+                    MakeSeparatorListVectorized(source, ref sepListBuilder, sep0, sep1, sep2);
+                    return;
+                }
+
+                for (int i = 0; i < source.Length; i++)
+                {
+                    char c = source[i];
+                    if (c == sep0 || c == sep1 || c == sep2)
+                    {
+                        sepListBuilder.Append(i);
+                    }
+                }
             }
 
             // Handle > 3 separators with a probabilistic map, ala IndexOfAny.
@@ -2098,20 +2111,13 @@ namespace System
             }
         }
 
-        private static void MakeSeparatorListFewChars(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
+        private static void MakeSeparatorListVectorized(ReadOnlySpan<char> sourceSpan, ref ValueListBuilder<int> sepListBuilder, char c, char c2, char c3)
         {
+            // Redundant test so we won't prejit remainder of this method
+            // on platforms where it is not supported
             if (!Vector128.IsHardwareAccelerated || (uint)sourceSpan.Length < (uint)Vector128<ushort>.Count*2)
             {
-                for (int i = 0; i < sourceSpan.Length; i++)
-                {
-                    char v = sourceSpan[i];
-                    if (v == c || v == c2 || v == c3)
-                    {
-                        sepListBuilder.Append(i);
-                    }
-                }
-
-                return;
+                throw new PlatformNotSupportedException();
             }
 
             Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count*2);
@@ -2315,10 +2321,9 @@ namespace System
                     }
                 }
             }
-            else
+            else if (remaining.Length >= Vector128<ushort>.Count*2)
             {
                 Debug.Assert(Vector128.IsHardwareAccelerated);
-                Debug.Assert(remaining.Length >= Vector128<ushort>.Count*2);
 
                 Vector128<ushort> v1 = Vector128.Create((ushort)c);
                 Vector128<ushort> v2 = Vector128.Create((ushort)c2);
@@ -2414,6 +2419,10 @@ namespace System
                         }
                     }
                 }
+            }
+            else
+            {
+                Debug.Fail("Expected remaining.Length >= Vector128<ushort>.Count*2");
             }
         }
 
