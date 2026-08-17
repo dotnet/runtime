@@ -103,7 +103,7 @@ jobs:
       - ${{insert}}: ${{ variable }}
 
     steps:
-    - ${{ if or(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(parameters.hostedOs, 'osx')) }}:
+    - ${{ if in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator') }}:
       - template: /eng/pipelines/common/select-xcode.yml
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
