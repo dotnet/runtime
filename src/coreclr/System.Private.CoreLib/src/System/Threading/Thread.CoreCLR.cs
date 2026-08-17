@@ -610,7 +610,7 @@ namespace System.Threading
         private unsafe NativeThread* GetNativeThreadForCurrentThread()
         {
             Debug.Assert(this == CurrentThread);
-            return (NativeThread*)GetNativeHandle().Value;
+            return (NativeThread*)_DONT_USE_InternalThread;
         }
 
         [StructLayout(LayoutKind.Sequential)]
