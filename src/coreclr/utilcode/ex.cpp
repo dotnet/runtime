@@ -118,7 +118,12 @@ void HRMsgException::GetMessage(SString &result)
 
 Exception *Exception::Clone()
 {
-    STANDARD_VM_CONTRACT;
+    CONTRACTL
+    {
+        GC_NOTRIGGER;
+        THROWS;
+    }
+    CONTRACTL_END;
 
     NewHolder<Exception> retExcep(CloneHelper());
     if (m_innerException)
