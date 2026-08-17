@@ -399,7 +399,6 @@ namespace CustomTaskCovariantReturn
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124238")]
         public static void TestCustomTaskOverride()
         {
             Base b = DateTime.Now.Year > 0 ? new Derived() : new Base();
@@ -526,7 +525,6 @@ namespace CustomTaskCovariantReturnWithoutRuntimeAsync
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/124238")]
         public static void TestCustomTaskOverrideWithoutRuntimeAsync()
         {
             Base b = DateTime.Now.Year > 0 ? new Derived() : new Base();
