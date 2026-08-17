@@ -415,6 +415,8 @@
              Link="Common\System\Text\ValueStringBuilder.AppendSpanFormattable.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\Experimentals.cs"
+             Link="Common\System\Experimentals.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeInterop.cs"
              Link="WinHttpHandler\UnitTests\FakeInterop.cs" />
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\FakeRegistry.cs"

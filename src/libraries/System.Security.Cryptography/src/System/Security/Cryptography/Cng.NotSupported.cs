@@ -469,6 +469,9 @@ namespace System.Security.Cryptography
 
     public sealed partial class CompositeMLDsaCng : CompositeMLDsa
     {
+        private static partial CompositeMLDsaAlgorithm AlgorithmFromHandle(CngKey key, out CngKey duplicateKey) =>
+            throw new PlatformNotSupportedException();
+
         public partial CngKey GetKey() =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyCng);
 

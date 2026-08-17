@@ -60,7 +60,7 @@ EXTERN_C VOID STDCALL PInvokeImportThunk();
 #define METHOD_TOKEN_RANGE_BIT_COUNT (24 - METHOD_TOKEN_REMAINDER_BIT_COUNT)
 #define METHOD_TOKEN_RANGE_MASK ((1 << METHOD_TOKEN_RANGE_BIT_COUNT) - 1)
 
-// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None.
+// [cDAC] [RuntimeTypeSystem]: Contract depends on the values of Thunk, None, IsAsyncVariant.
 enum class AsyncMethodFlags
 {
     // Method uses CORINFO_CALLCONV_ASYNCCALL call convention.
@@ -148,6 +148,13 @@ struct AsyncMethodData
 };
 
 typedef DPTR(struct AsyncMethodData) PTR_AsyncMethodData;
+
+template<>
+struct cdac_data<AsyncMethodData>
+{
+    static constexpr size_t Flags = offsetof(AsyncMethodData, flags);
+    static constexpr size_t Signature = offsetof(AsyncMethodData, sig);
+};
 
 //=============================================================
 // Splits methoddef token into two pieces for
@@ -956,6 +963,10 @@ public:
 
     COR_ILMETHOD* GetILHeader();
 
+    COR_ILMETHOD* GetActiveILHeader();
+
+    COR_ILMETHOD* GetILHeaderForNativeCode(PCODE nativeCodeStartAddress);
+
     BOOL HasStoredSig()
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -1218,13 +1229,11 @@ public:
 
 public:
 
-    // True iff it is possible to change the code this method will run using the CodeVersionManager. Note: EnC currently returns
-    // false here because it uses its own separate scheme to manage versionability. We will likely want to converge them at some
-    // point.
+    // True iff it is possible to change the code this method will run using the CodeVersionManager.
     bool IsVersionable()
     {
         WRAPPER_NO_CONTRACT;
-        return IsEligibleForTieredCompilation() || IsEligibleForReJIT();
+        return IsEligibleForTieredCompilation() || IsEligibleForReJIT() || IsEligibleForEnC();
     }
 
     // True iff all calls to the method should funnel through a Precode which can be updated to point to the current method
@@ -1259,10 +1268,24 @@ public:
             !IsWrapperStub() &&
 
             // Functional requirement
-            CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this));
+            CodeVersionManager::IsMethodSupported(PTR_MethodDesc(this)) &&
+            // ReJIT and EnC are mutually exclusive
+            !InEnCEnabledModule();
 #else // FEATURE_REJIT
         return false;
 #endif
+    }
+
+    bool IsEligibleForEnC()
+    {
+        WRAPPER_NO_CONTRACT;
+
+        return
+            InEnCEnabledModule() &&
+
+            // EnC edits are expressed as IL, wrapper stubs have no editable IL body
+            IsIL() &&
+            !IsWrapperStub();
     }
 
 public:
@@ -1358,7 +1381,9 @@ private:
             IsVtableSlot() &&
 
             // Functional requirement - True interface methods are not backpatched, see DoBackpatch()
-            !(IsInterface() && !IsStatic());
+            !(IsInterface() && !IsStatic()) &&
+            // EnC methods use precode
+            !InEnCEnabledModule();
 #else
         // Entry point slot backpatch is disabled for CrossGen
         return false;
@@ -1466,10 +1491,9 @@ public:
     void TrySetInitialCodeEntryPointForVersionableMethod(PCODE entryPoint, bool mayHaveEntryPointSlotsToBackpatch);
 #endif // FEATURE_CODE_VERSIONING
     void SetCodeEntryPoint(PCODE entryPoint);
-#ifdef FEATURE_TIERED_COMPILATION
+#ifdef FEATURE_CODE_VERSIONING
     void ResetCodeEntryPoint();
-#endif // FEATURE_TIERED_COMPILATION
-    void ResetCodeEntryPointForEnC();
+#endif // FEATURE_CODE_VERSIONING
 
 
 public:
@@ -1494,7 +1518,7 @@ public:
     {
         LIMITED_METHOD_DAC_CONTRACT;
 
-        return !IsVersionable() && !InEnCEnabledModule();
+        return !IsVersionable();
     }
 
 #ifndef FEATURE_PORTABLE_ENTRYPOINTS
@@ -1588,7 +1612,7 @@ public:
     // indirect call via slot in this case.
     PCODE TryGetMultiCallableAddrOfCode(CORINFO_ACCESS_FLAGS accessFlags);
 
-    MethodDesc* GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
+    MethodDesc* GetMethodDescOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH);
     // These return an address after resolving "virtual methods" correctly, including any
     // handling of context proxies, other thunking layers and also including
     // instantiation of generic virtual methods if required.
@@ -1598,8 +1622,8 @@ public:
     // The code that implements these was taken verbatim from elsewhere in the
     // codebase, and there may be subtle differences between the two, e.g. with
     // regard to thunking.
-    PCODE GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
-    PCODE GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, TypeHandle staticTH);
+    PCODE GetSingleCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH);
+    PCODE GetMultiCallableAddrOfVirtualizedCode(OBJECTREF *orThis, MethodTable* pMTOfThis, TypeHandle staticTH);
 
 #ifndef DACCESS_COMPILE
     // The current method entrypoint. It is simply the value of the current method slot.
@@ -1815,7 +1839,7 @@ public:
     // Given an object and an method descriptor for an instantiation of
     // a virtualized generic method, get the
     // corresponding instantiation of the target of a call.
-    MethodDesc *ResolveGenericVirtualMethod(OBJECTREF *orThis);
+    MethodDesc *ResolveGenericVirtualMethod(OBJECTREF *orThis, MethodTable* pMTOfThis);
 
 #if defined(TARGET_X86) && defined(HAVE_GCCOVER)
 public:
@@ -1832,7 +1856,7 @@ public:
     // but the additional weirdness that class-based-virtual calls (but not interface calls nor calls
     // on proxies) are resolved to their target.  Because of this, many clients of "Call" (see above)
     // end up doing some resolution for interface calls and/or proxies themselves.
-    PCODE GetCallTarget(OBJECTREF* pThisObj, TypeHandle ownerType = TypeHandle());
+    PCODE GetCallTarget(OBJECTREF* pThisObj, MethodTable *pMTThis, TypeHandle ownerType = TypeHandle());
 
     MethodImpl *GetMethodImpl();
 
@@ -3463,12 +3487,6 @@ public:
 
     BOOL HasDefaultDllImportSearchPathsAttribute();
 
-    BOOL IsDefaultDllImportSearchPathsAttributeCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_wPInvokeFlags & kDefaultDllImportSearchPathsIsCached) != 0;
-    }
-
     BOOL IsPopulated()
     {
         LIMITED_METHOD_CONTRACT;
@@ -3932,9 +3950,6 @@ private:
     WORD          m_wNumGenericArgs;
 
 public:
-    static InstantiatedMethodDesc *FindOrCreateExactClassMethod(MethodTable *pExactMT,
-                                                                MethodDesc *pCanonicalMD);
-
     static InstantiatedMethodDesc* FindLoadedInstantiatedMethodDesc(MethodTable *pMT,
                                                                     mdMethodDef methodDef,
                                                                     Instantiation methodInst,

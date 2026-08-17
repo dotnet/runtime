@@ -927,7 +927,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // but using the legacy X509Certificate2 ctor, to test the settings for that set of
             // loader limits with respect to duplicates.
 
-            X509Certificate2 cert = new X509Certificate2(TestData.DuplicateAttributesPfx, TestData.PlaceholderPw);
+            X509Certificate2 cert = TestData.WithDuplicateAttributesPfx((object)null, static (bytes, _) =>
+            {
+                return new X509Certificate2(bytes, TestData.PlaceholderPw);
+            });
 
             using (cert)
             {

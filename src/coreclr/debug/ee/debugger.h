@@ -1507,7 +1507,7 @@ public:
             "                     m_lastIL: 0x%x\n"
             "           m_sequenceMapCount: %u\n",
             this, (m_jitComplete ? "true" : "false"), encState,
-            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount));
+            m_methodInfo, (void*)m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount));
 #endif //LOGGING
     }
 
@@ -2013,7 +2013,8 @@ public:
 
     void getVars(MethodDesc * ftn,
                  ULONG32 *cVars, ICorDebugInfo::ILVarInfo **vars,
-                 bool *extendOthers);
+                 bool *extendOthers,
+                 unsigned ilCodeSize);
 
     DebuggerMethodInfo *GetOrCreateMethodInfo(Module *pModule, mdMethodDef token);
 
@@ -2886,23 +2887,7 @@ private:
     PTR_DebuggerLazyInit         m_pLazyData;
 
 
-    // A list of all defines that affect layout of MD types
-    typedef enum _Target_Defines
-    {
-        DEFINE__DEBUG = 1,
-    } _Target_Defines;
-
-    // A bitfield that has bits set at build time corresponding
-    // to which defines are active
-    static const int _defines = 0
-#ifdef _DEBUG
-        | DEFINE__DEBUG
-#endif
-        ;
-
 public:
-    DWORD m_defines;
-    DWORD m_mdDataStructureVersion;
 #ifndef DACCESS_COMPILE
     virtual void SuspendForGarbageCollectionStarted();
     virtual void SuspendForGarbageCollectionCompleted();

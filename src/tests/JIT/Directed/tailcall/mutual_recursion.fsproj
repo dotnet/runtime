@@ -8,6 +8,12 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <!-- F# does not emit tail calls in Debug builds, leading to stack overflow. See https://github.com/dotnet/runtime/issues/127437 -->
     <DisableProjectBuild Condition="'$(Configuration)' == 'Debug'">true</DisableProjectBuild>
+    <!-- F# test that relies on the merged-runner adding [<EntryPoint>];
+         either standalone build path (BuildAllTestsAsStandalone for the
+         WASI CoreCLR test runner, or BuildAsStandalone for per-test
+         wrappers) skips that, so the compiler errors with FS0988
+         "Main module of program is empty". Skip in either standalone mode. -->
+    <DisableProjectBuild Condition="'$(BuildAllTestsAsStandalone)' == 'true' or '$(BuildAsStandalone)' == 'true'">true</DisableProjectBuild>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="mutual_recursion.fs" />

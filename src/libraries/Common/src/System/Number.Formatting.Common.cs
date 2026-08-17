@@ -435,7 +435,7 @@ namespace System
                 }
                 else
                 {
-                    if (number.Kind != NumberBufferKind.FloatingPoint)
+                    if (number.Kind is not (NumberBufferKind.FloatingPoint or NumberBufferKind.DecimalIeee754))
                     {
                         // The integer types don't have a concept of -0 and decimal always format -0 as 0
                         number.IsNegative = false;
@@ -517,7 +517,15 @@ namespace System
                 }
             }
 
-            if (number.IsNegative && (section == 0) && (number.Scale != 0))
+            // A dedicated negative section (the portion after the first ';') is responsible for
+            // emitting the sign of negative values. When a negative value rounds to zero -- or is
+            // negative zero -- it can fall back to the first section (for example -0.001 or -0.0
+            // with "+0.00;-0.00"). In that case the first section already contains the caller's
+            // desired representation and we must not emit an extra sign, which would otherwise
+            // produce output such as "-+0.00". This only matters when 'section == 0', so
+            // 'HasNegativeSection' is evaluated lazily behind that check to avoid an extra format
+            // scan on the common path where the negative section is used directly ('section != 0').
+            if (number.IsNegative && (section == 0) && (number.Scale != 0) && !HasNegativeSection(format))
             {
                 vlb.Append(info.NegativeSignTChar<TChar>());
             }
@@ -705,7 +713,7 @@ namespace System
                 }
             }
 
-            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0))
+            if (number.IsNegative && (section == 0) && (number.Scale == 0) && (vlb.Length > 0) && !HasNegativeSection(format))
             {
                 vlb.Insert(0, info.NegativeSignTChar<TChar>());
             }
@@ -1077,7 +1085,7 @@ namespace System
 
             if (i == 0)
             {
-                if (number.Kind != NumberBufferKind.FloatingPoint)
+                if (number.Kind is not (NumberBufferKind.FloatingPoint or NumberBufferKind.DecimalIeee754))
                 {
                     // The integer types don't have a concept of -0 and decimal always format -0 as 0
                     number.IsNegative = false;
@@ -1112,6 +1120,30 @@ namespace System
                     return false;
                 }
 
+                if (numberKind == NumberBufferKind.DecimalIeee754)
+                {
+                    // The buffer holds the exact coefficient, so a '5' followed by nothing but zeros is a
+                    // true tie rather than an artifact of a truncated expansion. IEEE 754 §5.12.1 requires
+                    // the conversion to be correctly rounded under the applicable rounding-direction
+                    // attribute, which is roundTiesToEven.
+
+                    if (digit != '5')
+                    {
+                        return digit > '5';
+                    }
+
+                    for (int j = i + 1; dig[j] != '\0'; j++)
+                    {
+                        if (dig[j] != '0')
+                        {
+                            return true;
+                        }
+                    }
+
+                    // A tie with no preceding digit rounds toward the implicit leading zero, which is even.
+                    return (i > 0) && (((dig[i - 1] - '0') & 1) != 0);
+                }
+
                 // Values greater than or equal to 5 should round up, otherwise we round down. The IEEE
                 // 754 spec actually dictates that ties (exactly 5) should round to the nearest even number
                 // but that can have undesired behavior for custom numeric format strings. This probably
@@ -1121,6 +1153,11 @@ namespace System
                 return digit >= '5';
             }
         }
+
+        // A distinct negative section always begins after the first ';', so its offset is > 0.
+        // FindSection returns 0 both for the first section and when no such section exists, so a
+        // non-zero result reliably indicates the format defines a dedicated negative section.
+        private static bool HasNegativeSection(ReadOnlySpan<char> format) => FindSection(format, 1) != 0;
 
         private static unsafe int FindSection(ReadOnlySpan<char> format, int section)
         {

@@ -18,6 +18,12 @@ bool interceptor_ICJI::isIntrinsic(
     return original_ICorJitInfo->isIntrinsic(ftn);
 }
 
+bool interceptor_ICJI::canValueClassInstancePointerEscape(
+          CORINFO_METHOD_HANDLE ftn)
+{
+    return original_ICorJitInfo->canValueClassInstancePointerEscape(ftn);
+}
+
 bool interceptor_ICJI::notifyMethodInfoUsage(
           CORINFO_METHOD_HANDLE ftn)
 {
@@ -851,9 +857,20 @@ void interceptor_ICJI::getAsyncInfo(
 
 CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitReturnCall(
           CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
           CORINFO_LOOKUP* instArg)
 {
-    return original_ICorJitInfo->getAwaitReturnCall(callerHandle, instArg);
+    return original_ICorJitInfo->getAwaitReturnCall(callerHandle, contextHandle, instArg);
+}
+
+CORINFO_METHOD_HANDLE interceptor_ICJI::getAwaitAwaiterInContinuationCall(
+          CORINFO_METHOD_HANDLE callerHandle,
+          CORINFO_RESOLVED_TOKEN* pResolvedToken,
+          bool isUnsafe,
+          CORINFO_CONTEXT_HANDLE* contextHandle,
+          CORINFO_LOOKUP* instArg)
+{
+    return original_ICorJitInfo->getAwaitAwaiterInContinuationCall(callerHandle, pResolvedToken, isUnsafe, contextHandle, instArg);
 }
 
 mdMethodDef interceptor_ICJI::getMethodDefFromMethod(
@@ -918,6 +935,12 @@ uint32_t interceptor_ICJI::getAddressAlignment(
           void* address)
 {
     return original_ICorJitInfo->getAddressAlignment(address);
+}
+
+void interceptor_ICJI::getWasmWellKnownGlobals(
+          CORINFO_WASM_WELLKNOWN_GLOBALS* pWellKnownGlobalsOut)
+{
+    original_ICorJitInfo->getWasmWellKnownGlobals(pWellKnownGlobalsOut);
 }
 
 uint32_t interceptor_ICJI::getThreadTLSIndex(

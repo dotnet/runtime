@@ -194,9 +194,7 @@
 #include "profilinghelper.h"
 #endif // PROFILING_SUPPORTED
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #include "diagnosticserveradapter.h"
 #include "eventpipeadapter.h"
@@ -778,8 +776,6 @@ void EEStartupHelper()
         IfFailGoLog(EnsureRtlFunctions());
 #endif // !TARGET_UNIX
 
-        UnwindInfoTable::Initialize();
-
         // Fire the runtime information ETW event
         ETW::InfoLog::RuntimeInformation(ETW::InfoLog::InfoStructs::Normal);
 
@@ -981,7 +977,7 @@ void EEStartupHelper()
         // This should be done before assemblies/modules are loaded into it (i.e. SystemDomain::Init)
         // and after its OK to switch GC modes and synchronize for sending events to the debugger.
         // @dbgtodo  synchronization: this can probably be simplified in V3
-        LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain 0x%x\n",
+        LOG((LF_CORDB | LF_SYNC | LF_STARTUP, LL_INFO1000, "EEStartup: adding default domain %p\n",
              SystemDomain::System()->DefaultDomain()));
         SystemDomain::System()->PublishAppDomainAndInformDebugger(SystemDomain::System()->DefaultDomain());
 #endif

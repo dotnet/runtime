@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include "jitpch.h"
+#include "hwintrinsic.h"
+
 #ifdef FEATURE_HW_INTRINSICS
 
 //------------------------------------------------------------------------
@@ -22,7 +25,7 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
     {
         return InstructionSet_PackedSimd;
     }
-    else if (strcmp(className, "Vector128") == 0)
+    else if ((strcmp(className, "Vector128") == 0) || (strcmp(className, "Vector128`1") == 0))
     {
         return InstructionSet_Vector128;
     }
@@ -30,9 +33,19 @@ CORINFO_InstructionSet Compiler::lookupInstructionSet(const char* className)
     return InstructionSet_ILLEGAL;
 }
 
-int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id, var_types baseType)
+int HWIntrinsicInfo::lookupImmUpperBound(NamedIntrinsic id, unsigned int simdSize, var_types baseType)
 {
-    NYI_WASM_SIMD("lookupImmUpperBound");
+    switch (id)
+    {
+        case NI_PackedSimd_ExtractScalar:
+        case NI_PackedSimd_ReplaceScalar:
+        case NI_PackedSimd_LoadScalarAndInsert:
+        case NI_PackedSimd_StoreSelectedScalar:
+            return Compiler::getSIMDVectorLength(simdSize, baseType) - 1;
+        default:
+            unreached();
+    }
+
     return 0;
 }
 
@@ -63,7 +76,9 @@ CORINFO_InstructionSet Compiler::lookupIsa(const char* className,
 
 GenTree* Compiler::impNonConstFallback(NamedIntrinsic intrinsic, var_types simdType, var_types simdBaseType)
 {
-    NYI_WASM_SIMD("impNonConstFallback");
+    // On Wasm, for non-const immediate only instructions, we either emit a jump table
+    // or re-write to a fallback sequence, so impNonConstFallback should never be used.
+    unreached();
     return nullptr;
 }
 
@@ -92,6 +107,26 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
 
     switch (intrinsic)
     {
+        case NI_WasmBase_LeadingZeroCount:
+        {
+            assert(sig->numArgs == 1);
+
+            op1     = impPopStack().val;
+            retNode = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_LeadingZeroCount,
+                                                                nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+            break;
+        }
+
+        case NI_WasmBase_TrailingZeroCount:
+        {
+            assert(sig->numArgs == 1);
+
+            op1     = impPopStack().val;
+            retNode = new (this, GT_INTRINSIC) GenTreeIntrinsic(retType, op1, NI_PRIMITIVE_TrailingZeroCount,
+                                                                nullptr R2RARG(CORINFO_CONST_LOOKUP{IAT_VALUE}));
+            break;
+        }
+
         case NI_PackedSimd_CompareGreaterThan:
         {
             assert(sig->numArgs == 2);
@@ -140,18 +175,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
-        // The following PackedSimd intrinsics are not yet implemented on WASM. Because they are must-expand,
-        // when we return nullptr here the importer will insert a PlatformNotSupportedException throw.
-        case NI_PackedSimd_ExtractScalar:
-        {
-            break;
-        }
-
-        case NI_PackedSimd_ReplaceScalar:
-        {
-            break;
-        }
-
         case NI_PackedSimd_LoadVector128:
         {
             assert(sig->numArgs == 1);
@@ -166,21 +189,6 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             retNode = gtNewSimdLoadNode(retType, op1, simdBaseType, simdSize);
-            break;
-        }
-
-        case NI_PackedSimd_LoadScalarVector128:
-        case NI_PackedSimd_LoadScalarAndSplatVector128:
-        case NI_PackedSimd_LoadScalarAndInsert:
-        case NI_PackedSimd_LoadWideningVector128:
-        {
-            break;
-        }
-
-        case NI_PackedSimd_ShiftLeft:
-        case NI_PackedSimd_ShiftRightArithmetic:
-        case NI_PackedSimd_ShiftRightLogical:
-        {
             break;
         }
 
@@ -230,11 +238,29 @@ void Compiler::getHWIntrinsicImmOps(NamedIntrinsic    intrinsic,
                                     GenTree**         immOp1Ptr,
                                     GenTree**         immOp2Ptr)
 {
-    if ((sig->numArgs > 0) && HWIntrinsicInfo::isImmOp(intrinsic, impStackTop().val))
+    if (!HWIntrinsicInfo::HasImmediateOperand(intrinsic))
     {
-        // NOTE: The following code assumes that for all intrinsics
-        // taking an immediate operand, that operand will be last.
-        *immOp1Ptr = impStackTop().val;
+        return;
+    }
+
+    // Position of the immediates (in eval order)
+    int imm1Pos = -1;
+    int imm2Pos = -1;
+
+    int numArgs = HWIntrinsicInfo::lookupNumArgs(intrinsic);
+    HWIntrinsicInfo::GetImmOpsPositions(intrinsic, &imm1Pos, &imm2Pos);
+    if (imm1Pos >= 0)
+    {
+        int imm1StackPos = numArgs - imm1Pos;
+        *immOp1Ptr       = impStackTop(imm1StackPos).val;
+        assert(HWIntrinsicInfo::isImmOp(intrinsic, *immOp1Ptr));
+    }
+
+    if (imm2Pos >= 0)
+    {
+        int imm2StackPos = numArgs - imm2Pos;
+        *immOp2Ptr       = impStackTop(imm2StackPos).val;
+        assert(HWIntrinsicInfo::isImmOp(intrinsic, *immOp2Ptr));
     }
 }
 #endif

@@ -577,13 +577,13 @@ private:
     // This methods returns the a cell from ppList. It returns NULL if the list is empty.
     BYTE * GetOneIndCell(BYTE ** ppList)
     {
-        CONTRACT (BYTE*) {
+        CONTRACTL {
             NOTHROW;
             GC_NOTRIGGER;
             MODE_ANY;
             PRECONDITION(CheckPointer(ppList));
             PRECONDITION(m_indCellLock.OwnedByCurrentThread());
-        } CONTRACT_END;
+        } CONTRACTL_END;
 
         BYTE * temp = *ppList;
 
@@ -591,10 +591,10 @@ private:
         {
             BYTE * pNext = *((BYTE **)temp);
             *ppList = pNext;
-            RETURN temp;
+            return temp;
         }
 
-        RETURN NULL;
+        return NULL;
     }
 
     // insert a linked list of indirection cells at the beginning of m_FreeIndCellList
