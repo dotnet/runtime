@@ -326,7 +326,7 @@ extends:
             prepareParameters:
               cdacTestConfig: Debug
             sendDisplayName: 'Send cDAC Dump Gen to Helix'
-            sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:DumpOnly=true /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendDumpGenToHelix.binlog
+            sendParams: $(Build.SourcesDirectory)/src/native/managed/cdac/tests/DumpTests/cdac-dump-helix.proj /t:Test /p:DumpOnly=true /p:EnableHelixJobMonitor=false /p:TargetOS=$(osGroup) /p:TargetArchitecture=$(archType) /p:HelixTargetQueues="$(CdacHelixQueue)" /p:TestHostPayload=$(TestHostPayloadDir) /p:DumpTestsPayload=$(Build.SourcesDirectory)/artifacts/helixPayload/cdac /bl:$(Build.SourcesDirectory)/artifacts/log/SendDumpGenToHelix.binlog
             failDisplayName: 'Fail on dump generation errors'
             failErrorMessage: 'One or more cDAC dump generation failures were detected. Failing the job.'
             publishDumpsArtifactName: CdacDumps_$(osGroup)_$(archType)

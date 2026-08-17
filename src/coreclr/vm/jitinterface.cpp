@@ -6,6 +6,7 @@
 // ===========================================================================
 
 #include "common.h"
+#include <inttypes.h>
 #include "jitinterface.h"
 #include "codeman.h"
 #include "method.hpp"
@@ -1951,7 +1952,6 @@ unsigned CEEInfo::getClassAlignmentRequirementStatic(TypeHandle clsHnd)
             result = pInfo->GetAlignmentRequirement();
         }
     }
-
 #ifdef FEATURE_64BIT_ALIGNMENT
     if (result < 8 && pMT->RequiresAlign8())
     {
@@ -10445,6 +10445,10 @@ void CEEInfo::getAsyncInfo(CORINFO_ASYNC_INFO* pAsyncInfoOut)
     pAsyncInfoOut->captureContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_CONTEXTS));
     pAsyncInfoOut->restoreContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS));
     pAsyncInfoOut->restoreContextsOnSuspensionMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_CONTEXTS_ON_SUSPENSION));
+    pAsyncInfoOut->restoreInlinedFrameContextsMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__RESTORE_INLINED_FRAME_CONTEXTS));
+    pAsyncInfoOut->captureInlinedFrameTransitionWithContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_INLINED_FRAME_TRANSITION_WITH_CONTINUATION_CONTEXT));
+    pAsyncInfoOut->captureInlinedFrameTransitionNoContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_INLINED_FRAME_TRANSITION_NO_CONTINUATION_CONTEXT));
+    pAsyncInfoOut->captureInlinedFrameTransitionContinueOnThreadPoolMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__CAPTURE_INLINED_FRAME_TRANSITION_CONTINUE_ON_THREAD_POOL));
     pAsyncInfoOut->finishSuspensionNoContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINISH_SUSPENSION_NO_CONTINUATION_CONTEXT));
     pAsyncInfoOut->finishSuspensionWithContinuationContextMethHnd = CORINFO_METHOD_HANDLE(CoreLibBinder::GetMethod(METHOD__ASYNC_HELPERS__FINISH_SUSPENSION_WITH_CONTINUATION_CONTEXT));
 
@@ -10517,6 +10521,71 @@ CORINFO_METHOD_HANDLE CEEInfo::getAwaitReturnCall(CORINFO_METHOD_HANDLE callerHa
             MethodDesc* pContext = MethodDesc::FindOrCreateAssociatedMethodDesc(pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&retType, 1), FALSE);
             instArg->lookupKind.needsRuntimeLookup = false;
             instArg->constLookup.accessType = IAT_VALUE;
+            instArg->constLookup.addr = pContext;
+            // The exact instantiation is known, so use it as the inlining context.
+            pInliningContext = pContext;
+        }
+    }
+
+    *contextHandle = MAKE_METHODCONTEXT(pInliningContext);
+
+    EE_TO_JIT_TRANSITION();
+
+    return CORINFO_METHOD_HANDLE(pMD);
+}
+
+CORINFO_METHOD_HANDLE CEEInfo::getAwaitAwaiterInContinuationCall(
+    CORINFO_METHOD_HANDLE callerHandle,
+    CORINFO_RESOLVED_TOKEN* pResolvedToken,
+    bool isUnsafe,
+    CORINFO_CONTEXT_HANDLE* contextHandle,
+    CORINFO_LOOKUP* instArg)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    MethodDesc* pMD = NULL;
+
+    JIT_TO_EE_TRANSITION();
+
+    MethodDesc* pAwaitAwaiterMD = GetMethod(pResolvedToken->hMethod);
+    _ASSERTE(pAwaitAwaiterMD->GetNumGenericMethodArgs() == 1);
+    TypeHandle awaiterType = pAwaitAwaiterMD->GetMethodInstantiation()[0];
+
+    instArg->lookupKind.needsRuntimeLookup = false;
+    instArg->constLookup.accessType = IAT_VALUE;
+    instArg->constLookup.addr = NULL;
+
+    MethodDesc* pCallerMD = GetMethod(callerHandle);
+    MethodDesc* pTypicalAwaitMD = CoreLibBinder::GetMethod(
+        isUnsafe ? METHOD__ASYNC_HELPERS__UNSAFE_AWAIT_AWAITER_IN_CONTINUATION
+                 : METHOD__ASYNC_HELPERS__AWAIT_AWAITER_IN_CONTINUATION);
+    pMD = MethodDesc::FindOrCreateAssociatedMethodDesc(pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE,
+                                                       Instantiation(&awaiterType, 1), TRUE);
+
+    MethodDesc* pInliningContext = pMD;
+    if (pMD->RequiresInstArg())
+    {
+        MethodDesc* pContext = MethodDesc::FindOrCreateAssociatedMethodDesc(
+            pTypicalAwaitMD, pTypicalAwaitMD->GetMethodTable(), FALSE, Instantiation(&awaiterType, 1), FALSE);
+
+        if (awaiterType.IsCanonicalSubtype())
+        {
+            // The exact instantiation is only known at runtime, so it requires a generic
+            // dictionary lookup. pResolvedToken is for the AsyncHelpers.AwaitAwaiter or
+            // UnsafeAwaitAwaiter call that we are replacing; it has the same owning type and
+            // the same instantiation as the replacement, so it encodes the right lookup as
+            // long as we pass the replacement as the template method.
+            _ASSERTE(pResolvedToken->pMethodSpec != NULL);
+            ComputeRuntimeLookupForSharedGenericToken(MethodDescSlot, pResolvedToken,
+                                                      NULL /* pConstrainedResolvedToken */, pContext, pCallerMD,
+                                                      instArg);
+        }
+        else
+        {
             instArg->constLookup.addr = pContext;
             // The exact instantiation is known, so use it as the inlining context.
             pInliningContext = pContext;
@@ -10961,7 +11030,7 @@ void CEEInfo::reportFatalError(CorJitResult result)
     JIT_TO_EE_TRANSITION_LEAF();
 
     STRESS_LOG2(LF_JIT,LL_ERROR, "Jit reported error 0x%x while compiling 0x%p\n",
-                (int)result, (INT_PTR)getMethodBeingCompiled());
+                (int)result, (void*)(INT_PTR)getMethodBeingCompiled());
 
     EE_TO_JIT_TRANSITION_LEAF();
 }
@@ -12283,8 +12352,8 @@ void CEEJitInfo::recordRelocation(void *       location,
             }
         }
 
-        LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
-             DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, delta));
+                LOG((LF_JIT, LL_INFO100000, "Encoded a PCREL32 at" FMT_ADDR "to" FMT_ADDR "+%d,  delta is 0x%04x\n",
+                         DBG_ADDR(fixupLocation), DBG_ADDR(target), addlDelta, (UINT32)delta));
 
         // Write the 32-bits pc-relative delta into location
         *fixupLocationRW = (INT32) delta;
@@ -12371,8 +12440,8 @@ void CEEJitInfo::recordRelocation(void *       location,
                  DBG_ADDR(jumpStubAddr), DBG_ADDR(target)));
         }
 
-        LOG((LF_JIT, LL_INFO100000, "Encoded a BRANCH26 at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%04x\n",
-             DBG_ADDR(fixupLocation), DBG_ADDR(target), delta));
+                LOG((LF_JIT, LL_INFO100000, "Encoded a BRANCH26 at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%04x\n",
+                         DBG_ADDR(fixupLocation), DBG_ADDR(target), (UINT32)delta));
 
         _ASSERTE(FitsInRel28(delta));
 
@@ -12489,8 +12558,8 @@ void CEEJitInfo::recordRelocation(void *       location,
 
         bool isStype = (fRelocType == CorInfoReloc::RISCV64_PCREL_S);
         PutRiscV64AuipcCombo((UINT32 *)locationRW, delta, isStype);
-        LOG((LF_JIT, LL_INFO100000, "Fixed up an auipc + %c-type relocation at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%08x\n",
-            (isStype ? 'S' : 'I'), DBG_ADDR(location), DBG_ADDR(target), delta));
+        LOG((LF_JIT, LL_INFO100000, "Fixed up an auipc + %c-type relocation at" FMT_ADDR "to" FMT_ADDR ",  delta is 0x%08" PRIx64 "\n",
+            (isStype ? 'S' : 'I'), DBG_ADDR(location), DBG_ADDR(target), (uint64_t)delta));
         break;
     }
 #endif // TARGET_RISCV64
@@ -13251,13 +13320,13 @@ void CEECodeGenInfo::setEHinfoWorker(
     pEHClause->Flags          = (CorExceptionFlag)clause->Flags;
 
     LOG((LF_EH, LL_INFO1000000, "Setting EH clause #%d for %s::%s\n", EHnumber, m_pMethodBeingCompiled->m_pszDebugClassName, m_pMethodBeingCompiled->m_pszDebugMethodName));
-    LOG((LF_EH, LL_INFO1000000, "    Flags         : 0x%08lx  ->  0x%08lx\n",            clause->Flags,         pEHClause->Flags));
-    LOG((LF_EH, LL_INFO1000000, "    TryOffset     : 0x%08lx  ->  0x%08lx (startpc)\n",  clause->TryOffset,     pEHClause->TryStartPC));
-    LOG((LF_EH, LL_INFO1000000, "    TryLength     : 0x%08lx  ->  0x%08lx (endpc)\n",    clause->TryLength,     pEHClause->TryEndPC));
-    LOG((LF_EH, LL_INFO1000000, "    HandlerOffset : 0x%08lx  ->  0x%08lx\n",            clause->HandlerOffset, pEHClause->HandlerStartPC));
-    LOG((LF_EH, LL_INFO1000000, "    HandlerLength : 0x%08lx  ->  0x%08lx\n",            clause->HandlerLength, pEHClause->HandlerEndPC));
-    LOG((LF_EH, LL_INFO1000000, "    ClassToken    : 0x%08lx  ->  0x%08lx\n",            clause->ClassToken,    pEHClause->ClassToken));
-    LOG((LF_EH, LL_INFO1000000, "    FilterOffset  : 0x%08lx  ->  0x%08lx\n",            clause->FilterOffset,  pEHClause->FilterOffset));
+    LOG((LF_EH, LL_INFO1000000, "    Flags         : 0x%08x  ->  0x%08x\n",            clause->Flags,         pEHClause->Flags));
+    LOG((LF_EH, LL_INFO1000000, "    TryOffset     : 0x%08x  ->  0x%08x (startpc)\n",  clause->TryOffset,     pEHClause->TryStartPC));
+    LOG((LF_EH, LL_INFO1000000, "    TryLength     : 0x%08x  ->  0x%08x (endpc)\n",    clause->TryLength,     pEHClause->TryEndPC));
+    LOG((LF_EH, LL_INFO1000000, "    HandlerOffset : 0x%08x  ->  0x%08x\n",            clause->HandlerOffset, pEHClause->HandlerStartPC));
+    LOG((LF_EH, LL_INFO1000000, "    HandlerLength : 0x%08x  ->  0x%08x\n",            clause->HandlerLength, pEHClause->HandlerEndPC));
+    LOG((LF_EH, LL_INFO1000000, "    ClassToken    : 0x%08x  ->  0x%08x\n",            clause->ClassToken,    pEHClause->ClassToken));
+    LOG((LF_EH, LL_INFO1000000, "    FilterOffset  : 0x%08x  ->  0x%08x\n",            clause->FilterOffset,  pEHClause->FilterOffset));
 
     if (IsDynamicScope(m_MethodInfo.scope) &&
         ((pEHClause->Flags & (COR_ILEXCEPTION_CLAUSE_FILTER | COR_ILEXCEPTION_CLAUSE_FINALLY | COR_ILEXCEPTION_CLAUSE_FAULT)) == 0) &&

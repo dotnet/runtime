@@ -80,16 +80,11 @@ namespace BINDER_SPACE
 
     HRESULT ApplicationContext::SetupBindingPaths(SString &sTrustedPlatformAssemblies,
                                                   SString &sPlatformResourceRoots,
-                                                  SString &sAppPaths,
-                                                  BOOL     fAcquireLock)
+                                                  SString &sAppPaths)
     {
         HRESULT hr = S_OK;
 
-        CRITSEC_Holder contextLock(fAcquireLock ? GetCriticalSectionCookie() : NULL);
-        if (m_pTrustedPlatformAssemblyMap != nullptr)
-        {
-            GO_WITH_HRESULT(S_OK);
-        }
+        _ASSERTE(m_pTrustedPlatformAssemblyMap == nullptr);
 
         //
         // Parse TrustedPlatformAssemblies

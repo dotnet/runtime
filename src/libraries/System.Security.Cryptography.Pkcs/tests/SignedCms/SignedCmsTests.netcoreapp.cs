@@ -403,11 +403,11 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void AddCertificate()
         {
             SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.CounterSignedRsaPkcs1OneSigner);
+            cms.Decode(SignedDocuments.CounterSignedRsaPkcs1Sha256OneSigner);
 
             int numOfCerts = cms.Certificates.Count;
 
@@ -422,11 +422,11 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void AddCertificateWithPrivateKey()
         {
             SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.CounterSignedRsaPkcs1OneSigner);
+            cms.Decode(SignedDocuments.CounterSignedRsaPkcs1Sha256OneSigner);
 
             int numOfCerts = cms.Certificates.Count;
 
@@ -487,11 +487,11 @@ namespace System.Security.Cryptography.Pkcs.Tests
             }
         }
 
-        [ConditionalFact(typeof(SignatureSupport), nameof(SignatureSupport.SupportsRsaSha1Signatures))]
+        [Fact]
         public static void RemoveAllCertsAddBackSignerCert()
         {
             SignedCms cms = new SignedCms();
-            cms.Decode(SignedDocuments.CounterSignedRsaPkcs1OneSigner);
+            cms.Decode(SignedDocuments.CounterSignedRsaPkcs1Sha256OneSigner);
 
             SignerInfo signerInfoBeforeRemoval = cms.SignerInfos[0];
             X509Certificate2 signerCert = signerInfoBeforeRemoval.Certificate;

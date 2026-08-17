@@ -22,19 +22,21 @@ namespace Microsoft.Interop
         MarshallingInfo? CollectionElementMarshallingInfo);
 
     public readonly record struct CustomTypeMarshallers(
-        ImmutableDictionary<MarshalMode, CustomTypeMarshallerData> Modes)
+        ImmutableDictionary<MarshalMode, CustomTypeMarshallerData> Modes,
+        string? UnsupportedReason = null)
     {
         public bool Equals(CustomTypeMarshallers other)
         {
             // Check for equal count, then check if any KeyValuePairs exist in one 'Modes'
             // but not the other (i.e. set equality on the set of items in the dictionary)
             return Modes.Count == other.Modes.Count
-                && !Modes.Except(other.Modes).Any();
+                && !Modes.Except(other.Modes).Any()
+                && UnsupportedReason == other.UnsupportedReason;
         }
 
         public override int GetHashCode()
         {
-            int hash = 0;
+            int hash = UnsupportedReason?.GetHashCode() ?? 0;
             foreach (KeyValuePair<MarshalMode, CustomTypeMarshallerData> mode in Modes)
             {
                 hash = HashCode.Combine(hash, mode.Key, mode.Value);
