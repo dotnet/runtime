@@ -1473,7 +1473,7 @@ namespace System.Text.Json
             Debug.Assert(signResult == ConsumeNumberResult.OperationIncomplete);
 
             byte nextByte = data[i];
-            Debug.Assert(nextByte >= '0' && nextByte <= '9');
+            Debug.Assert(nextByte is >= (byte)'0' and <= (byte)'9');
 
             if (nextByte == '0')
             {
