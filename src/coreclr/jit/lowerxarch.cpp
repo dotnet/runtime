@@ -3064,7 +3064,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                     if (!TryInvertMask(maskNode, simdSize, maskBaseType))
                     {
                         // We weren't able to invert the mask, so we need to do it here.
-                        // The upper 8 - N bits area cleared during codegen
+                        // The upper 8 - N bits are zeroed during codegen
 
                         maskNode = m_compiler->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, NI_AVX512_NotMask,
                                                                         maskBaseType, simdSize);
