@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using Xunit;
 
@@ -27,6 +28,48 @@ namespace CodeGenTests
             return (long)value1 + (long)value2;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static nint Cast_LeadingZeroCount_To_NInt(ulong value)
+        {
+            // X64-NOT: cdqe
+            // X64-NOT: movsxd
+            return BitOperations.LeadingZeroCount(value);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static nint Cast_TrailingZeroCount_To_NInt(ulong value)
+        {
+            // X64-NOT: cdqe
+            // X64-NOT: movsxd
+            return BitOperations.TrailingZeroCount(value);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static nint Cast_PopCount_To_NInt(ulong value)
+        {
+            // X64-NOT: cdqe
+            // X64-NOT: movsxd
+            return BitOperations.PopCount(value);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool TruncatedValueCanBeNegative(long value)
+        {
+            return unchecked((int)value) < 0;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long TruncatingRoundTripMustRemain(long value)
+        {
+            return (long)(int)value;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static long ZeroExtendingRoundTripMustRemain(long value)
+        {
+            return unchecked((long)(uint)value);
+        }
+
         [Fact]
         public static int TestEntryPoint()
         {
@@ -34,6 +77,33 @@ namespace CodeGenTests
                 return 0;
 
             if (Cast_Short_To_Long_Add(Int16.MaxValue, Int16.MaxValue) != 65534)
+                return 0;
+
+            if (Cast_LeadingZeroCount_To_NInt(0) != 64)
+                return 0;
+
+            if (Cast_LeadingZeroCount_To_NInt(ulong.MaxValue) != 0)
+                return 0;
+
+            if (Cast_TrailingZeroCount_To_NInt(0) != 64)
+                return 0;
+
+            if (Cast_TrailingZeroCount_To_NInt(1) != 0)
+                return 0;
+
+            if (Cast_PopCount_To_NInt(0) != 0)
+                return 0;
+
+            if (Cast_PopCount_To_NInt(ulong.MaxValue) != 64)
+                return 0;
+
+            if (!TruncatedValueCanBeNegative(0xFFFF_FFFFL))
+                return 0;
+
+            if (TruncatingRoundTripMustRemain(0xFFFF_FFFFL) != -1)
+                return 0;
+
+            if (ZeroExtendingRoundTripMustRemain(-1) != uint.MaxValue)
                 return 0;
 
             return 100;
