@@ -892,6 +892,7 @@ private:
 #endif // FEATURE_DBGIPC_TRANSPORT_VM
 
     HANDLE                          m_thread;
+    Volatile<BOOL>                  m_helperThreadRunning;
     bool                            m_run;
 
     minipal_event                  *m_threadControlEvent;

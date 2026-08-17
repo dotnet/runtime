@@ -30,6 +30,7 @@ DebuggerRCThread::DebuggerRCThread(Debugger * pDebugger)
     : m_debugger(pDebugger),
     m_pDCB(NULL),
     m_thread(NULL),
+    m_helperThreadRunning(FALSE),
     m_run(true),
     m_threadControlEvent(NULL),
     m_helperThreadExitedEvent(NULL),
@@ -283,7 +284,8 @@ HRESULT DebuggerRCThread::Init(void)
         ThrowOutOfMemory();
     }
 
-    m_helperThreadExitedEvent = new (nothrow) minipal_event(true, false);
+    // Track liveness separately so this auto-reset event is only an exit notification.
+    m_helperThreadExitedEvent = new (nothrow) minipal_event(false, false);
     if ((m_helperThreadExitedEvent == nullptr) || !m_helperThreadExitedEvent->IsValid())
     {
         delete m_helperThreadExitedEvent;
@@ -583,10 +585,12 @@ void DebuggerRCThread::ThreadProc(void)
 
     struct HelperThreadExitSignal
     {
+        Volatile<BOOL> &Running;
         minipal_event *Event;
 
         ~HelperThreadExitSignal()
         {
+            Running.Store(FALSE);
             Event->Set();
         }
     };
@@ -678,11 +682,9 @@ void DebuggerRCThread::ThreadProc(void)
     // Mark that we're the true helper thread. Now that we've marked
     // this, no other threads will ever become the temporary helper
     // thread.
-    bool resetResult = m_helperThreadExitedEvent->Reset();
-    _ASSERTE(resetResult);
-    (void)resetResult;
+    HelperThreadExitSignal helperThreadExitSignal = { m_helperThreadRunning, m_helperThreadExitedEvent };
     m_pDCB->m_helperThreadId = GetCurrentThreadId();
-    HelperThreadExitSignal helperThreadExitSignal = { m_helperThreadExitedEvent };
+    m_helperThreadRunning.Store(TRUE);
 
     LOG((LF_CORDB, LL_INFO1000, "DRCT::TP: helper thread id is 0x%x helperThreadId\n",
         m_pDCB->m_helperThreadId));
@@ -1595,6 +1597,11 @@ bool DebuggerRCThread::IsRCThreadReady()
         return false;
     }
 
+    if (!m_helperThreadRunning.Load())
+    {
+        return false;
+    }
+
     // a more subtle check. It's possible the thread was up, but then
     // an bad call to ExitProcess suddenly terminated the helper thread,
     // leaving the threadid still non-0. So check the actual thread object
@@ -1674,96 +1681,105 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
     // We are being called on managed thread only.
     //
 
-    // We'll have problems if another thread comes in and
-    // deletes the RCThread object on us while we're in this call.
-    if (IsRCThreadReady())
-    {
-        // If the helper thread calls this, we deadlock.
-        // (Since we wait on an event that only the helper thread sets)
-        _ASSERTE(GetRCThreadId() != GetCurrentThreadId());
+    bool executeFavorOnCurrentThread = !IsRCThreadReady();
 
-        // Only lock if we're waiting on the helper thread.
+    if (!executeFavorOnCurrentThread)
+    {
+        // Serialize the readiness check with publishing and waiting for a favor.
         // This should be the only place the FavorLock is used.
         // Note this is never called on the helper thread.
         CrstHolder  ch(GetFavorLock());
 
-        SetFavorFnPtr(fp, pData);
-
-        // Our main message loop operating on the Helper thread will
-        // pickup that event, call the fp, and set the Read event
-        GetFavorAvailableEvent()->Set();
-
-        LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - Waiting on FavorReadEvent for favor %p\n", (void*)fp));
-
-        // Wait for either the FavorEventRead to be set (which means that the favor
-        // was executed by the helper thread) or the helper thread's handle (which means
-        // that the helper thread exited without doing the favor, so we should do it)
-        //
-        // Note we are assuming that there's only 2 ways the helper thread can exit:
-        // 1) Someone calls ::ExitProcess, killing all threads. That will kill us too, so we're "ok".
-        // 2) Someone calls Stop(), causing the helper to exit gracefully. That's ok too. The helper
-        // didn't execute the Favor (else the FREvent would have been set first) and so we can.
-        //
-        // Beware of problems:
-        // 1) If the helper can block, we may deadlock.
-        // 2) If the helper can exit magically (or if we change the Wait to include a timeout) ,
-        // the helper thread may have not executed the favor, partially executed the favor,
-        // or totally executed the favor but not yet signaled the FavorReadEvent. We don't
-        // know what it did, so we don't know what we can do; so we're in an unstable state.
-
-        const minipal_wait_handle *waitSet[] = {
-            GetFavorReadEvent(),
-#ifdef HOST_WINDOWS
-            // Preserve detection of abnormal helper termination through the native thread handle.
-            nullptr
-#else
-            m_helperThreadExitedEvent
-#endif
-        };
-#ifdef HOST_WINDOWS
-        minipal_process_wait helperThread(m_thread);
-        waitSet[1] = &helperThread;
-#endif
-
-        // the favor worker thread will require a transition to cooperative mode in order to complete its work and we will
-        // wait for the favor to complete before terminating the process.  if there is a GC in progress the favor thread
-        // will be blocked and if the thread requesting the favor is in cooperative mode we'll deadlock, so we switch to
-        // preemptive mode before waiting for the favor to complete (see Dev11 72349).
-        GCX_PREEMP();
-
-        int32_t waitResult = minipal_wait_handle::Wait(
-            waitSet,
-            ARRAY_SIZE(waitSet),
-            MINIPAL_WAIT_INFINITE);
-
-        if (waitResult == 0)
+        // Check readiness while holding the favor lock so that a prior waiter cannot consume
+        // the auto-reset exit notification before this caller starts waiting.
+        if (IsRCThreadReady())
         {
-            // Favor was executed, nothing to do here.
-            LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - favor %p finished, ret = %d\n", (void*)fp, waitResult));
+            // If the helper thread calls this, we deadlock.
+            // (Since we wait on an event that only the helper thread sets)
+            _ASSERTE(GetRCThreadId() != GetCurrentThreadId());
+
+            SetFavorFnPtr(fp, pData);
+
+            // Our main message loop operating on the Helper thread will
+            // pickup that event, call the fp, and set the Read event
+            GetFavorAvailableEvent()->Set();
+
+            LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - Waiting on FavorReadEvent for favor %p\n", (void*)fp));
+
+            // Wait for either the FavorEventRead to be set (which means that the favor
+            // was executed by the helper thread) or the helper thread's handle (which means
+            // that the helper thread exited without doing the favor, so we should do it)
+            //
+            // Note we are assuming that there's only 2 ways the helper thread can exit:
+            // 1) Someone calls ::ExitProcess, killing all threads. That will kill us too, so we're "ok".
+            // 2) Someone calls Stop(), causing the helper to exit gracefully. That's ok too. The helper
+            // didn't execute the Favor (else the FREvent would have been set first) and so we can.
+            //
+            // Beware of problems:
+            // 1) If the helper can block, we may deadlock.
+            // 2) If the helper can exit magically (or if we change the Wait to include a timeout) ,
+            // the helper thread may have not executed the favor, partially executed the favor,
+            // or totally executed the favor but not yet signaled the FavorReadEvent. We don't
+            // know what it did, so we don't know what we can do; so we're in an unstable state.
+
+            const minipal_wait_handle *waitSet[] = {
+                GetFavorReadEvent(),
+#ifdef HOST_WINDOWS
+                // Preserve detection of abnormal helper termination through the native thread handle.
+                nullptr
+#else
+                m_helperThreadExitedEvent
+#endif
+            };
+#ifdef HOST_WINDOWS
+            minipal_process_wait helperThread(m_thread);
+            waitSet[1] = &helperThread;
+#endif
+
+            // the favor worker thread will require a transition to cooperative mode in order to complete its work and we will
+            // wait for the favor to complete before terminating the process.  if there is a GC in progress the favor thread
+            // will be blocked and if the thread requesting the favor is in cooperative mode we'll deadlock, so we switch to
+            // preemptive mode before waiting for the favor to complete (see Dev11 72349).
+            GCX_PREEMP();
+
+            int32_t waitResult = minipal_wait_handle::Wait(
+                waitSet,
+                ARRAY_SIZE(waitSet),
+                MINIPAL_WAIT_INFINITE);
+
+            if (waitResult == 0)
+            {
+                // Favor was executed, nothing to do here.
+                LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - favor %p finished, ret = %d\n", (void*)fp, waitResult));
+            }
+            else
+            {
+                LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - lost helper thread during wait, "
+                    "doing favor %p on current thread\n", (void*)fp));
+
+                // Since we have no timeout, we shouldn't be able to get an error on the wait,
+                // but just in case ...
+                _ASSERTE(waitResult != MINIPAL_WAIT_FAILED);
+                _ASSERTE((waitResult == 1) || !"DoFavor - unexpected wait result");
+
+                // Thread exited without doing favor, so execute it on our thread.
+                // If we're here because of a stack overflow, this may push us over the edge,
+                // but there's nothing else we can really do
+                (*fp)(pData);
+
+                GetFavorAvailableEvent()->Reset();
+            }
+
+            // m_fpFavor & m_pFavorData are meaningless now. We could set them
+            // to NULL, but we may as well leave them as is to leave a trail.
         }
         else
         {
-            LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - lost helper thread during wait, "
-                "doing favor %p on current thread\n", (void*)fp));
-
-            // Since we have no timeout, we shouldn't be able to get an error on the wait,
-            // but just in case ...
-            _ASSERTE(waitResult != MINIPAL_WAIT_FAILED);
-            _ASSERTE((waitResult == 1) && !"DoFavor - unexpected wait result");
-
-            // Thread exited without doing favor, so execute it on our thread.
-            // If we're here because of a stack overflow, this may push us over the edge,
-            // but there's nothing else we can really do
-            (*fp)(pData);
-
-            GetFavorAvailableEvent()->Reset();
+            executeFavorOnCurrentThread = true;
         }
-
-        // m_fpFavor & m_pFavorData are meaningless now. We could set them
-        // to NULL, but we may as well leave them as is to leave a trail.
-
     }
-    else
+
+    if (executeFavorOnCurrentThread)
     {
         LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - helper thread not ready, "
             "doing favor %p on current thread\n", (void*)fp));
@@ -1830,6 +1846,8 @@ HRESULT DebuggerRCThread::SendIPCReply()
 void DebuggerRCThread::EarlyHelperThreadDeath(void)
 {
     LOG((LF_CORDB, LL_INFO10000, "DRCT::EHTD\n"));
+
+    m_helperThreadRunning.Store(FALSE);
 
     // If we ever spun up a thread...
     if (m_thread != NULL && m_pDCB)
