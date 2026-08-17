@@ -317,18 +317,20 @@ namespace System.Threading
 
         internal void SetWaitSleepJoinState()
         {
+            Debug.Assert(this == CurrentThread);
+
             // This method is called when the thread is about to enter a wait, sleep, or join state.
             // It sets the state in the native layer to indicate that the thread is waiting.
             SetWaitSleepJoinStateNative();
-            GC.KeepAlive(this);
         }
 
         internal void ClearWaitSleepJoinState()
         {
+            Debug.Assert(this == CurrentThread);
+
             // This method is called when the thread is no longer in a wait, sleep, or join state.
             // It clears the state in the native layer to indicate that the thread is no longer waiting.
             ClearWaitSleepJoinStateNative();
-            GC.KeepAlive(this);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetWaitSleepJoinState")]
@@ -611,12 +613,7 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ReentrantWaitAny")]
         internal static unsafe partial int ReentrantWaitAny([MarshalAs(UnmanagedType.Bool)] bool alertable, int timeout, int count, IntPtr* handles);
 
-        internal static void CheckForPendingInterrupt()
-        {
-            CheckForPendingInterruptNative();
-        }
-
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
-        private static partial void CheckForPendingInterruptNative();
+        internal static partial void CheckForPendingInterrupt();
     }
 }
