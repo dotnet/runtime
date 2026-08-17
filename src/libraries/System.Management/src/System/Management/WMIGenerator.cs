@@ -4241,7 +4241,7 @@ namespace System.Management
             string strObjectCollection = "privColObj";
             string strobjCollection = "objCollection";
 
-            //public class ServiceCollection : ICollection, IEnumerable
+            //public class ServiceCollection : ICollection, IDisposable
             ccc = new CodeTypeDeclaration(PrivateNamesUsed["CollectionClass"].ToString());
 
             ccc.BaseTypes.Add("System.Object");
@@ -4273,7 +4273,7 @@ namespace System.Management
 
             //public void Dispose()
             //{
-            //    objCollection.Dispose();
+            //    privColObj.Dispose();
             //}
 
             cmm = new CodeMemberMethod();
@@ -4437,7 +4437,7 @@ namespace System.Management
             string strManagementObjectCollectionType = "ManagementObjectCollection";
             string strobjEnum = "objEnum";
 
-            //public class ServiceEnumerator : IEnumerator
+            //public class ServiceEnumerator : IEnumerator, IDisposable
             ecc = new CodeTypeDeclaration(PrivateNamesUsed["EnumeratorClass"].ToString());
             ecc.TypeAttributes = TypeAttributes.NestedPublic;
 
@@ -4472,7 +4472,7 @@ namespace System.Management
 
             //public void Dispose()
             //{
-            //    ObjectEnumerator.Dispose();
+            //    privObjEnum.Dispose();
             //}
 
             cmm = new CodeMemberMethod();
