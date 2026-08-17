@@ -187,6 +187,6 @@ namespace System.Text.Json
         /// Returns 0 on a default instance of <see cref="JsonEncodedText"/>.
         /// </remarks>
         public override int GetHashCode()
-            => _value is null ? 0 : _value.GetHashCode();
+            => _value?.GetHashCode() ?? 0;
     }
 }
