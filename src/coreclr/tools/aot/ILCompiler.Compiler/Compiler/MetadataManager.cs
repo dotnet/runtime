@@ -71,6 +71,9 @@ namespace ILCompiler
         private readonly SortedSet<TypeDesc> _typesWithConstructedEETypesGenerated = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _methodsGenerated = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MethodDesc> _reflectableMethods = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
+        // These stay local to a single dependency graph so scanner-only field handles do not affect code generation.
+        private readonly SortedSet<FieldDesc> _fieldsWithRuntimeFieldHandles = new SortedSet<FieldDesc>(TypeSystemComparer.Instance);
+        private readonly HashSet<MetadataType> _typesOwningRuntimeFieldHandles = new HashSet<MetadataType>();
         private readonly SortedSet<GenericDictionaryNode> _genericDictionariesGenerated = new SortedSet<GenericDictionaryNode>(CompilerComparer.Instance);
         private readonly SortedSet<IMethodBodyNode> _methodBodiesGenerated = new SortedSet<IMethodBodyNode>(CompilerComparer.Instance);
         private readonly SortedSet<FrozenObjectNode> _frozenObjects = new SortedSet<FrozenObjectNode>(CompilerComparer.Instance);
@@ -323,6 +326,29 @@ namespace ILCompiler
             if (obj is DispatchCellNode dispatchCell)
             {
                 _dispatchCells.Add(dispatchCell);
+            }
+
+            FieldDesc runtimeFieldHandleField = obj switch
+            {
+                RuntimeFieldHandleNode runtimeFieldHandle => runtimeFieldHandle.Field,
+                NativeLayoutFieldLdTokenGenericDictionarySlotNode runtimeFieldHandle => runtimeFieldHandle.Field,
+                _ => null,
+            };
+
+            if (runtimeFieldHandleField is not null)
+            {
+                FieldDesc typicalField = runtimeFieldHandleField.GetTypicalFieldDefinition();
+                _fieldsWithRuntimeFieldHandles.Add(typicalField);
+
+                if (typicalField.OwningType is MetadataType owningType)
+                {
+                    do
+                    {
+                        _typesOwningRuntimeFieldHandles.Add(owningType);
+                        owningType = owningType.ContainingType as MetadataType;
+                    }
+                    while (owningType is not null);
+                }
             }
 
             if (obj is StructMarshallingDataNode structMarshallingDataNode)
@@ -619,6 +645,32 @@ namespace ILCompiler
             // RuntimeFieldHandle data structure.
         }
 
+        internal bool GeneratesMetadataForRuntimeFieldHandle(FieldDesc field)
+        {
+            Debug.Assert(field.IsTypicalFieldDefinition);
+            return _fieldsWithRuntimeFieldHandles.Contains(field)
+                && field.OwningType is MetadataType owningType
+                && !_blockingPolicy.IsBlocked(field)
+                && !_blockingPolicy.IsBlocked(owningType)
+                && IsModuleWithMetadata(owningType.Module);
+        }
+
+        internal bool GeneratesMetadataForRuntimeFieldHandle(MetadataType type)
+            => _typesOwningRuntimeFieldHandles.Contains(type)
+                && !_blockingPolicy.IsBlocked(type)
+                && IsModuleWithMetadata(type.Module);
+
+        private bool IsModuleWithMetadata(ModuleDesc module)
+        {
+            foreach (ModuleDesc moduleWithMetadata in GetCompilationModulesWithMetadata())
+            {
+                if (moduleWithMetadata == module)
+                    return true;
+            }
+
+            return false;
+        }
+
         public void GetDependenciesDueToDelegateCreation(ref DependencyList dependencies, NodeFactory factory, TypeDesc delegateType, MethodDesc target)
         {
             if (target.IsVirtual)
@@ -852,6 +904,16 @@ namespace ILCompiler
             foreach (var methodMapping in transformed.GetTransformedMethodDefinitions())
                 methodMetadataMappings[methodMapping.Key] = writer.GetRecordHandle(methodMapping.Value);
 
+            foreach (FieldDesc field in _fieldsWithRuntimeFieldHandles)
+            {
+                if (!GeneratesMetadataForRuntimeFieldHandle(field))
+                    continue;
+
+                Field record = transformed.GetTransformedFieldDefinition(field);
+                Debug.Assert(record is not null);
+                fieldMetadataMappings[field] = writer.GetRecordHandle(record);
+            }
+
             foreach (var method in GetReflectableMethods())
             {
                 MethodDesc typicalMethod = method.GetTypicalMethodDefinition();
@@ -894,8 +956,6 @@ namespace ILCompiler
                 Field record = transformed.GetTransformedFieldDefinition(field.GetTypicalFieldDefinition());
                 if (record == null)
                     continue;
-
-                fieldMetadataMappings[field.GetTypicalFieldDefinition()] = writer.GetRecordHandle(record);
 
                 FieldDesc fieldToAdd = field;
                 TypeDesc canonOwningType = field.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -1032,7 +1092,7 @@ namespace ILCompiler
 
         public int GetMetadataHandleForField(NodeFactory factory, FieldDesc field)
         {
-            if (!CanGenerateMetadata(field))
+            if (!GeneratesMetadataForRuntimeFieldHandle(field))
             {
                 // We can end up here with reflection disabled or multifile compilation.
                 // If we ever productize either, we'll need to do something different.

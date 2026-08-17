@@ -1027,7 +1027,8 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(FieldDesc fieldDef)
             {
-                return _factory.FieldMetadata(fieldDef).Marked;
+                return _factory.FieldMetadata(fieldDef).Marked
+                    || _factory.MetadataManager.GeneratesMetadataForRuntimeFieldHandle(fieldDef);
             }
 
             public bool GeneratesMetadata(MethodDesc methodDef)
@@ -1037,7 +1038,8 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(MetadataType typeDef)
             {
-                return _factory.TypeMetadata(typeDef).Marked;
+                return _factory.TypeMetadata(typeDef).Marked
+                    || _factory.MetadataManager.GeneratesMetadataForRuntimeFieldHandle(typeDef);
             }
 
             public bool GeneratesMetadata(EcmaModule module, CustomAttributeHandle caHandle)

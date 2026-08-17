@@ -1366,6 +1366,8 @@ namespace ILCompiler.DependencyAnalysis
     {
         private FieldDesc _field;
 
+        internal FieldDesc Field => _field;
+
         public NativeLayoutFieldLdTokenGenericDictionarySlotNode(FieldDesc field)
         {
             Debug.Assert(field.OwningType.IsRuntimeDeterminedSubtype);
