@@ -64,7 +64,20 @@ namespace
 
             // Verbose logging
             if (trace::is_enabled())
+            {
                 g_context->coreclr_properties.log_properties();
+                if (!g_context->coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)))
+                {
+                    for (const char* name : g_context->trusted_platform_assembly_names)
+                    {
+                        std::unordered_map<std::string, std::string>::const_iterator path =
+                            g_context->trusted_platform_assembly_paths.find(name);
+                        assert(path != g_context->trusted_platform_assembly_paths.end());
+
+                        trace::verbose(_X("TPA entry %hs = %hs"), name, path->second.c_str());
+                    }
+                }
+            }
 
             std::vector<char> host_path;
             pal::pal_clrstring(g_context->host_path, &host_path);
