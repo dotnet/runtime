@@ -63,13 +63,13 @@ namespace ILCompiler.Compiler.Tests
                         throw new Error("NativeAOT produced an invalid WebAssembly module.");
                     }
                     const webcil = {
-                        stackPointer: new WebAssembly.Global({ value: "i32", mutable: true }, 65000),
-                        imageBase: new WebAssembly.Global({ value: "i32", mutable: false }, 0),
-                        tableBase: new WebAssembly.Global({ value: "i32", mutable: false }, 0),
-                        asyncContinuation: new WebAssembly.Global({ value: "i32", mutable: true }, 0),
+                        __stack_pointer: new WebAssembly.Global({ value: "i32", mutable: true }, 65000),
+                        __memory_base: new WebAssembly.Global({ value: "i32", mutable: false }, 0),
+                        __table_base: new WebAssembly.Global({ value: "i32", mutable: false }, 0),
+                        __async_continuation: new WebAssembly.Global({ value: "i32", mutable: true }, 0),
                         table: new WebAssembly.Table({ initial: 4096, element: "anyfunc" }),
                         rtlRestoreContextTag: new WebAssembly.Tag({ parameters: [] }),
-                        memory: new WebAssembly.Memory({ initial: 16 }),
+                        memory: new WebAssembly.Memory({ initial: 32 }),
                     };
                     WebAssembly.instantiate(bytes, { webcil }).then(({ instance }) => {
                         const result = instance.exports.{{ExportName}}(65000, 0);
