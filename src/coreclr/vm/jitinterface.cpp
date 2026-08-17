@@ -4962,18 +4962,13 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
     return isAccessAllowed;
 }
 
-//---------------------------------------------------------------------------------------
-// Given a method descriptor ftnHnd, extract signature information into sigInfo
-// Obtain (representative) instantiation information from ftnHnd's owner class
-//@GENERICSVER: added explicit owner parameter
-static void setCalliStubSigFlag(MethodDesc* method, CORINFO_SIG_INFO* sig)
+static void setILStubSigFlag(MethodDesc* method, CORINFO_SIG_INFO* sig)
 {
     LIMITED_METHOD_CONTRACT;
 
-    if (method->IsILStub() &&
-        (method->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubPInvokeCalli))
+    if (method->IsILStub())
     {
-        sig->flags |= CORINFO_SIGFLAG_CALLI_STUB;
+        sig->flags |= CORINFO_SIGFLAG_IL_STUB;
     }
 }
 
@@ -5000,7 +4995,7 @@ static void getMethodSigInternal(
         CONV_TO_JITSIG_FLAGS_NONE,
         sigRet);
 
-    setCalliStubSigFlag(ftn, sigRet);
+    setILStubSigFlag(ftn, sigRet);
 
     //@GENERICS:
     // Shared generic methods and shared methods on generic structs take an extra argument representing their instantiation
@@ -7779,7 +7774,7 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
         CONV_TO_JITSIG_FLAGS_NONE,
         &methInfo->args);
 
-    setCalliStubSigFlag(ftn, &methInfo->args);
+    setILStubSigFlag(ftn, &methInfo->args);
 
     // Shared generic or static per-inst methods and shared methods on generic structs
     // take an extra argument representing their instantiation
@@ -9775,6 +9770,37 @@ CorInfoTypeWithMod CEEInfo::getArgType (
     }
 
     Module* pModule = GetModule(sig->scope);
+
+    // SecretStubArgument should only be present on IL stubs. Avoid searching every argument
+    // signature for it when compiling other methods.
+    if ((sig->flags & CORINFO_SIGFLAG_IL_STUB) != 0)
+    {
+        Module* modifierModule = nullptr;
+        mdToken modifierToken  = mdTokenNil;
+        if (ptr.HasCustomModifier(
+                pModule,
+                "System.Runtime.CompilerServices.SecretStubArgument",
+                ELEMENT_TYPE_CMOD_REQD,
+                &modifierModule,
+                &modifierToken))
+        {
+            TypeHandle secretStubArgument = CoreLibBinder::GetClass(CLASS__SECRET_STUB_ARGUMENT);
+            TypeHandle modifierType = ClassLoader::LoadTypeDefOrRefThrowing(
+                modifierModule,
+                modifierToken,
+                ClassLoader::ThrowIfNotFound,
+                ClassLoader::PermitUninstDefOrRef);
+            if (modifierType == secretStubArgument)
+            {
+                result = CorInfoTypeWithMod(result | CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT);
+            }
+        }
+    }
+    else
+    {
+        _ASSERTE(!ptr.HasCustomModifier(
+            pModule, "System.Runtime.CompilerServices.SecretStubArgument", ELEMENT_TYPE_CMOD_REQD));
+    }
 
     if (ptr.HasCustomModifier(pModule, "Microsoft.VisualC.NeedsCopyConstructorModifier", ELEMENT_TYPE_CMOD_REQD) ||
         ptr.HasCustomModifier(pModule, "System.Runtime.CompilerServices.IsCopyConstructed", ELEMENT_TYPE_CMOD_REQD))

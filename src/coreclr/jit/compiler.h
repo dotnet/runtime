@@ -4447,6 +4447,7 @@ public:
     // mechanism passes the address of the return address to a runtime helper
     // where it is used to detect tail-call chains.
     unsigned lvaRetAddrVar = BAD_VAR_NUM;
+    unsigned lvaSecretStubArg = BAD_VAR_NUM;
 
 #ifdef SWIFT_SUPPORT
     unsigned lvaSwiftSelfArg = BAD_VAR_NUM;
