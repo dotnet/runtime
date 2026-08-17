@@ -249,8 +249,8 @@ jobs:
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
-  # TEMP (wasm-aot-131537-validation): Mono AOT + Chrome runtime-test lane scoped to
-  # Loader/classloader/generics/regressions/131537 only. Remove before merging.
+  # TEMP (wasm-aot-131537-validation): Mono AOT + Chrome functional-test lane scoped to
+  # FunctionalTests/WebAssembly/Browser/AOT_131537 only. Remove before merging.
   - template: /eng/pipelines/common/templates/wasm-aot-runtime-test-131537.yml
     parameters:
       platforms:
