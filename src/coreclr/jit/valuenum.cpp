@@ -14973,27 +14973,33 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     // otherwise. Thus we know the value after the call is 1 if the call always
     // suspends, or if the indicator was already known to be 1 before it.
     GenTreeLclVarCommon* asyncResumedLclAddr = gtCallGetDefinedAsyncResumedLclAddr(call);
-    ValueNum             asyncResumedVN      = ValueNumStore::NoVN;
+    ValueNumPair         asyncResumedVNP;
     if (asyncResumedLclAddr != nullptr)
     {
-        bool isResumed = call->GetAsyncInfo().AlwaysSuspends;
-
-        if (!isResumed)
+        if (call->GetAsyncInfo().AlwaysSuspends)
+        {
+            asyncResumedVNP.SetBoth(vnStore->VNOneForType(TYP_I_IMPL));
+        }
+        else
         {
             CallArg* resumedUseArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
             if (resumedUseArg != nullptr)
             {
                 // The arg is usually a TYP_INT use of the TYP_I_IMPL indicator var.
                 assert(genActualTypeIsInt(resumedUseArg->GetNode()));
-                ValueNum resumedUseVN = vnStore->VNNormalValue(resumedUseArg->GetNode()->gtVNPair.GetLiberal());
-                isResumed =
-                    vnStore->IsVNConstant(resumedUseVN) && (vnStore->CoercedConstantValue<int>(resumedUseVN) == 1);
-            }
-        }
 
-        if (isResumed)
-        {
-            asyncResumedVN = vnStore->VNOneForType(TYP_I_IMPL);
+                // The indicator is monotonic, so it stays 1 for whichever kinds
+                // it was already known to be 1 for.
+                ValueNumKind vnKinds[2] = {VNK_Liberal, VNK_Conservative};
+                for (ValueNumKind vnKind : vnKinds)
+                {
+                    ValueNum resumedUseVN = vnStore->VNNormalValue(resumedUseArg->GetNode()->GetVN(vnKind));
+                    if (vnStore->IsVNConstant(resumedUseVN) && (vnStore->CoercedConstantValue<int>(resumedUseVN) == 1))
+                    {
+                        asyncResumedVNP.Set(vnKind, vnStore->VNOneForType(TYP_I_IMPL));
+                    }
+                }
+            }
         }
     }
 
@@ -15001,13 +15007,23 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
     // as well.
     auto visitDef = [=](const LocalDef& def) {
         ValueNumPair storeValue;
-        if ((def.Def == asyncResumedLclAddr) && (asyncResumedVN != ValueNumStore::NoVN))
+        if (def.Def == asyncResumedLclAddr)
         {
-            storeValue.SetBoth(asyncResumedVN);
+            storeValue = asyncResumedVNP;
         }
-        else
+
+        if (!storeValue.BothDefined())
         {
-            storeValue.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(def.Def->AsLclVarCommon())->TypeGet()));
+            // Use the same new unique VN for any kind we do not know the value of.
+            ValueNum newVN = vnStore->VNForExpr(compCurBB, lvaGetDesc(def.Def->AsLclVarCommon())->TypeGet());
+            if (storeValue.GetLiberal() == ValueNumStore::NoVN)
+            {
+                storeValue.SetLiberal(newVN);
+            }
+            if (storeValue.GetConservative() == ValueNumStore::NoVN)
+            {
+                storeValue.SetConservative(newVN);
+            }
         }
 
         fgValueNumberLocalStore(call, def.Def, def.Offset, def.Size, storeValue);
