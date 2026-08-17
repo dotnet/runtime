@@ -55,6 +55,9 @@
 
 struct DebuggerIPCEvent;
 struct DbgEventBufferEntry;
+#ifdef RIGHT_SIDE_COMPILE
+class DbgTransportSessionEvent;
+#endif // RIGHT_SIDE_COMPILE
 
 // Some simple ad-hoc debug only transport logging. This output is too chatty for an existng CLR logging
 // channel (and we've run out of bits for an additional channel) and is likely to be of limited use to anyone
@@ -643,7 +646,7 @@ private:
 #ifdef RIGHT_SIDE_COMPILE
     // Manual reset event that is signalled whenever the session state is SS_Open or SS_Closed (after waiting
     // on this event the caller should check to see which state it was).
-    minipal_event *m_hSessionOpenEvent;
+    DbgTransportSessionEvent *m_sessionOpenEvent;
 #endif // RIGHT_SIDE_COMPILE
 
     // Thread responsible for initial Connect()/Accept() on a low level transport connection and

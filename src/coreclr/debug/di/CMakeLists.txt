@@ -2,6 +2,10 @@ add_definitions(
     -DFEATURE_NO_HOST
     -DFEATURE_METADATA_LOAD_TRUSTED_IMAGES)
 
+if(CLR_CMAKE_HOST_UNIX AND HAVE_PTHREAD_CONDATTR_SETCLOCK)
+    add_compile_definitions(DBG_TRANSPORT_HAS_PTHREAD_CONDATTR_SETCLOCK=1)
+endif()
+
 set(CORDBDI_SOURCES
   shimprocess.cpp
   shimcallback.cpp
@@ -78,6 +82,25 @@ add_library_clr(cordbdi STATIC ${CORDBDI_SOURCES})
 set_target_properties(cordbdi PROPERTIES DBI_COMPONENT TRUE)
 target_precompile_headers(cordbdi PRIVATE stdafx.h)
 add_dependencies(cordbdi eventing_headers)
+
+add_executable_clr(coreclr_debug_session_event_tests
+    EXCLUDE_FROM_ALL
+    ../shared/dbgtransportsessionevent.cpp
+    ../shared/dbgtransportsessioneventtest.cpp
+)
+
+target_link_libraries(coreclr_debug_session_event_tests PRIVATE coreclrminipal)
+
+if(CLR_CMAKE_HOST_WIN32)
+    target_link_libraries(coreclr_debug_session_event_tests
+        PRIVATE
+        kernel32.lib
+        ${STATIC_MT_CRT_LIB}
+        ${STATIC_MT_VCRT_LIB}
+    )
+elseif(CLR_CMAKE_HOST_UNIX)
+    target_link_libraries(coreclr_debug_session_event_tests PRIVATE pthread)
+endif()
 
 if(CLR_CMAKE_HOST_UNIX)
     add_library_clr(cordbdi_universal STATIC ${CORDBDI_SOURCES})

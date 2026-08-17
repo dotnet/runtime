@@ -1620,7 +1620,7 @@ HRESULT CordbProcess::Init()
         // signal existing RS infrastructure. Eventually get rid of LSEA, LSER completely.
         //
 
-        m_leftSideEventAvailable = new (nothrow) minipal_event(false, false);
+        m_leftSideEventAvailable = new (nothrow) minipal_event(false);
         if ((m_leftSideEventAvailable == nullptr) || !m_leftSideEventAvailable->IsValid())
         {
             delete m_leftSideEventAvailable;
@@ -8772,7 +8772,7 @@ HRESULT CordbRCEventThread::Init()
     if (m_cordb == NULL)
         return E_INVALIDARG;
 
-    m_threadControlEvent = new (nothrow) minipal_event(false, false);
+    m_threadControlEvent = new (nothrow) minipal_event(false);
 
     if ((m_threadControlEvent == nullptr) || !m_threadControlEvent->IsValid())
     {
@@ -10252,7 +10252,7 @@ HRESULT CordbWin32EventThread::Init()
 
     m_sendToWin32EventThreadMutex.Init("Win32-Send lock", RSLock::cLockFlat, RSLock::LL_WIN32_SEND_LOCK);
 
-    m_threadControlEvent = new (nothrow) minipal_event(false, false);
+    m_threadControlEvent = new (nothrow) minipal_event(false);
     if ((m_threadControlEvent == nullptr) || !m_threadControlEvent->IsValid())
     {
         delete m_threadControlEvent;

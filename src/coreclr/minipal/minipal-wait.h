@@ -69,7 +69,7 @@ private:
 
 struct minipal_event final : minipal_wait_handle
 {
-    minipal_event(bool manualReset, bool initialState);
+    explicit minipal_event(bool initialState);
 
 #ifdef HOST_WINDOWS
     // Duplicates an existing native event handle.

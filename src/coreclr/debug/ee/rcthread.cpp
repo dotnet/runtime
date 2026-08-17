@@ -276,7 +276,7 @@ HRESULT DebuggerRCThread::Init(void)
 
 
     // Create the thread control event.
-    m_threadControlEvent = new (nothrow) minipal_event(false, false);
+    m_threadControlEvent = new (nothrow) minipal_event(false);
     if ((m_threadControlEvent == nullptr) || !m_threadControlEvent->IsValid())
     {
         delete m_threadControlEvent;
@@ -285,7 +285,7 @@ HRESULT DebuggerRCThread::Init(void)
     }
 
     // Track liveness separately so this auto-reset event is only an exit notification.
-    m_helperThreadExitedEvent = new (nothrow) minipal_event(false, false);
+    m_helperThreadExitedEvent = new (nothrow) minipal_event(false);
     if ((m_helperThreadExitedEvent == nullptr) || !m_helperThreadExitedEvent->IsValid())
     {
         delete m_helperThreadExitedEvent;

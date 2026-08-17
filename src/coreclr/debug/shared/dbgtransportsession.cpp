@@ -4,6 +4,10 @@
 
 #include "dbgtransportsession.h"
 
+#ifdef RIGHT_SIDE_COMPILE
+#include "dbgtransportsessionevent.h"
+#endif // RIGHT_SIDE_COMPILE
+
 #if (!defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_VM)) || (defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_DI))
 
 // This is the entry type for the IPC event queue owned by the transport.
@@ -60,8 +64,8 @@ DbgTransportSession::~DbgTransportSession()
         delete [] m_pEventBuffers;
 
 #ifdef RIGHT_SIDE_COMPILE
-    if (m_hSessionOpenEvent)
-        delete m_hSessionOpenEvent;
+    if (m_sessionOpenEvent)
+        delete m_sessionOpenEvent;
 
     if (m_hProcessExited)
         delete m_hProcessExited;
@@ -113,11 +117,11 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
     }
 
     m_fDebuggerAttached = false;
-    m_hSessionOpenEvent = new (nothrow) minipal_event(true, false);
-    if ((m_hSessionOpenEvent == nullptr) || !m_hSessionOpenEvent->IsValid())
+    m_sessionOpenEvent = new (nothrow) DbgTransportSessionEvent();
+    if ((m_sessionOpenEvent == nullptr) || !m_sessionOpenEvent->IsValid())
     {
-        delete m_hSessionOpenEvent;
-        m_hSessionOpenEvent = nullptr;
+        delete m_sessionOpenEvent;
+        m_sessionOpenEvent = nullptr;
         return E_OUTOFMEMORY;
     }
 
@@ -140,7 +144,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
     if (m_pEventBuffers == NULL)
         return E_OUTOFMEMORY;
 
-    m_rghEventReadyEvent[IPCET_OldStyle] = new (nothrow) minipal_event(false, false);
+    m_rghEventReadyEvent[IPCET_OldStyle] = new (nothrow) minipal_event(false);
     if ((m_rghEventReadyEvent[IPCET_OldStyle] == nullptr) ||
         !m_rghEventReadyEvent[IPCET_OldStyle]->IsValid())
     {
@@ -149,7 +153,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
         return E_OUTOFMEMORY;
     }
 
-    m_rghEventReadyEvent[IPCET_DebugEvent] = new (nothrow) minipal_event(false, false);
+    m_rghEventReadyEvent[IPCET_DebugEvent] = new (nothrow) minipal_event(false);
     if ((m_rghEventReadyEvent[IPCET_DebugEvent] == nullptr) ||
         !m_rghEventReadyEvent[IPCET_DebugEvent]->IsValid())
     {
@@ -213,8 +217,8 @@ void DbgTransportSession::Shutdown()
         } // Leave m_sStateLock
 
 #ifdef RIGHT_SIDE_COMPILE
-        // Signal the m_hSessionOpenEvent now to quickly error out any callers of WaitForSessionToOpen().
-        m_hSessionOpenEvent->Set();
+        // Signal the session-open event now to quickly error out any callers of WaitForSessionToOpen().
+        m_sessionOpenEvent->Set();
 #endif // RIGHT_SIDE_COMPILE
     }
 
@@ -256,14 +260,14 @@ void DbgTransportSession::CleanupTargetProcess()
 // returns true if the session opened within the time given (in milliseconds) and false otherwise.
 bool DbgTransportSession::WaitForSessionToOpen(DWORD dwTimeout)
 {
-    int32_t waitResult = minipal_wait_handle::Wait(*m_hSessionOpenEvent, dwTimeout);
+    DbgTransportSessionEvent::WaitResult waitResult = m_sessionOpenEvent->Wait(dwTimeout);
     if (m_eState == SS_Closed)
         return false;
 
-    if (waitResult == MINIPAL_WAIT_TIMEOUT)
+    if (waitResult == DbgTransportSessionEvent::WaitResult::TimedOut)
         DbgTransportLog(LC_Proxy, "DbgTransportSession::WaitForSessionToOpen(%u) timed out", dwTimeout);
 
-    return waitResult == 0;
+    return waitResult == DbgTransportSessionEvent::WaitResult::Signaled;
 }
 
 //---------------------------------------------------------------------------------------
@@ -705,7 +709,7 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
 HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
 {
     // Allocate event to wait for reply on.
-    pMessage->m_hReplyEvent = new (nothrow) minipal_event(false, false);
+    pMessage->m_hReplyEvent = new (nothrow) minipal_event(false);
     if ((pMessage->m_hReplyEvent == nullptr) || !pMessage->m_hReplyEvent->IsValid())
     {
         delete pMessage->m_hReplyEvent;
@@ -1264,7 +1268,7 @@ void DbgTransportSession::TransportWorker()
 
 #ifdef RIGHT_SIDE_COMPILE
         // The session is definitely not open at this point.
-        m_hSessionOpenEvent->Reset();
+        m_sessionOpenEvent->Reset();
 
         // On the right side we initiate the connection via Connect(). A failure is dealt with by waiting a
         // little while and retrying (the LS may take a little while to set up). If there's nobody listening
@@ -1514,7 +1518,7 @@ void DbgTransportSession::TransportWorker()
 
 #ifdef RIGHT_SIDE_COMPILE
             // Signal any WaitForSessionToOpen() waiters that we've gotten to SS_Open.
-            m_hSessionOpenEvent->Set();
+            m_sessionOpenEvent->Set();
 #endif // RIGHT_SIDE_COMPILE
 
             // We're ready to begin receiving normal incoming messages now.
@@ -2047,7 +2051,7 @@ void DbgTransportSession::TransportWorker()
 
 #ifdef RIGHT_SIDE_COMPILE
     // The session is definitely not open at this point.
-    m_hSessionOpenEvent->Reset();
+    m_sessionOpenEvent->Reset();
 #endif // RIGHT_SIDE_COMPILE
 
     // Close the connection if we haven't done so already.

@@ -50,8 +50,8 @@ minipal_wait_handle::~minipal_wait_handle()
     }
 }
 
-minipal_event::minipal_event(bool manualReset, bool initialState)
-    : minipal_wait_handle(CreateEventW(nullptr, manualReset, initialState, nullptr))
+minipal_event::minipal_event(bool initialState)
+    : minipal_wait_handle(CreateEventW(nullptr, FALSE, initialState, nullptr))
 {
 }
 

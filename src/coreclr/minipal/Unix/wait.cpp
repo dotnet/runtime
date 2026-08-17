@@ -63,7 +63,6 @@ namespace
         WaitableKind kind;
         minipal_mutex mutex;
         bool mutexInitialized;
-        bool manualReset;
         bool signaled;
         int readFileDescriptor;
         int writeFileDescriptor;
@@ -317,7 +316,7 @@ namespace
             return AcquireResult::NotReady;
         }
 
-        if (!waitable->manualReset)
+        if (waitable->kind == WaitableKind::Event)
         {
             if (!ReadByte(waitable->readFileDescriptor))
             {
@@ -659,7 +658,7 @@ namespace
         return result == 0;
     }
 
-    Waitable* CreatePipeWaitable(WaitableKind kind, bool manualReset, bool initialState)
+    Waitable* CreatePipeWaitable(WaitableKind kind, bool initialState)
     {
         Waitable* waitable = AllocateWaitable(kind);
         if (waitable == nullptr)
@@ -676,7 +675,6 @@ namespace
 
         waitable->readFileDescriptor = eventPipe[0];
         waitable->writeFileDescriptor = eventPipe[1];
-        waitable->manualReset = manualReset;
 
         if (initialState && !SignalPipe(waitable))
         {
@@ -689,7 +687,7 @@ namespace
 
     Waitable* CreateSignaledProcessWaitable(pid_t processId)
     {
-        Waitable* waitable = CreatePipeWaitable(WaitableKind::ProcessPipe, true, true);
+        Waitable* waitable = CreatePipeWaitable(WaitableKind::ProcessPipe, true);
         if (waitable != nullptr)
         {
             waitable->processId = processId;
@@ -701,7 +699,7 @@ namespace
 
     Waitable* CreateProcessWatcherWaitable(pid_t processId)
     {
-        Waitable* waitable = CreatePipeWaitable(WaitableKind::ProcessPipe, true, false);
+        Waitable* waitable = CreatePipeWaitable(WaitableKind::ProcessPipe, false);
         if (waitable == nullptr)
         {
             return nullptr;
@@ -764,7 +762,6 @@ namespace
 
         waitable->processId = processId;
         waitable->processFileDescriptor = processQueue;
-        waitable->manualReset = true;
         return waitable;
     }
 #endif // MINIPAL_WAIT_USES_KQUEUE
@@ -1035,7 +1032,6 @@ namespace
 
             waitable->processId = static_cast<pid_t>(processId);
             waitable->processFileDescriptor = processFileDescriptor;
-            waitable->manualReset = true;
             return waitable;
         }
 
@@ -1133,8 +1129,8 @@ minipal_wait_handle::~minipal_wait_handle()
     }
 }
 
-minipal_event::minipal_event(bool manualReset, bool initialState)
-    : minipal_wait_handle(CreatePipeWaitable(WaitableKind::Event, manualReset, initialState))
+minipal_event::minipal_event(bool initialState)
+    : minipal_wait_handle(CreatePipeWaitable(WaitableKind::Event, initialState))
 {
 }
 

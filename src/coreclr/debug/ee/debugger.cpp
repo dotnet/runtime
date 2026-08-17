@@ -2078,7 +2078,7 @@ void HelperThreadFavor::Init()
     CONTRACTL_END;
 
     // Create events for managing favors.
-    m_FavorReadEvent = new (nothrow) minipal_event(false, false);
+    m_FavorReadEvent = new (nothrow) minipal_event(false);
     if ((m_FavorReadEvent == nullptr) || !m_FavorReadEvent->IsValid())
     {
         delete m_FavorReadEvent;
@@ -2086,7 +2086,7 @@ void HelperThreadFavor::Init()
         ThrowOutOfMemory();
     }
 
-    m_FavorAvailableEvent = new (nothrow) minipal_event(false, false);
+    m_FavorAvailableEvent = new (nothrow) minipal_event(false);
     if ((m_FavorAvailableEvent == nullptr) || !m_FavorAvailableEvent->IsValid())
     {
         delete m_FavorAvailableEvent;

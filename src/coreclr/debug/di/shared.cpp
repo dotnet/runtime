@@ -11,5 +11,6 @@
 #include "stdafx.h"
 
 #include "../shared/utils.cpp"
+#include "../shared/dbgtransportsessionevent.cpp"
 #include "../shared/dbgtransportsession.cpp"
 #include "../shared/stringcopyholder.cpp"

@@ -133,12 +133,24 @@ namespace
 
     bool TestAutoResetEvent()
     {
-        minipal_event event(false, false);
+        minipal_event event(false);
+        minipal_event initiallySignaledEvent(true);
         bool success =
-            Check(event.IsValid(), "create auto-reset event") &&
+            Check(event.IsValid() && initiallySignaledEvent.IsValid(), "create auto-reset events") &&
+            Check(
+                minipal_wait_handle::Wait(initiallySignaledEvent, 0) == 0,
+                "initially signaled auto-reset event is acquired") &&
+            Check(
+                minipal_wait_handle::Wait(initiallySignaledEvent, 0) == MINIPAL_WAIT_TIMEOUT,
+                "initially signaled auto-reset event is consumed") &&
             Check(
                 minipal_wait_handle::Wait(event, 0) == MINIPAL_WAIT_TIMEOUT,
                 "unsignaled auto-reset event times out") &&
+            Check(event.Set(), "set auto-reset event before reset") &&
+            Check(event.Reset(), "reset auto-reset event") &&
+            Check(
+                minipal_wait_handle::Wait(event, 0) == MINIPAL_WAIT_TIMEOUT,
+                "reset auto-reset event times out") &&
             Check(event.Set(), "set auto-reset event") &&
             Check(event.Set(), "coalesce repeated auto-reset set") &&
             Check(
@@ -151,36 +163,13 @@ namespace
         return success;
     }
 
-    bool TestManualResetEvent()
-    {
-        minipal_event event(true, true);
-        bool success =
-            Check(event.IsValid(), "create manual-reset event") &&
-            Check(
-                minipal_wait_handle::Wait(event, 0) == 0,
-                "initially signaled manual-reset event") &&
-            Check(
-                minipal_wait_handle::Wait(event, 0) == 0,
-                "manual-reset event remains signaled") &&
-            Check(event.Reset(), "reset manual-reset event") &&
-            Check(
-                minipal_wait_handle::Wait(event, 0) == MINIPAL_WAIT_TIMEOUT,
-                "manual-reset event becomes unsignaled") &&
-            Check(event.Set(), "set manual-reset event") &&
-            Check(
-                minipal_wait_handle::Wait(event, 0) == 0,
-                "manual-reset event can be signaled again");
-
-        return success;
-    }
-
     bool TestLowestIndexPriority()
     {
         minipal_event events[3] =
         {
-            { false, false },
-            { false, false },
-            { false, false },
+            minipal_event(false),
+            minipal_event(false),
+            minipal_event(false),
         };
         const minipal_wait_handle* waitSet[] = { &events[0], &events[1], &events[2] };
 
@@ -200,7 +189,7 @@ namespace
 
     bool TestTimeout()
     {
-        minipal_event event(false, false);
+        minipal_event event(false);
         if (!Check(event.IsValid(), "create timeout event"))
         {
             return false;
@@ -220,7 +209,7 @@ namespace
 
     bool TestAutoResetReleasesSingleWaiter()
     {
-        minipal_event event(false, false);
+        minipal_event event(false);
         WaitThreadState states[2] =
         {
             { event, 2000 },
@@ -288,7 +277,7 @@ namespace
     {
         minipal_event* duplicate;
         {
-            minipal_event event(false, false);
+            minipal_event event(false);
             duplicate = new (std::nothrow) minipal_event(event);
         }
 
@@ -305,7 +294,7 @@ namespace
 
     bool TestInvalidWaitSet()
     {
-        minipal_event event(false, false);
+        minipal_event event(false);
         minipal_process_wait invalidProcess(static_cast<uint32_t>(0));
         const minipal_wait_handle* handles[] = { &event, nullptr };
 
@@ -334,7 +323,7 @@ namespace
 
     bool TestConcurrentWait()
     {
-        minipal_event event(false, false);
+        minipal_event event(false);
         WaitThreadState state(event, MINIPAL_WAIT_INFINITE);
 
 #ifdef HOST_WINDOWS
@@ -382,7 +371,7 @@ namespace
             return false;
         }
 
-        minipal_event event(false, false);
+        minipal_event event(false);
         WaitThreadState state(event, MINIPAL_WAIT_INFINITE);
         pthread_t thread;
         bool threadStarted = pthread_create(&thread, nullptr, WaitThread, &state) == 0;
@@ -628,7 +617,7 @@ namespace
         }
 
         minipal_process_wait process(processInfo.dwProcessId);
-        minipal_event event(false, false);
+        minipal_event event(false);
         const minipal_wait_handle* handles[] = { &event, &process };
         int32_t result = !process.IsValid() || !event.IsValid()
             ? MINIPAL_WAIT_FAILED
@@ -662,7 +651,7 @@ namespace
         }
 
         minipal_process_wait process(static_cast<uint32_t>(child));
-        minipal_event event(false, false);
+        minipal_event event(false);
         const minipal_wait_handle* handles[] = { &event, &process };
         int32_t result = !process.IsValid() || !event.IsValid()
             ? MINIPAL_WAIT_FAILED
@@ -702,7 +691,6 @@ int main(int argc, char** argv)
 
     bool success =
         TestAutoResetEvent() &&
-        TestManualResetEvent() &&
         TestLowestIndexPriority() &&
         TestTimeout() &&
         TestDuplicateLifetime() &&
