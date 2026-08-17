@@ -211,6 +211,11 @@ bool coreclr_property_bag_t::add(const pal::char_t *key, const pal::char_t *valu
     }
 }
 
+bool coreclr_property_bag_t::contains(const pal::char_t *key) const
+{
+    return _properties.find(key) != _properties.cend();
+}
+
 bool coreclr_property_bag_t::try_get(common_property key, const pal::char_t **value) const
 {
     int idx = static_cast<int>(key);

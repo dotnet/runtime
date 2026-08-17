@@ -20,6 +20,24 @@ namespace
         trace::error(_X("It is invalid to specify values for properties populated by the hosting layer in the application's .runtimeconfig.json"));
     }
 
+    std::string reconstruct_tpa_property(const hostpolicy_context_t* context)
+    {
+        std::string value;
+        for (const char* name : context->trusted_platform_assembly_names)
+        {
+            std::unordered_map<std::string, std::string>::const_iterator path =
+                context->trusted_platform_assembly_paths.find(name);
+            assert(path != context->trusted_platform_assembly_paths.end());
+
+            if (!value.empty())
+                value.push_back(static_cast<char>(PATH_SEPARATOR));
+
+            value.append(path->second);
+        }
+
+        return value;
+    }
+
     // bundle_probe:
     // Probe the app-bundle for the file 'path' and return its location ('offset', 'size') if found.
     //
@@ -122,20 +140,11 @@ namespace
 
         if (::strcmp(key, HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES) == 0)
         {
-            std::string value;
-            for (const char* name : context->trusted_platform_assembly_names)
-            {
-                std::unordered_map<std::string, std::string>::const_iterator path =
-                    context->trusted_platform_assembly_paths.find(name);
-                if (path == context->trusted_platform_assembly_paths.end())
-                    continue;
+            const pal::char_t* configuredValue;
+            if (context->coreclr_properties.try_get(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES), &configuredValue))
+                return pal::pal_utf8string(configuredValue, value_buffer, value_buffer_size);
 
-                if (!value.empty())
-                    value.push_back(static_cast<char>(PATH_SEPARATOR));
-
-                value.append(path->second);
-            }
-
+            std::string value = reconstruct_tpa_property(context);
             size_t requiredSize = value.size() + 1;
             if (value_buffer_size >= requiredSize)
                 memcpy(value_buffer, value.c_str(), requiredSize);
@@ -192,6 +201,11 @@ namespace
             return false;
 
         hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
+
+        // Custom host explicitly set the assemblies via a property string
+        if (context->coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)))
+            return false;
+
         *names = context->trusted_platform_assembly_names.data();
         *count = context->trusted_platform_assembly_names.size();
         return true;
@@ -202,6 +216,11 @@ namespace
         void* contract_context)
     {
         hostpolicy_context_t* context = static_cast<hostpolicy_context_t*>(contract_context);
+
+        // Custom host explicitly set the assemblies via a property string
+        if (context->coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)))
+            return nullptr;
+
         std::unordered_map<std::string, std::string>::const_iterator entry =
             context->trusted_platform_assembly_paths.find(simple_name);
         return entry == context->trusted_platform_assembly_paths.end() ? nullptr : entry->second.c_str();
@@ -219,6 +238,20 @@ bool hostpolicy_context_t::should_read_rid_fallback_graph(const hostpolicy_init_
 
     // Reading the RID fallback graph is disabled by default
     return false;
+}
+
+const pal::string_t& hostpolicy_context_t::get_reconstructed_tpa_property()
+{
+    assert(!coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)));
+
+    std::call_once(reconstructed_tpa_property_once, [this]()
+    {
+        std::string value = reconstruct_tpa_property(this);
+        bool converted = pal::clr_palstring(value.c_str(), &reconstructed_tpa_property);
+        assert(converted);
+    });
+
+    return reconstructed_tpa_property;
 }
 
 int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs)
@@ -339,7 +372,7 @@ int hostpolicy_context_t::initialize(const hostpolicy_init_t &hostpolicy_init, c
     {
         // Provide opt-in compatible behavior by using the switch to set APP_PATHS
         const pal::char_t *key = hostpolicy_init.cfg_keys[i].c_str();
-        if (pal::strcmp(key, _X("TRUSTED_PLATFORM_ASSEMBLIES")) == 0)
+        if (pal::strcmp(key, _STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)) == 0)
         {
             log_duplicate_property_error(key);
             return StatusCode::LibHostDuplicateProperty;

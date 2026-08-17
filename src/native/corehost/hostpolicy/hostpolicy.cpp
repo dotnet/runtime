@@ -571,7 +571,12 @@ namespace
             return StatusCode::HostInvalidState;
 
         if (!context->coreclr_properties.try_get(key, value))
-            return StatusCode::HostPropertyNotFound;
+        {
+            if (pal::strcmp(key, _STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES)) != 0)
+                return StatusCode::HostPropertyNotFound;
+
+            *value = context->get_reconstructed_tpa_property().c_str();
+        }
 
         return StatusCode::Success;
     }
@@ -612,7 +617,8 @@ namespace
             return StatusCode::HostInvalidState;
         }
 
-        size_t actualCount = context->coreclr_properties.count();
+        bool hasExplicitTpa = context->coreclr_properties.contains(_STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES));
+        size_t actualCount = context->coreclr_properties.count() + (hasExplicitTpa ? 0 : 1);
         size_t input_count = *count;
         *count = actualCount;
         if (input_count < actualCount || keys == nullptr || values == nullptr)
@@ -626,6 +632,11 @@ namespace
             ++index;
         };
         context->coreclr_properties.enumerate(callback);
+        if (!hasExplicitTpa)
+        {
+            keys[index] = _STRINGIFY(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES);
+            values[index] = context->get_reconstructed_tpa_property().c_str();
+        }
 
         return StatusCode::Success;
     }

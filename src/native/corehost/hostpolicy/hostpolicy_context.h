@@ -33,9 +33,14 @@ public:
     std::unordered_map<std::string, std::string> trusted_platform_assembly_paths;
 
     int initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs);
+    const pal::string_t& get_reconstructed_tpa_property();
 
 public: // static
     static bool should_read_rid_fallback_graph(const hostpolicy_init_t &init);
+
+private:
+    std::once_flag reconstructed_tpa_property_once;
+    pal::string_t reconstructed_tpa_property;
 };
 
 #endif // __HOSTPOLICY_CONTEXT_H__
