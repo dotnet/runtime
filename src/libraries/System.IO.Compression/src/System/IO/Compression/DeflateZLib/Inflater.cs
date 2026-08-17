@@ -282,6 +282,19 @@ namespace System.IO.Compression
         }
 
         /// <summary>
+        /// Discards any unconsumed input previously set via SetInput, releasing the pinned reference (if any).
+        /// Must be called if an in-progress operation is abandoned (e.g. due to an exception or cancellation) so
+        /// the inflater doesn't retain a dangling reference to a buffer the caller may since have reused or freed.
+        /// </summary>
+        internal void UnsetInput()
+        {
+            if (IsInputBufferHandleAllocated)
+            {
+                DeallocateInputBufferHandle(resetStreamHandle: true);
+            }
+        }
+
+        /// <summary>
         /// Frees the GCHandle being used to store the input buffer
         /// </summary>
         private void DeallocateInputBufferHandle(bool resetStreamHandle)
