@@ -2657,6 +2657,90 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
 
 //---------------------------------------------------------------------------------------
 //
+// Task and Task<T> are not sealed, thus a covariant override may return a type that derives from
+// Task/Task<T>, while not being Task/Task<T> itself. Such a method is not Task-returning on its own,
+// but the method that it overrides may well be. Since the overridden method has an Async variant,
+// the override must have one as well, or it would not be able to override it.
+//
+// This helper checks whether the given MethodImpl declaration is a Task-returning method and,
+// if so, produces the signature of the "element" type of its return type - the type that the
+// Async variant of the overriding method must return.
+// A NULL element signature means that the Async variant returns void (the declaration returns Task).
+//
+// Returns false if the declaration is not Task-returning or if the case is not supported.
+//
+static bool TryGetCovariantOverrideAsyncVariantReturnType(
+    IMDInternalImport* pMDInternalImport,
+    Module*            pModule,
+    mdToken            tkDecl,
+    PCCOR_SIGNATURE*   ppElementSig,
+    ULONG*             pcbElementSig)
+{
+    STANDARD_VM_CONTRACT;
+
+    *ppElementSig = NULL;
+    *pcbElementSig = 0;
+
+    PCCOR_SIGNATURE pSigDecl = NULL;
+    ULONG cbSigDecl = 0;
+
+    if (TypeFromToken(tkDecl) == mdtMethodDef)
+    {
+        if (FAILED(pMDInternalImport->GetSigOfMethodDef(tkDecl, &cbSigDecl, &pSigDecl)))
+            return false;
+    }
+    else if (TypeFromToken(tkDecl) == mdtMemberRef)
+    {
+        // The signature of a member of an instantiated generic type may refer to the generic
+        // parameters of that type. Such references do not have the same meaning in the scope of
+        // the overriding method, so we cannot reuse the signature. That case is not supported yet.
+        mdToken tkParent;
+        if (FAILED(pMDInternalImport->GetParentToken(tkDecl, &tkParent)) ||
+            (TypeFromToken(tkParent) == mdtTypeSpec))
+        {
+            return false;
+        }
+
+        LPCSTR szDeclName;
+        if (FAILED(pMDInternalImport->GetNameAndSigOfMemberRef(tkDecl, &pSigDecl, &cbSigDecl, &szDeclName)))
+            return false;
+    }
+    else
+    {
+        return false;
+    }
+
+    ULONG declOffsetOfAsyncDetails = 0;
+    ULONG declElementTypeLength = 0;
+    bool declReturnsValueTask = false;
+    MethodReturnKind declReturnKind = ClassifyMethodReturnKind(
+        SigPointer(pSigDecl, cbSigDecl), pModule, &declOffsetOfAsyncDetails, &declElementTypeLength, &declReturnsValueTask);
+
+    // ValueTask and ValueTask<T> are structs, so they cannot be base types of a covariant return type.
+    if (declReturnsValueTask)
+        return false;
+
+    if (declReturnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+    {
+        // "Task"-returning declaration. The Async variant returns void.
+        return true;
+    }
+
+    if (declReturnKind == MethodReturnKind::GenericTaskReturningMethod)
+    {
+        // "Task<T>"-returning declaration. The Async variant returns T.
+        // E_T_GENERICINST E_T_CLASS <TokenOfTask> 1 <elementType>
+        ULONG taskTokenLen = CorSigUncompressedDataSize(&pSigDecl[declOffsetOfAsyncDetails + 2]);
+        *ppElementSig = pSigDecl + declOffsetOfAsyncDetails + 2 + taskTokenLen + 1;
+        *pcbElementSig = declElementTypeLength;
+        return true;
+    }
+
+    return false;
+}
+
+//---------------------------------------------------------------------------------------
+//
 // Used by BuildMethodTable
 //
 // Enumerate this class's members
@@ -3339,6 +3423,38 @@ MethodTableBuilder::EnumerateClassMethods()
             }
         }
 
+        // A covariant override of a Task-returning method may return a type derived from
+        // Task/Task<T> and thus not be Task-returning itself. We still need to treat it as
+        // Task-returning, so that it gets an Async variant that overrides the Async variant
+        // of the overridden method. The Async variant is always a thunk in such case, since
+        // the method itself does not formally return a Task and thus cannot be async.
+        // The return type of the Async variant is the "element" type of the overridden method -
+        // void when the overridden method returns Task and T when it returns Task<T>.
+        bool isCovariantTaskOverride = false;
+        PCCOR_SIGNATURE pCovariantElementSig = NULL;
+        ULONG cbCovariantElementSig = 0;
+        if (bmtMetaData->fHasCovariantOverride &&
+            (implType == METHOD_IMPL) &&
+            !IsTaskReturning(returnKind) &&
+            !IsMiAsync(dwImplFlags) &&
+            IsMdVirtual(dwMemberAttrs))
+        {
+            for (DWORD impls = 0; impls < bmtMethod->dwNumberMethodImpls; impls++)
+            {
+                if ((bmtMetaData->rgMethodImplTokens[impls].methodBody == tok) &&
+                    bmtMetaData->rgMethodImplTokens[impls].fRequiresCovariantReturnTypeChecking)
+                {
+                    isCovariantTaskOverride = TryGetCovariantOverrideAsyncVariantReturnType(
+                        pMDInternalImport,
+                        GetModule(),
+                        bmtMetaData->rgMethodImplTokens[impls].methodDecl,
+                        &pCovariantElementSig,
+                        &cbCovariantElementSig);
+                    break;
+                }
+            }
+        }
+
         // For delegates we don't allow any non-runtime implemented bodies
         // for any of the four special methods
         if (IsDelegate() && !IsMiRuntime(dwImplFlags))
@@ -3375,7 +3491,7 @@ MethodTableBuilder::EnumerateClassMethods()
                     type,
                     implType);
 
-                if (IsTaskReturning(returnKind))
+                if (IsTaskReturning(returnKind) || isCovariantTaskOverride)
                 {
                     // Declare a TaskReturning variant method.
                     // In the next pass we will also add an AsyncCall variant that can be called by async
@@ -3419,7 +3535,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 ULONG taskTypePrefixReplacementSize;
 
                 AsyncMethodFlags asyncFlags = (AsyncMethodFlags::AsyncCall | AsyncMethodFlags::IsAsyncVariant);
-                if (returnsValueTask)
+                if (returnsValueTask && !isCovariantTaskOverride)
                 {
                     asyncFlags |= AsyncMethodFlags::IsAsyncVariantForValueTask;
                 }
@@ -3437,7 +3553,28 @@ MethodTableBuilder::EnumerateClassMethods()
                 // The rest of the signature stays exactly the same.
                 ULONG taskTokenLen = 0;
 
-                if (insertCount == 2)
+                if (isCovariantTaskOverride)
+                {
+                    // The method returns a type derived from Task/Task<T> and overrides a
+                    // Task-returning method. The async variant returns the "element" type of
+                    // the overridden method.
+
+                    // from ". . . MyTask<tk> . . . Method(args);"    we construct
+                    //      ". . .         tk . . . Method(args);"
+                    // (or "void" instead of "tk" when the overridden method returns Task)
+
+                    // Compute the size of the return type that we are replacing.
+                    SigParser ownReturnType(pMemberSignature + offsetOfAsyncDetails, cMemberSignature - offsetOfAsyncDetails);
+                    IfFailThrow(ownReturnType.SkipExactlyOne());
+                    taskTypePrefixSize = (ULONG)(ownReturnType.GetPtr() - (pMemberSignature + offsetOfAsyncDetails));
+
+                    taskTypePrefixReplacementSize = (cbCovariantElementSig == 0) ?
+                        1 :                       // ELEMENT_TYPE_VOID
+                        cbCovariantElementSig;
+
+                    cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
+                }
+                else if (insertCount == 2)
                 {
                     // This is a rare case when we need two async variants and this is the second one.
                     // The need arises when a Task-returning method has a Task<T> returning virtual override.
@@ -3498,7 +3635,18 @@ MethodTableBuilder::EnumerateClassMethods()
                 _ASSERTE((cMemberSignature - originalRemainingSigOffset) == (cAsyncThunkMemberSignature - newRemainingSigOffset));
                 memcpy(pNewMemberSignature + newRemainingSigOffset, pMemberSignature + originalRemainingSigOffset, cMemberSignature - originalRemainingSigOffset);
 
-                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod || insertCount == 2)
+                if (isCovariantTaskOverride)
+                {
+                    if (cbCovariantElementSig == 0)
+                    {
+                        pNewMemberSignature[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
+                    }
+                    else
+                    {
+                        memcpy(pNewMemberSignature + offsetOfAsyncDetails, pCovariantElementSig, cbCovariantElementSig);
+                    }
+                }
+                else if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod || insertCount == 2)
                 {
                     pNewMemberSignature[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
                 }
@@ -3552,7 +3700,14 @@ MethodTableBuilder::EnumerateClassMethods()
             }
 
             // Normal methods only insert a single method
-            if (!IsTaskReturning(returnKind))
+            if (!IsTaskReturning(returnKind) && !isCovariantTaskOverride)
+            {
+                break;
+            }
+
+            // A covariant override of a Task-returning method needs exactly one async variant -
+            // the one that matches the async variant of the overridden method.
+            if (isCovariantTaskOverride && (insertCount == 1))
             {
                 break;
             }
