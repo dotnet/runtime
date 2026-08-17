@@ -20,8 +20,6 @@ namespace System.Threading
         {
             _ptr = pThread;
         }
-
-        internal IntPtr Value => _ptr;
     }
 
     public sealed partial class Thread
