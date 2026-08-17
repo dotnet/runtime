@@ -3467,6 +3467,8 @@ PhaseStatus Compiler::lvaMarkLocalVars()
             cachedGenericContextArg->lvImplicitlyReferenced = 1;
             cachedGenericContextArg->lvOnFrame              = true;
             lvaSetVarDoNotEnregister(lvaCachedGenericContextArg DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
+            lvaSetVarAddrExposed(
+                lvaCachedGenericContextArg DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
         }
         else
         {
