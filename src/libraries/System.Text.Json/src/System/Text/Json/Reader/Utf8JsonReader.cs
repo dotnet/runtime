@@ -1536,7 +1536,7 @@ namespace System.Text.Json
                 }
             }
 
-            Debug.Assert(nextByte == 'E' || nextByte == 'e');
+            Debug.Assert(nextByte is (byte)'E' or (byte)'e');
             i++;
 
             signResult = ConsumeSign(ref data, ref i);
