@@ -64,6 +64,7 @@ bool SigInfoFlagsAreValid (CORINFO_SIG_INFO *sig)
     LIMITED_METHOD_CONTRACT;
     return !(sig->flags & ~(  CORINFO_SIGFLAG_IS_LOCAL_SIG
                             | CORINFO_SIGFLAG_IL_STUB
+                            | CORINFO_SIGFLAG_CALLI_STUB
                             ));
 }
 

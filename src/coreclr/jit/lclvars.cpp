@@ -931,6 +931,10 @@ void Compiler::lvaClassifyParameterABI(Classifier& classifier)
         {
             wellKnownArg = WellKnownArg::RetBuffer;
         }
+        else if (((info.compMethodInfo->args.flags & CORINFO_SIGFLAG_CALLI_STUB) != 0) && (i == info.compArgsCount - 1))
+        {
+            wellKnownArg = WellKnownArg::SecretStubParam;
+        }
 #ifdef SWIFT_SUPPORT
         else if (i == lvaSwiftSelfArg)
         {
