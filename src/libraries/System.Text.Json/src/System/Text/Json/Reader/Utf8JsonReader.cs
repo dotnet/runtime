@@ -1505,7 +1505,7 @@ namespace System.Text.Json
 
                 Debug.Assert(result == ConsumeNumberResult.OperationIncomplete);
                 nextByte = data[i];
-                if (nextByte != '.' && nextByte != 'E' && nextByte != 'e')
+                if (nextByte is not ((byte)'.' or (byte)'E' or (byte)'e'))
                 {
                     _bytePositionInLine += i;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedEndOfDigitNotFound, nextByte);
