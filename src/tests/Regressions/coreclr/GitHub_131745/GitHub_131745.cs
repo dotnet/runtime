@@ -8,6 +8,7 @@
 // The GC refs and GCStress mode for this test are designed to exercise
 // ArgIteratorTemplate::GetNextOffset in src/coreclr/vm/callingconvention.h.
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
@@ -29,28 +30,29 @@ public class Program
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int VarArgMethod(
+    private static bool VarArgMethod(
         Hfa24 hfa, Payload first, Payload second, long nonGc1, long nonGc2, __arglist)
     {
         if (hfa.A != 1.0 || hfa.B != 2.0 || hfa.C != 3.0)
         {
-            return -1;
+            return false;
         }
 
         if (first.Value != 10 || second.Value != 20)
         {
-            return -1;
+            return false;
         }
 
         if (nonGc1 != 1 || nonGc2 != 2)
         {
-            return -1;
+            return false;
         }
 
-        return 100;
+        return true;
     }
 
-    public static int Main()
+    [Fact]
+    public static void TestEntryPoint()
     {
         Hfa24 hfa = new Hfa24
         {
@@ -59,6 +61,6 @@ public class Program
             C = 3.0,
         };
 
-        return VarArgMethod(hfa, new Payload(10), new Payload(20), 1, 2, __arglist());
+        Assert.True(VarArgMethod(hfa, new Payload(10), new Payload(20), 1, 2, __arglist()));
     }
 }
