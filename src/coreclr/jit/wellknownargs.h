@@ -56,6 +56,7 @@ WELL_KNOWN_ARG(AsyncResumedDef,             "resumed def",    false,   false)
 
 WELL_KNOWN_ARG(WasmShadowStackPointer,      "wasm sp",        false,   false)
 WELL_KNOWN_ARG(WasmPortableEntryPoint,      "wasm pep",       false,   false)
+WELL_KNOWN_ARG(SecretStubParam,             "secret arg",     true,    false)
 
 #undef WELL_KNOWN_ARG
 

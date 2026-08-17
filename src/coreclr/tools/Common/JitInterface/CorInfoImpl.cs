@@ -863,6 +863,11 @@ namespace Internal.JitInterface
             if (method.IsAsyncCall())
                 sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
 
+#if !READYTORUN
+            if (method is Internal.IL.Stubs.CalliMarshallingMethodThunk)
+                sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_CALLI_STUB;
+#endif
+
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
 

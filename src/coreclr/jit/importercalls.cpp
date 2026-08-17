@@ -7418,6 +7418,12 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             }
         }
 
+        if ((i == sig->numArgs) && ((sig->flags & CORINFO_SIGFLAG_CALLI_STUB) != 0))
+        {
+            assert(arg.WellKnownArg == WellKnownArg::None);
+            arg = arg.WellKnown(WellKnownArg::SecretStubParam);
+        }
+
         call->gtArgs.PushFront(this, arg);
         call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;
     }

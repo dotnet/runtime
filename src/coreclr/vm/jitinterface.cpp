@@ -4964,6 +4964,17 @@ CorInfoIsAccessAllowedResult CEEInfo::canAccessClass(
 // Given a method descriptor ftnHnd, extract signature information into sigInfo
 // Obtain (representative) instantiation information from ftnHnd's owner class
 //@GENERICSVER: added explicit owner parameter
+static void setCalliStubSigFlag(MethodDesc* method, CORINFO_SIG_INFO* sig)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    if (method->IsILStub() &&
+        (method->AsDynamicMethodDesc()->GetILStubType() == DynamicMethodDesc::StubPInvokeCalli))
+    {
+        sig->flags |= CORINFO_SIGFLAG_CALLI_STUB;
+    }
+}
+
 // Internal version without JIT-EE transition
 static void getMethodSigInternal(
     CORINFO_METHOD_HANDLE ftnHnd,
@@ -4986,6 +4997,8 @@ static void getMethodSigInternal(
         &context,
         CONV_TO_JITSIG_FLAGS_NONE,
         sigRet);
+
+    setCalliStubSigFlag(ftn, sigRet);
 
     //@GENERICS:
     // Shared generic methods and shared methods on generic structs take an extra argument representing their instantiation
@@ -7763,6 +7776,8 @@ COR_ILMETHOD_DECODER* CEEInfo::getMethodInfoWorker(
         &context,
         CONV_TO_JITSIG_FLAGS_NONE,
         &methInfo->args);
+
+    setCalliStubSigFlag(ftn, &methInfo->args);
 
     // Shared generic or static per-inst methods and shared methods on generic structs
     // take an extra argument representing their instantiation
@@ -15489,8 +15504,9 @@ CORINFO_METHOD_HANDLE CEEJitInfo::getAsyncResumptionStub(void** entryPoint)
 // Optionally converts an unmanaged calli call site into a call to an IL stub that performs
 // the argument marshalling and the managed/native transition.
 //
-// The IL stub is created (and cached in the IL stub cache by signature) here, but it is only
-// JIT-compiled the first time it is called - we cannot JIT it while we are jitting the caller.
+// The IL stub is created (and cached in the IL stub cache by signature) and JIT-compiled here.
+// Compiling it before returning its MethodDesc ensures that calls can directly target its code
+// without entering a prestub that uses the secret stub parameter register.
 //
 // Arguments:
 //    pResolvedToken - the token of the calli call site. Only token, tokenScope and
@@ -15564,6 +15580,9 @@ bool CEEInfo::convertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
         if (pStubMD != NULL)
         {
+            PCODE pCode = JitILStub(pStubMD);
+            pStubMD->SetCodeEntryPoint(pCode);
+
             TypeHandle stubType(pStubMD->GetMethodTable());
             pResolvedToken->hClass = CORINFO_CLASS_HANDLE(stubType.AsPtr());
             pResolvedToken->hMethod = (CORINFO_METHOD_HANDLE)pStubMD;
