@@ -91,7 +91,7 @@ public:
     );
 
     // Return a handle which will be signaled when the debuggee process terminates.
-    virtual HANDLE GetProcessHandle();
+    virtual minipal_process_wait *GetProcessHandle();
 
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
@@ -115,7 +115,7 @@ private:
     {
         if (m_hProcess != NULL)
         {
-            CloseHandle(m_hProcess);
+            delete m_hProcess;
         }
         m_hProcess = NULL;
 
@@ -134,8 +134,8 @@ private:
     BOOL                  m_fRunning;
 
     DWORD                 m_dwProcessId;
-    // This is actually a handle to an event.  This is only valid for waiting on process termination.
-    HANDLE                m_hProcess;
+    // This waitable is only valid for waiting on process termination.
+    minipal_process_wait *m_hProcess;
 
     DbgTransportTarget *  m_pProxy;
     DbgTransportSession * m_pTransport;
@@ -229,14 +229,14 @@ BOOL DbgTransportPipeline::WaitForDebugEvent(DEBUG_EVENT * pEvent, DWORD dwTimeo
     // We need to wait for a debug event from the transport and the process termination event.
     // On Windows, process termination is communicated via a debug event as well, but that's not true for
     // the Mac debugging transport.
-    DWORD cWaitSet = 2;
-    HANDLE rghWaitSet[2];
-    rghWaitSet[0] = m_pTransport->GetDebugEventReadyEvent();
-    rghWaitSet[1] = m_hProcess;
+    const minipal_wait_handle *waitSet[] = {
+        m_pTransport->GetDebugEventReadyEvent(),
+        m_hProcess
+    };
 
-    DWORD dwRet = ::WaitForMultipleObjectsEx(cWaitSet, rghWaitSet, FALSE, dwTimeout, FALSE);
+    int32_t waitResult = minipal_wait_handle::Wait(waitSet, ARRAY_SIZE(waitSet), dwTimeout);
 
-    if (dwRet == WAIT_OBJECT_0)
+    if (waitResult == 0)
     {
         // The Mac debugging transport actually transmits IPC events and not debug events.
         // We need to convert the IPC event to a debug event and pass it back to the caller.
@@ -256,7 +256,7 @@ BOOL DbgTransportPipeline::WaitForDebugEvent(DEBUG_EVENT * pEvent, DWORD dwTimeo
 
         return TRUE;
     }
-    else if (dwRet == (WAIT_OBJECT_0 + 1))
+    else if (waitResult == 1)
     {
         // The process has been terminated.
 
@@ -295,24 +295,23 @@ BOOL DbgTransportPipeline::ContinueDebugEvent(
 }
 
 // Return a handle which will be signaled when the debuggee process terminates.
-HANDLE DbgTransportPipeline::GetProcessHandle()
+minipal_process_wait *DbgTransportPipeline::GetProcessHandle()
 {
-    HANDLE hProcessTerminated;
-
-    if (!DuplicateHandle(GetCurrentProcess(),
-                         m_hProcess,
-                         GetCurrentProcess(),
-                         &hProcessTerminated,
-                         0,      // ignored since we are going to pass DUPLICATE_SAME_ACCESS
-                         FALSE,
-                         DUPLICATE_SAME_ACCESS))
-    {
-        return NULL;
-    }
-
     // The handle returned here is only valid for waiting on process termination.
     // See code:INativeEventPipeline::GetProcessHandle.
-    return hProcessTerminated;
+    if (m_hProcess == nullptr)
+    {
+        return nullptr;
+    }
+
+    minipal_process_wait *processHandle = new (nothrow) minipal_process_wait(*m_hProcess);
+    if ((processHandle != nullptr) && !processHandle->IsValid())
+    {
+        delete processHandle;
+        processHandle = nullptr;
+    }
+
+    return processHandle;
 }
 
 // Terminate the debuggee process.

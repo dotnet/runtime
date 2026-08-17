@@ -36,6 +36,7 @@
 #include "eedbginterface.h"
 #include "dbginterface.h"
 #include "corhost.h"
+#include "minipal-wait.h"
 
 
 #include "corjit.h"
@@ -648,10 +649,10 @@ protected:
     // that blew its stack
     FAVORCALLBACK m_fpFavor;
     void                           *m_pFavorData;
-    HANDLE                          m_FavorReadEvent;
+    minipal_event                  *m_FavorReadEvent;
     Crst                            m_FavorLock;
 
-    HANDLE                          m_FavorAvailableEvent;
+    minipal_event                  *m_FavorAvailableEvent;
 };
 
 
@@ -865,8 +866,8 @@ private:
     }
     Crst * GetFavorLock()                   { return &m_favorData.m_FavorLock; }
 
-    HANDLE GetFavorReadEvent()              { return m_favorData.m_FavorReadEvent; }
-    HANDLE GetFavorAvailableEvent()         { return m_favorData.m_FavorAvailableEvent; }
+    minipal_event *GetFavorReadEvent()      { return m_favorData.m_FavorReadEvent; }
+    minipal_event *GetFavorAvailableEvent() { return m_favorData.m_FavorAvailableEvent; }
 
     HelperThreadFavor m_favorData;
 
@@ -893,7 +894,8 @@ private:
     HANDLE                          m_thread;
     bool                            m_run;
 
-    HANDLE                          m_threadControlEvent;
+    minipal_event                  *m_threadControlEvent;
+    minipal_event                  *m_helperThreadExitedEvent;
     HANDLE                          m_helperThreadCanGoEvent;
     bool                            m_rgfInitRuntimeOffsets[IPC_TARGET_COUNT];
     bool                            m_fDetachRightSide;

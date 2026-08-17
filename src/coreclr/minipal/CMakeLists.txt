@@ -5,3 +5,7 @@ if (CLR_CMAKE_HOST_UNIX)
 else (CLR_CMAKE_HOST_UNIX)
     add_subdirectory(Windows)
 endif (CLR_CMAKE_HOST_UNIX)
+
+if (NOT CLR_CMAKE_TARGET_ARCH_WASM)
+    add_subdirectory(tests)
+endif()

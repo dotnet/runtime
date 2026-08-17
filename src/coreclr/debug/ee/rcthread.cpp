@@ -32,6 +32,7 @@ DebuggerRCThread::DebuggerRCThread(Debugger * pDebugger)
     m_thread(NULL),
     m_run(true),
     m_threadControlEvent(NULL),
+    m_helperThreadExitedEvent(NULL),
     m_helperThreadCanGoEvent(NULL),
     m_fDetachRightSide(false)
 {
@@ -227,7 +228,7 @@ void DebuggerRCThread::WatchForStragglers(void)
     LOG((LF_CORDB,LL_INFO100000, "DRCT::WFS:setting event to watch "
         "for stragglers\n"));
 
-    SetEvent(m_threadControlEvent);
+    m_threadControlEvent->Set();
 }
 
 //---------------------------------------------------------------------------------------
@@ -274,7 +275,23 @@ HRESULT DebuggerRCThread::Init(void)
 
 
     // Create the thread control event.
-    m_threadControlEvent = CreateWin32EventOrThrow(NULL, kAutoResetEvent, FALSE);
+    m_threadControlEvent = new (nothrow) minipal_event(false, false);
+    if ((m_threadControlEvent == nullptr) || !m_threadControlEvent->IsValid())
+    {
+        delete m_threadControlEvent;
+        m_threadControlEvent = nullptr;
+        ThrowOutOfMemory();
+    }
+
+    m_helperThreadExitedEvent = new (nothrow) minipal_event(true, false);
+    if ((m_helperThreadExitedEvent == nullptr) || !m_helperThreadExitedEvent->IsValid())
+    {
+        delete m_helperThreadExitedEvent;
+        m_helperThreadExitedEvent = nullptr;
+        delete m_threadControlEvent;
+        m_threadControlEvent = nullptr;
+        ThrowOutOfMemory();
+    }
 
     // Create the helper thread can go event.
     m_helperThreadCanGoEvent = CreateWin32EventOrThrow(NULL, kManualResetEvent, TRUE);
@@ -564,6 +581,16 @@ void DebuggerRCThread::ThreadProc(void)
     }
     CONTRACTL_END;
 
+    struct HelperThreadExitSignal
+    {
+        minipal_event *Event;
+
+        ~HelperThreadExitSignal()
+        {
+            Event->Set();
+        }
+    };
+
     STRESS_LOG_RESERVE_MEM (0);
     // This message actually serves a purpose (which is why it is always run)
     // The Stress log is run during hijacking, when other threads can be suspended
@@ -651,7 +678,11 @@ void DebuggerRCThread::ThreadProc(void)
     // Mark that we're the true helper thread. Now that we've marked
     // this, no other threads will ever become the temporary helper
     // thread.
+    bool resetResult = m_helperThreadExitedEvent->Reset();
+    _ASSERTE(resetResult);
+    (void)resetResult;
     m_pDCB->m_helperThreadId = GetCurrentThreadId();
+    HelperThreadExitSignal helperThreadExitSignal = { m_helperThreadExitedEvent };
 
     LOG((LF_CORDB, LL_INFO1000, "DRCT::TP: helper thread id is 0x%x helperThreadId\n",
         m_pDCB->m_helperThreadId));
@@ -827,7 +858,11 @@ void DebuggerRCThread::MainLoop()
     // threads doing helper duty.
     CantStopHolder cantStopHolder;
 
-    HANDLE rghWaitSet[DRCT_COUNT_FINAL];
+    const minipal_wait_handle *waitSet[DRCT_COUNT_FINAL];
+#if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
+    minipal_event rightSideEventAvailable(m_pDCB->m_rightSideEventAvailable.ImportToLocalProcess());
+    minipal_process_wait *debuggerProcess = nullptr;
+#endif
 
 #ifdef _DEBUG
     DWORD dwSyncSpinCount = 0;
@@ -836,12 +871,12 @@ void DebuggerRCThread::MainLoop()
     // We start out just listening on RSEA and the thread control event...
     unsigned int cWaitCount = DRCT_COUNT_INITIAL;
     DWORD dwWaitTimeout = INFINITE;
-    rghWaitSet[DRCT_CONTROL_EVENT] = m_threadControlEvent;
-    rghWaitSet[DRCT_FAVORAVAIL] = GetFavorAvailableEvent();
+    waitSet[DRCT_CONTROL_EVENT] = m_threadControlEvent;
+    waitSet[DRCT_FAVORAVAIL] = GetFavorAvailableEvent();
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    rghWaitSet[DRCT_RSEA] = m_pDCB->m_rightSideEventAvailable;
+    waitSet[DRCT_RSEA] = &rightSideEventAvailable;
 #else
-    rghWaitSet[DRCT_RSEA] = g_pDbgTransport->GetIPCEventReadyEvent();
+    waitSet[DRCT_RSEA] = g_pDbgTransport->GetIPCEventReadyEvent();
 #endif // !FEATURE_DBGIPC_TRANSPORT_VM
 
     CONTRACT_VIOLATION(ThrowsViolation);// HndCreateHandle throws, and this loop is not backstopped by any EH
@@ -860,7 +895,14 @@ void DebuggerRCThread::MainLoop()
             m_pDCB->m_rightSideProcessHandle.ImportToLocalProcess() != NULL)
         {
             _ASSERTE((cWaitCount + 1) == DRCT_COUNT_FINAL);
-            rghWaitSet[DRCT_DEBUGGER_EVENT] = m_pDCB->m_rightSideProcessHandle;
+            debuggerProcess = new (nothrow) minipal_process_wait(
+                m_pDCB->m_rightSideProcessHandle.ImportToLocalProcess());
+            if ((debuggerProcess == nullptr) || !debuggerProcess->IsValid())
+            {
+                delete debuggerProcess;
+                EEPOLICY_HANDLE_FATAL_ERROR(COR_E_OUTOFMEMORY);
+            }
+            waitSet[DRCT_DEBUGGER_EVENT] = debuggerProcess;
             cWaitCount = DRCT_COUNT_FINAL;
         }
 #endif // !FEATURE_DBGIPC_TRANSPORT_VM
@@ -874,13 +916,15 @@ void DebuggerRCThread::MainLoop()
             _ASSERTE(cWaitCount == DRCT_COUNT_FINAL);
             _ASSERTE((cWaitCount - 1) == DRCT_COUNT_INITIAL);
 
-            rghWaitSet[DRCT_DEBUGGER_EVENT] = NULL;
+            delete debuggerProcess;
+            debuggerProcess = nullptr;
+            waitSet[DRCT_DEBUGGER_EVENT] = nullptr;
             cWaitCount = DRCT_COUNT_INITIAL;
 #endif // !FEATURE_DBGIPC_TRANSPORT_VM
         }
 
         // Wait for an event from the Right Side.
-        DWORD dwWaitResult = WaitForMultipleObjectsEx(cWaitCount, rghWaitSet, FALSE, dwWaitTimeout, FALSE);
+        int32_t waitResult = minipal_wait_handle::Wait(waitSet, cWaitCount, dwWaitTimeout);
 
         if (!m_run)
         {
@@ -888,7 +932,7 @@ void DebuggerRCThread::MainLoop()
         }
 
 
-        if (dwWaitResult == WAIT_OBJECT_0 + DRCT_DEBUGGER_EVENT)
+        if (waitResult == DRCT_DEBUGGER_EVENT)
         {
             // If the handle of the right side process is signaled, then we've lost our controlling debugger. We
             // terminate this process immediately in such a case.
@@ -897,7 +941,7 @@ void DebuggerRCThread::MainLoop()
             EEPOLICY_HANDLE_FATAL_ERROR(0);
             _ASSERTE(!"Should never reach this point.");
         }
-        else if (dwWaitResult == WAIT_OBJECT_0 + DRCT_FAVORAVAIL)
+        else if (waitResult == DRCT_FAVORAVAIL)
         {
             // execute the callback set by DoFavor()
             FAVORCALLBACK fpCallback = GetFavorFnPtr();
@@ -907,10 +951,10 @@ void DebuggerRCThread::MainLoop()
             if (fpCallback)
             {
                 (*fpCallback)(GetFavorData());
-                SetEvent(GetFavorReadEvent());
+                GetFavorReadEvent()->Set();
             }
         }
-        else if (dwWaitResult == WAIT_OBJECT_0 + DRCT_RSEA)
+        else if (waitResult == DRCT_RSEA)
         {
             bool fWasContinue = HandleRSEA();
 
@@ -940,7 +984,7 @@ void DebuggerRCThread::MainLoop()
 
             }
         }
-        else if (dwWaitResult == WAIT_OBJECT_0 + DRCT_CONTROL_EVENT)
+        else if (waitResult == DRCT_CONTROL_EVENT)
         {
             LOG((LF_CORDB, LL_INFO1000, "DRCT::ML:: straggler event set.\n"));
 
@@ -966,7 +1010,7 @@ void DebuggerRCThread::MainLoop()
             // dbgLockHolder goes out of scope - implicit Release
             // tsl goes out of scope - implicit Release
          }
-        else if (dwWaitResult == WAIT_TIMEOUT)
+        else if (waitResult == MINIPAL_WAIT_TIMEOUT)
         {
 
 LWaitTimedOut:
@@ -1036,6 +1080,10 @@ LWaitTimedOut:
         }
     }
 
+#if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
+    delete debuggerProcess;
+#endif
+
     STRESS_LOG0(LF_CORDB, LL_INFO1000, "DRCT::ML:: Exiting.\n");
 }
 
@@ -1076,7 +1124,10 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
     // threads doing helper duty.
     CantStopHolder cantStopHolder;
 
-    HANDLE rghWaitSet[DRCT_COUNT_FINAL];
+    const minipal_wait_handle *waitSet[DRCT_COUNT_FINAL];
+#if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
+    minipal_event rightSideEventAvailable(m_pDCB->m_rightSideEventAvailable.ImportToLocalProcess());
+#endif
 
 #ifdef _DEBUG
     DWORD dwSyncSpinCount = 0;
@@ -1085,12 +1136,12 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
     // We start out just listening on RSEA and the thread control event...
     unsigned int cWaitCount = DRCT_COUNT_INITIAL;
     DWORD dwWaitTimeout = INFINITE;
-    rghWaitSet[DRCT_CONTROL_EVENT] = m_threadControlEvent;
-    rghWaitSet[DRCT_FAVORAVAIL] = GetFavorAvailableEvent();
+    waitSet[DRCT_CONTROL_EVENT] = m_threadControlEvent;
+    waitSet[DRCT_FAVORAVAIL] = GetFavorAvailableEvent();
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    rghWaitSet[DRCT_RSEA] = m_pDCB->m_rightSideEventAvailable;
+    waitSet[DRCT_RSEA] = &rightSideEventAvailable;
 #else //FEATURE_DBGIPC_TRANSPORT_VM
-    rghWaitSet[DRCT_RSEA] = g_pDbgTransport->GetIPCEventReadyEvent();
+    waitSet[DRCT_RSEA] = g_pDbgTransport->GetIPCEventReadyEvent();
 #endif // !FEATURE_DBGIPC_TRANSPORT_VM
 
     CONTRACT_VIOLATION(ThrowsViolation);// HndCreateHandle throws, and this loop is not backstopped by any EH
@@ -1100,7 +1151,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
         LOG((LF_CORDB, LL_INFO1000, "DRCT::ML: waiting for event.\n"));
 
         // Wait for an event from the Right Side.
-        DWORD dwWaitResult = WaitForMultipleObjectsEx(cWaitCount, rghWaitSet, FALSE, dwWaitTimeout, FALSE);
+        int32_t waitResult = minipal_wait_handle::Wait(waitSet, cWaitCount, dwWaitTimeout);
 
         if (!m_run)
         {
@@ -1108,7 +1159,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
         }
 
 
-        if (dwWaitResult == WAIT_OBJECT_0 + DRCT_DEBUGGER_EVENT)
+        if (waitResult == DRCT_DEBUGGER_EVENT)
         {
             // If the handle of the right side process is signaled, then we've lost our controlling debugger. We
             // terminate this process immediately in such a case.
@@ -1117,14 +1168,14 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
             TerminateProcess(GetCurrentProcess(), 0);
             _ASSERTE(!"Should never reach this point.");
         }
-        else if (dwWaitResult == WAIT_OBJECT_0 + DRCT_FAVORAVAIL)
+        else if (waitResult == DRCT_FAVORAVAIL)
         {
             // execute the callback set by DoFavor()
             (*GetFavorFnPtr())(GetFavorData());
 
-            SetEvent(GetFavorReadEvent());
+            GetFavorReadEvent()->Set();
         }
-        else if (dwWaitResult == WAIT_OBJECT_0 + DRCT_RSEA)
+        else if (waitResult == DRCT_RSEA)
         {
             // @todo:
             // We are only interested in dealing with Continue event here...
@@ -1147,7 +1198,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
                 goto LExit;
             }
         }
-        else if (dwWaitResult == WAIT_OBJECT_0 + DRCT_CONTROL_EVENT)
+        else if (waitResult == DRCT_CONTROL_EVENT)
         {
             LOG((LF_CORDB, LL_INFO1000, "DRCT::THTML:: straggler event set.\n"));
 
@@ -1163,7 +1214,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
             //
             goto LWaitTimedOut;
          }
-        else if (dwWaitResult == WAIT_TIMEOUT)
+        else if (waitResult == MINIPAL_WAIT_TIMEOUT)
         {
 
 LWaitTimedOut:
@@ -1385,7 +1436,7 @@ HRESULT DebuggerRCThread::AsyncStop(void)
     // We need to get the helper thread out of its wait loop. So ping the thread-control event.
     // (Don't ping RSEA since that event should be used only for IPC communication).
     // Don't bother waiting for it to exit.
-    SetEvent(this->m_threadControlEvent);
+    this->m_threadControlEvent->Set();
 
     return hr;
 }
@@ -1640,7 +1691,7 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
 
         // Our main message loop operating on the Helper thread will
         // pickup that event, call the fp, and set the Read event
-        SetEvent(GetFavorAvailableEvent());
+        GetFavorAvailableEvent()->Set();
 
         LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - Waiting on FavorReadEvent for favor %p\n", (void*)fp));
 
@@ -1660,7 +1711,19 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
         // or totally executed the favor but not yet signaled the FavorReadEvent. We don't
         // know what it did, so we don't know what we can do; so we're in an unstable state.
 
-        const HANDLE waitset [] = { GetFavorReadEvent(), m_thread };
+        const minipal_wait_handle *waitSet[] = {
+            GetFavorReadEvent(),
+#ifdef HOST_WINDOWS
+            // Preserve detection of abnormal helper termination through the native thread handle.
+            nullptr
+#else
+            m_helperThreadExitedEvent
+#endif
+        };
+#ifdef HOST_WINDOWS
+        minipal_process_wait helperThread(m_thread);
+        waitSet[1] = &helperThread;
+#endif
 
         // the favor worker thread will require a transition to cooperative mode in order to complete its work and we will
         // wait for the favor to complete before terminating the process.  if there is a GC in progress the favor thread
@@ -1668,19 +1731,15 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
         // preemptive mode before waiting for the favor to complete (see Dev11 72349).
         GCX_PREEMP();
 
-        DWORD ret = WaitForMultipleObjectsEx(
-            ARRAY_SIZE(waitset),
-            waitset,
-            FALSE,
-            INFINITE,
-            FALSE
-        );
+        int32_t waitResult = minipal_wait_handle::Wait(
+            waitSet,
+            ARRAY_SIZE(waitSet),
+            MINIPAL_WAIT_INFINITE);
 
-        DWORD wn = (ret - WAIT_OBJECT_0);
-        if (wn == 0) // m_FavorEventRead
+        if (waitResult == 0)
         {
             // Favor was executed, nothing to do here.
-            LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - favor %p finished, ret = %d\n", (void*)fp, ret));
+            LOG((LF_CORDB, LL_INFO10000, "DRCT::DF - favor %p finished, ret = %d\n", (void*)fp, waitResult));
         }
         else
         {
@@ -1689,15 +1748,15 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
 
             // Since we have no timeout, we shouldn't be able to get an error on the wait,
             // but just in case ...
-            _ASSERTE(ret != WAIT_FAILED);
-            _ASSERTE((wn == 1) && !"DoFavor - unexpected return from WFMO");
+            _ASSERTE(waitResult != MINIPAL_WAIT_FAILED);
+            _ASSERTE((waitResult == 1) && !"DoFavor - unexpected wait result");
 
             // Thread exited without doing favor, so execute it on our thread.
             // If we're here because of a stack overflow, this may push us over the edge,
             // but there's nothing else we can really do
             (*fp)(pData);
 
-            ResetEvent(GetFavorAvailableEvent());
+            GetFavorAvailableEvent()->Reset();
         }
 
         // m_fpFavor & m_pFavorData are meaningless now. We could set them
@@ -1783,4 +1842,3 @@ void DebuggerRCThread::EarlyHelperThreadDeath(void)
         // dbgLockHolder goes out of scope - implicit Release
     }
 }
-

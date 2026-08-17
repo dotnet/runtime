@@ -71,7 +71,7 @@ public:
     );
 
     // Return a handle for the debuggee process.
-    virtual HANDLE GetProcessHandle();
+    virtual minipal_process_wait *GetProcessHandle();
 
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
@@ -156,19 +156,40 @@ BOOL WindowsNativePipeline::ContinueDebugEvent(
 }
 
 // Return a handle for the debuggee process.
-HANDLE WindowsNativePipeline::GetProcessHandle()
+minipal_process_wait *WindowsNativePipeline::GetProcessHandle()
 {
     _ASSERTE(m_dwProcessId != 0);
 
-    return ::OpenProcess(PROCESS_DUP_HANDLE        |
-                         PROCESS_QUERY_INFORMATION |
-                         PROCESS_TERMINATE         |
-                         PROCESS_VM_OPERATION      |
-                         PROCESS_VM_READ           |
-                         PROCESS_VM_WRITE          |
-                         SYNCHRONIZE,
-                         FALSE,
-                         m_dwProcessId);
+    HANDLE processHandle = ::OpenProcess(PROCESS_DUP_HANDLE        |
+                                         PROCESS_QUERY_INFORMATION |
+                                         PROCESS_TERMINATE         |
+                                         PROCESS_VM_OPERATION      |
+                                         PROCESS_VM_READ           |
+                                         PROCESS_VM_WRITE          |
+                                         SYNCHRONIZE,
+                                         FALSE,
+                                         m_dwProcessId);
+    if (processHandle == NULL)
+    {
+        return nullptr;
+    }
+
+    minipal_process_wait *waitHandle = new (nothrow) minipal_process_wait(processHandle);
+    DWORD error = GetLastError();
+    CloseHandle(processHandle);
+
+    if (waitHandle == nullptr)
+    {
+        SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+    }
+    else if (!waitHandle->IsValid())
+    {
+        delete waitHandle;
+        waitHandle = nullptr;
+        SetLastError(error);
+    }
+
+    return waitHandle;
 }
 
 // Terminate the debuggee process.

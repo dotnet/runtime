@@ -53,18 +53,18 @@ DbgTransportSession::~DbgTransportSession()
     if (m_hTransportThread)
         CloseHandle(m_hTransportThread);
     if (m_rghEventReadyEvent[IPCET_OldStyle])
-        CloseHandle(m_rghEventReadyEvent[IPCET_OldStyle]);
+        delete m_rghEventReadyEvent[IPCET_OldStyle];
     if (m_rghEventReadyEvent[IPCET_DebugEvent])
-        CloseHandle(m_rghEventReadyEvent[IPCET_DebugEvent]);
+        delete m_rghEventReadyEvent[IPCET_DebugEvent];
     if (m_pEventBuffers)
         delete [] m_pEventBuffers;
 
 #ifdef RIGHT_SIDE_COMPILE
     if (m_hSessionOpenEvent)
-        CloseHandle(m_hSessionOpenEvent);
+        delete m_hSessionOpenEvent;
 
     if (m_hProcessExited)
-        CloseHandle(m_hProcessExited);
+        delete m_hProcessExited;
 #endif // RIGHT_SIDE_COMPILE
 
     if (m_fInitStateLock)
@@ -81,7 +81,7 @@ DbgTransportSession::~DbgTransportSession()
 // addresses of a couple of runtime data structures to service certain debugger requests that may be delivered
 // once the session is established.
 #ifdef RIGHT_SIDE_COMPILE
-HRESULT DbgTransportSession::Init(const ProcessDescriptor& pd, HANDLE hProcessExited)
+HRESULT DbgTransportSession::Init(const ProcessDescriptor& pd, const minipal_process_wait& processExited)
 #else // RIGHT_SIDE_COMPILE
 HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
 #endif // RIGHT_SIDE_COMPILE
@@ -104,21 +104,22 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
         return E_FAIL;
 
     m_pd = pd;
-    if (!DuplicateHandle(GetCurrentProcess(),
-                         hProcessExited,
-                         GetCurrentProcess(),
-                         &m_hProcessExited,
-                         0,      // ignored since we are going to pass DUPLICATE_SAME_ACCESS
-                         FALSE,
-                         DUPLICATE_SAME_ACCESS))
+    m_hProcessExited = new (nothrow) minipal_process_wait(processExited);
+    if ((m_hProcessExited == nullptr) || !m_hProcessExited->IsValid())
     {
-        return HRESULT_FROM_GetLastError();
+        delete m_hProcessExited;
+        m_hProcessExited = nullptr;
+        return E_FAIL;
     }
 
     m_fDebuggerAttached = false;
-    m_hSessionOpenEvent = CreateEvent(NULL, TRUE, FALSE, NULL); // Manual reset, not signalled
-    if (m_hSessionOpenEvent == NULL)
+    m_hSessionOpenEvent = new (nothrow) minipal_event(true, false);
+    if ((m_hSessionOpenEvent == nullptr) || !m_hSessionOpenEvent->IsValid())
+    {
+        delete m_hSessionOpenEvent;
+        m_hSessionOpenEvent = nullptr;
         return E_OUTOFMEMORY;
+    }
 
 #else // RIGHT_SIDE_COMPILE
     m_pDCB = pDCB;
@@ -139,13 +140,23 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
     if (m_pEventBuffers == NULL)
         return E_OUTOFMEMORY;
 
-    m_rghEventReadyEvent[IPCET_OldStyle] = CreateEvent(NULL, FALSE, FALSE, NULL); // Auto reset, not signalled
-    if (m_rghEventReadyEvent[IPCET_OldStyle] == NULL)
+    m_rghEventReadyEvent[IPCET_OldStyle] = new (nothrow) minipal_event(false, false);
+    if ((m_rghEventReadyEvent[IPCET_OldStyle] == nullptr) ||
+        !m_rghEventReadyEvent[IPCET_OldStyle]->IsValid())
+    {
+        delete m_rghEventReadyEvent[IPCET_OldStyle];
+        m_rghEventReadyEvent[IPCET_OldStyle] = nullptr;
         return E_OUTOFMEMORY;
+    }
 
-    m_rghEventReadyEvent[IPCET_DebugEvent] = CreateEvent(NULL, FALSE, FALSE, NULL); // Auto reset, not signalled
-    if (m_rghEventReadyEvent[IPCET_DebugEvent] == NULL)
+    m_rghEventReadyEvent[IPCET_DebugEvent] = new (nothrow) minipal_event(false, false);
+    if ((m_rghEventReadyEvent[IPCET_DebugEvent] == nullptr) ||
+        !m_rghEventReadyEvent[IPCET_DebugEvent]->IsValid())
+    {
+        delete m_rghEventReadyEvent[IPCET_DebugEvent];
+        m_rghEventReadyEvent[IPCET_DebugEvent] = nullptr;
         return E_OUTOFMEMORY;
+    }
 
     // Start the transport thread which handles forming and re-forming connections, driving the session
     // state to SS_Open and receiving and initially processing all incoming traffic.
@@ -203,7 +214,7 @@ void DbgTransportSession::Shutdown()
 
 #ifdef RIGHT_SIDE_COMPILE
         // Signal the m_hSessionOpenEvent now to quickly error out any callers of WaitForSessionToOpen().
-        SetEvent(m_hSessionOpenEvent);
+        m_hSessionOpenEvent->Set();
 #endif // RIGHT_SIDE_COMPILE
     }
 
@@ -245,14 +256,14 @@ void DbgTransportSession::CleanupTargetProcess()
 // returns true if the session opened within the time given (in milliseconds) and false otherwise.
 bool DbgTransportSession::WaitForSessionToOpen(DWORD dwTimeout)
 {
-    DWORD dwRet = WaitForSingleObject(m_hSessionOpenEvent, dwTimeout);
+    int32_t waitResult = minipal_wait_handle::Wait(*m_hSessionOpenEvent, dwTimeout);
     if (m_eState == SS_Closed)
         return false;
 
-    if (dwRet == WAIT_TIMEOUT)
+    if (waitResult == MINIPAL_WAIT_TIMEOUT)
         DbgTransportLog(LC_Proxy, "DbgTransportSession::WaitForSessionToOpen(%u) timed out", dwTimeout);
 
-    return dwRet == WAIT_OBJECT_0;
+    return waitResult == 0;
 }
 
 //---------------------------------------------------------------------------------------
@@ -343,14 +354,14 @@ HRESULT DbgTransportSession::SendDebugEvent(DebuggerIPCEvent * pEvent)
 
 // Retrieves the auto-reset handle which is signalled by the session each time a new event is received from
 // the other side.
-HANDLE DbgTransportSession::GetIPCEventReadyEvent()
+minipal_event *DbgTransportSession::GetIPCEventReadyEvent()
 {
     return m_rghEventReadyEvent[IPCET_OldStyle];
 }
 
 // Retrieves the auto-reset handle which is signalled by the session each time a new event (disguised as a
 // debug event) is received from the other side.
-HANDLE DbgTransportSession::GetDebugEventReadyEvent()
+minipal_event *DbgTransportSession::GetDebugEventReadyEvent()
 {
     return m_rghEventReadyEvent[IPCET_DebugEvent];
 }
@@ -382,7 +393,7 @@ void DbgTransportSession::GetNextEvent(DebuggerIPCEvent *pEvent, DWORD cbEvent)
     // If there's at least one more valid event we can signal event ready now.
     if (m_cValidEventBuffers)
     {
-        SetEvent(m_rghEventReadyEvent[m_pEventBuffers[m_idxEventBufferHead].m_type]);
+        m_rghEventReadyEvent[m_pEventBuffers[m_idxEventBufferHead].m_type]->Set();
     }
 }
 
@@ -694,35 +705,33 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
 HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
 {
     // Allocate event to wait for reply on.
-    pMessage->m_hReplyEvent = CreateEvent(NULL, FALSE, FALSE, NULL); // Auto-reset, not signalled
-    if (pMessage->m_hReplyEvent == NULL)
-        return E_OUTOFMEMORY;
-
-    // Duplicate the handle to the event.  It's necessary to have two handles to the same event because
-    // both this thread and the message pumping thread may be trying to access the handle at the same
-    // time (e.g. closing the handle).  So we make a duplicate handle.  This thread is responsible for
-    // closing hReplyEvent (the local variable) whereas the message pumping thread is responsible for
-    // closing the handle on the message.
-    HANDLE hReplyEvent = NULL;
-    if (!DuplicateHandle(GetCurrentProcess(),
-                         pMessage->m_hReplyEvent,
-                         GetCurrentProcess(),
-                         &hReplyEvent,
-                         0,      // ignored since we are going to pass DUPLICATE_SAME_ACCESS
-                         FALSE,
-                         DUPLICATE_SAME_ACCESS))
+    pMessage->m_hReplyEvent = new (nothrow) minipal_event(false, false);
+    if ((pMessage->m_hReplyEvent == nullptr) || !pMessage->m_hReplyEvent->IsValid())
     {
-        return HRESULT_FROM_GetLastError();
+        delete pMessage->m_hReplyEvent;
+        pMessage->m_hReplyEvent = nullptr;
+        return E_OUTOFMEMORY;
+    }
+
+    // Acquire a second owned reference to the event because both this thread and the message pumping
+    // thread may release their references at the same time. This thread owns hReplyEvent while the
+    // message pumping thread owns the reference on the message.
+    minipal_event hReplyEvent(*pMessage->m_hReplyEvent);
+    if (!hReplyEvent.IsValid())
+    {
+        delete pMessage->m_hReplyEvent;
+        pMessage->m_hReplyEvent = nullptr;
+        return E_FAIL;
     }
 
     // Send the request.
     HRESULT hr = SendMessage(pMessage, true);
     if (FAILED(hr))
     {
-        // In this case, we need to close both handles since the message is never put into the send queue.
+        // Release both references since the message is never put into the send queue.
         // This thread is the only one who has access to the message.
-        CloseHandle(pMessage->m_hReplyEvent);
-        CloseHandle(hReplyEvent);
+        delete pMessage->m_hReplyEvent;
+        pMessage->m_hReplyEvent = nullptr;
         return hr;
     }
 
@@ -732,25 +741,26 @@ HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
     // Wait for a reply (by the time this event is signalled the message header will have been overwritten by
     // the reply and any output buffer provided will have been filled in).
 #if defined(RIGHT_SIDE_COMPILE)
-    HANDLE rgEvents[] = { hReplyEvent, m_hProcessExited };
+    const minipal_wait_handle *rgEvents[] = { &hReplyEvent, m_hProcessExited };
 #else  // !RIGHT_SIDE_COMPILE
-    HANDLE rgEvents[] = { hReplyEvent };
+    const minipal_wait_handle *rgEvents[] = { &hReplyEvent };
 #endif // RIGHT_SIDE_COMPILE
 
-    DWORD dwResult = WaitForMultipleObjectsEx(sizeof(rgEvents)/sizeof(rgEvents[0]), rgEvents, FALSE, INFINITE, FALSE);
+    int32_t waitResult = minipal_wait_handle::Wait(
+        rgEvents,
+        ARRAY_SIZE(rgEvents),
+        MINIPAL_WAIT_INFINITE);
 
-    if (dwResult == WAIT_OBJECT_0)
+    if (waitResult == 0)
     {
         // This is the normal case.  The message pumping thread receives a reply from the debuggee process.
         // It signals the event to wake up this thread.
-        CloseHandle(hReplyEvent);
-
         // Check whether the session aborted us due to a Shutdown().
         if (pMessage->m_fAborted)
             return E_ABORT;
     }
 #if defined(RIGHT_SIDE_COMPILE)
-    else if (dwResult == (WAIT_OBJECT_0 + 1))
+    else if (waitResult == 1)
     {
         // This is the complicated case.  This thread wakes up because the debuggee process is terminated.
         // At the same time, the message pumping thread may be in the process of handling the reply message.
@@ -769,17 +779,20 @@ HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
         // Fortunately, in this case, we know the message pumping thread is going to signal the event.
         if (pOriginalMessage == NULL)
         {
-            WaitForSingleObject(hReplyEvent, INFINITE);
+            minipal_wait_handle::Wait(hReplyEvent, MINIPAL_WAIT_INFINITE);
+        }
+        else
+        {
+            delete pOriginalMessage->m_hReplyEvent;
+            pOriginalMessage->m_hReplyEvent = nullptr;
         }
 
-        CloseHandle(hReplyEvent);
         return CORDBG_E_PROCESS_TERMINATED;
     }
 #endif // RIGHT_SIDE_COMPILE
     else
     {
         // Should never get here.
-        CloseHandle(hReplyEvent);
         UNREACHABLE();
     }
 
@@ -1033,7 +1046,7 @@ bool DbgTransportSession::ProcessReply(MessageHeader *pHeader)
 //---------------------------------------------------------------------------------------
 //
 // Upon receiving a reply message, signal the event on the message to wake up the thread waiting for
-// the reply message and close the handle to the event.
+// the reply message and release its event reference.
 //
 // Arguments:
 //    pMessage - the reply message to be processed
@@ -1044,11 +1057,12 @@ void DbgTransportSession::SignalReplyEvent(Message * pMessage)
     // Make a local copy of the event handle.  As soon as we signal the event, the thread blocked waiting on
     // the reply may wake up and trash the message.  See code:DbgTransportSession::SendRequestMessageAndWait()
     // for more info.
-    HANDLE hReplyEvent = pMessage->m_hReplyEvent;
-    _ASSERTE(hReplyEvent != NULL);
+    minipal_event *pReplyEvent = pMessage->m_hReplyEvent;
+    _ASSERTE(pReplyEvent != nullptr);
+    pMessage->m_hReplyEvent = nullptr;
 
-    SetEvent(hReplyEvent);
-    CloseHandle(hReplyEvent);
+    pReplyEvent->Set();
+    delete pReplyEvent;
 }
 
 //---------------------------------------------------------------------------------------
@@ -1250,7 +1264,7 @@ void DbgTransportSession::TransportWorker()
 
 #ifdef RIGHT_SIDE_COMPILE
         // The session is definitely not open at this point.
-        ResetEvent(m_hSessionOpenEvent);
+        m_hSessionOpenEvent->Reset();
 
         // On the right side we initiate the connection via Connect(). A failure is dealt with by waiting a
         // little while and retrying (the LS may take a little while to set up). If there's nobody listening
@@ -1500,7 +1514,7 @@ void DbgTransportSession::TransportWorker()
 
 #ifdef RIGHT_SIDE_COMPILE
             // Signal any WaitForSessionToOpen() waiters that we've gotten to SS_Open.
-            SetEvent(m_hSessionOpenEvent);
+            m_hSessionOpenEvent->Set();
 #endif // RIGHT_SIDE_COMPILE
 
             // We're ready to begin receiving normal incoming messages now.
@@ -1868,7 +1882,7 @@ void DbgTransportSession::TransportWorker()
                     // If we just added the first valid event then wake up the client so they can call
                     // GetNextEvent().
                     if (m_cValidEventBuffers == 1)
-                        SetEvent(m_rghEventReadyEvent[m_pEventBuffers[idxCurrentEvent].m_type]);
+                        m_rghEventReadyEvent[m_pEventBuffers[idxCurrentEvent].m_type]->Set();
                 }
             }
             break;
@@ -2033,7 +2047,7 @@ void DbgTransportSession::TransportWorker()
 
 #ifdef RIGHT_SIDE_COMPILE
     // The session is definitely not open at this point.
-    ResetEvent(m_hSessionOpenEvent);
+    m_hSessionOpenEvent->Reset();
 #endif // RIGHT_SIDE_COMPILE
 
     // Close the connection if we haven't done so already.

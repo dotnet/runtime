@@ -15,6 +15,7 @@
 
 #include <utilcode.h>
 #include <minipal/mutex.h>
+#include "minipal-wait.h"
 
 #include <functional>
 
@@ -3692,20 +3693,25 @@ public:
     RSSmartPtr<Cordb>     m_cordb;
 
 private:
-    // OS process handle to live process.
-    // @dbgtodo - , Move this into the Shim. This should only be needed in the live-process
-    // case. Get rid of this since it breaks the data-target abstraction.
-    // For Mac debugging, this handle is of course not the real process handle.  This is just a handle to
-    // wait on for process termination.
-    HANDLE                m_handle;
+    // Process-exit waitable. On Windows this is an OS process handle. On Unix it is an opaque
+    // minipal object that is valid only with the minipal wait APIs and must not be exposed to clients.
+    minipal_process_wait *m_handle;
 
     // Process descriptor - holds PID and App group ID for Mac debugging
     ProcessDescriptor m_processDescriptor;
 
 public:
-    // Wrapper to get the OS process handle. This is unsafe because it breaks the data-target abstraction.
-    // The only things that need this should be calls to DuplicateHandle, and some shimming work.
-    HANDLE  UnsafeGetProcessHandle()
+    // Windows-only callers may also use the returned value as the native process handle.
+    HANDLE UnsafeGetProcessHandle()
+    {
+#ifdef HOST_WINDOWS
+        return m_handle == nullptr ? NULL : m_handle->GetRawHandle();
+#else
+        return NULL;
+#endif
+    }
+
+    minipal_process_wait *UnsafeGetProcessWaitHandle()
     {
         return m_handle;
     }
@@ -3868,7 +3874,7 @@ public:
 
 
     DebuggerIPCRuntimeOffsets m_runtimeOffsets;
-    HANDLE                    m_leftSideEventAvailable;
+    minipal_event            *m_leftSideEventAvailable;
     HANDLE                    m_leftSideEventRead;
 #if defined(FEATURE_INTEROP_DEBUGGING)
     HANDLE                    m_leftSideUnmanagedWaitEvent;
@@ -10121,7 +10127,7 @@ private:
 
     HANDLE               m_thread;
     DWORD                m_threadId;
-    HANDLE               m_threadControlEvent;
+    minipal_event       *m_threadControlEvent;
     HANDLE               m_actionTakenEvent;
     BOOL                 m_run;
 
@@ -10295,7 +10301,7 @@ private:
     HANDLE               m_thread;
     DWORD                m_threadId;
     BOOL                 m_run;
-    HANDLE               m_threadControlEvent;
+    minipal_event       *m_threadControlEvent;
     BOOL                 m_processStateChanged;
 };
 
