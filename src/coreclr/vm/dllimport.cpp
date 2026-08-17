@@ -6181,9 +6181,9 @@ static void GetILStubForVarargPInvoke(VASigCookie* pVASigCookie, MethodDesc* pMD
 // Build the managed signature of the IL stub that implements an unmanaged CALLI call site.
 //
 // The stub signature is the call site signature with a managed (default) calling convention
-// and an extra trailing native int parameter that carries the unmanaged target. The target is
-// the value at the top of the evaluation stack at the calli site, so appending it as the last
-// parameter lets the JIT rewrite the calli into a direct call to the stub.
+// and an extra trailing native int parameter that carries the unmanaged target. A required
+// SecretStubArgument modifier on that parameter tells the JIT to pass it in the secret stub
+// register.
 //
 // The calling convention of the call site is not part of this signature. It does not need to be:
 // the IL stub cache keys on it separately through PInvokeStubHashBlob::m_unmgdCallConv and
@@ -6240,7 +6240,11 @@ static void BuildCalliILStubSignature(
     PCCOR_SIGNATURE pArgsEnd = sigParser.GetPtr();
     pSigBuilder->AppendBlob((PVOID)pArgsStart, (DWORD)(pArgsEnd - pArgsStart));
 
-    // The unmanaged target is the last parameter.
+    // The unmanaged target is marked so the JIT passes it in the secret stub register.
+    TypeHandle secretStubArgument = CoreLibBinder::GetClass(CLASS__SECRET_STUB_ARGUMENT);
+    pSigBuilder->AppendElementType(ELEMENT_TYPE_CMOD_INTERNAL);
+    pSigBuilder->AppendByte(1);
+    pSigBuilder->AppendPointer(secretStubArgument.AsPtr());
     pSigBuilder->AppendElementType(ELEMENT_TYPE_I);
 }
 

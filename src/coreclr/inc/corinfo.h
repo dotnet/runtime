@@ -632,9 +632,10 @@ enum CorInfoWasmType
 
 enum CorInfoTypeWithMod
 {
-    CORINFO_TYPE_MASK            = 0x3F,        // lower 6 bits are type mask
-    CORINFO_TYPE_MOD_PINNED      = 0x40,        // can be applied to CLASS, or BYREF to indicate pinned
-    CORINFO_TYPE_MOD_COPY_WITH_HELPER = 0x80    // can be applied to VALUECLASS to indicate 'needs helper to copy'
+    CORINFO_TYPE_MASK                     = 0x3F,  // lower 6 bits are type mask
+    CORINFO_TYPE_MOD_PINNED               = 0x40,  // can be applied to CLASS, or BYREF to indicate pinned
+    CORINFO_TYPE_MOD_COPY_WITH_HELPER     = 0x80,  // can be applied to VALUECLASS to indicate 'needs helper to copy'
+    CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT = 0x100, // can be applied to NATIVEINT to indicate the secret stub argument
 };
 
 inline CorInfoType strip(CorInfoTypeWithMod val) {
@@ -1034,7 +1035,7 @@ enum CorInfoSigInfoFlags
 {
     CORINFO_SIGFLAG_IS_LOCAL_SIG           = 0x01,
     CORINFO_SIGFLAG_IL_STUB                = 0x02,
-    CORINFO_SIGFLAG_CALLI_STUB             = 0x04,
+    // unused                              = 0x04,
     CORINFO_SIGFLAG_FAT_CALL               = 0x08,
 };
 

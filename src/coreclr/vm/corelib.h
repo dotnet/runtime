@@ -890,6 +890,7 @@ DEFINE_CLASS(CALLCONV_FASTCALL,              CompilerServices,       CallConvFas
 DEFINE_CLASS(CALLCONV_SUPPRESSGCTRANSITION,  CompilerServices,       CallConvSuppressGCTransition)
 DEFINE_CLASS(CALLCONV_MEMBERFUNCTION,        CompilerServices,       CallConvMemberFunction)
 DEFINE_CLASS(CALLCONV_SWIFT,                 CompilerServices,       CallConvSwift)
+DEFINE_CLASS(SECRET_STUB_ARGUMENT,           CompilerServices,       SecretStubArgument)
 
 #ifdef TARGET_APPLE
 DEFINE_CLASS(SWIFT_SELF,                     Swift,                  SwiftSelf)

@@ -7308,7 +7308,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
 
     struct SigParamInfo
     {
-        CorInfoType          CorType;
+        CorInfoTypeWithMod   CorType;
         CORINFO_CLASS_HANDLE ClassHandle;
     };
 
@@ -7320,13 +7320,29 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
     // JIT-EE interface only allows us to iterate the signature forwards. We
     // will collect the needed information here and at the same time notify the
     // EE that the signature types need to be loaded.
-    CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+    CORINFO_ARG_LIST_HANDLE sigArg                = sig->args;
+    bool                    hasSecretStubArgument = false;
     for (unsigned i = 0; i < sig->numArgs; i++)
     {
-        params[i].CorType = strip(info.compCompHnd->getArgType(sig, sigArg, &params[i].ClassHandle));
+        params[i].CorType   = info.compCompHnd->getArgType(sig, sigArg, &params[i].ClassHandle);
+        CorInfoType corType = strip(params[i].CorType);
 
-        if (params[i].CorType != CORINFO_TYPE_CLASS && params[i].CorType != CORINFO_TYPE_BYREF &&
-            params[i].CorType != CORINFO_TYPE_PTR)
+        if ((params[i].CorType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
+        {
+            if (corType != CORINFO_TYPE_NATIVEINT)
+            {
+                BADCODE("SecretStubArgument modifier must be applied to a native int parameter");
+            }
+
+            if (hasSecretStubArgument)
+            {
+                BADCODE("Duplicate SecretStubArgument modifier");
+            }
+
+            hasSecretStubArgument = true;
+        }
+
+        if (corType != CORINFO_TYPE_CLASS && corType != CORINFO_TYPE_BYREF && corType != CORINFO_TYPE_PTR)
         {
             CORINFO_CLASS_HANDLE argRealClass = info.compCompHnd->getArgClass(sig, sigArg);
             if (argRealClass != nullptr)
@@ -7361,7 +7377,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         typeInfo   ti      = se.seTypeInfo;
         GenTree*   argNode = se.val;
 
-        var_types            jitSigType = JITtype2varType(params[i - 1].CorType);
+        var_types            jitSigType = JITtype2varType(strip(params[i - 1].CorType));
         CORINFO_CLASS_HANDLE classHnd   = params[i - 1].ClassHandle;
 
         if (!impCheckImplicitArgumentCoercion(jitSigType, argNode->TypeGet()))
@@ -7418,9 +7434,13 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             }
         }
 
-        if ((i == sig->numArgs) && ((sig->flags & CORINFO_SIGFLAG_CALLI_STUB) != 0))
+        if ((params[i - 1].CorType & CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT) != 0)
         {
-            assert(arg.WellKnownArg == WellKnownArg::None);
+            if (arg.WellKnownArg != WellKnownArg::None)
+            {
+                BADCODE("SecretStubArgument modifier conflicts with another special argument");
+            }
+
             arg = arg.WellKnown(WellKnownArg::SecretStubParam);
         }
 

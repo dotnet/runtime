@@ -66,6 +66,7 @@ namespace Internal.JitInterface
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
 
         private ExceptionDispatchInfo _lastException;
+        private MetadataType _secretStubArgument;
 
         private struct PgoInstrumentationResults
         {
@@ -181,6 +182,23 @@ namespace Internal.JitInterface
             }
 
             _unmanagedCallbacks = GetUnmanagedCallbacks();
+        }
+
+        private void InitializeSecretStubArgument()
+        {
+            _secretStubArgument = _compilation.TypeSystemContext.SystemModule.GetType(
+                "System.Runtime.CompilerServices"u8,
+                "SecretStubArgument"u8,
+                throwIfNotFound: false);
+        }
+
+        private bool HasSecretStubArgument(MethodSignature signature, int parameterIndex)
+        {
+            return (_secretStubArgument is not null) &&
+                signature.HasCustomModifierOnTypeByParameterIndex(
+                    parameterIndex + 1,
+                    EmbeddedSignatureDataKind.RequiredCustomModifier,
+                    _secretStubArgument);
         }
 
         private Logger Logger
@@ -863,10 +881,8 @@ namespace Internal.JitInterface
             if (method.IsAsyncCall())
                 sig->callConv |= CorInfoCallConv.CORINFO_CALLCONV_ASYNCCALL;
 
-#if !READYTORUN
-            if (method is Internal.IL.Stubs.CalliMarshallingMethodThunk)
-                sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_CALLI_STUB;
-#endif
+            if (method is Internal.IL.Stubs.ILStubMethod)
+                sig->flags |= CorInfoSigInfoFlags.CORINFO_SIGFLAG_IL_STUB;
 
             // Does the method have a hidden parameter?
             bool hasHiddenParameter = !suppressHiddenArgument && method.RequiresInstArg();
@@ -920,7 +936,7 @@ namespace Internal.JitInterface
             ValidateSafetyOfUsingTypeEquivalenceOfType(signature.ReturnType);
 #endif
 
-            sig->flags = 0;    // used by IL stubs code
+            sig->flags = 0;
 
             sig->numArgs = (ushort)signature.Length;
 
@@ -3536,7 +3552,23 @@ namespace Internal.JitInterface
                 TypeDesc type = methodSig[index];
 
                 CorInfoType corInfoType = asCorInfoType(type, vcTypeRet);
-                return (CorInfoTypeWithMod)corInfoType;
+                CorInfoTypeWithMod result = (CorInfoTypeWithMod)corInfoType;
+
+                // SecretStubArgument should only be present on IL stubs. Avoid searching every
+                // argument signature for it when compiling other methods.
+                if ((sig->flags & CorInfoSigInfoFlags.CORINFO_SIGFLAG_IL_STUB) != 0)
+                {
+                    if (HasSecretStubArgument(methodSig, index))
+                    {
+                        result |= CorInfoTypeWithMod.CORINFO_TYPE_MOD_SECRET_STUB_ARGUMENT;
+                    }
+                }
+                else
+                {
+                    Debug.Assert(!HasSecretStubArgument(methodSig, index));
+                }
+
+                return result;
             }
             else
             {

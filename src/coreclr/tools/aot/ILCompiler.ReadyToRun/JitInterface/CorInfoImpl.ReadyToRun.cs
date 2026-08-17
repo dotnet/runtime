@@ -494,6 +494,7 @@ namespace Internal.JitInterface
             : this()
         {
             _compilation = compilation;
+            InitializeSecretStubArgument();
         }
 
         private void AddPrecodeFixup(ISymbolNode node)
