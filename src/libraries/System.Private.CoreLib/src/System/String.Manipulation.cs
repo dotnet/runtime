@@ -2115,7 +2115,7 @@ namespace System
         {
             // Redundant test so we won't prejit remainder of this method
             // on platforms where it is not supported
-            if (!Vector128.IsHardwareAccelerated || (uint)sourceSpan.Length < (uint)Vector128<ushort>.Count*2)
+            if (!Vector128.IsHardwareAccelerated)
             {
                 throw new PlatformNotSupportedException();
             }
