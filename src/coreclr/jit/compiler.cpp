@@ -10435,12 +10435,11 @@ int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
 
     if (varNum == lvaCachedGenericContextArg)
     {
-        if (lvaReportParamTypeArg())
+        if (info.compPatchpointInfo->HasGenericContextArgOffset())
         {
             return info.compPatchpointInfo->GenericContextArgOffset();
         }
 
-        assert(lvaKeepAliveAndReportThis());
         assert(info.compPatchpointInfo->HasKeptAliveThis());
         return info.compPatchpointInfo->KeptAliveThisOffset();
     }
