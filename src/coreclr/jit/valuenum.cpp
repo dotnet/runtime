@@ -14968,11 +14968,47 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         }
     }
 
+    // Async calls define the "resumed" indicator: it is set to 1 when the call
+    // suspends and we are later resumed in this frame, and is left alone
+    // otherwise. Thus we know the value after the call is 1 if the call always
+    // suspends, or if the indicator was already known to be 1 before it.
+    GenTreeLclVarCommon* asyncResumedLclAddr = gtCallGetDefinedAsyncResumedLclAddr(call);
+    ValueNum             asyncResumedVN      = ValueNumStore::NoVN;
+    if (asyncResumedLclAddr != nullptr)
+    {
+        bool isResumed = call->GetAsyncInfo().AlwaysSuspends;
+
+        if (!isResumed)
+        {
+            CallArg* resumedUseArg = call->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedUse);
+            if (resumedUseArg != nullptr)
+            {
+                // The arg is usually a TYP_INT use of the TYP_I_IMPL indicator var.
+                assert(genActualTypeIsInt(resumedUseArg->GetNode()));
+                ValueNum resumedUseVN = vnStore->VNNormalValue(resumedUseArg->GetNode()->gtVNPair.GetLiberal());
+                isResumed =
+                    vnStore->IsVNConstant(resumedUseVN) && (vnStore->CoercedConstantValue<int>(resumedUseVN) == 1);
+            }
+        }
+
+        if (isResumed)
+        {
+            asyncResumedVN = vnStore->VNOneForType(TYP_I_IMPL);
+        }
+    }
+
     // If the call generates any definitions, for example because it uses "return buffer", then VN the local
     // as well.
     auto visitDef = [=](const LocalDef& def) {
         ValueNumPair storeValue;
-        storeValue.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(def.Def->AsLclVarCommon())->TypeGet()));
+        if ((def.Def == asyncResumedLclAddr) && (asyncResumedVN != ValueNumStore::NoVN))
+        {
+            storeValue.SetBoth(asyncResumedVN);
+        }
+        else
+        {
+            storeValue.SetBoth(vnStore->VNForExpr(compCurBB, lvaGetDesc(def.Def->AsLclVarCommon())->TypeGet()));
+        }
 
         fgValueNumberLocalStore(call, def.Def, def.Offset, def.Size, storeValue);
         return GenTree::VisitResult::Continue;
