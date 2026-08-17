@@ -1529,7 +1529,7 @@ namespace System.Text.Json
 
                 Debug.Assert(result == ConsumeNumberResult.OperationIncomplete);
                 nextByte = data[i];
-                if (nextByte != 'E' && nextByte != 'e')
+                if (nextByte is not ((byte)'E' or (byte)'e'))
                 {
                     _bytePositionInLine += i;
                     ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedNextDigitEValueNotFound, nextByte);
