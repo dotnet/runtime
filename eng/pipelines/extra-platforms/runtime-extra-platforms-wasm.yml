@@ -32,6 +32,7 @@ jobs:
       buildAOTOnHelix: false
       shouldRunSmokeOnly: true
       alwaysRun: true
+      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
   # AOT Library tests - wasi_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -56,6 +57,7 @@ jobs:
       buildAOTOnHelix: false
       runAOT: true
       alwaysRun: true
+      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
 #
 # ********** For !rolling builds, IOW - PR builds *************
@@ -73,6 +75,7 @@ jobs:
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
       scenarios:
         - WasmTestOnChrome
 
@@ -104,6 +107,7 @@ jobs:
       buildAOTOnHelix: false
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
   # AOT Library tests - browser_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -119,6 +123,7 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
   # AOT Library tests - wasi_wasm
   - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -147,6 +152,7 @@ jobs:
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
+      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
   # Wasi - run only smoke tests by default
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -222,6 +228,7 @@ jobs:
       # The CoreCLR build-only job above stages the CoreCLR runtime pack for the
       # wasm-tools workload install.
       includeCoreClrRuntimePack: true
+      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
   - template: /eng/pipelines/common/templates/simple-wasm-build-tests.yml
     parameters:
@@ -231,6 +238,7 @@ jobs:
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
   - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
     parameters:
@@ -239,6 +247,7 @@ jobs:
       extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
 - ${{ if and(ne(parameters.isRollingBuild, true), ne(parameters.excludeOptional, true)) }}:
   - template: /eng/pipelines/common/templates/wasm-library-tests.yml
@@ -252,5 +261,6 @@ jobs:
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
       isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
       isWasmOnlyBuild: ${{ parameters.isWasmOnlyBuild }}
+      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
       scenarios:
         - WasmTestOnWasmtime

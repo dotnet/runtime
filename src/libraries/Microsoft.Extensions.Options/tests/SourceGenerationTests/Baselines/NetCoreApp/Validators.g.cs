@@ -695,7 +695,7 @@ namespace Generics
 namespace KeywordNames
 {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    internal sealed partial class __classValidator__
+    internal sealed partial class __classAsyncValidator__
     {
         /// <summary>
         /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
@@ -724,6 +724,43 @@ namespace KeywordNames
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
             validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
             if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.@string, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
+        }
+
+        /// <summary>
+        /// Validates a specific named options instance asynchronously (or all when <paramref name="name"/> is <see langword="null" />).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <param name="cancellationToken">The <see cref="global::System.Threading.CancellationToken"/> to monitor for cancellation requests.</param>
+        /// <returns>A task representing the asynchronous validation operation, containing the validation result.</returns>
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+        #if !NET
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+             Justification = "The created ValidationContext object is used in a way that never call reflection")]
+        #endif
+        public static async global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, global::KeywordNames.@class options, global::System.Threading.CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "class", null, null);
+            #else
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
+
+            context.MemberName = "string";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "string" : $"{name}.string";
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+            if (!await global::System.ComponentModel.DataAnnotations.Validator.TryValidateValueAsync(options.@string, context, validationResults, validationAttributes, cancellationToken).ConfigureAwait(false))
             {
                 (builder ??= new()).AddResults(validationResults);
             }
@@ -779,7 +816,7 @@ namespace KeywordNames
 
             if (options.@event is not null)
             {
-                (builder ??= new()).AddResult(global::KeywordNames.__classValidator__.Validate(string.IsNullOrEmpty(name) ? "event" : $"{name}.event", options.@event));
+                (builder ??= new()).AddResult(global::KeywordNames.__classAsyncValidator__.Validate(string.IsNullOrEmpty(name) ? "event" : $"{name}.event", options.@event));
             }
 
             if (options.@const is not null)
@@ -789,7 +826,7 @@ namespace KeywordNames
                 {
                     if (o is not null)
                     {
-                        (builder ??= new()).AddResult(global::KeywordNames.__classValidator__.Validate(string.IsNullOrEmpty(name) ? $"const[{count}]" : $"{name}.const[{count}]", o));
+                        (builder ??= new()).AddResult(global::KeywordNames.__classAsyncValidator__.Validate(string.IsNullOrEmpty(name) ? $"const[{count}]" : $"{name}.const[{count}]", o));
                     }
                     else
                     {
@@ -799,6 +836,121 @@ namespace KeywordNames
                 }
             }
 
+            return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
+        }
+
+        /// <summary>
+        /// Validates a specific named options instance asynchronously (or all when <paramref name="name"/> is <see langword="null" />).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <param name="cancellationToken">The <see cref="global::System.Threading.CancellationToken"/> to monitor for cancellation requests.</param>
+        /// <returns>A task representing the asynchronous validation operation, containing the validation result.</returns>
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+        #if !NET
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+             Justification = "The created ValidationContext object is used in a way that never call reflection")]
+        #endif
+        public async global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, global::KeywordNames.FirstModel options, global::System.Threading.CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            async global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> Validate0Async()
+            {
+                global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? memberBuilder0 = null;
+                #if NET
+                var memberContext0 = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+                #else
+                var memberContext0 = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                #endif
+                var memberValidationResults0 = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+                var memberValidationAttributes0 = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(2);
+                memberContext0.MemberName = "namespace";
+                memberContext0.DisplayName = string.IsNullOrEmpty(name) ? "namespace" : $"{name}.namespace";
+                memberValidationAttributes0.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+                memberValidationAttributes0.Add(global::__OptionValidationStaticInstances.__Attributes.A2);
+                if (!await global::System.ComponentModel.DataAnnotations.Validator.TryValidateValueAsync(options.@namespace, memberContext0, memberValidationResults0, memberValidationAttributes0, cancellationToken).ConfigureAwait(false))
+                {
+                    (memberBuilder0 ??= new()).AddResults(memberValidationResults0);
+                }
+                return memberBuilder0 is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : memberBuilder0.Build();
+            }
+
+            async global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> Validate1Async()
+            {
+                global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? memberBuilder1 = null;
+                #if NET
+                var memberContext1 = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "FirstModel", null, null);
+                #else
+                var memberContext1 = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+                #endif
+                var memberValidationResults1 = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+                var memberValidationAttributes1 = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
+                memberContext1.MemberName = "if";
+                memberContext1.DisplayName = string.IsNullOrEmpty(name) ? "if" : $"{name}.if";
+                memberValidationAttributes1.Add(global::__OptionValidationStaticInstances.__Attributes.A7);
+                if (!await global::System.ComponentModel.DataAnnotations.Validator.TryValidateValueAsync(options.@if, memberContext1, memberValidationResults1, memberValidationAttributes1, cancellationToken).ConfigureAwait(false))
+                {
+                    (memberBuilder1 ??= new()).AddResults(memberValidationResults1);
+                }
+                return memberBuilder1 is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : memberBuilder1.Build();
+            }
+
+            async global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> Validate2Async()
+            {
+                global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? memberBuilder2 = null;
+                if (options.@event is not null)
+                {
+                    (memberBuilder2 ??= new()).AddResult(await global::KeywordNames.__classAsyncValidator__.ValidateAsync(string.IsNullOrEmpty(name) ? "event" : $"{name}.event", options.@event, cancellationToken).ConfigureAwait(false));
+                }
+                return memberBuilder2 is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : memberBuilder2.Build();
+            }
+
+            async global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> Validate3Async()
+            {
+                global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? memberBuilder3 = null;
+                if (options.@const is not null)
+                {
+                    var count = 0;
+                    foreach (var o in options.@const)
+                    {
+                        if (o is not null)
+                        {
+                            (memberBuilder3 ??= new()).AddResult(await global::KeywordNames.__classAsyncValidator__.ValidateAsync(string.IsNullOrEmpty(name) ? $"const[{count}]" : $"{name}.const[{count}]", o, cancellationToken).ConfigureAwait(false));
+                        }
+                        else
+                        {
+                            (memberBuilder3 ??= new()).AddError(string.IsNullOrEmpty(name) ? $"const[{count}] is null" : $"{name}.const[{count}] is null");
+                        }
+                        count++;
+                    }
+                }
+                return memberBuilder3 is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : memberBuilder3.Build();
+            }
+
+            var memberTask0 = Validate0Async();
+            var memberTask1 = Validate1Async();
+            var memberTask2 = Validate2Async();
+            var memberTask3 = Validate3Async();
+            var memberResults = await global::System.Threading.Tasks.Task.WhenAll(memberTask0, memberTask1, memberTask2, memberTask3).ConfigureAwait(false);
+
+            if (memberResults[0].Failed)
+            {
+                (builder ??= new()).AddResult(memberResults[0]);
+            }
+            if (memberResults[1].Failed)
+            {
+                (builder ??= new()).AddResult(memberResults[1]);
+            }
+            if (memberResults[2].Failed)
+            {
+                (builder ??= new()).AddResult(memberResults[2]);
+            }
+            if (memberResults[3].Failed)
+            {
+                (builder ??= new()).AddResult(memberResults[3]);
+            }
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
         }
     }
@@ -1596,6 +1748,95 @@ namespace SelfValidation
             context.MemberName = "Validate";
             context.DisplayName = string.IsNullOrEmpty(name) ? "Validate" : $"{name}.Validate";
             (builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));
+
+            return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
+        }
+    }
+}
+namespace SelfValidation
+{
+    partial class AsyncSelfValidatingValidator
+    {
+        /// <summary>
+        /// Validates a specific named options instance (or all when <paramref name="name"/> is <see langword="null" />).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <returns>Validation result.</returns>
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+        #if !NET
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+             Justification = "The created ValidationContext object is used in a way that never call reflection")]
+        #endif
+        public global::Microsoft.Extensions.Options.ValidateOptionsResult Validate(string? name, global::SelfValidation.AsyncSelfValidatingModel options)
+        {
+            global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "AsyncSelfValidatingModel", null, null);
+            #else
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
+
+            context.MemberName = "Name";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Name" : $"{name}.Name";
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!global::System.ComponentModel.DataAnnotations.Validator.TryValidateValue(options.Name, context, validationResults, validationAttributes))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            context.MemberName = "Validate";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Validate" : $"{name}.Validate";
+            (builder ??= new()).AddResults(((global::System.ComponentModel.DataAnnotations.IValidatableObject)options).Validate(context));
+
+            return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
+        }
+
+        /// <summary>
+        /// Validates a specific named options instance asynchronously (or all when <paramref name="name"/> is <see langword="null" />).
+        /// </summary>
+        /// <param name="name">The name of the options instance being validated.</param>
+        /// <param name="options">The options instance.</param>
+        /// <param name="cancellationToken">The <see cref="global::System.Threading.CancellationToken"/> to monitor for cancellation requests.</param>
+        /// <returns>A task representing the asynchronous validation operation, containing the validation result.</returns>
+        [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
+        #if !NET
+        [global::System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026:RequiresUnreferencedCode",
+             Justification = "The created ValidationContext object is used in a way that never call reflection")]
+        #endif
+        public async global::System.Threading.Tasks.Task<global::Microsoft.Extensions.Options.ValidateOptionsResult> ValidateAsync(string? name, global::SelfValidation.AsyncSelfValidatingModel options, global::System.Threading.CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            global::Microsoft.Extensions.Options.ValidateOptionsResultBuilder? builder = null;
+            #if NET
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options, "AsyncSelfValidatingModel", null, null);
+            #else
+            var context = new global::System.ComponentModel.DataAnnotations.ValidationContext(options);
+            #endif
+            var validationResults = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationResult>();
+            var validationAttributes = new global::System.Collections.Generic.List<global::System.ComponentModel.DataAnnotations.ValidationAttribute>(1);
+
+            context.MemberName = "Name";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "Name" : $"{name}.Name";
+            validationAttributes.Add(global::__OptionValidationStaticInstances.__Attributes.A1);
+            if (!await global::System.ComponentModel.DataAnnotations.Validator.TryValidateValueAsync(options.Name, context, validationResults, validationAttributes, cancellationToken).ConfigureAwait(false))
+            {
+                (builder ??= new()).AddResults(validationResults);
+            }
+
+            context.MemberName = "ValidateAsync";
+            context.DisplayName = string.IsNullOrEmpty(name) ? "ValidateAsync" : $"{name}.ValidateAsync";
+            var asyncSelfValidationResults = ((global::System.ComponentModel.DataAnnotations.IAsyncValidatableObject)options).ValidateAsync(context, cancellationToken);
+            if (asyncSelfValidationResults is not null)
+            {
+                await foreach (var asyncValidationResult in global::System.Threading.Tasks.TaskAsyncEnumerableExtensions.ConfigureAwait(asyncSelfValidationResults, false))
+                {
+                    (builder ??= new()).AddResult(asyncValidationResult);
+                }
+            }
 
             return builder is null ? global::Microsoft.Extensions.Options.ValidateOptionsResult.Success : builder.Build();
         }

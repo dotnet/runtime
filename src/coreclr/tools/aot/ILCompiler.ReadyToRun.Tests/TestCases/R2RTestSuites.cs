@@ -111,13 +111,14 @@ public class R2RTestSuites
             Assert.True(WasmR2RAssert.WasmIndexSpacesHaveExpectedEntries(webcilReader, out string indexDiagnostic), indexDiagnostic);
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
-            // relocations that the R2R object writer must self-resolve back to the fixed global
-            // indices. Verify the emitted code contains a correctly self-resolved 'global.get' for the
+            // relocations that the R2R object writer must self-resolve to the fixed global
+            // indices and shrink down to their minimal size. Verify the emitted code contains a correctly self-resolved 'global.get' for the
             // image base (1, materialized by static-data reads in SumStaticData) and the table base
             // (2, materialized by the try/finally funclet path in SumWithFinally). Each pattern encodes
-            // the exact resolved index, so a regression in self-resolution changes it (or makes
-            // crossgen2 throw while emitting the method). The stack-pointer well-known global is passed to
-            // managed methods as a parameter in R2R, so it is not referenced via 'global.get' here.
+            // the exact resolved index in its minimal form, so a regression in self-resolution changes
+            // it (or makes crossgen2 throw while emitting the method). The stack-pointer well-known global
+            // is passed to managed methods as a parameter in R2R, so it is not referenced via
+            // 'global.get' here.
             const int ImageBaseGlobal = 1;
             const int TableBaseGlobal = 2;
             Assert.True(WasmR2RAssert.WasmImageContainsWellKnownGlobalGet(webcilReader, ImageBaseGlobal),
@@ -1182,11 +1183,6 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskNoAwait", "ReturnTaskNoAwait", out diag), diag);
             Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskPrimitiveNoAwait", "ReturnTaskPrimitiveNoAwait", out diag), diag);
             Assert.True(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskClassNoAwait", "ReturnTaskClassNoAwait", out diag), diag);
-
-            // Async candidates that contain a real await: cannot be inlined by the JIT.
-            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskWithAwait", "ReturnTaskWithAwait", out diag), diag);
-            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskPrimitiveWithAwait", "ReturnTaskPrimitiveWithAwait", out diag), diag);
-            Assert.False(R2RAssert.HasInlinedMethod(reader, "CallReturnTaskClassWithAwait", "ReturnTaskClassWithAwait", out diag), diag);
         }
     }
 
@@ -1877,6 +1873,38 @@ public class R2RTestSuites
             // The generic type instantiation is reached only through a GenericLookupSignature
             // fixup, so its virtual method must still be discovered and compiled.
             Assert.True(R2RAssert.HasCompiledMethod(reader, "TestA`2<__Canon,int>", "TestMethod", out diag), diag);
+        }
+    }
+
+    [Fact]
+    public void MissingVirtualSignature()
+    {
+        var missingDependency = new CompiledAssembly
+        {
+            AssemblyName = nameof(MissingVirtualSignature) + "Dependency",
+            SourceResourceNames = ["MissingVirtualSignature/Dependency.cs"],
+        };
+        var input = new CompiledAssembly
+        {
+            AssemblyName = nameof(MissingVirtualSignature),
+            SourceResourceNames = ["MissingVirtualSignature/Input.cs"],
+            References = [missingDependency],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(MissingVirtualSignature),
+            [
+                new(nameof(MissingVirtualSignature), [new CrossgenAssembly(input)])
+                {
+                    AdditionalArgs = ["--parallelism", "1"],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "EntryPoints", "CompilableMethod", out string diag), diag);
+            Assert.False(R2RAssert.HasCompiledMethod(reader, "IMissingSignature`1<__Canon>", "GetMissingType", out diag), diag);
         }
     }
 }

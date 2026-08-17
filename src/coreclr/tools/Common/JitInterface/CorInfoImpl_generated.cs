@@ -142,6 +142,7 @@ namespace Internal.JitInterface
                 s_callbacks.getEEInfo = &_getEEInfo;
                 s_callbacks.getAsyncInfo = &_getAsyncInfo;
                 s_callbacks.getAwaitReturnCall = &_getAwaitReturnCall;
+                s_callbacks.getAwaitAwaiterInContinuationCall = &_getAwaitAwaiterInContinuationCall;
                 s_callbacks.getMethodDefFromMethod = &_getMethodDefFromMethod;
                 s_callbacks.printMethodName = &_printMethodName;
                 s_callbacks.getMethodNameFromMetadata = &_getMethodNameFromMetadata;
@@ -327,6 +328,7 @@ namespace Internal.JitInterface
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_EE_INFO*, void> getEEInfo;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_ASYNC_INFO*, void> getAsyncInfo;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_CONTEXT_STRUCT**, CORINFO_LOOKUP*, CORINFO_METHOD_STRUCT_*> getAwaitReturnCall;
+            public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, CORINFO_RESOLVED_TOKEN*, byte, CORINFO_CONTEXT_STRUCT**, CORINFO_LOOKUP*, CORINFO_METHOD_STRUCT_*> getAwaitAwaiterInContinuationCall;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, mdToken> getMethodDefFromMethod;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte*, nuint, nuint*, nuint> printMethodName;
             public delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, byte**, byte**, byte**, nuint, byte*> getMethodNameFromMetadata;
@@ -2187,6 +2189,21 @@ namespace Internal.JitInterface
             try
             {
                 return _this.getAwaitReturnCall(callerHandle, contextHandle, ref *instArg);
+            }
+            catch (Exception ex)
+            {
+                *ppException = _this.AllocException(ex);
+                return default;
+            }
+        }
+
+        [UnmanagedCallersOnly]
+        private static CORINFO_METHOD_STRUCT_* _getAwaitAwaiterInContinuationCall(IntPtr thisHandle, IntPtr* ppException, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_RESOLVED_TOKEN* pResolvedToken, byte isUnsafe, CORINFO_CONTEXT_STRUCT** contextHandle, CORINFO_LOOKUP* instArg)
+        {
+            var _this = GetThis(thisHandle);
+            try
+            {
+                return _this.getAwaitAwaiterInContinuationCall(callerHandle, ref *pResolvedToken, isUnsafe != 0, contextHandle, ref *instArg);
             }
             catch (Exception ex)
             {

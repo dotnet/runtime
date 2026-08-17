@@ -238,7 +238,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <safety>Runtime FCall that reads the object's existing hash from its header and returns it as an int; it dereferences no raw pointer and touches no caller-chosen memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static safe extern int TryGetHashCode(object? o);
+        internal static extern safe int TryGetHashCode(object? o);
 
         [LibraryImport(QCall, EntryPoint = "ObjectNative_GetHashCodeSlow")]
         private static partial int GetHashCodeSlow(ObjectHandleOnStack o);
@@ -289,7 +289,7 @@ namespace System.Runtime.CompilerServices
 
         /// <safety>Runtime FCall that compares the field contents of two same-typed managed value objects and returns a bool; it works through type-checked object references and dereferences no raw pointer.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static safe extern bool ContentEquals(object o1, object o2);
+        private static extern safe bool ContentEquals(object o1, object o2);
 
         [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
@@ -329,7 +329,7 @@ namespace System.Runtime.CompilerServices
         // Note: this method is not to be confused with ProbeForSufficientStack.
         /// <safety>Runtime FCall that only checks the current thread's remaining stack space; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern bool TryEnsureSufficientExecutionStack();
+        public static extern safe bool TryEnsureSufficientExecutionStack();
 
         public static object GetUninitializedObject(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.

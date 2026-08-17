@@ -1128,53 +1128,6 @@ struct CoTaskMemTraits final
 template<typename T>
 using CoTaskMemHolder = LifetimeHolder<CoTaskMemTraits<T>>;
 
-//-----------------------------------------------------------------------------
-// StubHolder : holder for runtime-emitted Stub-like objects.
-// On scope exit, calls DecRef through the executable-memory
-// writer-holder so the refcount field can be written.
-//
-// Note: StubHolder does NOT call IncRef on assignment - the caller owns
-// matching IncRef/DecRef pairing on the value it hands to the holder.
-//
-// Usage example:
-//
-//  {
-//      StubHolder<Stub> foo;
-//      foo = new Stub();
-//      foo->AddRef();
-//  } // foo->DecRef() on out of scope
-//-----------------------------------------------------------------------------
-template<typename T>
-class ExecutableWriterHolderNoLog;
-
-class ExecutableAllocator;
-
-template<typename T>
-struct StubTraits final
-{
-    using Type = T*;
-    static constexpr Type Default() { return nullptr; }
-    static void Free(Type value)
-    {
-        STATIC_CONTRACT_WRAPPER;
-        if (value != nullptr)
-        {
-#ifdef LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-#ifdef HOST_UNIX
-            ExecutableAllocator::LogUsage(__FILE__, __LINE__, __PRETTY_FUNCTION__);
-#else
-            ExecutableAllocator::LogUsage(__FILE__, __LINE__, __FUNCTION__);
-#endif
-#endif // LOG_EXECUTABLE_ALLOCATOR_STATISTICS
-            ExecutableWriterHolderNoLog<T> stubWriterHolder(value, sizeof(T));
-            stubWriterHolder.GetRW()->DecRef();
-        }
-    }
-};
-
-template<typename T>
-using StubHolder = LifetimeHolder<StubTraits<T>>;
-
 //
 // We need the following methods to have volatile arguments, so that they can accept
 // raw pointers in addition to the results of the & operator on Volatile<T>.
