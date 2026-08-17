@@ -1703,7 +1703,7 @@ namespace System.Text.Json
             }
 
             byte nextByte = data[i];
-            if (nextByte == '+' || nextByte == '-')
+            if (nextByte is (byte)'+' or (byte)'-')
             {
                 i++;
                 if (i >= data.Length)
