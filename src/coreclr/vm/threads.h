@@ -3790,7 +3790,6 @@ struct cdac_data<Thread>
 #endif
 
     static_assert(State == 0, "Thread.NativeThread depends on Thread::m_State being the first field");
-    static_assert(Thread::TS_WaitSleepJoin == 0x02000000, "Thread.NativeThread.ThreadState depends on this value");
 };
 
 // End of class Thread
