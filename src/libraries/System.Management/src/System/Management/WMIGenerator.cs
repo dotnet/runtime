@@ -4273,7 +4273,7 @@ namespace System.Management
 
             //public void Dispose()
             //{
-            //    objCollection.Dispose();
+            //    privColObj.Dispose();
             //}
 
             cmm = new CodeMemberMethod();
