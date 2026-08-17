@@ -240,15 +240,15 @@ namespace ILVerify
             int methodCounter = 0;
             int verifiedTypeCounter = 0;
             int typeCounter = 0;
-            bool metadataOnly = Get(_command.MetadataOnly);
+            bool metadataReferencesOnly = Get(_command.MetadataReferencesOnly);
 
             List<VerificationResult> metadataErrors = new(_verifier.VerifyMetadataReferences(peReader));
-            int metadataErrorCounter = VerifyMetadataReferences(
+            VerifyMetadataReferences(
                 metadataErrors,
                 path,
                 ref numErrors);
 
-            if (!metadataOnly)
+            if (!metadataReferencesOnly)
             {
                 VerifyMethods(peReader, module, metadataErrors, path, ref numErrors, ref verifiedMethodCounter, ref methodCounter);
                 VerifyTypes(peReader, module, metadataErrors, path, ref numErrors, ref verifiedTypeCounter, ref typeCounter);
@@ -256,14 +256,14 @@ namespace ILVerify
 
             if (numErrors > 0)
                 WriteLine(numErrors + " Error(s) Verifying " + path);
-            else if (metadataOnly)
+            else if (metadataReferencesOnly)
                 WriteLine("All metadata references in " + path + " resolved.");
             else
                 WriteLine("All types and methods in " + path + " verified.");
 
             if (Get(_command.Statistics))
             {
-                if (!metadataOnly)
+                if (!metadataReferencesOnly)
                 {
                     WriteLine($"Types found: {typeCounter}");
                     WriteLine($"Types verified: {verifiedTypeCounter}");
@@ -276,13 +276,11 @@ namespace ILVerify
             return numErrors;
         }
 
-        private int VerifyMetadataReferences(
+        private void VerifyMetadataReferences(
             IEnumerable<VerificationResult> metadataErrors,
             string path,
             ref int numErrors)
         {
-            int metadataErrorCounter = 0;
-
             foreach (VerificationResult result in metadataErrors)
             {
                 if (ShouldIgnoreVerificationResult(result))
@@ -297,11 +295,8 @@ namespace ILVerify
                 {
                     PrintVerifyMetadataReferencesResult(result, path);
                     numErrors++;
-                    metadataErrorCounter++;
                 }
             }
-
-            return metadataErrorCounter;
         }
 
         private void PrintVerifyMetadataReferencesResult(VerificationResult result, string path)
