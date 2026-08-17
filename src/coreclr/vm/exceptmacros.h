@@ -218,6 +218,10 @@ void UnwindAndContinueRethrowHelperInsideQcallCatch(
     Exception* pException,
     QCallException* pQCallException DEBUG_ARG(Frame* pEntryFrame));
 
+#ifdef TARGET_UNIX
+void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallException* pQCallException);
+#endif
+
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);
 
 #ifdef FEATURE_INTERPRETER
@@ -347,9 +351,7 @@ VOID DECLSPEC_NORETURN DispatchManagedException(PAL_SEHException& ex, bool isHar
         {                                           \
             _ASSERTE(CURRENT_THREAD->GetFrame() == __pUnCEntryFrame);     \
             _ASSERTE(CURRENT_THREAD->GetFrame()->GetFrameIdentifier() == FrameIdentifier::InlinedCallFrame); \
-            GCX_COOP();                             \
-            OBJECTREF throwable = ExInfo::CreateThrowable(ex.GetExceptionRecord(), FALSE); \
-            qcallError->SetThrowable(throwable);    \
+            CaptureQCallExceptionFromPALException(ex, qcallError);        \
         }                                           \
         PAL_CPP_CATCH_NON_DERIVED_NOARG (const std::bad_alloc&)                             \
         {                                                                                   \

@@ -6700,6 +6700,20 @@ void UnwindAndContinueRethrowHelperInsideQcallCatch(
     pQCallException->SetThrowable(orThrowable);
 }
 
+#ifdef TARGET_UNIX
+void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallException* pQCallException)
+{
+    STATIC_CONTRACT_NOTHROW;
+    STATIC_CONTRACT_GC_TRIGGERS;
+    STATIC_CONTRACT_MODE_ANY;
+
+    GCX_COOP();
+
+    OBJECTREF throwable = ExInfo::CreateThrowable(exception.GetExceptionRecord(), FALSE);
+    pQCallException->SetThrowable(throwable);
+}
+#endif
+
 //
 // This does the work of the Unwind and Continue Hanlder after the catch clause of that handler. The stack has been
 // unwound by the time this is called. Keep that in mind when deciding where to put new code :)
