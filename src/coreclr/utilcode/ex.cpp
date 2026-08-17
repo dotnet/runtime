@@ -120,8 +120,9 @@ Exception *Exception::Clone()
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 

@@ -1452,21 +1452,17 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, Except
 }
 
 EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo)
-    : EEException(GetFileLoadKind(hr))
-    , m_name(name)
-    , m_hr(hr)
-    , m_diagnosticInfo(diagnosticInfo)
+    : EEFileLoadException(name, hr, NULL)
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         THROWS;
         MODE_ANY;
     }
     CONTRACTL_END;
 
-    if (m_name.IsEmpty())
-        m_name.Set(W("<Unknown>"));
+    m_diagnosticInfo.Set(diagnosticInfo);
 }
 
 void EEFileLoadException::SetFileName(const SString &fileName, BOOL removePath)
