@@ -20,6 +20,16 @@
 
 #include "minipal-wait.h"
 
+#if defined(MINIPAL_WAIT_TESTS)
+extern "C" void minipal_wait_test_pause_process_watchers(bool pause);
+extern "C" void minipal_wait_test_pause_exited_process_watchers(bool pause);
+extern "C" int32_t minipal_wait_test_get_process_watcher_count();
+extern "C" int32_t minipal_wait_test_get_paused_process_watcher_count();
+extern "C" int32_t minipal_wait_test_get_paused_exited_process_watcher_count();
+extern "C" int32_t minipal_wait_test_get_process_watcher_signal_count();
+extern "C" void minipal_wait_test_reset_process_watcher_signal_count();
+#endif // MINIPAL_WAIT_TESTS
+
 namespace
 {
     struct WaitThreadState
@@ -73,6 +83,38 @@ namespace
             static_cast<uint64_t>(currentTime.tv_nsec) / 1000000;
 #endif
     }
+
+#if defined(MINIPAL_WAIT_TESTS)
+    struct ProcessWaitReleaseState
+    {
+        minipal_process_wait* process;
+        int32_t released;
+    };
+
+    bool WaitForValue(int32_t (*getValue)(), int32_t expected, uint32_t timeout)
+    {
+        uint64_t start = GetTickMilliseconds();
+        do
+        {
+            if (getValue() == expected)
+            {
+                return true;
+            }
+
+            SleepMilliseconds(1);
+        } while (GetTickMilliseconds() - start < timeout);
+
+        return getValue() == expected;
+    }
+
+    void* ReleaseProcessWait(void* argument)
+    {
+        ProcessWaitReleaseState* state = static_cast<ProcessWaitReleaseState*>(argument);
+        delete state->process;
+        __atomic_store_n(&state->released, 1, __ATOMIC_RELEASE);
+        return nullptr;
+    }
+#endif // MINIPAL_WAIT_TESTS
 
 #ifdef HOST_WINDOWS
     DWORD WINAPI WaitThread(void* argument)
@@ -363,6 +405,202 @@ namespace
     }
 #endif
 
+#if defined(MINIPAL_WAIT_TESTS)
+    bool TestAbandonedProcessWatcher()
+    {
+        pid_t child = fork();
+        if (!Check(child >= 0, "fork abandoned process-watcher child"))
+        {
+            return false;
+        }
+
+        if (child == 0)
+        {
+            SleepMilliseconds(30000);
+            _exit(0);
+        }
+
+        minipal_wait_test_pause_process_watchers(true);
+
+        minipal_process_wait* process =
+            new (std::nothrow) minipal_process_wait(static_cast<uint32_t>(child));
+
+        bool watcherPaused =
+            process != nullptr &&
+            process->IsValid() &&
+            WaitForValue(minipal_wait_test_get_paused_process_watcher_count, 1, 2000);
+        bool success =
+            Check(process != nullptr && process->IsValid(), "create abandoned process watcher") &&
+            Check(watcherPaused, "pause process watcher");
+
+        minipal_process_wait* duplicate = watcherPaused
+            ? new (std::nothrow) minipal_process_wait(*process)
+            : nullptr;
+        success =
+            Check(duplicate != nullptr && duplicate->IsValid(), "duplicate process watcher") &&
+            success;
+
+        if (duplicate != nullptr)
+        {
+            delete process;
+            process = duplicate;
+            success =
+                Check(
+                    minipal_wait_test_get_process_watcher_count() == 1,
+                    "process watcher remains while public reference exists") &&
+                success;
+        }
+
+        ProcessWaitReleaseState state = { process, 0 };
+        pthread_t releaseThread;
+        bool releaseThreadStarted =
+            watcherPaused &&
+            pthread_create(&releaseThread, nullptr, ReleaseProcessWait, &state) == 0;
+        success = Check(releaseThreadStarted, "start process-wait release thread") && success;
+
+        bool releasedWithoutWaiting = false;
+        if (releaseThreadStarted)
+        {
+            uint64_t start = GetTickMilliseconds();
+            do
+            {
+                releasedWithoutWaiting = __atomic_load_n(&state.released, __ATOMIC_ACQUIRE) != 0;
+                if (!releasedWithoutWaiting)
+                {
+                    SleepMilliseconds(1);
+                }
+            } while (!releasedWithoutWaiting && GetTickMilliseconds() - start < 2000);
+        }
+
+        success =
+            Check(releasedWithoutWaiting, "final public release does not join process watcher") &&
+            success;
+
+        minipal_wait_test_pause_process_watchers(false);
+
+        if (releaseThreadStarted)
+        {
+            success = Check(pthread_join(releaseThread, nullptr) == 0, "join process-wait release thread") && success;
+        }
+        else
+        {
+            delete state.process;
+        }
+
+        success =
+            Check(
+                WaitForValue(minipal_wait_test_get_process_watcher_count, 0, 2000),
+                "abandoned process watcher exits") &&
+            success;
+
+        int status;
+        pid_t waitResult = waitpid(child, &status, WNOHANG);
+        success = Check(waitResult == 0, "abandoned process remains running") && success;
+        if (waitResult == 0)
+        {
+            success = Check(kill(child, SIGKILL) == 0, "terminate abandoned process-watcher child") && success;
+        }
+
+        do
+        {
+            waitResult = waitpid(child, &status, 0);
+        } while (waitResult < 0 && errno == EINTR);
+
+        success =
+            Check(waitResult == child || (waitResult < 0 && errno == ECHILD), "collect abandoned child process") &&
+            success;
+        return success;
+    }
+
+    bool TestAbandonedExitedProcessWatcher()
+    {
+        pid_t child = fork();
+        if (!Check(child >= 0, "fork exited process-watcher child"))
+        {
+            return false;
+        }
+
+        if (child == 0)
+        {
+            SleepMilliseconds(100);
+            _exit(0);
+        }
+
+        minipal_wait_test_reset_process_watcher_signal_count();
+        minipal_wait_test_pause_exited_process_watchers(true);
+
+        ProcessWaitReleaseState state =
+        {
+            new (std::nothrow) minipal_process_wait(static_cast<uint32_t>(child)),
+            0,
+        };
+
+        bool watcherPaused =
+            state.process != nullptr &&
+            state.process->IsValid() &&
+            WaitForValue(minipal_wait_test_get_paused_exited_process_watcher_count, 1, 2000);
+        bool success =
+            Check(state.process != nullptr && state.process->IsValid(), "create exited process watcher") &&
+            Check(watcherPaused, "pause exited process watcher before signaling");
+
+        pthread_t releaseThread;
+        bool releaseThreadStarted =
+            watcherPaused &&
+            pthread_create(&releaseThread, nullptr, ReleaseProcessWait, &state) == 0;
+        success = Check(releaseThreadStarted, "start exited process-wait release thread") && success;
+
+        bool releasedWithoutWaiting = false;
+        if (releaseThreadStarted)
+        {
+            uint64_t start = GetTickMilliseconds();
+            do
+            {
+                releasedWithoutWaiting = __atomic_load_n(&state.released, __ATOMIC_ACQUIRE) != 0;
+                if (!releasedWithoutWaiting)
+                {
+                    SleepMilliseconds(1);
+                }
+            } while (!releasedWithoutWaiting && GetTickMilliseconds() - start < 2000);
+        }
+
+        success =
+            Check(releasedWithoutWaiting, "final public release does not join exited process watcher") &&
+            success;
+
+        minipal_wait_test_pause_exited_process_watchers(false);
+
+        if (releaseThreadStarted)
+        {
+            success = Check(pthread_join(releaseThread, nullptr) == 0, "join exited process-wait release thread") && success;
+        }
+        else
+        {
+            delete state.process;
+        }
+
+        success =
+            Check(
+                WaitForValue(minipal_wait_test_get_process_watcher_count, 0, 2000),
+                "abandoned exited process watcher exits") &&
+            Check(
+                minipal_wait_test_get_process_watcher_signal_count() == 0,
+                "abandoned exited process watcher does not signal") &&
+            success;
+
+        int status;
+        pid_t waitResult;
+        do
+        {
+            waitResult = waitpid(child, &status, 0);
+        } while (waitResult < 0 && errno == EINTR);
+
+        success =
+            Check(waitResult == child || (waitResult < 0 && errno == ECHILD), "collect exited child process") &&
+            success;
+        return success;
+    }
+#endif // MINIPAL_WAIT_TESTS
+
     bool TestProcessExit(const char* executablePath)
     {
 #ifdef HOST_WINDOWS
@@ -475,6 +713,11 @@ int main(int argc, char** argv)
         TestInterruptedWait() &&
 #endif
         TestProcessExit(argv[0]);
+
+#if defined(MINIPAL_WAIT_TESTS)
+    success = TestAbandonedProcessWatcher() && success;
+    success = TestAbandonedExitedProcessWatcher() && success;
+#endif // MINIPAL_WAIT_TESTS
 
     if (success)
     {

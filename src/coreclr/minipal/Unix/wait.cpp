@@ -32,6 +32,15 @@
 
 namespace
 {
+#if defined(MINIPAL_WAIT_TESTS)
+    int32_t s_processWatcherCount;
+    int32_t s_pauseExitedProcessWatchers;
+    int32_t s_pausedProcessWatcherCount;
+    int32_t s_pausedExitedProcessWatcherCount;
+    int32_t s_pauseProcessWatchers;
+    int32_t s_processWatcherSignalCount;
+#endif // MINIPAL_WAIT_TESTS
+
     enum class WaitableKind
     {
         Event,
@@ -51,7 +60,6 @@ namespace
     {
         int32_t refCount;
         int32_t publicRefCount;
-        int32_t watcherRunning;
         WaitableKind kind;
         minipal_mutex mutex;
         bool mutexInitialized;
@@ -60,12 +68,8 @@ namespace
         int readFileDescriptor;
         int writeFileDescriptor;
         int processFileDescriptor;
-        int cancellationReadFileDescriptor;
-        int cancellationWriteFileDescriptor;
         int errorCode;
         pid_t processId;
-        pthread_t watcherThread;
-        bool watcherStarted;
     };
 
     void CloseFileDescriptor(int fileDescriptor)
@@ -176,8 +180,6 @@ namespace
         waitable->readFileDescriptor = -1;
         waitable->writeFileDescriptor = -1;
         waitable->processFileDescriptor = -1;
-        waitable->cancellationReadFileDescriptor = -1;
-        waitable->cancellationWriteFileDescriptor = -1;
 
         if (!minipal_mutex_init(&waitable->mutex))
         {
@@ -192,14 +194,11 @@ namespace
     void DestroyWaitable(Waitable* waitable)
     {
         assert(__atomic_load_n(&waitable->refCount, __ATOMIC_RELAXED) == 0);
-        assert(__atomic_load_n(&waitable->watcherRunning, __ATOMIC_RELAXED) == 0);
-        assert(!waitable->watcherStarted);
+        assert(__atomic_load_n(&waitable->publicRefCount, __ATOMIC_RELAXED) == 0);
 
         CloseFileDescriptor(waitable->readFileDescriptor);
         CloseFileDescriptor(waitable->writeFileDescriptor);
         CloseFileDescriptor(waitable->processFileDescriptor);
-        CloseFileDescriptor(waitable->cancellationReadFileDescriptor);
-        CloseFileDescriptor(waitable->cancellationWriteFileDescriptor);
 
         if (waitable->mutexInitialized)
         {
@@ -236,22 +235,11 @@ namespace
 
     void ReleasePublicReference(Waitable* waitable)
     {
-        int32_t publicRefCount =
-            __atomic_sub_fetch(&waitable->publicRefCount, 1, __ATOMIC_ACQ_REL);
-        assert(publicRefCount >= 0);
-
-        if (publicRefCount == 0 &&
-            waitable->watcherStarted)
         {
-            if (__atomic_load_n(&waitable->watcherRunning, __ATOMIC_ACQUIRE) != 0)
-            {
-                WriteByte(waitable->cancellationWriteFileDescriptor, true);
-            }
-
-            int joinResult = pthread_join(waitable->watcherThread, nullptr);
-            assert(joinResult == 0);
-            (void)joinResult;
-            waitable->watcherStarted = false;
+            minipal::MutexHolder lock(waitable->mutex);
+            int32_t publicRefCount =
+                __atomic_sub_fetch(&waitable->publicRefCount, 1, __ATOMIC_ACQ_REL);
+            assert(publicRefCount >= 0);
         }
 
         ReleaseReference(waitable);
@@ -269,9 +257,8 @@ namespace
         return result == sizeof(value);
     }
 
-    bool SignalPipe(Waitable* waitable)
+    bool SignalPipeLocked(Waitable* waitable)
     {
-        minipal::MutexHolder lock(waitable->mutex);
         if (waitable->signaled)
         {
             return true;
@@ -284,6 +271,12 @@ namespace
 
         waitable->signaled = true;
         return true;
+    }
+
+    bool SignalPipe(Waitable* waitable)
+    {
+        minipal::MutexHolder lock(waitable->mutex);
+        return SignalPipeLocked(waitable);
     }
 
     bool ResetPipe(Waitable* waitable)
@@ -554,22 +547,54 @@ namespace
         return false;
     }
 
+    void SignalProcessWatcherResult(Waitable* waitable, int errorCode)
+    {
+        minipal::MutexHolder lock(waitable->mutex);
+        if (__atomic_load_n(&waitable->publicRefCount, __ATOMIC_ACQUIRE) == 0)
+        {
+            return;
+        }
+
+        waitable->errorCode = errorCode;
+        if (SignalPipeLocked(waitable))
+        {
+#if defined(MINIPAL_WAIT_TESTS)
+            __atomic_add_fetch(&s_processWatcherSignalCount, 1, __ATOMIC_ACQ_REL);
+#endif // MINIPAL_WAIT_TESTS
+        }
+    }
+
     void* ProcessWatcher(void* argument)
     {
         Waitable* waitable = static_cast<Waitable*>(argument);
-        bool exited = HasProcessExited(waitable->processId);
+#if defined(MINIPAL_WAIT_TESTS)
+        __atomic_add_fetch(&s_processWatcherCount, 1, __ATOMIC_ACQ_REL);
+        if (__atomic_load_n(&s_pauseProcessWatchers, __ATOMIC_ACQUIRE) != 0)
+        {
+            __atomic_add_fetch(&s_pausedProcessWatcherCount, 1, __ATOMIC_ACQ_REL);
+            while (__atomic_load_n(&s_pauseProcessWatchers, __ATOMIC_ACQUIRE) != 0)
+            {
+                poll(nullptr, 0, 1);
+            }
+            __atomic_sub_fetch(&s_pausedProcessWatcherCount, 1, __ATOMIC_ACQ_REL);
+        }
+#endif // MINIPAL_WAIT_TESTS
+
+        bool exited = false;
         int errorCode = 0;
 
-        while (!exited)
+        while (__atomic_load_n(&waitable->publicRefCount, __ATOMIC_ACQUIRE) != 0)
         {
-            pollfd cancellation = {};
-            cancellation.fd = waitable->cancellationReadFileDescriptor;
-            cancellation.events = POLLIN;
+            exited = HasProcessExited(waitable->processId);
+            if (exited)
+            {
+                break;
+            }
 
             int result;
             do
             {
-                result = poll(&cancellation, 1, 250);
+                result = poll(nullptr, 0, 250);
             } while (result < 0 && errno == EINTR);
 
             if (result < 0)
@@ -577,59 +602,61 @@ namespace
                 errorCode = errno;
                 break;
             }
-
-            if (result > 0)
-            {
-                break;
-            }
-
-            exited = HasProcessExited(waitable->processId);
         }
 
-        if (exited)
+#if defined(MINIPAL_WAIT_TESTS)
+        if (exited && __atomic_load_n(&s_pauseExitedProcessWatchers, __ATOMIC_ACQUIRE) != 0)
         {
-            SignalPipe(waitable);
-        }
-        else if (errorCode != 0)
-        {
+            __atomic_add_fetch(&s_pausedExitedProcessWatcherCount, 1, __ATOMIC_ACQ_REL);
+            while (__atomic_load_n(&s_pauseExitedProcessWatchers, __ATOMIC_ACQUIRE) != 0)
             {
-                minipal::MutexHolder lock(waitable->mutex);
-                waitable->errorCode = errorCode;
+                poll(nullptr, 0, 1);
             }
-            SignalPipe(waitable);
+            __atomic_sub_fetch(&s_pausedExitedProcessWatcherCount, 1, __ATOMIC_ACQ_REL);
+        }
+#endif // MINIPAL_WAIT_TESTS
+
+        if (exited || errorCode != 0)
+        {
+            SignalProcessWatcherResult(waitable, errorCode);
         }
 
-        __atomic_store_n(&waitable->watcherRunning, 0, __ATOMIC_RELEASE);
+#if defined(MINIPAL_WAIT_TESTS)
+        __atomic_sub_fetch(&s_processWatcherCount, 1, __ATOMIC_ACQ_REL);
+#endif // MINIPAL_WAIT_TESTS
         ReleaseReference(waitable);
         return nullptr;
     }
 
     bool StartProcessWatcher(Waitable* waitable)
     {
-        int cancellationPipe[2];
-        if (!CreatePipe(cancellationPipe))
+        pthread_attr_t attributes;
+        if (pthread_attr_init(&attributes) != 0)
         {
             return false;
         }
 
-        waitable->cancellationReadFileDescriptor = cancellationPipe[0];
-        waitable->cancellationWriteFileDescriptor = cancellationPipe[1];
-
-        AddReference(waitable);
-        __atomic_store_n(&waitable->watcherRunning, 1, __ATOMIC_RELEASE);
-        if (pthread_create(
-                &waitable->watcherThread,
-                nullptr,
+        int result = pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_DETACHED);
+        if (result == 0)
+        {
+            pthread_t watcherThread;
+            AddReference(waitable);
+            result = pthread_create(
+                &watcherThread,
+                &attributes,
                 ProcessWatcher,
-                waitable) != 0)
-        {
-            __atomic_store_n(&waitable->watcherRunning, 0, __ATOMIC_RELEASE);
-            ReleaseReference(waitable);
-            return false;
+                waitable);
+
+            if (result != 0)
+            {
+                ReleaseReference(waitable);
+            }
         }
 
-        waitable->watcherStarted = true;
-        return true;
+        int destroyResult = pthread_attr_destroy(&attributes);
+        assert(destroyResult == 0);
+        (void)destroyResult;
+        return result == 0;
     }
 
     Waitable* CreatePipeWaitable(WaitableKind kind, bool manualReset, bool initialState)
@@ -983,6 +1010,7 @@ namespace
             return nullptr;
         }
 
+#if !defined(MINIPAL_WAIT_FORCE_PROCESS_WATCHER)
 #if defined(TARGET_LINUX) && defined(SYS_pidfd_open)
         int processFileDescriptor;
         do
@@ -1030,6 +1058,7 @@ namespace
             return waitable;
         }
 #endif // MINIPAL_WAIT_USES_KQUEUE
+#endif // !MINIPAL_WAIT_FORCE_PROCESS_WATCHER
 
         return CreateProcessWatcherWaitable(static_cast<pid_t>(processId));
     }
@@ -1048,6 +1077,43 @@ namespace
         return waitable;
     }
 }
+
+#if defined(MINIPAL_WAIT_TESTS)
+extern "C" void minipal_wait_test_pause_process_watchers(bool pause)
+{
+    __atomic_store_n(&s_pauseProcessWatchers, pause ? 1 : 0, __ATOMIC_RELEASE);
+}
+
+extern "C" void minipal_wait_test_pause_exited_process_watchers(bool pause)
+{
+    __atomic_store_n(&s_pauseExitedProcessWatchers, pause ? 1 : 0, __ATOMIC_RELEASE);
+}
+
+extern "C" int32_t minipal_wait_test_get_process_watcher_count()
+{
+    return __atomic_load_n(&s_processWatcherCount, __ATOMIC_ACQUIRE);
+}
+
+extern "C" int32_t minipal_wait_test_get_paused_process_watcher_count()
+{
+    return __atomic_load_n(&s_pausedProcessWatcherCount, __ATOMIC_ACQUIRE);
+}
+
+extern "C" int32_t minipal_wait_test_get_paused_exited_process_watcher_count()
+{
+    return __atomic_load_n(&s_pausedExitedProcessWatcherCount, __ATOMIC_ACQUIRE);
+}
+
+extern "C" int32_t minipal_wait_test_get_process_watcher_signal_count()
+{
+    return __atomic_load_n(&s_processWatcherSignalCount, __ATOMIC_ACQUIRE);
+}
+
+extern "C" void minipal_wait_test_reset_process_watcher_signal_count()
+{
+    __atomic_store_n(&s_processWatcherSignalCount, 0, __ATOMIC_RELEASE);
+}
+#endif // MINIPAL_WAIT_TESTS
 
 minipal_wait_handle::minipal_wait_handle(void* handle)
     : m_handle(handle)
