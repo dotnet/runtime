@@ -31,8 +31,8 @@ namespace bundle
         const file_entry_t* probe(const pal::string_t& relative_path) const;
 
         // Locates a file within the bundle.
-        // If the file was extracted to disk, sets full_path to the extracted path
-        bool locate(const pal::string_t& relative_path, pal::string_t& full_path, bool& extracted_to_disk) const;
+        // If the file was extracted to disk, sets full_path to the extracted path and sets extracted_to_disk to true.
+        // Otherwise sets extracted_to_disk to false and leaves full_path unchanged.
         bool locate(const pal::string_t& relative_path, pal::string_t& full_path) const
         {
             bool extracted_to_disk;
