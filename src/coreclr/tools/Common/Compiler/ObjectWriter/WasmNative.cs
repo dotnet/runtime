@@ -222,7 +222,7 @@ namespace ILCompiler.ObjectWriter
         public int EncodeRelocations(Span<Relocation> buffer) => Import.EncodeRelocations(buffer);
     }
 
-    public class WasmGlobal : IWasmEncodable
+    internal sealed class WasmGlobal : IWasmEncodable
     {
         public readonly int Index;
         public readonly string Name;
@@ -230,7 +230,7 @@ namespace ILCompiler.ObjectWriter
         private readonly WasmMutabilityType _mutability;
         private readonly WasmInstructionGroup _initExpr;
 
-        public WasmGlobal(int index, string name, WasmValueType valueType, WasmMutabilityType mutability, WasmInstructionGroup initExpr)
+        internal WasmGlobal(int index, string name, WasmValueType valueType, WasmMutabilityType mutability, WasmInstructionGroup initExpr)
         {
             Index = index;
             Name = name;
