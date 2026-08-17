@@ -704,14 +704,6 @@ uint32_t TableAllocBulkHandles(HandleTable *pTable, uint32_t uType, OBJECTHANDLE
 void TableFreeBulkPreparedHandles(HandleTable *pTable, uint32_t uType, OBJECTHANDLE *pHandleBase, uint32_t uCount);
 
 
-/*
- * TableFreeBulkUnpreparedHandles
- *
- * Frees an array of handles of the specified type by preparing them and calling TableFreeBulkPreparedHandles.
- *
- */
-void TableFreeBulkUnpreparedHandles(HandleTable *pTable, uint32_t uType, const OBJECTHANDLE *pHandles, uint32_t uCount);
-
 /*--------------------------------------------------------------------------*/
 
 
@@ -723,6 +715,16 @@ void TableFreeBulkUnpreparedHandles(HandleTable *pTable, uint32_t uType, const O
  ****************************************************************************/
 
 /*
+ * TableCacheMissOnAlloc
+ *
+ * Called when a handle cannot be fetched from the reserve cache for its type
+ * because the cache is empty.
+ *
+ */
+OBJECTHANDLE TableCacheMissOnAlloc(HandleTable *pTable, HandleTypeCache *pCache, uint32_t uType);
+
+
+/*
  * TableAllocSingleHandleFromCache
  *
  * Gets a single handle of the specified type from the handle table by
@@ -730,7 +732,51 @@ void TableFreeBulkUnpreparedHandles(HandleTable *pTable, uint32_t uType, const O
  * reserve cache is empty, this routine calls TableCacheMissOnAlloc.
  *
  */
-OBJECTHANDLE TableAllocSingleHandleFromCache(HandleTable *pTable, uint32_t uType);
+#ifndef DACCESS_COMPILE
+FORCEINLINE OBJECTHANDLE TableAllocSingleHandleFromCache(HandleTable *pTable, uint32_t uType)
+{
+    WRAPPER_NO_CONTRACT;
+
+    // we use this in two places
+    OBJECTHANDLE handle;
+
+    // first try to get a handle from the quick cache
+    if (pTable->rgQuickCache[uType])
+    {
+        // try to grab the handle we saw
+        handle = Interlocked::ExchangePointer(pTable->rgQuickCache + uType, (OBJECTHANDLE)NULL);
+
+        // if it worked then we're done
+        if (handle)
+            return handle;
+    }
+
+    // ok, get the main handle cache for this type
+    HandleTypeCache *pCache = pTable->rgMainCache + uType;
+
+    // try to take a handle from the main cache
+    int32_t lReserveIndex = Interlocked::Decrement(&pCache->lReserveIndex);
+
+    // did we underflow?
+    if (lReserveIndex < 0)
+    {
+        // yep - the cache is out of handles
+        return TableCacheMissOnAlloc(pTable, pCache, uType);
+    }
+
+    // get our handle
+    handle = pCache->rgReserveBank[lReserveIndex];
+
+    // zero the handle slot
+    pCache->rgReserveBank[lReserveIndex] = 0;
+
+    // sanity
+    _ASSERTE(handle);
+
+    // return our handle
+    return handle;
+}
+#endif // !DACCESS_COMPILE
 
 
 /*
@@ -803,16 +849,6 @@ FORCEINLINE void TableFreeSingleHandleToCache(HandleTable *pTable, uint32_t uTyp
     pCache->rgFreeBank[lFreeIndex] = handle;
 }
 #endif // !DACCESS_COMPILE
-
-
-/*
- * TableAllocHandlesFromCache
- *
- * Allocates multiple handles of the specified type by repeatedly
- * calling TableAllocSingleHandleFromCache.
- *
- */
-uint32_t TableAllocHandlesFromCache(HandleTable *pTable, uint32_t uType, OBJECTHANDLE *pHandleBase, uint32_t uCount);
 
 
 /*--------------------------------------------------------------------------*/
