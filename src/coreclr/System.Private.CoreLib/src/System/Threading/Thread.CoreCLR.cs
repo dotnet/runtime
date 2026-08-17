@@ -324,7 +324,7 @@ namespace System.Threading
             // This method is called when the thread is about to enter a wait, sleep, or join state.
             // It sets the state in the native layer to indicate that the thread is waiting.
             NativeThreadClass* nativeThread = (NativeThreadClass*)GetNativeHandle().Value;
-            Interlocked.Or(ref Unsafe.As<NativeThreadState, int>(ref nativeThread->m_State), (int)NativeThreadState.TS_WaitSleepJoin);
+            Interlocked.Or(ref nativeThread->m_State, NativeThreadState.TS_WaitSleepJoin);
         }
 
         internal unsafe void ClearWaitSleepJoinState()
@@ -334,7 +334,7 @@ namespace System.Threading
             // This method is called when the thread is no longer in a wait, sleep, or join state.
             // It clears the state in the native layer to indicate that the thread is no longer waiting.
             NativeThreadClass* nativeThread = (NativeThreadClass*)GetNativeHandle().Value;
-            Interlocked.And(ref Unsafe.As<NativeThreadState, int>(ref nativeThread->m_State), ~(int)NativeThreadState.TS_WaitSleepJoin);
+            Interlocked.And(ref nativeThread->m_State, ~NativeThreadState.TS_WaitSleepJoin);
         }
 
         /// <summary>
