@@ -50,27 +50,6 @@ namespace System.IO
             }
         }
 
-        // Returns the number of bytes actually available for this stream's window in the super stream,
-        // i.e. how many bytes remain in the super stream, starting from this window's start position,
-        // before hitting the actual end of the super stream. Returns null when the super stream is not
-        // seekable, since its total length cannot be determined without consuming it.
-        // This can be smaller than Length when the window's declared length extends past the actual data
-        // available in the super stream (for example, a corrupted or maliciously crafted length field).
-        internal long? AvailableLengthInSuperStream
-        {
-            get
-            {
-                ThrowIfDisposed();
-                if (!_superStream.CanSeek)
-                {
-                    return null;
-                }
-
-                long superStreamLength = _superStream.Length;
-                return superStreamLength <= _startInSuperStream ? 0 : superStreamLength - _startInSuperStream;
-            }
-        }
-
         public override long Position
         {
             get

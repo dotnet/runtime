@@ -739,7 +739,7 @@ namespace System.Formats.Tar
                 // (real) size, while the archive only contains the much smaller packed data.
                 // Preallocating to the expanded size would reserve disk space that bears no
                 // relation to the archive contents and can fail surprisingly on small volumes.
-                PreallocationSize = _header._gnuSparseDataStream is null ? GetPreallocationSize() : 0,
+                PreallocationSize = GetPreallocationSize(),
                 Options = isAsync ? FileOptions.Asynchronous : FileOptions.None
             };
 
@@ -758,38 +758,14 @@ namespace System.Formats.Tar
             return fileStreamOptions;
         }
 
-        // Determines the number of bytes to preallocate for the destination file.
-        // The entry's declared Length comes directly from the (potentially attacker-controlled) tar
-        // header's size field, so when the data section is backed by a SubReadStream over the archive
-        // stream, cap the preallocation to the number of bytes actually remaining in the archive stream.
-        // This prevents a crafted entry that declares a huge size but provides little or no actual data
-        // from causing an excessive up-front file preallocation (which can exhaust disk space or hang).
-        // Since extraction writes from the stream's current position, the remaining declared bytes
-        // (rather than the full Length) are compared against the remaining available archive data.
-        // When the archive stream isn't seekable, its true remaining length can't be determined without
-        // consuming it, so preallocation is skipped entirely rather than trusting the declared size.
-        // Non-SubReadStream data sources (e.g. a user-provided DataStream) are preallocated using the
-        // full remaining reported Length, since there is no archive stream to validate against.
         private long GetPreallocationSize()
         {
-            long length = Length;
-
-            if (length > 0 && _header._dataStream is SubReadStream subReadStream)
+            if (_header._gnuSparseDataStream is not null)
             {
-                long remainingDeclared = length - subReadStream.Position;
-
-                long? availableLength = subReadStream.AvailableLengthInSuperStream;
-                if (!availableLength.HasValue)
-                {
-                    // Unseekable archive stream: the declared size cannot be validated against the
-                    // actual remaining data, so don't preallocate based on it at all.
-                    return 0;
-                }
-
-                return Math.Min(remainingDeclared, availableLength.Value);
+                return 0;
             }
 
-            return length;
+            return Length;
         }
     }
 }
