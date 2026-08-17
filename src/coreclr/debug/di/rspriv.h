@@ -11124,7 +11124,7 @@ public:
 // - we're only being called through a public API.
 //-----------------------------------------------------------------------------
 #define PUBLIC_API_ENTRY(_pThis) \
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "[Public API '%s', this=0x%p]\n", __FUNCTION__, _pThis); \
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "[Public API '%s', this=%p]\n", __FUNCTION__, static_cast<void*>(_pThis)); \
     PUBLIC_CONTRACT; \
     PublicAPIHolder __pah;
 
@@ -11133,7 +11133,7 @@ public:
 // public version is heavier (eg, checking the HRESULT) so we benefit from having a fast
 // internal version and calling that directly.
 #define PUBLIC_REENTRANT_API_ENTRY(_pThis) \
-    STRESS_LOG2(LF_CORDB, LL_INFO1000, "[Public API (re) '%s', this=0x%p]\n", __FUNCTION__, _pThis); \
+    STRESS_LOG2(LF_CORDB, LL_INFO1000, "[Public API (re) '%s', this=%p]\n", __FUNCTION__, static_cast<void*>(_pThis)); \
     PUBLIC_CONTRACT; \
     PublicReentrantAPIHolder __pah;
 

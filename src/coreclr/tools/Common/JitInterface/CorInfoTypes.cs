@@ -972,6 +972,10 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsOnSuspensionMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreInlinedFrameContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionWithContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionNoContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
         public CORINFO_METHOD_STRUCT_* finishSuspensionNoContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* finishSuspensionWithContinuationContextMethHnd;
     }
