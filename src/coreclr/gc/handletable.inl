@@ -140,7 +140,7 @@ inline void HndWriteBarrier(OBJECTHANDLE handle, OBJECTREF objref)
     HndWriteBarrierWorker(handle, value);
 }
 
-inline void HndAssignHandle(OBJECTHANDLE handle, OBJECTREF objref)
+FORCEINLINE void HndAssignHandle(OBJECTHANDLE handle, OBJECTREF objref)
 {
     CONTRACTL
     {
