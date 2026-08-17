@@ -316,17 +316,15 @@ void Compiler::lvaInitTypeRef()
         }
     }
 
-    const bool mayNeedGenericContextArg = (info.compMethodInfo->options & (CORINFO_GENERICS_CTXT_FROM_METHODDESC |
-                                                                           CORINFO_GENERICS_CTXT_FROM_METHODTABLE |
-                                                                           CORINFO_GENERICS_CTXT_FROM_THIS)) != 0;
-
 #ifdef JIT32_GCENCODER
-    const bool mayNeedSynchronizedThis = !info.compIsStatic && ((info.compFlags & CORINFO_FLG_SYNCH) != 0);
+    const unsigned genericContextOptions =
+        CORINFO_GENERICS_CTXT_FROM_METHODDESC | CORINFO_GENERICS_CTXT_FROM_METHODTABLE;
 #else
-    const bool mayNeedSynchronizedThis = false;
+    const unsigned genericContextOptions = CORINFO_GENERICS_CTXT_FROM_METHODDESC |
+                                           CORINFO_GENERICS_CTXT_FROM_METHODTABLE | CORINFO_GENERICS_CTXT_FROM_THIS;
 #endif
 
-    if (mayNeedGenericContextArg || mayNeedSynchronizedThis)
+    if ((info.compMethodInfo->options & genericContextOptions) != 0)
     {
         lvaCachedGenericContextArg = lvaGrabTemp(true DEBUGARG("cached generic context"));
 
@@ -3462,13 +3460,34 @@ PhaseStatus Compiler::lvaMarkLocalVars()
     {
         LclVarDsc* cachedGenericContextArg = lvaGetDesc(lvaCachedGenericContextArg);
 
-        if (lvaReportParamTypeArg() || lvaKeepAliveAndReportThis())
+        bool reportGenericContextArg = lvaReportParamTypeArg();
+#ifndef JIT32_GCENCODER
+        reportGenericContextArg |= lvaKeepAliveAndReportThis();
+#endif
+
+        if (reportGenericContextArg)
         {
             cachedGenericContextArg->lvImplicitlyReferenced = 1;
             cachedGenericContextArg->lvOnFrame              = true;
             lvaSetVarDoNotEnregister(lvaCachedGenericContextArg DEBUGARG(DoNotEnregisterReason::VMNeedsStackAddr));
             lvaSetVarAddrExposed(
                 lvaCachedGenericContextArg DEBUGARG(AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY));
+
+            if (opts.IsOSR())
+            {
+                PatchpointInfo* patchpointInfo = info.compPatchpointInfo;
+                if (lvaReportParamTypeArg())
+                {
+                    assert(patchpointInfo->HasGenericContextArgOffset());
+                    cachedGenericContextArg->lvIsOSRLocal = true;
+                }
+#ifndef JIT32_GCENCODER
+                else if (patchpointInfo->HasKeptAliveThis())
+                {
+                    cachedGenericContextArg->lvIsOSRLocal = true;
+                }
+#endif
+            }
         }
         else
         {
@@ -5092,35 +5111,15 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 #ifdef JIT32_GCENCODER
         noway_assert(codeGen->isFramePointerUsed());
 #endif
-        if (opts.IsOSR())
+        if (!lvaIsOSRLocal(lvaCachedGenericContextArg))
         {
-            PatchpointInfo* ppInfo = info.compPatchpointInfo;
-            assert(ppInfo->HasGenericContextArgOffset());
-            const int originalOffset = ppInfo->GenericContextArgOffset();
-            lvaGetDesc(lvaCachedGenericContextArg)->SetStackOffset(originalFrameStkOffs + originalOffset);
-        }
-        else
-        {
-            // For CORINFO_CALLCONV_PARAMTYPE (if needed)
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaCachedGenericContextArg, TARGET_POINTER_SIZE, stkOffs);
         }
     }
 #ifndef JIT32_GCENCODER
     else if (lvaKeepAliveAndReportThis())
     {
-        bool canUseExistingSlot = false;
-        if (opts.IsOSR())
-        {
-            PatchpointInfo* ppInfo = info.compPatchpointInfo;
-            if (ppInfo->HasKeptAliveThis())
-            {
-                const int originalOffset = ppInfo->KeptAliveThisOffset();
-                lvaGetDesc(lvaCachedGenericContextArg)->SetStackOffset(originalFrameStkOffs + originalOffset);
-                canUseExistingSlot = true;
-            }
-        }
-
-        if (!canUseExistingSlot)
+        if (!lvaIsOSRLocal(lvaCachedGenericContextArg))
         {
             // When "this" is also used as generic context arg.
             stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaCachedGenericContextArg, TARGET_POINTER_SIZE, stkOffs);
@@ -5357,7 +5356,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if ((lclNum == lvaMonAcquired) || (lclNum == lvaCachedGenericContextArg) ||
+            if ((lclNum == lvaMonAcquired) ||
+                ((lclNum == lvaCachedGenericContextArg) && !lvaIsOSRLocal(lvaCachedGenericContextArg)) ||
                 (lclNum == lvaResumedIndicator) || (lclNum == lvaAsyncThreadObjectVar) ||
                 (lclNum == lvaAsyncExecutionContextVar) || (lclNum == lvaAsyncSynchronizationContextVar))
             {
