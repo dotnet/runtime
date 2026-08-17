@@ -95,12 +95,9 @@ namespace Microsoft.Extensions.Configuration
                 return earlierKeys;
             }
 
-            if (earlierKeys is not null)
+            foreach (string key in earlierKeys)
             {
-                foreach (string key in earlierKeys)
-                {
-                    accumulator.Add(key);
-                }
+                accumulator.Add(key);
             }
 
             ChildKeySorter.Sort(accumulator.Items, accumulator.Count);
@@ -149,8 +146,6 @@ namespace Microsoft.Extensions.Configuration
             }
 
             public ChildKeysAggregator? Accumulator { get; private set; }
-
-            public readonly bool HasParent => _parentPath is not null;
 
             public void AddChildKey(string key)
             {

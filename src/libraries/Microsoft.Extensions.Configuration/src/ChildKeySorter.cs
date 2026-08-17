@@ -7,13 +7,18 @@ using System.Collections.Generic;
 namespace Microsoft.Extensions.Configuration
 {
     /// <summary>
-    /// Orders accumulated child keys exactly as <see cref="ConfigurationKeyComparer"/> would, but without paying for
+    /// Orders accumulated child keys the way <see cref="ConfigurationKeyComparer"/> does, but without paying for
     /// work related to segments and delimiters that cannot apply to a child key.
     /// </summary>
     /// <remarks>
     /// A child key is a single path segment: <see cref="ConfigurationProvider"/> slices it between two delimiters, so
     /// it can never contain one. The general comparer does not know that, and per comparison it skips leading
     /// delimiters and scans both operands for a <c>':'</c> that is not there.
+    /// <para>
+    /// The two orders agree except on a pair of numeric keys far enough apart that the general comparer's
+    /// <c>value1 - value2</c> overflows and reverses them. This sorter compares such a pair with <c>CompareTo</c>,
+    /// so it does not reproduce that.
+    /// </para>
     /// </remarks>
     internal static class ChildKeySorter
     {
@@ -115,21 +120,9 @@ namespace Microsoft.Extensions.Configuration
                 return 1;
             }
 
-            return TryParse(x, out int xNumber)
-                ? TryParse(y, out int yNumber) ? xNumber.CompareTo(yNumber) : -1
-                : TryParse(y, out int _) ? 1 : x.AsSpan().CompareTo(y.AsSpan(), StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static bool TryParse(string s, out int value)
-        {
-            char c = s[0];
-            if (c is > '9' and < '{')
-            {
-                value = 0;
-                return false;
-            }
-
-            return int.TryParse(s, out value);
+            return int.TryParse(x, out int xNumber)
+                ? int.TryParse(y, out int yNumber) ? xNumber.CompareTo(yNumber) : -1
+                : int.TryParse(y, out int _) ? 1 : x.AsSpan().CompareTo(y.AsSpan(), StringComparison.OrdinalIgnoreCase);
         }
 
 #if !NET

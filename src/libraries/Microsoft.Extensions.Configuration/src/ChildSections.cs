@@ -56,6 +56,14 @@ namespace Microsoft.Extensions.Configuration
 
         public void CopyTo(IConfigurationSection[] array, int arrayIndex)
         {
+            ArgumentNullException.ThrowIfNull(array);
+            ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
+
+            if (array.Length - arrayIndex < _count)
+            {
+                throw new ArgumentException(SR.Error_DestinationArrayTooSmall, nameof(array));
+            }
+
             EnsureOrdered();
             for (int i = 0; i < _count; i++)
             {

@@ -1090,6 +1090,31 @@ namespace Microsoft.Extensions.Configuration.Test
             Assert.Equal([null, "2", "10", "apple", "Zebra", null], destination.Select(s => s?.Key));
         }
 
+        public static IEnumerable<object[]> CopyToInvalidArgumentsData()
+        {
+            yield return new object[] { null, 0, typeof(ArgumentNullException) };
+            yield return new object[] { new IConfigurationSection[4], -1, typeof(ArgumentOutOfRangeException) };
+            yield return new object[] { new IConfigurationSection[3], 0, typeof(ArgumentException) };
+            yield return new object[] { new IConfigurationSection[4], 1, typeof(ArgumentException) };
+            yield return new object[] { new IConfigurationSection[4], 5, typeof(ArgumentException) };
+        }
+
+        [Theory]
+        [MemberData(nameof(CopyToInvalidArgumentsData))]
+        public void GetChildren_CopyToValidatesItsArguments(IConfigurationSection[] destination, int arrayIndex, Type expected)
+        {
+            var config = new ConfigurationBuilder()
+                .AddInMemoryCollection(new Dictionary<string, string>
+                {
+                    { "Zebra", "1" }, { "10", "2" }, { "2", "3" }, { "apple", "4" }
+                })
+                .Build();
+
+            var collection = (ICollection<IConfigurationSection>)config.GetChildren();
+
+            Assert.Throws(expected, () => collection.CopyTo(destination, arrayIndex));
+        }
+
         [Fact]
         public void GetChildren_CountAndAnyDoNotRequireOrdering()
         {
@@ -1148,8 +1173,8 @@ namespace Microsoft.Extensions.Configuration.Test
         [Fact]
         public void GetChildren_VeryDeepSegmentStart_Works()
         {
-            // A key whose child segment starts far into the key (past ushort range) is handled by the plain scan:
-            // the segment is materialized with Substring, so there is no offset limit.
+            // A key whose child segment starts far into the key (past ushort range) is handled by the plain scan,
+            // which slices the segment as a span off the key, so there is no offset limit.
             var data = new Dictionary<string, string>();
             string longParent = new string('a', ushort.MaxValue + 100);
             data[longParent + ":Child"] = "v";
