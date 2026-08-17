@@ -2472,7 +2472,7 @@ namespace System.Text.Json
             }
 
             byte next = localBuffer[1];
-            if (localBuffer[0] == 0x80 && (next == 0xA8 || next == 0xA9))
+            if (localBuffer[0] == 0x80 && (next is 0xA8 or 0xA9))
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.UnexpectedEndOfLineSeparator);
             }
