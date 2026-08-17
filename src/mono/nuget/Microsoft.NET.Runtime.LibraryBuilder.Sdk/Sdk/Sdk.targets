@@ -2,8 +2,8 @@
 <Project>
   <!-- Property overrides -->
   <PropertyGroup>
-    <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\${NetCoreAppToolCurrent}\</_TasksDir>
-    <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\${NetFrameworkToolCurrent}\</_TasksDir>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tasks\net\</_TasksDir>
+    <_TasksDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tasks\netframework\</_TasksDir>
 
     <GenerateAppBundle Condition="'$(GenerateAppBundle)' == ''">true</GenerateAppBundle>
     <NativeLib Condition="'$(NativeLib)' == ''">shared</NativeLib>
