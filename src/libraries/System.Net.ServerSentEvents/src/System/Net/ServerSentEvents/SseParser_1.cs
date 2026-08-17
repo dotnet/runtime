@@ -33,7 +33,11 @@ namespace System.Net.ServerSentEvents
         private readonly long TimeSpan_MaxValueMilliseconds = (long)TimeSpan.MaxValue.TotalMilliseconds;
 
         /// <summary>The default size of an ArrayPool buffer to rent.</summary>
-        /// <remarks>Larger size used by default to minimize number of reads. Smaller size used in debug to stress growth/shifting logic.</remarks>
+        /// <remarks>
+        /// Larger size used by default to minimize number of reads. Smaller size used in debug to stress growth/shifting logic.
+        /// Also serves as the smallest configurable maximum buffer size; buffers smaller than this don't meaningfully reduce
+        /// memory usage but can cause excessive I/O and line-buffer churn.
+        /// </remarks>
         private const int DefaultArrayPoolRentSize =
 #if DEBUG
             16;
@@ -43,10 +47,6 @@ namespace System.Net.ServerSentEvents
 
         /// <summary>The maximum amount of data buffered by default.</summary>
         private const int DefaultMaxBufferSize = 1024 * 1024 * 1024;
-
-        /// <summary>The smallest configurable maximum buffer size.</summary>
-        /// <remarks>Buffers smaller than this don't meaningfully reduce memory usage but can cause excessive I/O and line-buffer churn.</remarks>
-        private const int MinMaxBufferSize = 128;
 
         /// <summary>The stream to be parsed.</summary>
         private readonly Stream _stream;
@@ -99,7 +99,7 @@ namespace System.Net.ServerSentEvents
         {
             _stream = stream;
             _itemParser = options.ItemParser;
-            _maxBufferSize = options.MaxBufferSize == -1 ? DefaultMaxBufferSize : Math.Max(options.MaxBufferSize, MinMaxBufferSize);
+            _maxBufferSize = options.MaxBufferSize == -1 ? DefaultMaxBufferSize : Math.Max(options.MaxBufferSize, DefaultArrayPoolRentSize);
         }
 
         /// <summary>Gets an enumerable of the server-sent events from this parser.</summary>

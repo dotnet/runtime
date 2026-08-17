@@ -17,6 +17,13 @@ namespace System.Net.ServerSentEvents.Tests
 {
     public partial class SseParserTests
     {
+        // Mirrors SseParser<T>.DefaultArrayPoolRentSize, which also serves as the smallest configurable maximum buffer size.
+#if DEBUG
+        private const int MinConfigurableMaxBufferSize = 16;
+#else
+        private const int MinConfigurableMaxBufferSize = 1024;
+#endif
+
         [Fact]
         public void Parse_InvalidArguments_Throws()
         {
@@ -939,8 +946,8 @@ namespace System.Net.ServerSentEvents.Tests
         }
 
         [Theory]
-        [InlineData(false, 129)]
-        [InlineData(true, 129)]
+        [InlineData(false, MinConfigurableMaxBufferSize + 1)]
+        [InlineData(true, MinConfigurableMaxBufferSize + 1)]
         public async Task Parse_MaxBufferSize_AllowsConfiguredLimit(bool useAsync, int maxBufferSize)
         {
             using Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', maxBufferSize)));
@@ -967,8 +974,8 @@ namespace System.Net.ServerSentEvents.Tests
         }
 
         [Theory]
-        [InlineData(false, 129)]
-        [InlineData(true, 129)]
+        [InlineData(false, MinConfigurableMaxBufferSize + 1)]
+        [InlineData(true, MinConfigurableMaxBufferSize + 1)]
         public async Task Parse_MaxBufferSize_ThrowsAfterConfiguredLimit(bool useAsync, int maxBufferSize)
         {
             using Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', maxBufferSize + 1)));
@@ -1002,9 +1009,9 @@ namespace System.Net.ServerSentEvents.Tests
         [InlineData(true, 10)]
         public async Task Parse_MaxBufferSize_BelowMinimum_IsRaisedToMinimum(bool useAsync, int maxBufferSize)
         {
-            // The enforced minimum (128) is well above any of the configured values above, so data shorter
-            // than it should be accepted, while data long enough to exceed it should still throw.
-            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', 100))))
+            // The enforced minimum (MinConfigurableMaxBufferSize) is well above any of the configured values above, so data
+            // shorter than it should be accepted, while data long enough to exceed it should still throw.
+            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', MinConfigurableMaxBufferSize / 2))))
             {
                 var options = new SseParserOptions<string>(static (_, bytes) => Encoding.UTF8.GetString(bytes.ToArray()))
                 {
@@ -1028,7 +1035,7 @@ namespace System.Net.ServerSentEvents.Tests
                 }
             }
 
-            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', 1000))))
+            using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', MinConfigurableMaxBufferSize * 2))))
             {
                 var options = new SseParserOptions<string>(static (_, bytes) => Encoding.UTF8.GetString(bytes.ToArray()))
                 {
