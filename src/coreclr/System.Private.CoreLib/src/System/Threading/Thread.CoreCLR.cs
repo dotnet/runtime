@@ -319,22 +319,18 @@ namespace System.Threading
 
         internal unsafe void SetWaitSleepJoinState()
         {
-            Debug.Assert(this == CurrentThread);
-
             // This method is called when the thread is about to enter a wait, sleep, or join state.
             // It sets the state in the native layer to indicate that the thread is waiting.
-            NativeThreadClass* nativeThread = (NativeThreadClass*)GetNativeHandle().Value;
-            Interlocked.Or(ref nativeThread->m_State, NativeThreadState.TS_WaitSleepJoin);
+            NativeThread* nativeThread = GetNativeThreadForCurrentThread();
+            Interlocked.Or(ref nativeThread->m_State, NativeThread.ThreadState.TS_WaitSleepJoin);
         }
 
         internal unsafe void ClearWaitSleepJoinState()
         {
-            Debug.Assert(this == CurrentThread);
-
             // This method is called when the thread is no longer in a wait, sleep, or join state.
             // It clears the state in the native layer to indicate that the thread is no longer waiting.
-            NativeThreadClass* nativeThread = (NativeThreadClass*)GetNativeHandle().Value;
-            Interlocked.And(ref nativeThread->m_State, ~NativeThreadState.TS_WaitSleepJoin);
+            NativeThread* nativeThread = GetNativeThreadForCurrentThread();
+            Interlocked.And(ref nativeThread->m_State, ~NativeThread.ThreadState.TS_WaitSleepJoin);
         }
 
         /// <summary>
@@ -612,22 +608,22 @@ namespace System.Threading
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
         internal static partial void CheckForPendingInterrupt();
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct NativeThreadClass
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private unsafe NativeThread* GetNativeThreadForCurrentThread()
         {
-            public NativeThreadState m_State;
+            Debug.Assert(this == CurrentThread);
+            return (NativeThread*)GetNativeHandle().Value;
         }
 
-        private enum NativeThreadState
+        [StructLayout(LayoutKind.Sequential)]
+        private struct NativeThread
         {
-            None = 0,
-            TS_AbortRequested = 0x00000001, // Abort the thread
-            TS_DebugSuspendPending = 0x00000008, // Is the debugger suspending threads?
-            TS_GCOnTransitions = 0x00000010, // Force a GC on stub transitions (GCStress only)
-            TS_WaitSleepJoin = 0x02000000, // Thread is waiting, sleeping or joining
+            public ThreadState m_State;
 
-            // We require (and assert) that the following bits are less than 0x100.
-            TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
-        };
+            internal enum ThreadState
+            {
+                TS_WaitSleepJoin = 0x02000000, // Thread is waiting, sleeping or joining
+            };
+        }
     }
 }

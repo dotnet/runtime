@@ -3789,8 +3789,8 @@ struct cdac_data<Thread>
     + offsetof(EHWatsonBucketTracker, m_WatsonUnhandledInfo.m_pUnhandledBuckets);
 #endif
 
-    static_assert(State == 0, "Thread.CoreCLR.NativeThreadClass depends on Thread::m_State being the first field");
-    static_assert(Thread::TS_WaitSleepJoin == 0x02000000, "Thread.CoreCLR.NativeThreadState depends on this value");
+    static_assert(State == 0, "Thread.NativeThread depends on Thread::m_State being the first field");
+    static_assert(Thread::TS_WaitSleepJoin == 0x02000000, "Thread.NativeThread.ThreadState depends on this value");
 };
 
 // End of class Thread
