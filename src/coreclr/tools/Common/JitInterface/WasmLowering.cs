@@ -588,7 +588,7 @@ namespace Internal.JitInterface
         {
             if (!flags.HasFlag(LoweringFlags.IsUnmanagedCallersOnly) && signature.Flags.HasFlag(MethodSignatureFlags.UnmanagedCallingConvention))
             {
-                flags = flags | LoweringFlags.IsUnmanagedCallersOnly;
+                flags |= LoweringFlags.IsUnmanagedCallersOnly;
             }
 
             TypeDesc returnType = signature.ReturnType;
