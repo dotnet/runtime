@@ -1064,13 +1064,13 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierPolymorphicCaseNotSupported(
+        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierCaseNotSupported(
             Type unionType,
             Type caseType)
         {
             throw new NotSupportedException(
                 SR.Format(
-                    SR.UnionTypeStructuralClassifierPolymorphicCaseNotSupported,
+                    SR.UnionTypeStructuralClassifierCaseNotSupported,
                     unionType,
                     caseType));
         }
@@ -1078,7 +1078,10 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowNotSupportedException_UnionTypeStructuralClassifierPreserveReferencesNotSupported(Type unionType)
         {
-            throw new NotSupportedException(SR.Format(SR.UnionTypeStructuralClassifierPreserveReferencesNotSupported, unionType));
+            throw new NotSupportedException(
+                SR.Format(
+                    SR.UnionTypeStructuralClassifierPreserveReferencesNotSupported,
+                    unionType));
         }
 
         [DoesNotReturn]
@@ -1095,32 +1098,6 @@ namespace System.Text.Json
                     conflictingCaseType,
                     caseType,
                     valueType));
-        }
-
-        [DoesNotReturn]
-        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierMixedObjectCases(
-            Type unionType,
-            Type pocoCaseType,
-            Type nonPocoCaseType)
-        {
-            throw new NotSupportedException(
-                SR.Format(
-                    SR.UnionTypeStructuralClassifierMixedObjectCases,
-                    unionType,
-                    pocoCaseType,
-                    nonPocoCaseType));
-        }
-
-        [DoesNotReturn]
-        public static void ThrowNotSupportedException_UnionTypeStructuralClassifierUnsupportedCase(
-            Type unionType,
-            Type caseType)
-        {
-            throw new NotSupportedException(
-                SR.Format(
-                    SR.UnionTypeStructuralClassifierUnsupportedCase,
-                    unionType,
-                    caseType));
         }
 
         [DoesNotReturn]

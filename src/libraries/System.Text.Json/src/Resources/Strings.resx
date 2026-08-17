@@ -872,22 +872,16 @@
   <data name="UnionTypeStructuralClassifierAmbiguousCases" xml:space="preserve">
     <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' because the case types '{1}' and '{2}' can both deserialize JSON values of type '{3}'. At most one case without object property metadata per JSON value type is supported.</value>
   </data>
-  <data name="UnionTypeStructuralClassifierMixedObjectCases" xml:space="preserve">
-    <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' because the case type '{1}' exposes object property metadata and the case type '{2}' accepts JSON objects without exposing object property metadata. Cases with and without object property metadata cannot be combined.</value>
+  <data name="UnionTypeStructuralClassifierCaseNotSupported" xml:space="preserve">
+    <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' because the case type '{1}' uses polymorphism or is itself a union type. Union cases that use polymorphism or are union types are not supported.</value>
   </data>
   <data name="UnionTypeStructuralClassifierOnlyForUnions" xml:space="preserve">
     <value>The JsonUnionTypeStructuralClassifier only supports union types. The type '{0}' is being configured as a polymorphic type or another non-union classification.</value>
   </data>
-  <data name="UnionTypeStructuralClassifierPolymorphicCaseNotSupported" xml:space="preserve">
-    <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' because the case type '{1}' has polymorphism configured. Polymorphic union case types are not supported.</value>
-  </data>
   <data name="UnionTypeStructuralClassifierPreserveReferencesNotSupported" xml:space="preserve">
-    <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' when ReferenceHandler.Preserve is enabled because reference metadata can replace or wrap the root JSON shape.</value>
+    <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' when reference preservation is enabled. Reference-preserving deserialization is not supported.</value>
   </data>
   <data name="UnionTypeStructuralClassifierUnreachableObjectCase" xml:space="preserve">
     <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' because the case type '{1}' can never be selected uniquely. The case type '{2}' recognizes every property name recognized by '{1}' and has no stricter required-property or unmapped-member constraints.</value>
-  </data>
-  <data name="UnionTypeStructuralClassifierUnsupportedCase" xml:space="preserve">
-    <value>The JsonUnionTypeStructuralClassifier cannot classify union type '{0}' because the case type '{1}' does not expose a supported JSON value type or object property shape without recursive inspection.</value>
   </data>
 </root>
