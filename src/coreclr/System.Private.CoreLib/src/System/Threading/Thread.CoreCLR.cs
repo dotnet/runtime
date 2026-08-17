@@ -320,6 +320,7 @@ namespace System.Threading
             // This method is called when the thread is about to enter a wait, sleep, or join state.
             // It sets the state in the native layer to indicate that the thread is waiting.
             SetWaitSleepJoinStateNative();
+            GC.KeepAlive(this);
         }
 
         internal void ClearWaitSleepJoinState()
@@ -327,6 +328,7 @@ namespace System.Threading
             // This method is called when the thread is no longer in a wait, sleep, or join state.
             // It clears the state in the native layer to indicate that the thread is no longer waiting.
             ClearWaitSleepJoinStateNative();
+            GC.KeepAlive(this);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetWaitSleepJoinState")]
