@@ -636,6 +636,13 @@ namespace System.Net.WebSockets
                     {
                         _closeReceivedTaskCompletionSource ??= new TaskCompletionSource();
 
+                        // _thisLock MUST be released before starting the CloseOutput operation: it acquires the
+                        // SessionHandle-lock, which MUST always be acquired before _thisLock (see TakeLocks).
+                        // Acquiring the locks in the opposite order here would deadlock with a thread that is
+                        // processing a received close frame, as that one holds the SessionHandle-lock while
+                        // acquiring _thisLock in StartOnCloseReceived.
+                        ReleaseLock(_thisLock, ref lockTaken);
+
                         closeOutputTask = CloseOutputAsync(closeStatus,
                             statusDescription,
                             linkedCancellationToken);
@@ -716,9 +723,13 @@ namespace System.Net.WebSockets
                     ArraySegment<byte> closeMessageBuffer =
                         new ArraySegment<byte>(new byte[HttpWebSocket.MinReceiveBufferSize]);
                     EnsureReceiveOperation();
+
+                    // As above, _thisLock MUST be released before starting the receive operation, because
+                    // WebSocketOperation.Process acquires the SessionHandle-lock.
+                    ReleaseLock(_thisLock, ref lockTaken);
+
                     Task<WebSocketReceiveResult?> receiveAsyncTask = _receiveOperation!.Process(closeMessageBuffer,
                         linkedCancellationToken);
-                    ReleaseLock(_thisLock, ref lockTaken);
 
                     WebSocketReceiveResult? receiveResult = null;
                     try
@@ -816,6 +827,11 @@ namespace System.Net.WebSockets
             catch (Exception exception)
             {
                 bool aborted = linkedCancellationToken.IsCancellationRequested;
+
+                // As above, _thisLock MUST be released before calling Abort, because it acquires the
+                // SessionHandle-lock.
+                ReleaseLock(_thisLock, ref lockTaken);
+
                 Abort();
                 ThrowIfConvertibleException(nameof(CloseAsync), exception, cancellationToken, aborted);
                 throw;

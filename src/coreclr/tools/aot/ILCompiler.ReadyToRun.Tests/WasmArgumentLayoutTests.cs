@@ -261,6 +261,43 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
+    /// Auto-layout structs use the runtime's effective aggregate alignment for argument placement,
+    /// which can be smaller than the alignment crossgen uses while laying out their fields.
+    /// </summary>
+    [Fact]
+    public void AutoLayoutStructUsesRuntimeAggregateAlignment()
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        DefType alignedEight = MakeAlignedEightBlob(context, 32);
+        DefType int128 = InstantiateMultiSlotType(context, Int128Type);
+        DefType autoLayout = MakeValueTuple(context, int128, int128);
+
+        Assert.Equal(32, alignedEight.InstanceFieldSize.AsInt);
+        Assert.Equal(8, alignedEight.InstanceFieldAlignment.AsInt);
+        Assert.Equal(32, autoLayout.InstanceFieldSize.AsInt);
+        Assert.Equal(16, autoLayout.InstanceFieldAlignment.AsInt);
+        Assert.Equal(8, CorInfoImpl.GetClassAlignmentRequirementStatic(autoLayout));
+
+        MethodSignature autoLayoutSignature = MakeProbeSignature(context, autoLayout);
+        MethodSignature alignedEightSignature = MakeProbeSignature(context, alignedEight);
+
+        WasmSignature autoLayoutLowered =
+            WasmLowering.GetSignature(autoLayoutSignature, WasmLowering.LoweringFlags.None);
+        WasmSignature alignedEightLowered =
+            WasmLowering.GetSignature(alignedEightSignature, WasmLowering.LoweringFlags.None);
+
+        Assert.Equal("vlS32ip", autoLayoutLowered.SignatureString);
+        Assert.Equal("vlS32ip", alignedEightLowered.SignatureString);
+        Assert.Equal(new[] { 0, 8, 40 }, GetArgumentOffsets(context, autoLayoutSignature));
+        Assert.Equal(
+            GetArgumentOffsets(context, autoLayoutSignature),
+            GetArgumentOffsets(context, WasmLowering.RaiseSignature(autoLayoutLowered, context)));
+        Assert.Equal(
+            GetArgumentOffsets(context, alignedEightSignature),
+            GetArgumentOffsets(context, WasmLowering.RaiseSignature(alignedEightLowered, context)));
+    }
+
+    /// <summary>
     /// Narrow vectors are not multi-slot. <see cref="System.Runtime.Intrinsics.Vector64{T}"/> is a
     /// single <c>ulong</c> field, so it unwraps to a scalar <c>i64</c> rather than to any slot form.
     /// Note the multi-slot widths are named by BYTE SIZE, so 64 there means Vector512, not Vector64.

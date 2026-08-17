@@ -374,7 +374,7 @@ namespace Microsoft.Win32.SafeHandles
             if (verb != string.Empty &&
                 !string.Equals(verb, "open", StringComparison.OrdinalIgnoreCase))
             {
-                throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION);
+                throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION, SR.Format(SR.UseShellExecuteVerbNotSupported, verb));
             }
 
             // On Windows, UseShellExecute of executables and scripts causes those files to be executed.
@@ -405,7 +405,7 @@ namespace Microsoft.Win32.SafeHandles
             }
 
             // use default program to open file/url
-            filename = Process.GetPathToOpenFile() ?? throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION);
+            filename = Process.GetPathToOpenFile() ?? throw new Win32Exception(Interop.Errors.ERROR_NO_ASSOCIATION, SR.UseShellExecuteNoOpenProgram);
             string[] openFileArgv = ProcessUtils.ParseArgv(startInfo, filename, ignoreArguments: true);
 
             SafeProcessHandle result = ForkAndExecProcess(
