@@ -385,36 +385,6 @@ PTR_uintptr_t HandleQuickFetchUserDataPointer(OBJECTHANDLE handle)
     return pUserData;
 }
 
-#ifndef DACCESS_COMPILE
-/*
- * HandleQuickSetUserData
- *
- * Stores user data with a handle.
- *
- */
-void HandleQuickSetUserData(OBJECTHANDLE handle, uintptr_t lUserData)
-{
-    WRAPPER_NO_CONTRACT;
-
-    /*
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    */
-
-    // fetch the user data slot for this handle
-    uintptr_t *pUserData = HandleQuickFetchUserDataPointer(handle);
-
-    // is there a slot?
-    if (pUserData)
-    {
-        // yes - store the info
-        *pUserData = lUserData;
-    }
-}
-
-#endif // !DACCESS_COMPILE
-
 /*
  * HandleFetchHandleTable
  *
@@ -2073,4 +2043,3 @@ void TableFreeBulkPreparedHandles(HandleTable *pTable, uint32_t uType, OBJECTHAN
 #endif // !DACCESS_COMPILE
 
 /*--------------------------------------------------------------------------*/
-

@@ -608,7 +608,28 @@ PTR_uintptr_t HandleQuickFetchUserDataPointer(OBJECTHANDLE handle);
  * Less validation is performed.
  *
  */
-void HandleQuickSetUserData(OBJECTHANDLE handle, uintptr_t lUserData);
+#ifndef DACCESS_COMPILE
+FORCEINLINE void HandleQuickSetUserData(OBJECTHANDLE handle, uintptr_t lUserData)
+{
+    WRAPPER_NO_CONTRACT;
+
+    /*
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    */
+
+    // fetch the user data slot for this handle
+    uintptr_t *pUserData = HandleQuickFetchUserDataPointer(handle);
+
+    // is there a slot?
+    if (pUserData)
+    {
+        // yes - store the info
+        *pUserData = lUserData;
+    }
+}
+#endif // !DACCESS_COMPILE
 
 
 /*
