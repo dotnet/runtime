@@ -1512,7 +1512,7 @@ namespace System.Text.Json
                 }
             }
 
-            Debug.Assert(nextByte == '.' || nextByte == 'E' || nextByte == 'e');
+            Debug.Assert(nextByte is (byte)'.' or (byte)'E' or (byte)'e');
 
             if (nextByte == '.')
             {
