@@ -752,7 +752,7 @@ void TableCacheMissOnFree(HandleTable *pTable, HandleTypeCache *pCache, uint32_t
  *
  */
 #ifndef DACCESS_COMPILE
-__inline void TableFreeSingleHandleToCache(HandleTable *pTable, uint32_t uType, OBJECTHANDLE handle)
+FORCEINLINE void TableFreeSingleHandleToCache(HandleTable *pTable, uint32_t uType, OBJECTHANDLE handle)
 {
     CONTRACTL
     {
