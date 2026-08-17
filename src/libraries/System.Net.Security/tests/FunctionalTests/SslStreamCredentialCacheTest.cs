@@ -8,6 +8,8 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
+using Microsoft.DotNet.RemoteExecutor;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Net.Security.Tests
@@ -44,6 +46,67 @@ namespace System.Net.Security.Tests
 
                     Assert.True(client.IsMutuallyAuthenticated);
                     Assert.True(server.IsMutuallyAuthenticated);
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_ClientCertificateContext_DoesNotPolluteAnonymousCredentialCache(SslProtocols protocol)
+        {
+            await RemoteExecutor.Invoke(async protocolString =>
+            {
+                SslProtocols protocol = (SslProtocols)int.Parse(protocolString);
+                using X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+                using X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate();
+
+                var serverOptions = new SslServerAuthenticationOptions
+                {
+                    ClientCertificateRequired = true,
+                    EnabledSslProtocols = protocol,
+                    RemoteCertificateValidationCallback = AllowAnyCertificate,
+                    ServerCertificateContext = SslStreamCertificateContext.Create(serverCertificate, null, false),
+                };
+
+                var clientOptions = new SslClientAuthenticationOptions
+                {
+                    CertificateRevocationCheckMode = X509RevocationMode.NoCheck,
+                    ClientCertificateContext = SslStreamCertificateContext.Create(clientCertificate, null, false),
+                    EnabledSslProtocols = protocol,
+                    RemoteCertificateValidationCallback = AllowAnyCertificate,
+                    TargetHost = Guid.NewGuid().ToString("N"),
+                };
+
+                await RunConnectionAsync(clientOptions, serverOptions, clientCertificate);
+
+                clientOptions.ClientCertificateContext = null;
+                clientOptions.TargetHost = Guid.NewGuid().ToString("N");
+
+                await RunConnectionAsync(clientOptions, serverOptions, expectedClientCertificate: null);
+            }, ((int)protocol).ToString()).DisposeAsync();
+
+            static async Task RunConnectionAsync(
+                SslClientAuthenticationOptions clientOptions,
+                SslServerAuthenticationOptions serverOptions,
+                X509Certificate2? expectedClientCertificate)
+            {
+                (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+                using (client)
+                using (server)
+                {
+                    await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
+                        client.AuthenticateAsClientAsync(clientOptions),
+                        server.AuthenticateAsServerAsync(serverOptions));
+
+                    if (expectedClientCertificate is null)
+                    {
+                        Assert.Null(server.RemoteCertificate);
+                    }
+                    else
+                    {
+                        Assert.Equal(expectedClientCertificate, server.RemoteCertificate);
+                    }
                 }
             }
         }

@@ -16,6 +16,8 @@ namespace ILLink.Shared.TrimAnalysis
     {
         readonly Compilation _compilation;
 
+        internal Compilation Compilation => _compilation;
+
         static readonly TypeNameParseOptions s_typeNameParseOptions = new() { MaxNodes = int.MaxValue };
 
         public TypeNameResolver(Compilation compilation)
