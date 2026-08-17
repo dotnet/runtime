@@ -759,7 +759,9 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 #if defined(TARGET_WASM)
     CorInfoWasmType abiType = info.compCompHnd->getWasmLowering(clsHnd);
 
-    if (abiType == CORINFO_WASM_TYPE_VOID)
+    // A struct wider than the wasm value it lowers to is split across several of them when
+    // passed, but returned via a hidden buffer like any other aggregate.
+    if ((abiType == CORINFO_WASM_TYPE_VOID) || (structSize > genTypeSize(WasmClassifier::ToJitType(abiType))))
     {
         howToReturnStruct = SPK_ByReference;
         useType           = TYP_UNKNOWN;
@@ -2696,7 +2698,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         printf("****** START compiling %s (MethodHash=%08x)\n", info.compFullName, info.compMethodHash());
         printf("Generating code for %s %s\n", Target::g_tgtPlatformName(), Target::g_tgtCPUName);
-        printf(""); // in our logic this causes a flush
+        fflush(jitstdout());
     }
 
     if (JitConfig.JitBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
@@ -5720,6 +5722,14 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->MonitorAcquiredOffset());
     }
 
+    if (lvaResumedIndicator != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaResumedIndicator);
+        patchpointInfo->SetResumedIndicatorOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- resumed indicator V%02u virtual offset is %d\n", lvaResumedIndicator,
+                patchpointInfo->ResumedIndicatorOffset());
+    }
+
     if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
     {
         LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncThreadObjectVar);
@@ -6035,6 +6045,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Rdm() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Rdm);
+        }
+
+        if (JitConfig.EnableArm64Fp16() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Fp16);
         }
 
         if (JitConfig.EnableArm64Sha1() != 0)
@@ -6629,7 +6644,7 @@ void Compiler::compCompileFinish()
         printf(" %3d |", info.compTotalColdCodeSize);
 
         printf(" %s\n", eeGetMethodFullName(info.compMethodHnd));
-        printf(""); // in our logic this causes a flush
+        fflush(jitstdout());
     }
 
     JITDUMP("Final metrics:\n");
@@ -6642,7 +6657,7 @@ void Compiler::compCompileFinish()
     if (verbose)
     {
         printf("\n****** DONE compiling %s\n", info.compFullName);
-        printf(""); // in our logic this causes a flush
+        fflush(jitstdout());
     }
 
 #if TRACK_ENREG_STATS
@@ -7991,7 +8006,7 @@ const CORINFO_FPSTRUCT_LOWERING* Compiler::GetFpStructLowering(CORINFO_CLASS_HAN
 #ifdef DEBUG
         if (verbose)
         {
-            printf("**** getFpStructInRegistersInfo(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
+            printf("**** getFpStructInRegistersInfo(%p (%s, %u bytes)) =>\n", (void*)dspPtr(structHandle),
                    eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
 
             if (lowering->byIntegerCallConv)
@@ -10421,6 +10436,10 @@ int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
     if (varNum == lvaMonAcquired)
     {
         return info.compPatchpointInfo->MonitorAcquiredOffset();
+    }
+    if (varNum == lvaResumedIndicator)
+    {
+        return info.compPatchpointInfo->ResumedIndicatorOffset();
     }
     if (varNum == lvaAsyncThreadObjectVar)
     {

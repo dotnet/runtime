@@ -80,6 +80,68 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
     return Limit(Limit::keUnknown);
 }
 
+#if defined(FEATURE_HW_INTRINSICS)
+//----------------------------------------------------------------------------------------------
+// optAssertionProp_HWIntrinsic: Propagate VN-derived facts to local var metadata.
+//
+// Arguments:
+//    comp - The compiler instance
+//    tree - The hwintrinsic node
+//
+static void optAssertionProp_HWIntrinsic(Compiler* comp, GenTreeHWIntrinsic* tree)
+{
+    NamedIntrinsic intrinsic = tree->GetHWIntrinsicId();
+
+    if (intrinsic != NI_Vector_ExtractMostSignificantBits)
+    {
+        return;
+    }
+
+    assert(tree->GetOperandCount() == 1);
+
+    GenTree* op1 = tree->Op(1);
+
+    if (!op1->OperIs(GT_LCL_VAR))
+    {
+        return;
+    }
+
+    LclVarDsc* varDsc = comp->lvaGetDesc(op1->AsLclVar());
+
+    if (!varDsc->lvSingleDef)
+    {
+        return;
+    }
+
+    ValueNum op1VN = comp->vnStore->VNConservativeNormalValue(op1->gtVNPair);
+
+    auto vnVisitor = [comp, tree](ValueNum vn) -> ValueNumStore::VNVisit {
+        if (vn == ValueNumStore::NoVN)
+        {
+            return ValueNumStore::VNVisit::Abort;
+        }
+
+        vn                 = comp->vnStore->VNNormalValue(vn);
+        var_types type     = comp->vnStore->TypeOfVN(vn);
+        unsigned  simdSize = tree->GetSimdSize();
+
+        if (!varTypeIsSIMD(type) || (genTypeSize(type) != simdSize))
+        {
+            return ValueNumStore::VNVisit::Abort;
+        }
+
+        return comp->vnStore->IsVectorPerElementMask(vn, tree->GetSimdBaseType(), simdSize)
+                   ? ValueNumStore::VNVisit::Continue
+                   : ValueNumStore::VNVisit::Abort;
+    };
+
+    if (comp->vnStore->VNVisitReachingVNs(op1VN, vnVisitor) == ValueNumStore::VNVisit::Continue)
+    {
+        varDsc->SetIsVectorPerElementMask(tree->GetSimdBaseType());
+    }
+}
+#endif // FEATURE_HW_INTRINSICS
+
 //------------------------------------------------------------------------
 // SymbolicToRealValue: Convert a symbolic value to a 64-bit signed integer.
 //
@@ -684,9 +746,9 @@ static Range GetRange(Compiler* comp, GenTree* tree, BasicBlock* block, ASSERT_V
 #ifdef DEBUG
 /* static */ void IntegralRange::Print(IntegralRange range)
 {
-    printf("[%lld", SymbolicToRealValue(range.m_lowerBound));
+    printf("[%lld", (long long)SymbolicToRealValue(range.m_lowerBound));
     printf("..");
-    printf("%lld]", SymbolicToRealValue(range.m_upperBound));
+    printf("%lld]", (long long)SymbolicToRealValue(range.m_upperBound));
 }
 #endif // DEBUG
 
@@ -947,7 +1009,7 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
                 ssize_t iconVal = curAssertion.GetOp2().GetIntConstant();
                 if (IsAot())
                 {
-                    printf("MT(%p)", dspPtr(iconVal));
+                    printf("MT(%p)", (void*)dspPtr(iconVal));
                 }
                 else
                 {
@@ -960,11 +1022,11 @@ void Compiler::optPrintAssertion(const AssertionDsc& curAssertion, AssertionInde
             }
             else if (curAssertion.GetOp2().HasIconFlag())
             {
-                printf("[%p]", dspPtr(curAssertion.GetOp2().GetIntConstant()));
+                printf("[%zx]", (size_t)dspPtr(curAssertion.GetOp2().GetIntConstant()));
             }
             else
             {
-                printf("%lld", (int64_t)curAssertion.GetOp2().GetIntConstant());
+                printf("%lld", (long long)curAssertion.GetOp2().GetIntConstant());
             }
             break;
 
@@ -1043,11 +1105,11 @@ void Compiler::optDumpAssertionIndices(const char* header, ASSERT_TP assertions,
     Compiler* compiler = JitTls::GetCompiler();
     if (compiler->verbose)
     {
-        printf(header);
+        printf("%s", header);
         compiler->optPrintAssertionIndices(assertions);
         if (footer != nullptr)
         {
-            printf(footer);
+            printf("%s", footer);
         }
     }
 #endif // DEBUG
@@ -3686,6 +3748,12 @@ GenTree* Compiler::optCopyAssertionProp(const AssertionDsc&  curAssertion,
         return nullptr;
     }
 
+    if (lclVarDsc->lvOnlyUsedOnSynchronousPath || copyVarDsc->lvOnlyUsedOnSynchronousPath)
+    {
+        // Do not touch these -- it will likely cause us to unnecessarily save state to the continuation.
+        return nullptr;
+    }
+
     tree->SetLclNum(copyLclNum);
 
     // The copied var also needs multi-reg, if set
@@ -4628,7 +4696,7 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
             }
             else if (op1->TypeIs(TYP_LONG))
             {
-                printf("%lld\n", vnStore->ConstantValue<INT64>(vnCns));
+                printf("%lld\n", (long long)vnStore->ConstantValue<INT64>(vnCns));
             }
             else if (op1->TypeIs(TYP_DOUBLE))
             {
@@ -4647,12 +4715,13 @@ GenTree* Compiler::optAssertionPropGlobal_RelOp(ASSERT_VALARG_TP assertions,
                 }
                 else
                 {
-                    printf("%d (gcref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                    printf("%zd (gcref)\n",
+                           (ssize_t) static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
                 }
             }
             else if (op1->TypeIs(TYP_BYREF))
             {
-                printf("%d (byref)\n", static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
+                printf("%zd (byref)\n", (ssize_t) static_cast<target_ssize_t>(vnStore->ConstantValue<size_t>(vnCns)));
             }
             else
             {
@@ -5491,8 +5560,8 @@ GenTree* Compiler::optAssertionProp_Call(ASSERT_VALARG_TP assertions, GenTreeCal
             (helper == CORINFO_HELP_CHKCASTCLASS) || (helper == CORINFO_HELP_CHKCASTANY) ||
             (helper == CORINFO_HELP_CHKCASTCLASS_SPECIAL))
         {
-            CallArg* castToCallArg = call->gtArgs.GetArgByIndex(0);
-            CallArg* objCallArg    = call->gtArgs.GetArgByIndex(1);
+            CallArg* castToCallArg = call->gtArgs.GetUserArgByIndex(0);
+            CallArg* objCallArg    = call->gtArgs.GetUserArgByIndex(1);
             GenTree* castToArg     = castToCallArg->GetNode();
             GenTree* objArg        = objCallArg->GetNode();
             ValueNum objVN         = optConservativeNormalVN(objArg);
@@ -5846,6 +5915,12 @@ GenTree* Compiler::optAssertionProp(ASSERT_VALARG_TP assertions, GenTree* tree, 
 
         case GT_CALL:
             return optAssertionProp_Call(assertions, tree->AsCall(), stmt);
+
+#if defined(FEATURE_HW_INTRINSICS)
+        case GT_HWINTRINSIC:
+            optAssertionProp_HWIntrinsic(this, tree->AsHWIntrinsic());
+            return nullptr;
+#endif // FEATURE_HW_INTRINSICS
 
         case GT_EQ:
         case GT_NE:

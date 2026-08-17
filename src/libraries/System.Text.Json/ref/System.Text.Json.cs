@@ -1142,6 +1142,7 @@ namespace System.Text.Json.Serialization
     {
         public JsonPolymorphicAttribute() { }
         public bool IgnoreUnrecognizedTypeDiscriminators { get { throw null; } set { } }
+        public bool InferClosedTypePolymorphism { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
         public System.Type? TypeClassifier { get { throw null; } set { } }
         public string? TypeDiscriminatorPropertyName { get { throw null; } set { } }

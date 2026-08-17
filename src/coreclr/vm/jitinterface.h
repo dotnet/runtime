@@ -39,7 +39,6 @@ enum SignatureKind
     SK_STATIC_VIRTUAL_CODEPOINTER_CALLSITE,
 };
 
-class Stub;
 class MethodDesc;
 class NativeCodeVersion;
 class FieldDesc;
@@ -1008,7 +1007,7 @@ struct VMAUXILIARYSYMBOLDEF
     PTR_CSTR name;
 };
 
-#define MAX_AUXILIARY_SYMBOLS 7
+#define MAX_AUXILIARY_SYMBOLS 17
 
 #if defined(DACCESS_COMPILE)
 

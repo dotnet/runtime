@@ -1526,7 +1526,7 @@ private:
                 CallArg* asyncResumedDef = callUser->gtArgs.FindWellKnownArg(WellKnownArg::AsyncResumedDef);
                 if ((asyncResumedDef != nullptr) && (val.Node() == asyncResumedDef->GetNode()))
                 {
-                    defSize = 1;
+                    defSize = TARGET_POINTER_SIZE;
                 }
             }
 

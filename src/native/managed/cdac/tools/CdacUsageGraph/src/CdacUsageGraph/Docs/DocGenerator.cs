@@ -403,7 +403,7 @@ public sealed partial class DocGenerator
 
     private static (string Type, string Field) SplitDescriptorKey(string key)
     {
-        int dot = key.LastIndexOf('.', StringComparison.Ordinal);
+        int dot = key.LastIndexOf('.');
         return (key.Substring(0, dot), key.Substring(dot + 1));
     }
 

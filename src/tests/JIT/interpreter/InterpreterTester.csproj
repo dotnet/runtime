@@ -1,10 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <_RunInterpreterDirectly Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetOS)' == 'browser' and '$(TargetArchitecture)' == 'wasm'">true</_RunInterpreterDirectly>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
-    <DisableProjectBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64' and '$(TargetArchitecture)' != 'riscv64' and '$(TargetArchitecture)' != 'loongarch64' and '$(TargetArchitecture)' != 'armel'">true</DisableProjectBuild>
+    <DisableProjectBuild Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64' and '$(TargetArchitecture)' != 'riscv64' and '$(TargetArchitecture)' != 'loongarch64' and '$(TargetArchitecture)' != 'armel' and '$(_RunInterpreterDirectly)' != 'true'">true</DisableProjectBuild>
     <!-- Interpreter is CoreCLR-VM specific -->
     <NativeAotIncompatible>true</NativeAotIncompatible>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(_RunInterpreterDirectly)' == 'true'">
+    <CLRTestEnvironmentVariable Include="DOTNET_Interpreter" Value="RunInterpreterTests" />
+    <CLRTestEnvironmentVariable Include="DOTNET_TieredCompilation" Value="0" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(_RunInterpreterDirectly)' == 'true'">
+    <CLRTestBatchPreCommands><![CDATA[
+      $(CLRTestBatchPreCommands)
+      set ExePath=Interpreter.dll
+      ]]></CLRTestBatchPreCommands>
+    <CLRTestBashPreCommands><![CDATA[
+      $(CLRTestBashPreCommands)
+      ExePath=Interpreter.dll
+      ]]></CLRTestBashPreCommands>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="InterpreterTester.cs" />

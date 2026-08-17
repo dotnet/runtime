@@ -11,6 +11,8 @@ schedules:
 
 variables:
   - template: variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -19,6 +21,11 @@ extends:
     stages:
     - stage: Build
       jobs:
+        - template: /eng/common/core-templates/job/helix-job-monitor.yml
+          parameters:
+            helixAccessToken: $(HelixApiAccessToken)
+            timeoutInMinutes: 720
+            allowNoHelixJobs: true
 
         - template: /eng/pipelines/common/platform-matrix.yml
           parameters:
@@ -53,6 +60,7 @@ extends:
                     testScope: outerloop
                     creator: dotnet-bot
                     testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                    useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
         - ${{ if eq(variables['isRollingBuild'], false) }}:
           - template: /eng/pipelines/common/platform-matrix.yml
@@ -82,6 +90,7 @@ extends:
                       testScope: outerloop
                       creator: dotnet-bot
                       testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
+                      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
         - ${{ if eq(variables['includeWindowsOuterloop'], true) }}:
           - template: /eng/pipelines/common/platform-matrix.yml
@@ -107,6 +116,7 @@ extends:
                       testScope: outerloop
                       creator: dotnet-bot
                       extraHelixArguments: /p:BuildTargetFramework=net481
+                      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
 
         # WebAssembly CoreCLR - run the library test suites on Chrome with the slow
         # [OuterLoop] tests enabled. Uses -testscope all (not outerloop) on purpose:
@@ -151,3 +161,4 @@ extends:
                       creator: dotnet-bot
                       testRunNamePrefixSuffix: CoreCLR_$(_BuildConfig)
                       extraHelixArguments: /p:BrowserHost=$(_hostedOs)
+                      useHelixMonitor: ${{ variables.enableHelixJobMonitor }}

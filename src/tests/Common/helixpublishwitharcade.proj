@@ -240,6 +240,7 @@
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
     <!-- Apple mobile test runs need to use the host OS DotnetCliRuntime -->
     <DotNetCliRuntime>osx-x64</DotNetCliRuntime>
+    <DotNetCliRuntime Condition="'$(TargetArchitecture)' == 'arm64' and ('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst')">osx-arm64</DotNetCliRuntime>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">

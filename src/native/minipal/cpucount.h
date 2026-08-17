@@ -17,6 +17,13 @@ extern "C"
 // Falls back to sysconf(_SC_NPROCESSORS_CONF) if the sysfs file is unavailable.
 int minipal_get_cpu_max_possible_count(void);
 
+// Returns the number of CPUs physically present in the system, regardless of
+// whether they are currently online or offline or -1 if unavailable. This is the
+// system core count and does not account for per-process affinity / cgroup limits.
+//
+// On Linux, this reads /sys/devices/system/cpu/present.
+int minipal_get_cpu_present_count(void);
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

@@ -27,7 +27,8 @@ DacDbiInterfaceInstance(
     CLRDATA_ADDRESS contractDescriptorAddress,
     IDacDbiInterface::IAllocator * pAllocator,
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup,
-    IDacDbiInterface ** ppInterface);
+    IDacDbiInterface ** ppInterface,
+    IUnknown ** ppLegacyDac);
 
 //---------------------------------------------------------------------------------------
 //
@@ -69,6 +70,8 @@ public:
 
     // Flush the DAC cache. This should be called when target memory changes.
     HRESULT STDMETHODCALLTYPE FlushCache();
+
+    HRESULT STDMETHODCALLTYPE Destroy();
 
     // enable or disable DAC target consistency checks
     HRESULT STDMETHODCALLTYPE DacSetTargetConsistencyChecks(BOOL fEnableAsserts);

@@ -651,11 +651,13 @@ namespace System.Reflection
     [StructLayout(LayoutKind.Explicit)]
     internal struct PrimitiveValue
     {
+        /// <safety>Overlaps only Byte8; both views are non-reference integers (int and long), so reinterpreting one as the other cannot forge a managed reference or read out of bounds.</safety>
         [FieldOffset(0)]
-        public int Byte4;
+        public safe int Byte4;
 
+        /// <safety>Overlaps only Byte4; both views are non-reference integers (long and int), so reinterpreting one as the other cannot forge a managed reference.</safety>
         [FieldOffset(0)]
-        public long Byte8;
+        public safe long Byte8;
     }
 
     internal sealed class CustomAttributeEncodedArgument
