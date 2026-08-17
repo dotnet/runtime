@@ -864,7 +864,7 @@ public:
     }
 };
 
-Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
+PCODE GenerateArrayOpStub(ArrayMethodDesc* pMD)
 {
     STANDARD_VM_CONTRACT;
 
@@ -908,7 +908,7 @@ Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
                                                             NULL,
                                                             &sl);
 
-    return Stub::NewStub(JitILStub(pStubMD));
+    return JitILStub(pStubMD);
 }
 
 

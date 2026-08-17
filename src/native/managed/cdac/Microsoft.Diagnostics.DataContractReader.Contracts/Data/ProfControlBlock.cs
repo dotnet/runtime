@@ -6,8 +6,8 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ProfControlBlock))]
 internal sealed partial class ProfControlBlock : IData<ProfControlBlock>
 {
-    [Field] public ulong GlobalEventMask { get; }
-    [Field] public bool RejitOnAttachEnabled { get; }
-    [Field] public TargetPointer MainProfilerProfInterface { get; }
-    [Field] public int NotificationProfilerCount { get; }
+    [Field] public partial ulong GlobalEventMask { get; }
+    [Field] public partial bool RejitOnAttachEnabled { get; }
+    [Field] public partial TargetPointer MainProfilerProfInterface { get; }
+    [Field] public partial int NotificationProfilerCount { get; }
 }

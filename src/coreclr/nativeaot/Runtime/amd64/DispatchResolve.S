@@ -18,7 +18,7 @@ LEAF_ENTRY \DispatchName, _TEXT
 
         // DispatchCellReg currently contains the indirection cell address.
         cmp     qword ptr [\DispatchCellReg], r10 // is this the monomorphic MethodTable?
-        jne     1f
+        jne     LOCAL_LABEL(Hashtable\@)
 
         mov     rax, [\DispatchCellReg + 8] // load the cached monomorphic resolved code address into rax
 .if \ReturnTarget
@@ -27,7 +27,7 @@ LEAF_ENTRY \DispatchName, _TEXT
         jmp     rax
 .endif
 
-1:
+LOCAL_LABEL(Hashtable\@):
 
         // r10 = MethodTable, DispatchCellReg = indirection cell address
         // Look up the target in the dispatch cache hashtable (GenericCache<Key, nint>).
@@ -61,7 +61,7 @@ LEAF_ENTRY \DispatchName, _TEXT
         shr     r9, cl
         xor     ecx, ecx
 
-2:
+LOCAL_LABEL(ProbeLoop\@):
         // Compute entry address: Element(table, index) = table + 0x10 + (index + 1) * 0x20
         lea     eax, [r9 + 1]
         movsxd  rax, eax
@@ -71,18 +71,18 @@ LEAF_ENTRY \DispatchName, _TEXT
         // Read version snapshot before key comparison (seqlock protocol).
         mov     edx, dword ptr [rax]
         test    edx, 1
-        jne     3f
+        jne     LOCAL_LABEL(ProbeMiss\@)
 
         // Compare key (dispatchCell, objectType)
         cmp     \DispatchCellReg, qword ptr [rax + 8]
-        jne     3f
+        jne     LOCAL_LABEL(ProbeMiss\@)
         cmp     r10, qword ptr [rax + 0x10]
-        jne     3f
+        jne     LOCAL_LABEL(ProbeMiss\@)
 
         // Read the cached code pointer, then re-verify the version has not changed.
         mov     r10, qword ptr [rax + 0x18]
         cmp     edx, dword ptr [rax]
-        jne     4f
+        jne     LOCAL_LABEL(CacheMiss\@)
 
         // Dispatch to cached target.
         mov     rax, r10
@@ -98,10 +98,10 @@ LEAF_ENTRY \DispatchName, _TEXT
         jmp     rax
 .endif
 
-3:
+LOCAL_LABEL(ProbeMiss\@):
         // If version is zero the rest of the bucket is unclaimed — stop probing.
         test    edx, edx
-        je      4f
+        je      LOCAL_LABEL(CacheMiss\@)
 
         // Quadratic reprobe: i++; index = (index + i) & tableMask
         inc     ecx
@@ -110,9 +110,9 @@ LEAF_ENTRY \DispatchName, _TEXT
         add     eax, 0xFFFFFFFE
         and     r9d, eax
         cmp     ecx, 8
-        jl      2b
+        jl      LOCAL_LABEL(ProbeLoop\@)
 
-4:
+LOCAL_LABEL(CacheMiss\@):
 .if \ReturnTarget
         jmp     C_FUNC(RhpCidResolve_Worker)
 .else

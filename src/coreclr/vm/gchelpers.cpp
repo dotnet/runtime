@@ -550,7 +550,7 @@ inline void LogAlloc(Object* object)
 
     if (LoggingOn(LF_GCALLOC, LL_INFO10))
     {
-        LogSpewAlways("Allocated %5d bytes for %s_TYPE" FMT_ADDR FMT_CLASS "\n",
+        LogSpewAlways("Allocated %5zu bytes for %s_TYPE" FMT_ADDR FMT_CLASS "\n",
                       size,
                       pMT->IsValueType() ? "VAL" : "REF",
                       DBG_ADDR(object),
@@ -1252,7 +1252,8 @@ OBJECTREF AllocateObject(MethodTable *pMT
         if (pMT == g_pBaseCOMObject)
             COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
 
-        oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(AllocateComObject_ForManaged(pMT));
+        OBJECTREF obj = AllocateComObject_ForManaged(pMT);
+        oref = OBJECTREF_TO_UNCHECKED_OBJECTREF(obj);
     }
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 #else  // FEATURE_COMINTEROP

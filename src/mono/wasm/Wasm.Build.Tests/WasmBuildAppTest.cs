@@ -136,7 +136,6 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/97449")]
         public async Task PropertiesFromRuntimeConfigJson(Configuration config, bool aot)
             => await TestMain("runtime_config_json",
                         @"
@@ -160,7 +159,6 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/97449")]
         public async Task PropertiesFromCsproj(Configuration config, bool aot)
             => await TestMain("csproj_properties",
                         @"

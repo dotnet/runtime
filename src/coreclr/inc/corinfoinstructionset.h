@@ -23,45 +23,48 @@ enum CORINFO_InstructionSet
     InstructionSet_Crc32=4,
     InstructionSet_Dp=5,
     InstructionSet_Rdm=6,
-    InstructionSet_Sha1=7,
-    InstructionSet_Sha256=8,
-    InstructionSet_Atomics=9,
-    InstructionSet_Vector64=10,
-    InstructionSet_Vector128=11,
-    InstructionSet_VectorT=12,
-    InstructionSet_Dczva=13,
-    InstructionSet_Rcpc=14,
-    InstructionSet_VectorT128=15,
-    InstructionSet_Rcpc2=16,
-    InstructionSet_Sve=17,
-    InstructionSet_Sve2=18,
-    InstructionSet_Sha3=19,
-    InstructionSet_Sm4=20,
-    InstructionSet_SveAes=21,
-    InstructionSet_SveSha3=22,
-    InstructionSet_SveSm4=23,
-    InstructionSet_Cssc=24,
-    InstructionSet_ArmBase_Arm64=25,
-    InstructionSet_AdvSimd_Arm64=26,
-    InstructionSet_Aes_Arm64=27,
-    InstructionSet_Crc32_Arm64=28,
-    InstructionSet_Dp_Arm64=29,
-    InstructionSet_Rdm_Arm64=30,
-    InstructionSet_Sha1_Arm64=31,
-    InstructionSet_Sha256_Arm64=32,
-    InstructionSet_Sve_Arm64=33,
-    InstructionSet_Sve2_Arm64=34,
-    InstructionSet_Sha3_Arm64=35,
-    InstructionSet_Sm4_Arm64=36,
-    InstructionSet_SveAes_Arm64=37,
-    InstructionSet_SveSha3_Arm64=38,
-    InstructionSet_SveSm4_Arm64=39,
+    InstructionSet_Fp16=7,
+    InstructionSet_Sha1=8,
+    InstructionSet_Sha256=9,
+    InstructionSet_Atomics=10,
+    InstructionSet_Vector64=11,
+    InstructionSet_Vector128=12,
+    InstructionSet_VectorT=13,
+    InstructionSet_Dczva=14,
+    InstructionSet_Rcpc=15,
+    InstructionSet_VectorT128=16,
+    InstructionSet_Rcpc2=17,
+    InstructionSet_Sve=18,
+    InstructionSet_Sve2=19,
+    InstructionSet_Sha3=20,
+    InstructionSet_Sm4=21,
+    InstructionSet_SveAes=22,
+    InstructionSet_SveSha3=23,
+    InstructionSet_SveSm4=24,
+    InstructionSet_Cssc=25,
+    InstructionSet_ArmBase_Arm64=26,
+    InstructionSet_AdvSimd_Arm64=27,
+    InstructionSet_Aes_Arm64=28,
+    InstructionSet_Crc32_Arm64=29,
+    InstructionSet_Dp_Arm64=30,
+    InstructionSet_Rdm_Arm64=31,
+    InstructionSet_Fp16_Arm64=32,
+    InstructionSet_Sha1_Arm64=33,
+    InstructionSet_Sha256_Arm64=34,
+    InstructionSet_Sve_Arm64=35,
+    InstructionSet_Sve2_Arm64=36,
+    InstructionSet_Sha3_Arm64=37,
+    InstructionSet_Sm4_Arm64=38,
+    InstructionSet_SveAes_Arm64=39,
+    InstructionSet_SveSha3_Arm64=40,
+    InstructionSet_SveSm4_Arm64=41,
 #endif // TARGET_ARM64
 #ifdef TARGET_RISCV64
     InstructionSet_RiscV64Base=1,
     InstructionSet_Zba=2,
     InstructionSet_Zbb=3,
     InstructionSet_Zbs=4,
+    InstructionSet_Zicond=5,
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
     InstructionSet_WasmBase=1,
@@ -270,6 +273,8 @@ public:
             AddInstructionSet(InstructionSet_Dp_Arm64);
         if (HasInstructionSet(InstructionSet_Rdm))
             AddInstructionSet(InstructionSet_Rdm_Arm64);
+        if (HasInstructionSet(InstructionSet_Fp16))
+            AddInstructionSet(InstructionSet_Fp16_Arm64);
         if (HasInstructionSet(InstructionSet_Sha1))
             AddInstructionSet(InstructionSet_Sha1_Arm64);
         if (HasInstructionSet(InstructionSet_Sha256))
@@ -370,6 +375,10 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Rdm);
         if (resultflags.HasInstructionSet(InstructionSet_Rdm_Arm64) && !resultflags.HasInstructionSet(InstructionSet_Rdm))
             resultflags.RemoveInstructionSet(InstructionSet_Rdm_Arm64);
+        if (resultflags.HasInstructionSet(InstructionSet_Fp16) && !resultflags.HasInstructionSet(InstructionSet_Fp16_Arm64))
+            resultflags.RemoveInstructionSet(InstructionSet_Fp16);
+        if (resultflags.HasInstructionSet(InstructionSet_Fp16_Arm64) && !resultflags.HasInstructionSet(InstructionSet_Fp16))
+            resultflags.RemoveInstructionSet(InstructionSet_Fp16_Arm64);
         if (resultflags.HasInstructionSet(InstructionSet_Sha1) && !resultflags.HasInstructionSet(InstructionSet_Sha1_Arm64))
             resultflags.RemoveInstructionSet(InstructionSet_Sha1);
         if (resultflags.HasInstructionSet(InstructionSet_Sha1_Arm64) && !resultflags.HasInstructionSet(InstructionSet_Sha1))
@@ -416,6 +425,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Dp);
         if (resultflags.HasInstructionSet(InstructionSet_Rdm) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd))
             resultflags.RemoveInstructionSet(InstructionSet_Rdm);
+        if (resultflags.HasInstructionSet(InstructionSet_Fp16) && !resultflags.HasInstructionSet(InstructionSet_AdvSimd))
+            resultflags.RemoveInstructionSet(InstructionSet_Fp16);
         if (resultflags.HasInstructionSet(InstructionSet_Sha1) && !resultflags.HasInstructionSet(InstructionSet_ArmBase))
             resultflags.RemoveInstructionSet(InstructionSet_Sha1);
         if (resultflags.HasInstructionSet(InstructionSet_Sha256) && !resultflags.HasInstructionSet(InstructionSet_ArmBase))
@@ -456,6 +467,8 @@ inline CORINFO_InstructionSetFlags EnsureInstructionSetFlagsAreValid(CORINFO_Ins
             resultflags.RemoveInstructionSet(InstructionSet_Zba);
         if (resultflags.HasInstructionSet(InstructionSet_Zbs) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
             resultflags.RemoveInstructionSet(InstructionSet_Zbs);
+        if (resultflags.HasInstructionSet(InstructionSet_Zicond) && !resultflags.HasInstructionSet(InstructionSet_RiscV64Base))
+            resultflags.RemoveInstructionSet(InstructionSet_Zicond);
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
         if (resultflags.HasInstructionSet(InstructionSet_Vector128) && !resultflags.HasInstructionSet(InstructionSet_PackedSimd))
@@ -694,6 +707,10 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Rdm";
         case InstructionSet_Rdm_Arm64 :
             return "Rdm_Arm64";
+        case InstructionSet_Fp16 :
+            return "Fp16";
+        case InstructionSet_Fp16_Arm64 :
+            return "Fp16_Arm64";
         case InstructionSet_Sha1 :
             return "Sha1";
         case InstructionSet_Sha1_Arm64 :
@@ -758,6 +775,8 @@ inline const char *InstructionSetToString(CORINFO_InstructionSet instructionSet)
             return "Zbb";
         case InstructionSet_Zbs :
             return "Zbs";
+        case InstructionSet_Zicond :
+            return "Zicond";
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
         case InstructionSet_WasmBase :
@@ -948,6 +967,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Crc32: return InstructionSet_Crc32;
         case READYTORUN_INSTRUCTION_Dp: return InstructionSet_Dp;
         case READYTORUN_INSTRUCTION_Rdm: return InstructionSet_Rdm;
+        case READYTORUN_INSTRUCTION_Fp16: return InstructionSet_Fp16;
         case READYTORUN_INSTRUCTION_Sha1: return InstructionSet_Sha1;
         case READYTORUN_INSTRUCTION_Sha256: return InstructionSet_Sha256;
         case READYTORUN_INSTRUCTION_Atomics: return InstructionSet_Atomics;
@@ -968,6 +988,7 @@ inline CORINFO_InstructionSet InstructionSetFromR2RInstructionSet(ReadyToRunInst
         case READYTORUN_INSTRUCTION_Zba: return InstructionSet_Zba;
         case READYTORUN_INSTRUCTION_Zbb: return InstructionSet_Zbb;
         case READYTORUN_INSTRUCTION_Zbs: return InstructionSet_Zbs;
+        case READYTORUN_INSTRUCTION_Zicond: return InstructionSet_Zicond;
 #endif // TARGET_RISCV64
 #ifdef TARGET_WASM
         case READYTORUN_INSTRUCTION_WasmBase: return InstructionSet_WasmBase;

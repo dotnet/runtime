@@ -16,6 +16,7 @@ extern "C" {
     int32_t CompressionNative_Deflate (void *, int32_t);
     int32_t CompressionNative_DeflateEnd (void *);
     int32_t CompressionNative_DeflateInit2_ (void *, int32_t, int32_t, int32_t, int32_t, int32_t);
+    int32_t CompressionNative_DeflateReset (void *);
     int32_t CompressionNative_Inflate (void *, int32_t);
     int32_t CompressionNative_InflateEnd (void *);
     int32_t CompressionNative_InflateInit2_ (void *, int32_t);
@@ -200,6 +201,7 @@ static const Entry s_libSystem_IO_Compression_Native [] = {
     DllImportEntry(CompressionNative_Deflate) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_DeflateEnd) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_DeflateInit2_) // System.IO.Compression, System.Net.WebSockets
+    DllImportEntry(CompressionNative_DeflateReset) // System.IO.Compression
     DllImportEntry(CompressionNative_Inflate) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_InflateEnd) // System.IO.Compression, System.Net.WebSockets
     DllImportEntry(CompressionNative_InflateInit2_) // System.IO.Compression, System.Net.WebSockets
@@ -324,7 +326,7 @@ typedef struct PInvokeTable {
 
 static PInvokeTable s_PInvokeTables[] = {
     {"libSystem.Globalization.Native", s_libSystem_Globalization_Native, 34},
-    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 9},
+    {"libSystem.IO.Compression.Native", s_libSystem_IO_Compression_Native, 10},
     {"libSystem.Native", s_libSystem_Native, 94},
     {"libSystem.Native.Browser", s_libSystem_Native_Browser, 1},
     {"libSystem.Runtime.InteropServices.JavaScript.Native", s_libSystem_Runtime_InteropServices_JavaScript_Native, 6}
