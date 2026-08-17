@@ -34,6 +34,7 @@
     <Compile Include="ReaderWriterLockSlimTests.cs" />
     <Compile Include="SpinWaitTests.cs" />
     <Compile Include="ThreadLocalTests.cs" />
+    <Compile Include="VolatileTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="ExecutionContextTests.cs" />
     <Compile Include="SynchronizationContextTests.cs" />

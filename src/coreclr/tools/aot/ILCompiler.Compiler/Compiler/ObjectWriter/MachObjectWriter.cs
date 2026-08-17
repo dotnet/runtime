@@ -378,9 +378,11 @@ namespace ILCompiler.ObjectWriter
             string symbolName,
             long addend)
         {
+            MachSection section = _sections[sectionIndex];
+
             // Mach-O doesn't use relocations between DWARF sections, so embed the offsets directly
             if (relocType is IMAGE_REL_BASED_DIR64 or IMAGE_REL_BASED_HIGHLOW &&
-                _sections[sectionIndex].IsDwarfSection)
+                section.IsDwarfSection)
             {
                 // DWARF section to DWARF section relocation
                 if (symbolName.StartsWith('.'))
@@ -421,14 +423,16 @@ namespace ILCompiler.ObjectWriter
                 case IMAGE_REL_BASED_RELPTR32:
                     if (_cpuType == CPU_TYPE_ARM64 || sectionIndex == EhFrameSectionIndex)
                     {
+                        Debug.Assert(!section.IsExecutable, "Executable sections cannot contain RELPTR32 relocations on Mach-O.");
+                        Debug.Assert(!section.IsZeroFill, "Uninitialized sections cannot contain RELPTR32 relocations on Mach-O.");
+
                         // On ARM64 we need to represent PC relative relocations as
                         // subtraction and the PC offset is baked into the addend.
                         // On x64, ld64 requires X86_64_RELOC_SUBTRACTOR + X86_64_RELOC_UNSIGNED
                         // for DWARF .eh_frame section.
-                        BinaryPrimitives.WriteInt32LittleEndian(
-                            data,
-                            BinaryPrimitives.ReadInt32LittleEndian(data) +
-                            (int)(addend - offset));
+                        long inlineAddend = checked((long)BinaryPrimitives.ReadInt32LittleEndian(data) + addend);
+                        long storedAddend = PrepareRelptr32Addend(section, offset, inlineAddend);
+                        BinaryPrimitives.WriteInt32LittleEndian(data, checked((int)storedAddend));
                     }
                     else
                     {
@@ -464,9 +468,23 @@ namespace ILCompiler.ObjectWriter
             IDictionary<string, SymbolDefinition> definedSymbols,
             SortedSet<string> undefinedSymbols)
         {
-            // We already emitted symbols for all non-debug sections in EmitSectionsAndLayout,
-            // these symbols are local and we need to account for them.
             uint symbolIndex = (uint)_symbolTable.Count;
+            int anchorOrdinal = 0;
+            foreach (MachSection section in _sections)
+            {
+                foreach (RelocAnchor anchor in section.RelocAnchors)
+                {
+                    _symbolTable.Add(new MachSymbol
+                    {
+                        Name = "lreloc_anchor" + anchorOrdinal++,
+                        Section = section,
+                        Value = section.VirtualAddress + (ulong)anchor.Offset,
+                        Descriptor = N_NO_DEAD_STRIP,
+                        Type = N_SECT,
+                    });
+                    anchor.SymbolIndex = symbolIndex++;
+                }
+            }
             _dySymbolTable.LocalSymbolsIndex = 0;
             _dySymbolTable.LocalSymbolsCount = symbolIndex;
 
@@ -535,6 +553,60 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private const long MinimumRelptr32Addend = -(1L << 19);
+        private const long MaximumRelptr32Addend = (1L << 19) - 1;
+
+        private static bool FitsInSigned20Bits(long value) =>
+            value >= MinimumRelptr32Addend && value <= MaximumRelptr32Addend;
+
+        private static long PrepareRelptr32Addend(MachSection section, long offset, long inlineAddend)
+        {
+            List<RelocAnchor> anchors = section.RelocAnchors;
+            long anchorOffset = anchors.Count > 0 ? anchors[^1].Offset : 0;
+            long storedAddend = checked(inlineAddend - (offset - anchorOffset));
+
+            if (FitsInSigned20Bits(storedAddend))
+            {
+                return storedAddend;
+            }
+
+            Debug.Assert(FitsInSigned20Bits(inlineAddend), "The RELPTR32 addend cannot fit in ld-prime's signed 20-bit inline encoding.");
+
+            anchors.Add(new RelocAnchor(offset));
+            return inlineAddend;
+        }
+
+        private uint GetRelocAnchorSymbolIndex(int sectionIndex, long offset)
+        {
+            MachSection section = _sections[sectionIndex];
+            List<RelocAnchor> anchors = section.RelocAnchors;
+            int anchorIndex = section.CachedRelocAnchorIndex;
+
+            if ((anchorIndex >= 0 && anchors[anchorIndex].Offset > offset) ||
+                (anchorIndex + 1 < anchors.Count && anchors[anchorIndex + 1].Offset <= offset))
+            {
+                int lower = 0;
+                int upper = anchors.Count - 1;
+                while (lower <= upper)
+                {
+                    int middle = lower + ((upper - lower) / 2);
+                    if (anchors[middle].Offset <= offset)
+                    {
+                        lower = middle + 1;
+                    }
+                    else
+                    {
+                        upper = middle - 1;
+                    }
+                }
+
+                anchorIndex = upper;
+                section.CachedRelocAnchorIndex = anchorIndex;
+            }
+
+            return anchorIndex >= 0 ? anchors[anchorIndex].SymbolIndex : (uint)sectionIndex;
+        }
+
         private void EmitRelocationsX64(int sectionIndex, List<SymbolicRelocation> relocationList)
         {
             ICollection<MachRelocation> sectionRelocations = _sections[sectionIndex].Relocations;
@@ -560,11 +632,13 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (symbolicRelocation.Type == IMAGE_REL_BASED_RELPTR32 && sectionIndex == EhFrameSectionIndex)
                 {
+                    uint baseSymbolIndex = GetRelocAnchorSymbolIndex(sectionIndex, symbolicRelocation.Offset);
+
                     sectionRelocations.Add(
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = (uint)sectionIndex,
+                            SymbolOrSectionIndex = baseSymbolIndex,
                             Length = 4,
                             RelocationType = X86_64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -673,12 +747,14 @@ namespace ILCompiler.ObjectWriter
                 }
                 else if (symbolicRelocation.Type == IMAGE_REL_BASED_RELPTR32)
                 {
+                    uint baseSymbolIndex = GetRelocAnchorSymbolIndex(sectionIndex, symbolicRelocation.Offset);
+
                     // This one is tough... needs to be represented by ARM64_RELOC_SUBTRACTOR + ARM64_RELOC_UNSIGNED.
                     sectionRelocations.Add(
                         new MachRelocation
                         {
                             Address = (int)symbolicRelocation.Offset,
-                            SymbolOrSectionIndex = (uint)sectionIndex,
+                            SymbolOrSectionIndex = baseSymbolIndex,
                             Length = 4,
                             RelocationType = ARM64_RELOC_SUBTRACTOR,
                             IsExternal = true,
@@ -998,6 +1074,17 @@ namespace ILCompiler.ObjectWriter
             }
         }
 
+        private sealed class RelocAnchor
+        {
+            public long Offset { get; }
+            public uint SymbolIndex { get; set; }
+
+            public RelocAnchor(long offset)
+            {
+                Offset = offset;
+            }
+        }
+
         private sealed class MachSection
         {
             private Stream dataStream;
@@ -1014,11 +1101,15 @@ namespace ILCompiler.ObjectWriter
             public uint Flags { get; set; }
 
             public uint Type => Flags & 0xFF;
-            public bool IsInFile => Size > 0 && Type != S_ZEROFILL && Type != S_GB_ZEROFILL && Type != S_THREAD_LOCAL_ZEROFILL;
+            public bool IsZeroFill => Type is S_ZEROFILL or S_GB_ZEROFILL or S_THREAD_LOCAL_ZEROFILL;
+            public bool IsInFile => Size > 0 && !IsZeroFill;
+            public bool IsExecutable => (Flags & (S_ATTR_SOME_INSTRUCTIONS | S_ATTR_PURE_INSTRUCTIONS)) != 0;
 
             public bool IsDwarfSection { get; }
 
             public IList<MachRelocation> Relocations => relocationCollection ??= new List<MachRelocation>();
+            public List<RelocAnchor> RelocAnchors { get; } = new();
+            public int CachedRelocAnchorIndex { get; set; } = -1;
             public Stream Stream => dataStream;
             public byte SectionIndex { get; set; }
 

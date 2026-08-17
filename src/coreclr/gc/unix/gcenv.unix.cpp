@@ -25,6 +25,7 @@
 #include "numasupport.h"
 #include <minipal/thread.h>
 #include <minipal/time.h>
+#include <minipal/cpucount.h>
 
 #if HAVE_SWAPCTL
 #include <sys/swap.h>
@@ -182,6 +183,9 @@ static uint8_t* g_helperPage = 0;
 // Mutex to make the FlushProcessWriteBuffersMutex thread safe
 static pthread_mutex_t g_flushProcessWriteBuffersMutex;
 
+// The number of CPUs that are configured in the OS.
+uint32_t g_configuredCpuCount = 0;
+
 size_t GetRestrictedPhysicalMemoryLimit();
 bool GetPhysicalMemoryUsed(size_t* val);
 
@@ -217,7 +221,19 @@ bool GCToOSInterface::Initialize()
         return false;
     }
 
+    int configuredCpuCount = minipal_get_cpu_max_possible_count();
+    if (configuredCpuCount == -1)
+    {
+        return false;
+    }
+
     g_totalCpuCount = cpuCount;
+    g_configuredCpuCount = configuredCpuCount;
+
+    if (!g_processAffinitySet.Initialize(configuredCpuCount))
+    {
+        return false;
+    }
 
     //
     // support for FlusProcessWriteBuffers
@@ -268,29 +284,42 @@ bool GCToOSInterface::Initialize()
 
 #if HAVE_SCHED_GETAFFINITY
 
-    cpu_set_t cpuSet;
-    int st = sched_getaffinity(getpid(), sizeof(cpu_set_t), &cpuSet);
-
-    if (st == 0)
     {
-        for (size_t i = 0; i < CPU_SETSIZE; i++)
+        // Use a dynamically allocated cpu_set_t to support systems with more than CPU_SETSIZE (typically 1024) CPUs.
+        cpu_set_t* pCpuSet = CPU_ALLOC(configuredCpuCount);
+        if (pCpuSet == nullptr)
         {
-            if (CPU_ISSET(i, &cpuSet))
+            return false;
+        }
+
+        size_t cpuSetSize = CPU_ALLOC_SIZE(configuredCpuCount);
+        CPU_ZERO_S(cpuSetSize, pCpuSet);
+
+        int st = sched_getaffinity(getpid(), cpuSetSize, pCpuSet);
+
+        if (st == 0)
+        {
+            for (size_t i = 0; i < (size_t)configuredCpuCount; i++)
             {
-                g_processAffinitySet.Add(i);
+                if (CPU_ISSET_S(i, cpuSetSize, pCpuSet))
+                {
+                    g_processAffinitySet.Add(i);
+                }
             }
         }
-    }
-    else
-    {
-        // We should not get any of the errors that the sched_getaffinity can return since none
-        // of them applies for the current thread, so this is an unexpected kind of failure.
-        assert(false);
+        else
+        {
+            // We should not get any of the errors that the sched_getaffinity can return since none
+            // of them applies for the current thread, so this is an unexpected kind of failure.
+            assert(false);
+        }
+
+        CPU_FREE(pCpuSet);
     }
 
 #else // HAVE_SCHED_GETAFFINITY
 
-    for (size_t i = 0; i < g_totalCpuCount; i++)
+    for (size_t i = 0; i < configuredCpuCount; i++)
     {
         g_processAffinitySet.Add(i);
     }
@@ -1074,9 +1103,11 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
 #if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
-    cpu_set_t cpuSet;
-    CPU_ZERO(&cpuSet);
-    CPU_SET((int)procNo, &cpuSet);
+
+    cpu_set_t* pCpuSet = CPU_ALLOC(g_configuredCpuCount);
+    size_t cpuSetSize = CPU_ALLOC_SIZE(g_configuredCpuCount);
+    CPU_ZERO_S(cpuSetSize, pCpuSet);
+    CPU_SET_S((int)procNo, cpuSetSize, pCpuSet);
 
     // Snap's default strict confinement does not allow sched_setaffinity(<nonzeroPid>, ...) without manually connecting the
     // process-control plug. sched_setaffinity(<currentThreadPid>, ...) is also currently not allowed, only
@@ -1087,12 +1118,15 @@ bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
     // - https://github.com/dotnet/runtime/pull/38795
     // - https://github.com/dotnet/runtime/issues/1634
     // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
-#if HAVE_SCHED_SETAFFINITY
-    int st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
-#else
-    int st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
-#endif
+ #if HAVE_SCHED_SETAFFINITY
+    int st = sched_setaffinity(0, cpuSetSize, pCpuSet);
+ #else
+    int st = pthread_setaffinity_np(pthread_self(), cpuSetSize, pCpuSet);
+ #endif
 
+    CPU_FREE(pCpuSet);
+
+    assert(st == 0);
     return (st == 0);
 
 #else  // !(HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP)
@@ -1124,7 +1158,7 @@ const AffinitySet* GCToOSInterface::SetGCThreadsAffinitySet(uintptr_t configAffi
     if (!configAffinitySet->IsEmpty())
     {
         // Update the process affinity set using the configured set
-        for (size_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
+        for (size_t i = 0; i < g_totalCpuCount; i++)
         {
             if (g_processAffinitySet.Contains(i) && !configAffinitySet->Contains(i))
             {
@@ -1477,6 +1511,11 @@ uint32_t GCToOSInterface::GetTotalProcessorCount()
     return g_totalCpuCount;
 }
 
+uint32_t GCToOSInterface::GetMaxProcessorCount()
+{
+    return (uint32_t)g_processAffinitySet.MaxCpuCount();
+}
+
 bool GCToOSInterface::CanEnableGCNumaAware()
 {
     return g_numaAvailable;
@@ -1499,7 +1538,9 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     bool success = false;
 
     uint16_t availableProcNumber = 0;
-    for (size_t procNumber = 0; procNumber < MAX_SUPPORTED_CPUS; procNumber++)
+
+    size_t maxCpuCount = g_processAffinitySet.MaxCpuCount();
+    for (size_t procNumber = 0; procNumber < maxCpuCount; procNumber++)
     {
         if (g_processAffinitySet.Contains(procNumber))
         {

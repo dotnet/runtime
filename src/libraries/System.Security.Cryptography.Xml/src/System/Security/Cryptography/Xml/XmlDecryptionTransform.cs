@@ -217,6 +217,8 @@ namespace System.Security.Cryptography.Xml
             if (encryptedDatas == null || encryptedDatas.Count == 0)
                 return;
             int maxDepth = LocalAppContextSwitches.DangerousMaxRecursionDepth;
+            int maxEncryptedDataElements = LocalAppContextSwitches.MaxDecryptedDataElements;
+            int decryptedElementsCount = 0;
             Queue<ProcessElementWorkItem> encryptedDatasQueue = new();
             foreach (XmlNode value in encryptedDatas)
             {
@@ -232,6 +234,11 @@ namespace System.Security.Cryptography.Xml
                 if (encryptedDataElement != null && encryptedDataElement.LocalName == "EncryptedData" &&
                     encryptedDataElement.NamespaceURI == EncryptedXml.XmlEncNamespaceUrl)
                 {
+                    if (maxEncryptedDataElements > 0 && ++decryptedElementsCount > maxEncryptedDataElements)
+                    {
+                        throw new CryptographicException(SR.Cryptography_Xml_MaxEncryptedDataElementsExceeded);
+                    }
+
                     XmlNode sibling = encryptedDataElement.NextSibling!;
                     XmlNode parent = encryptedDataElement.ParentNode!;
                     if (ProcessEncryptedDataItem(encryptedDataElement))
@@ -277,6 +284,13 @@ namespace System.Security.Cryptography.Xml
                 return (XmlDocument)GetOutput();
             else
                 throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
+        }
+
+        internal override void ClearState()
+        {
+            _containingDocument = null;
+            _encryptedDataList = null;
+            _nsm = null;
         }
 
         private readonly struct ProcessElementWorkItem(XmlNode element, int depth)
