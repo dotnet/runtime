@@ -3424,6 +3424,16 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
             assert(emitter::isMaskReg(op1Reg));
 
             emit->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg);
+
+            if (count < 8)
+            {
+                // Emit shifts to clear bits N to 7 for 2-bit or 4-bit NotMask.
+                // There is no 2 or 4-bit knot*.  Normally not an issue, but would cause wrong codegen
+                // if k is used in a kmovb+POPCNT for example.
+
+                emit->emitIns_R_R_I(INS_kshiftlb, EA_8BYTE, targetReg, targetReg, (int8_t)(8 - count));
+                emit->emitIns_R_R_I(INS_kshiftrb, EA_8BYTE, targetReg, targetReg, (int8_t)(8 - count));
+            }
             break;
         }
 
@@ -3626,6 +3636,14 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node, insOpts instOption
 
             // Use EA_32BYTE to ensure the VEX.L bit gets set
             emit->emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
+
+            if (count < 8)
+            {
+                // Same issue here as with knotb/NI_AVX512_NotMask above.
+
+                emit->emitIns_R_R_I(INS_kshiftlb, EA_8BYTE, targetReg, targetReg, (int8_t)(8 - count));
+                emit->emitIns_R_R_I(INS_kshiftrb, EA_8BYTE, targetReg, targetReg, (int8_t)(8 - count));
+            }
             break;
         }
 

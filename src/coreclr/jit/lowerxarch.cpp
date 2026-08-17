@@ -6347,6 +6347,55 @@ bool Lowering::TryInvertMask(GenTree* node, unsigned simdSize, var_types simdBas
     {
         GenTreeHWIntrinsic* mskIntrin = node->AsHWIntrinsic();
 
+        if (mskIntrin->GetHWIntrinsicId() == NI_AVX512_OrMask)
+        {
+            // `~(a | ~b)` is `~a & b`, which is a single `AndNotMask`. Folding it here means we
+            // never materialize the outer `NotMask`, which is both smaller and avoids `knotb`
+            // needing its unused upper bits cleared afterwards.
+            //
+            // `AndNotMask(op1, op2)` computes `~op1 & op2`, so `b` has to end up as op2.
+
+            unsigned simdBaseTypeSize = genTypeSize(mskIntrin->GetSimdBaseType());
+
+            GenTree* op1 = mskIntrin->Op(1);
+            GenTree* op2 = mskIntrin->Op(2);
+
+            bool transform = false;
+
+            if (op2->OperIsHWIntrinsic(NI_AVX512_NotMask))
+            {
+                GenTreeHWIntrinsic* opIntrin = op2->AsHWIntrinsic();
+
+                if (genTypeSize(opIntrin->GetSimdBaseType()) == simdBaseTypeSize)
+                {
+                    transform = true;
+
+                    op2 = opIntrin->Op(1);
+                    BlockRange().Remove(opIntrin);
+                }
+            }
+            else if (op1->OperIsHWIntrinsic(NI_AVX512_NotMask))
+            {
+                GenTreeHWIntrinsic* opIntrin = op1->AsHWIntrinsic();
+
+                if (genTypeSize(opIntrin->GetSimdBaseType()) == simdBaseTypeSize)
+                {
+                    transform = true;
+
+                    op1 = opIntrin->Op(1);
+                    BlockRange().Remove(opIntrin);
+
+                    std::swap(op1, op2);
+                }
+            }
+
+            if (transform)
+            {
+                mskIntrin->ChangeHWIntrinsicId(NI_AVX512_AndNotMask, op1, op2);
+                return true;
+            }
+        }
+
         bool       mskIsScalar = false;
         genTreeOps mskOper     = mskIntrin->GetOperForHWIntrinsicId(&mskIsScalar, /* getEffectiveOp */ true);
 
