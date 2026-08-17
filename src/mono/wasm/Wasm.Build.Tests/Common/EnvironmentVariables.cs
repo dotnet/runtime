@@ -31,7 +31,7 @@ namespace Wasm.Build.Tests
         internal static readonly string? RepositoryEngineeringDir      = Environment.GetEnvironmentVariable("REPOSITORY_ENGINEERING_DIR");
         internal static readonly string? BrowserBuildTargetsDir        = Environment.GetEnvironmentVariable("BROWSER_BUILD_TARGETS_DIR");
         internal static readonly string? WasmAppBuilderTasksAssemblyPath = Environment.GetEnvironmentVariable("WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH");
-        internal static readonly string? WasmAbiQueryCrossgen2Path      = Environment.GetEnvironmentVariable("WASM_ABI_QUERY_CROSSGEN2_PATH");
+        internal static readonly string? WasmInteropGeneratorPath      = Environment.GetEnvironmentVariable("WASM_INTEROP_GENERATOR_PATH");
         internal static readonly string? EmsdkPath                     = Environment.GetEnvironmentVariable("EMSDK_PATH");
 
         // WASM-TODO https://github.com/dotnet/runtime/issues/128362

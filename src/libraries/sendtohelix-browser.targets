@@ -188,7 +188,7 @@
     <HelixPreCommand Include="$(EnvVarCommand) REPOSITORY_ENGINEERING_DIR=$HELIX_CORRELATION_PAYLOAD/build/eng/" />
     <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=$HELIX_CORRELATION_PAYLOAD/build/wasm/" />
     <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=$HELIX_CORRELATION_PAYLOAD/build/WasmAppBuilder/WasmAppBuilder.dll" />
-    <HelixPreCommand Include="$(EnvVarCommand) WASM_ABI_QUERY_CROSSGEN2_PATH=$HELIX_CORRELATION_PAYLOAD/build/crossgen2/crossgen2" />
+    <HelixPreCommand Include="$(EnvVarCommand) WASM_INTEROP_GENERATOR_PATH=$HELIX_CORRELATION_PAYLOAD/build/crossgen2/crossgen2" />
     <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=$HELIX_CORRELATION_PAYLOAD/build/emsdk/" />
     <HelixPreCommand Include="$(EnvVarCommand) MINIPAL_INCLUDE_DIR=$HELIX_CORRELATION_PAYLOAD/build/minipal/" />
     <HelixPreCommand Include="$(EnvVarCommand) CORECLR_VM_WASM_INCLUDE_DIR=$HELIX_CORRELATION_PAYLOAD/build/coreclr-vm-wasm/" />
@@ -198,7 +198,7 @@
     <HelixPreCommand Include="$(EnvVarCommand) REPOSITORY_ENGINEERING_DIR=%HELIX_CORRELATION_PAYLOAD%\build\eng\" />
     <HelixPreCommand Include="$(EnvVarCommand) BROWSER_BUILD_TARGETS_DIR=%HELIX_CORRELATION_PAYLOAD%\build\wasm\" />
     <HelixPreCommand Include="$(EnvVarCommand) WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH=%HELIX_CORRELATION_PAYLOAD%\build\WasmAppBuilder\WasmAppBuilder.dll" />
-    <HelixPreCommand Include="$(EnvVarCommand) WASM_ABI_QUERY_CROSSGEN2_PATH=%HELIX_CORRELATION_PAYLOAD%\build\crossgen2\crossgen2.exe" />
+    <HelixPreCommand Include="$(EnvVarCommand) WASM_INTEROP_GENERATOR_PATH=%HELIX_CORRELATION_PAYLOAD%\build\crossgen2\crossgen2.exe" />
     <HelixPreCommand Include="$(EnvVarCommand) EMSDK_PATH=%HELIX_CORRELATION_PAYLOAD%\build\emsdk\" />
     <HelixPreCommand Include="$(EnvVarCommand) MINIPAL_INCLUDE_DIR=%HELIX_CORRELATION_PAYLOAD%\build\minipal\" />
     <HelixPreCommand Include="$(EnvVarCommand) CORECLR_VM_WASM_INCLUDE_DIR=%HELIX_CORRELATION_PAYLOAD%\build\coreclr-vm-wasm\" />
@@ -339,7 +339,7 @@
     <!-- CoreCLR WBT: ship src/native/minipal/{utils.h,entrypoints.h} and
          src/coreclr/vm/wasm/callhelpers.hpp into the payload so per-app native
          re-link (BrowserWasmApp.CoreCLR.targets) can resolve the #include lines
-         emitted by ManagedToNativeGenerator output. Stage into directories first
+         emitted by the generated interop helpers. Stage into directories first
          because HelixCorrelationPayload on individual files causes the Helix
          client to try unzipping them as archives. -->
     <PropertyGroup Condition="'$(NeedsEMSDK)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">

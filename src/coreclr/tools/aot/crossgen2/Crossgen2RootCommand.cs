@@ -98,8 +98,14 @@ namespace ILCompiler
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
-        public Option<bool> WasmAbiQuery { get; } =
-            new("--wasm-abi-query") { Description = SR.WasmAbiQueryOption };
+        public Option<string> WasmGenerateCallHelpers { get; } =
+            new("--wasm-generate-callhelpers") { Description = SR.WasmGenerateCallHelpersOption };
+        public Option<string[]> WasmPInvokeModule { get; } =
+            new("--wasm-pinvoke-module") { Description = SR.WasmPInvokeModuleOption };
+        public Option<string[]> WasmIgnoredPInvokeModule { get; } =
+            new("--wasm-ignored-pinvoke-module") { Description = SR.WasmIgnoredPInvokeModuleOption };
+        public Option<bool> WasmNoWarnUnresolvedPInvokeModules { get; } =
+            new("--wasm-no-warn-unresolved-pinvoke-modules") { Description = SR.WasmNoWarnUnresolvedPInvokeModulesOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -203,7 +209,10 @@ namespace ILCompiler
             Options.Add(TargetOS);
             Options.Add(JitPath);
             Options.Add(PrintReproInstructions);
-            Options.Add(WasmAbiQuery);
+            Options.Add(WasmGenerateCallHelpers);
+            Options.Add(WasmPInvokeModule);
+            Options.Add(WasmIgnoredPInvokeModule);
+            Options.Add(WasmNoWarnUnresolvedPInvokeModules);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);

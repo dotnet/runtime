@@ -49,46 +49,5 @@
   </Target>
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.Mono.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'Mono'" />
-  <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.CoreClr.ManagedToNativeGenerator" TaskFactory="TaskHostFactory" AssemblyFile="$(OutputPath)$(NetCoreAppToolCurrent)\WasmAppBuilder.dll" Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
-
-  <Target Name="RunGenerator" DependsOnTargets="Build" Condition="'$(AssembliesScanPath)' != ''">
-      <!-- The generator needs the compiler's type system to compute struct sizes, so it asks
-           crossgen2. Query mode does not load the JIT, so the in-build (host-targeting) crossgen2
-           answers wasm questions just as well as a wasm-targeting one would. -->
-      <PropertyGroup>
-        <_WasmAbiQueryCrossgen2Path Condition="'$(_WasmAbiQueryCrossgen2Path)' == ''">$([MSBuild]::NormalizePath('$(Crossgen2InBuildDir)', 'crossgen2$(ExeSuffix)'))</_WasmAbiQueryCrossgen2Path>
-      </PropertyGroup>
-
-      <Error Condition="!Exists('$(_WasmAbiQueryCrossgen2Path)')"
-             Text="crossgen2 was not found at '$(_WasmAbiQueryCrossgen2Path)'. Build the 'clr' subset first, or set _WasmAbiQueryCrossgen2Path." />
-
-      <ItemGroup>
-        <WasmPInvokeAssembly Include="$(AssembliesScanPath)*.dll" />
-        <WasmPInvokeModule Include="libSystem.Native" />
-        <WasmPInvokeModule Include="libSystem.Native.Browser" />
-        <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
-        <WasmPInvokeModule Include="libSystem.Globalization.Native" />
-        <WasmPInvokeModule Include="libSystem.Native.Browser" />
-        <WasmPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
-      </ItemGroup>
-
-      <PropertyGroup>
-        <_RunGeneratorTargetOS Condition="'$(TargetOS)' == ''">browser</_RunGeneratorTargetOS>
-        <_RunGeneratorTargetOS Condition="'$(TargetOS)' != ''">$(TargetOS)</_RunGeneratorTargetOS>
-      </PropertyGroup>
-
-      <Message Importance="high" Text="Running ManagedToNativeGenerator on @(WasmPInvokeAssembly) for TargetOS=$(_RunGeneratorTargetOS)" />
-      <ManagedToNativeGenerator
-          Assemblies="@(WasmPInvokeAssembly)"
-          PInvokeModules="@(WasmPInvokeModule)"
-          TargetOS="$(_RunGeneratorTargetOS)"
-          Crossgen2Path="$(_WasmAbiQueryCrossgen2Path)"
-          DotNetHostPath="$(DOTNET_HOST_PATH)"
-          PInvokeOutputPath="$(GeneratorOutputPath)callhelpers-pinvoke.cpp"
-          ReversePInvokeOutputPath="$(GeneratorOutputPath)callhelpers-reverse.cpp"
-          InterpToNativeOutputPath="$(GeneratorOutputPath)callhelpers-interp-to-managed.cpp">
-          <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-      </ManagedToNativeGenerator>
-  </Target>
 
 </Project>

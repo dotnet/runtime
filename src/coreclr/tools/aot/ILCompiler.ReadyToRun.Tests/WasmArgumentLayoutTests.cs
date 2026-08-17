@@ -7,14 +7,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 
 using crossgen2::ILCompiler;
 using crossgen2::ILCompiler.DependencyAnalysis.ReadyToRun;
 using crossgen2::ILCompiler.DependencyAnalysis.Wasm;
+using crossgen2::ILCompiler.Wasm;
 using crossgen2::Internal.CallingConvention;
 using crossgen2::Internal.JitInterface;
-using crossgen2::Internal.Text;
 
 using ILCompiler.ReadyToRun.Tests.TestCasesRunner;
 
@@ -545,7 +544,7 @@ public class WasmArgumentLayoutTests
 
 
     /// <summary>
-    /// The type query answers with the encoding of a type in parameter position. These are the three
+    /// The generator encodes a type in parameter position with a single token. These are the three
     /// shapes that encoding exists to tell apart: a multi-field struct, which goes by reference and
     /// carries its size; a single-field wrapper, which is passed as the field it wraps; and a
     /// primitive.
@@ -554,20 +553,20 @@ public class WasmArgumentLayoutTests
     [InlineData("Guid", "S16")]
     [InlineData("DateTime", "l")]
     [InlineData("Int32", "i")]
-    public void WasmAbiQueryAnswersTypeQueries(string typeName, string expected)
+    public void WasmInteropGeneratorEncodesTypesTheWayTheCompilerLowersThem(string typeName, string expected)
     {
         ReadyToRunCompilerContext context = CreateWasmContext();
 
-        Assert.Equal(new[] { expected }, RunQueries(context, TypeQuery(context, typeName)));
+        Assert.Equal(expected, WasmInteropSignature.GetAbiToken(GetSystemType(context, typeName)));
     }
 
     /// <summary>
     /// A struct that holds a reference lays out through the auto-layout path, which asks the
-    /// compilation group whether the base offset needs aligning. Query mode is not a compilation, so
+    /// compilation group whether the base offset needs aligning. Generation is not a compilation, so
     /// it has to configure a group itself for that question to have an answer at all.
     /// </summary>
     [Fact]
-    public void WasmAbiQueryComputesLayoutOfStructsHoldingReferences()
+    public void WasmInteropGeneratorComputesLayoutOfStructsHoldingReferences()
     {
         ReadyToRunCompilerContext context = CreateWasmContext();
         var type = GetSystemType(context, "RuntimeTypeHandle");
@@ -576,89 +575,94 @@ public class WasmArgumentLayoutTests
         Assert.True(type.ContainsGCPointers, $"{type} was chosen because it holds a reference");
 
         // One field the size of the whole struct: lowered to that field, a reference, passed as i32.
-        Assert.Equal(new[] { "i" }, RunQueries(context, TypeQuery(context, "RuntimeTypeHandle")));
+        Assert.Equal("i", WasmInteropSignature.GetAbiToken(type));
     }
 
     /// <summary>
-    /// Parameter types come from the signature blob rather than being named one by one, because a
-    /// generic instantiation has no metadata token of its own and so cannot be named over the wire.
-    /// The answer has to be the signature the compiler itself would lower the method to.
+    /// The thunk a method gets is keyed by its lowered signature, so the generator has to encode a
+    /// method exactly as the compiler lowers it. Anything else and the interpreter calls through a
+    /// thunk built for a different shape.
     /// </summary>
     [Fact]
-    public void WasmAbiQueryAnswersMethodQueriesLikeTheCompiler()
+    public void WasmInteropGeneratorEncodesMethodsLikeTheCompiler()
     {
         ReadyToRunCompilerContext context = CreateWasmContext();
-        var method = (EcmaMethod)GetSystemType(context, "DateTime").GetMethod(new Utf8String("AddTicks"), null);
+        var method = (EcmaMethod)GetSystemType(context, "DateTime").GetMethod("AddTicks"u8, null);
 
         string expected = WasmLowering.GetSignature(method.Signature, WasmLowering.LoweringFlags.None).SignatureString;
         _output.WriteLine($"{method} lowers to '{expected}'");
 
-        string query = $"m {CoreLibSimpleName} 0x{MetadataTokens.GetToken(method.Handle):x8} 0";
-        Assert.Equal(new[] { expected }, RunQueries(context, query));
+        Assert.Equal(expected, WasmInteropSignature.GetMethodSignature(method, includeThis: true));
     }
 
     /// <summary>
-    /// The caller cannot reference the type system, so it keeps its own copy of the lowering flags and
-    /// its own idea of the wire format. A copy that has drifted has to be told, rather than quietly
-    /// handed a lowering that is not the one it asked for.
+    /// Void has no lowering of its own - the compiler never sees it in a position that needs one -
+    /// but it is still what a thunk returns, so the generator has to encode it.
     /// </summary>
-    [Theory]
-    [InlineData("x System.Private.CoreLib 1", "Unrecognized query verb")]
-    [InlineData("t System.Private.CoreLib", "not enough fields")]
-    [InlineData("m System.Private.CoreLib 0x06000001 0x40000000", "Unknown wasm lowering flags")]
-    public void WasmAbiQueryRejectsQueriesItCannotAnswer(string query, string expectedMessage)
+    [Fact]
+    public void WasmInteropGeneratorEncodesVoid()
     {
-        string reply = RunQueries(CreateWasmContext(), query)[0];
+        ReadyToRunCompilerContext context = CreateWasmContext();
 
-        Assert.StartsWith("!", reply);
-        Assert.Contains(expectedMessage, reply);
+        Assert.Equal("v", WasmInteropSignature.GetAbiToken(context.GetWellKnownType(WellKnownType.Void)));
     }
 
     /// <summary>
-    /// Real builds hand query mode the whole app closure, not one assembly. The compilation group it
-    /// configures has to accept that: a multi-assembly set is only legal in composite mode, and a
+    /// Real builds hand the generator the whole app closure, not one assembly. The compilation group
+    /// it configures has to accept that: a multi-assembly set is only legal in composite mode, and a
     /// group built without it asserts in checked builds and lays out nothing in any build.
     /// </summary>
     [Fact]
-    public void WasmAbiQueryAcceptsMoreThanOneInputAssembly()
+    public void WasmInteropGeneratorAcceptsMoreThanOneInputAssembly()
     {
-        // Any second real assembly will do; the queries below still target CoreLib. This one is
-        // guaranteed to exist because it is the assembly currently executing.
+        // Any second real assembly will do. This one is guaranteed to exist because it is the
+        // assembly currently executing.
         string extraInput = typeof(WasmArgumentLayoutTests).Assembly.Location;
         Assert.True(File.Exists(extraInput), $"test assembly not found at '{extraInput}'");
 
         ReadyToRunCompilerContext context = CreateWasmContext(extraInput);
+        string outputDirectory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
 
-        Assert.Equal(new[] { "S16" }, RunQueries(context, TypeQuery(context, "Guid")));
+        try
+        {
+            var options = new WasmInteropGeneratorOptions
+            {
+                OutputDirectory = outputDirectory,
+                TargetOS = "browser",
+                PInvokeModules = new[] { "libSystem.Native" },
+                WarnOnUnresolvedPInvokeModules = false,
+            };
+
+            Assert.Equal(0, WasmInteropGenerator.Run(context, options, new Logger(TextWriter.Null, isVerbose: false)));
+
+            foreach (string fileName in new[]
+                     {
+                         WasmInteropGenerator.PInvokeFileName,
+                         WasmInteropGenerator.ReversePInvokeFileName,
+                         WasmInteropGenerator.InterpToNativeFileName,
+                     })
+            {
+                string path = Path.Combine(outputDirectory, fileName);
+                Assert.True(File.Exists(path), $"{fileName} was not generated");
+                Assert.NotEmpty(File.ReadAllText(path));
+            }
+
+            // The statically linked module has to resolve to direct calls, which is the whole point
+            // of naming it on the command line.
+            Assert.Contains("SystemNative_", File.ReadAllText(Path.Combine(outputDirectory, WasmInteropGenerator.PInvokeFileName)));
+        }
+        finally
+        {
+            if (Directory.Exists(outputDirectory))
+                Directory.Delete(outputDirectory, recursive: true);
+        }
     }
 
     private const string CoreLibSimpleName = "System.Private.CoreLib";
 
     private static EcmaType GetSystemType(ReadyToRunCompilerContext context, string typeName)
     {
-        return (EcmaType)context.SystemModule.GetType(new Utf8String("System"), new Utf8String(typeName));
-    }
-
-    private static string TypeQuery(ReadyToRunCompilerContext context, string typeName)
-    {
-        EcmaType type = GetSystemType(context, typeName);
-
-        return $"t {CoreLibSimpleName} 0x{MetadataTokens.GetToken(type.Handle):x8}";
-    }
-
-    /// <summary>
-    /// Runs the query loop over in-memory streams and returns the replies, minus the readiness line
-    /// that precedes them.
-    /// </summary>
-    private static string[] RunQueries(ReadyToRunCompilerContext context, params string[] queries)
-    {
-        StringWriter output = new();
-        Assert.Equal(0, WasmAbiQuery.Run(context, new StringReader(string.Join(Environment.NewLine, queries)), output));
-
-        string[] replies = output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal("ready", replies[0]);
-
-        return replies[1..];
+        return (EcmaType)context.SystemModule.GetType("System"u8, System.Text.Encoding.UTF8.GetBytes(typeName));
     }
 
     /// <summary>

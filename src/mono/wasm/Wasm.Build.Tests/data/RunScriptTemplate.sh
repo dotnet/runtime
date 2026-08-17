@@ -65,8 +65,8 @@ function set_env_vars()
     if [[ -n "$WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH" ]]; then
         export WASM_APP_BUILDER_TASKS_ASSEMBLY_PATH
     fi
-    if [[ -n "$WASM_ABI_QUERY_CROSSGEN2_PATH" ]]; then
-        export WASM_ABI_QUERY_CROSSGEN2_PATH
+    if [[ -n "$WASM_INTEROP_GENERATOR_PATH" ]]; then
+        export WASM_INTEROP_GENERATOR_PATH
     fi
     if [[ -n "$EMSDK_PATH" ]]; then
         export EMSDK_PATH

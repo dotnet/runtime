@@ -39,7 +39,7 @@ namespace ILCompiler
         private readonly bool _singleFileCompilation;
         private readonly bool _outNearInput;
         private readonly string _outputFilePath;
-        private readonly bool _wasmAbiQuery;
+        private readonly string _wasmGenerateCallHelpers;
 
         public Program(Crossgen2RootCommand command)
         {
@@ -48,7 +48,7 @@ namespace ILCompiler
             _singleFileCompilation = Get(command.SingleFileCompilation);
             _outNearInput = Get(command.OutNearInput);
             _outputFilePath = Get(command.OutputFilePath);
-            _wasmAbiQuery = Get(command.WasmAbiQuery);
+            _wasmGenerateCallHelpers = Get(command.WasmGenerateCallHelpers);
 
             if (Get(command.WaitForDebugger))
             {
@@ -70,9 +70,9 @@ namespace ILCompiler
 
         public int Run()
         {
-            // Query mode answers questions about the input assemblies and writes no image, so the
+            // Interop generation mode reads the input assemblies and writes source files, so the
             // output arguments the compilation path requires do not apply.
-            if (_outputFilePath == null && !_outNearInput && !_wasmAbiQuery)
+            if (_outputFilePath == null && !_outNearInput && _wasmGenerateCallHelpers is null)
                 throw new CommandLineException(SR.MissingOutputFile);
 
             if (_singleFileCompilation && !_outNearInput)
@@ -82,6 +82,15 @@ namespace ILCompiler
 
             (TargetArchitecture targetArchitecture, TargetOS targetOS, TargetAbi targetAbi) =
                 Helpers.GetTargetSpec(Get(_command.TargetArchitecture), Get(_command.TargetOS));
+
+            // The interop generator answers ABI questions (struct sizes, argument lowering) through the
+            // same type system the compiler uses, so an unspecified target would silently produce host
+            // layouts. Reject anything but a wasm target instead of emitting subtly wrong helpers.
+            if (_wasmGenerateCallHelpers is not null
+                && (targetArchitecture != TargetArchitecture.Wasm32 || targetOS is not (TargetOS.Browser or TargetOS.Wasi)))
+            {
+                throw new CommandLineException(SR.WasmGenerateCallHelpersRequiresWasmTarget);
+            }
             bool targetAllowsRuntimeCodeGeneration = GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
 
             // Crossgen2 is partial AOT and its pre-compiled methods can be thrown away at runtime if
@@ -279,9 +288,18 @@ namespace ILCompiler
             _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
             ReadyToRunCompilerContext typeSystemContext = _typeSystemContext;
 
-            if (_wasmAbiQuery)
+            if (_wasmGenerateCallHelpers is not null)
             {
-                return WasmAbiQuery.Run(typeSystemContext, Console.In, Console.Out);
+                return Wasm.WasmInteropGenerator.Run(typeSystemContext, new Wasm.WasmInteropGeneratorOptions
+                {
+                    OutputDirectory = _wasmGenerateCallHelpers,
+                    PInvokeModules = Get(_command.WasmPInvokeModule),
+                    IgnoredPInvokeModules = Get(_command.WasmIgnoredPInvokeModule),
+                    // The normalized name, so that platform attributes match regardless of how
+                    // --targetos was spelled on the command line.
+                    TargetOS = targetOS.ToString().ToLowerInvariant(),
+                    WarnOnUnresolvedPInvokeModules = !Get(_command.WasmNoWarnUnresolvedPInvokeModules),
+                }, logger);
             }
 
             if (_singleFileCompilation)

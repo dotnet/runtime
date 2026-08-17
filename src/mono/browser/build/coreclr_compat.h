@@ -4,7 +4,7 @@
 // Auto-included CoreCLR compat header for app native build.
 //
 // This header is pre-included via -include when compiling pinvoke-table.cpp
-// and wasm_m2n_invoke.g.cpp produced by ManagedToNativeGenerator. It provides
+// and wasm_m2n_invoke.g.cpp produced by the crossgen2 wasm interop generator. It provides
 // only the prerequisite types/macros that the real CoreCLR headers
 // (<callhelpers.hpp>, <minipal/entrypoints.h>) assume are already in scope from
 // the in-tree CoreCLR PCH (vm/common.h). The generated .cpp files still
