@@ -946,6 +946,8 @@ namespace System.Net.ServerSentEvents.Tests
         }
 
         [Theory]
+        [InlineData(false, MinConfigurableMaxBufferSize)]
+        [InlineData(true, MinConfigurableMaxBufferSize)]
         [InlineData(false, MinConfigurableMaxBufferSize + 1)]
         [InlineData(true, MinConfigurableMaxBufferSize + 1)]
         public async Task Parse_MaxBufferSize_AllowsConfiguredLimit(bool useAsync, int maxBufferSize)

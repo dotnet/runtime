@@ -314,11 +314,6 @@ namespace System.Net.ServerSentEvents
                 }
                 else if (_lineLength == _lineBuffer.Length)
                 {
-                    if (_lineLength >= _maxBufferSize)
-                    {
-                        throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
-                    }
-
                     int newLength;
                     try
                     {
@@ -327,11 +322,6 @@ namespace System.Net.ServerSentEvents
                     catch (OverflowException)
                     {
                         newLength = int.MaxValue;
-                    }
-
-                    if (newLength > _maxBufferSize)
-                    {
-                        newLength = _maxBufferSize;
                     }
 
                     GrowBuffer(ref _lineBuffer, newLength);
@@ -515,7 +505,7 @@ namespace System.Net.ServerSentEvents
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
-            int count = GetLineBufferReadCount(_lineBuffer.Length - offset);
+            int count = _lineBuffer.Length - offset;
             int bytesRead = _stream.Read(
 #if NET
                 _lineBuffer.AsSpan(offset, count));
@@ -546,7 +536,7 @@ namespace System.Net.ServerSentEvents
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
-            int bytesRead = await _stream.ReadAsync(_lineBuffer.AsMemory(offset, GetLineBufferReadCount(_lineBuffer.Length - offset)), cancellationToken).ConfigureAwait(false);
+            int bytesRead = await _stream.ReadAsync(_lineBuffer.AsMemory(offset), cancellationToken).ConfigureAwait(false);
 
             if (bytesRead > 0)
             {
@@ -565,12 +555,6 @@ namespace System.Net.ServerSentEvents
             return bytesRead;
         }
 
-        private int GetLineBufferReadCount(int available)
-        {
-            int remainingAllowed = _maxBufferSize - _lineLength;
-            return remainingAllowed < available ? remainingAllowed + 1 : available;
-        }
-
         /// <summary>Gets the UTF8 BOM.</summary>
         private static ReadOnlySpan<byte> Utf8Bom => [0xEF, 0xBB, 0xBF];
 
@@ -587,13 +571,8 @@ namespace System.Net.ServerSentEvents
         }
 
         /// <summary>Grows the buffer, returning the existing one to the ArrayPool and renting an ArrayPool replacement.</summary>
-        private void GrowBuffer([NotNull] ref byte[]? buffer, int minimumLength)
+        private static void GrowBuffer([NotNull] ref byte[]? buffer, int minimumLength)
         {
-            if (minimumLength > _maxBufferSize)
-            {
-                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
-            }
-
             byte[]? toReturn = buffer;
             buffer = ArrayPool<byte>.Shared.Rent(Math.Max(minimumLength, DefaultArrayPoolRentSize));
             if (toReturn is not null)
