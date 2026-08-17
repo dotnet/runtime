@@ -581,6 +581,9 @@ namespace System.Management
                             */
                             return false;
                         }
+
+                        if (cachedCount == 0)
+                            ManagementException.ThrowWithExtendedInfo(ManagementStatus.Timedout);
                     }
 
                     cacheIndex = 0;
