@@ -18,6 +18,7 @@
 #endif // TARGET_BROWSER
 
 #include <fstream>
+#include <unordered_map>
 
 #if defined(TARGET_UNIX)
 #include <dlfcn.h>
@@ -88,9 +89,10 @@ namespace envvar
     const char_t* mockHostPolicy = W("MOCK_HOSTPOLICY");
 
     // Variable used to indicate how app assemblies should be provided to the runtime
-    // - PROPERTY: corerun will pass the paths vias the TRUSTED_PLATFORM_ASSEMBLIES property
+    // - CALLBACK: corerun will pass assembly names and paths via the host runtime contract
+    // - PROPERTY: corerun will pass the paths via the TRUSTED_PLATFORM_ASSEMBLIES property
     // - EXTERNAL: corerun will pass an external assembly probe to the runtime for app assemblies
-    // - Not set: same as PROPERTY
+    // - Not set: same as CALLBACK
     // - The TPA list as a platform delimited list of paths. The same format as the system's PATH env var.
     const char_t* appAssemblies = W("APP_ASSEMBLIES");
 
@@ -127,9 +129,9 @@ static void wait_for_debugger()
 
 // N.B. It seems that CoreCLR doesn't always use the first instance of an assembly on the TPA list
 // (for example, ni's may be preferred over il, even if they appear later). Therefore, when building
-// the TPA only include the first instance of a simple assembly name to allow users the opportunity to
+// the TPA only includes the first instance of a simple assembly name to allow users the opportunity to
 // override Framework assemblies by placing dlls in %CORE_LIBRARIES%.
-static string_t build_tpa(const string_t& core_root, const string_t& core_libraries)
+static std::unordered_map<string_t, string_t> build_tpa(const string_t& core_root, const string_t& core_libraries)
 {
     static const char_t* const tpa_extensions[] =
     {
@@ -138,8 +140,7 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
         nullptr
     };
 
-    std::set<string_t> name_set;
-    pal::stringstream_t tpa_list;
+    std::unordered_map<string_t, string_t> tpa;
 
     // Iterate over all extensions.
     for (const char_t* const* curr_ext = tpa_extensions; *curr_ext != nullptr; ++curr_ext)
@@ -154,7 +155,7 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
                 continue;
 
             assert(dir.back() == pal::dir_delim);
-            string_t tmp = pal::build_file_list(dir, ext, [&](const char_t* file)
+            pal::build_file_list(dir, ext, [&](const char_t* file)
                 {
                     string_t file_local{ file };
 
@@ -162,16 +163,12 @@ static string_t build_tpa(const string_t& core_root, const string_t& core_librar
                     if (pal::string_ends_with(file_local, ext_len, ext))
                         file_local = file_local.substr(0, file_local.length() - ext_len);
 
-                    // Return true if the file is new.
-                    return name_set.insert(file_local).second;
+                    return tpa.emplace(std::move(file_local), dir + file).second;
                 });
-
-            // Add to the TPA.
-            tpa_list << tmp;
         }
     }
 
-    return tpa_list.str();
+    return tpa;
 }
 
 static bool try_get_export(pal::mod_t mod, const char* symbol, void** fptr)
@@ -253,13 +250,20 @@ static void log_error_info(const char* line)
     std::fprintf(stderr, "%s\n", line);
 }
 
+struct host_runtime_contract_context
+{
+    const configuration* config;
+    std::vector<const char*> assembly_names;
+    std::unordered_map<std::string, std::string> assembly_paths;
+};
+
 size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
     const char* key,
     char* value_buffer,
     size_t value_buffer_size,
     void* contract_context)
 {
-    configuration* config = static_cast<configuration *>(contract_context);
+    const configuration* config = static_cast<host_runtime_contract_context*>(contract_context)->config;
 
     if (::strcmp(key, HOST_PROPERTY_ENTRY_ASSEMBLY_NAME) == 0)
     {
@@ -298,6 +302,32 @@ size_t HOST_CONTRACT_CALLTYPE get_runtime_property(
     }
 
     return -1;
+}
+
+static bool HOST_CONTRACT_CALLTYPE get_assembly_names(
+    const char* const** names,
+    size_t* count,
+    void* contract_context)
+{
+    if (names == nullptr || count == nullptr)
+        return false;
+
+    host_runtime_contract_context* context = static_cast<host_runtime_contract_context*>(contract_context);
+    if (context->assembly_names.empty())
+        return false;
+
+    *names = context->assembly_names.data();
+    *count = context->assembly_names.size();
+    return true;
+}
+
+static const char* HOST_CONTRACT_CALLTYPE resolve_assembly_to_path(
+    const char* simple_name,
+    void* contract_context)
+{
+    host_runtime_contract_context* context = static_cast<host_runtime_contract_context*>(contract_context);
+    std::unordered_map<std::string, std::string>::const_iterator entry = context->assembly_paths.find(simple_name);
+    return entry == context->assembly_paths.end() ? nullptr : entry->second.c_str();
 }
 
 // Paths for external assembly probe
@@ -452,25 +482,36 @@ static int run(const configuration& config)
         native_search_dirs << core_root << pal::env_path_delim;
     }
 
-    string_t tpa_list;
+    std::unordered_map<string_t, string_t> tpa;
+    string_t tpa_property;
     string_t app_assemblies_env = pal::getenv(envvar::appAssemblies);
+    bool use_tpa_callbacks = app_assemblies_env.empty() || app_assemblies_env == W("CALLBACK");
     bool use_external_assembly_probe = false;
 #ifdef TARGET_BROWSER
     use_external_assembly_probe = true;
+    use_tpa_callbacks = false;
 #endif // TARGET_BROWSER
-    if (app_assemblies_env.empty() || app_assemblies_env == W("PROPERTY"))
+    if (use_tpa_callbacks)
+    {
+        tpa = build_tpa(core_root, core_libs);
+    }
+    else if (app_assemblies_env.empty() || app_assemblies_env == W("PROPERTY"))
     {
         // Use the TRUSTED_PLATFORM_ASSEMBLIES property to pass the app assemblies to the runtime.
-        tpa_list = build_tpa(core_root, core_libs);
+        pal::stringstream_t tpa_list;
+        for (const std::pair<const string_t, string_t>& entry : build_tpa(core_root, core_libs))
+            tpa_list << entry.second << pal::env_path_delim;
+
+        tpa_property = tpa_list.str();
     }
     else if (app_assemblies_env == W("EXTERNAL"))
     {
         // Use the external assembly probe to load assemblies from the app assembly paths.
         use_external_assembly_probe = true;
     }
-    else
+    else if (!app_assemblies_env.empty())
     {
-        tpa_list = std::move(app_assemblies_env);
+        tpa_property = std::move(app_assemblies_env);
     }
 
     if (use_external_assembly_probe)
@@ -524,7 +565,7 @@ static int run(const configuration& config)
     (void)try_get_export(coreclr_mod, "coreclr_set_error_writer", (void**)&coreclr_set_error_writer_func);
 
     // Construct CoreCLR properties.
-    pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(tpa_list.c_str());
+    pal::string_utf8_t tpa_property_utf8 = pal::convert_to_utf8(tpa_property.c_str());
     pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(app_path.c_str());
     pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str().c_str());
 
@@ -539,10 +580,13 @@ static int run(const configuration& config)
     std::vector<const char*> propertyKeys;
     std::vector<const char*> propertyValues;
 
-    // TRUSTED_PLATFORM_ASSEMBLIES
-    // - The list of complete paths to each of the fully trusted assemblies
-    propertyKeys.push_back("TRUSTED_PLATFORM_ASSEMBLIES");
-    propertyValues.push_back(tpa_list_utf8.c_str());
+    if (!use_tpa_callbacks)
+    {
+        // TRUSTED_PLATFORM_ASSEMBLIES
+        // - The list of complete paths to each of the fully trusted assemblies
+        propertyKeys.push_back(HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES);
+        propertyValues.push_back(tpa_property_utf8.c_str());
+    }
 
     // APP_PATHS
     // - The list of paths which will be probed by the assembly loader
@@ -563,14 +607,32 @@ static int run(const configuration& config)
     for (const pal::string_utf8_t& str : user_defined_values_utf8)
         propertyValues.push_back(str.c_str());
 
+    host_runtime_contract_context contract_context{ &config };
+    if (use_tpa_callbacks)
+    {
+        contract_context.assembly_names.reserve(tpa.size());
+        contract_context.assembly_paths.reserve(tpa.size());
+        for (const std::pair<const string_t, string_t>& entry : tpa)
+        {
+            pal::string_utf8_t name = pal::convert_to_utf8(entry.first.c_str());
+            pal::string_utf8_t path = pal::convert_to_utf8(entry.second.c_str());
+            std::pair<std::unordered_map<std::string, std::string>::iterator, bool> result =
+                contract_context.assembly_paths.insert_or_assign(name.c_str(), path.c_str());
+            if (result.second)
+                contract_context.assembly_names.push_back(result.first->first.c_str());
+        }
+    }
+
     host_runtime_contract host_contract = {
         sizeof(host_runtime_contract),
-        (void*)&config,
+        &contract_context,
         &get_runtime_property,
         nullptr,
         nullptr,
         use_external_assembly_probe ? &external_assembly_probe : nullptr,
-        pal::getenv(envvar::platformNativeR2R) == W("1") ? &get_native_code_data : nullptr };
+        pal::getenv(envvar::platformNativeR2R) == W("1") ? &get_native_code_data : nullptr,
+        &get_assembly_names,
+        &resolve_assembly_to_path };
     propertyKeys.push_back(HOST_PROPERTY_RUNTIME_CONTRACT);
     std::stringstream ss;
     ss << "0x" << std::hex << (size_t)(&host_contract);
