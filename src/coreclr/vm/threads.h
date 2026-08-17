@@ -2601,7 +2601,6 @@ private:
     //   which we can't do in SwitchOut since that may require locking or switching threads.</TODO>
     HANDLE          m_ThreadHandleForClose;
     HANDLE          m_ThreadHandleForResume;
-    BOOL            m_WeOwnThreadHandle;
     SIZE_T          m_OSThreadId;
 
     BOOL CreateNewOSThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);

@@ -319,25 +319,23 @@ namespace System.Threading
         {
             // This method is called when the thread is about to enter a wait, sleep, or join state.
             // It sets the state in the native layer to indicate that the thread is waiting.
-            SetWaitSleepJoinState(GetNativeHandle());
-            GC.KeepAlive(this);
+            SetWaitSleepJoinState();
         }
 
         internal void ClearWaitSleepJoinState()
         {
             // This method is called when the thread is no longer in a wait, sleep, or join state.
             // It clears the state in the native layer to indicate that the thread is no longer waiting.
-            ClearWaitSleepJoinState(GetNativeHandle());
-            GC.KeepAlive(this);
+            ClearWaitSleepJoinState();
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_SetWaitSleepJoinState")]
         [SuppressGCTransition]
-        private static partial void SetWaitSleepJoinState(ThreadHandle t);
+        private static partial void SetWaitSleepJoinState();
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_ClearWaitSleepJoinState")]
         [SuppressGCTransition]
-        private static partial void ClearWaitSleepJoinState(ThreadHandle t);
+        private static partial void ClearWaitSleepJoinState();
 
         /// <summary>
         /// An unstarted thread can be marked to indicate that it will host a
@@ -613,28 +611,10 @@ namespace System.Threading
 
         internal static void CheckForPendingInterrupt()
         {
-            CheckForPendingInterrupt(CurrentThread.GetNativeHandle());
-            GC.KeepAlive(CurrentThread);
+            CheckForPendingInterrupt();
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadNative_CheckForPendingInterrupt")]
-        private static partial void CheckForPendingInterrupt(ThreadHandle t);
-
-        [StructLayout(LayoutKind.Sequential)]
-        private struct NativeThreadClass
-        {
-            public NativeThreadState m_State;
-        }
-
-        private enum NativeThreadState
-        {
-            None = 0,
-            TS_AbortRequested = 0x00000001, // Abort the thread
-            TS_DebugSuspendPending = 0x00000008, // Is the debugger suspending threads?
-            TS_GCOnTransitions = 0x00000010, // Force a GC on stub transitions (GCStress only)
-
-            // We require (and assert) that the following bits are less than 0x100.
-            TS_CatchAtSafePoint = (TS_AbortRequested | TS_DebugSuspendPending | TS_GCOnTransitions),
-        };
+        private static partial void CheckForPendingInterrupt();
     }
 }

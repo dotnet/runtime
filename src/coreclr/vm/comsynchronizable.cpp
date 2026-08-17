@@ -427,30 +427,20 @@ extern "C" INT32 QCALLTYPE ThreadNative_GetThreadState(QCall::ThreadHandle threa
     return res;
 }
 
-extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState(QCall::ThreadHandle thread)
+extern "C" void QCALLTYPE ThreadNative_SetWaitSleepJoinState()
 {
-    CONTRACTL
-    {
-        QCALL_CHECK_NO_GC_TRANSITION;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
     // Set the state bits.
-    thread->SetThreadState(Thread::TS_WaitSleepJoin);
+    GetThread()->SetThreadState(Thread::TS_WaitSleepJoin);
 }
 
-extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState(QCall::ThreadHandle thread)
+extern "C" void QCALLTYPE ThreadNative_ClearWaitSleepJoinState()
 {
-    CONTRACTL
-    {
-        QCALL_CHECK_NO_GC_TRANSITION;
-        PRECONDITION(thread != NULL);
-    }
-    CONTRACTL_END;
+    QCALL_CONTRACT_NO_GC_TRANSITION;
 
     // Clear the state bits.
-    thread->ResetThreadState(Thread::TS_WaitSleepJoin);
+    GetThread()->ResetThreadState(Thread::TS_WaitSleepJoin);
 }
 
 #ifdef FEATURE_COMINTEROP_APARTMENT_SUPPORT
@@ -543,14 +533,17 @@ extern "C" HANDLE QCALLTYPE ThreadNative_GetOSHandle(QCall::ThreadHandle t)
     HANDLE currentHandle = t->GetThreadHandle();
     if (currentHandle != INVALID_HANDLE_VALUE)
     {
-        DuplicateHandle(
+        if (!DuplicateHandle(
             GetCurrentProcess(),
             currentHandle,
             GetCurrentProcess(),
             &retVal,
             0,
             FALSE,
-            DUPLICATE_SAME_ACCESS);
+            DUPLICATE_SAME_ACCESS))
+        {
+            COMPlusThrowWin32();
+        }
     }
 
     END_QCALL;
@@ -766,13 +759,13 @@ extern "C" void QCALLTYPE ThreadNative_Interrupt(QCall::ThreadHandle thread)
     END_QCALL;
 }
 
-extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt(QCall::ThreadHandle thread)
+extern "C" void QCALLTYPE ThreadNative_CheckForPendingInterrupt()
 {
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
 
-    thread->HandleThreadInterrupt();
+    GetThread()->HandleThreadInterrupt();
 
     END_QCALL;
 }
