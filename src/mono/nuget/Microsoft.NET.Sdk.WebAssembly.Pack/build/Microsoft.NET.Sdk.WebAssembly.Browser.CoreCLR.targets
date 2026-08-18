@@ -52,25 +52,26 @@ Copyright (c) .NET Foundation. All rights reserved.
   </Target>
 
   <!-- Prune raw pack R2R images (native/r2r/*.wasm) from build copy-local so the 90 MB closure never lands
-       loose in bin/; the managed .dll stays and ConvertDllsToWebcil stages the image. Unconditional (staging gated separately). -->
+       loose in bin/; the managed .dll stays and ConvertDllsToWebcil stages the image. The _WasmRuntimePackR2RDir
+       check stays at the item level: it is computed by the DependsOnTargets below, so it can't gate the target. -->
   <Target Name="_WasmCoreClrPrunePackR2RFromBuild"
-          Condition="'$(_WasmEnableWebcil)' == 'true' and '$(_WasmRuntimePackR2RDir)' != ''"
+          Condition="'$(_WasmEnableWebcil)' == 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
           BeforeTargets="_ComputeWasmBuildCandidates">
     <ItemGroup>
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)"
-        Condition="'%(Extension)' == '.wasm' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
+        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
     </ItemGroup>
   </Target>
 
   <!-- Same prune for publish, before ProcessPublishFilesForWasm derives _WasmResolvedFilesToPublish. -->
   <Target Name="_WasmCoreClrPruneR2RFromPublish"
-          Condition="'$(_WasmEnableWebcil)' == 'true' and '$(_WasmRuntimePackR2RDir)' != ''"
+          Condition="'$(_WasmEnableWebcil)' == 'true'"
           DependsOnTargets="_WasmCoreClrSelectR2RDirectories"
           BeforeTargets="ProcessPublishFilesForWasm">
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)"
-        Condition="'%(Extension)' == '.wasm' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
+        Condition="'%(Extension)' == '.wasm' and '$(_WasmRuntimePackR2RDir)' != '' and Exists('$(_WasmRuntimePackR2RDir)%(FileName).wasm')" />
     </ItemGroup>
   </Target>
 
