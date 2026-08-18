@@ -18,7 +18,7 @@ namespace ILVerify
 {
     internal sealed class Program : IResolver
     {
-        private readonly Dictionary<string, PEReader> _resolverCache = new();
+        private readonly Dictionary<string, PEReader> _resolverCache = new(StringComparer.OrdinalIgnoreCase);
         private readonly ILVerifyRootCommand _command;
         private readonly Dictionary<string, string> _inputFilePaths; // map of simple name to file path
         private readonly Dictionary<string, string> _referenceFilePaths; // map of simple name to file path

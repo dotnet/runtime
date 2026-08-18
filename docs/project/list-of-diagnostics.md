@@ -120,6 +120,7 @@ The PR that reveals the implementation of the `<IncludeInternalObsoleteAttribute
 |  __`SYSLIB0063`__ | This constructor has been deprecated and argument bool isConnected does not have any effect. Use NamedPipeClientStream(PipeDirection direction, bool isAsync, SafePipeHandle safePipeHandle) instead. |
 |  __`SYSLIB0064`__ | RSACryptoServiceProvider.Encrypt and RSACryptoServiceProvider.Decrypt methods that take a Boolean are obsolete. Use the overload that accepts RSAEncryptionPadding instead. |
 |  __`SYSLIB0065`__ | Setting AsnEncodedData.RawData is obsolete. Use CopyFrom instead. |
+|  __`SYSLIB0066`__ | Implement IAsyncStartupValidator instead. |
 
 ## Analyzer Warnings
 
@@ -265,7 +266,7 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1216`__ | C# language version not supported by the options validation source generator. |
 |  __`SYSLIB1217`__ | The validation attribute is only applicable to properties of type string, array, or ICollection; it cannot be used with other types. |
 |  __`SYSLIB1218`__ | _`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration._ |
-|  __`SYSLIB1219`__ | _`SYSLIB1201`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration._ |
+|  __`SYSLIB1219`__ | Options validation generator: A type already includes an implementation of the 'ValidateAsync' method. |
 |  __`SYSLIB1220`__ | JsonSourceGenerator encountered a [JsonConverterAttribute] with an invalid type argument. |
 |  __`SYSLIB1221`__ | JsonSourceGenerator does not support this C# language version. |
 |  __`SYSLIB1222`__ | Constructor annotated with JsonConstructorAttribute is inaccessible. |
