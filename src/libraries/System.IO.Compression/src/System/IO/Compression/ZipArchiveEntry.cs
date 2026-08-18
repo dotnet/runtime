@@ -681,9 +681,19 @@ namespace System.IO.Compression
         // created fresh in this session have no untrusted header to validate.
         private void ValidateUncompressedSizeIsPlausible()
         {
-            if (!_originallyInArchive || CompressionMethod == ZipCompressionMethod.Stored)
+            if (!_originallyInArchive)
             {
-                // Stored entries cannot expand: their uncompressed size must equal their compressed size.
+                return;
+            }
+
+            if (CompressionMethod == ZipCompressionMethod.Stored)
+            {
+                if (_uncompressedSize != _compressedSize)
+                {
+                    _currentlyOpenForWrite = false;
+                    throw new InvalidDataException(SR.Format(SR.EntryUncompressedSizeImplausible, _uncompressedSize, _compressedSize));
+                }
+
                 return;
             }
 
