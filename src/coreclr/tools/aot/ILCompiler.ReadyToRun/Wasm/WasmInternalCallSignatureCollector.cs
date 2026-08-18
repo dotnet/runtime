@@ -60,6 +60,15 @@ namespace ILCompiler.Wasm
                 if (!method.IsInternalCall)
                     continue;
 
+                // String constructors never reach a signature-derived thunk. They are compiled as static
+                // factories ("String Ctor(args)", see WasmLowering.GetStringCtorActualSignature), and the
+                // runtime special-cases them in both directions with hardcoded keys before it consults
+                // this table: GetCookieForCalliSig and GetPortableEntryPointToInterpreterThunk in
+                // src/coreclr/vm/wasm/helpers.cpp. Emitting the declared "void .ctor(this, args)" shape
+                // here would only add entries nothing can look up.
+                if (method.IsConstructor && method.OwningType.IsWellKnownType(WellKnownType.String))
+                    continue;
+
                 // An uninstantiated generic has no single signature to generate a thunk from, because
                 // its parameters stand for whatever the instantiation supplies.
                 if (method.HasInstantiation || method.OwningType.HasInstantiation)
