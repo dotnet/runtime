@@ -2204,7 +2204,7 @@ namespace System
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                if (remaining.Length > 0)
+                if (remaining.Length > 0 && X86Base.IsSupported)
                 {
                     Vector512<ushort> vector = Vector512.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector512<ushort>.Count));
                     Vector512<byte> cmp = Vector512.Equals(vector, v1).AsByte() | Vector512.Equals(vector, v2).AsByte() | Vector512.Equals(vector, v3).AsByte();
@@ -2219,6 +2219,8 @@ namespace System
                             mask = BitOperations.ResetLowestSetBit(mask);
                         }
                     }
+
+                    return;
                 }
             }
             else if (Vector256.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
@@ -2301,7 +2303,7 @@ namespace System
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                if (remaining.Length > 0)
+                if (remaining.Length > 0 && X86Base.IsSupported)
                 {
                     Vector256<ushort> vector = Vector256.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector256<ushort>.Count));
                     Vector256<byte> cmp = Vector256.Equals(vector, v1).AsByte() | Vector256.Equals(vector, v2).AsByte() | Vector256.Equals(vector, v3).AsByte();
@@ -2316,6 +2318,8 @@ namespace System
                             mask = BitOperations.ResetLowestSetBit(mask);
                         }
                     }
+
+                    return;
                 }
             }
             else if (remaining.Length >= Vector128<ushort>.Count*2)
@@ -2400,7 +2404,7 @@ namespace System
 
                 // Handle the last chunk in a vectorized way also.
                 // We do a whole vector's worth again, but just mask out the bits we've already handled.
-                if (remaining.Length > 0)
+                if (remaining.Length > 0 && X86Base.IsSupported)
                 {
                     Vector128<ushort> vector = Vector128.Create(sourceSpanUInt16.Slice(sourceSpanUInt16.Length - Vector128<ushort>.Count));
                     Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
@@ -2415,11 +2419,22 @@ namespace System
                             mask = BitOperations.ResetLowestSetBit(mask);
                         }
                     }
+
+                    return;
                 }
             }
             else
             {
                 Debug.Fail("Expected remaining.Length >= Vector128<ushort>.Count*2");
+            }
+
+            for (int i = 0; i < remaining.Length; i++)
+            {
+                char c = remaining[i];
+                if (c == sep0 || c == sep1 || c == sep2)
+                {
+                    sepListBuilder.Append(baseIndex + i);
+                }
             }
         }
 
