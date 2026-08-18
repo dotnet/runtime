@@ -157,7 +157,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
-            private TypeRef EnqueueTransitiveType(TypeParseInfo containingTypeParseInfo, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor diagDescriptor, string? memberName = null)
+            private TypeRef EnqueueTransitiveType(TypeParseInfo containingTypeParseInfo, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor diagDescriptor, string? memberName = null, TypeRef? knownTypeRef = null)
             {
                 TypeParseInfo memberTypeParseInfo = containingTypeParseInfo.ToTransitiveTypeParseInfo(memberTypeSymbol, diagDescriptor, memberName);
 
@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 _typesToParse.Enqueue(memberTypeParseInfo);
-                return new TypeRef(memberTypeSymbol);
+                return knownTypeRef ?? new TypeRef(memberTypeSymbol);
             }
 
             private TypeSpec CreateTypeSpec(TypeParseInfo typeParseInfo)
@@ -765,7 +765,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                             if (!spec.IsIgnored && (spec.CanGet || spec.CanSet || BacksConstructorParameter(ctor, propertyName)))
                             {
-                                EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName);
+                                EnqueueTransitiveType(typeParseInfo, property.Type, DiagnosticDescriptors.PropertyNotSupported, propertyName, spec.TypeRef);
                             }
 
                             (properties ??= new(StringComparer.OrdinalIgnoreCase))[propertyName] = spec;
