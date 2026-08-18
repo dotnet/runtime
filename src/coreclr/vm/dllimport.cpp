@@ -6414,12 +6414,7 @@ MethodDesc* PInvoke::CreateCalliILStub(
     DWORD cbStubSig;
     PCCOR_SIGNATURE pStubSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cbStubSig);
 
-    // The stub MethodDesc references this buffer for as long as it lives, so it has to be owned
-    // by the loader allocator the stub lives in. It is backed out below if the stub did not keep it.
-    AllocMemHolder<BYTE> pStubSigCopy(pLoaderModule->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbStubSig)));
-    memcpy(pStubSigCopy, pStubSig, cbStubSig);
-
-    StubSigDesc sigDesc(NULL, Signature((PCCOR_SIGNATURE)(BYTE*)pStubSigCopy, cbStubSig), pModule, pLoaderModule);
+    StubSigDesc sigDesc(NULL, Signature(pStubSig, cbStubSig), pModule, pLoaderModule);
     sigDesc.InitTypeContext(typeContext.m_classInst, typeContext.m_methodInst);
 
     int iLCIDArg = 0;
@@ -6439,6 +6434,7 @@ MethodDesc* PInvoke::CreateCalliILStub(
         stubState.SetInteropExceptionInfo(deferredError.Kind, deferredError.ResID);
     }
 
+    bool generatedNewStub = false;
     MethodDesc* pStubMD = CreateInteropILStub(
         &stubState,
         &sigDesc,
@@ -6447,13 +6443,22 @@ MethodDesc* PInvoke::CreateCalliILStub(
         unmgdCallConv,
         numParamTokens,
         pParamTokenArray,
-        iLCIDArg);
+        iLCIDArg,
+        &generatedNewStub);
 
-    PCCOR_SIGNATURE pFinalSig;
-    DWORD cbFinalSig;
-    pStubMD->GetSig(&pFinalSig, &cbFinalSig);
-    if (pFinalSig == (PCCOR_SIGNATURE)(BYTE*)pStubSigCopy)
-        pStubSigCopy.SuppressRelease();
+    if (generatedNewStub)
+    {
+        // Move the final signature to storage with the same lifetime as the new MethodDesc.
+        PCCOR_SIGNATURE pGeneratedStubSig;
+        DWORD cbGeneratedStubSig;
+        pStubMD->GetSig(&pGeneratedStubSig, &cbGeneratedStubSig);
+
+        LoaderHeap* pLoaderHeap = pStubMD->GetLoaderAllocator()->GetHighFrequencyHeap();
+        PCCOR_SIGNATURE pStoredStubSig =
+            (PCCOR_SIGNATURE)(void*)pLoaderHeap->AllocMem(S_SIZE_T(cbGeneratedStubSig));
+        memcpyNoGCRefs((void*)pStoredStubSig, pGeneratedStubSig, cbGeneratedStubSig);
+        pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pStoredStubSig, cbGeneratedStubSig);
+    }
 
     return pStubMD;
 }
