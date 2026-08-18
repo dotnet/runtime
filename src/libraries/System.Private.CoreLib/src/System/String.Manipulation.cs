@@ -2119,7 +2119,6 @@ namespace System
             {
                 throw new PlatformNotSupportedException();
             }
-
             Debug.Assert(sourceSpan.Length >= Vector128<ushort>.Count*2);
             int baseIndex = 0;
             ReadOnlySpan<ushort> sourceSpanUInt16 = MemoryMarshal.Cast<char, ushort>(sourceSpan);
