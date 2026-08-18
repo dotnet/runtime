@@ -32,7 +32,6 @@ public:
 
     FCDECL0(static void,            SetLastError            );
     FCDECL0(static void,            ClearLastError          );
-    FCDECL1(static void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE);
 
     FCDECL2(static void,            LogPinnedArgument, MethodDesc *localDesc, Object *nativeArg);
     FCDECL1(static DWORD,           CalcVaListSize, VARARGS *varargs);

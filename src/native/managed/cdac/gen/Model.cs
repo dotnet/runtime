@@ -40,6 +40,7 @@ internal enum MemberKind
     Field,
     FieldAddress,
     InstanceDataStart,
+    CustomInit,
     StaticAddress,
     StaticReference,
     ThreadStaticAddress,
@@ -53,6 +54,7 @@ internal sealed record MemberModel(
     string Name,
     MemberKind Kind,
     string DescriptorOrFieldName,
+    string? DescriptorNativeType,
     string PropertyOrReturnTypeFqn,
     FieldReadKind ReadKind,
     string? DataTypeArgumentFqn,
@@ -60,9 +62,10 @@ internal sealed record MemberModel(
     bool IsNullable,
     int? RawOffset,
     bool LittleEndian,
-    bool HasSetter,
+    bool Writable,
     string? BoolUnderlyingType,
-    EquatableArray<string> Names) : IEquatable<MemberModel>;
+    EquatableArray<string> Names,
+    string? CustomInitializerName = null) : IEquatable<MemberModel>;
 
 /// <summary>
 /// A <c>[CdacType]</c>-annotated class to be emitted.

@@ -23,6 +23,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <typeparam name="TAwaiter">The awaiter type.</typeparam>
         /// <param name="awaiter">The awaiter to await.</param>
+        [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
@@ -35,6 +36,29 @@ namespace System.Runtime.CompilerServices
             AsyncSuspend(sentinelContinuation);
         }
 
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        [StackTraceHidden]
+        private static unsafe void AwaitAwaiterInContinuation<TAwaiter>(int offset)
+            where TAwaiter : INotifyCompletion
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+            state.StackState->AwaiterContinuation = &AwaiterOnCompletedFromContinuation<TAwaiter>;
+            state.StackState->AwaiterOffset = offset;
+            state.CaptureContexts();
+            AsyncSuspend(sentinelContinuation);
+        }
+
+        private static void AwaiterOnCompletedFromContinuation<TAwaiter>(
+            Continuation headContinuation, int offset, Action continuation)
+            where TAwaiter : INotifyCompletion
+        {
+            ref byte data = ref RuntimeHelpers.GetRawData(headContinuation);
+            TAwaiter awaiter = Unsafe.As<byte, TAwaiter>(ref Unsafe.Add(ref data, offset));
+            awaiter.OnCompleted(continuation);
+        }
+
         // Must be NoInlining because we use AsyncSuspend to manufacture an explicit suspension point.
         // It will not capture/restore any local state that is live across it.
 
@@ -43,6 +67,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <typeparam name="TAwaiter">The awaiter type.</typeparam>
         /// <param name="awaiter">The awaiter to await.</param>
+        [Intrinsic]
         [BypassReadyToRun]
         [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
         [StackTraceHidden]
@@ -66,6 +91,29 @@ namespace System.Runtime.CompilerServices
 
             state.CaptureContexts();
             AsyncSuspend(sentinelContinuation);
+        }
+
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.Async)]
+        [StackTraceHidden]
+        private static unsafe void UnsafeAwaitAwaiterInContinuation<TAwaiter>(int offset)
+            where TAwaiter : ICriticalNotifyCompletion
+        {
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+            state.StackState->AwaiterContinuation = &UnsafeAwaiterOnCompletedFromContinuation<TAwaiter>;
+            state.StackState->AwaiterOffset = offset;
+            state.CaptureContexts();
+            AsyncSuspend(sentinelContinuation);
+        }
+
+        private static void UnsafeAwaiterOnCompletedFromContinuation<TAwaiter>(
+            Continuation headContinuation, int offset, Action continuation)
+            where TAwaiter : ICriticalNotifyCompletion
+        {
+            ref byte data = ref RuntimeHelpers.GetRawData(headContinuation);
+            TAwaiter awaiter = Unsafe.As<byte, TAwaiter>(ref Unsafe.Add(ref data, offset));
+            awaiter.UnsafeOnCompleted(continuation);
         }
 
         /// <summary>

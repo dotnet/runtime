@@ -860,19 +860,20 @@ namespace System.Xml.Serialization
                 {
                     MemberMapping? member = ImportFieldMapping(model, fieldModel, memberAttrs, mapping.Namespace, limiter);
                     if (member == null) continue;
-                    if (mapping.BaseMapping != null)
+                    bool memberDeclaredByBase = mapping.BaseMapping != null && mapping.BaseMapping.Declares(member, mapping.TypeName);
+                    if (memberDeclaredByBase)
                     {
                         // If the base mapping already declares this member, then we should remove that accessor and prefer the derived one.
-                        if (mapping.BaseMapping.Declares(member, mapping.TypeName))
-                        {
-                            RemoveUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
-                        }
+                        RemoveUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
                     }
                     isSequence |= member.IsSequence;
                     // add All member accessors to the scope accessors
                     AddUniqueAccessor(member, mapping.LocalElements, mapping.LocalAttributes, isSequence);
 
-                    if (member.Text != null)
+                    // Skip text/xmlns tracking for members that override a base mapping's member:
+                    // the base mapping already registered the accessor; re-registering it here
+                    // would falsely trigger the simpleContent extension check in SetContentModel.
+                    if (member.Text != null && !memberDeclaredByBase)
                     {
                         if (!member.Text.Mapping!.TypeDesc!.CanBeTextValue && member.Text.Mapping.IsList)
                             throw new InvalidOperationException(SR.Format(SR.XmlIllegalTypedTextAttribute, typeName, member.Text.Name, member.Text.Mapping.TypeDesc.FullName));
@@ -882,7 +883,7 @@ namespace System.Xml.Serialization
                         }
                         textAccessor = member.Text;
                     }
-                    if (member.Xmlns != null)
+                    if (member.Xmlns != null && !memberDeclaredByBase)
                     {
                         if (mapping.XmlnsMember != null)
                             throw new InvalidOperationException(SR.Format(SR.XmlMultipleXmlns, model.Type.FullName));
@@ -1636,6 +1637,20 @@ namespace System.Xml.Serialization
                         text.Mapping = ImportTypeMapping(_modelScope.GetTypeModel(targetType), ns, ImportContext.Text, a.XmlText.DataType, null, true, false, limiter);
                         if (!(text.Mapping is SpecialMapping) && targetTypeDesc != _typeScope.GetTypeDesc(typeof(string)))
                             throw new InvalidOperationException(SR.Format(SR.XmlIllegalArrayTextAttribute, accessorName));
+
+                        // By default, an array-like member serialized as XML text is treated as a
+                        // whitespace-separated list (matching [XmlAttribute] and the xs:list spec) so that
+                        // it round-trips. The legacy behavior concatenated the values with no separator.
+                        // The switch lets callers opt back into the legacy concatenation behavior.
+                        // Only pure-text arrays are treated as a list; mixed-content arrays (text combined
+                        // with elements) keep each text run intact so the reader and writer stay consistent.
+                        // This is derived from the mapping's own list state (text.Mapping.IsList, true for
+                        // the primitive string mapping and false for a SpecialMapping) so the accessor flag
+                        // can never contradict the mapping it describes.
+                        text.IsList = text.Mapping!.IsList
+                            && a.XmlElements.Count == 0
+                            && a.XmlAnyElements.Count == 0
+                            && !System.Xml.LocalAppContextSwitches.UseLegacyXmlListSeparation;
 
                         accessor.Text = text;
                     }
