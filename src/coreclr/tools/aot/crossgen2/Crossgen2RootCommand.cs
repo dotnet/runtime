@@ -168,6 +168,15 @@ namespace ILCompiler
 
         public Crossgen2RootCommand(string[] args) : base(SR.Crossgen2BannerText)
         {
+            // A compilation cannot resolve two inputs with the same simple name, so it rejects them.
+            // The call-helper generator only scans, and it is handed the app's whole bundle, which
+            // routinely carries several native files sharing a name (per-architecture payloads out
+            // of a NuGet package, say). Those get skipped as unloadable further on, so take the
+            // first of each name here rather than failing the build over an ambiguity that only a
+            // compilation has to settle.
+            InputFilePaths.CustomParser = result =>
+                Helpers.BuildPathDictionary(result.Tokens, strict: result.GetResult(WasmGenerateCallHelpers) is null);
+
             Arguments.Add(InputFilePaths);
             Options.Add(UnrootedInputFilePaths);
             Options.Add(ReferenceFilePaths);
