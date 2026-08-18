@@ -5,6 +5,7 @@ using System;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using TestLibrary;
 using Xunit;
 
 // Regression test for https://github.com/dotnet/runtime/issues/130545
@@ -120,6 +121,7 @@ namespace GitHub_130545
 
     public class Test
     {
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/132030", typeof(Utilities), nameof(Utilities.IsNativeAot))]
         [Fact]
         public static void DelegateOverStaticAbstractThroughGsharedvt()
         {

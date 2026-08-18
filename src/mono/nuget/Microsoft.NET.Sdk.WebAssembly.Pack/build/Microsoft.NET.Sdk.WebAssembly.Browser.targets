@@ -1292,7 +1292,6 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <!-- Prevent the wwwroot glob from picking up dotnet.d.ts copied by _EnsureDotnetTypeScriptDefinitions (https://github.com/dotnet/runtime/issues/124729) -->
   <ItemGroup Condition="'$(WasmEmitTypeScriptDefinitions)' == 'true'">
-    <Content Remove="wwwroot\dotnet.d.ts" />
     <Content Remove="wwwroot\_framework\dotnet.d.ts" />
   </ItemGroup>
 
