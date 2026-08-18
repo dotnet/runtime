@@ -119,7 +119,10 @@ namespace System.Security.Cryptography.X509Certificates
 
                     if (policyData.EnhancedKeyUsage != null)
                     {
-                        CheckExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);
+                        if (policyData.ApplicationCertPolicies == null)
+                        {
+                            CheckExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);
+                        }
                     }
 
                     if (policyData.InhibitAnyPolicyExtension != null)
@@ -445,27 +448,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (policyData.EnhancedKeyUsage != null)
             {
-                try
+                // If policyData.ApplicationCertPolicies is present, but corrupt, applicationCertPolicies
+                // should stay null, we'll only check EKU for structural validity.
+                if (policyData.ApplicationCertPolicies is null)
                 {
-                    // If policyData.ApplicationCertPolicies is present, but corrupt, applicationCertPolicies
-                    // should stay null, we'll only check EKU for structural validity.
-                    if (policyData.ApplicationCertPolicies is null)
-                    {
-                        applicationCertPolicies = ReadExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);
-                    }
-                    else
-                    {
-                        // Check can throw either CryptographicException or AsnContentException, so catch both.
-                        CheckExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);
-                    }
-                }
-                catch (AsnContentException)
-                {
-                    error = true;
-                }
-                catch (CryptographicException)
-                {
-                    error = true;
+                    applicationCertPolicies = ReadExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);
                 }
             }
 

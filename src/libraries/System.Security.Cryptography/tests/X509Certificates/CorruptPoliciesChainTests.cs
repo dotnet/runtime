@@ -389,7 +389,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                         // The OpenSSL chain engine will stop processing the chain when it hits a corrupt EKU,
                         // so the chain length is shorter than expected.
                         expectedLength = int.Max(1, corruptEku);
-                        detectCorruptEku = true;
                     }
 
                     Assert.Equal(expectedLength, chain.ChainElements.Count);
