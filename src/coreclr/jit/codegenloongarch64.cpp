@@ -6806,11 +6806,12 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
         if ((localFrameSize + (m_compiler->compCalleeRegsPushed << 3)) > 2040)
         {
             remainingSPSize = localFrameSize & -16;
-            genStackPointerAdjustment(remainingSPSize, REG_RA, nullptr, /* reportUnwindData */ true);
+            genStackPointerAdjustment(remainingSPSize, REG_RA, nullptr, /* reportUnwindData */ false);
 
             remainingSPSize = totalFrameSize - remainingSPSize;
             FP_offset       = localFrameSize & 0xf;
         }
+        m_compiler->unwindSetFrameReg(REG_FPBASE, FP_offset);
     }
 
     JITDUMP("    calleeSaveSPOffset=%d\n", FP_offset + 16);
