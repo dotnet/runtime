@@ -419,7 +419,7 @@ namespace System.Security.Cryptography.X509Certificates
                     X509ChainStatus invalidPolicyConstraints = new X509ChainStatus
                     {
                         Status = X509ChainStatusFlags.InvalidPolicyConstraints,
-                        // "NoPolicyMatch" sais that the policy is "invalid", which works for this one, too.
+                        // "NoPolicyMatch" says that the policy is "invalid", which works for this one, too.
                         StatusInformation = SR.Chain_NoPolicyMatch,
                     };
 

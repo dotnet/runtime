@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             // When the ApplicationPolicy is corrupt, it seems to treat
             // the element as valid for all usages (but is still
-            // scoped by the issuers), so by checking for a 
+            // scoped by the issuers)
 
             RunCase(
                 corruptApplicationPolicy: level,

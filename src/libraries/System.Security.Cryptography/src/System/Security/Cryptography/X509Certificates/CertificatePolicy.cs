@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             foreach (X509Certificate2 cert in chain)
             {
-                // Windows ignores declared policcy corruption on the root cert.
+                // Windows ignores declared policy corruption on the root cert.
                 if (i == rootDepth)
                 {
                     detector = ref ignored;
@@ -681,7 +681,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 if (_vector is null)
                 {
-                    _scalar |= (1 << index);
+                    _scalar |= ((nint)1 << index);
                 }
                 else
                 {

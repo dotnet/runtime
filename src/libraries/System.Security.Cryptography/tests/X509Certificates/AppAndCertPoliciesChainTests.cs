@@ -446,8 +446,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         public static IEnumerable<object[]> ApplicationPolicyVsEkuMemberData()
         {
-            const string ServerAuth = "1.3.6.1.5.5.7.3.2";
-            const string ClientAuth = "1.3.6.1.5.5.7.3.1";
+            const string ServerAuth = "1.3.6.1.5.5.7.3.1";
+            const string ClientAuth = "1.3.6.1.5.5.7.3.2";
             const string TimeStamp = "1.3.6.1.5.5.7.3.8"; // RFC 3161, used only as a companion value
             const string AnyEku = "2.5.29.37.0";           // anyExtendedKeyUsage
             const string AnyPolicy = "2.5.29.32.0";         // anyPolicy (certificate policies)
