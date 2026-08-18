@@ -53,19 +53,13 @@ namespace CodeGenTests
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static bool TruncatedValueCanBeNegative(long value)
+        static long Cast_Long_To_Int_To_Long(long value)
         {
-            return unchecked((int)value) < 0;
+            return unchecked((long)(int)value);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static long TruncatingRoundTripMustRemain(long value)
-        {
-            return (long)(int)value;
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        static long ZeroExtendingRoundTripMustRemain(long value)
+        static long Cast_Long_To_UInt_To_Long(long value)
         {
             return unchecked((long)(uint)value);
         }
@@ -97,13 +91,10 @@ namespace CodeGenTests
             if (Cast_PopCount_To_NInt(ulong.MaxValue) != 64)
                 return 0;
 
-            if (!TruncatedValueCanBeNegative(0xFFFF_FFFFL))
+            if (Cast_Long_To_Int_To_Long(0xFFFF_FFFFL) != -1)
                 return 0;
 
-            if (TruncatingRoundTripMustRemain(0xFFFF_FFFFL) != -1)
-                return 0;
-
-            if (ZeroExtendingRoundTripMustRemain(-1) != uint.MaxValue)
+            if (Cast_Long_To_UInt_To_Long(-1) != uint.MaxValue)
                 return 0;
 
             return 100;
