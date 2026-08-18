@@ -790,47 +790,69 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
     }
 
     SString profilerList{wszProfilerList};
+    SString::Iterator listEnd = profilerList.End();
 
     HRESULT storedHr = S_OK;
-    for (SString::Iterator sectionStart = profilerList.Begin(), sectionEnd = profilerList.Begin();
-        profilerList.Find(sectionEnd, W(';'));
-        sectionStart = ++sectionEnd)
+    for (SString::Iterator sectionStart = profilerList.Begin(); sectionStart != listEnd; )
     {
+        // The current section spans from sectionStart up to the next ';', or to the end
+        // of the list if no ';' remains.
+        SString::Iterator sectionEnd = sectionStart;
+        if (!profilerList.Find(sectionEnd, W(';')))
+        {
+            sectionEnd = listEnd;
+        }
+
+        // Skip empty sections produced by consecutive or trailing ';'.
+        if (sectionStart == sectionEnd)
+        {
+            sectionStart = sectionEnd + 1;
+            continue;
+        }
+
         SString::Iterator pathEnd = sectionStart;
         if (!profilerList.Find(pathEnd, W('=')) || pathEnd > sectionEnd)
         {
             ProfilingAPIUtility::LogProfError(IDS_E_PROF_BAD_PATH);
             storedHr = E_FAIL;
-            continue;
         }
-        SString::Iterator clsidStart = pathEnd + 1;
-
-        PathString path{profilerList, sectionStart, pathEnd};
-        StackSString clsidString{profilerList, clsidStart, sectionEnd};
-        CLSID clsid;
-        hr = ProfilingAPIUtility::ProfilerCLSIDFromString(clsidString.GetUnicode(), &clsid);
-        if (FAILED(hr))
+        else
         {
-            // ProfilerCLSIDFromString already logged an event if there was a failure
-            storedHr = hr;
-            continue;
+            SString::Iterator clsidStart = pathEnd + 1;
+
+            PathString path{profilerList, sectionStart, pathEnd};
+            StackSString clsidString{profilerList, clsidStart, sectionEnd};
+            CLSID clsid;
+            hr = ProfilingAPIUtility::ProfilerCLSIDFromString(clsidString.GetUnicode(), &clsid);
+            if (FAILED(hr))
+            {
+                // ProfilerCLSIDFromString already logged an event if there was a failure
+                storedHr = hr;
+            }
+            else
+            {
+                char clsidUtf8[MINIPAL_GUID_BUFFER_LEN];
+                minipal_guid_as_string(clsid, clsidUtf8, MINIPAL_GUID_BUFFER_LEN);
+                hr = LoadProfiler(
+                    kStartupLoad,
+                    &clsid,
+                    (LPCSTR)clsidUtf8,
+                    path.GetUnicode(),
+                    NULL,               // No client data for startup load
+                    0);                 // No client data for startup load
+                if (FAILED(hr))
+                {
+                    // LoadProfiler already logged if there was an error
+                    storedHr = hr;
+                }
+            }
         }
 
-        char clsidUtf8[MINIPAL_GUID_BUFFER_LEN];
-        minipal_guid_as_string(clsid, clsidUtf8, MINIPAL_GUID_BUFFER_LEN);
-        hr = LoadProfiler(
-            kStartupLoad,
-            &clsid,
-            (LPCSTR)clsidUtf8,
-            path.GetUnicode(),
-            NULL,               // No client data for startup load
-            0);                 // No client data for startup load
-        if (FAILED(hr))
+        if (sectionEnd == listEnd)
         {
-            // LoadProfiler already logged if there was an error
-            storedHr = hr;
-            continue;
+            break;
         }
+        sectionStart = sectionEnd + 1;
     }
 
     return storedHr;

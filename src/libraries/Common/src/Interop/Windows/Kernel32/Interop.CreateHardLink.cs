@@ -21,6 +21,7 @@ internal static partial class Interop
             }
         }
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateHardLinkW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool CreateHardLinkPrivate(string lpFileName, string lpExistingFileName, IntPtr lpSecurityAttributes);

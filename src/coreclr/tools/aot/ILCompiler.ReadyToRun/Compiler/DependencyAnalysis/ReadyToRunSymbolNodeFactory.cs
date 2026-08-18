@@ -116,7 +116,7 @@ namespace ILCompiler.DependencyAnalysis
                 );
             });
 
-            _interfaceDispatchCells = new NodeCache<MethodAndCallSite, Import>(cellKey =>
+            _dispatchCells = new NodeCache<MethodAndCallSite, Import>(cellKey =>
             {
                 return new DelayLoadHelperMethodImport(
                     _codegenNodeFactory,
@@ -470,12 +470,12 @@ namespace ILCompiler.DependencyAnalysis
             return _rvaFieldAddressCache.GetOrAdd(fieldWithToken);
         }
 
-        private NodeCache<MethodAndCallSite, Import> _interfaceDispatchCells = new NodeCache<MethodAndCallSite, Import>();
+        private NodeCache<MethodAndCallSite, Import> _dispatchCells = new NodeCache<MethodAndCallSite, Import>();
 
-        public Import InterfaceDispatchCell(MethodWithToken method, MethodDesc callingMethod)
+        public Import DispatchCell(MethodWithToken method, MethodDesc callingMethod)
         {
             MethodAndCallSite cellKey = new MethodAndCallSite(method, null);
-            return _interfaceDispatchCells.GetOrAdd(cellKey);
+            return _dispatchCells.GetOrAdd(cellKey);
         }
 
         private NodeCache<TypeAndMethod, Import> _delegateCtors = new NodeCache<TypeAndMethod, Import>();

@@ -226,14 +226,20 @@ protected:
     void                       ensureCurrentFuncIsUnwindable();
     void                       genEmitIf(WasmValueType blockType = WasmValueType::Invalid);
     void                       genEmitEndIf();
+    void                       genEmitBeginBlock(WasmValueType blockType = WasmValueType::Invalid);
+    void                       genEmitEndBlock();
     void                       genEmitFunctionEnd(bool emitTerminalUnreachable = true);
+    void                       genStoreAsyncContinuationGlobal();
+    void                       genClearAsyncContinuationGlobal();
 #endif
 
     void genEmitStartBlock(BasicBlock* block);
     void genEmitEndBlock(BasicBlock* block);
 
 public:
+#if HAS_FIXED_REGISTER_SET
     void genSpillVar(GenTree* tree);
+#endif // HAS_FIXED_REGISTER_SET
 
     void genEmitCallWithCurrentGC(EmitCallParams& callParams);
 
@@ -342,11 +348,8 @@ protected:
     // Prolog functions and data (there are a few exceptions for more generally used things)
     //
 
-    void genEstablishFramePointer(int delta, bool reportUnwindData);
-    void genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
-#ifdef TARGET_WASM
-    void genHomeRegisterParamsOutsideProlog();
-#endif
+    void      genEstablishFramePointer(int delta, bool reportUnwindData);
+    void      genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed);
     regMaskTP genGetParameterHomingTempRegisterCandidates();
 
     var_types genParamStackType(LclVarDsc* dsc, const ABIPassingSegment& seg);
@@ -442,6 +445,7 @@ protected:
 
 #if defined(TARGET_ARM64)
     void genUnknownSizeFrame();
+    void genZeroInitializeUnknownSizeFrame();
 #endif
 
 #elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -468,6 +472,9 @@ protected:
     void genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn);
 
     void genPoisonFrame(regMaskTP bbRegLiveIn);
+#ifdef TARGET_ARM64
+    void genPoisonUnknownSizeVariable(int varNum, char poisonVal);
+#endif
 
 #if defined(TARGET_ARM)
 
@@ -632,6 +639,7 @@ protected:
 #if defined(TARGET_ARM64)
     void genArm64EmitterUnitTestsGeneral();
     void genArm64EmitterUnitTestsAdvSimd();
+    void genArm64EmitterUnitTestsFp16();
     void genArm64EmitterUnitTestsSve();
     void genArm64EmitterUnitTestsPac();
 #endif
@@ -796,6 +804,9 @@ protected:
 
 #if defined(TARGET_WASM)
     void genCodeForConstant(GenTree* treeNode);
+#if defined(FEATURE_SIMD)
+    void genCodeForVectorConstant(GenTree* treeNode);
+#endif
     void genCatchArg(GenTree* treeNode);
 #endif
 
@@ -805,6 +816,7 @@ protected:
 
     void genCodeForDivMod(GenTreeOp* treeNode);
     void genCodeForMul(GenTreeOp* treeNode);
+    void genCodeForBitOp(GenTreeOp* treeNode);
     void genCodeForIncSaturate(GenTree* treeNode);
     void genCodeForMulHi(GenTreeOp* treeNode);
     void genLeaInstruction(GenTreeAddrMode* lea);
@@ -1019,6 +1031,12 @@ protected:
 #endif // defined(TARGET_XARCH)
 
 #ifdef TARGET_ARM64
+    void genEmbeddedMaskedHWIntrinsic(GenTreeHWIntrinsic* cndSelNode, regNumber targetReg);
+
+#ifdef DEBUG
+    void checkRMWRegisters(const HWIntrinsic intrin, regNumber targetReg);
+#endif
+
     class HWIntrinsicImmOpHelper final
     {
     public:
@@ -1078,6 +1096,10 @@ protected:
     };
 
 #endif // TARGET_ARM64
+
+#if defined(TARGET_WASM)
+    void genHWIntrinsicJumpTableFallback(GenTreeHWIntrinsic* node, HWIntrinsic info);
+#endif
 
 #endif // FEATURE_HW_INTRINSICS
 
@@ -1182,7 +1204,8 @@ protected:
     void genCodeForCpBlkUnroll(GenTreeBlk* cpBlkNode);
     void genCodeForPhysReg(GenTreePhysReg* tree);
 #ifdef TARGET_WASM
-    void genCodeForFrameSize(GenTree* tree);
+    void           genCodeForFrameSize(GenTree* tree);
+    cnsval_ssize_t genWasmMemargOffset(GenTree* addr);
 #endif // TARGET_WASM
 #ifdef SWIFT_SUPPORT
     void genCodeForSwiftErrorReg(GenTree* tree);
@@ -1648,6 +1671,7 @@ public:
 
     void instGen_MemoryBarrier(BarrierKind barrierKind = BARRIER_FULL);
 
+#ifdef HAS_FIXED_REGISTER_SET
     void instGen_Set_Reg_To_Zero(emitAttr size, regNumber reg, insFlags flags = INS_FLAGS_DONT_CARE);
 
     void instGen_Set_Reg_To_Base_Plus_Imm(emitAttr  size,
@@ -1662,6 +1686,7 @@ public:
                                 ssize_t   imm,
                                 insFlags flags = INS_FLAGS_DONT_CARE DEBUGARG(size_t targetHandle = 0)
                                     DEBUGARG(GenTreeFlags gtFlags = GTF_EMPTY));
+#endif // HAS_FIXED_REGISTER_SET
 
 #if defined(TARGET_AMD64)
     void instGen_Push2Pop2Ppx(instruction ins, regNumber reg1, regNumber reg2);

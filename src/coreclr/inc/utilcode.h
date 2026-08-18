@@ -22,7 +22,6 @@ using std::nothrow;
 #include "winwrap.h"
 #include <wchar.h>
 #include <ole2.h>
-#include <oleauto.h>
 #include "clrtypes.h"
 #include "safewrap.h"
 #include "volatile.h"
@@ -807,8 +806,10 @@ public:
 
     T *Append()
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             NOTHROW;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         // The array should grow, if we can't fit one more element into the array.
@@ -819,8 +820,10 @@ public:
 
     T *AppendThrowing()
     {
-        CONTRACTL {
+        CONTRACTL
+        {
             THROWS;
+            GC_NOTRIGGER;
         } CONTRACTL_END;
 
         // The array should grow, if we can't fit one more element into the array.
@@ -2356,7 +2359,6 @@ struct HASHLINK
 
 template <class T> class CChainedHash
 {
-    friend class VerifyLayoutsMD;
 public:
     CChainedHash(int iBuckets=32) :
         m_rgData(0),
@@ -3012,6 +3014,11 @@ INT32 GetArm64Rel21(UINT32 * pCode);
 INT32 GetArm64Rel12(UINT32 * pCode);
 
 //*****************************************************************************
+//  Extract the page offset from an ldr (unsigned immediate) instruction
+//*****************************************************************************
+INT32 GetArm64Rel12Ldr(UINT32 * pCode);
+
+//*****************************************************************************
 //  Deposit the PC-Relative offset 'imm28' into a b or bl instruction
 //*****************************************************************************
 void PutArm64Rel28(UINT32 * pCode, INT32 imm28);
@@ -3025,6 +3032,11 @@ void PutArm64Rel21(UINT32 * pCode, INT32 imm21);
 //  Deposit the page offset 'imm12' into an add instruction
 //*****************************************************************************
 void PutArm64Rel12(UINT32 * pCode, INT32 imm12);
+
+//*****************************************************************************
+//  Deposit the page offset 'imm12' into an ldr (unsigned immediate) instruction
+//*****************************************************************************
+void PutArm64Rel12Ldr(UINT32 * pCode, INT32 imm12);
 
 //*****************************************************************************
 //  Extract the PC-Relative page address and page offset from pcalau12i+add/ld

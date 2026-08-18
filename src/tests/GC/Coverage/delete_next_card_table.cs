@@ -13,6 +13,7 @@ using Xunit;
 
 public class delete_next_card_table
 {
+    [SkipOnCoreClr("This test is not compatible with GC stress.", RuntimeTestModes.AnyGCStress)]
     [Fact]
     public static void TestEntryPoint()
     {

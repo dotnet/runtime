@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(BundledNETCoreAppTargetFramework)</TargetFramework>
+    <EnableBinPlacing>false</EnableBinPlacing>
+    <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
+    <IsPackable>false</IsPackable>
+    <RestoreUseStaticGraphEvaluation>false</RestoreUseStaticGraphEvaluation>
+    <NetCoreSdkRoot Condition="'$(NetCoreSdkRoot)' == ''">$(MSBuildToolsPath)/</NetCoreSdkRoot>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ExtractRootCA.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="$(NetCoreSdkRoot)Microsoft.Build.Framework.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)Microsoft.Build.Utilities.Core.dll" Private="false" />
+    <Reference Include="$(NetCoreSdkRoot)System.Security.Cryptography.Pkcs.dll" Private="false" />
+  </ItemGroup>
+</Project>

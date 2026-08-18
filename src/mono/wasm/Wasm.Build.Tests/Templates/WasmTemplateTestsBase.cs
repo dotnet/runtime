@@ -392,7 +392,9 @@ public class WasmTemplateTestsBase : BuildTestBase
     protected void UpdateFile(string pathRelativeToProjectDir, Dictionary<string, string> replacements)
     {
         var path = Path.Combine(_projectDir, pathRelativeToProjectDir);
-        string text = File.ReadAllText(path);
+        // Normalize line endings so that replacement anchors containing '\n' match regardless of
+        // whether the file was checked out with LF or CRLF (e.g. on Windows).
+        string text = File.ReadAllText(path).Replace("\r\n", "\n");
         foreach (var replacement in replacements)
         {
             text = StringReplaceWithAssert(text, replacement.Key, replacement.Value);

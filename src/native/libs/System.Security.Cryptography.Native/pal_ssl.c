@@ -10,6 +10,7 @@
 #include "pal_x509.h"
 
 #include <assert.h>
+#include <errno.h>
 #include <string.h>
 #include <stdbool.h>
 
@@ -19,6 +20,10 @@ c_static_assert(PAL_SSL_ERROR_WANT_READ == SSL_ERROR_WANT_READ);
 c_static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE);
 c_static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL);
 c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
+#ifndef SSL_ERROR_WANT_RETRY_VERIFY
+#define SSL_ERROR_WANT_RETRY_VERIFY 12
+#endif
+c_static_assert(PAL_SSL_ERROR_WANT_RETRY_VERIFY == SSL_ERROR_WANT_RETRY_VERIFY);
 c_static_assert(SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE == 65);
 c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 
@@ -398,6 +403,10 @@ int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num, int32_t* e
 
     int32_t result = SSL_write(ssl, buf, num);
 
+    // Capture errno before SSL_get_error so a failing send() inside the BIO stays
+    // diagnosable; on SSL_ERROR_SYSCALL errno is the caller's primary diagnostic.
+    int savedErrno = errno;
+
     if (result > 0)
     {
         *error = SSL_ERROR_NONE;
@@ -407,6 +416,7 @@ int32_t CryptoNative_SslWrite(SSL* ssl, const void* buf, int32_t num, int32_t* e
         *error = CryptoNative_SslGetError(ssl, result);
     }
 
+    errno = savedErrno;
     return result;
 }
 
@@ -416,6 +426,9 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
 
     int32_t result = SSL_read(ssl, buf, num);
 
+    // See CryptoNative_SslWrite: preserve errno across SSL_get_error.
+    int savedErrno = errno;
+
     if (result > 0)
     {
         *error = SSL_ERROR_NONE;
@@ -425,6 +438,7 @@ int32_t CryptoNative_SslRead(SSL* ssl, void* buf, int32_t num, int32_t* error)
         *error = CryptoNative_SslGetError(ssl, result);
     }
 
+    errno = savedErrno;
     return result;
 }
 
@@ -486,6 +500,29 @@ void CryptoNative_SslSetBio(SSL* ssl, BIO* rbio, BIO* wbio)
 {
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
     SSL_set_bio(ssl, rbio, wbio);
+}
+
+int32_t CryptoNative_SslSetFd(SSL* ssl, intptr_t fd)
+{
+    ERR_clear_error();
+    return SSL_set_fd(ssl, (int)fd);
+}
+
+void CryptoNative_SslSetAcceptMovingWriteBuffer(SSL* ssl)
+{
+    // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
+    SSL_set_mode(ssl, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
+}
+
+int32_t CryptoNative_SslDoHandshake(SSL* ssl, int32_t* errorCode)
+{
+    ERR_clear_error();
+    int32_t ret = SSL_do_handshake(ssl);
+    // See CryptoNative_SslWrite: preserve errno across SSL_get_error.
+    int savedErrno = errno;
+    *errorCode = (ret <= 0) ? SSL_get_error(ssl, ret) : 0;
+    errno = savedErrno;
+    return ret;
 }
 
 int32_t CryptoNative_SslHandshake(
@@ -642,6 +679,22 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 {
     // No error queue impact.
     return SSL_is_init_finished(ssl);
+}
+
+int32_t CryptoNative_SslSetRetryVerify(SSL* ssl)
+{
+    // OpenSSL 3.0+ only. SSL_set_retry_verify is a macro that wraps SSL_ctrl with
+    // SSL_CTRL_SET_RETRY_VERIFY (=136). Calling this from inside the certificate
+    // verification callback (and returning -1 from the callback) suspends the
+    // handshake so the application can perform validation asynchronously and then
+    // resume by calling SSL_do_handshake again. On older OpenSSL versions the
+    // unknown control code returns 0 from SSL_ctrl, so the caller can fall back to
+    // inline validation.
+#ifndef SSL_CTRL_SET_RETRY_VERIFY
+#define SSL_CTRL_SET_RETRY_VERIFY 136
+#endif
+    long rc = SSL_ctrl(ssl, SSL_CTRL_SET_RETRY_VERIFY, 0, NULL);
+    return rc > 0 ? 1 : 0;
 }
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
@@ -893,35 +946,6 @@ int32_t CryptoNative_SslCtxSetCiphers(SSL_CTX* ctx, const char* cipherList, cons
     if (CryptoNative_Tls13Supported() && cipherSuites != NULL)
     {
         ret &= SSL_CTX_set_ciphersuites(ctx, cipherSuites);
-    }
-#else
-    (void)cipherSuites;
-#endif
-
-    return ret;
-}
-
-int32_t CryptoNative_SetCiphers(SSL* ssl, const char* cipherList, const char* cipherSuites)
-{
-    ERR_clear_error();
-
-    int32_t ret = true;
-
-    // for < TLS 1.3
-    if (cipherList != NULL)
-    {
-        ret &= SSL_set_cipher_list(ssl, cipherList);
-        if (!ret)
-        {
-            return ret;
-        }
-    }
-
-    // for TLS 1.3
-#if HAVE_OPENSSL_SET_CIPHERSUITES
-    if (CryptoNative_Tls13Supported() && cipherSuites != NULL)
-    {
-        ret &= SSL_set_ciphersuites(ssl, cipherSuites);
     }
 #else
     (void)cipherSuites;

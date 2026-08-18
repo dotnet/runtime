@@ -64,6 +64,10 @@ namespace Internal.JitInterface
     {
     }
 
+    public struct CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_
+    {
+    }
+
     public struct CORINFO_JUST_MY_CODE_HANDLE_
     {
     }
@@ -479,6 +483,7 @@ namespace Internal.JitInterface
         ARM64_BRANCH26,                        // Arm64: B, BL
         ARM64_PAGEBASE_REL21,                  // ADRP
         ARM64_PAGEOFFSET_12A,                  // ADD/ADDS (immediate) with zero shift, for page offset
+        ARM64_PAGEOFFSET_12L,                  // LDR (indexed, unsigned immediate), for page offset
         // Linux arm64
         ARM64_LIN_TLSDESC_ADR_PAGE21,
         ARM64_LIN_TLSDESC_LD64_LO12,
@@ -511,6 +516,8 @@ namespace Internal.JitInterface
         WASM_FUNCTION_INDEX_LEB,             // Wasm: a function index encoded as a 5-byte varuint32. Used for the immediate argument of a call instruction.
         WASM_TABLE_INDEX_SLEB,               // Wasm: a function table index encoded as a 5-byte varint32. Used to refer to the immediate argument of a
                                                //  i32.const instruction, e.g. taking the address of a function.
+        WASM_TABLE_INDEX_I32,                // Wasm: a function table index stored as a 4-byte little-endian uint32 in the data section,
+                                               //  e.g. recording a function reference in a JIT-emitted constant pool entry.
         WASM_MEMORY_ADDR_LEB,                // Wasm: a linear memory index encoded as a 5-byte varuint32. Used for the immediate argument of a load or store instruction,
                                                //  e.g. directly loading from or storing to a C++ global.
         WASM_MEMORY_ADDR_SLEB,               // Wasm: a linear memory index encoded as a 5-byte varint32. Used for the immediate argument of a i32.const instruction,
@@ -965,8 +972,27 @@ namespace Internal.JitInterface
         public CORINFO_METHOD_STRUCT_* captureContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsMethHnd;
         public CORINFO_METHOD_STRUCT_* restoreContextsOnSuspensionMethHnd;
+        public CORINFO_METHOD_STRUCT_* restoreInlinedFrameContextsMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionWithContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionNoContinuationContextMethHnd;
+        public CORINFO_METHOD_STRUCT_* captureInlinedFrameTransitionContinueOnThreadPoolMethHnd;
         public CORINFO_METHOD_STRUCT_* finishSuspensionNoContinuationContextMethHnd;
         public CORINFO_METHOD_STRUCT_* finishSuspensionWithContinuationContextMethHnd;
+    }
+
+    // The well-known wasm globals referenced by JIT-generated code via
+    // WASM_GLOBAL_INDEX_LEB relocations. Each handle is the relocation target for the
+    // corresponding well-known global; the object writer resolves it to the final wasm global index.
+    public unsafe struct CORINFO_WASM_WELLKNOWN_GLOBALS
+    {
+        // Shadow stack pointer global (read at the root frame, then threaded through locals).
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* stackPointer;
+        // Image base global (__memory_base), added to static data offsets.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* imageBase;
+        // Table base global (__table_base), added to funclet pointer offsets.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* tableBase;
+        // Runtime-async continuation return value global.
+        public CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_* asyncContinuation;
     }
 
     // Flags passed from JIT to runtime.

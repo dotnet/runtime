@@ -51,9 +51,7 @@
 #include <versionhelpers.h>
 #endif
 
-#ifdef FEATURE_PERFMAP
 #include "perfmap.h"
-#endif
 
 #include "exinfo.h"
 
@@ -922,8 +920,21 @@ HRESULT Thread::DetachThread(BOOL inTerminationCallback)
     // but the thread is blocked.
     // We do not consider blocked finalizer thread to be something to be robust against in general.
     // Blocking on a finalizer thread is a bug in the user code that can cause all sorts of problems.
+#ifndef TARGET_WASI
+    // On WASI there is no dedicated finalizer thread. The native
+    // FinalizerThread::EnableFinalization sets a flag that the managed
+    // WasiEventLoop drains between poll iterations via
+    // WasiFinalizer_Schedule / WasiFinalizer_TryClearPending /
+    // WasiFinalizer_RunWorker (see WasiFinalizerScheduler.cs). Calling
+    // EnableFinalization from DetachThread runs at process exit from a
+    // C++ TLS destructor, after the EBR thread record for this thread
+    // has already been marked detached; the flag set is safe (just a
+    // volatile store) but no managed drain will ever observe it, so the
+    // call is skipped — the process is exiting and there is no other
+    // thread that could observe leftover detached-thread state.
     if (g_fEEStarted)
         FinalizerThread::EnableFinalization();
+#endif // !TARGET_WASI
 
     return S_OK;
 }
@@ -947,8 +958,23 @@ DWORD_PTR Thread::OBJREF_HASH = OBJREF_TABSIZE;
 
 extern "C" void STDCALL JIT_PatchedCodeStart();
 extern "C" void STDCALL JIT_PatchedCodeLast();
+#ifndef TARGET_X86
+extern "C" void STDCALL JIT_WriteBarrier_End();
+#endif // !TARGET_X86
+#if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+extern "C" void STDCALL JIT_CheckedWriteBarrier_End();
+#endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 static void* s_barrierCopy = NULL;
+
+static DWORD GetCodeSize(VOID* codeStart, VOID* codeEnd)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    ptrdiff_t codeSize = (BYTE*)codeEnd - (BYTE*)codeStart;
+    _ASSERTE(codeSize > 0);
+    return (DWORD)codeSize;
+}
 
 BYTE* GetWriteBarrierCodeLocation(VOID* barrier)
 {
@@ -1028,13 +1054,13 @@ void InitThreadManagerPerfMapData()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
-#ifdef FEATURE_PERFMAP
+#ifndef FEATURE_PORTABLE_HELPERS
     if (IsWriteBarrierCopyEnabled())
     {
         size_t writeBarrierSize = (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart;
         PerfMap::LogStubs(__FUNCTION__, "JIT_CopiedWriteBarriers", (PCODE)s_barrierCopy, writeBarrierSize, PerfMapStubType::Individual);
     }
-#endif
+#endif // !FEATURE_PORTABLE_HELPERS
 }
 
 //---------------------------------------------------------------------------
@@ -1078,11 +1104,12 @@ void InitThreadManager()
         // can jump to it.
 #ifdef TARGET_X86
         JIT_WriteBarrierEAX_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrierEAX);
+        DWORD dwWriteBarrierSize = GetCodeSize((void*)JIT_WriteBarrierEBP, (void*)JIT_PatchedWriteBarrierGroup_End);
 
 #define X86_WRITE_BARRIER_REGISTER(reg) \
     SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF_##reg, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg)); \
     SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), "JIT_WriteBarrier" #reg); \
-    ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), W("@WriteBarrier" #reg));
+    ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier##reg), dwWriteBarrierSize, W("@WriteBarrier" #reg));
 
         ENUM_X86_WRITE_BARRIER_REGISTERS()
 
@@ -1090,10 +1117,11 @@ void InitThreadManager()
 
 #else // TARGET_X86
         JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
+        DWORD dwWriteBarrierSize = GetCodeSize((void*)JIT_WriteBarrier, (void*)JIT_WriteBarrier_End);
 #endif // TARGET_X86
         SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
         SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), "JIT_WriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), W("@WriteBarrier"));
+        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier), dwWriteBarrierSize, W("@WriteBarrier"));
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
@@ -1101,9 +1129,10 @@ void InitThreadManager()
 #endif // TARGET_ARM64 || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_ARM64) || defined(TARGET_ARM) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+        DWORD dwCheckedWriteBarrierSize = GetCodeSize((void*)JIT_CheckedWriteBarrier, (void*)JIT_CheckedWriteBarrier_End);
         SetJitHelperFunction(CORINFO_HELP_CHECKED_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier));
         SetAuxiliarySymbol(GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), "JIT_CheckedWriteBarrier");
-        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), W("@CheckedWriteBarrier"));
+        ETW::MethodLog::StubInitialized((ULONGLONG)GetWriteBarrierCodeLocation((void*)JIT_CheckedWriteBarrier), dwCheckedWriteBarrierSize, W("@CheckedWriteBarrier"));
 #endif // TARGET_ARM64 || TARGET_ARM || TARGET_LOONGARCH64 || TARGET_RISCV64
 
 #if defined(TARGET_AMD64)
@@ -1867,7 +1896,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     DWORD threadId;
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
-    if (hThread != INVALID_HANDLE_VALUE)
+    if (hThread != NULL)
     {
         SetThreadName(hThread, pName);
 
@@ -5175,7 +5204,7 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
         if (sizeof(meminfo) != res)
         {
-            LOG((LF_EH, LL_INFO1000, "VirtualQuery failed on %p\n", uStartOfThisRegion));
+            LOG((LF_EH, LL_INFO1000, "VirtualQuery failed on %p\n", (void*)uStartOfThisRegion));
             break;
         }
 
@@ -5188,7 +5217,8 @@ static void DebugLogStackRegionMBIs(UINT_PTR uLowAddress, UINT_PTR uHighAddress)
 
         UINT_PTR uRegionSize = uStartOfNextRegion - uStartOfThisRegion;
 
-        LOG((LF_EH, LL_INFO1000, "0x%p -> 0x%p (%d pg)  ", uStartOfThisRegion, uStartOfNextRegion - 1, (int)(uRegionSize / minipal_getpagesize())));
+        LOG((LF_EH, LL_INFO1000, "%p -> %p (%d pg)  ", (void*)uStartOfThisRegion,
+             (void*)(uStartOfNextRegion - 1), (int)(uRegionSize / minipal_getpagesize())));
         DebugLogMBIFlags(meminfo.State, meminfo.Protect);
         LOG((LF_EH, LL_INFO1000, "\n"));
 
@@ -5226,10 +5256,12 @@ void Thread::DebugLogStackMBIs()
     UINT_PTR uStackSize         = uStackBase - uStackLimit;
 
     LOG((LF_EH, LL_INFO1000, "----------------------------------------------------------------------\n"));
-    LOG((LF_EH, LL_INFO1000, "Stack Snapshot 0x%p -> 0x%p (%d pg)\n", uStackLimit, uStackBase, (int)(uStackSize / minipal_getpagesize())));
+    LOG((LF_EH, LL_INFO1000, "Stack Snapshot %p -> %p (%d pg)\n", (void*)uStackLimit,
+         (void*)uStackBase, (int)(uStackSize / minipal_getpagesize())));
     if (pThread)
     {
-        LOG((LF_EH, LL_INFO1000, "Last normal addr: 0x%p\n", pThread->GetLastNormalStackAddress()));
+        LOG((LF_EH, LL_INFO1000, "Last normal addr: %p\n",
+             (void*)pThread->GetLastNormalStackAddress()));
     }
 
     DebugLogStackRegionMBIs(uStackLimit, uStackBase);
@@ -6096,7 +6128,7 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     CONTRACTL
     {
         NOTHROW;
-        DISABLED(GC_TRIGGERS);  // due to UnwindFrameChain from NOTRIGGER areas
+        GC_NOTRIGGER;
         MODE_COOPERATIVE;
         PRECONDITION(CheckPointer(pStartFrame));
         PRECONDITION(CheckPointer(pvLimitSP));

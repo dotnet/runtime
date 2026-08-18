@@ -28,6 +28,17 @@
 #include "readonlydatatargetfacade.h"
 #include "metahost.h"
 
+// Defined in dbgutil; resolves a runtime export address from the data target.
+extern "C" bool TryGetSymbol(
+    ICorDebugDataTarget* dataTarget,
+    uint64_t baseAddress,
+    const char* symbolName,
+    uint64_t* symbolAddress);
+
+#if defined(MSCORDBI_LINKS_PRIVATE_PAL) && defined(HOST_UNIX)
+HRESULT EnsureUniversalDbiInitialized();
+#endif // MSCORDBI_LINKS_PRIVATE_PAL && HOST_UNIX
+
 // Keep this around for retail debugging. It's very very useful because
 // it's global state that we can always find, regardless of how many locals the compiler
 // optimizes away ;)
@@ -178,6 +189,13 @@ STDAPI DLLEXPORT OpenVirtualProcessImpl2(
     IUnknown ** ppInstance,
     CLR_DEBUGGING_PROCESS_FLAGS* pFlagsOut)
 {
+#if defined(MSCORDBI_LINKS_PRIVATE_PAL) && defined(HOST_UNIX)
+    HRESULT hrInit = EnsureUniversalDbiInitialized();
+    if (FAILED(hrInit))
+    {
+        return hrInit;
+    }
+#endif
 #ifdef TARGET_WINDOWS
     HMODULE hDac = WszLoadLibrary(pDacModulePath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 #else
@@ -533,102 +551,6 @@ void CordbProcess::Free(void * p)
 
 //---------------------------------------------------------------------------------------
 //
-// #DBIVersionChecking
-//
-// There are a few checks we need to do to make sure we are using the matching DBI and DAC for a particular
-// version of the runtime.
-//
-// 1. Runtime vs. DBI
-//     - Desktop
-//         This is done by making sure that the CorDebugInterfaceVersion passed to code:CreateCordbObject is
-//         compatible with the version of the DBI.
-//
-//     - Windows CoreCLR
-//         This is done by dbgshim.dll.  It checks whether the runtime DLL and the DBI DLL have the same
-//         product version.  See CreateDebuggingInterfaceForVersion() in dbgshim.cpp.
-//
-//     - Remote transport (Mac CoreCLR + CoreSystem CoreCLR)
-//         Since there is no dbgshim.dll for a remote CoreCLR, we have to do this check in some other place.
-//         We do this in code:CordbProcess::CreateDacDbiInterface, by calling
-//         code:DacDbiInterfaceImpl::CheckDbiVersion right after we have created the DDMarshal.
-//         The IDacDbiInterface implementation on remote device checks the product version of the device
-//         coreclr by:
-//             mac - looking at the Info.plist file in the CoreCLR bundle.
-//             CoreSystem - this check is skipped at the moment, but should be implemented if we release it
-//
-//         The one twist here is that the DBI needs to communicate with the IDacDbiInterface
-//         implementation on the device BEFORE it can verify the product versions.  This means that we need to
-//         have one IDacDbiInterface API which is consistent across all versions of the IDacDbiInterface.
-//         This puts two constraints on CheckDbiVersion():
-//
-//             1.  It has to be the first API on the IDacDbiInterface.
-//             - Otherwise, a wrong version of the DBI may end up calling a different API on the
-//               IDacDbiInterface and getting random results. (Really what matters is that it is
-//               protocol message id 0, at present the source code position implies the message id)
-//
-//             2.  Its parameters cannot change.
-//             - Otherwise, we may run into random errors when we marshal/unmarshal the arguments for the
-//               call to CheckDbiVersion().  Debugging will still fail, but we won't get the
-//               version mismatch error. (Again, the protocol is what ultimately matters)
-//             - To mitigate the impact of this constraint, we use the code:DbiVersion structure.
-//               In addition to the DBI version, it also contains a format number (in case we decide to
-//               check something else in the future), a breaking change number so that we can force
-//               breaking changes between a DBI and a DAC, and space reserved for future use.
-//
-// 2. DBI vs. DAC
-//     - Desktop and Windows CoreCLR (old architecture)
-//          No verification is done. There is a transitive implication that if DBI matches runtime and DAC matches
-//          runtime then DBI matches DAC. Technically because the DBI only matches runtime on major version number
-//          runtime and DAC could be from different builds. However because we service all three binaries together
-//          and DBI always loads the DAC that is sitting in the same directory DAC and DBI generally get tight
-//          version coupling. A user with admin privileges could put different builds together and no version check
-//          would ever fail though.
-//
-//      - Desktop and Windows CoreCLR (new architecture)
-//          No verification is done. Similar to above its implied that if DBI matches runtime and runtime matches
-//          DAC then DBI matches DAC. The only difference is that here both the DBI and DAC are provided by the
-//          debugger. We provide timestamp and filesize for both binaries which are relatively strongly bound hints,
-//          but there is no enforcement on the returned binaries beyond the runtime compat checking.
-//
-//      - Remote transport (Mac CoreCLR and CoreSystem CoreCLR)
-//          Because the transport exists between DBI and DAC it becomes much more important to do a versioning check
-//
-//          Mac - currently does a tightly bound version check between DBI and the runtime (CheckDbiVersion() above),
-//             which transitively gives a tightly bound check to DAC. In same function there is also a check that is
-//             logically a DAC DBI protocol check, verifying that the m_dwProtocolBreakingChangeCounter of DbiVersion
-//             matches. However this check should be weaker than the build version check and doesn't add anything here.
-//
-//          CoreSystem - currently skips the tightly bound version check to make internal deployment and usage easier.
-//             We want to use old desktop side debugger components to target newer CoreCLR builds, only forcing a desktop
-//             upgrade when the protocol actually does change. To do this we use two checks:
-//             1. The breaking change counter in CheckDbiVersion() whenever a dev knows they are breaking back
-//                compat and wants to be explicit about it. This is the same as mac above.
-//             2. During the auto-generation of the DDMarshal classes we take an MD5 hash of IDacDbiInterface source
-//                code and embed it in two DDMarshal functions, one which runs locally and one that runs remotely.
-//                If both DBI and DAC were built from the same source then the local and remote hashes will match. If the
-//                hashes don't match then we assume there has been a been a breaking change in the protocol. Note
-//                this hash could have both false-positives and false-negatives. False positives could occur when
-//                IDacDbiInterface is changed in a trivial way, such as changing a comment. False negatives could
-//                occur when the semantics of the protocol are changed even though the interface is not. Another
-//                case would be changing the DDMarshal proxy generation code. In addition to the hashes we also
-//                embed timestamps when the auto-generated code was produced. However this isn't used for version
-//                matching, only as a hint to indicate which of two mismatched versions is newer.
-//
-//
-// 3. Runtime vs. DAC
-//     - Desktop, Windows CoreCLR, CoreSystem CoreCLR
-//         In both cases we check this by matching the timestamp in the debug directory of the runtime image
-//         and the timestamp we store in the DAC table when we generate the DAC dll.  This is done in
-//         code:ClrDataAccess::VerifyDlls.
-//
-//     - Mac CoreCLR
-//         On Mac, we don't have a timestamp in the runtime image.  Instead, we rely on checking the 16-byte
-//         UUID in the image.  This UUID is used to check whether a symbol file matches the image, so
-//         conceptually it's the same as the timestamp we use on Windows.  This is also done in
-//         code:ClrDataAccess::VerifyDlls.
-//
-//---------------------------------------------------------------------------------------
-//
 // Instantiates a DacDbi Interface object in a live-debugging scenario that matches
 // the current instance of mscorwks in this process.
 //
@@ -649,6 +571,7 @@ CordbProcess::CreateDacDbiInterface()
 {
     _ASSERTE(m_pDACDataTarget != NULL);
     _ASSERTE(m_pDacPrimitives == NULL); // don't double-init
+    _ASSERTE(m_pLegacyDac == NULL);
 
     // Caller has already determined which CLR in the target is being debugged.
     _ASSERTE(m_clrInstanceId != 0);
@@ -673,26 +596,40 @@ CordbProcess::CreateDacDbiInterface()
     IDacDbiInterface::IAllocator * pAllocator = this;
     IDacDbiInterface::IMetaDataLookup * pMetaDataLookup = this;
 
+    // The cDAC needs the address of the runtime's contract descriptor to initialize. The legacy
+    // DAC only needs it if it wants to route through cdac or to compare results.
+    CLRDATA_ADDRESS contractDescriptorAddress = 0;
+    {
+        uint64_t address = 0;
+        if (TryGetSymbol(m_pDACDataTarget, m_clrInstanceId, "DotNetRuntimeContractDescriptor", &address))
+        {
+            contractDescriptorAddress = address;
+        }
+    }
 
     typedef HRESULT (STDAPICALLTYPE * PFN_DacDbiInterfaceInstance)(
         ICorDebugDataTarget *,
         CORDB_ADDRESS,
+        CLRDATA_ADDRESS,
         IDacDbiInterface::IAllocator *,
         IDacDbiInterface::IMetaDataLookup *,
-        IDacDbiInterface **);
+        IDacDbiInterface **,
+        IUnknown **);
 
     IDacDbiInterface* pInterfacePtr = NULL;
+    IUnknown* pLegacyDac = NULL;
     PFN_DacDbiInterfaceInstance pfnEntry = (PFN_DacDbiInterfaceInstance)GetProcAddress(m_hDacModule, "DacDbiInterfaceInstance");
     if (!pfnEntry)
     {
         ThrowLastError();
     }
 
-    hrStatus = pfnEntry(m_pDACDataTarget, m_clrInstanceId, pAllocator, pMetaDataLookup, &pInterfacePtr);
+    hrStatus = pfnEntry(m_pDACDataTarget, m_clrInstanceId, contractDescriptorAddress, pAllocator, pMetaDataLookup, &pInterfacePtr, &pLegacyDac);
     IfFailThrow(hrStatus);
 
-    // We now have a resource, pInterfacePtr, that needs to be freed.
+    // We now have resources that need to be freed.
     m_pDacPrimitives = pInterfacePtr;
+    m_pLegacyDac = pLegacyDac;
 
     // Setup DAC target consistency checking based on what we're using for DBI
     IfFailThrow(m_pDacPrimitives->DacSetTargetConsistencyChecks( m_fAssertOnTargetInconsistency ));
@@ -948,6 +885,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
     m_dispatchedEvent(DB_IPCE_DEBUGGER_INVALID),
     m_hDacModule(hDacModule),
     m_pDacPrimitives(NULL),
+    m_pLegacyDac(NULL),
     m_pEventChannel(NULL),
     m_fAssertOnTargetInconsistency(false),
     m_runtimeOffsetsInitialized(false),
@@ -1039,7 +977,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
 
 CordbProcess::~CordbProcess()
 {
-    LOG((LF_CORDB, LL_INFO1000, "CP::~CP: deleting process 0x%08x\n", this));
+    LOG((LF_CORDB, LL_INFO1000, "CP::~CP: deleting process %p\n", this));
 
     DTOR_ENTRY(this);
 
@@ -1532,8 +1470,21 @@ void CordbProcess::FreeDac()
 
     if (m_pDacPrimitives != NULL)
     {
+        HRESULT hr = m_pDacPrimitives->Destroy();
+        _ASSERTE(SUCCEEDED(hr));
+        if (FAILED(hr))
+        {
+            LOG((LF_CORDB, LL_ERROR, "Failed to prepare DAC for unload, hr=0x%08x\n", hr));
+            return;
+        }
         m_pDacPrimitives->Release();
         m_pDacPrimitives = NULL;
+    }
+
+    if (m_pLegacyDac != NULL)
+    {
+        m_pLegacyDac->Release();
+        m_pLegacyDac = NULL;
     }
 
     if (m_hDacModule != NULL)
@@ -1820,7 +1771,7 @@ void CordbProcess::Terminating(BOOL fDetach)
 {
     INTERNAL_API_ENTRY(this);
 
-    LOG((LF_CORDB, LL_INFO1000,"CP::T: Terminating process 0x%x detach=%d\n", m_id, fDetach));
+    LOG((LF_CORDB, LL_INFO1000,"CP::T: Terminating process 0x%zx detach=%d\n", m_id, fDetach));
     m_terminated = true;
 
     m_cordb->ProcessStateChanged();
@@ -2503,7 +2454,7 @@ COM_METHOD CordbProcess::GetAsyncStack(CORDB_ADDRESS continuationAddress, ICorDe
             ThrowHR(E_INVALIDARG);
         }
 
-        PCODE diagnosticIP;
+        CORDB_ADDRESS diagnosticIP;
         CORDB_ADDRESS nextContinuation;
         UINT32 state;
         if (FAILED(m_pDacPrimitives->ParseContinuation(
@@ -3374,7 +3325,7 @@ HRESULT CordbProcess::Stop(DWORD dwTimeout)
 
 HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainToken)
 {
-    LOG((LF_CORDB, LL_INFO1000, "CP::S: stopping process 0x%x(%d) with timeout %d\n", m_id, m_id,  dwTimeout));
+    LOG((LF_CORDB, LL_INFO1000, "CP::S: stopping process 0x%zx(%zu) with timeout %d\n", m_id, m_id, dwTimeout));
 
     INTERNAL_API_ENTRY(this);
 
@@ -3512,7 +3463,8 @@ HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainTo
     event = (DebuggerIPCEvent*) _alloca(CorDBIPC_BUFFER_SIZE);
     InitIPCEvent(event, DB_IPCE_ASYNC_BREAK, false, pAppDomainToken);
 
-    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::S: sending async stop to appd 0x%x.\n", VmPtrToCookie(pAppDomainToken));
+    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::S: sending async stop to appd 0x%zx.\n",
+                static_cast<size_t>(VmPtrToCookie(pAppDomainToken)));
 
     hr = m_cordb->SendIPCEvent(this, event, CorDBIPC_BUFFER_SIZE);
     hr = WORST_HR(hr, event->hr);
@@ -3523,7 +3475,8 @@ HRESULT CordbProcess::StopInternal(DWORD dwTimeout, VMPTR_AppDomain pAppDomainTo
         return hr;
     }
 
-    LOG((LF_CORDB, LL_INFO1000, "CP::S: sent async stop to appd 0x%x.\n", VmPtrToCookie(pAppDomainToken)));
+    LOG((LF_CORDB, LL_INFO1000, "CP::S: sent async stop to appd 0x%zx.\n",
+         static_cast<size_t>(VmPtrToCookie(pAppDomainToken))));
 
     // Wait for the sync complete message to come in. Note: when the sync complete message arrives to the RCEventThread,
     // it will mark the process as synchronized and _not_ dispatch any events. Instead, it will set m_stopWaitEvent
@@ -3748,7 +3701,7 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
 
     CORDBFailIfOnWin32EventThread(this);
 
-    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::CI: continuing IB,  this=0x%X\n", this);
+    STRESS_LOG1(LF_CORDB, LL_INFO1000, "CP::CI: continuing IB, this=%p\n", this);
 
     // Stop + Continue are executed under the Stop-Go lock. This makes them atomic.
     // We'll toggle the process-lock (b/c we communicate w/ the W32et, so that's not sufficient).
@@ -4102,7 +4055,8 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
     }
     else if (fWasSynchronized)
     {
-        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Sending continue to AppD:0x%x.\n", VmPtrToCookie(pAppDomainToken)));
+        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Sending continue to AppD:0x%zx.\n",
+             static_cast<size_t>(VmPtrToCookie(pAppDomainToken))));
 #ifdef FEATURE_INTEROP_DEBUGGING
         STRESS_LOG2(LF_CORDB, LL_INFO1000, "Continue flags:special=%d, dowin32=%d\n", m_specialDeferment, fDoWin32Continue);
 #endif
@@ -4124,7 +4078,8 @@ HRESULT CordbProcess::ContinueInternal(BOOL fIsOutOfBand)
         }
         _ASSERTE(SUCCEEDED(pEvent->hr));
 
-        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Continue sent to AppD:0x%x.\n", VmPtrToCookie(pAppDomainToken)));
+        LOG((LF_CORDB, LL_INFO1000, "CP::CI: Continue sent to AppD:0x%zx.\n",
+             static_cast<size_t>(VmPtrToCookie(pAppDomainToken))));
     }
 
 #ifdef FEATURE_INTEROP_DEBUGGING
@@ -4839,10 +4794,10 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_LOAD_MODULE:
         {
             LOG((LF_CORDB, LL_INFO100,
-                "RCET::HRCE: load module (includes assembly loading) on thread %#x Asm:0x%08x AD:0x%08x \n",
+                "RCET::HRCE: load module (includes assembly loading) on thread %#x Asm:0x%08zx AD:0x%08zx \n",
                 dwVolatileThreadId,
-                VmPtrToCookie(pEvent->LoadModuleData.vmAssembly),
-                VmPtrToCookie(pEvent->vmAppDomain)));
+                static_cast<size_t>(VmPtrToCookie(pEvent->LoadModuleData.vmAssembly)),
+                static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain))));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -4870,10 +4825,10 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_UNLOAD_MODULE:
         {
-            STRESS_LOG3(LF_CORDB, LL_INFO100, "RCET::HRCE: unload module on thread %#x Mod:0x%x AD:0x%08x\n",
+            STRESS_LOG3(LF_CORDB, LL_INFO100, "RCET::HRCE: unload module on thread %#x Mod:0x%zx AD:0x%08zx\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->UnloadModuleData.vmAssembly),
-                 VmPtrToCookie(pEvent->vmAppDomain));
+                 static_cast<size_t>(VmPtrToCookie(pEvent->UnloadModuleData.vmAssembly)),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain)));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -4907,12 +4862,12 @@ void CordbProcess::RawDispatchEvent(
             CordbClass *pClass = NULL;
 
             LOG((LF_CORDB, LL_INFO10000,
-                 "RCET::HRCE: load class on thread %#x Tok:0x%08x Mod:0x%08x Asm:0x%08x AD:0x%08x\n",
+                 "RCET::HRCE: load class on thread %#x Tok:0x%08x Mod:0x%08zx Asm:0x%08zx AD:0x%08zx\n",
                  dwVolatileThreadId,
-                 pEvent->LoadClass.classMetadataToken,
-                 VmPtrToCookie(pEvent->LoadClass.vmAssembly),
-                 LsPtrToCookie(pEvent->LoadClass.classDebuggerAssemblyToken),
-                 VmPtrToCookie(pEvent->vmAppDomain)));
+                 static_cast<mdTypeDef>(pEvent->LoadClass.classMetadataToken),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->LoadClass.vmAssembly)),
+                 static_cast<size_t>(LsPtrToCookie(pEvent->LoadClass.classDebuggerAssemblyToken)),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain))));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -4965,11 +4920,11 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_UNLOAD_CLASS:
         {
             LOG((LF_CORDB, LL_INFO10000,
-                 "RCET::HRCE: unload class on thread %#x Tok:0x%08x Mod:0x%08x AD:0x%08x\n",
+                 "RCET::HRCE: unload class on thread %#x Tok:0x%08x Mod:0x%08zx AD:0x%08zx\n",
                  dwVolatileThreadId,
-                 pEvent->UnloadClass.classMetadataToken,
-                 VmPtrToCookie(pEvent->UnloadClass.vmAssembly),
-                 VmPtrToCookie(pEvent->vmAppDomain)));
+                 static_cast<mdTypeDef>(pEvent->UnloadClass.classMetadataToken),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->UnloadClass.vmAssembly)),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain))));
 
             // get the appdomain object
             _ASSERTE (pAppDomain != NULL);
@@ -5004,8 +4959,7 @@ void CordbProcess::RawDispatchEvent(
             ULONG cchCategory = pEvent->FirstLogMessage.cchCategory;
             ULONG cchContent = pEvent->FirstLogMessage.cchContent;
 
-            const ULONG cchMax = 0x10000;
-            if (cchCategory > cchMax || cchContent > cchMax)
+            if (cchCategory > MAX_LOG_SWITCH_NAME_LEN)
             {
                 IfFailThrow(E_UNEXPECTED);
             }
@@ -5069,9 +5023,9 @@ void CordbProcess::RawDispatchEvent(
     case DB_IPCE_CREATE_APP_DOMAIN:
         {
             STRESS_LOG2(LF_CORDB, LL_INFO100,
-                 "RCET::HRCE: create appdomain on thread %#x AD:0x%08x \n",
+                 "RCET::HRCE: create appdomain on thread %#x AD:0x%08zx \n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->vmAppDomain));
+                 static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain)));
 
 
             // Enumerate may have prepopulated the appdomain, so check if it already exists.
@@ -5091,10 +5045,10 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_UNLOAD_ASSEMBLY:
         {
-            LOG((LF_CORDB, LL_INFO100, "RCET::DRCE: unload assembly on thread %#x Asm:0x%x AD:0x%x\n",
+            LOG((LF_CORDB, LL_INFO100, "RCET::DRCE: unload assembly on thread %#x Asm:0x%zx AD:0x%zx\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->AssemblyData.vmAssembly),
-                 VmPtrToCookie(pEvent->vmAppDomain)));
+                 static_cast<size_t>(VmPtrToCookie(pEvent->AssemblyData.vmAssembly)),
+                 static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain))));
 
             _ASSERTE (pAppDomain != NULL);
 
@@ -5206,9 +5160,9 @@ void CordbProcess::RawDispatchEvent(
 
     case DB_IPCE_NAME_CHANGE:
         {
-            LOG((LF_CORDB, LL_INFO1000, "RCET::HRCE: Name Change %d  0x%p\n",
+            LOG((LF_CORDB, LL_INFO1000, "RCET::HRCE: Name Change %d  0x%zx\n",
                  dwVolatileThreadId,
-                 VmPtrToCookie(pEvent->NameChange.vmAppDomain)));
+                 static_cast<size_t>(VmPtrToCookie(pEvent->NameChange.vmAppDomain))));
 
             pThread = NULL;
             pAppDomain.Clear();
@@ -5410,9 +5364,9 @@ void CordbProcess::RawDispatchEvent(
             STRESS_LOG4(LF_CORDB, LL_INFO100,
                 "RCET::DRCE: Exception2 0x%p 0x%X 0x%X 0x%X\n",
                  CORDB_ADDRESS_TO_PTR(pEvent->ExceptionCallback2.framePointer),
-                 pEvent->ExceptionCallback2.nOffset,
-                 pEvent->ExceptionCallback2.eventType,
-                 pEvent->ExceptionCallback2.dwFlags
+                 static_cast<UINT>(pEvent->ExceptionCallback2.nOffset),
+                 static_cast<unsigned>(pEvent->ExceptionCallback2.eventType),
+                 static_cast<DWORD>(pEvent->ExceptionCallback2.dwFlags)
                  );
 
             if (pThread == NULL)
@@ -5460,8 +5414,8 @@ void CordbProcess::RawDispatchEvent(
         {
             STRESS_LOG2(LF_CORDB, LL_INFO100,
                 "RCET::DRCE: Exception Unwind 0x%X 0x%X\n",
-                 pEvent->ExceptionCallback2.eventType,
-                 pEvent->ExceptionCallback2.dwFlags
+                 static_cast<unsigned>(pEvent->ExceptionCallback2.eventType),
+                 static_cast<DWORD>(pEvent->ExceptionCallback2.dwFlags)
                  );
 
             if (pThread == NULL)
@@ -5521,7 +5475,7 @@ void CordbProcess::RawDispatchEvent(
         _ASSERTE(!"Unknown event");
         LOG((LF_CORDB, LL_INFO1000,
              "[%x] RCET::HRCE: Unknown event: 0x%08x\n",
-             GetCurrentThreadId(), pEvent->type));
+             GetCurrentThreadId(), static_cast<unsigned>(pEvent->type)));
     }
 
 
@@ -5726,7 +5680,7 @@ HRESULT CordbProcess::SetAllThreadsDebugState(CorDebugThreadState state,
     }
     CordbThread * pCordbExceptThread = static_cast<CordbThread *> (pExceptThread);
 
-    LOG((LF_CORDB, LL_INFO1000, "CP::SATDS: except thread=0x%08x 0x%x\n",
+    LOG((LF_CORDB, LL_INFO1000, "CP::SATDS: except thread=%p 0x%zx\n",
          pExceptThread,
          (pCordbExceptThread != NULL) ? pCordbExceptThread->m_id : 0));
 
@@ -5828,7 +5782,8 @@ HRESULT CordbProcess::IsTransitionStub(CORDB_ADDRESS address, BOOL *pfTransition
         _ASSERTE(eventData.type == DB_IPCE_IS_TRANSITION_STUB_RESULT);
 
         *pfTransitionStub = eventData.IsTransitionStubResult.isStub;
-        LOG((LF_CORDB, LL_INFO1000, "CP::ITS: addr=0x%p result=%d\n", address, *pfTransitionStub));
+        LOG((LF_CORDB, LL_INFO1000, "CP::ITS: addr=%p result=%d\n", CORDB_ADDRESS_TO_PTR(address),
+             *pfTransitionStub));
         // @todo - beware that IsTransitionStub has a very important sideeffect - it synchronizes the runtime!
         // This for example covers an OS bug where SetThreadContext may silently fail if we're not synchronized.
         // (See IMDArocess::SetThreadContext for details on that bug).
@@ -6194,7 +6149,7 @@ HRESULT CordbProcess::ReadMemory(CORDB_ADDRESS address,
     // read.
     if ((*read > 0) && (*read <= size))
     {
-        LOG((LF_CORDB, LL_INFO100000, "CP::RM: read %d bytes from 0x%08x, first byte is 0x%x\n",
+        LOG((LF_CORDB, LL_INFO100000, "CP::RM: read %zu bytes from 0x%08x, first byte is 0x%x\n",
              *read, (DWORD)address, buffer[0]));
 
         if (m_initialized)
@@ -6284,7 +6239,7 @@ HRESULT CordbProcess::AdjustBuffer( CORDB_ADDRESS address,
     if (!m_runtimeOffsetsInitialized)
         return S_OK;
 
-    LOG((LF_CORDB,LL_INFO10000, "CordbProcess::AdjustBuffer at addr 0x%p\n", address));
+    LOG((LF_CORDB,LL_INFO10000, "CordbProcess::AdjustBuffer at addr %p\n", CORDB_ADDRESS_TO_PTR(address)));
 
     if (mode == AB_WRITE)
     {
@@ -6807,7 +6762,7 @@ HRESULT CordbProcess::WriteMemory(CORDB_ADDRESS address, DWORD size,
     }
 
 
-    LOG((LF_CORDB, LL_INFO100000, "CP::WM: wrote %d bytes at 0x%08x, first byte is 0x%x\n",
+    LOG((LF_CORDB, LL_INFO100000, "CP::WM: wrote %zu bytes at 0x%08x, first byte is 0x%x\n",
          *written, (DWORD)address, buffer[0]));
 
     if (bUpdateOriginalPatchTable == TRUE )
@@ -7191,57 +7146,57 @@ HRESULT CordbProcess::GetRuntimeOffsets()
 #ifdef FEATURE_INTEROP_DEBUGGING
     LOG((LF_CORDB, LL_INFO10000, "    m_genericHijackFuncAddr=          0x%p\n",
          m_runtimeOffsets.m_genericHijackFuncAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_signalHijackStartedBPAddr=      0x%p\n",
-         m_runtimeOffsets.m_signalHijackStartedBPAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_excepNotForRuntimeBPAddr=       0x%p\n",
-         m_runtimeOffsets.m_excepNotForRuntimeBPAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_notifyRSOfSyncCompleteBPAddr=   0x%p\n",
-         m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr));
+    LOG((LF_CORDB, LL_INFO10000, "    m_signalHijackStartedBPAddr=      %p\n",
+         (void*)(m_runtimeOffsets.m_signalHijackStartedBPAddr)));
+    LOG((LF_CORDB, LL_INFO10000, "    m_excepNotForRuntimeBPAddr=       %p\n",
+         (void*)(m_runtimeOffsets.m_excepNotForRuntimeBPAddr)));
+    LOG((LF_CORDB, LL_INFO10000, "    m_notifyRSOfSyncCompleteBPAddr=   %p\n",
+         (void*)(m_runtimeOffsets.m_notifyRSOfSyncCompleteBPAddr)));
     LOG((LF_CORDB, LL_INFO10000, "    m_debuggerWordTLSIndex=           0x%08x\n",
          m_runtimeOffsets.m_debuggerWordTLSIndex));
 #endif // FEATURE_INTEROP_DEBUGGING
 
-    LOG((LF_CORDB, LL_INFO10000, "    m_setThreadContextNeededAddr=     0x%p\n",
-         m_runtimeOffsets.m_setThreadContextNeededAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_TLSIndex=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_setThreadContextNeededAddr=     %p\n",
+         (void*)(m_runtimeOffsets.m_setThreadContextNeededAddr)));
+    LOG((LF_CORDB, LL_INFO10000, "    m_TLSIndex=                       0x%08zx\n",
          m_runtimeOffsets.m_TLSIndex));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateOffset=            0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateOffset=            0x%08zx\n",
          m_runtimeOffsets.m_EEThreadStateOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateNCOffset=          0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadStateNCOffset=          0x%08zx\n",
          m_runtimeOffsets.m_EEThreadStateNCOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadPGCDisabledOffset=      0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadPGCDisabledOffset=      0x%08zx\n",
          m_runtimeOffsets.m_EEThreadPGCDisabledOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadPGCDisabledValue=       0x%08x\n",
          m_runtimeOffsets.m_EEThreadPGCDisabledValue));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadFrameOffset=            0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadFrameOffset=            0x%08zx\n",
          m_runtimeOffsets.m_EEThreadFrameOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadMaxNeededSize=          0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadMaxNeededSize=          0x%08zx\n",
          m_runtimeOffsets.m_EEThreadMaxNeededSize));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadSteppingStateMask=      0x%08x\n",
          m_runtimeOffsets.m_EEThreadSteppingStateMask));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEMaxFrameValue=                0x%08x\n",
          m_runtimeOffsets.m_EEMaxFrameValue));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadDebuggerFilterContextOffset= 0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEThreadDebuggerFilterContextOffset= 0x%08zx\n",
          m_runtimeOffsets.m_EEThreadDebuggerFilterContextOffset));
-    LOG((LF_CORDB, LL_INFO10000, "    m_EEFrameNextOffset=              0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_EEFrameNextOffset=              0x%08zx\n",
          m_runtimeOffsets.m_EEFrameNextOffset));
     LOG((LF_CORDB, LL_INFO10000, "    m_EEIsManagedExceptionStateMask=  0x%08x\n",
          m_runtimeOffsets.m_EEIsManagedExceptionStateMask));
-    LOG((LF_CORDB, LL_INFO10000, "    m_pPatches=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_pPatches=                       %p\n",
          m_runtimeOffsets.m_pPatches));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offRgData=                      0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offRgData=                      0x%08zx\n",
          m_runtimeOffsets.m_offRgData));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offCData=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offCData=                       0x%08zx\n",
          m_runtimeOffsets.m_offCData));
-    LOG((LF_CORDB, LL_INFO10000, "    m_cbPatch=                        0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_cbPatch=                        0x%08zx\n",
          m_runtimeOffsets.m_cbPatch));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offAddr=                        0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offAddr=                        0x%08zx\n",
          m_runtimeOffsets.m_offAddr));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offOpcode=                      0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offOpcode=                      0x%08zx\n",
          m_runtimeOffsets.m_offOpcode));
-    LOG((LF_CORDB, LL_INFO10000, "    m_cbOpcode=                       0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_cbOpcode=                       0x%08zx\n",
          m_runtimeOffsets.m_cbOpcode));
-    LOG((LF_CORDB, LL_INFO10000, "    m_offTraceType=                   0x%08x\n",
+    LOG((LF_CORDB, LL_INFO10000, "    m_offTraceType=                   0x%08zx\n",
          m_runtimeOffsets.m_offTraceType));
     LOG((LF_CORDB, LL_INFO10000, "    m_traceTypeUnmanaged=             0x%08x\n",
          m_runtimeOffsets.m_traceTypeUnmanaged));
@@ -8453,7 +8408,7 @@ bool CordbProcess::IsBreakOpcodeAtAddress(const void * address)
 HRESULT
 CordbProcess::SetUnmanagedBreakpoint(CORDB_ADDRESS address, ULONG32 bufsize, BYTE buffer[], ULONG32 * bufLen)
 {
-    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBP: pProcess=%x, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
+    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBP: pProcess=%p, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
 #ifndef FEATURE_INTEROP_DEBUGGING
     return E_NOTIMPL;
 #else
@@ -8480,7 +8435,7 @@ CordbProcess::SetUnmanagedBreakpoint(CORDB_ADDRESS address, ULONG32 bufsize, BYT
 HRESULT
 CordbProcess::SetUnmanagedBreakpointInternal(CORDB_ADDRESS address, ULONG32 bufsize, BYTE buffer[], ULONG32 * bufLen)
 {
-    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBPI: pProcess=%x, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
+    LOG((LF_CORDB, LL_INFO100, "CP::SetUnBPI: pProcess=%p, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
 #ifndef FEATURE_INTEROP_DEBUGGING
     return E_NOTIMPL;
 #else
@@ -8572,7 +8527,7 @@ ErrExit:
 HRESULT
 CordbProcess::ClearUnmanagedBreakpoint(CORDB_ADDRESS address)
 {
-    LOG((LF_CORDB, LL_INFO100, "CP::ClearUnBP: pProcess=%x, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
+    LOG((LF_CORDB, LL_INFO100, "CP::ClearUnBP: pProcess=%p, address=%p.\n", this, CORDB_ADDRESS_TO_PTR(address)));
 #ifndef FEATURE_INTEROP_DEBUGGING
     return E_NOTIMPL;
 #else
@@ -8894,7 +8849,7 @@ void CordbProcess::FinishInitializeIPCChannelWorker()
         BOOL fBlockExists;
         GetEventBlock(&fBlockExists); // throws on error
 
-        LOG((LF_CORDB, LL_EVERYTHING, "Size of CdbP is %d\n", sizeof(CordbProcess)));
+        LOG((LF_CORDB, LL_EVERYTHING, "Size of CdbP is %zu\n", sizeof(CordbProcess)));
 
         m_pEventChannel->Init(m_handle);
 
@@ -9328,8 +9283,9 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
     if (eventSize > CorDBIPC_BUFFER_SIZE)
         return E_INVALIDARG;
 
-    STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: sending %s to AD 0x%x, proc 0x%x(%d)\n",
-         IPCENames::GetName(event->type), VmPtrToCookie(event->vmAppDomain), process->m_id, process->m_id);
+    STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: sending %s to AD 0x%zx, proc 0x%zx(%zu)\n",
+         IPCENames::GetName(event->type), static_cast<size_t>(VmPtrToCookie(event->vmAppDomain)),
+         static_cast<size_t>(process->m_id), static_cast<size_t>(process->m_id));
 
     // For 2-way events, this check is unnecessary (since we already check for LS exit)
     // But for async events, we need this.
@@ -9676,8 +9632,11 @@ void CordbProcess::HandleRCEvent(
 
     IfFailThrow(pManagedEvent->hr);
 
-    STRESS_LOG4(LF_CORDB, LL_INFO1000, "RCET::TP: Got %s for AD 0x%x, proc 0x%x(%d)\n",
-        IPCENames::GetName(pManagedEvent->type), VmPtrToCookie(pManagedEvent->vmAppDomain), this->m_id, this->m_id);
+    STRESS_LOG4(LF_CORDB, LL_INFO1000, "RCET::TP: Got %s for AD 0x%zx, proc 0x%zx(%zu)\n",
+        IPCENames::GetName(pManagedEvent->type),
+        static_cast<size_t>(VmPtrToCookie(pManagedEvent->vmAppDomain)),
+        static_cast<size_t>(this->m_id),
+        static_cast<size_t>(this->m_id));
 
     RSExtSmartPtr<ICorDebugManagedCallback2> pCallback2;
     pCallback->QueryInterface(IID_ICorDebugManagedCallback2, reinterpret_cast<void **> (&pCallback2));
@@ -9812,7 +9771,7 @@ void CordbRCEventThread::ThreadProc()
                 // per-process mutex when checking the process's synchronized flag here.
                 if (!pProcess->GetSynchronized() && pProcess->IsSafeToSendEvents())
                 {
-                    STRESS_LOG2(LF_CORDB, LL_INFO1000, "RCET::TP: listening to process 0x%x(%d)\n",
+                    STRESS_LOG2(LF_CORDB, LL_INFO1000, "RCET::TP: listening to process 0x%zx(%zu)\n",
                                 pProcess->m_id, pProcess->m_id);
 
                     waitSet[waitCount] = pProcess->m_leftSideEventAvailable;
@@ -10088,11 +10047,11 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
         {
             IfFailThrow(pEvent->hr);
 
-            STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: Got %s for AD 0x%x, proc 0x%x(%d)\n",
+            STRESS_LOG4(LF_CORDB, LL_INFO1000, "CRCET::SIPCE: Got %s for AD 0x%zx, proc 0x%zx(%zu)\n",
                         IPCENames::GetName(pEvent->type),
-                        VmPtrToCookie(pEvent->vmAppDomain),
-                        pProcess->m_id,
-                        pProcess->m_id);
+                        static_cast<size_t>(VmPtrToCookie(pEvent->vmAppDomain)),
+                        static_cast<size_t>(pProcess->m_id),
+                        static_cast<size_t>(pProcess->m_id));
 
         }
         EX_CATCH_HRESULT(hr)

@@ -11,7 +11,6 @@
 #define __cgensys_h__
 
 class MethodDesc;
-class Stub;
 class Thread;
 class CrawlFrame;
 struct EE_ILEXCEPTION_CLAUSE;
@@ -68,7 +67,11 @@ extern "C" PCODE STDCALL DelayLoad_MethodCall(TransitionBlock* pTransitionBlock,
 extern "C" void STDCALL DelayLoad_MethodCall();
 #endif
 
+#ifdef TARGET_WASM
+extern "C" SIZE_T STDCALL DelayLoad_Helper(TransitionBlock* pTransitionBlock, READYTORUN_IMPORT_THUNK_PORTABLE_ENTRYPOINT* pImportThunkEntry, uint8_t *moduleBase, int32_t rvaOfModuleFixup);
+#else
 extern "C" void STDCALL DelayLoad_Helper();
+#endif
 extern "C" void STDCALL DelayLoad_Helper_Obj();
 extern "C" void STDCALL DelayLoad_Helper_ObjObj();
 #endif

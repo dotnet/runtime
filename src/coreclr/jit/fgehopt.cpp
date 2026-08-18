@@ -1811,24 +1811,11 @@ void Compiler::fgDebugCheckTryFinallyExits()
 
 //------------------------------------------------------------------------
 // fgRemoveUnreachableTry: Remove EH regions whose try entry is not
-//    reachable from the method entry.
+//    reachable from the method entry, and any regions structurally
+//    enclosed in such regions.
 //
 // Returns:
 //    PhaseStatus indicating what, if anything, was changed.
-//
-// Notes:
-//    Walks the EH table; for each entry whose try entry is not in the DFS
-//    reachable set: retargets any callfinally pairs that target the handler
-//    to its continuation, unprotects every block in the try/filter/handler,
-//    clears stale tryIndex/hndIndex on those blocks, and drops the EH table
-//    entry. After all dead entries are dropped, recomputes the DFS and runs
-//    fgRemoveBlocksOutsideDfsTree to delete the now-unreachable blocks.
-//
-//    The standard DFS is EH-aware (AllSuccessorEnumerator visits EH
-//    successors), so try-reachability normally implies handler/filter
-//    reachability; the callfinally retargeting handles the case where
-//    finally-cloning has left live callfinally pairs into an otherwise-dead
-//    handler.
 //
 PhaseStatus Compiler::fgRemoveUnreachableTry()
 {
@@ -1863,9 +1850,6 @@ PhaseStatus Compiler::fgRemoveUnreachableTry()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // Compute DFS if the caller didn't supply one; the EH-aware DFS makes
-    // try-reachability imply handler/filter reachability for the common case.
-    //
     bool ownsDfs = false;
     if (m_dfsTree == nullptr)
     {
@@ -1873,8 +1857,11 @@ PhaseStatus Compiler::fgRemoveUnreachableTry()
         ownsDfs   = true;
     }
 
-    // PASS 1: For each dead-try region, retarget any callfinally pairs that
-    // target the handler so the now-dead handler has no live preds.
+    BitVecTraits traits(compHndBBtabCount, this);
+    BitVec       markedDead(BitVecOps::MakeEmpty(&traits));
+
+    // PASS 1: directly-dead regions (try entry not in DFS); retarget any
+    // callfinally pairs targeting the now-dead handler.
     //
     bool foundDead = false;
 
@@ -1889,16 +1876,9 @@ PhaseStatus Compiler::fgRemoveUnreachableTry()
             continue;
         }
 
+        BitVecOps::AddElemD(&traits, markedDead, XTnum);
         foundDead = true;
         JITDUMP("EH#%u try entry " FMT_BB " is unreachable.\n", XTnum, tryBeg->bbNum);
-
-        // Filters are only reached via EH-succ from try blocks, so an
-        // unreachable try implies an unreachable filter.
-        //
-        if (HBtab->HasFilter())
-        {
-            assert(!m_dfsTree->Contains(HBtab->ebdFilter));
-        }
 
         if (HBtab->HasFinallyHandler())
         {
@@ -1931,10 +1911,6 @@ PhaseStatus Compiler::fgRemoveUnreachableTry()
                 }
             }
         }
-
-        // Non-finally handlers can stay DFS-reachable via two-pass EH
-        // dispatch from an outer filter; PASS 3's EH-entry removal + PASS 4's
-        // DFS rebuild will make them unreachable.
     }
 
     if (!foundDead)
@@ -1947,16 +1923,38 @@ PhaseStatus Compiler::fgRemoveUnreachableTry()
         return PhaseStatus::MODIFIED_NOTHING;
     }
 
-    // PASS 2: Unprotect blocks in dead regions and drop the artificial
-    // bbRefs on handler/filter entries so the dead-block pass can remove them.
+    // Close `markedDead` under structural containment. EH entries are stored
+    // inner-first so an enclosing region has a higher index; a single
+    // high-to-low pass propagates death inward.
     //
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    for (int XTnum = (int)compHndBBtabCount - 1; XTnum >= 0; XTnum--)
     {
-        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
-        if (m_dfsTree->Contains(HBtab->ebdTryBeg))
+        if (BitVecOps::IsMember(&traits, markedDead, (unsigned)XTnum))
         {
             continue;
         }
+        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
+        const unsigned  encT  = HBtab->ebdEnclosingTryIndex;
+        const unsigned  encH  = HBtab->ebdEnclosingHndIndex;
+        if (((encT != EHblkDsc::NO_ENCLOSING_INDEX) && BitVecOps::IsMember(&traits, markedDead, encT)) ||
+            ((encH != EHblkDsc::NO_ENCLOSING_INDEX) && BitVecOps::IsMember(&traits, markedDead, encH)))
+        {
+            BitVecOps::AddElemD(&traits, markedDead, (unsigned)XTnum);
+            JITDUMP("EH#%u is transitively dead (enclosed in a dead region).\n", XTnum);
+        }
+    }
+
+    // PASS 2: unprotect blocks in dead regions; drop artificial handler/filter refs.
+    //
+    unsigned removedCount = 0;
+    for (unsigned XTnum = 0; XTnum < compHndBBtabCount; XTnum++)
+    {
+        if (!BitVecOps::IsMember(&traits, markedDead, XTnum))
+        {
+            continue;
+        }
+
+        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
 
         for (BasicBlock* const block : Blocks(HBtab->ebdTryBeg, HBtab->ebdTryLast))
         {
@@ -1982,38 +1980,35 @@ PhaseStatus Compiler::fgRemoveUnreachableTry()
             assert(HBtab->ebdFilter->bbRefs >= 1);
             HBtab->ebdFilter->bbRefs--;
         }
+
+        removedCount++;
     }
 
-    // PASS 3: Drop the EH table entries for the dead regions, clearing the
-    // try/hnd index on any block still claimed by them so fgRemoveEHTableEntry
-    // is satisfied.
+    // PASS 3: clear stale tryIndex/hndIndex on blocks claiming a dead region,
+    // then drop EH entries highest-to-lowest so indices below remain valid.
     //
-    unsigned removedCount = 0;
-    for (unsigned XTnum = 0; XTnum < compHndBBtabCount;)
+    for (BasicBlock* const block : Blocks())
     {
-        EHblkDsc* const HBtab = &compHndBBtab[XTnum];
-        if (m_dfsTree->Contains(HBtab->ebdTryBeg))
+        if (block->hasTryIndex() && BitVecOps::IsMember(&traits, markedDead, block->getTryIndex()))
         {
-            XTnum++;
+            block->clearTryIndex();
+        }
+        if (block->hasHndIndex() && BitVecOps::IsMember(&traits, markedDead, block->getHndIndex()))
+        {
+            block->clearHndIndex();
+        }
+    }
+
+    for (int XTnum = (int)compHndBBtabCount - 1; XTnum >= 0; XTnum--)
+    {
+        if (!BitVecOps::IsMember(&traits, markedDead, (unsigned)XTnum))
+        {
             continue;
         }
 
-        for (BasicBlock* const block : Blocks())
-        {
-            if (block->hasTryIndex() && block->getTryIndex() == XTnum)
-            {
-                block->clearTryIndex();
-            }
-            if (block->hasHndIndex() && block->getHndIndex() == XTnum)
-            {
-                block->clearHndIndex();
-            }
-        }
-
-        JITDUMP("Dropping EH#%u (try entry " FMT_BB ")\n", XTnum, HBtab->ebdTryBeg->bbNum);
-        fgUpdateACDsBeforeEHTableEntryRemoval(XTnum);
-        fgRemoveEHTableEntry(XTnum);
-        removedCount++;
+        JITDUMP("Dropping EH#%u (try entry " FMT_BB ")\n", XTnum, compHndBBtab[XTnum].ebdTryBeg->bbNum);
+        fgUpdateACDsBeforeEHTableEntryRemoval((unsigned)XTnum);
+        fgRemoveEHTableEntry((unsigned)XTnum);
     }
 
     // PASS 4: Rebuild the DFS; PASS 1 and PASS 3 both invalidate it.

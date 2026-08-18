@@ -313,19 +313,6 @@ namespace System.Numerics.Tensors
                 rentedBuffer.Dispose();
             }
         }
-
-        private static nint CalculateCopyLength(ReadOnlySpan<nint> lengths, int startingAxis)
-        {
-            // When starting axis is -1 we want all the data at once same as if starting axis is 0
-            if (startingAxis == -1)
-                startingAxis = 0;
-            nint length = 1;
-            for (int i = startingAxis; i < lengths.Length; i++)
-            {
-                length *= lengths[i];
-            }
-            return length;
-        }
         #endregion
 
         #region Create
@@ -1620,7 +1607,7 @@ namespace System.Numerics.Tensors
 
             if (tensor.IsDense)
             {
-                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref Unsafe.Add(ref tensor.AsTensorSpan()._reference, tensor._start), tensor._values.Length - tensor._start);
+                ReadOnlySpan<T> span = MemoryMarshal.CreateSpan(ref tensor.AsReadOnlyTensorSpan()._reference, (int)tensor.FlattenedLength);
                 Span<T> ospan = MemoryMarshal.CreateSpan(ref output.AsTensorSpan()._reference, (int)output.FlattenedLength);
                 if (newSize >= span.Length)
                 {

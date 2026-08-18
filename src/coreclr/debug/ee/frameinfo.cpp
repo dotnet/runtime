@@ -436,8 +436,9 @@ bool HasExitRuntime(Frame *pFrame, DebuggerFrameData *pData, FramePointer *pPote
     EX_END_CATCH
 
     LOG((LF_CORDB, LL_INFO100000,
-         "DWSP: TYPE_EXIT: returnIP=0x%08x, returnSP=0x%08x, frame=0x%08x, threadFrame=0x%08x, regSP=0x%08x\n",
-         returnIP, returnSP, pFrame, pData->GetThread()->GetFrame(), GetRegdisplaySP(&pData->regDisplay)));
+         "DWSP: TYPE_EXIT: returnIP=0x%08x, returnSP=0x%08x, frame=%p, threadFrame=%p, regSP=0x%08x\n",
+         returnIP, returnSP, static_cast<void*>(pFrame), static_cast<void*>(pData->GetThread()->GetFrame()),
+         GetRegdisplaySP(&pData->regDisplay)));
 
     if (pPotentialFP != NULL)
     {
@@ -1745,8 +1746,8 @@ StackWalkAction DebuggerWalkStackProc(CrawlFrame *pCF, void *data)
 
 #if defined(TARGET_AMD64)
         LOG((LF_CORDB, LL_INFO100000, "DWSP: Saving REGDISPLAY with sp = 0x%p, pc = 0x%p.\n",
-            GetRegdisplaySP(&(d->info.registers)),
-            GetControlPC(&(d->info.registers))));
+            (void*)GetRegdisplaySP(&(d->info.registers)),
+            (void*)GetControlPC(&(d->info.registers))));
 #endif // TARGET_AMD64
 
         d->needParentInfo = true;
@@ -1806,7 +1807,7 @@ bool ShouldSendUMLeafChain(Thread * pThread)
     }
 
     // If a thread is suspended for sync purposes, it was suspended from managed
-    // code and the only native code is a mscorwks hijack.
+    // code and the only native code is a runtime hijack.
     // There are a few caveats here:
     // - This means a thread will lose it's UM chain. But what if a user inactive thread
     // enters the CLR from native code and hits a GC toggle? We'll lose that entire
@@ -1815,14 +1816,14 @@ bool ShouldSendUMLeafChain(Thread * pThread)
     // may not have this state set, run a little, try to enter the GC, and then get
     // this state set. Thus we'll lose the UM chain right out from under our noses.
     Thread::ThreadState ts = pThread->GetState();
-    if ((ts & Thread::TS_SyncSuspended) != 0)
+    if ((ts & Thread::TS_DebugSyncSuspended) != 0)
     {
         // If we've been stopped inside the runtime (eg, at a gc-toggle) but
         // not actually at a stopping context, then the thread must have some
-        // leafframes in mscorwks.
+        // leafframes in the runtime.
         // We can detect this case by checking if GetManagedStoppedCtx(pThread) == NULL.
         // This is very significant for notifcations (like LogMessage) that are
-        // dispatches from within mscorwks w/o a filter context.
+        // dispatches from within the runtime w/o a filter context.
         // We don't send a UM chain for these cases because that would
         // cause managed debug events to be dispatched w/ UM chains on the callstack.
         // And that just seems wrong ...

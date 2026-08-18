@@ -291,7 +291,7 @@ internal sealed class PInvokeCollector {
             {
                 if (cattr.AttributeType.FullName == "System.Runtime.Versioning.UnsupportedOSPlatformAttribute" &&
                     cattr.ConstructorArguments.Count > 0 &&
-                    cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
+                    MatchesTargetOS(cattr.ConstructorArguments[0].Value?.ToString()))
                 {
                     return PlatformSupport.Unsupported;
                 }
@@ -299,7 +299,7 @@ internal sealed class PInvokeCollector {
                     cattr.ConstructorArguments.Count > 0)
                 {
                     hasSupportedOSPlatform = true;
-                    if (cattr.ConstructorArguments[0].Value?.ToString() == _targetOS)
+                    if (MatchesTargetOS(cattr.ConstructorArguments[0].Value?.ToString()))
                         hasSupportedTarget = true;
                 }
             }
@@ -313,6 +313,22 @@ internal sealed class PInvokeCollector {
             return hasSupportedTarget ? PlatformSupport.Supported : PlatformSupport.Unsupported;
 
         return PlatformSupport.Unknown;
+    }
+
+    private bool MatchesTargetOS(string? platformName)
+    {
+        if (string.Equals(platformName, _targetOS, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (platformName?.StartsWith(_targetOS, StringComparison.OrdinalIgnoreCase) != true)
+            return false;
+
+#if NETFRAMEWORK
+        string version = platformName.Substring(_targetOS.Length);
+#else
+        ReadOnlySpan<char> version = platformName.AsSpan(_targetOS.Length);
+#endif
+        return Version.TryParse(version, out _);
     }
 }
 
@@ -336,7 +352,14 @@ internal sealed class PInvokeCallback
         TypeFullName = t.FullName!;
         AssemblyName = t.Module!.Assembly!.GetName()!.Name!;
         AssemblyFQName = t.Module!.Assembly!.GetName()!.FullName!;
-        Namespace = t.Namespace;
+        // Nested types: the runtime reverse-thunk key (vm/wasm/helpers.cpp GetHashCode ->
+        // GetFullyQualifiedNameInfo) reports an empty namespace for nested types, so match that
+        // here or the emitted g_ReverseThunks key won't be found at lookup time (#130129).
+        // This key drops the enclosing-type chain, so nested types with the same simple name in
+        // different namespaces collide; the duplicate-key check in PInvokeTableGenerator
+        // (EmitNativeToInterp) turns that into a build error.
+        // Tracked by https://github.com/dotnet/runtime/issues/130739.
+        Namespace = t.IsNested ? string.Empty : t.Namespace;
         MethodName = method.Name!;
         ReturnType = method.ReturnType!;
         IsVoid = ReturnType.Name == "Void";

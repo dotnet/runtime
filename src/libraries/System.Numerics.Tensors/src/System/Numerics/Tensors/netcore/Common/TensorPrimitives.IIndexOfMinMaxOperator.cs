@@ -93,7 +93,7 @@ namespace System.Numerics.Tensors
             Vector128<T> result = Vector128.Create(x);
             if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                Vector128<T> nanMask = IsNaN(result);
+                Vector128<T> nanMask = Vector128.IsNaN(result);
                 if (nanMask != Vector128<T>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -126,7 +126,7 @@ namespace System.Numerics.Tensors
                 // Quick return if possible.
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    Vector128<T> nanMask = IsNaN(current);
+                    Vector128<T> nanMask = Vector128.IsNaN(current);
                     if (nanMask != Vector128<T>.Zero)
                     {
                         return int.CreateTruncating(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
@@ -160,7 +160,7 @@ namespace System.Numerics.Tensors
             Vector128<T> result = Vector128.Create(x);
             if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                Vector128<T> nanMask = IsNaN(result);
+                Vector128<T> nanMask = Vector128.IsNaN(result);
                 if (nanMask != Vector128<T>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -194,7 +194,7 @@ namespace System.Numerics.Tensors
                 // Quick return if possible.
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    Vector128<T> nanMask = IsNaN(current);
+                    Vector128<T> nanMask = Vector128.IsNaN(current);
                     if (nanMask != Vector128<T>.Zero)
                     {
                         return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
@@ -235,7 +235,7 @@ namespace System.Numerics.Tensors
             Vector128<T> result = Vector128.Create(x);
             if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                Vector128<T> nanMask = IsNaN(result);
+                Vector128<T> nanMask = Vector128.IsNaN(result);
                 if (nanMask != Vector128<T>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -271,7 +271,7 @@ namespace System.Numerics.Tensors
                 // Quick return if possible.
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    Vector128<T> nanMask = IsNaN(current);
+                    Vector128<T> nanMask = Vector128.IsNaN(current);
                     if (nanMask != Vector128<T>.Zero)
                     {
                         return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
@@ -324,7 +324,7 @@ namespace System.Numerics.Tensors
             Vector256<T> result = Vector256.Create(x);
             if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                Vector256<T> nanMask = IsNaN(result);
+                Vector256<T> nanMask = Vector256.IsNaN(result);
                 if (nanMask != Vector256<T>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -357,7 +357,7 @@ namespace System.Numerics.Tensors
                 // Quick return if possible.
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    Vector256<T> nanMask = IsNaN(current);
+                    Vector256<T> nanMask = Vector256.IsNaN(current);
                     if (nanMask != Vector256<T>.Zero)
                     {
                         return int.CreateTruncating(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
@@ -391,7 +391,7 @@ namespace System.Numerics.Tensors
             Vector256<T> result = Vector256.Create(x);
             if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                Vector256<T> nanMask = IsNaN(result);
+                Vector256<T> nanMask = Vector256.IsNaN(result);
                 if (nanMask != Vector256<T>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -425,7 +425,7 @@ namespace System.Numerics.Tensors
                 // Quick return if possible.
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    Vector256<T> nanMask = IsNaN(current);
+                    Vector256<T> nanMask = Vector256.IsNaN(current);
                     if (nanMask != Vector256<T>.Zero)
                     {
                         return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
@@ -466,7 +466,7 @@ namespace System.Numerics.Tensors
             Vector256<T> result = Vector256.Create(x);
             if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                Vector256<T> nanMask = IsNaN(result);
+                Vector256<T> nanMask = Vector256.IsNaN(result);
                 if (nanMask != Vector256<T>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -502,7 +502,7 @@ namespace System.Numerics.Tensors
                 // Quick return if possible.
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    Vector256<T> nanMask = IsNaN(current);
+                    Vector256<T> nanMask = Vector256.IsNaN(current);
                     if (nanMask != Vector256<T>.Zero)
                     {
                         return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
@@ -555,7 +555,7 @@ namespace System.Numerics.Tensors
             Vector512<T> result = Vector512.Create(x);
             if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                Vector512<T> nanMask = IsNaN(result);
+                Vector512<T> nanMask = Vector512.IsNaN(result);
                 if (nanMask != Vector512<T>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -588,7 +588,7 @@ namespace System.Numerics.Tensors
                 // Quick return if possible.
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    Vector512<T> nanMask = IsNaN(current);
+                    Vector512<T> nanMask = Vector512.IsNaN(current);
                     if (nanMask != Vector512<T>.Zero)
                     {
                         return int.CreateTruncating(currentIndex.ToScalar()) + IndexOfFirstMatch(nanMask);
@@ -622,7 +622,7 @@ namespace System.Numerics.Tensors
             Vector512<T> result = Vector512.Create(x);
             if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                Vector512<T> nanMask = IsNaN(result);
+                Vector512<T> nanMask = Vector512.IsNaN(result);
                 if (nanMask != Vector512<T>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -656,7 +656,7 @@ namespace System.Numerics.Tensors
                 // Quick return if possible.
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    Vector512<T> nanMask = IsNaN(current);
+                    Vector512<T> nanMask = Vector512.IsNaN(current);
                     if (nanMask != Vector512<T>.Zero)
                     {
                         return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);
@@ -697,7 +697,7 @@ namespace System.Numerics.Tensors
             Vector512<T> result = Vector512.Create(x);
             if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
             {
-                Vector512<T> nanMask = IsNaN(result);
+                Vector512<T> nanMask = Vector512.IsNaN(result);
                 if (nanMask != Vector512<T>.Zero)
                 {
                     return IndexOfFirstMatch(nanMask);
@@ -733,7 +733,7 @@ namespace System.Numerics.Tensors
                 // Quick return if possible.
                 if (typeof(T) == typeof(float) || typeof(T) == typeof(double))
                 {
-                    Vector512<T> nanMask = IsNaN(current);
+                    Vector512<T> nanMask = Vector512.IsNaN(current);
                     if (nanMask != Vector512<T>.Zero)
                     {
                         return (int)currentIndex.ToScalar() + IndexOfFirstMatch(nanMask);

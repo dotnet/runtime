@@ -1,15 +1,19 @@
+# This pipeline is a subset of crossgen2-outerloop.yml and is retained for manual runs.
 trigger: none
+pr: none
 
-schedules:
-- cron: "0 5 * * *"
-  displayName: Mon through Sun at 9:00 PM (UTC-8:00)
-  branches:
-    include:
-    - main
-  always: true
+# schedules:
+# - cron: "0 5 * * *"
+#   displayName: Mon through Sun at 9:00 PM (UTC-8:00)
+#   branches:
+#     include:
+#     - main
+#   always: true
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -18,6 +22,11 @@ extends:
     stages:
     - stage: Build
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
@@ -73,6 +82,7 @@ extends:
           helixQueueGroup: ci
           helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
           jobParameters:
+            useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
             testGroup: outerloop
             readyToRun: true
             displayNameArgs: R2R

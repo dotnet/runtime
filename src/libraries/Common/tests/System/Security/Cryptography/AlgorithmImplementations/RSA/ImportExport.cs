@@ -3,17 +3,19 @@
 
 using System.Linq;
 using System.Numerics;
+using System.Security.Cryptography.Tests;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Rsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public partial class ImportExport
+    public abstract class ImportExport
     {
-        public static bool Supports16384 { get; } = TestRsa16384();
+        protected abstract RSAProvider RSAFactory { get; }
 
         [Fact]
-        public static void ExportAutoKey()
+        public void ExportAutoKey()
         {
             RSAParameters privateParams;
             RSAParameters publicParams;
@@ -43,7 +45,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void PaddedExport()
+        public void PaddedExport()
         {
             // OpenSSL's numeric type for the storage of RSA key parts disregards zero-valued
             // prefix bytes.
@@ -69,9 +71,11 @@ namespace System.Security.Cryptography.Rsa.Tests
             RSATestHelpers.AssertKeyEquals(diminishedDPParameters, exported);
         }
 
-        [ConditionalFact(typeof(ImportExport), nameof(ImportExport.Supports16384))]
-        public static void LargeKeyImportExport()
+        [ConditionalFact]
+        public void LargeKeyImportExport()
         {
+            SkipTestException.ThrowUnless(RSAFactory.Supports16384);
+
             RSAParameters imported = TestData.RSA16384Params;
 
             using (RSA rsa = RSAFactory.Create())
@@ -99,7 +103,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void UnusualExponentImportExport()
+        public void UnusualExponentImportExport()
         {
             // Most choices for the Exponent value in an RSA key use a Fermat prime.
             // Since a Fermat prime is 2^(2^m) + 1, it always only has two bits set, and
@@ -123,7 +127,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void ImportExport1032()
+        public void ImportExport1032()
         {
             RSAParameters imported = TestData.RSA1032Parameters;
             RSAParameters exported;
@@ -144,7 +148,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void ImportReset()
+        public void ImportReset()
         {
             using (RSA rsa = RSAFactory.Create())
             {
@@ -174,7 +178,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void ImportPrivateExportPublic()
+        public void ImportPrivateExportPublic()
         {
             RSAParameters imported = TestData.RSA1024Params;
 
@@ -192,7 +196,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void MultiExport()
+        public void MultiExport()
         {
             RSAParameters imported = TestData.RSA1024Params;
 
@@ -223,7 +227,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void PublicOnlyPrivateExport()
+        public void PublicOnlyPrivateExport()
         {
             RSAParameters imported = new RSAParameters
             {
@@ -239,7 +243,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void ImportNoExponent()
+        public void ImportNoExponent()
         {
             RSAParameters imported = new RSAParameters
             {
@@ -256,7 +260,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         }
 
         [Fact]
-        public static void ImportNoModulus()
+        public void ImportNoModulus()
         {
             RSAParameters imported = new RSAParameters
             {
@@ -276,7 +280,7 @@ namespace System.Security.Cryptography.Rsa.Tests
 #if TESTING_CNG_IMPLEMENTATION
         [ActiveIssue("https://github.com/dotnet/runtime/issues/21341", TargetFrameworkMonikers.NetFramework)]
 #endif
-        public static void ImportNoDP()
+        public void ImportNoDP()
         {
             // Because RSAParameters is a struct, this is a copy,
             // so assigning DP is not destructive to other tests.
@@ -292,7 +296,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void ExportAfterDispose(bool importKey)
+        public void ExportAfterDispose(bool importKey)
         {
             RSA rsa = importKey ? RSAFactory.Create(TestData.RSA2048Params) : RSAFactory.Create(1024);
 
@@ -314,7 +318,7 @@ namespace System.Security.Cryptography.Rsa.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public static void ImportZeroModulus(bool includePrivateParameters)
+        public void ImportZeroModulus(bool includePrivateParameters)
         {
             RSAParameters zeroModulus = CopyRSAParameters(TestData.RSA2048Params);
             zeroModulus.Modulus.AsSpan().Clear();
@@ -363,31 +367,6 @@ namespace System.Security.Cryptography.Rsa.Tests
                 Modulus = rsaParams.Modulus,
                 Exponent = rsaParams.Exponent,
             };
-        }
-
-        private static bool TestRsa16384()
-        {
-            if (PlatformDetection.IsAndroid)
-            {
-                // We cannot detect this on Android at the moment. Even attempting to generate or import a 16K RSA key
-                // may leave the error queue in the incorrect state. See https://github.com/google/conscrypt/issues/1507
-                return false;
-            }
-
-            try
-            {
-                using (RSA rsa = RSAFactory.Create())
-                {
-                    rsa.ImportParameters(TestData.RSA16384Params);
-                }
-
-                return true;
-            }
-            catch (Exception e) when (e is CryptographicException or PlatformNotSupportedException)
-            {
-                // The key is too big for this platform or the platform is not supported.
-                return false;
-            }
         }
 
         private static RSAParameters CopyRSAParameters(in RSAParameters rsaParams)

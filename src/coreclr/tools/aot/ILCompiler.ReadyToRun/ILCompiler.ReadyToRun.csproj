@@ -5,7 +5,6 @@
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>READYTORUN;$(DefineConstants)</DefineConstants>
-    <DefineConstants Condition="'$(FeatureDynamicCodeCompiled)' == 'true'">$(DefineConstants);FEATURE_DYNAMIC_CODE_COMPILED</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Platforms>x64;x86;arm;arm64</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -24,6 +23,8 @@
     <ProjectReference Include="..\ILCompiler.DependencyAnalysisFramework\ILCompiler.DependencyAnalysisFramework.csproj" />
     <ProjectReference Include="..\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
+
+    <InternalsVisibleTo Include="ILCompiler.ReadyToRun.Tests" />
 
     <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">
       <PrivateAssets>all</PrivateAssets>
@@ -64,6 +65,7 @@
     <Compile Include="..\..\Common\Compiler\AsyncContinuationType.cs" Link="Compiler\AsyncContinuationType.cs" />
     <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.cs" Link="Compiler\AsyncMethodVariant.cs" />
     <Compile Include="..\..\Common\Compiler\AsyncMethodVariant.Mangling.cs" Link="Compiler\AsyncMethodVariant.Mangling.cs" />
+    <Compile Include="..\..\Common\Compiler\CachingVirtualMethodAlgorithm.cs" Link="Compiler\CachingVirtualMethodAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\CodeGenerationFailedException.cs" Link="Compiler\CodeGenerationFailedException.cs" />
     <Compile Include="..\..\Common\Compiler\CompilationBuilder.cs" Link="Compiler\CompilationBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\CompilationModuleGroup.cs" Link="Compiler\CompilationModuleGroup.cs" />
@@ -83,6 +85,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs" Link="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\CompilerComparer.cs" Link="Compiler\DependencyAnalysis\CompilerComparer.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ExternSymbolNode.cs" Link="Compiler\DependencyAnalysis\ExternSymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\GVMDependenciesNode.cs" Link="Compiler\DependencyAnalysis\GVMDependenciesNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodBodyNode.cs" Link="Compiler\DependencyAnalysis\IMethodBodyNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IMethodNode.cs" Link="Compiler\DependencyAnalysis\IMethodNode.cs" />
@@ -92,6 +95,7 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" Link="Compiler\DependencyAnalysis\INodeWithTypeSignature.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" Link="Compiler\DependencyAnalysis\INodeWithRuntimeDeterminedDependencies.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectDumper.cs" Link="Compiler\DependencyAnalysis\IObjectDumper.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" Link="Compiler\DependencyAnalysis\IObjectNodeWithAlignment.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\IPCodeSymbolNode.cs" Link="Compiler\DependencyAnalysis\IPCodeSymbolNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISortableNode.cs" Link="Compiler\DependencyAnalysis\ISortableNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ISymbolNode.cs" Link="Compiler\DependencyAnalysis\ISymbolNode.cs" />
@@ -105,6 +109,8 @@
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\ShadowMethodNode.cs" Link="Compiler\DependencyAnalysis\ShadowMethodNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\SortableDependencyNode.cs" Link="Compiler\DependencyAnalysis\SortableDependencyNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\WasmTypeNode.cs" Link="Compiler\DependencyAnalysis\WasmTypeNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\WasmWellKnownGlobalSymbolNode.cs" Link="Compiler\DependencyAnalysis\WasmWellKnownGlobalSymbolNode.cs" />
+    <Compile Include="..\..\Common\Compiler\DependencyAnalysis\NodeFactory.Wasm.cs" Link="Compiler\DependencyAnalysis\NodeFactory.Wasm.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\AddrMode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\ARM64Emitter.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\Target_ARM64\Register.cs" Link="Compiler\DependencyAnalysis\Target_ARM64\Register.cs" />
@@ -141,6 +147,7 @@
     <Compile Include="..\..\Common\Compiler\IProxyTypeMapNode.cs" Link="Compiler\DependencyAnalysis\IProxyTypeMapNode.cs" />
     <Compile Include="..\..\Common\Compiler\InstructionSetSupport.cs" Link="Compiler\InstructionSetSupport.cs" />
     <Compile Include="..\..\Common\Compiler\Int128FieldLayoutAlgorithm.cs" Link="Compiler\Int128FieldLayoutAlgorithm.cs" />
+    <Compile Include="..\..\Common\Compiler\DecimalFieldLayoutAlgorithm.cs" Link="Compiler\DecimalFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\InternalCompilerErrorException.cs" Link="Compiler\InternalCompilerErrorException.cs" />
     <Compile Include="..\..\Common\Compiler\MethodExtensions.cs" Link="Compiler\MethodExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\NameMangler.cs" Link="Compiler\NameMangler.cs" />
@@ -163,6 +170,9 @@
     <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Compiler\Win32Resources\ResourceData.Win32Structs.cs" />
     <Compile Include="..\..\Common\JitInterface\CorInfoTypes.VarInfo.cs" Link="JitInterface\CorInfoTypes.VarInfo.cs" />
     <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs" Link="JitInterface\SystemVStructClassificator.cs" />
+    <Compile Include="..\..\Common\CallingConvention\ArgIterator.cs" Link="CallingConvention\ArgIterator.cs" />
+    <Compile Include="..\..\Common\CallingConvention\TransitionBlock.cs" Link="CallingConvention\TransitionBlock.cs" />
+    <Compile Include="..\..\Common\CallingConvention\ITypeHandle.cs" Link="CallingConvention\ITypeHandle.cs" />
     <Compile Include="..\..\Common\Internal\Runtime\RiscVLoongArch64FpStruct.cs" Link="Common\RiscVLoongArch64FpStruct.cs" />
     <Compile Include="..\..\Common\JitInterface\SwiftPhysicalLowering.cs" Link="JitInterface\SwiftPhysicalLowering.cs" />
     <Compile Include="..\..\Common\JitInterface\WasmLowering.cs" Link="JitInterface\WasmLowering.cs" />
@@ -186,7 +196,14 @@
     <Compile Include="..\..\Common\Compiler\ObjectWriter\SectionWriter.cs" Link="Compiler\ObjectWriter\SectionWriter.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\StringTableBuilder.cs" Link="Compiler\ObjectWriter\StringTableBuilder.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\TypeString.cs" Link="Compiler\ObjectWriter\TypeString.cs" />
-    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmObjectWriter.cs" Link="Compiler\ObjectWriter\WasmObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSection.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmDataSegment.cs" Link="Compiler\ObjectWriter\Wasm\WasmDataSegment.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSection.cs" Link="Compiler\ObjectWriter\Wasm\WasmSection.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WasmSections.cs" Link="Compiler\ObjectWriter\Wasm\WasmSections.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\Wasm\WebcilSection.cs" Link="Compiler\ObjectWriter\Wasm\WebcilSection.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WebCilObjectWriter.cs" Link="Compiler\ObjectWriter\WebCilObjectWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmSymbolManager.cs" Link="Compiler\ObjectWriter\WasmSymbolManager.cs" />
+    <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmGlobalImports.cs" Link="Compiler\ObjectWriter\WasmGlobalImports.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmNative.cs" Link="Compiler\ObjectWriter\WasmNative.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\WasmInstructions.cs" Link="Compiler\ObjectWriter\WasmInstructions.cs" />
     <Compile Include="..\..\Common\Compiler\ObjectWriter\CodeDataLayoutMode.cs" Link="Compiler\ObjectWriter\CodeDataLayoutMode.cs" />
@@ -231,13 +248,13 @@
     <Compile Include="Compiler\CompositeImageSettings.cs" />
     <Compile Include="Compiler\CryptographicHashProvider.cs" />
     <Compile Include="Compiler\DependencyAnalysis\AllMethodsOnTypeNode.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ArrayInterfaceMethodsNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\InheritedVirtualMethodsNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" Link="Compiler\DependencyAnalysis\VirtualMethodUseNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedDataNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ArrayOfEmbeddedPointersNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedObjectNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\EmbeddedPointerIndirectionNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ArgIterator.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AssemblyTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\AttributePresenceFilterNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\DebugDirectoryEntryNode.cs" />
@@ -288,6 +305,7 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHelperSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunInstructionSetSupportSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ResumptionStubEntryPointSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StoreMultiCallableAddrOfCodeSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\InjectStringThunksSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\StringDiscoverableAssemblyStubNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
@@ -306,8 +324,8 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_Wasm\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X64\ImportThunk.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\Target_X86\ImportThunk.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TransitionBlock.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeFixupSignature.cs" />
+    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypeHandle.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\TypesTableNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\VirtualResolutionFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\WasmImportThunkPortableEntrypoint.cs" />

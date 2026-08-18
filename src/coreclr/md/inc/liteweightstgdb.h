@@ -15,6 +15,7 @@
 #include "metadata.h"
 #include "metamodelro.h"
 #include "metamodelrw.h"
+#include "cdacdata.h"
 
 #include "stgtiggerstorage.h"
 
@@ -32,10 +33,11 @@ class TiggerStorage;
 //  base class for the heap, and the class for heap extensions (additional
 //  memory that must be allocated to grow the heap).
 //*****************************************************************************
+class DacDbiInterfaceImpl;
 template <class MiniMd>
 class CLiteWeightStgdb
 {
-    friend class VerifyLayoutsMD;
+    friend class ::DacDbiInterfaceImpl;
 public:
     CLiteWeightStgdb() : m_pvMd(NULL), m_cbMd(0)
     {}
@@ -79,8 +81,8 @@ void CLiteWeightStgdb<MiniMd>::Uninit()
 
 class CLiteWeightStgdbRW : public CLiteWeightStgdb<CMiniMdRW>
 {
+    friend struct ::cdac_data<CLiteWeightStgdbRW>;
     friend class RegMeta;
-    friend class VerifyLayoutsMD;
     friend HRESULT TranslateSigHelper(
             IMDInternalImport*      pImport,
             IMDInternalImport*      pAssemImport,
@@ -138,14 +140,6 @@ public:
         void        *pbData,                // Data to open on top of, 0 default.
         ULONG       cbData,                 // How big is the data.
         DWORD       dwFlags);               // Flags for the open.
-
-#ifdef FEATURE_METADATA_CUSTOM_DATA_SOURCE
-    // Open a metadata section for read/write
-    __checkReturn
-    HRESULT OpenForRead(
-        IMDCustomDataSource *pDataSource,   // data to open on top of
-        DWORD       dwFlags);               // Flags for the open.
-#endif
 
     __checkReturn
     HRESULT FindImageMetaData(
@@ -234,5 +228,12 @@ private:
     PdbHeap *m_pPdbHeap;
 #endif
 };  // class CLiteWeightStgdbRW
+
+template<>
+struct cdac_data<CLiteWeightStgdbRW>
+{
+    static constexpr size_t MiniMd = offsetof(CLiteWeightStgdbRW, m_MiniMd);
+    static constexpr size_t MetadataAddress = offsetof(CLiteWeightStgdbRW, m_pvMd);
+};
 
 #endif // __LiteWeightStgdb_h__

@@ -30,6 +30,9 @@ public abstract class TypedView
     protected ulong ReadPointerField(string fieldName)
         => ReadPointer(GetFieldSlice(fieldName));
 
+    protected ulong ReadCodePointerField(string fieldName)
+        => ReadPointer(GetFieldSlice(fieldName));
+
     protected uint ReadUInt32Field(string fieldName)
         => Read<uint>(GetFieldSlice(fieldName));
 
@@ -49,6 +52,9 @@ public abstract class TypedView
         => GetFieldSlice(fieldName)[0];
 
     protected void WritePointerField(string fieldName, ulong value)
+        => WritePointer(GetFieldSlice(fieldName), value);
+
+    protected void WriteCodePointerField(string fieldName, ulong value)
         => WritePointer(GetFieldSlice(fieldName), value);
 
     protected void WriteUInt32Field(string fieldName, uint value)

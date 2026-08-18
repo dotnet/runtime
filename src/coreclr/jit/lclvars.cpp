@@ -131,7 +131,7 @@ void Compiler::lvaInitTypeRef()
         }
         else
         {
-            printf("Swift compilation returns %s as %d primitive(s) in registers\n",
+            printf("Swift compilation returns %s as %zu primitive(s) in registers\n",
                    typGetObjLayout(retTypeHnd)->GetClassName(), lowering->numLoweredElements);
             for (size_t i = 0; i < lowering->numLoweredElements; i++)
             {
@@ -1615,7 +1615,7 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
             // We will only promote fields of SIMD types that fit into a SIMD register.
             if (simdBaseType != TYP_UNDEF)
             {
-                if (m_compiler->structSizeMightRepresentSIMDType(simdSize))
+                if (m_compiler->structMightRepresentSIMDType(node.simdTypeHnd))
                 {
                     return m_compiler->getSIMDTypeForSize(simdSize);
                 }
@@ -1807,7 +1807,7 @@ bool Compiler::StructPromotionHelper::CanPromoteStructVar(unsigned lclNum)
     // (which would result in dependent promotion anyway).
     if ((m_compiler->info.compCallConv == CorInfoCallConvExtension::Swift) && varDsc->lvIsParam)
     {
-        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function");
+        JITDUMP("  struct promotion of V%02u is disabled because it is a parameter to a Swift function", lclNum);
         return false;
     }
 #endif
@@ -2276,9 +2276,7 @@ void Compiler::lvaSetHiddenBufferStructArg(unsigned varNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(varNum);
 
-#ifdef DEBUG
-    varDsc->SetDefinedViaAddress(true);
-#endif
+    INDEBUG(varDsc->SetDefinedViaAddress(true));
 
     if (varDsc->lvPromoted)
     {
@@ -5330,7 +5328,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
                 continue;
             }
 
-            if ((lclNum == lvaMonAcquired) || (lclNum == lvaAsyncThreadObjectVar) ||
+            if ((lclNum == lvaMonAcquired) || (lclNum == lvaResumedIndicator) || (lclNum == lvaAsyncThreadObjectVar) ||
                 (lclNum == lvaAsyncExecutionContextVar) || (lclNum == lvaAsyncSynchronizationContextVar))
             {
                 continue;
@@ -5859,6 +5857,18 @@ int Compiler::lvaAllocLocalAndSetVirtualOffset(unsigned lclNum, unsigned size, i
 //
 int Compiler::lvaAllocAsyncContexts(int stkOffs)
 {
+    if (lvaResumedIndicator != BAD_VAR_NUM)
+    {
+        stkOffs =
+            lvaAllocLocalAndSetVirtualOffset(lvaResumedIndicator, lvaLclStackHomeSize(lvaResumedIndicator), stkOffs);
+    }
+    else
+    {
+        // For x86 EnC the VM expects that we always allocate stack space
+        // for these locals when contexts were saved.
+        assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
+    }
+
     if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
     {
         stkOffs = lvaAllocLocalAndSetVirtualOffset(lvaAsyncThreadObjectVar,
@@ -5866,8 +5876,6 @@ int Compiler::lvaAllocAsyncContexts(int stkOffs)
     }
     else
     {
-        // For x86 EnC the VM expects that we always allocate stack space
-        // for this local when contexts were saved.
         assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
     }
 
@@ -5878,8 +5886,6 @@ int Compiler::lvaAllocAsyncContexts(int stkOffs)
     }
     else
     {
-        // For x86 EnC the VM expects that we always allocate stack space
-        // for this local when contexts were saved.
         assert((info.compMethodInfo->options & CORINFO_ASYNC_SAVE_CONTEXTS) == 0);
     }
 
@@ -6049,14 +6055,32 @@ void Compiler::lvaAlignFrame()
     }
 #elif defined(TARGET_WASM)
     // Keep the stack aligned to STACK_ALIGN.
+    unsigned pad = 0;
     if ((compLclFrameSize % STACK_ALIGN) != 0)
     {
-        lvaIncrementFrameSize(STACK_ALIGN - (compLclFrameSize % STACK_ALIGN));
+        pad = STACK_ALIGN - (compLclFrameSize % STACK_ALIGN);
     }
     else if (lvaDoneFrameLayout != FINAL_FRAME_LAYOUT)
     {
         // Reserve a full STACK_ALIGN so the offsets computed now are upper bounds.
-        lvaIncrementFrameSize(STACK_ALIGN);
+        pad = STACK_ALIGN;
+    }
+
+    if (pad != 0)
+    {
+        lvaIncrementFrameSize(pad);
+
+        // The Wasm EH slots are read at fixed offsets and must stay at the frame bottom,
+        // so shift them down past the padding.
+        unsigned const ehSlots[] = {lvaWasmFunctionIndex, lvaWasmVirtualIP, lvaWasmResumeIP};
+        for (unsigned ehSlot : ehSlots)
+        {
+            if (ehSlot != BAD_VAR_NUM)
+            {
+                LclVarDsc* const ehSlotDsc = lvaGetDesc(ehSlot);
+                ehSlotDsc->SetStackOffset(ehSlotDsc->GetStackOffset() - (int)pad);
+            }
+        }
     }
     assert((compLclFrameSize % STACK_ALIGN) == 0);
 #else
@@ -6078,7 +6102,7 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // This is not true for the System V systems since there is no
         // outgoing args space. Assign the dependently promoted fields properly.
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASM)
         // ARM: lo/hi parts of a promoted long arg need to be updated.
         //
         // For System V platforms there is no outgoing args space.
@@ -6087,12 +6111,17 @@ void Compiler::lvaAssignFrameOffsetsToPromotedStructs()
         // The offset of these structs is already calculated in lvaAssignVirtualFrameOffsetToArg method.
         // Make sure the code below is not executed for these structs and the offset is not changed.
         //
+        // Wasm: params arrive in Wasm locals and are homed by the prolog, so parameter fields never get an
+        // offset from lvaAssignVirtualFrameOffsetToArg. Without processing them here a dependently promoted
+        // parameter field keeps offset zero and, once the frame delta is applied, aliases the end of the
+        // frame instead of its parent's home.
+        //
         const bool mustProcessParams = true;
 #else
         // OSR/Swift must also assign offsets here.
         //
         const bool mustProcessParams = opts.IsOSR() || (info.compCallConv == CorInfoCallConvExtension::Swift);
-#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86)
+#endif // defined(UNIX_AMD64_ABI) || defined(TARGET_ARM) || defined(TARGET_X86) || defined(TARGET_WASM)
 
         if (varDsc->lvIsStructField && (!varDsc->lvIsParam || mustProcessParams))
         {
@@ -6654,7 +6683,7 @@ void Compiler::lvaTableDump(FrameLayoutState curState)
     assert(codeGen->regSet.tmpAllFree());
     for (TempDsc* temp = codeGen->regSet.tmpListBeg(); temp != nullptr; temp = codeGen->regSet.tmpListNxt(temp))
     {
-        printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", refCntWtdWidth, " ",
+        printf(";  TEMP_%02u %26s%*s%7s  -> ", -temp->tdTempNum(), " ", static_cast<int>(refCntWtdWidth), " ",
                varTypeName(temp->tdTempType()));
         int offset = temp->tdTempOffs();
         printf(" [%2s%1s0x%02X]\n", isFramePointerUsed() ? STR_FPBASE : STR_SPBASE, (offset < 0 ? "-" : "+"),

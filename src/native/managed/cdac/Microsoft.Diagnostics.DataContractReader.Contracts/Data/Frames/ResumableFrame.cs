@@ -6,5 +6,5 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.ResumableFrame))]
 internal partial class ResumableFrame : IData<ResumableFrame>
 {
-    [Field] public TargetPointer TargetContextPtr { get; }
+    [Field] public partial TargetPointer TargetContextPtr { get; }
 }
