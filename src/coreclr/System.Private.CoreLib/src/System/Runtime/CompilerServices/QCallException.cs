@@ -16,31 +16,29 @@ namespace System.Runtime.CompilerServices
     [CustomMarshaller(typeof(QCallException), MarshalMode.ManagedToUnmanagedOut, typeof(QCallExceptionMarshaller))]
     internal struct QCallExceptionMarshaller
     {
-        private readonly Thread _thread;
-
-        public QCallExceptionMarshaller()
-        {
-            _thread = Thread.CurrentThread;
-        }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FromUnmanaged(int exceptionPending)
         {
-            Debug.Assert(exceptionPending is 0 or 1);
-
             if (exceptionPending == 1)
             {
-                Exception exception = _thread.GetAndClearQCallException();
-
-                // Throw during unmarshalling so QCall exception propagation remains as close as
-                // possible to throwing directly from native code, as QCalls did previously.
-                ExceptionDispatchInfo.Throw(exception);
+                HandleException();
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public QCallException ToManaged() => default;
 
-        public void Free()
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Free() { }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void HandleException()
         {
+            Exception exception = Thread.GetAndClearQCallException();
+
+            // Throw during unmarshalling so QCall exception propagation remains as close as
+            // possible to throwing directly from native code, as QCalls did previously.
+            ExceptionDispatchInfo.Throw(exception);
         }
     }
 }

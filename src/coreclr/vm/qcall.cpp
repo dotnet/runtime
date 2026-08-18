@@ -6,18 +6,17 @@
 
 
 #include "common.h"
+#include "threadstatics.h"
 
 void QCallException::SetThrowable(OBJECTREF throwable)
 {
     LIMITED_METHOD_CONTRACT;
 
     _ASSERTE(throwable != NULL);
-    _ASSERTE(m_exceptionPending == 0 || m_exceptionPending == 1);
     _ASSERTE(m_exceptionPending == 0);
 
-    THREADBASEREF thread = (THREADBASEREF)GetThread()->GetExposedObjectRaw();
-    _ASSERTE(thread != NULL);
-    thread->SetQCallException(throwable);
+    _ASSERTE(t_ThreadStatics.pQCallException == NULL);
+    t_ThreadStatics.pQCallException = OBJECTREFToObject(throwable);
     VolatileStore(&m_exceptionPending, 1);
 }
 

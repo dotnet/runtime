@@ -723,6 +723,17 @@ FCIMPL0(INT32, ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 }
 FCIMPLEND
 
+FCIMPL0(Object*, ThreadNative::GetAndClearQCallException)
+{
+    FCALL_CONTRACT;
+
+    Object *result = t_ThreadStatics.pQCallException;
+    t_ThreadStatics.pQCallException = NULL;
+
+    return result;
+}
+FCIMPLEND
+
 // Returns the address of the current thread's ThreadLocalData (&t_ThreadStatics). Used on wasm to break
 // the thread-static bootstrap recursion in Thread.GetThreadStaticsBase (see the managed counterpart).
 #ifdef TARGET_WASM

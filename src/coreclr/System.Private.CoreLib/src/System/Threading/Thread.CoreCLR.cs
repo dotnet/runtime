@@ -34,7 +34,6 @@ namespace System.Threading
 
         private string? _name;
         private StartHelper? _startHelper;
-        private Exception? _qcallException;
 
 #if TARGET_UNIX || TARGET_BROWSER || TARGET_WASI
         internal WaitSubsystem.ThreadWaitInfo? _waitInfo;
@@ -74,14 +73,8 @@ namespace System.Threading
 
         private Thread() { }
 
-        internal Exception GetAndClearQCallException()
-        {
-            Exception? exception = _qcallException;
-            _qcallException = null;
-
-            Debug.Assert(exception is not null);
-            return exception;
-        }
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern Exception GetAndClearQCallException();
 
         public int ManagedThreadId
         {
