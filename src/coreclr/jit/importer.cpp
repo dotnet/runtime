@@ -3838,11 +3838,12 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
-    // Increase size of lvaNewObjArrayArgs to be the largest size needed to hold 'numArgs' integers
-    // for our call to CORINFO_HELP_NEW_MDARR.
+    // Use a new temp if the current one is too small. Growing the existing temp would make earlier
+    // full-width stores partial definitions after they have already been created.
     if (dimensionsSize > lvaTable[lvaNewObjArrayArgs].lvExactSize())
     {
-        lvaTable[lvaNewObjArrayArgs].GrowBlockLayout(typGetBlkLayout(dimensionsSize));
+        lvaNewObjArrayArgs = lvaGrabTemp(false DEBUGARG("NewObjArrayArgs"));
+        lvaSetStruct(lvaNewObjArrayArgs, typGetBlkLayout(dimensionsSize), false);
     }
 
     // The side-effects may include allocation of more multi-dimensional arrays. Spill all side-effects
@@ -10098,6 +10099,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = (lclTyp == TYP_STRUCT) ? gtNewStoreBlkNode(layout, op1, op2, indirFlags)->AsIndir()
                                              : gtNewStoreIndNode(lclTyp, op1, op2, indirFlags);
                 impAnnotateFieldIndir(op1->AsIndir());
+                gtUpdateNodeSideEffects(op1);
 
                 if (varTypeIsStruct(op1))
                 {
@@ -12036,6 +12038,8 @@ bool Compiler::impWrapTopOfStackInAwait()
         awaitCall->SetIsAsync(asyncInfo);
         impInheritAsyncContextsFromInliner(awaitCall);
     }
+
+    gtUpdateNodeSideEffects(awaitCall);
 
     if (awaitCall->IsInlineCandidate())
     {
