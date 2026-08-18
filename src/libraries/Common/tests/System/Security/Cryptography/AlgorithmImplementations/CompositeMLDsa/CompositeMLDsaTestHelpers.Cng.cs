@@ -13,13 +13,6 @@ namespace System.Security.Cryptography.Tests
 {
     internal static partial class CompositeMLDsaTestHelpers
     {
-        private static readonly CngAlgorithm s_compositeMLDsa = new CngAlgorithm("Composite-ML-DSA");
-
-        extension (CngAlgorithm)
-        {
-            internal static CngAlgorithm CompositeMLDsa => s_compositeMLDsa;
-        }
-
         private const int NTE_NOT_SUPPORTED = unchecked((int)0x80090029);
 
         private static readonly Lazy<bool> s_lazyIsCngSupported = new(CheckCngSupport);
