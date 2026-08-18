@@ -895,7 +895,8 @@ class FindNonInlineCandidateVisitor final : public GenTreeVisitor<FindNonInlineC
 public:
     enum
     {
-        DoPreOrder = true,
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
     };
 
     FindNonInlineCandidateVisitor(Compiler* compiler, Statement* stmt)

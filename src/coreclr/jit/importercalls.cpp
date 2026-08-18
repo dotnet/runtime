@@ -8091,7 +8091,8 @@ class SpillRetExprHelper final : public GenTreeVisitor<SpillRetExprHelper>
 public:
     enum
     {
-        DoPreOrder = true,
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
     };
 
     SpillRetExprHelper(Compiler* comp)

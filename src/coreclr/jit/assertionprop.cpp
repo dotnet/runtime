@@ -6427,7 +6427,8 @@ class VNAssertionPropVisitor final : public GenTreeVisitor<VNAssertionPropVisito
 public:
     enum
     {
-        DoPostOrder = true,
+        DoPostOrder       = true,
+        UseExecutionOrder = true,
     };
 
     VNAssertionPropVisitor(Compiler* compiler, BasicBlock* block, Statement* stmt)

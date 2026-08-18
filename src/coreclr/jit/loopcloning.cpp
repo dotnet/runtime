@@ -3191,7 +3191,8 @@ class LoopCloneVisitor final : public GenTreeVisitor<LoopCloneVisitor>
 public:
     enum
     {
-        DoPreOrder = true,
+        DoPreOrder        = true,
+        UseExecutionOrder = true,
     };
 
     LoopCloneVisitor(Compiler* compiler, Compiler::LoopCloneVisitorInfo* info)
