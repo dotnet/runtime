@@ -232,6 +232,14 @@ LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
         : EXCEPTION_EXECUTE_HANDLER;
 }
 
+void RethrowLastThrownObject()
+{
+    _ASSERTE(GetThread()->PreemptiveGCDisabled());
+    GCX_COOP();
+    OBJECTREF ohThrowable = GetThread()->LastThrownObject();
+    DispatchManagedException(ohThrowable);
+}
+
 template<typename Function>
 std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
 {
@@ -253,9 +261,7 @@ std::invoke_result_t<Function> CallWithSEHWrapper(Function function)
         // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
         // The managed ones are represented by SEH exception, which cannot be handled there
         // because it is not possible to handle both SEH and C++ exceptions in the same frame.
-        GCX_COOP_NO_DTOR();
-        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
-        DispatchManagedException(ohThrowable);
+        RethrowLastThrownObject();
     }
     PAL_ENDTRY
 
@@ -285,10 +291,8 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
 
     PAL_TRY(Param *, pParam, &param)
     {
-        GCX_PREEMP_NO_DTOR();
         // WASM-TODO: Handle unmanaged calling conventions
-        InvokeManagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget, NULL);
-        GCX_PREEMP_NO_DTOR_END();
+        InvokeUnmanagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget);
     }
     PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
     {
@@ -298,9 +302,7 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
         // INSTALL_/UNINSTALL_UNWIND_AND_CONTINUE_HANDLER in the InterpExecMethod.
         // The managed ones are represented by SEH exception, which cannot be handled there
         // because it is not possible to handle both SEH and C++ exceptions in the same frame.
-        GCX_COOP_NO_DTOR();
-        OBJECTREF ohThrowable = GetThread()->LastThrownObject();
-        DispatchManagedException(ohThrowable);
+        RethrowLastThrownObject();
     }
     PAL_ENDTRY
 
@@ -474,6 +476,9 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
+    WRAPPER_NO_CONTRACT;
+
+    GCX_PREEMP();
     InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget, NULL);
 }
 
@@ -4809,7 +4814,7 @@ do                                                                      \
     }
     catch (const ResumeAfterCatchException& ex)
     {
-        GCX_COOP_NO_DTOR();
+        _ASSERTE(GetThread()->PreemptiveGCDisabled());
         ex.GetResumeContext(&resumeSP, &resumeIP);
         _ASSERTE(resumeSP != 0 && resumeIP != 0);
 
