@@ -3,7 +3,7 @@
 
 #include <platformdefines.h>
 
-using CallbackFn = void (*)();
+typedef void (*CallbackFn)();
 
 static CallbackFn s_callback;
 

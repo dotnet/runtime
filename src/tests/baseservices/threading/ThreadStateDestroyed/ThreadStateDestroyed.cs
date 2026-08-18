@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 
@@ -11,14 +12,27 @@ using System.Threading;
 
 public static unsafe class ThreadStateDestroyed
 {
+    private const int Pass = 100;
+    private const int Fail = -1;
+
     private const string NativeLib = "ThreadStateDestroyedNative";
+    private const string RunScenarioArg = "--run-scenario";
+
+    private const int StatusFailFastException = unchecked((int)0xC0000602);
+    private const int SigAbrtExitCode = 128 + 6;
+    private static readonly TimeSpan s_subprocessTimeout = TimeSpan.FromSeconds(60);
+
+    // We need to check both the exit code and the message since the runtime may fail fast
+    // with the same exit code for other reasons.
+    private const string ExpectedMessage =
+        "Attempt to execute managed code after the .NET runtime thread state has been destroyed.";
+    private const string SecondCallbackMarker = "[managed] callback #2";
 
     [DllImport(NativeLib)]
     private static extern void RunCallbackOnThreadAndDuringItsDestruction(delegate* unmanaged<void> callback);
 
     private static int s_callbackCount;
     private static Thread s_firstThread;
-    private static bool s_secondCallbackGotNewThread;
 
     [UnmanagedCallersOnly]
     private static void Callback()
@@ -33,30 +47,79 @@ public static unsafe class ThreadStateDestroyed
         }
         else
         {
-            // Managed thread ids can be recycled. We need to check that it's actually a new Thread object.
-            s_secondCallbackGotNewThread = !ReferenceEquals(current, s_firstThread);
-            Console.WriteLine($"[managed] callback #{count} ran; attached to a new Thread: {s_secondCallbackGotNewThread}.");
+            // Managed thread ids can be recycled, so compare the Thread objects themselves.
+            bool newThread = !ReferenceEquals(current, s_firstThread);
+            Console.WriteLine($"{SecondCallbackMarker} ran; attached to a new Thread: {newThread}.");
         }
     }
 
-    public static int Main()
+    public static int Main(string[] args)
+    {
+        return args.Length > 0 && args[0] == RunScenarioArg
+            ? RunScenario()
+            : RunController();
+    }
+
+    private static int RunScenario()
     {
         RunCallbackOnThreadAndDuringItsDestruction(&Callback);
 
-        // Only reachable when the runtime did not fail fast.
-        if (s_callbackCount != 2)
+        Console.WriteLine("[managed] The runtime did not fail fast.");
+        return Fail;
+    }
+
+    private static int RunController()
+    {
+        string[] arguments = TestLibrary.Utilities.IsNativeAot
+            ? [RunScenarioArg]
+            : [typeof(ThreadStateDestroyed).Assembly.Location, RunScenarioArg];
+
+        ProcessStartInfo psi = new ProcessStartInfo(Environment.ProcessPath, arguments)
         {
-            Console.WriteLine($"[managed] Expected exactly 2 callbacks but got {s_callbackCount}.");
-            return 102;
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+        };
+
+        psi.Environment["DOTNET_DbgEnableMiniDump"] = "0";
+        psi.Environment["DOTNET_EnableCrashReport"] = "0";
+
+        ProcessTextOutput subprocess;
+        try
+        {
+            subprocess = Process.RunAndCaptureText(psi, s_subprocessTimeout);
+        }
+        catch (TimeoutException)
+        {
+            Console.WriteLine($"Subprocess timed out after {s_subprocessTimeout}.");
+            return Fail;
         }
 
-        if (!s_secondCallbackGotNewThread)
+        string output = subprocess.StandardOutput + subprocess.StandardError;
+        int exitCode = subprocess.ExitStatus.ExitCode;
+
+        Console.WriteLine($"Subprocess exited with {exitCode}:");
+        Console.WriteLine(output);
+
+        if (output.Contains(SecondCallbackMarker))
         {
-            Console.WriteLine("[managed] The second callback reused the existing Thread.");
-            return 103;
+            Console.WriteLine("The runtime ran managed code on a thread whose runtime thread state was already destroyed.");
+            return Fail;
         }
 
-        Console.WriteLine("[managed] FAIL: the runtime attached a second Thread instead of failing fast.");
-        return 101;
+        if (!output.Contains(ExpectedMessage))
+        {
+            Console.WriteLine($"The subprocess terminated for some other reason. Expected to find: {ExpectedMessage}");
+            return Fail;
+        }
+
+        // RaiseFailFastException on Windows, abort on Unix, for both CoreCLR and NativeAOT.
+        int expectedExitCode = OperatingSystem.IsWindows() ? StatusFailFastException : SigAbrtExitCode;
+        if (exitCode != expectedExitCode)
+        {
+            Console.WriteLine($"Expected the subprocess to fail fast with {expectedExitCode}.");
+            return Fail;
+        }
+
+        return Pass;
     }
 }
