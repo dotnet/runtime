@@ -444,7 +444,7 @@ namespace Wasm.Build.Tests
 
         [Theory]
         [BuildAndRun(aot: false)]
-        [TestCategory("native-mono")]
+        [TestCategory("native")]
         public async Task VersionedOSPlatformPInvokeIsIncluded(Configuration config, bool aot)
         {
             // Regression coverage for https://github.com/dotnet/runtime/issues/132297:
