@@ -184,8 +184,35 @@ namespace ILCompiler
                 //  typeSystemContext.InputFilePaths = inFilePaths;
                 //
 
-                foreach (var inputFile in inputFilePathsArg)
+                // Argument parsing collapses input files that share a simple name and keeps the
+                // first one, which is what a compilation wants. An app bundle can legitimately
+                // carry several files with the same name though - per-architecture native
+                // payloads shipped as content are the common case - and keeping the first one
+                // there can shadow a managed assembly with a native file. The type system holds
+                // a single module per simple name either way, so the generator walks every path
+                // and lets the first one that actually loads claim the name.
+                IEnumerable<KeyValuePair<string, string>> inputFilesToLoad = inputFilePathsArg;
+                if (_wasmGenerateCallHelpers is not null
+                    && _command.Result.GetResult(_command.InputFilePaths) is { } inputFilePathsResult)
                 {
+                    List<KeyValuePair<string, string>> everyInputFile = new();
+                    foreach (string path in Helpers.BuildPathList(inputFilePathsResult.Tokens))
+                    {
+                        everyInputFile.Add(new KeyValuePair<string, string>(Path.GetFileNameWithoutExtension(path), path));
+                    }
+
+                    inputFilesToLoad = everyInputFile;
+                }
+
+                HashSet<string> claimedSimpleNames = new(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var inputFile in inputFilesToLoad)
+                {
+                    if (claimedSimpleNames.Contains(inputFile.Key))
+                    {
+                        continue;
+                    }
+
                     try
                     {
                         var module = _typeSystemContext.GetModuleFromPath(inputFile.Value);
@@ -195,6 +222,7 @@ namespace ILCompiler
                             Console.WriteLine(SR.IgnoringCompositeImage, inputFile.Value);
                             continue;
                         }
+                        claimedSimpleNames.Add(inputFile.Key);
                         _allInputFilePaths.Add(inputFile.Key, inputFile.Value);
                         inputFilePaths.Add(inputFile.Key, inputFile.Value);
                         _referenceableModules.Add(module);
