@@ -11,10 +11,12 @@ Copyright (c) .NET Foundation. All rights reserved.
 -->
 <Project>
 
-  <!-- Default R2R on for CoreCLR browser (mirrors AppleBuild.props); targets-time is early enough (consumed by later targets). -->
+  <!-- TODO-WASM https://github.com/dotnet/runtime/issues/132466
+  Default R2R on for CoreCLR browser (mirrors AppleBuild.props); targets-time is early enough (consumed by later targets).
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(PublishReadyToRun)' == ''">true</PublishReadyToRun>
   </PropertyGroup>
+   -->
 
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
     <!-- Override only the incompatible SDK default: net11+ defaults ContainerFormat=pe (unloadable on wasm).
