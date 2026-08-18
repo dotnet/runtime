@@ -33,7 +33,7 @@ namespace ILCompiler.ObjectWriter
             Alignment = Math.Max(Alignment, alignment);
         }
 
-        public override int EncodedSize()
+        public override int EncodeSize()
         {
             return (int)ContentReadStream.Length;
         }
