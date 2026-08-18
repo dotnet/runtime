@@ -106,7 +106,9 @@
     <Error Condition="'$(_WasmCoreLibIL)' == ''"
            Text="WasmEnableFrameworkR2R is true but System.Private.CoreLib IL was not found under '$(CoreCLRArtifactsPath)'. Build CoreCLR first or set WasmEnableFrameworkR2R=false." />
     <Message Importance="High" Text="Crossgen R2R (wasm): %(_WasmFrameworkR2RInput.FileName)" />
-    <Exec Command="&quot;$(_WasmCrossgen2Exe)&quot; -o:&quot;%(_WasmFrameworkR2RInput.OutputWasm)&quot; -r:&quot;$(LibrariesSharedFrameworkBinArtifactsPath)*.dll&quot; -r:&quot;$(_WasmCoreLibIL)&quot; --targetarch:$(TargetArchitecture) --targetos:$(TargetOS) --obj-format:wasm --codegenopt:JitWasmNyiToR2RUnsupported=1 --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 -O &quot;%(_WasmFrameworkR2RInput.FullPath)&quot;" />
+    <!-- inputbubble: fold every -r reference into the version bubble so the whole shared framework is one
+         (large) bubble; still one R2R image per assembly (non-composite). -->
+    <Exec Command="&quot;$(_WasmCrossgen2Exe)&quot; -o:&quot;%(_WasmFrameworkR2RInput.OutputWasm)&quot; -r:&quot;$(LibrariesSharedFrameworkBinArtifactsPath)*.dll&quot; -r:&quot;$(_WasmCoreLibIL)&quot; --inputbubble --targetarch:$(TargetArchitecture) --targetos:$(TargetOS) --obj-format:wasm --codegenopt:JitWasmNyiToR2RUnsupported=1 --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 -O &quot;%(_WasmFrameworkR2RInput.FullPath)&quot;" />
   </Target>
 
   <!-- No Inputs/Outputs so images are packed even when crossgen was incrementally skipped. native/r2r is a
