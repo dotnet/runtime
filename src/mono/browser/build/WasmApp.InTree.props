@@ -25,7 +25,7 @@
   </PropertyGroup>
 
   <!-- In-tree R2R uses the in-build crossgen2. These two hooks must be props-time (property defaults live
-       in the CoreCLR .targets); both are inert unless PublishReadyToRun. See PR.md. -->
+       in the CoreCLR .targets); both are inert unless PublishReadyToRun. See dotnet/runtime#121257. -->
   <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetOS)' == 'browser'">
     <AfterMicrosoftNETSdkTargets Condition="'$(Crossgen2SdkOverrideTargetsPath)' != '' and Exists('$(Crossgen2SdkOverrideTargetsPath)')">$(AfterMicrosoftNETSdkTargets);$(Crossgen2SdkOverrideTargetsPath)</AfterMicrosoftNETSdkTargets>
     <AfterMicrosoftNETSdkTargets>$(AfterMicrosoftNETSdkTargets);$(MSBuildThisFileDirectory)WasmApp.ReadyToRun.targets</AfterMicrosoftNETSdkTargets>
