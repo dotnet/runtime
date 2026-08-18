@@ -657,7 +657,7 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     if (_vector is null)
                     {
-                        return (_scalar & (1 << index)) != 0;
+                        return (_scalar & ((nint)1 << index)) != 0;
                     }
 
                     return _vector[index];
