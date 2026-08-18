@@ -81,7 +81,6 @@ namespace ILCompiler.ObjectWriter
                 fixed (byte* pData = ReadRelocToDataSpan(reloc, relocScratchBuffer, sectionStart))
                 {
                     long addend = Relocation.ReadValue(reloc.Type, pData);
-                    int relocLength = Relocation.GetSize(reloc.Type);
 
                     switch (reloc.Type)
                     {
@@ -108,7 +107,9 @@ namespace ILCompiler.ObjectWriter
                         default:
                             // TODO-WASM: add other cases as needed;
                             // ignoring other reloc types for now
-                            throw new NotSupportedException($"Relocation type {reloc.Type} not yet implemented");
+                            throw new NotSupportedException($"Relocation type {reloc.Type} for symbol '{reloc.SymbolName}' at "
+                                + $"offset 0x{reloc.Offset:X} in section {sectionIndex} not yet implemented");
+
                     }
 
                     WriteRelocFromDataSpan(reloc, pData, sectionStart);
@@ -153,20 +154,22 @@ namespace ILCompiler.ObjectWriter
         private const int ImageBaseGlobalIndex = 1;
         private const int TableBaseGlobalIndex = 2;
         private const int AsyncContinuationGlobalIndex = 3;
-        private static readonly Utf8String RtlRestoreContextTagName = new Utf8String("RtlRestoreContextTag");
+        private static readonly Utf8String RtlRestoreContextTagName = new Utf8String("rtlRestoreContextTag");
         private WasmImport[] CreateDefaultGlobalImports()
         {
+            // TODO: This is copied from the webcil writer as a workaround until reloc sections are emitted properly.
+            // These should eventually be resolved to relocs + imports according to the relocation / linking wasm spec, and no default imports should be required.
             int rtlRestoreContextTagTypeIndex = RegisterSignature(RtlRestoreContextTagSignature);
 
             return
             [
-                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.StackPointerName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
-                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.ImageBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
-                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.TableBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
-                new WasmImport("webcil", WasmWellKnownGlobalSymbolNode.AsyncContinuationName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: AsyncContinuationGlobalIndex),
-                new WasmImport("webcil", "table", import: new WasmTableImportType(), index: 0),
-                new WasmImport("webcil", RtlRestoreContextTagName.ToString(), import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: RtlRestoreContextTagIndex),
-                new WasmImport("webcil", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, /* TODO: This is an arbitrary number */ 32))
+                new WasmImport("env", WasmWellKnownGlobalSymbolNode.StackPointerName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: StackPointerGlobalIndex),
+                new WasmImport("env", WasmWellKnownGlobalSymbolNode.ImageBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: ImageBaseGlobalIndex),
+                new WasmImport("env", WasmWellKnownGlobalSymbolNode.TableBaseName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Const), index: TableBaseGlobalIndex),
+                new WasmImport("env", WasmWellKnownGlobalSymbolNode.AsyncContinuationName, import: new WasmGlobalImportType(WasmValueType.I32, WasmMutabilityType.Mut), index: AsyncContinuationGlobalIndex),
+                new WasmImport("env", "table", import: new WasmTableImportType(), index: 0),
+                new WasmImport("env", RtlRestoreContextTagName.ToString(), import: new WasmTagImportType(rtlRestoreContextTagTypeIndex), index: RtlRestoreContextTagIndex),
+                new WasmImport("env", "memory", import: new WasmMemoryImportType(WasmLimitType.HasMin, /* TODO: This is an arbitrary number */ 32))
             ];
         }
 
@@ -185,11 +188,9 @@ namespace ILCompiler.ObjectWriter
         private protected override void WriteElements()
         {
         }
-    }
 
-    // AOT
-    internal sealed partial class WasmRelocatableObjectWriter : WasmObjectWriter
-    {
+
+        // ObjectWriter.Aot.cs methods
         private protected override void EmitUnwindInfo(SectionWriter sectionWriter, INodeWithCodeInfo nodeWithCodeInfo, Utf8String currentSymbolName)
         {
         }
