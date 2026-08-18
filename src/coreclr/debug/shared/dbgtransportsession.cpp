@@ -85,7 +85,7 @@ DbgTransportSession::~DbgTransportSession()
 // addresses of a couple of runtime data structures to service certain debugger requests that may be delivered
 // once the session is established.
 #ifdef RIGHT_SIDE_COMPILE
-HRESULT DbgTransportSession::Init(const ProcessDescriptor& pd, const minipal_process_wait& processExited)
+HRESULT DbgTransportSession::Init(const ProcessDescriptor& pd, const minipal_wait_handle& processExited)
 #else // RIGHT_SIDE_COMPILE
 HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
 #endif // RIGHT_SIDE_COMPILE
@@ -112,7 +112,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
         return E_FAIL;
 
     m_pd = pd;
-    m_hProcessExited = new (nothrow) minipal_process_wait(processExited);
+    m_hProcessExited = new (nothrow) minipal_wait_handle(processExited);
     if ((m_hProcessExited == nullptr) || !m_hProcessExited->IsValid())
     {
         delete m_hProcessExited;

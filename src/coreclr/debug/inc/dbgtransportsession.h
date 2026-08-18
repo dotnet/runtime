@@ -367,7 +367,7 @@ public:
     // requires the addresses of a couple of runtime data structures to service certain debugger requests that
     // may be delivered once the session is established.
 #ifdef RIGHT_SIDE_COMPILE
-    HRESULT Init(const ProcessDescriptor& pd, const minipal_process_wait& processExited);
+    HRESULT Init(const ProcessDescriptor& pd, const minipal_wait_handle& processExited);
 #else
     HRESULT Init(DebuggerIPCControlBlock * pDCB);
 #endif // RIGHT_SIDE_COMPILE
@@ -665,7 +665,7 @@ private:
     // On the RS the transport thread needs to know the IP address and port number to Connect() to.
     ProcessDescriptor m_pd;                  // Descriptor of a process we're talking to.
 
-    minipal_process_wait *m_hProcessExited;     // wait which will be signaled when the debuggee is terminated
+    minipal_wait_handle *m_hProcessExited;     // wait which will be signaled when the debuggee is terminated
 
     bool              m_fDebuggerAttached;
 #endif

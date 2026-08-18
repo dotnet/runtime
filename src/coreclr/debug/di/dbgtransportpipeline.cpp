@@ -57,11 +57,12 @@ class DbgTransportPipeline :
 public:
     DbgTransportPipeline()
     {
-        m_fRunning   = FALSE;
-        m_hProcess   = NULL;
-        m_pIPCEvent  = reinterpret_cast<DebuggerIPCEvent * >(m_rgbIPCEventBuffer);
-        m_pProxy     = NULL;
-        m_pTransport = NULL;
+        m_fRunning                 = FALSE;
+        m_fProcessExitEventPending = FALSE;
+        m_hProcess                 = NULL;
+        m_pIPCEvent                = reinterpret_cast<DebuggerIPCEvent * >(m_rgbIPCEventBuffer);
+        m_pProxy                   = NULL;
+        m_pTransport               = NULL;
         _ASSERTE(!IsTransportRunning());
     }
 
@@ -91,7 +92,7 @@ public:
     );
 
     // Return a handle which will be signaled when the debuggee process terminates.
-    virtual minipal_process_wait *GetProcessHandle();
+    virtual minipal_wait_handle *GetProcessHandle();
 
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
@@ -113,6 +114,8 @@ private:
     // clean up all resources
     void Dispose()
     {
+        m_fProcessExitEventPending = FALSE;
+
         if (m_hProcess != NULL)
         {
             delete m_hProcess;
@@ -132,10 +135,11 @@ private:
     }
 
     BOOL                  m_fRunning;
+    BOOL                  m_fProcessExitEventPending;
 
     DWORD                 m_dwProcessId;
     // This waitable is only valid for waiting on process termination.
-    minipal_process_wait *m_hProcess;
+    minipal_wait_handle *m_hProcess;
 
     DbgTransportTarget *  m_pProxy;
     DbgTransportSession * m_pTransport;
@@ -200,6 +204,7 @@ HRESULT DbgTransportPipeline::DebugActiveProcess(MachineInfo machineInfo, const 
     if (SUCCEEDED(hr))
     {
         m_dwProcessId = processDescriptor.m_Pid;
+        m_fProcessExitEventPending = FALSE;
         m_fRunning = TRUE;
     }
     else
@@ -266,9 +271,8 @@ BOOL DbgTransportPipeline::WaitForDebugEvent(DEBUG_EVENT * pEvent, DWORD dwTimeo
         pEvent->dwThreadId = 0;                 // On Windows this is the first thread created in the process.
         pEvent->u.ExitProcess.dwExitCode = 0;   // This is not passed back to us by the transport.
 
-        // Once the process termination event is signaled, we cannot send or receive any events.
-        // So we mark the transport as not running anymore.
-        m_fRunning = FALSE;
+        // The shim will continue this synthesized event before asking for another one.
+        m_fProcessExitEventPending = TRUE;
         return TRUE;
     }
     else
@@ -285,6 +289,13 @@ BOOL DbgTransportPipeline::ContinueDebugEvent(
   DWORD dwContinueStatus
 )
 {
+    if (m_fProcessExitEventPending)
+    {
+        m_fProcessExitEventPending = FALSE;
+        m_fRunning = FALSE;
+        return TRUE;
+    }
+
     if (!IsTransportRunning())
     {
         return FALSE;
@@ -295,7 +306,7 @@ BOOL DbgTransportPipeline::ContinueDebugEvent(
 }
 
 // Return a handle which will be signaled when the debuggee process terminates.
-minipal_process_wait *DbgTransportPipeline::GetProcessHandle()
+minipal_wait_handle *DbgTransportPipeline::GetProcessHandle()
 {
     // The handle returned here is only valid for waiting on process termination.
     // See code:INativeEventPipeline::GetProcessHandle.
@@ -304,7 +315,7 @@ minipal_process_wait *DbgTransportPipeline::GetProcessHandle()
         return nullptr;
     }
 
-    minipal_process_wait *processHandle = new (nothrow) minipal_process_wait(*m_hProcess);
+    minipal_wait_handle *processHandle = new (nothrow) minipal_wait_handle(*m_hProcess);
     if ((processHandle != nullptr) && !processHandle->IsValid())
     {
         delete processHandle;

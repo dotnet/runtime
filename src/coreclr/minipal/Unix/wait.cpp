@@ -7,24 +7,9 @@
 #include <limits.h>
 #include <new>
 #include <poll.h>
-#include <pthread.h>
-#include <signal.h>
 #include <stdint.h>
-#include <sys/types.h>
-#include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
-
-#if defined(TARGET_LINUX)
-#include <sys/syscall.h>
-#endif // TARGET_LINUX
-
-#if defined(TARGET_APPLE) || defined(TARGET_FREEBSD) || defined(TARGET_NETBSD) || defined(TARGET_OPENBSD)
-#include <sys/event.h>
-#define MINIPAL_WAIT_USES_KQUEUE 1
-#else
-#define MINIPAL_WAIT_USES_KQUEUE 0
-#endif // kqueue platforms
 
 #include <minipal/mutex.h>
 
@@ -32,14 +17,6 @@
 
 namespace
 {
-    enum class WaitableKind
-    {
-        Event,
-        ProcessFileDescriptor,
-        ProcessKqueue,
-        ProcessPipe,
-    };
-
     enum class AcquireResult
     {
         Failed,
@@ -49,33 +26,13 @@ namespace
 
     struct Waitable
     {
-        int32_t refCount;
-        int32_t publicRefCount;
-        WaitableKind kind;
         minipal_mutex mutex;
+        int32_t refCount;
+        int readFileDescriptor;
+        int writeFileDescriptor;
         bool mutexInitialized;
+        bool resetOnWait;
         bool signaled;
-        union
-        {
-            struct
-            {
-                int readFileDescriptor;
-                int writeFileDescriptor;
-            } event;
-
-            struct
-            {
-                int fileDescriptor;
-                pid_t processId;
-            } processFileDescriptor;
-
-            struct
-            {
-                int readFileDescriptor;
-                int writeFileDescriptor;
-                pid_t processId;
-            } processPipe;
-        };
     };
 
     void CloseFileDescriptor(int fileDescriptor)
@@ -172,7 +129,7 @@ namespace
         return true;
     }
 
-    Waitable* AllocateWaitable(WaitableKind kind)
+    Waitable* AllocateWaitable(bool resetOnWait)
     {
         Waitable* waitable = new (std::nothrow) Waitable;
         if (waitable == nullptr)
@@ -181,30 +138,11 @@ namespace
         }
 
         waitable->refCount = 1;
-        waitable->publicRefCount = 1;
-        waitable->kind = kind;
         waitable->mutexInitialized = false;
+        waitable->resetOnWait = resetOnWait;
         waitable->signaled = false;
-
-        switch (kind)
-        {
-            case WaitableKind::Event:
-                waitable->event.readFileDescriptor = -1;
-                waitable->event.writeFileDescriptor = -1;
-                break;
-
-            case WaitableKind::ProcessFileDescriptor:
-            case WaitableKind::ProcessKqueue:
-                waitable->processFileDescriptor.fileDescriptor = -1;
-                waitable->processFileDescriptor.processId = 0;
-                break;
-
-            case WaitableKind::ProcessPipe:
-                waitable->processPipe.readFileDescriptor = -1;
-                waitable->processPipe.writeFileDescriptor = -1;
-                waitable->processPipe.processId = 0;
-                break;
-        }
+        waitable->readFileDescriptor = -1;
+        waitable->writeFileDescriptor = -1;
 
         if (!minipal_mutex_init(&waitable->mutex))
         {
@@ -219,25 +157,9 @@ namespace
     void DestroyWaitable(Waitable* waitable)
     {
         assert(__atomic_load_n(&waitable->refCount, __ATOMIC_RELAXED) == 0);
-        assert(__atomic_load_n(&waitable->publicRefCount, __ATOMIC_RELAXED) == 0);
 
-        switch (waitable->kind)
-        {
-            case WaitableKind::Event:
-                CloseFileDescriptor(waitable->event.readFileDescriptor);
-                CloseFileDescriptor(waitable->event.writeFileDescriptor);
-                break;
-
-            case WaitableKind::ProcessFileDescriptor:
-            case WaitableKind::ProcessKqueue:
-                CloseFileDescriptor(waitable->processFileDescriptor.fileDescriptor);
-                break;
-
-            case WaitableKind::ProcessPipe:
-                CloseFileDescriptor(waitable->processPipe.readFileDescriptor);
-                CloseFileDescriptor(waitable->processPipe.writeFileDescriptor);
-                break;
-        }
+        CloseFileDescriptor(waitable->readFileDescriptor);
+        CloseFileDescriptor(waitable->writeFileDescriptor);
 
         if (waitable->mutexInitialized)
         {
@@ -260,7 +182,7 @@ namespace
         }
     }
 
-    bool WriteByte(int fileDescriptor, bool allowFullPipe)
+    bool WriteByte(int fileDescriptor)
     {
         uint8_t value = 1;
         ssize_t result;
@@ -269,19 +191,7 @@ namespace
             result = write(fileDescriptor, &value, sizeof(value));
         } while (result < 0 && errno == EINTR);
 
-        return result == sizeof(value) || (allowFullPipe && result < 0 && errno == EAGAIN);
-    }
-
-    void ReleasePublicReference(Waitable* waitable)
-    {
-        {
-            minipal::MutexHolder lock(waitable->mutex);
-            int32_t publicRefCount =
-                __atomic_sub_fetch(&waitable->publicRefCount, 1, __ATOMIC_ACQ_REL);
-            assert(publicRefCount >= 0);
-        }
-
-        ReleaseReference(waitable);
+        return result == sizeof(value);
     }
 
     bool ReadByte(int fileDescriptor)
@@ -296,18 +206,14 @@ namespace
         return result == sizeof(value);
     }
 
-    bool SignalPipeLocked(Waitable* waitable)
+    bool SignalEventLocked(Waitable* waitable)
     {
-        assert(waitable->kind == WaitableKind::Event || waitable->kind == WaitableKind::ProcessPipe);
         if (waitable->signaled)
         {
             return true;
         }
 
-        int writeFileDescriptor = waitable->kind == WaitableKind::Event
-            ? waitable->event.writeFileDescriptor
-            : waitable->processPipe.writeFileDescriptor;
-        if (!WriteByte(writeFileDescriptor, false))
+        if (!WriteByte(waitable->writeFileDescriptor))
         {
             return false;
         }
@@ -316,15 +222,15 @@ namespace
         return true;
     }
 
-    bool SignalPipe(Waitable* waitable)
+    bool SignalEvent(Waitable* waitable)
     {
         minipal::MutexHolder lock(waitable->mutex);
-        return SignalPipeLocked(waitable);
+        return SignalEventLocked(waitable);
     }
 
-    bool ResetPipe(Waitable* waitable)
+    bool ResetEvent(Waitable* waitable)
     {
-        assert(waitable->kind == WaitableKind::Event || waitable->kind == WaitableKind::ProcessPipe);
+        assert(waitable->resetOnWait);
         minipal::MutexHolder lock(waitable->mutex);
         if (!waitable->signaled)
         {
@@ -333,12 +239,9 @@ namespace
 
         uint8_t buffer[16];
         ssize_t result;
-        int readFileDescriptor = waitable->kind == WaitableKind::Event
-            ? waitable->event.readFileDescriptor
-            : waitable->processPipe.readFileDescriptor;
         do
         {
-            result = read(readFileDescriptor, buffer, sizeof(buffer));
+            result = read(waitable->readFileDescriptor, buffer, sizeof(buffer));
         } while (result > 0 || (result < 0 && errno == EINTR));
 
         if (result < 0 && errno != EAGAIN)
@@ -350,158 +253,25 @@ namespace
         return true;
     }
 
-    AcquireResult TryAcquirePipe(Waitable* waitable)
+    AcquireResult TryAcquire(Waitable* waitable)
     {
-        assert(waitable->kind == WaitableKind::Event || waitable->kind == WaitableKind::ProcessPipe);
         minipal::MutexHolder lock(waitable->mutex);
         if (!waitable->signaled)
         {
             return AcquireResult::NotReady;
         }
 
-        if (waitable->kind == WaitableKind::Event)
+        if (waitable->resetOnWait &&
+            !ReadByte(waitable->readFileDescriptor))
         {
-            if (!ReadByte(waitable->event.readFileDescriptor))
-            {
-                return AcquireResult::Failed;
-            }
+            return AcquireResult::Failed;
+        }
 
+        if (waitable->resetOnWait)
+        {
             waitable->signaled = false;
         }
-
         return AcquireResult::Ready;
-    }
-
-    void ReapChild(pid_t processId)
-    {
-        int status;
-        pid_t result;
-        do
-        {
-            result = waitpid(processId, &status, WNOHANG);
-        } while (result < 0 && errno == EINTR);
-    }
-
-    AcquireResult TryAcquireProcessFileDescriptor(Waitable* waitable)
-    {
-        assert(waitable->kind == WaitableKind::ProcessFileDescriptor);
-        minipal::MutexHolder lock(waitable->mutex);
-        if (waitable->signaled)
-        {
-            return AcquireResult::Ready;
-        }
-
-        pollfd descriptor = {};
-        descriptor.fd = waitable->processFileDescriptor.fileDescriptor;
-        descriptor.events = POLLIN;
-
-        int result;
-        do
-        {
-            result = poll(&descriptor, 1, 0);
-        } while (result < 0 && errno == EINTR);
-
-        if (result < 0 || (descriptor.revents & POLLNVAL) != 0)
-        {
-            return AcquireResult::Failed;
-        }
-
-        if (result == 0)
-        {
-            return AcquireResult::NotReady;
-        }
-
-        ReapChild(waitable->processFileDescriptor.processId);
-        waitable->signaled = true;
-        return AcquireResult::Ready;
-    }
-
-#if MINIPAL_WAIT_USES_KQUEUE
-    AcquireResult TryAcquireProcessKqueue(Waitable* waitable)
-    {
-        assert(waitable->kind == WaitableKind::ProcessKqueue);
-        minipal::MutexHolder lock(waitable->mutex);
-        if (waitable->signaled)
-        {
-            return AcquireResult::Ready;
-        }
-
-        struct kevent processEvent;
-        timespec timeout = {};
-        int result;
-        do
-        {
-            result = kevent(
-                waitable->processFileDescriptor.fileDescriptor,
-                nullptr,
-                0,
-                &processEvent,
-                1,
-                &timeout);
-        } while (result < 0 && errno == EINTR);
-
-        if (result < 0)
-        {
-            return AcquireResult::Failed;
-        }
-
-        if (result == 0)
-        {
-            return AcquireResult::NotReady;
-        }
-
-        ReapChild(waitable->processFileDescriptor.processId);
-        waitable->signaled = true;
-        return AcquireResult::Ready;
-    }
-
-    void MarkExitedProcesses(
-        Waitable* const* waitables,
-        uint32_t count,
-        const struct kevent* events,
-        int eventCount)
-    {
-        for (int eventIndex = 0; eventIndex < eventCount; eventIndex++)
-        {
-            if (events[eventIndex].filter != EVFILT_PROC)
-            {
-                continue;
-            }
-
-            for (uint32_t handleIndex = 0; handleIndex < count; handleIndex++)
-            {
-                Waitable* waitable = waitables[handleIndex];
-                if (waitable->kind == WaitableKind::ProcessKqueue &&
-                    waitable->processFileDescriptor.processId == static_cast<pid_t>(events[eventIndex].ident))
-                {
-                    minipal::MutexHolder lock(waitable->mutex);
-                    ReapChild(waitable->processFileDescriptor.processId);
-                    waitable->signaled = true;
-                }
-            }
-        }
-    }
-#endif // MINIPAL_WAIT_USES_KQUEUE
-
-    AcquireResult TryAcquire(Waitable* waitable)
-    {
-        switch (waitable->kind)
-        {
-            case WaitableKind::Event:
-            case WaitableKind::ProcessPipe:
-                return TryAcquirePipe(waitable);
-
-            case WaitableKind::ProcessFileDescriptor:
-                return TryAcquireProcessFileDescriptor(waitable);
-
-#if MINIPAL_WAIT_USES_KQUEUE
-            case WaitableKind::ProcessKqueue:
-                return TryAcquireProcessKqueue(waitable);
-#endif // MINIPAL_WAIT_USES_KQUEUE
-
-            default:
-                return AcquireResult::Failed;
-        }
     }
 
     int32_t TryAcquireAny(Waitable* const* waitables, uint32_t count)
@@ -557,114 +327,9 @@ namespace
             : static_cast<int>(remainingMilliseconds);
     }
 
-    bool HasProcessExited(pid_t processId)
+    Waitable* CreateWaitable(bool initialState, bool resetOnWait)
     {
-        int status;
-        pid_t result;
-        do
-        {
-            result = waitpid(processId, &status, WNOHANG);
-        } while (result < 0 && errno == EINTR);
-
-        if (result == processId)
-        {
-            return true;
-        }
-
-        if (result == 0)
-        {
-            return false;
-        }
-
-        if (result < 0 && errno == ECHILD)
-        {
-            // No identity-stable primitive is available on this fallback path, so PID reuse can race this probe.
-            int killResult;
-            do
-            {
-                killResult = kill(processId, 0);
-            } while (killResult < 0 && errno == EINTR);
-
-            return killResult < 0 && errno == ESRCH;
-        }
-
-        return false;
-    }
-
-    void SignalProcessWatcherExit(Waitable* waitable)
-    {
-        assert(waitable->kind == WaitableKind::ProcessPipe);
-        minipal::MutexHolder lock(waitable->mutex);
-        if (__atomic_load_n(&waitable->publicRefCount, __ATOMIC_ACQUIRE) == 0)
-        {
-            return;
-        }
-
-        SignalPipeLocked(waitable);
-    }
-
-    void* ProcessWatcher(void* argument)
-    {
-        Waitable* waitable = static_cast<Waitable*>(argument);
-        assert(waitable->kind == WaitableKind::ProcessPipe);
-        bool exited = false;
-
-        while (__atomic_load_n(&waitable->publicRefCount, __ATOMIC_ACQUIRE) != 0)
-        {
-            exited = HasProcessExited(waitable->processPipe.processId);
-            if (exited)
-            {
-                break;
-            }
-
-            timespec sleepDuration = { 0, 250 * 1000 * 1000 };
-            nanosleep(&sleepDuration, nullptr);
-        }
-
-        if (exited)
-        {
-            SignalProcessWatcherExit(waitable);
-        }
-
-        ReleaseReference(waitable);
-        return nullptr;
-    }
-
-    bool StartProcessWatcher(Waitable* waitable)
-    {
-        pthread_attr_t attributes;
-        if (pthread_attr_init(&attributes) != 0)
-        {
-            return false;
-        }
-
-        int result = pthread_attr_setdetachstate(&attributes, PTHREAD_CREATE_DETACHED);
-        if (result == 0)
-        {
-            pthread_t watcherThread;
-            AddReference(waitable);
-            result = pthread_create(
-                &watcherThread,
-                &attributes,
-                ProcessWatcher,
-                waitable);
-
-            if (result != 0)
-            {
-                ReleaseReference(waitable);
-            }
-        }
-
-        int destroyResult = pthread_attr_destroy(&attributes);
-        assert(destroyResult == 0);
-        (void)destroyResult;
-        return result == 0;
-    }
-
-    Waitable* CreatePipeWaitable(WaitableKind kind, bool initialState)
-    {
-        assert(kind == WaitableKind::Event || kind == WaitableKind::ProcessPipe);
-        Waitable* waitable = AllocateWaitable(kind);
+        Waitable* waitable = AllocateWaitable(resetOnWait);
         if (waitable == nullptr)
         {
             return nullptr;
@@ -673,111 +338,21 @@ namespace
         int eventPipe[2];
         if (!CreatePipe(eventPipe))
         {
-            ReleasePublicReference(waitable);
+            ReleaseReference(waitable);
             return nullptr;
         }
 
-        if (kind == WaitableKind::Event)
-        {
-            waitable->event.readFileDescriptor = eventPipe[0];
-            waitable->event.writeFileDescriptor = eventPipe[1];
-        }
-        else
-        {
-            assert(kind == WaitableKind::ProcessPipe);
-            waitable->processPipe.readFileDescriptor = eventPipe[0];
-            waitable->processPipe.writeFileDescriptor = eventPipe[1];
-        }
+        waitable->readFileDescriptor = eventPipe[0];
+        waitable->writeFileDescriptor = eventPipe[1];
 
-        if (initialState && !SignalPipe(waitable))
+        if (initialState && !SignalEvent(waitable))
         {
-            ReleasePublicReference(waitable);
+            ReleaseReference(waitable);
             return nullptr;
         }
 
         return waitable;
     }
-
-    Waitable* CreateSignaledProcessWaitable(pid_t processId)
-    {
-        Waitable* waitable = CreatePipeWaitable(WaitableKind::ProcessPipe, true);
-        if (waitable != nullptr)
-        {
-            waitable->processPipe.processId = processId;
-            ReapChild(processId);
-        }
-
-        return waitable;
-    }
-
-    Waitable* CreateProcessWatcherWaitable(pid_t processId)
-    {
-        Waitable* waitable = CreatePipeWaitable(WaitableKind::ProcessPipe, false);
-        if (waitable == nullptr)
-        {
-            return nullptr;
-        }
-
-        waitable->processPipe.processId = processId;
-        if (!StartProcessWatcher(waitable))
-        {
-            ReleasePublicReference(waitable);
-            return nullptr;
-        }
-
-        return waitable;
-    }
-
-#if MINIPAL_WAIT_USES_KQUEUE
-    Waitable* CreateKqueueProcessWaitable(pid_t processId)
-    {
-        int processQueue = kqueue();
-        if (processQueue < 0)
-        {
-            return nullptr;
-        }
-
-        if (!SetCloseOnExec(processQueue))
-        {
-            CloseFileDescriptor(processQueue);
-            return nullptr;
-        }
-
-        struct kevent change;
-        EV_SET(
-            &change,
-            processId,
-            EVFILT_PROC,
-            EV_ADD | EV_ENABLE | EV_ONESHOT,
-            NOTE_EXIT,
-            0,
-            nullptr);
-
-        if (kevent(processQueue, &change, 1, nullptr, 0, nullptr) < 0)
-        {
-            int error = errno;
-            CloseFileDescriptor(processQueue);
-            if (error == ESRCH)
-            {
-                return CreateSignaledProcessWaitable(processId);
-            }
-
-            errno = error;
-            return nullptr;
-        }
-
-        Waitable* waitable = AllocateWaitable(WaitableKind::ProcessKqueue);
-        if (waitable == nullptr)
-        {
-            CloseFileDescriptor(processQueue);
-            return nullptr;
-        }
-
-        waitable->processFileDescriptor.processId = processId;
-        waitable->processFileDescriptor.fileDescriptor = processQueue;
-        return waitable;
-    }
-#endif // MINIPAL_WAIT_USES_KQUEUE
 
     int32_t WaitWithPoll(
         Waitable* const* waitables,
@@ -788,26 +363,7 @@ namespace
         pollfd descriptors[MINIPAL_MAX_WAIT_OBJECTS] = {};
         for (uint32_t index = 0; index < count; index++)
         {
-            Waitable* waitable = waitables[index];
-            switch (waitable->kind)
-            {
-                case WaitableKind::Event:
-                    descriptors[index].fd = waitable->event.readFileDescriptor;
-                    break;
-
-                case WaitableKind::ProcessPipe:
-                    descriptors[index].fd = waitable->processPipe.readFileDescriptor;
-                    break;
-
-                case WaitableKind::ProcessFileDescriptor:
-                    descriptors[index].fd = waitable->processFileDescriptor.fileDescriptor;
-                    break;
-
-                default:
-                    errno = EINVAL;
-                    return MINIPAL_WAIT_FAILED;
-            }
-
+            descriptors[index].fd = waitables[index]->readFileDescriptor;
             descriptors[index].events = POLLIN;
         }
 
@@ -863,236 +419,6 @@ namespace
         }
     }
 
-#if MINIPAL_WAIT_USES_KQUEUE
-    int32_t WaitWithKqueue(
-        Waitable* const* waitables,
-        uint32_t count,
-        uint32_t timeout,
-        uint64_t deadline)
-    {
-        while (true)
-        {
-            int32_t acquired = TryAcquireAny(waitables, count);
-            if (acquired != MINIPAL_WAIT_TIMEOUT || timeout == 0)
-            {
-                return acquired;
-            }
-
-            int waitQueue = kqueue();
-            if (waitQueue < 0)
-            {
-                return MINIPAL_WAIT_FAILED;
-            }
-
-            if (!SetCloseOnExec(waitQueue))
-            {
-                CloseFileDescriptor(waitQueue);
-                return MINIPAL_WAIT_FAILED;
-            }
-
-            bool registrationFailed = false;
-            for (uint32_t index = 0; index < count; index++)
-            {
-                Waitable* waitable = waitables[index];
-                struct kevent change;
-                if (waitable->kind == WaitableKind::ProcessKqueue)
-                {
-                    EV_SET(
-                        &change,
-                        waitable->processFileDescriptor.processId,
-                        EVFILT_PROC,
-                        EV_ADD | EV_ENABLE | EV_ONESHOT,
-                        NOTE_EXIT,
-                        0,
-                        nullptr);
-                }
-                else
-                {
-                    int fileDescriptor;
-                    switch (waitable->kind)
-                    {
-                        case WaitableKind::Event:
-                            fileDescriptor = waitable->event.readFileDescriptor;
-                            break;
-
-                        case WaitableKind::ProcessFileDescriptor:
-                            fileDescriptor = waitable->processFileDescriptor.fileDescriptor;
-                            break;
-
-                        case WaitableKind::ProcessPipe:
-                            fileDescriptor = waitable->processPipe.readFileDescriptor;
-                            break;
-
-                        default:
-                            registrationFailed = true;
-                            break;
-                    }
-                    if (registrationFailed)
-                    {
-                        break;
-                    }
-                    EV_SET(
-                        &change,
-                        fileDescriptor,
-                        EVFILT_READ,
-                        EV_ADD | EV_ENABLE,
-                        0,
-                        0,
-                        nullptr);
-                }
-
-                if (kevent(waitQueue, &change, 1, nullptr, 0, nullptr) < 0)
-                {
-                    if (waitable->kind == WaitableKind::ProcessKqueue && errno == ESRCH)
-                    {
-                        minipal::MutexHolder lock(waitable->mutex);
-                        ReapChild(waitable->processFileDescriptor.processId);
-                        waitable->signaled = true;
-                        continue;
-                    }
-
-                    registrationFailed = true;
-                    break;
-                }
-            }
-
-            if (registrationFailed)
-            {
-                CloseFileDescriptor(waitQueue);
-                return MINIPAL_WAIT_FAILED;
-            }
-
-            acquired = TryAcquireAny(waitables, count);
-            if (acquired != MINIPAL_WAIT_TIMEOUT)
-            {
-                CloseFileDescriptor(waitQueue);
-                return acquired;
-            }
-
-            timespec remainingTime;
-            timespec* waitTimeout = nullptr;
-            if (timeout != MINIPAL_WAIT_INFINITE)
-            {
-                uint64_t remaining;
-                if (!GetRemainingNanoseconds(deadline, &remaining))
-                {
-                    CloseFileDescriptor(waitQueue);
-                    return MINIPAL_WAIT_FAILED;
-                }
-
-                if (remaining == 0)
-                {
-                    CloseFileDescriptor(waitQueue);
-                    return MINIPAL_WAIT_TIMEOUT;
-                }
-
-                remainingTime.tv_sec = static_cast<time_t>(remaining / 1000000000);
-                remainingTime.tv_nsec = static_cast<long>(remaining % 1000000000);
-                waitTimeout = &remainingTime;
-            }
-
-            struct kevent events[MINIPAL_MAX_WAIT_OBJECTS];
-            int result;
-            do
-            {
-                result = kevent(waitQueue, nullptr, 0, events, count, waitTimeout);
-            } while (result < 0 && errno == EINTR && timeout == MINIPAL_WAIT_INFINITE);
-
-            if (result > 0)
-            {
-                for (int eventIndex = 0; eventIndex < result; eventIndex++)
-                {
-                    if ((events[eventIndex].flags & EV_ERROR) != 0 && events[eventIndex].data != 0)
-                    {
-                        errno = static_cast<int>(events[eventIndex].data);
-                        CloseFileDescriptor(waitQueue);
-                        return MINIPAL_WAIT_FAILED;
-                    }
-                }
-
-                MarkExitedProcesses(waitables, count, events, result);
-            }
-
-            int error = errno;
-            CloseFileDescriptor(waitQueue);
-
-            if (result == 0)
-            {
-                return MINIPAL_WAIT_TIMEOUT;
-            }
-
-            if (result < 0)
-            {
-                if (error == EINTR)
-                {
-                    continue;
-                }
-
-                errno = error;
-                return MINIPAL_WAIT_FAILED;
-            }
-        }
-    }
-#endif // MINIPAL_WAIT_USES_KQUEUE
-
-    Waitable* CreateProcessWaitable(uint32_t processId)
-    {
-        if (processId == 0 || processId > static_cast<uint32_t>(INT_MAX))
-        {
-            errno = EINVAL;
-            return nullptr;
-        }
-
-#if defined(TARGET_LINUX) && defined(SYS_pidfd_open)
-        int processFileDescriptor;
-        do
-        {
-            processFileDescriptor = static_cast<int>(syscall(SYS_pidfd_open, processId, 0));
-        } while (processFileDescriptor < 0 && errno == EINTR);
-
-        if (processFileDescriptor >= 0)
-        {
-            if (!SetCloseOnExec(processFileDescriptor))
-            {
-                CloseFileDescriptor(processFileDescriptor);
-                return nullptr;
-            }
-
-            Waitable* waitable = AllocateWaitable(WaitableKind::ProcessFileDescriptor);
-            if (waitable == nullptr)
-            {
-                CloseFileDescriptor(processFileDescriptor);
-                return nullptr;
-            }
-
-            waitable->processFileDescriptor.processId = static_cast<pid_t>(processId);
-            waitable->processFileDescriptor.fileDescriptor = processFileDescriptor;
-            return waitable;
-        }
-
-        if (errno == ENOSYS)
-        {
-            // The syscall can be present in the build headers but absent from the running kernel.
-            return CreateProcessWatcherWaitable(static_cast<pid_t>(processId));
-        }
-
-        if (errno == ESRCH)
-        {
-            return CreateSignaledProcessWaitable(static_cast<pid_t>(processId));
-        }
-#endif // TARGET_LINUX && SYS_pidfd_open
-
-#if MINIPAL_WAIT_USES_KQUEUE
-        Waitable* waitable = CreateKqueueProcessWaitable(static_cast<pid_t>(processId));
-        if (waitable != nullptr)
-        {
-            return waitable;
-        }
-#endif // MINIPAL_WAIT_USES_KQUEUE
-
-        return CreateProcessWatcherWaitable(static_cast<pid_t>(processId));
-    }
-
     void* DuplicateWaitable(void* handle)
     {
         if (handle == nullptr)
@@ -1102,7 +428,6 @@ namespace
         }
 
         Waitable* waitable = static_cast<Waitable*>(handle);
-        __atomic_add_fetch(&waitable->publicRefCount, 1, __ATOMIC_RELAXED);
         AddReference(waitable);
         return waitable;
     }
@@ -1122,12 +447,12 @@ minipal_wait_handle::~minipal_wait_handle()
 {
     if (m_handle != nullptr)
     {
-        ReleasePublicReference(static_cast<Waitable*>(m_handle));
+        ReleaseReference(static_cast<Waitable*>(m_handle));
     }
 }
 
 minipal_event::minipal_event(bool initialState)
-    : minipal_wait_handle(CreatePipeWaitable(WaitableKind::Event, initialState))
+    : minipal_wait_handle(CreateWaitable(initialState, true))
 {
 }
 
@@ -1139,14 +464,7 @@ bool minipal_event::Set()
         return false;
     }
 
-    Waitable* waitable = static_cast<Waitable*>(GetWaitable());
-    if (waitable->kind != WaitableKind::Event)
-    {
-        errno = EINVAL;
-        return false;
-    }
-
-    return SignalPipe(waitable);
+    return SignalEvent(static_cast<Waitable*>(GetWaitable()));
 }
 
 bool minipal_event::Reset()
@@ -1157,19 +475,23 @@ bool minipal_event::Reset()
         return false;
     }
 
-    Waitable* waitable = static_cast<Waitable*>(GetWaitable());
-    if (waitable->kind != WaitableKind::Event)
+    return ResetEvent(static_cast<Waitable*>(GetWaitable()));
+}
+
+minipal_latch::minipal_latch()
+    : minipal_wait_handle(CreateWaitable(false, false))
+{
+}
+
+bool minipal_latch::Set()
+{
+    if (!IsValid())
     {
         errno = EINVAL;
         return false;
     }
 
-    return ResetPipe(waitable);
-}
-
-minipal_process_wait::minipal_process_wait(uint32_t processId)
-    : minipal_wait_handle(CreateProcessWaitable(processId))
-{
+    return SignalEvent(static_cast<Waitable*>(GetWaitable()));
 }
 
 int32_t minipal_wait_handle::Wait(
@@ -1207,9 +529,5 @@ int32_t minipal_wait_handle::Wait(
         deadline = currentTime + static_cast<uint64_t>(timeout) * 1000000;
     }
 
-#if MINIPAL_WAIT_USES_KQUEUE
-    return WaitWithKqueue(waitables, count, timeout, deadline);
-#else
     return WaitWithPoll(waitables, count, timeout, deadline);
-#endif
 }

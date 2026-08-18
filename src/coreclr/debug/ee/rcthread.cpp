@@ -863,7 +863,9 @@ void DebuggerRCThread::MainLoop()
     const minipal_wait_handle *waitSet[DRCT_COUNT_FINAL];
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
     minipal_event rightSideEventAvailable(m_pDCB->m_rightSideEventAvailable.ImportToLocalProcess());
-    minipal_process_wait *debuggerProcess = nullptr;
+#ifdef HOST_WINDOWS
+    minipal_native_handle *debuggerProcess = nullptr;
+#endif // HOST_WINDOWS
 #endif
 
 #ifdef _DEBUG
@@ -891,13 +893,13 @@ void DebuggerRCThread::MainLoop()
     {
         LOG((LF_CORDB, LL_INFO1000, "DRCT::ML: waiting for event.\n"));
 
-#if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
+#if !defined(FEATURE_DBGIPC_TRANSPORT_VM) && defined(HOST_WINDOWS)
         // If there is a debugger attached, wait on its handle, too...
         if ((cWaitCount == DRCT_COUNT_INITIAL) &&
             m_pDCB->m_rightSideProcessHandle.ImportToLocalProcess() != NULL)
         {
             _ASSERTE((cWaitCount + 1) == DRCT_COUNT_FINAL);
-            debuggerProcess = new (nothrow) minipal_process_wait(
+            debuggerProcess = new (nothrow) minipal_native_handle(
                 m_pDCB->m_rightSideProcessHandle.ImportToLocalProcess());
             if ((debuggerProcess == nullptr) || !debuggerProcess->IsValid())
             {
@@ -907,14 +909,14 @@ void DebuggerRCThread::MainLoop()
             waitSet[DRCT_DEBUGGER_EVENT] = debuggerProcess;
             cWaitCount = DRCT_COUNT_FINAL;
         }
-#endif // !FEATURE_DBGIPC_TRANSPORT_VM
+#endif // !defined(FEATURE_DBGIPC_TRANSPORT_VM) && defined(HOST_WINDOWS)
 
 
         if (m_fDetachRightSide)
         {
             m_fDetachRightSide = false;
 
-#if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
+#if !defined(FEATURE_DBGIPC_TRANSPORT_VM) && defined(HOST_WINDOWS)
             _ASSERTE(cWaitCount == DRCT_COUNT_FINAL);
             _ASSERTE((cWaitCount - 1) == DRCT_COUNT_INITIAL);
 
@@ -922,7 +924,7 @@ void DebuggerRCThread::MainLoop()
             debuggerProcess = nullptr;
             waitSet[DRCT_DEBUGGER_EVENT] = nullptr;
             cWaitCount = DRCT_COUNT_INITIAL;
-#endif // !FEATURE_DBGIPC_TRANSPORT_VM
+#endif // !defined(FEATURE_DBGIPC_TRANSPORT_VM) && defined(HOST_WINDOWS)
         }
 
         // Wait for an event from the Right Side.
@@ -1082,9 +1084,9 @@ LWaitTimedOut:
         }
     }
 
-#if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
+#if !defined(FEATURE_DBGIPC_TRANSPORT_VM) && defined(HOST_WINDOWS)
     delete debuggerProcess;
-#endif
+#endif // !defined(FEATURE_DBGIPC_TRANSPORT_VM) && defined(HOST_WINDOWS)
 
     STRESS_LOG0(LF_CORDB, LL_INFO1000, "DRCT::ML:: Exiting.\n");
 }
@@ -1732,7 +1734,7 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
 #endif
             };
 #ifdef HOST_WINDOWS
-            minipal_process_wait helperThread(m_thread);
+            minipal_native_handle helperThread(m_thread);
             waitSet[1] = &helperThread;
 #endif
 

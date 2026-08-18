@@ -109,12 +109,12 @@ public:
     //    handle for the debuggee process (see below)
     //
     // Notes:
-    //    Handles are a Windows-specific concept. On Unix, the returned value is an internal opaque minipal
-    //    waitable that is only valid for debugger-internal process-termination waits. It must not be exposed
-    //    through ICorDebugProcess::GetHandle.
+    //    Handles are a Windows-specific concept. On Unix, the returned value is a minipal latch that is only
+    //    valid for debugger-internal process-termination waits. It must not be exposed through
+    //    ICorDebugProcess::GetHandle.
     //
 
-    virtual minipal_process_wait *GetProcessHandle() = 0;
+    virtual minipal_wait_handle *GetProcessHandle() = 0;
 
     //
     // Terminate the debuggee process.

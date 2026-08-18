@@ -71,7 +71,7 @@ public:
     );
 
     // Return a handle for the debuggee process.
-    virtual minipal_process_wait *GetProcessHandle();
+    virtual minipal_wait_handle *GetProcessHandle();
 
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
@@ -156,7 +156,7 @@ BOOL WindowsNativePipeline::ContinueDebugEvent(
 }
 
 // Return a handle for the debuggee process.
-minipal_process_wait *WindowsNativePipeline::GetProcessHandle()
+minipal_wait_handle *WindowsNativePipeline::GetProcessHandle()
 {
     _ASSERTE(m_dwProcessId != 0);
 
@@ -174,10 +174,18 @@ minipal_process_wait *WindowsNativePipeline::GetProcessHandle()
         return nullptr;
     }
 
-    minipal_process_wait *waitHandle = new (nothrow) minipal_process_wait(processHandle);
+    minipal_native_handle nativeHandle(processHandle);
     DWORD error = GetLastError();
     CloseHandle(processHandle);
 
+    if (!nativeHandle.IsValid())
+    {
+        SetLastError(error);
+        return nullptr;
+    }
+
+    minipal_wait_handle *waitHandle = new (nothrow) minipal_wait_handle(nativeHandle);
+    DWORD duplicateError = GetLastError();
     if (waitHandle == nullptr)
     {
         SetLastError(ERROR_NOT_ENOUGH_MEMORY);
@@ -186,7 +194,7 @@ minipal_process_wait *WindowsNativePipeline::GetProcessHandle()
     {
         delete waitHandle;
         waitHandle = nullptr;
-        SetLastError(error);
+        SetLastError(duplicateError);
     }
 
     return waitHandle;

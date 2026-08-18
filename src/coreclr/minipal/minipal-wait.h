@@ -42,15 +42,16 @@ struct minipal_wait_handle
         uint32_t count,
         uint32_t timeout);
 
+    minipal_wait_handle(const minipal_wait_handle& handle);
+    minipal_wait_handle& operator=(const minipal_wait_handle& handle) = delete;
+    virtual ~minipal_wait_handle();
+
 protected:
 #ifdef HOST_WINDOWS
     explicit minipal_wait_handle(HANDLE handle);
 #else
     explicit minipal_wait_handle(void* handle);
 #endif
-    minipal_wait_handle(const minipal_wait_handle& handle);
-    minipal_wait_handle& operator=(const minipal_wait_handle& handle) = delete;
-    ~minipal_wait_handle();
 
 #ifndef HOST_WINDOWS
     void* GetWaitable() const
@@ -82,18 +83,23 @@ struct minipal_event final : minipal_wait_handle
     bool Reset();
 };
 
-struct minipal_process_wait final : minipal_wait_handle
+struct minipal_latch final : minipal_wait_handle
 {
-    // Process waits remain signaled after exit. On Unix, observing a child process exit may reap it,
-    // matching the debugger's existing behavior.
-    explicit minipal_process_wait(uint32_t processId);
+    minipal_latch();
+    minipal_latch(const minipal_latch& latch) = default;
+    minipal_latch& operator=(const minipal_latch& latch) = delete;
+
+    bool Set();
+};
 
 #ifdef HOST_WINDOWS
-    // Duplicates an existing native process or thread handle.
-    explicit minipal_process_wait(HANDLE handle);
-#endif
-    minipal_process_wait(const minipal_process_wait& processWait) = default;
-    minipal_process_wait& operator=(const minipal_process_wait& processWait) = delete;
+struct minipal_native_handle final : minipal_wait_handle
+{
+    // Duplicates an existing native handle.
+    explicit minipal_native_handle(HANDLE handle);
+    minipal_native_handle(const minipal_native_handle& handle) = default;
+    minipal_native_handle& operator=(const minipal_native_handle& handle) = delete;
 };
+#endif // HOST_WINDOWS
 
 #endif // __MINIPAL_WAIT_H__

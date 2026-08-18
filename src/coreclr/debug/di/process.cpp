@@ -9339,7 +9339,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
     }
     else
     {
-        minipal_process_wait *pLSProcess = process->UnsafeGetProcessWaitHandle();
+        minipal_wait_handle *pLSProcess = process->UnsafeGetProcessWaitHandle();
 
         // We take locks to ensure that the CordbProcess object is still alive,
         // even if the OS process exited.
@@ -9391,8 +9391,8 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
             // follow up with an exit.
             // This includes when we've dispatch Native events, and it includes the AsyncBreak sent to get us from a
             // win32 frozen state to a synchronized state).
-            minipal_process_wait *pHelperThreadWait = nullptr;
 #ifdef HOST_WINDOWS
+            minipal_native_handle *pHelperThreadWait = nullptr;
             HANDLE hHelperThread = NULL;
             if (process->IsStopped())
             {
@@ -9401,13 +9401,15 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
 
             if (hHelperThread != NULL)
             {
-                pHelperThreadWait = new (nothrow) minipal_process_wait(hHelperThread);
+                pHelperThreadWait = new (nothrow) minipal_native_handle(hHelperThread);
                 if ((pHelperThreadWait == nullptr) || !pHelperThreadWait->IsValid())
                 {
                     delete pHelperThreadWait;
                     return E_OUTOFMEMORY;
                 }
             }
+#else
+            minipal_wait_handle *pHelperThreadWait = nullptr;
 #endif
 
             // In a tie, wait-any gives priority to the handle earlier in the array.

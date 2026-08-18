@@ -95,7 +95,7 @@ HRESULT NewEventChannelForThisPlatform(CORDB_ADDRESS pLeftSideDCB,
 {
     // @dbgtodo  Mac - Consider moving all of the transport logic to one place.
     // Perhaps add a new function on DbgTransportManager.
-    minipal_process_wait *processWaitHandle = nullptr;
+    minipal_wait_handle *processWaitHandle = nullptr;
     HRESULT hr = E_FAIL;
 
     RemoteEventChannel *      pEventChannel = NULL;

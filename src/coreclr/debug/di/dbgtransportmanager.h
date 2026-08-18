@@ -7,6 +7,10 @@
 
 #ifdef FEATURE_DBGIPC_TRANSPORT_DI
 
+#ifdef HOST_UNIX
+#include <pthread.h>
+#endif // HOST_UNIX
+
 #include "minipal-wait.h"
 
 // TODO: Ideally we'd like to remove this class and don't do any process related book keeping in DBI.
@@ -40,7 +44,7 @@ public:
     HRESULT GetTransportForProcess(
         const ProcessDescriptor *pProcessDescriptor,
         DbgTransportSession **ppTransport,
-        minipal_process_wait **ppProcessHandle);
+        minipal_wait_handle **ppProcessHandle);
 
     // Give back a previously acquired transport (if nobody else is using the transport it will close down the
     // connection at this point).
@@ -57,12 +61,25 @@ private:
     {
         ProcessEntry           *m_pNext;            // Next entry in the list
         DWORD                   m_dwPID;            // Process ID for this entry
-        minipal_process_wait   *m_hProcessExited;   // Waitable handle that becomes signaled when the process exits
+#ifdef HOST_UNIX
+        minipal_latch          *m_hProcessExited;   // Latch set when the process exits
+#else
+        minipal_native_handle  *m_hProcessExited;   // Native process handle
+#endif // HOST_UNIX
         DbgTransportSession    *m_transport;        // Debugger's connection to the process
         DWORD                   m_cProcessRef;      // Ref count
+#ifdef HOST_UNIX
+        pthread_t               m_pollerThread;     // Thread that polls m_dwPID for exit
+        bool                    m_fPollerStarted;   // True once m_pollerThread has been created
+        Volatile<bool>          m_fStopPoller;      // Set to true to ask the poller thread to exit
+#endif // HOST_UNIX
 
         ~ProcessEntry();
     };
+
+#ifdef HOST_UNIX
+    static void *ProcessExitPollerThread(void *arg);
+#endif // HOST_UNIX
 
     ProcessEntry           *m_pProcessList;         // Head of list of currently alive processes (unsorted)
     RSLock                  m_sLock;                // Lock protecting read and write access to the target list

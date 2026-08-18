@@ -70,12 +70,17 @@ bool minipal_event::Reset()
     return ResetEvent(GetRawHandle()) != FALSE;
 }
 
-minipal_process_wait::minipal_process_wait(uint32_t processId)
-    : minipal_wait_handle(OpenProcess(SYNCHRONIZE, FALSE, processId))
+minipal_latch::minipal_latch()
+    : minipal_wait_handle(CreateEventW(nullptr, TRUE, FALSE, nullptr))
 {
 }
 
-minipal_process_wait::minipal_process_wait(HANDLE handle)
+bool minipal_latch::Set()
+{
+    return SetEvent(GetRawHandle()) != FALSE;
+}
+
+minipal_native_handle::minipal_native_handle(HANDLE handle)
     : minipal_wait_handle(DuplicateNativeHandle(handle))
 {
 }

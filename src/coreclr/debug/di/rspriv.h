@@ -3693,9 +3693,9 @@ public:
     RSSmartPtr<Cordb>     m_cordb;
 
 private:
-    // Process-exit waitable. On Windows this is an OS process handle. On Unix it is an opaque
-    // minipal object that is valid only with the minipal wait APIs and must not be exposed to clients.
-    minipal_process_wait *m_handle;
+    // Process-exit waitable. On Windows this wraps an OS process handle. On Unix it is a minipal latch
+    // that is valid only with the minipal wait APIs and must not be exposed to clients.
+    minipal_wait_handle *m_handle;
 
     // Process descriptor - holds PID and App group ID for Mac debugging
     ProcessDescriptor m_processDescriptor;
@@ -3711,7 +3711,7 @@ public:
 #endif
     }
 
-    minipal_process_wait *UnsafeGetProcessWaitHandle()
+    minipal_wait_handle *UnsafeGetProcessWaitHandle()
     {
         return m_handle;
     }

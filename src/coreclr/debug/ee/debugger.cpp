@@ -6825,7 +6825,7 @@ HRESULT Debugger::LaunchJitDebuggerAndNativeAttach(Thread * pThread, EXCEPTION_P
 
     LOG((LF_CORDB, LL_INFO10000, "D::LJDANA: waiting on m_exUnmanagedAttachEvent and debugger's process handle\n"));
     minipal_event unmanagedAttachEvent(GetUnmanagedAttachEvent());
-    minipal_process_wait debuggerProcess(processInfo.hProcess);
+    minipal_native_handle debuggerProcess(processInfo.hProcess);
     const minipal_wait_handle *waitSet[] = { &unmanagedAttachEvent, &debuggerProcess };
 
     // Let the helper thread do the attach logic for us and wait for the
