@@ -121,13 +121,13 @@ void LoaderHeapEvent::Describe(SString *pSString)
 
     {
         StackSString buf;
-        buf.Printf("    Requested size:       %lu (0x%lx)\n", (ULONG)m_dwRequestedSize, (ULONG)m_dwRequestedSize);
+        buf.Printf("    Requested size:       %zu (0x%zx)\n", m_dwRequestedSize, m_dwRequestedSize);
         pSString->Append(buf);
     }
 
     {
         StackSString buf;
-        buf.Printf("    Actual size:          %lu (0x%lx)\n", (ULONG)m_dwSize, (ULONG)m_dwSize);
+        buf.Printf("    Actual size:          %zu (0x%zx)\n", m_dwSize, m_dwSize);
         pSString->Append(buf);
     }
 
