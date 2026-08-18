@@ -1791,19 +1791,7 @@ namespace System.Text.Json.SourceGeneration
                     string caseTypeName = caseType.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat);
                     JsonValueType valueTypes = GetSupportedJsonValueTypes(caseType);
 
-                    if (valueTypes is JsonValueType.None)
-                    {
-                        // [JsonConverter] on the case type makes it inherently non-classifiable
-                        // at compile time -- a custom converter can serialize as any JSON value type.
-                        ReportDiagnostic(
-                            DiagnosticDescriptors.UnionCaseTypesNotClassifiable,
-                            location,
-                            unionTypeName,
-                            $"case type '{caseTypeName}' is annotated with [JsonConverter] and may serialize as any JSON value type");
-                        continue;
-                    }
-
-                    for (int flag = 1; flag <= (int)JsonValueType.Null; flag <<= 1)
+                    for (int flag = 1; flag <= (int)JsonValueType.Boolean; flag <<= 1)
                     {
                         JsonValueType valueType = (JsonValueType)flag;
                         if ((valueTypes & valueType) == 0)
@@ -1838,20 +1826,19 @@ namespace System.Text.Json.SourceGeneration
             // table here MUST stay in sync with:
             //   * src/System/Text/Json/Serialization/Metadata/DefaultJsonTypeInfoResolver.Converters.cs (GetDefaultSimpleConverters)
             //   * src/System/Text/Json/Serialization/Metadata/JsonMetadataServices.Converters.cs (the *Converter properties)
-            //   * src/System/Text/Json/Serialization/Converters/Value/*Converter.cs (each leaf converter's
+            //   * src/System/Text/Json/Serialization/Converters/ (each built-in converter's
             //     GetSupportedJsonValueTypes override)
             // When a built-in converter is added/removed/retargeted in any of those locations,
             // update this method as well so the union ambiguity diagnostic agrees with the
             // runtime value-shape map (JsonTypeInfo.BuildUnionValueTypeMap).
             //
-            // Returns None when the case type carries a user-defined [JsonConverter]. User
-            // converters can serialize as any JSON value type, so the caller surfaces a
-            // not-classifiable diagnostic.
+            // User-defined converters are conservatively classified as potentially representing
+            // every JSON value shape, matching the JsonConverter base implementation.
             private JsonValueType GetSupportedJsonValueTypes(ITypeSymbol type)
             {
                 if (HasCustomConverterAttribute(type))
                 {
-                    return JsonValueType.None;
+                    return JsonValueType.Any;
                 }
 
                 if (type is INamedTypeSymbol { OriginalDefinition.SpecialType: SpecialType.System_Nullable_T } nullable)
@@ -1860,8 +1847,15 @@ namespace System.Text.Json.SourceGeneration
 
                     if (HasCustomConverterAttribute(type))
                     {
-                        return JsonValueType.None;
+                        return JsonValueType.Any;
                     }
+                }
+
+                if (type is INamedTypeSymbol unionType && IsUnionType(unionType))
+                {
+                    // The runtime skips nested union cases when building its value-shape map.
+                    // Contributing no shapes keeps this compile-time ambiguity check aligned.
+                    return JsonValueType.None;
                 }
 
                 // Boolean
@@ -1905,18 +1899,23 @@ namespace System.Text.Json.SourceGeneration
 
                 // Enums: default EnumConverter writes a number. A user-applied
                 // [JsonConverter] override (e.g. JsonStringEnumConverter) is detected at the
-                // top of this method and returns None.
+                // top of this method and returns Any.
                 if (type.TypeKind is TypeKind.Enum)
                 {
                     return JsonValueType.Number;
                 }
 
-                // Object-shaped built-ins (JsonElement / JsonDocument / JsonNode hierarchy).
+                // Built-ins that can represent every JSON value shape.
                 if (SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonElementType) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonDocumentType) ||
                     SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonNodeType) ||
-                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonObjectType) ||
-                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonValueType))
+                    SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonValueType) ||
+                    type.SpecialType is SpecialType.System_Object)
+                {
+                    return JsonValueType.Any;
+                }
+
+                if (SymbolEqualityComparer.Default.Equals(type, _knownSymbols.JsonObjectType))
                 {
                     return JsonValueType.Object;
                 }
@@ -1943,7 +1942,7 @@ namespace System.Text.Json.SourceGeneration
                     return JsonValueType.Array;
                 }
 
-                // Anything else (POCOs, dictionaries, object, etc.) defaults to Object.
+                // Anything else (POCOs, dictionaries, etc.) defaults to Object.
                 // This matches the runtime ConverterStrategy fallback in JsonTypeInfo.
                 return JsonValueType.Object;
             }

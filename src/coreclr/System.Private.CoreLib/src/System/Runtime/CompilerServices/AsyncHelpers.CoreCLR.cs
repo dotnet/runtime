@@ -1491,6 +1491,171 @@ namespace System.Runtime.CompilerServices
             flags |= ContinuationFlags.ContinueOnThreadPool;
         }
 
+        // Restore the contexts that an inlined async frame captured when it logically returned to
+        // its caller, after that frame was resumed inside its own body.
+        //
+        // Used by the JIT when inlining runtime async calls. The JIT emits the check of whether
+        // the frame was resumed at all and calls this when it was; everything the async
+        // infrastructure would otherwise have done at that frame boundary happens here.
+        //
+        // Unlike the synchronous restore at the end of a method, the ExecutionContext restore runs
+        // only after a resumption, so it must target the thread we were resumed on rather than the
+        // one whose contexts were captured on entry.
+        //
+        // The continuation context check determines whether resuming the caller's continuation here
+        // would be dispatched inline. It mirrors the "can inline" conditions in
+        // RuntimeAsyncTaskContinuation.QueueIfNecessary; the two must be kept in sync.
+        //
+        // 'flags' must contain only ContinuationFlags.AllContinuationFlags bits.
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        private static void RestoreInlinedFrameContexts(ExecutionContext? previousExecCtx, object? continuationContext, ContinuationFlags flags)
+        {
+            Debug.Assert((flags & ~ContinuationFlags.AllContinuationFlags) == 0);
+
+            // We are inside a runtime async chain, so the thread has already been cached. Use it
+            // instead of Thread.CurrentThreadAssumedInitialized to keep this to one TLS lookup.
+            ref RuntimeAsyncAwaitState state = ref t_runtimeAsyncAwaitState;
+            Thread? currentThread = state.CurrentThread;
+            Debug.Assert(currentThread != null);
+
+            RestoreExecutionContext(currentThread, previousExecCtx);
+
+            if ((flags & ContinuationFlags.ContinueOnThreadPool) != 0)
+            {
+                SynchronizationContext? syncCtx = currentThread._synchronizationContext;
+                if (syncCtx is null || syncCtx.GetType() == typeof(SynchronizationContext))
+                {
+                    TaskScheduler? sched = TaskScheduler.InternalCurrent;
+                    if (sched is null || sched == TaskScheduler.Default)
+                    {
+                        return;
+                    }
+                }
+            }
+            else if ((flags & ContinuationFlags.ContinueOnCapturedSynchronizationContext) != 0)
+            {
+                Debug.Assert(continuationContext is SynchronizationContext);
+                if (continuationContext == currentThread._synchronizationContext)
+                {
+                    return;
+                }
+            }
+            else if ((flags & ContinuationFlags.ContinueOnCapturedTaskScheduler) != 0)
+            {
+                Debug.Assert(continuationContext is TaskScheduler);
+                if (continuationContext == TaskScheduler.InternalCurrent)
+                {
+                    return;
+                }
+            }
+            else
+            {
+                // No continuation context was captured, so there is nothing to switch to.
+                return;
+            }
+
+            TailAwait();
+            SwitchToContinuationContext(ref state, continuationContext, flags);
+        }
+
+        // Suspend and resume in the specified continuation context.
+        //
+        // Suspending on an already completed task makes the dispatcher re-dispatch the continuation
+        // immediately. Because that dispatch happens with canInline: false, it always posts or
+        // schedules onto the requested context rather than running inline here, which is what we
+        // want -- we only get here when we are known to be on the wrong context.
+        [BypassReadyToRun]
+        [MethodImpl(MethodImplOptions.Async)]
+        private static unsafe void SwitchToContinuationContext(ref RuntimeAsyncAwaitState state, object? continuationContext, ContinuationFlags flags)
+        {
+            Continuation? sentinelContinuation = state.SentinelContinuation ??= new Continuation();
+
+            RuntimeAsyncTaskContinuation? taskCont = state.CachedTaskContinuation;
+            if (taskCont != null)
+            {
+                state.CachedTaskContinuation = null;
+            }
+            else
+            {
+                taskCont = new RuntimeAsyncTaskContinuation();
+            }
+
+            taskCont.Initialize(Task.CompletedTask);
+            taskCont.ContinuationContext = continuationContext;
+            taskCont.Flags |= flags;
+
+            sentinelContinuation.Next = taskCont;
+            state.StackState->TaskContinuation = taskCont;
+
+            state.CaptureContexts();
+            AsyncSuspend(taskCont);
+        }
+
+        // Capture the contexts an inlined async frame hands to its caller when it logically
+        // returns during a suspension, i.e. what the caller's continuation would have captured
+        // had the callee's frame been physically present.
+        //
+        // No-ops when the frame has already resumed: in that case the caller's continuation
+        // already exists and keeps the values it captured when the frame first suspended.
+        //
+        // The suspension walks the inlined frames outward, and a frame having resumed implies
+        // its caller has too, so these can be emitted as a straight line: once one frame has
+        // resumed, this and every subsequent capture for the frames outside it no-op.
+        //
+        // Which of the three variants the JIT emits follows how the caller awaited the frame.
+        // Each assigns the whole flags value rather than adding to it, since the per-depth
+        // storage is shared and may hold what an unrelated suspension point left there.
+        //
+        // Capture with the caller's continuation context, for a frame whose caller awaited it in
+        // a way that has to come back to the context it was on.
+        private static void CaptureInlinedFrameTransitionWithContinuationContext(bool resumed,
+                                                          ref object? continuationContext,
+                                                          ref ContinuationFlags flags,
+                                                          ref ExecutionContext? execContext)
+        {
+            if (resumed)
+            {
+                return;
+            }
+
+            flags = default;
+            CaptureContinuationContext(ref continuationContext, ref flags);
+            execContext = CaptureExecutionContext();
+        }
+
+        // Capture for a frame whose caller awaited it in a way that captures no continuation
+        // context at all, as a custom awaiter does, so only the ExecutionContext has to be
+        // restored when the frame logically returns.
+        private static void CaptureInlinedFrameTransitionNoContinuationContext(bool resumed,
+                                                          ref ContinuationFlags flags,
+                                                          ref ExecutionContext? execContext)
+        {
+            if (resumed)
+            {
+                return;
+            }
+
+            flags = default;
+            execContext = CaptureExecutionContext();
+        }
+
+        // Capture for a frame whose caller awaited it with ConfigureAwait(false), which asks to
+        // continue off any captured context, so the frame gets back to the thread pool rather
+        // than to a context it recorded.
+        private static void CaptureInlinedFrameTransitionContinueOnThreadPool(bool resumed,
+                                                          ref ContinuationFlags flags,
+                                                          ref ExecutionContext? execContext)
+        {
+            if (resumed)
+            {
+                return;
+            }
+
+            flags = ContinuationFlags.ContinueOnThreadPool;
+            execContext = CaptureExecutionContext();
+        }
+
         // Finish suspension in the common case of a custom await or for a ConfigureAwait(false) task await:
         // - Capture current ExecutionContext into the continuation
         // - Restore ExecutionContext and SynchronizationContext to the current Thread object

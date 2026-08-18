@@ -70,10 +70,15 @@ namespace System.IO.Tests
         [Fact]
         public void StreamCapabilities()
         {
-            var stream = new StringStream("test", Encoding.UTF8);
+            using var stream = new StringStream("test", Encoding.UTF8);
+
             Assert.True(stream.CanRead);
             Assert.False(stream.CanSeek);
             Assert.False(stream.CanWrite);
+            Assert.Throws<NotSupportedException>(() => stream.Length);
+            Assert.Throws<NotSupportedException>(() => stream.Position);
+            Assert.Throws<NotSupportedException>(() => stream.Position = 0);
+            Assert.Throws<NotSupportedException>(() => stream.Seek(0, SeekOrigin.Begin));
         }
 
         [Fact]
