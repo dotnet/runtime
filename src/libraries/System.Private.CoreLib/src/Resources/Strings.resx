@@ -2739,7 +2739,7 @@
     <value>Underlying type information on enumeration is not specified.</value>
   </data>
   <data name="InvalidOperation_NoValue" xml:space="preserve">
-    <value>Nullable object must have a value.</value>
+    <value>Cannot read the Value property of a Nullable object that has no value. Check HasValue before reading Value.</value>
   </data>
   <data name="InvalidOperation_NullArray" xml:space="preserve">
     <value>The underlying array is null.</value>
