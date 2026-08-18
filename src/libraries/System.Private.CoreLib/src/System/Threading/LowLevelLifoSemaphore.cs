@@ -148,8 +148,9 @@ namespace System.Threading
         }
 
         // If we have signals and have waiters, we need to make sure at least one is waking.
-        // We wake one waiter at a time. If it finds work it will ask for workers and that can wake more waiters
-        // if other workers do not consume the additional signals.
+        // We wake one waiter at a time. If it finds a signal it will wake another worker, unless other workers consume
+        // the additional signals first.
+
         // It is generally unusual to have > 1 signal. That only happens when the count of desired workers had a forced change.
         // In any case, we would prefer that extra signals be consumed by active workers, but must guarantee that signals
         // are consumed eventually thus we release waiters one by one.
@@ -257,6 +258,11 @@ namespace System.Threading
                         if (counts.SignalCount != 0)
                         {
                             // success
+
+                            // If there are more counts wake another waiter, to make sure the counts are consumed.
+                            // If the threadpool is saturated, there may be no new semaphore traffic for a while and
+                            // we'd run all that time with some sleeping workers counted as running.
+                            MaybeWakeWaiter(newCounts);
                             return true;
                         }
 
