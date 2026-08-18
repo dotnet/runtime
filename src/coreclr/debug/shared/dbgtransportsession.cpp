@@ -5,7 +5,7 @@
 #include "dbgtransportsession.h"
 
 #ifdef RIGHT_SIDE_COMPILE
-#include "dbgtransportsessionevent.h"
+#include <minipal/time.h>
 #endif // RIGHT_SIDE_COMPILE
 
 #if (!defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_VM)) || (defined(RIGHT_SIDE_COMPILE) && defined(FEATURE_DBGIPC_TRANSPORT_DI))
@@ -64,8 +64,8 @@ DbgTransportSession::~DbgTransportSession()
         delete [] m_pEventBuffers;
 
 #ifdef RIGHT_SIDE_COMPILE
-    if (m_sessionOpenEvent)
-        delete m_sessionOpenEvent;
+    if (m_fInitSessionStateCondition)
+        minipal_condition_variable_destroy(&m_sessionStateCondition);
 
     if (m_hProcessExited)
         delete m_hProcessExited;
@@ -101,6 +101,10 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
     m_fInitStateLock = true;
 
 #ifdef RIGHT_SIDE_COMPILE
+    if (!minipal_condition_variable_init(&m_sessionStateCondition))
+        return E_OUTOFMEMORY;
+    m_fInitSessionStateCondition = true;
+
     // The RS randomly allocates a session ID which is sent to the LS in the SessionRequest message. In the
     // case of network errors during session formation this allows the LS to tell SessionRequest re-sends from
     // a new request from a different RS.
@@ -117,14 +121,6 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
     }
 
     m_fDebuggerAttached = false;
-    m_sessionOpenEvent = new (nothrow) DbgTransportSessionEvent();
-    if ((m_sessionOpenEvent == nullptr) || !m_sessionOpenEvent->IsValid())
-    {
-        delete m_sessionOpenEvent;
-        m_sessionOpenEvent = nullptr;
-        return E_OUTOFMEMORY;
-    }
-
 #else // RIGHT_SIDE_COMPILE
     m_pDCB = pDCB;
 
@@ -207,7 +203,7 @@ void DbgTransportSession::Shutdown()
 
             // Remember previous state and transition to SS_Closed.
             SessionState ePreviousState = m_eState;
-            m_eState = SS_Closed;
+            SetSessionStateUnderLock(SS_Closed);
 
             if (ePreviousState != SS_Closed && m_channel != NULL)
             {
@@ -215,11 +211,6 @@ void DbgTransportSession::Shutdown()
             }
 
         } // Leave m_sStateLock
-
-#ifdef RIGHT_SIDE_COMPILE
-        // Signal the session-open event now to quickly error out any callers of WaitForSessionToOpen().
-        m_sessionOpenEvent->Set();
-#endif // RIGHT_SIDE_COMPILE
     }
 
     // The transport instance is no longer valid
@@ -236,7 +227,7 @@ void DbgTransportSession::Neuter()
     // Simply set the session state to SS_Closed. The transport thread will switch itself off if it ever gets
     // a connection but the rest of the transport resources remain valid (so the debugger helper thread won't
     // AV on a deallocated handle, which might happen if we simply called Shutdown()).
-    m_eState = SS_Closed;
+    SetSessionState(SS_Closed);
 }
 
 #else // RIGHT_SIDE_COMPILE
@@ -260,14 +251,44 @@ void DbgTransportSession::CleanupTargetProcess()
 // returns true if the session opened within the time given (in milliseconds) and false otherwise.
 bool DbgTransportSession::WaitForSessionToOpen(DWORD dwTimeout)
 {
-    DbgTransportSessionEvent::WaitResult waitResult = m_sessionOpenEvent->Wait(dwTimeout);
-    if (m_eState == SS_Closed)
-        return false;
+    int64_t start = minipal_lowres_ticks();
+    uint32_t remaining = dwTimeout;
+    TransportLockHolder lock(m_sStateLock);
 
-    if (waitResult == DbgTransportSessionEvent::WaitResult::TimedOut)
-        DbgTransportLog(LC_Proxy, "DbgTransportSession::WaitForSessionToOpen(%u) timed out", dwTimeout);
+    while (m_eState != SS_Open && m_eState != SS_Closed)
+    {
+        minipal_condition_variable_result result =
+            minipal_condition_variable_wait(&m_sessionStateCondition, &m_sStateLock.GetMutex(), remaining);
+        if (result == MINIPAL_CONDITION_VARIABLE_FAILED)
+        {
+            return false;
+        }
 
-    return waitResult == DbgTransportSessionEvent::WaitResult::Signaled;
+        if (m_eState == SS_Open || m_eState == SS_Closed)
+        {
+            break;
+        }
+
+        if (result == MINIPAL_CONDITION_VARIABLE_TIMED_OUT)
+        {
+            DbgTransportLog(LC_Proxy, "DbgTransportSession::WaitForSessionToOpen(%u) timed out", dwTimeout);
+            return false;
+        }
+
+        if (dwTimeout != INFINITE)
+        {
+            int64_t elapsed = minipal_lowres_ticks() - start;
+            if (elapsed >= static_cast<int64_t>(dwTimeout))
+            {
+                DbgTransportLog(LC_Proxy, "DbgTransportSession::WaitForSessionToOpen(%u) timed out", dwTimeout);
+                return false;
+            }
+
+            remaining = dwTimeout - static_cast<uint32_t>(elapsed);
+        }
+    }
+
+    return m_eState == SS_Open;
 }
 
 //---------------------------------------------------------------------------------------
@@ -1211,6 +1232,26 @@ void DbgTransportSession::InitSessionState()
     m_idxEventBufferTail = 0;
 }
 
+void DbgTransportSession::SetSessionState(SessionState state)
+{
+    TransportLockHolder lock(m_sStateLock);
+    SetSessionStateUnderLock(state);
+}
+
+void DbgTransportSession::SetSessionStateUnderLock(SessionState state)
+{
+    m_eState = state;
+
+#ifdef RIGHT_SIDE_COMPILE
+    if (state == SS_Open || state == SS_Closed)
+    {
+        bool result = minipal_condition_variable_broadcast(&m_sessionStateCondition);
+        _ASSERTE(result);
+        (void)result;
+    }
+#endif // RIGHT_SIDE_COMPILE
+}
+
 // The entry point of the transport worker thread. This one's static, so we immediately dispatch to an
 // instance method version defined below for convenience in the implementation.
 DWORD WINAPI DbgTransportSession::TransportWorkerStatic(LPVOID pvContext)
@@ -1236,7 +1277,7 @@ DWORD WINAPI DbgTransportSession::TransportWorkerStatic(LPVOID pvContext)
 } while (false)
 
 #define HANDLE_CRITICAL_ERROR() do {            \
-    m_eState = SS_Closed;                       \
+    SetSessionState(SS_Closed);                 \
     goto Shutdown;                              \
 } while (false)
 
@@ -1267,9 +1308,6 @@ void DbgTransportSession::TransportWorker()
         }
 
 #ifdef RIGHT_SIDE_COMPILE
-        // The session is definitely not open at this point.
-        m_sessionOpenEvent->Reset();
-
         // On the right side we initiate the connection via Connect(). A failure is dealt with by waiting a
         // little while and retrying (the LS may take a little while to set up). If there's nobody listening
         // the debugger will eventually get bored waiting for us and shutdown the session, which will
@@ -1511,15 +1549,10 @@ void DbgTransportSession::TransportWorker()
                 if (m_eState == SS_Closed)
                     break;
                 else if (m_eState == SS_Opening)
-                    m_eState = SS_Open;
+                    SetSessionStateUnderLock(SS_Open);
                 else
                     _ASSERTE(!"Bad session state");
             } // Leave m_sStateLock
-
-#ifdef RIGHT_SIDE_COMPILE
-            // Signal any WaitForSessionToOpen() waiters that we've gotten to SS_Open.
-            m_sessionOpenEvent->Set();
-#endif // RIGHT_SIDE_COMPILE
 
             // We're ready to begin receiving normal incoming messages now.
         }
@@ -1642,7 +1675,7 @@ void DbgTransportSession::TransportWorker()
                 // Finished processing queued sends. We can transition to the SS_Open state now as long as there
                 // wasn't a send failure or an asynchronous Shutdown().
                 if (m_eState == SS_Resync)
-                    m_eState = SS_Open;
+                    SetSessionStateUnderLock(SS_Open);
                 else if (m_eState == SS_Closed)
                     break;
                 else if (m_eState == SS_Resync_NC)
@@ -1759,14 +1792,14 @@ void DbgTransportSession::TransportWorker()
             case MT_SessionReject:
             case MT_SessionResync:
                 // Illegal messages at this time, fail the transport entirely.
-                m_eState = SS_Closed;
+                SetSessionState(SS_Closed);
                 break;
 
             case MT_SessionClose:
                 // Close is legal on the LS and transitions to the SS_Opening_NC state. It's illegal on the RS
                 // and should shutdown the transport.
 #ifdef RIGHT_SIDE_COMPILE
-                m_eState = SS_Closed;
+                SetSessionState(SS_Closed);
                 break;
 #else // RIGHT_SIDE_COMPILE
                 // We need to do some state cleanup here, since when we reform a connection (if ever, it will
@@ -1777,7 +1810,7 @@ void DbgTransportSession::TransportWorker()
                     // Check we're still in a good state before a clean restart.
                     if (m_eState != SS_Open)
                     {
-                        m_eState = SS_Closed;
+                        SetSessionStateUnderLock(SS_Closed);
                         break;
                     }
 
@@ -2048,11 +2081,6 @@ void DbgTransportSession::TransportWorker()
   Shutdown:
 
     _ASSERTE(m_eState == SS_Closed);
-
-#ifdef RIGHT_SIDE_COMPILE
-    // The session is definitely not open at this point.
-    m_sessionOpenEvent->Reset();
-#endif // RIGHT_SIDE_COMPILE
 
     // Close the connection if we haven't done so already.
     if (m_channel != NULL)

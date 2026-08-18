@@ -11,6 +11,7 @@
 #endif // !RIGHT_SIDE_COMPILE
 
 #include <minipal/mutex.h>
+#include <minipal/conditionvariable.h>
 #include <minipal/guid.h>
 #include "minipal-wait.h"
 
@@ -55,9 +56,6 @@
 
 struct DebuggerIPCEvent;
 struct DbgEventBufferEntry;
-#ifdef RIGHT_SIDE_COMPILE
-class DbgTransportSessionEvent;
-#endif // RIGHT_SIDE_COMPILE
 
 // Some simple ad-hoc debug only transport logging. This output is too chatty for an existng CLR logging
 // channel (and we've run out of bits for an additional channel) and is likely to be of limited use to anyone
@@ -282,6 +280,13 @@ public:
     void Destroy();
     void Enter();
     void Leave();
+
+#ifdef RIGHT_SIDE_COMPILE
+    minipal_mutex& GetMutex()
+    {
+        return m_sLock;
+    }
+#endif // RIGHT_SIDE_COMPILE
 
 private:
 #ifdef RIGHT_SIDE_COMPILE
@@ -644,9 +649,9 @@ private:
     SessionState    m_eState;
 
 #ifdef RIGHT_SIDE_COMPILE
-    // Manual reset event that is signalled whenever the session state is SS_Open or SS_Closed (after waiting
-    // on this event the caller should check to see which state it was).
-    DbgTransportSessionEvent *m_sessionOpenEvent;
+    // Notified whenever the session reaches a state that resolves WaitForSessionToOpen().
+    minipal_condition_variable m_sessionStateCondition;
+    bool m_fInitSessionStateCondition;
 #endif // RIGHT_SIDE_COMPILE
 
     // Thread responsible for initial Connect()/Accept() on a low level transport connection and
@@ -815,6 +820,8 @@ private:
     // Initialize all session state to correct starting values. Used during Init() and on the LS when we
     // gracefully close one session and prepare for another.
     void InitSessionState();
+    void SetSessionState(SessionState state);
+    void SetSessionStateUnderLock(SessionState state);
 
     // The entry point of the transport worker thread. This one's static, so we immediately dispatch to an
     // instance method version defined below for convenience in the implementation.
