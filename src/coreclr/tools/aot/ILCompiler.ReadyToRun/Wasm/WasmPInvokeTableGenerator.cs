@@ -312,7 +312,7 @@ namespace ILCompiler.Wasm
             TypeDesc returnType = signature.ReturnType;
             List<string> parameterTypes = ParameterTypes(signature).Select(MapType).ToList();
 
-            if (IsReturnedByReference(returnType))
+            if (IsPassedByReference(returnType))
             {
                 returnType = pinvoke.Method.Context.GetWellKnownType(WellKnownType.Void);
                 parameterTypes.Insert(0, "void *");
@@ -339,10 +339,11 @@ namespace ILCompiler.Wasm
             => $"    {{ {HashString(cb.Key)}, \"{EscapeLiteral(cb.Key)}\", {{ &MD_{FixedSymbolName(cb)}, (void*)&Call_{cb.EntrySymbol} }} }}";
 
         /// <summary>
-        /// Whether a struct return is turned into a hidden by-reference first argument, which the C
-        /// declaration has to spell out because the generated code calls the import directly.
+        /// Whether the wasm ABI moves a struct by reference instead of as a bare value. Padding,
+        /// several fields, or a type too wide for one slot all force the hidden-pointer form, so the
+        /// C declaration has to say <c>void *</c> rather than unwrap to the field's type.
         /// </summary>
-        private static bool IsReturnedByReference(TypeDesc type)
+        private static bool IsPassedByReference(TypeDesc type)
         {
             if (!type.IsValueType || type.IsPrimitive || type.IsEnum || type is FunctionPointerType)
                 return false;
@@ -383,6 +384,14 @@ namespace ILCompiler.Wasm
 
             if (type.IsEnum)
                 return MapType(type.UnderlyingType);
+
+            // The wasm C ABI hands a struct over as a bare scalar only when it recursively contains a
+            // single scalar that fills it. Padding or extra fields make it travel by reference, so ask
+            // the same lowering the runtime encodes into the signature instead of unwrapping blindly:
+            // otherwise a `[StructLayout(Size = 16)] struct { long V; }` parameter is declared int64_t
+            // while the caller passes a pointer.
+            if (IsPassedByReference(type))
+                return "void *";
 
             // https://github.com/WebAssembly/tool-conventions/blob/main/BasicCABI.md#function-signatures
             // Any struct or union that recursively (including through nested structs, unions, and arrays)
