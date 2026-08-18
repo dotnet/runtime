@@ -44,7 +44,6 @@ namespace Internal.JitInterface
             : this()
         {
             _compilation = compilation;
-            InitializeSecretStubArgument();
         }
 
         private FrozenObjectNode HandleToObject(CORINFO_OBJECT_STRUCT_* obj) => (FrozenObjectNode)HandleToObject((void*)obj);
