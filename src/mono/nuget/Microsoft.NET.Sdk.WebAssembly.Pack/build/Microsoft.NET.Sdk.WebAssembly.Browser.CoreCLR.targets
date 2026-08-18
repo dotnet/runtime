@@ -41,9 +41,9 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
       <_WasmPublishR2RDir Condition="'$(_WasmPublishR2RDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'r2r'))</_WasmPublishR2RDir>
-      <_WasmBuildPrebuiltR2RDirectories>$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectories>
-      <_WasmPublishPrebuiltR2RDirectories Condition="'$(PublishTrimmed)' == 'true'">$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectories>
-      <_WasmPublishPrebuiltR2RDirectories Condition="'$(PublishTrimmed)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmPublishPrebuiltR2RDirectories>
+      <_WasmBuildPrebuiltR2RDirectory>$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+      <_WasmPublishPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' == 'true'">$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectory>
+      <_WasmPublishPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmPublishPrebuiltR2RDirectory>
     </PropertyGroup>
   </Target>
 
@@ -83,7 +83,11 @@ Copyright (c) .NET Foundation. All rights reserved.
         Condition="'%(ResolvedFileToPublish.PostprocessAssembly)' == 'true' and Exists('$(IntermediateLinkDir)%(ResolvedFileToPublish.FileName).dll')" />
     </ItemGroup>
     <ItemGroup>
-      <_WasmReadyToRunCompileInput Include="$(IntermediateLinkDir)*.dll" />
+      <!-- The linker output is exactly ManagedAssemblyToLink minus what trimming removed, so map that
+           item into IntermediateLinkDir (mirrors ILLink's own _LinkedResolvedFileToPublishCandidate)
+           rather than globbing every *.dll in the dir. -->
+      <_WasmReadyToRunCompileInput Include="@(ManagedAssemblyToLink->'$(IntermediateLinkDir)%(FileName)%(Extension)')"
+                                   Condition="Exists('$(IntermediateLinkDir)%(FileName)%(Extension)')" />
       <ResolvedFileToPublish Include="@(_WasmReadyToRunCompileInput)"
                              PostprocessAssembly="true"
                              RelativePath="%(FileName)%(Extension)"
