@@ -3549,6 +3549,15 @@ MethodTableBuilder::EnumerateClassMethods()
                 if (insertCount == 2)
                     asyncFlags |= (AsyncMethodFlags::Thunk | AsyncMethodFlags::ReturnDroppingThunk);
 
+                if (isCovariantTaskOverride)
+                {
+                    // The method itself does not return the well-known Task/Task<T>, so its IL cannot be
+                    // compiled as an async version. The async variant is a thunk that calls the ordinary
+                    // variant and awaits the returned Task.
+                    _ASSERTE(hasAsyncFlags(asyncFlags, AsyncMethodFlags::Thunk));
+                    asyncFlags |= AsyncMethodFlags::CovariantForwardingThunk;
+                }
+
                 // Here we construct the signature of async call variant given its task-returning counterpart.
                 // It is basically just removing the Task/ValueTask part of the return type and keeping
                 // the token for T or inserting void instead.
