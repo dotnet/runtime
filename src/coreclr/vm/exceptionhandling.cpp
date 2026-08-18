@@ -3290,6 +3290,8 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
 
     if (pHandlerIP != NULL)
     {
+        GCPROTECT_BEGIN(throwable);
+
         pCodeManager = exInfo->m_frameIter.m_crawl.GetCodeManager();
 #ifdef _DEBUG
         pCodeManager->EnsureCallerContextIsValid(pvRegDisplay);
@@ -3312,6 +3314,9 @@ void CallCatchFunclet(OBJECTREF throwable, BYTE* pHandlerIP, REGDISPLAY* pvRegDi
 
         // Profiler, debugger and ETW events
         exInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &exInfo->m_ClauseForCatch, (DWORD_PTR)pHandlerIP, spForDebugger);
+
+        GCPROTECT_END();
+
         SetIP(pvRegDisplay->pCurrentContext, dwResumePC);
         callerTargetSp = CallerStackFrame::FromRegDisplay(pvRegDisplay).SP;
     }
@@ -3544,6 +3549,9 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
 
     ExInfo* pExInfo = (ExInfo*)pThread->GetExceptionState()->GetCurrentExceptionTracker();
     OBJECTREF throwable = exceptionObj.Get();
+
+    GCPROTECT_BEGIN(throwable);
+
     throwable = PossiblyUnwrapThrowable(throwable, pExInfo->m_frameIter.m_crawl.GetAssembly());
 
     pExInfo->m_csfEnclosingClause = CallerStackFrame::FromRegDisplay(pExInfo->m_frameIter.m_crawl.GetRegisterSet());
@@ -3568,6 +3576,9 @@ extern "C" CLR_BOOL QCALLTYPE CallFilterFunclet(QCall::ObjectHandleOnStack excep
 
     // Profiler, debugger and ETW events
     pExInfo->MakeCallbacksRelatedToHandler(false, pThread, pMD, &pExInfo->m_CurrentClause, (DWORD_PTR)pFilterIP, spForDebugger);
+
+    GCPROTECT_END();
+
     END_QCALL;
 
     return dwResult == EXCEPTION_EXECUTE_HANDLER;
