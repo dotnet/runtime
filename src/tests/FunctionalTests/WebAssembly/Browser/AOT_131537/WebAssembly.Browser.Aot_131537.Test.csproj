@@ -6,12 +6,7 @@
          Nullable<T> through the non-generic IEnumerator traps. -->
     <RunAOTCompilation>true</RunAOTCompilation>
     <MonoForceInterpreter>false</MonoForceInterpreter>
-    <ExpectedExitCode>42</ExpectedExitCode>
   </PropertyGroup>
-  <ItemGroup>
-    <WasmExtraFilesToDeploy Include="index.html" />
-    <WasmExtraFilesToDeploy Include="main.js" />
-  </ItemGroup>
   <ItemGroup>
     <!-- Run this assembly interpreted while corelib stays AOT'd: this is the
          WasmTestOnChrome-MONO configuration in which #131537 regresses. -->
