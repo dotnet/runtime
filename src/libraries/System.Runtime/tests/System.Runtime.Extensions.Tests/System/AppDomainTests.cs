@@ -196,6 +196,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnMono("Mono does not suppress reentrant first chance exception notifications")]
         public void FirstChanceException_HandlerThrows_DoesNotRecurse()
         {
             // A handler that throws must not cause the runtime to recursively deliver
