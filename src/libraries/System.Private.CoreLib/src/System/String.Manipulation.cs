@@ -2375,11 +2375,9 @@ namespace System
                         baseIndex += Vector128<ushort>.Count*2;
                         remaining = remaining.Slice(Vector128<ushort>.Count*2);
                     }
-
-                    goto condition;
                 }
 
-                loop:
+                while (remaining.Length >= Vector128<ushort>.Count)
                 {
                     Vector128<ushort> vector = Vector128.Create(remaining);
                     Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
@@ -2398,12 +2396,6 @@ namespace System
 
                     baseIndex += Vector128<ushort>.Count;
                     remaining = remaining.Slice(Vector128<ushort>.Count);
-                }
-
-                condition:
-                if (remaining.Length >= Vector128<ushort>.Count)
-                {
-                    goto loop;
                 }
 
                 // Handle the last chunk in a vectorized way also.
