@@ -197,7 +197,7 @@ namespace ILCompiler.Wasm
             }
 
             static string ListRefs(IGrouping<string, WasmPInvoke> l)
-                => string.Join(", ", l.Select(c => ((EcmaAssembly)c.Method.Module).GetName().Name).Distinct().OrderBy(n => n));
+                => string.Join(", ", l.Select(c => ((EcmaAssembly)c.Method.Module).GetName().Name).Distinct().OrderBy(n => n, StringComparer.Ordinal));
         }
 
         public void EmitNativeToInterp(TextWriter w, List<WasmPInvokeCallback> callbacks)

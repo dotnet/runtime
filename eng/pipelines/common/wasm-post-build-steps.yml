@@ -8,7 +8,7 @@ parameters:
 
 steps:
 
-  # The wasm CoreCLR generator shells out to crossgen2 for P/Invoke struct sizes while building test
+  # The wasm CoreCLR build runs crossgen2 to generate the P/Invoke call helpers while building test
   # apps, so the Wasm.Build.Tests leg ships it to Helix as a correlation payload. That leg builds only
   # the test project and takes everything else from here, so crossgen2 has to travel in these
   # artifacts. The glob matches nothing for Mono, which has no crossgen2 to send.

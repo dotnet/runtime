@@ -295,8 +295,8 @@
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
       <HelixCorrelationPayload Include="$(EmSdkDirForHelixPayload)"              Destination="build/emsdk" />
       <HelixCorrelationPayload Include="$(WasmAppBuilderDir)"                    Destination="build/WasmAppBuilder" />
-      <!-- crossgen2 answers the wasm ABI struct-size queries the CoreCLR generator makes while
-           building the test apps on the Helix machine. -->
+      <!-- crossgen2 generates the CoreCLR wasm call helpers, which encode struct sizes, while the
+           test apps are built on the Helix machine. -->
       <HelixCorrelationPayload Include="$(Crossgen2InBuildDir)"                  Destination="build/crossgen2"
                                Condition="'$(RuntimeFlavor)' == 'CoreCLR'" />
       <HelixCorrelationPayload Include="$(BrowserBuildTargetsDir)"               Destination="build/wasm" />
