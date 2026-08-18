@@ -588,6 +588,7 @@ extern "C" void QCALLTYPE StubHelpers_ValidateByref(void *pByref, MethodDesc *pM
     // Skip byref if is not pointing inside managed heap
     if (!GCHeapUtilities::GetGCHeap()->IsHeapPointer(pByref))
     {
+        qcallError->SetNoException();
         return;
     }
 

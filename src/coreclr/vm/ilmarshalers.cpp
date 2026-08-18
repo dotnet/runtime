@@ -4770,7 +4770,10 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ConvertSpaceToNative(MngdSafeAr
     CONTRACTL_END;
 
     if (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_IsStatic)
+    {
+        qcallError->SetNoException();
         return;
+    }
 
     BEGIN_QCALL;
 
@@ -4936,7 +4939,10 @@ extern "C" void QCALLTYPE MngdSafeArrayMarshaler_ClearNative(MngdSafeArrayMarsha
     QCALL_CONTRACT;
 
     if (pThis->m_fStatic & MngdSafeArrayMarshaler::SCSF_IsStatic)
+    {
+        qcallError->SetNoException();
         return;
+    }
 
     BEGIN_QCALL;
 

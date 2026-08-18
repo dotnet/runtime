@@ -110,6 +110,7 @@
 #endif // !TARGET_UNIX
 
 #define BEGIN_QCALL                      \
+    qcallError->SetNoException();        \
     INSTALL_RESUME_AFTER_CATCH_HANDLER_WITH_FRAME(GetThread()->GetFrame()) \
     INSTALL_MANAGED_EXCEPTION_CAPTURE_DISPATCHER
 

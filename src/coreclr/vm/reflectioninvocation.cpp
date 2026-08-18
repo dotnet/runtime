@@ -1267,7 +1267,10 @@ extern "C" void QCALLTYPE ReflectionInvocation_CompileMethod(MethodDesc * pMD, Q
     PRECONDITION(pMD != NULL);
 
     if (!pMD->ShouldCallPrestub())
+    {
+        qcallError->SetNoException();
         return;
+    }
 
     BEGIN_QCALL;
     pMD->DoPrestub(NULL);
@@ -1281,12 +1284,18 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunClassConstructor(QCall::TypeHa
 
     TypeHandle typeHnd = pType.AsTypeHandle();
     if (typeHnd.IsTypeDesc())
+    {
+        qcallError->SetNoException();
         return;
+    }
 
     MethodTable *pMT = typeHnd.AsMethodTable();
     // The ContainsGenericVariables check is to preserve back-compat where we assume the generic type is already initialized
     if (pMT->IsClassInited() || pMT->ContainsGenericVariables())
+    {
+        qcallError->SetNoException();
         return;
+    }
 
     BEGIN_QCALL;
     pMT->CheckRestore();
@@ -1302,7 +1311,10 @@ extern "C" void QCALLTYPE ReflectionInvocation_RunModuleConstructor(QCall::Modul
 
     Assembly *pAssembly = pModule->GetAssembly();
     if (pAssembly != NULL && pAssembly->IsActive())
+    {
+        qcallError->SetNoException();
         return;
+    }
 
     BEGIN_QCALL;
     pAssembly->EnsureActive();

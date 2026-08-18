@@ -32,6 +32,7 @@ extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
         numProviders == 0 ||
         pProviders == nullptr)
     {
+        qcallError->SetNoException();
         return 0;
     }
 

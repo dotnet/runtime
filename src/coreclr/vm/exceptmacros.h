@@ -210,6 +210,11 @@ private:
     INT32 m_exceptionPending;
 
 public:
+    void SetNoException()
+    {
+        m_exceptionPending = 0;
+    }
+
     void SetThrowable(OBJECTREF throwable);
 };
 

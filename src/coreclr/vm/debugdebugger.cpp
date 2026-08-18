@@ -80,6 +80,8 @@ extern "C" void QCALLTYPE DebugDebugger_Break(QCallException* qcallError)
     }
 
     END_QCALL;
+#else
+    qcallError->SetNoException();
 #endif // DEBUGGING_SUPPORTED
 }
 
@@ -870,7 +872,10 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
 #ifdef DEBUGGING_SUPPORTED
     // Send notification only if the debugger is attached
     if (!CORDebuggerAttached())
+    {
+        qcallError->SetNoException();
         return;
+    }
 
     BEGIN_QCALL;
 
@@ -895,6 +900,8 @@ extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOn
     }
 
     END_QCALL;
+#else
+    qcallError->SetNoException();
 #endif // DEBUGGING_SUPPORTED
 }
 
