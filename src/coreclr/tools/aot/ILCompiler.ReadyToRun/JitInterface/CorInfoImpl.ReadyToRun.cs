@@ -2919,6 +2919,18 @@ namespace Internal.JitInterface
             return null;
         }
 
+        private bool CanEncodeTypeHandleFixup(TypeDesc type)
+        {
+            if (type.IsPrimitive || type.IsString || type.IsObject || type.IsWellKnownType(WellKnownType.TypedReference))
+                return true;
+
+            if (type.GetTypeDefinition() is not EcmaType ecmaType)
+                return true;
+
+            return !_compilation.NodeFactory.Resolver.GetModuleTokenForType(
+                ecmaType, allowDynamicallyCreatedReference: true, throwIfNotFound: false).IsNull;
+        }
+
         private void embedGenericHandle(ref CORINFO_RESOLVED_TOKEN pResolvedToken, bool fEmbedParent, CORINFO_METHOD_STRUCT_* callerHandle, ref CORINFO_GENERICHANDLE_RESULT pResult)
         {
             ceeInfoEmbedGenericHandle(ref pResolvedToken, fEmbedParent, callerHandle, ref pResult);
@@ -2941,9 +2953,20 @@ namespace Internal.JitInterface
                 switch (pResult.handleType)
                 {
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_CLASS:
-                        symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
-                            ReadyToRunHelperId.TypeHandle,
-                            HandleToObject(pResolvedToken.hClass));
+                        {
+                            TypeDesc classHandleType = HandleToObject(pResolvedToken.hClass);
+
+                            // A TypeHandle fixup has to be encodable as a module token. See dotnet/runtime#130585.
+                            if (_compilation.NodeFactory.Target.Architecture == TargetArchitecture.Wasm32 &&
+                                !CanEncodeTypeHandleFixup(classHandleType))
+                            {
+                                throw new RequiresRuntimeJitException(classHandleType.ToString());
+                            }
+
+                            symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                                ReadyToRunHelperId.TypeHandle,
+                                classHandleType);
+                        }
                         break;
 
                     case CorInfoGenericHandleType.CORINFO_HANDLETYPE_METHOD:
