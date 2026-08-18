@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Test needs explicit executable and isolation as it tests crashing the runtime. -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NativeAotIncompatible>true</NativeAotIncompatible>
+    <GCStressIncompatible>true</GCStressIncompatible>
+    <!-- Both platforms fail fast but exit codes are different:
+        SIGABRT on Unix, STATUS_FAIL_FAST_EXCEPTION on Windows. -->
+    <CLRTestExitCode>134</CLRTestExitCode>
+    <CLRTestExitCode Condition="'$(TestWrapperTargetsWindows)' == 'true'">-1073740286</CLRTestExitCode>
+    <CLRTestTargetUnsupported Condition="'$(TargetOS)' == 'browser' or '$(TargetOS)' == 'wasi'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(RuntimeFlavor)' != 'coreclr'">true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ThreadStateDestroyed.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+  </ItemGroup>
+</Project>
