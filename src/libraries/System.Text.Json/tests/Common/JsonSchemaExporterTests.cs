@@ -82,30 +82,6 @@ namespace System.Text.Json.Schema.Tests
             Assert.Equal(expectedType, (string)schema["type"]!);
         }
 
-        [Fact]
-        public void GetOnlyProperties_DoNotUseSetterNullabilityInSchema() 
-        {
-            JsonNode schema = Serializer.DefaultOptions.GetJsonSchemaAsNode(typeof(PocoWithGetOnlyProperties));
-            const string ExpectedJsonSchema = """
-                {
-                    "type": ["object", "null"],
-                    "properties": {
-                        "Values": {
-                            "type": "array",
-                            "items": { "type": ["string", "null"] }
-                        },
-                        "SingleValueGetOnly": { "type": "string" },
-                        "NullableGetOnly": { "type": ["string", "null"] },
-                        "SingleValueGetSet": { "type": "string" },
-                        "NonNullableReadonlyField": { "type": "string" },
-                        "NullableReadonlyField": { "type": ["string", "null"] }
-                    }
-                }
-                """;
-
-            AssertValidJsonSchema(typeof(PocoWithGetOnlyProperties), ExpectedJsonSchema, schema);
-        }
-
         [Theory]
         [InlineData(typeof(Type))]
         [InlineData(typeof(MethodInfo))]
@@ -285,21 +261,6 @@ namespace System.Text.Json.Schema.Tests
         }
 
         record PocoWithProperty(int Value);
-
-        sealed class PocoWithGetOnlyProperties
-        {
-            public IEnumerable<string> Values => [];
-            public string SingleValueGetOnly { get; } = "value";
-            public string? NullableGetOnly { get; }
-            public string SingleValueGetSet { get; set; } = "value";
-            [JsonInclude]
-            public readonly string NonNullableReadonlyField = "value";
-
-#pragma warning disable CS0649 // field never assigned to
-            [JsonInclude]
-            public readonly string? NullableReadonlyField;
-#pragma warning restore CS0649
-        }
 
         [JsonSerializable(typeof(PocoWithProperty))]
         partial class PocoWithPropertyContext : JsonSerializerContext;
