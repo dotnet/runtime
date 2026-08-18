@@ -23936,6 +23936,7 @@ GenTree* Compiler::gtNewSimdBinOpNode(
             if (varTypeIsLong(simdBaseType))
             {
                 GenTree** op2ToDup = nullptr;
+                GenTree*  op2ToScalar;
 
                 assert(varTypeIsSIMD(op1));
                 op1                = gtNewSimdToScalarNode(TYP_LONG, op1, simdBaseType, simdSize);
@@ -23943,18 +23944,23 @@ GenTree* Compiler::gtNewSimdBinOpNode(
 
                 if (varTypeIsSIMD(op2))
                 {
-                    op2      = gtNewSimdToScalarNode(TYP_LONG, op2, simdBaseType, simdSize);
-                    op2ToDup = &op2->AsHWIntrinsic()->Op(1);
+                    op2ToScalar = gtNewSimdToScalarNode(TYP_LONG, op2, simdBaseType, simdSize);
+                    op2         = op2ToScalar;
+                    op2ToDup    = &op2ToScalar->AsHWIntrinsic()->Op(1);
+                }
+                else
+                {
+                    op2ToScalar = nullptr;
                 }
 
                 // lower = op1.GetElement(0) * op2.GetElement(0)
-                GenTree* lower = gtNewOperNode(GT_MUL, TYP_LONG, op1, op2);
+                GenTree* lowerMul = gtNewOperNode(GT_MUL, TYP_LONG, op1, op2);
 
                 if (op2ToDup == nullptr)
                 {
-                    op2ToDup = &lower->AsOp()->gtOp2;
+                    op2ToDup = &lowerMul->AsOp()->gtOp2;
                 }
-                lower = gtNewSimdCreateScalarUnsafeNode(type, lower, simdBaseType, simdSize);
+                GenTree* lower = gtNewSimdCreateScalarUnsafeNode(type, lowerMul, simdBaseType, simdSize);
 
                 if (simdSize == 8)
                 {
@@ -23965,6 +23971,14 @@ GenTree* Compiler::gtNewSimdBinOpNode(
                 // Make the original op1 and op2 multi-use:
                 GenTree* op1Dup = fgMakeMultiUse(op1ToDup);
                 GenTree* op2Dup = fgMakeMultiUse(op2ToDup);
+
+                gtUpdateNodeSideEffects(op1);
+                if (op2ToScalar != nullptr)
+                {
+                    gtUpdateNodeSideEffects(op2ToScalar);
+                }
+                gtUpdateNodeSideEffects(lowerMul);
+                gtUpdateNodeSideEffects(lower);
 
                 assert(!varTypeIsArithmetic(op1Dup));
                 op1Dup = gtNewSimdGetElementNode(TYP_LONG, op1Dup, gtNewIconNode(1), simdBaseType, simdSize);

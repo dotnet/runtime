@@ -12040,6 +12040,10 @@ bool Compiler::impWrapTopOfStackInAwait()
     }
 
     gtUpdateNodeSideEffects(awaitCall);
+    if (toPush != awaitCall)
+    {
+        gtUpdateNodeSideEffects(toPush);
+    }
 
     if (awaitCall->IsInlineCandidate())
     {
