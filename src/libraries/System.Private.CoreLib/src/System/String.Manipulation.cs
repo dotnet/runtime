@@ -2428,12 +2428,12 @@ namespace System
                 Debug.Fail("Expected remaining.Length >= Vector128<ushort>.Count*2");
             }
 
-            for (int i = 0; i < remaining.Length; i++)
+            for (int i = baseIndex; i < sourceSpanUInt16.Length; i++)
             {
-                char v = (char)remaining[i];
+                char v = (char)sourceSpanUInt16[i];
                 if (v == c || v == c2 || v == c3)
                 {
-                    sepListBuilder.Append(baseIndex + i);
+                    sepListBuilder.Append(i);
                 }
             }
         }
