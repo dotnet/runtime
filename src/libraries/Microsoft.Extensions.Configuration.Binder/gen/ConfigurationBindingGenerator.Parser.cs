@@ -159,6 +159,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private TypeRef EnqueueTransitiveType(TypeParseInfo containingTypeParseInfo, ITypeSymbol memberTypeSymbol, DiagnosticDescriptor diagDescriptor, string? memberName = null, TypeRef? knownTypeRef = null)
             {
+                Debug.Assert(knownTypeRef is null || knownTypeRef.FullyQualifiedName == memberTypeSymbol.GetFullyQualifiedName(),
+                    $"'{nameof(knownTypeRef)}' must describe '{nameof(memberTypeSymbol)}'.");
+
                 TypeParseInfo memberTypeParseInfo = containingTypeParseInfo.ToTransitiveTypeParseInfo(memberTypeSymbol, diagDescriptor, memberName);
 
                 if (_createdTypeSpecs.TryGetValue(memberTypeSymbol, out TypeSpec? memberTypeSpec))
