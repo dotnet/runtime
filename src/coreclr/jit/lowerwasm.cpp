@@ -200,6 +200,38 @@ GenTreeAddrMode* Lowering::GetFoldableAddrMode(GenTreeIndir* indirNode)
 }
 
 //------------------------------------------------------------------------
+// TryFoldLclAddrOffset: Fold a local address's frame offset into its indirection's memarg.
+//
+// Arguments:
+//    indirNode - The indirection node of interest
+//
+// Notes:
+//    Codegen for GT_LCL_ADDR is "local.get $FP; i32.const <frame offset>; i32.add". Flagging the node makes
+//    it emit just the frame pointer, and the indirection supplies the frame offset as its memarg instead.
+//    The frame pointer plus a non-negative frame offset stays within the shadow stack, so the memarg's
+//    infinite-precision addition cannot differ from the "i32.add" it replaces.
+//
+//    SIMD12 indirections re-materialize the address for the trailing lane access, and a multiply-used
+//    address is read back from a wasm local that would no longer hold the full address, so neither folds.
+//
+//    Folding relies on the flagged node keeping its single use: because GT_LCL_ADDR is invariant, neither
+//    the stackifier ("CanMoveForward") nor "fgWasmSpillRefs" can replace it with a temporary.
+//
+void Lowering::TryFoldLclAddrOffset(GenTreeIndir* indirNode)
+{
+    GenTree* const addr = indirNode->Addr();
+
+    if (!indirNode->OperIs(GT_IND, GT_STOREIND) || !addr->OperIs(GT_LCL_ADDR) || indirNode->TypeIs(TYP_SIMD12) ||
+        ((addr->gtLIRFlags & LIR::Flags::MultiplyUsed) != LIR::Flags::None))
+    {
+        return;
+    }
+
+    assert(addr->IsInvariant());
+    addr->gtLIRFlags |= LIR::Flags::FoldedAddr;
+}
+
+//------------------------------------------------------------------------
 // LowerStoreIndir: Determine addressing mode for an indirection, and whether operands are contained.
 //
 // Arguments:
@@ -528,6 +560,10 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
     if (foldable != nullptr)
     {
         MakeSrcContained(indirNode, foldable);
+    }
+    else
+    {
+        TryFoldLclAddrOffset(indirNode);
     }
 
     // Contain a relocatable address constant so it folds into the load's memarg offset.

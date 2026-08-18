@@ -19,17 +19,8 @@
 #include "sstring.h"
 #include "peimage.h"
 #include "metadata.h"
-#include "corhlpr.h"
-#include "utilcode.h"
-#include "loaderheap.h"
-#include "sstring.h"
-#include "ex.h"
-#include "assemblyspecbase.h"
+#include "../binder/inc/assembly.hpp"
 #include "eecontract.h"
-#include "stackwalktypes.h"
-#include <specstrings.h>
-#include "slist.h"
-#include "eventtrace.h"
 
 #include "assemblybinderutil.h"
 
@@ -37,45 +28,32 @@
 // Forward declared classes
 // --------------------------------------------------------------------------------
 
-class Module;
-class EditAndContinueModule;
-
 class PEAssembly;
-class SimpleRWLock;
-
 typedef DPTR(PEAssembly) PTR_PEAssembly;
 
 // --------------------------------------------------------------------------------
-// Types
-// --------------------------------------------------------------------------------
-
-// --------------------------------------------------------------------------------
-// A PEAssembly is an input to the CLR loader.  It is produced as a result of
-// binding, usually through fusion (although there are a few less common methods to
-// obtain one which do not go through fusion, e.g. IJW loads)
+// A PEAssembly is an input to the CLR loader. It is produced as a result of binding.
 //
 // Although a PEAssembly is usually a disk based PE file, it is not
 // always the case. Thus it is a conscious decision to not export access to the PE
 // file directly; rather the specific information required should be provided via
 // individual query API.
 //
-// There are multiple "flavors" of PEAssemblies:
+// A PEAssembly is one of two kinds, distinguished by IsReflectionEmit():
 //
-// 1. HMODULE - these PE Files are loaded in response to "spontaneous" OS callbacks.
-//    These should only occur for .exe main modules and IJW dlls loaded via LoadLibrary
-//    or static imports in umnanaged code.
-//    These get their PEImage loaded directly in PEImage::CreateFromHMODULE(HMODULE hMod)
+// 1. Bound to a PE image - the result of an AssemblyBinder bind
+//    It holds the BINDER_SPACE::Assembly that the binder produced, and takes
+//    both its PEImage and its metadata from that bind result.
 //
-// 2. Assemblies loaded directly or indirectly by the managed code - these are the most
-//    common case.  A path is obtained from assembly binding and the result is loaded
-//    via PEImage:
-//      a. Display name loads - these are metadata-based binds
-//      b. Path loads - these are loaded from an explicit path
+//    The PEImage may come from:
+//      - File on disk - loaded via binding to an assembly name or an explicit path
+//      - Byte array - via an API such as AssemblyLoadContext.LoadFromStream
+//      - HMODULE - IJW module already loaded into memory by the OS (Windows)
+//    The source of the PEImage does not change the PEAssembly itself.
 //
-// 3. Byte arrays - loaded explicitly by user code.  These also go through PEImage.
-//
-// 4. Dynamic - these are not actual PE images at all, but are placeholders
-//    for reflection-based modules.
+// 2. Dynamic - a reflection emit assembly
+//    It has no PEImage. Its metadata comes from an IMetaDataEmit and it uses the binder
+//    of the assembly that created it.
 //
 // See also file:..\inc\corhdr.h#ManagedHeader for more on the format of managed images.
 // --------------------------------------------------------------------------------
@@ -151,7 +129,7 @@ public:
     // Classification
     // ------------------------------------------------------------
 
-    BOOL IsSystem() const;
+    bool IsSystem() const;
     BOOL IsReflectionEmit() const;
 
     // ------------------------------------------------------------
@@ -177,7 +155,6 @@ public:
     void GetMVID(GUID* pMvid);
     ULONG GetHashAlgId();
     HRESULT GetVersion(USHORT* pMajor, USHORT* pMinor, USHORT* pBuild, USHORT* pRevision);
-    BOOL IsStrongNamed();
     LPCUTF8 GetSimpleName();
     HRESULT GetScopeName(LPCUTF8 * pszName);
     const void *GetPublicKey(DWORD *pcbPK);
@@ -321,14 +298,10 @@ public:
     // Creation entry points
     // ------------------------------------------------------------
 
-    static PEAssembly* Open(
-        PEImage* pPEImageIL,
-        BINDER_SPACE::Assembly* pHostAssembly);
-
     // This opens the canonical System.Private.CoreLib.dll
     static PEAssembly* OpenSystem();
 
-    static PEAssembly* Open(BINDER_SPACE::Assembly* pBindResult);
+    static PEAssembly* Open(BINDER_SPACE::Assembly* pBoundAssembly);
 
     static PEAssembly* Create(IMetaDataAssemblyEmit* pEmit, AssemblyBinder* pDynamicAssemblyBinder);
 
@@ -352,16 +325,13 @@ private:
 
 #ifdef DACCESS_COMPILE
     // just to make the DAC and GCC happy.
-    ~PEAssembly() {};
+    ~PEAssembly() = default;
     PEAssembly() = default;
 #else
     PEAssembly(
-        BINDER_SPACE::Assembly* pBindResultInfo,
+        BINDER_SPACE::Assembly* pBoundAssembly,
         IMetaDataEmit* pEmit,
-        BOOL isSystem,
-        AssemblyBinder* pDynamicAssemblyBinder = NULL,
-        PEImage* pPEImageIL = NULL,
-        BINDER_SPACE::Assembly* pHostAssembly = NULL
+        AssemblyBinder* pDynamicAssemblyBinder = NULL
     );
 
     ~PEAssembly();
@@ -410,7 +380,6 @@ private:
     IMetaDataEmit* m_pEmitter;
 
     Volatile<LONG>           m_refCount;
-    bool                     m_isSystem;
 
     PTR_BINDER_SPACE_Assembly m_pHostAssembly;
     PTR_AssemblyBinder m_pAssemblyBinder;

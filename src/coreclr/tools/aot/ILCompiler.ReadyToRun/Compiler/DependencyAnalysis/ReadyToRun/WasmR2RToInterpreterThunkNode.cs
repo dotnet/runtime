@@ -231,6 +231,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     expressions.Add(I32.Const(0));
                     expressions.Add(I32.Store((ulong)currentOffset));
                 }
+                else if (WasmLowering.TryGetMultiSegmentLayout(paramType, out WasmValueType slotType, out int slotCount))
+                {
+                    // Passed by value across several wasm locals — store each one into the argument area.
+                    int slotSize = WasmLowering.GetMultiSegmentSlotSize(slotType);
+                    for (int slot = 0; slot < slotCount; slot++)
+                    {
+                        expressions.Add(Local.Get(0));
+                        expressions.Add(Local.Get(wasmLocalIndex));
+                        ulong slotOffset = (ulong)(currentOffset + (slot * slotSize));
+                        expressions.Add(slotType == WasmValueType.I64 ? I64.Store(slotOffset) : V128.Store(slotOffset));
+                        wasmLocalIndex++;
+                    }
+                }
                 else if (isIndirectStructArg[i])
                 {
                     // Indirect struct — copy the exact contents from the incoming pointer
