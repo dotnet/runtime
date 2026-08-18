@@ -1667,6 +1667,21 @@ namespace System.Text.Json.Schema.Tests
             public PocoWithPolymorphism.DerivedPocoStringDiscriminator DerivedValue2 { get; set; } = new() { DerivedValue = "derived" };
         }
 
+        public sealed class PocoWithGetOnlyProperties
+        {
+            public IEnumerable<string> Values => [];
+            public string SingleValueGetOnly { get; } = "value";
+            public string? NullableGetOnly { get; }
+            public string SingleValueGetSet { get; set; } = "value";
+            [JsonInclude]
+            public readonly string NonNullableReadonlyField = "value";
+
+#pragma warning disable CS0649 // field never assigned to
+            [JsonInclude]
+            public readonly string? NullableReadonlyField;
+#pragma warning restore CS0649
+        }
+
         public class ClassWithComponentModelAttributes
         {
             public ClassWithComponentModelAttributes(string stringValue, [DefaultValue(42)] int intValue)
