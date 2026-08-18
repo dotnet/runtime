@@ -205,16 +205,6 @@
   </Target>
 
   <Target Name="_PrepareR2RItemsOnHelix">
-    <ItemGroup Condition="'$(PublishReadyToRunContainerFormat)' == 'macho'">
-      <_StaleR2ROutputInPublishDir Include="$(OriginalPublishDir)*.r2r.dylib" />
-    </ItemGroup>
-
-    <!-- The publish directory is the crossgen2 input for every run in this work item, so it has to keep
-         holding the original IL. This warns instead of failing the build because a payload can also
-         arrive with ReadyToRun output that the build machine produced. -->
-    <Warning Condition="'@(_StaleR2ROutputInPublishDir)' != ''"
-             Text="ReadyToRun output found in the crossgen2 input directory '$(OriginalPublishDir)': @(_StaleR2ROutputInPublishDir->'%(Filename)%(Extension)', ', '). Compiling assemblies that have already been compiled produces an image that is missing method bodies." />
-
     <PropertyGroup>
       <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
       <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
