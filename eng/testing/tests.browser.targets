@@ -26,7 +26,7 @@
     </ResolveWasmOutputsDependsOn>
 
     <!-- set this when provisioning emsdk on CI -->
-    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and '$(MonoProjectRoot)' != ''">$([MSBuild]::NormalizeDirectory($(BrowserProjectRoot), 'emsdk'))</EMSDK_PATH>
+    <EMSDK_PATH Condition="'$(EMSDK_PATH)' == '' and '$(ContinuousIntegrationBuild)' == 'true' and Exists('$(EmscriptenSdkStampFile)')">$(EmscriptenSdkCacheDir)</EMSDK_PATH>
 
     <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == ''">true</WasmEmitSymbolMap>
 

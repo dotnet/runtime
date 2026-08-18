@@ -6,10 +6,11 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Unicode;
 
 using Internal.Text;
@@ -1082,6 +1083,36 @@ namespace Internal.JitInterface
             return method.IsIntrinsic || HardwareIntrinsicHelpers.IsHardwareIntrinsic(method);
         }
 
+        private bool canValueClassInstancePointerEscape(CORINFO_METHOD_STRUCT_* ftn)
+        {
+            MethodDesc method = HandleToObject(ftn);
+
+            Debug.Assert(!method.Signature.IsStatic);
+
+            if (method.GetTypicalMethodDefinition() is not EcmaMethod ecmaMethod)
+                return true;
+
+            // ECMA augment III.1.7.7 allows making this escaping assumption
+            // based on RefSafetyRules and UnscopedRef attributes.
+            if (!ModuleOptsIntoRefSafetyRules(ecmaMethod.Module, 11))
+                return true;
+
+            return ecmaMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "UnscopedRefAttribute");
+        }
+
+        private static bool ModuleOptsIntoRefSafetyRules(EcmaModule module, int minVersion)
+        {
+            MetadataReader reader = module.MetadataReader;
+            CustomAttributeHandle handle = reader.GetCustomAttributeHandle(
+                reader.GetModuleDefinition().GetCustomAttributes(),
+                "System.Runtime.CompilerServices", "RefSafetyRulesAttribute");
+            if (handle.IsNil)
+                return false;
+
+            CustomAttributeValue<TypeDesc> value = reader.GetCustomAttribute(handle).DecodeValue(new CustomAttributeTypeProvider(module));
+            return value.FixedArguments.Length == 1 && value.FixedArguments[0].Value is int version && version >= minVersion;
+        }
+
         private uint getMethodAttribsInternal(MethodDesc method)
         {
             CorInfoFlag result = 0;
@@ -1318,6 +1349,16 @@ namespace Internal.JitInterface
         {
             MethodDesc callerMethod = HandleToObject(callerHnd);
             MethodDesc calleeMethod = HandleToObject(calleeHnd);
+
+#if !READYTORUN
+            // Some thunks, like DIM instantiation thunks, are compiled as async but are not
+            // async in the type system. They do not support the suspension points that
+            // inlining an async callee would introduce.
+            if (calleeMethod.IsAsyncCall() && !MethodBeingCompiled.IsAsyncCall())
+            {
+                return CorInfoInline.INLINE_FAIL;
+            }
+#endif
 
             EcmaModule rootModule = (MethodBeingCompiled.OwningType as MetadataType)?.Module as EcmaModule;
             EcmaModule calleeModule = (calleeMethod.OwningType as MetadataType)?.Module as EcmaModule;
@@ -2408,12 +2449,12 @@ namespace Internal.JitInterface
 
             if (type is MetadataType metadataType && !metadataType.IsAutoLayout)
             {
-                if (metadataType.IsSequentialLayout || MarshalUtils.IsBlittableType(metadataType))
+                if (metadataType.IsSequentialLayout ||
+                    MarshalUtils.IsBlittableType(metadataType))
                 {
                     alignment = metadataType.InstanceFieldAlignment.AsInt;
                 }
             }
-
             if (type.Context.Target.SupportsAlign8 &&
                 alignment < 8 && type.RequiresAlign8())
             {
@@ -2640,6 +2681,39 @@ namespace Internal.JitInterface
             throw new InvalidOperationException();
         }
 
+        //------------------------------------------------------------------------
+        // IsSimdIntrinsicType: Check whether a type is one of the SIMD types that the
+        // JIT considers to be a primitive.
+        //
+        // Arguments:
+        //   type - The type to check.
+        //
+        // Return Value:
+        //   True if the type is a SIMD type; otherwise false.
+        //
+        // Remarks:
+        //   This is an explicit allow list mirroring the types recognized by
+        //   Compiler::getBaseTypeAndSizeOfSIMDType. The other intrinsic types in these
+        //   namespaces (Decimal32/Decimal64/Decimal128, Matrix3x2/Matrix4x4) are laid
+        //   out like any other struct, so the JIT needs their fields reported.
+        //
+        private static bool IsSimdIntrinsicType(MetadataType type)
+        {
+            if (VectorFieldLayoutAlgorithm.IsVectorType(type) || VectorOfTFieldLayoutAlgorithm.IsVectorOfTType(type))
+            {
+                return true;
+            }
+
+            if (!type.IsIntrinsic || type.Namespace != "System.Numerics"u8)
+            {
+                return false;
+            }
+
+            Utf8Span name = type.Name;
+            return name == "Vector2"u8 || name == "Vector3"u8 || name == "Vector4"u8 ||
+                   name == "Quaternion"u8 || name == "Plane"u8;
+        }
+
         private GetTypeLayoutResult GetTypeLayoutHelper(MetadataType type, uint parentIndex, uint baseOffs, FieldDesc field, CORINFO_TYPE_LAYOUT_NODE* treeNodes, nuint maxTreeNodes, nuint* numTreeNodes)
         {
             if (*numTreeNodes >= maxTreeNodes)
@@ -2681,34 +2755,30 @@ namespace Internal.JitInterface
 
             // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
             // not care about since they are considered primitives by the JIT.
-            if (type.IsIntrinsic)
+            if (IsSimdIntrinsicType(type))
             {
-                Utf8Span ns = type.Namespace;
-                if (ns == "System.Runtime.Intrinsics"u8 || ns == "System.Numerics"u8)
+                parNode->simdTypeHnd = ObjectToHandle(type);
+                if (parentIndex != uint.MaxValue)
                 {
-                    parNode->simdTypeHnd = ObjectToHandle(type);
-                    if (parentIndex != uint.MaxValue)
-                    {
 #if READYTORUN
-                        if (NeedsTypeLayoutCheck(type))
-                        {
-                            // We cannot allow the JIT to call getClassSize for
-                            // arbitrary types of fields as it will insert a fixup
-                            // that we may not be able to encode. We could skip the
-                            // field, but that will make prejit promotion different
-                            // from the runtime promotion. We could also change the
-                            // JIT to avoid calling getClassSize and just use the
-                            // size from the returned node, but for that we would
-                            // need to be sure that the type layout check fixup
-                            // added in getTypeLayout is sufficient to guarantee
-                            // the size of all these intrinsically handled SIMD
-                            // types.
-                            return GetTypeLayoutResult.Failure;
-                        }
+                    if (NeedsTypeLayoutCheck(type))
+                    {
+                        // We cannot allow the JIT to call getClassSize for
+                        // arbitrary types of fields as it will insert a fixup
+                        // that we may not be able to encode. We could skip the
+                        // field, but that will make prejit promotion different
+                        // from the runtime promotion. We could also change the
+                        // JIT to avoid calling getClassSize and just use the
+                        // size from the returned node, but for that we would
+                        // need to be sure that the type layout check fixup
+                        // added in getTypeLayout is sufficient to guarantee
+                        // the size of all these intrinsically handled SIMD
+                        // types.
+                        return GetTypeLayoutResult.Failure;
+                    }
 #endif
 
-                        return GetTypeLayoutResult.Success;
-                    }
+                    return GetTypeLayoutResult.Success;
                 }
             }
 
@@ -3590,6 +3660,10 @@ namespace Internal.JitInterface
             pAsyncInfoOut.captureContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureContexts"u8, null));
             pAsyncInfoOut.restoreContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreContexts"u8, null));
             pAsyncInfoOut.restoreContextsOnSuspensionMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreContextsOnSuspension"u8, null));
+            pAsyncInfoOut.restoreInlinedFrameContextsMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("RestoreInlinedFrameContexts"u8, null));
+            pAsyncInfoOut.captureInlinedFrameTransitionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionWithContinuationContext"u8, null));
+            pAsyncInfoOut.captureInlinedFrameTransitionNoContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionNoContinuationContext"u8, null));
+            pAsyncInfoOut.captureInlinedFrameTransitionContinueOnThreadPoolMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("CaptureInlinedFrameTransitionContinueOnThreadPool"u8, null));
             pAsyncInfoOut.finishSuspensionNoContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionNoContinuationContext"u8, null));
             pAsyncInfoOut.finishSuspensionWithContinuationContextMethHnd = ObjectToHandle(asyncHelpers.GetKnownMethod("FinishSuspensionWithContinuationContext"u8, null));
         }
@@ -3600,6 +3674,7 @@ namespace Internal.JitInterface
             pWellKnownGlobalsOut.stackPointer = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.StackPointerName)));
             pWellKnownGlobalsOut.imageBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.ImageBaseName)));
             pWellKnownGlobalsOut.tableBase = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.TableBaseName)));
+            pWellKnownGlobalsOut.asyncContinuation = (CORINFO_WASM_GLOBAL_SYMBOL_STRUCT_*)ObjectToHandle(factory.GetWellKnownWasmGlobalSymbol(new(WasmWellKnownGlobalSymbolNode.AsyncContinuationName)));
         }
         private CORINFO_METHOD_STRUCT_* getAwaitReturnCall(CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CONTEXT_STRUCT** contextHandle, ref CORINFO_LOOKUP instArg)
         {
@@ -3668,6 +3743,85 @@ namespace Internal.JitInterface
 #else
                 // Runtime lookup is needed
                 ComputeLookup(caller != MethodBeingCompiled, runtimeDeterminedResult, ReadyToRunHelperId.MethodDictionary, caller, ref instArg);
+#endif
+            }
+
+            return ObjectToHandle(targetMethod);
+        }
+
+        private CORINFO_METHOD_STRUCT_* getAwaitAwaiterInContinuationCall(
+            CORINFO_METHOD_STRUCT_* callerHandle,
+            ref CORINFO_RESOLVED_TOKEN pResolvedToken,
+            bool isUnsafe,
+            CORINFO_CONTEXT_STRUCT** contextHandle,
+            ref CORINFO_LOOKUP instArg)
+        {
+            instArg.lookupKind.needsRuntimeLookup = false;
+            instArg.constLookup.accessType = InfoAccessType.IAT_VALUE;
+            instArg.constLookup.addr = null;
+
+            MethodDesc caller = HandleToObject(callerHandle);
+            MethodDesc awaitAwaiterMethod = HandleToObject(pResolvedToken.hMethod);
+            Debug.Assert(awaitAwaiterMethod.Instantiation.Length == 1);
+            TypeDesc awaiterType = awaitAwaiterMethod.Instantiation[0];
+
+            // The resolved token gives us the canonical form of the awaiter
+            // type; the dependency analysis needs the runtime determined form.
+            var runtimeDeterminedAwaitAwaiterMethod = (MethodDesc)GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
+            TypeDesc runtimeDeterminedAwaiterType = runtimeDeterminedAwaitAwaiterMethod.Instantiation[0];
+
+            CompilerTypeSystemContext context = _compilation.TypeSystemContext;
+            DefType asyncHelpers =
+                context.SystemModule.GetKnownType("System.Runtime.CompilerServices"u8, "AsyncHelpers"u8);
+            MethodSignature signature = new MethodSignature(
+                MethodSignatureFlags.Static,
+                1,
+                context.GetWellKnownType(WellKnownType.Void),
+                [context.GetWellKnownType(WellKnownType.Int32)]);
+            MethodDesc typicalMethod = asyncHelpers.GetKnownMethod(
+                isUnsafe ? "UnsafeAwaitAwaiterInContinuation"u8 : "AwaitAwaiterInContinuation"u8,
+                signature);
+            MethodDesc result = typicalMethod.MakeInstantiatedMethod(awaiterType);
+            MethodDesc runtimeDeterminedResult = typicalMethod.MakeInstantiatedMethod(runtimeDeterminedAwaiterType);
+
+            MethodDesc targetMethod = runtimeDeterminedResult.GetCanonMethodTarget(CanonicalFormKind.Specific);
+            *contextHandle = contextFromMethod(result);
+
+            if (targetMethod.RequiresInstArg())
+            {
+#if READYTORUN
+                if (runtimeDeterminedResult.IsRuntimeDeterminedExactMethod)
+                {
+                    // TODO-Async: the instantiation argument would have to be obtained through a runtime
+                    // generic dictionary lookup, which is not yet emitted here.
+                    if (((ReadyToRunCompilerContext)context).TargetAllowsRuntimeCodeGeneration)
+                    {
+                        // Leave this method to runtime JIT that will be able to avoid the box
+                        throw new RequiresRuntimeJitException($"getAwaitAwaiterInContinuationCall: runtime-determined exact instantiation requires runtime JIT ({runtimeDeterminedResult})");
+                    }
+                    else
+                    {
+                        // Skip the optimization, which will result in a box,
+                        // but is still better than interpreter fallback
+                        return null;
+                    }
+                }
+
+                instArg.constLookup = CreateConstLookupToSymbol(
+                    _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
+                        ReadyToRunHelperId.MethodDictionary,
+                        new MethodWithToken(
+                            runtimeDeterminedResult,
+                            _compilation.NodeFactory.Resolver.GetModuleTokenForMethod(
+                                runtimeDeterminedResult,
+                                allowDynamicallyCreatedReference: true,
+                                throwIfNotFound: true),
+                            constrainedType: null,
+                            unboxing: false,
+                            genericContextObject: caller)));
+#else
+                ComputeLookup(caller != MethodBeingCompiled, runtimeDeterminedResult, ReadyToRunHelperId.MethodDictionary,
+                              caller, ref instArg);
 #endif
             }
 
@@ -3886,6 +4040,15 @@ namespace Internal.JitInterface
                 AddPrecodeFixup(node);
             }
 #endif
+
+            // A type split across several wasm parameters reports the slot type it splits into;
+            // the JIT derives the count from the struct's size.
+            if (WasmLowering.TryGetMultiSegmentLayout(type, out WasmValueType multiSlotType, out _))
+            {
+                return multiSlotType == WasmValueType.I64
+                    ? CorInfoWasmType.CORINFO_WASM_TYPE_I64
+                    : CorInfoWasmType.CORINFO_WASM_TYPE_V128;
+            }
 
             TypeDesc abiType = WasmLowering.LowerToAbiType(type);
 
@@ -4395,6 +4558,8 @@ namespace Internal.JitInterface
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset);
 
+        partial void TryUseWasmMethodCodeStoreFixup(void* target, CorInfoReloc fRelocType, BlockType locationBlock, int relocOffset, int addlDelta, ref bool handled);
+
         private ref ArrayBuilder<Relocation> findRelocBlock(BlockType blockType, out int length)
         {
             switch (blockType)
@@ -4446,6 +4611,7 @@ namespace Internal.JitInterface
                 CorInfoReloc.RISCV64_PCREL_S => RelocType.IMAGE_REL_BASED_RISCV64_PCREL_S,
                 CorInfoReloc.WASM_FUNCTION_INDEX_LEB => RelocType.WASM_FUNCTION_INDEX_LEB,
                 CorInfoReloc.WASM_TABLE_INDEX_SLEB => RelocType.WASM_TABLE_INDEX_SLEB,
+                CorInfoReloc.WASM_TABLE_INDEX_I32 => RelocType.WASM_TABLE_INDEX_I32,
                 CorInfoReloc.WASM_MEMORY_ADDR_LEB => RelocType.WASM_MEMORY_ADDR_LEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_SLEB => RelocType.WASM_MEMORY_ADDR_SLEB,
                 CorInfoReloc.WASM_MEMORY_ADDR_REL_SLEB => RelocType.WASM_MEMORY_ADDR_REL_SLEB,
@@ -4461,6 +4627,17 @@ namespace Internal.JitInterface
             int relocOffset;
             BlockType locationBlock = findKnownBlock(location, out relocOffset);
             Debug.Assert(locationBlock != BlockType.Unknown, "BlockType.Unknown not expected");
+
+            // On WebAssembly a direct code pointer to a compiled method cannot be materialized at
+            // build time. When such a reference lands in the method's read-only data blob, replace
+            // the relocation with a method-load-time fixup that stores the target's runtime
+            // MultiCallableAddrOfCode into the location.
+            bool handledByCodeStoreFixup = false;
+            TryUseWasmMethodCodeStoreFixup(target, fRelocType, locationBlock, relocOffset, addlDelta, ref handledByCodeStoreFixup);
+            if (handledByCodeStoreFixup)
+            {
+                return;
+            }
 
             int length;
             ref ArrayBuilder<Relocation> sourceBlock = ref findRelocBlock(locationBlock, out length);

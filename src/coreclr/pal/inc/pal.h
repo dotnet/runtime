@@ -268,6 +268,10 @@ PAL_SetLogManagedCallstackForSignalCallback(
 /// be async-signal-safe. siginfo is opaque (siginfo_t*) and context is the
 /// raw ucontext_t pointer received by the PAL signal handler.
 ///
+/// The PAL serializes concurrent crash diagnostics (this callback and the
+/// out-of-proc createdump path) through a shared gate before invoking the
+/// callback, so implementations do not need to serialize themselves.
+///
 /// Registration is opt-in: if no callback is installed the PAL falls back
 /// to its default crash-dump path (createdump where available). The PAL
 /// itself has no source-level dependency on the in-proc reporter library;

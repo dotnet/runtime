@@ -6,7 +6,7 @@ namespace Microsoft.Diagnostics.DataContractReader.Data;
 [CdacType(nameof(DataType.CMiniMdSchema))]
 internal sealed partial class CMiniMdSchema : IData<CMiniMdSchema>
 {
-    [Field] public byte Heaps { get; }
-    [Field] public ulong Sorted { get; }
-    [FieldAddress] public TargetPointer RecordCounts { get; }
+    [Field] public partial byte Heaps { get; }
+    [Field] public partial ulong Sorted { get; }
+    [FieldAddress] public partial TargetPointer RecordCounts { get; }
 }

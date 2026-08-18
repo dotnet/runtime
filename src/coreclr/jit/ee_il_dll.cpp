@@ -902,7 +902,9 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
             break;
 
         case CodeGenInterface::VLT_REG_FP:
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+            // AMD64/ARM64 store the FP register as a debug RegNum (REGNUM_FP_FIRST-based);
+            // map it back to a JIT regNumber for display.
             printf("%s", getRegName(static_cast<regNumber>(REG_FP_FIRST + var->loc.vlReg.vlrReg -
                                                            ICorDebugInfo::REGNUM_FP_FIRST)));
 #else
@@ -928,7 +930,7 @@ void Compiler::eeDispVar(ICorDebugInfo::NativeVarInfo* var)
 
         case CodeGenInterface::VLT_REG_REG:
         {
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
             auto toJitRegNum = [](ICorDebugInfo::RegNum reg) -> regNumber {
                 unsigned val     = static_cast<unsigned>(reg);
                 unsigned fpFirst = static_cast<unsigned>(ICorDebugInfo::REGNUM_FP_FIRST);
@@ -1536,7 +1538,7 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(
 #ifdef DEBUG
     if (verbose)
     {
-        printf("**** getSystemVAmd64PassStructInRegisterDescriptor(0x%x (%s), ...) =>\n", dspPtr(structHnd),
+        printf("**** getSystemVAmd64PassStructInRegisterDescriptor(%p (%s), ...) =>\n", dspPtr(structHnd),
                eeGetClassName(structHnd));
         printf("        passedInRegisters = %s\n", dspBool(structPassInRegDescPtr->passedInRegisters));
         if (structPassInRegDescPtr->passedInRegisters)

@@ -73,8 +73,8 @@ EEClassHashTable *EEClassHashTable::Create(Module *pModule, DWORD dwNumBuckets, 
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
         INJECT_FAULT(COMPlusThrowOM(););
         PRECONDITION(!FORBIDGC_LOADER_USE_ENABLED());
 
@@ -138,7 +138,7 @@ bool EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data, Loader::LoadF
                                                    Module **ppModule, mdTypeDef *pCL,
                                                    mdExportedType *pmdFoundExportedType)
 {
-    CONTRACT(bool)
+    CONTRACTL
     {
         INSTANCE_CHECK;
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
@@ -148,10 +148,9 @@ bool EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data, Loader::LoadF
 
         PRECONDITION(CheckPointer(pCL));
         PRECONDITION(CheckPointer(ppModule));
-        POSTCONDITION(*ppModule != nullptr || loadFlag != Loader::Load);
         SUPPORTS_DAC;
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     DWORD dwData = (DWORD)dac_cast<TADDR>(Data);
     _ASSERTE((dwData & EECLASSHASH_TYPEHANDLE_DISCR) == EECLASSHASH_TYPEHANDLE_DISCR);
@@ -166,7 +165,8 @@ bool EEClassHashTable::UncompressModuleAndClassDef(HashDatum Data, Loader::LoadF
         _ASSERTE(*ppModule != nullptr); // Should never fail.
     }
 
-    RETURN (*ppModule != nullptr);
+    _ASSERTE(*ppModule != nullptr || loadFlag != Loader::Load);
+    return *ppModule != nullptr;
 }
 
 /* static */
@@ -676,7 +676,7 @@ BOOL EEClassHashTable::IsNested(ModuleBase *pModule, mdToken token, mdToken *mdE
     CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        GC_NOTRIGGER;
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         SUPPORTS_DAC;
@@ -685,7 +685,7 @@ BOOL EEClassHashTable::IsNested(ModuleBase *pModule, mdToken token, mdToken *mdE
 
     switch(TypeFromToken(token)) {
         case mdtTypeDef:
-            return (SUCCEEDED(pModule->GetMDImport()->GetNestedClassProps(token, mdEncloser)));
+            return SUCCEEDED(pModule->GetMDImport()->GetNestedClassProps(token, mdEncloser));
 
         case mdtTypeRef:
             IfFailThrow(pModule->GetMDImport()->GetResolutionScopeOfTypeRef(token, mdEncloser));
@@ -714,7 +714,7 @@ BOOL EEClassHashTable::IsNested(const NameHandle* pName, mdToken *mdEncloser)
     CONTRACTL
     {
         if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
-        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        GC_NOTRIGGER;
         if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
         MODE_ANY;
         SUPPORTS_DAC;
