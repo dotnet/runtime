@@ -119,7 +119,7 @@ namespace ILCompiler.Wasm
         private static void RejectMultiSlotToken(string token)
         {
             if (IsMultiSlotToken(token))
-                throw new NotSupportedException($"Multi-slot signature token '{token}' is not supported in interop thunks");
+                throw new LogAsErrorException($"Multi-slot signature token '{token}' is not supported in interop thunks");
         }
 
         public static string TokenToNativeType(string token)

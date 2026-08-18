@@ -355,7 +355,12 @@ namespace ILCompiler.Wasm
                 return false;
             }
 
-            var metadataType = (MetadataType)type;
+            if (type is not MetadataType metadataType)
+            {
+                log.InfoHigh("WASM0060", $"Type {type} is not blittable: No metadata");
+                return false;
+            }
+
             List<FieldDesc> fields = [];
             foreach (FieldDesc field in metadataType.GetFields())
             {

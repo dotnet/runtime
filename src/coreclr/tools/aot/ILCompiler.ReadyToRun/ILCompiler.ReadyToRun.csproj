@@ -24,6 +24,7 @@
     <ProjectReference Include="..\ILCompiler.Diagnostics\ILCompiler.Diagnostics.csproj" />
     <ProjectReference Include="..\ILCompiler.TypeSystem\ILCompiler.TypeSystem.csproj" />
 
+    <InternalsVisibleTo Include="crossgen2" />
     <InternalsVisibleTo Include="ILCompiler.ReadyToRun.Tests" />
 
     <PackageReference Condition="'$(DotNetBuildSourceOnly)' != 'true'" Include="StaticCs" Version="$(StaticCsVersion)">

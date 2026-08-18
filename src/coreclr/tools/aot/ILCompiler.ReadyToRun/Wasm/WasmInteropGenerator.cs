@@ -15,7 +15,7 @@ namespace ILCompiler.Wasm
     /// <summary>
     /// Options for <see cref="WasmInteropGenerator"/>, mirroring the command line.
     /// </summary>
-    public sealed class WasmInteropGeneratorOptions
+    internal sealed class WasmInteropGeneratorOptions
     {
         public string OutputDirectory { get; init; }
         public IReadOnlyList<string> PInvokeModules { get; init; } = [];
@@ -39,7 +39,7 @@ namespace ILCompiler.Wasm
     ///   crossgen2 --wasm-generate-callhelpers &lt;dir&gt; --targetos &lt;browser|wasi&gt; --targetarch wasm \
     ///             --wasm-pinvoke-module &lt;name&gt;... &lt;assembly&gt;...
     /// </remarks>
-    public static class WasmInteropGenerator
+    internal static class WasmInteropGenerator
     {
         public const string PInvokeFileName = "callhelpers-pinvoke.cpp";
         public const string ReversePInvokeFileName = "callhelpers-reverse.cpp";
