@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.X509Certificates.Tests
 {
+    [SkipOnPlatform(TestPlatforms.Browser, "Browser doesn't support X.509 certificates")]
     public static class AppAndCertPoliciesChainTests
     {
         private const string ApplicationCertPoliciesOid = "1.3.6.1.4.1.311.21.10";
