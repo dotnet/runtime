@@ -132,6 +132,11 @@ namespace System
                 else
                 {
                     ret = NumberToBigInteger(ref number, out result);
+
+                    if (ret != ParsingStatus.OK)
+                    {
+                        elementsConsumed = 0;
+                    }
                 }
             }
 

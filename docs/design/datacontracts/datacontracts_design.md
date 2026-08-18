@@ -1,6 +1,8 @@
 # Data Contracts
 
 The diagnostic data contract documents a subset of internal .NET runtime in-memory data structures. It enables diagnostic tools to inspect state of .NET runtime process by directly reading and interpreting process memory. It is meant to be used debuggers - for both live and post-mortem debugging, profilers, and other diagnostic tools. We expect it to enable innovative solutions like [unwinding through JITed code using eBPF filters](https://github.com/dotnet/runtime/issues/93550).
+These contracts define both the physical shape of the data structures in memory (addresses, field sizes, and offsets) as well as their semantics. The contract is a promise from the runtime to diagnostic tools that if a tool reads
+the memory of a .NET runtime process and interprets it according to the contract, it can calculate specific useful information about the current runtime state.
 
 The diagnostic data contract addresses multiple problems of the established .NET runtime debugger architecture. The established CoreCLR debugger architecture requires debugger to acquire and load DAC and DBI libraries that exactly match the version of .NET runtime being debugged. It comes with multiple challenges:
 - *Security*: The DBI and DAC libraries that match the exact .NET runtime may be untrusted (e.g. custom or 3rd party build of .NET runtime). https://github.com/dotnet/runtime/blob/main/docs/workflow/debugging/coreclr/debugging-runtime.md#resolving-signature-validation-errors-in-visual-studio has some additional context.
@@ -19,7 +21,7 @@ The Data Contract Descriptor has a set of records of the following forms.
 ### Data descriptor
 
 The data descriptor is a logical entity that defines the layout of certain types relevant to one or
-more algorithmic contracts, as well as global values known to the target runtime that may be
+more contracts, as well as global values known to the target runtime that may be
 relevant to one or more algorithmic contracts.
 
 More details are provided in the [data descriptor spec](./data_descriptor.md).  We highlight some important aspects below:
@@ -51,16 +53,32 @@ Each compatible contract is described by a string naming the contract, and a str
 
 
 ## Versioning of contracts
-Contracts are described by a string version identifier. Different version identifiers represent different contract implementations. A "higher" identifier is not more recent, it just means different. In order to avoid conflicts, all contracts should be documented in the main branch of the dotnet repository with a version identifier which does not conflict with any other. It is expected that every version of every contract describes the same functionality/data layout/set of global values.
+Contracts are described by a string version identifier. Different version identifiers represent different contract implementations. A "higher" identifier is not necessarily more recent, it just means different. In order to avoid conflicts, all contracts should be documented in the main branch of the dotnet repository with a version identifier which does not conflict with any other. It is expected that every version of the same contract describes the same functionality but may use different data structures or algorithms to do so.
+
+Every build of the runtime will have some set of contract versions that it supports enumerated in the contract descriptor. Whenever the runtime changes its implementation of data structures or algorithms in a way that is not compatible with the previous contract version then a new version of the contract needs to be defined and used instead.
+
+In some cases we allow previously defined contract versions to be amended after they were defined. This could occur either to:
+ - Fix a bug in the documentation
+ - Describe additional optional globals, types, fields, or algorithms
+
+When amending a contract version, the change must be compatible: a runtime that advertises it supports contract version X must be understandable by a tool that implements the original definition of X as well as any amended definition of X.
+There is some subjective leeway in making this determination. Generally we expect that additive contract amendments either add brand new APIs that are documented to return a default value/error for some older runtime builds, or
+an existing API might be extended to return additional or more refined information.
+
+For any given major release of the runtime, the set of supported contract versions should remain fixed from the first release candidate to the final servicing build. This ensures that diagnostic tools that advertise support
+for a particular .NET version will remain functional for the full lifetime of that release. Prior to the first release candidate it is acceptable to change the supported contract versions, but it should be done carefully because
+doing so is likely to break compatibility with many diagnostic tools. Ideally such changes are isolated in feature branches or behind opt-in switches and coordinated so that diagnostic tools have already implemented support for
+the new contract version before it is broadly enabled in runtime nightly or preview builds.
+
 
 ## Contract data model
 Logically a contract may refer to another contract. If it does so, it will typically refer to other contracts by names which do not include the contract version. This is to allow for version flexibility. Logically once the Data Contract Descriptor is fully processed, there is a single list of contracts that represents the set of contracts useable with whatever runtime instance is being processed.
 
-## Algorithmic contracts
+## Contract algorithms
 
-Algorithmic contracts define how to process a given set of data structures to produce useful results. These are effectively code snippets which utilize the abstracted data structures and global values provided by data descriptor to produce useful output about a given program. Descriptions of these contracts may refer to functionality provided by other contracts to do their work. The algorithms provided in these contracts are designed to operate given the ability to read various primitive types and defined data structures from the process memory space, as well as perform general purpose computation.
+Contracts define not only the raw runtime data structures but also how to process those data structures to produce useful observations about current runtime state. Often these will be documented as pseudocode snippets which utilize the abstracted data structures and global values provided by data descriptor. Descriptions of these contracts may refer to functionality provided by other contracts to do their work. The algorithms provided in these contracts are designed to operate given the ability to read various primitive types and defined data structures from the process memory space, as well as perform general purpose computation.
 
-It is entirely reasonable for an algorithmic contract to have multiple entrypoints which take different inputs. For example imagine a contract which provides information about a `MethodTable`. It may provide the an api to get the `BaseSize` of a `MethodTable`, and an api to get the `DynamicTypeID` of a `MethodTable`. However, while the set of contracts which describe an older version of .NET may provide a means by which the `DynamicTypeID` may be acquired for a `MethodTable`, a newer runtime may not have that concept. In such a case, it is very reasonable to define that the `GetDynamicTypeID` api portion of that contract is defined to simply `throw new NotSupportedException();`
+It is entirely reasonable for a contract to have multiple entrypoints which take different inputs. For example imagine a contract which provides information about a `MethodTable`. It may provide the an api to get the `BaseSize` of a `MethodTable`, and an api to get the `DynamicTypeID` of a `MethodTable`. However, while the set of contracts which describe an older version of .NET may provide a means by which the `DynamicTypeID` may be acquired for a `MethodTable`, a newer runtime may not have that concept. In such a case, it is very reasonable to define that the `GetDynamicTypeID` api portion of that contract is defined to simply `throw new NotSupportedException();`
 
 For simplicity, as it can be expected that all developers who work on the .NET runtime understand C# to a fair degree, it is preferred that the algorithms be defined in C#, or at least psuedocode that looks like C#. It is also considered entirely permissible to refer to other specifications if the algorithm is a general purpose one which is well defined by the OS or some other body. (For example, it is expected that the unwinding algorithms will be defined by references into either the DWARF spec, or various Windows Unwind specifications.)
 
@@ -68,7 +86,7 @@ For working with data from the target process/other contracts, the following C# 
 
 Best practice is to either write the algorithm in C# like psuedocode working on top of the [C# style api](contract_csharp_api_design.cs) or by reference to specifications which are not co-developed with the runtime, such as OS/architecture specifications. Within the contract algorithm specification, the intention is that all interesting api work is done by using an instance of the `Target` class.
 
-Algorithmic contracts may include specifications for numbers which can be referred to in the contract or by other contracts. The intention is that these global values represent magic numbers and values which are useful for the operation of algorithmic contracts.
+Contracts may include specifications for numbers which can be referred to in the contract or by other contracts. The intention is that these global values represent magic numbers and values which are useful for the operation of algorithmic contracts.
 
 While not all versions of a data structure are required to have the same fields/type of fields,
 algorithms may be built targeting the union of the set of field types defined in the data structure
@@ -80,9 +98,9 @@ runtime will produce an error.
 
 Specs shall be stored in the repo in a set of directories. `docs/design/datacontracts` Each one of them shall be a separate markdown file named with the name of contract. `docs/design/datacontracts/<contract_name>.md` Every version of each contract shall be located in the same file to facilitate understanding how variations between different contracts work.
 
-### Algorithmic Contract
+### Contract doc format
 
-Algorithmic contracts describe how an algorithm that processes over data layouts work. Every version of an algorithmic contract presents a consistent api to consumers of the contract.
+Contracts describe how an algorithm that processes over data layouts work. Every version of a contract presents a consistent api to consumers of the contract.
 
 There are several sections:
 1. The header, where a description of what the contract can do is placed.

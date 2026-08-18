@@ -197,7 +197,6 @@ public unsafe class LoaderTests
         [LoaderAllocatorHeapType.LowFrequencyHeap] = new(0x1000),
         [LoaderAllocatorHeapType.HighFrequencyHeap] = new(0x2000),
         [LoaderAllocatorHeapType.StaticsHeap] = new(0x3000),
-        [LoaderAllocatorHeapType.StubHeap] = new(0x4000),
         [LoaderAllocatorHeapType.ExecutableHeap] = new(0x5000),
         [LoaderAllocatorHeapType.FixupPrecodeHeap] = new(0x6000),
         [LoaderAllocatorHeapType.NewStubPrecodeHeap] = new(0x7000),
@@ -232,7 +231,6 @@ public unsafe class LoaderTests
                 ["LowFrequencyHeap"] = dummyField,
                 ["HighFrequencyHeap"] = dummyField,
                 ["StaticsHeap"] = dummyField,
-                ["StubHeap"] = dummyField,
                 ["ExecutableHeap"] = dummyField,
                 ["FixupPrecodeHeap"] = dummyField,
                 ["NewStubPrecodeHeap"] = dummyField,
@@ -253,7 +251,7 @@ public unsafe class LoaderTests
                 l => l.GetLoaderAllocatorHeaps(It.IsAny<TargetPointer>()) == (IReadOnlyDictionary<LoaderAllocatorHeapType, TargetPointer>)MockHeapDictionary
                 && l.GetGlobalLoaderAllocator() == new TargetPointer(0x100)))
             .Build();
-        return new SOSDacImpl(target, null);
+        return new SOSDacImpl(target, null, new());
     }
 
     private static (ISOSDacInterface Interface, Mock<ILoader> Loader) CreateSOSDacInterfaceForVirtCallHeapTests(MockTarget.Architecture arch)
@@ -266,7 +264,7 @@ public unsafe class LoaderTests
             .AddMockContract<ILoader>(loader.Object)
             .Build();
 
-        return (new SOSDacImpl(target, null), loader);
+        return (new SOSDacImpl(target, null, new()), loader);
     }
 
     [Theory]
@@ -1126,7 +1124,7 @@ public unsafe class LoaderTests
             .AddContract<ILoader>(version: "c1")
             .Build();
 
-        DacDbiImpl dbi = new(target, legacyObj: null);
+        DacDbiImpl dbi = new(target, legacyObj: null, new());
 
         Interop.BOOL allowJITOpts;
         Interop.BOOL enableEnC;

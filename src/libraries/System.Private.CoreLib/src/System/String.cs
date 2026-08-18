@@ -72,7 +72,7 @@ namespace System
 #if MONO
         [DynamicDependency("Ctor(System.Char[])")]
 #endif
-        public safe extern String(char[]? value);
+        public extern safe String(char[]? value);
 
         private static string Ctor(char[]? value)
         {
@@ -94,7 +94,7 @@ namespace System
 #if MONO
         [DynamicDependency("Ctor(System.Char[],System.Int32,System.Int32)")]
 #endif
-        public safe extern String(char[] value, int startIndex, int length);
+        public extern safe String(char[] value, int startIndex, int length);
 
         private static string Ctor(char[] value, int startIndex, int length)
         {
@@ -287,7 +287,7 @@ namespace System
 #if MONO
         [DynamicDependency("Ctor(System.Char,System.Int32)")]
 #endif
-        public safe extern String(char c, int count);
+        public extern safe String(char c, int count);
 
         private static string Ctor(char c, int count)
         {
@@ -310,7 +310,7 @@ namespace System
 #if MONO
         [DynamicDependency("Ctor(System.ReadOnlySpan{System.Char})")]
 #endif
-        public safe extern String(ReadOnlySpan<char> value);
+        public extern safe String(ReadOnlySpan<char> value);
 
         private static string Ctor(ReadOnlySpan<char> value)
         {

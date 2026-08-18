@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <!-- Let the CoreCLR-browser merged runner apply the ActiveIssue before Environment.Exit. -->
-    <RequiresProcessIsolation Condition="'$(RuntimeFlavor)' != 'coreclr' or '$(TargetOS)' != 'browser'">true</RequiresProcessIsolation>
+    <!-- Needed for Environment.Exit -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <PropertyGroup>
