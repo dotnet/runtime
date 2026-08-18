@@ -1858,7 +1858,12 @@ void Compiler::lvaClassifyParameterABI()
             numSegmentsToCompare = 1;
         }
 #endif
-
+#ifdef TARGET_S390X
+        if (varTypeIsStruct(dsc))
+        {
+            numSegmentsToCompare = 1;
+        }
+#endif
         for (unsigned i = 0; i < numSegmentsToCompare; i++)
         {
             const ABIPassingSegment& expected = abiInfo.Segment(i);

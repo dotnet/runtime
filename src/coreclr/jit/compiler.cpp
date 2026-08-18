@@ -1096,6 +1096,10 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 howToReturnStruct = SPK_ByValue;
                 useType           = TYP_STRUCT;
 
+#elif defined (TARGET_S390X)
+                howToReturnStruct = SPK_ByReference;
+                useType           = TYP_UNKNOWN;
+
 #else //  TARGET_XXX
 
                 noway_assert(!"Unhandled TARGET in getReturnTypeForStruct (with FEATURE_MULTIREG_ARGS=1)");

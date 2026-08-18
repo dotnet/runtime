@@ -1231,6 +1231,10 @@ protected:
                 case INS_bne:
                 case INS_bgt:
                 case INS_ble:
+                case INS_bo:
+                case INS_bno:
+                case INS_bl:
+                case INS_bnl:
                 case INS_blt:
                 case INS_bge:
                 case INS_sllg:

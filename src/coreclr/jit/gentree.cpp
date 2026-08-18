@@ -29807,6 +29807,12 @@ void ReturnTypeDesc::InitializeStructReturnType(Compiler*                comp,
                 m_regType[i] = comp->getJitGCType(gcPtrs[i]);
             }
 
+#elif defined(TARGET_S390X)
+
+            // On s390x structs are returned via a return buffer (SPK_ByReference).
+            // SPK_ByValue should never be reached for s390x.
+            unreached();
+
 #else //  TARGET_XXX
 
             // This target needs support here!

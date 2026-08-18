@@ -266,6 +266,10 @@ INST(bgt,           "brcl",           0,    0xC04)
 INST(ble,           "brcl",           0,    0xC04)
 INST(blt,           "brcl",           0,    0xC04)
 INST(bge,           "brcl",           0,    0xC04)
+INST(bo,            "brcl",           0,    0xC04)
+INST(bno,           "brcl",           0,    0xC04)
+INST(bl,            "brcl",           0,    0xC04)
+INST(bnl,           "brcl",           0,    0xC04)
 
 //// Vector FP (VRR/VRX, 6 bytes) — used for V16-V31 in hybrid approach
 INST(wfasb,     "wfasb",        0,      0xe7e3)

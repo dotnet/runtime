@@ -23,9 +23,9 @@
   #define FEATURE_FASTTAILCALL     1       // Tail calls made as epilog+jmp
   #define FEATURE_TAILCALL_OPT     1       // opportunistic Tail calls (i.e. without ".tail" prefix) made as fast tail calls.
   #define FEATURE_IMPLICIT_BYREFS       1  // Support for struct parameters passed via pointers to shadow copies
-  #define FEATURE_MULTIREG_ARGS_OR_RET  1  // Support for passing and/or returning single values in more than one register
-  #define FEATURE_MULTIREG_ARGS         1  // Support for passing a single argument in more than one register
-  #define FEATURE_MULTIREG_RET          1  // Support for returning a single value in more than one register
+  #define FEATURE_MULTIREG_ARGS_OR_RET  0  // does not Support for passing and/or returning single values in more than one register
+  #define FEATURE_MULTIREG_ARGS         0  // does not Support for passing a single argument in more than one register
+  #define FEATURE_MULTIREG_RET          0  // does not support for returning a single value in more than one register
   #define FEATURE_STRUCT_CLASSIFIER     0  // Uses a classifier function to determine is structs are passed/returned in more than one register
   #define MAX_PASS_SINGLEREG_BYTES      8  // Maximum size of a struct passed in a single register (16-byte vector).
   #define MAX_PASS_MULTIREG_BYTES       0  // Maximum size of a struct that could be passed in more than one register (max is 4 16-byte vectors using an HVA)
@@ -33,7 +33,7 @@
   #define MAX_ARG_REG_COUNT             1  // Maximum registers used to pass a single argument in multiple registers. (max is 4 128-bit vectors using an HVA)
   #define MAX_RET_REG_COUNT             1  // Maximum registers used to return a value.
 
-  #define MAX_MULTIREG_COUNT            2  // Maximum number of registers defined by a single instruction (including calls).
+  #define MAX_MULTIREG_COUNT            1  // Maximum number of registers defined by a single instruction (including calls).
                                            // This is also the maximum number of registers for a MultiReg node.
 
   #define NOGC_WRITE_BARRIERS      0       // s390x uses standard write barriers
@@ -266,14 +266,15 @@
 
   #define FIRST_ARG_STACK_OFFS      S390X_REG_SAVE_AREA_SIZE 
 
-  // On ARM64 the calling convention defines REG_R8 (x8) as an additional argument register.
-  // It isn't allocated for the normal user arguments, so it isn't counted by MAX_REG_ARG.
-  // Whether we use this register to pass the RetBuff is controlled by the function hasFixedRetBuffReg().
-  // It is considered to be the next integer argnum, which is 8.
-  //
-  #define REG_ARG_RET_BUFF         REG_R8
-  #define RBM_ARG_RET_BUFF         RBM_R8
-  #define RET_BUFF_ARGNUM          5
+  // On s390x there is no dedicated out-of-band return-buffer register (hasFixedRetBuffReg() returns false).
+  // The hidden return-buffer pointer is passed as the first integer argument in R2 (for static methods)
+  // or R3 (for instance methods, shifted after 'this' in R2), per the z/Architecture Linux ABI.
+  // These defines use R2 as the nominal value; they are only referenced by the dead-code path in
+  // S390xClassifier::Classify that is guarded by hasFixedRetBuffReg().
+
+  #define REG_ARG_RET_BUFF         REG_R2
+  #define RBM_ARG_RET_BUFF         RBM_R2
+  #define RET_BUFF_ARGNUM          0
 
   #define MAX_REG_ARG              5
   #define MAX_FLOAT_REG_ARG        4

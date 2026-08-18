@@ -5354,6 +5354,8 @@ struct GenTreeCall final : public GenTree
         {
             return true;
         }
+#else if defined(TARGET_S390X)
+	return false;
 #endif
 
         if (!varTypeIsStruct(gtType) || ShouldHaveRetBufArg())

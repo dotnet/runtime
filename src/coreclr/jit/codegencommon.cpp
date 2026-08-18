@@ -1689,7 +1689,21 @@ void CodeGen::genCheckOverflow(GenTree* tree)
                 jumpKind = EJ_hs;
             }
         }
-#endif // defined(TARGET_ARMARCH)
+#elif defined(TARGET_S390X)
+
+    if (isUnsignedOverflow)
+    {
+        // Both ADD LOGICAL and SUBTRACT LOGICAL set CC=2 or CC=3 on carry/borrow.
+        // "Branch if Not Low" covers CC >= 2, i.e. the carry/borrow bit is set.
+        jumpKind = EJ_bnl;   // CC >= 2  (carry out or borrow)
+    }
+    else
+    {
+        // Signed ADD / SUBTRACT / MULTIPLY all set CC=3 on overflow.
+        jumpKind = EJ_bo;    // CC == 3  (overflow)
+    }
+
+#endif
     }
 
     // Jump to the block which will throw the exception

@@ -9729,6 +9729,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
         case INS_ble: mask = 12; break;
         case INS_blt: mask = 4;  break;
         case INS_bge: mask = 10; break;
+        case INS_bnl: mask = 3;  break;
+        case INS_bl:  mask = 12; break;
+        case INS_bo:  mask = 1;  break;
+        case INS_bno: mask = 14; break;
         default: unreached();
     }
 
@@ -10377,6 +10381,10 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case INS_ble:
         case INS_blt:
         case INS_bge:
+        case INS_bo:
+        case INS_bno:
+        case INS_bl:
+        case INS_bnl:
             dst = emitOutputLJ(ig, dst, id);
             sz = sizeof(instrDescJmp);
             break;
@@ -13412,9 +13420,9 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
     }
 
     bool isMulOverflow = false;
-#if 0
     if (dst->gtOverflowEx())
     {
+/*
         if ((ins == INS_add) || (ins == INS_adds))
         {
             ins = INS_adds;
@@ -13423,7 +13431,8 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
         {
             ins = INS_subs;
         }
-        else if (ins == INS_mul)
+*/
+        if (ins == INS_mul)
         {
             isMulOverflow = true;
             assert(intConst == nullptr); // overflow format doesn't support an int constant operand
@@ -13433,7 +13442,6 @@ regNumber emitter::emitInsTernary(instruction ins, emitAttr attr, GenTree* dst, 
             assert(!"Invalid ins for overflow check");
         }
     }
-#endif
 
     if (intConst != nullptr)
     {

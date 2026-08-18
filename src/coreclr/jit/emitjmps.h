@@ -70,6 +70,10 @@ JMP_SMALL(lt    , ge    , blt    )  // CC=1 (less than)
 JMP_SMALL(ge    , lt    , bge    )  // CC=0,2 (greater or equal)
 JMP_SMALL(hs    , lo    , bge    )
 JMP_SMALL(lo    , hs    , blt    )
+JMP_SMALL(bo    , bno   , bo     )  // CC==3  signed overflow
+JMP_SMALL(bno   , bo    , bno    )  // CC!=3  no signed overflow
+JMP_SMALL(bnl   , bl    , bnl    )  // CC>=2  (alias for hs; needed for genOverflowCheck)
+JMP_SMALL(bl    , bnl   , bl     )  // CC<=1  (alias for lo; needed for genOverflowCheck)
 #else
   #error Unsupported or unset target architecture
 #endif // target type
