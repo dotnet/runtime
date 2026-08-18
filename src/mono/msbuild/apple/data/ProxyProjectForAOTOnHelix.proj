@@ -210,19 +210,19 @@
     </ItemGroup>
 
     <!-- The publish directory is the crossgen2 input for every run in this work item, so it has to keep
-         holding the original IL. R2R output in here means a previous run rewrote those inputs, and
-         compiling already compiled assemblies again produces an unusable image. -->
-    <Error Condition="'@(_StaleR2ROutputInPublishDir)' != ''"
-           Text="Found ReadyToRun output in the crossgen2 input directory '$(OriginalPublishDir)': @(_StaleR2ROutputInPublishDir->'%(Filename)%(Extension)', ', ')." />
+         holding the original IL. This warns instead of failing the build because a payload can also
+         arrive with ReadyToRun output that the build machine produced. -->
+    <Warning Condition="'@(_StaleR2ROutputInPublishDir)' != ''"
+             Text="ReadyToRun output found in the crossgen2 input directory '$(OriginalPublishDir)': @(_StaleR2ROutputInPublishDir->'%(Filename)%(Extension)', ', '). Compiling assemblies that have already been compiled produces an image that is missing method bodies." />
 
     <PropertyGroup>
       <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
       <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     </PropertyGroup>
 
-    <!-- The compilation is only skipped based on timestamps, and in composite mode the per assembly
-         outputs are not tracked as outputs at all, so an attempt that was killed mid write would look
-         up to date to the next one. Always compile from scratch instead. -->
+    <!-- The compilation is skipped whenever the tracked output, the composite image, is newer than the
+         inputs, and the per assembly outputs written next to it are not tracked at all, so an attempt
+         that was killed mid write can look up to date to the next one. Always compile from scratch. -->
     <RemoveDir Directories="$(IntermediateOutputPath)R2R" />
 
     <ItemGroup>
