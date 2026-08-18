@@ -182,8 +182,8 @@
       <_WasiInteropGeneratorArg Include="--wasm-generate-callhelpers" />
       <_WasiInteropGeneratorArg Include="$(_WasiRelinkObjDir)" />
       <_WasiInteropGeneratorArg Include="--wasm-no-warn-unresolved-pinvoke-modules" />
-      <_WasiInteropGeneratorArg Include="--wasm-pinvoke-module;%(_WasiPInvokeModules.Identity)" />
-      <_WasiInteropGeneratorArg Include="--wasm-ignored-pinvoke-module;%(_WasiIgnoredPInvokeModules.Identity)" />
+      <_WasiInteropGeneratorArg Include="--wasm-pinvoke-module;%(_WasiPInvokeModules.Identity)" Condition="'%(_WasiPInvokeModules.Identity)' != ''" />
+      <_WasiInteropGeneratorArg Include="--wasm-ignored-pinvoke-module;%(_WasiIgnoredPInvokeModules.Identity)" Condition="'%(_WasiIgnoredPInvokeModules.Identity)' != ''" />
       <_WasiInteropGeneratorArg Include="@(_WasiManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
 

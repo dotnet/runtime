@@ -659,8 +659,8 @@
       <_WasmInteropGeneratorArg Include="wasm" />
       <_WasmInteropGeneratorArg Include="--wasm-generate-callhelpers" />
       <_WasmInteropGeneratorArg Include="$(_WasmIntermediateOutputPath)" />
-      <_WasmInteropGeneratorArg Include="--wasm-pinvoke-module;%(_WasmPInvokeModules.Identity)" />
-      <_WasmInteropGeneratorArg Include="--wasm-ignored-pinvoke-module;%(_WasmIgnoredPInvokeModules.Identity)" />
+      <_WasmInteropGeneratorArg Include="--wasm-pinvoke-module;%(_WasmPInvokeModules.Identity)" Condition="'%(_WasmPInvokeModules.Identity)' != ''" />
+      <_WasmInteropGeneratorArg Include="--wasm-ignored-pinvoke-module;%(_WasmIgnoredPInvokeModules.Identity)" Condition="'%(_WasmIgnoredPInvokeModules.Identity)' != ''" />
       <_WasmInteropGeneratorArg Include="--wasm-no-warn-unresolved-pinvoke-modules" Condition="'$(WasmWarnOnUnresolvedPInvokeModules)' == 'false'" />
       <_WasmInteropGeneratorArg Include="@(_WasmManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
