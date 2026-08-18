@@ -1875,4 +1875,36 @@ public class R2RTestSuites
             Assert.True(R2RAssert.HasCompiledMethod(reader, "TestA`2<__Canon,int>", "TestMethod", out diag), diag);
         }
     }
+
+    [Fact]
+    public void MissingVirtualSignature()
+    {
+        var missingDependency = new CompiledAssembly
+        {
+            AssemblyName = nameof(MissingVirtualSignature) + "Dependency",
+            SourceResourceNames = ["MissingVirtualSignature/Dependency.cs"],
+        };
+        var input = new CompiledAssembly
+        {
+            AssemblyName = nameof(MissingVirtualSignature),
+            SourceResourceNames = ["MissingVirtualSignature/Input.cs"],
+            References = [missingDependency],
+        };
+
+        new R2RTestRunner(_output).Run(new R2RTestCase(
+            nameof(MissingVirtualSignature),
+            [
+                new(nameof(MissingVirtualSignature), [new CrossgenAssembly(input)])
+                {
+                    AdditionalArgs = ["--parallelism", "1"],
+                    Validate = Validate,
+                },
+            ]));
+
+        static void Validate(ReadyToRunReader reader)
+        {
+            Assert.True(R2RAssert.HasCompiledMethod(reader, "EntryPoints", "CompilableMethod", out string diag), diag);
+            Assert.False(R2RAssert.HasCompiledMethod(reader, "IMissingSignature`1<__Canon>", "GetMissingType", out diag), diag);
+        }
+    }
 }

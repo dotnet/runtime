@@ -1083,43 +1083,50 @@ namespace ComWrappersTests
             Console.WriteLine($"Running {nameof(ComWrappersNoLockAroundQueryInterface)}...");
 
             var cw = new RecursiveSimpleComWrappers();
+            var managedObject = new RecursiveCrossThreadQI(cw);
 
-            IntPtr comObject = cw.GetOrCreateComInterfaceForObject(new RecursiveCrossThreadQI(cw), CreateComInterfaceFlags.None);
+            IntPtr comObject = cw.GetOrCreateComInterfaceForObject(managedObject, CreateComInterfaceFlags.None);
             try
             {
+                // The nested call has to use this same COM instance. The RCW cache is partitioned into buckets
+                // keyed off the COM instance, so using a different instance would only exercise the same lock by
+                // chance, and the test would no longer reliably catch a regression.
+                managedObject.NestedComObject = comObject;
+
                 _ = cw.GetOrCreateObjectForComInstance(comObject, CreateObjectFlags.TrackerObject);
             }
             finally
             {
                 Marshal.Release(comObject);
             }
+
+            Assert.True(managedObject.NestedCallCompleted);
         }
 
-        private class RecursiveCrossThreadQI(ComWrappers? wrappers) : ICustomQueryInterface
+        private class RecursiveCrossThreadQI(ComWrappers wrappers) : ICustomQueryInterface
         {
+            public IntPtr NestedComObject { get; set; }
+
+            public bool NestedCallCompleted { get; private set; }
+
             CustomQueryInterfaceResult ICustomQueryInterface.GetInterface(ref Guid iid, out IntPtr ppv)
             {
                 ppv = IntPtr.Zero;
-                if (iid == ComWrappersHelper.IID_IReferenceTracker && wrappers is not null)
+                if (iid == ComWrappersHelper.IID_IReferenceTracker)
                 {
                     Console.WriteLine("Attempting to create a new COM object on a different thread.");
+                    IntPtr nestedComObject = NestedComObject;
                     Thread thread = new Thread(() =>
                     {
-                        IntPtr comObject = wrappers.GetOrCreateComInterfaceForObject(new RecursiveCrossThreadQI(null), CreateComInterfaceFlags.None);
-                        try
-                        {
-                            // Make sure that ComWrappers isn't locking in GetOrCreateObjectForComInstance
-                            // around the QI call by calling it on a different thread from within a QI call to register a new managed wrapper
-                            // for a COM object representing "this".
-                            _ = wrappers.GetOrCreateObjectForComInstance(comObject, CreateObjectFlags.None);
-                        }
-                        finally
-                        {
-                            Marshal.Release(comObject);
-                        }
+                        // Make sure that ComWrappers isn't locking in GetOrCreateObjectForComInstance
+                        // around the QI call by calling it on a different thread from within a QI call to register a new managed wrapper
+                        // for a COM object representing "this".
+                        _ = wrappers.GetOrCreateObjectForComInstance(nestedComObject, CreateObjectFlags.None);
                     });
                     thread.Start();
-                    thread.Join(TimeSpan.FromSeconds(20)); // 20 seconds should be more than long enough for the thread to complete
+
+                    // The result is recorded and asserted by the caller.
+                    NestedCallCompleted = thread.Join(TimeSpan.FromSeconds(20)); // 20 seconds should be more than long enough for the thread to complete
                 }
 
                 return CustomQueryInterfaceResult.Failed;
