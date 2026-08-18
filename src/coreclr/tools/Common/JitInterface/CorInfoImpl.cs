@@ -66,7 +66,6 @@ namespace Internal.JitInterface
         private IntPtr _unmanagedCallbacks; // array of pointers to JIT-EE interface callbacks
 
         private ExceptionDispatchInfo _lastException;
-        private MetadataType _secretStubArgument;
 
         private struct PgoInstrumentationResults
         {
@@ -184,9 +183,9 @@ namespace Internal.JitInterface
             _unmanagedCallbacks = GetUnmanagedCallbacks();
         }
 
-        private void InitializeSecretStubArgument()
+        private MetadataType SecretStubArgument
         {
-            _secretStubArgument = _compilation.TypeSystemContext.SystemModule.GetType(
+            get => field ??= _compilation.TypeSystemContext.SystemModule.GetType(
                 "System.Runtime.CompilerServices"u8,
                 "SecretStubArgument"u8,
                 throwIfNotFound: false);
@@ -194,11 +193,12 @@ namespace Internal.JitInterface
 
         private bool HasSecretStubArgument(MethodSignature signature, int parameterIndex)
         {
-            return (_secretStubArgument is not null) &&
+            MetadataType secretStubArgument = SecretStubArgument;
+            return (secretStubArgument is not null) &&
                 signature.HasCustomModifierOnTypeByParameterIndex(
                     parameterIndex + 1,
                     EmbeddedSignatureDataKind.RequiredCustomModifier,
-                    _secretStubArgument);
+                    secretStubArgument);
         }
 
         private Logger Logger
