@@ -2379,9 +2379,11 @@ namespace System
                         baseIndex += Vector128<ushort>.Count*2;
                         remaining = remaining.Slice(Vector128<ushort>.Count*2);
                     }
+
+                    goto condition;
                 }
 
-                while ((uint)remaining.Length >= (uint)Vector128<ushort>.Count)
+                loop:
                 {
                     Vector128<ushort> vector = Vector128.Create(remaining);
                     Vector128<byte> cmp = Vector128.Equals(vector, v1).AsByte() | Vector128.Equals(vector, v2).AsByte() | Vector128.Equals(vector, v3).AsByte();
@@ -2400,6 +2402,12 @@ namespace System
 
                     baseIndex += Vector128<ushort>.Count;
                     remaining = remaining.Slice(Vector128<ushort>.Count);
+                }
+
+                condition:
+                if (remaining.Length >= Vector128<ushort>.Count)
+                {
+                    goto loop;
                 }
 
                 // Handle the last chunk in a vectorized way also.
@@ -2428,12 +2436,12 @@ namespace System
                 Debug.Fail("Expected remaining.Length >= Vector128<ushort>.Count*2");
             }
 
-            for (int i = baseIndex; i < sourceSpanUInt16.Length; i++)
+            for (int i = 0; i < remaining.Length; i++)
             {
-                char v = (char)sourceSpanUInt16[i];
+                char v = (char)remaining[i];
                 if (v == c || v == c2 || v == c3)
                 {
-                    sepListBuilder.Append(i);
+                    sepListBuilder.Append(baseIndex + i);
                 }
             }
         }
