@@ -232,8 +232,10 @@ LONG IgnoreCppExceptionFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
         : EXCEPTION_EXECUTE_HANDLER;
 }
 
-void RethrowLastThrownObject()
+NOINLINE static void DECLSPEC_NORETURN RethrowLastThrownObject()
 {
+    WRAPPER_NO_CONTRACT;
+
     _ASSERTE(GetThread()->PreemptiveGCDisabled());
     GCX_COOP();
     OBJECTREF ohThrowable = GetThread()->LastThrownObject();
