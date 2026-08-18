@@ -160,6 +160,10 @@
 
     <PropertyGroup>
       <_R2ROutputPath>$(IntermediateOutputPath)R2R</_R2ROutputPath>
+      <!-- The app payload is staged outside the publish directory because publish is the pristine
+           crossgen2 input for every run in this work item, and AppleAppBuilder bundles every top level
+           entry of its AppDir, so staging inside publish would end up inside the app. -->
+      <_R2RStagingDir>$([MSBuild]::NormalizeDirectory($(BaseIntermediateOutputPath), 'r2r-publish'))</_R2RStagingDir>
     </PropertyGroup>
 
     <ItemGroup>
@@ -167,26 +171,59 @@
       <_R2RDylibFiles Include="$(_R2ROutputPath)\*.r2r.dylib" />
     </ItemGroup>
 
+    <Warning Condition="'@(_R2RCompiledAssemblies)' == ''" Text="No R2R compiled assemblies found at $(_R2ROutputPath)." />
     <Warning Condition="'@(_R2RDylibFiles)' == ''" Text="No R2R dylib files found at $(_R2ROutputPath)." />
 
-    <Copy SourceFiles="@(_R2RCompiledAssemblies)"
-          DestinationFolder="$(OriginalPublishDir)"
-          OverwriteReadOnlyFiles="true" />
-
-    <Copy SourceFiles="@(_R2RDylibFiles)"
-          DestinationFolder="$(OriginalPublishDir)"
-          OverwriteReadOnlyFiles="true" />
+    <!-- Recreated on every run so that a Helix retry in the same work item cannot inherit stale dylibs
+         or app builder output from a previous attempt. -->
+    <RemoveDir Directories="$(_R2RStagingDir)" />
+    <MakeDir Directories="$(_R2RStagingDir)" />
 
     <ItemGroup>
-      <AppleNativeFilesToBundle Include="@(_R2RDylibFiles->'$(OriginalPublishDir)%(Filename)%(Extension)')" />
+      <_R2RStagingSourceFiles Include="$(OriginalPublishDir)**\*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(_R2RStagingSourceFiles)"
+          DestinationFiles="@(_R2RStagingSourceFiles->'$(_R2RStagingDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <Copy SourceFiles="@(_R2RCompiledAssemblies);@(_R2RDylibFiles)"
+          DestinationFolder="$(_R2RStagingDir)"
+          OverwriteReadOnlyFiles="true" />
+
+    <PropertyGroup>
+      <AppleBuildDir>$(_R2RStagingDir)</AppleBuildDir>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <AppleAssembliesToBundle Remove="@(AppleAssembliesToBundle)" />
+      <AppleAssembliesToBundle Include="$(_R2RStagingDir)*.dll" Exclude="$(_R2RStagingDir)*.resources.dll" />
+
+      <AppleNativeFilesToBundle Remove="@(AppleNativeFilesToBundle)" />
+      <AppleNativeFilesToBundle Include="@(_ExtraFiles)" />
+      <AppleNativeFilesToBundle Include="$(_R2RStagingDir)**\*.*" Exclude="$(_R2RStagingDir)*.dll" />
     </ItemGroup>
   </Target>
 
   <Target Name="_PrepareR2RItemsOnHelix">
+    <ItemGroup Condition="'$(PublishReadyToRunContainerFormat)' == 'macho'">
+      <_StaleR2ROutputInPublishDir Include="$(OriginalPublishDir)*.r2r.dylib" />
+    </ItemGroup>
+
+    <!-- The publish directory is the crossgen2 input for every run in this work item, so it has to keep
+         holding the original IL. R2R output in here means a previous run rewrote those inputs, and
+         compiling already compiled assemblies again produces an unusable image. -->
+    <Error Condition="'@(_StaleR2ROutputInPublishDir)' != ''"
+           Text="Found ReadyToRun output in the crossgen2 input directory '$(OriginalPublishDir)': @(_StaleR2ROutputInPublishDir->'%(Filename)%(Extension)', ', ')." />
+
     <PropertyGroup>
       <IntermediateOutputPath>$(BaseIntermediateOutputPath)</IntermediateOutputPath>
       <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     </PropertyGroup>
+
+    <!-- The compilation is only skipped based on timestamps, and in composite mode the per assembly
+         outputs are not tracked as outputs at all, so an attempt that was killed mid write would look
+         up to date to the next one. Always compile from scratch instead. -->
+    <RemoveDir Directories="$(IntermediateOutputPath)R2R" />
 
     <ItemGroup>
       <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" />
