@@ -2219,8 +2219,6 @@ namespace System
                             mask = BitOperations.ResetLowestSetBit(mask);
                         }
                     }
-
-                    return;
                 }
             }
             else if (Vector256.IsHardwareAccelerated && (uint)remaining.Length >= (uint)Vector256<ushort>.Count*2)
