@@ -212,50 +212,43 @@ namespace System
                 return "/apex/com.android.tzdata";
             }
 
-            private static string? GetVersionedTimeZoneDataDirectory(string apexTimeDataRoot)
+            private static string? GetTzLookupFilePath(string tzFileDir)
             {
-                // Android 15+ stores time zone data under versioned/<format-major>.
-                // Use the newest format supported by the running OS; newer releases retain older formats for compatibility.
-                // https://android.googlesource.com/platform/system/timezone/+/0470df3d38d8e08932ebbe08b3d8ec9bbdcd403f/README.android
-                string? formatMajorVersion =
-                    OperatingSystem.IsAndroidVersionAtLeast(36) ? "9" :
-                    OperatingSystem.IsAndroidVersionAtLeast(35) ? "8" :
-                    OperatingSystem.IsAndroidVersionAtLeast(34) ? "7" :
-                    OperatingSystem.IsAndroidVersionAtLeast(33) ? "6" :
-                    OperatingSystem.IsAndroidVersionAtLeast(31) ? "5" :
-                    OperatingSystem.IsAndroidVersionAtLeast(30) ? "4" :
-                    OperatingSystem.IsAndroidVersionAtLeast(29) ? "3" :
-                    null;
+                string tzLookupFilePath = Path.Combine(tzFileDir, "tzlookup.xml");
+                if (File.Exists(tzLookupFilePath))
+                {
+                    return tzLookupFilePath;
+                }
 
-                if (formatMajorVersion is null)
+                // Android 15+ stores tzlookup.xml under versioned/<format-major>.
+                // The unversioned tz_version begins with the three-digit format major for
+                // the newest data set shipped in the module.
+                // https://android.googlesource.com/platform/external/icu/+/474ba9832e41cc4ee44b20a9ee07ec6d573ce1a4/android_icu4j/libcore_bridge/src/java/com/android/i18n/timezone/TimeZoneDataFiles.java#53
+                // https://android.googlesource.com/platform/external/icu/+/474ba9832e41cc4ee44b20a9ee07ec6d573ce1a4/android_icu4j/libcore_bridge/src/java/com/android/i18n/timezone/TzDataSetVersion.java#93
+                const int FormatMajorVersionLength = 3;
+                const int FormatVersionLength = 7;
+                string versionFilePath = Path.Combine(tzFileDir, "tz_version");
+                if (!File.Exists(versionFilePath))
                 {
                     return null;
                 }
 
-                string versionedRoot = Path.Combine(apexTimeDataRoot, "etc/tz/versioned");
-                string preferredDirectory = Path.Combine(versionedRoot, formatMajorVersion);
-                if (File.Exists(Path.Combine(preferredDirectory, TimeZoneFileName)))
-                {
-                    return preferredDirectory;
-                }
-
-                // Compatibility versions are eventually pruned. If the preferred version is gone,
-                // use the newest available data rather than falling back to the non-updatable system copy.
-                string? latestDirectory = null;
-                int latestVersion = -1;
                 try
                 {
-                    foreach (string directory in Directory.EnumerateDirectories(versionedRoot))
+                    string version = File.ReadAllText(versionFilePath);
+                    if (version.Length < FormatVersionLength ||
+                        version[FormatMajorVersionLength] != '.' ||
+                        !int.TryParse(version.AsSpan(0, FormatMajorVersionLength), NumberStyles.None, CultureInfo.InvariantCulture, out int formatMajorVersion))
                     {
-                        string directoryName = Path.GetFileName(directory);
-                        if (int.TryParse(directoryName, NumberStyles.None, CultureInfo.InvariantCulture, out int version) &&
-                            version > latestVersion &&
-                            File.Exists(Path.Combine(directory, TimeZoneFileName)))
-                        {
-                            latestDirectory = directory;
-                            latestVersion = version;
-                        }
+                        return null;
                     }
+
+                    string versionedFilePath = Path.Combine(
+                        tzFileDir,
+                        "versioned",
+                        formatMajorVersion.ToString(CultureInfo.InvariantCulture),
+                        "tzlookup.xml");
+                    return File.Exists(versionedFilePath) ? versionedFilePath : null;
                 }
                 catch (IOException)
                 {
@@ -265,8 +258,6 @@ namespace System
                 {
                     return null;
                 }
-
-                return latestDirectory;
             }
 
             private static string GetApexRuntimeRoot()
@@ -285,19 +276,12 @@ namespace System
                 // On Android, time zone data is found in tzdata
                 // Based on https://github.com/mono/mono/blob/main/mcs/class/corlib/System/TimeZoneInfo.Android.cs
                 // Also follows the locations found at the bottom of https://github.com/aosp-mirror/platform_bionic/blob/master/libc/tzcode/bionic.cpp
-                string apexTimeDataRoot = GetApexTimeDataRoot();
-                ReadOnlySpan<string?> tzFileDirList = [ GetVersionedTimeZoneDataDirectory(apexTimeDataRoot), // Android 15+, versioned TimeData module
-                                                        apexTimeDataRoot + "/etc/tz/", // Android 10+, unversioned TimeData module
-                                                        GetApexRuntimeRoot() + "/etc/tz/", // Android 10+, fallback location if the above isn't found or corrupted
-                                                        Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/",
-                                                        Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory ];
-                foreach (string? tzFileDir in tzFileDirList)
+                ReadOnlySpan<string> tzFileDirList = [ GetApexTimeDataRoot() + "/etc/tz/", // Android 10+, TimeData module where the updates land
+                                                       GetApexRuntimeRoot() + "/etc/tz/", // Android 10+, Fallback location if the above isn't found or corrupted
+                                                       Environment.GetEnvironmentVariable("ANDROID_DATA") + "/misc/zoneinfo/",
+                                                       Environment.GetEnvironmentVariable("ANDROID_ROOT") + DefaultTimeZoneDirectory ];
+                foreach (string tzFileDir in tzFileDirList)
                 {
-                    if (string.IsNullOrEmpty(tzFileDir))
-                    {
-                        continue;
-                    }
-
                     string tzFilePath = Path.Combine(tzFileDir, TimeZoneFileName);
                     if (LoadData(tzFileDir, tzFilePath))
                     {
@@ -335,8 +319,8 @@ namespace System
             // to determine if an id is backwards and label it as such if they are.
             private static HashSet<string>? FilterBackwardIDs(string tzFileDir)
             {
-                string tzLookupFilePath = Path.Combine(tzFileDir, "tzlookup.xml");
-                if (!File.Exists(tzLookupFilePath))
+                string? tzLookupFilePath = GetTzLookupFilePath(tzFileDir);
+                if (tzLookupFilePath is null)
                 {
                     return GetCanonicalLocationTimeZoneIds();
                 }
