@@ -68,13 +68,13 @@ void Compiler::fgResetForSsa(bool deepClean)
         {
             blk->bbMemorySsaPhiFunc[memoryKind] = nullptr;
         }
-        if (blk->bbStmtList != nullptr)
+        if (blk->firstStmt() != nullptr)
         {
             Statement* last = blk->lastStmt();
-            blk->bbStmtList = blk->FirstNonPhiDef();
-            if (blk->bbStmtList != nullptr)
+            blk->SetFirstStmt(blk->FirstNonPhiDef());
+            if (blk->firstStmt() != nullptr)
             {
-                blk->bbStmtList->SetPrevStmt(last);
+                blk->firstStmt()->SetPrevStmt(last);
             }
         }
 
@@ -446,20 +446,20 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
                 LclVarDsc* fieldVarDsc = m_compiler->lvaGetDesc(fieldLclNum);
                 if (m_compiler->lvaInSsa(fieldLclNum))
                 {
-                    ssize_t  fieldStoreOffset;
-                    unsigned fieldStoreSize;
-                    unsigned ssaNum = SsaConfig::RESERVED_SSA_NUM;
+                    ssize_t   fieldStoreOffset;
+                    ValueSize fieldStoreSize;
+                    unsigned  ssaNum = SsaConfig::RESERVED_SSA_NUM;
 
                     // Fast-path the common case of an "entire" store.
                     if (def.IsEntire)
                     {
                         ssaNum = RenamePushDef(defNode, block, fieldLclNum, /* defIsFull */ true);
                     }
-                    else if (m_compiler->gtStoreDefinesField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
-                                                             &fieldStoreSize))
+                    else if (m_compiler->gtStoreMayDefineField(fieldVarDsc, def.Offset, def.Size, &fieldStoreOffset,
+                                                               &fieldStoreSize))
                     {
                         ssaNum = RenamePushDef(defNode, block, fieldLclNum,
-                                               ValueNumStore::LoadStoreIsEntire(genTypeSize(fieldVarDsc),
+                                               ValueNumStore::LoadStoreIsEntire(fieldVarDsc->lvValueSize(),
                                                                                 fieldStoreOffset, fieldStoreSize));
                     }
 
@@ -746,7 +746,7 @@ void SsaBuilder::AddMemoryDefToEHSuccessorPhis(MemoryKind memoryKind, BasicBlock
         }
 
         DBG_SSA_JITDUMP("   Added phi arg u:%d for %s to phi defn in handler block " FMT_BB ".\n", ssaNum,
-                        memoryKindNames[memoryKind], memoryKind, succ->bbNum);
+                        memoryKindNames[memoryKind], succ->bbNum);
 
         if ((memoryKind == ByrefExposed) && m_compiler->byrefStatesMatchGcHeapStates)
         {
@@ -1340,7 +1340,7 @@ void Compiler::JitTestCheckSSA()
                 printf("  Node: ");
                 printTreeID(lcl);
                 printf(", SSA name = <%d, %d> -- SSA name class %d.\n", lcl->GetLclNum(), lcl->GetSsaNum(),
-                       tlAndN.m_num);
+                       (int)tlAndN.m_num);
             }
             SSAName ssaNm;
             if (labelToSSA->Lookup(tlAndN.m_num, &ssaNm))
@@ -1359,10 +1359,10 @@ void Compiler::JitTestCheckSSA()
                     printf("Node: ");
                     printTreeID(lcl);
                     printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->GetLclNum(),
-                           lcl->GetSsaNum(), tlAndN.m_num);
+                           lcl->GetSsaNum(), (int)tlAndN.m_num);
                     printf(
                         "but this SSA name <%d,%d> has already been associated with a different SSA name class: %d.\n",
-                        ssaNm.m_lvNum, ssaNm.m_ssaNum, num2);
+                        ssaNm.m_lvNum, ssaNm.m_ssaNum, (int)num2);
                     unreached();
                 }
                 // And the current node must be of the specified SSA family.
@@ -1371,7 +1371,7 @@ void Compiler::JitTestCheckSSA()
                     printf("Node: ");
                     printTreeID(lcl);
                     printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->GetLclNum(),
-                           lcl->GetSsaNum(), tlAndN.m_num);
+                           lcl->GetSsaNum(), (int)tlAndN.m_num);
                     printf("but that name class was previously bound to a different SSA name: <%d,%d>.\n",
                            ssaNm.m_lvNum, ssaNm.m_ssaNum);
                     unreached();
@@ -1388,8 +1388,9 @@ void Compiler::JitTestCheckSSA()
                     printf("Node: ");
                     printTreeID(lcl);
                     printf(", SSA name = <%d, %d> was declared in SSA name class %d,\n", lcl->GetLclNum(),
-                           lcl->GetSsaNum(), tlAndN.m_num);
-                    printf("but this SSA name has already been associated with a different name class: %d.\n", num);
+                           lcl->GetSsaNum(), (int)tlAndN.m_num);
+                    printf("but this SSA name has already been associated with a different name class: %d.\n",
+                           (int)num);
                     unreached();
                 }
                 // Add to both mappings.
@@ -1554,9 +1555,8 @@ bool IncrementalSsaBuilder::FindReachingDefInBlock(const UseDefLocation& use, Ba
     Statement*     latestDefStmt = nullptr;
     GenTreeLclVar* latestTree    = nullptr;
 
-    for (int i = 0; i < m_defs.Height(); i++)
+    for (UseDefLocation& candidate : m_defs.BottomUpOrder())
     {
-        UseDefLocation& candidate = m_defs.BottomRef(i);
         if (candidate.Block != block)
         {
             continue;
@@ -1668,9 +1668,9 @@ bool IncrementalSsaBuilder::FinalizeDefs()
     {
         printf("Finalizing defs for SSA insertion of V%02u\n", m_lclNum);
         printf("  %d defs:", m_defs.Height());
-        for (int i = 0; i < m_defs.Height(); i++)
+        for (const UseDefLocation& def : m_defs.BottomUpOrder())
         {
-            printf(" [%06u]", Compiler::dspTreeID(m_defs.Bottom(i).Tree));
+            printf(" [%06u]", Compiler::dspTreeID(def.Tree));
         }
         printf("\n");
     }
@@ -1719,9 +1719,9 @@ bool IncrementalSsaBuilder::FinalizeDefs()
     // know which blocks are candidates for phis.
     BlkVector idf(m_compiler->getAllocator(CMK_SSA));
 
-    for (int i = 0; i < m_defs.Height(); i++)
+    for (UseDefLocation& def : m_defs.BottomUpOrder())
     {
-        BasicBlock* block = m_defs.BottomRef(i).Block;
+        BasicBlock* block = def.Block;
         idf.clear();
         m_compiler->m_domFrontiers->ComputeIteratedDominanceFrontier(block, &idf);
 
@@ -1740,9 +1740,8 @@ bool IncrementalSsaBuilder::FinalizeDefs()
     }
 
     // Alloc SSA numbers for all real definitions.
-    for (int i = 0; i < m_defs.Height(); i++)
+    for (UseDefLocation& def : m_defs.BottomUpOrder())
     {
-        UseDefLocation& def = m_defs.BottomRef(i);
         if (m_compiler->m_dfsTree->Contains(def.Block))
         {
             BitVecOps::AddElemD(&m_poTraits, m_defBlocks, def.Block->bbPostorderNum);

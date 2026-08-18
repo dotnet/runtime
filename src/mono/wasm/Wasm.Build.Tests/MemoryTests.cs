@@ -13,6 +13,7 @@ using Xunit;
 
 namespace Wasm.Build.Tests;
 
+[TestCategory("native")]
 public class MemoryTests : WasmTemplateTestsBase
 {
     public MemoryTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
@@ -38,10 +39,14 @@ public class MemoryTests : WasmTemplateTestsBase
 
         if (BuildTestBase.IsUsingWorkloads)
         {
-            await RunForBuildWithDotnetRun(new BrowserRunOptions(
+            RunResult result = await RunForBuildWithDotnetRun(new BrowserRunOptions(
                 Configuration: config,
                 TestScenario: "AllocateLargeHeapThenInterop"
             ));
+
+            Assert.Contains(result.TestOutput, line => line.Contains("Great success, MemoryTest finished without errors."));
+            // above the 2GB boundary the jiterpreter used to encode negative pointers and emit invalid wasm modules
+            Assert.DoesNotContain(result.ConsoleOutput, line => line.Contains("code generation failed"));
         }
     }
 }

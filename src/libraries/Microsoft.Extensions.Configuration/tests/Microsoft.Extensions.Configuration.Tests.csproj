@@ -15,8 +15,11 @@
   <ItemGroup>
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Abstractions\src\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
     <ProjectReference Include="..\src\Microsoft.Extensions.Configuration.csproj" SkipUseReferenceAssembly="true" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.FileProviders.Abstractions\src\Microsoft.Extensions.FileProviders.Abstractions.csproj" />
   </ItemGroup>
 
 </Project>

@@ -17,9 +17,8 @@ namespace ILCompiler.DependencyAnalysis
     /// Represents a map containing the necessary information needed to resolve
     /// a virtual method target called through reflection.
     /// </summary>
-    internal sealed class ReflectionVirtualInvokeMapNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ReflectionVirtualInvokeMapNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public ReflectionVirtualInvokeMapNode(ExternalReferencesTableNode externalReferences)
@@ -32,7 +31,6 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__VirtualInvokeMap"u8);
         }
 
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -88,11 +86,11 @@ namespace ILCompiler.DependencyAnalysis
                     factory.NecessaryTypeSymbol(method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific)),
                     "Reflection virtual invoke owning type");
 
-                MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(method);
+                MethodDesc methodDefinition = method.GetMethodDefinition();
+                MethodDesc slotDefiningMethod = MetadataVirtualMethodAlgorithm.FindSlotDefiningMethodForVirtualMethod(methodDefinition);
                 if (method.HasInstantiation)
                 {
-                    // FindSlotDefiningMethod might uninstantiate. We might want to fix the method not to do that.
-                    if (slotDefiningMethod.IsMethodDefinition)
+                    if (method != methodDefinition)
                         slotDefiningMethod = factory.TypeSystemContext.GetInstantiatedMethod(slotDefiningMethod, method.Instantiation);
                     dependencies.Add(factory.GVMDependencies(slotDefiningMethod.GetCanonMethodTarget(CanonicalFormKind.Specific)), "GVM callable reflectable method");
                 }
@@ -205,8 +203,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             byte[] hashTableBytes = writer.Save();
-
-            _size = hashTableBytes.Length;
 
             return new ObjectData(hashTableBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

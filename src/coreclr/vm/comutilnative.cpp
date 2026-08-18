@@ -60,8 +60,6 @@ FCIMPL1(FC_BOOL_RET, ExceptionNative::IsImmutableAgileException, Object* pExcept
 
     OBJECTREF pException = (OBJECTREF) pExceptionUNSAFE;
 
-    // The preallocated exception objects may be used from multiple AppDomains
-    // and therefore must remain immutable from the application's perspective.
     FC_RETURN_BOOL(CLRException::IsPreallocatedExceptionObject(pException));
 }
 FCIMPLEND
@@ -124,30 +122,6 @@ extern "C" void QCALLTYPE ExceptionNative_GetFrozenStackTrace(QCall::ObjectHandl
 
 #ifdef FEATURE_COMINTEROP
 
-static BSTR BStrFromString(STRINGREF s)
-{
-    CONTRACTL
-    {
-        THROWS;
-    }
-    CONTRACTL_END;
-
-    WCHAR *wz;
-    int cch;
-    BSTR bstr;
-
-    if (s == NULL)
-        return NULL;
-
-    s->RefInterpretGetStringValuesDangerousForGC(&wz, &cch);
-
-    bstr = SysAllocString(wz);
-    if (bstr == NULL)
-        COMPlusThrowOM();
-
-    return bstr;
-}
-
 static BSTR GetExceptionDescription(OBJECTREF objException)
 {
     CONTRACTL
@@ -161,30 +135,11 @@ static BSTR GetExceptionDescription(OBJECTREF objException)
 
     BSTR bstrDescription;
 
-    STRINGREF MessageString = NULL;
-    GCPROTECT_BEGIN(MessageString)
     GCPROTECT_BEGIN(objException)
     {
-        // read Exception.Message property
-        MethodDescCallSite getMessage(METHOD__EXCEPTION__GET_MESSAGE, &objException);
-
-        ARG_SLOT GetMessageArgs[] = { ObjToArgSlot(objException)};
-        MessageString = getMessage.Call_RetSTRINGREF(GetMessageArgs);
-
-        // if the message string is empty then use the exception classname.
-        if (MessageString == NULL || MessageString->GetStringLength() == 0) {
-            // call GetClassName
-            MethodDescCallSite getClassName(METHOD__EXCEPTION__GET_CLASS_NAME, &objException);
-            ARG_SLOT GetClassNameArgs[] = { ObjToArgSlot(objException)};
-            MessageString = getClassName.Call_RetSTRINGREF(GetClassNameArgs);
-            _ASSERTE(MessageString != NULL && MessageString->GetStringLength() != 0);
-        }
-
-        // Allocate the description BSTR.
-        int DescriptionLen = MessageString->GetStringLength();
-        bstrDescription = SysAllocStringLen(MessageString->GetBuffer(), DescriptionLen);
+        UnmanagedCallersOnlyCaller getDescriptionBstr(METHOD__EXCEPTION__GET_DESCRIPTION_BSTR);
+        bstrDescription = getDescriptionBstr.InvokeThrowing_Ret<BSTR>(&objException);
     }
-    GCPROTECT_END();
     GCPROTECT_END();
 
     return bstrDescription;
@@ -200,19 +155,17 @@ static BSTR GetExceptionSource(OBJECTREF objException)
         PRECONDITION( IsException(objException->GetMethodTable()) );
     }
     CONTRACTL_END;
+    
+    BSTR bstrSource;
 
-    STRINGREF refRetVal;
     GCPROTECT_BEGIN(objException)
-
-    // read Exception.Source property
-    MethodDescCallSite getSource(METHOD__EXCEPTION__GET_SOURCE, &objException);
-
-    ARG_SLOT GetSourceArgs[] = { ObjToArgSlot(objException)};
-
-    refRetVal = getSource.Call_RetSTRINGREF(GetSourceArgs);
-
+    {
+        UnmanagedCallersOnlyCaller getSourceBstr(METHOD__EXCEPTION__GET_SOURCE_BSTR);
+        bstrSource = getSourceBstr.InvokeThrowing_Ret<BSTR>(&objException);
+    }
     GCPROTECT_END();
-    return BStrFromString(refRetVal);
+
+    return bstrSource;
 }
 
 static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD *pdwHelpContext)
@@ -229,20 +182,11 @@ static void GetExceptionHelp(OBJECTREF objException, BSTR *pbstrHelpFile, DWORD 
     }
     CONTRACTL_END;
 
-    *pdwHelpContext = 0;
-
-    GCPROTECT_BEGIN(objException);
-
-    // call managed code to parse help context
-    MethodDescCallSite getHelpContext(METHOD__EXCEPTION__GET_HELP_CONTEXT, &objException);
-
-    ARG_SLOT GetHelpContextArgs[] =
+    GCPROTECT_BEGIN(objException)
     {
-        ObjToArgSlot(objException),
-        PtrToArgSlot(pdwHelpContext)
-    };
-    *pbstrHelpFile = BStrFromString(getHelpContext.Call_RetSTRINGREF(GetHelpContextArgs));
-
+        UnmanagedCallersOnlyCaller getHelpContextBstr(METHOD__EXCEPTION__GET_HELP_CONTEXT_BSTR);
+        getHelpContextBstr.InvokeThrowing(&objException, pbstrHelpFile, pdwHelpContext);
+    }
     GCPROTECT_END();
 }
 
@@ -558,8 +502,8 @@ FCIMPL2(void, GCInterface::GetMemoryInfo, Object* objUNSAFE, int kind)
 
     GCMEMORYINFODATAREF objGCMemoryInfo = (GCMEMORYINFODATAREF)(ObjectToOBJECTREF (objUNSAFE));
 
-    UINT64* genInfoRaw = (UINT64*)&(objGCMemoryInfo->generationInfo0);
-    UINT64* pauseInfoRaw = (UINT64*)&(objGCMemoryInfo->pauseDuration0);
+    UINT64* genInfoRaw = (UINT64*)&(objGCMemoryInfo->generationInfo[0]);
+    UINT64* pauseInfoRaw = (UINT64*)&(objGCMemoryInfo->pauseDurations[0]);
 
     return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(
         &(objGCMemoryInfo->highMemLoadThresholdBytes),
@@ -831,17 +775,28 @@ extern "C" void* QCALLTYPE GCInterface_GetNextFinalizableObject(QCall::ObjectHan
 
     BEGIN_QCALL;
 
-    GCX_COOP();
-
-    OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
-
-    if (target != NULL)
+    MethodTable *pTargetMT = NULL;
     {
-        pObj.Set(target);
+        GCX_COOP();
 
-        MethodTable* pMT = target->GetMethodTable();
+        OBJECTREF target = FinalizerThread::GetNextFinalizableObject();
 
-        funcPtr = pMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
+        if (target != NULL)
+        {
+            pObj.Set(target);
+
+            pTargetMT = target->GetMethodTable();
+        }
+    }
+
+    if (pTargetMT != NULL)
+    {
+        funcPtr = pTargetMT->GetRestoredSlot(g_pObjectFinalizerMD->GetSlot());
+#ifdef FEATURE_PORTABLE_ENTRYPOINTS
+        // RunFinalizers invokes the finalizer via the function pointer, so its portable entrypoint must
+        // resolve to real code if possible.
+        MethodDesc::EnsurePortableEntryPointIsCallableFromR2R(funcPtr);
+#endif // FEATURE_PORTABLE_ENTRYPOINTS
     }
 
     END_QCALL;
@@ -995,14 +950,13 @@ extern "C" INT64 QCALLTYPE GCInterface_GetTotalAllocatedBytesPrecise()
         }
     }
 
-    ThreadSuspend::RestartEE(FALSE, TRUE);
+    ThreadSuspend::RestartEE(true /* SuspendSucceeded */);
 
     END_QCALL;
 
     return allocated;
 }
 
-#ifdef FEATURE_BASICFREEZE
 
 /*===============================RegisterFrozenSegment===============================
 **Action: Registers the frozen segment
@@ -1058,7 +1012,6 @@ extern "C" void QCALLTYPE GCInterface_UnregisterFrozenSegment(void* segment)
     END_QCALL;
 }
 
-#endif // FEATURE_BASICFREEZE
 
 /*==============================SuppressFinalize================================
 **Action: Indicate that an object's finalizer should not be run by the system
@@ -1322,7 +1275,7 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
     UINT64 rem = m_remPressure[0] + m_remPressure[1] + m_remPressure[2] + m_remPressure[3] - m_remPressure[p];
 
     STRESS_LOG4(LF_GCINFO, LL_INFO10000, "AMP Add: %llu => added=%llu total_added=%llu total_removed=%llu",
-        bytesAllocated, newMemValue, add, rem);
+        (unsigned long long)bytesAllocated, (unsigned long long)newMemValue, (unsigned long long)add, (unsigned long long)rem);
 
     SendEtwAddMemoryPressureEvent(bytesAllocated);
 
@@ -1364,7 +1317,8 @@ void GCInterface::AddMemoryPressure(UINT64 bytesAllocated)
                 if ((size_t)(pGCHeap->GetNow() - pGCHeap->GetLastGCStartTime(2)) > (pGCHeap->GetLastGCDuration(2) * 5))
                 {
                     STRESS_LOG6(LF_GCINFO, LL_INFO10000, "AMP Budget: pressure=%llu ? budget=%llu (total_added=%llu, total_removed=%llu, mng_heap=%llu) pos=%d",
-                        newMemValue, budget, add, rem, heapOver3 * 3, m_iteration);
+                        (unsigned long long)newMemValue, (unsigned long long)budget, (unsigned long long)add, (unsigned long long)rem,
+                        (unsigned long long)(heapOver3 * 3), m_iteration);
 
                     GarbageCollectModeAny(2);
 
@@ -1403,7 +1357,7 @@ void GCInterface::RemoveMemoryPressure(UINT64 bytesAllocated)
     InterlockedAdd(&m_remPressure[p], bytesAllocated);
 
     STRESS_LOG2(LF_GCINFO, LL_INFO10000, "AMP Remove: %llu => removed=%llu",
-        bytesAllocated, m_remPressure[p]);
+        (unsigned long long)bytesAllocated, (unsigned long long)m_remPressure[p]);
 }
 
 inline void GCInterface::SendEtwAddMemoryPressureEvent(UINT64 bytesAllocated)
@@ -1974,8 +1928,11 @@ static ValueTypeHashCodeStrategy GetHashCodeStrategy(MethodTable* mt, QCall::Obj
             else
             {
                 // got another value type. Get the type
-                TypeHandle fieldTH = field->GetFieldTypeHandleThrowing();
+                // The type itself may be generic. We need to get the instantiated
+                // type for the field to properly call its method.
+                TypeHandle fieldTH = field->GetExactFieldType(TypeHandle(mt));
                 _ASSERTE(!fieldTH.IsNull());
+                _ASSERTE(!fieldTH.IsSharedByGenericInstantiations());
                 MethodTable* fieldMT = fieldTH.GetMethodTable();
                 if (CanCompareBitsOrUseFastGetHashCode(fieldMT))
                 {
@@ -2033,7 +1990,7 @@ FCIMPL1(CorElementType, MethodTableNative::GetPrimitiveCorElementType, MethodTab
 {
     FCALL_CONTRACT;
 
-    _ASSERTE(mt->IsTruePrimitive() || mt->IsEnum());
+    _ASSERTE(mt->IsPrimitive());
 
     // MethodTable::GetInternalCorElementType has unnecessary overhead for primitives and enums
     // Call EEClass::GetInternalCorElementType directly to avoid it

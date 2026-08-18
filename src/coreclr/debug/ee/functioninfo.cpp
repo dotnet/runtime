@@ -43,7 +43,7 @@ static void _dumpVarNativeInfo(ICorDebugInfo::NativeVarInfo* vni)
 {
     WRAPPER_NO_CONTRACT;
 
-    LOG((LF_CORDB, LL_INFO1000000, "Var %02d: 0x%04x-0x%04x vlt=",
+    LOG((LF_CORDB, LL_INFO1000000, "Var %02d: 0x%04x-0x%04x vlt=%d, ",
             vni->varNumber,
             vni->startOffset, vni->endOffset,
             vni->loc.vlType));
@@ -166,7 +166,7 @@ DWORD DebuggerJitInfo::GetFuncletOffsetByIndex(int index)
 
     if (index < 0 || index >= m_funcletCount)
     {
-        return (-1);
+        return -1;
     }
 
     return m_rgFunclet[index];
@@ -249,8 +249,6 @@ DebuggerJitInfo::DebuggerJitInfo(DebuggerMethodInfo *minfo, NativeCodeVersion na
     m_lastIL(0),
     m_sequenceMap(NULL),
     m_sequenceMapCount(0),
-    m_callsiteMap(NULL),
-    m_callsiteMapCount(0),
     m_sequenceMapSorted(false),
     m_varNativeInfo(NULL), m_varNativeInfoCount(0),
     m_fAttemptInit(false)
@@ -450,7 +448,7 @@ bool DebuggerJitInfo::ILToNativeOffsetIterator::IsAtEnd()
 {
     LIMITED_METHOD_CONTRACT;
 
-    return (m_currentILOffset.m_ilOffset == INVALID_IL_OFFSET);
+    return m_currentILOffset.m_ilOffset == INVALID_IL_OFFSET;
 }
 
 SIZE_T DebuggerJitInfo::ILToNativeOffsetIterator::Current(BOOL* pfExact)
@@ -519,7 +517,7 @@ SIZE_T DebuggerJitInfo::MapSpecialToNative(CorDebugMappingResult mapping,
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB, LL_INFO10000, "DJI::MSTN map:0x%x which:0x%x\n", mapping, which));
+    LOG((LF_CORDB, LL_INFO10000, "DJI::MSTN map:0x%x which:0x%zx\n", mapping, which));
 
     bool fFound;
     SIZE_T  cFound = 0;
@@ -647,7 +645,7 @@ void DebuggerJitInfo::MapILRangeToMapEntryRange(SIZE_T startOffset,
     CONTRACTL_END;
 
     LOG((LF_CORDB, LL_INFO1000000,
-         "DJI::MIRTMER: IL 0x%04x-0x%04x\n",
+         "DJI::MIRTMER: IL 0x%04zx-0x%04zx\n",
          startOffset, endOffset));
 
     if (GetSequenceMapCount() == 0)
@@ -685,7 +683,7 @@ void DebuggerJitInfo::MapILRangeToMapEntryRange(SIZE_T startOffset,
 
 
     LOG((LF_CORDB, LL_INFO1000000,
-         "DJI::MIRTMER: IL 0x%04x-0x%04x --> 0x%04x 0x%08x-0x%08x\n"
+         "DJI::MIRTMER: IL 0x%04zx-0x%04zx --> 0x%04x 0x%08x-0x%08x\n"
          "                               --> 0x%04x 0x%08x-0x%08x\n",
          startOffset, endOffset,
          (*start)->ilOffset,
@@ -1031,7 +1029,7 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 
 #ifdef FEATURE_CODE_VERSIONING
     ILCodeVersion ilVersion = m_nativeCodeVersion.GetILCodeVersion();
-    if (!ilVersion.IsDefaultVersion())
+    if (!ilVersion.IsDefaultVersion() && ilVersion.GetSource() == CodeVersionSource::kReJIT)
     {
         // Did the current rejit provide a map?
         const InstrumentedILOffsetMapping *pReJitMap = NULL;
@@ -1160,18 +1158,11 @@ void DebuggerJitInfo::SetBoundaries(ULONG32 cMap, ICorDebugInfo::OffsetMapping *
 
     m_sequenceMapSorted = true;
 
-    m_callsiteMapCount = m_sequenceMapCount;
-    while (m_sequenceMapCount > 0 && (m_sequenceMap[m_sequenceMapCount-1].source & call_inst) == call_inst)
-      m_sequenceMapCount--;
-
-    m_callsiteMap = m_sequenceMap + m_sequenceMapCount;
-    m_callsiteMapCount -= m_sequenceMapCount;
-
-    LOG((LF_CORDB, LL_INFO100000, "DJI::sB: this=%p boundary count is %u (%u callsites)\n",
-         this, m_sequenceMapCount, m_callsiteMapCount));
+    LOG((LF_CORDB, LL_INFO100000, "DJI::sB: this=%p boundary count is %u\n",
+         this, m_sequenceMapCount));
 
 #ifdef LOGGING
-    for (unsigned count = 0; count < m_sequenceMapCount + m_callsiteMapCount; count++)
+    for (unsigned count = 0; count < m_sequenceMapCount; count++)
     {
         const DebuggerILToNativeMap& entry = m_sequenceMap[count];
         switch (entry.ilOffset)
@@ -1235,12 +1226,12 @@ void DebuggerJitInfo::Init(TADDR newAddress)
          "Code from %p to %p "
          "varCount=%u  seqCount=%u\n",
          this, this->m_encVersion,
-         this->m_codeRegionInfo.getAddrOfHotCode(),
-         this->m_codeRegionInfo.getAddrOfHotCode() + this->m_codeRegionInfo.getSizeOfHotCode(),
-         this->m_codeRegionInfo.getAddrOfColdCode(),
-         this->m_codeRegionInfo.getAddrOfColdCode() + this->m_codeRegionInfo.getSizeOfColdCode(),
-         this->m_addrOfCode,
-         this->m_addrOfCode+(ULONG)this->m_sizeOfCode,
+         (void*)this->m_codeRegionInfo.getAddrOfHotCode(),
+         (void*)(this->m_codeRegionInfo.getAddrOfHotCode() + this->m_codeRegionInfo.getSizeOfHotCode()),
+         (void*)this->m_codeRegionInfo.getAddrOfColdCode(),
+         (void*)(this->m_codeRegionInfo.getAddrOfColdCode() + this->m_codeRegionInfo.getSizeOfColdCode()),
+         (void*)this->m_addrOfCode,
+         (void*)(this->m_addrOfCode+(ULONG)this->m_sizeOfCode),
          this->GetVarNativeInfoCount(),
          this->GetSequenceMapCount()));
 
@@ -1273,7 +1264,7 @@ ICorDebugInfo::SourceTypes DebuggerJitInfo::GetSrcTypeFromILOffset(SIZE_T ilOffs
     BOOL exact = FALSE;
     DebuggerILToNativeMap *pMap = MapILOffsetToMapEntry(ilOffset, &exact);
 
-    LOG((LF_CORDB, LL_INFO100000, "DJI::GSTFILO: for il 0x%x, got entry 0x%p,"
+    LOG((LF_CORDB, LL_INFO100000, "DJI::GSTFILO: for il 0x%zx, got entry 0x%p,"
         "(il 0x%x) nat 0x%x to 0x%x, SourceTypes 0x%x, exact:%x\n", ilOffset, pMap,
         pMap->ilOffset, pMap->nativeStartOffset, pMap->nativeEndOffset, pMap->source,
         exact));
@@ -1401,7 +1392,6 @@ DebuggerMethodInfo::DebuggerMethodInfo(Module *module, mdMethodDef token) :
     {
         WRAPPER(THROWS);
         WRAPPER(GC_TRIGGERS);
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 
@@ -1682,7 +1672,7 @@ DebuggerJitInfo *DebuggerMethodInfo::CreateInitAndAddJitInfo(NativeCodeVersion n
 
             m_latestJitInfo = dji;
 
-            LOG((LF_CORDB,LL_INFO10000,"DMI:CAAJI: DJI version 0x%04x for %s\n",
+            LOG((LF_CORDB,LL_INFO10000,"DMI:CAAJI: DJI version 0x%04zx for %s\n",
                  GetCurrentEnCVersion(),
                  dji->m_nativeCodeVersion.GetMethodDesc()->m_pszDebugMethodName));
         }
@@ -1725,7 +1715,7 @@ void DebuggerMethodInfo::DeleteJitInfo(DebuggerJitInfo *dji)
 
     Debugger::DebuggerDataLockHolder debuggerDataLockHolder(g_pDebugger);
 
-    LOG((LF_CORDB,LL_INFO10000,"DMI:DJI: dji:0x%08x\n", dji));
+    LOG((LF_CORDB,LL_INFO10000,"DMI:DJI: dji:0x%p\n", dji));
 
     DebuggerJitInfo *djiPrev = dji->m_prevJitInfo;
 
@@ -1854,7 +1844,7 @@ bool DebuggerMethodInfo::HasJitInfos()
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
-    return (m_latestJitInfo != NULL);
+    return m_latestJitInfo != NULL;
 }
 
 /******************************************************************************
@@ -1870,7 +1860,7 @@ bool DebuggerMethodInfo::HasMoreRecentEnCVersion()
 /******************************************************************************
  * Updated the instrumented-IL map
  ******************************************************************************/
-void DebuggerMethodInfo::SetInstrumentedILMap(COR_IL_MAP * pMap, SIZE_T cEntries)
+void DebuggerMethodInfo::SetInstrumentedILMap(COR_IL_MAP * pMap, UINT cEntries)
 {
     InstrumentedILOffsetMapping mapping;
     mapping.SetMappingInfo(cEntries, pMap);
@@ -2060,8 +2050,8 @@ void DebuggerMethodInfo::CreateDJIsForMethodDesc(MethodDesc * pMethodDesc)
         {
             // Some versions may not be compiled yet - skip those for now
             // if they compile later the JitCompiled callback will add a DJI to our cache at that time
-            PCODE codeAddr = itr->GetNativeCode();
-            LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD (%d) Native code for DJI - %p\n", ++count, codeAddr));
+            PCODE codeAddr = GetInterpreterCodeFromEntryPointIfPresent(itr->GetNativeCode());
+            LOG((LF_CORDB, LL_INFO10000, "DMI::CDJIFMD (%d) Native code for DJI - %p\n", ++count, (void*)codeAddr));
             if (codeAddr)
             {
                 // The DJI may already be populated in the cache, if so CreateInitAndAdd is
@@ -2113,7 +2103,6 @@ DebuggerMethodInfoTable::DebuggerMethodInfoTable() : CHashTableAndData<CNewZeroD
         WRAPPER(THROWS);
         GC_NOTRIGGER;
 
-        CONSTRUCTOR_CHECK;
     }
     CONTRACTL_END;
 
@@ -2227,7 +2216,7 @@ void DebuggerMethodInfoTable::ClearMethodsOfModule(Module *pModule)
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
-    LOG((LF_CORDB, LL_INFO1000000, "CMOM:mod:0x%x (%s)\n", pModule
+    LOG((LF_CORDB, LL_INFO1000000, "CMOM:mod:0x%p (%s)\n", pModule
         ,pModule->GetDebugName()));
 
     HASHFIND info;
@@ -2350,37 +2339,37 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetMethodInfo(Module *pModule, mdMe
 
 DebuggerMethodInfo *DebuggerMethodInfoTable::GetFirstMethodInfo(HASHFIND *info)
 {
-    CONTRACT(DebuggerMethodInfo*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
 
         PRECONDITION(CheckPointer(info));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
     DebuggerMethodInfoEntry *entry = PTR_DebuggerMethodInfoEntry
         (PTR_HOST_TO_TADDR(FindFirstEntry(info)));
     if (entry == NULL)
-        RETURN NULL;
+        return NULL;
     else
-        RETURN entry->mi;
+        {
+            return entry->mi;
+        }
 }
 
 DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
 {
-    CONTRACT(DebuggerMethodInfo*)
+    CONTRACTL
     {
         NOTHROW;
         GC_NOTRIGGER;
 
         PRECONDITION(CheckPointer(info));
-        POSTCONDITION(CheckPointer(RETVAL, NULL_OK));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     _ASSERTE(g_pDebugger->HasDebuggerDataLock());
 
@@ -2398,9 +2387,11 @@ DebuggerMethodInfo *DebuggerMethodInfoTable::GetNextMethodInfo(HASHFIND *info)
     }
 
     if (entry == NULL)
-        RETURN NULL;
+        return NULL;
     else
-        RETURN entry->mi;
+        {
+            return entry->mi;
+        }
 }
 
 
@@ -2435,16 +2426,6 @@ DebuggerMethodInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     DAC_ENUM_DTHIS();
     SUPPORTS_DAC;
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        // Modules are enumerated already for minidumps, save the empty calls.
-        if (m_module.IsValid())
-        {
-            m_module->EnumMemoryRegions(flags, true);
-        }
-
-    }
-
     PTR_DebuggerJitInfo jitInfo = m_latestJitInfo;
     while (jitInfo.IsValid())
     {
@@ -2464,19 +2445,6 @@ DebuggerJitInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
         m_methodInfo->EnumMemoryRegions(flags);
     }
 
-    if (flags != CLRDATA_ENUM_MEM_MINI && flags != CLRDATA_ENUM_MEM_TRIAGE && flags != CLRDATA_ENUM_MEM_HEAP2)
-    {
-        if (m_nativeCodeVersion.GetMethodDesc().IsValid())
-        {
-            m_nativeCodeVersion.GetMethodDesc()->EnumMemoryRegions(flags);
-        }
-
-        DacEnumMemoryRegion(PTR_TO_TADDR(GetSequenceMap()),
-                            GetSequenceMapCount() * sizeof(DebuggerILToNativeMap));
-        DacEnumMemoryRegion(PTR_TO_TADDR(GetVarNativeInfo()),
-                            GetVarNativeInfoCount() *
-                            sizeof(ICorDebugInfo::NativeVarInfo));
-    }
 }
 
 

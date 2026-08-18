@@ -195,6 +195,7 @@ namespace System.Net
                         string[]? answerValues = answer switch
                         {
                             string h => [h],
+                            string[] values => values,
                             IPAddress[] addresses => GetStringValues(addresses),
                             IPHostEntry entry => GetStringValues(entry.AddressList),
                             _ => null

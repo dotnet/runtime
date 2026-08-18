@@ -182,6 +182,7 @@ MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 		if (cindex == 64)
 			cindex = 0;
 	}
+	g_hash_table_destroy(offset_to_bb_hash);
 	fprintf (ofd, "\n");
 	fclose (ofd);
 

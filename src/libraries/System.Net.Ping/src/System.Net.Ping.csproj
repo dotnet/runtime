@@ -25,6 +25,10 @@
              Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs"
              Link="Common\System\Obsoletions.cs" />
+    <Compile Include="$(CommonPath)System\LocalAppContextSwitches.Common.cs"
+             Link="Common\System\LocalAppContextSwitches.Common.cs" />
+    <Compile Include="$(CommonPath)System\Net\LocalAppContextSwitches.Net.cs"
+             Link="Common\System\Net\LocalAppContextSwitches.Net.cs" />
     <!-- System.Net Common -->
     <Compile Include="$(CommonPath)System\Net\SocketProtocolSupportPal.cs"
              Link="Common\System\Net\SocketProtocolSupportPal.cs" />

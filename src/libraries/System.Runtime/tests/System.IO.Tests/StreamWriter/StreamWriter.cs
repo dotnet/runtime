@@ -8,7 +8,7 @@ namespace System.IO.Tests
     public partial class WriteTests
     {
         // single-threaded WASM bypasses SyncTextWriter for faster startup
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void Synchronized_NewObject()
         {
             using (Stream str = CreateStream())

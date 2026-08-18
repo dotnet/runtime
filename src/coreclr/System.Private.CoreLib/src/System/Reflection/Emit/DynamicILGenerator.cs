@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Runtime.InteropServices;
 
@@ -244,6 +245,18 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
+        /// <inheritdoc/>
+        public override void EmitCalli(Type functionPointerType)
+        {
+            ArgumentNullException.ThrowIfNull(functionPointerType);
+
+            if (!functionPointerType.IsFunctionPointer)
+                throw new ArgumentException(SR.Argument_MustBeFunctionPointer, nameof(functionPointerType));
+
+            SignatureHelper sig = SignatureHelper.GetMethodSigHelper(m_scope, functionPointerType);
+            Emit(OpCodes.Calli, sig);
+        }
+
         public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
             ArgumentNullException.ThrowIfNull(methodInfo);
@@ -299,6 +312,10 @@ namespace System.Reflection.Emit
             {
                 Debug.Assert(opcode.Equals(OpCodes.Calli),
                                 "Unexpected opcode encountered for StackBehaviour VarPop.");
+
+                // If there is a non-void return type, push one.
+                if (signature.ReturnType is Type retType && retType != typeof(void))
+                    stackchange++;
                 // Pop the arguments..
                 stackchange -= signature.ArgumentCount;
                 // Pop native function pointer off the stack.
@@ -635,7 +652,7 @@ namespace System.Reflection.Emit
 
             // We can never ever have two active destroy scouts for the same method. We need to initialize the scout
             // outside the try/reregister block to avoid possibility of reregistration for finalization with active scout.
-            scout.m_methodHandle = method._methodHandle.Value;
+            scout.m_methodHandle = IRuntimeMethodInfo.GetValue(method._methodHandle);
         }
 
         private sealed class DestroyScout
@@ -1011,7 +1028,7 @@ namespace System.Reflection.Emit
             IRuntimeMethodInfo methodReal = method.GetMethodInfo();
             if (methodReal != null)
             {
-                RuntimeMethodHandleInternal rmhi = methodReal.Value;
+                RuntimeMethodHandleInternal rmhi = IRuntimeMethodInfo.GetValue(methodReal);
                 if (!RuntimeMethodHandle.IsDynamicMethod(rmhi))
                 {
                     RuntimeType type = RuntimeMethodHandle.GetDeclaringType(rmhi);

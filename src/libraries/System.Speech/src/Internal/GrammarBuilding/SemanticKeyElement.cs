@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Speech.Internal.SrgsParser;
 using System.Speech.Recognition;
 
@@ -23,10 +24,9 @@ namespace System.Speech.Internal.GrammarBuilding
         #endregion
 
         #region Public Methods
-        public override bool Equals(object obj)
+        public override bool Equals([NotNullWhen(true)] object? obj)
         {
-            SemanticKeyElement refObj = obj as SemanticKeyElement;
-            if (refObj == null)
+            if (obj is not SemanticKeyElement refObj)
             {
                 return false;
             }
@@ -67,7 +67,7 @@ namespace System.Speech.Internal.GrammarBuilding
             return semanticKeyElement;
         }
 
-        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule rule, IdentifierCollection ruleIds)
+        internal override IElement CreateElement(IElementFactory elementFactory, IElement parent, IRule? rule, IdentifierCollection ruleIds)
         {
             // Create the rule associated with this key
             _ruleRef.Rule.CreateElement(elementFactory, parent, rule, ruleIds);

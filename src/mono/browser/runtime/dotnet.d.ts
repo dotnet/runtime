@@ -58,11 +58,10 @@ declare type TypedArray = Int8Array | Uint8Array | Uint8ClampedArray | Int16Arra
 interface DotnetHostBuilder {
     /**
      * @param config default values for the runtime configuration. It will be merged with the default values.
-     * Note that if you provide resources and don't provide custom configSrc URL, the dotnet.boot.js will be downloaded and applied by default.
      */
     withConfig(config: MonoConfig): DotnetHostBuilder;
     /**
-     * @param configSrc URL to the configuration file. ./dotnet.boot.js is a default config file location.
+     * @deprecated This method is no longer supported and will be removed in a future version.
      */
     withConfigSrc(configSrc: string): DotnetHostBuilder;
     /**
@@ -137,14 +136,14 @@ interface DotnetHostBuilder {
      * Note: after the runtime exits, it would reject all further calls to the API.
      * You can use runMain() if you want to keep the runtime alive.
      */
-    runMainAndExit (): Promise<number>;
+    runMainAndExit(): Promise<number>;
     /**
      * Runs the Main() method of the application and keeps the runtime alive.
      * You can provide "command line" arguments for the Main() method using
      * - dotnet.withApplicationArguments("A", "B", "C")
      * - dotnet.withApplicationArgumentsFromQuery()
      */
-    runMain (): Promise<number>;
+    runMain(): Promise<number>;
 }
 type MonoConfig = {
     /**
@@ -262,7 +261,6 @@ interface Assets {
     lazyAssembly?: AssemblyAsset[];
     corePdb?: PdbAsset[];
     pdb?: PdbAsset[];
-    jsModuleWorker?: JsAsset[];
     jsModuleDiagnostics?: JsAsset[];
     jsModuleNative: JsAsset[];
     jsModuleRuntime: JsAsset[];
@@ -365,55 +363,6 @@ interface LoadingResource {
     url: string;
     response: Promise<Response>;
 }
-interface AssetEntry {
-    /**
-     * the name of the asset, including extension.
-     */
-    name: string;
-    /**
-     * determines how the asset will be handled once loaded
-     */
-    behavior: AssetBehaviors;
-    /**
-     * this should be absolute url to the asset
-     */
-    resolvedUrl?: string;
-    /**
-     * the integrity hash of the asset (if any)
-     */
-    hash?: string | null | "";
-    /**
-     * If specified, overrides the path of the asset in the virtual filesystem and similar data structures once downloaded.
-     */
-    virtualPath?: string;
-    /**
-     * Culture code
-     */
-    culture?: string;
-    /**
-     * If true, an attempt will be made to load the asset from each location in MonoConfig.remoteSources.
-     */
-    loadRemote?: boolean;
-    /**
-     * If true, the runtime startup would not fail if the asset download was not successful.
-     */
-    isOptional?: boolean;
-    /**
-     * If provided, runtime doesn't have to fetch the data.
-     * Runtime would set the buffer to null after instantiation to free the memory.
-     */
-    buffer?: ArrayBuffer | Promise<ArrayBuffer>;
-    /**
-     * If provided, runtime doesn't have to import it's JavaScript modules.
-     * This will not work for multi-threaded runtime.
-     */
-    moduleExports?: any | Promise<any>;
-    /**
-     * It's metadata + fetch-like Promise<Response>
-     * If provided, the runtime doesn't have to initiate the download. It would just await the response.
-     */
-    pendingDownload?: LoadingResource;
-}
 type SingleAssetBehaviors = 
 /**
  * The binary of the .NET runtime.
@@ -423,10 +372,6 @@ type SingleAssetBehaviors =
  * The javascript module for loader.
  */
  | "js-module-dotnet"
-/**
- * The javascript module for threads.
- */
- | "js-module-threads"
 /**
  * The javascript module for diagnostic server and client.
  */
@@ -496,7 +441,6 @@ declare const enum GlobalizationMode {
 }
 type DotnetModuleConfig = {
     config?: MonoConfig;
-    configSrc?: string;
     onConfigLoaded?: (config: MonoConfig) => void | Promise<void>;
     onDotnetReady?: () => void | Promise<void>;
     onDownloadResourceProgress?: (resourcesLoaded: number, totalResources: number) => void;
@@ -528,9 +472,7 @@ type RunAPIType = {
      */
     exit: (code: number, reason?: any) => void;
     /**
-     * Sets the environment variable for the "process"
-     * @param name
-     * @param value
+     * @deprecated use withEnvironmentVariable() on the host builder instead.
      */
     setEnvironmentVariable: (name: string, value: string) => void;
     /**
@@ -722,7 +664,7 @@ type DiagnosticsAPIType = {
 type DiagnosticCommandProviderV2 = {
     keywords: [number, number];
     logLevel: number;
-    provider_name: string;
+    providerName: string;
     arguments: string | null;
 };
 type DiagnosticCommandOptions = {
@@ -794,4 +736,4 @@ declare global {
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
 export { GlobalizationMode, createDotnetRuntime as default, dotnet, exit };
-export type { AssetBehaviors, AssetEntry, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, ModuleAPI, MonoConfig, RuntimeAPI };
+export type { AssemblyAsset, Asset, AssetBehaviors, Assets, BootModule, CreateDotnetRuntimeType, DotnetHostBuilder, DotnetModuleConfig, EmscriptenModule, IMemoryView, IcuAsset, JsAsset, LoadBootResourceCallback, LoadingResource, ModuleAPI, MonoConfig, PdbAsset, ResourceExtensions, ResourceList, RuntimeAPI, SymbolsAsset, VfsAsset, WasmAsset, WebAssemblyBootResourceType };

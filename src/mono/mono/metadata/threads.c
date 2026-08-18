@@ -204,7 +204,7 @@ static MonoThreadAttachCB mono_thread_attach_cb = NULL;
 static MonoThreadCleanupFunc mono_thread_cleanup_fn = NULL;
 
 /* The default stack size for each thread */
-static guint32 default_stacksize = 0;
+static guint32 default_stacksize = ~0;
 
 static void mono_free_static_data (gpointer* static_data);
 static void mono_init_static_data_info (StaticDataInfo *static_data);
@@ -995,12 +995,12 @@ mono_thread_detach_internal (MonoInternalThread *thread)
 	g_assert (threads);
 
 	if (!mono_g_hash_table_lookup_extended (threads, GUINT_TO_POINTER (thread->tid), NULL, (gpointer*) &value)) {
-		g_error ("%s: thread %p (tid: %p) should not have been removed yet from threads", __func__, thread, thread->tid);
+		g_error ("%s: thread %p (tid: %" G_GSIZE_FORMAT ") should not have been removed yet from threads", __func__, thread, (gsize)thread->tid);
 	} else if (thread != value) {
 		/* We have to check whether the thread object for the tid is still the same in the table because the
 		 * thread might have been destroyed and the tid reused in the meantime, in which case the tid would be in
 		 * the table, but with another thread object. */
-		g_error ("%s: thread %p (tid: %p) do not match with value %p (tid: %p)", __func__, thread, thread->tid, value, value->tid);
+		g_error ("%s: thread %p (tid: %" G_GSIZE_FORMAT ") do not match with value %p (tid: %" G_GSIZE_FORMAT ")", __func__, thread, (gsize)thread->tid, value, (gsize)value->tid);
 	}
 
 	removed = mono_g_hash_table_remove (threads, GUINT_TO_POINTER (thread->tid));
@@ -1371,7 +1371,7 @@ create_thread (MonoThread *thread, MonoInternalThread *internal, MonoThreadStart
 	mono_coop_sem_init (&start_info->registered, 0);
 
 	if (flags != MONO_THREAD_CREATE_FLAGS_SMALL_STACK)
-		stack_set_size = stack_size ? stack_size : default_stacksize;
+		stack_set_size = stack_size ? stack_size : mono_threads_get_default_stacksize();
 	else
 		stack_set_size = 0;
 
@@ -1445,6 +1445,21 @@ mono_threads_set_default_stacksize (guint32 stacksize)
 guint32
 mono_threads_get_default_stacksize (void)
 {
+	if (default_stacksize == ~0)
+	{
+		unsigned long stacksize = 0;
+
+		const char *value = g_getenv ("DOTNET_Thread_DefaultStackSize");
+		if (value) {
+			errno = 0;
+			stacksize = strtoul (value, NULL, 16);
+			if (errno != 0 || stacksize >= UINT_MAX)
+				stacksize = 0;
+		}
+
+		default_stacksize = (guint32)stacksize;
+	}
+
 	return default_stacksize;
 }
 
@@ -2758,7 +2773,7 @@ wait_for_tids (struct wait_data *wait, guint32 timeout, gboolean check_state_cha
 
 		mono_threads_lock ();
 		if (mono_g_hash_table_lookup (threads, GUINT_TO_POINTER (internal->tid)) == internal)
-			g_error ("%s: failed to call mono_thread_detach_internal on thread %p, InternalThread: %p", __func__, internal->tid, internal);
+			g_error ("%s: failed to call mono_thread_detach_internal on thread %" G_GSIZE_FORMAT ", InternalThread: %p", __func__, (gsize)internal->tid, internal);
 		mono_threads_unlock ();
 	}
 }

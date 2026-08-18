@@ -34,32 +34,32 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void NewLine_Contains_nullChar()
         {
             VerifyRead(new ASCIIEncoding(), "\0");
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void NewLine_CR()
         {
             VerifyRead(new ASCIIEncoding(), "\r");
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void NewLine_LF()
         {
             VerifyRead(new ASCIIEncoding(), "\n");
         }
 
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void NewLine_CRLF_RndStr()
         {
             VerifyRead(new ASCIIEncoding(), "\r\n");
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void NewLine_CRLF_CRStr()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -78,7 +78,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void NewLine_CRLF_LFStr()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -97,73 +97,73 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void NewLine_END()
         {
             VerifyRead(new ASCIIEncoding(), "END");
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void NewLine_Surrogate()
         {
             VerifyRead(Encoding.UTF8, "\uD800\uDC00");
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void ASCIIEncoding()
         {
             VerifyRead(new ASCIIEncoding(), GenRandomNewLine(true));
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void UTF8Encoding()
         {
             VerifyRead(new UTF8Encoding(), GenRandomNewLine(false));
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void UTF32Encoding()
         {
             VerifyRead(new UTF32Encoding(), GenRandomNewLine(false));
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void UnicodeEncoding()
         {
             VerifyRead(new UnicodeEncoding(), GenRandomNewLine(false));
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void LargeInputBuffer()
         {
             VerifyRead(LARGE_NUM_CHARS_TO_READ);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void ReadLineWriteLine_ASCII()
         {
             VerifyReadLineWithWriteLine(new ASCIIEncoding(), GenRandomNewLine(true));
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void ReadLineWriteLine_UTF8()
         {
             VerifyReadLineWithWriteLine(new UTF8Encoding(), GenRandomNewLine(true));
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void ReadLineWriteLine_UTF32()
         {
             VerifyReadLineWithWriteLine(new UTF32Encoding(), GenRandomNewLine(true));
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void ReadLineWriteLine_Unicode()
         {
             VerifyReadLineWithWriteLine(new UnicodeEncoding(), GenRandomNewLine(true));
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_ReadBufferedData()
         {
             var numBytesToRead = 32;
@@ -200,7 +200,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_IterativeReadBufferedData()
         {
             var numBytesToRead = 32;
@@ -208,7 +208,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(Encoding.ASCII, GenRandomNewLine(true), numBytesToRead, 1, ReadDataFromEnum.Buffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_ReadBufferedAndNonBufferedData()
         {
             var numBytesToRead = 32;
@@ -250,7 +250,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void SerialPort_IterativeReadBufferedAndNonBufferedData()
         {
             var numBytesToRead = 3;
@@ -258,7 +258,7 @@ namespace System.IO.Ports.Tests
             VerifyRead(Encoding.ASCII, GenRandomNewLine(true), numBytesToRead, 1, ReadDataFromEnum.BufferedAndNonBuffered);
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void GreedyRead()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -325,7 +325,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void NewLineSubstring()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -346,7 +346,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void Read_DataReceivedBeforeTimeout()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -405,7 +405,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void Read_Timeout()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -453,7 +453,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void Read_LargeBuffer()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())
@@ -497,7 +497,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-        [ConditionalFact(nameof(HasLoopbackOrNullModem))]
+        [ConditionalFact(typeof(ReadLine), nameof(HasLoopbackOrNullModem))]
         public void Read_SurrogateCharacter()
         {
             using (SerialPort com1 = TCSupport.InitFirstSerialPort())

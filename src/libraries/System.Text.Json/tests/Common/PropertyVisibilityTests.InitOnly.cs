@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -11,65 +12,65 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(ClassWithInitOnlyProperty))]
         [InlineData(typeof(StructWithInitOnlyProperty))]
-        public virtual async Task InitOnlyProperties(Type type)
+        public virtual async Task InitOnlyProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
             // Init-only property included by default.
-            object obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
+            object obj = await Serializer.DeserializeWrapper("""{"MyInt":1}""", type);
             Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
 
             // Init-only properties can be serialized.
-            Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj));
+            Assert.Equal("""{"MyInt":1}""", await Serializer.SerializeWrapper(obj));
         }
 
         [Theory]
         [InlineData(typeof(ClassWithCustomNamedInitOnlyProperty))]
         [InlineData(typeof(StructWithCustomNamedInitOnlyProperty))]
-        public virtual async Task CustomNamedInitOnlyProperties(Type type)
+        public virtual async Task CustomNamedInitOnlyProperties([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
             // Regression test for https://github.com/dotnet/runtime/issues/82730
 
             // Init-only property included by default.
-            object obj = await Serializer.DeserializeWrapper(@"{""CustomMyInt"":1}", type);
+            object obj = await Serializer.DeserializeWrapper("""{"CustomMyInt":1}""", type);
             Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
 
             // Init-only properties can be serialized.
-            Assert.Equal(@"{""CustomMyInt"":1}", await Serializer.SerializeWrapper(obj));
+            Assert.Equal("""{"CustomMyInt":1}""", await Serializer.SerializeWrapper(obj));
         }
 
         [Theory]
         [InlineData(typeof(Class_PropertyWith_PrivateInitOnlySetter))]
         [InlineData(typeof(Class_PropertyWith_InternalInitOnlySetter))]
         [InlineData(typeof(Class_PropertyWith_ProtectedInitOnlySetter))]
-        public async Task NonPublicInitOnlySetter_Without_JsonInclude_Fails(Type type)
+        public async Task NonPublicInitOnlySetter_Without_JsonInclude_Fails([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
             // Non-public init-only property setter ignored.
-            object obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
+            object obj = await Serializer.DeserializeWrapper("""{"MyInt":1}""", type);
             Assert.Equal(0, (int)type.GetProperty("MyInt").GetValue(obj));
 
             // Public getter can be used for serialization.
-            Assert.Equal(@"{""MyInt"":0}", await Serializer.SerializeWrapper(obj, type));
+            Assert.Equal("""{"MyInt":0}""", await Serializer.SerializeWrapper(obj, type));
         }
 
         [Theory]
         [InlineData(typeof(Class_PropertyWith_PrivateInitOnlySetter_WithAttribute))]
         [InlineData(typeof(Class_PropertyWith_InternalInitOnlySetter_WithAttribute))]
         [InlineData(typeof(Class_PropertyWith_ProtectedInitOnlySetter_WithAttribute))]
-        public virtual async Task NonPublicInitOnlySetter_With_JsonInclude(Type type)
+        public virtual async Task NonPublicInitOnlySetter_With_JsonInclude([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
             // Non-public init-only property setter included with [JsonInclude].
-            object obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
+            object obj = await Serializer.DeserializeWrapper("""{"MyInt":1}""", type);
             Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
 
             // Init-only properties can be serialized.
-            Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj));
+            Assert.Equal("""{"MyInt":1}""", await Serializer.SerializeWrapper(obj));
         }
 
         [Theory]
         [InlineData(typeof(Class_WithIgnoredInitOnlyProperty))]
         [InlineData(typeof(Record_WithIgnoredPropertyInCtor))]
-        public async Task InitOnlySetter_With_JsonIgnoreAlways(Type type)
+        public async Task InitOnlySetter_With_JsonIgnoreAlways([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
         {
-            object obj = await Serializer.DeserializeWrapper(@"{""MyInt"":42}", type);
+            object obj = await Serializer.DeserializeWrapper("""{"MyInt":42}""", type);
             Assert.Equal(0, (int)type.GetProperty("MyInt").GetValue(obj));
         }
 
@@ -78,7 +79,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task RequiredSetter_With_JsonIgnoreAlways_ThrowsInvalidOperationException(Type type)
         {
             JsonSerializerOptions options = Serializer.CreateOptions(opts => opts.RespectRequiredConstructorParameters = true);
-            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper(@"{""MyInt"":42}", type, options));
+            await Assert.ThrowsAsync<InvalidOperationException>(() => Serializer.DeserializeWrapper("""{"MyInt":42}""", type, options));
         }
 
         [Fact]
@@ -191,6 +192,52 @@ namespace System.Text.Json.Serialization.Tests
             [JsonPropertyName("foo")] public int Foo => Other.Foo;
 
             public record InnerRecord(int Foo, string Bar);
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithInitOnlyPropertyDefaults))]
+        [InlineData(typeof(StructWithInitOnlyPropertyDefaults))]
+        public async Task InitOnlyPropertyDefaultValues_PreservedWhenMissingFromJson([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
+        {
+            // When no properties are present in JSON, C# default values should be preserved.
+            object obj = await Serializer.DeserializeWrapper("{}", type);
+            Assert.Equal("DefaultName", (string)type.GetProperty("Name").GetValue(obj));
+            Assert.Equal(42, (int)type.GetProperty("Number").GetValue(obj));
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithInitOnlyPropertyDefaults))]
+        [InlineData(typeof(StructWithInitOnlyPropertyDefaults))]
+        public async Task InitOnlyPropertyDefaultValues_OverriddenWhenPresentInJson([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
+        {
+            // When properties are present in JSON, specified values should be used.
+            object obj = await Serializer.DeserializeWrapper("""{"Name":"Override","Number":99}""", type);
+            Assert.Equal("Override", (string)type.GetProperty("Name").GetValue(obj));
+            Assert.Equal(99, (int)type.GetProperty("Number").GetValue(obj));
+        }
+
+        [Theory]
+        [InlineData(typeof(ClassWithInitOnlyPropertyDefaults))]
+        [InlineData(typeof(StructWithInitOnlyPropertyDefaults))]
+        public async Task InitOnlyPropertyDefaultValues_PartialOverride([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
+        {
+            // When only some properties are present in JSON, the rest should keep defaults.
+            object obj = await Serializer.DeserializeWrapper("""{"Number":99}""", type);
+            Assert.Equal("DefaultName", (string)type.GetProperty("Name").GetValue(obj));
+            Assert.Equal(99, (int)type.GetProperty("Number").GetValue(obj));
+        }
+
+        public class ClassWithInitOnlyPropertyDefaults
+        {
+            public string Name { get; init; } = "DefaultName";
+            public int Number { get; init; } = 42;
+        }
+
+        public struct StructWithInitOnlyPropertyDefaults
+        {
+            public StructWithInitOnlyPropertyDefaults() { }
+            public string Name { get; init; } = "DefaultName";
+            public int Number { get; init; } = 42;
         }
     }
 }

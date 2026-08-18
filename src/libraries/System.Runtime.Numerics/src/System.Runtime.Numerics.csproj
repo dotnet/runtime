@@ -5,11 +5,16 @@
     <RootNamespace>System.Numerics</RootNamespace>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <UseCompilerGeneratedDocXmlFile>false</UseCompilerGeneratedDocXmlFile>
+    <!-- Mono routes ulong -> float through double, which double rounds; the BigInteger -> float
+         conversion excludes its correctly-rounded fast path there. -->
+    <DefineConstants Condition="'$(RuntimeFlavor)' == 'Mono'">$(DefineConstants);MONO</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="System\ThrowHelper.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.AddSub.cs" />
+    <Compile Include="System\Numerics\BigIntegerCalculator.Bitwise.cs" />
+    <Compile Include="System\Numerics\BigInteger.RentedBuffer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.DivRem.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.FastReducer.cs" />
     <Compile Include="System\Numerics\BigIntegerCalculator.GcdInv.cs" />
@@ -22,13 +27,14 @@
     <Compile Include="System\Number.Polyfill.cs" />
     <Compile Include="System\Numerics\NumericsHelpers.cs" />
     <Compile Include="System\Numerics\Complex.cs" />
+    <Compile Include="System\Numerics\Complex.Generic.cs" />
     <Compile Include="Properties\InternalsVisibleTo.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)System\Buffers\Text\FormattingHelpers.CountDigits.cs"
              Link="CoreLib\System\Buffers\Text\FormattingHelpers.CountDigits.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs"
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.cs"
              Link="CoreLib\System\Collections\Generic\ValueListBuilder.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder_1.cs"
              Link="CoreLib\System\Text\ValueStringBuilder_1.cs" />

@@ -26,7 +26,7 @@ namespace System.IO.Ports.Tests
 
         #region Test Cases
         [KnownFailure] // either hanging or really slow
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BaudRate_Property), nameof(HasNullModem))]
         public void BaudRate_Default()
         {
             using (SerialPort com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
@@ -48,7 +48,7 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure] // currently not supported on linux (can be emulated)
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BaudRate_Property), nameof(HasNullModem))]
         public void BaudRate_14400()
         {
             Debug.WriteLine("Verifying 14400 BaudRate");
@@ -56,14 +56,14 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure] // currently not supported on linux (can be emulated)
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BaudRate_Property), nameof(HasNullModem))]
         public void BaudRate_28800()
         {
             Debug.WriteLine("Verifying 28800 BaudRate");
             VerifyBaudRate(28800);
         }
 
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BaudRate_Property), nameof(HasNullModem))]
         public void BaudRate_1200()
         {
             Debug.WriteLine("Verifying 1200 BaudRate");
@@ -71,35 +71,35 @@ namespace System.IO.Ports.Tests
         }
 
         [KnownFailure] // either hanging or really slow
-        [ConditionalFact(nameof(HasNullModem))]
+        [ConditionalFact(typeof(BaudRate_Property), nameof(HasNullModem))]
         public void BaudRate_115200()
         {
             Debug.WriteLine("Verifying 115200 BaudRate");
             VerifyBaudRate(115200);
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(BaudRate_Property), nameof(HasOneSerialPort))]
         public void BaudRate_MinValue()
         {
             Debug.WriteLine("Verifying Int32.MinValue BaudRate");
             VerifyException(int.MinValue, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(BaudRate_Property), nameof(HasOneSerialPort))]
         public void BaudRate_Neg1()
         {
             Debug.WriteLine("Verifying -1 BaudRate");
             VerifyException(-1, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(BaudRate_Property), nameof(HasOneSerialPort))]
         public void BaudRate_Zero()
         {
             Debug.WriteLine("Verifying 0 BaudRate");
             VerifyException(0, ThrowAt.Set, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(nameof(HasOneSerialPort))]
+        [ConditionalFact(typeof(BaudRate_Property), nameof(HasOneSerialPort))]
         public void BaudRate_MaxValue()
         {
             Debug.WriteLine("Verifying Int32.MaxValue BaudRate");

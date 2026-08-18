@@ -190,7 +190,7 @@ mono_clock_get_time_ns (mono_clock_id_t clk_id)
 void
 mono_clock_init (mono_clock_id_t *clk_id)
 {
-#ifdef HAVE_CLOCK_MONOTONIC
+#ifdef CLOCK_MONOTONIC
 	*clk_id = CLOCK_MONOTONIC;
 #endif
 }

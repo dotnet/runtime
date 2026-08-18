@@ -37,6 +37,8 @@ namespace System.Net.Security
         public bool TargetIsServer { get; set; } = false;
         public bool PreferUnicode { get; set; } = true;
         public bool ForceNegotiateVersion { get; set; } = true;
+        public bool SendPreExistingTargetName { get; set; } = false;
+        public bool SendPreExistingChannelBindings { get; set; } = false;
 
         // Negotiation results
         public bool IsAuthenticated { get; private set; }
@@ -259,6 +261,21 @@ namespace System.Net.Security
                 BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(targetInfoCurrentOffset + 2), (ushort)8);
                 BinaryPrimitives.WriteInt64LittleEndian(buffer.AsSpan(targetInfoCurrentOffset + 4), DateTime.UtcNow.ToFileTimeUtc());
                 targetInfoCurrentOffset += 12;
+            }
+
+            if (SendPreExistingTargetName)
+            {
+                // Insert a dummy TargetName AV pair that the client should replace with its own
+                targetInfoCurrentOffset += WriteAvIdString(buffer.AsSpan(targetInfoCurrentOffset), AvId.TargetName, "DummyTargetName");
+            }
+
+            if (SendPreExistingChannelBindings)
+            {
+                // Insert a dummy ChannelBindings AV pair (16 zero bytes) that the client should replace
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(targetInfoCurrentOffset), (ushort)AvId.ChannelBindings);
+                BinaryPrimitives.WriteUInt16LittleEndian(buffer.AsSpan(targetInfoCurrentOffset + 2), (ushort)16);
+                // Leave channel bindings hash as zeros (dummy value)
+                targetInfoCurrentOffset += 20;
             }
 
             // TODO: DNS machine, domain, forest?

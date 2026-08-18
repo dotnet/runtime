@@ -627,6 +627,59 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
+        public void SaveInterfaceOverrideWithCustomModifier()
+        {
+            using (TempFile file = TempFile.Create())
+            {
+                AssemblyName name = new("TestAssembly");
+                PersistedAssemblyBuilder assemblyBuilder = AssemblySaveTools.PopulateAssemblyBuilder(name);
+                ModuleBuilder mb = assemblyBuilder.DefineDynamicModule("My Module");
+
+                TypeBuilder tb = mb.DefineType("IMethodWithModifiersImpl", TypeAttributes.Class | TypeAttributes.Public);
+                tb.AddInterfaceImplementation(typeof(IMethodWithModifiers));
+                MethodInfo mRun = typeof(IMethodWithModifiers).GetMethod(nameof(IMethodWithModifiers.Run));
+                MethodBuilder m = tb.DefineMethod("IMethodWithModifiers.Run",
+                    MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
+                    CallingConventions.Standard,
+                    returnType: mRun.ReturnParameter.GetModifiedParameterType(),
+                    returnTypeRequiredCustomModifiers: null,
+                    returnTypeOptionalCustomModifiers: null,
+                    // The first parameter will have modreqs specified from parameterTypeRequiredCustomModifiers, and the second from parameterTypes.
+                    parameterTypes: mRun.GetParameters().Select((x, i) => i == 0 ? x.ParameterType : x.GetModifiedParameterType()).ToArray(),
+                    parameterTypeRequiredCustomModifiers: [[typeof(InAttribute)], null],
+                    parameterTypeOptionalCustomModifiers: null);
+                tb.DefineMethodOverride(m, mRun);
+                ParameterBuilder pb = m.DefineParameter(1, ParameterAttributes.In, "x");
+                pb.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: []), []));
+                m.GetILGenerator().Emit(OpCodes.Ret);
+                MethodInfo mRun2 = typeof(IMethodWithModifiers).GetMethod(nameof(IMethodWithModifiers.Run2));
+                MethodBuilder m2 = tb.DefineMethod("IMethodWithModifiers.Run2",
+                    MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.NewSlot | MethodAttributes.Virtual,
+                    CallingConventions.Standard,
+                    returnType: mRun2.ReturnParameter.GetModifiedParameterType(),
+                    returnTypeRequiredCustomModifiers: null,
+                    returnTypeOptionalCustomModifiers: null,
+                    parameterTypes: mRun2.GetParameters().Select(x => x.GetModifiedParameterType()).ToArray(),
+                    // Test that passing null gets modreqs from the parameter types.
+                    parameterTypeRequiredCustomModifiers: null,
+                    parameterTypeOptionalCustomModifiers: null);
+                tb.DefineMethodOverride(m2, mRun2);
+                ParameterBuilder pb2 = m2.DefineParameter(1, ParameterAttributes.In, "x");
+                pb2.SetCustomAttribute(new CustomAttributeBuilder(typeof(IsReadOnlyAttribute).GetConstructor(types: []), []));
+                m2.GetILGenerator().Emit(OpCodes.Ret);
+
+                tb.CreateType();
+                assemblyBuilder.Save(file.Path);
+
+                TestAssemblyLoadContext context = new();
+                // Load the assembly and check that loading the type does not throw.
+                Assembly loadedAsm = context.LoadFromAssemblyPath(file.Path);
+                _ = loadedAsm.GetType(tb.Name, throwOnError: true);
+                context.Unload();
+            }
+        }
+
+        [Fact]
         public void SaveMultipleGenericTypeParametersToEnsureSortingWorks()
         {
             using (TempFile file = TempFile.Create())
@@ -807,17 +860,24 @@ namespace System.Reflection.Emit.Tests
             tb.DefineField("FuncPtr1", funcPtr1, FieldAttributes.Public | FieldAttributes.Static);
 
             // delegate* unmanaged[Cdecl]<int, float, double>
-            Type funcPtr4 = new ModifiedTypeHelpers.FunctionPointer(
+            Type funcPtr2 = new ModifiedTypeHelpers.FunctionPointer(
                 typeof(delegate* unmanaged[Cdecl]<int, float, double>),
                 [typeof(CallConvCdecl)]);
-            tb.DefineField("FuncPtr2", funcPtr4, FieldAttributes.Public | FieldAttributes.Static);
+            tb.DefineField("FuncPtr2", funcPtr2, FieldAttributes.Public | FieldAttributes.Static);
 
             // delegate* unmanaged[Stdcall]<string, in int, void>
-            Type funcPtr5 = new ModifiedTypeHelpers.FunctionPointer(
+            Type funcPtr3 = new ModifiedTypeHelpers.FunctionPointer(
                 typeof(delegate* unmanaged[Stdcall]<string, in int, void>),
                 [typeof(CallConvStdcall)],
                 customParameterTypes: [typeof(string), new ModifiedTypeHelpers.ModifiedType(typeof(int).MakeByRefType(), [typeof(InAttribute)], [])]);
-            tb.DefineField("FuncPtr3", funcPtr5, FieldAttributes.Public | FieldAttributes.Static);
+            tb.DefineField("FuncPtr3", funcPtr3, FieldAttributes.Public | FieldAttributes.Static);
+
+            // delegate* unmanaged[Fastcall, SuppressGCTransition]<void>
+            Type funcPtr4 = new ModifiedTypeHelpers.FunctionPointer(
+                typeof(delegate* unmanaged[Fastcall, SuppressGCTransition]<void>),
+                [typeof(CallConvFastcall), typeof(CallConvSuppressGCTransition)],
+                new ModifiedTypeHelpers.ModifiedType(typeof(void), [], [typeof(CallConvFastcall), typeof(CallConvSuppressGCTransition)]));
+            tb.DefineField("FuncPtr4", funcPtr4, FieldAttributes.Public | FieldAttributes.Static);
 
             tb.CreateType();
             ab.Save(file.Path);
@@ -836,8 +896,8 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(typeof(int).FullName, field1.FieldType.GetFunctionPointerReturnType().FullName);
 
             FieldInfo field2 = testType.GetField("FuncPtr2");
-            Type field2Type = field2.GetModifiedFieldType();
             Assert.NotNull(field2);
+            Type field2Type = field2.GetModifiedFieldType();
             Assert.True(field2Type.IsFunctionPointer);
             Assert.True(field2Type.IsUnmanagedFunctionPointer);
             Type[] paramTypes2 = field2Type.GetFunctionPointerParameterTypes();
@@ -849,8 +909,8 @@ namespace System.Reflection.Emit.Tests
             Assert.Contains(callingConventions2, t => t.FullName == typeof(CallConvCdecl).FullName);
 
             FieldInfo field3 = testType.GetField("FuncPtr3");
-            Type field3Type = field3.GetModifiedFieldType();
             Assert.NotNull(field3);
+            Type field3Type = field3.GetModifiedFieldType();
             Assert.True(field3Type.IsFunctionPointer);
             Assert.True(field3Type.IsUnmanagedFunctionPointer);
             Type[] paramTypes3 = field3Type.GetFunctionPointerParameterTypes();
@@ -861,6 +921,18 @@ namespace System.Reflection.Emit.Tests
             Assert.Equal(typeof(void).FullName, field3Type.GetFunctionPointerReturnType().FullName);
             Type[] callingConventions3 = field3Type.GetFunctionPointerCallingConventions();
             Assert.Contains(callingConventions3, t => t.FullName == typeof(CallConvStdcall).FullName);
+
+            FieldInfo field4 = testType.GetField("FuncPtr4");
+            Assert.NotNull(field4);
+            Type field4Type = field4.GetModifiedFieldType();
+            Assert.True(field4Type.IsFunctionPointer);
+            Assert.True(field4Type.IsUnmanagedFunctionPointer);
+            Type[] paramTypes4 = field4Type.GetFunctionPointerParameterTypes();
+            Assert.Equal(0, paramTypes4.Length);
+            Assert.Equal(typeof(void).FullName, field4Type.GetFunctionPointerReturnType().FullName);
+            Type[] callingConventions4 = field4Type.GetFunctionPointerCallingConventions();
+            Assert.Contains(callingConventions4, t => t.FullName == typeof(CallConvFastcall).FullName);
+            Assert.Contains(callingConventions4, t => t.FullName == typeof(CallConvSuppressGCTransition).FullName);
         }
 
         [Fact]
@@ -870,7 +942,7 @@ namespace System.Reflection.Emit.Tests
             // public unsafe class Container
             // {
             //     public static delegate*<int, int, int> Method;
-            // 
+            //
             //     public static int Add(int a, int b) => a + b;
             //     public static void Init() => Method = &Add;
             // }
@@ -981,6 +1053,12 @@ namespace System.Reflection.Emit.Tests
     public interface IOneMethod
     {
         object Func(string a, short b);
+    }
+
+    public interface IMethodWithModifiers
+    {
+        unsafe void Run(in int x, delegate*<in long, void> f);
+        void Run2(in int x);
     }
 
     public struct EmptyStruct

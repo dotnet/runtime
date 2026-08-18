@@ -188,7 +188,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
         #endregion
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class TaskWaitAllAnyTest
     {
         #region Private Fields
@@ -448,7 +448,7 @@ namespace System.Threading.Tasks.Tests.WaitAllAny
 
     #endregion
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class TaskWaitAllAny
     {
         [Fact]

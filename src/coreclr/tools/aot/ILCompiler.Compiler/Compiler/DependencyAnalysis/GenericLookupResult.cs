@@ -625,6 +625,9 @@ namespace ILCompiler.DependencyAnalysis
         public override ISymbolNode GetTarget(NodeFactory factory, GenericLookupResultContext dictionary, bool isConcreteInstantiation)
         {
             MethodDesc instantiatedMethod = _method.GetNonRuntimeDeterminedMethodFromRuntimeDeterminedMethodViaSubstitution(dictionary.TypeInstantiation, dictionary.MethodInstantiation);
+
+            factory.TypeSystemContext.DetectGenericCycles(dictionary.Context, instantiatedMethod);
+
             if (isConcreteInstantiation || !instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any))
             {
                 // TODO-SIZE: this is address taken only in the delegate target case
@@ -635,7 +638,6 @@ namespace ILCompiler.DependencyAnalysis
                 Debug.Assert(instantiatedMethod.IsCanonicalMethod(CanonicalFormKind.Any));
                 if (!instantiatedMethod.IsAbstract)
                 {
-                    factory.TypeSystemContext.DetectGenericCycles(dictionary.Context, instantiatedMethod);
                     return factory.ShadowNonConcreteMethod(instantiatedMethod);
                 }
                 return null;
@@ -690,17 +692,17 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Generic lookup result that points to a dispatch cell.
     /// </summary>
-    internal sealed class VirtualDispatchCellGenericLookupResult : GenericLookupResult
+    internal sealed class DispatchCellGenericLookupResult : GenericLookupResult
     {
         private MethodDesc _method;
 
         protected override int ClassCode => 643566930;
 
-        public VirtualDispatchCellGenericLookupResult(MethodDesc method)
+        public DispatchCellGenericLookupResult(MethodDesc method)
         {
             Debug.Assert(method.IsRuntimeDeterminedExactMethod);
             Debug.Assert(method.IsVirtual);
-            Debug.Assert(method.OwningType.IsInterface);
+            Debug.Assert(method.HasInstantiation || method.OwningType.IsInterface);
 
             _method = method;
         }
@@ -724,7 +726,7 @@ namespace ILCompiler.DependencyAnalysis
                     dictionary = null;
                 }
 
-                return factory.InterfaceDispatchCell(instantiatedMethod, dictionary);
+                return factory.DispatchCell(instantiatedMethod, dictionary);
             }
             else
             {
@@ -748,12 +750,12 @@ namespace ILCompiler.DependencyAnalysis
 
         public override NativeLayoutVertexNode TemplateDictionaryNode(NodeFactory factory)
         {
-            return factory.NativeLayout.InterfaceCellDictionarySlot(_method);
+            return _method.HasInstantiation ? factory.NativeLayout.GvmCellDictionarySlot(_method) : factory.NativeLayout.InterfaceCellDictionarySlot(_method);
         }
 
         protected override int CompareToImpl(GenericLookupResult other, TypeSystemComparer comparer)
         {
-            return comparer.Compare(_method, ((VirtualDispatchCellGenericLookupResult)other)._method);
+            return comparer.Compare(_method, ((DispatchCellGenericLookupResult)other)._method);
         }
 
         protected override int GetHashCodeImpl()
@@ -763,7 +765,7 @@ namespace ILCompiler.DependencyAnalysis
 
         protected override bool EqualsImpl(GenericLookupResult obj)
         {
-            return ((VirtualDispatchCellGenericLookupResult)obj)._method == _method;
+            return ((DispatchCellGenericLookupResult)obj)._method == _method;
         }
     }
 
@@ -1069,7 +1071,7 @@ namespace ILCompiler.DependencyAnalysis
 
             // If we're producing a full vtable for the type, we don't need to report virtual method use.
             // We also don't report virtual method use for generic virtual methods - tracking those is orthogonal.
-            if (!factory.VTable(canonMethod.OwningType).HasKnownVirtualMethodUse && !canonMethod.HasInstantiation)
+            if (!canonMethod.HasInstantiation && !factory.VTable(canonMethod.OwningType).HasKnownVirtualMethodUse)
             {
                 // Report the method as virtually used so that types that could be used here at runtime
                 // have the appropriate implementations generated.

@@ -29,7 +29,7 @@ namespace System.Threading.Tests
         }
 
         // Uses 3 events to coordinate between two threads. Very little validation.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunManualResetEventSlimTest1_SimpleWait()
         {
             ManualResetEventSlim ev1 = new ManualResetEventSlim(false);
@@ -50,7 +50,7 @@ namespace System.Threading.Tests
         }
 
         // Tests timeout on an event that is never set.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunManualResetEventSlimTest2_TimeoutWait()
         {
             for (int i = 0; i < 2; i++)

@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
 #pragma warning restore SA1001
 #endif
     {
-        private static readonly string[] s_knownOids =
+        private protected static readonly string[] KnownOids =
         [
             Oids.MLDsa44WithRSA2048PssPreHashSha256,
             Oids.MLDsa44WithRSA2048Pkcs15PreHashSha256,
@@ -666,20 +666,25 @@ namespace System.Security.Cryptography
             Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
-            KeyFormatHelper.ReadSubjectPublicKeyInfo(s_knownOids, source, SubjectPublicKeyReader, out int read, out CompositeMLDsa dsa);
+            KeyFormatHelper.ReadSubjectPublicKeyInfo(KnownOids, source, SubjectPublicKeyReader, out int read, out CompositeMLDsa dsa);
             Debug.Assert(read == source.Length);
             return dsa;
 
-            static void SubjectPublicKeyReader(ReadOnlyMemory<byte> key, in AlgorithmIdentifierAsn identifier, out CompositeMLDsa dsa)
+            static void SubjectPublicKeyReader(ReadOnlySpan<byte> key, in ValueAlgorithmIdentifierAsn identifier, out CompositeMLDsa dsa)
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in identifier);
+
+                if (!IsAlgorithmSupported(algorithm))
+                {
+                    throw new CryptographicException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLDsa)));
+                }
 
                 if (!algorithm.IsValidPublicKeySize(key.Length))
                 {
                     throw new CryptographicException(SR.Argument_PublicKeyWrongSizeForAlgorithm);
                 }
 
-                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, key.Span);
+                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPublicKeyImpl(algorithm, key);
             }
         }
 
@@ -856,23 +861,28 @@ namespace System.Security.Cryptography
             Helpers.ThrowIfAsnInvalidLength(source);
             ThrowIfNotSupported();
 
-            KeyFormatHelper.ReadPkcs8(s_knownOids, source, PrivateKeyReader, out int read, out CompositeMLDsa dsa);
+            KeyFormatHelper.ReadPkcs8(KnownOids, source, PrivateKeyReader, out int read, out CompositeMLDsa dsa);
             Debug.Assert(read == source.Length);
             return dsa;
 
             static void PrivateKeyReader(
-                ReadOnlyMemory<byte> privateKeyContents,
-                in AlgorithmIdentifierAsn algorithmIdentifier,
+                ReadOnlySpan<byte> privateKeyContents,
+                in ValueAlgorithmIdentifierAsn algorithmIdentifier,
                 out CompositeMLDsa dsa)
             {
                 CompositeMLDsaAlgorithm algorithm = GetAlgorithmIdentifier(in algorithmIdentifier);
+
+                if (!IsAlgorithmSupported(algorithm))
+                {
+                    throw new CryptographicException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(CompositeMLDsa)));
+                }
 
                 if (!algorithm.IsValidPrivateKeySize(privateKeyContents.Length))
                 {
                     throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
                 }
 
-                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, privateKeyContents.Span);
+                dsa = CompositeMLDsaImplementation.ImportCompositeMLDsaPrivateKeyImpl(algorithm, privateKeyContents);
             }
         }
 
@@ -1795,6 +1805,50 @@ namespace System.Security.Cryptography
         {
         }
 
+        private protected bool TryExportPkcs8FromExportedPrivateKey(Span<byte> destination, out int bytesWritten)
+        {
+            AsnWriter? writer = null;
+
+            try
+            {
+                using (CryptoPoolLease lease = CryptoPoolLease.Rent(Algorithm.MaxPrivateKeySizeInBytes))
+                {
+                    int privateKeySize = ExportCompositeMLDsaPrivateKeyCore(lease.Span);
+
+                    if (!Algorithm.IsValidPrivateKeySize(privateKeySize))
+                    {
+                        bytesWritten = 0;
+                        throw new CryptographicException(SR.Argument_PrivateKeyWrongSizeForAlgorithm);
+                    }
+
+                    // Add some overhead for the ASN.1 structure.
+                    int initialCapacity = 32 + privateKeySize;
+
+                    writer = new AsnWriter(AsnEncodingRules.DER, initialCapacity);
+
+                    using (writer.PushSequence())
+                    {
+                        writer.WriteInteger(0); // Version
+
+                        using (writer.PushSequence())
+                        {
+                            writer.WriteObjectIdentifier(Algorithm.Oid);
+                        }
+
+                        writer.WriteOctetString(lease.Span.Slice(0, privateKeySize));
+                    }
+
+                    Debug.Assert(writer.GetEncodedLength() <= initialCapacity);
+
+                    return writer.TryEncode(destination, out bytesWritten);
+                }
+            }
+            finally
+            {
+                writer?.Reset();
+            }
+        }
+
         private AsnWriter WriteEncryptedPkcs8PrivateKeyToAsnWriter(ReadOnlySpan<byte> passwordBytes, PbeParameters pbeParameters)
         {
             AsnWriter? tmp = null;
@@ -1877,9 +1931,7 @@ namespace System.Security.Cryptography
             return writer;
         }
 
-        private delegate TResult ProcessExportedContent<TResult>(ReadOnlySpan<byte> exportedContent);
-
-        private TResult ExportPkcs8PrivateKeyCallback<TResult>(ProcessExportedContent<TResult> func)
+        private TResult ExportPkcs8PrivateKeyCallback<TResult>(ExportPkcs8PrivateKeyFunc<TResult> func)
         {
             int size = Algorithm.MaxPrivateKeySizeInBytes;
             byte[] buffer = CryptoPool.Rent(size);
@@ -1910,22 +1962,20 @@ namespace System.Security.Cryptography
             }
         }
 
-        private static CompositeMLDsaAlgorithm GetAlgorithmIdentifier(ref readonly AlgorithmIdentifierAsn identifier)
+        private static CompositeMLDsaAlgorithm GetAlgorithmIdentifier(ref readonly ValueAlgorithmIdentifierAsn identifier)
         {
             CompositeMLDsaAlgorithm? algorithm = CompositeMLDsaAlgorithm.GetAlgorithmFromOid(identifier.Algorithm);
             Debug.Assert(algorithm is not null, "Algorithm identifier should have been pre-validated by KeyFormatHelper.");
 
-            if (identifier.Parameters.HasValue)
+            if (identifier.HasParameters)
             {
-                AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
-                identifier.Encode(writer);
-                throw Helpers.CreateAlgorithmUnknownException(writer);
+                throw Helpers.CreateAlgorithmUnknownException(in identifier);
             }
 
             return algorithm;
         }
 
-        private static void ThrowIfNotSupported()
+        private protected static void ThrowIfNotSupported()
         {
             if (!IsSupported)
             {
@@ -1941,6 +1991,6 @@ namespace System.Security.Cryptography
             }
         }
 
-        private void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(CompositeMLDsa));
+        private protected void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, typeof(CompositeMLDsa));
     }
 }

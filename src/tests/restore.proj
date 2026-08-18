@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.Build.Traversal">
+  <Import Project="restore.projects.props" />
+
+  <ItemGroup>
+    <ProjectReference Include="@(RestoreProjects)" />
+  </ItemGroup>
+</Project>

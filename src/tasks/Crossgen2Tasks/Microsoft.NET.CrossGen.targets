@@ -32,6 +32,18 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunEmitSymbols Condition="'$(PublishReadyToRunEmitSymbols)' == '' and $(RuntimeIdentifier.StartsWith('tvossimulator-'))">false</PublishReadyToRunEmitSymbols>
     <PublishReadyToRunEmitSymbols Condition="'$(PublishReadyToRunEmitSymbols)' == '' and $(RuntimeIdentifier.StartsWith('maccatalyst-'))">false</PublishReadyToRunEmitSymbols>
     <PublishReadyToRunEmitSymbols Condition="'$(PublishReadyToRunEmitSymbols)' == '' and $(RuntimeIdentifier.StartsWith('osx-'))">false</PublishReadyToRunEmitSymbols>
+
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripInliningInfo)' != 'false' and $(RuntimeIdentifier.StartsWith('ios-'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-inlining-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripInliningInfo)' != 'false' and $(RuntimeIdentifier.StartsWith('tvos-'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-inlining-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripInliningInfo)' != 'false' and $(RuntimeIdentifier.StartsWith('iossimulator-'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-inlining-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripInliningInfo)' != 'false' and $(RuntimeIdentifier.StartsWith('tvossimulator-'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-inlining-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripInliningInfo)' != 'false' and $(RuntimeIdentifier.StartsWith('maccatalyst-'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-inlining-info</PublishReadyToRunCrossgen2ExtraArgs>
+
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' != 'false' and $(RuntimeIdentifier.StartsWith('ios-'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' != 'false' and $(RuntimeIdentifier.StartsWith('tvos-'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' != 'false' and $(RuntimeIdentifier.StartsWith('iossimulator-'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' != 'false' and $(RuntimeIdentifier.StartsWith('tvossimulator-'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(PublishReadyToRunStripDebugInfo)' != 'false' and $(RuntimeIdentifier.StartsWith('maccatalyst-'))">$(PublishReadyToRunCrossgen2ExtraArgs);--strip-debug-info</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
   <!--
@@ -665,6 +677,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     <Exec Command="chmod 644 &quot;%(_ReadyToRunNativeObjectOutputs.Identity)&quot;" />
 
     <Exec Condition="'$(StripSymbols)' == 'true'"
+      IgnoreStandardErrorWarningFormat="true"
       Command="
         dsymutil $(DsymUtilOptions) &quot;%(_ReadyToRunNativeObjectOutputs.Identity)&quot; &amp;&amp;
         strip -no_code_signature_warning -x &quot;%(_ReadyToRunNativeObjectOutputs.Identity)&quot;" />

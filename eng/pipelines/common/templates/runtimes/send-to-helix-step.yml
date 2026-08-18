@@ -12,7 +12,7 @@ parameters:
   helixSource: ''
   helixQueues: ''
   helixType: ''
-  msbuildParallelism: '/maxcpucount'
+  useHelixMonitor: false
   scenarios: ''
   timeoutPerTestCollectionInMinutes: ''
   timeoutPerTestInMinutes: ''
@@ -24,6 +24,7 @@ parameters:
   runInterpreter: ''
   tieringTest: ''
   hotColdSplitting: ''
+  largeVersionBubble: false
   nativeAotTest: ''
   longRunningGcTests: ''
   gcSimulatorTests: ''
@@ -41,7 +42,16 @@ steps:
 - template: send-to-helix-inner-step.yml
   parameters:
     osGroup: ${{ parameters.osGroup }}
-    sendParams: ${{ parameters.helixProjectArguments }} ${{ parameters.msbuildParallelism }} /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog /p:TargetArchitecture=${{ parameters.archType }} /p:TargetOS=${{ parameters.osGroup }} /p:TargetOSSubgroup=${{ parameters.osSubgroup }} /p:Configuration=${{ parameters.buildConfig }} ${{ parameters.extraHelixArguments }}
+    sendParams: >
+      ${{ parameters.helixProjectArguments }}
+      /m
+      /bl:$(Build.SourcesDirectory)/artifacts/log/SendToHelix.binlog
+      /p:TargetArchitecture=${{ parameters.archType }}
+      /p:TargetOS=${{ parameters.osGroup }}
+      /p:TargetOSSubgroup=${{ parameters.osSubgroup }}
+      /p:Configuration=${{ parameters.buildConfig }}
+      /p:EnableHelixJobMonitor=${{ parameters.useHelixMonitor }}
+      ${{ parameters.extraHelixArguments }}
     condition: and(succeeded(), ${{ parameters.condition }})
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     displayName: ${{ parameters.displayName }}
@@ -59,6 +69,7 @@ steps:
       _RunInterpreter: ${{ parameters.runInterpreter }}
       _TieringTest: ${{ parameters.tieringTest }}
       _HotColdSplitting: ${{ parameters.hotColdSplitting }}
+      _LargeVersionBubble: ${{ parameters.largeVersionBubble }}
       _NativeAotTest: ${{ parameters.nativeAotTest }}
       _LongRunningGcTests: ${{ parameters.longRunningGcTests }}
       _GcSimulatorTests: ${{ parameters.gcSimulatorTests }}

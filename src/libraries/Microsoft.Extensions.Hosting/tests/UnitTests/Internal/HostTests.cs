@@ -283,7 +283,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                         {
                             Assert.False(ct.IsCancellationRequested);
                             serviceStarting.Set();
-                            Assert.True(startCancelled.WaitOne(TimeSpan.FromSeconds(5)));
+                            Assert.True(startCancelled.WaitOne(TimeSpan.FromSeconds(30)));
                             ct.ThrowIfCancellationRequested();
                         }
                     });
@@ -293,7 +293,7 @@ namespace Microsoft.Extensions.Hosting.Internal
                 var cts = new CancellationTokenSource();
 
                 var startTask = Task.Run(() => host.StartAsync(cts.Token));
-                Assert.True(serviceStarting.WaitOne(TimeSpan.FromSeconds(5)));
+                Assert.True(serviceStarting.WaitOne(TimeSpan.FromSeconds(30)));
                 cts.Cancel();
                 startCancelled.Set();
                 await Assert.ThrowsAsync<OperationCanceledException>(() => startTask);

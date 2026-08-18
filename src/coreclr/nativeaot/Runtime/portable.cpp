@@ -272,54 +272,6 @@ FCIMPLEND
 #endif // !HOST_64BIT
 #endif // defined(HOST_ARM) || defined(HOST_WASM)
 
-FCIMPL0(void, RhpInitialDynamicInterfaceDispatch)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-FCIMPL0(void, RhpInterfaceDispatch1)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-FCIMPL0(void, RhpInterfaceDispatch2)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-FCIMPL0(void, RhpInterfaceDispatch4)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-FCIMPL0(void, RhpInterfaceDispatch8)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-FCIMPL0(void, RhpInterfaceDispatch16)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-FCIMPL0(void, RhpInterfaceDispatch32)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
-FCIMPL0(void, RhpInterfaceDispatch64)
-{
-    ASSERT_UNCONDITIONALLY("NYI");
-}
-FCIMPLEND
-
 // @TODO Implement UniversalTransitionTailCall
 EXTERN_C void * ReturnFromUniversalTransitionTailCall;
 void * ReturnFromUniversalTransitionTailCall;

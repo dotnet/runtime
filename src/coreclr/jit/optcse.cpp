@@ -206,15 +206,6 @@ bool Compiler::optUnmarkCSE(GenTree* tree)
     }
 }
 
-Compiler::fgWalkResult Compiler::optCSE_MaskHelper(GenTree** pTree, fgWalkData* walkData)
-{
-    GenTree*         tree      = *pTree;
-    Compiler*        comp      = walkData->m_compiler;
-    optCSE_MaskData* pUserData = (optCSE_MaskData*)(walkData->pCallbackData);
-
-    return WALK_CONTINUE;
-}
-
 // This functions walks all the node for an given tree
 // and return the mask of CSE defs and uses for the tree
 //
@@ -836,7 +827,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(key);
-                printf("K_%p", dspPtr(kVal));
+                printf("K_%zx", (size_t)dspPtr(kVal));
             }
 
             printf(" in " FMT_BB ", [cost=%2u, size=%2u]: \n", compCurBB->bbNum, tree->GetCostEx(), tree->GetCostSz());
@@ -1796,13 +1787,27 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
         }
     }
 
-    // Don't allow non-SIMD struct CSEs under a return; we don't fully
-    // re-morph these if we introduce a CSE store, and so may create
-    // IR that lower is not yet prepared to handle.
-    //
-    if (isReturn && varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
+    if (varTypeIsStruct(tree->gtType) && !varTypeIsSIMD(tree->gtType))
     {
-        return false;
+        // Don't allow non-SIMD struct CSEs under a return; we don't fully
+        // re-morph these if we introduce a CSE store, and so may create
+        // IR that lower is not yet prepared to handle.
+        //
+        if (isReturn)
+        {
+            return false;
+        }
+
+        // Skip all multireg nodes. The locals we introduce cannot be
+        // enregistered in multiple registers since we do not promote them, so
+        // they would always be spilled. Also, for correctness we would need to
+        // DNER existing store destinations when replacing the CSE uses and we
+        // do not currently do that.
+        //
+        if (tree->IsMultiRegNode())
+        {
+            return false;
+        }
     }
 
     // No good if the expression contains side effects or if it was marked as DONT CSE
@@ -1868,8 +1873,7 @@ bool CSE_HeuristicCommon::CanConsiderTree(GenTree* tree, bool isReturn)
             // more exceptions (NullRef) so we abandon this CSE.
             // If we don't mark CALL ALLOC_HELPER as a CSE candidate, we are able
             // to use GT_IND(x) in [2] as a CSE def.
-            if (call->IsHelperCall() &&
-                Compiler::s_helperCallProperties.IsAllocator(m_compiler->eeGetHelperNum(call->gtCallMethHnd)))
+            if (call->IsHelperCall() && Compiler::s_helperCallProperties.IsAllocator(call->GetHelperNum()))
             {
                 return false;
             }
@@ -3417,7 +3421,7 @@ void CSE_HeuristicRL::Announce()
 
     if (m_updateParameters)
     {
-        JITDUMP("Operating in update mode with sequence %ls, rewards %ls, and alpha %f\n", JitConfig.JitReplayCSE(),
+        JITDUMP("Operating in update mode with sequence %s, rewards %s, and alpha %f\n", JitConfig.JitReplayCSE(),
                 JitConfig.JitReplayCSEReward(), m_alpha);
     }
 }
@@ -3550,9 +3554,8 @@ void CSE_HeuristicRL::SoftmaxPolicy()
 
         if (first)
         {
-            for (int i = 0; i < choices.Height(); i++)
+            for (Choice& option : choices.TopDownOrder())
             {
-                Choice& option = choices.TopRef(i);
                 if (option.m_dsc == nullptr)
                 {
                     m_baseLikelihoods->push_back(0);
@@ -3683,18 +3686,18 @@ void CSE_HeuristicRL::Softmax(ArrayStack<Choice>& choices)
     // Determine likelihood via softmax.
     //
     double softmaxSum = 0;
-    for (int i = 0; i < choices.Height(); i++)
+    for (Choice& choice : choices.TopDownOrder())
     {
-        double softmax              = exp(choices.TopRef(i).m_preference);
-        choices.TopRef(i).m_softmax = softmax;
+        double softmax   = exp(choice.m_preference);
+        choice.m_softmax = softmax;
         softmaxSum += softmax;
     }
 
     // Normalize each choice's softmax likelihood
     //
-    for (int i = 0; i < choices.Height(); i++)
+    for (Choice& choice : choices.TopDownOrder())
     {
-        choices.TopRef(i).m_softmax /= softmaxSum;
+        choice.m_softmax /= softmaxSum;
     }
 }
 
@@ -3888,11 +3891,11 @@ void CSE_HeuristicRL::UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choi
         adjustment[i] = 0;
     }
 
-    for (int c = 0; c < choices.Height(); c++)
+    for (Choice& choice : choices.TopDownOrder())
     {
         double choiceFeatures[numParameters];
-        GetFeatures(choices.TopRef(c).m_dsc, choiceFeatures);
-        double softmax = choices.TopRef(c).m_softmax;
+        GetFeatures(choice.m_dsc, choiceFeatures);
+        double softmax = choice.m_softmax;
 
         for (int i = 0; i < numParameters; i++)
         {
@@ -3942,11 +3945,11 @@ void CSE_HeuristicRL::UpdateParametersStep(CSEdsc* dsc, ArrayStack<Choice>& choi
 //
 CSE_HeuristicRL::Choice* CSE_HeuristicRL::FindChoice(CSEdsc* dsc, ArrayStack<Choice>& choices)
 {
-    for (int i = 0; i < choices.Height(); i++)
+    for (Choice& choice : choices.TopDownOrder())
     {
-        if (choices.TopRef(i).m_dsc == dsc)
+        if (choice.m_dsc == dsc)
         {
-            return &choices.TopRef(i);
+            return &choice;
         }
     }
     return nullptr;
@@ -4068,7 +4071,8 @@ void CSE_Heuristic::Initialize()
         }
 #endif // TARGET_X86
 
-        if (onStack)
+        // TODO-SVE: What are the consequences of excluding Vector<T> here?
+        if (onStack && !varTypeHasUnknownSize(varDsc))
         {
             frameSize += m_compiler->lvaLclStackHomeSize(lclNum);
         }
@@ -4238,10 +4242,10 @@ void CSE_Heuristic::Initialize()
         }
     }
 
-    // The minumum value that we want to use for aggressiveRefCnt is BB_UNITY_WEIGHT * 2
+    // The minimum value that we want to use for aggressiveRefCnt is BB_UNITY_WEIGHT / 2
     // so increase it when we are below that value
     //
-    aggressiveRefCnt = max(BB_UNITY_WEIGHT * 2, aggressiveRefCnt);
+    aggressiveRefCnt = max(BB_UNITY_WEIGHT / 2, aggressiveRefCnt);
 
     // The minumum value that we want to use for moderateRefCnt is BB_UNITY_WEIGHT
     // so increase it when we are below that value
@@ -4316,15 +4320,16 @@ void CSE_Heuristic::SortCandidates()
 
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
             {
-                printf(FMT_CSE ", {$%-3x, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
-                       dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
+                printf(FMT_CSE ", {$%-3zx, $%-3x} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ",
+                       dsc->csdIndex, dsc->csdHashKey, dsc->defExcSetPromise, dsc->csdUseCount, def, use, cost,
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                printf(FMT_CSE ", {K_%p} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
-                       dspPtr(kVal), dsc->csdUseCount, def, use, cost, dsc->csdLiveAcrossCall ? ", call" : "      ");
+                printf(FMT_CSE ", {K_%zx} useCnt=%d: [def=%3f, use=%3f, cost=%3u%s]\n        :: ", dsc->csdIndex,
+                       (size_t)dspPtr(kVal), dsc->csdUseCount, def, use, cost,
+                       dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
 
             m_compiler->gtDispTree(expr, nullptr, nullptr, true);
@@ -4976,8 +4981,8 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
         {
             if (isSharedConst)
             {
-                printf("\nWe have shared Const CSE's and selected " FMT_VN " with a value of 0x%p as the base.\n",
-                       dsc->csdConstDefVN, dspPtr(dsc->csdConstDefValue));
+                printf("\nWe have shared Const CSE's and selected " FMT_VN " with a value of 0x%zx as the base.\n",
+                       dsc->csdConstDefVN, (size_t)dspPtr(dsc->csdConstDefValue));
             }
             else // !isSharedConst
             {
@@ -5108,9 +5113,9 @@ void CSE_HeuristicCommon::PerformCSE(CSE_Candidate* successfulCandidate)
     if (insertIntoSsa)
     {
         JITDUMP("Inserting each use created for defs into SSA\n");
-        for (int i = 0; i < defUses.Height(); i++)
+        for (UseDefLocation& defUse : defUses.BottomUpOrder())
         {
-            InsertUseIntoSsa(ssaBuilder, defUses.BottomRef(i));
+            InsertUseIntoSsa(ssaBuilder, defUse);
         }
     }
 
@@ -5359,15 +5364,15 @@ void CSE_HeuristicCommon::ConsiderCandidates()
         {
             if (!Compiler::Is_Shared_Const_CSE(dsc->csdHashKey))
             {
-                printf("\nConsidering " FMT_CSE " {$%-3x, $%-3x} [def=%3f, use=%3f, cost=%3u%s]\n",
+                printf("\nConsidering " FMT_CSE " {$%-3zx, $%-3x} [def=%3f, use=%3f, cost=%3u%s]\n",
                        candidate.CseIndex(), dsc->csdHashKey, dsc->defExcSetPromise, candidate.DefCount(),
                        candidate.UseCount(), candidate.Cost(), dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             else
             {
                 size_t kVal = Compiler::Decode_Shared_Const_CSE_Value(dsc->csdHashKey);
-                printf("\nConsidering " FMT_CSE " {K_%p} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
-                       dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
+                printf("\nConsidering " FMT_CSE " {K_%zx} [def=%3f, use=%3f, cost=%3u%s]\n", candidate.CseIndex(),
+                       (size_t)dspPtr(kVal), candidate.DefCount(), candidate.UseCount(), candidate.Cost(),
                        dsc->csdLiveAcrossCall ? ", call" : "      ");
             }
             printf("CSE Expression : \n");

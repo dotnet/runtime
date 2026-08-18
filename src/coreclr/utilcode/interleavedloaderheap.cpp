@@ -43,13 +43,12 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
 {
     CONTRACTL
     {
-        CONSTRUCTOR_CHECK;
         NOTHROW;
         FORBID_FAULT;
     }
     CONTRACTL_END;
 
-    _ASSERTE((GetStubCodePageSize() % GetOsPageSize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
+    _ASSERTE((GetStubCodePageSize() % minipal_getpagesize()) == 0); // Stub code page size MUST be in increments of the page size. (Really it must be a power of 2 as well, but this is good enough)
 }
 
 UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
@@ -151,9 +150,10 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     size_t dwSizeToReserve;
 
     // Round to page size again
-    dwSizeToCommit = ALIGN_UP(dwSizeToCommit, GetOsPageSize());
+    dwSizeToCommit = ALIGN_UP(dwSizeToCommit, minipal_getpagesize());
 
-    ReservedMemoryHolder pData = NULL;
+    ReservedMemoryHolder pDataHolder;
+    BYTE* pData = NULL;
 
     // Figure out how much to reserve
     dwSizeToReserve = dwSizeToCommit;
@@ -175,6 +175,9 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
         _ASSERTE(!"Unable to reserve memory range for a loaderheap");
         return FALSE;
     }
+
+    // Own the reserved memory for automatic cleanup on the error paths below.
+    pDataHolder = pData;
 
     // When the user passes in the reserved memory, the commit size is 0 and is adjusted to be the sizeof(LoaderHeap).
     // If for some reason this is not true then we just catch this via an assertion and the dev who changed code
@@ -214,7 +217,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     m_dwTotalAlloc += dwSizeToCommit;
 
     pNewBlock.SuppressRelease();
-    pData.SuppressRelease();
+    pDataHolder.Detach();
 
     pNewBlock->dwVirtualSize    = dwSizeToReserve;
     pNewBlock->pVirtualAddress  = pData;
@@ -233,13 +236,20 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     return TRUE;
 }
 
-void ReleaseAllocatedThunks(BYTE* thunks)
+struct ThunkMemoryTraits final
 {
-    ExecutableAllocator::Instance()->FreeThunksFromTemplate(thunks, GetStubCodePageSize());
-}
-
-using ThunkMemoryHolder = SpecializedWrapper<BYTE, ReleaseAllocatedThunks>;
-
+    using Type = BYTE*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        STATIC_CONTRACT_WRAPPER;
+        if (value != NULL)
+        {
+            ExecutableAllocator::Instance()->FreeThunksFromTemplate(value, GetStubCodePageSize());
+        }
+    }
+};
+using ThunkMemoryHolder = LifetimeHolder<ThunkMemoryTraits>;
 
 // Get some more committed pages - either commit some more in the current reserved region, or, if it
 // has run out, reserve another set of pages.
@@ -258,11 +268,14 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
 
     if (m_pConfig->Template != NULL)
     {
-        ThunkMemoryHolder newAllocatedThunks = (BYTE*)ExecutableAllocator::Instance()->AllocateThunksFromTemplate(m_pConfig->Template, GetStubCodePageSize(), m_pConfig->DataPageGenerator);
+        BYTE* newAllocatedThunks = (BYTE*)ExecutableAllocator::Instance()->AllocateThunksFromTemplate(m_pConfig->Template, GetStubCodePageSize(), m_pConfig->DataPageGenerator);
         if (newAllocatedThunks == NULL)
         {
             return FALSE;
         }
+
+        // Own the allocated thunks for automatic cleanup on the error paths below.
+        ThunkMemoryHolder thunksHolder(newAllocatedThunks);
 
         NewHolder<LoaderHeapBlock> pNewBlock = new (nothrow) LoaderHeapBlock;
         if (pNewBlock == NULL)
@@ -271,7 +284,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
         }
 
         size_t dwSizeToReserve = GetStubCodePageSize() * 2;
-    
+
         // Record reserved range in range list, if one is specified
         // Do this AFTER the commit - otherwise we'll have bogus ranges included.
         if (m_pRangeList != NULL)
@@ -283,20 +296,20 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
                 return FALSE;
             }
         }
-    
+
         m_dwTotalAlloc += dwSizeToReserve;
-    
+
         pNewBlock.SuppressRelease();
-        newAllocatedThunks.SuppressRelease();
-    
+        thunksHolder.Detach();
+
         pNewBlock->dwVirtualSize    = dwSizeToReserve;
         pNewBlock->pVirtualAddress  = newAllocatedThunks;
         pNewBlock->pNext            = m_pFirstBlock;
         pNewBlock->m_fReleaseMemory = TRUE;
-    
+
         // Add to the linked list
         m_pFirstBlock = pNewBlock;
-    
+
         m_pAllocPtr = (BYTE*)newAllocatedThunks;
         m_pPtrToEndOfCommittedRegion = m_pAllocPtr + GetStubCodePageSize();
         m_pEndReservedRegion = m_pAllocPtr + dwSizeToReserve; // For consistency with the non-template path m_pEndReservedRegion is after the end of the data area
@@ -410,7 +423,6 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
     // define Backout(NULL) be a legal NOP.
     if (pMem == NULL)
     {
-        return;
     }
 
     size_t dwSize = m_dwGranularity;
@@ -449,7 +461,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
                                                           INDEBUG(_In_ const char *szFile)
                                                           COMMA_INDEBUG(int  lineNum))
 {
-    CONTRACT(void*)
+    CONTRACTL
     {
         NOTHROW;
 
@@ -457,14 +469,14 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
         //INJECT_FAULT( do{ if (*pdwExtra) {*pdwExtra = 0} RETURN NULL; } while(0) );
 
     }
-    CONTRACT_END
+    CONTRACTL_END
 
     size_t dwRequestedSize = m_dwGranularity;
     size_t alignment = 1;
 
     STATIC_CONTRACT_FAULT;
 
-    SHOULD_INJECT_FAULT(RETURN NULL);
+    SHOULD_INJECT_FAULT(return NULL);
 
     void *pResult;
 
@@ -486,7 +498,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
         {
             if (!GetMoreCommittedPages(dwRequestedSize))
             {
-                RETURN NULL;
+                return NULL;
             }
         }
 
@@ -523,7 +535,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
     EtwAllocRequest(this, pResult, dwRequestedSize);
 #endif //_DEBUG
 
-    RETURN pResult;
+    return pResult;
 }
 
 void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
@@ -557,4 +569,3 @@ void InitializeLoaderHeapConfig(InterleavedLoaderHeapConfig *pConfig, size_t stu
 }
 
 #endif // #ifndef DACCESS_COMPILE
-

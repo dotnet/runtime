@@ -22,7 +22,11 @@ function libBrowserUtilsFactory() {
         "$DOTNET",
         "GetDotNetRuntimeContractDescriptor",
         "_exit",
+        "abort",
         "__trap",
+        "__stack_pointer",
+        "__coreclr_wasm_rtlrestorecontext_tag",
+        "__async_continuation",
         "$readI53FromU64",
         "$readI53FromI64",
         "$writeI53ToI64"

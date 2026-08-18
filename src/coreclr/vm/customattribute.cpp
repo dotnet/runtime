@@ -52,7 +52,7 @@ static HRESULT ParseCaType(
 
         if (!th.IsNull() && th.IsEnum())
         {
-            pCaType->enumType = (CorSerializationType)th.GetVerifierCorElementType();
+            pCaType->enumType = (CorSerializationType)th.GetInternalCorElementType();
 
             // The assembly qualified name of th might not equal pCaType->szEnumName.
             // e.g. th could be "MyEnum, MyAssembly, Version=4.0.0.0" while
@@ -915,7 +915,14 @@ extern "C" void QCALLTYPE CustomAttribute_CreateCustomAttributeInstance(
     MethodDesc* pCtorMD = ((REFLECTMETHODREF)pMethod.Get())->GetMethod();
     TypeHandle th = ((REFLECTCLASSBASEREF)pCaType.Get())->GetType();
 
-    MethodDescCallSite ctorCallSite(pCtorMD, th);
+    PCODE pCallTarget;
+
+    {
+        GCX_PREEMP();
+        pCallTarget = pCtorMD->GetSingleCallableAddrOfCode();
+    }
+
+    MethodDescCallSite ctorCallSite(pCtorMD, pCallTarget, th);
     MetaSig* pSig = ctorCallSite.GetMetaSig();
     BYTE* pBlob = *ppBlob;
 

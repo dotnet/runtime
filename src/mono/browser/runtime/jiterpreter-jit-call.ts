@@ -333,11 +333,11 @@ export function mono_interp_flush_jitcall_queue (): void {
         return;
     }
 
-    if (builder.options.enableWasmEh) {
-        if (!runtimeHelpers.featureWasmEh) {
+    if (builder.options.enableWasmFinalEh) {
+        if (!runtimeHelpers.featureWasmFinalEh) {
             // The user requested to enable wasm EH but it's not supported, so turn the option back off
-            applyOptions(<any>{ enableWasmEh: false });
-            builder.options.enableWasmEh = false;
+            applyOptions(<any>{ enableWasmFinalEh: false });
+            builder.options.enableWasmFinalEh = false;
         }
     }
 
@@ -639,10 +639,16 @@ function generate_wasm_body (
 ): boolean {
     let stack_index = 0;
 
-    // If wasm EH is enabled we will perform the call inside a catch-all block and set a flag
-    //  if it throws any exception
-    if (builder.options.enableWasmEh)
-        builder.block(WasmValtype.void, WasmOpcode.try_);
+    // If wasm EH is enabled we perform the call inside a try_table (standardized exnref proposal)
+    //  and set a flag if it throws a C++ exception. Structure:
+    //   (block $outer (block $catch (result i32) (try_table (catch __cpp_exception $catch) <body>) br $outer) <handler>)
+    if (builder.options.enableWasmFinalEh) {
+        builder.block(WasmValtype.void); // $outer
+        builder.block(WasmValtype.i32); // $catch - receives the exception pointer
+        // try_table catch labels are resolved in the scope surrounding the try_table (its own
+        //  block label is not counted), so depth 0 targets the immediately-enclosing $catch block.
+        builder.tryTable(WasmValtype.void, "__cpp_exception", 0); // catch __cpp_exception -> $catch
+    }
 
     // Wrapper signature: [thisptr], [&retval], &arg0, ..., &funcdef
     // Desired stack layout for direct calls: [&retval], [thisptr], arg0, ..., &rgctx
@@ -778,10 +784,13 @@ function generate_wasm_body (
         builder.appendMemarg(0, 0);
     }
 
-    // If the call threw a JS or wasm exception, set the thrown flag
-    if (builder.options.enableWasmEh) {
-        builder.appendU8(WasmOpcode.catch_);
-        builder.appendULeb(builder.getTypeIndex("__cpp_exception"));
+    // If the call threw a C++ exception, set the thrown flag
+    if (builder.options.enableWasmFinalEh) {
+        builder.endBlock(); // end try_table
+        // Normal completion (no exception): skip the handler by branching out to $outer
+        builder.appendU8(WasmOpcode.br);
+        builder.appendULeb(1);
+        builder.endBlock(); // end $catch - reached only when caught, stack: [exception ptr]
         builder.callImport("begin_catch");
         builder.callImport("end_catch");
         builder.local("thrown");
@@ -789,7 +798,7 @@ function generate_wasm_body (
         builder.appendU8(WasmOpcode.i32_store);
         builder.appendMemarg(0, 2);
 
-        builder.endBlock();
+        builder.endBlock(); // end $outer
     }
 
     builder.appendU8(WasmOpcode.return_);

@@ -123,31 +123,31 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_SyncSpan : SendTo<SocketHelperSpanSync>
     {
         public SendTo_SyncSpan(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_SyncSpanForceNonBlocking : SendTo<SocketHelperSpanSyncForceNonBlocking>
     {
         public SendTo_SyncSpanForceNonBlocking(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_ArraySync : SendTo<SocketHelperArraySync>
     {
         public SendTo_ArraySync(ITestOutputHelper output) : base(output) { }
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_SyncForceNonBlocking : SendTo<SocketHelperSyncForceNonBlocking>
     {
         public SendTo_SyncForceNonBlocking(ITestOutputHelper output) : base(output) {}
     }
 
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
     public sealed class SendTo_Apm : SendTo<SocketHelperApm>
     {
         public SendTo_Apm(ITestOutputHelper output) : base(output) {}

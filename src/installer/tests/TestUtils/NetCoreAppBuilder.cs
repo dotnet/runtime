@@ -207,6 +207,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             public string Type { get; set; }
             public string Name { get; set; }
             public string Version { get; set; }
+            public bool Serviceable { get; set; } = false;
 
             public List<RuntimeAssetGroupBuilder> AssemblyGroups { get; } = new List<RuntimeAssetGroupBuilder>();
             public List<RuntimeAssetGroupBuilder> NativeLibraryGroups { get; } = new List<RuntimeAssetGroupBuilder>();
@@ -249,6 +250,12 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 return this;
             }
 
+            public RuntimeLibraryBuilder WithServiceable(bool serviceable)
+            {
+                Serviceable = serviceable;
+                return this;
+            }
+
             internal RuntimeLibrary Build(BuildContext context)
             {
                 return new RuntimeLibrary(
@@ -260,7 +267,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
                     NativeLibraryGroups.Select(g => g.Build(context)).ToList(),
                     ResourceAssemblies.Select(ra => ra.Build(context)).ToList(),
                     Enumerable.Empty<Dependency>(),
-                    false);
+                    Serviceable);
             }
         }
 

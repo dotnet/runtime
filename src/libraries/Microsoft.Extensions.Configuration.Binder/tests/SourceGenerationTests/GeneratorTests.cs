@@ -9,23 +9,25 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using ILLink.RoslynAnalyzer;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.Binder.SourceGeneration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using SourceGenerators.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/105311", typeof(ConfigurationBindingGeneratorTests), nameof(IsBigEndian))]
     public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
-        // The source hash applied to the [Interceptable] attribute treats chars as bytes which fails baseline comparisons on big-endian.
-        public static bool IsBigEndian => !BitConverter.IsLittleEndian;
-
         [Theory]
         [InlineData(LanguageVersion.CSharp11)]
         [InlineData(LanguageVersion.CSharp10)]
@@ -209,6 +211,129 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
         }
 
         [Fact]
+        public async Task IgnorePropertiesWithUnresolvableMetadataTypes()
+        {
+            CSharpCompilationOptions compilationOptions = new(OutputKind.DynamicallyLinkedLibrary);
+            MetadataReference[] commonReferences = s_compilationAssemblyRefs
+                .Select(a => MetadataReference.CreateFromFile(a.Location))
+                .ToArray();
+
+            CSharpCompilation transitiveDependencyCompilation = CSharpCompilation.Create(
+                assemblyName: $"TransitiveDependency_{Guid.NewGuid():N}",
+                syntaxTrees:
+                [
+                    CSharpSyntaxTree.ParseText("""
+                        namespace MissingTypes;
+
+                        public struct ValueTypeMessage {}
+                        public sealed class HttpRequestMessage {}
+                        public sealed class CredentialDescription {}
+                        """)
+                ],
+                references: commonReferences,
+                options: compilationOptions);
+
+            byte[] transitiveDependencyImage = CreateAssemblyImage(transitiveDependencyCompilation);
+            MetadataReference transitiveDependencyReference = MetadataReference.CreateFromImage(transitiveDependencyImage);
+
+            CSharpCompilation modelCompilation = CSharpCompilation.Create(
+                assemblyName: $"UnresolvableModel_{Guid.NewGuid():N}",
+                syntaxTrees:
+                [
+                    CSharpSyntaxTree.ParseText("""
+                        namespace UnresolvableModel;
+
+                        public sealed class Wrapper<T>
+                        {
+                            public int Count { get; set; }
+
+                            public sealed class Inner
+                            {
+                                public int Value { get; set; }
+                            }
+                        }
+
+                        public class DstsOptionsBase
+                        {
+                            public virtual MissingTypes.HttpRequestMessage? OverriddenMessage { get; set; }
+                            public MissingTypes.HttpRequestMessage? ShadowedMessage { get; set; }
+                        }
+
+                        public sealed class DstsOptions : DstsOptionsBase
+                        {
+                            public MissingTypes.ValueTypeMessage? ValueTypeMessage { get; set; }
+                            public MissingTypes.HttpRequestMessage? HttpRequestMessage { get; set; }
+                            public MissingTypes.CredentialDescription? CredentialDescription { get; set; }
+                            public Wrapper<MissingTypes.HttpRequestMessage>? WrappedMessage { get; set; }
+                            public Wrapper<MissingTypes.HttpRequestMessage>.Inner? NestedInnerMessage { get; set; }
+                            public System.Tuple<int, MissingTypes.CredentialDescription>? TupleMessage { get; set; }
+                            public override MissingTypes.HttpRequestMessage? OverriddenMessage { get; set; }
+                            public new MissingTypes.HttpRequestMessage? ShadowedMessage { get; set; }
+                            public int Value { get; set; }
+                        }
+                        """)
+                ],
+                references: commonReferences.Concat([transitiveDependencyReference]),
+                options: compilationOptions);
+
+            // Reference the model as an in-memory metadata reference and omit the transitive dependency, so the
+            // generator sees the affected member types as unresolved error symbols. Using a metadata reference
+            // (rather than writing the assemblies to disk and using Assembly.LoadFrom) avoids locking files and
+            // leaking a temp directory on every run.
+            MetadataReference modelReference = MetadataReference.CreateFromImage(CreateAssemblyImage(modelCompilation));
+
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using UnresolvableModel;
+
+                public static class Program
+                {
+                    public static void Main()
+                    {
+                        var configuration = new ConfigurationBuilder().Build();
+                        _ = configuration.Get<DstsOptions>();
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, metadataReferences: [modelReference]);
+
+            result.ValidateDiagnostics(ExpectedDiagnostics.None);
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Contains("instance.Value = ", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("ValueTypeMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("HttpRequestMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("CredentialDescription", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("WrappedMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("NestedInnerMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("TupleMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("OverriddenMessage", result.GeneratedSource.Value.SourceText.ToString());
+            Assert.DoesNotContain("ShadowedMessage", result.GeneratedSource.Value.SourceText.ToString());
+
+            // Each skipped member surfaces a SYSLIB1101 warning so the incomplete binding is not silent.
+            foreach (string skippedProperty in new[] { "ValueTypeMessage", "HttpRequestMessage", "CredentialDescription", "WrappedMessage", "NestedInnerMessage", "TupleMessage" })
+            {
+                Assert.Contains(result.Diagnostics, diagnostic =>
+                    diagnostic.Id == "SYSLIB1101" &&
+                    diagnostic.Severity == DiagnosticSeverity.Warning &&
+                    diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains($"'{skippedProperty}'"));
+            }
+
+            // An error-typed property that is overridden or `new`-shadowed must report SYSLIB1101 exactly once,
+            // not once per occurrence while walking the inheritance chain.
+            foreach (string shadowedProperty in new[] { "OverriddenMessage", "ShadowedMessage" })
+            {
+                Assert.Equal(1, result.Diagnostics.Count(diagnostic =>
+                    diagnostic.Id == "SYSLIB1101" &&
+                    diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains($"'{shadowedProperty}'")));
+            }
+
+            // The bindable member must still bind without a diagnostic.
+            Assert.DoesNotContain(result.Diagnostics, diagnostic =>
+                diagnostic.GetMessage(CultureInfo.InvariantCulture).Contains("'Value'"));
+        }
+
+        [Fact]
         public async Task SucceedWhenGivenMinimumRequiredReferences()
         {
             string source = """
@@ -288,10 +413,304 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            // Ensure the generated code can be compiled.
-            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        // Required, settable property whose value flows through a constructor marked [SetsRequiredMembers]
+        // whose parameter name differs only in casing from the property.
+        [InlineData("""
+            [method: SetsRequiredMembers]
+            public class GreetSettings(string name)
+            {
+                public string Greeting { get; set; } = "Hello";
+                public required string Name { get; set; } = name;
+            }
+            """)]
+        // Same as above, but the constructor parameter name matches the property name exactly.
+        [InlineData("""
+            [method: SetsRequiredMembers]
+            public class GreetSettings(string Name)
+            {
+                public string Greeting { get; set; } = "Hello";
+                public required string Name { get; set; } = Name;
+            }
+            """)]
+        // Required property set via a constructor parameter, but the constructor does not set required
+        // members, so the property must still be assigned through the object initializer.
+        [InlineData("""
+            public class GreetSettings(string name)
+            {
+                public string Greeting { get; set; } = "Hello";
+                public required string Name { get; set; } = name;
+            }
+            """)]
+        public async Task RequiredPropertyWithMatchingConstructorParameter(string greetSettingsType)
+        {
+            string source = $$"""
+                using System.Diagnostics.CodeAnalysis;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        GreetSettings settings = config.GetSection("Settings").Get<GreetSettings>()!;
+                    }
+                }
+
+                {{greetSettingsType}}
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task ListOfTupleWithComplexElementInInternalPropertyTest()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        ExampleOptions options = new();
+                        config.Bind(options);
+                    }
+                }
+
+                public class ExampleOptions
+                {
+                    public List<string> ExampleCollection { get; set; } = new();
+
+                    internal List<(string, ICollection<string>?)> UsesCollection =>
+                        [
+                            ("Label-1", ExampleCollection)
+                        ];
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("IReadOnlyList")]
+        [InlineData("IReadOnlyCollection")]
+        [InlineData("IReadOnlySet")]
+        [InlineData("IEnumerable")]
+        public async Task ReadOnlyCollectionConstructorParameterIsBindable(string collectionType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                    }
+                }
+
+                public record Options(string Name, {{collectionType}}<string> Values);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // The collection type is only reachable through a read-only property, so its BindCore
+            // helper must still be generated for the constructor parameter.
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("IReadOnlyList")]
+        [InlineData("IReadOnlyCollection")]
+        [InlineData("IReadOnlySet")]
+        [InlineData("IEnumerable")]
+        public async Task SoleReadOnlyCollectionConstructorParameterIsBindable(string collectionType)
+        {
+            // Regression test: a type whose only member is a non-bindable, read-only collection
+            // constructor parameter (no other bindable property) used to make the generator emit a
+            // call to an Initialize method that was never generated, producing CS0103 at compile time.
+            //
+            // This only covers the top-level GetCore path. Binding this same shape as a *nested*
+            // member (reached via BindCore/EmitObjectInit) silently produces null instead of the
+            // real value, a separate pre-existing bug tracked in dotnet/runtime#131399.
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static object? Result;
+
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["Values:0"] = "a",
+                            ["Values:1"] = "b",
+                        });
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                        Result = options.Values;
+                    }
+                }
+
+                public record Options({{collectionType}}<string> Values);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // Compiling only proves the Initialize method the fix registers is emitted; loading and
+            // running the assembly proves it also binds the right values, not just compilable code.
+            var boundValues = (IEnumerable<string>)LoadAndInvokeMain(result.OutputCompilation, "Result")!;
+            Assert.Equal(new[] { "a", "b" }, boundValues);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task SoleReadOnlyCollectionConstructorParameterOfComplexElementIsBindable()
+        {
+            // Same regression as SoleReadOnlyCollectionConstructorParameterIsBindable, but the element
+            // type is itself a bindable object rather than a string. ComplexReadOnlyListConstructorParameterIsBindable
+            // below covers the complex-element case, but always pairs it with a second, ordinarily-bindable
+            // property, so it never exercises the fixed code path (the type has bindable members either way).
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+                using System.Linq;
+
+                public class Program
+                {
+                    public static object? Result;
+
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                        {
+                            ["Values:0:Value"] = "a",
+                            ["Values:1:Value"] = "b",
+                        });
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                        Result = options.Values.Select(v => v.Value).ToArray();
+                    }
+                }
+
+                public class Child
+                {
+                    public string Value { get; set; }
+                }
+
+                public record Options(IReadOnlyList<Child> Values);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            var boundValues = (string[])LoadAndInvokeMain(result.OutputCompilation, "Result")!;
+            Assert.Equal(new[] { "a", "b" }, boundValues);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task ComplexReadOnlyListConstructorParameterIsBindable()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        Options options = config.Get<Options>();
+                    }
+                }
+
+                public class Child
+                {
+                    public string Value { get; set; }
+                }
+
+                public record Options(string Name, IReadOnlyList<Child> Items);
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task TypeReachableOnlyThroughNonBindablePropertyIsNotEmitted()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+                using System.Collections.Generic;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+                        ExampleOptions options = new();
+                        config.Bind(options);
+                    }
+                }
+
+                public class ExampleOptions
+                {
+                    public List<string> ExampleCollection { get; set; } = new();
+
+                    // Non-bindable internal property. UnreachableChild is only reachable through it,
+                    // so the generator must not emit any binding code that references it.
+                    internal List<UnreachableChild> UsesCollection => new();
+                }
+
+                public class UnreachableChild
+                {
+                    public string Value { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder), typeof(List<>)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            // The type is reachable only through a non-bindable property, so the generator must
+            // not register or emit any binding code that references it.
+            Assert.DoesNotContain("UnreachableChild", result.GeneratedSource.Value.SourceText.ToString());
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         [Fact]
@@ -320,10 +739,7 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.Empty(result.Diagnostics);
 
-            // Ensure the generated code can be compiled.
-            // If there is any compilation error, exception will be thrown with the list of the errors in the exception message.
-            byte[] emittedAssemblyImage = CreateAssemblyImage(result.OutputCompilation);
-            Assert.NotNull(emittedAssemblyImage);
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
 
         /// <summary>
@@ -413,6 +829,450 @@ namespace Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests
             Assert.NotNull(result.GeneratedSource);
             Assert.True(result.Diagnostics.Any(diag => diag.Id == Diagnostics.TypeNotSupported.Id));
             Assert.True(result.Diagnostics.Any(diag => diag.Id == Diagnostics.PropertyNotSupported.Id));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Diagnostic_HasPragmaSuppressibleLocation()
+        {
+            // SYSLIB1103: ValueTypesInvalidForBind (Warning, configurable).
+            string source = """
+                #pragma warning disable SYSLIB1103
+                using System;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        int myInt = 1;
+                        config.Bind(myInt);
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, result.OutputCompilation);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1103");
+            Assert.True(diagnostic.IsSuppressed);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Diagnostic_NoPragma_IsNotSuppressed()
+        {
+            string source = """
+                using System;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        int myInt = 1;
+                        config.Bind(myInt);
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, result.OutputCompilation);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1103");
+            Assert.False(diagnostic.IsSuppressed);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Diagnostic_MultipleDiagnostics_OnlySomeSuppressed()
+        {
+            string source = """
+                using System;
+                using System.Collections.Immutable;
+                using System.Text;
+                using System.Text.Json;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        // SYSLIB1103 suppressed for this call only.
+                        #pragma warning disable SYSLIB1103
+                        int myInt = 1;
+                        config.Bind(myInt);
+                        #pragma warning restore SYSLIB1103
+
+                        // SYSLIB1103 NOT suppressed for this call.
+                        long myLong = 1;
+                        config.Bind(myLong);
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, result.OutputCompilation)
+                .Where(d => d.Id == "SYSLIB1103")
+                .ToList();
+
+            Assert.Equal(2, effective.Count);
+            Assert.Single(effective, d => d.IsSuppressed);
+            Assert.Single(effective, d => !d.IsSuppressed);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        public async Task Diagnostic_PragmaRestoreOutsideSpan_IsNotSuppressed()
+        {
+            string source = """
+                using System;
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfigurationRoot config = configurationBuilder.Build();
+
+                        // Suppress and restore BEFORE the diagnostic site.
+                        #pragma warning disable SYSLIB1103
+                        #pragma warning restore SYSLIB1103
+
+                        int myInt = 1;
+                        config.Bind(myInt);
+                    }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            var effective = CompilationWithAnalyzers.GetEffectiveDiagnostics(result.Diagnostics, result.OutputCompilation);
+            Diagnostic diagnostic = Assert.Single(effective, d => d.Id == "SYSLIB1103");
+            Assert.False(diagnostic.IsSuppressed);
+        }
+
+        /// <summary>
+        /// Verifies that the suppressor suppresses IL2026/IL3050 when a ConfigurationBinder call
+        /// is passed directly as a method argument (e.g. Some.Method(config.Get&lt;T&gt;())).
+        /// Regression test for https://github.com/dotnet/runtime/issues/94544.
+        /// </summary>
+        [Fact]
+        public async Task Suppressor_SuppressesWarnings_WhenBindingCallIsMethodArgument()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfigurationSection c = new ConfigurationBuilder().Build().GetSection("Options");
+                        Some.Method(c.Get<MyOptions>());
+                    }
+                }
+
+                internal static class Some
+                {
+                    public static void Method(MyOptions? options) { }
+                }
+
+                public class MyOptions
+                {
+                    public int MaxRetries { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+        }
+
+        /// <summary>
+        /// Verifies that the suppressor also works for the straightforward assignment case,
+        /// ensuring no regression in existing behavior.
+        /// </summary>
+        [Fact]
+        public async Task Suppressor_SuppressesWarnings_ForSimpleBindingCall()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfigurationSection c = new ConfigurationBuilder().Build().GetSection("Options");
+                        var options = c.Get<MyOptions>();
+                    }
+                }
+
+                public class MyOptions
+                {
+                    public int MaxRetries { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+        }
+
+        [Fact]
+        public async Task Suppressor_SuppressesWarnings_WithLineDirective()
+        {
+            string source = """
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        IConfigurationSection c = new ConfigurationBuilder().Build().GetSection("Options");
+                #line 100 "Remapped.cs"
+                        var options = c.Get<MyOptions>();
+                #line default
+                    }
+                }
+
+                public class MyOptions
+                {
+                    public int MaxRetries { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source);
+            Assert.NotNull(result.GeneratedSource);
+
+            await VerifySuppressedCallsMatchInterceptedCalls(result);
+        }
+
+        /// <summary>
+        /// Verifies that the set of IL2026/IL3050 diagnostics suppressed by the suppressor
+        /// matches exactly the set of calls intercepted by the source generator.
+        /// Catches both under-suppression (https://github.com/dotnet/runtime/issues/94544)
+        /// and over-suppression (https://github.com/dotnet/runtime/issues/96643).
+        /// </summary>
+        private static async Task VerifySuppressedCallsMatchInterceptedCalls(ConfigBindingGenRunResult result)
+        {
+            Assert.NotNull(result.GenerationSpec);
+
+            // Collect all intercepted (line, column) locations from the generator spec.
+            // The interceptor targets MemberAccessExpression.Name (e.g. "Get" in "c.Get<T>()").
+            HashSet<(int Line, int Column)> interceptedLocations = GetInterceptedLocations(result.GenerationSpec);
+            Assert.NotEmpty(interceptedLocations);
+
+            // Run the ILLink analyzer + suppressor on the output compilation (which includes generated InterceptsLocation attributes).
+            ImmutableArray<Diagnostic> diagnostics = await GetDiagnosticsWithSuppressor(result.OutputCompilation);
+
+            // The ILLink analyzer must have produced at least one IL2026 or IL3050 that was suppressed.
+            // Without this, the assertions below would pass vacuously if the analyzer didn't fire.
+            Assert.Contains(diagnostics, d => (d.Id is "IL2026" or "IL3050") && d.IsSuppressed);
+
+            // Every suppressed IL2026/IL3050 diagnostic should be at an intercepted location.
+            foreach (Diagnostic d in diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && d.IsSuppressed))
+            {
+                (int line, int column) = GetMethodNameLocation(d);
+                Assert.True(interceptedLocations.Contains((line, column)),
+                    $"Suppressed {d.Id} at ({line},{column}) but no interceptor was generated for that call site.");
+            }
+
+            // Every intercepted location should have its IL2026/IL3050 diagnostics suppressed.
+            foreach (Diagnostic d in diagnostics.Where(d => (d.Id is "IL2026" or "IL3050") && !d.IsSuppressed))
+            {
+                (int line, int column) = GetMethodNameLocation(d);
+                Assert.False(interceptedLocations.Contains((line, column)),
+                    $"Unsuppressed {d.Id} at ({line},{column}) but an interceptor was generated for that call site.");
+            }
+        }
+
+        /// <summary>
+        /// Resolves a diagnostic's location to the method name position that the interceptor targets.
+        /// The ILLink analyzer reports on the MemberAccessExpression (e.g. "c.Get&lt;T&gt;"),
+        /// but the interceptor targets just the Name part (e.g. "Get"). This method walks from
+        /// the diagnostic location to the InvocationExpression's MemberAccessExpression.Name
+        /// to get the matching (line, column).
+        /// </summary>
+        private static (int Line, int Column) GetMethodNameLocation(Diagnostic diagnostic)
+        {
+            Location location = diagnostic.AdditionalLocations.Count > 0
+                ? diagnostic.AdditionalLocations[0]
+                : diagnostic.Location;
+            SyntaxTree sourceTree = location.SourceTree!;
+            SyntaxNode node = sourceTree.GetRoot().FindNode(location.SourceSpan, getInnermostNodeForTie: true);
+
+            InvocationExpressionSyntax invocation = (node as InvocationExpressionSyntax
+                ?? node.Parent as InvocationExpressionSyntax)!;
+
+            var memberAccess = (MemberAccessExpressionSyntax)invocation.Expression;
+            FileLinePositionSpan nameSpan = sourceTree.GetLineSpan(memberAccess.Name.Span);
+
+            return (nameSpan.StartLinePosition.Line + 1, nameSpan.StartLinePosition.Character + 1);
+        }
+
+        private static HashSet<(int Line, int Column)> GetInterceptedLocations(SourceGenerationSpec spec)
+        {
+            var locations = new HashSet<(int, int)>();
+            InterceptorInfo info = spec.InterceptorInfo;
+
+            AddLocations(info.ConfigBinder);
+            AddLocations(info.OptionsBuilderExt);
+            AddLocations(info.ServiceCollectionExt);
+            AddTypedLocations(info.ConfigBinder_Bind_instance);
+            AddTypedLocations(info.ConfigBinder_Bind_instance_BinderOptions);
+            AddTypedLocations(info.ConfigBinder_Bind_key_instance);
+
+            return locations;
+
+            void AddLocations(IEnumerable<InvocationLocationInfo>? locationInfos)
+            {
+                if (locationInfos is null)
+                    return;
+
+                foreach (InvocationLocationInfo loc in locationInfos)
+                {
+                    locations.Add(GetLocation(loc));
+                }
+            }
+
+            void AddTypedLocations(IEnumerable<TypedInterceptorInvocationInfo>? typedInfos)
+            {
+                if (typedInfos is null)
+                    return;
+
+                foreach (TypedInterceptorInvocationInfo typed in typedInfos)
+                {
+                    AddLocations(typed.Locations);
+                }
+            }
+        }
+
+        private static (int Line, int Column) GetLocation(InvocationLocationInfo loc)
+        {
+            if (loc.LineNumber != 0)
+            {
+                return (loc.LineNumber, loc.CharacterNumber);
+            }
+
+            // v1 interceptor: parse from display location, e.g. "path(line,col)"
+            string display = loc.InterceptableLocationGetDisplayLocation();
+            Match match = Regex.Match(display, @"\((\d+),(\d+)\)$");
+            Assert.True(match.Success, $"Could not parse display location: {display}");
+
+            return (int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture),
+                    int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture));
+        }
+
+        private static async Task<ImmutableArray<Diagnostic>> GetDiagnosticsWithSuppressor(Compilation compilation)
+        {
+            var analyzers = ImmutableArray.Create<DiagnosticAnalyzer>(
+                new DynamicallyAccessedMembersAnalyzer(),
+                new ConfigurationBindingGenerator.Suppressor());
+
+            var trimAotAnalyzerOptions = new DictionaryAnalyzerConfigOptions(
+                ImmutableDictionary.CreateRange<string, string>(
+                    StringComparer.OrdinalIgnoreCase,
+                    [
+                        new("build_property.EnableTrimAnalyzer", "true"),
+                        new("build_property.EnableAotAnalyzer", "true"),
+                    ]));
+            var analyzerOptions = new AnalyzerOptions(
+                ImmutableArray<AdditionalText>.Empty,
+                new GlobalOptionsOnlyProvider(trimAotAnalyzerOptions));
+            var options = new CompilationWithAnalyzersOptions(
+                analyzerOptions,
+                onAnalyzerException: null,
+                concurrentAnalysis: true,
+                logAnalyzerExecutionTime: false,
+                reportSuppressedDiagnostics: true);
+
+            return await new CompilationWithAnalyzers(compilation, analyzers, options)
+                .GetAllDiagnosticsAsync();
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        // Keyword-named constructor parameters bound to locals.
+        [InlineData("""
+            class MyConfiguration(string @base, string @event)
+            {
+                public string Base { get; } = @base;
+                public string Event { get; } = @event;
+            }
+            """)]
+        // Keyword-named settable properties bound through member access on the instance.
+        [InlineData("""
+            class MyConfiguration
+            {
+                public string @base { get; set; }
+                public string @event { get; set; }
+            }
+            """)]
+        // Positional record properties keep the keyword names of their matching constructor parameters,
+        // so both sides of the emitted object initializer need escaping.
+        [InlineData("record MyConfiguration(string @base, string @event);")]
+        public async Task KeywordNamedMembers(string configurationType)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        MyConfiguration options = config.GetSection("My").Get<MyConfiguration>()!;
+                    }
+                }
+
+                {{configurationType}}
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
+        [InlineData("quoted\"key")]
+        [InlineData(@"path\key")]
+        [InlineData("line\nbreak")]
+        public async Task ConfigurationKeyNamesRequiringEscaping(string configurationKeyName)
+        {
+            string source = $$"""
+                using Microsoft.Extensions.Configuration;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        MyConfiguration options = config.GetSection("My").Get<MyConfiguration>()!;
+                    }
+                }
+
+                class MyConfiguration
+                {
+                    [ConfigurationKeyName({{SymbolDisplay.FormatLiteral(configurationKeyName, quote: true)}})]
+                    public string Value { get; set; }
+                }
+                """;
+
+            ConfigBindingGenRunResult result = await RunGeneratorAndUpdateCompilation(source, assemblyReferences: GetAssemblyRefsWithAdditional(typeof(ConfigurationBuilder)));
+            Assert.NotNull(result.GeneratedSource);
+            Assert.Empty(result.Diagnostics);
+
+            AssertCanCreateAssemblyImage(result.OutputCompilation);
         }
     }
 }

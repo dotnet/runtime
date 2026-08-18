@@ -33,9 +33,9 @@ namespace System.Text.RegularExpressions.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.EnumerateMatches("input", "pattern", (RegexOptions)(-1)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.EnumerateMatches("input", "pattern", (RegexOptions)(-1), TimeSpan.FromSeconds(1)));
 
-            // 0x400 is new NonBacktracking mode that is now valid, 0x800 is still invalid
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.EnumerateMatches("input", "pattern", (RegexOptions)0x800));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.EnumerateMatches("input", "pattern", (RegexOptions)0x800, TimeSpan.FromSeconds(1)));
+            // 0x800 is new AnyNewLine mode that is now valid, 0x1000 is still invalid
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.EnumerateMatches("input", "pattern", (RegexOptions)0x1000));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => Regex.EnumerateMatches("input", "pattern", (RegexOptions)0x1000, TimeSpan.FromSeconds(1)));
 
             // MatchTimeout is invalid
             AssertExtensions.Throws<ArgumentOutOfRangeException>("matchTimeout", () => Regex.EnumerateMatches("input", "pattern", RegexOptions.None, TimeSpan.Zero));

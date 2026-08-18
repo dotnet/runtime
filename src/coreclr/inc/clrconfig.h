@@ -150,6 +150,13 @@ inline CLRConfig::LookupOptions operator&(CLRConfig::LookupOptions lhs, CLRConfi
     return static_cast<CLRConfig::LookupOptions>(static_cast<DWORD>(lhs) & static_cast<DWORD>(rhs));
 }
 
-typedef Wrapper<LPWSTR, DoNothing, CLRConfig::FreeConfigString, 0> CLRConfigStringHolder;
+struct CLRConfigStringTraits final
+{
+    using Type = LPWSTR;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value) { CLRConfig::FreeConfigString(value); }
+};
+
+using CLRConfigStringHolder = LifetimeHolder<CLRConfigStringTraits>;
 
 #endif //__CLRConfig_h__

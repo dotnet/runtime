@@ -4,7 +4,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 namespace Mono.Linker.Tests.Cases.Metadata
 {
     [VerifyMetadataNames]
-    [SetupLinkerArgument("-a", "test.exe", "visible")]
+    [SetupLinkerArgument("-a", "test", "visible")]
     [KeptMember(".ctor()")]
     public class RootVisibleAssemblyNamesAreKept
     {

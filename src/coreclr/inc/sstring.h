@@ -45,6 +45,7 @@
 #include "utilcode.h"
 #include "sbuffer.h"
 #include "debugmacros.h"
+#include <minipal/types.h>
 
 // ==========================================================================================
 // Documentational typedefs: use these to indicate specific representations of 8 bit strings:
@@ -70,7 +71,7 @@ typedef const UTF8 *LPCUTF8;
 
 
 typedef DPTR(class SString) PTR_SString;
-class EMPTY_BASES_DECL SString : private SBuffer
+class EMPTY_BASES SString : private SBuffer
 {
     friend struct _DacGlobals;
 
@@ -333,7 +334,7 @@ private:
 
  protected:
 
-    class EMPTY_BASES_DECL Index : public SBuffer::Index
+    class EMPTY_BASES Index : public SBuffer::Index
     {
         friend class SString;
 
@@ -365,7 +366,7 @@ private:
 
  public:
 
-    class EMPTY_BASES_DECL CIterator : public Index, public Indexer<const WCHAR, CIterator>
+    class EMPTY_BASES CIterator : public Index, public Indexer<const WCHAR, CIterator>
     {
         friend class SString;
 
@@ -405,7 +406,7 @@ private:
         WCHAR operator[](int index) const { return Index::operator[](index); }
     };
 
-    class EMPTY_BASES_DECL Iterator : public Index, public Indexer<WCHAR, Iterator>
+    class EMPTY_BASES Iterator : public Index, public Indexer<WCHAR, Iterator>
     {
         friend class SString;
 
@@ -566,9 +567,9 @@ private:
     // Utilities
     //---------------------------------------------------------------------
 
-    void Printf(const CHAR *format, ...);
+    void Printf(const CHAR *format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
     void VPrintf(const CHAR *format, va_list args);
-    void AppendPrintf(const CHAR *format, ...);
+    void AppendPrintf(const CHAR *format, ...) MINIPAL_ATTR_FORMAT_PRINTF(2, 3);
     void AppendVPrintf(const CHAR *format, va_list args);
 
 public:
@@ -711,7 +712,7 @@ private:
 // ===========================================================================
 
 template <COUNT_T MEMSIZE>
-class EMPTY_BASES_DECL InlineSString : public SString
+class EMPTY_BASES InlineSString : public SString
 {
 private:
     DAC_ALIGNAS(SString)

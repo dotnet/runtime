@@ -16,6 +16,8 @@ using DupType_MapString = Lib.AliasedName;
 [assembly: TypeMapAssemblyTarget<MultipleTypeMapAssemblies>("TypeMapLib3")]
 [assembly: TypeMapAssemblyTarget<MultipleTypeMapAssemblies>("TypeMapLib4")]
 
+[assembly: TypeMapAssemblyTarget<DuplicateTypeMapEntriesAcrossAssemblies>("TypeMapLib3")]
+
 [assembly: TypeMapAssemblyTarget<UnknownAssemblyReference>("DoesNotExist")]
 
 [assembly: TypeMap<TypicalUseCase>("1", typeof(C1))]
@@ -63,6 +65,9 @@ using DupType_MapString = Lib.AliasedName;
 
 [assembly: TypeMap<DuplicateTypeNameKey>("1", typeof(object))]
 [assembly: TypeMap<DuplicateTypeNameKey>("1", typeof(object))]
+
+[assembly: TypeMap<DuplicateTypeMapEntriesAcrossAssemblies>("1", typeof(object))]
+
 
 [assembly: TypeMapAssociation<DuplicateTypeNameKey>(typeof(DupType_MapObject), typeof(object))]
 [assembly: TypeMapAssociation<DuplicateTypeNameKey>(typeof(DupType_MapString), typeof(string))]
@@ -184,6 +189,8 @@ public class TypeMap
         Console.WriteLine(nameof(Validate_ExternalTypeMapping_DuplicateTypeKey));
 
         AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeNameKey>());
+
+        AssertExtensions.ThrowsAny<ArgumentException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<DuplicateTypeMapEntriesAcrossAssemblies>());
     }
 
     [Fact]
@@ -259,11 +266,67 @@ public class TypeMap
     }
 
     [Fact]
+    public static void Validate_MissingAssemblyTarget_DoesNotAffectGroupsWithoutTargets()
+    {
+        // Validates that groups without TypeMapAssemblyTarget attributes (like TypicalUseCase)
+        // still work correctly alongside groups with failing targets (like UnknownAssemblyReference).
+        // In R2R, groups without assembly targets must have their precached entry emitted so the
+        // runtime doesn't unnecessarily fall back to attribute scanning.
+        Console.WriteLine(nameof(Validate_MissingAssemblyTarget_DoesNotAffectGroupsWithoutTargets));
+
+        Assert.Throws<FileNotFoundException>(() => TypeMapping.GetOrCreateExternalTypeMapping<UnknownAssemblyReference>());
+
+        IReadOnlyDictionary<string, Type> externalMap = TypeMapping.GetOrCreateExternalTypeMapping<TypicalUseCase>();
+        Assert.Equal(typeof(C1), externalMap["1"]);
+        Assert.Equal(typeof(S1), externalMap["2"]);
+
+        IReadOnlyDictionary<Type, Type> proxyMap = TypeMapping.GetOrCreateProxyTypeMapping<TypicalUseCase>();
+        Assert.Equal(typeof(C1), proxyMap[new C1().GetType()]);
+        Assert.Equal(typeof(S1), proxyMap[((object)default(S1)).GetType()]);
+
+        // When running in R2R mode, verify the R2R image contains TypeMap sections.
+        // This confirms CrossGen2 correctly emitted entries for groups without
+        // TypeMapAssemblyTarget attributes alongside groups with failed targets.
+        string assemblyLocation = typeof(TypeMap).Assembly.Location;
+        if (!string.IsNullOrEmpty(assemblyLocation))
+        {
+            string r2rDumpFile = assemblyLocation + ".r2rdump";
+            if (File.Exists(r2rDumpFile))
+            {
+                string[] lines = File.ReadAllLines(r2rDumpFile);
+                bool hasExternalTypeMaps = false;
+                bool hasProxyTypeMaps = false;
+                bool hasTypeMapAssemblyTargets = false;
+                foreach (string line in lines)
+                {
+                    if (line.Contains("ExternalTypeMaps", StringComparison.Ordinal))
+                        hasExternalTypeMaps = true;
+                    if (line.Contains("ProxyTypeMaps", StringComparison.Ordinal))
+                        hasProxyTypeMaps = true;
+                    if (line.Contains("TypeMapAssemblyTargets", StringComparison.Ordinal))
+                        hasTypeMapAssemblyTargets = true;
+                }
+                Assert.True(hasExternalTypeMaps, "R2R image should contain ExternalTypeMaps section");
+                Assert.True(hasProxyTypeMaps, "R2R image should contain ProxyTypeMaps section");
+                Assert.True(hasTypeMapAssemblyTargets, "R2R image should contain TypeMapAssemblyTargets section");
+            }
+        }
+    }
+
+    [Fact]
     public static void Validate_EmptyOrInvalidMappings()
     {
         Console.WriteLine(nameof(Validate_EmptyOrInvalidMappings));
 
         AssertExtensions.ThrowsAny<COMException, BadImageFormatException>(() => TypeMapping.GetOrCreateExternalTypeMapping<InvalidTypeNameKey>());
         AssertExtensions.ThrowsAny<COMException, BadImageFormatException>(() => TypeMapping.GetOrCreateProxyTypeMapping<InvalidTypeNameKey>());
+    }
+
+    [ConditionalFact(typeof(ValidateNoTypeMapEntries), nameof(ValidateNoTypeMapEntries.HasR2RDumpFile))]
+    public static void NoTypeMapEntriesInR2RImageWhenNoTypeMapsDefined()
+    {
+        Console.WriteLine(nameof(NoTypeMapEntriesInR2RImageWhenNoTypeMapsDefined));
+
+        ValidateNoTypeMapEntries.VerifyNoTypeMapSections();
     }
 }

@@ -13,9 +13,18 @@ steps:
     TargetFolder: '$(Build.StagingDirectory)/IntermediateArtifacts/${{ parameters.name }}'
     CleanTargetFolder: true
 
-- template: /eng/pipelines/common/templates/publish-build-artifacts.yml
-  parameters:
-    isOfficialBuild: ${{ parameters.isOfficialBuild }}
+# NOTE: Uses classic build (container) artifacts because the dotnet/runtimelab consumer relies on
+# multiple jobs merging into one same-named 'IntermediateArtifacts' artifact, which pipeline
+# artifacts don't support. Can be removed/migrated once runtimelab no longer needs this.
+- ${{ if parameters.isOfficialBuild }}:
+  - task: 1ES.PublishBuildArtifacts@1
+    displayName: Publish intermediate artifacts
+    inputs:
+      PathtoPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'
+      ArtifactName: IntermediateArtifacts
+      ArtifactType: container
+- ${{ else }}:
+  - task: PublishBuildArtifacts@1
     displayName: Publish intermediate artifacts
     inputs:
       PathtoPublish: '$(Build.StagingDirectory)/IntermediateArtifacts'

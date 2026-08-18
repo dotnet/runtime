@@ -28,7 +28,7 @@ namespace System.Net.WebSockets.Client.Tests
     [PlatformSpecific(~TestPlatforms.Browser)]
     public abstract class DeflateTests(ITestOutputHelper output) : ClientWebSocketTestBase(output)
     {
-        [ConditionalTheory(nameof(WebSocketsSupported))]
+        [ConditionalTheory(typeof(DeflateTests), nameof(WebSocketsSupported))]
         [InlineData(15, true, 15, true, "permessage-deflate; client_max_window_bits")]
         [InlineData(14, true, 15, true, "permessage-deflate; client_max_window_bits=14")]
         [InlineData(15, true, 14, true, "permessage-deflate; client_max_window_bits; server_max_window_bits=14")]
@@ -79,7 +79,7 @@ namespace System.Net.WebSockets.Client.Tests
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
 
-        [ConditionalFact(nameof(WebSocketsSupported))]
+        [ConditionalFact(typeof(DeflateTests), nameof(WebSocketsSupported))]
         public async Task ThrowsWhenContinuationHasDifferentCompressionFlags()
         {
             var deflateOpt = new WebSocketDeflateOptions
@@ -108,7 +108,7 @@ namespace System.Net.WebSockets.Client.Tests
             }), new LoopbackServer.Options { WebSocketEndpoint = true });
         }
 
-        [ConditionalFact(nameof(WebSocketsSupported))]
+        [ConditionalFact(typeof(DeflateTests), nameof(WebSocketsSupported))]
         public async Task SendHelloWithDisableCompression()
         {
             byte[] bytes = "Hello"u8.ToArray();

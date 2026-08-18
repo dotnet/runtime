@@ -2,11 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
-using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -86,29 +83,6 @@ namespace Microsoft.Interop
             Debug.Assert(value is not null);
             Debug.Assert(diagnostics is not null);
             return new ValueAndDiagnostic(value, ImmutableArray.Create(diagnostics));
-        }
-    }
-
-    public static class DiagnosticOrTHelperExtensions
-    {
-        /// <summary>
-        /// Splits the elements of <paramref name="provider"/> into a values provider and a diagnostics provider.
-        /// </summary>
-        public static (IncrementalValuesProvider<T>, IncrementalValuesProvider<DiagnosticInfo>) Split<T>(this IncrementalValuesProvider<DiagnosticOr<T>> provider)
-        {
-            var values = provider.Where(x => x.HasValue).Select(static (x, ct) => x.Value);
-            var diagnostics = provider.Where(x => x.HasDiagnostic).SelectMany(static (x, ct) => x.Diagnostics);
-            return (values, diagnostics);
-        }
-
-        /// <summary>
-        /// Filters the <see cref="IncrementalValuesProvider{TValue}"/> by whether or not the is a <see cref="Diagnostic"/>, reports the diagnostics, and returns the values.
-        /// </summary>
-        public static IncrementalValuesProvider<T> FilterAndReportDiagnostics<T>(this IncrementalGeneratorInitializationContext ctx, IncrementalValuesProvider<DiagnosticOr<T>> diagnosticOrValues)
-        {
-            var (values, diagnostics) = diagnosticOrValues.Split();
-            ctx.RegisterDiagnostics(diagnostics);
-            return values;
         }
     }
 }

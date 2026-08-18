@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
@@ -84,24 +84,27 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool IsWhiteSpace<TChar>(this ReadOnlySpan<TChar> span)
+        internal static bool IsWhiteSpace<TChar>(this ReadOnlySpan<TChar> span, out int elementsConsumed)
             where TChar : unmanaged, IUtfChar<TChar>
         {
             int elemsConsumed;
 
             for (int i = 0; i < span.Length; i += elemsConsumed)
             {
-                if (DecodeFromUtfChar(span, out Rune rune, out elemsConsumed) != OperationStatus.Done)
+                if (DecodeFromUtfChar(span[i..], out Rune rune, out elemsConsumed) != OperationStatus.Done)
                 {
+                    elementsConsumed = i;
                     return false;
                 }
 
                 if (!Rune.IsWhiteSpace(rune))
                 {
+                    elementsConsumed = i;
                     return false;
                 }
             }
 
+            elementsConsumed = span.Length;
             return true;
         }
 
@@ -109,8 +112,8 @@ namespace System
             where TChar : unmanaged, IUtfChar<TChar>
         {
             return (typeof(TChar) == typeof(Utf8Char))
-                 ? Rune.DecodeFromUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span), out result, out elemsConsumed)
-                 : Rune.DecodeFromUtf16(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span), out result, out elemsConsumed);
+                ? Rune.DecodeFromUtf8(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(span), out result, out elemsConsumed)
+                : Rune.DecodeFromUtf16(Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<char>>(span), out result, out elemsConsumed);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

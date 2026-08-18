@@ -371,7 +371,7 @@ namespace System.Diagnostics.Tests
         /// Stresses the Subscription routine by having many threads subscribe and
         /// unsubscribe concurrently
         /// </summary>
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public void MultiSubscriberStress()
         {
             using (DiagnosticListener listener = new DiagnosticListener("MultiSubscriberStressTest"))
@@ -532,7 +532,7 @@ namespace System.Diagnostics.Tests
         /// Stresses the AllListeners by having many threads be adding and removing.
         /// </summary>
         [OuterLoop]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(100, 100)] // run multiple times to stress it further
         [InlineData(100, 101)]
         [InlineData(100, 102)]
@@ -714,6 +714,81 @@ namespace System.Diagnostics.Tests
                     listener.OnActivityExport(exporterActivity, exporter);
                     Assert.True(seenActivityExport);
                 }
+            }
+        }
+
+        [Fact]
+        public void ActivityImportExportSurvivesOtherSubscriptionRemoval()
+        {
+            using (DiagnosticListener listener = new DiagnosticListener("ActivityImportExportSurvivesRemoval"))
+            {
+                Activity activity = new Activity("MyActivity");
+                object payload = "MyPayload";
+                bool seenActivityImport = false;
+                bool seenActivityExport = false;
+
+                Action<Activity, object> activityImport = (a, p) => seenActivityImport = true;
+                Action<Activity, object> activityExport = (a, p) => seenActivityExport = true;
+
+                // Subscribe the activity-hook observer first. Subscriptions are prepended, so a later
+                // subscription sits ahead of it in the linked list. Removing that deeper (earlier) node
+                // forces this node to be rebuilt, which is where the activity hooks were being dropped.
+                IDisposable plain = listener.Subscribe(
+                    new ObserverToList<TelemData>(new List<KeyValuePair<string, object>>()));
+
+                IDisposable withActivityHooks = listener.Subscribe(
+                    new ObserverToList<TelemData>(new List<KeyValuePair<string, object>>()),
+                    (name, arg1, arg2) => true,
+                    activityImport,
+                    activityExport);
+
+                // Removing the earlier-added (deeper) subscription forces the activity-hook node ahead
+                // of it to be copied.
+                plain.Dispose();
+
+                listener.OnActivityImport(activity, payload);
+                listener.OnActivityExport(activity, payload);
+
+                Assert.True(seenActivityImport, "OnActivityImport hook was lost when another subscription was removed.");
+                Assert.True(seenActivityExport, "OnActivityExport hook was lost when another subscription was removed.");
+
+                withActivityHooks.Dispose();
+            }
+        }
+
+        [Fact]
+        public void IsEnabledOneArgDoesNotRouteThroughThreeArgOverride()
+        {
+            using (var listener = new OverriddenIsEnabledListener("IsEnabledRoutingListener"))
+            {
+                bool seenPredicate = false;
+                Func<string, object, object, bool> predicate = (name, arg1, arg2) =>
+                {
+                    seenPredicate = true;
+                    return true;
+                };
+
+                using (listener.Subscribe(new ObserverToList<TelemData>(new List<KeyValuePair<string, object>>()), predicate))
+                {
+                    Assert.True(listener.IsEnabled("SomeEvent"));
+
+                    // The single-arg IsEnabled must not be dispatched through the three-arg IsEnabled override.
+                    Assert.Equal(0, listener.ThreeArgIsEnabledCount);
+                    Assert.True(seenPredicate);
+                }
+            }
+        }
+
+        private sealed class OverriddenIsEnabledListener : DiagnosticListener
+        {
+            public OverriddenIsEnabledListener(string name) : base(name) { }
+
+            public int ThreeArgIsEnabledCount { get; private set; }
+
+            public override bool IsEnabled(string name, object arg1, object arg2 = null)
+            {
+                ThreeArgIsEnabledCount++;
+                return base.IsEnabled(name, arg1, arg2);
             }
         }
 

@@ -8,17 +8,10 @@ using System.Runtime.InteropServices;
 
 namespace System.Security.Cryptography.Asn1.Pkcs7
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal partial struct CertificateChoiceAsn
-    {
-        internal ReadOnlyMemory<byte>? Certificate;
-        internal ReadOnlyMemory<byte>? ExtendedCertificate;
-        internal ReadOnlyMemory<byte>? AttributeCertificateV1;
-        internal ReadOnlyMemory<byte>? AttributeCertificateV2;
-        internal System.Security.Cryptography.Asn1.Pkcs7.OtherCertificateFormat? OtherCertificateFormat;
-
 #if DEBUG
-        static CertificateChoiceAsn()
+    file static class ValidateCertificateChoiceAsn
+    {
+        static ValidateCertificateChoiceAsn()
         {
             var usedTags = new System.Collections.Generic.Dictionary<Asn1Tag, string>();
             Action<Asn1Tag, string> ensureUniqueTag = (tag, fieldName) =>
@@ -36,6 +29,28 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 1), "AttributeCertificateV1");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 2), "AttributeCertificateV2");
             ensureUniqueTag(new Asn1Tag(TagClass.ContextSpecific, 3), "OtherCertificateFormat");
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(
+            System.Runtime.CompilerServices.MethodImplOptions.NoInlining |
+            System.Runtime.CompilerServices.MethodImplOptions.NoOptimization)]
+        internal static void Validate() { }
+    }
+#endif
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal partial struct CertificateChoiceAsn
+    {
+        internal ReadOnlyMemory<byte>? Certificate;
+        internal ReadOnlyMemory<byte>? ExtendedCertificate;
+        internal ReadOnlyMemory<byte>? AttributeCertificateV1;
+        internal ReadOnlyMemory<byte>? AttributeCertificateV2;
+        internal System.Security.Cryptography.Asn1.Pkcs7.OtherCertificateFormat? OtherCertificateFormat;
+
+#if DEBUG
+        static CertificateChoiceAsn()
+        {
+            ValidateCertificateChoiceAsn.Validate();
         }
 #endif
 
@@ -162,7 +177,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
         {
             try
             {
-                AsnValueReader reader = new AsnValueReader(encoded.Span, ruleSet);
+                ValueAsnReader reader = new ValueAsnReader(encoded.Span, ruleSet);
 
                 DecodeCore(ref reader, encoded, out CertificateChoiceAsn decoded);
                 reader.ThrowIfNotEmpty();
@@ -174,7 +189,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             }
         }
 
-        internal static void Decode(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out CertificateChoiceAsn decoded)
+        internal static void Decode(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out CertificateChoiceAsn decoded)
         {
             try
             {
@@ -186,7 +201,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             }
         }
 
-        private static void DecodeCore(ref AsnValueReader reader, ReadOnlyMemory<byte> rebind, out CertificateChoiceAsn decoded)
+        private static void DecodeCore(ref ValueAsnReader reader, ReadOnlyMemory<byte> rebind, out CertificateChoiceAsn decoded)
         {
             decoded = default;
             Asn1Tag tag = reader.PeekTag();

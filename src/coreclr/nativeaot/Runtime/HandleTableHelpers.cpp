@@ -36,14 +36,14 @@ FCIMPLEND
 FCIMPL2(Object *, RhHandleGetDependent, OBJECTHANDLE handle, Object **ppSecondary)
 {
     Object *pPrimary = ObjectFromHandle(handle);
-    *ppSecondary = (pPrimary != NULL) ? GetDependentHandleSecondary(handle) : NULL;
+    *ppSecondary = (pPrimary != NULL) ? GCHandleUtilities::GetGCHandleManager()->GetDependentHandleSecondary(handle) : NULL;
     return pPrimary;
 }
 FCIMPLEND
 
 FCIMPL2(void, RhHandleSetDependentSecondary, OBJECTHANDLE handle, Object *pSecondary)
 {
-    SetDependentHandleSecondary(handle, pSecondary);
+    GCHandleUtilities::GetGCHandleManager()->SetDependentHandleSecondary(handle, pSecondary);
 }
 FCIMPLEND
 

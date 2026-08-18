@@ -7,19 +7,6 @@
 #include "trace.h"
 #include "bundle/runner.h"
 
-static pal::string_t normalize_dir_separator(const pal::string_t& path)
-{
-    // Entry relative path contains '/' separator, sanitize it to use
-    // platform separator. Perf: avoid extra copy if it matters.
-    pal::string_t normalized_path = path;
-    if (_X('/') != DIR_SEPARATOR)
-    {
-        replace_char(&normalized_path, _X('/'), DIR_SEPARATOR);
-    }
-
-    return normalized_path;
-}
-
 // -----------------------------------------------------------------------------
 // Given a "base" directory, determine the resolved path for this file.
 //
@@ -140,46 +127,49 @@ static bool to_path(const pal::string_t& base, const pal::string_t& relative_pat
 //
 bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str, uint32_t search_options, bool& found_in_bundle) const
 {
-    pal::string_t relative_path = normalize_dir_separator(asset.local_path);
-    if (relative_path.empty())
+    search_options &= ~deps_entry_t::search_options::is_servicing;
+
+    // If local_path is set, use it directly without copying
+    if (!asset.local_path.empty())
     {
-        relative_path = normalize_dir_separator(asset.relative_path);
-        if (library_type != _X("runtimepack")) // runtimepack assets set the path to the local path
-        {
-            pal::string_t file_name = get_filename(relative_path);
-
-            // Compute the expected relative path for this asset.
-            //   resource: <ietf-code>/<asset_file_name>
-            //   runtime/native: <asset_file_name>
-            if (asset_type == asset_types::resources)
-            {
-                // Resources are represented as "lib/<netstandrd_ver>/<ietf-code>/<ResourceAssemblyName.dll>" in the deps.json.
-                // The <ietf-code> is the "directory" in the relative_path below, so extract it.
-                pal::string_t ietf_dir = get_directory(relative_path);
-
-                // get_directory returns with DIR_SEPARATOR appended that we need to remove.
-                assert(ietf_dir.back() == DIR_SEPARATOR);
-                remove_trailing_dir_separator(&ietf_dir);
-
-                // Extract IETF code from "lib/<netstandrd_ver>/<ietf-code>"
-                ietf_dir = get_filename(ietf_dir);
-
-                trace::verbose(_X("  Detected a resource asset, will query <base>/<ietf>/<file_name> base: %s ietf: %s asset: %s"),
-                    base.c_str(), ietf_dir.c_str(), asset.name.c_str());
-
-                relative_path = ietf_dir;
-                append_path(&relative_path, file_name.c_str());
-            }
-            else
-            {
-                relative_path = std::move(file_name);
-            }
-        }
-
-        trace::verbose(_X("  Computed relative path: %s"), relative_path.c_str());
+        return to_path(base, asset.local_path, str, search_options, found_in_bundle);
     }
 
-    search_options &= ~deps_entry_t::search_options::is_servicing;
+    // For runtimepack assets without a local path set, the relative path is set to the local path on disk - use it as is
+    if (library_type == _X("runtimepack"))
+    {
+        return to_path(base, asset.relative_path, str, search_options, found_in_bundle);
+    }
+
+    // Compute the expected relative path for this asset.
+    //   resource: <ietf-code>/<asset_file_name>
+    //   runtime/native: <asset_file_name>
+    pal::string_t relative_path;
+    if (asset_type == asset_types::resources)
+    {
+        // Resources are represented as "lib/<netstandrd_ver>/<ietf-code>/<ResourceAssemblyName.dll>" in the deps.json.
+        // The <ietf-code> is the "directory" in the relative_path below, so extract it.
+        pal::string_t ietf_dir = get_directory(asset.relative_path);
+
+        // get_directory returns with DIR_SEPARATOR appended that we need to remove.
+        assert(ietf_dir.back() == DIR_SEPARATOR);
+        remove_trailing_dir_separator(&ietf_dir);
+
+        // Extract IETF code from "lib/<netstandrd_ver>/<ietf-code>"
+        ietf_dir = get_filename(ietf_dir);
+
+        trace::verbose(_X("  Detected a resource asset, will query <base>/<ietf>/<file_name> base: %s ietf: %s asset: %s"),
+            base.c_str(), ietf_dir.c_str(), asset.name.c_str());
+
+        relative_path = ietf_dir;
+        append_path(&relative_path, get_filename(asset.relative_path).c_str());
+    }
+    else
+    {
+        relative_path = get_filename(asset.relative_path);
+    }
+
+    trace::verbose(_X("  Computed relative path: %s"), relative_path.c_str());
     return to_path(base, relative_path, str, search_options, found_in_bundle);
 }
 
@@ -198,7 +188,7 @@ bool deps_entry_t::to_dir_path(const pal::string_t& base, pal::string_t* str, ui
 bool deps_entry_t::to_package_path(const pal::string_t& base, pal::string_t* str, uint32_t search_options) const
 {
     bool found_in_bundle;
-    bool result = to_path(base, normalize_dir_separator(asset.relative_path), str, search_options, found_in_bundle);
+    bool result = to_path(base, asset.relative_path, str, search_options, found_in_bundle);
     assert(!found_in_bundle);
     return result;
 }

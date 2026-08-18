@@ -25,7 +25,7 @@ namespace System.Configuration
         private const string MachineConfigSubdirectory = "Config";
 
         private static readonly object s_version = new object();
-        private static volatile string s_machineConfigFilePath;
+        private static string s_machineConfigFilePath;
         private ClientConfigPaths _configPaths; // physical paths to client config files
 
         private string _exePath; // the physical path to the exe being configured

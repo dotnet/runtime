@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DebugType>None</DebugType>
+    <Optimize />
+    <HasMergedInTests>true</HasMergedInTests>
+  </PropertyGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="CMakeLists.txt" />
+    <Compile Include="*.cs" />
+  </ItemGroup>
+
+  <Import Project="$(TestSourceDir)MergedTestRunner.targets" />
+</Project>

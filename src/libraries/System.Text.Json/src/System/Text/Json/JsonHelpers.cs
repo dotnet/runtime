@@ -190,7 +190,7 @@ namespace System.Text.Json
             return reader.TrySkipPartial(reader.CurrentDepth);
         }
 
-        public static bool TryLookupUtf8Key<TValue>(
+        public static unsafe bool TryLookupUtf8Key<TValue>(
             this Dictionary<string, TValue> dictionary,
             ReadOnlySpan<byte> utf8Key,
             [MaybeNullWhen(false)] out TValue result)
@@ -212,7 +212,7 @@ namespace System.Text.Json
 
             bool success = spanLookup.TryGetValue(decodedKey, out result);
 
-            if (rentedBuffer != null)
+            if (rentedBuffer is not null)
             {
                 decodedKey.Clear();
                 ArrayPool<char>.Shared.Return(rentedBuffer);
@@ -223,6 +223,54 @@ namespace System.Text.Json
             string key = Encoding.UTF8.GetString(utf8Key);
             return dictionary.TryGetValue(key, out result);
 #endif
+        }
+
+        public static bool TryLookupUtf8Key<TValue>(
+            this Dictionary<byte[], TValue> dictionary,
+            ReadOnlySpan<byte> utf8Key,
+            [MaybeNullWhen(false)] out TValue result)
+        {
+            Debug.Assert(dictionary.Comparer is ByteArrayOrdinalComparer);
+#if NET
+            Dictionary<byte[], TValue>.AlternateLookup<ReadOnlySpan<byte>> spanLookup =
+                dictionary.GetAlternateLookup<ReadOnlySpan<byte>>();
+
+            return spanLookup.TryGetValue(utf8Key, out result);
+#else
+            return dictionary.TryGetValue(utf8Key.ToArray(), out result);
+#endif
+        }
+
+        /// <summary>Compares byte arrays using ordinal equality.</summary>
+        internal sealed class ByteArrayOrdinalComparer :
+#if NET
+            IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>,
+#endif
+            IEqualityComparer<byte[]>
+        {
+            public static readonly ByteArrayOrdinalComparer Instance = new();
+
+            public bool Equals(byte[]? left, byte[]? right) =>
+                ReferenceEquals(left, right) ||
+                (left is not null && right is not null && left.AsSpan().SequenceEqual(right));
+
+            public int GetHashCode(byte[] value) => ComputeHashCode(value);
+
+#if NET
+            byte[] IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>.Create(ReadOnlySpan<byte> span) =>
+                span.ToArray();
+
+            bool IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>.Equals(
+                ReadOnlySpan<byte> span,
+                byte[] target) =>
+                span.SequenceEqual(target);
+
+            int IAlternateEqualityComparer<ReadOnlySpan<byte>, byte[]>.GetHashCode(ReadOnlySpan<byte> span) =>
+                ComputeHashCode(span);
+#endif
+
+            private static int ComputeHashCode(ReadOnlySpan<byte> value) =>
+                Marvin.ComputeHash32(value, Marvin.DefaultSeed);
         }
 
         /// <summary>
@@ -247,24 +295,6 @@ namespace System.Text.Json
 #endif
         }
 
-        public static bool IsFinite(double value)
-        {
-#if NET
-            return double.IsFinite(value);
-#else
-            return !(double.IsNaN(value) || double.IsInfinity(value));
-#endif
-        }
-
-        public static bool IsFinite(float value)
-        {
-#if NET
-            return float.IsFinite(value);
-#else
-            return !(float.IsNaN(value) || float.IsInfinity(value));
-#endif
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateInt32MaxArrayLength(uint length)
         {
@@ -273,21 +303,6 @@ namespace System.Text.Json
                 ThrowHelper.ThrowOutOfMemoryException(length);
             }
         }
-
-#if !NET
-        public static bool HasAllSet(this BitArray bitArray)
-        {
-            for (int i = 0; i < bitArray.Count; i++)
-            {
-                if (!bitArray[i])
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-#endif
 
         /// <summary>
         /// Gets a Regex instance for recognizing integer representations of enums.

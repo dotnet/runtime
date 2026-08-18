@@ -10,8 +10,6 @@ namespace System.Reflection
 {
     internal sealed partial class ModifiedFunctionPointerType : ModifiedType
     {
-        private const string CallingConventionTypePrefix = "System.Runtime.CompilerServices.CallConv";
-
         private Type[]? _parameterTypes;
         private Type? _returnType;
 
@@ -71,7 +69,7 @@ namespace System.Reflection
                     // For the above cases, there will be no other custom calling convention modifiers.
                     foreach (Type type in GetFunctionPointerReturnType().GetOptionalCustomModifiers())
                     {
-                        if (type.FullName!.StartsWith(CallingConventionTypePrefix, StringComparison.Ordinal))
+                        if (type.FullName!.StartsWith(Type.CallingConventionTypePrefix, StringComparison.Ordinal))
                         {
                             builder.Add(type);
                         }

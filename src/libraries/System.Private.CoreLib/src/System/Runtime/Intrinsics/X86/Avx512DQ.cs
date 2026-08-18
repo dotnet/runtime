@@ -318,11 +318,13 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI64x2 zmm1 {k1}{z}, m128</para>
         /// </summary>
         public static unsafe Vector512<long> BroadcastVector128ToVector512(long* address) => BroadcastVector128ToVector512(address);
+
         /// <summary>
         ///   <para>__m512i _mm512_broadcast_i64x2 (__m128i const * mem_addr)</para>
         ///   <para>  VBROADCASTI64x2 zmm1 {k1}{z}, m128</para>
         /// </summary>
         public static unsafe Vector512<ulong> BroadcastVector128ToVector512(ulong* address) => BroadcastVector128ToVector512(address);
+
         /// <summary>
         ///   <para>__m512d _mm512_broadcast_f64x2 (__m128d const * mem_addr)</para>
         ///   <para>  VBROADCASTF64x2 zmm1 {k1}{z}, m128</para>
@@ -334,11 +336,13 @@ namespace System.Runtime.Intrinsics.X86
         ///   <para>  VBROADCASTI32x8 zmm1 {k1}{z}, m256</para>
         /// </summary>
         public static unsafe Vector512<int> BroadcastVector256ToVector512(int* address) => BroadcastVector256ToVector512(address);
+
         /// <summary>
         ///   <para>__m512i _mm512_broadcast_i32x8 (__m256i const * mem_addr)</para>
         ///   <para>  VBROADCASTI32x8 zmm1 {k1}{z}, m256</para>
         /// </summary>
         public static unsafe Vector512<uint> BroadcastVector256ToVector512(uint* address) => BroadcastVector256ToVector512(address);
+
         /// <summary>
         ///   <para>__m512 _mm512_broadcast_f32x8 (__m256 const * mem_addr)</para>
         ///   <para>  VBROADCASTF32x8 zmm1 {k1}{z}, m256</para>

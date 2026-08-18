@@ -14,7 +14,7 @@ namespace System.Speech.Internal
 
         internal static SpeechAudioFormatInfo ToSpeechAudioFormatInfo(IntPtr waveFormatPtr)
         {
-            WaveFormatEx waveFormatEx = Marshal.PtrToStructure<WaveFormatEx>(waveFormatPtr);
+            WaveFormatEx waveFormatEx = Marshal.PtrToStructure<WaveFormatEx>(waveFormatPtr)!;
 
             byte[] extraData = new byte[waveFormatEx.cbSize];
             IntPtr extraDataPtr = new(waveFormatPtr.ToInt64() + Marshal.SizeOf<WaveFormatEx>());
@@ -26,7 +26,7 @@ namespace System.Speech.Internal
             return new SpeechAudioFormatInfo((EncodingFormat)waveFormatEx.wFormatTag, (int)waveFormatEx.nSamplesPerSec, (short)waveFormatEx.wBitsPerSample, (short)waveFormatEx.nChannels, (int)waveFormatEx.nAvgBytesPerSec, (short)waveFormatEx.nBlockAlign, extraData);
         }
 
-        internal static SpeechAudioFormatInfo ToSpeechAudioFormatInfo(string formatString)
+        internal static SpeechAudioFormatInfo? ToSpeechAudioFormatInfo(string formatString)
         {
             // Is it normal format?
             short streamFormat;
@@ -45,10 +45,10 @@ namespace System.Speech.Internal
         /// <summary>
         /// This method converts the specified stream format into a wave format
         /// </summary>
-        private static SpeechAudioFormatInfo ConvertFormat(StreamFormat eFormat)
+        private static SpeechAudioFormatInfo? ConvertFormat(StreamFormat eFormat)
         {
-            WaveFormatEx waveEx = new();
-            byte[] extra = null;
+            WaveFormatEx? waveEx = new();
+            byte[]? extra = null;
 
             if (eFormat >= StreamFormat.PCM_8kHz8BitMono && eFormat <= StreamFormat.PCM_48kHz16BitStereo)
             {

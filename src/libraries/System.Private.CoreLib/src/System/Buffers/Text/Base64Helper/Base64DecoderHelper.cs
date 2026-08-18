@@ -5,8 +5,11 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
+
 #if NET
 using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics;
 #endif
@@ -86,7 +89,7 @@ namespace System.Buffers.Text
                     }
 
                     end = srcMax - 24;
-                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
+                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
                     {
                         Vector128Decode(decoder, ref src, ref dest, end, maxSrcLength, destLength, srcBytes, destBytes);
 
@@ -167,6 +170,11 @@ namespace System.Buffers.Text
                 long remaining = srcEnd - src;
                 Debug.Assert(typeof(TBase64Decoder) == typeof(Base64DecoderByte) ? remaining == 4 : remaining < 8);
                 int i0 = decoder.DecodeRemaining(srcEnd, ref decodingMap, remaining, out uint t2, out uint t3);
+
+                if (i0 < 0)
+                {
+                    goto InvalidDataExit;
+                }
 
                 byte* destMax = destBytes + (uint)destLength;
 
@@ -348,6 +356,47 @@ namespace System.Buffers.Text
 
                 ref sbyte decodingMap = ref MemoryMarshal.GetReference(decoder.DecodingMap);
 
+#if NET
+                // Decode in place using the same vectorized helpers as DecodeFrom. This is safe because the
+                // write cursor (dest) always trails the read cursor (src) by 25%, so each vector store -- including
+                // its zero-padded overshoot -- ends at or before the next vector load and never clobbers source
+                // that hasn't been read yet.
+                if (bufferLength >= 24)
+                {
+                    byte* src = bufferBytes;
+                    byte* dest = bufferBytes;
+                    int length = (int)bufferLength;
+                    byte* srcMax = bufferBytes + length;
+
+                    byte* end = srcMax - 88;
+                    if (Vector512.IsHardwareAccelerated && Avx512Vbmi.IsSupported && (end >= src))
+                    {
+                        Avx512Decode(decoder, ref src, ref dest, end, length, length, bufferBytes, bufferBytes);
+                    }
+
+                    end = srcMax - 45;
+                    if (Avx2.IsSupported && (end >= src))
+                    {
+                        Avx2Decode(decoder, ref src, ref dest, end, length, length, bufferBytes, bufferBytes);
+                    }
+
+                    end = srcMax - 66;
+                    if (AdvSimd.Arm64.IsSupported && (end >= src))
+                    {
+                        AdvSimdDecode(decoder, ref src, ref dest, end, length, length, bufferBytes, bufferBytes);
+                    }
+
+                    end = srcMax - 24;
+                    if ((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian && (end >= src))
+                    {
+                        Vector128Decode(decoder, ref src, ref dest, end, length, length, bufferBytes, bufferBytes);
+                    }
+
+                    sourceIndex = (uint)(src - bufferBytes);
+                    destIndex = (uint)(dest - bufferBytes);
+                }
+#endif
+
                 if (bufferLength > 4)
                 {
                     while (sourceIndex < bufferLength - 4)
@@ -458,7 +507,7 @@ namespace System.Buffers.Text
             }
         }
 
-        internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        internal static unsafe OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<byte> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
             where TBase64Decoder : IBase64Decoder<byte>
         {
             const int BlockSize = 4;
@@ -563,7 +612,7 @@ namespace System.Buffers.Text
             return status;
         }
 
-        internal static OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
+        internal static unsafe OperationStatus DecodeWithWhiteSpaceBlockwise<TBase64Decoder>(TBase64Decoder decoder, ReadOnlySpan<ushort> source, Span<byte> bytes, ref int bytesConsumed, ref int bytesWritten, bool isFinalBlock = true)
             where TBase64Decoder : IBase64Decoder<ushort>
         {
             const int BlockSize = 4;
@@ -602,7 +651,7 @@ namespace System.Buffers.Text
 
                 bool hasAnotherBlock;
 
-                if (decoder is Base64DecoderByte)
+                if (decoder is Base64DecoderChar)
                 {
                     hasAnotherBlock = source.Length >= BlockSize;
                 }
@@ -705,7 +754,7 @@ namespace System.Buffers.Text
             return padding;
         }
 
-        private static OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> source, ref int destIndex, uint sourceIndex)
+        private static unsafe OperationStatus DecodeWithWhiteSpaceFromUtf8InPlace<TBase64Decoder>(TBase64Decoder decoder, Span<byte> source, ref int destIndex, uint sourceIndex)
             where TBase64Decoder : IBase64Decoder<byte>
         {
             int BlockSize = Math.Min(source.Length - (int)sourceIndex, 4);
@@ -959,13 +1008,18 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         internal static Vector128<byte> SimdShuffle(Vector128<byte> left, Vector128<byte> right, Vector128<byte> mask8F)
         {
-            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian);
 
             if (Ssse3.IsSupported)
             {
                 return Ssse3.Shuffle(left, right);
+            }
+            else if (PackedSimd.IsSupported)
+            {
+                return PackedSimd.Swizzle(left, right & mask8F);
             }
             else
             {
@@ -1116,11 +1170,12 @@ namespace System.Buffers.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
         private static unsafe void Vector128Decode<TBase64Decoder, T>(TBase64Decoder decoder, ref T* srcBytes, ref byte* destBytes, T* srcEnd, int sourceLength, int destLength, T* srcStart, byte* destStart)
             where TBase64Decoder : IBase64Decoder<T>
             where T : unmanaged
         {
-            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
+            Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported || PackedSimd.IsSupported) && BitConverter.IsLittleEndian);
 
             // If we have Vector128 support, pick off 16 bytes at a time for as long as we can,
             // but make sure that we quit before seeing any == markers at the end of the
@@ -1241,6 +1296,14 @@ namespace System.Buffers.Text
                     Vector128<ushort> odds = AdvSimd.Arm64.TransposeOdd(str, Vector128<byte>.Zero).AsUInt16();
                     merge_ab_and_bc = Vector128.Add(evens, odds).AsInt16();
                 }
+                else if (PackedSimd.IsSupported)
+                {
+                    // MultiplyAddAdjacent by {64,1,...} is the even byte (low of each u16 lane) times 64 plus the odd byte.
+                    Vector128<ushort> u = str.AsUInt16();
+                    Vector128<ushort> evens = Vector128.ShiftLeft(u & Vector128.Create((ushort)0x00FF), 6);
+                    Vector128<ushort> odds = Vector128.ShiftRightLogical(u, 8);
+                    merge_ab_and_bc = (evens + odds).AsInt16();
+                }
                 else
                 {
                     // We explicitly recheck each IsSupported query to ensure that the trimmer can see which paths are live/dead
@@ -1262,6 +1325,14 @@ namespace System.Buffers.Text
                     Vector128<int> ievens = AdvSimd.ShiftLeftLogicalWideningLower(AdvSimd.Arm64.UnzipEven(merge_ab_and_bc, one.AsInt16()).GetLower(), 12);
                     Vector128<int> iodds = AdvSimd.Arm64.TransposeOdd(merge_ab_and_bc, Vector128<short>.Zero).AsInt32();
                     output = Vector128.Add(ievens, iodds).AsInt32();
+                }
+                else if (PackedSimd.IsSupported)
+                {
+                    // MultiplyAddAdjacent by {4096,1,...} is the even i16 (low of each i32 lane) times 4096 plus the odd i16.
+                    Vector128<uint> m = merge_ab_and_bc.AsUInt32();
+                    Vector128<uint> ievens = Vector128.ShiftLeft(m & Vector128.Create(0x0000FFFFu), 12);
+                    Vector128<uint> iodds = Vector128.ShiftRightLogical(m, 16);
+                    output = (ievens + iodds).AsInt32();
                 }
                 else
                 {
@@ -1409,6 +1480,7 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public bool TryDecode128Core(
                 Vector128<byte> str,
                 Vector128<byte> hiNibbles,
@@ -1630,6 +1702,7 @@ namespace System.Buffers.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
             [CompExactlyDependsOn(typeof(Ssse3))]
+            [CompExactlyDependsOn(typeof(PackedSimd))]
             public bool TryDecode128Core(Vector128<byte> str, Vector128<byte> hiNibbles, Vector128<byte> maskSlashOrUnderscore, Vector128<byte> mask8F,
                 Vector128<byte> lutLow, Vector128<byte> lutHigh, Vector128<sbyte> lutShift, Vector128<byte> shiftForUnderscore, out Vector128<byte> result) =>
                 default(Base64DecoderByte).TryDecode128Core(str, hiNibbles, maskSlashOrUnderscore, mask8F, lutLow, lutHigh, lutShift, shiftForUnderscore, out result);

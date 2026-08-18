@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
     <CustomNativeMain>true</CustomNativeMain>
     <NativeLib>Shared</NativeLib>
+    <UseNativeLibPrefix>false</UseNativeLibPrefix>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <ReferenceXUnitWrapperGenerator>false</ReferenceXUnitWrapperGenerator>
   </PropertyGroup>

@@ -18,15 +18,17 @@ function libBrowserHostFactory() {
     libBrowserHost(exports);
 
     // libBrowserHostFn is too complex for acorn-optimizer.mjs to find the dependencies
+    // NOTE: wasm_load_icu_data is NOT listed here because it's only available when
+    // InvariantGlobalization != true. The loadIcuData() JS code is only called when
+    // ICU data is present, so the symbol doesn't need to be a hard link-time dependency.
     let explicitDeps = [
-        "wasm_load_icu_data",
         "BrowserHost_CreateHostContract",
-        "BrowserHost_InitializeCoreCLR",
-        "BrowserHost_ExecuteAssembly"
+        "BrowserHost_InitializeDotnet",
+        "BrowserHost_ExecuteAssembly",
+        "BrowserHost_ShutdownDotnet",
     ];
     let commonDeps = [
         "$DOTNET",
-        "$DOTNET_INTEROP",
         "$ENV",
         "$FS",
         "$libBrowserHostFn",
@@ -66,28 +68,6 @@ function libBrowserHostFactory() {
 
     autoAddDeps(mergeBrowserHost, "$BROWSER_HOST");
     addToLibrary(mergeBrowserHost);
-
-    function trim() {
-        return -1;
-    }
-
-    // TODO-WASM: fix PAL https://github.com/dotnet/runtime/issues/122506
-    if (LibraryManager.library.__syscall_pipe) {
-        LibraryManager.library.__syscall_pipe = trim;
-        delete LibraryManager.library.__syscall_pipe__deps;
-    }
-    if (LibraryManager.library.__syscall_connect) {
-        LibraryManager.library.__syscall_connect = trim;
-        delete LibraryManager.library.__syscall_connect__deps;
-    }
-    if (LibraryManager.library.__syscall_sendto) {
-        LibraryManager.library.__syscall_sendto = trim;
-        delete LibraryManager.library.__syscall_sendto__deps;
-    }
-    if (LibraryManager.library.__syscall_socket) {
-        LibraryManager.library.__syscall_socket = trim;
-        delete LibraryManager.library.__syscall_socket__deps;
-    }
 }
 
 libBrowserHostFactory();

@@ -146,7 +146,9 @@ namespace System.Net.WebSockets.Client.Tests
         {
             await RemoteExecutor.Invoke(static (typeName) =>
             {
+#pragma warning disable IL2026, IL2072 // https://github.com/dotnet/runtime/issues/126862
                 ClientWebSocketTestBase test = (ClientWebSocketTestBase)Activator.CreateInstance(typeof(ClientWebSocketTestBase).Assembly.GetType(typeName), new object[] { null });
+#pragma warning restore IL2026, IL2072
                 using CancellationTokenSource timeoutCts = new CancellationTokenSource(TimeOutMilliseconds);
 
                 Exception unobserved = null;

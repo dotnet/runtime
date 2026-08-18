@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/103584", TestPlatforms.Windows)]
     public class File_Changed_Tests : FileSystemWatcherTest
     {
         [Fact]

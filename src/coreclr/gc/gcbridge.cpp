@@ -44,7 +44,7 @@ static void DynPtrArrayUninit(DynPtrArray* da)
     if (da->capacity == 0)
         return;
 
-    free(da->data);
+    delete[] reinterpret_cast<void**>(da->data);
     da->data = NULL;
 }
 
@@ -72,7 +72,7 @@ static void DynPtrArrayEnsureCapacity(DynPtrArray* da, int capacity)
     assert(newData);
     memcpy(newData, da->data, sizeof(void*) * da->size);
     if (oldCapacity > 0)
-        free(da->data);
+        delete[] reinterpret_cast<void**>(da->data);
     da->data = newData;
 }
 
@@ -1109,6 +1109,13 @@ uint8_t** GetRegisteredBridges(size_t* pNumBridges)
 {
     *pNumBridges = (size_t)g_registeredBridges.size;
     return (uint8_t**)g_registeredBridges.data;
+}
+
+bool ShouldProcessBridgeObjects()
+{
+    // The client discards any set of cross references handed to it while it is still
+    // processing a previous one, so computing it would be pure waste.
+    return !GCToEEInterface::IsClientBridgeProcessingActive();
 }
 
 static bool TarjanSccAlgorithm()

@@ -6,6 +6,10 @@
 //
 
 // clang-format off
+#ifdef TARGET_64BIT
+#define LOWER_DECOMPOSE_LONGS 0
+#endif
+
 #ifndef CNT_CALLEE_SAVED_FOR_CSE
 #define CNT_CALLEE_SAVED_FOR_CSE CNT_CALLEE_SAVED
 #endif

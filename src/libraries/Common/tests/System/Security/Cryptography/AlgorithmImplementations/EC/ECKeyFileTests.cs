@@ -16,28 +16,20 @@ namespace System.Security.Cryptography.Tests
         protected virtual Func<T, byte[]> PublicKeyWriteArrayFunc { get; } = null;
         protected virtual WriteKeyToSpanFunc PublicKeyWriteSpanFunc { get; } = null;
 
-        // This would need to be virtualized if there was ever a platform that
-        // allowed explicit in ECDH or ECDSA but not the other.
-        public static bool SupportsExplicitCurves { get; } =
-            EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupported ||
-            EcDiffieHellman.Tests.ECDiffieHellmanFactory.ExplicitCurvesSupportFailOnUseOnly;
+        protected abstract bool SupportsExplicitCurves { get; }
+        protected abstract bool CanDeriveNewPublicKey { get; }
 
-        public static bool CanDeriveNewPublicKey { get; } = EcDiffieHellman.Tests.ECDiffieHellmanFactory.CanDeriveNewPublicKey;
-
-        public static bool SupportsBrainpool { get; } = IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
-        public static bool SupportsSect163k1 { get; } = IsCurveSupported(EccTestData.Sect163k1Key1.Curve.Oid);
-        public static bool SupportsSect283k1 { get; } = IsCurveSupported(EccTestData.Sect283k1Key1.Curve.Oid);
-        public static bool SupportsC2pnb163v1 { get; } = IsCurveSupported(EccTestData.C2pnb163v1Key1.Curve.Oid);
+        public bool SupportsBrainpool => IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
+        public bool SupportsSect163k1 => IsCurveSupported(EccTestData.Sect163k1Key1.Curve.Oid);
+        public bool SupportsSect283k1 => IsCurveSupported(EccTestData.Sect283k1Key1.Curve.Oid);
+        public bool SupportsC2pnb163v1 => IsCurveSupported(EccTestData.C2pnb163v1Key1.Curve.Oid);
 
         // Some platforms support explicitly specifying these curves, but do not support specifying them by name.
-        public static bool ExplicitNamedSameSupport { get; } = !PlatformDetection.IsAndroid;
-        public static bool SupportsSect163k1Explicit { get; } = SupportsSect163k1 || (!ExplicitNamedSameSupport && SupportsExplicitCurves);
-        public static bool SupportsC2pnb163v1Explicit { get; } = SupportsC2pnb163v1 || (!ExplicitNamedSameSupport && SupportsExplicitCurves);
+        public bool ExplicitNamedSameSupport => !PlatformDetection.IsAndroid;
+        public bool SupportsSect163k1Explicit => SupportsSect163k1 || (!ExplicitNamedSameSupport && SupportsExplicitCurves);
+        public bool SupportsC2pnb163v1Explicit => SupportsC2pnb163v1 || (!ExplicitNamedSameSupport && SupportsExplicitCurves);
 
-        private static bool IsCurveSupported(Oid oid)
-        {
-            return EcDiffieHellman.Tests.ECDiffieHellmanFactory.IsCurveValid(oid);
-        }
+        protected abstract bool IsCurveSupported(Oid oid);
 
         [Theory]
         [InlineData(false)]

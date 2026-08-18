@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 namespace System.Xml.XslCompiledTransformApiTests
 {
     //[TestCase(Name = "OutputSettings", Desc = "This testcase tests the OutputSettings on XslCompiledTransform", Param = "Debug")]
-    [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
+    [ConditionalClass(typeof(XsltApiTestRequirements), nameof(XsltApiTestRequirements.IsSupported))]
     public class COutputSettings : XsltApiTestCaseBase2
     {
         private XslCompiledTransform _xsl = null;

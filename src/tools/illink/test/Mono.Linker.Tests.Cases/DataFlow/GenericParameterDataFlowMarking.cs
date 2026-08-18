@@ -272,6 +272,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             class BaseTypeGenericNesting
             {
                 [Kept]
+                [KeptMember(".ctor()")]
                 class Base<T>
                 {
                 }
@@ -285,6 +286,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
 
                 [Kept]
+                [KeptMember(".ctor()")]
                 [KeptBaseTypeAttribute(typeof(Base<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = Tool.Trimmer)]
                 class DerivedWithTarget
                     : Base<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>
@@ -293,8 +295,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [Kept]
                 public static void Test()
                 {
-                    Type a;
-                    a = typeof(DerivedWithTarget);
+                    new DerivedWithTarget();
                 }
             }
 
@@ -302,7 +303,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             class InterfaceGenericNesting
             {
                 [Kept]
-                class IBase<T>
+                interface IBase<T>
                 {
                 }
 
@@ -315,7 +316,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 }
 
                 [Kept]
-                [KeptBaseTypeAttribute(typeof(IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = Tool.Trimmer)]
+                [KeptMember(".ctor()")]
+                [KeptInterfaceAttribute(typeof(IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>), By = Tool.Trimmer)]
                 class DerivedWithTarget
                     : IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>
                 { }
@@ -323,8 +325,46 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 [Kept]
                 public static void Test()
                 {
-                    Type a;
-                    a = typeof(DerivedWithTarget);
+                    object o = new DerivedWithTarget();
+                    var i = typeof(IBase<RequiresMethods<RequiresNothing<RequiresMethods<TargetType>>>>);
+                }
+            }
+
+            [Kept]
+            class InterfaceGenericMarkingUnderRuc
+            {
+                [Kept]
+                interface IRequires<
+                    [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>
+                {
+                }
+
+                [Kept]
+                class TargetType
+                {
+                    [Kept]
+                    public static void PublicMethod() { }
+                }
+
+                [Kept]
+                [KeptMember(".ctor()")]
+                [KeptInterfaceAttribute(typeof(IRequires<TargetType>), By = Tool.Trimmer)]
+                [KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute))]
+                [RequiresUnreferencedCode("--InterfaceGenericMarkingUnderRuc--")]
+                class DerivedWithTarget : IRequires<TargetType>
+                {
+                }
+
+                [Kept]
+                [ExpectedWarning("IL2026", "--InterfaceGenericMarkingUnderRuc--")]
+                public static void Test()
+                {
+                    new DerivedWithTarget();
+
+                    // Keep the interface implementation without creating a closed generic use-site
+                    // which would independently mark TargetType.PublicMethod.
+                    var interfaceType = typeof(IRequires<>);
                 }
             }
 
@@ -340,6 +380,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 FieldOnGenericType.Test();
                 BaseTypeGenericNesting.Test();
                 InterfaceGenericNesting.Test();
+                InterfaceGenericMarkingUnderRuc.Test();
             }
         }
     }

@@ -1,0 +1,39 @@
+trigger: none
+pr:
+  branches:
+    include:
+    - '*'
+    exclude:
+    - release/*
+    - internal/release/*
+  paths:
+    include:
+    - eng/pipelines/coreclr/hardware-intrinsics-arm64.yml
+    - eng/pipelines/coreclr/templates/jit-hardware-intrinsics-common.yml
+    - src/coreclr/jit/*arm64*
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
+  - template: /eng/pipelines/helix-platforms.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    isOfficialBuild: false
+    stages:
+    - stage: Build
+      jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
+
+      - template: /eng/pipelines/coreclr/templates/jit-hardware-intrinsics-common.yml
+        parameters:
+          platforms:
+            - linux_arm64
+          testBuildArgs: '-tree:JIT/HardwareIntrinsics'
+          useHelixMonitor: ${{ variables.enableHelixJobMonitor }}

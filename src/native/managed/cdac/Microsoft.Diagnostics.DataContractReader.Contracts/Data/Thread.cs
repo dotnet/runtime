@@ -3,50 +3,50 @@
 
 namespace Microsoft.Diagnostics.DataContractReader.Data;
 
-internal sealed class Thread : IData<Thread>
+[CdacType(nameof(DataType.Thread))]
+internal sealed partial class Thread : IData<Thread>
 {
-    static Thread IData<Thread>.Create(Target target, TargetPointer address)
-        => new Thread(target, address);
+    [Field] public partial uint Id { get; }
+    [Field] public partial TargetNUInt OSId { get; }
+    [Field] public partial uint State { get; }
+    [Field(Writable = true)] public partial uint DebuggerControlledThreadState { get; private set; }
+    [Field] public partial uint PreemptiveGCDisabled { get; }
+    [Field] public partial TargetPointer Frame { get; }
+    [Field] public partial TargetPointer GCFrame { get; }
+    [Field] public partial TargetPointer CachedStackBase { get; }
+    [Field] public partial TargetPointer CachedStackLimit { get; }
+    [Field] public partial ObjectHandle ExposedObject { get; }
+    [Field] public partial ObjectHandle LastThrownObject { get; }
+    [Field] public partial uint LastThrownObjectIsUnhandled { get; }
+    [Field] public partial TargetPointer LinkNext { get; }
 
-    public Thread(Target target, TargetPointer address)
+    [FieldAddress]
+    public partial TargetPointer ExceptionTracker { get; }
+
+    // Descriptor-optional: not present on non-Windows platforms.
+    [Field] public partial TargetPointer? UEWatsonBucketTrackerBuckets { get; }
+    [Field] public partial TargetPointer ThreadLocalDataPtr { get; }
+    [Field] public partial TargetPointer DebuggerFilterContext { get; }
+    [Field] public partial uint InteropDebuggingHijacked { get; }
+    [Field] public partial ObjectHandle CurrentCustomDebuggerNotification { get; }
+    [CustomInit(nameof(InitRuntimeThreadLocals))] public partial RuntimeThreadLocals? RuntimeThreadLocals { get; }
+
+    // Descriptor-optional: not present on all platforms.
+    [CustomInit(nameof(InitThreadHandle))] public partial TargetPointer ThreadHandle { get; }
+
+    [DataDescriptorDependency(nameof(RuntimeThreadLocals), "pointer")]
+    private partial RuntimeThreadLocals? InitRuntimeThreadLocals(Target target, TargetPointer address)
     {
         Target.TypeInfo type = target.GetTypeInfo(DataType.Thread);
-
-        Id = target.Read<uint>(address + (ulong)type.Fields[nameof(Id)].Offset);
-        OSId = target.ReadNUInt(address + (ulong)type.Fields[nameof(OSId)].Offset);
-        State = target.Read<uint>(address + (ulong)type.Fields[nameof(State)].Offset);
-        PreemptiveGCDisabled = target.Read<uint>(address + (ulong)type.Fields[nameof(PreemptiveGCDisabled)].Offset);
-
-        TargetPointer runtimeThreadLocalsPointer = target.ReadPointer(address + (ulong)type.Fields[nameof(RuntimeThreadLocals)].Offset);
-        if (runtimeThreadLocalsPointer != TargetPointer.Null)
-            RuntimeThreadLocals = target.ProcessedData.GetOrAdd<RuntimeThreadLocals>(runtimeThreadLocalsPointer);
-
-        Frame = target.ReadPointer(address + (ulong)type.Fields[nameof(Frame)].Offset);
-
-        // TEB does not exist on certain platforms
-        TEB = type.Fields.TryGetValue(nameof(TEB), out Target.FieldInfo fieldInfo)
-            ? target.ReadPointer(address + (ulong)fieldInfo.Offset)
-            : TargetPointer.Null;
-        LastThrownObject = target.ProcessedData.GetOrAdd<ObjectHandle>(
-            target.ReadPointer(address + (ulong)type.Fields[nameof(LastThrownObject)].Offset));
-        LinkNext = target.ReadPointer(address + (ulong)type.Fields[nameof(LinkNext)].Offset);
-
-        // Address of the exception tracker
-        ExceptionTracker = address + (ulong)type.Fields[nameof(ExceptionTracker)].Offset;
-        UEWatsonBucketTrackerBuckets = target.ReadPointer(address + (ulong)type.Fields[nameof(UEWatsonBucketTrackerBuckets)].Offset);
-        ThreadLocalDataPtr = target.ReadPointer(address + (ulong)type.Fields[nameof(ThreadLocalDataPtr)].Offset);
+        TargetPointer rtlPointer = target.ReadPointerField(address, type, nameof(RuntimeThreadLocals));
+        return rtlPointer != TargetPointer.Null
+            ? target.ProcessedData.GetOrAdd<RuntimeThreadLocals>(rtlPointer)
+            : null;
     }
-
-    public uint Id { get; init; }
-    public TargetNUInt OSId { get; init; }
-    public uint State { get; init; }
-    public uint PreemptiveGCDisabled { get; init; }
-    public RuntimeThreadLocals? RuntimeThreadLocals { get; init; }
-    public TargetPointer Frame { get; init; }
-    public TargetPointer TEB { get; init; }
-    public ObjectHandle LastThrownObject { get; init; }
-    public TargetPointer LinkNext { get; init; }
-    public TargetPointer ExceptionTracker { get; init; }
-    public TargetPointer UEWatsonBucketTrackerBuckets { get; init; }
-    public TargetPointer ThreadLocalDataPtr { get; init; }
+    [DataDescriptorDependency(nameof(ThreadHandle), "pointer")]
+    private partial TargetPointer InitThreadHandle(Target target, TargetPointer address)
+    {
+        Target.TypeInfo type = target.GetTypeInfo(DataType.Thread);
+        return target.ReadPointerFieldOrNull(address, type, nameof(ThreadHandle));
+    }
 }

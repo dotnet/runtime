@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.EventLog;
 using Xunit;
@@ -124,6 +125,55 @@ namespace Microsoft.Extensions.Logging
             Assert.Equal("bar", settings.LogName);
             Assert.Equal("foo", settings.SourceName);
             Assert.Equal("blah", settings.MachineName);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void AddEventLog_SettingsFromConfiguration_IsReadFromLoggingConfiguration()
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[]
+            {
+                new KeyValuePair<string, string>("Logging:EventLog:SourceName", "TestSource"),
+                new KeyValuePair<string, string>("Logging:EventLog:LogName", "TestLog"),
+                new KeyValuePair<string, string>("Logging:EventLog:MachineName", "TestMachine"),
+            }).Build();
+
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging(builder => builder
+                .AddConfiguration(configuration.GetSection("Logging"))
+                .AddEventLog());
+
+            var services = serviceCollection.BuildServiceProvider();
+            var provider = (EventLogLoggerProvider)(services.GetRequiredService<IEnumerable<ILoggerProvider>>().First());
+            var settings = provider._settings;
+            Assert.Equal("TestLog", settings.LogName);
+            Assert.Equal("TestSource", settings.SourceName);
+            Assert.Equal("TestMachine", settings.MachineName);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void AddEventLog_SettingsFromConfiguration_ActionOverridesConfigValues()
+        {
+            var configuration = new ConfigurationBuilder().AddInMemoryCollection(new[]
+            {
+                new KeyValuePair<string, string>("Logging:EventLog:SourceName", "ConfigSource"),
+                new KeyValuePair<string, string>("Logging:EventLog:LogName", "ConfigLog"),
+            }).Build();
+
+            var serviceCollection = new ServiceCollection();
+            serviceCollection.AddLogging(builder => builder
+                .AddConfiguration(configuration.GetSection("Logging"))
+                .AddEventLog(options =>
+                {
+                    options.SourceName = "ActionSource";
+                }));
+
+            var services = serviceCollection.BuildServiceProvider();
+            var provider = (EventLogLoggerProvider)(services.GetRequiredService<IEnumerable<ILoggerProvider>>().First());
+            var settings = provider._settings;
+            Assert.Equal("ActionSource", settings.SourceName);
+            Assert.Equal("ConfigLog", settings.LogName);
         }
 
         [Theory]

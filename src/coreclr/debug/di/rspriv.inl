@@ -504,9 +504,9 @@ inline RSLock::RSLock()
 
 inline RSLock::~RSLock()
 {
-    // If this lock is still ininitialized, then no body ever deleted the critical section
-    // for it and we're leaking.
-    CONSISTENCY_CHECK_MSGF(!IsInit(), ("Leaking Critical section for RS Lock '%s'", m_szTag));
+    // If this lock is still initialized, then nobody ever deleted the critical section
+    // for it and we're leaking. cLockAllowLeak opts out of this assert.
+    CONSISTENCY_CHECK_MSGF(!IsInit() || (m_eAttr & cLockAllowLeak), ("Leaking Critical section for RS Lock '%s'", m_szTag));
 }
 #endif
 

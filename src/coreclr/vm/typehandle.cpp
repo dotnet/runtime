@@ -91,11 +91,11 @@ BOOL TypeHandle::IsString() const
     return !IsTypeDesc() && AsMethodTable()->IsString();
 }
 
-BOOL TypeHandle::IsContinuation() const
+BOOL TypeHandle::IsContinuationWithoutMetadata() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    return !IsTypeDesc() && AsMethodTable()->IsContinuation();
+    return !IsTypeDesc() && AsMethodTable()->IsContinuationWithoutMetadata();
 }
 
 BOOL TypeHandle::IsGenericVariable() const {
@@ -333,7 +333,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
     }
     CONTRACTL_END
 
-    if (IsContinuation())
+    if (IsContinuationWithoutMetadata())
     {
         COMPlusThrow(kNotSupportedException, W("NotSupported_Continuation"));
         return;
@@ -454,6 +454,13 @@ bool TypeHandle::IsFloatHfa() const
         return false;
     }
     return (GetHFAType() == CORINFO_HFA_ELEM_FLOAT);
+}
+
+// Returns true when the type is Vector<T> or any instantiation thereof.
+bool TypeHandle::IsVectorT() const
+{
+    LIMITED_METHOD_CONTRACT;
+    return !IsTypeDesc() && AsMethodTable()->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT));
 }
 
 
@@ -592,7 +599,7 @@ BOOL TypeHandle::IsBoxedAndCanCastTo(TypeHandle type, TypeHandlePairList *pPairL
     CONTRACTL_END
 
 
-    CorElementType fromParamCorType = GetVerifierCorElementType();
+    CorElementType fromParamCorType = GetInternalCorElementType();
 
     if (CorTypeInfo::IsObjRef(fromParamCorType))
     {
@@ -1204,24 +1211,6 @@ CorElementType TypeHandle::GetSignatureCorElementType() const
         return AsMethodTable()->GetSignatureCorElementType();
     }
 }
-
-// As its name suggests, this returns the type used by the IL verifier. The basic difference between this
-// type and the type in the meta-data is that enumerations have been normalized to their underlieing
-// primitive type. see code:MethodTable#KindsOfElementTypes for more
-CorElementType TypeHandle::GetVerifierCorElementType() const
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (IsTypeDesc())
-    {
-        return AsTypeDesc()->GetInternalCorElementType();
-    }
-    else
-    {
-        return AsMethodTable()->GetVerifierCorElementType();
-    }
-}
-
 
 #ifdef DACCESS_COMPILE
 

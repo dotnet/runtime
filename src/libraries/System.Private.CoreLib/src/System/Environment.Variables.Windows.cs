@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
@@ -10,7 +10,7 @@ namespace System
 {
     public static partial class Environment
     {
-        private static string? GetEnvironmentVariableCore(string variable)
+        private static unsafe string? GetEnvironmentVariableCore(string variable)
         {
             var builder = new ValueStringBuilder(stackalloc char[128]);
 
@@ -31,7 +31,7 @@ namespace System
         }
 
         /// <summary>GetEnvironmentVariableCore that avoids using the ArrayPool. Environment variables must be less than 128 characters in length or won't be found.</summary>
-        internal static string? GetEnvironmentVariableCore_NoArrayPool(string variable)
+        internal static unsafe string? GetEnvironmentVariableCore_NoArrayPool(string variable)
         {
             Span<char> span = stackalloc char[128];
             uint length = Interop.Kernel32.GetEnvironmentVariable(variable, ref MemoryMarshal.GetReference(span), (uint)span.Length);

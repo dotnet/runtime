@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Diagnostics.DataContractReader.ExecutionManagerHelpers;
@@ -24,8 +25,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         {
             info = null;
             // EEJitManager::JitCodeToMethodInfo
-            if (rangeSection.IsRangeList)
-                return false;
+            Debug.Assert(!rangeSection.IsRangeList);
 
             if (rangeSection.Data == null)
                 throw new ArgumentException(nameof(rangeSection));
@@ -35,19 +35,37 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
                 return false;
 
             Debug.Assert(codeStart.Value <= jittedCodeAddress.Value);
-            TargetNUInt relativeOffset = new TargetNUInt(jittedCodeAddress.Value - codeStart.Value);
+            TargetPointer instrPointer = CodePointerUtils.AddressFromCodePointer(jittedCodeAddress, Target);
+            TargetNUInt relativeOffset = new TargetNUInt(instrPointer.Value - codeStart.Value);
 
             if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
                 return false;
 
-            info = new CodeBlock(codeStart.Value, realCodeHeader.MethodDesc, relativeOffset, rangeSection.Data!.JitManager);
+            info = new CodeBlock(codeStart, realCodeHeader.MethodDesc, relativeOffset, rangeSection.Data!.JitManager);
             return true;
+        }
+
+        public override void GetMethodRegionInfo(
+            RangeSection rangeSection,
+            TargetCodePointer jittedCodeAddress,
+            out uint hotSize,
+            out TargetPointer coldStart,
+            out uint coldSize)
+        {
+            // cold regions are not supported for JITted code
+            coldStart = TargetPointer.Null;
+            coldSize = 0;
+
+            IGCInfo gcInfo = Target.Contracts.GCInfo;
+            GetGCInfo(rangeSection, jittedCodeAddress, out TargetPointer pGcInfo, out uint gcVersion);
+            IGCInfoHandle gcInfoHandle = gcInfo.DecodePlatformSpecificGCInfo(pGcInfo, gcVersion);
+            hotSize = gcInfo.GetCodeLength(gcInfoHandle);
+            Debug.Assert(hotSize > 0);
         }
 
         public override TargetPointer GetUnwindInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
         {
-            if (rangeSection.IsRangeList)
-                return TargetPointer.Null;
+            Debug.Assert(!rangeSection.IsRangeList);
             if (rangeSection.Data == null)
                 throw new ArgumentException(nameof(rangeSection));
 
@@ -78,8 +96,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
         public override TargetPointer GetDebugInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out bool hasFlagByte)
         {
             hasFlagByte = false;
-            if (rangeSection.IsRangeList)
-                return TargetPointer.Null;
+            Debug.Assert(!rangeSection.IsRangeList);
             if (rangeSection.Data == null)
                 throw new ArgumentException(nameof(rangeSection));
 
@@ -91,12 +108,20 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             if (!GetRealCodeHeader(rangeSection, codeStart, out Data.RealCodeHeader? realCodeHeader))
                 return TargetPointer.Null;
 
-            bool featureOnStackReplacement = Target.ReadGlobal<byte>(Constants.Globals.FeatureOnStackReplacement) != 0;
+            bool featureOnStackReplacement = Target.Contracts.FeatureFlags.IsEnabled(RuntimeFeature.OnStackReplacement);
             Data.EEJitManager eeJitManager = Target.ProcessedData.GetOrAdd<Data.EEJitManager>(rangeSection.Data.JitManager);
             if (featureOnStackReplacement || eeJitManager.StoreRichDebugInfo)
                 hasFlagByte = true;
 
             return realCodeHeader.DebugInfo;
+        }
+
+        public override CodeKind GetCodeKind(RangeSection rangeSection, TargetCodePointer codeAddress)
+        {
+            TargetPointer startAddr = FindMethodCode(rangeSection, codeAddress); // validate that the code address is within the method's code range
+            if (startAddr == TargetPointer.Null)
+                return CodeKind.Unknown;
+            return GetCodeHeaderStubKind(rangeSection, startAddr);
         }
 
         public override void GetGCInfo(RangeSection rangeSection, TargetCodePointer jittedCodeAddress, out TargetPointer gcInfo, out uint gcVersion)
@@ -105,8 +130,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             gcVersion = 0;
 
             // EEJitManager::GetGCInfoToken
-            if (rangeSection.IsRangeList)
-                return;
+            Debug.Assert(!rangeSection.IsRangeList);
 
             if (rangeSection.Data == null)
                 throw new ArgumentException(nameof(rangeSection));
@@ -123,7 +147,7 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
             gcInfo = realCodeHeader.GCInfo;
         }
 
-        private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer jittedCodeAddress)
+        private TargetPointer FindMethodCode(RangeSection rangeSection, TargetCodePointer codeAddress)
         {
             // EEJitManager::FindMethodCode
             Debug.Assert(rangeSection.Data != null);
@@ -133,32 +157,104 @@ internal partial class ExecutionManagerCore<T> : IExecutionManager
 
             TargetPointer heapListAddress = rangeSection.Data.HeapList;
             Data.CodeHeapListNode heapListNode = Target.ProcessedData.GetOrAdd<Data.CodeHeapListNode>(heapListAddress);
-            return _nibbleMap.FindMethodCode(heapListNode, jittedCodeAddress);
+            return _nibbleMap.FindMethodCode(heapListNode, codeAddress);
+        }
+
+        public List<TargetPointer> EnumerateFunctionTableEntries(Data.CodeHeapListNode heapListNode)
+        {
+            // Port of the reverse code-header walk in OutOfProcessFunctionTableCallbackEx. Starting from
+            // the end of the used portion of the code heap, walk backwards through the nibble map to visit
+            // each method, skip stub code blocks, and collect the RUNTIME_FUNCTION entries of the real code
+            // headers. Entries are ordered by descending method start address, ascending within a method.
+            uint runtimeFunctionSize = Target.GetTypeInfo(DataType.RuntimeFunction).Size!.Value;
+            List<TargetPointer> entries = [];
+
+            TargetCodePointer current = new(heapListNode.EndAddress.Value);
+            while (true)
+            {
+                TargetPointer codeStart = _nibbleMap.FindMethodCode(heapListNode, current);
+                if (codeStart == TargetPointer.Null)
+                    break;
+
+                // The real code header pointer is stored immediately before the code start.
+                TargetPointer codeHeaderIndirect = codeStart - (ulong)Target.PointerSize;
+                TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
+
+                // Only real code headers (not stub code blocks) contribute unwind info entries.
+                if (!RangeSection.IsStubCodeBlock(Target, codeHeaderAddress))
+                {
+                    Data.RealCodeHeader realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
+                    for (uint i = 0; i < realCodeHeader.NumUnwindInfos; i++)
+                        entries.Add(realCodeHeader.UnwindInfos + (ulong)(i * runtimeFunctionSize));
+                }
+
+                if (codeStart.Value <= heapListNode.StartAddress.Value)
+                    break;
+
+                current = new TargetCodePointer(codeStart.Value - 1);
+            }
+
+            return entries;
+        }
+
+        private TargetPointer GetCodeHeaderAddress(RangeSection rangeSection, TargetPointer codeStart)
+        {
+            // EEJitManager::JitCodeToMethodInfo
+            Debug.Assert(!rangeSection.IsRangeList);
+
+            if (rangeSection.Data == null)
+                throw new ArgumentException(nameof(rangeSection));
+
+            // See EEJitManager::GetCodeHeaderFromStartAddress in vm/codeman.h
+            int codeHeaderOffset = Target.PointerSize;
+            TargetPointer codeHeaderIndirect = new TargetPointer(codeStart - (ulong)codeHeaderOffset);
+            return Target.ReadPointer(codeHeaderIndirect);
         }
 
         private bool GetRealCodeHeader(RangeSection rangeSection, TargetPointer codeStart, [NotNullWhen(true)] out Data.RealCodeHeader? realCodeHeader)
         {
             realCodeHeader = null;
-            // EEJitManager::JitCodeToMethodInfo
-            if (rangeSection.IsRangeList)
+            TargetPointer codeHeaderAddress = GetCodeHeaderAddress(rangeSection, codeStart);
+            if (RangeSection.IsStubCodeBlock(Target, codeHeaderAddress))
+            {
                 return false;
+            }
+            realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
+            return true;
+        }
+
+        private CodeKind GetCodeHeaderStubKind(RangeSection rangeSection, TargetPointer codeStart)
+        {
+            TargetPointer codeHeaderAddress = GetCodeHeaderAddress(rangeSection, codeStart);
+            if (RangeSection.IsStubCodeBlock(Target, codeHeaderAddress))
+            {
+                return GetStubKind((StubKind)codeHeaderAddress.Value);
+            }
+            return CodeKind.Jitted;
+        }
+
+        public override void GetExceptionClauses(RangeSection rangeSection, CodeBlockHandle codeInfoHandle, out TargetPointer startAddr, out TargetPointer endAddr)
+        {
+            startAddr = TargetPointer.Null;
+            endAddr = TargetPointer.Null;
 
             if (rangeSection.Data == null)
                 throw new ArgumentException(nameof(rangeSection));
 
+            Data.RealCodeHeader? realCodeHeader;
+            TargetPointer codeStart = FindMethodCode(rangeSection, new TargetCodePointer(codeInfoHandle.Address));
             if (codeStart == TargetPointer.Null)
-                return false;
+                return;
+            if (!GetRealCodeHeader(rangeSection, codeStart, out realCodeHeader) || realCodeHeader == null)
+                return;
 
-            // See EEJitManager::GetCodeHeaderFromStartAddress in vm/codeman.h
-            int codeHeaderOffset = Target.PointerSize;
-            TargetPointer codeHeaderIndirect = new TargetPointer(codeStart - (ulong)codeHeaderOffset);
-            if (RangeSection.IsStubCodeBlock(Target, codeHeaderIndirect))
-            {
-                return false;
-            }
-            TargetPointer codeHeaderAddress = Target.ReadPointer(codeHeaderIndirect);
-            realCodeHeader = Target.ProcessedData.GetOrAdd<Data.RealCodeHeader>(codeHeaderAddress);
-            return true;
+            if (realCodeHeader.EHInfo == TargetPointer.Null)
+                return;
+
+            Data.EEILException ehInfo = Target.ProcessedData.GetOrAdd<Data.EEILException>(realCodeHeader.EHInfo);
+            TargetNUInt numEHInfos = Target.ReadNUInt(ehInfo.Address - (ulong)Target.PointerSize);
+            startAddr = ehInfo.Clauses;
+            endAddr = startAddr + numEHInfos.Value * Data.EEExceptionClause.GetSize(Target);
         }
     }
 }

@@ -35,6 +35,6 @@
                           ReferenceOutputAssembly="false"
                           AdditionalProperties="%(AdditionalProperties);$(SplitSubprojectProps)"
                           Targets="Publish"
-                          Condition="$(SupportsNativeAotComponents)"/>
+                          Condition="'$(SupportsNativeAotComponents)' == 'true'"/>
     </ItemGroup>
 </Project>

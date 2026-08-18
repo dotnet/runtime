@@ -87,7 +87,7 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, MulticoreJitCode
             MulticoreJitTrace((
                 "%p %p %d %d StoredMethodCode",
                 pMD,
-                codeInfo.GetEntryPoint(),
+                (void*)codeInfo.GetEntryPoint(),
                 (int)codeInfo.WasTier0(),
                 (int)codeInfo.JitSwitchedToOptimized()));
         }
@@ -145,7 +145,7 @@ MulticoreJitCodeInfo MulticoreJitCodeStorage::QueryAndRemoveMethodCode(MethodDes
                 MulticoreJitTrace((
                     "%p %p %d %d QueryAndRemoveMethodCode",
                     pMethod,
-                    codeInfo.GetEntryPoint(),
+                    (void*)codeInfo.GetEntryPoint(),
                     (int)codeInfo.WasTier0(),
                     (int)codeInfo.JitSwitchedToOptimized()));
             }
@@ -426,7 +426,7 @@ bool MulticoreJitManager::ModuleHasNoCode(Module * pModule)
 }
 
 
-// We only support default load context, non dynamic module, non domain neutral (needed for dependency)
+// We only support default load context, non dynamic module (needed for dependency)
 bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit)
 {
     CONTRACTL
@@ -450,7 +450,7 @@ bool MulticoreJitManager::IsSupportedModule(Module * pModule, bool fMethodJit)
         return false;
     }
 
-    if (pPEAssembly->GetPath().IsEmpty()) // Ignore in-memory modules
+    if (!pPEAssembly->GetPEImage()->IsInBundle() && pPEAssembly->GetPath().IsEmpty()) // Ignore in-memory modules
     {
         return false;
     }
@@ -1037,7 +1037,7 @@ HRESULT MulticoreJitProfilePlayer::ReadCheckFile(const WCHAR * pFileName)
 
         HeaderRecord header;
 
-        size_t cbRead = fread(&header, sizeof(header), 1, fp);
+        size_t cbRead = fread(&header, 1, sizeof(header), fp);
 
         if (cbRead != sizeof(header))
         {
@@ -1127,9 +1127,12 @@ HRESULT MulticoreJitProfilePlayer::PlayProfile()
 
     unsigned nSize = m_nFileSize;
 
-    MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
-        nSize,
-        GetAppDomain()->GetFriendlyName()));
+    {
+        MAKE_UTF8PTR_FROMWIDE(pFriendlyName, GetAppDomain()->GetFriendlyName());
+        MulticoreJitTrace(("PlayProfile %d bytes in (%s)",
+            nSize,
+            pFriendlyName));
+    }
 
     while ((SUCCEEDED(hr)) && (nSize > sizeof(unsigned)))
     {

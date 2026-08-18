@@ -346,6 +346,7 @@ InlineContext::InlineContext(InlineStrategy* strategy)
     , m_Devirtualized(false)
     , m_Guarded(false)
     , m_Unboxed(false)
+    , m_IsAsyncCall(false)
     , m_ILInstsSet(nullptr)
 #endif
 {
@@ -415,27 +416,33 @@ void InlineContext::Dump(bool verbose, unsigned indent)
         const char* guarded       = m_Guarded ? " GUARDED" : "";
         const char* unboxed       = m_Unboxed ? " UNBOXED" : "";
 
+        const char* asyncness = "";
+        if (compiler->compIsAsync())
+        {
+            asyncness = m_IsAsyncCall ? " ASYNC" : " SYNC";
+        }
+
         IL_OFFSET offs = m_ActualCallOffset;
 
         if (verbose)
         {
             if (offs == BAD_IL_OFFSET)
             {
-                printf("%*s[" FMT_INL_CTX " IL=???? TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal,
+                printf("%*s[" FMT_INL_CTX " IL=???? TR=%06u %08X] [%s%s: %s%s%s%s%s] %s\n", indent, "", m_Ordinal,
                        m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
-                       calleeName);
+                       asyncness, calleeName);
             }
             else
             {
-                printf("%*s[" FMT_INL_CTX " IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s] %s\n", indent, "", m_Ordinal, offs,
+                printf("%*s[" FMT_INL_CTX " IL=%04d TR=%06u %08X] [%s%s: %s%s%s%s%s] %s\n", indent, "", m_Ordinal, offs,
                        m_TreeID, calleeToken, inlineResult, inlineTarget, inlineReason, guarded, devirtualized, unboxed,
-                       calleeName);
+                       asyncness, calleeName);
             }
         }
         else
         {
-            printf("%*s[%s%s%s%s%s] %s\n", indent, "", inlineResult, inlineReason, guarded, devirtualized, unboxed,
-                   calleeName);
+            printf("%*s[%s%s%s%s%s%s] %s\n", indent, "", inlineResult, inlineReason, guarded, devirtualized, unboxed,
+                   asyncness, calleeName);
         }
     }
 
@@ -655,6 +662,15 @@ InlineResult::InlineResult(
     const bool isPrejitRoot = false;
     m_Policy                = InlinePolicy::GetPolicy(m_RootCompiler, isPrejitRoot);
 
+#ifdef DEBUG
+    if (Compiler::compAsyncInliningStress() && call->IsAsync() && call->IsInlineCandidate() &&
+        !call->IsGuardedDevirtualizationCandidate())
+    {
+        m_Policy->NoteInt(InlineObservation::CALLSITE_ASYNC_STRESS_INDEX,
+                          call->GetSingleInlineCandidateInfo()->asyncStressIndex);
+    }
+#endif // DEBUG
+
     // Pass along some optional information to the policy.
     if (stmt != nullptr)
     {
@@ -840,6 +856,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_MaxInlineSize(DEFAULT_MAX_INLINE_SIZE)
     , m_MaxInlineDepth(DEFAULT_MAX_INLINE_DEPTH)
     , m_MaxForceInlineDepth(DEFAULT_MAX_FORCE_INLINE_DEPTH)
+    , m_OverBudgetIntrinsicInlineCount(0)
     , m_InitialTimeBudget(0)
     , m_InitialTimeEstimate(0)
     , m_CurrentTimeBudget(0)
@@ -847,6 +864,7 @@ InlineStrategy::InlineStrategy(Compiler* compiler)
     , m_InitialSizeEstimate(0)
     , m_CurrentSizeEstimate(0)
     , m_HasForceViaDiscretionary(false)
+    , m_HasHardwareIntrinsicCheck(false)
 #if defined(DEBUG)
     , m_MethodXmlFilePosition(0)
     , m_Random(nullptr)
@@ -1255,6 +1273,46 @@ bool InlineStrategy::BudgetCheck(unsigned ilSize)
 }
 
 //------------------------------------------------------------------------
+// NoteHardwareIntrinsicCheckObserved: record that the root method or an
+//   already-imported inlinee references a HW-intrinsic IsSupported /
+//   IsHardwareAccelerated capability check, and grow the inline time
+//   budget on the first such observation per root method.
+//
+// Notes:
+//   Methods with SIMD paths typically carry several ISA-specific fallbacks
+//   (e.g. Vector512/Vector256/Vector128/scalar variants), making them
+//   IL-heavy. Inlining one such callee can otherwise consume nearly the
+//   entire inline time budget for the root method, blocking subsequent
+//   inlines of trivial helpers (Span.Slice, property getters, etc.).
+//
+//   The boost is one-shot per root method and monotonic: it never lowers
+//   the current budget (preserving any prior growth from force inlines).
+//
+void InlineStrategy::NoteHardwareIntrinsicCheckObserved()
+{
+    if (m_HasHardwareIntrinsicCheck)
+    {
+        return;
+    }
+
+    m_HasHardwareIntrinsicCheck = true;
+
+    // Compute the boosted budget in 64-bit to avoid signed overflow when
+    // an unusually large JitInlineBudget is configured.
+    const int64_t boosted64 =
+        static_cast<int64_t>(m_InitialTimeBudget) * static_cast<int64_t>(SIMD_BUDGET_BOOST_MULTIPLIER);
+    const int boosted = (boosted64 > INT_MAX) ? INT_MAX : static_cast<int>(boosted64);
+
+    if (m_CurrentTimeBudget < boosted)
+    {
+        JITDUMP("\nBudget: HW intrinsic IsSupported/IsHardwareAccelerated check observed; "
+                "boosting inline time budget from %d to %d (initial=%d, multiplier=%d)\n",
+                m_CurrentTimeBudget, boosted, m_InitialTimeBudget, (int)SIMD_BUDGET_BOOST_MULTIPLIER);
+        m_CurrentTimeBudget = boosted;
+    }
+}
+
+//------------------------------------------------------------------------
 // NewRoot: construct an InlineContext for the root method
 //
 // Return Value:
@@ -1329,6 +1387,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
     context->m_Devirtualized = call->IsDevirtualized();
     context->m_Guarded       = call->IsGuarded();
     context->m_Unboxed       = call->IsUnboxed();
+    context->m_IsAsyncCall   = call->IsAsync();
     context->m_TreeID        = call->gtTreeID;
 #endif
 

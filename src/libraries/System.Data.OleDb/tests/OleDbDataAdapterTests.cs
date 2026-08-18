@@ -10,7 +10,7 @@ namespace System.Data.OleDb.Tests
     [Collection("System.Data.OleDb")] // not let tests run in parallel
     public class OleDbDataAdapterTests : OleDbTestBase
     {
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Fill_NullDataTable_Throws()
         {
             using (var adapter = (OleDbDataAdapter)OleDbFactory.Instance.CreateDataAdapter())
@@ -20,7 +20,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Fill_NoSelectCommand_Throws()
         {
             RunTest((command, tableName) => {
@@ -32,7 +32,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void DefaultCommandValues()
         {
             RunTest((command, tableName) => {
@@ -52,7 +52,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Fill_Select_Success()
         {
             RunTest((command, tableName) => {
@@ -73,7 +73,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Fill_Select_NullDataTable_Throws()
         {
             RunTest((command, tableName) => {
@@ -88,7 +88,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Update_Success()
         {
             RunTest((command, tableName) => {
@@ -126,7 +126,7 @@ namespace System.Data.OleDb.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(Helpers.IsDriverAvailable)]
+        [ConditionalFact(typeof(Helpers), nameof(Helpers.GetIsDriverAvailable))]
         public void Fill_OpenDataReader_Throws()
         {
             RunTest((command, tableName) => {

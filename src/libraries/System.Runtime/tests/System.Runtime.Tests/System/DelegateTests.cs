@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.IO;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -315,7 +314,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_ValueTypeParameterWithExplicitValue()
         {
             Assert.Equal(
@@ -324,7 +322,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DateTimeParameterWithMissingValue()
         {
             Assert.Equal(
@@ -333,7 +330,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DateTimeAndCustomConstantAttribute_DateTimeParameterWithMissingValue()
         {
             Assert.Equal(
@@ -342,7 +338,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_CustomConstantAndDateTimeAttribute_DateTimeParameterWithMissingValue()
         {
             Assert.Equal(
@@ -351,7 +346,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_CustomConstantAttribute_DateTimeParameterWithMissingValue()
         {
             Assert.Equal(
@@ -360,7 +354,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DateTimeParameterWithExplicitValue()
         {
             Assert.Equal(
@@ -369,7 +362,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DecimalParameterWithAttributeAndMissingValue()
         {
             Assert.Equal(
@@ -378,7 +370,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DecimalAndCustomConstantAttribute_DecimalParameterWithAttributeAndMissingValue()
         {
             Assert.Equal(
@@ -387,7 +378,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_CustomConstantAndDecimalAttribute_DecimalParameterWithAttributeAndMissingValue()
         {
             Assert.Equal(
@@ -396,7 +386,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_CustomConstantAttribute_DecimalParameterWithAttributeAndMissingValue()
         {
             Assert.Equal(
@@ -405,7 +394,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DecimalParameterWithAttributeAndExplicitValue()
         {
             Assert.Equal(
@@ -414,7 +402,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DecimalParameterWithMissingValue()
         {
             Assert.Equal(
@@ -423,7 +410,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_DecimalParameterWithExplicitValue()
         {
             Assert.Equal(
@@ -438,7 +424,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void DynamicInvoke_DefaultParameter_NullableIntWithExplicitValue()
         {
             Assert.Equal(
@@ -536,6 +521,42 @@ namespace System.Tests
             Assert.Equal(m1.MethodHandle.Value, m2.MethodHandle.Value);
         }
 
+        [Fact]
+        public static void DifferentOpenVirtualDelegates()
+        {
+            MethodInfo m1 = typeof(OpenVirtualClass).GetMethod(nameof(OpenVirtualClass.M1), BindingFlags.Instance | BindingFlags.NonPublic);
+            MethodInfo m2 = typeof(OpenVirtualClass).GetMethod(nameof(OpenVirtualClass.M2), BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Delegate a = m1.CreateDelegate<Action<OpenVirtualClass>>();
+            Delegate b = m2.CreateDelegate<Action<OpenVirtualClass>>();
+
+            Assert.False(a.Equals(b));
+
+            Assert.Equal(m1, a.Method);
+            Assert.Equal(m2, b.Method);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsTypeEquivalenceSupported))]
+        public static void TypeEquivalentDelegatesPointingToSameMethod_AreEqualAndHaveSameHashCode()
+        {
+            // Get the type-equivalent delegate from System.TestEquivalentTypes.dll.
+            // Both types are compiled from TestEquivalentTypes/System.TestEquivalentTypes.cs.
+            Type otherDelegateType = Type.GetType($"{typeof(EquivalentDelegate).FullName}, System.TestEquivalentTypes", throwOnError: true)!;
+            Assert.False(typeof(EquivalentDelegate).Equals(otherDelegateType));
+            Assert.True(typeof(EquivalentDelegate).IsEquivalentTo(otherDelegateType));
+
+            MethodInfo methodInfo = typeof(DelegateTests).GetMethod(nameof(DelegateEquivalentTypeTargetMethod), BindingFlags.Static | BindingFlags.NonPublic);
+            Delegate a = Delegate.CreateDelegate(typeof(EquivalentDelegate), methodInfo);
+            Delegate b = Delegate.CreateDelegate(otherDelegateType, methodInfo);
+
+            // Delegates of type-equivalent types pointing to the same method should be equal
+            // and must return the same hash code.
+            Assert.True(a.Equals(b));
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        }
+
+        private static void DelegateEquivalentTypeTargetMethod() { }
+
         class Class { internal void M() { } }
 
         struct Struct { internal void M() { } }
@@ -543,6 +564,12 @@ namespace System.Tests
         class ClassG { internal void M<Key, Value>() { } }
 
         struct StructG { internal void M<Key, Value>() { } }
+
+        class OpenVirtualClass
+        {
+            internal virtual void M1() { }
+            internal virtual void M2() { }
+        }
 
         private delegate void IntIntDelegate(int expected, int actual);
         private delegate void IntIntDelegateWithDefault(int expected, int actual = 7);
@@ -1276,6 +1303,7 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>(
                 () => Delegate.CreateDelegate(typeof(NullableIntToString), num, mi));
         }
+
         #endregion Tests
 
         #region Test Setup
@@ -1384,6 +1412,7 @@ namespace System.Tests
         public delegate int E(C c);
 
         delegate string NullableIntToString(ref int? obj);
+
         #endregion Test Setup
     }
 }

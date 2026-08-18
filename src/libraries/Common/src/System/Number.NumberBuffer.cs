@@ -21,6 +21,9 @@ namespace System
         internal const int UInt32NumberBufferLength = 10 + 1;   // 10 for the longest input: 4,294,967,295
         internal const int UInt64NumberBufferLength = 20 + 1;   // 20 for the longest input: 18,446,744,073,709,551,615
         internal const int UInt128NumberBufferLength = 39 + 1; // 39 for the longest input: 340,282,366,920,938,463,463,374,607,431,768,211,455
+        internal const int Decimal32NumberBufferLength = 7 + 1 + 1; // 7 for the longest input + 1 for rounding
+        internal const int Decimal64NumberBufferLength = 16 + 1 + 1; // 16 for the longest input + 1 for rounding
+        internal const int Decimal128NumberBufferLength = 34 + 1 + 1; // 34 for the longest input + 1 for rounding
 
         internal unsafe ref struct NumberBuffer
         {
@@ -30,6 +33,7 @@ namespace System
             public bool HasNonZeroTail;
             public NumberBufferKind Kind;
             public Span<byte> Digits;
+            /// <safety>Converts the ref to Digits into a pointer value via Unsafe.AsPointer and returns it without dereferencing; the result is not GC-tracked, so any use must be in an unsafe context that establishes Digits still refers to unmovable memory.</safety>
             public readonly byte* DigitsPtr => (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(Digits)); // safe since constructor expects Digits to refer to unmovable memory
 
             public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength) : this(kind, new Span<byte>(digits, digitsLength))
@@ -62,7 +66,7 @@ namespace System
             public void CheckConsistency()
             {
 #if DEBUG
-                Debug.Assert((Kind == NumberBufferKind.Integer) || (Kind == NumberBufferKind.Decimal) || (Kind == NumberBufferKind.FloatingPoint));
+                Debug.Assert(Kind is NumberBufferKind.Integer or NumberBufferKind.Decimal or NumberBufferKind.FloatingPoint or NumberBufferKind.DecimalIeee754);
                 Debug.Assert(Digits[0] != '0', "Leading zeros should never be stored in a Number");
 
                 int numDigits;
@@ -89,7 +93,7 @@ namespace System
             //
             public override string ToString()
             {
-                StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new();
 
                 sb.Append('[');
                 sb.Append('"');
@@ -124,6 +128,14 @@ namespace System
             Integer = 1,
             Decimal = 2,
             FloatingPoint = 3,
+
+            /// <summary>
+            /// An IEEE 754 decimal interchange format. Unlike <see cref="NumberBufferKind.FloatingPoint"/> the buffer
+            /// holds the exact coefficient rather than a pre-rounded shortest representation, so formatting must round
+            /// it; unlike <see cref="NumberBufferKind.Decimal"/> that rounding is ties-to-even and a signed zero must
+            /// survive it.
+            /// </summary>
+            DecimalIeee754 = 4,
         }
     }
 }

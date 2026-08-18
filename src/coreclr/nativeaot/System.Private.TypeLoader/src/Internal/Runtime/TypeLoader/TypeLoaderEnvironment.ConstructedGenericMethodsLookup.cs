@@ -21,6 +21,7 @@ namespace Internal.Runtime.TypeLoader
             private int? _hashCode;
             public bool _isRegisteredSuccessfully;
             public bool _isAsyncVariant;
+            public bool _isReturnDroppingAsyncThunk;
             public IntPtr _methodDictionary;
             public RuntimeTypeHandle _declaringTypeHandle;
             public MethodNameAndSignature _methodNameAndSignature;
@@ -48,6 +49,9 @@ namespace Internal.Runtime.TypeLoader
                     return false;
 
                 if (_isAsyncVariant != other._isAsyncVariant)
+                    return false;
+
+                if (_isReturnDroppingAsyncThunk != other._isReturnDroppingAsyncThunk)
                     return false;
 
                 if (!other._methodNameAndSignature.Equals(_methodNameAndSignature))
@@ -157,10 +161,13 @@ namespace Internal.Runtime.TypeLoader
 
                 int flagsAndToken = (int)entryParser.GetUnsigned();
                 bool isAsyncVariant = (flagsAndToken & GenericMethodsHashtableConstants.IsAsyncVariant) != 0;
+                bool isReturnDroppingAsyncThunk = (flagsAndToken & GenericMethodsHashtableConstants.IsReturnDroppingAsyncThunk) != 0;
                 if (_methodToLookup.AsyncVariant != isAsyncVariant)
                     return false;
+                if (_methodToLookup.ReturnDroppingAsyncThunk != isReturnDroppingAsyncThunk)
+                    return false;
 
-                int token = ((int)HandleType.Method << 25) | (flagsAndToken & ~GenericMethodsHashtableConstants.IsAsyncVariant);
+                int token = ((int)HandleType.Method << 25) | (flagsAndToken & ~(GenericMethodsHashtableConstants.IsAsyncVariant | GenericMethodsHashtableConstants.IsReturnDroppingAsyncThunk));
 
                 MethodNameAndSignature nameAndSignature = TypeLoaderEnvironment.GetMethodNameAndSignatureFromToken(moduleHandle, (uint)token);
                 if (!_methodToLookup.NameAndSignature.Equals(nameAndSignature))
@@ -190,6 +197,9 @@ namespace Internal.Runtime.TypeLoader
                     return false;
 
                 if (_methodToLookup.AsyncVariant != entry._isAsyncVariant)
+                    return false;
+
+                if (_methodToLookup.ReturnDroppingAsyncThunk != entry._isReturnDroppingAsyncThunk)
                     return false;
 
                 if (!_methodToLookup.NameAndSignature.Equals(entry._methodNameAndSignature))
@@ -300,7 +310,7 @@ namespace Internal.Runtime.TypeLoader
             if (!method.UnboxingStub && method.OwningType.IsValueType && !IsStaticMethodSignature(method.NameAndSignature))
             {
                 // Make it an unboxing stub, note the first parameter which is true
-                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, method.AsyncVariant, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
+                nonTemplateMethod = (InstantiatedMethod)method.Context.ResolveGenericMethodInstantiation(true, method.AsyncVariant, method.ReturnDroppingAsyncThunk, (DefType)method.OwningType, method.NameAndSignature, method.Instantiation);
             }
 
             // If we cannot find an exact method entry point, look for an equivalent template and compute the generic dictionary
@@ -441,7 +451,7 @@ namespace Internal.Runtime.TypeLoader
                     int flagsAndToken = (int)entryParser.GetUnsigned();
                     isAsyncVariant = (flagsAndToken & GenericMethodsHashtableConstants.IsAsyncVariant) != 0;
 
-                    int token = ((int)HandleType.Method << 25) | (flagsAndToken & ~GenericMethodsHashtableConstants.IsAsyncVariant);
+                    int token = ((int)HandleType.Method << 25) | (flagsAndToken & ~(GenericMethodsHashtableConstants.IsAsyncVariant | GenericMethodsHashtableConstants.IsReturnDroppingAsyncThunk));
 
                     nameAndSignature = new MethodNameAndSignature(module.MetadataReader, token.AsHandle().ToMethodHandle(module.MetadataReader));
 

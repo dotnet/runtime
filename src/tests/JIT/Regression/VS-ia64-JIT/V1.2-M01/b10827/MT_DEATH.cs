@@ -20830,7 +20830,7 @@ public class testout1
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingNotSupported))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/41472", typeof(PlatformDetection), nameof(PlatformDetection.IsNotMultithreadingSupported))]
     public static int TestEntryPoint()
     {
         int Sum = 0;

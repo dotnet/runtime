@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Needed for UnloadabilityIncompatible -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
+    <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CLRTestPriority>1</CLRTestPriority>
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="SampleProfilerSampleType.cs" />
+    <ProjectReference Include="../common/eventpipe_common.csproj" />
+    <ProjectReference Include="../common/Microsoft.Diagnostics.NETCore.Client/Microsoft.Diagnostics.NETCore.Client.csproj" />
+    <ProjectReference Include="$(TestLibraryProjectPath)" />
+  </ItemGroup>
+</Project>

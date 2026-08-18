@@ -17,7 +17,7 @@ namespace System.Threading.Tasks.Tests
     {
         #region ContinueWith Tests
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithAsyncStateCheckTests()
         {
             Task t = new Task(() => { });
@@ -33,14 +33,14 @@ namespace System.Threading.Tasks.Tests
 
             Task.WaitAll(c1, c2, c3, c4);
 
-            Assert.True(c1.AsyncState == null, "RunContinueWithAsyncStateCheckTests: task=>task continuation leaks state");
-            Assert.True(c2.AsyncState == null, "RunContinueWithAsyncStateCheckTests: task=>future continuation leaks state");
-            Assert.True(c3.AsyncState == null, "RunContinueWithAsyncStateCheckTests: future=>task continuation leaks state");
-            Assert.True(c4.AsyncState == null, "RunContinueWithAsyncStateCheckTests: future=>future continuation leaks state");
+            Assert.True(c1.AsyncState == null, "RunContinueWithAsyncStateCheckTests: Task=>Task continuation leaks state");
+            Assert.True(c2.AsyncState == null, "RunContinueWithAsyncStateCheckTests: Task=>Task<TResult> continuation leaks state");
+            Assert.True(c3.AsyncState == null, "RunContinueWithAsyncStateCheckTests: Task<TResult>=>Task continuation leaks state");
+            Assert.True(c4.AsyncState == null, "RunContinueWithAsyncStateCheckTests: Task<TResult>=>Task<TResult> continuation leaks state");
         }
 
         // Stresses on multiple continuations from a single antecedent
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [SkipOnCoreClr("Stress test", ~RuntimeConfiguration.Release)]
         [SkipOnMono("Stress test")]
         public static void RunContinueWithStressTestsNoState()
@@ -72,7 +72,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithPreCancelTests()
         {
             Action<Task, bool, string> EnsureCompletionStatus = delegate (Task task, bool shouldBeCompleted, string message)
@@ -131,7 +131,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinuationChainingTest()
         {
             int x = 0;
@@ -173,7 +173,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithParamsTest_Cancellation()
         {
             //
@@ -221,7 +221,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithParamsTest_IllegalArgs()
         {
             Task t1 = new Task(delegate { });
@@ -256,7 +256,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test what happens when you cancel a task in the middle of a continuation chain.
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public static void RunContinuationCancelTest(bool useTimeSpan)
@@ -306,7 +306,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithExceptionTestsNoState()
         {
             //
@@ -357,7 +357,7 @@ namespace System.Threading.Tasks.Tests
                () => { f1.ContinueWith(_ => 5, CancellationToken.None, TaskContinuationOptions.None, (TaskScheduler)null); });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinueWithAllParamsTestsNoState()
         {
             for (int i = 0; i < 2; i++)
@@ -374,7 +374,7 @@ namespace System.Threading.Tasks.Tests
 
                     for (int k = 0; k < 2; k++)
                     {
-                        bool antecedentIsFuture = (k == 0);
+                        bool antecedentHasResult = (k == 0);
                         Task antecedent = null;
 
                         for (int z = 0; z < 2; z++)
@@ -382,7 +382,7 @@ namespace System.Threading.Tasks.Tests
                             bool preCompletedTask = (z == 0);
                             if (preCompletedTask)
                             {
-                                if (antecedentIsFuture) antecedent = Task<int>.Factory.StartNew(() => 5);
+                                if (antecedentHasResult) antecedent = Task<int>.Factory.StartNew(() => 5);
                                 else antecedent = Task.Factory.StartNew(() => { });
                                 antecedent.Wait();
                             }
@@ -390,7 +390,7 @@ namespace System.Threading.Tasks.Tests
 
                             for (int x = 0; x < 2; x++)
                             {
-                                bool continuationIsFuture = (x == 0);
+                                bool continuationHasResult = (x == 0);
 
                                 //
                                 // Test ContinueWith() overloads that take all parameters
@@ -400,28 +400,28 @@ namespace System.Threading.Tasks.Tests
 
                                     if (!preCompletedTask)
                                     {
-                                        if (antecedentIsFuture) antecedent = new Task<int>(() => 5);
+                                        if (antecedentHasResult) antecedent = new Task<int>(() => 5);
                                         else antecedent = new Task(() => { });
                                     }
 
-                                    if (continuationIsFuture)
+                                    if (continuationHasResult)
                                     {
-                                        if (antecedentIsFuture)
+                                        if (antecedentHasResult)
                                         {
-                                            //Debug.WriteLine(" - Future = {2}Future.CW(func, ct({0}), tco({1}), TS.Default)", preCanceled ? "signaled" : "unsignaled", tco, preCompletedTask ? "C" : "U");
+                                            //Debug.WriteLine(" - Task<TResult> = {2}Task<TResult>.CW(func, ct({0}), tco({1}), TS.Default)", preCanceled ? "signaled" : "unsignaled", tco, preCompletedTask ? "C" : "U");
                                             continuation = ((Task<int>)antecedent).ContinueWith(_ => 5, ct, tco, TaskScheduler.Default);
                                         }
                                         else
                                         {
-                                            //Debug.WriteLine(" - Future = {2}Task.CW(func, ct({0}), tco({1}), TS.Default)", preCanceled ? "signaled" : "unsignaled", tco, preCompletedTask ? "C" : "U");
+                                            //Debug.WriteLine(" - Task<TResult> = {2}Task.CW(func, ct({0}), tco({1}), TS.Default)", preCanceled ? "signaled" : "unsignaled", tco, preCompletedTask ? "C" : "U");
                                             continuation = antecedent.ContinueWith(_ => 5, ct, tco, TaskScheduler.Default);
                                         }
                                     }
                                     else
                                     {
-                                        if (antecedentIsFuture)
+                                        if (antecedentHasResult)
                                         {
-                                            //Debug.WriteLine(" - Task = {2}Future.CW(action, ct({0}), tco({1}), TS.Default)", preCanceled ? "signaled" : "unsignaled", tco, preCompletedTask ? "C" : "U");
+                                            //Debug.WriteLine(" - Task = {2}Task<TResult>.CW(action, ct({0}), tco({1}), TS.Default)", preCanceled ? "signaled" : "unsignaled", tco, preCompletedTask ? "C" : "U");
                                             continuation = ((Task<int>)antecedent).ContinueWith(_ => { }, ct, tco, TaskScheduler.Default);
                                         }
                                         else
@@ -440,7 +440,7 @@ namespace System.Threading.Tasks.Tests
                                     try
                                     {
                                         continuation.Wait();
-                                        if (continuationIsFuture) result = ((Task<int>)continuation).Result;
+                                        if (continuationHasResult) result = ((Task<int>)continuation).Result;
                                     }
                                     catch (Exception e)
                                     {
@@ -455,8 +455,8 @@ namespace System.Threading.Tasks.Tests
                                        "RunContinueWithAllParamsTestsNoState: Got Wait() exception w/o pre-cancellation");
                                     Assert.True(continuation.CreationOptions == (TaskCreationOptions)tco,
                                        "RunContinueWithAllParamsTestsNoState: mis-matched CreationOptions");
-                                    Assert.True((result == 5) || (!continuationIsFuture || preCanceled),
-                                       "RunContinueWithAllParamsTestsNoState: Expected valid result from non-canceled Future continuation");
+                                    Assert.True((result == 5) || (!continuationHasResult || preCanceled),
+                                       "RunContinueWithAllParamsTestsNoState: Expected valid result from non-canceled Task<TResult> continuation");
                                     if (preCanceled)
                                     {
                                         Assert.True(
@@ -474,29 +474,29 @@ namespace System.Threading.Tasks.Tests
                                     Task continuation = null;
                                     if (!preCompletedTask)
                                     {
-                                        if (antecedentIsFuture) antecedent = new Task<int>(() => 5);
+                                        if (antecedentHasResult) antecedent = new Task<int>(() => 5);
                                         else antecedent = new Task(() => { });
                                     }
 
 
-                                    if (continuationIsFuture)
+                                    if (continuationHasResult)
                                     {
-                                        if (antecedentIsFuture)
+                                        if (antecedentHasResult)
                                         {
-                                            //Debug.WriteLine(" - Future = {1}Future.CW(func, ct({0}))", preCanceled ? "signaled" : "unsignaled", preCompletedTask ? "C" : "U");
+                                            //Debug.WriteLine(" - Task<TResult> = {1}Task<TResult>.CW(func, ct({0}))", preCanceled ? "signaled" : "unsignaled", preCompletedTask ? "C" : "U");
                                             continuation = ((Task<int>)antecedent).ContinueWith(_ => 5, ct);
                                         }
                                         else
                                         {
-                                            //Debug.WriteLine(" - Future = {1}Task.CW(func, ct({0}))", preCanceled ? "signaled" : "unsignaled", preCompletedTask ? "C" : "U");
+                                            //Debug.WriteLine(" - Task<TResult> = {1}Task.CW(func, ct({0}))", preCanceled ? "signaled" : "unsignaled", preCompletedTask ? "C" : "U");
                                             continuation = antecedent.ContinueWith(_ => 5, ct);
                                         }
                                     }
                                     else
                                     {
-                                        if (antecedentIsFuture)
+                                        if (antecedentHasResult)
                                         {
-                                            //Debug.WriteLine(" - Task = {1}Future.CW(action, ct({0}))", preCanceled ? "signaled" : "unsignaled", preCompletedTask ? "C" : "U");
+                                            //Debug.WriteLine(" - Task = {1}Task<TResult>.CW(action, ct({0}))", preCanceled ? "signaled" : "unsignaled", preCompletedTask ? "C" : "U");
                                             continuation = ((Task<int>)antecedent).ContinueWith(_ => { }, ct);
                                         }
                                         else
@@ -515,7 +515,7 @@ namespace System.Threading.Tasks.Tests
                                     try
                                     {
                                         continuation.Wait();
-                                        if (continuationIsFuture) result = ((Task<int>)continuation).Result;
+                                        if (continuationHasResult) result = ((Task<int>)continuation).Result;
                                     }
                                     catch (Exception e)
                                     {
@@ -528,8 +528,8 @@ namespace System.Threading.Tasks.Tests
                                        "RunContinueWithAllParamsTestsNoState overloads: Expected continuation to end as Canceled when pre-canceled");
                                     Assert.True((ex == null) || preCanceled,
                                        "RunContinueWithAllParamsTestsNoState overloads: Got Wait() exception w/o pre-cancellation");
-                                    Assert.True((result == 5) || (!continuationIsFuture || preCanceled),
-                                       "RunContinueWithAllParamsTestsNoState overloads: Expected valid result from non-canceled Future continuation");
+                                    Assert.True((result == 5) || (!continuationHasResult || preCanceled),
+                                       "RunContinueWithAllParamsTestsNoState overloads: Expected valid result from non-canceled Task<TResult> continuation");
                                     if (preCanceled)
                                     {
                                         Assert.True(
@@ -547,14 +547,14 @@ namespace System.Threading.Tasks.Tests
                                     Task continuation = null;
                                     if (!preCompletedTask)
                                     {
-                                        if (antecedentIsFuture) antecedent = new Task<int>(() => 5);
+                                        if (antecedentHasResult) antecedent = new Task<int>(() => 5);
                                         else antecedent = new Task(() => { });
                                     }
 
 
-                                    if (continuationIsFuture)
+                                    if (continuationHasResult)
                                     {
-                                        if (antecedentIsFuture)
+                                        if (antecedentHasResult)
                                         {
                                             continuation = ((Task<int>)antecedent).ContinueWith(_ => 5, tco);
                                         }
@@ -565,7 +565,7 @@ namespace System.Threading.Tasks.Tests
                                     }
                                     else
                                     {
-                                        if (antecedentIsFuture)
+                                        if (antecedentHasResult)
                                         {
                                             continuation = ((Task<int>)antecedent).ContinueWith(_ => { }, tco);
                                         }
@@ -584,7 +584,7 @@ namespace System.Threading.Tasks.Tests
                                     try
                                     {
                                         continuation.Wait();
-                                        if (continuationIsFuture) result = ((Task<int>)continuation).Result;
+                                        if (continuationHasResult) result = ((Task<int>)continuation).Result;
                                     }
                                     catch (Exception e)
                                     {
@@ -597,8 +597,8 @@ namespace System.Threading.Tasks.Tests
                                        "RunContinueWithAllParamsTestsNoState: Got Wait() exception");
                                     Assert.True(continuation.CreationOptions == (TaskCreationOptions)tco,
                                        "RunContinueWithAllParamsTestsNoState: Mis-matched CreationOptions");
-                                    Assert.True((result == 5) || (!continuationIsFuture),
-                                       "RunContinueWithAllParamsTestsNoState: Expected valid result from Future continuation");
+                                    Assert.True((result == 5) || (!continuationHasResult),
+                                       "RunContinueWithAllParamsTestsNoState: Expected valid result from Task<TResult> continuation");
                                 }
 
                                 //
@@ -613,11 +613,11 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Make sure that cancellation works for monadic versions of ContinueWith()
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunUnwrapTests()
         {
             Task taskRoot = null;
-            Task<int> futureRoot = null;
+            Task<int> taskWithResultRoot = null;
 
             Task<int> c1 = null;
             Task<int> c2 = null;
@@ -632,7 +632,7 @@ namespace System.Threading.Tasks.Tests
             // Basic functionality tests
             //
             taskRoot = new Task(delegate { });
-            futureRoot = new Task<int>(delegate { return 10; });
+            taskWithResultRoot = new Task<int>(delegate { return 10; });
             ManualResetEvent mres = new ManualResetEvent(false);
             Action<Task, bool, string> checkCompletionState = delegate (Task ctask, bool shouldBeCompleted, string scenario)
             {
@@ -643,10 +643,10 @@ namespace System.Threading.Tasks.Tests
             };
 
             c1 = taskRoot.ContinueWith((antecedent) => { return Task<int>.Factory.StartNew(delegate { mres.WaitOne(); return 1; }); }).Unwrap();
-            c2 = futureRoot.ContinueWith((antecedent) => { return Task<int>.Factory.StartNew(delegate { mres.WaitOne(); return 2; }); }).Unwrap();
+            c2 = taskWithResultRoot.ContinueWith((antecedent) => { return Task<int>.Factory.StartNew(delegate { mres.WaitOne(); return 2; }); }).Unwrap();
             var v3 = new Task<Task<int>>(delegate { return Task<int>.Factory.StartNew(delegate { mres.WaitOne(); return 3; }); });
             c3 = v3.Unwrap();
-            c4 = Task.Factory.ContinueWhenAll(new Task[] { taskRoot, futureRoot }, completedTasks =>
+            c4 = Task.Factory.ContinueWhenAll(new Task[] { taskRoot, taskWithResultRoot }, completedTasks =>
             {
                 int sum = 0;
                 for (int i = 0; i < completedTasks.Length; i++)
@@ -657,10 +657,10 @@ namespace System.Threading.Tasks.Tests
                 return Task.Factory.StartNew(delegate { mres.WaitOne(); return sum; });
             }).Unwrap();
             c5 = taskRoot.ContinueWith((antecedent) => { return Task.Factory.StartNew(delegate { mres.WaitOne(); }); }).Unwrap();
-            c6 = futureRoot.ContinueWith((antecedent) => { return Task.Factory.StartNew(delegate { mres.WaitOne(); }); }).Unwrap();
+            c6 = taskWithResultRoot.ContinueWith((antecedent) => { return Task.Factory.StartNew(delegate { mres.WaitOne(); }); }).Unwrap();
             var v7 = new Task<Task>(delegate { return Task.Factory.StartNew(delegate { mres.WaitOne(); }); });
             c7 = v7.Unwrap();
-            c8 = Task.Factory.ContinueWhenAny(new Task[] { taskRoot, futureRoot }, winner =>
+            c8 = Task.Factory.ContinueWhenAny(new Task[] { taskRoot, taskWithResultRoot }, winner =>
             {
                 return Task.Factory.StartNew(delegate { mres.WaitOne(); });
             }).Unwrap();
@@ -676,7 +676,7 @@ namespace System.Threading.Tasks.Tests
             checkCompletionState(c8, false, "ContinueWhenAny => Task, antecedent unstarted");
 
             taskRoot.Start();
-            futureRoot.Start();
+            taskWithResultRoot.Start();
             v3.Start();
             v7.Start();
 
@@ -784,11 +784,11 @@ namespace System.Threading.Tasks.Tests
             //catch (Exception e) {  }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunUnwrapTests_ExceptionTests()
         {
             Task taskRoot = null;
-            Task<int> futureRoot = null;
+            Task<int> taskWithResultRoot = null;
 
             Task<int> c1 = null;
             Task<int> c2 = null;
@@ -804,17 +804,17 @@ namespace System.Threading.Tasks.Tests
             // Exception tests
             //
             taskRoot = new Task(delegate { });
-            futureRoot = new Task<int>(delegate { return 10; });
+            taskWithResultRoot = new Task<int>(delegate { return 10; });
             c1 = taskRoot.ContinueWith(delegate (Task t) { doExc(); return Task<int>.Factory.StartNew(delegate { return 1; }); }).Unwrap();
-            c2 = futureRoot.ContinueWith(delegate (Task<int> t) { doExc(); return Task<int>.Factory.StartNew(delegate { return 2; }); }).Unwrap();
+            c2 = taskWithResultRoot.ContinueWith(delegate (Task<int> t) { doExc(); return Task<int>.Factory.StartNew(delegate { return 2; }); }).Unwrap();
             c3 = taskRoot.ContinueWith(delegate (Task t) { return Task<int>.Factory.StartNew(delegate { doExc(); return 3; }); }).Unwrap();
-            c4 = futureRoot.ContinueWith(delegate (Task<int> t) { return Task<int>.Factory.StartNew(delegate { doExc(); return 4; }); }).Unwrap();
+            c4 = taskWithResultRoot.ContinueWith(delegate (Task<int> t) { return Task<int>.Factory.StartNew(delegate { doExc(); return 4; }); }).Unwrap();
             c5 = taskRoot.ContinueWith(delegate (Task t) { doExc(); return Task.Factory.StartNew(delegate { }); }).Unwrap();
-            c6 = futureRoot.ContinueWith(delegate (Task<int> t) { doExc(); return Task.Factory.StartNew(delegate { }); }).Unwrap();
+            c6 = taskWithResultRoot.ContinueWith(delegate (Task<int> t) { doExc(); return Task.Factory.StartNew(delegate { }); }).Unwrap();
             c7 = taskRoot.ContinueWith(delegate (Task t) { return Task.Factory.StartNew(delegate { doExc(); }); }).Unwrap();
-            c8 = futureRoot.ContinueWith(delegate (Task<int> t) { return Task.Factory.StartNew(delegate { doExc(); }); }).Unwrap();
+            c8 = taskWithResultRoot.ContinueWith(delegate (Task<int> t) { return Task.Factory.StartNew(delegate { doExc(); }); }).Unwrap();
             taskRoot.Start();
-            futureRoot.Start();
+            taskWithResultRoot.Start();
 
             Action<Task, string> excTest = delegate (Task ctask, string scenario)
             {
@@ -846,11 +846,11 @@ namespace System.Threading.Tasks.Tests
             try
             {
                 taskRoot.Wait();
-                futureRoot.Wait();
+                taskWithResultRoot.Wait();
             }
             catch (Exception e)
             {
-                Assert.Fail(string.Format("RunUnwrapTests: > FAILED.  Exception thrown while waiting for task/futureRoots used for exception testing: {0}", e));
+                Assert.Fail(string.Format("RunUnwrapTests: > FAILED.  Exception thrown while waiting for task/taskWithResultRoots used for exception testing: {0}", e));
             }
 
 
@@ -883,11 +883,11 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunUnwrapTests_CancellationTests()
         {
             Task taskRoot = null;
-            Task<int> futureRoot = null;
+            Task<int> taskWithResultRoot = null;
 
             Task<int> c1 = null;
             Task<int> c2 = null;
@@ -910,7 +910,7 @@ namespace System.Threading.Tasks.Tests
             ManualResetEvent mres = new ManualResetEvent(false);
 
             taskRoot = new Task(delegate { });
-            futureRoot = new Task<int>(delegate { return 20; });
+            taskWithResultRoot = new Task<int>(delegate { return 20; });
             Task container = Task.Factory.StartNew(delegate
             {
                 c1 = taskRoot.ContinueWith(delegate (Task antecedent)
@@ -919,7 +919,7 @@ namespace System.Threading.Tasks.Tests
                     return rval;
                 }, ctsForC1.Token).Unwrap();
 
-                c2 = futureRoot.ContinueWith(delegate (Task<int> antecedent)
+                c2 = taskWithResultRoot.ContinueWith(delegate (Task<int> antecedent)
                 {
                     Task<int> rval = new Task<int>(delegate { c2val = 1; return 10; });
                     return rval;
@@ -931,7 +931,7 @@ namespace System.Threading.Tasks.Tests
                     return rval;
                 }, ctsForC5.Token).Unwrap();
 
-                c6 = futureRoot.ContinueWith(delegate (Task<int> antecedent)
+                c6 = taskWithResultRoot.ContinueWith(delegate (Task<int> antecedent)
                 {
                     Task rval = new Task(delegate { c6val = 1; });
                     return rval;
@@ -1001,12 +1001,12 @@ namespace System.Threading.Tasks.Tests
             container.Wait();
 
             taskRoot.Start();
-            futureRoot.Start();
+            taskWithResultRoot.Start();
 
             try
             {
                 taskRoot.Wait();
-                futureRoot.Wait();
+                taskWithResultRoot.Wait();
             }
             catch (Exception e)
             {
@@ -1035,7 +1035,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test what happens when you cancel a task in the middle of a continuation chain.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunContinuationCancelTest_State()
         {
             bool t1Ran = false;
@@ -1075,7 +1075,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void TestNoDeadlockOnContinueWith()
         {
@@ -1093,7 +1093,7 @@ namespace System.Threading.Tasks.Tests
             Debug.WriteLine("Success!");
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunLazyCancellationTests()
         {
             for (int i = 0; i < 2; i++)
@@ -1149,7 +1149,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunLazyCancellationTests_Negative()
         {
             for (int i = 0; i < 2; i++)
@@ -1239,7 +1239,7 @@ namespace System.Threading.Tasks.Tests
             t.Wait();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void LongContinuationChain_Unwrap_DoesNotStackOverflow()
         {
             const int DiveDepth = 12_000;
@@ -1255,7 +1255,7 @@ namespace System.Threading.Tasks.Tests
             func(DiveDepth).Wait();
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void LongContinuationChain_Await_DoesNotStackOverflow()
         {
@@ -1271,7 +1271,7 @@ namespace System.Threading.Tasks.Tests
             func(0).Wait();
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public static void TestNoDeadlockOnContinueWithExecuteSynchronously(bool useWaitAll)

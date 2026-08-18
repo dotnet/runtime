@@ -90,6 +90,8 @@ class GenerateHWIntrinsicTests_Arm
         string outputDirectory = args[2];
         string testListFileName = args[3];
 
+        Directory.CreateDirectory(outputDirectory);
+
         ProcessInputs(AdvSimdTests.AdvSimdInputs);
         ProcessInputs(AdvSimdTests.AdvSimd_Arm64Inputs);
         ProcessInputs(AdvSimdTests.AesInputs);
@@ -99,12 +101,15 @@ class GenerateHWIntrinsicTests_Arm
         ProcessInputs(AdvSimdTests.Rdm_Arm64Inputs);
         ProcessInputs(AdvSimdTests.Sha1Inputs);
         ProcessInputs(AdvSimdTests.Sha256Inputs);
-        ProcessInputs(AdvSimdTests.Sha256Inputs);
+        ProcessInputs(AdvSimdTests.Sha3Inputs);
+        ProcessInputs(AdvSimdTests.Sm4Inputs);
         ProcessInputs(BaseTests.ArmBaseInputs);
         ProcessInputs(BaseTests.ArmBase_Arm64Inputs);
         ProcessInputs(BaseTests.Crc32Inputs);
         ProcessInputs(SveTests.SveInputs);
         ProcessInputs(Sve2Tests.Sve2Inputs);
+        ProcessInputs(SveTests.SveSha3Inputs);
+        ProcessInputs(SveTests.SveSm4Inputs);
 
         void ProcessInputs(TestGroup testGroup)
         {
@@ -112,8 +117,6 @@ class GenerateHWIntrinsicTests_Arm
             {
                 return;
             }
-
-            Directory.CreateDirectory(outputDirectory);
 
             using (var testListFile = new StreamWriter(testListFileName, append: false))
             {

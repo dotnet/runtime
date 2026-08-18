@@ -2,11 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 
 namespace Microsoft.Diagnostics.DataContractReader.Contracts;
 
 internal readonly struct Exception_1 : IException
 {
+    // StackTraceElementFlags values from src/coreclr/vm/clrex.h.
+    private const int STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001;
+    private const int STEF_IP_ADJUSTED = 0x0002;
+    private const int STEF_CONTINUATION = 0x0008;
+
     private readonly Target _target;
 
     internal Exception_1(Target target)
@@ -14,12 +20,17 @@ internal readonly struct Exception_1 : IException
         _target = target;
     }
 
-    TargetPointer IException.GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo)
+    TargetPointer IException.GetNestedExceptionInfo(TargetPointer exceptionInfoAddr, out TargetPointer nextNestedExceptionInfo, out TargetPointer thrownObjectHandle)
     {
         Data.ExceptionInfo exceptionInfo = _target.ProcessedData.GetOrAdd<Data.ExceptionInfo>(exceptionInfoAddr);
         nextNestedExceptionInfo = exceptionInfo.PreviousNestedInfo;
-        Data.ObjectHandle throwableObject = _target.ProcessedData.GetOrAdd<Data.ObjectHandle>(exceptionInfo.ThrownObjectHandle);
-        return throwableObject.Object;
+        // ThrownObject is a direct object pointer stored in ExInfo::m_exception.
+        // Return the address of the field as a "handle" - reading through it yields the
+        // exception Object*. This has the same lifetime as the ExInfo (both are invalidated
+        // when PopExInfos calls ReleaseResources). See dacimpl.h for the equivalent native
+        // DAC documentation.
+        thrownObjectHandle = exceptionInfoAddr + (ulong)Data.ExceptionInfo.GetThrownObjectOffset(_target);
+        return exceptionInfo.ThrownObject;
     }
 
     ExceptionData IException.GetExceptionData(TargetPointer exceptionAddr)
@@ -34,5 +45,71 @@ internal readonly struct Exception_1 : IException
             exception.RemoteStackTraceString,
             exception.HResult,
             exception.XCode);
+    }
+
+    IEnumerable<ExceptionStackFrameInfo> IException.GetExceptionStackFrames(TargetPointer exceptionAddr)
+    {
+        Data.Exception exception = _target.ProcessedData.GetOrAdd<Data.Exception>(exceptionAddr);
+        TargetPointer stackTraceObj = exception.StackTrace;
+        if (stackTraceObj == TargetPointer.Null)
+            yield break;
+
+        // Path 1: the stack trace object's MethodTable ContainsGCPointers. The object is a
+        //         combined object[] whose first slot is the actual stack-trace I1Array and
+        //         whose subsequent slots are the keep-alive references. We unwrap to slot 0.
+        // Path 2: the stack trace object is itself the I1Array payload.
+        IObject objectContract = _target.Contracts.Object;
+        IRuntimeTypeSystem rtsContract = _target.Contracts.RuntimeTypeSystem;
+
+        TargetPointer mt = objectContract.GetMethodTableAddress(stackTraceObj);
+        if (mt == TargetPointer.Null)
+            throw new InvalidOperationException($"Stack trace object 0x{stackTraceObj.Value:x} has no MethodTable.");
+        ITypeHandle stackTraceHandle = rtsContract.GetTypeHandle(mt);
+
+        TargetPointer i1ArrayAddr;
+        if (rtsContract.ContainsGCPointers(stackTraceHandle))
+        {
+            // Combined PTRArray; slot 0 holds the I1Array pointer.
+            Data.Array combinedArray = _target.ProcessedData.GetOrAdd<Data.Array>(stackTraceObj);
+            i1ArrayAddr = _target.ReadPointer(combinedArray.DataPointer);
+        }
+        else
+        {
+            i1ArrayAddr = stackTraceObj;
+        }
+
+        if (i1ArrayAddr == TargetPointer.Null)
+            yield break;
+
+        Data.Array i1Array = _target.ProcessedData.GetOrAdd<Data.Array>(i1ArrayAddr);
+        TargetPointer payload = i1Array.DataPointer;
+
+        Data.StackTraceArrayHeader header = _target.ProcessedData.GetOrAdd<Data.StackTraceArrayHeader>(payload);
+        uint frameCount = header.Size;
+        if (frameCount == 0)
+            yield break;
+
+        ulong elementSize = Data.StackTraceElement.GetSize(_target);
+        bool compensateForOldEhIp = _target.Contracts.RuntimeInfo.GetTargetArchitecture() is RuntimeInfoArchitecture.X64;
+
+        uint headerSize = Data.StackTraceArrayHeader.GetSize(_target);
+        TargetPointer cursor = payload + headerSize;
+        for (uint i = 0; i < frameCount; i++)
+        {
+            Data.StackTraceElement element = _target.ProcessedData.GetOrAdd<Data.StackTraceElement>(cursor);
+            TargetPointer ip = element.Ip;
+            if (compensateForOldEhIp
+                && i == 0
+                && (element.Flags & (STEF_IP_ADJUSTED | STEF_CONTINUATION)) == 0)
+            {
+                ip = new TargetPointer(ip.Value - 1);
+            }
+
+            yield return new ExceptionStackFrameInfo(
+                ip,
+                element.MethodDesc,
+                (element.Flags & STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE) != 0);
+            cursor += elementSize;
+        }
     }
 }

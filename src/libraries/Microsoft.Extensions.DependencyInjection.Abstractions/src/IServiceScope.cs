@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     /// <remarks>
     /// The <see cref="System.IDisposable.Dispose"/> method ends the scope lifetime. Once Dispose
-    /// is called, any scoped services that have been resolved from
+    /// is called, any scoped services and any transient services that have been resolved from
     /// <see cref="Microsoft.Extensions.DependencyInjection.IServiceScope.ServiceProvider"/> will be
     /// disposed.
     /// </remarks>

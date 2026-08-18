@@ -19,11 +19,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         {
             switch (_thunkKind)
             {
-                case Kind.Eager:
+                case ImportThunkKind.Eager:
                     break;
 
-                case Kind.DelayLoadHelper:
-                case Kind.VirtualStubDispatch:
+                case ImportThunkKind.DelayLoadHelper:
+                case ImportThunkKind.VirtualStubDispatch:
                     instructionEncoder.EmitXOR(Register.EAX, Register.EAX);
 
                     if (!relocsOnly)
@@ -37,7 +37,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                     break;
 
-                case Kind.Lazy:
+                case ImportThunkKind.Lazy:
                     // mov edx, [module]
                     instructionEncoder.EmitMOV(Register.EDX, factory.ModuleImport);
                     break;

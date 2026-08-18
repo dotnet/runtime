@@ -3,9 +3,9 @@ name: performance-benchmark
 description: Generate and run ad hoc performance benchmarks to validate code changes. Use this when asked to benchmark, profile, or validate the performance impact of a code change in dotnet/runtime.
 ---
 
-# Ad Hoc Performance Benchmarking
+# Ad Hoc Performance Benchmarking Locally (or with @EgorBot)
 
-When you need to validate the performance impact of a code change, follow this process to write a BenchmarkDotNet benchmark and trigger EgorBot to run it.
+When you need to validate the performance impact of a code change, follow this process to write a BenchmarkDotNet benchmark and compare local baseline and changed builds.
 
 ## Step 1: Write the Benchmark
 
@@ -120,50 +120,90 @@ public class Bench
 }
 ```
 
-## Step 2: Post the EgorBot Comment
+## Step 2: Prepare Baseline and Changed Runtime Builds
 
-Post a comment on the PR to trigger EgorBot with your benchmark. The general format is:
+At this point the change is typically already present in the working tree.
+
+1. Save only the intended changes safely in a commit, patch, or separate worktree. Do not stash or revert unrelated changes.
+2. Temporarily remove the changes and return the source to the baseline state.
+3. Build Release runtime and testhost artifacts. For JIT, VM, and shared-framework library changes, run the repository build script for the current operating system with:
+
+```text
+./build.cmd|.sh clr+libs -rc Release -lc Release
+```
+
+The `libs` subset includes `libs.pretest`, which constructs and updates the testhost. The `libs.tests` subset is not needed for benchmarking.
+
+4. Copy the generated testhost directory next to itself as `testhost_baseline`:
+
+```text
+artifacts/bin/testhost -> artifacts/bin/testhost_baseline
+```
+
+5. Restore the changes and run exactly the same Release build again. You can save time by just copying the changed bit to the artifacts/bin/testhost if you know exactly which component was changed.
+
+The baseline remains in `artifacts/bin/testhost_baseline`, while the normal `artifacts/bin/testhost` directory now contains the changed runtime. Use the corresponding `CoreRun` executable under each directory.
+
+Copying the directory preserves the baseline while leaving the normal testhost and other artifacts available for an incremental changed build. If the changed runtime was already built before restoring the baseline source, clean or explicitly rebuild the affected component to avoid capturing stale binaries.
+
+For libraries outside the shared framework, build the library in Release and place the exact baseline or changed assembly, plus required dependencies, beside the corresponding `CoreRun`. Use the same layout for both testhosts.
+
+## Step 3: Run the Benchmark Locally
+
+Run the benchmark created in Step 1 against both hosts. The first `CoreRun` is the baseline:
 
 ```
-@EgorBot [target flags] [options] [BenchmarkDotNet args]
+dotnet run -c Release -- --filter "*" --coreRun "<baseline-corerun>" "<changed-corerun>"
+```
+
+Use a BenchmarkDotNet version compatible with the repository's current target framework. If it fails with `GetRuntimeVersion not implemented for NotRecognized`, update BenchmarkDotNet to a compatible preview or nightly version.
+
+Optionally, you can pass additional environment variables to the benchmark process using `--envvars`. For example, to enable JIT disassembly for a specific method:
+
+```
+--envvars DOTNET_JitDisasm:MethodName
+```
+
+## @EgorBot Usage
+
+[@EgorBot](https://github.com/EgorBo/EgorBot/blob/main/README.md) is a GitHub bot that runs BenchmarkDotNet snippets against `dotnet/runtime` PR changes and reports comparisons with the PR's base branch. It is only useful on GitHub for PRs in the `dotnet/runtime` repository.
+
+Only use @EgorBot when the user explicitly asks for it. Prefer the local workflow above otherwise. The bot will notify you when results are ready, so do not wait for them.
+
+Post a comment on the PR to trigger EgorBot with the benchmark. The general format is:
+
+> 📝 **AI-generated content disclosure:** When posting benchmark comments to GitHub under a user's credentials — i.e., the account is **not** a dedicated "copilot" or "bot" account/app (e.g., `github-actions[bot]`, `copilot`) — you **MUST** include a concise, visible note (e.g. a `> [!NOTE]` alert) at the bottom of the content indicating the content was AI/Copilot-generated. Skip this if the user explicitly asks you to omit it.
+
+@EgorBot [targets] [options] [BenchmarkDotNet args]
 
 ```cs
 // Your benchmark code here
 ```
-```
+> **Note:** When using @EgorBot, follow these formatting rules:
+> - The @EgorBot command must not be inside the code block.
+> - Only the benchmark code should be inside the code block.
+> - Do not place any additional text between the @EgorBot command line and the code block, as EgorBot will treat it as additional command arguments.
 
-### Target Flags (Required - Choose at Least One)
+### Target Flags
 
-| Flag | Architecture | Description |
-|------|--------------|-------------|
-| `-x64` or `-amd` | x64 | Linux Azure Genoa (AMD EPYC) - default x64 target |
-| `-arm` | ARM64 | Linux Azure Cobalt100 (Neoverse-N2) |
-| `-intel` | x64 | Azure Cascade Lake (more flaky due to JCC Erratum and loop alignment sensitivity) |
-| `-windows_x64` | x64 | Windows x64 (when Windows-specific testing is needed) |
+- `-linux_amd`
+- `-linux_intel`
+- `-windows_amd`
+- `-windows_intel`
+- `-linux_arm64`
+- `-osx_arm64` (baremetal, feel free to always include it)
 
-**Choosing targets:**
-
-- **Default for most changes**: Use `-x64` for quick verification of non-architecture/non-OS specific changes
-- **Default when ARM might differ**: Use `-x64 -arm` if there's any suspicion the change might behave differently on ARM
-- **Windows-specific changes**: Use `-windows_x64` when Windows behavior needs testing
-- **Noisy results suspected**: Use `-arm -intel -amd` to get results from multiple x64 CPUs (note: `-intel` targets are more flaky)
+The most common combination is `-linux_amd -osx_arm64`. Do not include more than 3 targets.
 
 ### Common Options
 
-| Option | Description |
-|--------|-------------|
-| `-profiler` | Collect flamegraph/hot assembly using perf record |
-| `--envvars KEY:VALUE` | Set environment variables (e.g., `DOTNET_JitDisasm:MethodName`) |
-| `-commit <hash>` | Run against a specific commit |
-| `-commit <hash1> vs <hash2>` | Compare two commits |
-| `-commit <hash> vs previous` | Compare commit with its parent |
+Use `-profiler` when absolutely necessary along with `-linux_arm64` and/or `-linux_amd` to include `perf` profiling and disassembly in the results.
 
 ### Example: Basic PR Benchmark
 
 To benchmark the current PR changes against the base branch:
 
-```
-@EgorBot -x64 -arm
+@EgorBot -linux_amd -osx_arm64
 
 ```cs
 using BenchmarkDotNet.Attributes;
@@ -182,61 +222,6 @@ public class Bench
     }
 }
 ```
-```
-
-### Example: Benchmark with Profiling and Disassembly
-
-```
-@EgorBot -x64 -profiler --envvars DOTNET_JitDisasm:SumArray
-
-```cs
-using System.Linq;
-using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
-
-BenchmarkSwitcher.FromAssembly(typeof(Bench).Assembly).Run(args);
-
-public class Bench
-{
-    private int[] _data = Enumerable.Range(0, 1000).ToArray();
-
-    [Benchmark]
-    public int SumArray() => _data.Sum();
-}
-```
-```
-
-### Example: Compare Two Commits
-
-```
-@EgorBot -amd -commit abc1234 vs def5678
-
-```cs
-using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
-
-BenchmarkSwitcher.FromAssembly(typeof(Bench).Assembly).Run(args);
-
-public class Bench
-{
-    [Benchmark]
-    public void TestMethod()
-    {
-        // Benchmark code
-    }
-}
-```
-```
-
-### Example: Run Existing dotnet/performance Benchmarks
-
-To run benchmarks from the dotnet/performance repository (no code snippet needed):
-
-```
-@EgorBot -arm -intel --filter `*TryGetValueFalse<String, String>*`
-```
-
-**Note**: Surround filter expressions with backticks to avoid issues with special characters.
 
 ## Important Notes
 
@@ -244,11 +229,10 @@ To run benchmarks from the dotnet/performance repository (no code snippet needed
 - **Supported repositories**: EgorBot monitors `dotnet/runtime` and `EgorBot/runtime-utils`
 - **PR mode (default)**: When posting in a PR, EgorBot automatically compares the PR changes against the base branch
 - **Results variability**: Results may vary between runs due to VM differences. Do not compare results across different architectures or cloud providers
-- **Check the manual**: EgorBot replies include a link to the [manual](https://github.com/EgorBot/runtime-utils) for advanced options
+- **Check the manual**: EgorBot replies include a link to the [manual](https://github.com/EgorBo/EgorBot?tab=readme-ov-file#github-usage) for advanced options
 
 ## Additional Resources
 
 - [Microbenchmark Design Guidelines](https://github.com/dotnet/performance/blob/main/docs/microbenchmark-design-guidelines.md) - Essential reading for writing effective benchmarks
 - [BenchmarkDotNet CLI Arguments](https://github.com/dotnet/BenchmarkDotNet/blob/master/docs/articles/guides/console-args.md)
-- [EgorBot Manual](https://github.com/EgorBot/runtime-utils)
-- [BenchmarkDotNet Filter Simulator](http://egorbot.westus2.cloudapp.azure.com:5042/microbenchmarks)
+- [EgorBot Manual](https://github.com/EgorBo/EgorBot?tab=readme-ov-file#github-usage)

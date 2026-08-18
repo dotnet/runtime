@@ -157,6 +157,13 @@ namespace Microsoft.Extensions
             public int Length { get; } = length;
         }
 
+        public class ClassWithPrimaryCtorAndIgnoredProperty(string color, int length)
+        {
+            [ConfigurationIgnore]
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+        }
+
         public class ClassWithPrimaryCtorDefaultValues(string color = "blue", int length = 15, decimal height = 5.946238490567943927384M, EditorBrowsableState eb = EditorBrowsableState.Never)
         {
             public string Color { get; } = color;
@@ -168,6 +175,39 @@ namespace Microsoft.Extensions
 
         public record Line(string Color, int Length, int Thickness);
 
+        public enum ConstructorParameterKind
+        {
+            StringType,
+            ObjectType,
+            NullableValueType,
+            ComplexType,
+            ArrayType,
+        }
+
+        public record RecordWithStringValue(string Value);
+
+        public record RecordWithObjectValue(object Value);
+
+        public record RecordWithNullableIntValue(int? Value);
+
+        public record RecordWithIntValue(int Value);
+
+        public record RecordWithComplexValue(NestedOptions Value);
+
+        public record RecordWithArrayValue(string[] Value);
+
+        public record RecordWithDefaultedStringValue(string Value = "fallback");
+
+        public record RecordWithDefaultedObjectValue(object Value = null);
+
+        public record RecordWithDefaultedNullableIntValue(int? Value = 42);
+
+        public record RecordWithDefaultedIntValue(int Value = 42);
+
+        public record RecordWithDefaultedComplexValue(NestedOptions Value = null);
+
+        public record RecordWithDefaultedArrayValue(string[] Value = null);
+
         public class ClassWithMatchingParametersAndProperties
         {
             private readonly string _color;
@@ -177,6 +217,27 @@ namespace Microsoft.Extensions
                 _color = Color;
                 this.ColorFromCtor = Color;
                 this.Length = Length;
+            }
+
+            public int Length { get; set; }
+
+            public string ColorFromCtor { get; }
+            public string Color
+            {
+                get => _color;
+                init => _color = "the color is " + value;
+            }
+        }
+
+        public class ClassWithMatchingParametersAndProperties_DifferentlyCasedCtorParam
+        {
+            private readonly string _color;
+
+            public ClassWithMatchingParametersAndProperties_DifferentlyCasedCtorParam(string color, int length)
+            {
+                _color = color;
+                this.ColorFromCtor = color;
+                this.Length = length;
             }
 
             public int Length { get; set; }
@@ -213,6 +274,70 @@ namespace Microsoft.Extensions
         }
 
         public record RecordWithArrayParameter(string[] Array);
+
+        public class GetterOnlyCollectionWithCaseMismatchedCtorParameter
+        {
+            public GetterOnlyCollectionWithCaseMismatchedCtorParameter(List<string> instances) => Instances = instances;
+            public List<string> Instances { get; }
+        }
+
+        public class SettableCollectionWithCaseMismatchedCtorParameter
+        {
+            public SettableCollectionWithCaseMismatchedCtorParameter(List<string> instances) => Instances = instances;
+            public List<string> Instances { get; set; }
+        }
+
+        public class GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter
+        {
+            public GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter(IList<string> instances) => Instances = instances;
+            public IList<string> Instances { get; }
+        }
+
+        public sealed class ContainerWithCtorCollectionChild
+        {
+            public GetterOnlyInterfaceCollectionWithCaseMismatchedCtorParameter Child { get; set; }
+        }
+
+        public class ParamsCollectionCtor
+        {
+            public ParamsCollectionCtor(params List<string> instances) => Instances = instances;
+            public List<string> Instances { get; }
+        }
+
+        public sealed class SourceWithCollectionCtorParameters
+        {
+            public SourceWithCollectionCtorParameters(string Name, IEnumerable<string> Addresses, IList<int> Ints, string[] Strings)
+            {
+                this.Name = Name;
+                this.Addresses = Addresses;
+                this.Ints = Ints;
+                this.Strings = Strings;
+            }
+
+            public string Name { get; }
+            public IEnumerable<string> Addresses { get; }
+            public IList<int> Ints { get; }
+            public string[] Strings { get; }
+        }
+
+        public sealed class ClassWithInitOnlyCollectionNoCtorParam
+        {
+            public ClassWithInitOnlyCollectionNoCtorParam(int Number) => this.Number = Number;
+            public int Number { get; }
+            public List<string> Items { get; init; }
+        }
+
+        public sealed class ClassWithInitOnlyComplexNoCtorParam
+        {
+            public ClassWithInitOnlyComplexNoCtorParam(int Number) => this.Number = Number;
+            public int Number { get; }
+            public NestedForInitOnly Child { get; init; }
+        }
+
+        public sealed class NestedForInitOnly
+        {
+            public string Value { get; set; }
+        }
 
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
@@ -988,6 +1113,23 @@ namespace Microsoft.Extensions
             public AbstractBase AbstractProp { get; set; }
         }
 
+        internal class ClassWithGetterOnlyProperties
+        {
+            public ClassWithGetterOnlyProperties(bool initializeProperties)
+            {
+                if (initializeProperties)
+                {
+                    Nested = new();
+                    Collection = ["existing"];
+                    Abstract = new Derived();
+                }
+            }
+
+            public NestedOptions? Nested { get; }
+            public List<string>? Collection { get; }
+            public AbstractBase? Abstract { get; }
+        }
+
         internal class ClassWithAbstractCtorParam
         {
             public AbstractBase AbstractProp { get; }
@@ -1190,5 +1332,15 @@ namespace Microsoft.Extensions
             public NestedWithIEnumerable? Source { get; set; }
         }
         internal sealed record NestedWithIEnumerable(string Name, IEnumerable<string> Addresses);
+
+        public class ClassWithArrayConstructorParameter
+        {
+            public ClassWithArrayConstructorParameter(string[] arrayField = null)
+            {
+                ArrayField = arrayField;
+            }
+
+            public string[] ArrayField { get; }
+        }
     }
 }

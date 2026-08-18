@@ -6,7 +6,7 @@
 # IMPORTANT: This file is specific to the Emscripten version and WebAssembly target.
 # 
 # Valid for:
-#   - Emscripten version: 3.1.56
+#   - Emscripten version: 6.0.2
 #   - Target: wasm32-unknown-emscripten (browser-wasm)
 #   - Architecture: wasm32
 #   - OS: browser/Emscripten
@@ -20,6 +20,10 @@
 # HOW TO USE:
 #   Automatically applied when building for browser-wasm. No special flags needed:
 #     ./build.sh -subset clr.runtime -os browser -arch wasm -c Debug
+#
+# OVERRIDES:
+#   We don't want to use all emulators which are available in Emscripten.
+#   - HAVE_SYS_SOCKET_H
 #
 # VERSION TRACKING:
 #   The TRYRUN_BROWSER_EMSCRIPTEN_VERSION variable at the top of this file tracks
@@ -81,7 +85,7 @@
 #        mv eng/native/tryrun.browser.cmake.bak eng/native/tryrun.browser.cmake
 
 # Version tracking: This cache is valid for the following Emscripten version
-set(TRYRUN_BROWSER_EMSCRIPTEN_VERSION "3.1.56" CACHE INTERNAL "Emscripten version this cache was generated for")
+set(TRYRUN_BROWSER_EMSCRIPTEN_VERSION "6.0.2" CACHE INTERNAL "Emscripten version this cache was generated for")
 
 # Macro to set cache values (same as eng/native/tryrun.cmake)
 macro(set_cache_value)
@@ -130,9 +134,6 @@ set(HAVE_CFSETSPEED 1 CACHE INTERNAL "")
 set(HAVE_CHMOD 1 CACHE INTERNAL "")
 set(HAVE_CLOCK_GETTIME_NSEC_NP "" CACHE INTERNAL "")
 set(HAVE_CLOCK_MONOTONIC_COARSE 1 CACHE INTERNAL "")
-set(HAVE_CLOCK_MONOTONIC_COMPILED TRUE CACHE INTERNAL "")
-set_cache_value(HAVE_CLOCK_MONOTONIC_EXITCODE 0)
-set(HAVE_CLOCK_MONOTONIC 1 CACHE INTERNAL "")
 set(HAVE_CLOCK_THREAD_CPUTIME_COMPILED TRUE CACHE INTERNAL "")
 set_cache_value(HAVE_CLOCK_THREAD_CPUTIME_EXITCODE 255)
 set(HAVE_CLOCK_THREAD_CPUTIME "" CACHE INTERNAL "")
@@ -313,7 +314,6 @@ set(HAVE_STDDEF_H 1 CACHE INTERNAL "")
 set(HAVE_STDINT_H 1 CACHE INTERNAL "")
 set(HAVE_STRCPY_S "" CACHE INTERNAL "")
 set(HAVE_STRERROR 1 CACHE INTERNAL "")
-set(HAVE_STRERRORNAME_NP "" CACHE INTERNAL "")
 set(HAVE_STRLCAT 1 CACHE INTERNAL "")
 set(HAVE_SWAPCTL "" CACHE INTERNAL "")
 set(HAVE_SYS_AUXV_H "" CACHE INTERNAL "")
@@ -330,7 +330,7 @@ set(HAVE_SYS_POLL_H "" CACHE INTERNAL "")
 set(HAVE_SYS_PROCINFO_H "" CACHE INTERNAL "")
 set(HAVE_SYS_PTRACE_H "" CACHE INTERNAL "")
 set(HAVE_SYS_SDT_H "" CACHE INTERNAL "")
-set(HAVE_SYS_SOCKET_H 1 CACHE INTERNAL "")
+set(HAVE_SYS_SOCKET_H "" CACHE INTERNAL "")
 set(HAVE_SYS_SOCKIO_H "" CACHE INTERNAL "")
 set(HAVE_SYS_STATFS_H 1 CACHE INTERNAL "")
 set(HAVE_SYS_STATVFS_H 1 CACHE INTERNAL "")

@@ -22,16 +22,9 @@ namespace System.Net
         private static readonly Lazy<bool> _hasSystemNetSecurityNative = new Lazy<bool>(CheckHasSystemNetSecurityNative);
         internal static bool HasSystemNetSecurityNative => _hasSystemNetSecurityNative.Value;
 
-        [FeatureSwitchDefinition("System.Net.Security.UseManagedNtlm")]
-        private static bool UseManagedNtlm { get; } =
-            AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) ?
-            useManagedNtlm :
-            OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsMacCatalyst() ||
-            (OperatingSystem.IsLinux() && RuntimeInformation.RuntimeIdentifier.StartsWith("linux-bionic-", StringComparison.OrdinalIgnoreCase));
-
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {
-            if (UseManagedNtlm)
+            if (LocalAppContextSwitches.UseManagedNtlm)
             {
                 switch (clientOptions.Package)
                 {
@@ -47,20 +40,21 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(clientOptions);
             }
-            catch (Interop.NetSecurityNative.GssApiException gex)
+            catch (Exception ex) when (ex is Interop.NetSecurityNative.GssApiException or TypeInitializationException)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
-                NegotiateAuthenticationStatusCode statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
-                if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+                NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+
+                if (ex is Interop.NetSecurityNative.GssApiException gex)
                 {
-                    statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
+                    if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                    {
+                        statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    }
                 }
+
                 return new UnsupportedNegotiateAuthenticationPal(clientOptions, statusCode);
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // GSSAPI shim may not be available on some platforms (Linux Bionic)
-                return new UnsupportedNegotiateAuthenticationPal(clientOptions);
             }
         }
 
@@ -70,20 +64,21 @@ namespace System.Net
             {
                 return new UnixNegotiateAuthenticationPal(serverOptions);
             }
-            catch (Interop.NetSecurityNative.GssApiException gex)
+            catch (Exception ex) when (ex is Interop.NetSecurityNative.GssApiException or TypeInitializationException)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, gex);
-                NegotiateAuthenticationStatusCode statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
-                if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+
+                NegotiateAuthenticationStatusCode statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+
+                if (ex is Interop.NetSecurityNative.GssApiException gex)
                 {
-                    statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    statusCode = UnixNegotiateAuthenticationPal.GetErrorCode(gex);
+                    if (statusCode <= NegotiateAuthenticationStatusCode.GenericFailure)
+                    {
+                        statusCode = NegotiateAuthenticationStatusCode.Unsupported;
+                    }
                 }
                 return new UnsupportedNegotiateAuthenticationPal(serverOptions, statusCode);
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // GSSAPI shim may not be available on some platforms (Linux Bionic)
-                return new UnsupportedNegotiateAuthenticationPal(serverOptions);
             }
         }
 
@@ -286,13 +281,12 @@ namespace System.Net
                 }
                 else
                 {
-                    // TODO: We don't currently check channel bindings.
-
                     // Server session.
                     statusCode = AcceptSecurityContext(
                         _credentialsHandle,
                         ref _securityContext,
                         incomingBlob,
+                        _channelBinding,
                         ref _tokenBuffer,
                         out resultBlobLength,
                         ref _contextFlags);
@@ -545,7 +539,7 @@ namespace System.Net
                 }
             }
 
-            private unsafe NegotiateAuthenticationStatusCode InitializeSecurityContext(
+            private NegotiateAuthenticationStatusCode InitializeSecurityContext(
                 ref SafeGssCredHandle credentialsHandle,
                 ref SafeGssContextHandle? contextHandle,
                 ref SafeGssNameHandle? targetNameHandle,
@@ -587,18 +581,11 @@ namespace System.Net
 
                     if (channelBinding != null)
                     {
-                        // If a TLS channel binding token (cbt) is available then get the pointer
-                        // to the application specific data.
-                        int appDataOffset = sizeof(SecChannelBindings);
-                        Debug.Assert(appDataOffset < channelBinding.Size);
-                        IntPtr cbtAppData = channelBinding.DangerousGetHandle() + appDataOffset;
-                        int cbtAppDataSize = channelBinding.Size - appDataOffset;
                         status = Interop.NetSecurityNative.InitSecContext(out minorStatus,
                                                                         credentialsHandle,
                                                                         ref contextHandle,
                                                                         _packageType,
-                                                                        cbtAppData,
-                                                                        cbtAppDataSize,
+                                                                        channelBinding,
                                                                         targetNameHandle,
                                                                         (uint)requestedContextFlags,
                                                                         incomingBlob,
@@ -675,9 +662,8 @@ namespace System.Net
             private NegotiateAuthenticationStatusCode AcceptSecurityContext(
                 SafeGssCredHandle credentialsHandle,
                 ref SafeGssContextHandle? contextHandle,
-                //ContextFlagsPal requestedContextFlags,
                 ReadOnlySpan<byte> incomingBlob,
-                //ChannelBinding? channelBinding,
+                ChannelBinding? channelBinding,
                 ref byte[]? resultBlob,
                 out int resultBlobLength,
                 ref Interop.NetSecurityNative.GssFlags contextFlags)
@@ -689,9 +675,11 @@ namespace System.Net
                 {
                     Interop.NetSecurityNative.Status status;
                     Interop.NetSecurityNative.Status minorStatus;
+
                     status = Interop.NetSecurityNative.AcceptSecContext(out minorStatus,
                                                                         credentialsHandle,
                                                                         ref contextHandle,
+                                                                        channelBinding,
                                                                         incomingBlob,
                                                                         ref token,
                                                                         out uint outputFlags,
@@ -765,6 +753,14 @@ namespace System.Net
                     case Interop.NetSecurityNative.Status.GSS_S_BAD_MECH:
                     case Interop.NetSecurityNative.Status.GSS_S_UNAVAILABLE:
                         return NegotiateAuthenticationStatusCode.Unsupported;
+                    case Interop.NetSecurityNative.Status.GSS_S_FAILURE:
+                        // KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN - server principal is unknown in the KDC
+                        // This is the same error code value in both MIT and Heimdal Kerberos (com_err base for "krb5" table)
+                        if ((uint)exception.MinorStatus == 0x96C73A07u)
+                        {
+                            return NegotiateAuthenticationStatusCode.TargetUnknown;
+                        }
+                        return NegotiateAuthenticationStatusCode.GenericFailure;
                     case Interop.NetSecurityNative.Status.GSS_S_NO_CONTEXT:
                     default:
                         return NegotiateAuthenticationStatusCode.GenericFailure;

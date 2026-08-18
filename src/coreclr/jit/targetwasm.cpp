@@ -28,6 +28,31 @@ WasmClassifier::WasmClassifier(const ClassifierInfo& info)
 }
 
 //-----------------------------------------------------------------------------
+// ToJitType: translate CorInfoWasmType to var_types
+//
+// Parameters:
+//   wasmType -- wasm type to translate
+//
+var_types WasmClassifier::ToJitType(CorInfoWasmType wasmType)
+{
+    switch (wasmType)
+    {
+        case CORINFO_WASM_TYPE_I32:
+            return TYP_INT;
+        case CORINFO_WASM_TYPE_I64:
+            return TYP_LONG;
+        case CORINFO_WASM_TYPE_F32:
+            return TYP_FLOAT;
+        case CORINFO_WASM_TYPE_F64:
+            return TYP_DOUBLE;
+        case CORINFO_WASM_TYPE_V128:
+            return TYP_SIMD16;
+        default:
+            unreached();
+    }
+}
+
+//-----------------------------------------------------------------------------
 // Classify:
 //   Classify a parameter for the Wasm ABI.
 //
@@ -46,9 +71,50 @@ ABIPassingInformation WasmClassifier::Classify(Compiler*    comp,
                                                ClassLayout* structLayout,
                                                WellKnownArg wellKnownParam)
 {
-    if (type == TYP_STRUCT)
+    if (varTypeIsStruct(type))
     {
-        NYI_WASM("WasmClassifier::Classify - structs");
+        CORINFO_CLASS_HANDLE clsHnd = structLayout->GetClassHandle();
+        assert(clsHnd != NO_CLASS_HANDLE);
+        CorInfoWasmType wasmAbiType = comp->info.compCompHnd->getWasmLowering(clsHnd);
+        bool            passByRef   = false;
+        var_types       abiType     = TYP_UNDEF;
+
+        if (wasmAbiType == CORINFO_WASM_TYPE_VOID)
+        {
+            abiType   = TYP_I_IMPL;
+            passByRef = true;
+        }
+        else
+        {
+            abiType = ToJitType(wasmAbiType);
+
+            // A struct wider than the wasm value it lowers to is passed by value across several
+            // of them, matching the wasm C ABI: Int128 as 2 x i64, a 256-bit vector as 2 x v128,
+            // a 512-bit vector as 4 x v128. A struct can be narrower than its value (see the
+            // segment size below), so this must compare sizes rather than count slots.
+            unsigned segSize = genTypeSize(abiType);
+            if (structLayout->GetSize() > segSize)
+            {
+                unsigned numSegs = structLayout->GetSize() / segSize;
+                assert((numSegs * segSize) == structLayout->GetSize());
+
+                ABIPassingInformation info(comp, numSegs);
+                for (unsigned i = 0; i < numSegs; i++)
+                {
+                    regNumber reg   = MakeWasmReg(m_localIndex++, abiType);
+                    info.Segment(i) = ABIPassingSegment::InRegister(reg, i * segSize, segSize);
+                }
+
+                return info;
+            }
+        }
+
+        regNumber reg = MakeWasmReg(m_localIndex++, genActualType(abiType));
+        // If the struct is being passed directly as a wasm value, make sure we record
+        //  the actual size of the struct, not the size of the containing wasm value.
+        unsigned segmentSize  = passByRef ? genTypeSize(abiType) : min(structLayout->GetSize(), genTypeSize(abiType));
+        ABIPassingSegment seg = ABIPassingSegment::InRegister(reg, 0, segmentSize);
+        return ABIPassingInformation::FromSegment(comp, passByRef, seg);
     }
 
     regNumber         reg = MakeWasmReg(m_localIndex++, genActualType(type));

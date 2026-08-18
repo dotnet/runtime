@@ -9,8 +9,8 @@
   <Import Project="Microsoft.Extensions.Logging.Generators.targets" />
 
   <ItemGroup>
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
-    <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
   </ItemGroup>
   
   <ItemGroup>

@@ -432,7 +432,7 @@ class PrecodeStubManager : public StubManager
 
   protected:
     virtual LPCWSTR GetStubManagerName(PCODE addr)
-        { LIMITED_METHOD_CONTRACT; return W("MethodDescPrestub"); }
+        { LIMITED_METHOD_CONTRACT; return W("Prestub"); }
 #endif
 };
 #endif // !FEATURE_PORTABLE_ENTRYPOINTS
@@ -469,21 +469,9 @@ class StubLinkStubManager : public StubManager
 #endif // DACCESS_COMPILE
 
 #if !defined(DACCESS_COMPILE)
-    StubLinkStubManager() : StubManager(), m_rangeList() {LIMITED_METHOD_CONTRACT;}
+    StubLinkStubManager() : StubManager() {LIMITED_METHOD_CONTRACT;}
     ~StubLinkStubManager() {WRAPPER_NO_CONTRACT;}
 #endif // DACCESS_COMPILE
-
-  protected:
-    LockedRangeList m_rangeList;
-  public:
-    // Get dac-ized pointer to rangelist.
-    PTR_RangeList GetRangeList()
-    {
-        SUPPORTS_DAC;
-
-        TADDR addr = PTR_HOST_MEMBER_TADDR(StubLinkStubManager, this, m_rangeList);
-        return PTR_RangeList(addr);
-    }
 
     virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
 
@@ -503,46 +491,6 @@ class StubLinkStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("StubLinkStub"); }
 #endif
 } ;
-
-#ifdef FEATURE_JIT
-//
-// Stub manager for jump stubs created by ExecutionManager::jumpStub()
-//
-typedef VPTR(class JumpStubStubManager) PTR_JumpStubStubManager;
-
-class JumpStubStubManager : public StubManager
-{
-    VPTR_VTABLE_CLASS(JumpStubStubManager, StubManager)
-
-  public:
-
-    SPTR_DECL(JumpStubStubManager, g_pManager);
-
-    static void Init();
-
-#ifndef DACCESS_COMPILE
-    JumpStubStubManager() {LIMITED_METHOD_CONTRACT;}
-    ~JumpStubStubManager() {WRAPPER_NO_CONTRACT;}
-
-#endif
-
-#ifdef _DEBUG
-    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "JumpStubStubManager"; }
-#endif
-
-    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
-
-    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
-
-#ifdef DACCESS_COMPILE
-    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-
-  protected:
-    virtual LPCWSTR GetStubManagerName(PCODE addr)
-        { LIMITED_METHOD_CONTRACT; return W("JumpStub"); }
-#endif
-};
-#endif // FEATURE_JIT
 
 //
 // Stub manager for code sections. It forwards the query to the more appropriate
@@ -643,8 +591,55 @@ class ILStubManager : public StubManager
 #endif
 };
 
+//
+// This is the stub manager for PInvoke stubs.
+// It handles addresses that map to a PInvokeMethodDesc.
+//
+typedef VPTR(class PInvokeStubManager) PTR_PInvokeStubManager;
+
+class PInvokeStubManager : public StubManager
+{
+    VPTR_VTABLE_CLASS(PInvokeStubManager, StubManager)
+
+  public:
+    static void Init();
+
+#ifndef DACCESS_COMPILE
+    PInvokeStubManager() : StubManager() {WRAPPER_NO_CONTRACT;}
+    ~PInvokeStubManager()
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_NOTRIGGER;
+            CAN_TAKE_LOCK;     // StubManager::UnlinkStubManager uses a crst
+        }
+        CONTRACTL_END;
+    }
+#endif
+
+   public:
+
+#ifdef _DEBUG
+    virtual const char * DbgGetName() { LIMITED_METHOD_CONTRACT; return "PInvokeStubManager"; }
+#endif
+
+    virtual BOOL CheckIsStub_Internal(PCODE stubStartAddress);
+
+  private:
+
+    virtual BOOL DoTraceStub(PCODE stubStartAddress, TraceDestination *trace);
+
+#ifdef DACCESS_COMPILE
+    virtual void DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags);
+
+  protected:
+    virtual LPCWSTR GetStubManagerName(PCODE addr)
+        { LIMITED_METHOD_CONTRACT; return W("PInvokeStub"); }
+#endif
+};
+
 // This is used to recognize
-//   GenericCLRToCOMCallStub()
 //   VarargPInvokeStub()
 //   GenericPInvokeCalliHelper()
 typedef VPTR(class InteropDispatchStubManager) PTR_InteropDispatchStubManager;

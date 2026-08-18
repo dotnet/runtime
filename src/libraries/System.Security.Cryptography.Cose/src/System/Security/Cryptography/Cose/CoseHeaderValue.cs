@@ -252,14 +252,7 @@ namespace System.Security.Cryptography.Cose
         public override int GetHashCode()
         {
             HashCode hashCode = default;
-#if NET
             hashCode.AddBytes(EncodedValue.Span);
-#else
-            foreach (byte b in EncodedValue.Span)
-            {
-                hashCode.Add(b);
-            }
-#endif
             return hashCode.ToHashCode();
         }
 

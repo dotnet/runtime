@@ -398,7 +398,7 @@ Compiler::Compiler(ArenaAllocator*       arena,
     // check that HelperCallProperties are initialized
     assert(s_helperCallProperties.IsPure(CORINFO_HELP_GET_GCSTATIC_BASE));
 
-    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo();
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
@@ -756,6 +756,40 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     }
     assert(structSize > 0);
 
+#if defined(TARGET_WASM)
+    CorInfoWasmType abiType = info.compCompHnd->getWasmLowering(clsHnd);
+
+    // A struct wider than the wasm value it lowers to is split across several of them when
+    // passed, but returned via a hidden buffer like any other aggregate.
+    if ((abiType == CORINFO_WASM_TYPE_VOID) || (structSize > genTypeSize(WasmClassifier::ToJitType(abiType))))
+    {
+        howToReturnStruct = SPK_ByReference;
+        useType           = TYP_UNKNOWN;
+    }
+    else
+    {
+        howToReturnStruct = SPK_PrimitiveType;
+        useType           = WasmClassifier::ToJitType(abiType);
+    }
+
+    if (wbReturnStruct != nullptr)
+    {
+        *wbReturnStruct = howToReturnStruct;
+    }
+
+    return useType;
+#else
+#ifdef DEBUG
+    // Extra query to facilitate wasm replay of native collections.
+    // TODO-WASM: delete once we can get a wasm collection.
+    //
+    if (JitConfig.EnableExtraSuperPmiQueries() && IsReadyToRun())
+    {
+        info.compCompHnd->getWasmLowering(clsHnd);
+    }
+#endif // DEBUG
+#endif // defined(TARGET_WASM)
+
 #ifdef SWIFT_SUPPORT
     if (callConv == CorInfoCallConvExtension::Swift)
     {
@@ -950,9 +984,17 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 // Structs that are pointer sized or smaller should have been handled by getPrimitiveTypeForStruct
                 assert(structSize > TARGET_POINTER_SIZE);
 
+                // TODO-SVE: For now, we always pass Vector<T> by reference. Support passing Vector<T> in Z registers.
+                unsigned simdSize = 0;
+                if (structMightRepresentSIMDType(clsHnd) &&
+                    (getBaseTypeAndSizeOfSIMDType(clsHnd, &simdSize) != TYP_UNDEF) && (simdSize == SIZE_UNKNOWN))
+                {
+                    howToReturnStruct = SPK_ByReference;
+                    useType           = TYP_UNKNOWN;
+                }
                 // On ARM64 structs that are 9-16 bytes are returned by value in multiple registers
                 //
-                if (structSize <= (TARGET_POINTER_SIZE * 2))
+                else if (structSize <= (TARGET_POINTER_SIZE * 2))
                 {
                     // setup wbPassType and useType indicate that this is return by value in multiple registers
                     howToReturnStruct = SPK_ByValue;
@@ -1542,10 +1584,10 @@ void Compiler::compShutdown()
     if (s_dspMemStats)
     {
         jitprintf("\nAll allocations:\n");
-        ArenaAllocator::dumpAggregateMemStats(jitstdout());
+        JitMemStatsInfo::dumpAggregateMemStats(jitstdout());
 
         jitprintf("\nLargest method:\n");
-        ArenaAllocator::dumpMaxMemStats(jitstdout());
+        JitMemStatsInfo::dumpMaxMemStats(jitstdout());
 
         jitprintf("\n");
         jitprintf("---------------------------------------------------\n");
@@ -1682,22 +1724,6 @@ CORINFO_CONST_LOOKUP Compiler::compGetHelperFtn(CorInfoHelpFunc ftnNum)
     }
 
     return lookup;
-}
-
-unsigned Compiler::compGetTypeSize(CorInfoType cit, CORINFO_CLASS_HANDLE clsHnd)
-{
-    var_types sigType = genActualType(JITtype2varType(cit));
-    unsigned  sigSize;
-    sigSize = genTypeSize(sigType);
-    if (cit == CORINFO_TYPE_VALUECLASS)
-    {
-        sigSize = info.compCompHnd->getClassSize(clsHnd);
-    }
-    else if (cit == CORINFO_TYPE_REFANY)
-    {
-        sigSize = 2 * TARGET_POINTER_SIZE;
-    }
-    return sigSize;
 }
 
 #ifdef DEBUG
@@ -1839,46 +1865,6 @@ const char* Compiler::compRegVarName(regNumber reg, bool displayVar, bool isFloa
     return getRegName(reg);
 }
 
-const char* Compiler::compRegNameForSize(regNumber reg, size_t size)
-{
-#if CPU_HAS_BYTE_REGS
-    if (size == 1 || size == 2)
-    {
-        // clang-format off
-        static const char* sizeNames[][2] =
-        {
-            { "al", "ax" },
-            { "cl", "cx" },
-            { "dl", "dx" },
-            { "bl", "bx" },
-    #ifdef TARGET_AMD64
-            {  "spl",   "sp" }, // ESP
-            {  "bpl",   "bp" }, // EBP
-            {  "sil",   "si" }, // ESI
-            {  "dil",   "di" }, // EDI
-            {  "r8b",  "r8w" },
-            {  "r9b",  "r9w" },
-            { "r10b", "r10w" },
-            { "r11b", "r11w" },
-            { "r12b", "r12w" },
-            { "r13b", "r13w" },
-            { "r14b", "r14w" },
-            { "r15b", "r15w" },
-    #endif // TARGET_AMD64
-        };
-        // clang-format on
-
-        assert(isByteReg(reg));
-        assert(genRegMask(reg) & RBM_BYTE_REGS);
-        assert(size == 1 || size == 2);
-
-        return sizeNames[reg][size - 1];
-    }
-#endif // CPU_HAS_BYTE_REGS
-
-    return compRegVarName(reg, true);
-}
-
 #ifdef DEBUG
 const char* Compiler::compLocalVarName(unsigned varNum, unsigned offs)
 {
@@ -1987,6 +1973,13 @@ void Compiler::compSetProcessor()
 
     // Add virtual vector ISAs. These are both supported as part of the required baseline.
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector64);
+    instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
+#elif defined(TARGET_WASM)
+    // Ensure required baseline ISAs are supported in JIT code, even if not passed in by the VM.
+    instructionSetFlags.AddInstructionSet(InstructionSet_WasmBase);
+    instructionSetFlags.AddInstructionSet(InstructionSet_PackedSimd);
+
+    // Add virtual vector ISA. Vector128 is part of the required Wasm SIMD baseline.
     instructionSetFlags.AddInstructionSet(InstructionSet_Vector128);
 #endif // TARGET_ARM64
 
@@ -2655,7 +2648,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 #endif // LATE_DISASM
 
-        if (JitConfig.JitDasmWithAddress() != 0)
+        if (JitConfig.JitDisasmWithAddress() != 0)
         {
             opts.disAddr = true;
         }
@@ -2705,7 +2698,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         printf("****** START compiling %s (MethodHash=%08x)\n", info.compFullName, info.compMethodHash());
         printf("Generating code for %s %s\n", Target::g_tgtPlatformName(), Target::g_tgtCPUName);
-        printf(""); // in our logic this causes a flush
+        fflush(jitstdout());
     }
 
     if (JitConfig.JitBreak().contains(info.compMethodHnd, info.compClassHnd, &info.compMethodInfo->args))
@@ -2945,6 +2938,13 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
     opts.compScopeInfo = opts.compDbgInfo;
 
+#ifdef TARGET_WASM
+    // Wasm uses virtual registers that cannot be encoded in the
+    // ICorDebugInfo register scheme, and there is no native debugger
+    // to consume scope info, so disable it entirely.
+    opts.compScopeInfo = false;
+#endif
+
 #ifdef LATE_DISASM
     codeGen->getDisAssembler().disOpenForLateDisAsm(info.compMethodName, info.compClassName,
                                                     info.compMethodInfo->args.pSig);
@@ -3081,10 +3081,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         printf("OPTIONS: compProcedureSplittingEH = %s\n", dspBool(opts.compProcedureSplittingEH));
 
         // This is rare; don't clutter up the dump with it normally.
+#ifdef PROFILING_SUPPORTED
         if (compProfilerHookNeeded)
         {
             printf("OPTIONS: compProfilerHookNeeded   = %s\n", dspBool(compProfilerHookNeeded));
         }
+#endif
 
         if (jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT))
         {
@@ -3099,6 +3101,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (compIsAsync())
         {
             printf("OPTIONS: compilation is an async state machine\n");
+        }
+
+        if (compIsAsyncVersion())
+        {
+            printf(
+                "OPTIONS: compilation is for an async version of a synchronous method; IL belongs to synchronous method\n");
         }
     }
 #endif
@@ -3983,9 +3991,8 @@ const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMapping
         return nullptr;
     }
 
-    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    for (const ParameterRegisterLocalMapping& mapping : m_paramRegLocalMappings->BottomUpOrder())
     {
-        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
         if (mapping.RegisterSegment->GetRegister() == reg)
         {
             return &mapping;
@@ -4015,9 +4022,8 @@ const ParameterRegisterLocalMapping* Compiler::FindParameterRegisterLocalMapping
         return nullptr;
     }
 
-    for (int i = 0; i < m_paramRegLocalMappings->Height(); i++)
+    for (const ParameterRegisterLocalMapping& mapping : m_paramRegLocalMappings->BottomUpOrder())
     {
-        const ParameterRegisterLocalMapping& mapping = m_paramRegLocalMappings->BottomRef(i);
         if ((mapping.LclNum == lclNum) && (mapping.Offset == offset))
         {
             return &mapping;
@@ -4417,6 +4423,11 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
     if (opts.OptimizationEnabled())
     {
+        // Trim dead code that follows no-return calls introduced by inlining,
+        // so subsequent phases see a cleaner flow graph.
+        //
+        DoPhase(this, PHASE_POST_INLINE_NORETURN, &Compiler::fgPostInlineNoReturnCleanup);
+
         // Try and resolve GDV checks if improved types were found during inlining
         //
         DoPhase(this, PHASE_RESOLVE_GDVS, &Compiler::fgResolveGDVs);
@@ -4477,10 +4488,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
             return fgHeadTailMerge(true);
         });
 
-        // Merge common throw blocks
-        //
-        DoPhase(this, PHASE_MERGE_THROWS, &Compiler::fgTailMergeThrows);
-
         // Run an early flow graph simplification pass
         //
         DoPhase(this, PHASE_EARLY_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
@@ -4524,6 +4531,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
+    // Unpin pinned locals whose value is provably non-movable.
+    //
+    DoPhase(this, PHASE_UNPIN_LOCALS, &Compiler::fgUnpinNonMovableLocals);
+
     // Expose candidates for implicit byref last-use copy elision.
     DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, &Compiler::fgMarkImplicitByRefCopyOmissionCandidates);
 
@@ -4551,9 +4562,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         fgMarkDemotedImplicitByRefArgs();
         lvaRefCountState       = RCS_INVALID;
         fgLocalVarLivenessDone = false;
-
-        // Decide the kind of code we want to generate
-        fgSetOptions();
 
         fgExpandQmarkNodes(/*early*/ false);
 
@@ -4638,6 +4646,12 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #ifdef DEBUG
     fgDebugCheckLinks();
 #endif
+
+    // Decide the kind of code we want to generate. Done here, after the second
+    // round of empty-EH removal above, so that EH eliminated post-morph doesn't
+    // force fully-interruptible codegen / a frame pointer.
+    //
+    fgSetOptions();
 
     // Morph multi-dimensional array operations.
     // (Consider deferring all array operation morphing, including single-dimensional array ops,
@@ -4777,6 +4791,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
             if (doAssertionProp)
             {
+                // Coalesce groups of constant-indexed bounds checks.
+                //
+                DoPhase(this, PHASE_BOUNDS_CHECK_COALESCE, &Compiler::optBoundsCheckCoalesce);
+
                 // Assertion propagation
                 //
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
@@ -4827,6 +4845,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // update the flowgraph if we modified it during the optimization phase
                 //
                 DoPhase(this, PHASE_OPT_UPDATE_FLOW_GRAPH, &Compiler::fgUpdateFlowGraphPhase);
+
+                // Clean up unreachable blocks.
+                // In opt-repeat builds, RecomputeFlowGraphAnnotations() will call
+                // fgDfsBlocksAndRemove() when resetting annotations between iterations.
+                // To avoid doing this expensive work twice per iteration, only run this
+                // phase on non-optRepeat builds or on the final optRepeat iteration.
+                //
+                if (!opts.optRepeat || (opts.optRepeatIteration == opts.optRepeatCount))
+                {
+                    DoPhase(this, PHASE_OPT_DFS_BLOCKS, &Compiler::fgDfsBlocksAndRemove);
+                    fgInvalidateDfsTree();
+                }
             }
 
             // Iterate if requested, resetting annotations first.
@@ -4875,6 +4905,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Remove empty try regions (try/catch/fault)
     //
     DoPhase(this, PHASE_EMPTY_TRY_CATCH_FAULT_3, &Compiler::fgRemoveEmptyTryCatchOrTryFault);
+
+    // Remove unreachable try regions
+    //
+    DoPhase(this, PHASE_REMOVE_UNREACHABLE_TRY, &Compiler::fgRemoveUnreachableTry);
 
     // Create funclets from the EH handlers.
     //
@@ -4958,9 +4992,20 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_GS_COOKIE, &Compiler::gsPhase);
 
 #ifdef TARGET_WASM
-    // Transform any strongly connected components into reducible flow.
+    // Make EH continuation flow explicit
+    //
+    DoPhase(this, PHASE_WASM_EH_FLOW, &Compiler::fgWasmEhFlow);
+
+    // Clean up unreachable blocks.
     //
     DoPhase(this, PHASE_DFS_BLOCKS_WASM, &Compiler::fgDfsBlocksAndRemove);
+
+    // Repair any multiple-entry try regions back to single entry.
+    //
+    DoPhase(this, PHASE_WASM_REPAIR_TRY_ENTRIES, &Compiler::fgWasmRepairTryEntries);
+
+    // Transform any strongly connected components into reducible flow.
+    //
     DoPhase(this, PHASE_WASM_TRANSFORM_SCCS, &Compiler::fgWasmTransformSccs);
 #endif
 
@@ -4980,6 +5025,18 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     StackLevelSetter stackLevelSetter(this);
     stackLevelSetter.Run();
     m_pLowering->FinalizeOutgoingArgSpace();
+
+#ifdef TARGET_WASM
+    // Determine if a Virtual IP is needed and add code as needed to
+    // keep the Virtual IP updated.
+    //
+    DoPhase(this, PHASE_WASM_VIRTUAL_IP, &Compiler::fgWasmVirtualIP);
+
+    // Ensure that any refs or byrefs live at call sites are spilled
+    // to pinned stack slots so the objects aren't moved.
+    //
+    DoPhase(this, PHASE_WASM_SPILL_REFS, &Compiler::fgWasmSpillRefs);
+#endif
 
     FinalizeEH();
 
@@ -5543,7 +5600,7 @@ void Compiler::SplitTreesRemoveCommas()
 //
 void Compiler::generatePatchpointInfo()
 {
-    if (!doesMethodHavePatchpoints() && !doesMethodHavePartialCompilationPatchpoints())
+    if (!doesMethodHavePatchpoints())
     {
         // Nothing to report
         return;
@@ -5566,8 +5623,8 @@ void Compiler::generatePatchpointInfo()
     // offset.
 
 #if defined(TARGET_AMD64)
-    // We add +TARGET_POINTER_SIZE here is to account for the slot that Jit_Patchpoint
-    // creates when it simulates calling the OSR method (the "pseudo return address" slot).
+    // We add +TARGET_POINTER_SIZE here to account for the return address slot that the OSR method prolog
+    // pushes on entry (the "pseudo return address" slot) to make the stack unaligned.
     // This is effectively a new slot at the bottom of the Tier0 frame.
     //
     const int totalFrameSize = codeGen->genTotalFrameSize() + TARGET_POINTER_SIZE;
@@ -5597,6 +5654,12 @@ void Compiler::generatePatchpointInfo()
         // If there are shadowed params, the patchpoint info should refer to the shadow copy.
         //
         unsigned varNum = lclNum;
+
+        // Variable-sized locals reside in a different part of the stack frame.
+        if (lvaIsUnknownSizeLocal(varNum))
+        {
+            continue;
+        }
 
         if (gsShadowVarInfo != nullptr)
         {
@@ -5659,6 +5722,22 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->MonitorAcquiredOffset());
     }
 
+    if (lvaResumedIndicator != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaResumedIndicator);
+        patchpointInfo->SetResumedIndicatorOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- resumed indicator V%02u virtual offset is %d\n", lvaResumedIndicator,
+                patchpointInfo->ResumedIndicatorOffset());
+    }
+
+    if (lvaAsyncThreadObjectVar != BAD_VAR_NUM)
+    {
+        LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncThreadObjectVar);
+        patchpointInfo->SetAsyncThreadOffset(varDsc->GetStackOffset() + offsetAdjust);
+        JITDUMP("--OSR-- async thread object V%02u virtual offset is %d\n", lvaAsyncThreadObjectVar,
+                patchpointInfo->AsyncThreadOffset());
+    }
+
     if (lvaAsyncExecutionContextVar != BAD_VAR_NUM)
     {
         LclVarDsc* const varDsc = lvaGetDesc(lvaAsyncExecutionContextVar);
@@ -5675,17 +5754,30 @@ void Compiler::generatePatchpointInfo()
                 patchpointInfo->AsyncSynchronizationContextOffset());
     }
 
-#if defined(TARGET_AMD64)
     // Record callee save registers.
-    // Currently only needed for x64.
     //
     regMaskTP rsPushRegs = codeGen->regSet.rsGetModifiedCalleeSavedRegsMask();
     rsPushRegs |= RBM_FPBASE;
-    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs);
-    JITDUMP("--OSR-- Tier0 callee saves: ");
-    JITDUMPEXEC(dspRegMask((regMaskTP)patchpointInfo->CalleeSaveRegisters()));
-    JITDUMP("\n");
+#if defined(TARGET_ARM64)
+    rsPushRegs |= RBM_LR;
+#elif defined(TARGET_LOONGARCH64)
+    rsPushRegs |= RBM_RA;
+#elif defined(TARGET_RISCV64)
+    rsPushRegs |= RBM_RA;
 #endif
+
+#ifdef TARGET_ARM64
+    // For arm64 we communicate whether fp/lr are stored with the callee saves in this mask.
+    if (!codeGen->IsSaveFpLrWithAllCalleeSavedRegisters())
+    {
+        rsPushRegs &= ~(RBM_FP | RBM_LR);
+    }
+#endif
+
+    patchpointInfo->SetCalleeSaveRegisters((uint64_t)rsPushRegs.getLow());
+    JITDUMP("--OSR-- Tier0 callee saves: ");
+    JITDUMPEXEC(dspRegMask(regMaskTP((regMaskSmall)patchpointInfo->CalleeSaveRegisters())));
+    JITDUMP("\n");
 
     // Register this with the runtime.
     info.compCompHnd->setPatchpointInfo(patchpointInfo);
@@ -5915,6 +6007,16 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
             {
                 instructionSetFlags.AddInstructionSet(InstructionSet_VectorT128);
             }
+
+#ifdef DEBUG
+            if (JitConfig.JitUseScalableVectorT() &&
+                currentInstructionSetFlags.HasInstructionSet(InstructionSet_VectorT))
+            {
+                // Vector<T> will use SVE instead of NEON.
+                instructionSetFlags.RemoveInstructionSet(InstructionSet_VectorT128);
+                instructionSetFlags.AddInstructionSet(InstructionSet_VectorT);
+            }
+#endif
         }
 
         instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
@@ -5930,6 +6032,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
             instructionSetFlags.AddInstructionSet(InstructionSet_Crc32);
         }
 
+        if (JitConfig.EnableArm64Cssc() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Cssc);
+        }
+
         if (JitConfig.EnableArm64Dp() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Dp);
@@ -5938,6 +6045,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Rdm() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Rdm);
+        }
+
+        if (JitConfig.EnableArm64Fp16() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Fp16);
         }
 
         if (JitConfig.EnableArm64Sha1() != 0)
@@ -5968,6 +6080,31 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableArm64Sve2() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Sve2);
+        }
+
+        if (JitConfig.EnableArm64Sha3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sha3);
+        }
+
+        if (JitConfig.EnableArm64Sm4() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sm4);
+        }
+
+        if (JitConfig.EnableArm64SveAes() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveAes);
+        }
+
+        if (JitConfig.EnableArm64SveSha3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveSha3);
+        }
+
+        if (JitConfig.EnableArm64SveSm4() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SveSm4);
         }
 #elif defined(TARGET_XARCH)
         if (info.compMatchedVM)
@@ -6087,6 +6224,11 @@ int Compiler::compCompileAfterInit(CORINFO_MODULE_HANDLE classPtr,
         if (JitConfig.EnableRiscV64Zbb() != 0)
         {
             instructionSetFlags.AddInstructionSet(InstructionSet_Zbb);
+        }
+
+        if (JitConfig.EnableRiscV64Zicond() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Zicond);
         }
 #endif
 
@@ -6284,11 +6426,9 @@ void Compiler::compCompileFinish()
 
 #if MEASURE_MEM_ALLOC
     {
-        compArenaAllocator->finishMemStats();
+        JitMemStatsInfo::finishMemStats(compArenaAllocator);
         memAllocHist.record((unsigned)((compArenaAllocator->getTotalBytesAllocated() + 1023) / 1024));
         memUsedHist.record((unsigned)((compArenaAllocator->getTotalBytesUsed() + 1023) / 1024));
-
-        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
     }
 
 #ifdef DEBUG
@@ -6299,6 +6439,11 @@ void Compiler::compCompileFinish()
     }
 #endif // DEBUG
 #endif // MEASURE_MEM_ALLOC
+
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.BytesAllocated = (int64_t)compArenaAllocator->getTotalBytesUsed();
+    }
 
 #if LOOP_HOIST_STATS
     AddLoopHoistStats();
@@ -6323,8 +6468,8 @@ void Compiler::compCompileFinish()
         (info.compLocalsCount <= 32) && !opts.MinOpts() && // We may have too many local variables, etc
         (getJitStressLevel() == 0) &&                      // We need extra memory for stress
         !opts.optRepeat &&                                 // We need extra memory to repeat opts
-        !compArenaAllocator->bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
-                                                      // DirectAlloc
+        !JitMemKindTraits::bypassHostAllocator() && // ArenaAllocator::getDefaultPageSize() is artificially low for
+                                                    // DirectAlloc
         // Factor of 2x is because data-structures are bigger under DEBUG
         (compArenaAllocator->getTotalBytesAllocated() > (2 * ArenaAllocator::getDefaultPageSize())) &&
         // RyuJIT backend needs memory tuning! TODO-Cleanup: remove this case when memory tuning is complete.
@@ -6499,17 +6644,20 @@ void Compiler::compCompileFinish()
         printf(" %3d |", info.compTotalColdCodeSize);
 
         printf(" %s\n", eeGetMethodFullName(info.compMethodHnd));
-        printf(""); // in our logic this causes a flush
+        fflush(jitstdout());
     }
 
     JITDUMP("Final metrics:\n");
-    Metrics.report(this);
+    if (JitConfig.JitReportMetrics())
+    {
+        Metrics.report(this);
+    }
     DBEXEC(verbose, Metrics.dump());
 
     if (verbose)
     {
         printf("\n****** DONE compiling %s\n", info.compFullName);
-        printf(""); // in our logic this causes a flush
+        fflush(jitstdout());
     }
 
 #if TRACK_ENREG_STATS
@@ -6524,91 +6672,12 @@ void Compiler::compCompileFinish()
     }
 #endif // TRACK_ENREG_STATS
 
-    // Only call _DbgBreakCheck when we are jitting, not when we are generating AOT code.
-    // For AOT the int3 or breakpoint instruction will be right at the
-    // start of the AOT method and we will stop when we execute it.
-    //
-    if (!IsAot())
+#else  // DEBUG
+    if (JitConfig.JitReportMetrics())
     {
-        if (compJitHaltMethod())
-        {
-#if !defined(HOST_UNIX)
-            // TODO-UNIX: re-enable this when we have an OS that supports a pop-up dialog
-
-            // Don't do an assert, but just put up the dialog box so we get just-in-time debugger
-            // launching.  When you hit 'retry' it will continue and naturally stop at the INT 3
-            // that the JIT put in the code
-            _DbgBreakCheck(__FILE__, __LINE__, "JitHalt");
-#endif
-        }
+        Metrics.report(this);
     }
-#endif // DEBUG
-}
-
-#ifdef PSEUDORANDOM_NOP_INSERTION
-// this is zlib adler32 checksum.  source came from windows base
-
-#define BASE 65521L // largest prime smaller than 65536
-#define NMAX 5552
-// NMAX is the largest n such that 255n(n+1)/2 + (n+1)(BASE-1) <= 2^32-1
-
-#define DO1(buf, i)                                                                                                    \
-    {                                                                                                                  \
-        s1 += buf[i];                                                                                                  \
-        s2 += s1;                                                                                                      \
-    }
-#define DO2(buf, i)                                                                                                    \
-    DO1(buf, i);                                                                                                       \
-    DO1(buf, i + 1);
-#define DO4(buf, i)                                                                                                    \
-    DO2(buf, i);                                                                                                       \
-    DO2(buf, i + 2);
-#define DO8(buf, i)                                                                                                    \
-    DO4(buf, i);                                                                                                       \
-    DO4(buf, i + 4);
-#define DO16(buf)                                                                                                      \
-    DO8(buf, 0);                                                                                                       \
-    DO8(buf, 8);
-
-unsigned adler32(unsigned adler, char* buf, unsigned int len)
-{
-    unsigned int s1 = adler & 0xffff;
-    unsigned int s2 = (adler >> 16) & 0xffff;
-    int          k;
-
-    if (buf == NULL)
-        return 1L;
-
-    while (len > 0)
-    {
-        k = len < NMAX ? len : NMAX;
-        len -= k;
-        while (k >= 16)
-        {
-            DO16(buf);
-            buf += 16;
-            k -= 16;
-        }
-        if (k != 0)
-            do
-            {
-                s1 += *buf++;
-                s2 += s1;
-            } while (--k);
-        s1 %= BASE;
-        s2 %= BASE;
-    }
-    return (s2 << 16) | s1;
-}
-#endif
-
-unsigned getMethodBodyChecksum(_In_z_ char* code, int size)
-{
-#ifdef PSEUDORANDOM_NOP_INSERTION
-    return adler32(0, code, size);
-#else
-    return 0;
-#endif
+#endif // !DEBUG
 }
 
 int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
@@ -6637,10 +6706,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
     }
     else
     {
-        info.compFlags = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
-#ifdef PSEUDORANDOM_NOP_INSERTION
-        info.compChecksum = getMethodBodyChecksum((char*)methodInfo->ILCode, methodInfo->ILCodeSize);
-#endif
+        info.compFlags    = info.compCompHnd->getMethodAttribs(info.compMethodHnd);
         compInlineContext = m_inlineStrategy->GetRootContext();
     }
 
@@ -7940,7 +8006,7 @@ const CORINFO_FPSTRUCT_LOWERING* Compiler::GetFpStructLowering(CORINFO_CLASS_HAN
 #ifdef DEBUG
         if (verbose)
         {
-            printf("**** getFpStructInRegistersInfo(0x%x (%s, %u bytes)) =>\n", dspPtr(structHandle),
+            printf("**** getFpStructInRegistersInfo(%p (%s, %u bytes)) =>\n", (void*)dspPtr(structHandle),
                    eeGetClassName(structHandle), info.compCompHnd->getClassSize(structHandle));
 
             if (lowering->byIntegerCallConv)
@@ -8014,54 +8080,8 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
     return reachable;
 }
 
-void Compiler::TransferTestDataToNode(GenTree* from, GenTree* to)
-{
-    TestLabelAndNum tlAndN;
-    // We can't currently associate multiple annotations with a single node.
-    // If we need to, we can fix this...
-
-    // If the table is null, don't create it just to do the lookup, which would fail...
-    if (m_nodeTestData != nullptr && GetNodeTestData()->Lookup(from, &tlAndN))
-    {
-        assert(!GetNodeTestData()->Lookup(to, &tlAndN));
-        // We can't currently associate multiple annotations with a single node.
-        // If we need to, we can fix this...
-        TestLabelAndNum tlAndNTo;
-        assert(!GetNodeTestData()->Lookup(to, &tlAndNTo));
-
-        GetNodeTestData()->Remove(from);
-        GetNodeTestData()->Set(to, tlAndN);
-    }
-}
-
 #endif // DEBUG
 
-/*
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XX                                                                           XX
-XX                          jvc                                              XX
-XX                                                                           XX
-XX  Functions for the stand-alone version of the JIT .                       XX
-XX                                                                           XX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-*/
-
-/*****************************************************************************/
-void codeGeneratorCodeSizeBeg()
-{
-}
-
-/*****************************************************************************
- *
- *  Used for counting pointer assignments.
- */
-
-/*****************************************************************************/
-void codeGeneratorCodeSizeEnd()
-{
-}
 /*****************************************************************************
  *
  *  Gather statistics - mainly used for the standalone
@@ -9047,23 +9067,6 @@ void Compiler::AddLoopHoistStats()
     s_totalHoistedExpressions += m_totalHoistedExpressions;
 }
 
-void Compiler::PrintPerMethodLoopHoistStats()
-{
-    double pctWithHoisted = 0.0;
-    if (m_loopsConsidered > 0)
-    {
-        pctWithHoisted = 100.0 * (double(m_loopsWithHoistedExpressions) / double(m_loopsConsidered));
-    }
-    double exprsPerLoopWithExpr = 0.0;
-    if (m_loopsWithHoistedExpressions > 0)
-    {
-        exprsPerLoopWithExpr = double(m_totalHoistedExpressions) / double(m_loopsWithHoistedExpressions);
-    }
-    printf("Considered %d loops.  Of these, we hoisted expressions out of %d (%5.2f%%).\n", m_loopsConsidered,
-           m_loopsWithHoistedExpressions, pctWithHoisted);
-    printf("  A total of %d expressions were hoisted, an average of %5.2f per loop-with-hoisted-expr.\n",
-           m_totalHoistedExpressions, exprsPerLoopWithExpr);
-}
 #endif // LOOP_HOIST_STATS
 
 //------------------------------------------------------------------------
@@ -10362,7 +10365,7 @@ bool Compiler::killGCRefs(GenTree* tree)
             return true;
         }
 
-        if (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_JIT_PINVOKE_BEGIN))
+        if (call->IsHelperCall(CORINFO_HELP_JIT_PINVOKE_BEGIN))
         {
             assert(opts.ShouldUsePInvokeHelpers());
             return true;
@@ -10386,7 +10389,7 @@ bool Compiler::killGCRefs(GenTree* tree)
 // Return Value:
 //    true       - this is an OSR compile and this local requires special treatment
 //    false      - not an OSR compile, or not an interesting local for OSR
-
+//
 bool Compiler::lvaIsOSRLocal(unsigned varNum)
 {
     LclVarDsc* const varDsc = lvaGetDesc(varNum);
@@ -10398,8 +10401,9 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
         {
             // Sanity check for promoted fields of OSR locals.
             //
-            if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) &&
-                (varNum != lvaAsyncExecutionContextVar) && (varNum != lvaAsyncSynchronizationContextVar))
+            if ((varNum >= info.compLocalsCount) && (varNum != lvaMonAcquired) && (varNum != lvaAsyncThreadObjectVar) &&
+                (varNum != lvaResumedIndicator) && (varNum != lvaAsyncExecutionContextVar) &&
+                (varNum != lvaAsyncSynchronizationContextVar))
             {
                 assert(varDsc->lvIsStructField);
                 assert(varDsc->lvParentLcl < info.compLocalsCount);
@@ -10413,6 +10417,45 @@ bool Compiler::lvaIsOSRLocal(unsigned varNum)
 #endif
 
     return varDsc->lvIsOSRLocal;
+}
+
+//------------------------------------------------------------------------
+// lvaOSRLocalTier0FrameOffset:
+//   Get the offset in the tier0 frame for a specified OSR local.
+//
+// Arguments:
+//   varNum - variable of interest
+//
+// Return Value:
+//   The offset into the tier 0 frame.
+//
+int Compiler::lvaOSRLocalTier0FrameOffset(unsigned varNum)
+{
+    assert(lvaIsOSRLocal(varNum));
+
+    if (varNum == lvaMonAcquired)
+    {
+        return info.compPatchpointInfo->MonitorAcquiredOffset();
+    }
+    if (varNum == lvaResumedIndicator)
+    {
+        return info.compPatchpointInfo->ResumedIndicatorOffset();
+    }
+    if (varNum == lvaAsyncThreadObjectVar)
+    {
+        return info.compPatchpointInfo->AsyncThreadOffset();
+    }
+    if (varNum == lvaAsyncExecutionContextVar)
+    {
+        return info.compPatchpointInfo->AsyncExecutionContextOffset();
+    }
+    if (varNum == lvaAsyncSynchronizationContextVar)
+    {
+        return info.compPatchpointInfo->AsyncSynchronizationContextOffset();
+    }
+
+    assert(varNum < info.compPatchpointInfo->NumberOfLocals());
+    return info.compPatchpointInfo->Offset(varNum);
 }
 
 //------------------------------------------------------------------------------
@@ -10642,11 +10685,9 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
                 m_longParamField++;
                 break;
 #endif
-#ifdef JIT32_GCENCODER
             case DoNotEnregisterReason::PinningRef:
                 m_PinningRef++;
                 break;
-#endif
             case DoNotEnregisterReason::LclAddrNode:
                 m_lclAddrNode++;
                 break;
@@ -10677,6 +10718,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
 
             case DoNotEnregisterReason::SimdUserForcesDep:
                 m_simdUserForcesDep++;
+                break;
+
+            case DoNotEnregisterReason::WasmGCVisibility:
+                m_wasmGcVisibility++;
                 break;
 
             default:
@@ -10724,6 +10769,10 @@ void Compiler::EnregisterStats::RecordLocal(const LclVarDsc* varDsc)
 
                 case AddressExposedReason::EXTERNALLY_VISIBLE_IMPLICITLY:
                     m_externallyVisibleImplicitly++;
+                    break;
+
+                case AddressExposedReason::SMALL_TYPE_PARTIAL_DEF:
+                    m_smallTypePartialDef++;
                     break;
 
                 default:
@@ -10794,15 +10843,14 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
 #if !defined(TARGET_64BIT)
     PRINT_STATS(m_longParamField, notEnreg);
 #endif // !TARGET_64BIT
-#ifdef JIT32_GCENCODER
     PRINT_STATS(m_PinningRef, notEnreg);
-#endif // JIT32_GCENCODER
     PRINT_STATS(m_lclAddrNode, notEnreg);
     PRINT_STATS(m_castTakesAddr, notEnreg);
     PRINT_STATS(m_storeBlkSrc, notEnreg);
     PRINT_STATS(m_swizzleArg, notEnreg);
     PRINT_STATS(m_blockOpRet, notEnreg);
     PRINT_STATS(m_returnSpCheck, notEnreg);
+    PRINT_STATS(m_wasmGcVisibility, notEnreg);
     PRINT_STATS(m_callSpCheck, notEnreg);
     PRINT_STATS(m_simdUserForcesDep, notEnreg);
 
@@ -10822,5 +10870,6 @@ void Compiler::EnregisterStats::Dump(FILE* fout) const
     PRINT_STATS(m_dispatchRetBuf, m_addrExposed);
     PRINT_STATS(m_stressPoisonImplicitByrefs, m_addrExposed);
     PRINT_STATS(m_externallyVisibleImplicitly, m_addrExposed);
+    PRINT_STATS(m_smallTypePartialDef, m_addrExposed);
 }
 #endif // TRACK_ENREG_STATS

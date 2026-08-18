@@ -28,7 +28,6 @@
 #include "TypeManager.h"
 #include "MethodTable.h"
 #include "ObjectLayout.h"
-#include "slist.inl"
 #include "MethodTable.inl"
 #include "CommonMacros.inl"
 #include "volatile.h"

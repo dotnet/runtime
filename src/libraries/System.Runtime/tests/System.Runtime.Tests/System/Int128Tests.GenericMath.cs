@@ -121,6 +121,13 @@ namespace System.Tests
             Assert.Equal((One, Zero), BinaryIntegerHelper<Int128>.DivRem(NegativeTwo, NegativeTwo));
             Assert.Equal((Zero, NegativeOne), BinaryIntegerHelper<Int128>.DivRem(NegativeOne, NegativeTwo));
 
+            Assert.Equal((Zero, NegativeOne), BinaryIntegerHelper<Int128>.DivRem(NegativeOne, UInt64MaxValue));
+            Assert.Equal((new Int128(0x0000_0000_0000_0000, 0x8000_0000_0000_0000), Int64MaxValue), BinaryIntegerHelper<Int128>.DivRem(MaxValue, UInt64MaxValue));
+            Assert.Equal((new Int128(0xFFFF_FFFF_FFFF_FFFF, 0x0000_0000_0000_0001), Int64MaxValue), BinaryIntegerHelper<Int128>.DivRem(MaxValue, Int64MinValue));
+            Assert.Equal((One, One), BinaryIntegerHelper<Int128>.DivRem(MaxValue, MaxValueMinusOne));
+            Assert.Equal((NegativeOne, Zero), BinaryIntegerHelper<Int128>.DivRem(MaxValue, MinValuePlusOne));
+
+            Assert.Throws<OverflowException>(() => BinaryIntegerHelper<Int128>.DivRem(MinValue, NegativeOne));
             Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.DivRem(Zero, 0));
             Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.DivRem(One, 0));
             Assert.Throws<DivideByZeroException>(() => BinaryIntegerHelper<Int128>.DivRem(NegativeOne, 0));
@@ -227,6 +234,28 @@ namespace System.Tests
             Assert.Equal(0x01, BinaryIntegerHelper<Int128>.LeadingZeroCount(MaxValue));
             Assert.Equal(0x00, BinaryIntegerHelper<Int128>.LeadingZeroCount(MinValue));
             Assert.Equal(0x00, BinaryIntegerHelper<Int128>.LeadingZeroCount(NegativeOne));
+        }
+
+        [Fact]
+        public static void Log10Test()
+        {
+            Assert.Equal(0, BinaryIntegerHelper<Int128>.Log10(Zero));
+            Assert.Equal(0, BinaryIntegerHelper<Int128>.Log10(One));
+
+            Int128 power = 1;
+            for (int n = 0; n < 38; n++)
+            {
+                Assert.Equal((Int128)n, BinaryIntegerHelper<Int128>.Log10(power));
+                if (power > 1)
+                {
+                    Assert.Equal((Int128)(n - 1), BinaryIntegerHelper<Int128>.Log10(power - 1));
+                }
+                power *= 10;
+            }
+
+            Assert.Equal(38, BinaryIntegerHelper<Int128>.Log10(MaxValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<Int128>.Log10(MinValue));
+            Assert.Throws<ArgumentOutOfRangeException>(() => BinaryIntegerHelper<Int128>.Log10(NegativeOne));
         }
 
         [Fact]
@@ -1364,6 +1393,24 @@ namespace System.Tests
             Assert.Equal(0x007F, NumberHelper<Int128>.Clamp(MaxValue, new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF80), 0x007F));
             Assert.Equal(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF80), NumberHelper<Int128>.Clamp(MinValue, new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF80), 0x007F));
             Assert.Equal(NegativeOne, NumberHelper<Int128>.Clamp(NegativeOne, new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FF80), 0x007F));
+        }
+
+        [Fact]
+        public static void CopySignTest()
+        {
+            Assert.Equal(Zero, NumberHelper<Int128>.CopySign(Zero, One));
+            Assert.Equal(One, NumberHelper<Int128>.CopySign(One, One));
+            Assert.Equal(MaxValue, NumberHelper<Int128>.CopySign(MaxValue, One));
+            Assert.Equal(One, NumberHelper<Int128>.CopySign(NegativeOne, One));
+
+            Assert.Equal(Zero, NumberHelper<Int128>.CopySign(Zero, NegativeOne));
+            Assert.Equal(NegativeOne, NumberHelper<Int128>.CopySign(One, NegativeOne));
+            Assert.Equal(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0001), NumberHelper<Int128>.CopySign(MaxValue, NegativeOne));
+            Assert.Equal(MinValue, NumberHelper<Int128>.CopySign(MinValue, NegativeOne));
+            Assert.Equal(NegativeOne, NumberHelper<Int128>.CopySign(NegativeOne, NegativeOne));
+
+            Assert.Throws<OverflowException>(() => NumberHelper<Int128>.CopySign(MinValue, Zero));
+            Assert.Throws<OverflowException>(() => NumberHelper<Int128>.CopySign(MinValue, One));
         }
 
         [Fact]

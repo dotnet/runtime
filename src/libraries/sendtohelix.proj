@@ -50,7 +50,8 @@
         Scenarios=$(_Scenarios);
         SuperPmiCollect=$(_SuperPmiCollect);
         SuperPmiCollectionType=$(_SuperPmiCollectionType);
-        SuperPmiCollectionName=$(_SuperPmiCollectionName)
+        SuperPmiCollectionName=$(_SuperPmiCollectionName);
+        EnableHelixJobMonitor=$(EnableHelixJobMonitor)
       </_PropertiesToPass>
       <_DebuggerHosts Condition="'$(_DebuggerHosts)' == ''">$(DebuggerHost)</_DebuggerHosts>
       <_DebuggerHosts Condition="'$(_DebuggerHosts)' == ''">chrome</_DebuggerHosts>
@@ -246,7 +247,8 @@
 
     <ZipDirectory SourceDirectory="$(TestArchiveRoot)coreclr"
                   DestinationFile="$(TestArchiveRoot)coreclr.zip"
-                  Overwrite="true" />
+                  Overwrite="true"
+                  CompressionLevel="Fastest" />
   </Target>
 
   <Target Name="CompressRuntimeDirectory"
@@ -264,7 +266,8 @@
 
     <ZipDirectory SourceDirectory="$(NetCoreAppCurrentTestHostPath)"
                   DestinationFile="$(TestArchiveRuntimeFile)"
-                  Overwrite="true" />
+                  Overwrite="true"
+                  CompressionLevel="Fastest" />
   </Target>
 
   <!--

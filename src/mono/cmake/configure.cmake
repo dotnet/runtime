@@ -112,7 +112,6 @@ check_function_exists(clock_gettime HAVE_CLOCK_GETTIME)
 
 check_symbol_exists(madvise "sys/mman.h" HAVE_MADVISE)
 check_symbol_exists(pthread_mutexattr_setprotocol "pthread.h" HAVE_DECL_PTHREAD_MUTEXATTR_SETPROTOCOL)
-check_symbol_exists(CLOCK_MONOTONIC "time.h" HAVE_CLOCK_MONOTONIC)
 
 check_symbol_exists(sys_signame "signal.h" HAVE_SYSSIGNAME)
 check_symbol_exists(pthread_jit_write_protect_np "pthread.h" HAVE_PTHREAD_JIT_WRITE_PROTECT_NP)

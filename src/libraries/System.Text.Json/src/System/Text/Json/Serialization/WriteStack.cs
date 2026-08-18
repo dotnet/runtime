@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO.Pipelines;
 using System.Runtime.ExceptionServices;
@@ -79,11 +78,6 @@ namespace System.Text.Json
         public Task? PendingTask;
 
         /// <summary>
-        /// List of completed IAsyncDisposables that have been scheduled for disposal by converters.
-        /// </summary>
-        public List<IAsyncDisposable>? CompletedAsyncDisposables;
-
-        /// <summary>
         /// The amount of bytes to write before the underlying Stream should be flushed and the
         /// current buffer adjusted to remove the processed bytes.
         /// </summary>
@@ -127,7 +121,7 @@ namespace System.Text.Json
         /// <summary>
         /// Whether the current frame needs to write out any metadata.
         /// </summary>
-        public readonly bool CurrentContainsMetadata => NewReferenceId != null || PolymorphicTypeDiscriminator != null;
+        public readonly bool CurrentContainsMetadata => NewReferenceId is not null || PolymorphicTypeDiscriminator is not null;
 
         private void EnsurePushCapacity()
         {
@@ -160,7 +154,7 @@ namespace System.Text.Json
             JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy != JsonKnownReferenceHandler.Unspecified)
             {
-                Debug.Assert(options.ReferenceHandler != null);
+                Debug.Assert(options.ReferenceHandler is not null);
                 ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
 
                 if (options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.IgnoreCycles &&
@@ -277,35 +271,6 @@ namespace System.Text.Json
             }
         }
 
-        public void AddCompletedAsyncDisposable(IAsyncDisposable asyncDisposable)
-            => (CompletedAsyncDisposables ??= new List<IAsyncDisposable>()).Add(asyncDisposable);
-
-        // Asynchronously dispose of any AsyncDisposables that have been scheduled for disposal
-        public readonly async ValueTask DisposeCompletedAsyncDisposables()
-        {
-            Debug.Assert(CompletedAsyncDisposables?.Count > 0);
-            Exception? exception = null;
-
-            foreach (IAsyncDisposable asyncDisposable in CompletedAsyncDisposables)
-            {
-                try
-                {
-                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
-                }
-                catch (Exception e)
-                {
-                    exception = e;
-                }
-            }
-
-            if (exception is not null)
-            {
-                ExceptionDispatchInfo.Capture(exception).Throw();
-            }
-
-            CompletedAsyncDisposables.Clear();
-        }
-
         /// <summary>
         /// Walks the stack cleaning up any leftover IDisposables
         /// in the event of an exception on serialization
@@ -314,7 +279,7 @@ namespace System.Text.Json
         {
             Exception? exception = null;
 
-            Debug.Assert(Current.AsyncDisposable is null);
+            Debug.Assert(Current.AsyncEnumerator is null);
             DisposeFrame(Current.CollectionEnumerator, ref exception);
 
             if (_stack is not null)
@@ -323,7 +288,7 @@ namespace System.Text.Json
                 int stackSize = Math.Max(currentIndex, _continuationCount);
                 for (int i = 0; i < stackSize; i++)
                 {
-                    Debug.Assert(_stack[i].AsyncDisposable is null);
+                    Debug.Assert(_stack[i].AsyncEnumerator is null);
 
                     if (i == currentIndex)
                     {
@@ -365,7 +330,7 @@ namespace System.Text.Json
         {
             Exception? exception = null;
 
-            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncDisposable, exception).ConfigureAwait(false);
+            exception = await DisposeFrame(Current.CollectionEnumerator, Current.AsyncEnumerator, exception).ConfigureAwait(false);
 
             if (_stack is not null)
             {
@@ -378,11 +343,11 @@ namespace System.Text.Json
                     {
                         // Matches the entry in Current, skip to avoid double disposal.
                         Debug.Assert(_stack[i].CollectionEnumerator is null || ReferenceEquals(Current.CollectionEnumerator, _stack[i].CollectionEnumerator));
-                        Debug.Assert(_stack[i].AsyncDisposable is null || ReferenceEquals(Current.AsyncDisposable, _stack[i].AsyncDisposable));
+                        Debug.Assert(_stack[i].AsyncEnumerator is null || ReferenceEquals(Current.AsyncEnumerator, _stack[i].AsyncEnumerator));
                         continue;
                     }
 
-                    exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncDisposable, exception).ConfigureAwait(false);
+                    exception = await DisposeFrame(_stack[i].CollectionEnumerator, _stack[i].AsyncEnumerator, exception).ConfigureAwait(false);
                 }
             }
 
@@ -391,9 +356,9 @@ namespace System.Text.Json
                 ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
-            static async ValueTask<Exception?> DisposeFrame(IEnumerator? collectionEnumerator, IAsyncDisposable? asyncDisposable, Exception? exception)
+            static async ValueTask<Exception?> DisposeFrame(IEnumerator? collectionEnumerator, object? asyncEnumerator, Exception? exception)
             {
-                Debug.Assert(!(collectionEnumerator is not null && asyncDisposable is not null));
+                Debug.Assert(!(collectionEnumerator is not null && asyncEnumerator is not null));
 
                 try
                 {
@@ -401,7 +366,7 @@ namespace System.Text.Json
                     {
                         disposable.Dispose();
                     }
-                    else if (asyncDisposable is not null)
+                    else if (asyncEnumerator is IAsyncDisposable asyncDisposable)
                     {
                         await asyncDisposable.DisposeAsync().ConfigureAwait(false);
                     }
@@ -453,7 +418,7 @@ namespace System.Text.Json
 
             static void AppendPropertyName(StringBuilder sb, string? propertyName)
             {
-                if (propertyName != null)
+                if (propertyName is not null)
                 {
                     if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {

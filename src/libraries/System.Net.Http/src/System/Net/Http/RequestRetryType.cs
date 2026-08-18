@@ -26,6 +26,11 @@ namespace System.Net.Http
         /// <summary>
         /// The proxy failed, so the request should be retried on the next proxy.
         /// </summary>
-        RetryOnNextProxy
+        RetryOnNextProxy,
+
+        /// <summary>
+        /// The request received a session-based authentication challenge (e.g., NTLM or Negotiate) on HTTP/2 and should be retried on HTTP/1.1.
+        /// </summary>
+        RetryOnSessionAuthenticationChallenge
     }
 }

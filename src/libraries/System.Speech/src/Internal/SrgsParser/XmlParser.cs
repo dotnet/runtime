@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Speech.Recognition.SrgsGrammar;
 using System.Text;
@@ -17,7 +18,7 @@ namespace System.Speech.Internal.SrgsParser
     {
         #region Constructors
 
-        internal XmlParser(XmlReader reader, Uri uri)
+        internal XmlParser(XmlReader reader, Uri? uri)
         {
             _reader = reader;
             _xmlTextReader = reader as XmlTextReader;
@@ -117,7 +118,7 @@ namespace System.Speech.Internal.SrgsParser
         /// Tokens may also be delimited by double quotes.  In these cases, the double
         /// quotes token must be surrounded by white space or string boundary.
         /// </summary>
-        internal static void ParseText(IElement parent, string sChars, string pronunciation, string display, float reqConfidence, CreateTokenCallback createTokens)
+        internal static void ParseText(IElement parent, string sChars, string? pronunciation, string? display, float reqConfidence, CreateTokenCallback? createTokens)
         {
             sChars = sChars.Trim(Helpers._achTrimChars);
 
@@ -183,7 +184,8 @@ namespace System.Speech.Internal.SrgsParser
         /// Throws an Exception with the error specified by the resource ID.
         /// Add the line and column number if the XmlReader is a TextReader
         /// </summary>
-        internal static void ThrowSrgsException(SRID id, params object[] args)
+        [DoesNotReturn]
+        internal static void ThrowSrgsException(SRID id, params object?[]? args)
         {
             throw new FormatException(SR.Get(id, args));
         }
@@ -192,11 +194,11 @@ namespace System.Speech.Internal.SrgsParser
         /// Throws an Exception with the error specified by the resource ID.
         /// Add the line and column number if the XmlReader is a TextReader
         /// </summary>
-        internal static void ThrowSrgsExceptionWithPosition(string filename, XmlReader xmlReader, string sError, Exception innerException)
+        [DoesNotReturn]
+        internal static void ThrowSrgsExceptionWithPosition(string? filename, XmlReader xmlReader, string sError, Exception? innerException)
         {
             // Add the line and column number if the XmlReader is a XmlTextReader
-            XmlTextReader xmlTextReader = xmlReader as XmlTextReader;
-            if (xmlTextReader != null)
+            if (xmlReader is XmlTextReader xmlTextReader)
             {
                 string sLine = SR.Get(SRID.Line);
                 string sPosition = SR.Get(SRID.Position);
@@ -263,10 +265,10 @@ namespace System.Speech.Internal.SrgsParser
         // The perf gain using .Lengh == 0 other  readability is not worth it fixing this FxCop issue
         private void ParseGrammar(XmlReader reader, IGrammar grammar)
         {
-            string sAlphabet = null;
-            string sLanguage = null;
-            string sNamespace = null;
-            string sVersion = null;
+            string? sAlphabet = null;
+            string? sLanguage = null;
+            string? sNamespace = null;
+            string? sVersion = null;
             GrammarType grammarType = GrammarType.VoiceGrammar;
 
             // Process attributes.
@@ -488,23 +490,23 @@ namespace System.Speech.Internal.SrgsParser
             }
             // Finish all initialization - should check for the Root and the all
             // rules are defined
-            grammar.PostParse(null);
+            grammar.PostParse(null!);
         }
 
         // The perf gain using .Lengh == 0 other  readability is not worth it fixing this FxCop issue
         private IRule ParseRule(IGrammar grammar, XmlReader reader)
         {
-            string id = null;
-            string scope = null;
-            string dynamic = null;
+            string? id = null;
+            string? scope = null;
+            string? dynamic = null;
             RulePublic publicRule = RulePublic.NotSet;
             RuleDynamic ruleDynamic = RuleDynamic.NotSet;
 
-            string sBaseClass = null;
-            string sInit = null;
-            string sParse = null;
-            string sError = null;
-            string sRecognition = null;
+            string? sBaseClass = null;
+            string? sInit = null;
+            string? sParse = null;
+            string? sError = null;
+            string? sRecognition = null;
 
             while (reader.MoveToNextAttribute())
             {
@@ -658,11 +660,11 @@ namespace System.Speech.Internal.SrgsParser
         // The perf gain using .Lengh == 0 other  readability is not worth it fixing this FxCop issue
         private IRuleRef ParseRuleRef(IElement parent, XmlReader reader)
         {
-            IRuleRef ruleRef = null;
+            IRuleRef? ruleRef = null;
 
-            string sAlias = null;
-            string sParams = null;
-            string uri = null;
+            string? sAlias = null;
+            string? sParams = null;
+            string? uri = null;
 
             while (reader.MoveToNextAttribute())
             {
@@ -743,7 +745,7 @@ namespace System.Speech.Internal.SrgsParser
             }
 
             // No children allowed
-            ProcessChildNodes(reader, null, null, "ruleref");
+            ProcessChildNodes(reader, null, null!, "ruleref");
 
             if (ruleRef == null)
             {
@@ -854,7 +856,7 @@ namespace System.Speech.Internal.SrgsParser
 
         private ISubset ParseSubset(IElement parent, XmlReader reader)
         {
-            string sMatch = null;
+            string? sMatch = null;
             MatchMode matchMode = MatchMode.Subsequence;
 
             while (reader.MoveToNextAttribute())
@@ -918,8 +920,8 @@ namespace System.Speech.Internal.SrgsParser
 
         private IToken ParseToken(IElement parent, XmlReader reader)
         {
-            string sPronunciation = null;
-            string sDisplay = null;
+            string? sPronunciation = null;
+            string? sDisplay = null;
             float reqConfidence = -1;
 
             while (reader.MoveToNextAttribute())
@@ -1030,7 +1032,7 @@ namespace System.Speech.Internal.SrgsParser
         /// Tokens may also be delimited by double quotes.  In these cases, the double
         /// quotes token must be surrounded by white space or string boundary.
         /// </summary>
-        private void ParseText(IElement parent, string sChars, string pronunciation, string display, float reqConfidence)
+        private void ParseText(IElement parent, string sChars, string? pronunciation, string? display, float reqConfidence)
         {
             System.Diagnostics.Debug.Assert((parent != null) && (!string.IsNullOrEmpty(sChars)));
 
@@ -1058,7 +1060,7 @@ namespace System.Speech.Internal.SrgsParser
             System.Diagnostics.Debug.Assert(_parser.Grammar.TagFormat == SrgsTagFormat.KeyValuePairs);
 
             IPropertyTag propertyTag = _parser.CreatePropertyTag(parent);
-            string name;
+            string? name;
             object value;
             ParsePropertyTag(content, out name, out value);
             propertyTag.NameValue(parent, name, value);
@@ -1187,8 +1189,8 @@ namespace System.Speech.Internal.SrgsParser
 
         private void ParseScript(XmlReader reader, IGrammar grammar)
         {
-            int line = _filename != null ? _xmlTextReader.LineNumber : -1;
-            string sRule = null;
+            int line = _filename != null ? _xmlTextReader!.LineNumber : -1;
+            string? sRule = null;
 
             while (reader.MoveToNextAttribute())
             {
@@ -1284,12 +1286,12 @@ namespace System.Speech.Internal.SrgsParser
             }
         }
 
-        private bool ProcessChildNodes(XmlReader reader, IElement parent, IRule rule, string parentName)
+        private bool ProcessChildNodes(XmlReader reader, IElement? parent, IRule rule, string parentName)
         {
             bool fFirstElement = true;
 
             // Create a list of name value tags for this scope
-            List<IPropertyTag> tags = null;
+            List<IPropertyTag>? tags = null;
 
             reader.MoveToElement();                                 // Move to containing parent of attributes
             if (!reader.IsEmptyElement)
@@ -1307,7 +1309,7 @@ namespace System.Speech.Internal.SrgsParser
                             ThrowSrgsException(SRID.InvalidNotEmptyElement, parentName);
                         }
 
-                        IElement child = null;
+                        IElement? child = null;
                         switch (reader.NamespaceURI)
                         {
                             case srgsNamespace:
@@ -1345,8 +1347,7 @@ namespace System.Speech.Internal.SrgsParser
 
                                     case "tag":
                                         child = ParseTag(parent, reader);
-                                        IPropertyTag tag = child as IPropertyTag;
-                                        if (tag != null)
+                                        if (child is IPropertyTag tag)
                                         {
                                             // The tag list is delayed as it might not be necessary
                                             tags ??= new List<IPropertyTag>();
@@ -1418,7 +1419,7 @@ namespace System.Speech.Internal.SrgsParser
             {
                 foreach (IPropertyTag tag in tags)
                 {
-                    tag.PostParse(parent);
+                    tag.PostParse(parent!);
                 }
             }
             return !fFirstElement;
@@ -1442,15 +1443,13 @@ namespace System.Speech.Internal.SrgsParser
             }
             else
             {
-                IRule parentRule = parent as IRule;
-                if (parentRule != null)
+                if (parent is IRule parentRule)
                 {
                     _parser.AddElement(parentRule, srgsText);
                 }
                 else
                 {
-                    IItem parentItem = parent as IItem;
-                    if (parentItem != null)
+                    if (parent is IItem parentItem)
                     {
                         _parser.AddElement(parentItem, srgsText);
                     }
@@ -1465,17 +1464,15 @@ namespace System.Speech.Internal.SrgsParser
             return isInvalidNode;
         }
 
-        private bool ParseChildNodeElement(IElement parent, bool isInvalidNode, IElement child)
+        private bool ParseChildNodeElement(IElement parent, bool isInvalidNode, IElement? child)
         {
             // The child parent has not been processed yet
             if (child != null)
             {
                 // if the parent is a one of, then the children must be an Item
-                IOneOf parentOneOf = parent as IOneOf;
-                if (parentOneOf != null)
+                if (parent is IOneOf parentOneOf)
                 {
-                    IItem childItem = child as IItem;
-                    if (childItem != null)
+                    if (child is IItem childItem)
                     {
                         _parser.AddItem(parentOneOf, childItem);
                     }
@@ -1486,15 +1483,13 @@ namespace System.Speech.Internal.SrgsParser
                 }
                 else
                 {
-                    IRule parentRule = parent as IRule;
-                    if (parentRule != null)
+                    if (parent is IRule parentRule)
                     {
                         _parser.AddElement(parentRule, child);
                     }
                     else
                     {
-                        IItem parentItem = parent as IItem;
-                        if (parentItem != null)
+                        if (parent is IItem parentItem)
                         {
                             _parser.AddElement(parentItem, child);
                         }
@@ -1669,7 +1664,7 @@ namespace System.Speech.Internal.SrgsParser
             reader.Read();                                          // Move to next sibling
             return sb.ToString();
         }
-        private static void ParsePropertyTag(string sTag, out string name, out object value)
+        private static void ParsePropertyTag(string sTag, out string? name, out object value)
         {
             // Default value
             name = null;
@@ -1814,7 +1809,7 @@ namespace System.Speech.Internal.SrgsParser
             }
         }
 
-        private static void CheckForDuplicates(ref string dest, XmlReader reader)
+        private static void CheckForDuplicates([NotNull] ref string? dest, XmlReader reader)
         {
             if (!string.IsNullOrEmpty(dest))
             {
@@ -1830,7 +1825,7 @@ namespace System.Speech.Internal.SrgsParser
         }
 
         // Throws exception if the specified Rule does not have a valid Id.
-        internal static void ValidateRuleId(string id)
+        internal static void ValidateRuleId([NotNull] string? id)
         {
             Helpers.ThrowIfEmptyOrNull(id, nameof(id));
 
@@ -1847,7 +1842,7 @@ namespace System.Speech.Internal.SrgsParser
             // in srgs.xml: or  <ruleref uri="srgs.xml>
             if (_filename != null)
             {
-                if (uri.StartsWith(_shortFilename, StringComparison.Ordinal) && (uri.Length > _shortFilename.Length && uri[_shortFilename.Length] == '#' || uri.Length == _shortFilename.Length))
+                if (uri.StartsWith(_shortFilename!, StringComparison.Ordinal) && (uri.Length > _shortFilename!.Length && uri[_shortFilename.Length] == '#' || uri.Length == _shortFilename.Length))
                 {
                     ThrowSrgsException(SRID.InvalidRuleRefSelf);
                 }
@@ -1882,22 +1877,22 @@ namespace System.Speech.Internal.SrgsParser
 
         #region Private Fields
 
-        private IElementFactory _parser;
+        private IElementFactory _parser = null!;
 
         // Avoid to do a cast many times
         private XmlReader _reader;
 
         // Avoid to do a cast many times
-        private XmlTextReader _xmlTextReader;
+        private XmlTextReader? _xmlTextReader;
 
         // Save the filename
-        private string _filename;
+        private string? _filename;
 
         // Save the filename without the path
-        private string _shortFilename;
+        private string? _shortFilename;
 
         // Language Id for this grammar
-        private CultureInfo _langId;
+        private CultureInfo? _langId;
 
         // Has the Grammar element a FormatTag
         private bool _hasTagFormat;

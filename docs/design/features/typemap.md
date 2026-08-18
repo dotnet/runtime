@@ -200,6 +200,8 @@ An entry in an External Type Map is included when the "trim target" type is refe
 
 Many of these instructions can be passed a generic parameter. In that case, the trimming tool should consider type arguments of instantiations of that type as having met one of these rules and include any entries with those types as "trim target" types.
 
+For pointer, byref, and array types as trim targets, the entries are preserved if the element type meets the requirements above to keep the entry. A trimming tool is free to remove entries if it can prove that the pointer, byref, or array type cannot be represented at runtime.
+
 ### Proxy Type Map
 
 An entry in the Proxy Type Map is included when the "source type" is referenced in one of the following ways:
@@ -220,3 +222,5 @@ If the type is an interface type and the user could possibly see a `RuntimeTypeH
 - The owning type of the method argument to `callvirt`, or `ldvirtftn`.
 
 Finally, if the trimming tool determines that it is impossible to retrieve a `System.Type` instance the represents the "source type" at runtime, then the entry may be omitted from the Proxy Type Map as its existence is unobservable.
+
+For pointer, byref, and array types as source types, the entries are preserved if the element type meets the requirements above to keep the entry. A trimming tool is free to remove entries if it can prove that the pointer, byref, or array type cannot be represented at runtime.

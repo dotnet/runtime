@@ -52,7 +52,7 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.Equal(id, Trace.CorrelationManager.ActivityId);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CorrelationManager_MutateStackPush()
         {
             Guid id = Guid.NewGuid();
@@ -67,7 +67,7 @@ namespace System.Diagnostics.TraceSourceTests
             ValidateStack(Trace.CorrelationManager.LogicalOperationStack, 2, 1);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CorrelationManager_MutateStackPop()
         {
             Guid id = Guid.NewGuid();
@@ -82,7 +82,7 @@ namespace System.Diagnostics.TraceSourceTests
             ValidateStack(Trace.CorrelationManager.LogicalOperationStack, Array.Empty<object>());
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CorrelationManager_ActivityIdAcrossAwait()
         {
             Guid g = Guid.NewGuid();
@@ -94,7 +94,7 @@ namespace System.Diagnostics.TraceSourceTests
             Assert.Equal(g, Trace.CorrelationManager.ActivityId);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public async Task CorrelationManager_CorrelationAcrossAwait()
         {
             Guid g = Guid.NewGuid();

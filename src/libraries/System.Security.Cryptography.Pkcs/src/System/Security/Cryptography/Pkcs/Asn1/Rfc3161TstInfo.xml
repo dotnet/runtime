@@ -2,7 +2,8 @@
 <asn:Sequence
   xmlns:asn="http://schemas.dot.net/asnxml/201808/"
   name="Rfc3161TstInfo"
-  namespace="System.Security.Cryptography.Pkcs.Asn1">
+  namespace="System.Security.Cryptography.Pkcs.Asn1"
+  emitType="both">
 
   <!--
     https://tools.ietf.org/html/rfc3161#section-2.4.2
@@ -28,7 +29,7 @@
   -->
   <asn:Integer name="Version" backingType="int" />
   <asn:ObjectIdentifier name="Policy" />
-  <asn:AsnType name="MessageImprint" typeName="System.Security.Cryptography.Pkcs.Asn1.MessageImprint" />
+  <asn:AsnType name="MessageImprint" typeName="System.Security.Cryptography.Pkcs.Asn1.MessageImprint" valueTypeName="System.Security.Cryptography.Pkcs.Asn1.ValueMessageImprint" />
   <asn:Integer name="SerialNumber"  backingType="ReadOnlyMemory" />
   <asn:GeneralizedTime name="GenTime" />
   <asn:AsnType name="Accuracy" typeName="System.Security.Cryptography.Pkcs.Asn1.Rfc3161Accuracy" optional="true" rebind="false" />

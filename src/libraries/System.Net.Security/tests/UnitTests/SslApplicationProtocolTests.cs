@@ -52,6 +52,51 @@ namespace System.Net.Security.Tests
         }
 
         [Theory]
+        [InlineData(0, true)]
+        [InlineData(1, false)]
+        [InlineData(254, false)]
+        [InlineData(255, false)]
+        [InlineData(256, true)]
+        [InlineData(512, true)]
+        public void Constructor_ProtocolSizeBoundary_ThrowsForInvalidSize(int size, bool shouldThrow)
+        {
+            byte[] protocol = new byte[size];
+            protocol.AsSpan().Fill((byte)'a');
+
+            if (shouldThrow)
+            {
+                AssertExtensions.Throws<ArgumentException>("protocol", () => new SslApplicationProtocol(protocol));
+            }
+            else
+            {
+                SslApplicationProtocol alpn = new SslApplicationProtocol(protocol);
+                Assert.Equal(size, alpn.Protocol.Length);
+            }
+        }
+
+        [Theory]
+        [InlineData(0, true)]
+        [InlineData(1, false)]
+        [InlineData(254, false)]
+        [InlineData(255, false)]
+        [InlineData(256, true)]
+        [InlineData(512, true)]
+        public void Constructor_StringSizeBoundary_ThrowsForInvalidSize(int size, bool shouldThrow)
+        {
+            string protocol = new string('a', size);
+
+            if (shouldThrow)
+            {
+                AssertExtensions.Throws<ArgumentException>("protocol", () => new SslApplicationProtocol(protocol));
+            }
+            else
+            {
+                SslApplicationProtocol alpn = new SslApplicationProtocol(protocol);
+                Assert.Equal(size, alpn.Protocol.Length);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(Protocol_Equality_TestData))]
         public void Equality_Tests_Succeeds(SslApplicationProtocol left, SslApplicationProtocol right)
         {

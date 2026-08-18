@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.Cng.Tests
         private static readonly CngAlgorithm s_cngAlgorithm = new CngAlgorithm("AES");
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalTheory(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalTheory(typeof(AesCngTests), nameof(SupportsPersistedSymmetricKeys))]
         // AES128-ECB-NoPadding 2 blocks.
         [InlineData(128, 2 * BlockSizeBytes, CipherMode.ECB, PaddingMode.None)]
         // AES128-ECB-Zeros 2 blocks.
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(AesCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void GetKey_NonExportable()
         {
             SymmetricCngTestHelpers.GetKey_NonExportable(
@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(AesCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void SetKey_DetachesFromPersistedKey()
         {
             SymmetricCngTestHelpers.SetKey_DetachesFromPersistedKey(
@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(AesCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void LoadWrongKeyType_ByKeyName()
         {
             string keyName = Guid.NewGuid().ToString();
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(AesCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void LoadWrongKeyType_ByCngKey()
         {
             string keyName = Guid.NewGuid().ToString();
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop(/* Creates/Deletes a persisted key, limit exposure to key leaking */)]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys), nameof(IsAdministrator))]
+        [ConditionalFact(typeof(AesCngTests), nameof(SupportsPersistedSymmetricKeys), nameof(IsAdministrator))]
         public static void VerifyMachineKey()
         {
             SymmetricCngTestHelpers.VerifyMachineKey(
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop("Creates/Deletes a persisted key, limit exposure to key leaking")]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(AesCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void VerifyUnsupportedFeedbackSizeForPersistedCfb()
         {
             SymmetricCngTestHelpers.VerifyCfbPersistedUnsupportedFeedbackSize(
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop("Creates/Deletes a persisted key, limit exposure to key leaking")]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(AesCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void VerifyRequiresAesCngKey()
         {
             SymmetricCngTestHelpers.VerifyMismatchAlgorithmFails(
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Cng.Tests
         }
 
         [OuterLoop("Creates/Deletes a persisted key, limit exposure to key leaking")]
-        [ConditionalFact(nameof(SupportsPersistedSymmetricKeys))]
+        [ConditionalFact(typeof(AesCngTests), nameof(SupportsPersistedSymmetricKeys))]
         public static void VerifyCngKeyIndependentLifetime()
         {
             string keyName = Guid.NewGuid().ToString();

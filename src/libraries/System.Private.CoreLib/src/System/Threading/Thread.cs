@@ -73,10 +73,10 @@ namespace System.Threading
 
                 try
                 {
-#if TARGET_OSX || NATIVEAOT
+#if TARGET_APPLE || NATIVEAOT
                     // On other platforms, when the underlying native thread is created,
                     // the thread name is set to the name of the managed thread by another thread.
-                    // However, on OS X and NativeAOT (across all OSes), only the thread itself can set its name.
+                    // However, on Apple platforms and NativeAOT (across all OSes), only the thread itself can set its name.
                     // Therefore, by this point the native thread is still unnamed as it has not started yet.
                     Thread thread = Thread.CurrentThread;
                     if (!string.IsNullOrEmpty(thread.Name))
@@ -195,7 +195,7 @@ namespace System.Threading
 
         private void Start(object? parameter, bool captureContext)
         {
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
 
             StartHelper? startHelper = _startHelper;
 
@@ -238,7 +238,7 @@ namespace System.Threading
 
         private void Start(bool captureContext)
         {
-            Thread.ThrowIfSingleThreaded();
+            RuntimeFeature.ThrowIfMultithreadingIsNotSupported();
             StartHelper? startHelper = _startHelper;
 
             // In the case of a null startHelper (second call to start on same thread)
@@ -429,7 +429,7 @@ namespace System.Threading
         internal void ResetThreadPoolThread()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(IsSingleThreaded || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!RuntimeFeature.IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
 
             if (_mayNeedResetForThreadPool)
             {
@@ -441,7 +441,7 @@ namespace System.Threading
         private void ResetThreadPoolThreadSlow()
         {
             Debug.Assert(this == CurrentThread);
-            Debug.Assert(IsSingleThreaded || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
+            Debug.Assert(!RuntimeFeature.IsMultithreadingSupported || IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
             Debug.Assert(_mayNeedResetForThreadPool);
 
             _mayNeedResetForThreadPool = false;
@@ -736,27 +736,6 @@ namespace System.Threading
         {
             return ProcessorIdCache.GetCurrentProcessorId();
         }
-
-        [SupportedOSPlatformGuard("browser")]
-        [SupportedOSPlatformGuard("wasi")]
-#if FEATURE_SINGLE_THREADED
-        internal static bool IsSingleThreaded => true;
-        [DoesNotReturn]
-        internal static void ThrowIfSingleThreaded()
-        {
-            throw new PlatformNotSupportedException();
-        }
-#else
-        internal static bool IsSingleThreaded => false;
-#if FEATURE_WASM_MANAGED_THREADS
-        internal static void ThrowIfSingleThreaded()
-        {
-            AssureBlockingPossible();
-        }
-#else
-        internal static void ThrowIfSingleThreaded() { }
-#endif
-#endif
 
 #if FEATURE_WASM_MANAGED_THREADS
         [ThreadStatic]

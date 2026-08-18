@@ -44,7 +44,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest0_Helper(-1, 10, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest1_Wait()
         {
             // Infinite timeout
@@ -63,14 +63,14 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest1_Wait_Helper(1, 10, TimeSpan.FromMilliseconds(uint.MaxValue), true, null);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest1_Wait_NegativeCases()
         {
             // Invalid timeout
             RunSemaphoreSlimTest1_Wait_Helper(10, 10, -10, false, typeof(ArgumentOutOfRangeException));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest1_WaitAsync()
         {
             // Infinite timeout
@@ -90,7 +90,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest1_WaitAsync_Helper(1, 10, TimeSpan.MaxValue, true, null);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/99519", TestPlatforms.Browser)]
         public static void RunSemaphoreSlimTest1_WaitAsync_NegativeCases()
         {
@@ -121,7 +121,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest2_Release_Helper(int.MaxValue - 1, int.MaxValue, 10, typeof(SemaphoreFullException));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest4_Dispose()
         {
             RunSemaphoreSlimTest4_Dispose_Helper(5, 10, null, null);
@@ -136,7 +136,7 @@ namespace System.Threading.Tests
               (5, 10, SemaphoreSlimActions.AvailableWaitHandle, typeof(ObjectDisposedException));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest5_CurrentCount()
         {
             RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, null);
@@ -145,7 +145,7 @@ namespace System.Threading.Tests
             RunSemaphoreSlimTest5_CurrentCount_Helper(5, 10, SemaphoreSlimActions.Release);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public static void RunSemaphoreSlimTest7_AvailableWaitHandle()
         {
             RunSemaphoreSlimTest7_AvailableWaitHandle_Helper(5, 10, null, true);
@@ -461,7 +461,7 @@ namespace System.Threading.Tests
         /// <param name="failedWait">Number of failed wait threads</param>
         /// <param name="finalCount">The final semaphore count</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(5, 1000, 50, 50, 50, 0, 5, 1000)]
         [InlineData(0, 1000, 50, 25, 25, 25, 0, 500)]
         [InlineData(0, 1000, 50, 0, 0, 50, 0, 100)]
@@ -527,7 +527,7 @@ namespace System.Threading.Tests
         /// <param name="failedWait">Number of failed wait threads</param>
         /// <param name="finalCount">The final semaphore count</param>
         /// <returns>True if the test succeeded, false otherwise</returns>
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(5, 1000, 50, 50, 50, 0, 5, 500)]
         [InlineData(0, 1000, 50, 25, 25, 25, 0, 500)]
         [InlineData(0, 1000, 50, 0, 0, 50, 0, 100)]
@@ -576,7 +576,7 @@ namespace System.Threading.Tests
             Assert.Equal(finalCount, semaphore.CurrentCount);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(10, 10)]
         [InlineData(1, 10)]
         [InlineData(10, 1)]

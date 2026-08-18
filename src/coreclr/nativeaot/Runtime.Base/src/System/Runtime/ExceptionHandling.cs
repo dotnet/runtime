@@ -253,6 +253,8 @@ namespace System.Runtime
             RH_EH_FIRST_RETHROW_FRAME = 2,
         }
 
+        [StackTraceHidden]
+        [DebuggerHidden]
         private static void AppendExceptionStackFrameViaClasslib(object exception, IntPtr ip,
             UIntPtr sp, ref ExInfo exInfo,
             ref bool isFirstRethrowFrame, ref bool isFirstFrame)
@@ -380,6 +382,7 @@ namespace System.Runtime
         // the asm helpers to these functions, which performs the throw. The tail-call is important: it ensures that
         // the stack is crawlable from within these functions.
         [StackTraceHidden]
+        [DebuggerHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibOverflowException")]
         public static void ThrowClasslibOverflowException(IntPtr address)
         {
@@ -390,6 +393,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         [RuntimeExport("RhExceptionHandling_ThrowClasslibDivideByZeroException")]
         public static void ThrowClasslibDivideByZeroException(IntPtr address)
         {
@@ -400,6 +404,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         [RuntimeExport("RhExceptionHandling_FailedAllocation")]
         public static void FailedAllocation(MethodTable* pEEType, bool fIsOverflow)
         {
@@ -578,12 +583,19 @@ namespace System.Runtime
         //
         // Called by RhpThrowHwEx
         //
+        [StackTraceHidden]
+        [DebuggerHidden]
 #if NATIVEAOT
         [RuntimeExport("RhThrowHwEx")]
-#endif
-        [StackTraceHidden]
         public static void RhThrowHwEx(uint exceptionCode, ref ExInfo exInfo)
+#else
+        [UnmanagedCallersOnly]
+        internal static void RhThrowHwEx(uint exceptionCode, ExInfo* pExInfo)
+#endif
         {
+#if !NATIVEAOT
+            ref ExInfo exInfo = ref *pExInfo;
+#endif
 #if NATIVEAOT
             // trigger a GC (only if gcstress) to ensure we can stackwalk at this point
             GCStress.TriggerGC();
@@ -661,12 +673,20 @@ namespace System.Runtime
 
         private const uint MaxTryRegionIdx = 0xFFFFFFFFu;
 
+        [StackTraceHidden]
+        [DebuggerHidden]
 #if NATIVEAOT
         [RuntimeExport("RhThrowEx")]
-#endif
-        [StackTraceHidden]
         public static void RhThrowEx(object exceptionObj, ref ExInfo exInfo)
+#else
+        [UnmanagedCallersOnly]
+        internal static void RhThrowEx(object* pExceptionObj, ExInfo* pExInfo)
+#endif
         {
+#if !NATIVEAOT
+            object exceptionObj = *pExceptionObj;
+            ref ExInfo exInfo = ref *pExInfo;
+#endif
 #if NATIVEAOT
 
 #if TARGET_WINDOWS
@@ -694,12 +714,20 @@ namespace System.Runtime
 #endif
         }
 
+        [StackTraceHidden]
+        [DebuggerHidden]
 #if NATIVEAOT
         [RuntimeExport("RhRethrow")]
-#endif
-        [StackTraceHidden]
         public static void RhRethrow(ref ExInfo activeExInfo, ref ExInfo exInfo)
+#else
+        [UnmanagedCallersOnly]
+        internal static void RhRethrow(ExInfo* pActiveExInfo, ExInfo* pExInfo)
+#endif
         {
+#if !NATIVEAOT
+            ref ExInfo activeExInfo = ref *pActiveExInfo;
+            ref ExInfo exInfo = ref *pExInfo;
+#endif
 #if NATIVEAOT
 
 #if TARGET_WINDOWS
@@ -725,6 +753,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         private static void DispatchEx(scoped ref StackFrameIterator frameIter, ref ExInfo exInfo)
         {
             Debug.Assert(exInfo._passNumber == 1, "expected asm throw routine to set the pass");
@@ -967,6 +996,8 @@ namespace System.Runtime
             return codeOffset;
         }
 
+        [StackTraceHidden]
+        [DebuggerHidden]
         private static void UpdateStackTrace(object exceptionObj, UIntPtr curFramePtr, IntPtr ip, UIntPtr sp,
             ref bool isFirstRethrowFrame, ref UIntPtr prevFramePtr, ref bool isFirstFrame, ref ExInfo exInfo)
         {
@@ -987,6 +1018,7 @@ namespace System.Runtime
         }
 
         [StackTraceHidden]
+        [DebuggerHidden]
         private static bool FindFirstPassHandler(object exception, uint idxStart,
             ref StackFrameIterator frameIter, out uint tryRegionIdx, out byte* pHandler)
         {

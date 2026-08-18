@@ -171,6 +171,7 @@ namespace System.Net.Sockets
             set
             {
                 _clientSocket.EnableBroadcast = value;
+                _isBroadcastSetByUser = true;
             }
         }
 
@@ -247,6 +248,7 @@ namespace System.Net.Sockets
         }
 
         private bool _isBroadcast;
+        private bool _isBroadcastSetByUser;
         private void CheckForBroadcast(IPAddress ipAddress)
         {
             // Here we check to see if the user is trying to use a Broadcast IP address
@@ -254,7 +256,10 @@ namespace System.Net.Sockets
             // and in that case we set SocketOptionName.Broadcast on the socket to allow its use.
             // if the user really wants complete control over Broadcast addresses they need to
             // inherit from UdpClient and gain control over the Socket and do whatever is appropriate.
-            if (_clientSocket != null && !_isBroadcast && IsBroadcast(ipAddress))
+            //
+            // If the user has explicitly set EnableBroadcast, we respect their choice
+            // and do not auto-enable broadcast.
+            if (_clientSocket != null && !_isBroadcast && !_isBroadcastSetByUser && IsBroadcast(ipAddress))
             {
                 // We need to set the Broadcast socket option.
                 // Note that once we set the option on the Socket we never reset it.

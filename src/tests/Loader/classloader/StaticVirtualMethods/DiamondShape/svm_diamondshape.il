@@ -1528,7 +1528,11 @@
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
     )
-    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {string('https://github.com/dotnet/runtime/issues/72589') type([TestLibrary]TestLibrary.Utilities) string[1] ('IsNativeAot') }
+    .custom instance void [Microsoft.DotNet.XUnitExtensions]Xunit.ActiveIssueAttribute::.ctor(string, class [mscorlib]System.Type, string[]) = {
+        string('https://github.com/dotnet/runtime/issues/72589')
+        type([TestLibrary]TestLibrary.Utilities)
+        string[1] ('IsNativeAot')
+    }
     .entrypoint
     // Code size       23 (0x17)
     .maxstack  1

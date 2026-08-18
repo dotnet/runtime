@@ -47,6 +47,15 @@
     <xs:attribute name="name" use="required" type="xs:NCName" />
     <xs:attribute name="namespace" use="required" type="QualifiedName" />
     <xs:attribute name="rebind" use="optional" type="xs:boolean" default="true" />
+    <xs:attribute name="emitType" use="optional" default="struct">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="struct" />
+          <xs:enumeration value="ref" />
+          <xs:enumeration value="both" />
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="FieldBase">
@@ -61,12 +70,14 @@
     <xs:complexContent>
       <xs:extension base="FieldBase">
         <xs:attribute name="typeName" use="required" type="QualifiedName" />
+        <xs:attribute name="valueTypeName" use="optional" type="QualifiedName" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
 
   <xs:complexType name="ExternalCollectionTypeRef">
     <xs:attribute name="typeName" use="required" type="QualifiedName" />
+    <xs:attribute name="valueTypeName" use="optional" type="QualifiedName" />
   </xs:complexType>
 
   <xs:complexType name="AnyValueType">
@@ -142,6 +153,7 @@
             <xs:element name="BMPString"/>
           </xs:choice>
         </xs:sequence>
+        <xs:attribute name="valueName" use="optional" type="xs:NCName" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>

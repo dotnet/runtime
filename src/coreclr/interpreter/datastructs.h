@@ -4,6 +4,8 @@
 #ifndef _DATASTRUCTS_H_
 #define _DATASTRUCTS_H_
 
+#include "interpalloc.h"
+
 struct MallocAllocator
 {
     MallocAllocator() {}
@@ -232,23 +234,18 @@ struct TSList
         this->pNext = pNext;
     }
 
-    static TSList* Push(TSList *head, T data)
+    template <typename TAllocator>
+    static TSList* Push(TSList *head, T data, TAllocator allocator)
     {
-        TSList *newHead = new TSList(data, head);
+        TSList *newHead = new(allocator) TSList(data, head);
         return newHead;
     }
 
     static TSList* Pop(TSList *head)
     {
         TSList *next = head->pNext;
-        delete head;
+        head->~TSList();
         return next;
-    }
-
-    static void Free(TSList *head)
-    {
-        while (head != NULL)
-            head = Pop(head);
     }
 };
 

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -15,7 +16,7 @@ using Microsoft.Interop.UnitTests;
 using Xunit;
 using static Microsoft.Interop.UnitTests.TestUtils;
 using StringMarshalling = System.Runtime.InteropServices.StringMarshalling;
-using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator>;
+using VerifyComInterfaceGenerator = Microsoft.Interop.UnitTests.Verifiers.CSharpSourceGeneratorVerifier<Microsoft.Interop.ComInterfaceGenerator, Microsoft.Interop.Analyzers.ComInterfaceGeneratorDiagnosticsAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
@@ -30,14 +31,136 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithArguments("IComInterface2")
             } };
-            yield return new object[] { ID(), codeSnippets.InterfaceWithPropertiesAndEvents, new[]
+            yield return new object[] { ID(), codeSnippets.InterfaceWithEvents, new[]
             {
-               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InstancePropertyDeclaredInInterface)
-                   .WithLocation(0)
-                   .WithArguments("Property", "INativeAPI"),
                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InstanceEventDeclaredInInterface)
-                   .WithLocation(1)
+                   .WithLocation(0)
                    .WithArguments("Event", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithExternProperty, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface)
+                   .WithLocation(0)
+                   .WithArguments("Extern", "INativeAPI", "extern"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithRequiredProperty, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface)
+                   .WithLocation(0)
+                   .WithArguments("Required", "INativeAPI", "required"),
+               DiagnosticResult.CompilerError("CS0106").WithSpan(12, 18, 12, 26).WithArguments("required"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithInitProperty, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface)
+                   .WithLocation(0)
+                   .WithArguments("InitOnly", "INativeAPI", "init"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithPropertyMixedAccessorBodies, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.PropertyAccessorsMustBeAllOrNothing)
+                   .WithLocation(0)
+                   .WithArguments("Mixed", "INativeAPI"),
+               DiagnosticResult.CompilerError("CS0525").WithSpan(12, 9, 12, 14),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalAttributeOnDefaultImplementedMethod, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember)
+                   .WithLocation(0)
+                   .WithArguments("DefaultedMethod", "INativeAPI"),
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember)
+                   .WithLocation(1)
+                   .WithArguments("DefaultedMethod", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalAttributeOnDefaultImplementedProperty, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember)
+                   .WithLocation(0)
+                   .WithArguments("Defaulted", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithExternIndexer, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface)
+                   .WithLocation(0)
+                   .WithArguments("this[]", "INativeAPI", "extern"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithInitIndexer, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.InvalidPropertyDeclarationOnGeneratedComInterface)
+                   .WithLocation(0)
+                   .WithArguments("this[]", "INativeAPI", "init"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithIndexerMixedAccessorBodies, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.PropertyAccessorsMustBeAllOrNothing)
+                   .WithLocation(0)
+                   .WithArguments("this[]", "INativeAPI"),
+               DiagnosticResult.CompilerError("CS0501").WithSpan(12, 23, 12, 26).WithArguments("INativeAPI.this[int].get"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithRefProperty, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
+                   .WithLocation(0)
+                   .WithArguments("ref return", "INativeAPI.RefProp"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithRefReadonlyProperty, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
+                   .WithLocation(0)
+                   .WithArguments("ref return", "INativeAPI.RefReadonlyProp"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithRefIndexer, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
+                   .WithLocation(0)
+                   .WithArguments("ref return", "INativeAPI.this[int]"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithRefReadonlyIndexer, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
+                   .WithLocation(0)
+                   .WithArguments("ref return", "INativeAPI.this[int]"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalAttributeOnDefaultImplementedIndexer, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalAttributeOnDefaultImplementedComInterfaceMember)
+                   .WithLocation(0)
+                   .WithArguments("this[]", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalUsingCountOnlyOnPropertyGetter, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType)
+                   .WithLocation(0)
+                   .WithArguments("Prop", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalUsingCountOnlyOnPropertySetter, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType)
+                   .WithLocation(0)
+                   .WithArguments("Prop", "INativeAPI"),
+            } };
+
+            yield return new object[] { ID(), codeSnippets.InterfaceWithMarshalUsingDepthOnlyOnPropertyAccessor, new[]
+            {
+               VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType)
+                   .WithLocation(0)
+                   .WithArguments("Prop", "INativeAPI"),
             } };
 
             yield return new object[] { ID(), codeSnippets.DerivedComInterfaceTypeMismatchInWrappers, new[]
@@ -60,9 +183,9 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             CodeSnippets codeSnippets = new(generator);
 
-            string safeHandleMarshallerDoesNotSupportManagedToUnmanaged = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, "global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>");
-            string safeHandleMarshallerDoesNotSupportUnmanagedToManaged = string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, "global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>");
-            string safeHandleMarshallerDoesNotSupportBidirectional = string.Format(SR.BidirectionalMissingRequiredMarshaller, "global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>");
+            string safeHandleMarshallerDoesNotSupportManagedToUnmanaged = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, "global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>", "");
+            string safeHandleMarshallerDoesNotSupportUnmanagedToManaged = string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, "global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>", "");
+            string safeHandleMarshallerDoesNotSupportBidirectional = string.Format(SR.BidirectionalMissingRequiredMarshaller, "global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>", "");
             // SafeHandles
             yield return new object[] { ID(), codeSnippets.BasicParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle"), new[]
             {
@@ -79,8 +202,8 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             // Marshallers with only support for their expected places in the signatures in
             // ManagedToUnmanaged marshal modes.
-            string marshallerDoesNotSupportManagedToUnmanaged = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, "global::Marshaller");
-            string marshallerDoesNotSupportUnmanagedToManaged = string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, "global::Marshaller");
+            string marshallerDoesNotSupportManagedToUnmanaged = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, "global::Marshaller", "");
+            string marshallerDoesNotSupportUnmanagedToManaged = string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, "global::Marshaller", "");
             DiagnosticResult invalidManagedToUnmanagedParameterDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                 .WithLocation(0)
                 .WithArguments(marshallerDoesNotSupportManagedToUnmanaged, "value");
@@ -364,7 +487,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                 .WithLocation(0)
-                .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, "global::Marshaller"), "value");
+                .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, "global::Marshaller", ""), "value");
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
         }
 
@@ -883,6 +1006,339 @@ namespace ComInterfaceGenerator.Unit.Tests
                 """;
 
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(code, new DiagnosticResult(GeneratorDiagnostics.InvalidExceptionToUnmanagedMarshallerType).WithLocation(0));
+        }
+
+        [Fact]
+        public async Task MarshalAsIidParameterIndexOnNonOutObject_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    void M(in Guid iid, [{|#0:MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)|}] ref object o);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"));
+        }
+
+        [Fact]
+        public async Task MarshalAsIidParameterIndexWithoutInterfaceUnmanagedType_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    void M(in Guid iid, [{|#0:MarshalAs(UnmanagedType.Struct, IidParameterIndex = 0)|}] out object {|#1:o|});
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"),
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(1)
+                    .WithArguments(SR.RuntimeMarshallingMustBeDisabled, "o"));
+        }
+
+        [Fact]
+        public async Task MarshalAsIidParameterIndexOnArrayUnmanagedType_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    void M(in Guid iid, [{|#0:MarshalAs(UnmanagedType.LPArray, IidParameterIndex = 0)|}] out object[] {|#1:o|});
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"),
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupported)
+                    .WithLocation(1)
+                    .WithArguments("object", "o"));
+        }
+
+        [Fact]
+        public async Task MarshalAsIidParameterIndexOutOfBounds_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    void M(in Guid iid, [{|#0:MarshalAs(UnmanagedType.Interface, IidParameterIndex = 99)|}] out object o);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"));
+        }
+
+        [Fact]
+        public async Task MarshalAsIidParameterIndexPointsAtNonGuid_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    void M(int notAnIid, [{|#0:MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)|}] out object o);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"));
+        }
+
+        [Fact]
+        public async Task MarshalAsIidParameterIndexPointsAtSelf_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    void M([{|#0:MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)|}] out object o);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"),
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments(string.Format(SR.CyclicalCountInfo, "o")));
+        }
+
+        [Fact]
+        public async Task MarshalAsIidParameterIndexPointsAtOutGuid_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    void M(out Guid iid, [{|#0:MarshalAs(UnmanagedType.Interface, IidParameterIndex = 0)|}] out object o);
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ConfigurationNotSupported)
+                    .WithLocation(0)
+                    .WithArguments($"{nameof(MarshalAsAttribute)}{Type.Delimiter}{nameof(MarshalAsAttribute.IidParameterIndex)} (supported only on [MarshalAs(UnmanagedType.Interface)] out object parameters)"));
+        }
+
+        // Indexer accessors that use [MarshalUsing(CountElementName = ...)] are now rejected
+        // upfront by MarshalUsingOnPropertyAccessorMustSpecifyType: accessor-level [MarshalUsing]
+        // must specify a marshaller type, so neither the count-only form nor the depth-only form
+        // is reachable on a property/indexer accessor without first combining the marshaller type
+        // and count info on a single attribute. The earlier underlying limitation (indexer
+        // accessors are routed through EmptyElementInfoProvider so peer-element lookups against
+        // the index parameter fail) is still present in the marshalling pipeline, but is hidden
+        // behind this diagnostic from a user's perspective.
+
+        [Fact]
+        public async Task IndexerGetterWithCountElementName_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [assembly:DisableRuntimeMarshalling]
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    int[] {|#0:this|}[int count] { [return: MarshalUsing(CountElementName = "count")] get; }
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType)
+                    .WithLocation(0)
+                    .WithArguments("this[]", "I"));
+        }
+
+        [Fact]
+        public async Task IndexerSetterWithCountElementName_ReportsDiagnostic()
+        {
+            string source = """
+                using System;
+                using System.Runtime.CompilerServices;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [assembly:DisableRuntimeMarshalling]
+
+                [GeneratedComInterface]
+                [Guid("85E4DFAA-2E8B-4A7A-9D56-DAA54CC8BF3B")]
+                partial interface I
+                {
+                    int[] {|#0:this|}[int count] { [param: MarshalUsing(CountElementName = "count")] set; }
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.MarshalUsingOnPropertyAccessorMustSpecifyType)
+                    .WithLocation(0)
+                    .WithArguments("this[]", "I"));
+        }
+
+        [Fact]
+        public async Task GeneratedComInterfaceMemberTakingInterfaceWithoutRcw_ReportsDiagnostic()
+        {
+            // A [GeneratedComInterface] virtual member with a by-value / in parameter of a
+            // [GeneratedComInterface(Options = ComInterfaceOptions.ManagedObjectWrapper)] type
+            // requires unwrapping the unmanaged pointer to a managed object (RCW), which will not be generated.
+            const string entryPointType = "global::System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<global::INoRcw>";
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface(Options = ComInterfaceOptions.ManagedObjectWrapper)]
+                [Guid("D5A6D2DD-F1F1-4DF7-B84F-8A34A6B27CD3")]
+                partial interface INoRcw
+                {
+                    void Method();
+                }
+
+                [GeneratedComInterface]
+                [Guid("2E8A6D3F-9AF7-4A44-9DD9-4A6E39D7B0F1")]
+                partial interface IHost
+                {
+                    void TakeNoRcw(INoRcw {|#0:value|});
+                    void TakeNoRcwIn(in INoRcw {|#1:value|});
+                    void TakeNoRcwRef(ref INoRcw {|#2:value|});
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ComObjectWrapperNotSpecifiedReason, "INoRcw")), "value"),
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(1)
+                    .WithArguments(string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ComObjectWrapperNotSpecifiedReason, "INoRcw")), "value"),
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(2)
+                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType, SR.Format(SR.ComObjectWrapperNotSpecifiedReason, "INoRcw")), "value"));
+        }
+
+        [Fact]
+        public async Task GeneratedComInterfaceMemberReturningInterfaceWithoutCcw_ReportsDiagnostic()
+        {
+            // A [GeneratedComInterface] virtual member with a return / out parameter of a
+            // [GeneratedComInterface(Options = ComInterfaceOptions.ComObjectWrapper)] type
+            // requires wrapping a managed object as an unmanaged pointer (CCW), which will not be generated.
+            const string entryPointType = "global::System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<global::INoCcw>";
+            string source = """
+                using System;
+                using System.Runtime.InteropServices;
+                using System.Runtime.InteropServices.Marshalling;
+
+                [GeneratedComInterface(Options = ComInterfaceOptions.ComObjectWrapper)]
+                [Guid("D5A6D2DD-F1F1-4DF7-B84F-8A34A6B27CD3")]
+                partial interface INoCcw
+                {
+                    void Method();
+                }
+
+                [GeneratedComInterface]
+                [Guid("2E8A6D3F-9AF7-4A44-9DD9-4A6E39D7B0F1")]
+                partial interface IHost
+                {
+                    INoCcw {|#0:GetNoCcw|}();
+                    void GetNoCcwOut(out INoCcw {|#1:value|});
+                    void GetNoCcwRef(ref INoCcw {|#2:value|});
+                }
+                """;
+
+            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(
+                source,
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ManagedObjectWrapperNotSpecifiedReason, "INoCcw")), "GetNoCcw"),
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(1)
+                    .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, entryPointType, SR.Format(SR.ManagedObjectWrapperNotSpecifiedReason, "INoCcw")), "value"),
+                VerifyComInterfaceGenerator
+                    .Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(2)
+                    .WithArguments(string.Format(SR.BidirectionalMissingRequiredMarshaller, entryPointType, SR.Format(SR.ManagedObjectWrapperNotSpecifiedReason, "INoCcw")), "value"));
         }
     }
 }

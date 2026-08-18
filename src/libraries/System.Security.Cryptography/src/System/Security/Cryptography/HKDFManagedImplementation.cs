@@ -9,13 +9,13 @@ namespace System.Security.Cryptography
 {
     internal static class HKDFManagedImplementation
     {
-        internal static void Extract(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
+        internal static unsafe void Extract(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> ikm, ReadOnlySpan<byte> salt, Span<byte> prk)
         {
             int written = CryptographicOperations.HmacData(hashAlgorithmName, salt, ikm, prk);
             Debug.Assert(written == prk.Length, $"Bytes written is {written} bytes which does not match output length ({prk.Length} bytes)");
         }
 
-        internal static void Expand(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
+        internal static unsafe void Expand(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> prk, Span<byte> output, ReadOnlySpan<byte> info)
         {
             Debug.Assert(Helpers.HashLength(hashAlgorithmName) == hashLength);
 
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography
             }
         }
 
-        internal static void DeriveKey(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
+        internal static unsafe void DeriveKey(HashAlgorithmName hashAlgorithmName, int hashLength, ReadOnlySpan<byte> ikm, Span<byte> output, ReadOnlySpan<byte> salt, ReadOnlySpan<byte> info)
         {
             Span<byte> prk = stackalloc byte[hashLength];
 

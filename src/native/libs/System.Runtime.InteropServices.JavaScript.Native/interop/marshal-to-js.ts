@@ -13,6 +13,7 @@ import {
     getArgJsHandle, getArgLength, getArgType, getArgU16, getArgU8,
     getMarshalerToJsByType, getSignatureArg1Type, getSignatureArg2Type, getSignatureArg3Type, getSignatureResType,
     setArgType, setJsHandle,
+    isReceiverShouldFree,
 } from "./marshal";
 import { marshalExceptionToCs } from "./marshal-to-cs";
 import { lookupJsOwnedObject, getJsHandleFromJSObject, getJSObjectFromJSHandle, registerWithJsvHandle, releaseCSOwnedObject, setupManagedProxy, teardownManagedProxy, proxyDebugSymbol } from "./gc-handles";
@@ -461,6 +462,10 @@ function _marshalArrayToJs_impl(arg: JSMarshalerArgument, elementType: Marshaler
         const bufferOffset = fixupPointer(bufferPtr, 3);
         const sourceView = dotnetApi.localHeapViewF64().subarray(bufferOffset, bufferOffset + length);
         result = sourceView.slice();//copy
+    } else if (elementType == MarshalerType.Single) {
+        const bufferOffset = fixupPointer(bufferPtr, 2);
+        const sourceView = dotnetApi.localHeapViewF32().subarray(bufferOffset, bufferOffset + length);
+        result = sourceView.slice();//copy
     } else {
         throw new Error(`NotImplementedException ${elementType}. ${jsinteropDoc}`);
     }
@@ -480,6 +485,8 @@ function _marshalSpanToJs(arg: JSMarshalerArgument, elementType?: MarshalerType)
         result = new Span(<any>bufferPtr, length, MemoryViewType.Int32);
     } else if (elementType == MarshalerType.Double) {
         result = new Span(<any>bufferPtr, length, MemoryViewType.Double);
+    } else if (elementType == MarshalerType.Single) {
+        result = new Span(<any>bufferPtr, length, MemoryViewType.Single);
     } else {
         throw new Error(`NotImplementedException ${elementType}. ${jsinteropDoc}`);
     }
@@ -498,6 +505,8 @@ function _marshalArraySegmentToJs(arg: JSMarshalerArgument, elementType?: Marsha
         result = new ArraySegment(<any>bufferPtr, length, MemoryViewType.Int32);
     } else if (elementType == MarshalerType.Double) {
         result = new ArraySegment(<any>bufferPtr, length, MemoryViewType.Double);
+    } else if (elementType == MarshalerType.Single) {
+        result = new ArraySegment(<any>bufferPtr, length, MemoryViewType.Single);
     } else {
         throw new Error(`NotImplementedException ${elementType}. ${jsinteropDoc}`);
     }
@@ -517,7 +526,7 @@ export function resolveOrRejectPromise(args: JSMarshalerArguments): void {
     }
     args = fixupPointer(args, 0);
     const exc = getArg(args, 0);
-    // TODO-WASM const receiver_should_free = WasmEnableThreads && is_receiver_should_free(args);
+    const receiverShouldFree = isReceiverShouldFree(args);
     try {
         assertRuntimeRunning();
 
@@ -532,18 +541,19 @@ export function resolveOrRejectPromise(args: JSMarshalerArguments): void {
         dotnetAssert.fastCheck(holder, () => `Cannot find Promise for JSHandle ${jsHandle}`);
 
         holder.resolveOrReject(type, jsHandle, argValue);
-        /* TODO-WASM if (receiver_should_free) {
+        if (receiverShouldFree) {
             // this works together with AllocHGlobal in JSFunctionBinding.ResolveOrRejectPromise
-            free(args as any);
-        } else {*/
-        setArgType(res, MarshalerType.Void);
-        setArgType(exc, MarshalerType.None);
-        //}
+            Module._free(args as any);
+        } else {
+            setArgType(res, MarshalerType.Void);
+            setArgType(exc, MarshalerType.None);
+        }
 
     } catch (ex: any) {
-        /* TODO-WASM if (receiver_should_free) {
-            mono_assert(false, () => `Failed to resolve or reject promise ${ex}`);
-        }*/
+        if (receiverShouldFree) {
+            Module._free(args as any);
+            dotnetAssert.fastCheck(false, () => `Failed to resolve or reject promise. ${ex}`);
+        }
         marshalExceptionToCs(exc, ex);
     }
 }

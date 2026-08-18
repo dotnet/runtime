@@ -25,26 +25,6 @@
 extern PCODE g_FCDynamicallyAssignedImplementations[ECall::NUM_DYNAMICALLY_ASSIGNED_FCALL_IMPLEMENTATIONS];
 extern "C" void STDCALL ThePreStubPatchLabel(void);
 
-#ifdef FEATURE_COMWRAPPERS
-// Keep these forward declarations in sync with the method definitions in interop/comwrappers.cpp
-namespace InteropLib
-{
-    namespace ABI
-    {
-        struct ComInterfaceDispatch;
-    }
-}
-HRESULT STDMETHODCALLTYPE ManagedObjectWrapper_QueryInterface(
-    _In_ InteropLib::ABI::ComInterfaceDispatch* disp,
-    /* [in] */ REFIID riid,
-    /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject);
-HRESULT STDMETHODCALLTYPE TrackerTarget_QueryInterface(
-    _In_ InteropLib::ABI::ComInterfaceDispatch* disp,
-    /* [in] */ REFIID riid,
-    /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR* __RPC_FAR* ppvObject);
-
-#endif
-
 template<typename T, template<typename> class U>
 struct is_type_template_instantiation
 {

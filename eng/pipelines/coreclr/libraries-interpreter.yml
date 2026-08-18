@@ -10,6 +10,8 @@ schedules:
 
 variables:
   - template: /eng/pipelines/common/variables.yml
+  - name: enableHelixJobMonitor
+    value: true
   - template: /eng/pipelines/helix-platforms.yml
 
 extends:
@@ -18,13 +20,17 @@ extends:
     stages:
     - stage: Build
       jobs:
+      - template: /eng/common/core-templates/job/helix-job-monitor.yml
+        parameters:
+          helixAccessToken: $(HelixApiAccessToken)
+          timeoutInMinutes: 540
+          allowNoHelixJobs: true
 
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
+          buildConfig: Release
           platforms:
-          - windows_x64
           - osx_arm64
           - linux_x64
           helixQueueGroup: libraries
@@ -38,5 +44,6 @@ extends:
                 parameters:
                   creator: dotnet-bot
                   extraHelixArguments: /maxcpucount:10
+                  useHelixMonitor: ${{ variables.enableHelixJobMonitor }}
                   scenarios:
-                  - interpmode3
+                  - interpmode1

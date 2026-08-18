@@ -9,11 +9,11 @@ namespace System.Diagnostics
         {
         }
 
-        public EntryWrittenEventArgs(EventLogEntry entry)
+        public EntryWrittenEventArgs(EventLogEntry? entry)
         {
             Entry = entry;
         }
 
-        public EventLogEntry Entry { get; }
+        public EventLogEntry? Entry { get; }
     }
 }

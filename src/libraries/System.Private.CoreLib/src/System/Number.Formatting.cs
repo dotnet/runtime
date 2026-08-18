@@ -1,9 +1,11 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -329,6 +331,189 @@ namespace System
             ref MemoryMarshal.GetReference(useChars ? TwoDigitsCharsAsBytes : TwoDigitsBytes);
 #endif
 
+        internal static string FormatDecimalIeee754<TDecimal, TValue>(TValue value, string? format, NumberFormatInfo info)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            var vlb = new ValueListBuilder<char>(stackalloc char[CharStackBufferSize]);
+            string result = FormatDecimalIeee754<TDecimal, TValue, char>(ref vlb, value, format, info) ?? vlb.AsSpan().ToString();
+            vlb.Dispose();
+            return result;
+        }
+
+        private static unsafe string? FormatDecimalIeee754<TDecimal, TValue, TChar>(ref ValueListBuilder<TChar> vlb, TValue value, ReadOnlySpan<char> format, NumberFormatInfo info)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            if (!TDecimal.IsFinite(value))
+            {
+                if (TDecimal.IsNaN(value))
+                {
+                    if (typeof(TChar) == typeof(char))
+                    {
+                        return info.NaNSymbol;
+                    }
+                    else
+                    {
+                        vlb.Append(info.NaNSymbolTChar<TChar>());
+                        return null;
+                    }
+                }
+
+                if (typeof(TChar) == typeof(char))
+                {
+                    return TDecimal.IsNegative(value) ? info.NegativeInfinitySymbol : info.PositiveInfinitySymbol;
+                }
+                else
+                {
+                    vlb.Append(TDecimal.IsNegative(value) ? info.NegativeInfinitySymbolTChar<TChar>() : info.PositiveInfinitySymbolTChar<TChar>());
+                    return null;
+                }
+            }
+            char fmt = ParseFormatSpecifier(format, out int digits);
+
+            byte* pDigits = stackalloc byte[TDecimal.BufferLength];
+            NumberBuffer number = new NumberBuffer(NumberBufferKind.DecimalIeee754, pDigits, TDecimal.BufferLength);
+
+            DecimalIeee754ToNumber<TDecimal, TValue>(value, ref number);
+
+            if (fmt != 0)
+            {
+                if (fmt is 'G' or 'R' or 'g' or 'r')
+                {
+                    if (fmt is 'R' or 'r')
+                    {
+                        // The roundtrip specifier ignores any precision specifier and is otherwise identical to the general specifier
+                        fmt = (char)(fmt - ('R' - 'G'));
+                        digits = -1;
+                    }
+
+                    FormatGeneralAndRoundTripDecimalIeee754(ref vlb, ref number, (char)(fmt - ('G' - 'E')), digits, info);
+                }
+                else
+                {
+                    NumberToString(ref vlb, ref number, fmt, digits, info);
+                }
+            }
+            else
+            {
+                NumberToStringFormat(ref vlb, ref number, format, info);
+            }
+
+            return null;
+        }
+
+        internal static bool TryFormatDecimalIeee754<TDecimal, TValue, TChar>(TValue value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+
+            var vlb = new ValueListBuilder<TChar>(stackalloc TChar[CharStackBufferSize]);
+            string? s = FormatDecimalIeee754<TDecimal, TValue, TChar>(ref vlb, value, format, info);
+
+            Debug.Assert(s is null || typeof(TChar) == typeof(char));
+            bool success = s != null ?
+                TryCopyTo(s, destination, out charsWritten) :
+                vlb.TryCopyTo(destination, out charsWritten);
+
+            vlb.Dispose();
+            return success;
+        }
+
+        /// <summary>
+        /// Formats <paramref name="number"/> using the general format, preserving the quantum exponent so that
+        /// reparsing the result recovers the same member of the cohort.
+        /// </summary>
+        /// <remarks>
+        /// Fixed-point notation can only spell a quantum exponent that is at or below zero, since a positive
+        /// quantum would require trailing zeros that reparse as a larger coefficient. Scientific notation is
+        /// therefore required whenever the quantum exponent is positive, and is otherwise picked using the same
+        /// compactness heuristic as the binary floating-point types.
+        /// </remarks>
+        private static unsafe void FormatGeneralAndRoundTripDecimalIeee754<TChar>(ref ValueListBuilder<TChar> vlb, ref NumberBuffer number, char expChar, int nMaxDigits, NumberFormatInfo info)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(number.Kind == NumberBufferKind.DecimalIeee754);
+
+            bool rounded = (nMaxDigits > 0) && (nMaxDigits < number.DigitsCount);
+
+            if (rounded)
+            {
+                RoundNumber(ref number, nMaxDigits, isCorrectlyRounded: false);
+            }
+
+            if (number.IsNegative)
+            {
+                vlb.Append(info.NegativeSignTChar<TChar>());
+            }
+
+            byte* dig = number.DigitsPtr;
+            int digitCount = number.DigitsCount;
+
+            // `Scale` is the coefficient digit count plus the quantum exponent, so `Scale` exceeding the number
+            // of significant digits means the quantum exponent is positive. Rounding drops trailing coefficient
+            // digits without touching `Scale`, so the requested precision is what remains significant in that
+            // case; the dropped digits are recovered as trailing zeros below.
+            int significantDigits = rounded ? nMaxDigits : digitCount;
+
+            // A zero coefficient has no stored digits but still participates as the single digit `0` when
+            // computing the adjusted exponent.
+            int adjustedExponent = (digitCount != 0) ? (number.Scale - 1) : number.Scale;
+
+            if ((number.Scale > significantDigits) || (adjustedExponent < -4))
+            {
+                vlb.Append(TChar.CastFrom((digitCount != 0) ? (char)dig[0] : '0'));
+
+                if (digitCount > 1)
+                {
+                    vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+
+                    for (int i = 1; i < digitCount; i++)
+                    {
+                        vlb.Append(TChar.CastFrom((char)dig[i]));
+                    }
+                }
+
+                FormatExponent(ref vlb, info, adjustedExponent, expChar, minDigits: 2, positiveSign: true);
+                return;
+            }
+
+            int integerDigits = number.Scale;
+
+            if (integerDigits > 0)
+            {
+                for (int i = 0; i < integerDigits; i++)
+                {
+                    // Rounding can leave fewer digits than the scale requires, in which case the remaining
+                    // integer positions are trailing zeros of the rounded coefficient.
+                    vlb.Append(TChar.CastFrom((i < digitCount) ? (char)dig[i] : '0'));
+                }
+            }
+            else
+            {
+                vlb.Append(TChar.CastFrom('0'));
+            }
+
+            if (integerDigits < digitCount)
+            {
+                vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+
+                for (int i = integerDigits; i < 0; i++)
+                {
+                    vlb.Append(TChar.CastFrom('0'));
+                }
+
+                for (int i = Math.Max(integerDigits, 0); i < digitCount; i++)
+                {
+                    vlb.Append(TChar.CastFrom((char)dig[i]));
+                }
+            }
+        }
 
         public static unsafe string FormatDecimal(decimal value, ReadOnlySpan<char> format, NumberFormatInfo info)
         {
@@ -382,6 +567,40 @@ namespace System
             bool success = vlb.TryCopyTo(destination, out charsWritten);
             vlb.Dispose();
             return success;
+        }
+
+        internal static void DecimalIeee754ToNumber<TDecimal, TValue>(TValue value, ref NumberBuffer number)
+            where TDecimal : unmanaged, IDecimalIeee754ParseAndFormatInfo<TDecimal, TValue>
+            where TValue : unmanaged, IBinaryInteger<TValue>
+        {
+            DecodedDecimalIeee754<TValue> unpackDecimal = Number.UnpackDecimalIeee754<TDecimal, TValue>(value);
+            number.IsNegative = unpackDecimal.Signed;
+
+            if (TValue.IsZero(unpackDecimal.Significand))
+            {
+                // A zero coefficient has no stored digits, so `Scale` carries the quantum exponent directly.
+                // Every other format specifier calls `RoundNumber` (or resets `Scale` itself) before reading it.
+                number.Scale = unpackDecimal.UnbiasedExponent;
+                number.DigitsCount = 0;
+                number.Digits[0] = (byte)'\0';
+                number.CheckConsistency();
+                return;
+            }
+
+            string significand = TDecimal.ToDecStr(unpackDecimal.Significand);
+
+            Debug.Assert(significand.Length < TDecimal.BufferLength);
+
+            for (int i = 0; i < significand.Length; i++)
+            {
+                number.Digits[i] = (byte)significand[i];
+            }
+
+            number.Scale = significand.Length + unpackDecimal.UnbiasedExponent;
+            number.DigitsCount = significand.Length;
+            number.Digits[significand.Length] = (byte)'\0';
+
+            number.CheckConsistency();
         }
 
         internal static unsafe void DecimalToNumber(scoped ref decimal d, ref NumberBuffer number)
@@ -540,7 +759,210 @@ namespace System
             }
         }
 
-        public static string FormatFloat<TNumber>(TNumber value, string? format, NumberFormatInfo info)
+        private static unsafe void FormatFloatingPointAsHex<TNumber, TChar>(ref ValueListBuilder<TChar> vlb, TNumber value, char fmt, int precision, NumberFormatInfo info)
+            where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert((fmt | 0x20) == 'x');
+            Debug.Assert(TNumber.IsFinite(value));
+
+            bool isNegative = TNumber.IsNegative(value);
+
+            if (isNegative)
+            {
+                vlb.Append(info.NegativeSignTChar<TChar>());
+            }
+
+            vlb.Append(TChar.CastFrom('0'));
+            vlb.Append(TChar.CastFrom(fmt));
+
+            ulong fraction = ExtractFractionAndBiasedExponent(value, out int exponent);
+
+            if (fraction == 0)
+            {
+                // +/- 0
+                vlb.Append(TChar.CastFrom('0'));
+
+                if (precision > 0)
+                {
+                    vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+                    vlb.AppendSpan(precision).Fill(TChar.CastFrom('0'));
+                }
+
+                // Exponent sign is always emitted ('+' or '-'), consistent with the 'E' format.
+                vlb.Append(TChar.CastFrom(fmt == 'X' ? 'P' : 'p'));
+                vlb.Append(TChar.CastFrom('+'));
+                vlb.Append(TChar.CastFrom('0'));
+
+                return;
+            }
+
+            // ExtractFractionAndBiasedExponent returns (note: despite the name, the exponent is unbiased):
+            //   For normal:   fraction = (1 << DenormalMantissaBits) | mantissa, exponent = biasedExp - ExponentBias - DenormalMantissaBits
+            //   For denormal: fraction = mantissa, exponent = MinBinaryExponent - DenormalMantissaBits
+            //
+            // We want the form: 1.xxxxx * 2^e
+            // So we need to normalize so that the leading 1 bit is at bit DenormalMantissaBits.
+            // For normal numbers, this is already the case.
+            // For denormal numbers, we need to shift left until the leading 1 is there.
+
+            int mantissaBits = TNumber.DenormalMantissaBits;
+
+            if (fraction < (1UL << mantissaBits))
+            {
+                // Denormal: shift the leading 1 up to the implicit bit position
+                int lz = BitOperations.LeadingZeroCount(fraction) - (63 - mantissaBits);
+                fraction <<= lz;
+                exponent -= lz;
+            }
+
+            // Now fraction has the leading 1 at bit [mantissaBits], and the remaining bits below.
+            // The unbiased exponent for the value is: exponent + mantissaBits (since fraction is
+            // really fraction * 2^exponent, and we want 1.xxx * 2^actualExponent).
+            int actualExponent = exponent + mantissaBits;
+
+            // Strip the implicit leading 1 to get the fractional bits
+            ulong significandBits = fraction & ((1UL << mantissaBits) - 1);
+
+            // Leading digit is normally '1' for non-zero (the implicit bit)
+            int leadingDigit = 1;
+
+            // Determine how many hex digits to emit for the fractional part
+            int defaultHexDigits = (mantissaBits + 3) / 4;
+
+            if (precision == 0)
+            {
+                // Round significandBits into the leading digit
+                ulong half = (mantissaBits > 0) ? (1UL << (mantissaBits - 1)) : 0;
+                if (significandBits > half || (significandBits == half && (leadingDigit & 1) != 0))
+                {
+                    leadingDigit++;
+                    // leadingDigit can't exceed 2 since it started at 1
+                }
+
+                significandBits = 0;
+            }
+
+            vlb.Append(TChar.CastFrom((char)('0' + leadingDigit)));
+
+            if (precision > 0)
+            {
+                ulong shifted;
+
+                if (precision < defaultHexDigits)
+                {
+                    // Need to round
+                    int bitsToKeep = precision * 4;
+                    int bitsToDiscard = mantissaBits - bitsToKeep;
+
+                    // bitsToDiscard is always in (0, mantissaBits) here because precision >= 1
+                    // (we're in the precision > 0 branch) and precision < defaultHexDigits
+                    // (checked above), so bitsToKeep < mantissaBits and bitsToDiscard > 0.
+                    // For all IEEE types mantissaBits <= 52, so bitsToDiscard < 64.
+                    Debug.Assert(bitsToDiscard > 0 && bitsToDiscard < 64);
+                    if (bitsToDiscard > 0 && bitsToDiscard < 64)
+                    {
+                        ulong roundBit = 1UL << (bitsToDiscard - 1);
+                        ulong discardedBits = significandBits & ((1UL << bitsToDiscard) - 1);
+                        bool roundUp = discardedBits > roundBit || (discardedBits == roundBit && ((significandBits >> bitsToDiscard) & 1) != 0);
+
+                        if (roundUp)
+                        {
+                            significandBits = (significandBits >> bitsToDiscard) + 1;
+
+                            // Check if rounding overflowed into leading digit
+                            if (significandBits >= (1UL << bitsToKeep))
+                            {
+                                significandBits = 0;
+                                actualExponent++;
+                            }
+                        }
+                        else
+                        {
+                            significandBits >>= bitsToDiscard;
+                        }
+
+                        shifted = significandBits << (64 - bitsToKeep);
+                    }
+                    else
+                    {
+                        shifted = significandBits << (64 - mantissaBits);
+                    }
+                }
+                else
+                {
+                    shifted = significandBits << (64 - mantissaBits);
+                }
+
+                vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+
+                // Emit real nibbles
+                int realDigits = Math.Min(precision, defaultHexDigits);
+                for (int i = 0; i < realDigits; i++)
+                {
+                    vlb.Append(TChar.CastFrom(fmt == 'X' ? HexConverter.ToCharUpper((int)(shifted >> 60)) : HexConverter.ToCharLower((int)(shifted >> 60))));
+                    shifted <<= 4;
+                }
+
+                // Emit padding zeros (when precision > defaultHexDigits)
+                int padCount = precision - realDigits;
+                if (padCount > 0)
+                {
+                    vlb.AppendSpan(padCount).Fill(TChar.CastFrom('0'));
+                }
+            }
+            else if (precision < 0)
+            {
+                // Default precision: emit significant hex digits, trimming trailing zeros.
+                // Compute trailing zero nibbles from the nibble-aligned representation.
+                int trimmedDigits = 0;
+                if (significandBits != 0)
+                {
+                    // Align significand to nibble boundary (pad LSB so total bits = defaultHexDigits * 4),
+                    // then count trailing zero nibbles via trailing zero bits.
+                    int paddingBits = defaultHexDigits * 4 - mantissaBits;
+                    ulong nibbleAligned = significandBits << paddingBits;
+                    int trailingZeroBits = BitOperations.TrailingZeroCount(nibbleAligned);
+                    trimmedDigits = defaultHexDigits - (trailingZeroBits / 4);
+
+                    if (trimmedDigits > 0)
+                    {
+                        vlb.Append(info.NumberDecimalSeparatorTChar<TChar>());
+
+                        ulong shifted = significandBits << (64 - mantissaBits);
+                        for (int i = 0; i < trimmedDigits; i++)
+                        {
+                            vlb.Append(TChar.CastFrom(fmt == 'X' ? HexConverter.ToCharUpper((int)(shifted >> 60)) : HexConverter.ToCharLower((int)(shifted >> 60))));
+                            shifted <<= 4;
+                        }
+                    }
+                }
+            }
+
+            // Emit exponent: p+NNN or p-NNN
+            // The exponent sign is always ASCII '+'/'-' per IEEE 754 §5.12.3,
+            // independent of NumberFormatInfo (which only governs the leading value sign).
+            vlb.Append(TChar.CastFrom(fmt == 'X' ? 'P' : 'p'));
+
+            if (actualExponent >= 0)
+            {
+                vlb.Append(TChar.CastFrom('+'));
+            }
+            else
+            {
+                vlb.Append(TChar.CastFrom('-'));
+                actualExponent = -actualExponent;
+            }
+
+            // Write exponent digits
+            Debug.Assert(actualExponent >= 0);
+            int digitCount = FormattingHelpers.CountDigits((uint)actualExponent);
+            TChar* pExponent = stackalloc TChar[digitCount];
+            UInt32ToDecChars(pExponent + digitCount, (uint)actualExponent);
+            vlb.Append(new ReadOnlySpan<TChar>(pExponent, digitCount));
+        }
+
+        public static unsafe string FormatFloat<TNumber>(TNumber value, string? format, NumberFormatInfo info)
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
         {
             var vlb = new ValueListBuilder<char>(stackalloc char[CharStackBufferSize]);
@@ -549,7 +971,7 @@ namespace System
             return result;
         }
 
-        public static bool TryFormatFloat<TNumber, TChar>(TNumber value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten)
+        public static unsafe bool TryFormatFloat<TNumber, TChar>(TNumber value, ReadOnlySpan<char> format, NumberFormatInfo info, Span<TChar> destination, out int charsWritten)
             where TNumber : unmanaged, IBinaryFloatParseAndFormatInfo<TNumber>
             where TChar : unmanaged, IUtfChar<TChar>
         {
@@ -605,6 +1027,14 @@ namespace System
             }
 
             char fmt = ParseFormatSpecifier(format, out int precision);
+
+            // Handle hex float formatting (X/x format specifier)
+            if ((fmt | 0x20) == 'x')
+            {
+                FormatFloatingPointAsHex(ref vlb, value, fmt, precision, info);
+                return null;
+            }
+
             byte* pDigits = stackalloc byte[TNumber.NumberBufferLength];
 
             if (fmt == '\0')
@@ -1590,7 +2020,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void UInt32ToNumber(uint value, ref NumberBuffer number)
+        internal static unsafe void UInt32ToNumber(uint value, ref NumberBuffer number)
         {
             number.DigitsCount = UInt32Precision;
             number.IsNegative = false;
@@ -2055,7 +2485,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static unsafe void UInt64ToNumber(ulong value, ref NumberBuffer number)
+        internal static unsafe void UInt64ToNumber(ulong value, ref NumberBuffer number)
         {
             number.DigitsCount = UInt64Precision;
             number.IsNegative = false;
@@ -2467,7 +2897,7 @@ namespace System
             }
         }
 
-        private static unsafe void UInt128ToNumber(UInt128 value, ref NumberBuffer number)
+        internal static unsafe void UInt128ToNumber(UInt128 value, ref NumberBuffer number)
         {
             number.DigitsCount = UInt128Precision;
             number.IsNegative = false;

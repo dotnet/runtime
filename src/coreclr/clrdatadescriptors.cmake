@@ -59,7 +59,7 @@ function(generate_data_descriptors)
     add_custom_command(
       OUTPUT "${CONTRACT_DESCRIPTOR_OUTPUT}"
       VERBATIM
-      COMMAND ${CLR_DOTNET_HOST_PATH} ${CDAC_BUILD_TOOL_BINARY_PATH} compose -i "${CONTRACT_DESCRIPTOR_INPUT}" -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -b "${CONTRACT_BASELINE_DIR}" $<TARGET_OBJECTS:${INTERMEDIARY_LIBRARY}>
+      COMMAND "${CLR_DOTNET_HOST_PATH}" "${CDAC_BUILD_TOOL_BINARY_PATH}" compose -i "${CONTRACT_DESCRIPTOR_INPUT}" -o "${CONTRACT_DESCRIPTOR_OUTPUT}" -b "${CONTRACT_BASELINE_DIR}" $<TARGET_OBJECTS:${INTERMEDIARY_LIBRARY}>
       DEPENDS ${INTERMEDIARY_LIBRARY} ${DATA_DESCRIPTORS_DEPENDENCIES} $<TARGET_OBJECTS:${INTERMEDIARY_LIBRARY}> "${CONTRACT_DESCRIPTOR_INPUT}"
       USES_TERMINAL
     )
@@ -88,4 +88,13 @@ function(generate_data_descriptors)
   # Set include directories for the data descriptor targets, now that they are created.
   target_include_directories(${LIBRARY} PUBLIC ${DATA_DESCRIPTOR_SHARED_INCLUDE_DIR})
   target_include_directories(${LIBRARY} PRIVATE ${GENERATED_CDAC_DESCRIPTOR_DIR})
+
+  if(MSVC)
+    # Embed debug info in the object files (/Z7). CMake does not assign a compile
+    # PDB to OBJECT libraries, so the objects archived into a static library (e.g.
+    # Runtime.ServerGC.lib) would otherwise reference an absent vc140.pdb, producing
+    # LNK4099 for the NativeAOT publish of ILCompiler/crossgen2/ilasm/mscordaccore_universal,
+    # which is fatal under /WX in the VMR build.
+    set_target_properties(${LIBRARY} PROPERTIES MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+  endif()
 endfunction(generate_data_descriptors)

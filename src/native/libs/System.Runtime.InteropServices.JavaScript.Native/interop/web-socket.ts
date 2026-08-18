@@ -6,7 +6,7 @@ import type { EmscriptenModuleInternal, PromiseCompletionSource, VoidPtr } from 
 import { preventTimerThrottling } from "./scheduling";
 import { Queue } from "./queue";
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL } from "./per-module";
-import { assertJsInterop, utf8ToStringRelaxed } from "./utils";
+import { assertJsInterop } from "./utils";
 import { fixupPointer } from "./utils";
 import { dotnetApi, dotnetAssert, dotnetBrowserUtilsExports, dotnetLoaderExports, dotnetLogger } from "./cross-module";
 import { wrapAsCancelable } from "./cancelable-promise";
@@ -426,8 +426,8 @@ function webSocketSendBuffering(ws: WebSocketExtension, bufferView: Uint8Array, 
         ws[wasmWsPendingSendBufferType] = messageType;
     } else {
         if (length !== 0) {
-            // TODO-WASM: copy, because the provided ArrayBufferView value must not be shared in MT.
-            buffer = bufferView;
+            // the provided ArrayBufferView value must not be SAB.
+            buffer = dotnetBrowserUtilsExports.viewOrCopy(bufferView, 0 as any, length as any);
             offset = length;
         }
     }
@@ -439,7 +439,7 @@ function webSocketSendBuffering(ws: WebSocketExtension, bufferView: Uint8Array, 
             // text, convert from UTF-8 bytes to string, because of bad browser API
             const bytes = buffer.subarray(0, offset >>> 0);
             // we do not validate outgoing data https://github.com/dotnet/runtime/issues/59214
-            return utf8ToStringRelaxed(bytes);
+            return dotnetBrowserUtilsExports.utf8ToStringRelaxed(bytes);
         } else {
             // binary, view to used part of the buffer
             return buffer.subarray(0, offset);
@@ -496,8 +496,8 @@ function verifyEnvironment() {
     }
     if (typeof globalThis.WebSocket !== "function") {
         const message = ENVIRONMENT_IS_NODE
-            ? "Please install `ws` npm package to enable networking support. See also https://aka.ms/dotnet-wasm-features"
-            : "This browser doesn't support WebSocket API. Please use a modern browser. See also https://aka.ms/dotnet-wasm-features";
+            ? "Please install `ws` npm package to enable networking support."
+            : "This browser doesn't support WebSocket API. Please use a modern browser. See also https://learn.microsoft.com/aspnet/core/blazor/supported-platforms";
         throw new Error(message);
     }
 }

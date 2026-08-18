@@ -14,6 +14,8 @@ namespace System.Text.Json.Serialization.Converters
             IsInternalConverterForNumberType = true;
         }
 
+        internal override bool IsIeeeFloatingPointConverter => true;
+
         public override double Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             if (options?.NumberHandling is not null and not JsonNumberHandling.Strict)
@@ -81,5 +83,8 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override JsonSchema? GetSchema(JsonNumberHandling numberHandling) =>
                 GetSchemaForNumericType(JsonSchemaType.Number, numberHandling, isIeeeFloatingPoint: true);
+
+        internal override JsonValueType GetSupportedJsonValueTypes(JsonNumberHandling numberHandling) =>
+            GetSupportedJsonValueTypesForNumericType(numberHandling);
     }
 }

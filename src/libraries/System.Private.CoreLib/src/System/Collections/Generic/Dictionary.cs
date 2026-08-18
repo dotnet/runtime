@@ -885,7 +885,7 @@ namespace System.Collections.Generic
                     Entry[]? entries = dictionary._entries;
                     int last = -1;
                     int i = bucket - 1; // Value in buckets is 1-based
-                    while (i >= 0)
+                    while ((uint)i < (uint)entries.Length)
                     {
                         ref Entry entry = ref entries[i];
 
@@ -1294,6 +1294,7 @@ namespace System.Collections.Generic
             // The overload Remove(TKey key, out TValue value) is a copy of this method with one additional
             // statement to copy the value for entry being removed into the output parameter.
             // Code has been intentionally duplicated for performance reasons.
+            // If you make any changes here, make sure to keep that version in sync as well.
 
             if (key == null)
             {
@@ -1313,49 +1314,101 @@ namespace System.Collections.Generic
                 Entry[]? entries = _entries;
                 int last = -1;
                 int i = bucket - 1; // Value in buckets is 1-based
-                while (i >= 0)
+
+                if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
+                    comparer == null)
                 {
-                    ref Entry entry = ref entries[i];
-
-                    if (entry.hashCode == hashCode &&
-                        (typeof(TKey).IsValueType && comparer == null ? EqualityComparer<TKey>.Default.Equals(entry.key, key) : comparer!.Equals(entry.key, key)))
+                    while ((uint)i < (uint)entries.Length)
                     {
-                        if (last < 0)
+                        ref Entry entry = ref entries[i];
+
+                        if (entry.hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entry.key, key))
                         {
-                            bucket = entry.next + 1; // Value in buckets is 1-based
-                        }
-                        else
-                        {
-                            entries[last].next = entry.next;
+                            if (last < 0)
+                            {
+                                bucket = entry.next + 1; // Value in buckets is 1-based
+                            }
+                            else
+                            {
+                                entries[last].next = entry.next;
+                            }
+
+                            Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
+                            entry.next = StartOfFreeList - _freeList;
+
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+                            {
+                                entry.key = default!;
+                            }
+
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+                            {
+                                entry.value = default!;
+                            }
+
+                            _freeList = i;
+                            _freeCount++;
+                            return true;
                         }
 
-                        Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
-                        entry.next = StartOfFreeList - _freeList;
+                        last = i;
+                        i = entry.next;
 
-                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+                        collisionCount++;
+                        if (collisionCount > (uint)entries.Length)
                         {
-                            entry.key = default!;
+                            // The chain of entries forms a loop; which means a concurrent update has happened.
+                            // Break out of the loop and throw, rather than looping forever.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                         }
-
-                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
-                        {
-                            entry.value = default!;
-                        }
-
-                        _freeList = i;
-                        _freeCount++;
-                        return true;
                     }
-
-                    last = i;
-                    i = entry.next;
-
-                    collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
+                }
+                else
+                {
+                    Debug.Assert(comparer is not null);
+                    while ((uint)i < (uint)entries.Length)
                     {
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
-                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        ref Entry entry = ref entries[i];
+
+                        if (entry.hashCode == hashCode && comparer.Equals(entry.key, key))
+                        {
+                            if (last < 0)
+                            {
+                                bucket = entry.next + 1; // Value in buckets is 1-based
+                            }
+                            else
+                            {
+                                entries[last].next = entry.next;
+                            }
+
+                            Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
+                            entry.next = StartOfFreeList - _freeList;
+
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+                            {
+                                entry.key = default!;
+                            }
+
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+                            {
+                                entry.value = default!;
+                            }
+
+                            _freeList = i;
+                            _freeCount++;
+                            return true;
+                        }
+
+                        last = i;
+                        i = entry.next;
+
+                        collisionCount++;
+                        if (collisionCount > (uint)entries.Length)
+                        {
+                            // The chain of entries forms a loop; which means a concurrent update has happened.
+                            // Break out of the loop and throw, rather than looping forever.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        }
                     }
                 }
             }
@@ -1367,6 +1420,7 @@ namespace System.Collections.Generic
             // This overload is a copy of the overload Remove(TKey key) with one additional
             // statement to copy the value for entry being removed into the output parameter.
             // Code has been intentionally duplicated for performance reasons.
+            // If you make any changes here, make sure to keep the other overload in sync as well.
 
             if (key == null)
             {
@@ -1386,51 +1440,105 @@ namespace System.Collections.Generic
                 Entry[]? entries = _entries;
                 int last = -1;
                 int i = bucket - 1; // Value in buckets is 1-based
-                while (i >= 0)
+
+                if (typeof(TKey).IsValueType && // comparer can only be null for value types; enable JIT to eliminate entire if block for ref types
+                    comparer == null)
                 {
-                    ref Entry entry = ref entries[i];
-
-                    if (entry.hashCode == hashCode &&
-                        (typeof(TKey).IsValueType && comparer == null ? EqualityComparer<TKey>.Default.Equals(entry.key, key) : comparer!.Equals(entry.key, key)))
+                    while ((uint)i < (uint)entries.Length)
                     {
-                        if (last < 0)
+                        ref Entry entry = ref entries[i];
+
+                        if (entry.hashCode == hashCode && EqualityComparer<TKey>.Default.Equals(entry.key, key))
                         {
-                            bucket = entry.next + 1; // Value in buckets is 1-based
+                            if (last < 0)
+                            {
+                                bucket = entry.next + 1; // Value in buckets is 1-based
+                            }
+                            else
+                            {
+                                entries[last].next = entry.next;
+                            }
+
+                            value = entry.value;
+
+                            Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
+                            entry.next = StartOfFreeList - _freeList;
+
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+                            {
+                                entry.key = default!;
+                            }
+
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+                            {
+                                entry.value = default!;
+                            }
+
+                            _freeList = i;
+                            _freeCount++;
+                            return true;
                         }
-                        else
+
+                        last = i;
+                        i = entry.next;
+
+                        collisionCount++;
+                        if (collisionCount > (uint)entries.Length)
                         {
-                            entries[last].next = entry.next;
+                            // The chain of entries forms a loop; which means a concurrent update has happened.
+                            // Break out of the loop and throw, rather than looping forever.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
                         }
-
-                        value = entry.value;
-
-                        Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
-                        entry.next = StartOfFreeList - _freeList;
-
-                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
-                        {
-                            entry.key = default!;
-                        }
-
-                        if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
-                        {
-                            entry.value = default!;
-                        }
-
-                        _freeList = i;
-                        _freeCount++;
-                        return true;
                     }
-
-                    last = i;
-                    i = entry.next;
-
-                    collisionCount++;
-                    if (collisionCount > (uint)entries.Length)
+                }
+                else
+                {
+                    Debug.Assert(comparer is not null);
+                    while ((uint)i < (uint)entries.Length)
                     {
-                        // The chain of entries forms a loop; which means a concurrent update has happened.
-                        // Break out of the loop and throw, rather than looping forever.
-                        ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        ref Entry entry = ref entries[i];
+
+                        if (entry.hashCode == hashCode && comparer.Equals(entry.key, key))
+                        {
+                            if (last < 0)
+                            {
+                                bucket = entry.next + 1; // Value in buckets is 1-based
+                            }
+                            else
+                            {
+                                entries[last].next = entry.next;
+                            }
+
+                            value = entry.value;
+
+                            Debug.Assert((StartOfFreeList - _freeList) < 0, "shouldn't underflow because max hashtable length is MaxPrimeArrayLength = 0x7FEFFFFD(2146435069) _freelist underflow threshold 2147483646");
+                            entry.next = StartOfFreeList - _freeList;
+
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TKey>())
+                            {
+                                entry.key = default!;
+                            }
+
+                            if (RuntimeHelpers.IsReferenceOrContainsReferences<TValue>())
+                            {
+                                entry.value = default!;
+                            }
+
+                            _freeList = i;
+                            _freeCount++;
+                            return true;
+                        }
+
+                        last = i;
+                        i = entry.next;
+
+                        collisionCount++;
+                        if (collisionCount > (uint)entries.Length)
+                        {
+                            // The chain of entries forms a loop; which means a concurrent update has happened.
+                            // Break out of the loop and throw, rather than looping forever.
+                            ThrowHelper.ThrowInvalidOperationException_ConcurrentOperationsNotSupported();
+                        }
                     }
                 }
             }

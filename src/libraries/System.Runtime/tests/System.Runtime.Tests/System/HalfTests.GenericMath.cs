@@ -40,7 +40,7 @@ namespace System.Tests
                 return;
             }
 
-            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected, actual);
+            throw Xunit.Sdk.EqualException.ForMismatchedValues(expected.ToString(), actual.ToString());
         }
 
         //
@@ -800,18 +800,12 @@ namespace System.Tests
         public static void op_ModulusTest()
         {
             AssertBitwiseEqual(Half.NaN, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Half.NegativeInfinity, Two));
-
-            // https://github.com/dotnet/runtime/issues/67993
-            // AssertBitwiseEqual(NegativeZero, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Half.MinValue, PositiveTwo));
-
+            AssertBitwiseEqual(NegativeZero, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Half.MinValue, Two));
             AssertBitwiseEqual(NegativeOne, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(NegativeOne, Two));
             AssertBitwiseEqual(-MinNormal, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(-MinNormal, Two));
             AssertBitwiseEqual(-MaxSubnormal, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(-MaxSubnormal, Two));
             AssertBitwiseEqual(-Half.Epsilon, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(-Half.Epsilon, Two)); ;
-
-            // https://github.com/dotnet/runtime/issues/67993
-            // AssertBitwiseEqual(NegativeZero, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(NegativeZero, PositiveTwo));
-
+            AssertBitwiseEqual(NegativeZero, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(NegativeZero, Two));
             AssertBitwiseEqual(Half.NaN, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Half.NaN, Two));
             AssertBitwiseEqual(Zero, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Zero, Two));
             AssertBitwiseEqual(Half.Epsilon, ModulusOperatorsHelper<Half, Half, Half>.op_Modulus(Half.Epsilon, Two));
@@ -2454,7 +2448,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(HalfTests.Parse_Valid_TestData), MemberType = typeof(HalfTests))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void ParseValidStringTest(string value, NumberStyles style, IFormatProvider provider, Half expected)
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
@@ -2529,7 +2522,6 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(HalfTests.Parse_ValidWithOffsetCount_TestData), MemberType = typeof(HalfTests))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/123011", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsCoreCLR))]
         public static void ParseValidSpanTest(string value, int offset, int count, NumberStyles style, IFormatProvider provider, Half expected)
         {
             bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;

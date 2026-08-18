@@ -675,7 +675,7 @@ MethodTableBuilder::BuildMethodTableThrowException(
     CONTRACTL
     {
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END
@@ -1174,6 +1174,10 @@ MethodTableBuilder::CopyParentVtable()
      }
 }
 
+#ifdef TARGET_ARM64
+extern "C" uint64_t GetSveLengthFromOS();
+#endif
+
 //*******************************************************************************
 // Determine if this is the special SIMD type System.Numerics.Vector<T>, whose
 // size is determined dynamically based on the hardware and the presence of JIT
@@ -1186,7 +1190,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
 {
     STANDARD_VM_CONTRACT;
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (!bmtProp->fIsIntrinsicType)
         return false;
 
@@ -1205,6 +1209,7 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     CORJIT_FLAGS CPUCompileFlags       = ExecutionManager::GetEEJitManager()->GetCPUCompileFlags();
     uint32_t     numInstanceFieldBytes = 16;
 
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
     if (CPUCompileFlags.IsSet(InstructionSet_VectorT512))
     {
         numInstanceFieldBytes = 64;
@@ -1213,13 +1218,19 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     {
         numInstanceFieldBytes = 32;
     }
+#elif defined(TARGET_ARM64)
+    if (CPUCompileFlags.IsSet(InstructionSet_VectorT))
+    {
+        numInstanceFieldBytes = (uint32_t) GetSveLengthFromOS();
+    }
+#endif
 
     if (numInstanceFieldBytes != 16)
     {
         bmtFP->NumInstanceFieldBytes = numInstanceFieldBytes;
         return true;
     }
-#endif // TARGET_X86 || TARGET_AMD64
+#endif // TARGET_X86 || TARGET_AMD64 || TARGET_ARM64
 
     return false;
 }
@@ -1238,15 +1249,8 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
 
     if (GetInterfaceType()->GetMethodTable()->HasVirtualStaticMethods())
     {
-        MethodTable::MethodIterator it(GetInterfaceType()->GetMethodTable());
-        for (; it.IsValid(); it.Next())
-        {
-            MethodDesc *pDeclMD = it.GetDeclMethodDesc();
-            if (pDeclMD->IsStatic() && pDeclMD->IsVirtual())
-            {
-                cSlotsTotal++;
-            }
-        }
+        // cSlotsTotal is an overestimate. Computing an exact value would require iterating all methods.
+        cSlotsTotal = GetInterfaceType()->GetMethodTable()->GetNumMethods();
     }
 
     bmtInterfaceSlotImpl * pST = new (pStackingAllocator) bmtInterfaceSlotImpl[cSlotsTotal];
@@ -1262,7 +1266,7 @@ MethodTableBuilder::bmtInterfaceEntry::CreateSlotTable(
         }
 
         bmtRTMethod * pCurMethod = new (pStackingAllocator)
-            bmtRTMethod(GetInterfaceType(), it.GetDeclMethodDesc());
+            bmtRTMethod(GetInterfaceType(), pDeclMD);
 
         if (pDeclMD->IsStatic())
         {
@@ -1694,7 +1698,21 @@ MethodTableBuilder::BuildMethodTableThrowing(
         //
         ComputeInterfaceMapEquivalenceSet();
 
+#ifdef _DEBUG
+        // In debug builds always run PlaceInterfaceMethods so that the DispatchMap built for a
+        // specific instantiation can be validated against the reused typical instantiation map
+        // (see AllocateNewMT).
         PlaceInterfaceMethods();
+#else
+        // In release builds, skip the (potentially expensive) interface method placement when the
+        // typical instantiation's DispatchMap can be reused, or when the resulting DispatchMap is
+        // already known to be empty (see GetTypicalMethodTableForDispatchMapReuse).
+        MethodTable *pUnusedTypicalMTForDispatchMap = NULL;
+        if (GetTypicalMethodTableForDispatchMapReuse(&pUnusedTypicalMTForDispatchMap) == DispatchMapReuseKind::BuildNormally)
+        {
+            PlaceInterfaceMethods();
+        }
+#endif // _DEBUG
 
         ProcessMethodImpls();
         ProcessInexactMethodImpls();
@@ -2697,8 +2715,9 @@ MethodTableBuilder::EnumerateClassMethods()
     // In a worst case the number of declared methods can double
     // as each async method may have two variants.
     // The method count is typically a modest number though.
-    // We will reserve twice the size for the builder, up to the max, just in case.
-    DWORD cMethUpperBound = cMethAndGaps * 2;
+    // If we have covariant overrides, such as a base Task method overridden by Task<T>, we will need 3 method descs.
+    // Reserve the space conservatively, up to the max, for the worst case scenario.
+    DWORD cMethUpperBound = cMethAndGaps * (bmtMetaData->fHasCovariantOverride ? 3 : 2);
     if ((DWORD)MAX_SLOT_INDEX <= cMethUpperBound)
     {
         cMethUpperBound = MAX_SLOT_INDEX - 1;
@@ -2782,10 +2801,11 @@ MethodTableBuilder::EnumerateClassMethods()
         SigParser sig(pMemberSignature, cMemberSignature);
 
         ULONG offsetOfAsyncDetails = 0;
+        ULONG elementTypeLength = 0;
         bool returnsValueTask = false;
         MethodReturnKind returnKind = IsDelegate() ?
             MethodReturnKind::NormalMethod :
-            ClassifyMethodReturnKind(sig, GetModule(), &offsetOfAsyncDetails, &returnsValueTask);
+            ClassifyMethodReturnKind(sig, GetModule(), &offsetOfAsyncDetails, &elementTypeLength, &returnsValueTask);
 
         bool hasGenericMethodArgsComputed = false;
         bool hasGenericMethodArgs = this->GetModule()->m_pMethodIsGenericMap->IsGeneric(tok, &hasGenericMethodArgsComputed);
@@ -3338,8 +3358,7 @@ MethodTableBuilder::EnumerateClassMethods()
         // Create a new bmtMDMethod representing this method and add it to the
         // declared method list.
         //
-        bmtMDMethod *pDeclaredMethod = NULL;
-        for (int insertCount = 0; insertCount < 2; insertCount++)
+        for (int insertCount = 0; insertCount < 3; insertCount++)
         {
             if (bmtMethod->m_cDeclaredMethods >= bmtMethod->m_cMaxDeclaredMethods)
             {
@@ -3391,12 +3410,10 @@ MethodTableBuilder::EnumerateClassMethods()
                         pNewMethod->SetAsyncMethodFlags(AsyncMethodFlags::None);
                     }
                 }
-
-                pDeclaredMethod = pNewMethod;
             }
             else
             {
-                // Second pass, add the async variant.
+                // Extra pass, add an async variant.
 
                 ULONG cAsyncThunkMemberSignature;
                 ULONG taskTokenOffsetFromAsyncDetailsOffset;
@@ -3413,20 +3430,42 @@ MethodTableBuilder::EnumerateClassMethods()
                 if (!IsMiAsync(dwImplFlags))
                     asyncFlags |= AsyncMethodFlags::Thunk;
 
+                if (insertCount == 2)
+                    asyncFlags |= (AsyncMethodFlags::Thunk | AsyncMethodFlags::ReturnDroppingThunk);
+
                 // Here we construct the signature of async call variant given its task-returning counterpart.
                 // It is basically just removing the Task/ValueTask part of the return type and keeping
                 // the token for T or inserting void instead.
                 // The rest of the signature stays exactly the same.
-                ULONG tokenLen = 0;
-                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+                ULONG taskTokenLen = 0;
+
+                if (insertCount == 2)
+                {
+                    // This is a rare case when we need two async variants and this is the second one.
+                    // The need arises when a Task-returning method has a Task<T> returning virtual override.
+                    // We need an extra void-returning thunk that can override the void-returning async variant in the base.
+                    // The thunk's implementation simply calls the T-returning async variant and ignores the return.
+
+                    // from ". . . Task<tk> . . . Method(args);"    we construct
+                    //      ". . .    void  . . . Method(args);"
+
+                    taskTokenOffsetFromAsyncDetailsOffset = 2;
+                    taskTokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
+
+                    taskTypePrefixSize = 2 + taskTokenLen + 1 + elementTypeLength; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1 <elementType>
+                    taskTypePrefixReplacementSize = 1;                             // ELEMENT_TYPE_VOID
+
+                    cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
+                }
+                else if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
                 {
                     // from ". . . Task . . . Method(args);"        we construct
                     //      ". . . void . . . Method(args);"
 
                     taskTokenOffsetFromAsyncDetailsOffset = 1;
-                    tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
+                    taskTokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
 
-                    taskTypePrefixSize = 1 + tokenLen;     // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
+                    taskTypePrefixSize = 1 + taskTokenLen; // E_T_CLASS/E_T_VALUETYPE <TokenOfTask>
                     taskTypePrefixReplacementSize = 1;     // ELEMENT_TYPE_VOID
 
                     cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
@@ -3437,9 +3476,9 @@ MethodTableBuilder::EnumerateClassMethods()
                     //      ". . .      tk  . . . Method(args);"
 
                     taskTokenOffsetFromAsyncDetailsOffset = 2;
-                    tokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
+                    taskTokenLen = CorSigUncompressedDataSize(&pMemberSignature[offsetOfAsyncDetails + taskTokenOffsetFromAsyncDetailsOffset]);
 
-                    taskTypePrefixSize = 2 + tokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
+                    taskTypePrefixSize = 2 + taskTokenLen + 1; // E_T_GENERICINST E_T_CLASS/E_T_VALUETYPE <TokenOfTask> 1
                     taskTypePrefixReplacementSize = 0;
 
                     cAsyncThunkMemberSignature = cMemberSignature - taskTypePrefixSize + taskTypePrefixReplacementSize;
@@ -3461,7 +3500,7 @@ MethodTableBuilder::EnumerateClassMethods()
                 _ASSERTE((cMemberSignature - originalRemainingSigOffset) == (cAsyncThunkMemberSignature - newRemainingSigOffset));
                 memcpy(pNewMemberSignature + newRemainingSigOffset, pMemberSignature + originalRemainingSigOffset, cMemberSignature - originalRemainingSigOffset);
 
-                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod)
+                if (returnKind == MethodReturnKind::NonGenericTaskReturningMethod || insertCount == 2)
                 {
                     pNewMemberSignature[newRemainingSigOffset - 1] = ELEMENT_TYPE_VOID;
                 }
@@ -3486,9 +3525,6 @@ MethodTableBuilder::EnumerateClassMethods()
                     asyncFlags,
                     asyncVariantType,
                     implType);
-
-                pNewMethod->SetAsyncOtherVariant(pDeclaredMethod);
-                pDeclaredMethod->SetAsyncOtherVariant(pNewMethod);
 
 #ifdef FEATURE_COMINTEROP
                 // We only ever include one of the two async variants (whichever doesn't have the async calling convention)
@@ -3521,6 +3557,23 @@ MethodTableBuilder::EnumerateClassMethods()
             if (!IsTaskReturning(returnKind))
             {
                 break;
+            }
+
+            // In rare cases we need a void-returning async variant in addition to the T-returning one.
+            // It is ok to add a void-returning thunk and end up not using it, but we want to avoid waste.
+            // Thus we try to filter closer to the cases when the thunk most certainly will be used.
+            if (insertCount == 1)
+            {
+                if (!bmtMetaData->fHasCovariantOverride ||
+                    implType != METHOD_IMPL ||
+                    returnsValueTask ||
+                    returnKind != MethodReturnKind::GenericTaskReturningMethod ||
+                    this->IsValueClass() ||
+                    !IsMdVirtual(dwMemberAttrs))
+                {
+                    // No need for another variant
+                    break;
+                }
             }
         }
     }
@@ -4415,7 +4468,7 @@ IS_VALUETYPE:
                             SetHasFieldsWhichMustBeInited();
 
 #ifdef FEATURE_READYTORUN
-                        if (!(pByValueClass->IsTruePrimitive() || pByValueClass->IsEnum()))
+                        if (!pByValueClass->IsPrimitive())
                         {
                             CheckLayoutDependsOnOtherModules(pByValueClass);
                         }
@@ -4894,8 +4947,6 @@ VOID MethodTableBuilder::TestOverRide(bmtMethodHandle hParentMethod,
     {
         BuildMethodTableThrowException(IDS_CLASSLOAD_REDUCEACCESS, hChildMethod.GetMethodSignature().GetToken());
     }
-
-    return;
 }
 
 //*******************************************************************************
@@ -5005,8 +5056,6 @@ VOID MethodTableBuilder::TestMethodImpl(
             BuildMethodTableThrowException(IDS_CLASSLOAD_MI_SEALED_DECL);
         }
     }
-
-    return;
 }
 
 
@@ -5546,8 +5595,8 @@ MethodTableBuilder::PlaceVirtualMethods()
     }
 }
 
-// Given an interface map entry, and a name+signature, compute the method on the interface
-// that the name+signature corresponds to. Used by ProcessMethodImpls and ProcessInexactMethodImpls
+// Given an interface map entry, and a name+signature+variantLookup, compute the method on the interface
+// that the name+signature+variantLookup corresponds to. Used by ProcessMethodImpls and ProcessInexactMethodImpls
 // Always returns the first match that it finds. Affects the ambiguities in code:#ProcessInexactMethodImpls_Ambiguities
 MethodTableBuilder::bmtMethodHandle
 MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry, MethodSignature &declSig, AsyncVariantLookup variantLookup, bool searchForStaticMethods)
@@ -5587,7 +5636,10 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
         }
     }
 
-    if (variantLookup == AsyncVariantLookup::AsyncOtherVariant && !declMethod.IsNull())
+    // declSig is for an ordinary method, we should not find an async variant.
+    _ASSERTE(declMethod.IsNull() || !declMethod.GetMethodDesc()->IsAsyncVariantMethod());
+
+    if (variantLookup != AsyncVariantLookup::Ordinary && !declMethod.IsNull())
     {
         bmtRTMethod* declRTMethod = declMethod.AsRTMethod();
         // Other variant may not exist. For example we return Task and the base is generic and returns T.
@@ -5600,7 +5652,7 @@ MethodTableBuilder::FindDeclMethodOnInterfaceEntry(bmtInterfaceEntry *pItfEntry,
             if ((slotDeclMethod->GetOwningType() == declRTMethod->GetOwningType()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMethodTable() == declRTMethod->GetMethodDesc()->GetMethodTable()) &&
                 (slotDeclMethod->GetMethodDesc()->GetMemberDef() == declRTMethod->GetMethodDesc()->GetMemberDef()) &&
-                (slotDeclMethod->GetMethodDesc()->IsAsyncVariantMethod() != declRTMethod->GetMethodDesc()->IsAsyncVariantMethod()))
+                (slotDeclMethod->GetMethodDesc()->MatchesAsyncVariantLookup(variantLookup)))
             {
                 declMethod = slotIt->Decl();
                 break;
@@ -5676,9 +5728,9 @@ MethodTableBuilder::ProcessInexactMethodImpls()
             continue;
         }
 
-        AsyncVariantLookup asyncVariantOfDeclToFind = !it->IsAsyncVariant() ?
-            AsyncVariantLookup::MatchingAsyncVariant :
-            AsyncVariantLookup::AsyncOtherVariant;
+        AsyncVariantLookup asyncVariantOfDeclToFind = it->IsAsyncVariant() ?
+            AsyncVariantLookup::Async :
+            AsyncVariantLookup::Ordinary;
 
         // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
@@ -5821,9 +5873,9 @@ MethodTableBuilder::ProcessMethodImpls()
             continue;
         }
 
-        AsyncVariantLookup asyncVariantOfDeclToFind = !it->IsAsyncVariant() ?
-            AsyncVariantLookup::MatchingAsyncVariant :
-            AsyncVariantLookup::AsyncOtherVariant;
+        AsyncVariantLookup asyncVariantOfDeclToFind = it->IsAsyncVariant() ?
+            AsyncVariantLookup::Async :
+            AsyncVariantLookup::Ordinary;
 
         // If this method serves as the BODY of a MethodImpl specification, then
         // we should iterate all the MethodImpl's for this class and see just how many
@@ -6008,11 +6060,23 @@ MethodTableBuilder::ProcessMethodImpls()
                                 declMethod = FindDeclMethodOnClassInHierarchy(it, pDeclMT, declSig, asyncVariantOfDeclToFind);
                             }
 
-                            if (declMethod.IsNull() && asyncVariantOfDeclToFind == AsyncVariantLookup::AsyncOtherVariant)
+                            if (asyncVariantOfDeclToFind == AsyncVariantLookup::Async &&
+                                (declMethod.IsNull() ||
+                                    !MethodSignature::SignaturesEquivalent(declMethod.GetMethodSignature(), it->GetMethodSignature(), FALSE)))
                             {
-                                // when implementing/overriding, we may see a Task-returning method
-                                // which matches a T-returning method in the interface/base, which would not have variants.
-                                // in such case the async variant of the Task-returning method does not implement/override anything.
+                                // There are two scenarios when an async variant may not find a base to override:
+                                // 
+                                // 1. We have a Task-returning method that is Task-returning due to generic substitution of the return type.
+                                //    The base method is T-returning and thus does not have an async variant that we can override.
+                                // 
+                                // 2. We may have added a void-returning async thunk in anticipation of covariant Task -> Task<T> override.
+                                //    The thunk is added very early based on limited type system information and it is not 100% guaranteed that
+                                //    we actually have Task -> Task<T> situation. (i.e. we may have Object -> Task<T> override or some other case...)
+                                //    When this happens the thunk does not override anything.
+                                // 
+                                // It is ok in the above cases to not have a base. It means that the "impl" method should not be called
+                                // polymorphically.
+                                //
                                 continue;
                             }
 
@@ -6150,11 +6214,14 @@ MethodTableBuilder::bmtMethodHandle MethodTableBuilder::FindDeclMethodOnClassInH
                         FALSE,
                         iPass == 0 ? &newVisited : NULL))
                     {
-                        if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
+                        // We should find the ordinary variant first.
+                        _ASSERTE(pCurMD->MatchesAsyncVariantLookup(AsyncVariantLookup::Ordinary));
+
+                        if (variantLookup != AsyncVariantLookup::Ordinary)
                         {
-                            if (pCurMD->IsAsyncVariantMethod() || pCurMD->ReturnsTaskOrValueTask())
+                            if (pCurMD->ReturnsTaskOrValueTask())
                             {
-                                pCurMD = pCurMD->GetAsyncOtherVariant();
+                                pCurMD = pCurMD->GetAsyncVariant();
                             }
                             else
                             {
@@ -6202,7 +6269,7 @@ MethodTableBuilder::InitMethodDesc(
     {
         THROWS;
         if (fEnC) { GC_NOTRIGGER; } else { GC_TRIGGERS; }
-        MODE_ANY;
+        MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
 
@@ -7025,8 +7092,8 @@ VOID MethodTableBuilder::ValidateInterfaceMethodConstraints()
                                                    pMTItf->GetModule(),
                                                    mdTok))
             {
-                LOG((LF_CLASSLOADER, LL_INFO1000,
-                     "BADCONSTRAINTS on interface method implementation: %x\n", pTargetMD));
+                 LOG((LF_CLASSLOADER, LL_INFO1000,
+                     "BADCONSTRAINTS on interface method implementation: %p\n", pTargetMD));
                 // This exception will be due to an implicit implementation, since explicit errors
                 // will be detected in MethodImplCompareSignatures (for now, anyway).
                 CONSISTENCY_CHECK(!it.IsMethodImpl());
@@ -7971,6 +8038,49 @@ MethodTableBuilder::PlaceInterfaceMethods()
 
 
 //*******************************************************************************
+// Determines how the DispatchMap for the type being built relates to its typical instantiation.
+// The encoded DispatchMap is instantiation-independent (it consists of type IDs and slot numbers
+// only), so a non-typical instantiation of a generic type can reuse its typical instantiation's
+// DispatchMap directly, avoiding a redundant - and potentially expensive - run of
+// PlaceInterfaceMethods for every instantiation.
+//
+//   - BuildNormally:  there is no typical instantiation to reuse from (interface or typical type
+//                     definition); PlaceInterfaceMethods must run and the map is built normally.
+//   - ReuseTypicalMap: the typical instantiation has its own DispatchMap; *ppTypicalMTForReuse is
+//                     set to it so its bytes can be reused.
+//   - KnownEmpty:     the typical instantiation has no DispatchMap, so this instantiation's map is
+//                     known to be empty; PlaceInterfaceMethods can be skipped entirely.
+MethodTableBuilder::DispatchMapReuseKind
+MethodTableBuilder::GetTypicalMethodTableForDispatchMapReuse(MethodTable **ppTypicalMTForReuse)
+{
+    STANDARD_VM_CONTRACT;
+
+    _ASSERTE(ppTypicalMTForReuse != NULL);
+    *ppTypicalMTForReuse = NULL;
+
+    // DispatchMaps are not built for interfaces.
+    if (IsInterface())
+        return DispatchMapReuseKind::BuildNormally;
+
+    // Only non-typical instantiations of generic types have a distinct typical instantiation.
+    if (bmtGenerics->IsTypicalTypeDefinition())
+        return DispatchMapReuseKind::BuildNormally;
+
+    MethodTable *pTypicalMT = bmtGenerics->GetTypicalMethodTable();
+    _ASSERTE(pTypicalMT != NULL);
+
+    // If the typical instantiation has no DispatchMap of its own, then this non-typical
+    // instantiation would produce an (identical) empty DispatchMap. The result is therefore known
+    // to be empty and PlaceInterfaceMethods can be skipped.
+    if (!pTypicalMT->HasDispatchMapSlot())
+        return DispatchMapReuseKind::KnownEmpty;
+
+    *ppTypicalMTForReuse = pTypicalMT;
+    return DispatchMapReuseKind::ReuseTypicalMap;
+} // MethodTableBuilder::GetTypicalMethodTableForDispatchMapReuse
+
+
+//*******************************************************************************
 //
 // Used by BuildMethodTable
 //
@@ -8261,6 +8371,9 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     bool hasInt128Field = (pParentMT && pParentMT->IsInt128OrHasInt128Fields())
         || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Int128) == EEClassLayoutInfo::NestedFieldFlags::Int128);
 
+    bool hasDecimalField = (pParentMT && pParentMT->IsDecimalFloatingPointOrHasDecimalFloatingPointFields())
+        || ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::DecimalFloatingPoint) == EEClassLayoutInfo::NestedFieldFlags::DecimalFloatingPoint);
+
     bool isAlign8 = ((nestedFieldFlags & EEClassLayoutInfo::NestedFieldFlags::Align8) == EEClassLayoutInfo::NestedFieldFlags::Align8)
 #if defined(FEATURE_64BIT_ALIGNMENT)
         || (pParentMT && pParentMT->RequiresAlign8())
@@ -8273,6 +8386,7 @@ VOID MethodTableBuilder::PlaceInstanceFields(MethodTable** pByValueClassCache)
     pLayoutInfo->SetIsBlittable(isBlittable ? TRUE : FALSE);
     pLayoutInfo->SetHasAutoLayoutField(isAutoLayoutOrHasAutoLayoutField ? TRUE : FALSE);
     pLayoutInfo->SetIsInt128OrHasInt128Fields(hasInt128Field ? TRUE : FALSE);
+    pLayoutInfo->SetIsDecimalFloatingPointOrHasDecimalFloatingPointFields(hasDecimalField ? TRUE : FALSE);
     pLayoutInfo->SetHasExplicitSize(bmtLayout->classSize);
 
     if (bmtLayout->layoutType == EEClassLayoutInfo::LayoutType::Sequential)
@@ -8899,7 +9013,7 @@ DWORD MethodTableBuilder::GetFieldSize(FieldDesc *pFD)
 
     if (pFD->IsByValue())
         return (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass);
-    return (1 << (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass));
+    return 1 << (DWORD)(DWORD_PTR&)(pFD->m_pMTOfEnclosingClass);
 }
 
 #ifdef UNIX_AMD64_ABI
@@ -9833,13 +9947,22 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                     {
                         MethodTable *pItfPossiblyApprox = intIt.GetInterfaceApprox();
 
-                        // pItfPossiblyApprox can be in 4 situations
+                        // pItfPossiblyApprox can be in 6 situations
                         // 1. It has no instantiation
-                        // 2. It is a special marker type, AND pNewItfMT is a special marker type. Compute the exact instantiation as containing entirely a list of types corresponding to calling GetSpecialInstantiationType on pMT (This rule works based on the current behavior of GetSpecialInstantiationType where it treats all interfaces the same)
-                        // 3. It is a special marker type, but pNewItfMT is NOT a special marker type. Compute the exact instantiation as containing entirely a list of types corresponding to calling GetSpecialInstantiationType on pNewItfMT
-                        // 4. It is an exact instantiation
+                        // 2. It is a special marker type, AND pNewIntfMT is a special marker type. Compute the exact instantiation as containing entirely a list of
+                        //    types corresponding to calling GetSpecialInstantiationType on pMT (This rule works based on the current behavior of
+                        //    GetSpecialInstantiationType where it treats all interfaces the same)
+                        // 3. It is a special marker type, but pNewIntfMT is NOT a special marker type. Compute the exact instantiation as containing entirely a list
+                        //    of types corresponding to calling GetSpecialInstantiationType on pNewIntfMT
+                        // 4. It is an exact instantiation, but pNewIntfMT was a special marker type, and the exact instantiation type found here could have been a
+                        //    special marker type. This should produce a result equivalent to case 2 (the special marker type)
+                        // 5. It is an exact instantiation, but pNewIntfMT was a special marker type, and the exact instantiation type is NOT one which would have
+                        //    been on the exact instantiation of pNewIntfMT if it were not a special marker type. In theory we could reconstruct this, but this is a
+                        //    rare scenario, so we just fallback to the retry with exact interfaces pathway
+                        // 6. It is an exact instantiation, and pNewIntfMT is NOT a special marker type, compute the result and insert either a special marker or
+                        //    the exact instantiation already found.
                         //
-                        // NOTE: pItfPossiblyApprox must not be considered a special marker type if pNewItfMT has the MayHaveOpenInterfacesInInterfaceMap flag set
+                        // NOTE: pItfPossiblyApprox must not be considered a special marker type if pNewIntfMT has the MayHaveOpenInterfacesInInterfaceMap flag set
                         //
                         // Then determine if all of the following conditions hold true.
                         // 1. All generic arguments are the same (always true for cases 2 and 3 above)
@@ -9889,17 +10012,40 @@ MethodTableBuilder::LoadExactInterfaceMap(MethodTable *pMT)
                         }
                         else
                         {
-                            // case 4 (We have an exact interface)
-                            if (ClassLoader::EligibleForSpecialMarkerTypeUsage(pItfPossiblyApprox->GetInstantiation(), pMT))
+                            // case 4, 5, or 6 (We have an exact interface)
+                            bool pNewIntfMTIsSpecialMarkerType = pNewIntfMT->IsSpecialMarkerTypeForGenericCasting() && !pMT->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap();
+                            if (pNewIntfMTIsSpecialMarkerType)
                             {
-                                // Validated that all generic arguments are the same, and that the first generic argument in the instantiation is exactly the value of calling GetSpecialInstantiationType on pMT
-                                // Then use the special marker type here
-                                pItfToInsert = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                                if (ClassLoader::EligibleForSpecialMarkerTypeUsage(pItfPossiblyApprox->GetInstantiation(), pNewIntfMT))
+                                {
+                                    // Case 4 - we have an exact instantiation, but pNewIntfMT was a special marker type, and the exact instantiation type found here could have been a special marker type. We need to check if the exact instantiation we found
+                                    // here could have been a special marker type. If it is, we need to insert the special marker type here.
+                                    pItfToInsert = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                                }
+                                else if (pItfPossiblyApprox->ContainsGenericVariables())
+                                {
+                                    // Case 5
+                                    // If the instantiation contains generic variables and can't be converted to the special marker type, then we would need to fully re-instantiate the type with a deep substitution to get the exact instantiation, which is complex and expensive, and we expect this to be a rare case, so we can just fallback to the retry with exact interfaces pathway in this case.
+                                    retry = true;
+                                    break;
+                                }
+                                // If we reach here, we've already found the correct pItfToInsert (case 4), OR we can proceed to case 6 since pItfPossiblyApprox was an exact type defined on the generic type.
                             }
-                            else
+
+                            if (pItfToInsert == NULL)
                             {
-                                pItfToInsert = pItfPossiblyApprox;
-                                intendedExactMatch = true;
+                                // Case 6, this is an exact instantiation of exactly the right type. Insert it here.
+                                if (ClassLoader::EligibleForSpecialMarkerTypeUsage(pItfPossiblyApprox->GetInstantiation(), pMT))
+                                {
+                                    // Validated that all generic arguments are the same, and that the first generic argument in the instantiation is exactly the value of calling GetSpecialInstantiationType on pMT
+                                    // Then use the special marker type here
+                                    pItfToInsert = ClassLoader::LoadTypeDefThrowing(pItfPossiblyApprox->GetModule(), pItfPossiblyApprox->GetCl(), ClassLoader::ThrowIfNotFound, ClassLoader::PermitUninstDefOrRef, 0, CLASS_LOAD_EXACTPARENTS).AsMethodTable();
+                                }
+                                else
+                                {
+                                    pItfToInsert = pItfPossiblyApprox;
+                                    intendedExactMatch = true;
+                                }
                             }
                         }
 
@@ -10604,6 +10750,18 @@ void MethodTableBuilder::CheckForSystemTypes()
 
                 return;
             }
+
+#ifdef TARGET_WASM
+            // System.Numerics.Vector<T> is a v128 value on wasm, so it needs the same 16-byte
+            // alignment as System.Runtime.Intrinsics.Vector128<T> above. Its metadata layout is
+            // already 16 bytes (two UInt64 fields), but those only give it 8-byte alignment,
+            // which disagrees with crossgen2 and the interpreter.
+            if ((strcmp(nameSpace, g_NumericsNS) == 0) && (strcmp(name, "Vector`1") == 0))
+            {
+                pClass->GetLayoutInfo()->SetAlignmentRequirement(16); // sizeof(v128)
+                return;
+            }
+#endif // TARGET_WASM
         }
 
         if (g_pNullableClass != NULL)
@@ -10651,16 +10809,51 @@ void MethodTableBuilder::CheckForSystemTypes()
         // Value types
         //
 
+        // The IEEE 754 decimal floating-point types live in System.Numerics and require special ABI
+        // handling similar to Int128/UInt128 (Decimal128 shares __int128's 16-byte alignment).
+        if (strcmp(nameSpace, g_NumericsNS) == 0)
+        {
+            if ((strcmp(name, g_Decimal32Name) == 0)
+                || (strcmp(name, g_Decimal64Name) == 0)
+                || (strcmp(name, g_Decimal128Name) == 0))
+            {
+                EEClassLayoutInfo* pLayout = pClass->GetLayoutInfo();
+                pLayout->SetIsDecimalFloatingPointOrHasDecimalFloatingPointFields(TRUE);
+
+                if (strcmp(name, g_Decimal128Name) == 0)
+                {
+                    // Decimal32/Decimal64 map onto uint/ulong and keep their natural alignment.
+                    // Decimal128 corresponds to the _Decimal128 ABI primitive, which mirrors the
+                    // 16-byte alignment applied to Int128/UInt128.
+#ifdef TARGET_ARM
+                    // No _Decimal128 type exists for the Procedure Call Standard for ARM. We default
+                    // to the same alignment as __m128, matching the Int128/UInt128 treatment.
+                    pLayout->SetAlignmentRequirement(8);
+#elif defined(TARGET_64BIT) || defined(TARGET_X86)
+                    pLayout->SetAlignmentRequirement(16); // sizeof(_Decimal128)
+#elif defined(TARGET_WASM)
+                    // The Wasm Basic C ABI does not define a decimal type; it tracks what the
+                    // clang/LLVM Wasm backend implements, and clang has no _Decimal128. Match
+                    // __int128_t, the only other 16 byte scalar it does define, which is 16 byte
+                    // aligned (including under Emscripten, which only reduces long double to 8).
+                    pLayout->SetAlignmentRequirement(16);
+#else
+#error Unknown architecture
+#endif // TARGET_ARM
+                }
+            }
+            return;
+        }
+
         // All special value types are in the system namespace
         if (strcmp(nameSpace, g_SystemNS) != 0)
             return;
 
         // Check if it is a primitive type
         CorElementType type = CorTypeInfo::FindPrimitiveType(name);
-        if (type != ELEMENT_TYPE_END)
+        if (type != ELEMENT_TYPE_END && CorTypeInfo::IsPrimitiveType(type))
         {
-            pMT->SetInternalCorElementType(type);
-            pMT->SetIsTruePrimitive();
+            pMT->SetInternalCorElementType(type, true);
 
 #if defined(TARGET_X86) && defined(UNIX_X86_ABI)
             switch (type)
@@ -10692,18 +10885,6 @@ void MethodTableBuilder::CheckForSystemTypes()
         else if (strcmp(name, g_NullableName) == 0)
         {
             pMT->SetIsNullable();
-        }
-        else if (strcmp(name, g_RuntimeArgumentHandleName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeMethodHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
-        }
-        else if (strcmp(name, g_RuntimeFieldHandleInternalName) == 0)
-        {
-            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
         }
         else if ((strcmp(name, g_Int128Name) == 0) || (strcmp(name, g_UInt128Name) == 0))
         {
@@ -10804,14 +10985,13 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
         , AllocMemTracker *pamTracker
     )
 {
-    CONTRACT (MethodTable*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
         MODE_ANY;
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     DWORD dwNonVirtualSlots = dwVtableSlots - dwVirtuals;
 
@@ -10827,7 +11007,22 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     BYTE *pbDispatchMapTemp = NULL;
     UINT32 cbDispatchMapTemp = 0;
     size_t dispatchMapAllocationSize = 0;
-    if (bmtVT->pDispatchMapBuilder->Count() > 0)
+
+    // Determine whether this (non-typical) generic instantiation can reuse its typical
+    // instantiation's DispatchMap, or whether its DispatchMap is already known to be empty.
+    // The encoded map is instantiation-independent.
+    MethodTable *pTypicalMTForDispatchMap = NULL;
+    DispatchMapReuseKind dispatchMapReuseKind = GetTypicalMethodTableForDispatchMapReuse(&pTypicalMTForDispatchMap);
+
+    if (bmtVT->pDispatchMapBuilder->Count() > 0
+#ifndef _DEBUG
+        // In release builds, when reusing the typical instantiation's map, PlaceInterfaceMethods
+        // was skipped, so the builder only holds a partial (method-impl-only) map. Don't bother
+        // encoding it; it would just be discarded below. When the map is known to be empty the
+        // builder is empty as well, so nothing needs to be encoded.
+        && dispatchMapReuseKind == DispatchMapReuseKind::BuildNormally
+#endif // !_DEBUG
+        )
     {
         DispatchMapBuilder          *pDispatchMapBuilder = bmtVT->pDispatchMapBuilder;
         CONSISTENCY_CHECK(CheckPointer(pDispatchMapBuilder));
@@ -10841,6 +11036,40 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
         // Now determine the size of the dispatch map, so that we can allocate it in the MethodTableAuxiliaryData
         dispatchMapAllocationSize = (size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp);
+    }
+
+    if (dispatchMapReuseKind == DispatchMapReuseKind::ReuseTypicalMap)
+    {
+        _ASSERTE(pTypicalMTForDispatchMap != NULL);
+        DispatchMap *pTypicalDispatchMap = pTypicalMTForDispatchMap->GetDispatchMap();
+        // The reuse helper only returns a MethodTable that has its own DispatchMap slot.
+        CONSISTENCY_CHECK(CheckPointer(pTypicalDispatchMap));
+        BYTE  *pbTypicalMap = pTypicalDispatchMap->GetEncodedMapData();
+        UINT32 cbTypicalMap = pTypicalDispatchMap->GetMapSize();
+
+        // Validate that the DispatchMap we just built for this specific instantiation is
+        // byte-for-byte identical to the typical instantiation's DispatchMap. If this fires,
+        // the DispatchMap is not actually instantiation-independent and cannot be reused.
+        _ASSERTE_MSG(cbTypicalMap == cbDispatchMapTemp,
+            "Typical instantiation DispatchMap size differs from the specific instantiation's DispatchMap");
+        _ASSERTE_MSG((cbTypicalMap == 0) || (memcmp(pbTypicalMap, pbDispatchMapTemp, cbTypicalMap) == 0),
+            "Typical instantiation DispatchMap contents differ from the specific instantiation's DispatchMap");
+
+#ifndef _DEBUG
+        // Reuse the typical instantiation's encoded DispatchMap directly. It is fully constructed
+        // and immutable; the DispatchMap constructor below copies the bytes into this type's map.
+        pbDispatchMapTemp = pbTypicalMap;
+        cbDispatchMapTemp = cbTypicalMap;
+        dispatchMapAllocationSize = (size_t) DispatchMap::GetObjectSize(cbDispatchMapTemp);
+#endif // _DEBUG
+    }
+    else if (dispatchMapReuseKind == DispatchMapReuseKind::KnownEmpty)
+    {
+        // The typical instantiation has no DispatchMap, so this instantiation's DispatchMap must be
+        // empty too. In debug builds PlaceInterfaceMethods always runs, so validate that it indeed
+        // produced nothing.
+        _ASSERTE_MSG(bmtVT->pDispatchMapBuilder->Count() == 0,
+            "Non-typical instantiation produced DispatchMap entries even though its typical instantiation has no DispatchMap");
     }
 
     // Add space for optional members here. Same as GetOptionalMembersSize()
@@ -10916,7 +11145,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
 
     pMT->GetAuxiliaryDataForWrite()->SetIsNotFullyLoadedForBuildMethodTable();
 
-    if (bmtVT->pDispatchMapBuilder->Count() > 0)
+    if (dispatchMapAllocationSize > 0)
     {
         pMT->SetFlag(MethodTable::enum_flag_HasDispatchMapSlot);
 
@@ -11030,7 +11259,7 @@ MethodTable * MethodTableBuilder::AllocateNewMT(
     pMT->m_pAuxiliaryData->m_dwLastVerifedGCCnt = (DWORD)-1;
 #endif // _DEBUG
 
-    RETURN(pMT);
+    return pMT;
 }
 
 
@@ -11946,7 +12175,7 @@ VOID MethodTableBuilder::CheckLayoutDependsOnOtherModules(MethodTable * pDepende
     STANDARD_VM_CONTRACT;
 
     // These cases are expected to be handled by the caller
-    _ASSERTE(!(pDependencyMT == g_pObjectClass || pDependencyMT->IsTruePrimitive() || ((g_pEnumClass != NULL) && pDependencyMT->IsEnum())));
+    _ASSERTE(!(pDependencyMT == g_pObjectClass || pDependencyMT->IsPrimitive()));
 
     //
     // WARNING: Changes in this algorithm are potential ReadyToRun breaking changes !!!
@@ -12558,15 +12787,13 @@ MethodTableBuilder::GatherGenericsInfo(
             bmtGenericsInfo->fSharedByGenericInstantiations = TypeHandle::IsCanonicalSubtypeInstantiation(inst);
             _ASSERTE(bmtGenericsInfo->fSharedByGenericInstantiations == ClassLoader::IsSharableInstantiation(inst));
 
-#ifdef _DEBUG
             // Set typical instantiation MethodTable
             {
                 MethodTable * pTypicalInstantiationMT = pModule->LookupTypeDef(cl).AsMethodTable();
                 // Typical instantiation was already loaded by code:ClassLoader::LoadApproxTypeThrowing
                 _ASSERTE(pTypicalInstantiationMT != NULL);
-                bmtGenericsInfo->dbg_pTypicalInstantiationMT = pTypicalInstantiationMT;
+                bmtGenericsInfo->pTypicalInstantiationMT = pTypicalInstantiationMT;
             }
-#endif //_DEBUG
         }
 
         TypeHandle * pDestInst = (TypeHandle *)inst.GetRawArgs();
@@ -12794,15 +13021,13 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
     Instantiation     inst,
     AllocMemTracker * pamTracker)
 {
-    CONTRACT(TypeHandle)
+    CONTRACTL
     {
         STANDARD_VM_CHECK;
         PRECONDITION(GetThreadNULLOk() != NULL);
         PRECONDITION(CheckPointer(pModule));
-        POSTCONDITION(!RETVAL.IsNull());
-        POSTCONDITION(CheckPointer(RETVAL.GetMethodTable()));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable * pMT = NULL;
 
@@ -13080,5 +13305,5 @@ ClassLoader::CreateTypeHandleForTypeDefThrowing(
         parentInst,
         (WORD)cInterfaces);
 
-    RETURN(TypeHandle(pMT));
+    return TypeHandle(pMT);
 } // ClassLoader::CreateTypeHandleForTypeDefThrowing

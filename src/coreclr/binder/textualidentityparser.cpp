@@ -68,18 +68,6 @@ namespace BINDER_SPACE
             return NULL;
         }
 
-        LPCWSTR ContentTypeToString(AssemblyContentType kContentType)
-        {
-            _ASSERTE(kContentType != AssemblyContentType_Default);
-
-            if (kContentType == AssemblyContentType_WindowsRuntime)
-            {
-                return W("WindowsRuntime");
-            }
-
-            return NULL;
-        }
-
         BOOL IsWhitespace(WCHAR wcChar)
         {
             return ((wcChar == L'\n') || (wcChar == L'\r') || (wcChar == L' ') || (wcChar == L'\t'));
@@ -168,13 +156,6 @@ namespace BINDER_SPACE
                                        AssemblyIdentity::IDENTITY_FLAG_RETARGETABLE))
             {
                 textualIdentity.Append(W(", Retargetable=Yes"));
-            }
-
-            if (AssemblyIdentity::Have(dwIdentityFlags,
-                                       AssemblyIdentity::IDENTITY_FLAG_CONTENT_TYPE))
-            {
-                textualIdentity.Append(W(", ContentType="));
-                textualIdentity.Append(ContentTypeToString(pAssemblyIdentity->m_kContentType));
             }
 
         }

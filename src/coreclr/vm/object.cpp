@@ -622,7 +622,8 @@ VOID Object::ValidateInner(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncB
     }
     EX_CATCH
     {
-        STRESS_LOG3(LF_ASSERT, LL_ALWAYS, "Detected use of corrupted OBJECTREF: %p [MT=%p] (lastTest=%d)", this, lastTest > 0 ? (*(size_t*)this) : 0, lastTest);
+        STRESS_LOG3(LF_ASSERT, LL_ALWAYS, "Detected use of corrupted OBJECTREF: %p [MT=%p] (lastTest=%d)", this,
+                    (void*)(size_t)(lastTest > 0 ? (*(size_t*)this) : 0), lastTest);
         CHECK_AND_TEAR_DOWN(!"Detected use of a corrupted OBJECTREF. Possible GC hole.");
     }
     EX_END_CATCH
@@ -819,7 +820,7 @@ STRINGREF* StringObject::InitEmptyStringRefPtr() {
 
     GCX_COOP();
 
-    EEStringData data(0, W(""), TRUE);
+    EEStringData data(0, W(""));
     void* pinnedStr = nullptr;
     EmptyStringRefPtr = SystemDomain::System()->DefaultDomain()->GetLoaderAllocator()->GetStringObjRefPtrFromUnicodeString(&data, &pinnedStr);
     EmptyStringIsFrozen = pinnedStr != nullptr;
@@ -1168,35 +1169,6 @@ OBJECTREF& OBJECTREF::operator=(TADDR nul)
     return *this;
 }
 #endif  // DEBUG
-
-#ifdef _DEBUG
-
-void* __cdecl GCSafeMemCpy(void * dest, const void * src, size_t len)
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FORBID_FAULT;
-
-    if (!(((*(BYTE**)&dest) <  g_lowest_address ) ||
-          ((*(BYTE**)&dest) >= g_highest_address)))
-    {
-        Thread* pThread = GetThreadNULLOk();
-
-        // GCHeapUtilities::IsHeapPointer has race when called in preemptive mode. It walks the list of segments
-        // that can be modified by GC. Do the check below only if it is safe to do so.
-        if (pThread != NULL && pThread->PreemptiveGCDisabled())
-        {
-            // Note there is memcpyNoGCRefs which will allow you to do a memcpy into the GC
-            // heap if you really know you don't need to call the write barrier
-
-            _ASSERTE(!GCHeapUtilities::GetGCHeap()->IsHeapPointer((BYTE *) dest) ||
-                     !"using memcpy to copy into the GC heap, use CopyValueClass");
-        }
-    }
-    return memcpyNoGCRefs(dest, src, len);
-}
-
-#endif // _DEBUG
 
 // This function clears a piece of memory in a GC safe way.  It makes the guarantee
 // that it will clear memory in at least pointer sized chunks whenever possible.

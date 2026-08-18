@@ -99,7 +99,7 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => listener.Prefixes.CopyTo(new object[1, 1], 0));
         }
 
-        [ConditionalFact(nameof(IsNonZeroLowerBoundArraySupported))]
+        [ConditionalFact(typeof(HttpListenerPrefixCollectionTests), nameof(IsNonZeroLowerBoundArraySupported))]
         public void CopyTo_NonZeroLowerBoundArray_ThrowsIndexOutOfRangeException()
         {
             var listener = new HttpListener();

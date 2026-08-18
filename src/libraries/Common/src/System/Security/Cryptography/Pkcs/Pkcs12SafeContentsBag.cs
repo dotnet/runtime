@@ -30,13 +30,23 @@ namespace System.Security.Cryptography.Pkcs
             return Decode(writer.Encode());
         }
 
-        internal static Pkcs12SafeContentsBag Decode(ReadOnlyMemory<byte> encodedValue)
+        private static Pkcs12SafeContentsBag Decode(ReadOnlyMemory<byte> encodedValue)
         {
             Pkcs12SafeContents contents = new Pkcs12SafeContents(encodedValue);
 
             return new Pkcs12SafeContentsBag(encodedValue)
             {
                 SafeContents = contents
+            };
+        }
+
+        internal static Pkcs12SafeContentsBag CreateWithDeferredContents(
+            ReadOnlyMemory<byte> encodedValue,
+            Pkcs12SafeContents deferredContents)
+        {
+            return new Pkcs12SafeContentsBag(encodedValue)
+            {
+                SafeContents = deferredContents
             };
         }
     }

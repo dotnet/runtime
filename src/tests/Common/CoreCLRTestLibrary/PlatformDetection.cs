@@ -71,6 +71,7 @@ namespace TestLibrary
         public static bool IsExceptionInteropSupported => IsWindows && !Utilities.IsNativeAot && !Utilities.IsMonoRuntime && !Utilities.IsCoreClrInterpreter;
 
         public static bool IsMonoRuntime => Type.GetType("Mono.RuntimeStructs") != null;
+        public static bool IsCoreCLR => !IsMonoRuntime && Utilities.IsNotNativeAot;
 
         static string _variant = Environment.GetEnvironmentVariable("DOTNET_RUNTIME_VARIANT");
 
@@ -100,11 +101,12 @@ namespace TestLibrary
             OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsAndroid() || OperatingSystem.IsBrowser() || OperatingSystem.IsWasi();
         public static bool IsAppleMobile => OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst();
 
+        // wasm properties
         public static bool IsBrowser => OperatingSystem.IsBrowser();
         public static bool IsWasi => OperatingSystem.IsWasi();
-        public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
-        public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
-        public static bool IsThreadingNotSupported => !IsThreadingSupported;
+        public static bool IsWasm => IsBrowser || IsWasi;
+        public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
+        public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
 
         private static bool IsEnvironmentVariableTrue(string variableName)
         {

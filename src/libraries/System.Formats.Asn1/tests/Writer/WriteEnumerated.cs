@@ -11,14 +11,14 @@ namespace System.Formats.Asn1.Tests.Writer
     public class WriteEnumerated : Asn1WriterTests
     {
         [Theory]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.SByteBacked.Zero, false, "0A0100")]
-        [InlineData(AsnEncodingRules.CER, ReadEnumerated.SByteBacked.Pillow, true, "9E01EF")]
-        [InlineData(AsnEncodingRules.DER, ReadEnumerated.SByteBacked.Fluff, false, "0A0153")]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.SByteBacked.Fluff, true, "9E0153")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.SByteBacked)(-127), true, "9E0181")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.SByteBacked.Zero, false, "0A0100")]
+        [InlineData(AsnEncodingRules.CER, ReadEnumeratedBase.SByteBacked.Pillow, true, "9E01EF")]
+        [InlineData(AsnEncodingRules.DER, ReadEnumeratedBase.SByteBacked.Fluff, false, "0A0153")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.SByteBacked.Fluff, true, "9E0153")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.SByteBacked)(-127), true, "9E0181")]
         public void VerifyWriteEnumerated_SByte(
             AsnEncodingRules ruleSet,
-            ReadEnumerated.SByteBacked value,
+            ReadEnumeratedBase.SByteBacked value,
             bool customTag,
             string expectedHex)
         {
@@ -37,14 +37,14 @@ namespace System.Formats.Asn1.Tests.Writer
         }
 
         [Theory]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.ByteBacked.Zero, false, "0A0100")]
-        [InlineData(AsnEncodingRules.CER, ReadEnumerated.ByteBacked.NotFluffy, true, "9A010B")]
-        [InlineData(AsnEncodingRules.DER, ReadEnumerated.ByteBacked.Fluff, false, "0A010C")]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.ByteBacked.Fluff, true, "9A010C")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.ByteBacked)253, false, "0A0200FD")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.ByteBacked.Zero, false, "0A0100")]
+        [InlineData(AsnEncodingRules.CER, ReadEnumeratedBase.ByteBacked.NotFluffy, true, "9A010B")]
+        [InlineData(AsnEncodingRules.DER, ReadEnumeratedBase.ByteBacked.Fluff, false, "0A010C")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.ByteBacked.Fluff, true, "9A010C")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.ByteBacked)253, false, "0A0200FD")]
         public void VerifyWriteEnumerated_Byte(
             AsnEncodingRules ruleSet,
-            ReadEnumerated.ByteBacked value,
+            ReadEnumeratedBase.ByteBacked value,
             bool customTag,
             string expectedHex)
         {
@@ -63,16 +63,16 @@ namespace System.Formats.Asn1.Tests.Writer
         }
 
         [Theory]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.ShortBacked.Zero, true, "DF81540100")]
-        [InlineData(AsnEncodingRules.CER, ReadEnumerated.ShortBacked.Pillow, true, "DF815402FC00")]
-        [InlineData(AsnEncodingRules.DER, ReadEnumerated.ShortBacked.Fluff, false, "0A020209")]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.ShortBacked.Fluff, true, "DF8154020209")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.ShortBacked)25321, false, "0A0262E9")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.ShortBacked)(-12345), false, "0A02CFC7")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.ShortBacked)(-1), true, "DF815401FF")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.ShortBacked.Zero, true, "DF81540100")]
+        [InlineData(AsnEncodingRules.CER, ReadEnumeratedBase.ShortBacked.Pillow, true, "DF815402FC00")]
+        [InlineData(AsnEncodingRules.DER, ReadEnumeratedBase.ShortBacked.Fluff, false, "0A020209")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.ShortBacked.Fluff, true, "DF8154020209")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.ShortBacked)25321, false, "0A0262E9")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.ShortBacked)(-12345), false, "0A02CFC7")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.ShortBacked)(-1), true, "DF815401FF")]
         public void VerifyWriteEnumerated_Short(
             AsnEncodingRules ruleSet,
-            ReadEnumerated.ShortBacked value,
+            ReadEnumeratedBase.ShortBacked value,
             bool customTag,
             string expectedHex)
         {
@@ -91,16 +91,16 @@ namespace System.Formats.Asn1.Tests.Writer
         }
 
         [Theory]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.UShortBacked.Zero, false, "0A0100")]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.UShortBacked.Zero, true, "4D0100")]
-        [InlineData(AsnEncodingRules.DER, ReadEnumerated.UShortBacked.Fluff, false, "0A03008000")]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.UShortBacked.Fluff, true, "4D03008000")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.UShortBacked)11, false, "0A010B")]
-        [InlineData(AsnEncodingRules.DER, (ReadEnumerated.UShortBacked)short.MaxValue, false, "0A027FFF")]
-        [InlineData(AsnEncodingRules.BER, (ReadEnumerated.UShortBacked)ushort.MaxValue, true, "4D0300FFFF")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.UShortBacked.Zero, false, "0A0100")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.UShortBacked.Zero, true, "4D0100")]
+        [InlineData(AsnEncodingRules.DER, ReadEnumeratedBase.UShortBacked.Fluff, false, "0A03008000")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.UShortBacked.Fluff, true, "4D03008000")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.UShortBacked)11, false, "0A010B")]
+        [InlineData(AsnEncodingRules.DER, (ReadEnumeratedBase.UShortBacked)short.MaxValue, false, "0A027FFF")]
+        [InlineData(AsnEncodingRules.BER, (ReadEnumeratedBase.UShortBacked)ushort.MaxValue, true, "4D0300FFFF")]
         public void VerifyWriteEnumerated_UShort(
             AsnEncodingRules ruleSet,
-            ReadEnumerated.UShortBacked value,
+            ReadEnumeratedBase.UShortBacked value,
             bool customTag,
             string expectedHex)
         {
@@ -119,18 +119,18 @@ namespace System.Formats.Asn1.Tests.Writer
         }
 
         [Theory]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.IntBacked.Zero, true, "5F81FF7F0100")]
-        [InlineData(AsnEncodingRules.CER, ReadEnumerated.IntBacked.Pillow, true, "5F81FF7F03FEFFFF")]
-        [InlineData(AsnEncodingRules.DER, ReadEnumerated.IntBacked.Fluff, false, "0A03010001")]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.IntBacked.Fluff, true, "5F81FF7F03010001")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.IntBacked)25321, false, "0A0262E9")]
-        [InlineData(AsnEncodingRules.DER, (ReadEnumerated.IntBacked)(-12345), false, "0A02CFC7")]
-        [InlineData(AsnEncodingRules.BER, (ReadEnumerated.IntBacked)(-1), true, "5F81FF7F01FF")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.IntBacked)int.MinValue, true, "5F81FF7F0480000000")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.IntBacked)int.MaxValue, false, "0A047FFFFFFF")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.IntBacked.Zero, true, "5F81FF7F0100")]
+        [InlineData(AsnEncodingRules.CER, ReadEnumeratedBase.IntBacked.Pillow, true, "5F81FF7F03FEFFFF")]
+        [InlineData(AsnEncodingRules.DER, ReadEnumeratedBase.IntBacked.Fluff, false, "0A03010001")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.IntBacked.Fluff, true, "5F81FF7F03010001")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.IntBacked)25321, false, "0A0262E9")]
+        [InlineData(AsnEncodingRules.DER, (ReadEnumeratedBase.IntBacked)(-12345), false, "0A02CFC7")]
+        [InlineData(AsnEncodingRules.BER, (ReadEnumeratedBase.IntBacked)(-1), true, "5F81FF7F01FF")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.IntBacked)int.MinValue, true, "5F81FF7F0480000000")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.IntBacked)int.MaxValue, false, "0A047FFFFFFF")]
         public void VerifyWriteEnumerated_Int(
             AsnEncodingRules ruleSet,
-            ReadEnumerated.IntBacked value,
+            ReadEnumeratedBase.IntBacked value,
             bool customTag,
             string expectedHex)
         {
@@ -149,16 +149,16 @@ namespace System.Formats.Asn1.Tests.Writer
         }
 
         [Theory]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.UIntBacked.Zero, false, "0A0100")]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.UIntBacked.Zero, true, "9F610100")]
-        [InlineData(AsnEncodingRules.DER, ReadEnumerated.UIntBacked.Fluff, false, "0A050080000005")]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.UIntBacked.Fluff, true, "9F61050080000005")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.UIntBacked)11, false, "0A010B")]
-        [InlineData(AsnEncodingRules.DER, (ReadEnumerated.UIntBacked)short.MaxValue, false, "0A027FFF")]
-        [InlineData(AsnEncodingRules.BER, (ReadEnumerated.UIntBacked)ushort.MaxValue, true, "9F610300FFFF")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.UIntBacked.Zero, false, "0A0100")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.UIntBacked.Zero, true, "9F610100")]
+        [InlineData(AsnEncodingRules.DER, ReadEnumeratedBase.UIntBacked.Fluff, false, "0A050080000005")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.UIntBacked.Fluff, true, "9F61050080000005")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.UIntBacked)11, false, "0A010B")]
+        [InlineData(AsnEncodingRules.DER, (ReadEnumeratedBase.UIntBacked)short.MaxValue, false, "0A027FFF")]
+        [InlineData(AsnEncodingRules.BER, (ReadEnumeratedBase.UIntBacked)ushort.MaxValue, true, "9F610300FFFF")]
         public void VerifyWriteEnumerated_UInt(
             AsnEncodingRules ruleSet,
-            ReadEnumerated.UIntBacked value,
+            ReadEnumeratedBase.UIntBacked value,
             bool customTag,
             string expectedHex)
         {
@@ -177,20 +177,20 @@ namespace System.Formats.Asn1.Tests.Writer
         }
 
         [Theory]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.LongBacked.Zero, true, "800100")]
-        [InlineData(AsnEncodingRules.CER, ReadEnumerated.LongBacked.Pillow, true, "8005FF00000000")]
-        [InlineData(AsnEncodingRules.DER, ReadEnumerated.LongBacked.Fluff, false, "0A050200000441")]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.LongBacked.Fluff, true, "80050200000441")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.LongBacked)25321, false, "0A0262E9")]
-        [InlineData(AsnEncodingRules.DER, (ReadEnumerated.LongBacked)(-12345), false, "0A02CFC7")]
-        [InlineData(AsnEncodingRules.BER, (ReadEnumerated.LongBacked)(-1), true, "8001FF")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.LongBacked)int.MinValue, true, "800480000000")]
-        [InlineData(AsnEncodingRules.DER, (ReadEnumerated.LongBacked)int.MaxValue, false, "0A047FFFFFFF")]
-        [InlineData(AsnEncodingRules.BER, (ReadEnumerated.LongBacked)long.MinValue, false, "0A088000000000000000")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.LongBacked)long.MaxValue, true, "80087FFFFFFFFFFFFFFF")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.LongBacked.Zero, true, "800100")]
+        [InlineData(AsnEncodingRules.CER, ReadEnumeratedBase.LongBacked.Pillow, true, "8005FF00000000")]
+        [InlineData(AsnEncodingRules.DER, ReadEnumeratedBase.LongBacked.Fluff, false, "0A050200000441")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.LongBacked.Fluff, true, "80050200000441")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.LongBacked)25321, false, "0A0262E9")]
+        [InlineData(AsnEncodingRules.DER, (ReadEnumeratedBase.LongBacked)(-12345), false, "0A02CFC7")]
+        [InlineData(AsnEncodingRules.BER, (ReadEnumeratedBase.LongBacked)(-1), true, "8001FF")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.LongBacked)int.MinValue, true, "800480000000")]
+        [InlineData(AsnEncodingRules.DER, (ReadEnumeratedBase.LongBacked)int.MaxValue, false, "0A047FFFFFFF")]
+        [InlineData(AsnEncodingRules.BER, (ReadEnumeratedBase.LongBacked)long.MinValue, false, "0A088000000000000000")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.LongBacked)long.MaxValue, true, "80087FFFFFFFFFFFFFFF")]
         public void VerifyWriteEnumerated_Long(
             AsnEncodingRules ruleSet,
-            ReadEnumerated.LongBacked value,
+            ReadEnumeratedBase.LongBacked value,
             bool customTag,
             string expectedHex)
         {
@@ -209,18 +209,18 @@ namespace System.Formats.Asn1.Tests.Writer
         }
 
         [Theory]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.ULongBacked.Zero, false, "0A0100")]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.ULongBacked.Zero, true, "C10100")]
-        [InlineData(AsnEncodingRules.DER, ReadEnumerated.ULongBacked.Fluff, false, "0A0900FACEF00DCAFEBEEF")]
-        [InlineData(AsnEncodingRules.BER, ReadEnumerated.ULongBacked.Fluff, true, "C10900FACEF00DCAFEBEEF")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.ULongBacked)11, false, "0A010B")]
-        [InlineData(AsnEncodingRules.DER, (ReadEnumerated.ULongBacked)short.MaxValue, false, "0A027FFF")]
-        [InlineData(AsnEncodingRules.BER, (ReadEnumerated.ULongBacked)ushort.MaxValue, true, "C10300FFFF")]
-        [InlineData(AsnEncodingRules.CER, (ReadEnumerated.ULongBacked)long.MaxValue, true, "C1087FFFFFFFFFFFFFFF")]
-        [InlineData(AsnEncodingRules.DER, (ReadEnumerated.ULongBacked)ulong.MaxValue, false, "0A0900FFFFFFFFFFFFFFFF")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.ULongBacked.Zero, false, "0A0100")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.ULongBacked.Zero, true, "C10100")]
+        [InlineData(AsnEncodingRules.DER, ReadEnumeratedBase.ULongBacked.Fluff, false, "0A0900FACEF00DCAFEBEEF")]
+        [InlineData(AsnEncodingRules.BER, ReadEnumeratedBase.ULongBacked.Fluff, true, "C10900FACEF00DCAFEBEEF")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.ULongBacked)11, false, "0A010B")]
+        [InlineData(AsnEncodingRules.DER, (ReadEnumeratedBase.ULongBacked)short.MaxValue, false, "0A027FFF")]
+        [InlineData(AsnEncodingRules.BER, (ReadEnumeratedBase.ULongBacked)ushort.MaxValue, true, "C10300FFFF")]
+        [InlineData(AsnEncodingRules.CER, (ReadEnumeratedBase.ULongBacked)long.MaxValue, true, "C1087FFFFFFFFFFFFFFF")]
+        [InlineData(AsnEncodingRules.DER, (ReadEnumeratedBase.ULongBacked)ulong.MaxValue, false, "0A0900FFFFFFFFFFFFFFFF")]
         public void VerifyWriteEnumerated_ULong(
             AsnEncodingRules ruleSet,
-            ReadEnumerated.ULongBacked value,
+            ReadEnumeratedBase.ULongBacked value,
             bool customTag,
             string expectedHex)
         {
@@ -277,11 +277,11 @@ namespace System.Formats.Asn1.Tests.Writer
 
             AssertExtensions.Throws<ArgumentException>(
                 "tag",
-                () => writer.WriteEnumeratedValue(ReadEnumerated.IntBacked.Pillow, Asn1Tag.Null));
+                () => writer.WriteEnumeratedValue(ReadEnumeratedBase.IntBacked.Pillow, Asn1Tag.Null));
 
             AssertExtensions.Throws<ArgumentException>(
                 "tag",
-                () => writer.WriteEnumeratedValue((Enum)ReadEnumerated.IntBacked.Pillow, Asn1Tag.Null));
+                () => writer.WriteEnumeratedValue((Enum)ReadEnumeratedBase.IntBacked.Pillow, Asn1Tag.Null));
         }
 
         [Theory]
@@ -312,14 +312,14 @@ namespace System.Formats.Asn1.Tests.Writer
             AsnWriter objWriter = new AsnWriter(ruleSet);
             AsnWriter genWriter = new AsnWriter(ruleSet);
 
-            genWriter.WriteEnumeratedValue(ReadEnumerated.UIntBacked.Fluff);
-            objWriter.WriteEnumeratedValue((Enum)ReadEnumerated.UIntBacked.Fluff);
+            genWriter.WriteEnumeratedValue(ReadEnumeratedBase.UIntBacked.Fluff);
+            objWriter.WriteEnumeratedValue((Enum)ReadEnumeratedBase.UIntBacked.Fluff);
 
-            genWriter.WriteEnumeratedValue(ReadEnumerated.SByteBacked.Fluff);
-            objWriter.WriteEnumeratedValue((Enum)ReadEnumerated.SByteBacked.Fluff);
+            genWriter.WriteEnumeratedValue(ReadEnumeratedBase.SByteBacked.Fluff);
+            objWriter.WriteEnumeratedValue((Enum)ReadEnumeratedBase.SByteBacked.Fluff);
 
-            genWriter.WriteEnumeratedValue(ReadEnumerated.ULongBacked.Fluff);
-            objWriter.WriteEnumeratedValue((Enum)ReadEnumerated.ULongBacked.Fluff);
+            genWriter.WriteEnumeratedValue(ReadEnumeratedBase.ULongBacked.Fluff);
+            objWriter.WriteEnumeratedValue((Enum)ReadEnumeratedBase.ULongBacked.Fluff);
 
             Verify(objWriter, genWriter.Encode().ByteArrayToHex());
         }
@@ -335,18 +335,18 @@ namespace System.Formats.Asn1.Tests.Writer
 
             Asn1Tag tag = new Asn1Tag(TagClass.ContextSpecific, 52);
 
-            genWriter.WriteEnumeratedValue(ReadEnumerated.UIntBacked.Fluff, tag);
-            objWriter.WriteEnumeratedValue((Enum)ReadEnumerated.UIntBacked.Fluff, tag);
+            genWriter.WriteEnumeratedValue(ReadEnumeratedBase.UIntBacked.Fluff, tag);
+            objWriter.WriteEnumeratedValue((Enum)ReadEnumeratedBase.UIntBacked.Fluff, tag);
 
             tag = new Asn1Tag(TagClass.Private, 4);
 
-            genWriter.WriteEnumeratedValue(ReadEnumerated.SByteBacked.Fluff, tag);
-            objWriter.WriteEnumeratedValue((Enum)ReadEnumerated.SByteBacked.Fluff, tag);
+            genWriter.WriteEnumeratedValue(ReadEnumeratedBase.SByteBacked.Fluff, tag);
+            objWriter.WriteEnumeratedValue((Enum)ReadEnumeratedBase.SByteBacked.Fluff, tag);
 
             tag = new Asn1Tag(TagClass.Application, 75);
 
-            genWriter.WriteEnumeratedValue(ReadEnumerated.ULongBacked.Fluff, tag);
-            objWriter.WriteEnumeratedValue((Enum)ReadEnumerated.ULongBacked.Fluff, tag);
+            genWriter.WriteEnumeratedValue(ReadEnumeratedBase.ULongBacked.Fluff, tag);
+            objWriter.WriteEnumeratedValue((Enum)ReadEnumeratedBase.ULongBacked.Fluff, tag);
 
             Verify(objWriter, genWriter.Encode().ByteArrayToHex());
         }
@@ -359,11 +359,11 @@ namespace System.Formats.Asn1.Tests.Writer
         {
             AsnWriter writer = new AsnWriter(ruleSet);
             writer.WriteEnumeratedValue(
-                ReadEnumerated.ULongBacked.Fluff,
+                ReadEnumeratedBase.ULongBacked.Fluff,
                 new Asn1Tag(UniversalTagNumber.Enumerated, isConstructed: true));
 
             writer.WriteEnumeratedValue(
-                (Enum)ReadEnumerated.SByteBacked.Fluff,
+                (Enum)ReadEnumeratedBase.SByteBacked.Fluff,
                 new Asn1Tag(TagClass.ContextSpecific, 0, isConstructed: true));
 
             Verify(writer, "0A0900FACEF00DCAFEBEEF" + "800153");

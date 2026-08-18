@@ -34,21 +34,51 @@ namespace System.Text.Json.Serialization.Tests
             };
 
             string json = JsonSerializer.Serialize(obj);
-            Assert.Contains(@"""MyString"":null", json);
-            Assert.Contains(@"""MyInt"":null", json);
-            Assert.Contains(@"""MyDateTime"":null", json);
-            Assert.Contains(@"""MyIntArray"":null", json);
-            Assert.Contains(@"""MyIntList"":null", json);
-            Assert.Contains(@"""MyNullableIntList"":null", json);
-            Assert.Contains(@"""MyObjectList"":[null],", json);
-            Assert.Contains(@"""MyListList"":[[null]],", json);
-            Assert.Contains(@"""MyDictionaryList"":[{""key"":null}],", json);
-            Assert.Contains(@"""MyStringDictionary"":{""key"":null},", json);
-            Assert.Contains(@"""MyNullableDateTimeDictionary"":{""key"":null},", json);
-            Assert.Contains(@"""MyObjectDictionary"":{""key"":null},", json);
-            Assert.Contains(@"""MyStringDictionaryDictionary"":{""key"":null},", json);
-            Assert.Contains(@"""MyListDictionary"":{""key"":null},", json);
-            Assert.Contains(@"""MyObjectDictionaryDictionary"":{""key"":null}", json);
+            Assert.Contains("""
+                "MyString":null
+                """, json);
+            Assert.Contains("""
+                "MyInt":null
+                """, json);
+            Assert.Contains("""
+                "MyDateTime":null
+                """, json);
+            Assert.Contains("""
+                "MyIntArray":null
+                """, json);
+            Assert.Contains("""
+                "MyIntList":null
+                """, json);
+            Assert.Contains("""
+                "MyNullableIntList":null
+                """, json);
+            Assert.Contains("""
+                "MyObjectList":[null],
+                """, json);
+            Assert.Contains("""
+                "MyListList":[[null]],
+                """, json);
+            Assert.Contains("""
+                "MyDictionaryList":[{"key":null}],
+                """, json);
+            Assert.Contains("""
+                "MyStringDictionary":{"key":null},
+                """, json);
+            Assert.Contains("""
+                "MyNullableDateTimeDictionary":{"key":null},
+                """, json);
+            Assert.Contains("""
+                "MyObjectDictionary":{"key":null},
+                """, json);
+            Assert.Contains("""
+                "MyStringDictionaryDictionary":{"key":null},
+                """, json);
+            Assert.Contains("""
+                "MyListDictionary":{"key":null},
+                """, json);
+            Assert.Contains("""
+                "MyObjectDictionaryDictionary":{"key":null}
+                """, json);
         }
 
         [Fact]
@@ -149,23 +179,57 @@ namespace System.Text.Json.Serialization.Tests
             obj.Object = null;
 
             string json = JsonSerializer.Serialize(obj);
-            Assert.Contains(@"""Address"":null", json);
-            Assert.Contains(@"""List"":null", json);
-            Assert.Contains(@"""Array"":null", json);
-            Assert.Contains(@"""IEnumerableT"":null", json);
-            Assert.Contains(@"""IListT"":null", json);
-            Assert.Contains(@"""ICollectionT"":null", json);
-            Assert.Contains(@"""IReadOnlyCollectionT"":null", json);
-            Assert.Contains(@"""IReadOnlyListT"":null", json);
-            Assert.Contains(@"""StackT"":null", json);
-            Assert.Contains(@"""QueueT"":null", json);
-            Assert.Contains(@"""HashSetT"":null", json);
-            Assert.Contains(@"""IReadOnlySetT"":null", json);
-            Assert.Contains(@"""LinkedListT"":null", json);
-            Assert.Contains(@"""SortedSetT"":null", json);
-            Assert.Contains(@"""NullableInt"":null", json);
-            Assert.Contains(@"""Object"":null", json);
-            Assert.Contains(@"""NullableIntArray"":null", json);
+            Assert.Contains("""
+                "Address":null
+                """, json);
+            Assert.Contains("""
+                "List":null
+                """, json);
+            Assert.Contains("""
+                "Array":null
+                """, json);
+            Assert.Contains("""
+                "IEnumerableT":null
+                """, json);
+            Assert.Contains("""
+                "IListT":null
+                """, json);
+            Assert.Contains("""
+                "ICollectionT":null
+                """, json);
+            Assert.Contains("""
+                "IReadOnlyCollectionT":null
+                """, json);
+            Assert.Contains("""
+                "IReadOnlyListT":null
+                """, json);
+            Assert.Contains("""
+                "StackT":null
+                """, json);
+            Assert.Contains("""
+                "QueueT":null
+                """, json);
+            Assert.Contains("""
+                "HashSetT":null
+                """, json);
+            Assert.Contains("""
+                "IReadOnlySetT":null
+                """, json);
+            Assert.Contains("""
+                "LinkedListT":null
+                """, json);
+            Assert.Contains("""
+                "SortedSetT":null
+                """, json);
+            Assert.Contains("""
+                "NullableInt":null
+                """, json);
+            Assert.Contains("""
+                "Object":null
+                """, json);
+            Assert.Contains("""
+                "NullableIntArray":null
+                """, json);
         }
 
         [Fact]
@@ -207,25 +271,25 @@ namespace System.Text.Json.Serialization.Tests
             {
                 ["key"] = null,
             };
-            Assert.Equal(@"{""key"":null}", JsonSerializer.Serialize(StringVals));
+            Assert.Equal("""{"key":null}""", JsonSerializer.Serialize(StringVals));
 
             Dictionary<string, object> ObjVals = new Dictionary<string, object>()
             {
                 ["key"] = null,
             };
-            Assert.Equal(@"{""key"":null}", JsonSerializer.Serialize(ObjVals));
+            Assert.Equal("""{"key":null}""", JsonSerializer.Serialize(ObjVals));
 
             Dictionary<string, Dictionary<string, string>> StringDictVals = new Dictionary<string, Dictionary<string, string>>()
             {
                 ["key"] = null,
             };
-            Assert.Equal(@"{""key"":null}", JsonSerializer.Serialize(StringDictVals));
+            Assert.Equal("""{"key":null}""", JsonSerializer.Serialize(StringDictVals));
 
             Dictionary<string, Dictionary<string, object>> ObjectDictVals = new Dictionary<string, Dictionary<string, object>>()
             {
                 ["key"] = null,
             };
-            Assert.Equal(@"{""key"":null}", JsonSerializer.Serialize(ObjectDictVals));
+            Assert.Equal("""{"key":null}""", JsonSerializer.Serialize(ObjectDictVals));
         }
 
         [Fact]

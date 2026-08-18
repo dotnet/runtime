@@ -7,7 +7,7 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding
     // Actions:
     // link - This assembly, Forwarder.dll and Implementation.dll
 
-    [SetupLinkerArgument("--skip-unresolved", "true")]
+    [SkipUnresolved(true)]
 
     [SetupCompileArgument("/unsafe")]
     [SetupCompileBefore("Forwarder.dll", new[] { "Dependencies/TypeForwardersRewriteLib.cs" })]

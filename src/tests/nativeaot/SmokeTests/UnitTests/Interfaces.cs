@@ -19,6 +19,9 @@ public class Interfaces
         if (TestInterfaceCache() == Fail)
             return Fail;
 
+        if (TestSharedDescriptorCells() == Fail)
+            return Fail;
+
         if (TestAVInInterfaceCache() == Fail)
             return Fail;
 
@@ -64,6 +67,7 @@ public class Interfaces
         TestDynamicStaticGenericVirtualMethods.Run();
         TestRuntime109496Regression.Run();
         TestRuntime113664Regression.Run();
+        TestRuntime125577Regression.Run();
 
         return Pass;
     }
@@ -161,6 +165,27 @@ public class Interfaces
 
         return 100;
     }
+
+    private static int TestSharedDescriptorCells()
+    {
+        MyInterface instance = new Foo7();
+        return CallSharedDescriptor0(instance) +
+            CallSharedDescriptor1(instance) +
+            CallSharedDescriptor2(instance) +
+            CallSharedDescriptor3(instance) == 28 ? Pass : Fail;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor0(MyInterface instance) => instance.GetAnInt();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor1(MyInterface instance) => instance.GetAnInt();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor2(MyInterface instance) => instance.GetAnInt();
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int CallSharedDescriptor3(MyInterface instance) => instance.GetAnInt();
 
     private static int TestAVInInterfaceCache()
     {
@@ -2046,4 +2071,30 @@ public class Interfaces
             return T.Frob<V>();
         }
     }
+
+    class TestRuntime125577Regression
+    {
+        class Shapeshifter : IDynamicInterfaceCastable
+        {
+            bool _result;
+            public Shapeshifter(bool result) => _result = result;
+
+            public RuntimeTypeHandle GetInterfaceImplementation(RuntimeTypeHandle interfaceType) => throw new NotImplementedException();
+            public bool IsInterfaceImplemented(RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) => _result;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static bool Is(object o, bool expected) => o is IEnumerable<object> == expected;
+
+        public static void Run()
+        {
+            // Call multiple times in case we just flushed the cast cache (when we flush we don't store).
+            if (!Is(new Shapeshifter(true), true)
+                || !Is(new Shapeshifter(false), false)
+                || !Is(new Shapeshifter(true), true)
+                || !Is(new Shapeshifter(false), false))
+                throw new Exception();
+        }
+    }
+
 }

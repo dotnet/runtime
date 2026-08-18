@@ -9,6 +9,9 @@ using Microsoft.Extensions.FileSystemGlobbing.Abstractions;
 
 namespace Microsoft.Extensions.FileSystemGlobbing
 {
+    /// <summary>
+    /// Provides extensions for configuring and executing a <see cref="Matcher" />.
+    /// </summary>
     public static class MatcherExtensions
     {
         /// <summary>

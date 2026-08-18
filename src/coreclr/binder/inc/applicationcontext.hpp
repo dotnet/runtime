@@ -84,18 +84,16 @@ namespace BINDER_SPACE
         ~ApplicationContext();
         HRESULT Init();
 
-        inline SString &GetApplicationName();
-
         HRESULT SetupBindingPaths(/* in */ SString &sTrustedPlatformAssemblies,
                                   /* in */ SString &sPlatformResourceRoots,
-                                  /* in */ SString &sAppPaths,
-                                  /* in */ BOOL     fAcquireLock);
+                                  /* in */ SString &sAppPaths);
 
         // Getters/Setter
         inline ExecutionContext *GetExecutionContext();
         inline FailureCache *GetFailureCache();
         inline HRESULT AddToFailureCache(SString &assemblyNameOrPath,
-                                         HRESULT  hrBindResult);
+                                         HRESULT  hrBindResult,
+                                         LPCWSTR  diagnosticInfo);
         inline StringArrayList *GetAppPaths();
         inline SimpleNameToFileNameMap *GetTpaList();
         inline StringArrayList *GetPlatformResourceRoots();
@@ -108,7 +106,6 @@ namespace BINDER_SPACE
 
     private:
         Volatile<LONG>     m_cVersion;
-        SString            m_applicationName;
         ExecutionContext  *m_pExecutionContext;
         FailureCache      *m_pFailureCache;
         CRITSEC_COOKIE     m_contextCS;

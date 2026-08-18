@@ -125,13 +125,13 @@ The reasons are captured by telemetry and regularly analyzed to allow us to find
 
 The `Build Analysis` requests are sent to a queue. In certain scenarios, this queue can have many items to process and it can take a while for the status to be updated. If you do not see the status getting updated, be patient and wait at least 10 minutes before investigating further.
 
-While most failures can be matched via known issues, a few failures modes cannot be matched currently and it is valid to suppress them manually. Suggested wording to use in these situations (this list is not exhaustive):
+While most failures can be matched via known issues, a few failure modes cannot be matched currently and it is valid to suppress them manually. Suggested wording to use in these situations (this list is not exhaustive, wording after `/ba-g` is an arbitrary justification string):
 
 - `/ba-g deadletter` - Helix infrastructure failed with "This is a helix work item crash with status: DeadLetter." error message. Validate that the coverage provided by the dead-lettered leg is not relevant to the PR first. Rerun the leg instead if the coverage is relevant.
 - `/ba-g missing logs` - Logs are completely missing.
 - `/ba-g insufficient info in logs` - No good unique pattern in the logs to open a known issue.
 - `/ba-g recently fixed known issue #<Known Issue number>` - The fix for the known issue had already been merged, but the CI run was triggered beforehand.
-- `/ba-g all known issue filled #<Known Issue number 1>, #<Known Issue number 2>, ...` - All failures have known issues filled, but the build analysis is not turning green for some reasons.
+- `/ba-g all known issues already filed #<Known Issue number 1>, #<Known Issue number 2>, ...` - All failures have known issues filed, but the build analysis is not turning green for some reason.
 
 On release branches, Build Analysis does not automatically turn green, even for known issues. Authors are required to use `/ba-g <reason>` to manually inspect the build analysis results and update its status as appropriate.
 For more information, see https://github.com/dotnet/arcade/blob/main/Documentation/Projects/Build%20Analysis/EscapeMechanismforBuildAnalysis.md

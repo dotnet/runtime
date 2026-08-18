@@ -43,11 +43,12 @@
 
 class Thread;
 
+// [cDAC] [Thread]: Contract depends on the values of NonCollectible, Collectible, and DirectOnThreadLocalData.
 enum class TLSIndexType
 {
-    NonCollectible, // IndexOffset for this form of TLSIndex is scaled by sizeof(OBJECTREF) and used as an index into the array at ThreadLocalData::pNonCollectibleTlsArrayData to get the final address
-    Collectible, // IndexOffset for this form of TLSIndex is scaled by sizeof(void*) and then added to ThreadLocalData::pCollectibleTlsArrayData to get the final address
-    DirectOnThreadLocalData, // IndexOffset for this form of TLS index is an offset into the ThreadLocalData structure itself. This is used for very high performance scenarios, and scenario where the runtime native code needs to hold a TLS pointer to a managed TLS slot. Each one of these is hand-opted into this model.
+    NonCollectible = 0, // IndexOffset for this form of TLSIndex is scaled by sizeof(OBJECTREF) and used as an index into the array at ThreadLocalData::pNonCollectibleTlsArrayData to get the final address
+    Collectible = 1, // IndexOffset for this form of TLSIndex is scaled by sizeof(void*) and then added to ThreadLocalData::pCollectibleTlsArrayData to get the final address
+    DirectOnThreadLocalData = 2, // IndexOffset for this form of TLS index is an offset into the ThreadLocalData structure itself. This is used for very high performance scenarios, and scenario where the runtime native code needs to hold a TLS pointer to a managed TLS slot. Each one of these is hand-opted into this model.
 };
 
 struct TLSIndex
@@ -62,6 +63,7 @@ struct TLSIndex
     static TLSIndex Unallocated() { LIMITED_METHOD_DAC_CONTRACT; return TLSIndex(0xFFFFFFFF); }
     bool operator == (TLSIndex index) const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex == index.TLSIndexRawIndex; }
     bool operator != (TLSIndex index) const { LIMITED_METHOD_DAC_CONTRACT; return TLSIndexRawIndex != index.TLSIndexRawIndex; }
+    void VolatileStore(const TLSIndex &other) { LIMITED_METHOD_CONTRACT; ::VolatileStore(&TLSIndexRawIndex, other.TLSIndexRawIndex); }
 };
 
 // Used to store access to TLS data for a single index when the TLS is accessed while the class constructor is running
@@ -122,6 +124,7 @@ public:
     PTR_MethodTable Lookup(TLSIndex index, bool *isGCStatic, bool *isCollectible) const
     {
         LIMITED_METHOD_CONTRACT;
+        // This method is called without the g_TLSCrst lock being held
         *isGCStatic = false;
         *isCollectible = false;
         if (index.GetIndexOffset() < VolatileLoad(&m_maxIndex))
@@ -141,6 +144,7 @@ public:
     PTR_MethodTable LookupTlsIndexKnownToBeAllocated(TLSIndex index) const
     {
         LIMITED_METHOD_CONTRACT;
+        // This method is called without the g_TLSCrst lock being held
         if (index.GetIndexOffset() < VolatileLoad(&m_maxIndex))
         {
             TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.GetIndexOffset()]);
@@ -164,9 +168,14 @@ public:
 
     entry Lookup(TLSIndex index) const
     {
+        // This method is called with the g_TLSCrst lock held, so we don't actually
+        // need all of these volatile loads, but using VolatileLoad is more similar to the other
+        // paths, and the performance penalty is negligible, so we keep them.
+
         LIMITED_METHOD_CONTRACT;
         entry e(index);
-        if (index.GetIndexOffset() < VolatileLoad(&m_maxIndex))
+        int32_t maxIndex = VolatileLoad(&m_maxIndex); // This VolatileLoad pairs with a VolatileStore in TLSIndexToMethodTableMap::Set to ensure that if we read a maxIndex that is large enough to contain our index
+        if (index.GetIndexOffset() < maxIndex)
         {
             TADDR rawValue = VolatileLoadWithoutBarrier(&VolatileLoad(&pMap)[index.GetIndexOffset()]);
             if (!IsClearedValue(rawValue))
@@ -183,7 +192,7 @@ public:
         }
         else
         {
-            e.TlsIndex = TLSIndex(m_indexType, m_maxIndex);
+            e.TlsIndex = TLSIndex(m_indexType, maxIndex);
         }
         return e;
     }

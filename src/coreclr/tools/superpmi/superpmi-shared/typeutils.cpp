@@ -59,12 +59,9 @@ const char* TypeUtils::GetCorInfoTypeName(CorInfoType type)
             return "byref";
 
         case CORINFO_TYPE_VALUECLASS:
-        case CORINFO_TYPE_REFANY:
             return "struct";
 
-        case CORINFO_TYPE_STRING:
         case CORINFO_TYPE_CLASS:
-        case CORINFO_TYPE_VAR:
             return "ref";
 
         case CORINFO_TYPE_NATIVEINT:
@@ -90,13 +87,12 @@ bool TypeUtils::IsFloatingPoint(CorInfoType type)
 
 bool TypeUtils::IsPointer(CorInfoType type)
 {
-    return (type == CORINFO_TYPE_STRING || type == CORINFO_TYPE_PTR || type == CORINFO_TYPE_BYREF ||
-            type == CORINFO_TYPE_CLASS);
+    return (type == CORINFO_TYPE_CLASS || type == CORINFO_TYPE_PTR || type == CORINFO_TYPE_BYREF);
 }
 
 bool TypeUtils::IsValueClass(CorInfoType type)
 {
-    return (type == CORINFO_TYPE_VALUECLASS || type == CORINFO_TYPE_REFANY);
+    return (type == CORINFO_TYPE_VALUECLASS);
 }
 
 // Determines if a value class, represented by the given class handle, is required to be passed
@@ -144,15 +140,13 @@ size_t TypeUtils::SizeOfCorInfoType(CorInfoType type)
 
         case CORINFO_TYPE_NATIVEINT:
         case CORINFO_TYPE_NATIVEUINT:
-        case CORINFO_TYPE_STRING:
+        case CORINFO_TYPE_CLASS:
         case CORINFO_TYPE_PTR:
         case CORINFO_TYPE_BYREF:
-        case CORINFO_TYPE_CLASS:
             return SpmiTargetPointerSize();
 
         // This should be obtained via repGetClassSize
         case CORINFO_TYPE_VALUECLASS:
-        case CORINFO_TYPE_REFANY:
             LogException(EXCEPTIONCODE_TYPEUTILS,
                          "SizeOfCorInfoType does not support value types; use repGetClassSize instead (type: 0x%x)",
                          type);

@@ -6,6 +6,7 @@ set(MDRUNTIME_SOURCES
   mdfileformat.cpp
   metamodel.cpp
   metamodelro.cpp
+  noopmetadataimport.cpp
   recordpool.cpp
   mdinternaldisp.cpp
   mdinternalro.cpp
@@ -18,6 +19,7 @@ set(MDRUNTIME_SOURCES
 set(MDRUNTIME_HEADERS
   ../../inc/caparser.h
   ../../inc/cor.h
+  ../../inc/cordecoderhelpers.h
   ../../inc/corhlpr.h
   ../../inc/corpriv.h
   ../../inc/mdcommon.h

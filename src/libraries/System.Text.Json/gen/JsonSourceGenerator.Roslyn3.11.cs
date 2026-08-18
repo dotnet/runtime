@@ -75,9 +75,9 @@ namespace System.Text.Json.SourceGeneration
                 }
 
                 // Stage 2. Report any diagnostics gathered by the parser.
-                foreach (DiagnosticInfo diagnosticInfo in parser.Diagnostics)
+                foreach (Diagnostic diagnostic in parser.Diagnostics)
                 {
-                    executionContext.ReportDiagnostic(diagnosticInfo.CreateDiagnostic());
+                    executionContext.ReportDiagnostic(diagnostic);
                 }
 
                 if (contextGenerationSpecs is null)

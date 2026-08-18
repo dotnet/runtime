@@ -23,4 +23,6 @@ public class InvalidTypeNameKey { }
 
 public class MultipleTypeMapAssemblies { }
 
+public class DuplicateTypeMapEntriesAcrossAssemblies { }
+
 public class UnknownAssemblyReference { }

@@ -13,5 +13,12 @@ namespace ILLink.RoslynAnalyzer.Tests
         {
             return RunTest();
         }
+
+        [Fact]
+        public Task GenericConstraints()
+        {
+            return RunTest();
+        }
+
     }
 }

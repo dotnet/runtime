@@ -91,11 +91,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             try
             {
-                AsnValueReader reader = new AsnValueReader(currentCrl, AsnEncodingRules.DER);
+                ValueAsnReader reader = new ValueAsnReader(currentCrl, AsnEncodingRules.DER);
                 payloadLength = reader.PeekEncodedValue().Length;
 
-                AsnValueReader certificateList = reader.ReadSequence();
-                AsnValueReader tbsCertList = certificateList.ReadSequence();
+                ValueAsnReader certificateList = reader.ReadSequence();
+                ValueAsnReader tbsCertList = certificateList.ReadSequence();
                 AlgorithmIdentifierAsn.Decode(ref certificateList, ReadOnlyMemory<byte>.Empty, out _);
 
                 if (!certificateList.TryReadPrimitiveBitString(out _, out _))
@@ -130,7 +130,7 @@ namespace System.Security.Cryptography.X509Certificates
                 // nextUpdate
                 ReadX509TimeOpt(ref tbsCertList);
 
-                AsnValueReader revokedCertificates = default;
+                ValueAsnReader revokedCertificates = default;
 
                 if (tbsCertList.HasData && tbsCertList.PeekTag().HasSameClassAndValue(Asn1Tag.Sequence))
                 {
@@ -139,13 +139,13 @@ namespace System.Security.Cryptography.X509Certificates
 
                 if (version > 0 && tbsCertList.HasData)
                 {
-                    AsnValueReader crlExtensionsExplicit = tbsCertList.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
-                    AsnValueReader crlExtensions = crlExtensionsExplicit.ReadSequence();
+                    ValueAsnReader crlExtensionsExplicit = tbsCertList.ReadSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
+                    ValueAsnReader crlExtensions = crlExtensionsExplicit.ReadSequence();
                     crlExtensionsExplicit.ThrowIfNotEmpty();
 
                     while (crlExtensions.HasData)
                     {
-                        AsnValueReader extension = crlExtensions.ReadSequence();
+                        ValueAsnReader extension = crlExtensions.ReadSequence();
                         Oid? extnOid = Oids.GetSharedOrNullOid(ref extension);
 
                         if (extnOid is null)
@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.X509Certificates
                         // the ReferenceEquals or will evaulate to false).
                         if (ReferenceEquals(extnOid, Oids.CrlNumberOid))
                         {
-                            AsnValueReader crlNumberReader = new AsnValueReader(
+                            ValueAsnReader crlNumberReader = new ValueAsnReader(
                                 extnValue,
                                 AsnEncodingRules.DER);
 

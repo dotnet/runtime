@@ -182,6 +182,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
             }
         }
 
+#if HAS_FIXED_REGISTER_SET
         if (ForCodeGen && ((lclVarTree->gtFlags & GTF_SPILL) != 0))
         {
             m_compiler->codeGen->genSpillVar(tree);
@@ -195,6 +196,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
                 }
             }
         }
+#endif // HAS_FIXED_REGISTER_SET
     }
     else if (varDsc->lvPromoted)
     {
@@ -285,6 +287,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree, GenTreeLclVarComm
 //    tree - the tree which effect on liveness is processed.
 //
 template <bool ForCodeGen>
+template <bool GeneralLclAddrHandling>
 void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
 {
     assert(m_compiler->GetCurLVEpoch() == epoch);
@@ -299,7 +302,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
     {
         UpdateLifeVar(tree, tree->AsLclVarCommon());
     }
-    else if (tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_ADDR))
+    else if (!GeneralLclAddrHandling && tree->OperIsIndir() && tree->AsIndir()->Addr()->OperIs(GT_LCL_ADDR))
     {
         UpdateLifeVar(tree, tree->AsIndir()->Addr()->AsLclVarCommon());
     }
@@ -310,6 +313,10 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLife(GenTree* tree)
             return GenTree::VisitResult::Continue;
         };
         tree->VisitLocalDefNodes(m_compiler, visitDef);
+    }
+    else if (GeneralLclAddrHandling && tree->OperIs(GT_LCL_ADDR))
+    {
+        UpdateLifeVar(tree, tree->AsLclVarCommon());
     }
 }
 
@@ -405,3 +412,6 @@ void TreeLifeUpdater<ForCodeGen>::DumpLifeDelta(GenTree* tree)
 
 template class TreeLifeUpdater<true>;
 template class TreeLifeUpdater<false>;
+template void TreeLifeUpdater<false>::UpdateLife<false>(GenTree*);
+template void TreeLifeUpdater<false>::UpdateLife<true>(GenTree*);
+template void TreeLifeUpdater<true>::UpdateLife<false>(GenTree*);

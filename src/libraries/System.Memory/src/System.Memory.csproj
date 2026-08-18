@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- https://github.com/dotnet/dotnet/issues/5640 -->
+    <NoWarn>$(NoWarn);CS9368</NoWarn>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ContractTypesPartiallyMoved>true</ContractTypesPartiallyMoved>
     <!-- ArrayBufferWriter is publicly exposed from the System.Memory ref and only it should define this constant as true.  -->
@@ -26,6 +28,7 @@
     <Compile Include="System\Buffers\ReadOnlySequence.cs" />
     <Compile Include="System\Buffers\ReadOnlySequenceDebugView.cs" />
     <Compile Include="System\Buffers\ReadOnlySequenceSegment.cs" />
+    <Compile Include="System\Buffers\ReadOnlySequenceStream.cs" />
     <Compile Include="System\Buffers\ReadOnlySequence.Helpers.cs" />
     <Compile Include="System\Buffers\SequenceReader.cs" />
     <Compile Include="System\Buffers\SequenceReader.Search.cs" />
@@ -38,6 +41,8 @@
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs"
              Link="Common\System\Buffers\ArrayBufferWriter.cs" />
+    <Compile Include="$(CommonPath)System\Threading\Tasks\CachedCompletedInt32Task.cs"
+             Link="Common\System\Threading\Tasks\CachedCompletedInt32Task.cs" />
   </ItemGroup>
 
   <ItemGroup>

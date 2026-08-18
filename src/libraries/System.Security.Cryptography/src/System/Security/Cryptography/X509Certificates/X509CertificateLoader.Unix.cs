@@ -131,7 +131,7 @@ namespace System.Security.Cryptography.X509Certificates
                     try
                     {
                         ReadOnlyMemory<byte> memory = manager.Memory;
-                        AsnValueReader reader = new AsnValueReader(memory.Span, AsnEncodingRules.BER);
+                        ValueAsnReader reader = new ValueAsnReader(memory.Span, AsnEncodingRules.BER);
                         PfxAsn.Decode(ref reader, memory, out _);
                         return true;
                     }
@@ -157,7 +157,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 ReadOnlyMemory<byte> memory = manager?.Memory ?? new ReadOnlyMemory<byte>(rented, 0, length);
 
-                AsnValueReader reader = new AsnValueReader(memory.Span, AsnEncodingRules.BER);
+                ValueAsnReader reader = new ValueAsnReader(memory.Span, AsnEncodingRules.BER);
                 PfxAsn.Decode(ref reader, memory, out _);
                 return true;
             }

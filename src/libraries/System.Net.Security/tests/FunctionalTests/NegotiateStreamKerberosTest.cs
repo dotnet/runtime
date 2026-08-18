@@ -96,7 +96,7 @@ namespace System.Net.Security.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(IsServerAndDomainAvailable))]
+        [ConditionalTheory(typeof(NegotiateStreamKerberosTest), nameof(IsServerAndDomainAvailable))]
         [MemberData(nameof(GoodCredentialsData))]
         public async Task NegotiateStream_ClientAuthenticationRemote_Success(object credentialObject)
         {
@@ -105,7 +105,7 @@ namespace System.Net.Security.Tests
         }
 
         [OuterLoop]
-        [ConditionalTheory(nameof(IsServerAndDomainAvailable))]
+        [ConditionalTheory(typeof(NegotiateStreamKerberosTest), nameof(IsServerAndDomainAvailable))]
         [MemberData(nameof(BadCredentialsData))]
         public async Task NegotiateStream_ClientAuthenticationRemote_Fails(object credentialObject)
         {
@@ -165,7 +165,7 @@ namespace System.Net.Security.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(nameof(IsClientAvailable))]
+        [ConditionalFact(typeof(NegotiateStreamKerberosTest), nameof(IsClientAvailable))]
         public async Task NegotiateStream_ServerAuthenticationRemote_Success()
         {
             string expectedUser = Configuration.Security.NegotiateClientUser;

@@ -1094,8 +1094,9 @@ namespace System.IO.Tests
             if (SkipOnWasi(mode)) return;
 
             const int Length = 1024;
+            const int Copies = 3;
 
-            using Stream? stream = await CreateReadWriteStream();
+            using Stream? stream = await CreateReadWriteStream(new byte[Length * Copies]);
             if (stream is null)
             {
                 return;
@@ -1103,7 +1104,6 @@ namespace System.IO.Tests
 
             byte[] expected = GetRandomBytes(Length);
 
-            const int Copies = 3;
             for (int i = 0; i < Copies; i++)
             {
                 await WriteAsync(mode, stream, expected, 0, expected.Length);
@@ -1117,6 +1117,42 @@ namespace System.IO.Tests
                 int bytesRead = await ReadAllAsync(mode, stream, actual, 0, actual.Length);
                 AssertExtensions.SequenceEqual(expected, actual);
                 Array.Clear(actual, 0, actual.Length);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(AllReadWriteModes))]
+        public virtual async Task Write_GrowsLength_Success(ReadWriteMode mode)
+        {
+            if (SkipOnWasi(mode)) return;
+
+            // Start from an empty stream. Streams that cannot produce an empty read-write instance
+            // (e.g. fixed-capacity streams that require initial data) return null and are skipped.
+            using Stream? stream = await CreateReadWriteStream();
+            if (stream is null)
+            {
+                return;
+            }
+
+            const int Length = 1024;
+            byte[] expected = GetRandomBytes(Length);
+
+            if (stream.CanSeek)
+            {
+                Assert.Equal(0, stream.Length);
+            }
+
+            await WriteAsync(mode, stream, expected, 0, expected.Length);
+
+            if (stream.CanSeek)
+            {
+                Assert.Equal(Length, stream.Position);
+                Assert.Equal(Length, stream.Length);
+
+                stream.Position = 0;
+                byte[] actual = new byte[Length];
+                Assert.Equal(Length, await ReadAllAsync(mode, stream, actual, 0, actual.Length));
+                AssertExtensions.SequenceEqual(expected, actual);
             }
         }
 
@@ -1173,7 +1209,7 @@ namespace System.IO.Tests
             await FlushAsync(mode, stream);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         public virtual async Task Flush_SetLengthAtEndOfBuffer_OperatesOnValidData()
         {
             if (!CanSeek || !CanSetLengthGreaterThanCapacity)
@@ -1734,7 +1770,7 @@ namespace System.IO.Tests
             await ValidateCancelableReadAsyncValueTask_AfterInvocation_ThrowsCancellationException(readable, cancellationDelay);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadWriteByte_Success()
@@ -1919,7 +1955,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(AllReadWriteModesAndValue), false)]
         [MemberData(nameof(AllReadWriteModesAndValue), true)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
@@ -2400,7 +2436,7 @@ namespace System.IO.Tests
             await writes;
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
@@ -2519,13 +2555,13 @@ namespace System.IO.Tests
 
         [OuterLoop("May take several seconds", ~TestPlatforms.Browser)]
         [SkipOnPlatform(TestPlatforms.Browser, "Not supported on browser")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [InlineData(false)]
         [InlineData(true)]
         public virtual async Task CopyToAsync_AllDataCopied_Large(bool useAsync) =>
             await CopyToAsync_AllDataCopied(1024 * 1024, useAsync);
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [MemberData(nameof(CopyToAsync_AllDataCopied_MemberData))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
@@ -2564,7 +2600,7 @@ namespace System.IO.Tests
         }
 
         [OuterLoop("May take several seconds")]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task Parallel_ReadWriteMultipleStreamsConcurrently()
@@ -2730,7 +2766,7 @@ namespace System.IO.Tests
             await Assert.ThrowsAsync<IOException>(async () => { await Task.Factory.FromAsync(writeable.BeginWrite, writeable.EndWrite, new byte[1], 0, 1, null); });
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsMultithreadingSupported))]
         [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets in our CI environment")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "iOS/tvOS blocks binding to UNIX sockets")]
         public virtual async Task ReadAsync_DuringReadAsync_ThrowsIfUnsupported()

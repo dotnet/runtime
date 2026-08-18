@@ -493,9 +493,13 @@ namespace Mono.Linker.Steps
                 Collection<Instruction> instrs = body.Instructions;
 #pragma warning restore RS0030
 
+                int offset = 0;
+
                 for (int i = 0; i < instrs.Count; ++i)
                 {
                     Instruction instr = instrs[i];
+                    instr.Offset = offset;
+
                     switch (instr.OpCode.Code)
                     {
 
@@ -503,10 +507,10 @@ namespace Mono.Linker.Steps
                         case Code.Callvirt:
                             MethodDefinition? md = optimizer._context.TryResolve((MethodReference)instr.Operand);
                             if (md == null)
-                                continue;
+                                break;
 
                             if (md.IsVirtual)
-                                continue;
+                                break;
 
                             if (md.CallingConvention == MethodCallingConvention.VarArg)
                                 break;
@@ -529,40 +533,63 @@ namespace Mono.Linker.Steps
                             {
                                 if (!md.HasMetadataParameters() && CanInlineInstanceCall(instrs, i))
                                 {
-                                    processor.Replace(i - 1, Instruction.Create(OpCodes.Nop));
-                                    processor.Replace(i, result.GetPrototype());
+                                    offset -= instrs[i - 1].GetSize();
+
+                                    var nop = Instruction.Create(OpCodes.Nop);
+                                    nop.Offset = offset;
+                                    processor.Replace(i - 1, nop);
+                                    offset += nop.GetSize();
+
+                                    instr = result.GetPrototype();
+                                    instr.Offset = offset;
+                                    processor.Replace(i, instr);
                                     changed = true;
                                 }
 
-                                continue;
+                                break;
                             }
 
                             if (md.HasMetadataParameters())
                             {
                                 if (!IsCalledWithoutSideEffects(md, instrs, i))
-                                    continue;
+                                    break;
 
                                 for (int p = 1; p <= md.GetMetadataParametersCount(); ++p)
                                 {
-                                    processor.Replace(i - p, Instruction.Create(OpCodes.Nop));
+                                    offset -= instrs[i - p].GetSize();
+                                }
+
+                                for (int p = 1; p <= md.GetMetadataParametersCount(); ++p)
+                                {
+                                    var nop = Instruction.Create(OpCodes.Nop);
+                                    nop.Offset = offset;
+                                    processor.Replace(i - p, nop);
+                                    offset += nop.GetSize();
                                 }
                             }
 
-                            processor.Replace(i, result.GetPrototype());
+                            instr = result.GetPrototype();
+                            instr.Offset = offset;
+                            processor.Replace(i, instr);
                             changed = true;
-                            continue;
+                            break;
 
                         case Code.Sizeof:
                             var operand = (TypeReference)instr.Operand;
                             Instruction? value = optimizer.GetSizeOfResult(operand);
                             if (value != null)
                             {
-                                processor.Replace(i, value.GetPrototype());
+                                instr = value.GetPrototype();
+                                instr.Offset = offset;
+                                processor.Replace(i, instr);
                                 changed = true;
                             }
 
-                            continue;
+                            break;
+                        default:
+                            break;
                     }
+                    offset += instr.GetSize();
                 }
 
                 return changed;
@@ -1160,7 +1187,23 @@ namespace Mono.Linker.Steps
                 var reachable = new BitArray(FoldedInstructions.Count);
 
                 Stack<int>? condBranches = null;
-                bool exceptionHandlersChecked = !Body.HasExceptionHandlers;
+                BitArray? reachableExceptionHandlers = null;
+                (int Start, int End)[]? exceptionHandlerRanges = null;
+                if (Body.HasExceptionHandlers)
+                {
+                    int handlerCount = ExceptionHandlers.Count;
+                    reachableExceptionHandlers = new BitArray(handlerCount);
+                    exceptionHandlerRanges = new (int Start, int End)[handlerCount];
+
+                    // Fixed-point discovery can scan handlers multiple times, but instruction positions do not change here.
+                    Collection<Instruction> instructions = Instructions;
+                    for (int handlerIndex = 0; handlerIndex < handlerCount; handlerIndex++)
+                    {
+                        ExceptionHandler handler = ExceptionHandlers[handlerIndex];
+                        exceptionHandlerRanges[handlerIndex] = (instructions.IndexOf(handler.TryStart), instructions.IndexOf(handler.TryEnd) - 1);
+                    }
+                }
+
                 Instruction target;
                 int i = 0;
                 while (true)
@@ -1218,23 +1261,23 @@ namespace Mono.Linker.Steps
                         continue;
                     }
 
-                    if (!exceptionHandlersChecked)
+                    if (reachableExceptionHandlers != null)
                     {
-                        exceptionHandlersChecked = true;
+                        Debug.Assert(exceptionHandlerRanges is not null);
 
-                        var instrs = Instructions;
-                        foreach (var handler in ExceptionHandlers)
+                        // Newly reachable handlers can contain protected regions for nested handlers.
+                        for (int handlerIndex = 0; handlerIndex < ExceptionHandlers.Count; handlerIndex++)
                         {
-                            int start = instrs.IndexOf(handler.TryStart);
-                            int end = instrs.IndexOf(handler.TryEnd) - 1;
-
-                            if (!HasAnyBitSet(reachable, start, end))
-                            {
-                                unreachableHandlers ??= new List<ExceptionHandler>();
-
-                                unreachableHandlers.Add(handler);
+                            if (reachableExceptionHandlers[handlerIndex])
                                 continue;
-                            }
+
+                            var handler = ExceptionHandlers[handlerIndex];
+                            (int Start, int End) range = exceptionHandlerRanges[handlerIndex];
+
+                            if (!HasAnyBitSet(reachable, range.Start, range.End))
+                                continue;
+
+                            reachableExceptionHandlers[handlerIndex] = true;
 
                             condBranches ??= new Stack<int>();
 
@@ -1261,6 +1304,15 @@ namespace Mono.Linker.Steps
                         {
                             i = condBranches.Pop();
                             continue;
+                        }
+
+                        for (int handlerIndex = 0; handlerIndex < ExceptionHandlers.Count; handlerIndex++)
+                        {
+                            if (reachableExceptionHandlers[handlerIndex])
+                                continue;
+
+                            unreachableHandlers ??= new List<ExceptionHandler>();
+                            unreachableHandlers.Add(ExceptionHandlers[handlerIndex]);
                         }
                     }
 

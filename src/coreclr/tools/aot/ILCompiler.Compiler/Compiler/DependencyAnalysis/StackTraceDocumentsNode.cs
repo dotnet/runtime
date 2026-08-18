@@ -12,18 +12,16 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Contains information about source files in this compilation.
     /// </summary>
-    public sealed class StackTraceDocumentsNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    public sealed class StackTraceDocumentsNode : ObjectNode, ISymbolDefinitionNode
     {
         private Dictionary<string, int> _documentToIndex = new Dictionary<string, int>(StringComparer.Ordinal);
         private List<string> _documents = new List<string>();
-        private int? _size;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__stacktrace_documents"u8);
         }
 
-        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
 
@@ -84,8 +82,6 @@ namespace ILCompiler.DependencyAnalysis
                 bw.Write(Encoding.UTF8.GetBytes(_documents[i]));
                 bw.Write((byte)0);
             }
-
-            _size = checked((int)ms.Length);
 
             return new ObjectData(ms.ToArray(), Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }

@@ -11,11 +11,8 @@ using Internal.TypeSystem.Ecma;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class ModuleInitializerListNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
+    internal sealed class ModuleInitializerListNode : ObjectNode, ISymbolDefinitionNode
     {
-        private int? _size;
-
-        int INodeWithSize.Size => _size.Value;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -143,8 +140,6 @@ namespace ILCompiler.DependencyAnalysis
             }
 
             var result = builder.ToObjectData();
-
-            _size = result.Data.Length;
 
             return result;
         }

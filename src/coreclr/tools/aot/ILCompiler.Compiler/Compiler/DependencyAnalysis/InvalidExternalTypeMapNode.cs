@@ -10,7 +10,7 @@ using Internal.TypeSystem;
 
 namespace ILCompiler.DependencyAnalysis
 {
-    internal sealed class InvalidExternalTypeMapNode(TypeDesc typeMapGroup, MethodDesc throwingMethodStub) : DependencyNodeCore<NodeFactory>, ISortableNode, IExternalTypeMapNode
+    internal sealed class InvalidExternalTypeMapNode(TypeDesc typeMapGroup, MethodDesc throwingMethodStub) : SortableDependencyNode, IExternalTypeMapNode
     {
         public override bool InterestingForDynamicDependencyAnalysis => false;
 
@@ -34,15 +34,15 @@ namespace ILCompiler.DependencyAnalysis
         public TypeDesc TypeMapGroup { get; } = typeMapGroup;
         public MethodDesc ThrowingMethodStub { get; } = throwingMethodStub;
 
-        public int ClassCode => 36910224;
+        public override int ClassCode => 36910224;
 
-        public int CompareToImpl(ISortableNode other, CompilerComparer comparer) => comparer.Compare(TypeMapGroup, ((InvalidExternalTypeMapNode)other).TypeMapGroup);
+        public override int CompareToImpl(ISortableNode other, CompilerComparer comparer) => comparer.Compare(TypeMapGroup, ((InvalidExternalTypeMapNode)other).TypeMapGroup);
 
-        public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, ExternalReferencesTableNode externalReferences)
+        public Vertex CreateTypeMap(NodeFactory factory, NativeWriter writer, Section section, INativeFormatTypeReferenceProvider externalReferences)
         {
             Vertex typeMapStateVertex = writer.GetUnsignedConstant(0); // Invalid type map state
-            Vertex typeMapGroupVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.NecessaryTypeSymbol(TypeMapGroup)));
-            Vertex throwingMethodStubVertex = writer.GetUnsignedConstant(externalReferences.GetIndex(factory.MethodEntrypoint(ThrowingMethodStub)));
+            Vertex typeMapGroupVertex = externalReferences.EncodeReferenceToType(writer, TypeMapGroup);
+            Vertex throwingMethodStubVertex = externalReferences.EncodeReferenceToMethod(writer, ThrowingMethodStub);
             Vertex tuple = writer.GetTuple(typeMapGroupVertex, typeMapStateVertex, throwingMethodStubVertex);
             return section.Place(tuple);
         }

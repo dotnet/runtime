@@ -223,7 +223,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (options.ErrorOnUnknownConfiguration)
             {
-                HashSet<string> propertyNames = new(modelProperties.Select(mp => mp.Name),
+                HashSet<string> propertyNames = new(modelProperties.Select(GetPropertyName),
                     StringComparer.OrdinalIgnoreCase);
 
                 List<string>? missingPropertyNames = null;
@@ -245,7 +245,12 @@ namespace Microsoft.Extensions.Configuration
 
             foreach (PropertyInfo property in modelProperties)
             {
-                if (constructorParameters is null || !constructorParameters.Any(p => p.Name == property.Name))
+                if (IsIgnoredProperty(property))
+                {
+                    continue;
+                }
+
+                if (constructorParameters is null || !constructorParameters.Any(p => string.Equals(p.Name, property.Name, StringComparison.OrdinalIgnoreCase)))
                 {
                     BindProperty(property, instance, configuration, options);
                 }
@@ -622,6 +627,11 @@ namespace Microsoft.Extensions.Configuration
             HashSet<string> propertyNames = new(StringComparer.OrdinalIgnoreCase);
             foreach (PropertyInfo prop in properties)
             {
+                if (IsIgnoredProperty(prop))
+                {
+                    continue;
+                }
+
                 propertyNames.Add(prop.Name);
             }
 
@@ -1058,6 +1068,9 @@ namespace Microsoft.Extensions.Configuration
         private static bool IsIEnumerableInterface(Type type)
             => type.IsInterface && type.IsConstructedGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>);
 
+        private static bool CanBeNull(Type type)
+            => !type.IsValueType || (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
+
         private static bool TypeIsASetInterface(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
@@ -1138,7 +1151,7 @@ namespace Microsoft.Extensions.Configuration
                 throw new InvalidOperationException(SR.Format(SR.Error_ParameterBeingBoundToIsUnnamed, type));
             }
 
-            var propertyBindingPoint = new BindingPoint(initialValue: config.GetSection(parameterName).Value, isReadOnly: false);
+            var propertyBindingPoint = new BindingPoint(isReadOnly: false);
 
             BindInstance(
                 parameter.ParameterType,
@@ -1151,9 +1164,10 @@ namespace Microsoft.Extensions.Configuration
             {
                 if (ParameterDefaultValue.TryGetDefaultValue(parameter, out object? defaultValue))
                 {
-                    propertyBindingPoint.SetValue(defaultValue);
+                    return defaultValue;
                 }
-                else
+
+                if (!CanBeNull(parameter.ParameterType))
                 {
                     throw new InvalidOperationException(SR.Format(SR.Error_ParameterHasNoMatchingConfig, type, parameterName));
                 }
@@ -1161,6 +1175,8 @@ namespace Microsoft.Extensions.Configuration
 
             return propertyBindingPoint.Value;
         }
+
+        private static bool IsIgnoredProperty(PropertyInfo property) => property.IsDefined(typeof(ConfigurationIgnoreAttribute));
 
         private static string GetPropertyName(PropertyInfo property)
         {

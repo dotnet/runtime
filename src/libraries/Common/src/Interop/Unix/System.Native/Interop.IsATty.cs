@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Microsoft.Win32.SafeHandles;
 
 internal static partial class Interop
 {
@@ -11,5 +12,9 @@ internal static partial class Interop
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IsATty")]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool IsATty(IntPtr fd);
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_IsATty")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsATty(SafeFileHandle fd);
     }
 }

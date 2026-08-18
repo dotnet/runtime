@@ -33,7 +33,6 @@
  *  Forward declarations
  */
 class   AppDomain;
-class   ArrayClass;
 class   ArrayMethodDesc;
 class   Assembly;
 class   ClassLoader;
@@ -49,7 +48,6 @@ class   MethodNameHash;
 class   MethodTable;
 class   Module;
 class   Object;
-class   Stub;
 class   Substitution;
 class   SystemDomain;
 class   TypeHandle;

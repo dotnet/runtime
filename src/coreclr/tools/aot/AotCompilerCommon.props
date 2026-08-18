@@ -8,6 +8,7 @@
     <InvariantGlobalization>true</InvariantGlobalization>
     <StripSymbols Condition="'$(KeepNativeSymbols)' == 'true'">false</StripSymbols>
     <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
+    <StackTraceLineNumberSupport>true</StackTraceLineNumberSupport>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -15,5 +16,48 @@
     <_LibPrefix Condition="'$(CrossHostArch)' != 'true'">$(HostLibPrefix)</_LibPrefix>
     <_LibSuffix Condition="'$(CrossHostArch)' == 'true'">$(LibSuffix)</_LibSuffix>
     <_LibSuffix Condition="'$(CrossHostArch)' != 'true'">$(HostLibSuffix)</_LibSuffix>
+
+    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' == ''">$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
+    <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</TargetArchitectureForSharedLibraries>
+    <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitectureForSharedLibraries)'=='armel'">arm</TargetArchitectureForSharedLibraries>
+
+    <JitInterfaceLibraryName>$(_LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)</JitInterfaceLibraryName>
+    <!-- Keep the copied single-JIT name in sync with JitConfigProvider.GetTargetSpec. -->
+    <_TargetArchitectureForJitLibraryName>$(TargetArchitecture)</_TargetArchitectureForJitLibraryName>
+    <_TargetArchitectureForJitLibraryName Condition="'$(_TargetArchitectureForJitLibraryName)' == 'armel'">arm</_TargetArchitectureForJitLibraryName>
+    <_TargetArchitectureForJitLibraryName Condition="'$(_TargetArchitectureForJitLibraryName)' == 'wasm'">wasm</_TargetArchitectureForJitLibraryName>
+    <_TargetOSForJitLibraryName Condition="'$(TargetArchitecture)' == 'arm' or '$(TargetArchitecture)' == 'armel' or '$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'wasm'">universal</_TargetOSForJitLibraryName>
+    <_TargetOSForJitLibraryName Condition="'$(_TargetOSForJitLibraryName)' == '' and '$(TargetOS)' == 'windows'">win</_TargetOSForJitLibraryName>
+    <_TargetOSForJitLibraryName Condition="'$(_TargetOSForJitLibraryName)' == ''">unix</_TargetOSForJitLibraryName>
+    <SingleJitLibraryName>$(_LibPrefix)clrjit_$(_TargetOSForJitLibraryName)_$(_TargetArchitectureForJitLibraryName)_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)</SingleJitLibraryName>
+    <SingleJitLibrarySourceName>$(_LibPrefix)clrjit$(_LibSuffix)</SingleJitLibrarySourceName>
+    <SingleJitLibrarySourceName Condition="'$(_TargetOSForJitLibraryName)' == 'universal' and '$(TargetOS)' != 'windows'">$(SingleJitLibraryName)</SingleJitLibrarySourceName>
+    <CopyAllJitLibrariesToAotCompilerOutput Condition="'$(CopyAllJitLibrariesToAotCompilerOutput)' == '' and '$(CrossHostArch)' == ''">true</CopyAllJitLibrariesToAotCompilerOutput>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(JitInterfaceLibraryName)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
+      Link="%(FileName)%(Extension)"
+      Condition="'$(TargetsWasm)' != 'true' or '$(CrossHostArch)' != ''"
+      />
+
+    <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(_LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(_LibSuffix)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
+      Link="%(FileName)%(Extension)"
+      Condition="'$(CopyAllJitLibrariesToAotCompilerOutput)' == 'true'"
+      />
+
+    <Content Include="$(CoreCLRArtifactsPath)/$(CrossHostArch)/$(SingleJitLibrarySourceName)"
+      CopyToOutputDirectory="PreserveNewest"
+      CopyToPublishDirectory="PreserveNewest"
+      ExcludeFromSingleFile="$(PublishSingleFile)"
+      Link="$(SingleJitLibraryName)"
+      Condition="'$(CrossHostArch)' != '' and '$(CopyAllJitLibrariesToAotCompilerOutput)' != 'true'"
+      />
+  </ItemGroup>
 </Project>

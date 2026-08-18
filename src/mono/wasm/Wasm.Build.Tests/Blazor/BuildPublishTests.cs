@@ -50,6 +50,7 @@ public class BuildPublishTests : BlazorWasmTestBase
 
     [Theory]
     [MemberData(nameof(TestDataForDefaultTemplate_WithWorkload), parameters: new object[] { true })]
+    [TestCategory("native-mono")]
     public void DefaultTemplate_AOT_WithWorkload(Configuration config, bool testUnicode)
     {
         ProjectInfo info = CopyTestAsset(config, aot: false, TestAsset.BlazorBasicTestApp, "blz_aot", appendUnicodeToPath: testUnicode);
@@ -94,13 +95,25 @@ public class BuildPublishTests : BlazorWasmTestBase
 
         Utils.DirectoryCopy(resxSourcePath, Path.Combine(_projectDir, "resx"));
 
-        // Build and assert resource dlls
+        // Build and assert resource dlls. With CopyToOutputDirectory=Never, framework files
+        // (including satellite assemblies) are no longer copied to bin/_framework/ during build.
+        // Webcil-converted assemblies live under obj/{config}/{tfm}/webcil/{locale}/; when webcil
+        // is disabled they're materialized under obj/{config}/{tfm}/fx/{name}/_framework/{locale}/.
         BlazorBuild(info, config);
-        AssertResourcesDlls(GetBlazorBinFrameworkDir(config, forPublish: false));
+        AssertResourcesDlls(GetBuildSatelliteBaseDir());
 
         // Publish and assert resource dlls
         BlazorPublish(info, config, new PublishOptions(UseCache: false));
         AssertResourcesDlls(GetBlazorBinFrameworkDir(config, forPublish: true));
+
+        string GetBuildSatelliteBaseDir()
+        {
+            string objDir = Path.Combine(_projectDir, "obj", config.ToString(), DefaultTargetFrameworkForBlazor);
+            if (UseWebcil)
+                return Path.Combine(objDir, "webcil");
+
+            return WasmSdkBasedProjectProvider.GetMaterializedFrameworkDir(objDir);
+        }
 
         void AssertResourcesDlls(string basePath)
         {
@@ -117,6 +130,7 @@ public class BuildPublishTests : BlazorWasmTestBase
     [Theory]
     [InlineData("", true)] // Default case
     [InlineData("false", false)] // the other case
+    [TestCategory("native-mono")]
     public async Task Test_WasmStripILAfterAOT(string stripILAfterAOT, bool expectILStripping)
     {
         Configuration config = Configuration.Release;
@@ -136,6 +150,7 @@ public class BuildPublishTests : BlazorWasmTestBase
 
     [Theory]
     [InlineData(Configuration.Debug)]
+    [TestCategory("native-mono")]
     public void BlazorWasm_CannotAOT_InDebug(Configuration config)
     {
         ProjectInfo info = CopyTestAsset(

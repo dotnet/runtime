@@ -70,7 +70,7 @@ namespace System.Buffers
                 span[0] = '^';
                 pos = 1;
             }
-            bool formatted = ((uint)Start.Value).TryFormat(span.Slice(pos), out int charsWritten);
+            bool formatted = ((nuint)Start.Value).TryFormat(span.Slice(pos), out int charsWritten);
             Debug.Assert(formatted);
             pos += charsWritten;
 
@@ -81,7 +81,7 @@ namespace System.Buffers
             {
                 span[pos++] = '^';
             }
-            formatted = ((uint)End.Value).TryFormat(span.Slice(pos), out charsWritten);
+            formatted = ((nuint)End.Value).TryFormat(span.Slice(pos), out charsWritten);
             Debug.Assert(formatted);
             pos += charsWritten;
 
@@ -110,7 +110,7 @@ namespace System.Buffers
             nint start = Start.GetOffset(length);
             nint end = End.GetOffset(length);
 
-            if ((uint)end > (uint)length || (uint)start > (uint)end)
+            if ((nuint)end > (nuint)length || (nuint)start > (nuint)end)
             {
                 ThrowArgumentOutOfRangeException();
             }

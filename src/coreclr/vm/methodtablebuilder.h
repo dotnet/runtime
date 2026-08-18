@@ -49,15 +49,23 @@ public:
             return typeContext.m_classInst;
         }
 
-#ifdef _DEBUG
-        // Typical instantiation (= open type). Non-NULL only when loading any non-typical instantiation.
-        // NULL if 'this' is a typical instantiation or a non-generic type.
-        MethodTable * dbg_pTypicalInstantiationMT;
+        // Typical instantiation (= open type) MethodTable. Non-NULL only when loading a
+        // non-typical instantiation of a generic type. NULL if 'this' is a typical
+        // instantiation or a non-generic type. Used to reuse the typical instantiation's
+        // DispatchMap for non-typical instantiations.
+        MethodTable * pTypicalInstantiationMT;
 
+        inline MethodTable * GetTypicalMethodTable() const
+        {
+            LIMITED_METHOD_CONTRACT;
+            return pTypicalInstantiationMT;
+        }
+
+#ifdef _DEBUG
         inline MethodTable * Debug_GetTypicalMethodTable() const
         {
             LIMITED_METHOD_CONTRACT;
-            return dbg_pTypicalInstantiationMT;
+            return pTypicalInstantiationMT;
         }
 #endif //_DEBUG
     };  // struct bmtGenericsInfo
@@ -1112,9 +1120,6 @@ private:
             return m_asyncMethodFlags;
         }
 
-        bmtMDMethod *     GetAsyncOtherVariant() const { return m_asyncOtherVariant; }
-        void              SetAsyncOtherVariant(bmtMDMethod* pAsyncOtherVariant) { m_asyncOtherVariant = pAsyncOtherVariant; }
-
     private:
         //-----------------------------------------------------------------------------------------
         bmtMDType *       m_pOwningType;
@@ -1126,7 +1131,6 @@ private:
         AsyncMethodFlags  m_asyncMethodFlags;
         METHOD_IMPL_TYPE  m_implType;           // Whether or not the method is a methodImpl body
         MethodSignature   m_methodSig;
-        bmtMDMethod*      m_asyncOtherVariant = NULL;
 
         MethodDesc *      m_pMD;                // MethodDesc created and assigned to this method
         MethodDesc *      m_pUnboxedMD;         // Unboxing MethodDesc if this is a virtual method on a valuetype
@@ -2027,11 +2031,7 @@ private:
                 if ((*this)[i]->GetMethodSignature().GetToken() == tok)
                 {
                     auto result = (*this)[i];
-                    if (variantLookup == AsyncVariantLookup::AsyncOtherVariant)
-                    {
-                        return result->GetAsyncOtherVariant();
-                    }
-                    else
+                    if ((variantLookup == AsyncVariantLookup::Async) == result->IsAsyncVariant())
                     {
                         return result;
                     }
@@ -2402,8 +2402,8 @@ private:
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
         bmtError->resIDWhy = idResWhy;
@@ -2424,8 +2424,8 @@ private:
         CONTRACTL
         {
             THROWS;
-            GC_TRIGGERS;
-            MODE_ANY;
+            GC_NOTRIGGER;
+            MODE_PREEMPTIVE;
         }
         CONTRACTL_END;
         bmtError->resIDWhy = idResWhy;
@@ -2772,6 +2772,33 @@ private:
     // See comment in implementation for more details.
     VOID
     PlaceInterfaceMethods();
+
+    // --------------------------------------------------------------------------------------------
+    // Describes how the DispatchMap for the type being built relates to its typical instantiation.
+    enum class DispatchMapReuseKind
+    {
+        // There is no typical instantiation to reuse from (the type is an interface or is itself a
+        // typical type definition). The DispatchMap must be built normally, which requires running
+        // PlaceInterfaceMethods.
+        BuildNormally,
+
+        // The typical instantiation has its own DispatchMap. Because the encoded map is
+        // instantiation-independent, it can be reused directly instead of being rebuilt.
+        ReuseTypicalMap,
+
+        // The typical instantiation has no DispatchMap of its own, so this non-typical instantiation
+        // is known to have an empty DispatchMap as well. PlaceInterfaceMethods can be skipped and no
+        // DispatchMap needs to be built.
+        KnownEmpty,
+    };
+
+    // --------------------------------------------------------------------------------------------
+    // Determines how the DispatchMap for the type being built relates to its typical instantiation
+    // (see DispatchMapReuseKind). When the result is ReuseTypicalMap, *ppTypicalMTForReuse is set to
+    // the typical instantiation's MethodTable whose DispatchMap can be reused; otherwise it is set to
+    // NULL.
+    DispatchMapReuseKind
+    GetTypicalMethodTableForDispatchMapReuse(MethodTable **ppTypicalMTForReuse);
 
     // --------------------------------------------------------------------------------------------
     // For every MethodImpl pair (represented by Entry) in bmtMethodImpl, place the body in the

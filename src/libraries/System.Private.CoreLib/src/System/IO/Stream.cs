@@ -218,8 +218,8 @@ namespace System.IO
             Task? semaphoreTask = null;
 
             // The synchronous path is emulating legacy behavior.
-            // Drop the emulation for IsSingleThreaded to avoid throwing.
-            if (Thread.IsSingleThreaded || serializeAsynchronously)
+            // Drop the emulation for !IsMultithreadingSupported to avoid throwing.
+            if (!RuntimeFeature.IsMultithreadingSupported || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync();
             }
@@ -424,6 +424,7 @@ namespace System.IO
 
         // No argument checking is done here. It is up to the caller.
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+        [RuntimeAsyncMethodGeneration(false)]
         private async ValueTask<int> ReadAtLeastAsyncCore(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken)
         {
             Debug.Assert(minimumBytes <= buffer.Length);
@@ -493,14 +494,14 @@ namespace System.IO
             Task? semaphoreTask = null;
 
             // The synchronous path is emulating legacy behavior.
-            // Drop the emulation for IsSingleThreaded to avoid throwing.
-            if (Thread.IsSingleThreaded || serializeAsynchronously)
+            // Drop the emulation for !IsMultithreadingSupported to avoid throwing.
+            if (!RuntimeFeature.IsMultithreadingSupported || serializeAsynchronously)
             {
                 semaphoreTask = semaphore.WaitAsync(); // kick off the asynchronous wait, but don't block
             }
             else
             {
-                semaphore.Wait(); // synchronously wait here
+                semaphore.Wait();
             }
 
             // Create the task to asynchronously do a Write.  This task serves both

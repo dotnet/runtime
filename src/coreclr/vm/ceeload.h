@@ -326,7 +326,7 @@ typedef DPTR(class MemberRef) PTR_MemberRef;
 
 
 // flag used to mark member ref pointers to field descriptors in the member ref cache
-#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002)
+#define IS_FIELD_MEMBER_REF ((TADDR)0x00000002) // [cDAC] [Loader]: Contract depends on this value.
 
 
 //
@@ -349,6 +349,12 @@ struct VASigCookie
     Signature       signature;
     Instantiation   classInst;
     Instantiation   methodInst;
+};
+
+template<>
+struct cdac_data<VASigCookie>
+{
+    static constexpr size_t Signature = offsetof(VASigCookie, signature);
 };
 
 //
@@ -444,7 +450,6 @@ class ModuleBase
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
-    friend class NativeImageDumper;
 #endif
 
     friend class DataImage;
@@ -603,7 +608,6 @@ class Module : public ModuleBase
 {
 #ifdef DACCESS_COMPILE
     friend class ClrDataAccess;
-    friend class NativeImageDumper;
 #endif
 
     friend class DataImage;
@@ -620,9 +624,10 @@ private:
 
     enum {
         // These are the values set in m_dwTransientFlags.
+        // [cDAC] [Loader]: Contract depends on the values of MODULE_IS_TENURED, IS_EDIT_AND_CONTINUE, IS_REFLECTION_EMIT, IS_JIT_OPTIMIZATION_DISABLED, IS_ENC_CAPABLE, PROF_DISABLE_OPTIMIZATIONS, DEBUGGER_INFO_MASK_PRIV, DEBUGGER_INFO_SHIFT_PRIV.
 
         MODULE_IS_TENURED           = 0x00000001,   // Set once we know for sure the Module will not be freed until the appdomain itself exits
-        // unused                   = 0x00000002,
+        IS_JIT_OPTIMIZATION_DISABLED= 0x00000002,   // Cached result: JIT optimizations are disabled for this module (by debugger or profiler)
         CLASSES_FREED               = 0x00000004,
         IS_EDIT_AND_CONTINUE        = 0x00000008,   // is EnC Enabled for this module
 
@@ -633,12 +638,14 @@ private:
         PROF_DISABLE_OPTIMIZATIONS  = 0x00000080,   // indicates if Profiler disabled JIT optimization event mask was set when loaded
         PROF_DISABLE_INLINING       = 0x00000100,   // indicates if Profiler disabled JIT Inlining event mask was set when loaded
 
+        IS_ENC_CAPABLE              = 0x00000200,   // Cached result of IsEditAndContinueCapable() at Module creation
+
         //
         // Note: The values below must match the ones defined in
         // cordbpriv.h for DebuggerAssemblyControlFlags when shifted
         // right DEBUGGER_INFO_SHIFT bits.
         //
-        DEBUGGER_USER_OVERRIDE_PRIV = 0x00000400,
+        // DEBUGGER_USER_OVERRIDE_PRIV was 0x00000400.  Deprecated.
         DEBUGGER_ALLOW_JIT_OPTS_PRIV= 0x00000800,
         DEBUGGER_TRACK_JIT_INFO_PRIV= 0x00001000,
         DEBUGGER_ENC_ENABLED_PRIV   = 0x00002000,   // this is what was attempted to be set.  IS_EDIT_AND_CONTINUE is actual result.
@@ -652,7 +659,6 @@ private:
         IS_BEING_UNLOADED           = 0x00100000,
     };
 
-    static_assert(DEBUGGER_USER_OVERRIDE_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_USER_OVERRIDE);
     static_assert(DEBUGGER_ALLOW_JIT_OPTS_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ALLOW_JIT_OPTS);
     static_assert(DEBUGGER_TRACK_JIT_INFO_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_OBSOLETE_TRACK_JIT_INFO);
     static_assert(DEBUGGER_ENC_ENABLED_PRIV >> DEBUGGER_INFO_SHIFT_PRIV == DebuggerAssemblyControlFlags::DACF_ENC_ENABLED);
@@ -687,6 +693,11 @@ private:
         RUNTIME_MARSHALLING_ENABLED = 0x00010000,
 
         SKIP_TYPE_VALIDATION = 0x00020000,
+
+        //If the RefSafetyRules >= v11 setting has been cached
+        REF_SAFETY_RULES_V11_IS_CACHED = 0x00040000,
+        //If this module opted into RefSafetyRules version 11 or above
+        REF_SAFETY_RULES_V11 = 0x00080000,
     };
 
     Volatile<DWORD>          m_dwTransientFlags;
@@ -823,6 +834,9 @@ private:
     // Set the given bit on m_dwTransientFlags. Return true if we won the race to set the bit.
     BOOL SetTransientFlagInterlocked(DWORD dwFlag);
 
+    // Set bits on the m_dwTransientFlags according to the given mask.
+    void SetTransientFlagInterlockedWithMask(DWORD dwFlag, DWORD dwMask);
+
     // Cannoically-cased hashtable of the available class names for
     // case insensitive lookup.  Contains pointers into
     // m_pAvailableClasses.
@@ -871,6 +885,7 @@ protected:
 #endif
 
     PTR_PEAssembly GetPEAssembly() const { LIMITED_METHOD_DAC_CONTRACT; return m_pPEAssembly; }
+    PTR_VOID GetModuleBaseAddress() const { LIMITED_METHOD_DAC_CONTRACT; return m_baseAddress; }
 
     void ApplyMetaData();
 
@@ -899,10 +914,6 @@ protected:
     MethodTable *GetGlobalMethodTable();
     bool         NeedsGlobalMethodTable();
 
-    DomainAssembly *GetDomainAssembly();
-
-    void SetDomainAssembly(DomainAssembly *pDomainAssembly);
-
     OBJECTREF GetExposedObject();
     OBJECTREF GetExposedObjectIfExists();
 
@@ -912,9 +923,7 @@ protected:
 #endif
 
     BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return (m_dwTransientFlags & IS_REFLECTION_EMIT) != 0; }
-    BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
-    // Returns true iff the debugger can see this module.
-    BOOL IsVisibleToDebugger();
+    bool IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
 
     virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
 
@@ -936,27 +945,10 @@ protected:
 
     BOOL AreJITOptimizationsDisabled() const
     {
-        WRAPPER_NO_CONTRACT;
+        LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
 
-#ifdef DEBUGGING_SUPPORTED
-        // check if debugger has disallowed JIT optimizations
-        auto dwDebuggerBits = GetDebuggerInfoBits();
-        if (!CORDebuggerAllowJITOpts(dwDebuggerBits))
-        {
-            return TRUE;
-        }
-#endif // DEBUGGING_SUPPORTED
-
-#if defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-        // check if profiler had disabled JIT optimizations when module was loaded
-        if (m_dwTransientFlags & PROF_DISABLE_OPTIMIZATIONS)
-        {
-            return TRUE;
-        }
-#endif // defined(PROFILING_SUPPORTED) || defined(PROFILING_SUPPORTED_DATA)
-
-        return FALSE;
+        return (m_dwTransientFlags & IS_JIT_OPTIMIZATION_DISABLED) != 0;
     }
 
 #ifdef FEATURE_METADATA_UPDATER
@@ -971,7 +963,18 @@ private:
         SUPPORTS_DAC;
         _ASSERTE(IsEditAndContinueCapable());
         LOG((LF_ENC, LL_INFO100, "M:EnableEditAndContinue: this:%p, %s\n", this, GetDebugName()));
-        m_dwTransientFlags |= IS_EDIT_AND_CONTINUE;
+        SetTransientFlagInterlocked(IS_EDIT_AND_CONTINUE);
+    }
+
+    // Recompute and cache the IS_JIT_OPTIMIZATION_DISABLED bit from the debugger and profiler source bits.
+    // Must be called after any change to DEBUGGER_ALLOW_JIT_OPTS_PRIV or PROF_DISABLE_OPTIMIZATIONS.
+    void UpdateJitOptimizationDisabledState()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        DWORD flags = m_dwTransientFlags;
+        bool disabled = !(flags & DEBUGGER_ALLOW_JIT_OPTS_PRIV) || (flags & PROF_DISABLE_OPTIMIZATIONS);
+        SetTransientFlagInterlockedWithMask(disabled ? IS_JIT_OPTIMIZATION_DISABLED : 0, IS_JIT_OPTIMIZATION_DISABLED);
     }
 
 public:
@@ -1380,7 +1383,7 @@ private:
 public:
 
     // Debugger stuff
-    BOOL NotifyDebuggerLoad(DomainAssembly * pDomainAssembly, int level, BOOL attaching);
+    BOOL NotifyDebuggerLoad(Assembly * pAssembly, int level, BOOL attaching);
     void NotifyDebuggerUnload();
 
     void SetDebuggerInfoBits(DebuggerAssemblyControlFlags newBits);
@@ -1568,15 +1571,7 @@ public:
 
 protected:
 
-    PTR_DomainAssembly      m_pDomainAssembly;
-
 public:
-    //-----------------------------------------------------------------------------------------
-    // Returns a BOOL to indicate if we have computed whether compiler has instructed us to
-    // wrap the non-CLS compliant exceptions or not.
-    //-----------------------------------------------------------------------------------------
-    BOOL                    IsRuntimeWrapExceptionsStatusComputed();
-
     //-----------------------------------------------------------------------------------------
     // If true,  any non-CLSCompliant exceptions (i.e. ones which derive from something other
     // than System.Exception) are wrapped in a RuntimeWrappedException instance.  In other
@@ -1592,11 +1587,11 @@ public:
     //-----------------------------------------------------------------------------------------
     BOOL                    IsRuntimeMarshallingEnabled();
 
-    BOOL                    IsRuntimeMarshallingEnabledCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_dwPersistedFlags & RUNTIME_MARSHALLING_ENABLED_IS_CACHED);
-    }
+    //-----------------------------------------------------------------------------------------
+    // If true, this module opted into the ECMA-335 augment tied to RefSafetyRulesAttribute with a
+    // version of at least 11 (i.e. RefSafetyRulesAttribute(version) with version >= 11).
+    //-----------------------------------------------------------------------------------------
+    BOOL                    OptsIntoRefSafetyRulesV11();
 
 protected:
     // For reflection emit modules we set this flag when we emit the attribute, and always consider
@@ -1604,17 +1599,11 @@ protected:
     void SetIsRuntimeWrapExceptionsCached_ForReflectionEmitModules()
     {
         LIMITED_METHOD_CONTRACT;
-        m_dwPersistedFlags |= COMPUTED_WRAP_EXCEPTIONS;
+        m_dwPersistedFlags = m_dwPersistedFlags | COMPUTED_WRAP_EXCEPTIONS;
     }
 public:
 
     BOOL                    HasDefaultDllImportSearchPathsAttribute();
-
-    BOOL IsDefaultDllImportSearchPathsAttributeCached()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_dwPersistedFlags & DEFAULT_DLL_IMPORT_SEARCH_PATHS_IS_CACHED) != 0;
-    }
 
     ULONG DefaultDllImportSearchPathsAttributeCachedValue()
     {
@@ -1685,6 +1674,10 @@ private:
 protected:
     TADDR m_pDynamicMetadata;
 
+    // Incremented each time a module's metadata is updated.
+    // Indicates update to out-of-process readers.
+    uint32_t m_dwMetadataGeneration;
+
 public:
 #if !defined(DACCESS_COMPILE)
     PTR_Assembly GetNativeMetadataAssemblyRefFromCache(DWORD rid)
@@ -1715,6 +1708,8 @@ struct cdac_data<Module>
     static constexpr size_t Flags = offsetof(Module, m_dwTransientFlags);
     static constexpr size_t LoaderAllocator = offsetof(Module, m_loaderAllocator);
     static constexpr size_t DynamicMetadata = offsetof(Module, m_pDynamicMetadata);
+    static constexpr size_t MetadataGeneration = offsetof(Module, m_dwMetadataGeneration);
+    static constexpr size_t SimpleName = offsetof(Module, m_pSimpleName);
     static constexpr size_t Path = offsetof(Module, m_path);
     static constexpr size_t FileName = offsetof(Module, m_fileName);
     static constexpr size_t ReadyToRunInfo = offsetof(Module, m_pReadyToRunInfo);
@@ -1731,6 +1726,9 @@ struct cdac_data<Module>
     static constexpr size_t MethodDefToILCodeVersioningStateMap = offsetof(Module, m_ILCodeVersioningStateMap);
 #endif // FEATURE_CODE_VERSIONING
     static constexpr size_t DynamicILBlobTable = offsetof(Module, m_debuggerSpecificData.m_pDynamicILBlobTable);
+#ifdef FEATURE_METADATA_UPDATER
+    static constexpr size_t EnCClassList = offsetof(Module, m_ClassList);
+#endif // FEATURE_METADATA_UPDATER
 };
 
 //
@@ -1787,27 +1785,37 @@ public:
     void CaptureModuleMetaDataToMemory();
 };
 
-// Module holders
-FORCEINLINE void VoidModuleDestruct(Module *pModule)
+struct ModuleHolderTraits final
 {
+    using Type = Module*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type pModule)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-    if (g_fEEStarted)
-        pModule->Destruct();
+        if (g_fEEStarted && pModule != NULL)
+            pModule->Destruct();
 #endif
-}
+    }
+};
 
-typedef Wrapper<Module*, DoNothing, VoidModuleDestruct, 0> ModuleHolder;
+using ModuleHolder = LifetimeHolder<ModuleHolderTraits>;
 
-
-
-FORCEINLINE void VoidReflectionModuleDestruct(ReflectionModule *pModule)
+struct ReflectionModuleHolderTraits final
 {
+    using Type = ReflectionModule*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type pModule)
+    {
+        STATIC_CONTRACT_WRAPPER;
 #ifndef DACCESS_COMPILE
-    pModule->Destruct();
+        if (pModule != NULL)
+            pModule->Destruct();
 #endif
-}
+    }
+};
 
-typedef Wrapper<ReflectionModule*, DoNothing, VoidReflectionModuleDestruct, 0> ReflectionModuleHolder;
+using ReflectionModuleHolder = LifetimeHolder<ReflectionModuleHolderTraits>;
 
 
 

@@ -166,6 +166,7 @@ namespace Mono.Linker.Steps
             DependencyKind.ReturnTypeMarshalSpec,
             DependencyKind.DynamicInterfaceCastableImplementation,
             DependencyKind.XmlDescriptor,
+            DependencyKind.DisablePrivateReflectionRequirement,
         };
 
         static readonly DependencyKind[] _methodReasons = new DependencyKind[] {
@@ -215,6 +216,7 @@ namespace Mono.Linker.Steps
             DependencyKind.ReturnTypeMarshalSpec,
             DependencyKind.XmlDescriptor,
             DependencyKind.UnsafeAccessorTarget,
+            DependencyKind.DisablePrivateReflectionRequirement,
         };
 #endif
 
@@ -500,6 +502,24 @@ namespace Mono.Linker.Steps
             {
                 marked = true;
                 ApplyPreserveInfo(type);
+            }
+
+            foreach (var (method, origin) in Annotations.DrainPendingReflectionVisibleMethods())
+            {
+                marked = true;
+                MarkMethodVisibleToReflection(method, DependencyInfo.AlreadyMarked, origin);
+            }
+
+            foreach (var (field, origin) in Annotations.DrainPendingReflectionVisibleFields())
+            {
+                marked = true;
+                MarkFieldVisibleToReflection(field, DependencyInfo.AlreadyMarked, origin);
+            }
+
+            foreach (var (type, origin) in Annotations.DrainPendingReflectionVisibleTypes())
+            {
+                marked = true;
+                MarkTypeVisibleToReflection(type, DependencyInfo.AlreadyMarked, origin);
             }
 
             return marked;
@@ -1186,6 +1206,9 @@ namespace Mono.Linker.Steps
             MarkCustomAttributeArguments(ca, origin);
 
             TypeReference constructor_type = ca.Constructor.DeclaringType;
+            if (GenericArgumentDataFlow.RequiresGenericArgumentDataFlow(Context.Annotations.FlowAnnotations, constructor_type))
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in origin, this, Context, constructor_type);
+
             TypeDefinition? type = Context.Resolve(constructor_type);
 
             if (type == null)
@@ -1240,9 +1263,9 @@ namespace Mono.Linker.Steps
             return true;
         }
 
-        protected internal void MarkStaticConstructor(TypeDefinition type, in DependencyInfo reason, in MessageOrigin origin)
+        protected internal void MarkStaticConstructor(TypeDefinition type, in DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
-            if (MarkMethodIf(type.Methods, IsNonEmptyStaticConstructor, reason, origin) != null)
+            if (MarkMethodIf(type.Methods, IsNonEmptyStaticConstructor, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings) != null)
                 Annotations.SetPreservedStaticCtor(type);
         }
 
@@ -1462,11 +1485,14 @@ namespace Mono.Linker.Steps
             return !Annotations.SetProcessed(provider);
         }
 
-        public void MarkAssembly(AssemblyDefinition assembly, DependencyInfo reason, MessageOrigin origin)
+        public virtual void MarkAssembly(AssemblyDefinition assembly, DependencyInfo reason, MessageOrigin origin)
         {
             Annotations.Mark(assembly, reason, origin);
             if (CheckProcessed(assembly))
                 return;
+
+            // Flush any TypeMapAssemblyTarget attributes that were waiting for this assembly to be marked.
+            _typeMapHandler.TriggerPendingAssemblyTargets(assembly);
 
             var assemblyOrigin = new MessageOrigin(assembly);
 
@@ -1489,6 +1515,8 @@ namespace Mono.Linker.Steps
                     disableMarkingOfCopyAssembliesValue != "true")
                 {
                     MarkEntireAssembly(assembly, assemblyOrigin);
+                    // For copy/save assemblies, also mark scopes of type references, since they won't be rewritten.
+                    TypeReferenceMarker.MarkTypeReferences(assembly, MarkingHelpers);
                 }
                 return;
             }
@@ -1519,8 +1547,14 @@ namespace Mono.Linker.Steps
             foreach (TypeDefinition type in module.Types)
                 MarkEntireType(type, new DependencyInfo(DependencyKind.TypeInAssembly, assembly), origin);
 
-            // Mark scopes of type references and exported types.
-            TypeReferenceMarker.MarkTypeReferences(assembly, MarkingHelpers);
+            MarkExportedTypes(assembly, origin);
+        }
+
+        void MarkExportedTypes(AssemblyDefinition assembly, MessageOrigin origin)
+        {
+            ModuleDefinition module = assembly.MainModule;
+            foreach (ExportedType exportedType in module.ExportedTypes)
+                MarkingHelpers.MarkExportedType(exportedType, module, new DependencyInfo(DependencyKind.ExportedType, assembly), origin);
         }
 
         sealed class TypeReferenceMarker : TypeReferenceWalker
@@ -1546,7 +1580,6 @@ namespace Mono.Linker.Steps
 
             protected override void ProcessExportedType(ExportedType exportedType)
             {
-                markingHelpers.MarkExportedType(exportedType, assembly.MainModule, new DependencyInfo(DependencyKind.ExportedType, assembly), new MessageOrigin(assembly));
                 markingHelpers.MarkForwardedScope(CreateTypeReferenceForExportedTypeTarget(exportedType), new MessageOrigin(assembly));
             }
 
@@ -1691,7 +1724,7 @@ namespace Mono.Linker.Steps
             return markOccurred;
         }
 
-        protected void MarkField(FieldReference reference, DependencyInfo reason, in MessageOrigin origin)
+        protected void MarkField(FieldReference reference, DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
             if (reference.DeclaringType is GenericInstanceType)
             {
@@ -1711,11 +1744,14 @@ namespace Mono.Linker.Steps
                 return;
             }
 
-            MarkField(field, reason, origin);
+            MarkField(field, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
         }
 
-        void ReportWarningsForReflectionAccess(in MessageOrigin origin, MethodDefinition method, DependencyKind dependencyKind)
+        void ReportWarningsForReflectionAccess(in MessageOrigin origin, MethodDefinition method, DependencyKind dependencyKind, bool suppressTrimAnalysisWarnings)
         {
+            if (suppressTrimAnalysisWarnings)
+                return;
+
             if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(origin.Provider, out _))
                 return;
 
@@ -1828,7 +1864,7 @@ namespace Mono.Linker.Steps
             }
         }
 
-        void MarkField(FieldDefinition field, in DependencyInfo reason, in MessageOrigin origin)
+        void MarkField(FieldDefinition field, in DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
 #if DEBUG
             if (!_fieldReasons.Contains(reason.Kind))
@@ -1844,7 +1880,7 @@ namespace Mono.Linker.Steps
                 Annotations.Mark(field, reason, origin);
             }
 
-            ProcessAnalysisAnnotationsForField(field, reason.Kind, in origin);
+            ProcessAnalysisAnnotationsForField(field, reason.Kind, in origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
 
             if (CheckProcessed(field))
                 return;
@@ -1856,7 +1892,7 @@ namespace Mono.Linker.Steps
             MarkType(field.FieldType, new DependencyInfo(DependencyKind.FieldType, field), fieldOrigin);
             MarkCustomAttributes(field, new DependencyInfo(DependencyKind.CustomAttribute, field), fieldOrigin);
             MarkMarshalSpec(field, new DependencyInfo(DependencyKind.FieldMarshalSpec, field), fieldOrigin);
-            DoAdditionalFieldProcessing(field);
+            DoAdditionalFieldProcessing(field, fieldOrigin);
 
             // If we accessed a field on a type and the type has explicit/sequential layout, make sure to keep
             // all the other fields.
@@ -1891,7 +1927,7 @@ namespace Mono.Linker.Steps
             }
         }
 
-        void ProcessAnalysisAnnotationsForField(FieldDefinition field, DependencyKind dependencyKind, in MessageOrigin origin)
+        void ProcessAnalysisAnnotationsForField(FieldDefinition field, DependencyKind dependencyKind, in MessageOrigin origin, bool suppressTrimAnalysisWarnings)
         {
             switch (dependencyKind)
             {
@@ -1909,6 +1945,9 @@ namespace Mono.Linker.Steps
                 default:
                     break;
             }
+
+            if (suppressTrimAnalysisWarnings)
+                return;
 
             if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode(origin.Provider, out _))
                 return;
@@ -1992,22 +2031,27 @@ namespace Mono.Linker.Steps
             Annotations.MarkRelevantToVariantCasting(type);
         }
 
-        internal void MarkMethodVisibleToReflection(MethodReference method, in DependencyInfo reason, in MessageOrigin origin)
+        internal void MarkMethodVisibleToReflection(MethodReference method, in DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
-            MarkMethod(method, reason, origin);
+            MarkMethod(method, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
             if (Context.Resolve(method) is MethodDefinition methodDefinition)
             {
                 Annotations.MarkReflectionUsed(methodDefinition);
                 Annotations.MarkIndirectlyCalledMethod(methodDefinition);
 
+                // A reflection-visible method's DeclaringType is also accessible
+                // (e.g., via MethodBase.DeclaringType). Mark it as reflection-visible.
+                if (!Annotations.IsReflectionUsed(methodDefinition.DeclaringType))
+                    MarkTypeVisibleToReflection(methodDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, methodDefinition), origin);
+
                 // On a reflectable method, perform generic data flow for the return type and all the parameter types
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
                 var methodOrigin = new MessageOrigin(methodDefinition);
-                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in methodOrigin, this, Context, methodDefinition.ReturnType);
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in methodOrigin, this, Context, methodDefinition.ReturnType, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
 
                 foreach (var parameter in methodDefinition.GetMetadataParameters())
                 {
-                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in methodOrigin, this, Context, parameter.ParameterType);
+                    GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in methodOrigin, this, Context, parameter.ParameterType, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
                 }
             }
         }
@@ -2026,15 +2070,22 @@ namespace Mono.Linker.Steps
             return true;
         }
 
-        internal void MarkFieldVisibleToReflection(FieldReference field, in DependencyInfo reason, in MessageOrigin origin)
+        internal void MarkFieldVisibleToReflection(FieldReference field, in DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
-            MarkField(field, reason, origin);
+            MarkField(field, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
             if (Context.Resolve(field) is FieldDefinition fieldDefinition)
             {
+                Annotations.MarkReflectionUsed(fieldDefinition);
+
+                // A reflection-visible field's DeclaringType is also accessible
+                // (e.g., via FieldInfo.DeclaringType). Mark it as reflection-visible.
+                if (!Annotations.IsReflectionUsed(fieldDefinition.DeclaringType))
+                    MarkTypeVisibleToReflection(fieldDefinition.DeclaringType, new DependencyInfo(DependencyKind.DeclaringType, fieldDefinition), origin);
+
                 // On a reflectable field, perform generic data flow for the field's type
                 // This is a compensation for the DI issue described in https://github.com/dotnet/runtime/issues/81358
                 var fieldOrigin = new MessageOrigin(fieldDefinition);
-                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in fieldOrigin, this, Context, fieldDefinition.FieldType);
+                GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in fieldOrigin, this, Context, fieldDefinition.FieldType, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
             }
         }
 
@@ -2063,32 +2114,32 @@ namespace Mono.Linker.Steps
             return true;
         }
 
-        internal void MarkPropertyVisibleToReflection(PropertyDefinition property, in DependencyInfo reason, in MessageOrigin origin)
+        internal void MarkPropertyVisibleToReflection(PropertyDefinition property, in DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
             // Marking the property itself actually doesn't keep it (it only marks its attributes and records the dependency), we have to mark the methods on it
             MarkProperty(property, reason);
             // We don't track PropertyInfo, so we can't tell if any accessor is needed by the app, so include them both.
             // With better tracking it might be possible to be more precise here: dotnet/linker/issues/1948
-            MarkMethodIfNotNull(property.GetMethod, reason, origin);
-            MarkMethodIfNotNull(property.SetMethod, reason, origin);
-            MarkMethodsIf(property.OtherMethods, m => true, reason, origin);
+            MarkMethodIfNotNull(property.GetMethod, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
+            MarkMethodIfNotNull(property.SetMethod, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
+            MarkMethodsIf(property.OtherMethods, m => true, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
         }
 
-        internal void MarkEventVisibleToReflection(EventDefinition @event, in DependencyInfo reason, in MessageOrigin origin)
+        internal void MarkEventVisibleToReflection(EventDefinition @event, in DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
-            MarkEvent(@event, reason, origin);
+            MarkEvent(@event, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
             // MarkEvent already marks the add/remove/invoke methods, but we need to mark them with the
             // DependencyInfo used to access the event from reflection, to produce warnings for annotated
             // event methods.
-            MarkMethodIfNotNull(@event.AddMethod, reason, origin);
-            MarkMethodIfNotNull(@event.RemoveMethod, reason, origin);
-            MarkMethodIfNotNull(@event.InvokeMethod, reason, origin);
-            MarkMethodsIf(@event.OtherMethods, m => true, reason, origin);
+            MarkMethodIfNotNull(@event.AddMethod, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
+            MarkMethodIfNotNull(@event.RemoveMethod, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
+            MarkMethodIfNotNull(@event.InvokeMethod, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
+            MarkMethodsIf(@event.OtherMethods, m => true, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
         }
 
-        internal void MarkStaticConstructorVisibleToReflection(TypeDefinition type, in DependencyInfo reason, in MessageOrigin origin)
+        internal void MarkStaticConstructorVisibleToReflection(TypeDefinition type, in DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
-            MarkStaticConstructor(type, reason, origin);
+            MarkStaticConstructor(type, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
         }
 
         /// <summary>
@@ -2162,7 +2213,6 @@ namespace Mono.Linker.Steps
                 handleMarkType(type);
 
             MarkType(type.BaseType, new DependencyInfo(DependencyKind.BaseType, type), typeOrigin);
-            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in typeOrigin, this, Context, type.BaseType);
 
             // The DynamicallyAccessedMembers hierarchy processing must be done after the base type was marked
             // (to avoid inconsistencies in the cache), but before anything else as work done below
@@ -2250,7 +2300,7 @@ namespace Mono.Linker.Steps
                 }
             }
 
-            DoAdditionalTypeProcessing(type);
+            DoAdditionalTypeProcessing(type, typeOrigin);
 
             ApplyPreserveInfo(type);
             ApplyPreserveMethods(type, typeOrigin);
@@ -2269,27 +2319,27 @@ namespace Mono.Linker.Steps
         }
 
         // Allow subclassers to mark additional things
-        protected virtual void DoAdditionalTypeProcessing(TypeDefinition type)
+        protected virtual void DoAdditionalTypeProcessing(TypeDefinition type, MessageOrigin origin)
         {
         }
 
         // Allow subclassers to mark additional things
-        protected virtual void DoAdditionalFieldProcessing(FieldDefinition field)
+        protected virtual void DoAdditionalFieldProcessing(FieldDefinition field, MessageOrigin origin)
         {
         }
 
         // Allow subclassers to mark additional things
-        protected virtual void DoAdditionalPropertyProcessing(PropertyDefinition property)
+        protected virtual void DoAdditionalPropertyProcessing(PropertyDefinition property, MessageOrigin origin)
         {
         }
 
         // Allow subclassers to mark additional things
-        protected virtual void DoAdditionalEventProcessing(EventDefinition evt)
+        protected virtual void DoAdditionalEventProcessing(EventDefinition evt, MessageOrigin origin)
         {
         }
 
         // Allow subclassers to mark additional things
-        protected virtual void DoAdditionalInstantiatedTypeProcessing(TypeDefinition type)
+        protected virtual void DoAdditionalInstantiatedTypeProcessing(TypeDefinition type, MessageOrigin origin)
         {
         }
 
@@ -2724,27 +2774,27 @@ namespace Mono.Linker.Steps
                 method.TryGetParameter((ParameterIndex)2)?.ParameterType.Name == "StreamingContext";
         }
 
-        protected internal bool MarkMethodsIf(Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate, in DependencyInfo reason, in MessageOrigin origin)
+        protected internal bool MarkMethodsIf(Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate, in DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
             bool marked = false;
             foreach (MethodDefinition method in methods)
             {
                 if (predicate(method))
                 {
-                    MarkMethod(method, reason, origin);
+                    MarkMethod(method, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
                     marked = true;
                 }
             }
             return marked;
         }
 
-        protected MethodDefinition? MarkMethodIf(Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate, in DependencyInfo reason, in MessageOrigin origin)
+        protected MethodDefinition? MarkMethodIf(Collection<MethodDefinition> methods, Func<MethodDefinition, bool> predicate, in DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
             foreach (MethodDefinition method in methods)
             {
                 if (predicate(method))
                 {
-                    return MarkMethod(method, reason, origin);
+                    return MarkMethod(method, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
                 }
             }
 
@@ -2926,23 +2976,16 @@ namespace Mono.Linker.Steps
         {
             var arguments = instance.GenericArguments;
 
-            IGenericParameterProvider? generic_element = GetGenericProviderFromInstance(instance);
-            Collection<GenericParameter>? parameters = generic_element?.GenericParameters;
-
             for (int i = 0; i < arguments.Count; i++)
             {
                 var argument = arguments[i];
-                var parameter = parameters?[i];
 
                 var argumentTypeDef = MarkType(argument, new DependencyInfo(DependencyKind.GenericArgumentType, instance), origin);
                 if (argumentTypeDef == null)
                     continue;
 
                 MarkRelevantToVariantCasting(argumentTypeDef);
-
-                if (parameter?.HasDefaultConstructorConstraint == true)
-                    MarkDefaultConstructor(argumentTypeDef, new DependencyInfo(DependencyKind.DefaultCtorForNewConstrainedGenericArgument, instance), origin);
-            }
+           }
         }
 
         IGenericParameterProvider? GetGenericProviderFromInstance(IGenericInstance instance)
@@ -3136,7 +3179,7 @@ namespace Mono.Linker.Steps
                 MarkMethod(method, reason, origin);
         }
 
-        protected virtual MethodDefinition? MarkMethod(MethodReference reference, DependencyInfo reason, in MessageOrigin origin)
+        protected virtual MethodDefinition? MarkMethod(MethodReference reference, DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
             DependencyInfo originalReason = reason;
             (reference, reason) = GetOriginalMethod(reference, reason, origin);
@@ -3165,23 +3208,12 @@ namespace Mono.Linker.Steps
             if (method == null)
                 return null;
 
-            var methodAction = Annotations.GetAction(method);
-            if (methodAction is MethodAction.ConvertToStub)
-            {
-                // CodeRewriterStep runs after sweeping, and may request the stubbed value for any preserved method
-                // with the action ConvertToStub. Ensure we have precomputed any stub value that may be needed by
-                // CodeRewriterStep. This ensures sweeping doesn't change the stub value (which can be determined by
-                // FeatureGuardAttribute or FeatureSwitchDefinitionAttribute that might have been removed).
-                Annotations.TryGetMethodStubValue(method, out _);
-            }
-
-            if (methodAction == MethodAction.Nothing)
+            if (Annotations.GetAction(method) == MethodAction.Nothing)
                 Annotations.SetAction(method, MethodAction.Parse);
-
 
             // Use the original reason as it's important to correctly generate warnings
             // the updated reason is only useful for better tracking of dependencies.
-            ProcessAnalysisAnnotationsForMethod(method, originalReason.Kind, origin);
+            ProcessAnalysisAnnotationsForMethod(method, originalReason.Kind, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
 
             // Record the reason for marking a method on each call.
             switch (reason.Kind)
@@ -3238,7 +3270,7 @@ namespace Mono.Linker.Steps
             return CheckRequiresReflectionMethodBodyScanner(Context.GetMethodIL(method));
         }
 
-        void ProcessAnalysisAnnotationsForMethod(MethodDefinition method, DependencyKind dependencyKind, in MessageOrigin origin)
+        void ProcessAnalysisAnnotationsForMethod(MethodDefinition method, DependencyKind dependencyKind, in MessageOrigin origin, bool suppressTrimAnalysisWarnings)
         {
             switch (dependencyKind)
             {
@@ -3312,7 +3344,7 @@ namespace Mono.Linker.Steps
                 default:
                     // All other cases have the potential of us missing a warning if we don't report it
                     // It is possible that in some cases we may report the same warning twice, but that's better than not reporting it.
-                    ReportWarningsForReflectionAccess(origin, method, dependencyKind);
+                    ReportWarningsForReflectionAccess(origin, method, dependencyKind, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
                     break;
             }
             ;
@@ -3468,13 +3500,13 @@ namespace Mono.Linker.Steps
                 }
             }
 
-            DoAdditionalMethodProcessing(method);
+            DoAdditionalMethodProcessing(method, methodOrigin);
 
             ApplyPreserveMethods(method, methodOrigin);
         }
 
         // Allow subclassers to mark additional things when marking a method
-        protected virtual void DoAdditionalMethodProcessing(MethodDefinition method)
+        protected virtual void DoAdditionalMethodProcessing(MethodDefinition method, MessageOrigin origin)
         {
         }
 
@@ -3516,7 +3548,7 @@ namespace Mono.Linker.Steps
             return false;
         }
 
-        protected virtual void MarkRequirementsForInstantiatedTypes(TypeDefinition type)
+        protected internal virtual void MarkRequirementsForInstantiatedTypes(TypeDefinition type)
         {
             if (Annotations.IsInstantiated(type))
                 return;
@@ -3539,7 +3571,7 @@ namespace Mono.Linker.Steps
 
             _typeMapHandler.ProcessInstantiated(type);
 
-            DoAdditionalInstantiatedTypeProcessing(type);
+            DoAdditionalInstantiatedTypeProcessing(type, typeOrigin);
         }
 
         void MarkRuntimeInterfaceImplementation(MethodDefinition method, MethodReference ov)
@@ -3757,32 +3789,32 @@ namespace Mono.Linker.Steps
 
             // Consider making this more similar to MarkEvent method?
             MarkCustomAttributes(prop, new DependencyInfo(DependencyKind.CustomAttribute, prop), propertyOrigin);
-            DoAdditionalPropertyProcessing(prop);
+            DoAdditionalPropertyProcessing(prop, propertyOrigin);
         }
 
-        protected internal virtual void MarkEvent(EventDefinition evt, in DependencyInfo reason, MessageOrigin origin)
+        protected internal virtual void MarkEvent(EventDefinition evt, in DependencyInfo reason, MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
             origin = reason.Source is IMemberDefinition member ? new MessageOrigin(member) : origin;
             DependencyKind dependencyKind = DependencyKind.EventMethod;
 
-            MarkMethodIfNotNull(evt.AddMethod, new DependencyInfo(dependencyKind, evt), origin);
-            MarkMethodIfNotNull(evt.InvokeMethod, new DependencyInfo(dependencyKind, evt), origin);
-            MarkMethodIfNotNull(evt.RemoveMethod, new DependencyInfo(dependencyKind, evt), origin);
+            MarkMethodIfNotNull(evt.AddMethod, new DependencyInfo(dependencyKind, evt), origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
+            MarkMethodIfNotNull(evt.InvokeMethod, new DependencyInfo(dependencyKind, evt), origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
+            MarkMethodIfNotNull(evt.RemoveMethod, new DependencyInfo(dependencyKind, evt), origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
 
             if (!Annotations.MarkProcessed(evt, reason))
                 return;
 
             var eventOrigin = new MessageOrigin(evt);
             MarkCustomAttributes(evt, new DependencyInfo(DependencyKind.CustomAttribute, evt), eventOrigin);
-            DoAdditionalEventProcessing(evt);
+            DoAdditionalEventProcessing(evt, eventOrigin);
         }
 
-        internal void MarkMethodIfNotNull(MethodReference method, in DependencyInfo reason, in MessageOrigin origin)
+        internal void MarkMethodIfNotNull(MethodReference method, in DependencyInfo reason, in MessageOrigin origin, bool suppressTrimAnalysisWarnings = false)
         {
             if (method == null)
                 return;
 
-            MarkMethod(method, reason, origin);
+            MarkMethod(method, reason, origin, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
         }
 
         protected virtual void MarkMethodBody(MethodBody body, MessageOrigin origin)
@@ -4082,7 +4114,13 @@ namespace Mono.Linker.Steps
             if (Annotations.IsMarked(iface))
                 return;
             Annotations.MarkProcessed(iface, reason ?? new DependencyInfo(DependencyKind.InterfaceImplementationOnType, origin.Provider));
-            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in origin, this, Context, iface.InterfaceType);
+            // The generic instantiation in the interface list is only reachable through the members of the
+            // type which implements the interface, which are all in the Requires scope of a type-level
+            // RequiresUnreferencedCode, so the attribute silences these warnings. Note that the data flow
+            // still needs to run to mark the members required by the instantiation.
+            bool suppressTrimAnalysisWarnings = origin.Provider is TypeDefinition implementingType &&
+                Annotations.TryGetLinkerAttribute<RequiresUnreferencedCodeAttribute>(implementingType, out _);
+            GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(in origin, this, Context, iface.InterfaceType, suppressTrimAnalysisWarnings: suppressTrimAnalysisWarnings);
 
             // Blame the type that has the interfaceimpl, expecting the type itself to get marked for other reasons.
             MarkCustomAttributes(iface, new DependencyInfo(DependencyKind.CustomAttribute, iface), origin);
