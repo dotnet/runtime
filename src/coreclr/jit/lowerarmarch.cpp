@@ -152,23 +152,23 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
                 if (immVal == 0)
                     return true;
                 break;
-            case GT_LSH:
-            case GT_RSH:
-            case GT_RSZ:
-            case GT_ROL:
-            case GT_ROR:
-                return emitter::isValidImmShift(immVal, emitActualTypeSize(parentNode->TypeGet()));
 #endif // TARGET_ARM64
 
-#ifdef TARGET_ARM
             case GT_LSH:
             case GT_RSH:
             case GT_RSZ:
             case GT_ROL:
             case GT_ROR:
+                // genCodeForShift masks the constant to (immWidth - 1) before emitting,
+                // so any integer immediate is valid and containable.
+                return true;
+
+#ifdef TARGET_ARM
             case GT_LSH_HI:
             case GT_RSH_LO:
-                // ARM32: shift amount 0-31 for LSL; LSR/ASR/ROR use 0 to mean 32
+                // genCodeForShiftLong does not mask, so validate the range.
+                // DecomposeLongs produces counts in 1..31; allow 0..32 for the
+                // LSR/ASR idiom where 0 encodes a shift of 32.
                 return (immVal >= 0) && (immVal <= 32);
 #endif // TARGET_ARM
 
