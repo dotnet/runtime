@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace Microsoft.Extensions.Configuration
 {
@@ -22,12 +23,6 @@ namespace Microsoft.Extensions.Configuration
     /// </remarks>
     internal static class ChildKeySorter
     {
-#if NET
-        private static readonly Comparison<string> s_comparer = CompareSegment;
-#else
-        private static readonly SegmentComparer s_comparer = new SegmentComparer();
-#endif
-
         /// <summary>Sorts the first <paramref name="count"/> keys of <paramref name="keys"/> in place.</summary>
         /// <param name="keys">The accumulated child keys.</param>
         /// <param name="count">The number of keys to sort.</param>
@@ -38,10 +33,17 @@ namespace Microsoft.Extensions.Configuration
                 return;
             }
 
-#if NET
-            keys.AsSpan(0, count).Sort(s_comparer);
+            NumberFormatInfo formatInfo = NumberFormatInfo.CurrentInfo;
+            bool preCheck = MayPreCheck(formatInfo.PositiveSign) && MayPreCheck(formatInfo.NegativeSign);
+
+#if NET11_0_OR_GREATER
+            keys.AsSpan(0, count).Sort(new SegmentComparer(formatInfo, preCheck));
+#elif NET
+            // Before that, sorting by IComparer<T> boxed the comparer and then made a Comparison<T> out of it anyway,
+            // so the delegate is passed directly instead, which costs one allocation rather than two.
+            keys.AsSpan(0, count).Sort((x, y) => CompareSegment(x, y, formatInfo, preCheck));
 #else
-            Array.Sort(keys, 0, count, s_comparer);
+            Array.Sort(keys, 0, count, new SegmentComparer(formatInfo, preCheck));
 #endif
         }
 
@@ -109,7 +111,7 @@ namespace Microsoft.Extensions.Configuration
             return true;
         }
 
-        private static int CompareSegment(string? x, string? y)
+        private static int CompareSegment(string? x, string? y, NumberFormatInfo formatInfo, bool preCheck)
         {
             if (string.IsNullOrEmpty(x))
             {
@@ -120,15 +122,40 @@ namespace Microsoft.Extensions.Configuration
                 return 1;
             }
 
-            return int.TryParse(x, out int xNumber)
-                ? int.TryParse(y, out int yNumber) ? xNumber.CompareTo(yNumber) : -1
-                : int.TryParse(y, out int _) ? 1 : x.AsSpan().CompareTo(y.AsSpan(), StringComparison.OrdinalIgnoreCase);
+            return TryParse(x, formatInfo, preCheck, out int xNumber)
+                ? TryParse(y, formatInfo, preCheck, out int yNumber) ? xNumber.CompareTo(yNumber) : -1
+                : TryParse(y, formatInfo, preCheck, out int _) ? 1 : x.AsSpan().CompareTo(y.AsSpan(), StringComparison.OrdinalIgnoreCase);
         }
 
-#if !NET
-        private sealed class SegmentComparer : IComparer<string>
+        private static bool TryParse(string s, NumberFormatInfo formatInfo, bool preCheck, out int value)
         {
-            public int Compare(string? x, string? y) => CompareSegment(x, y);
+            if (preCheck && CannotStartNumber(s[0]))
+            {
+                value = 0;
+                return false;
+            }
+
+            return int.TryParse(s, NumberStyles.Integer, formatInfo, out value);
+        }
+
+        private static bool CannotStartNumber(char c) =>
+            c < 0x80 && (uint)(c - '0') > 9 && c != '-' && c != '+' && !char.IsWhiteSpace(c);
+
+        private static bool MayPreCheck(string sign) => sign.Length == 0 || !CannotStartNumber(sign[0]);
+
+#if NET11_0_OR_GREATER || !NET
+        private readonly struct SegmentComparer : IComparer<string>
+        {
+            private readonly NumberFormatInfo _formatInfo;
+            private readonly bool _preCheck;
+
+            internal SegmentComparer(NumberFormatInfo formatInfo, bool preCheck)
+            {
+                _formatInfo = formatInfo;
+                _preCheck = preCheck;
+            }
+
+            public int Compare(string? x, string? y) => CompareSegment(x, y, _formatInfo, _preCheck);
         }
 #endif
     }

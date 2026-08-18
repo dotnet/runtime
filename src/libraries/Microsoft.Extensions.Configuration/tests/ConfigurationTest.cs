@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading;
 using Microsoft.Extensions.Configuration.Memory;
@@ -1294,6 +1295,44 @@ namespace Microsoft.Extensions.Configuration.Test
             ChildKeySorter.Sort(keys, keys.Length);
 
             Assert.Equal(expected, keys);
+        }
+
+        [Theory]
+        [InlineData("+", "-")]
+        [InlineData("p", "n")]
+        [InlineData("\u2212", "\u2212")]
+        [InlineData("", "")]
+        public void ChildKeySorter_OrdersLikeConfigurationKeyComparer_UnderAnySign(string positiveSign, string negativeSign)
+        {
+            var culture = (CultureInfo)CultureInfo.InvariantCulture.Clone();
+            culture.NumberFormat.PositiveSign = positiveSign;
+            culture.NumberFormat.NegativeSign = negativeSign;
+
+            string[] keys = ["p2", "n3", "10", "2", "Name", "\u22124", "+5", "-6", "p", "0"];
+            string[] sorted = (string[])keys.Clone();
+
+            CultureInfo original = CultureInfo.CurrentCulture;
+            try
+            {
+                CultureInfo.CurrentCulture = culture;
+
+                ChildKeySorter.Sort(sorted, sorted.Length);
+
+                // Any two orderings that satisfy the comparer differ only where it reports equality, so the sorter
+                // agrees with it exactly when the sequence never decreases. This has to be judged under the same
+                // culture the sort ran in, since the comparer reads the ambient one on every call.
+                Assert.Equal(keys.OrderBy(k => k, StringComparer.Ordinal), sorted.OrderBy(k => k, StringComparer.Ordinal));
+                for (int i = 1; i < sorted.Length; i++)
+                {
+                    Assert.True(
+                        ConfigurationKeyComparer.Instance.Compare(sorted[i - 1], sorted[i]) <= 0,
+                        $"'{sorted[i - 1]}' must not sort after '{sorted[i]}' under '{positiveSign}'/'{negativeSign}'");
+                }
+            }
+            finally
+            {
+                CultureInfo.CurrentCulture = original;
+            }
         }
 
         [Fact]
