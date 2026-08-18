@@ -218,6 +218,7 @@ static size_t CreateDispatchTokenForMethod(MethodDesc* pMD)
 // Call invoker helpers provided by platform.
 void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
+void InvokeUnmanagedMethodInPreemptiveMode(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget);
 void InvokeCalliStub(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet, Object** pContinuationRet);
 void InvokeUnmanagedCalli(PCODE ftn, InterpreterCalliCookie cookie, int8_t *pArgs, int8_t *pRet);
 void InvokeDelegateInvokeMethod(MethodDesc *pMDDelegateInvoke, int8_t *pArgs, int8_t *pRet, PCODE target, Object** pContinuationRet);
@@ -236,7 +237,6 @@ NOINLINE static void DECLSPEC_NORETURN RethrowLastThrownObject()
 {
     WRAPPER_NO_CONTRACT;
 
-    _ASSERTE(GetThread()->PreemptiveGCDisabled());
     GCX_COOP();
     OBJECTREF ohThrowable = GetThread()->LastThrownObject();
     DispatchManagedException(ohThrowable);
@@ -294,7 +294,7 @@ void InvokeUnmanagedMethodWithTransition(MethodDesc *targetMethod, int8_t *stack
     PAL_TRY(Param *, pParam, &param)
     {
         // WASM-TODO: Handle unmanaged calling conventions
-        InvokeUnmanagedMethod(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget);
+        InvokeUnmanagedMethodInPreemptiveMode(pParam->targetMethod, pParam->pArgs, pParam->pRet, pParam->callTarget);
     }
     PAL_EXCEPT_FILTER(IgnoreCppExceptionFilter)
     {
@@ -478,10 +478,15 @@ void InvokeManagedMethod(MethodDesc *pMD, int8_t *pArgs, int8_t *pRet, PCODE tar
 
 void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
 {
+    InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget, NULL);
+}
+
+void InvokeUnmanagedMethodInPreemptiveMode(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+{
     WRAPPER_NO_CONTRACT;
 
     GCX_PREEMP();
-    InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget, NULL);
+    InvokeUnmanagedMethod(targetMethod, pArgs, pRet, callTarget);
 }
 
 static NOINLINE CallStubHeader *InvokeDelegateInvokeMethodHelper(MethodDesc *pMDDelegateInvoke)
