@@ -51,7 +51,7 @@ public class Program
         return true;
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsVarArgSupported))]
     public static void TestEntryPoint()
     {
         Hfa24 hfa = new Hfa24
