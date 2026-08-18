@@ -3668,13 +3668,17 @@ void Compiler::fgDebugCheckFlagsHelper(GenTree* tree, GenTreeFlags actualFlags, 
         GenTreeFlags const extraFlags = actualFlags & ~expectedFlags & flagsToCheck;
         if (extraFlags != 0)
         {
-            // Print the tree so we can see it in the log.
-            printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
-            Compiler::fgDebugCheckDispFlags(tree, extraFlags, GTF_DEBUG_NONE);
-            printf("\n");
-            gtDispTree(tree);
+            bool const isRelaxed = hasFlag(activePhaseChecks, PhaseChecks::CHECK_IR_RELAXED);
+            if (!isRelaxed || verbose)
+            {
+                // Print the tree so we can see it in the log.
+                printf("Extra flags on tree [%06d]: ", dspTreeID(tree));
+                Compiler::fgDebugCheckDispFlags(tree, extraFlags, GTF_DEBUG_NONE);
+                printf("\n");
+                gtDispTree(tree);
+            }
 
-            if (hasFlag(activePhaseChecks, PhaseChecks::CHECK_IR_RELAXED))
+            if (isRelaxed)
             {
                 Metrics.IRExtraFlags += genCountBits(static_cast<uint32_t>(extraFlags));
                 return;
