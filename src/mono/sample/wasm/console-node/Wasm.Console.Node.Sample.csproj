@@ -7,7 +7,6 @@
     <GenerateRunScriptForSample Condition="'$(ArchiveTests)' == 'true'">true</GenerateRunScriptForSample>
     <ExpectedExitCode>2</ExpectedExitCode>
     <RunScriptCommand>$(ExecXHarnessVar) wasm test --app=. --engine=NodeJS --engine-arg=--stack-trace-limit=1000 --js-file=main.mjs --output-directory=$(XHarnessOutputVar) --expected-exit-code $(ExpectedExitCode)</RunScriptCommand>
-    <PublishReadyToRun>true</PublishReadyToRun>
   </PropertyGroup>
 
   <Target Name="RunSample" DependsOnTargets="RunSampleWithNode" />
