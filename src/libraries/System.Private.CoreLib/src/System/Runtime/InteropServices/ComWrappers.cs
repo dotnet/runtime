@@ -812,9 +812,8 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         private readonly struct CreateManagedObjectWrapperState(ComWrappers comWrappers, CreateComInterfaceFlags flags)
         {
-            public ComWrappers ComWrappers { get; } = comWrappers;
-
-            public CreateComInterfaceFlags Flags { get; } = flags;
+            public readonly ComWrappers ComWrappers = comWrappers;
+            public readonly CreateComInterfaceFlags Flags = flags;
         }
 
         private static void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)
