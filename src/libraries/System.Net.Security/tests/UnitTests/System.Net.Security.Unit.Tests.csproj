@@ -135,7 +135,7 @@
   </ItemGroup>
 
   <!-- Compiled on desktop only: crashes Apple-mobile CoreCLR at startup due to R2R IL-body stripping. -->
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' or '$(TargetPlatformIdentifier)' == 'unix' or '$(TargetPlatformIdentifier)' == 'osx'">
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
     <Compile Include="SslAuthenticationOptionsTests.Desktop.cs" />
   </ItemGroup>
 
