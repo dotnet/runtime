@@ -32,7 +32,7 @@ internal sealed class ArraySingleObjectRecord : SZArrayRecord<SerializationRecor
 
     private SerializationRecord?[] ToArray(bool allowNulls)
     {
-        ThrowIfNullsAreNotAllowedButPresent(Records, allowNulls);
+        CheckExpectedRecordCount(Records, allowNulls);
 
         SerializationRecord?[] values = new SerializationRecord?[Length];
 
