@@ -202,7 +202,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         /// <safety>Reads the current thread's last platform-invoke error code and returns it by value; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern int GetLastPInvokeError();
+        public static extern safe int GetLastPInvokeError();
 
         /// <summary>
         /// Set the last platform invoke error on the current thread
@@ -210,7 +210,7 @@ namespace System.Runtime.InteropServices
         /// <param name="error">Error to set</param>
         /// <safety>Stores the supplied error code into the current thread's platform-invoke error state; it takes only an integer value and dereferences no memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern void SetLastPInvokeError(int error);
+        public static extern safe void SetLastPInvokeError(int error);
 
         private static void PrelinkCore(MethodInfo m)
         {
@@ -233,7 +233,7 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("GetExceptionCode() may be unavailable in future releases.")]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern int GetExceptionCode();
+        public static extern safe int GetExceptionCode();
 
         internal sealed class LayoutTypeMarshalerMethods : RuntimeType.IGenericCacheEntry<LayoutTypeMarshalerMethods>
         {
@@ -645,7 +645,7 @@ namespace System.Runtime.InteropServices
 
         /// <safety>Returns a Boolean computed from runtime COM-cleanup state; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
-        public static safe extern bool AreComObjectsAvailableForCleanup();
+        public static extern safe bool AreComObjectsAvailableForCleanup();
 
         /// <summary>
         /// Checks if the object is classic COM component.
