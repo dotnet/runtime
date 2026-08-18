@@ -32,15 +32,6 @@
 
 namespace
 {
-#if defined(MINIPAL_WAIT_TESTS)
-    int32_t s_processWatcherCount;
-    int32_t s_pauseExitedProcessWatchers;
-    int32_t s_pausedProcessWatcherCount;
-    int32_t s_pausedExitedProcessWatcherCount;
-    int32_t s_pauseProcessWatchers;
-    int32_t s_processWatcherSignalCount;
-#endif // MINIPAL_WAIT_TESTS
-
     enum class WaitableKind
     {
         Event,
@@ -609,30 +600,13 @@ namespace
             return;
         }
 
-        if (SignalPipeLocked(waitable))
-        {
-#if defined(MINIPAL_WAIT_TESTS)
-            __atomic_add_fetch(&s_processWatcherSignalCount, 1, __ATOMIC_ACQ_REL);
-#endif // MINIPAL_WAIT_TESTS
-        }
+        SignalPipeLocked(waitable);
     }
 
     void* ProcessWatcher(void* argument)
     {
         Waitable* waitable = static_cast<Waitable*>(argument);
         assert(waitable->kind == WaitableKind::ProcessPipe);
-#if defined(MINIPAL_WAIT_TESTS)
-        __atomic_add_fetch(&s_processWatcherCount, 1, __ATOMIC_ACQ_REL);
-        if (__atomic_load_n(&s_pauseProcessWatchers, __ATOMIC_ACQUIRE) != 0)
-        {
-            __atomic_add_fetch(&s_pausedProcessWatcherCount, 1, __ATOMIC_ACQ_REL);
-            while (__atomic_load_n(&s_pauseProcessWatchers, __ATOMIC_ACQUIRE) != 0)
-            {
-                poll(nullptr, 0, 1);
-            }
-            __atomic_sub_fetch(&s_pausedProcessWatcherCount, 1, __ATOMIC_ACQ_REL);
-        }
-#endif // MINIPAL_WAIT_TESTS
         bool exited = false;
 
         while (__atomic_load_n(&waitable->publicRefCount, __ATOMIC_ACQUIRE) != 0)
@@ -647,26 +621,11 @@ namespace
             nanosleep(&sleepDuration, nullptr);
         }
 
-#if defined(MINIPAL_WAIT_TESTS)
-        if (exited && __atomic_load_n(&s_pauseExitedProcessWatchers, __ATOMIC_ACQUIRE) != 0)
-        {
-            __atomic_add_fetch(&s_pausedExitedProcessWatcherCount, 1, __ATOMIC_ACQ_REL);
-            while (__atomic_load_n(&s_pauseExitedProcessWatchers, __ATOMIC_ACQUIRE) != 0)
-            {
-                poll(nullptr, 0, 1);
-            }
-            __atomic_sub_fetch(&s_pausedExitedProcessWatcherCount, 1, __ATOMIC_ACQ_REL);
-        }
-#endif // MINIPAL_WAIT_TESTS
-
         if (exited)
         {
             SignalProcessWatcherExit(waitable);
         }
 
-#if defined(MINIPAL_WAIT_TESTS)
-        __atomic_sub_fetch(&s_processWatcherCount, 1, __ATOMIC_ACQ_REL);
-#endif // MINIPAL_WAIT_TESTS
         ReleaseReference(waitable);
         return nullptr;
     }
@@ -1084,7 +1043,6 @@ namespace
             return nullptr;
         }
 
-#if !defined(MINIPAL_WAIT_FORCE_PROCESS_WATCHER)
 #if defined(TARGET_LINUX) && defined(SYS_pidfd_open)
         int processFileDescriptor;
         do
@@ -1131,7 +1089,6 @@ namespace
             return waitable;
         }
 #endif // MINIPAL_WAIT_USES_KQUEUE
-#endif // !MINIPAL_WAIT_FORCE_PROCESS_WATCHER
 
         return CreateProcessWatcherWaitable(static_cast<pid_t>(processId));
     }
@@ -1150,43 +1107,6 @@ namespace
         return waitable;
     }
 }
-
-#if defined(MINIPAL_WAIT_TESTS)
-extern "C" void minipal_wait_test_pause_process_watchers(bool pause)
-{
-    __atomic_store_n(&s_pauseProcessWatchers, pause ? 1 : 0, __ATOMIC_RELEASE);
-}
-
-extern "C" void minipal_wait_test_pause_exited_process_watchers(bool pause)
-{
-    __atomic_store_n(&s_pauseExitedProcessWatchers, pause ? 1 : 0, __ATOMIC_RELEASE);
-}
-
-extern "C" int32_t minipal_wait_test_get_process_watcher_count()
-{
-    return __atomic_load_n(&s_processWatcherCount, __ATOMIC_ACQUIRE);
-}
-
-extern "C" int32_t minipal_wait_test_get_paused_process_watcher_count()
-{
-    return __atomic_load_n(&s_pausedProcessWatcherCount, __ATOMIC_ACQUIRE);
-}
-
-extern "C" int32_t minipal_wait_test_get_paused_exited_process_watcher_count()
-{
-    return __atomic_load_n(&s_pausedExitedProcessWatcherCount, __ATOMIC_ACQUIRE);
-}
-
-extern "C" int32_t minipal_wait_test_get_process_watcher_signal_count()
-{
-    return __atomic_load_n(&s_processWatcherSignalCount, __ATOMIC_ACQUIRE);
-}
-
-extern "C" void minipal_wait_test_reset_process_watcher_signal_count()
-{
-    __atomic_store_n(&s_processWatcherSignalCount, 0, __ATOMIC_RELEASE);
-}
-#endif // MINIPAL_WAIT_TESTS
 
 minipal_wait_handle::minipal_wait_handle(void* handle)
     : m_handle(handle)
