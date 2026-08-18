@@ -390,4 +390,10 @@
   <data name="Argument_InvalidProcessId" xml:space="preserve">
     <value>The callback must return a positive process ID for the newly created process.</value>
   </data>
+  <data name="UseShellExecuteVerbNotSupported" xml:space="preserve">
+    <value>The verb '{0}' is not supported for UseShellExecute on this platform. Only the default verb (an empty string or "open") is supported.</value>
+  </data>
+  <data name="UseShellExecuteNoOpenProgram" xml:space="preserve">
+    <value>No program was found to handle opening files or URLs with UseShellExecute on this platform. Ensure one such as 'xdg-open' or 'open' is installed and available on the PATH.</value>
+  </data>
 </root>

@@ -565,7 +565,7 @@ DECODE_OPCODE:
 
                 INT_OP:
                     dumpILBytes(startOpcodePtr, (unsigned)((opcodePtr - startOpcodePtr) + sz), ALIGN_WIDTH);
-                    printf(" %-12s 0x%X", opcodeNames[opcode], iOp);
+                    printf(" %-12s 0x%llX", opcodeNames[opcode], (unsigned long long)iOp);
                     break;
 
                 case ShortInlineR:
