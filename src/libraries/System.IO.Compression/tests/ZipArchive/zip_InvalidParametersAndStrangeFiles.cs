@@ -451,6 +451,81 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ZipArchiveEntry_OpenInUpdateMode_UncompressedSizeImplausibleGivenCompressedSize_ThrowsInvalidData(bool async)
+        {
+            // A small compressed entry cannot legitimately decompress to a wildly larger size: a single
+            // DEFLATE stream can expand by, at most, a few orders of magnitude (see MaxDeflateExpansionRatio).
+            // If the declared _uncompressedSize is implausible relative to the actual _compressedSize present
+            // in the archive (as could happen with a spoofed/corrupt header), the entry must be rejected up
+            // front in Update mode, before a MemoryStream sized to the untrusted declared value is allocated.
+            byte[] payload = [0xCA, 0xFE, 0xBA, 0xBE, 0xDE, 0xAD, 0xBE, 0xEF];
+            MemoryStream stream = new MemoryStream();
+
+            // Use an actual Deflate-compressed entry (not Stored): the plausibility check only
+            // applies to compression methods that can expand data, and Stored cannot.
+            ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry("entry.bin", CompressionLevel.Optimal);
+            Stream entryStream = await OpenEntryStream(async, entry);
+            await entryStream.WriteAsync(payload);
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, archive);
+
+            stream.Position = 0;
+            archive = await CreateZipArchive(async, stream, ZipArchiveMode.Update, leaveOpen: true);
+            entry = archive.GetEntry("entry.bin");
+
+            // The entry's actual compressed size is a handful of bytes; claim a 50 MB uncompressed size,
+            // which is many orders of magnitude beyond what that compressed data could plausibly produce.
+            FieldInfo uncompressedSizeField = typeof(ZipArchiveEntry).GetField("_uncompressedSize", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(uncompressedSizeField);
+            uncompressedSizeField.SetValue(entry, 50_000_000L);
+
+            if (async)
+            {
+                await Assert.ThrowsAsync<InvalidDataException>(() => entry.OpenAsync());
+            }
+            else
+            {
+                Assert.Throws<InvalidDataException>(() => entry.Open());
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
+        public static async Task ZipArchiveEntry_OpenInUpdateMode_HighButPlausibleCompressionRatio_OpensSuccessfully(bool async)
+        {
+            // Legitimately compressible content (a highly repetitive payload) can have a large, but
+            // plausible, expansion ratio. This must continue to open successfully in Update mode.
+            byte[] payload = new byte[1_000_000];
+            Array.Fill(payload, (byte)'A');
+            MemoryStream stream = new MemoryStream();
+
+            ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry("entry.bin", CompressionLevel.Optimal);
+            Stream entryStream = await OpenEntryStream(async, entry);
+            await entryStream.WriteAsync(payload);
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, archive);
+
+            stream.Position = 0;
+            archive = await CreateZipArchive(async, stream, ZipArchiveMode.Update, leaveOpen: true);
+            entry = archive.GetEntry("entry.bin");
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                Stream source = await OpenEntryStream(async, entry);
+                await source.CopyToAsync(ms);
+                Assert.Equal(payload.Length, ms.Length);
+                await DisposeStream(async, source);
+            }
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         public static async Task UnseekableVeryLargeArchive_DataDescriptor_Read_Zip64(bool async)
         {
             MemoryStream stream = await LocalMemoryStream.ReadAppFileAsync(strange("veryLarge.zip"));

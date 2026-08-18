@@ -596,6 +596,23 @@ namespace System.IO.Compression
         // will not work in a 32-bit process.
         private static readonly bool s_allowLargeZipArchiveEntriesInUpdateMode = IntPtr.Size > 4;
 
+        // A DEFLATE length/distance pair can encode a back-reference match of at most 258 bytes
+        // (RFC 1951), so a single, non-nested DEFLATE stream cannot legitimately expand by more
+        // than about 1032x (258 bytes of match per few bits of compressed data). This bounds how
+        // large a declared uncompressed size can plausibly be relative to the actual compressed
+        // data present in the archive.
+        private const long MaxDeflateExpansionRatio = 1032;
+
+        // Deflate64 extends the maximum match length from 258 up to 65538 bytes (see
+        // InflaterManaged/OutputWindow), so its worst-case expansion ratio scales accordingly.
+        // 256x is a round, conservative multiplier that comfortably covers the ~254x increase
+        // in maximum match length without relying on an exact derivation.
+        private const long MaxDeflate64ExpansionRatio = MaxDeflateExpansionRatio * 256;
+
+        // A small additive allowance so that tiny, legitimate entries (where fixed per-stream
+        // overhead dominates the ratio math) are never rejected.
+        private const long MinPlausibleUncompressedSizeAllowance = 4096;
+
         internal bool EverOpenedForWrite => _everOpenedForWrite;
 
         internal long GetOffsetOfCompressedData()
@@ -654,6 +671,38 @@ namespace System.IO.Compression
             }
         }
 
+        // Validates that this entry's declared _uncompressedSize is plausible given its _compressedSize,
+        // i.e. that it could actually have been produced by decompressing the bytes physically present
+        // in the archive. Without this check, an entry can declare an uncompressed size wildly out of
+        // proportion to its (small) compressed size, causing GetUncompressedData/GetUncompressedDataAsync
+        // to eagerly allocate a MemoryStream sized to that untrusted value before any decompression is
+        // attempted - e.g. a few hundred bytes of archive claiming multiple gigabytes of uncompressed
+        // content. Only applies to entries whose data originates from the archive being read; entries
+        // created fresh in this session have no untrusted header to validate.
+        private void ValidateUncompressedSizeIsPlausible()
+        {
+            if (!_originallyInArchive || CompressionMethod == ZipCompressionMethod.Stored)
+            {
+                // Stored entries cannot expand: their uncompressed size must equal their compressed size.
+                return;
+            }
+
+            long maxExpansionRatio = CompressionMethod == ZipCompressionMethod.Deflate64
+                ? MaxDeflate64ExpansionRatio
+                : MaxDeflateExpansionRatio;
+
+            if (_uncompressedSize > MinPlausibleUncompressedSizeAllowance)
+            {
+                // Divide rather than multiply to avoid any risk of overflow.
+                long minPlausibleCompressedSize = (_uncompressedSize - MinPlausibleUncompressedSizeAllowance) / maxExpansionRatio;
+                if (_compressedSize < minPlausibleCompressedSize)
+                {
+                    _currentlyOpenForWrite = false;
+                    throw new InvalidDataException(SR.Format(SR.EntryUncompressedSizeImplausible, _uncompressedSize, _compressedSize));
+                }
+            }
+        }
+
         private MemoryStream GetUncompressedData(ReadOnlySpan<char> password = default)
         {
             if (_storedUncompressedData == null)
@@ -668,6 +717,8 @@ namespace System.IO.Compression
                     _currentlyOpenForWrite = false;
                     throw new InvalidDataException(SR.EntryUncompressedSizeTooLargeForUpdateMode);
                 }
+
+                ValidateUncompressedSizeIsPlausible();
 
                 _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
