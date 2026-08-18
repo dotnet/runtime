@@ -197,7 +197,7 @@ qtlbnispri1a/EghiaPQ0po=";
                 EccTestData.GetNistP521Key2());
         }
 
-        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
+        [ConditionalFact(typeof(RC2Provider), nameof(RC2Provider.IsSupported))]
         public void ReadNistP256EncryptedPkcs8_Pbes1_RC2_MD5()
         {
             const string base64 = @"

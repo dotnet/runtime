@@ -5,16 +5,12 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 {
     using Aes = System.Security.Cryptography.Aes;
 
-    public interface IAesProvider
+    public sealed class AesCngProvider : AesProvider
     {
-        Aes Create();
-    }
+        public static readonly AesCngProvider Instance = new AesCngProvider();
 
-    public static partial class AesFactory
-    {
-        public static Aes Create()
-        {
-            return s_provider.Create();
-        }
+        private AesCngProvider() { }
+
+        public override Aes Create() => new AesCng();
     }
 }

@@ -110,7 +110,7 @@ hpTvzzEtnljU3dHAHig4M/TxSeX5vUVJMEQxthvg2tcXtTjFzVL94ajmYZPonQnB
                 DSATestData.Dsa2048DeficientXParameters);
         }
 
-        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
+        [ConditionalFact(typeof(RC2Provider), nameof(RC2Provider.IsSupported))]
         public void ReadWriteDsa512EncryptedPkcs8()
         {
             // pbeWithSHA1And40BitRC2-CBC (PKCS12-PBE)
@@ -130,7 +130,7 @@ UCouQg==",
                 DSATestData.Dsa512Parameters);
         }
 
-        [ConditionalFact(typeof(RC2Factory), nameof(RC2Factory.IsSupported))]
+        [ConditionalFact(typeof(RC2Provider), nameof(RC2Provider.IsSupported))]
         public void ReadWriteDsa576EncryptedPkcs8()
         {
             // pbeWithSHA1And128BitRC2-CBC (PKCS12-PBE)

@@ -8,8 +8,10 @@ using Xunit;
 namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
-    public static class TripleDESContractTests
+    public abstract class TripleDESContractTests
     {
+        protected abstract TripleDESProvider TripleDESFactory { get; }
+
         [Theory]
         [InlineData(0, true)]
         [InlineData(1, true)]
@@ -21,7 +23,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         [InlineData(256, true)]
         [InlineData(128, true)]
         [InlineData(127, true)]
-        public static void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
+        public void InvalidCFBFeedbackSizes(int feedbackSize, bool discoverableInSetter)
         {
             using (TripleDES tdes = TripleDESFactory.Create())
             {
@@ -53,7 +55,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         [Theory]
         [InlineData(8)]
         [InlineData(64)]
-        public static void ValidCFBFeedbackSizes(int feedbackSize)
+        public void ValidCFBFeedbackSizes(int feedbackSize)
         {
             using (TripleDES tdes = TripleDESFactory.Create())
             {
@@ -70,7 +72,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         }
 
         [Fact]
-        public static void Cfb8ModeCanDepadCfb64Padding()
+        public void Cfb8ModeCanDepadCfb64Padding()
         {
             using (TripleDES tdes = TripleDESFactory.Create())
             {
@@ -89,7 +91,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         }
 
         [Fact]
-        public static void SetKey_SetsKey()
+        public void SetKey_SetsKey()
         {
             using (TripleDES des = TripleDESFactory.Create())
             {
@@ -104,7 +106,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public static void ReadKeyAfterDispose(bool setProperty)
+        public void ReadKeyAfterDispose(bool setProperty)
         {
             using (TripleDES des = TripleDESFactory.Create())
             {
