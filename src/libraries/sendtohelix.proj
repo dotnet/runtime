@@ -87,9 +87,14 @@
     <!-- For BuildWasmApps we want to build the project 4 times, with: TestUsingWorkloads=true, and TestUsingWorkloads=false and WasmEnableWebcil=true and WasmEnableWebcil=false-->
     <ItemGroup Condition="'@(_Scenarios -> AnyHaveMetadataValue('Identity', 'buildwasmapps'))' == 'true'">
       <_TestUsingWorkloadsValues Include="false" />
-      <_TestUsingWorkloadsValues Include="true" Condition="'$(RuntimeFlavor)' == 'Mono'" />
+      <_TestUsingWorkloadsValues Include="true" />
       <_TestUsingWebcilValues Include="true;false" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'" />
       <_TestUsingFingerprintingValues Include="true;false" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'Mono'" />
+
+      <!-- CoreCLR only runs the two workload lanes (no-workload and workload); the webcil and
+           fingerprinting permutations stay Mono-only. Fingerprinting is pinned to its default so
+           the lane still selects the same Helix work items as the Mono workload lane. -->
+      <_TestUsingFingerprintingValues Include="true" Condition="'$(TargetOS)' == 'browser' and '$(RuntimeFlavor)' == 'CoreCLR'" />
 
       <!-- now make the cartesian product of true and false values for two categories -->
       <_TestUsingCrossProductValuesTemp Include="@(_TestUsingWorkloadsValues)">
