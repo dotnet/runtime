@@ -1137,6 +1137,25 @@ namespace System.Text.Json.Schema.Tests
                     }
                 """);
 
+            yield return new TestData<PocoWithGetOnlyProperties>(
+                Value: new(),
+                ExpectedJsonSchema: """
+                {
+                    "type": ["object", "null"],
+                    "properties": {
+                        "Values": {
+                            "type": "array",
+                            "items": { "type": ["string", "null"] }
+                        },
+                        "SingleValueGetOnly": { "type": "string" },
+                        "NullableGetOnly": { "type": ["string", "null"] },
+                        "SingleValueGetSet": { "type": "string" },
+                        "NonNullableReadonlyField": { "type": "string" },
+                        "NullableReadonlyField": { "type": ["string", "null"] }
+                    }
+                }
+                """);
+
             yield return new TestData<ClassWithComponentModelAttributes>(
                 Value: new("string", -1),
                 ExpectedJsonSchema: """
