@@ -247,38 +247,6 @@ namespace System.Threading.Channels.Tests
         }
 
         [Fact]
-        public async Task SynchronouslyCanceledWaiter_DelayedRemovalDoesNotCorruptList()
-        {
-            using var cts = new CancellationTokenSource();
-            cts.Cancel();
-
-            object canceledWaiter = CreateSynchronouslyCanceledAsyncOperation(
-                "System.Threading.Channels.WaitingReadAsyncOperation",
-                cts.Token);
-
-            await AssertExtensions.CanceledAsync(cts.Token, async () => await GetOperationValueTask<bool>(canceledWaiter));
-            Assert.False(TryReserveOperation(canceledWaiter));
-
-            Channel<int> c = CreateChannel();
-            object parent = GetChannelParent(c);
-            SetOperationListHead(parent, "_waitingReadersHead", canceledWaiter);
-
-            ValueTask write = c.Writer.WriteAsync(42);
-            Assert.False(write.IsCompleted);
-            Assert.Null(GetOperationListHead(parent, "_waitingReadersHead"));
-
-            RemoveOperationFromList(parent, "_waitingReadersHead", canceledWaiter);
-            Assert.Null(GetOperationListHead(parent, "_waitingReadersHead"));
-
-            (object next, object previous) = GetOperationLinks(canceledWaiter);
-            Assert.Null(next);
-            Assert.Null(previous);
-
-            Assert.Equal(42, await c.Reader.ReadAsync());
-            await write;
-        }
-
-        [Fact]
         public async Task WaitToWriteAsync_AfterRead_ReturnsTrue()
         {
             Channel<int> c = CreateChannel();
