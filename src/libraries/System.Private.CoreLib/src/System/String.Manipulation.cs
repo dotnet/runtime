@@ -2430,7 +2430,7 @@ namespace System
 
             for (int i = 0; i < remaining.Length; i++)
             {
-                char c = remaining[i];
+                char c = (char)remaining[i];
                 if (c == sep0 || c == sep1 || c == sep2)
                 {
                     sepListBuilder.Append(baseIndex + i);
