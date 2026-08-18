@@ -27,7 +27,7 @@ namespace System.Management.Tests
         }
 
         [ConditionalFact(typeof(WmiTestHelper), nameof(WmiTestHelper.IsWmiSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34689", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34360", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework uses its inbox System.Management implementation")]
         public void GeneratedCollectionAndEnumeratorImplementIDisposable()
         {
