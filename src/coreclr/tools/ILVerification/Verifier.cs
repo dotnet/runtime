@@ -279,7 +279,10 @@ namespace ILVerify
             }
             catch (TypeSystemException e)
             {
-                return createVerificationResult(e.Message, e.StringID);
+                return createVerificationResult(
+                    e.Message,
+                    e.StringID,
+                    exceptionArguments: e.Arguments);
             }
             catch (BadImageFormatException e)
             {
@@ -307,7 +310,8 @@ namespace ILVerify
             VerificationResult createVerificationResult(
                 string message,
                 ExceptionStringID? exceptionID = null,
-                VerifierError code = VerifierError.None)
+                VerifierError code = VerifierError.None,
+                IReadOnlyList<string> exceptionArguments = null)
             {
                 if (code == VerifierError.None && exceptionID == null)
                 {
@@ -319,7 +323,12 @@ namespace ILVerify
                     Code = code,
                     ExceptionID = exceptionID,
                     MetadataHandle = handle,
-                    ErrorArguments = Array.Empty<ErrorArgument>(),
+                    ErrorArguments = exceptionArguments == null ? Array.Empty<ErrorArgument>()
+                        : new[]
+                        {
+                            new ErrorArgument(nameof(TypeSystemException.Arguments),
+                                exceptionArguments.ToArray())
+                        },
                     Message = $"Unable to resolve metadata reference ({handle.Kind}): {message}"
                 };
             }
@@ -538,9 +547,7 @@ namespace ILVerify
             TypeSystemException exception,
             IReadOnlyCollection<VerificationResult> metadataErrors)
         {
-            if (exception is not TypeSystemException.TypeLoadException &&
-                exception is not TypeSystemException.MissingMemberException &&
-                exception is not TypeSystemException.FileNotFoundException)
+            if (!CanDeduplicateMetadataResolutionException(exception.StringID))
             {
                 return false;
             }
@@ -556,6 +563,23 @@ namespace ILVerify
 
             return false;
         }
+
+        internal static bool CanDeduplicateMetadataResolutionException(ExceptionStringID exceptionID)
+            => exceptionID is ExceptionStringID.ClassLoadGeneral
+                or ExceptionStringID.ClassLoadExplicitGeneric
+                or ExceptionStringID.ClassLoadBadFormat
+                or ExceptionStringID.ClassLoadExplicitLayout
+                or ExceptionStringID.ClassLoadValueClassTooLarge
+                or ExceptionStringID.ClassLoadRankTooLarge
+                or ExceptionStringID.ClassLoadInlineArrayFieldCount
+                or ExceptionStringID.ClassLoadInlineArrayLength
+                or ExceptionStringID.ClassLoadInlineArrayExplicit
+                or ExceptionStringID.ClassLoadInlineArrayExplicitSize
+
+                or ExceptionStringID.MissingMethod
+                or ExceptionStringID.MissingField
+
+                or ExceptionStringID.FileLoadErrorGeneric;
 
         private void ThrowMissingSystemModule()
         {

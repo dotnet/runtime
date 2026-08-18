@@ -5,6 +5,7 @@ using System;
 using System.Linq;
 using System.Reflection.Metadata;
 using ILVerify;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 using Xunit;
 
@@ -52,6 +53,13 @@ namespace ILVerification.Tests
             AssertResult(results, HandleKind.MethodSpecification, "ILVerifyMethodSpecTypeThatDoesNotExist");
             AssertResult(results, HandleKind.StandaloneSignature, "ILVerifyStandaloneMethodTypeThatDoesNotExist");
             AssertResult(results, HandleKind.StandaloneSignature, "ILVerifyStandaloneLocalTypeThatDoesNotExist");
+
+            VerificationResult missingAssembly = Assert.Single(results, result =>
+                result.MetadataHandle.Kind == HandleKind.AssemblyReference &&
+                result.ExceptionID == ExceptionStringID.FileLoadErrorGeneric);
+            Assert.Equal(
+                new[] { "ILVerifyAssemblyThatDoesNotExist" },
+                missingAssembly.GetArgumentValue<string[]>(nameof(TypeSystemException.Arguments)));
 
             Assert.All(results, result =>
             {

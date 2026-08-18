@@ -5,12 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.RegularExpressions;
+using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
 
 using static System.Console;
@@ -281,8 +283,15 @@ namespace ILVerify
             string path,
             ref int numErrors)
         {
+            var reportedMetadataResolutionErrors = new Dictionary<ExceptionStringID, List<string[]>>();
+
             foreach (VerificationResult result in metadataErrors)
             {
+                if (IsDuplicateMetadataResolutionError(result, reportedMetadataResolutionErrors))
+                {
+                    continue;
+                }
+
                 if (ShouldIgnoreVerificationResult(result))
                 {
                     if (_verbose)
@@ -297,6 +306,35 @@ namespace ILVerify
                     numErrors++;
                 }
             }
+        }
+
+        private static bool IsDuplicateMetadataResolutionError(
+            VerificationResult result,
+            Dictionary<ExceptionStringID, List<string[]>> reportedErrors)
+        {
+            if (result.ExceptionID is not ExceptionStringID exceptionID ||
+                !Verifier.CanDeduplicateMetadataResolutionException(exceptionID) ||
+                !result.TryGetArgumentValue(nameof(TypeSystemException.Arguments), out string[] arguments))
+            {
+                return false;
+            }
+
+            if (!reportedErrors.TryGetValue(exceptionID, out List<string[]> reportedArguments))
+            {
+                reportedArguments = new List<string[]>();
+                reportedErrors.Add(exceptionID, reportedArguments);
+            }
+
+            foreach (string[] previousArguments in reportedArguments)
+            {
+                if (arguments.SequenceEqual(previousArguments))
+                {
+                    return true;
+                }
+            }
+
+            reportedArguments.Add(arguments);
+            return false;
         }
 
         private void PrintVerifyMetadataReferencesResult(VerificationResult result, string path)
