@@ -87,6 +87,9 @@
       <_WasmFrameworkR2RInput>
         <OutputWasm>$(_WasmFrameworkR2RDir)%(FileName).wasm</OutputWasm>
       </_WasmFrameworkR2RInput>
+      <!-- Full crossgen -r closure so a change to ANY referenced framework assembly re-runs crossgen,
+           even when only a WasmFrameworkR2RSubset is being compiled. -->
+      <_WasmFrameworkR2RReference Include="$(LibrariesSharedFrameworkBinArtifactsPath)*.dll" />
     </ItemGroup>
     <PropertyGroup>
       <_WasmCoreLibIL Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.dll')">$(CoreCLRArtifactsPath)System.Private.CoreLib.dll</_WasmCoreLibIL>
@@ -98,7 +101,7 @@
   <Target Name="_CrossgenBrowserFrameworkR2R"
           Condition="'$(WasmEnableFrameworkR2R)' == 'true'"
           DependsOnTargets="_ComputeBrowserFrameworkR2RInputs"
-          Inputs="@(_WasmFrameworkR2RInput);$(_WasmCoreLibIL)"
+          Inputs="@(_WasmFrameworkR2RInput);@(_WasmFrameworkR2RReference);$(_WasmCoreLibIL);$(_WasmCrossgen2Exe)"
           Outputs="@(_WasmFrameworkR2RInput->'%(OutputWasm)')">
     <MakeDir Directories="$(_WasmFrameworkR2RDir)" />
     <Error Condition="!Exists('$(_WasmCrossgen2Exe)')"
@@ -119,7 +122,8 @@
           DependsOnTargets="_CrossgenBrowserFrameworkR2R"
           BeforeTargets="AddFrameworkFilesToPackage">
     <ItemGroup>
-      <_WasmFrameworkR2ROutput Include="$(_WasmFrameworkR2RDir)*.wasm" />
+      <_WasmFrameworkR2ROutput Include="@(_WasmFrameworkR2RInput->'%(OutputWasm)')"
+                               Condition="Exists('%(_WasmFrameworkR2RInput.OutputWasm)')" />
       <_WasmFrameworkR2ROutput Include="$(CoreCLRArtifactsPath)System.Private.CoreLib.wasm"
                                Condition="Exists('$(CoreCLRArtifactsPath)System.Private.CoreLib.wasm')" />
       <LibrariesRuntimeFiles Include="@(_WasmFrameworkR2ROutput)" IsNative="true" NativeSubDirectory="r2r" />
