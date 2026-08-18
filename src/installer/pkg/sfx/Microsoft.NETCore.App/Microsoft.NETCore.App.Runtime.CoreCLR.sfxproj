@@ -68,7 +68,7 @@
   <!--
     WASM framework R2R: crossgen each shared-framework assembly to a webcil-in-wasm R2R image under the
     pack native/r2r/, keeping the IL in lib/ (the CoreLib model generalized; the SDK's in-place R2R can't
-    be used as it drops the IL). See PR.md / dotnet/runtime#121257. WasmFrameworkR2RSubset limits the set.
+    be used as it drops the IL). See dotnet/runtime#121257. WasmFrameworkR2RSubset limits the set.
   -->
   <PropertyGroup Condition="'$(TargetsBrowser)' == 'true' and '$(RuntimeFlavor)' == 'CoreCLR'">
     <WasmEnableFrameworkR2R Condition="'$(WasmEnableFrameworkR2R)' == ''">true</WasmEnableFrameworkR2R>
