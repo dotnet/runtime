@@ -3033,7 +3033,7 @@ GenTree* Compiler::impXplatIntrinsic(NamedIntrinsic        intrinsic,
     auto vectorFirstArgMatchesSimdSize = [this, sig, simdSize]() {
         // Vector2/3/4 and the fixed-size Vector64/128 helpers share some method names. Make sure this importer
         // only handles the generic Vector64<T>/Vector128<T> methods whose first argument has the expected SIMD size.
-        if (sig->sigInst.methInstCount != 1)
+        if (((simdSize != 8) && (simdSize != 16)) || (sig->sigInst.methInstCount != 1))
         {
             return false;
         }
