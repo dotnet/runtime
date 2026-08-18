@@ -361,11 +361,23 @@ namespace System
             Debug.Assert((pEnd != null) || (p == pEnd));
             Debug.Assert(p <= pEnd);
 
-            // An empty pattern never matches, and one longer than the remaining input cannot match, so
-            // the loop only has to bound itself by the pattern.
-            if (value.IsEmpty || (value.Length > (pEnd - p)))
+            if (value.IsEmpty)
             {
                 return null;
+            }
+
+            if (value.Length > (pEnd - p))
+            {
+                if (sizeof(TChar) != sizeof(byte))
+                {
+                    return null;
+                }
+
+                ReadOnlySpan<byte> input = new((byte*)p, (int)(pEnd - p));
+                ReadOnlySpan<byte> utf8Value = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
+                int matchedLength = MatchUtf8SpaceReplacingChars(input, utf8Value);
+
+                return matchedLength >= 0 ? p + matchedLength : null;
             }
 
             fixed (TChar* stringPointer = &MemoryMarshal.GetReference(value))
@@ -378,14 +390,22 @@ namespace System
                     uint cp = TChar.CastToUInt32(*p);
                     uint val = TChar.CastToUInt32(*str);
 
-                    // We only hurt the failure case
-                    // This fix is for cultures that use NBSP (U+00A0) or narrow NBSP (U+202F) as group/decimal separators
-                    // (e.g., French, Kazakh, Ukrainian). Since a user cannot easily type these characters,
-                    // we accept regular space (U+0020) as equivalent.
-                    // For UTF-16, we also handle the reverse case where the input has NBSP and the format string has space.
-                    if (cp != val && (sizeof(TChar) == sizeof(byte) || NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val)))
+                    if (cp != val)
                     {
-                        return null;
+                        if (sizeof(TChar) == sizeof(byte))
+                        {
+                            ReadOnlySpan<byte> input = new((byte*)p, (int)(pEnd - p));
+                            ReadOnlySpan<TChar> remainingValue = new(str, (int)(strEnd - str));
+                            ReadOnlySpan<byte> utf8Value = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(remainingValue);
+                            int matchedLength = MatchUtf8SpaceReplacingChars(input, utf8Value);
+
+                            return matchedLength >= 0 ? p + matchedLength : null;
+                        }
+
+                        if (NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val))
+                        {
+                            return null;
+                        }
                     }
 
                     p++;
@@ -395,6 +415,101 @@ namespace System
             }
 
             return p;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static unsafe int MatchCharsSlow<TChar>(ReadOnlySpan<TChar> input, ReadOnlySpan<TChar> value)
+            where TChar : unmanaged, IUtfChar<TChar>
+        {
+            if (input.IsEmpty || value.IsEmpty)
+            {
+                return 0;
+            }
+
+            if (sizeof(TChar) == sizeof(char))
+            {
+                if (NormalizeSpaceReplacingChar(TChar.CastToUInt32(input[0])) != NormalizeSpaceReplacingChar(TChar.CastToUInt32(value[0])))
+                {
+                    return 0;
+                }
+            }
+            else
+            {
+                ReadOnlySpan<byte> inputBytes = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(input);
+                ReadOnlySpan<byte> valueBytes = Unsafe.BitCast<ReadOnlySpan<TChar>, ReadOnlySpan<byte>>(value);
+
+                if (inputBytes[0] != valueBytes[0] &&
+                    GetUtf8SpaceCharLength(inputBytes) == 0 &&
+                    GetUtf8SpaceCharLength(valueBytes) == 0)
+                {
+                    return 0;
+                }
+            }
+
+            return MatchCharsCore(input, value);
+
+            static unsafe int MatchCharsCore(ReadOnlySpan<TChar> input, ReadOnlySpan<TChar> value)
+            {
+                fixed (TChar* pInput = &MemoryMarshal.GetReference(input))
+                {
+                    TChar* matchEnd = MatchChars(pInput, pInput + input.Length, value);
+                    return matchEnd is null ? 0 : (int)(matchEnd - pInput);
+                }
+            }
+        }
+
+        private static int MatchUtf8SpaceReplacingChars(ReadOnlySpan<byte> input, ReadOnlySpan<byte> value)
+        {
+            int inputIndex = 0;
+            int valueIndex = 0;
+
+            while (valueIndex < value.Length)
+            {
+                if (inputIndex >= input.Length)
+                {
+                    return -1;
+                }
+
+                if (input[inputIndex] == value[valueIndex])
+                {
+                    inputIndex++;
+                    valueIndex++;
+                    continue;
+                }
+
+                int inputLength = GetUtf8SpaceCharLength(input.Slice(inputIndex));
+                int valueLength = GetUtf8SpaceCharLength(value.Slice(valueIndex));
+
+                if (inputLength == 0 || valueLength == 0)
+                {
+                    return -1;
+                }
+
+                inputIndex += inputLength;
+                valueIndex += valueLength;
+            }
+
+            return inputIndex;
+        }
+
+        private static int GetUtf8SpaceCharLength(ReadOnlySpan<byte> value)
+        {
+            if (value[0] == ' ')
+            {
+                return 1;
+            }
+
+            if (value.StartsWith("\u00A0"u8))
+            {
+                return 2;
+            }
+
+            if (value.StartsWith("\u202F"u8))
+            {
+                return 3;
+            }
+
+            return 0;
         }
     }
 }

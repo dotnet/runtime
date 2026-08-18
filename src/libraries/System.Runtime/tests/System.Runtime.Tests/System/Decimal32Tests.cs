@@ -68,6 +68,14 @@ namespace System.Tests
             yield return new object[] { "-1" + new string('0', 97), NumberStyles.Any, invariantFormat, Decimal32.NegativeInfinity };
         }
 
+        [Fact]
+        public static void ParseSpecialValueWithHyphen()
+        {
+            CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
+
+            Assert.True(Decimal32.IsNaN(Decimal32.Parse("-NaN", NumberStyles.Float, ci)));
+            Assert.True(Decimal32.IsNaN(Decimal32.Parse("-NaN"u8, NumberStyles.Float, ci)));
+        }
 
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
