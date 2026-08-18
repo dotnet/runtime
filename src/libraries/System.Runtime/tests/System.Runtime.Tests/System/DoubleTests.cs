@@ -1371,10 +1371,16 @@ namespace System.Tests
         [Fact]
         public static void TestSpecialValueParsingWithHyphen()
         {
-            CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
+            NumberFormatInfo format = new() { NegativeSign = "\u2212" };
 
-            Assert.True(double.IsNaN(double.Parse("-NaN", NumberStyles.Float, ci)));
-            Assert.True(double.IsNaN(double.Parse("-NaN"u8, NumberStyles.Float, ci)));
+            Assert.True(double.IsNaN(double.Parse("-NaN", NumberStyles.Float, format)));
+            Assert.True(double.IsNaN(double.Parse("-NaN"u8, NumberStyles.Float, format)));
+
+            format = CultureInfo.GetCultureInfo("sv-SE").NumberFormat;
+            string value = "-" + format.NaNSymbol;
+
+            Assert.True(double.IsNaN(double.Parse(value, NumberStyles.Float, format)));
+            Assert.True(double.IsNaN(double.Parse(Encoding.UTF8.GetBytes(value), NumberStyles.Float, format)));
         }
 
         [Theory]

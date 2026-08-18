@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -71,10 +72,16 @@ namespace System.Tests
         [Fact]
         public static void ParseSpecialValueWithHyphen()
         {
-            CultureInfo ci = CultureInfo.GetCultureInfo("sv-SE");
+            NumberFormatInfo format = new() { NegativeSign = "\u2212" };
 
-            Assert.True(Decimal32.IsNaN(Decimal32.Parse("-NaN", NumberStyles.Float, ci)));
-            Assert.True(Decimal32.IsNaN(Decimal32.Parse("-NaN"u8, NumberStyles.Float, ci)));
+            Assert.True(Decimal32.IsNaN(Decimal32.Parse("-NaN", NumberStyles.Float, format)));
+            Assert.True(Decimal32.IsNaN(Decimal32.Parse("-NaN"u8, NumberStyles.Float, format)));
+
+            format = CultureInfo.GetCultureInfo("sv-SE").NumberFormat;
+            string value = "-" + format.NaNSymbol;
+
+            Assert.True(Decimal32.IsNaN(Decimal32.Parse(value, NumberStyles.Float, format)));
+            Assert.True(Decimal32.IsNaN(Decimal32.Parse(Encoding.UTF8.GetBytes(value), NumberStyles.Float, format)));
         }
 
         [Theory]
