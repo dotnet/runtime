@@ -157,13 +157,6 @@ public class MyClass : IMyInterface
    }
 
 #if V2
-    public string MovedToBaseClass()
-    {
-        return "MovedToBaseClass";
-    }
-#endif
-
-#if V2
     public virtual string ChangedToVirtual()
     {
         return null;
@@ -195,7 +188,26 @@ public class MyClass : IMyInterface
     }
 }
 
-public class MyChildClass : MyClass
+#if V2
+public class MyIntermediateClass : MyClass
+{
+    public string MovedToBaseClass()
+    {
+        return "MovedToBaseClass";
+    }
+    public string MovedToBaseClassGeneric<T>()
+    {
+        return "MovedToBaseClassGeneric";
+    }
+}
+#endif
+
+public class MyChildClass
+#if V2
+ : MyIntermediateClass
+#else
+ : MyClass
+#endif
 {
     public MyChildClass()
     {
@@ -205,6 +217,10 @@ public class MyChildClass : MyClass
     public string MovedToBaseClass()
     {
         return "MovedToBaseClass";
+    }
+    public string MovedToBaseClassGeneric<T>()
+    {
+        return "MovedToBaseClassGeneric";
     }
 #endif
 
@@ -272,14 +288,6 @@ public class MyGeneric<T,U>
     }
 
 #if V2
-    public string MovedToBaseClass<W>()
-    {
-        typeof(Dictionary<W,W>).ToString();
-        return typeof(List<W>).ToString();
-    }
-#endif
-
-#if V2
     public virtual string ChangedToVirtual<W>()
     {
         return null;
@@ -310,7 +318,24 @@ public class MyGeneric<T,U>
     }
 }
 
-public class MyChildGeneric<T> : MyGeneric<T,T>
+#if V2
+public class MyIntermediateGeneric<T, U> : MyGeneric<T,U>
+{
+    public string MovedToBaseClass<W>()
+    {
+        typeof(Dictionary<W,W>).ToString();
+        return typeof(List<W>).ToString();
+    }
+}
+#endif
+
+
+public class MyChildGeneric<T>
+#if V2
+ : MyIntermediateGeneric<T,T>
+#else
+ : MyGeneric<T,T>
+#endif
 {
     public MyChildGeneric()
     {
