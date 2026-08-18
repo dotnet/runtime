@@ -1146,9 +1146,9 @@ namespace System.Diagnostics.Tests
 
             Assert.InRange(_process.PrivateMemorySize64, 1, long.MaxValue);
 
-#pragma warning disable 0618
+#pragma warning disable CS0618
             Assert.Equal(unchecked((int)_process.PrivateMemorySize64), _process.PrivateMemorySize);
-#pragma warning restore 0618
+#pragma warning restore CS0618
         }
 
         [Fact]
