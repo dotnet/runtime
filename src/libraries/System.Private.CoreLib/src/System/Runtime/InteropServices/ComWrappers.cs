@@ -790,14 +790,31 @@ namespace System.Runtime.InteropServices
 
             ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, state) =>
             {
-                ManagedObjectWrapper* value = state.This.CreateManagedObjectWrapper(c, state.flags);
+                ManagedObjectWrapper* value = state.ComWrappers.CreateManagedObjectWrapper(c, state.Flags);
                 return new ManagedObjectWrapperHolder(value, c);
-            }, new { This = this, flags });
+            }, new CreateManagedObjectWrapperState(this, flags));
 
             managedObjectWrapper.AddRef();
             RegisterManagedObjectWrapperForDiagnostics(instance, managedObjectWrapper);
 
             return managedObjectWrapper.ComIp;
+        }
+
+        /// <summary>
+        /// The state needed to create a <see cref="ManagedObjectWrapperHolder"/> for a given object.
+        /// </summary>
+        /// <param name="comWrappers">The <see cref="ComWrappers"/> instance creating the wrapper.</param>
+        /// <param name="flags">The flags to create the wrapper with.</param>
+        /// <remarks>
+        /// This is a struct so that passing it costs nothing. The value is passed on every call, including the ones
+        /// that find a wrapper that already exists and never invoke the factory, so an object here would be garbage
+        /// produced by every single transition of a managed object into native code.
+        /// </remarks>
+        private readonly struct CreateManagedObjectWrapperState(ComWrappers comWrappers, CreateComInterfaceFlags flags)
+        {
+            public ComWrappers ComWrappers { get; } = comWrappers;
+
+            public CreateComInterfaceFlags Flags { get; } = flags;
         }
 
         private static void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)
