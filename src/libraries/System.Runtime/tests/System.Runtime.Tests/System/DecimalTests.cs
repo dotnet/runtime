@@ -849,6 +849,17 @@ namespace System.Tests
             var customFormat4 = new NumberFormatInfo();
             customFormat4.NumberDecimalSeparator = ".";
 
+            // Signs, separators, and symbols that encode to more than one UTF-8 byte, modeled on
+            // he/ar (NegativeSign is "\u200E-") and fa-IR (CurrencySymbol is "\u0631\u06CC\u0627\u0644").
+            var multiByteFormat = new NumberFormatInfo();
+            multiByteFormat.NegativeSign = "\u200E-";
+            multiByteFormat.PositiveSign = "\u200E+";
+            multiByteFormat.NumberGroupSeparator = "\u2009";
+            multiByteFormat.NumberDecimalSeparator = "\u066B";
+            multiByteFormat.CurrencySymbol = "\u0631\u06CC\u0627\u0644";
+            multiByteFormat.CurrencyGroupSeparator = "\u2009";
+            multiByteFormat.CurrencyDecimalSeparator = "\u066B";
+
             yield return new object[] { "-123", defaultStyle, null, -123m };
             yield return new object[] { "0", defaultStyle, null, 0m };
             yield return new object[] { "123", defaultStyle, null, 123m };
@@ -878,6 +889,20 @@ namespace System.Tests
 
             // Number buffer limit ran out (string too long)
             yield return new object[] { "1234567890123456789012345.678456", defaultStyle, customFormat4, 1234567890123456789012345.6785m };
+
+            yield return new object[] { "\u200E-1\u2009234\u066B5", defaultStyle, multiByteFormat, -1234.5m };
+            yield return new object[] { "\u200E+1\u2009234\u066B5", defaultStyle, multiByteFormat, 1234.5m };
+            yield return new object[] { "\u0631\u06CC\u0627\u06441\u2009234\u066B5", NumberStyles.Currency, multiByteFormat, 1234.5m };
+            yield return new object[] { "\u200E-\u0631\u06CC\u0627\u06441\u2009234", NumberStyles.Currency, multiByteFormat, -1234m };
+
+            // Signs and separators containing embedded NUL bytes: the new length-bounded MatchChars must
+            // match them literally, neither stopping at the NUL nor reading past the pattern end.
+            var nullEmbeddedFormat = new NumberFormatInfo();
+            nullEmbeddedFormat.NegativeSign = "a\0b";
+            nullEmbeddedFormat.NumberDecimalSeparator = ".\0.";
+
+            yield return new object[] { "a\0b123", defaultStyle, nullEmbeddedFormat, -123m };
+            yield return new object[] { "1.\0.5", defaultStyle, nullEmbeddedFormat, 1.5m };
         }
 
         [Theory]
@@ -942,6 +967,13 @@ namespace System.Tests
 
             yield return new object[] { "ab", NumberStyles.None, null, typeof(FormatException) }; // Hex value
             yield return new object[] { "  123  ", NumberStyles.None, null, typeof(FormatException) }; // Trailing and leading whitespace
+
+            // A sign/separator with an embedded NUL must not match input that lacks the NUL.
+            var nullEmbeddedFormat = new NumberFormatInfo();
+            nullEmbeddedFormat.NegativeSign = "a\0b";
+            nullEmbeddedFormat.NumberDecimalSeparator = ".";
+
+            yield return new object[] { "-123", defaultStyle, nullEmbeddedFormat, typeof(FormatException) }; // '-' is not "a\0b"
         }
 
         [Theory]

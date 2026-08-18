@@ -26,11 +26,11 @@ enum StackTraceElementFlags
     STEF_LAST_FRAME_FROM_FOREIGN_STACK_TRACE = 0x0001, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the "ip" field has already been adjusted (decremented)
-    STEF_IP_ADJUSTED = 0x0002,
+    STEF_IP_ADJUSTED = 0x0002, // [cDAC] [Exception]: Contract depends on this value.
 
     // Set if the element references a method that needs a keep alive object
     STEF_KEEPALIVE = 0x0004,
-    STEF_CONTINUATION = 0x0008,
+    STEF_CONTINUATION = 0x0008, // [cDAC] [Exception]: Contract depends on this value.
 };
 
 // This struct is used by SOS in the diagnostic repo.
@@ -301,7 +301,7 @@ class EEMessageException : public EEException
 
     static BOOL IsEEMessageException(Exception *pException)
     {
-        return (*(PVOID*)pException == GetEEMessageExceptionVPtr());
+        return *(PVOID*)pException == GetEEMessageExceptionVPtr();
     }
 
  protected:
@@ -318,17 +318,16 @@ class EEMessageException : public EEException
 
     static PVOID GetEEMessageExceptionVPtr()
     {
-        CONTRACT (PVOID)
+        CONTRACTL
         {
             WRAPPER(THROWS);
             WRAPPER(GC_TRIGGERS);
             MODE_ANY;
-            POSTCONDITION(CheckPointer(RETVAL));
         }
-        CONTRACT_END;
+        CONTRACTL_END;
 
         EEMessageException boilerplate(E_FAIL);
-        RETURN (PVOID&)boilerplate;
+        return (PVOID&)boilerplate;
     }
 
     BOOL GetResourceMessage(UINT iResourceID, SString &result);
@@ -967,7 +966,7 @@ inline CLRException::CLRException()
 
 inline void CLRException::SetThrowableHandle(OBJECTHANDLE throwable)
 {
-    STRESS_LOG1(LF_EH, LL_INFO100, "in CLRException::SetThrowableHandle: obj = %x\n", throwable);
+    STRESS_LOG1(LF_EH, LL_INFO100, "in CLRException::SetThrowableHandle: obj = %p\n", (void*)throwable);
     m_throwableHandle = throwable;
 }
 
@@ -1187,4 +1186,3 @@ class CLRLastThrownObjectException : public CLRException
 bool IsHRESULTForExceptionKind(HRESULT hr, RuntimeExceptionKind kind);
 
 #endif // _CLREX_H_
-

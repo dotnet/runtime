@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -72,6 +73,16 @@ internal static class Emitter
             sb.AppendLine();
         }
 
+        if (model.Names.Count > 0)
+        {
+            sb.AppendLine("    [UsesDataDescriptorTypeSize]");
+            sb.AppendLine($"    public static uint GetSize({Target} target)");
+            sb.AppendLine("        => checked((uint)LayoutSet.Resolve(target, _typeNames).InstanceSize);");
+            sb.AppendLine();
+        }
+
+        EmitFieldOffsetMethods(sb, model);
+
         sb.AppendLine($"    public {TargetPointer} Address {{ get; }}");
         sb.AppendLine();
 
@@ -125,6 +136,32 @@ internal static class Emitter
         return sb.ToString();
     }
 
+    private static void EmitFieldOffsetMethods(StringBuilder sb, CdacTypeModel model)
+    {
+        foreach (MemberModel member in model.Members)
+        {
+            if (member.Kind is not (MemberKind.Field or MemberKind.FieldAddress))
+                continue;
+
+            if (member.RawOffset is null)
+                EmitDataDescriptorDependencyAttribute(sb, member);
+            sb.AppendLine($"    public static int Get{member.Name}Offset({Target} target)");
+            if (member.RawOffset is int offset)
+            {
+                sb.AppendLine($"        => {offset};");
+            }
+            else
+            {
+                sb.AppendLine("    {");
+                sb.AppendLine("        LayoutSet layouts = LayoutSet.Resolve(target, _typeNames);");
+                sb.AppendLine($"        layouts.Select(default, out var type, out _, out var name, {NameArgs(member)});");
+                sb.AppendLine("        return type.Fields[name].Offset;");
+                sb.AppendLine("    }");
+            }
+            sb.AppendLine();
+        }
+    }
+
     /// <summary>
     /// Emits a <c>Write{Name}(T value)</c> method for each settable
     /// <c>[Field]</c> property. Uses the captured <c>_target</c> field.
@@ -134,7 +171,7 @@ internal static class Emitter
     {
         foreach (MemberModel member in model.Members)
         {
-            if (member.Kind != MemberKind.Field || member.Setter != SetterKind.Writable)
+            if (member.Kind != MemberKind.Field || !member.Writable)
                 continue;
 
             if (member.ReadKind != FieldReadKind.Primitive
@@ -154,6 +191,7 @@ internal static class Emitter
     {
         string propType = Shorten(member.PropertyOrReturnTypeFqn)!;
 
+        EmitDataDescriptorDependencyAttribute(sb, member);
         sb.AppendLine($"    public void Write{member.Name}({propType} value)");
         sb.AppendLine("    {");
         sb.AppendLine($"        _layouts.Select(Address, out var t, out var b, out var n, {NameArgs(member)});");
@@ -177,14 +215,6 @@ internal static class Emitter
 
     private static void EmitConstructor(StringBuilder sb, CdacTypeModel model, bool hasInstanceMembers, bool needsDescriptor)
     {
-        // Hook: a `partial void OnInit(Target, TargetPointer)` the user may
-        // implement to perform reads that don't fit the declarative attribute
-        // surface (e.g. variable-count loops, raw-offset reads, or values
-        // computed from other fields). If no implementation is provided the
-        // C# compiler elides both the call site and the signature.
-        sb.AppendLine($"    partial void OnInit({Target} target, {TargetPointer} address);");
-        sb.AppendLine();
-
         sb.AppendLine($"    public {model.ClassName}({Target} target, {TargetPointer} address)");
         sb.AppendLine("    {");
         sb.AppendLine("        Address = address;");
@@ -199,8 +229,6 @@ internal static class Emitter
             sb.AppendLine("        _layouts = LayoutSet.Resolve(target, _typeNames);");
         }
 
-        sb.AppendLine();
-        sb.AppendLine("        OnInit(target, address);");
         sb.AppendLine("    }");
         sb.AppendLine();
     }
@@ -230,7 +258,7 @@ internal static class Emitter
                     EmitLayoutRead(read, member, valueField,
                         ReadExpression(member, "b", "t", "n", Shorten(member.DataTypeArgumentFqn)),
                         $"default({Shorten(member.PropertyOrReturnTypeFqn)})");
-                EmitLazyProperty(sb, member, read, emitSetter: member.Setter != SetterKind.None);
+                EmitLazyProperty(sb, member, read, emitSetter: member.Writable);
                 break;
             case MemberKind.FieldAddress:
                 EmitLayoutRead(read, member, valueField, "b + (ulong)t.Fields[n].Offset", "null");
@@ -238,6 +266,18 @@ internal static class Emitter
                 break;
             case MemberKind.InstanceDataStart:
                 read.Add($"                {valueField} = Address + _layouts.InstanceSize;");
+                EmitLazyProperty(sb, member, read, emitSetter: false);
+                break;
+            case MemberKind.CustomInit:
+                string initializerName = member.CustomInitializerName!;
+                // The generator declares a partial init method the author
+                // implements; the getter calls it lazily on first access. The
+                // suppression is required because simple init methods read only
+                // from the target and never touch instance state, which would
+                // otherwise trip CA1822.
+                sb.AppendLine($"    [System.Diagnostics.CodeAnalysis.SuppressMessage(\"Performance\", \"CA1822:Mark members as static\", Justification = \"Generated lazy initializer; may read instance members.\")]");
+                sb.AppendLine($"    private partial {Shorten(member.PropertyOrReturnTypeFqn)} {initializerName}({Target} target, {TargetPointer} address);");
+                read.Add($"                {valueField} = {initializerName}(_target, Address);");
                 EmitLazyProperty(sb, member, read, emitSetter: false);
                 break;
         }
@@ -279,6 +319,7 @@ internal static class Emitter
 
         sb.AppendLine($"    private {propType} {valueField} = default!;");
         sb.AppendLine($"    private bool {readFlag};");
+        EmitDataDescriptorDependencyAttribute(sb, member);
         sb.AppendLine($"    public partial {propType} {member.Name}");
         sb.AppendLine("    {");
         sb.AppendLine("        get");
@@ -303,6 +344,25 @@ internal static class Emitter
         sb.AppendLine();
     }
 
+    private static void EmitDataDescriptorDependencyAttribute(StringBuilder sb, MemberModel member)
+    {
+        if (member.Kind is MemberKind.CustomInit)
+        {
+            // The attributes on the user-declared partial property are part of
+            // the combined property symbol; do not duplicate them here.
+        }
+        else if (member.Kind == MemberKind.InstanceDataStart)
+        {
+            sb.AppendLine("    [UsesDataDescriptorTypeSize]");
+        }
+        else if (member.RawOffset is null)
+        {
+            Debug.Assert(member.DescriptorNativeType is not null);
+            sb.AppendLine(
+                $"    [DataDescriptorDependency(\"{member.DescriptorOrFieldName}\", \"{member.DescriptorNativeType}\")]");
+        }
+    }
+
     /// <summary>
     /// Emits the <see cref="Data.IReadableData.EnsureAllFieldsRead"/> implementation,
     /// which touches every lazily-read member so a caller can eagerly force a full
@@ -310,19 +370,51 @@ internal static class Emitter
     /// </summary>
     private static void EmitEnsureAllFieldsRead(StringBuilder sb, CdacTypeModel model)
     {
+        // Descriptor attributes short-circuit body analysis in CdacUsageGraph.
+        // A custom initializer can also read globals, call helpers, and access
+        // other Data properties, so let the analyzer walk this method's body.
+        if (!model.Members.Any(member => member.Kind == MemberKind.CustomInit))
+            EmitEnsureAllFieldsReadDependencyAttributes(sb, model);
         sb.AppendLine("    void global::Microsoft.Diagnostics.DataContractReader.Data.IReadableData.EnsureAllFieldsRead()");
         sb.AppendLine("    {");
         foreach (MemberModel member in model.Members)
         {
             if (member.Kind == MemberKind.Field
                 || member.Kind == MemberKind.FieldAddress
-                || member.Kind == MemberKind.InstanceDataStart)
+                || member.Kind == MemberKind.InstanceDataStart
+                || member.Kind == MemberKind.CustomInit)
             {
                 sb.AppendLine($"        _ = {member.Name};");
             }
         }
         sb.AppendLine("    }");
         sb.AppendLine();
+    }
+
+    private static void EmitEnsureAllFieldsReadDependencyAttributes(StringBuilder sb, CdacTypeModel model)
+    {
+        (string FieldName, string NativeType)[] fields = model.Members
+            .Where(member =>
+                member.Kind is MemberKind.Field or MemberKind.FieldAddress &&
+                member.RawOffset is null)
+            .Select(DescriptorDependency)
+            .Distinct()
+            .ToArray();
+        bool usesTypeSize = model.Members.Any(member => member.Kind == MemberKind.InstanceDataStart);
+
+        foreach ((string fieldName, string nativeType) in fields)
+        {
+            sb.AppendLine(
+                $"    [DataDescriptorDependency(\"{fieldName}\", \"{nativeType}\")]");
+        }
+        if (usesTypeSize)
+            sb.AppendLine("    [UsesDataDescriptorTypeSize]");
+    }
+
+    private static (string FieldName, string NativeType) DescriptorDependency(MemberModel member)
+    {
+        Debug.Assert(member.DescriptorNativeType is not null);
+        return (member.DescriptorOrFieldName, member.DescriptorNativeType!);
     }
 
     private static string ReadExpression(MemberModel member, string baseVar, string typeVar, string nameVar, string? typeArg)
@@ -383,7 +475,8 @@ internal static class Emitter
         {
             if (member.Kind == MemberKind.Field
                 || member.Kind == MemberKind.FieldAddress
-                || member.Kind == MemberKind.InstanceDataStart)
+                || member.Kind == MemberKind.InstanceDataStart
+                || member.Kind == MemberKind.CustomInit)
                 return true;
         }
 

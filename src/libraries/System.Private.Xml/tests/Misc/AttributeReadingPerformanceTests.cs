@@ -23,7 +23,7 @@ namespace System.Xml.Tests
 
         protected abstract void ReadFully(string xml, CancellationToken ct);
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
         public void AttributeDuplicatesCheck_LongUris_SameLocalName_AboveThreshold()
         {
             // Exercises the HashSet duplicate-check path (number of attributes >= threshold)
@@ -31,7 +31,7 @@ namespace System.Xml.Tests
                 n => GenerateDoc(n, attrCount: MaxAttrDuplWalkCount, longUris: true, distinctLocalNames: false));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
         public void AttributeDuplicatesCheck_ShortUris_SameLocalName_BelowThreshold()
         {
             // Pairwise walk path (number of attributes < threshold)
@@ -39,7 +39,7 @@ namespace System.Xml.Tests
                 n => GenerateDoc(n, attrCount: MaxAttrDuplWalkCount - 1, longUris: false, distinctLocalNames: false));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
         public void AttributeDuplicatesCheck_LongUris_DistinctLocalNames_AboveThreshold()
         {
             // Distinct localNames starting with same letter (to bypass some optimizations)
@@ -47,7 +47,7 @@ namespace System.Xml.Tests
                 n => GenerateDoc(n, attrCount: MaxAttrDuplWalkCount, longUris: true, distinctLocalNames: true));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
         public void AttributeDuplicatesCheck_LongUris_SameLocalName_WellAboveThreshold()
         {
             // Larger amount of attributes — well above the threshold
@@ -55,7 +55,7 @@ namespace System.Xml.Tests
                 n => GenerateDoc(n, attrCount: MaxAttrDuplWalkCount * 4, longUris: true, distinctLocalNames: false));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
         public void AttributeDuplicatesCheck_ShortUris_DistinctLocalNames_BelowThreshold()
         {
             // Below threshold with distinct localNames
@@ -65,7 +65,7 @@ namespace System.Xml.Tests
 
         // We're doing full string.Equals on DEBUG on top of Ref.Equal which makes it quadratic.
 #if !DEBUG
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotCoreClrInterpreter))]
         public void AttributeDuplicatesCheck_LongUris_SameLocalName_BelowThreshold()
         {
             // Pairwise walk path with long URIs — only valid in Release

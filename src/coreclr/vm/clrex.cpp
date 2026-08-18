@@ -47,7 +47,7 @@ CLRException::~CLRException()
     OBJECTHANDLE throwableHandle = GetThrowableHandle();
     if (throwableHandle != NULL)
     {
-        STRESS_LOG1(LF_EH, LL_INFO100, "CLRException::~CLRException destroying throwable: obj = %x\n", GetThrowableHandle());
+        STRESS_LOG1(LF_EH, LL_INFO100, "CLRException::~CLRException destroying throwable: obj = %p\n", (void*)GetThrowableHandle());
         // clear the handle first, so if we SO on destroying it, we don't have a dangling reference
         SetThrowableHandle(NULL);
         DestroyHandle(throwableHandle);
@@ -686,7 +686,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                 else
                 {
 #ifdef FEATURE_COMINTEROP
-                    ComHolderAnyMode<IErrorInfo> pErrInfo(pException->GetErrorInfo());
+                    ReleaseHolderAnyMode<IErrorInfo> pErrInfo(pException->GetErrorInfo());
 
                     if (pErrInfo != NULL)
                     {

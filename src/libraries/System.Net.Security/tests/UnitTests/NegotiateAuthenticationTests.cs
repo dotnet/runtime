@@ -24,6 +24,7 @@ namespace System.Net.Security.Tests
         private static bool UseManagedNtlm => PlatformDetection.IsUbuntu24 || PlatformDetection.IsUbuntu26 || PlatformDetection.IsOpenSUSE16 || (PlatformDetection.IsRedHatFamily && !PlatformDetection.IsOpenSsl3);
         private static bool IsNtlmAvailable => UseManagedNtlm || Capability.IsNtlmInstalled() || OperatingSystem.IsAndroid() || OperatingSystem.IsTvOS();
         private static bool IsNtlmUnavailable => !IsNtlmAvailable;
+        private static bool OSDoesNotSupportExtendedProtection => !ExtendedProtectionPolicy.OSSupportsExtendedProtection;
 
         private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
         private static NetworkCredential s_testCredentialWrong = new NetworkCredential("rightusername", "wrongpassword");
@@ -218,6 +219,33 @@ namespace System.Net.Security.Tests
                 Assert.True(fakeNtlmServer.IsMICPresent);
                 Assert.Equal("HTTP/foo", fakeNtlmServer.ClientSpecifiedSpn);
             }
+        }
+
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
+        public void NtlmMutualAuthentication()
+        {
+            using FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);
+            using NegotiateAuthentication ntAuth = new NegotiateAuthentication(
+                new NegotiateAuthenticationClientOptions
+                {
+                    Package = "NTLM",
+                    Credential = s_testCredentialRight,
+                    TargetName = "HTTP/foo",
+                    RequiredProtectionLevel = ProtectionLevel.Sign,
+                    RequireMutualAuthentication = true
+                });
+
+            byte[]? negotiateBlob = ntAuth.GetOutgoingBlob((byte[]?)null, out NegotiateAuthenticationStatusCode statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.ContinueNeeded, statusCode);
+            Assert.NotNull(negotiateBlob);
+
+            byte[]? challengeBlob = fakeNtlmServer.GetOutgoingBlob(negotiateBlob);
+            Assert.NotNull(challengeBlob);
+
+            byte[]? authenticateBlob = ntAuth.GetOutgoingBlob(challengeBlob, out statusCode);
+            Assert.Equal(NegotiateAuthenticationStatusCode.SecurityQosFailed, statusCode);
+            Assert.NotNull(authenticateBlob);
+            Assert.False(ntAuth.IsMutuallyAuthenticated);
         }
 
         [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(IsNtlmAvailable))]
@@ -438,6 +466,12 @@ namespace System.Net.Security.Tests
             while (!ntAuth.IsAuthenticated);
         }
 
+        [ConditionalFact(typeof(NegotiateAuthenticationTests), nameof(OSDoesNotSupportExtendedProtection))]
+        public void ExtendedProtectionPolicy_NotSupported_Throws()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => new NegotiateAuthentication(new NegotiateAuthenticationServerOptions { Policy = new ExtendedProtectionPolicy(PolicyEnforcement.Always) }));
+        }
+
         public static IEnumerable<object[]> MalformedChallengeBlobs()
         {
             // Truncated below sizeof(ChallengeMessage). The fixed header is 56 bytes.
@@ -530,13 +564,6 @@ namespace System.Net.Security.Tests
             byte[]? response = ntAuth.GetOutgoingBlob(malformed, out statusCode);
             Assert.Equal(NegotiateAuthenticationStatusCode.InvalidToken, statusCode);
             Assert.Null(response);
-        }
-
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]
-        public void ExtendedProtectionPolicy_NotSupportedOnUnix()
-        {
-            Assert.Throws<PlatformNotSupportedException>(() => new NegotiateAuthentication(new NegotiateAuthenticationServerOptions { Policy = new ExtendedProtectionPolicy(PolicyEnforcement.Always) }));
         }
     }
 }

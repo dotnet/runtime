@@ -367,19 +367,14 @@ public:
     uint32_t pauseTimePercent;
     uint8_t isCompaction;
     uint8_t isConcurrent;
-    RH_GC_GENERATION_INFO generationInfo0;
-    RH_GC_GENERATION_INFO generationInfo1;
-    RH_GC_GENERATION_INFO generationInfo2;
-    RH_GC_GENERATION_INFO generationInfo3;
-    RH_GC_GENERATION_INFO generationInfo4;
-    uint64_t pauseDuration0;
-    uint64_t pauseDuration1;
+    RH_GC_GENERATION_INFO generationInfo[5];
+    uint64_t pauseDurations[2];
 };
 
 FCIMPL2(void, RhGetMemoryInfo, RH_GH_MEMORY_INFO* pData, int kind)
 {
-    uint64_t* genInfoRaw = (uint64_t*)&(pData->generationInfo0);
-    uint64_t* pauseInfoRaw = (uint64_t*)&(pData->pauseDuration0);
+    uint64_t* genInfoRaw = (uint64_t*)&(pData->generationInfo[0]);
+    uint64_t* pauseInfoRaw = (uint64_t*)&(pData->pauseDurations[0]);
 
     return GCHeapUtilities::GetGCHeap()->GetMemoryInfo(
         &(pData->highMemLoadThresholdBytes),

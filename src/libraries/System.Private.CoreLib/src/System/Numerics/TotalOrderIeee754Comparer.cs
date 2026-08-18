@@ -120,17 +120,78 @@ namespace System.Numerics
                     return 1;
                 }
 
+                static int CompareMagnitudeBigEndian(ReadOnlySpan<byte> x, ReadOnlySpan<byte> y, bool isNegative)
+                {
+                    // Compares two big-endian magnitudes that may have different lengths. Extending the
+                    // shorter span with additional fill bytes in front does not change the value it
+                    // represents (0x00 for an unsigned or non-negative two's complement magnitude, 0xFF for
+                    // a negative two's complement magnitude), so the longer span's extra leading bytes are
+                    // compared directly against fill: the first mismatch (if any) determines the result,
+                    // otherwise the aligned, equal-length suffixes are compared directly.
+
+                    byte fill = isNegative ? (byte)0xFF : (byte)0x00;
+
+                    bool xIsLonger = x.Length >= y.Length;
+                    ReadOnlySpan<byte> longer = xIsLonger ? x : y;
+                    ReadOnlySpan<byte> shorter = xIsLonger ? y : x;
+
+                    ReadOnlySpan<byte> extra = longer[..(longer.Length - shorter.Length)];
+
+                    if (extra.IndexOfAnyExcept(fill) >= 0)
+                    {
+                        // A mismatch means the longer span has a byte that isn't fill in a position more
+                        // significant than every remaining byte. Since fill is already the extreme byte
+                        // value for its sign (0x00 is the smallest unsigned/non-negative byte, 0xFF is the
+                        // largest), any mismatch must lie on the same side: greater than 0x00, or less than
+                        // 0xFF. The direction is therefore fixed by sign alone, without inspecting the byte.
+                        int extraComparison = isNegative ? -1 : 1;
+                        return xIsLonger ? extraComparison : -extraComparison;
+                    }
+
+                    int suffixComparison = longer[extra.Length..].SequenceCompareTo(shorter);
+                    return xIsLonger ? suffixComparison : -suffixComparison;
+                }
+
+                static bool ExponentIsNegative(T value)
+                {
+                    // Prevent stack overflow for huge numbers
+                    const int StackAllocThreshold = 256;
+
+                    int length = value!.GetExponentByteCount();
+                    Span<byte> exponent = (uint)length <= StackAllocThreshold ? stackalloc byte[length] : new byte[length];
+
+                    value.WriteExponentBigEndian(exponent);
+                    return (exponent[0] & 0x80) != 0;
+                }
+
                 static int CompareExponent(T x, T y)
                 {
                     // Equal values with differing representations only differ by their exponent, so the
-                    // unbiased (quantum) exponents are read and compared using signed semantics. For a
-                    // given type both exponents share the same byte count.
+                    // unbiased (quantum) exponents are read and compared using signed two's complement
+                    // semantics. A custom type may report a different (minimal) exponent byte count per
+                    // value, so the two spans are not assumed to share the same length.
+
+                    // The shortest bit length is cheap to query and, since a bit length of 0 uniquely
+                    // identifies an exponent value of exactly 0 (there is no negative-zero encoding),
+                    // lets a zero operand be handled -- or the non-zero operand's sign alone decide --
+                    // without reading either operand's raw exponent bytes, or the other operand's at all.
+                    int xExponentBits = x!.GetExponentShortestBitLength();
+                    int yExponentBits = y!.GetExponentShortestBitLength();
+
+                    if (xExponentBits == 0)
+                    {
+                        return (yExponentBits == 0) ? 0 : (ExponentIsNegative(y) ? 1 : -1);
+                    }
+                    else if (yExponentBits == 0)
+                    {
+                        return ExponentIsNegative(x) ? -1 : 1;
+                    }
 
                     // Prevent stack overflow for huge numbers
                     const int StackAllocThreshold = 256;
 
-                    int xExponentLength = x!.GetExponentByteCount();
-                    int yExponentLength = y!.GetExponentByteCount();
+                    int xExponentLength = x.GetExponentByteCount();
+                    int yExponentLength = y.GetExponentByteCount();
 
                     Span<byte> exponentX = (uint)xExponentLength <= StackAllocThreshold ? stackalloc byte[xExponentLength] : new byte[xExponentLength];
                     Span<byte> exponentY = (uint)yExponentLength <= StackAllocThreshold ? stackalloc byte[yExponentLength] : new byte[yExponentLength];
@@ -138,12 +199,25 @@ namespace System.Numerics
                     x.WriteExponentBigEndian(exponentX);
                     y.WriteExponentBigEndian(exponentY);
 
-                    // The exponents are two's complement big-endian. Flipping the sign bit of the most
-                    // significant byte maps the signed ordering onto an unsigned byte-wise comparison.
-                    exponentX[0] ^= 0x80;
-                    exponentY[0] ^= 0x80;
+                    bool xIsNegative = (exponentX[0] & 0x80) != 0;
+                    bool yIsNegative = (exponentY[0] & 0x80) != 0;
 
-                    return exponentX.SequenceCompareTo(exponentY);
+                    if (xIsNegative != yIsNegative)
+                    {
+                        // Differing sign determines the result regardless of magnitude or length.
+                        return xIsNegative ? -1 : 1;
+                    }
+
+                    // For a fixed sign, the shortest two's complement bit length is monotonic in
+                    // magnitude (more bits means a larger positive value, or a more-negative value),
+                    // so a mismatch settles the comparison without walking the full magnitude.
+                    if (xExponentBits != yExponentBits)
+                    {
+                        int bitComparison = xExponentBits.CompareTo(yExponentBits);
+                        return xIsNegative ? -bitComparison : bitComparison;
+                    }
+
+                    return CompareMagnitudeBigEndian(exponentX, exponentY, xIsNegative);
                 }
 
                 // If < or > returns true, the result satisfies definition of totalOrder too
@@ -202,7 +276,9 @@ namespace System.Numerics
                             x.WriteSignificandBigEndian(significandX);
                             y.WriteSignificandBigEndian(significandY);
 
-                            return significandX.SequenceCompareTo(significandY);
+                            // The byte count is not guaranteed to match the bit length, so the significands
+                            // (unsigned magnitudes) may still be encoded with differing lengths.
+                            return CompareMagnitudeBigEndian(significandX, significandY, isNegative: false);
                         }
                         else
                         {

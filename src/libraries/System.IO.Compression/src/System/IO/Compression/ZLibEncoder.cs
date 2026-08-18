@@ -78,9 +78,9 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="inputLength"/> is negative.</exception>
         public static long GetMaxCompressedLength(long inputLength)
         {
-            // compressBound() returns the upper bound for zlib-wrapped deflate output, which already
+            // DeflateEncoder.GetMaxCompressedLength() returns a bound for deflate output that already
             // accounts for zlib's 2-byte header and 4-byte Adler32 trailer. ZLibEncoder produces
-            // zlib-format output, so this value is the exact upper bound with no additional overhead needed.
+            // zlib-format output, so this value is a valid upper bound with no additional overhead needed.
             return DeflateEncoder.GetMaxCompressedLength(inputLength);
         }
 
@@ -109,6 +109,19 @@ namespace System.IO.Compression
         {
             EnsureNotDisposed();
             return _deflateEncoder.Flush(destination, out bytesWritten);
+        }
+
+        /// <summary>
+        /// Resets the encoder to its initial state so the same instance can be reused for a new, independent compression operation.
+        /// </summary>
+        /// <remarks>
+        /// The encoder keeps the compression quality and window size it was created with. Any pending output or unflushed input from a previous, unfinished compression is discarded.
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">The encoder has been disposed.</exception>
+        public void Reset()
+        {
+            EnsureNotDisposed();
+            _deflateEncoder.Reset();
         }
 
         /// <summary>

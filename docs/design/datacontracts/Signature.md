@@ -27,26 +27,29 @@ void GetVarArgSignature(TargetPointer vaSigCookieAddr, out TargetPointer signatu
 
 ## Version 1
 
-Data descriptors used:
-| Data Descriptor Name | Field | Meaning |
-| --- | --- | --- |
-| `VASigCookie` | `SizeOfArgs` | Total size in bytes of the pushed argument list. Used on x86 to locate the args base. |
-| `VASigCookie` | `Signature` | The raw vararg signature (see `Signature`). |
-| `Signature` | `SignaturePointer` | Target address of the raw signature blob. |
-| `Signature` | `SignatureLength` | Length in bytes of the raw signature blob. |
+<!-- BEGIN GENERATED: usage contract=Signature version=c1 -->
+### Data descriptors used
 
-Global variables used:
-| Global Name | Type | Purpose |
-| --- | --- | --- |
-| _none_ |  | |
+| Data Descriptor | Field | Type | Meaning |
+| --- | --- | --- | --- |
+| `Signature` | `SignatureLength` | `uint32` | Length in bytes of the raw signature blob. |
+| `Signature` | `SignaturePointer` | `pointer` | Target address of the raw signature blob. |
+| `VASigCookie` | `Signature` | `Signature` | The raw vararg signature (see `Signature`). |
+| `VASigCookie` | `SizeOfArgs` | `uint32` | Total size in bytes of the varargs argument area; used on x86 to locate the argument base |
 
-Contracts used:
+### Global variables used
+
+_None._
+
+### Contracts used
+
 | Contract Name |
 | --- |
-| RuntimeTypeSystem |
-| Loader |
-| EcmaMetadata |
-| RuntimeInfo |
+| `EcmaMetadata` |
+| `Loader` |
+| `RuntimeInfo` |
+| `RuntimeTypeSystem` |
+<!-- END GENERATED: usage contract=Signature version=c1 -->
 
 Constants:
 | Constant Name | Meaning | Value |
@@ -63,7 +66,7 @@ TType GetInternalType(TargetPointer typeHandlePointer);
 TType GetInternalModifiedType(TargetPointer typeHandlePointer, TType unmodifiedType, bool isRequired);
 ```
 
-The contract's provider resolves these pointers through `RuntimeTypeSystem.GetTypeHandle`. Standard ECMA-335 element types resolve through `RuntimeTypeSystem.GetPrimitiveType` and `RuntimeTypeSystem.GetConstructedType`. Generic type parameters (`VAR`) and generic method parameters (`MVAR`) resolve via `RuntimeTypeSystem.GetInstantiation` and `RuntimeTypeSystem.GetGenericMethodInstantiation` respectively, using an `ITypeHandle` (for generic types) or `MethodDescHandle` (for generic methods) generic context. `GetTypeFromDefinition` and `GetTypeFromReference` resolve tokens via the module's `TypeDefToMethodTableMap` / `TypeRefToMethodTableMap`; cross-module references and `GetTypeFromSpecification` are not currently implemented.
+The contract's provider resolves these pointers through `RuntimeTypeSystem.GetTypeHandle`. Standard ECMA-335 element types resolve through `RuntimeTypeSystem.GetPrimitiveType` and `RuntimeTypeSystem.GetConstructedType`. Generic type parameters (`VAR`) and generic method parameters (`MVAR`) resolve via `RuntimeTypeSystem.GetInstantiation` and `RuntimeTypeSystem.GetGenericMethodInstantiation` respectively, using an `ITypeHandle` (for generic types) or `MethodDescHandle` (for generic methods) generic context. `GetTypeFromDefinition` and `GetTypeFromReference` resolve tokens with `Loader.GetModuleLookupMapElement` using the `TypeDefToMethodTable` and `TypeRefToMethodTable` lookup-map kinds; cross-module references and `GetTypeFromSpecification` are not currently implemented.
 
 ```csharp
 ITypeHandle? ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle moduleHandle, ITypeHandle? ctx)
@@ -75,10 +78,6 @@ ITypeHandle? ISignature.DecodeFieldSignature(BlobHandle blobHandle, ModuleHandle
     return decoder.DecodeFieldSignature(ref blobReader);
 }
 ```
-
-### Other consumers
-
-`RuntimeSignatureDecoder` is shared infrastructure within the cDAC. Other contracts construct their own decoder and provider directly when they need to decode method or local signatures rather than going through this contract. For example, the [StackWalk](./StackWalk.md) contract uses `RuntimeSignatureDecoder<GcTypeKind, GcSignatureContext>` with a GC-specific provider to classify method parameters during signature-based GC reference scanning.
 
 ### Vararg call cookies
 

@@ -446,7 +446,7 @@ BOOL MethodTable::HasSameTypeDefAs(MethodTable *pMT)
     if (rid == 0)
         return FALSE;
 
-    return (GetModule() == pMT->GetModule());
+    return GetModule() == pMT->GetModule();
 }
 
 #ifndef DACCESS_COMPILE
@@ -469,29 +469,30 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 //==========================================================================================
 // get the method desc given the interface method desc
 /* static */ MethodDesc *MethodTable::GetMethodDescForInterfaceMethodAndServer(
-                            TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer)
+                            TypeHandle ownerType, MethodDesc *pItfMD, OBJECTREF *pServer, MethodTable* pServerMT)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(!ownerType.IsNull());
         PRECONDITION(ownerType.GetMethodTable()->HasSameTypeDefAs(pItfMD->GetMethodTable()));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
-    VALIDATEOBJECTREF(*pServer);
+    CONTRACTL_END;
+#ifdef DEBUG
+    {
+        GCX_COOP();
+        VALIDATEOBJECTREF(*pServer);
+    }
+#endif
 
 #ifdef _DEBUG
     MethodTable * pItfMT =  ownerType.GetMethodTable();
     _ASSERTE(pItfMT != NULL);
 #endif // _DEBUG
-
-    MethodTable *pServerMT = (*pServer)->GetMethodTable();
-    _ASSERTE(pServerMT != NULL);
 
 #ifdef FEATURE_COMINTEROP
     if (pServerMT->IsComObjectType() && !pItfMD->HasMethodInstantiation())
@@ -505,7 +506,7 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
             FALSE,              // allowInstParam
             TRUE);              // forceRemotableMethod
 
-        RETURN(pServerMT->GetMethodDescForComInterfaceMethod(pItfMD));
+        return pServerMT->GetMethodDescForComInterfaceMethod(pItfMD);
     }
 #endif // !FEATURE_COMINTEROP
 
@@ -516,21 +517,25 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
         && !TypeHandle(pServerMT).CanCastTo(ownerType)) // we need to make sure object doesn't implement this interface in a natural way
     {
         TypeHandle implTypeHandle;
-        OBJECTREF obj = *pServer;
+        {
+            GCX_COOP();
 
-        GCPROTECT_BEGIN(obj);
-        OBJECTREF implTypeRef = DynamicInterfaceCastable::GetInterfaceImplementation(&obj, ownerType);
-        _ASSERTE(implTypeRef != NULL);
+            OBJECTREF obj = *pServer;
 
-        ReflectClassBaseObject *implTypeObj = ((ReflectClassBaseObject *)OBJECTREFToObject(implTypeRef));
-        implTypeHandle = implTypeObj->GetType();
-        GCPROTECT_END();
+            GCPROTECT_BEGIN(obj);
+            OBJECTREF implTypeRef = DynamicInterfaceCastable::GetInterfaceImplementation(&obj, ownerType);
+            _ASSERTE(implTypeRef != NULL);
 
-        RETURN(implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
+            ReflectClassBaseObject *implTypeObj = ((ReflectClassBaseObject *)OBJECTREFToObject(implTypeRef));
+            implTypeHandle = implTypeObj->GetType();
+            GCPROTECT_END();
+        }
+
+        return implTypeHandle.GetMethodTable()->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */);
     }
 
     // Handle pure CLR types.
-    RETURN (pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */));
+    return pServerMT->GetMethodDescForInterfaceMethod(ownerType, pItfMD, TRUE /* throwOnConflict */);
 }
 
 #ifdef FEATURE_COMINTEROP
@@ -538,17 +543,16 @@ PTR_MethodTable InterfaceInfo_t::GetApproxMethodTable(Module * pContainingModule
 // get the method desc given the interface method desc on a COM implemented server
 MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
 {
-    CONTRACT(MethodDesc*)
+    CONTRACTL
     {
         THROWS;
         GC_TRIGGERS;
-        MODE_COOPERATIVE;
+        MODE_PREEMPTIVE;
         PRECONDITION(CheckPointer(pItfMD));
         PRECONDITION(pItfMD->IsInterface());
         PRECONDITION(IsComObjectType());
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable * pItfMT =  pItfMD->GetMethodTable();
     _ASSERTE(pItfMT != NULL);
@@ -556,7 +560,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
         // We now handle __ComObject class that doesn't have Dynamic Interface Map
     if (!HasDynamicInterfaceMap())
     {
-        RETURN(pItfMD);
+        return pItfMD;
     }
     else
     {
@@ -571,7 +575,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
 
         if (tgt != NULL)
         {
-            RETURN(NonVirtualEntry2MethodDesc(tgt));
+            return NonVirtualEntry2MethodDesc(tgt);
         }
 
         // The interface is not in the static class definition so we need to look at the
@@ -581,7 +585,7 @@ MethodDesc *MethodTable::GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD)
         // This interface was added to the class dynamically so it is implemented
         // by the COM object. We treat this dynamically added interface the same
         // way we treat COM objects. That is by using the interface vtable.
-        RETURN(pItfMD);
+        return pItfMD;
     }
 }
 #endif // FEATURE_COMINTEROP
@@ -1037,7 +1041,7 @@ BOOL MethodTable::IsEquivalentTo_Worker(MethodTable *pOtherMT COMMA_INDEBUG(Type
         }
 
         // arrays of structures have their own unshared MTs and will take this path
-        return (GetArrayElementTypeHandle().IsEquivalentTo(pOtherMT->GetArrayElementTypeHandle() COMMA_INDEBUG(&newVisited)));
+        return GetArrayElementTypeHandle().IsEquivalentTo(pOtherMT->GetArrayElementTypeHandle() COMMA_INDEBUG(&newVisited));
     }
 
     return IsEquivalentTo_WorkerInner(pOtherMT COMMA_INDEBUG(&newVisited));
@@ -1937,6 +1941,27 @@ DWORD MethodTable::GetIndexForFieldDesc(FieldDesc *pField)
 
 namespace
 {
+    // Resolve the MethodTable for a value-type field.
+    //
+    // pCachedValueTypeMT is the MethodTable from the ByValueClassCache, or NULL when there was no
+    // cache (which happens on recursive layout-classification calls). When it is NULL and the field
+    // is a value type, the exact generic instantiation may not yet be in the type loader hash
+    // (e.g. EntityIdValue<UserId> replaced by EntityIdValue<__Canon> to break recursion during load).
+    // In that case FieldDesc::GetSize(NULL) -> LookupApproxFieldTypeHandle (DontLoadTypes) would return
+    // a null TypeHandle and crash. GetApproxFieldTypeHandleThrowing loads the field type with
+    // dropGenericArgumentLevel=TRUE (see FieldDesc::GetApproxFieldTypeHandleThrowing), which always
+    // resolves to the canonical __Canon form - fully loaded and correctly sized for any shared
+    // instantiation.
+    MethodTable* ResolveValueTypeFieldMT(FieldDesc* pField, MethodTable* pCachedValueTypeMT)
+    {
+        WRAPPER_NO_CONTRACT;
+        if (pCachedValueTypeMT == NULL && pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            pCachedValueTypeMT = pField->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+        }
+        return pCachedValueTypeMT;
+    }
+
     // Does this type have fields that are implicitly defined through repetition and not explicitly defined in metadata?
     bool HasImpliedRepeatedFields(MethodTable* pMT, MethodTable* pFirstFieldValueType = nullptr)
     {
@@ -1970,6 +1995,9 @@ namespace
         // instead of adding additional padding at the end of a one-field structure.
         // We do this check here to save looking up the FixedBufferAttribute when loading the field
         // from metadata.
+        // Resolve the value-type field MethodTable when the caller didn't supply one; see helper.
+        pFirstFieldValueType = ResolveValueTypeFieldMT(pFieldStart, pFirstFieldValueType);
+
         return (CorTypeInfo::IsPrimitiveType_NoThrow(firstFieldElementType)
                             || firstFieldElementType == ELEMENT_TYPE_VALUETYPE)
                         && (pFieldStart->GetOffset() == 0)
@@ -2125,24 +2153,26 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
     FieldDesc *pFieldStart = GetApproxFieldDescListRaw();
 
-    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this, ByValueClassCacheLookup(pByValueClassCache, 0));
+    // Pre-resolve the first field's MethodTable so HasImpliedRepeatedFields and all subsequent
+    // GetSize calls receive a valid (non-null) MT for value-type fields; see ResolveValueTypeFieldMT.
+    MethodTable* pFirstFieldValueTypeMT = ResolveValueTypeFieldMT(pFieldStart, ByValueClassCacheLookup(pByValueClassCache, 0));
+
+    bool hasImpliedRepeatedFields = HasImpliedRepeatedFields(this, pFirstFieldValueTypeMT);
 
     if (hasImpliedRepeatedFields)
     {
-        numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize(ByValueClassCacheLookup(pByValueClassCache, 0));
+        numIntroducedFields = GetNumInstanceFieldBytes() / pFieldStart->GetSize(pFirstFieldValueTypeMT);
     }
 
     for (unsigned int fieldIndex = 0; fieldIndex < numIntroducedFields; fieldIndex++)
     {
         FieldDesc* pField;
         DWORD fieldOffset;
-        unsigned int fieldIndexForCacheLookup = fieldIndex;
 
         if (hasImpliedRepeatedFields)
         {
             pField = pFieldStart;
-            fieldIndexForCacheLookup = 0;
-            fieldOffset = fieldIndex * pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
+            fieldOffset = fieldIndex * pField->GetSize(pFirstFieldValueTypeMT);
         }
         else
         {
@@ -2152,7 +2182,17 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
 
         unsigned int normalizedFieldOffset = fieldOffset + startOffsetOfStruct;
 
-        unsigned int fieldSize = pField->GetSize(ByValueClassCacheLookup(pByValueClassCache, fieldIndexForCacheLookup));
+        CorElementType fieldType = pField->GetFieldType();
+        SystemVClassificationType fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
+
+        // For implied-repeated-field structs (inline arrays / fixed buffers) every iteration reuses
+        // the pre-resolved first field MT.  Otherwise resolve the nested value-type MethodTable,
+        // falling back to the canonical __Canon form on recursive calls; see ResolveValueTypeFieldMT.
+        MethodTable* pFieldValueTypeMT = hasImpliedRepeatedFields
+            ? pFirstFieldValueTypeMT
+            : ResolveValueTypeFieldMT(pField, ByValueClassCacheLookup(pByValueClassCache, fieldIndex));
+
+        unsigned int fieldSize = pField->GetSize(pFieldValueTypeMT);
         _ASSERTE(fieldSize != (unsigned int)-1);
 
         // The field can't span past the end of the struct.
@@ -2162,22 +2202,14 @@ bool MethodTable::ClassifyEightBytesWithManagedLayout(SystemVStructRegisterPassi
             return false;
         }
 
-        CorElementType fieldType = pField->GetFieldType();
-        SystemVClassificationType fieldClassificationType = CorInfoType2UnixAmd64Classification(fieldType);
-
 #ifdef _DEBUG
         LPCUTF8 fieldName;
         pField->GetName_NoThrow(&fieldName);
 #endif // _DEBUG
         if (fieldClassificationType == SystemVClassificationTypeStruct)
         {
-            TypeHandle th;
-            if (pByValueClassCache != NULL)
-                th = TypeHandle(pByValueClassCache[fieldIndexForCacheLookup]);
-            else
-                th = pField->GetApproxFieldTypeHandleThrowing();
-            _ASSERTE(!th.IsNull());
-            MethodTable* pFieldMT = th.GetMethodTable();
+            _ASSERTE(pFieldValueTypeMT != NULL);
+            MethodTable* pFieldMT = pFieldValueTypeMT;
 
             bool inEmbeddedStructPrev = helperPtr->inEmbeddedStruct;
             helperPtr->inEmbeddedStruct = true;
@@ -2887,7 +2919,7 @@ static bool FlattenFields(TypeHandle th, uint32_t structOffset, FpStructInRegist
             {
                 LOG((LF_JIT, LL_EVERYTHING, "FpStructInRegistersInfo:%*s "
                     " * field %s [%i..%i) overlaps with other fields (occupied bytes map: 0x%04x), treat as union\n",
-                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(), startOffset, endOffset));
+                    nestingLevel * 4, "", fields[i].GetFieldDesc()->GetDebugName(), startOffset, endOffset, occupiedBytesMap));
                 return false;
             }
             occupiedBytesMap |= fieldOccupation;
@@ -3537,7 +3569,11 @@ BOOL MethodTable::RunClassInitEx(OBJECTREF *pThrowable)
         MethodTable * pCanonMT = GetCanonicalMethodTable();
 
         // Call the code method without touching MethodDesc if possible
-        PCODE pCctorCode = pCanonMT->GetRestoredSlot(pCanonMT->GetClassConstructorSlot());
+        PCODE pCctorCode;
+        {
+            GCX_PREEMP();
+            pCctorCode = pCanonMT->GetRestoredSlot(pCanonMT->GetClassConstructorSlot());
+        }
         MethodTable* instantiatingArg = pCanonMT->IsSharedByGenericInstantiations() ? this : nullptr;
 
 #ifdef FEATURE_PORTABLE_ENTRYPOINTS
@@ -4087,16 +4123,15 @@ OBJECTREF MethodTable::FastBox(void** data)
 //==========================================================================
 OBJECTREF MethodTable::GetManagedClassObject()
 {
-    CONTRACT(OBJECTREF) {
+    CONTRACTL {
 
         THROWS;
         GC_TRIGGERS;
         MODE_COOPERATIVE;
         INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(GetAuxiliaryData()->m_hExposedClassObject != 0);
         //REENTRANT
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
 #ifdef _DEBUG
     // Force a GC here because GetManagedClassObject could trigger GC nondeterministicaly
@@ -4109,7 +4144,7 @@ OBJECTREF MethodTable::GetManagedClassObject()
         CheckRestore();
         TypeHandle(this).AllocateManagedClassObject(&GetAuxiliaryDataForWrite()->m_hExposedClassObject);
     }
-    RETURN(GetManagedClassObjectIfExists());
+    return GetManagedClassObjectIfExists();
 }
 
 #endif //!DACCESS_COMPILE
@@ -5260,14 +5295,13 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
                                     UINT32 slotNumber,
                                     DispatchMapEntry *pEntry)
 {
-    CONTRACT (BOOL) {
+    CONTRACTL {
         INSTANCE_CHECK;
         MODE_ANY;
         THROWS;
         GC_TRIGGERS;
-        POSTCONDITION(!RETVAL || pEntry->IsValid());
         PRECONDITION(typeID != TYPE_ID_THIS_CLASS);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     // Start at the current type and work up the inheritance chain
     MethodTable *pCurMT = this;
@@ -5277,12 +5311,13 @@ BOOL MethodTable::FindDispatchEntry(UINT32 typeID,
         if (pCurMT->FindDispatchEntryForCurrentType(
                 typeID, slotNumber, pEntry))
         {
-            RETURN (TRUE);
+            _ASSERTE(pEntry->IsValid());
+            return TRUE;
         }
         pCurMT = pCurMT->GetParentMethodTable();
         iCurInheritanceChainDelta++;
     }
-    RETURN (FALSE);
+    return FALSE;
 }
 
 #ifndef DACCESS_COMPILE
@@ -5337,12 +5372,11 @@ MethodTable::FindDispatchImpl(
     DispatchSlot * pImplSlot,
     BOOL           throwOnConflict)
 {
-    CONTRACT (BOOL) {
+    CONTRACTL {
         INSTANCE_CHECK;
         STANDARD_VM_CHECK;
         PRECONDITION(CheckPointer(pImplSlot));
-        POSTCONDITION(!RETVAL || !pImplSlot->IsNull() || IsComObjectType());
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
     LOG((LF_LOADER, LL_INFO10000, "SD: MT::FindDispatchImpl: searching %s.\n", GetClass()->GetDebugClassName()));
 
@@ -5385,7 +5419,7 @@ MethodTable::FindDispatchImpl(
                 if (!(pIfcMT->HasInstantiation()))
                 {
                     _ASSERTE(!"Should not have gotten here. If you did, it's probably because multiple interface instantiation hasn't been checked in yet. This code only works on top of that.");
-                    RETURN(FALSE);
+                    return FALSE;
                 }
 
                 // Get the type of T (as in IList<T>)
@@ -5404,7 +5438,7 @@ MethodTable::FindDispatchImpl(
                    *pImplSlot = ds;
                 }
 
-                RETURN(TRUE);
+                return TRUE;
 
             }
             else
@@ -5461,13 +5495,13 @@ MethodTable::FindDispatchImpl(
                             *pImplSlot = ds;
                         }
 
-                        RETURN(TRUE);
+                        return TRUE;
                     }
                 }
             }
 
             // This contract is not implemented by this class or any parent class.
-            RETURN(FALSE);
+            return FALSE;
         }
 
 
@@ -5485,7 +5519,8 @@ MethodTable::FindDispatchImpl(
     *pImplSlot = GetRestoredSlot(slotNumber);
 
     // Successfully determined the target for the given target
-    RETURN (TRUE);
+    _ASSERTE(!(TRUE) || !pImplSlot->IsNull() || IsComObjectType());
+    return TRUE;
 }
 
 #ifndef DACCESS_COMPILE
@@ -5699,15 +5734,14 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
     ClassLoadLevel level
 )
 {
-    CONTRACT(BOOL) {
+    CONTRACTL {
         INSTANCE_CHECK;
         THROWS;
         GC_TRIGGERS;
         PRECONDITION(CheckPointer(pInterfaceMD));
         PRECONDITION(CheckPointer(pInterfaceMT));
         PRECONDITION(CheckPointer(ppDefaultMethod));
-        POSTCONDITION(!RETVAL || (*ppDefaultMethod) != nullptr);
-    } CONTRACT_END;
+    } CONTRACTL_END;
 
 #ifdef FEATURE_DEFAULT_INTERFACES
     struct MatchCandidate
@@ -5866,20 +5900,20 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                 ThrowAmbiguousResolutionException(this, pInterfaceMT, pInterfaceMD);
 
             *ppDefaultMethod = pBestCandidateMD;
-            RETURN(FALSE);
+            return FALSE;
         }
     }
 
     if (pBestCandidateMD != NULL)
     {
         *ppDefaultMethod = pBestCandidateMD;
-        RETURN(TRUE);
+        return TRUE;
     }
 #else
     *ppDefaultMethod = NULL;
 #endif // FEATURE_DEFAULT_INTERFACES
 
-    RETURN(FALSE);
+    return FALSE;
 }
 #endif // DACCESS_COMPILE
 
@@ -6324,7 +6358,7 @@ BOOL MethodTable::SanityCheck()
         return FALSE;
 
     if (GetNumGenericArgs() != 0)
-        return (pCanonMT->GetClass() == pClass);
+        return pCanonMT->GetClass() == pClass;
     else
         return (pCanonMT == this) || IsArray() || IsContinuationWithoutMetadata();
 }
@@ -6524,7 +6558,7 @@ InteropMethodTableData *MethodTable::CreateComInteropData(AllocMemTracker *pamTr
 
     InteropMethodTableData *pData = builder.BuildInteropVTable(pamTracker);
     _ASSERTE(pData);
-    return (pData);
+    return pData;
 }
 
 //==========================================================================================
@@ -6562,7 +6596,7 @@ InteropMethodTableData *MethodTable::GetComInteropData()
     }
 
     _ASSERTE(pData);
-    return (pData);
+    return pData;
 }
 
 #endif // FEATURE_COMINTEROP
@@ -6578,7 +6612,7 @@ ULONG MethodTable::MethodData::Release()
     if (cRef == 0) {
         delete this;
     }
-    return (cRef);
+    return cRef;
 }
 
 //==========================================================================================
@@ -6802,7 +6836,6 @@ MethodDesc * MethodTable::MethodDataObject::GetDeclMethodDesc(UINT32 slotNumber)
     if (pMDRet == NULL)
     {
         pMDRet = GetImplMethodDesc(slotNumber)->GetDeclMethodDesc(slotNumber);
-        _ASSERTE(CheckPointer(pMDRet));
         pEntry->SetDeclMethodDesc(pMDRet);
     }
     else
@@ -6852,7 +6885,6 @@ MethodDesc *MethodTable::MethodDataObject::GetImplMethodDesc(UINT32 slotNumber)
     {
         _ASSERTE(slotNumber < GetNumVirtuals());
         pMDRet = m_pDeclMT->GetMethodDescForSlot_NoThrow(slotNumber);
-        _ASSERTE(CheckPointer(pMDRet));
         pEntry->SetImplMethodDesc(pMDRet);
     }
     else
@@ -6909,7 +6941,6 @@ void MethodTable::MethodDataInterface::InvalidateCachedVirtualSlot(UINT32 slotNu
     LIMITED_METHOD_CONTRACT;
 
     // MethodDataInterface does not store any cached MethodDesc values
-    return;
 }
 
 //==========================================================================================
@@ -7075,7 +7106,7 @@ bool MethodTable::MethodDataInterfaceImpl::IsImplSlotNull(UINT32 slotNumber)
 {
     WRAPPER_NO_CONTRACT;
     UINT32 implSlotNumber = MapToImplSlotNumber(slotNumber);
-    return (implSlotNumber == INVALID_SLOT_NUMBER);
+    return implSlotNumber == INVALID_SLOT_NUMBER;
 }
 
 //==========================================================================================
@@ -7793,7 +7824,7 @@ PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
     CONTRACTL {
         THROWS;
         GC_NOTRIGGER;
-        MODE_ANY;
+        MODE_PREEMPTIVE;
         SUPPORTS_DAC;
     } CONTRACTL_END;
 
@@ -8789,15 +8820,14 @@ EEClassNativeLayoutInfo const* MethodTable::EnsureNativeLayoutInfoInitialized()
 #ifndef DACCESS_COMPILE
 PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMTOwner, ClassLoadLevel loadLevel /*= CLASS_LOADED*/)
 {
-    CONTRACT(PTR_MethodTable)
+    CONTRACTL
     {
         GC_TRIGGERS;
         THROWS;
         PRECONDITION(m_i != (DWORD) -1 && m_i < m_count);
         PRECONDITION(CheckPointer(pMTOwner));
-        POSTCONDITION(CheckPointer(RETVAL));
     }
-    CONTRACT_END;
+    CONTRACTL_END;
 
     MethodTable *pResult = m_pMap->GetMethodTable();
     if (pResult->IsSpecialMarkerTypeForGenericCasting() && !pMTOwner->GetAuxiliaryData()->MayHaveOpenInterfacesInInterfaceMap())
@@ -8812,7 +8842,7 @@ PTR_MethodTable MethodTable::InterfaceMapIterator::GetInterface(MethodTable* pMT
         if (pResult->IsFullyLoaded())
             SetInterface(pResult);
     }
-    RETURN (pResult);
+    return pResult;
 }
 #endif // DACCESS_COMPILE
 

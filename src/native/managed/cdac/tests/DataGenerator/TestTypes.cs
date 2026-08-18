@@ -159,3 +159,37 @@ internal sealed partial class MigrateMNStatic : IData<MigrateMNStatic>
     [StaticAddress("s_instance")]
     public static partial TargetPointer Instance(Target target);
 }
+
+[CdacType("TestInstanceDataStart")]
+internal sealed partial class TestInstanceDataStart : IData<TestInstanceDataStart>
+{
+    [InstanceDataStart]
+    public partial TargetPointer Data { get; }
+}
+
+[CdacType("TestRawOffset")]
+internal sealed partial class TestRawOffset : IData<TestRawOffset>
+{
+    [RawOffset(4)]
+    public partial uint Value { get; }
+}
+
+// 19. CustomInit -- author-provided lazy initializer. The generator emits a
+//     lazy getter that calls the partial InitXxx method on first access.
+[CdacType("TestCustomInit")]
+internal sealed partial class TestCustomInit : IData<TestCustomInit>
+{
+    [Field] public partial uint Raw { get; }
+
+    // Computed lazily from Raw (declarative field) + custom descriptor data.
+    [CustomInit(nameof(InitDoubled))] public partial uint Doubled { get; }
+
+    public static int InitDoubledCallCount;
+    [DataDescriptorDependency("CustomValue", "uint32", "CustomDescriptor")]
+    [UsesDataDescriptorTypeSize("CustomDescriptor")]
+    private partial uint InitDoubled(Target target, TargetPointer address)
+    {
+        InitDoubledCallCount++;
+        return Raw * 2;
+    }
+}
