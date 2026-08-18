@@ -526,6 +526,43 @@ namespace System.IO.Compression.Tests
 
         [Theory]
         [MemberData(nameof(Get_Booleans_Data))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on browser.")]
+        public static async Task ZipArchiveEntry_OpenWithPasswordInUpdateMode_UncompressedSizeImplausibleGivenCompressedSize_ThrowsInvalidData(bool async)
+        {
+            // The encrypted re-open-for-update path decrypts and decompresses into a MemoryStream sized to
+            // the declared uncompressed size. In the async implementation this happens via a separate code
+            // path (StoreDecryptedDataForUpdateAsync) from the unencrypted GetUncompressedDataAsync path,
+            // while the sync implementation shares GetUncompressedData(password) with the unencrypted path.
+            // Both must apply the same uncompressed-size plausibility check.
+            const string Password = "S3cur3P@ssw0rd";
+            byte[] payload = [0xCA, 0xFE, 0xBA, 0xBE, 0xDE, 0xAD, 0xBE, 0xEF];
+            MemoryStream stream = new MemoryStream();
+
+            ZipArchive createArchive = await CreateZipArchive(async, stream, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry createEntry = createArchive.CreateEntry("entry.bin", CompressionLevel.Optimal, Password, ZipEncryptionMethod.Aes256);
+            Stream entryStream = await OpenEntryStream(async, createEntry, Password);
+            await entryStream.WriteAsync(payload);
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, createArchive);
+
+            stream.Position = 0;
+            ZipArchive archive = await CreateZipArchive(async, stream, ZipArchiveMode.Update, leaveOpen: true);
+            ZipArchiveEntry entry = archive.GetEntry("entry.bin");
+            Assert.True(entry.IsEncrypted);
+
+            // The entry's actual compressed size is a handful of bytes; claim a 50 MB uncompressed size,
+            // which is many orders of magnitude beyond what that compressed data could plausibly produce.
+            FieldInfo uncompressedSizeField = typeof(ZipArchiveEntry).GetField("_uncompressedSize", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.NotNull(uncompressedSizeField);
+            uncompressedSizeField.SetValue(entry, 50_000_000L);
+
+            await Assert.ThrowsAsync<InvalidDataException>(() => OpenEntryStream(async, entry, Password));
+
+            await DisposeZipArchive(async, archive);
+        }
+
+        [Theory]
+        [MemberData(nameof(Get_Booleans_Data))]
         public static async Task UnseekableVeryLargeArchive_DataDescriptor_Read_Zip64(bool async)
         {
             MemoryStream stream = await LocalMemoryStream.ReadAppFileAsync(strange("veryLarge.zip"));

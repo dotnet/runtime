@@ -605,6 +605,8 @@ public partial class ZipArchiveEntry
             throw new InvalidDataException(SR.EntryTooLarge);
         }
 
+        ValidateUncompressedSizeIsPlausible();
+
         _storedUncompressedData = new MemoryStream((int)_uncompressedSize);
 
         Stream decompressed = BuildDecompressionPipeline(decryptedStream);
