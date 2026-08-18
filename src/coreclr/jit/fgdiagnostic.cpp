@@ -3328,97 +3328,16 @@ void Compiler::fgDebugCheckInitBB()
 }
 
 //------------------------------------------------------------------------
-// fgDebugCheckTypes: Validate node types used in the given tree
+// fgDebugCheckFlagsAndTypes: Validate node types, and the invariants related to
+//    the propagation and setting of tree, block and method flags.
 //
 // Arguments:
-//    tree - the tree to (recursively) check types for
-//
-void Compiler::fgDebugCheckTypes(GenTree* tree)
-{
-    struct NodeTypeValidator : GenTreeVisitor<NodeTypeValidator>
-    {
-        enum
-        {
-            DoPostOrder = true,
-        };
-
-        NodeTypeValidator(Compiler* comp)
-            : GenTreeVisitor(comp)
-        {
-        }
-
-        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user) const
-        {
-            GenTree* node = *use;
-
-            // Validate types of nodes in the IR:
-            //
-            // * TYP_ULONG and TYP_UINT are not legal.
-            // * Small types are only legal for the following nodes:
-            //    * All kinds of indirections including GT_NULLCHECK
-            //    * All kinds of locals
-            //    * GT_COMMA wrapped around any of the above.
-            //
-            if (node->TypeIs(TYP_ULONG, TYP_UINT))
-            {
-                m_compiler->gtDispTree(node);
-                assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
-            }
-
-            switch (node->OperGet())
-            {
-                case GT_NOP:
-                case GT_JTRUE:
-                case GT_BOUNDS_CHECK:
-                    if (!node->TypeIs(TYP_VOID))
-                    {
-                        m_compiler->gtDispTree(node);
-                        assert(!"The tree is expected to be of TYP_VOID type");
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-
-            if (varTypeIsSmall(node))
-            {
-                if (node->OperIs(GT_COMMA))
-                {
-                    // TODO: it's only allowed if its underlying effective node is also a small type.
-                    return WALK_CONTINUE;
-                }
-
-                if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK) || node->IsPhiNode() || node->IsAnyLocal())
-                {
-                    return WALK_CONTINUE;
-                }
-
-                m_compiler->gtDispTree(node);
-                assert(!"Unexpected small type in IR");
-            }
-
-            // TODO: validate types in GT_CAST nodes.
-            // Validate mismatched types in binopt's arguments, etc.
-            //
-            return WALK_CONTINUE;
-        }
-    };
-
-    NodeTypeValidator walker(this);
-    walker.WalkTree(&tree, nullptr);
-}
-
-//------------------------------------------------------------------------
-// fgDebugCheckFlags: Validate various invariants related to the propagation
-//                    and setting of tree, block, and method flags
-//
-// Arguments:
-//    tree - the tree to (recursively) check the flags for
+//    tree  - the tree to (recursively) check
 //    block - basic block containing the tree
 //
-void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
+void Compiler::fgDebugCheckFlagsAndTypes(GenTree* tree, BasicBlock* block)
 {
+    fgDebugCheckType(tree);
     GenTreeFlags actualFlags   = tree->gtFlags & GTF_ALL_EFFECT;
     GenTreeFlags expectedFlags = GTF_EMPTY;
 
@@ -3585,13 +3504,73 @@ void Compiler::fgDebugCheckFlags(GenTree* tree, BasicBlock* block)
     }
 
     tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
-        fgDebugCheckFlags(operand, block);
+        fgDebugCheckFlagsAndTypes(operand, block);
         expectedFlags |= (operand->gtFlags & GTF_ALL_EFFECT);
 
         return GenTree::VisitResult::Continue;
     });
 
     fgDebugCheckFlagsHelper(tree, actualFlags, expectedFlags);
+}
+
+//------------------------------------------------------------------------
+// fgDebugCheckType: Validate the type of a single node
+//
+// Arguments:
+//    node - the node to check the type of
+//
+void Compiler::fgDebugCheckType(GenTree* node)
+{
+    // Validate types of nodes in the IR:
+    //
+    // * TYP_ULONG and TYP_UINT are not legal.
+    // * Small types are only legal for the following nodes:
+    //    * All kinds of indirections including GT_NULLCHECK
+    //    * All kinds of locals
+    //    * GT_COMMA wrapped around any of the above.
+    //
+    if (node->TypeIs(TYP_ULONG, TYP_UINT))
+    {
+        gtDispTree(node);
+        assert(!"TYP_ULONG and TYP_UINT are not legal in IR");
+    }
+
+    switch (node->OperGet())
+    {
+        case GT_NOP:
+        case GT_JTRUE:
+        case GT_BOUNDS_CHECK:
+            if (!node->TypeIs(TYP_VOID))
+            {
+                gtDispTree(node);
+                assert(!"The tree is expected to be of TYP_VOID type");
+            }
+            break;
+
+        default:
+            break;
+    }
+
+    if (varTypeIsSmall(node))
+    {
+        if (node->OperIs(GT_COMMA))
+        {
+            // TODO: it's only allowed if its underlying effective node is also a small type.
+            return;
+        }
+
+        if (node->OperIsIndir() || node->OperIs(GT_NULLCHECK) || node->IsPhiNode() || node->IsAnyLocal())
+        {
+            return;
+        }
+
+        gtDispTree(node);
+        assert(!"Unexpected small type in IR");
+    }
+
+    // TODO: validate types in GT_CAST nodes.
+    // Validate mismatched types in binopt's arguments, etc.
+    //
 }
 
 //------------------------------------------------------------------------------
@@ -4008,8 +3987,7 @@ void Compiler::fgDebugCheckStmtsList(BasicBlock* block, bool morphTrees)
 
         // For each statement check that the exception flags are properly set
         noway_assert(stmt->GetRootNode());
-        fgDebugCheckFlags(stmt->GetRootNode(), block);
-        fgDebugCheckTypes(stmt->GetRootNode());
+        fgDebugCheckFlagsAndTypes(stmt->GetRootNode(), block);
 
         // Block that isn't BBJ_RETURN should not contain GT_RETURN node.
         if (!block->KindIs(BBJ_RETURN))
