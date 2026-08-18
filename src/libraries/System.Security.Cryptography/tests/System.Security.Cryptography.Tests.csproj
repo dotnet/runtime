@@ -290,6 +290,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\AesFactory.cs" />
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\KeyWrapPaddedTests.cs"
+             Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\KeyWrapPaddedTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\KeyWrapTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\AES\KeyWrapTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\CompositeMLDsa\CompositeMLDsaCngTests.cs"
