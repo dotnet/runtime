@@ -923,7 +923,7 @@ protected:
 #endif
 
     BOOL IsReflectionEmit() const { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return (m_dwTransientFlags & IS_REFLECTION_EMIT) != 0; }
-    BOOL IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
+    bool IsSystem() { WRAPPER_NO_CONTRACT; SUPPORTS_DAC; return m_pPEAssembly->IsSystem(); }
 
     virtual BOOL IsEditAndContinueCapable() const { return FALSE; }
 

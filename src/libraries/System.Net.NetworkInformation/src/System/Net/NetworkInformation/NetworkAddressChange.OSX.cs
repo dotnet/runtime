@@ -222,7 +222,19 @@ namespace System.Net.NetworkInformation
 
         private static void StopRunLoop()
         {
-            Debug.Assert(s_runLoop != IntPtr.Zero);
+            if (s_runLoop == IntPtr.Zero)
+            {
+                // The listener thread already exited on its own: CFRunLoopRun() returns as soon as the
+                // SCDynamicStore run loop source is invalidated (e.g. configd restart, sleep/wake), and
+                // the thread's epilogue below zeroes s_runLoop and disposes the store. There is nothing
+                // left to stop, and passing the null handle to CFRunLoopIsWaiting would fault inside
+                // CoreFoundation (EXC_BAD_ACCESS at 0x8), taking the whole process down. Consume the
+                // ended-event that thread has set, or is about to set, so a subsequent
+                // CreateAndStartRunLoop/StopRunLoop pair starts from a clean state.
+                s_runLoopEndedEvent.WaitOne();
+                return;
+            }
+
             Debug.Assert(s_runLoopSource != null);
             Debug.Assert(s_dynamicStoreRef != null);
 
