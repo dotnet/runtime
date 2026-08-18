@@ -101,9 +101,10 @@
           Inputs="@(_WasmFrameworkR2RInput);$(_WasmCoreLibIL)"
           Outputs="@(_WasmFrameworkR2RInput->'%(OutputWasm)')">
     <MakeDir Directories="$(_WasmFrameworkR2RDir)" />
+    <Error Condition="!Exists('$(_WasmCrossgen2Exe)')"
+           Text="WasmEnableFrameworkR2R is true but crossgen2 was not found at '$(_WasmCrossgen2Exe)'. Build the crossgen2 pack or set WasmEnableFrameworkR2R=false." />
     <Message Importance="High" Text="Crossgen R2R (wasm): %(_WasmFrameworkR2RInput.FileName)" />
-    <Exec Condition="Exists('$(_WasmCrossgen2Exe)')"
-          Command="&quot;$(_WasmCrossgen2Exe)&quot; -o:&quot;%(_WasmFrameworkR2RInput.OutputWasm)&quot; -r:&quot;$(LibrariesSharedFrameworkBinArtifactsPath)*.dll&quot; -r:&quot;$(_WasmCoreLibIL)&quot; --targetarch:$(TargetArchitecture) --targetos:$(TargetOS) --obj-format:wasm --codegenopt:JitWasmNyiToR2RUnsupported=1 --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 -O &quot;%(_WasmFrameworkR2RInput.FullPath)&quot;" />
+    <Exec Command="&quot;$(_WasmCrossgen2Exe)&quot; -o:&quot;%(_WasmFrameworkR2RInput.OutputWasm)&quot; -r:&quot;$(LibrariesSharedFrameworkBinArtifactsPath)*.dll&quot; -r:&quot;$(_WasmCoreLibIL)&quot; --targetarch:$(TargetArchitecture) --targetos:$(TargetOS) --obj-format:wasm --codegenopt:JitWasmNyiToR2RUnsupported=1 --codegenopt:JitWasmSimdNyiToR2RUnsupported=1 -O &quot;%(_WasmFrameworkR2RInput.FullPath)&quot;" />
   </Target>
 
   <!-- No Inputs/Outputs so images are packed even when crossgen was incrementally skipped. native/r2r is a

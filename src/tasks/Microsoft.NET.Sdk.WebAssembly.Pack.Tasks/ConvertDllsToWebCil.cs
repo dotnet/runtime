@@ -28,7 +28,7 @@ public class ConvertDllsToWebcil : Task
     /// .dll candidate with empty <c>R2RWebcilPath</c>, the first matching image is staged instead of
     /// converting the IL. Empty for Mono.
     /// </summary>
-    public string[] PrebuiltR2RDirectories { get; set; }
+    public string[]? PrebuiltR2RDirectories { get; set; }
 
     public int WebcilVersion { get; set; }
 
