@@ -1358,7 +1358,7 @@ Copyright (c) .NET Foundation. All rights reserved.
     </ItemGroup>
   </Target>
 
-  <!-- CoreCLR browser-wasm R2R, isolated from Mono. '== false' (not '!= true'): Mono apps leave UseMonoRuntime unset. -->
+  <!-- CoreCLR browser-wasm R2R, isolated from Mono. '== false' (not '!= true'): the WasmSdk defaults UseMonoRuntime=true, so CoreCLR is the explicit opt-in. -->
   <Import Project="$(MSBuildThisFileDirectory)Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.targets"
           Condition="'$(UseMonoRuntime)' == 'false'" />
 </Project>
