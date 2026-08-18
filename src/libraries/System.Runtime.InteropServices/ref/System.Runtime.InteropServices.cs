@@ -353,7 +353,7 @@ namespace System.Runtime.InteropServices.Marshalling
         ManagedObjectWrapper = 0x1,
         ComObjectWrapper = 0x2,
     }
-    public sealed partial class ComObject : System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
+    public sealed partial class ComObject : System.Runtime.InteropServices.ComWrappersObject, System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
     {
         internal ComObject() { }
         public void FinalRelease() { }
