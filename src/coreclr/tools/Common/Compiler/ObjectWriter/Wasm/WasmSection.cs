@@ -15,7 +15,7 @@ namespace ILCompiler.ObjectWriter
     internal interface IWasmEmittable
     {
         int EmitToStream(Stream outputFileStream);
-        int EncodedSize();
+        int EncodeSize();
     }
 
     /// <summary>
@@ -45,7 +45,7 @@ namespace ILCompiler.ObjectWriter
         public Stream ContentReadStream { get; set; }
 
         public abstract int EmitToStream(Stream outputFileStream);
-        public abstract int EncodedSize();
+        public abstract int EncodeSize();
     }
 
     /// <summary>
@@ -70,7 +70,7 @@ namespace ILCompiler.ObjectWriter
 
         public virtual int ContentSize => (int)ContentReadStream.Length + ContentPrefixSize;
 
-        public override int EncodedSize()
+        public override int EncodeSize()
         {
             return HeaderSize + ContentSize;
         }
