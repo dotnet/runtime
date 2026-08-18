@@ -978,9 +978,12 @@ namespace System.Net.ServerSentEvents.Tests
         [Theory]
         [InlineData(false, MinConfigurableMaxBufferSize + 1)]
         [InlineData(true, MinConfigurableMaxBufferSize + 1)]
-        public async Task Parse_MaxBufferSize_ThrowsAfterConfiguredLimit(bool useAsync, int maxBufferSize)
+        public async Task Parse_MaxBufferSize_ThrowsForLongLine(bool useAsync, int maxBufferSize)
         {
-            using Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', maxBufferSize + 1)));
+            // ArrayPool can return larger buffers than requested; use a much longer line to ensure we're beyond
+            // whichever rented bucket size ends up backing the parser.
+            int lineLength = maxBufferSize + (MinConfigurableMaxBufferSize * 4);
+            using Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(new string('a', lineLength)));
             var options = new SseParserOptions<string>(static (_, bytes) => Encoding.UTF8.GetString(bytes.ToArray()))
             {
                 MaxBufferSize = maxBufferSize

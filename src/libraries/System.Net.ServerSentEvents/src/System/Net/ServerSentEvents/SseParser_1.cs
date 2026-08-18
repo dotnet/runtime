@@ -324,7 +324,15 @@ namespace System.Net.ServerSentEvents
                         newLength = int.MaxValue;
                     }
 
-                    GrowBuffer(ref _lineBuffer, newLength);
+                    if (newLength > _maxBufferSize)
+                    {
+                        newLength = _maxBufferSize;
+                    }
+
+                    if (newLength > _lineBuffer.Length)
+                    {
+                        GrowBuffer(ref _lineBuffer, newLength);
+                    }
                 }
             }
         }
@@ -506,6 +514,18 @@ namespace System.Net.ServerSentEvents
 
             int offset = _lineOffset + _lineLength;
             int count = _lineBuffer.Length - offset;
+            if (count == 0)
+            {
+                int probeBytesRead = _stream.Read(new byte[1], 0, 1);
+                if (probeBytesRead == 0)
+                {
+                    _eof = true;
+                    return 0;
+                }
+
+                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+            }
+
             int bytesRead = _stream.Read(
 #if NET
                 _lineBuffer.AsSpan(offset, count));
@@ -516,10 +536,6 @@ namespace System.Net.ServerSentEvents
             if (bytesRead > 0)
             {
                 _lineLength += bytesRead;
-                if (_lineLength > _maxBufferSize)
-                {
-                    throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
-                }
             }
             else
             {
@@ -536,15 +552,23 @@ namespace System.Net.ServerSentEvents
             ShiftOrGrowLineBufferIfNecessary();
 
             int offset = _lineOffset + _lineLength;
+            if (offset == _lineBuffer.Length)
+            {
+                int probeBytesRead = await _stream.ReadAsync(new byte[1].AsMemory(), cancellationToken).ConfigureAwait(false);
+                if (probeBytesRead == 0)
+                {
+                    _eof = true;
+                    return 0;
+                }
+
+                throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
+            }
+
             int bytesRead = await _stream.ReadAsync(_lineBuffer.AsMemory(offset), cancellationToken).ConfigureAwait(false);
 
             if (bytesRead > 0)
             {
                 _lineLength += bytesRead;
-                if (_lineLength > _maxBufferSize)
-                {
-                    throw new InvalidDataException(SR.InvalidDataException_SseExceededMaxLength);
-                }
             }
             else
             {
