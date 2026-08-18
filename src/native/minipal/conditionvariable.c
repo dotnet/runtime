@@ -83,6 +83,61 @@ bool minipal_condition_variable_broadcast(minipal_condition_variable* condition)
 #endif // HOST_WINDOWS
 }
 
+bool minipal_condition_variable_signal(minipal_condition_variable* condition)
+{
+    assert(condition != NULL);
+#ifdef HOST_WINDOWS
+    WakeConditionVariable(&condition->_impl);
+    return true;
+#else
+    return pthread_cond_signal(&condition->_impl) == 0;
+#endif // HOST_WINDOWS
+}
+
+#ifndef HOST_WINDOWS
+static minipal_condition_variable_result minipal_condition_variable_wait_pthread(
+    minipal_condition_variable* condition,
+    pthread_mutex_t* mutex,
+    uint32_t timeoutMilliseconds)
+{
+    int error;
+    if (timeoutMilliseconds == MINIPAL_CONDITION_VARIABLE_INFINITE)
+    {
+        error = pthread_cond_wait(&condition->_impl, mutex);
+    }
+    else
+    {
+        struct timespec timeout;
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+        uint64_t nanoseconds = (uint64_t)timeoutMilliseconds * NANOSECONDS_PER_MILLISECOND;
+        timeout.tv_sec = (time_t)(nanoseconds / NANOSECONDS_PER_SECOND);
+        timeout.tv_nsec = (long)(nanoseconds % NANOSECONDS_PER_SECOND);
+        error = pthread_cond_timedwait_relative_np(&condition->_impl, mutex, &timeout);
+#else
+#if HAVE_PTHREAD_CONDATTR_SETCLOCK
+        const clockid_t waitClock = CLOCK_MONOTONIC;
+#else
+        const clockid_t waitClock = CLOCK_REALTIME;
+#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK
+        if (!GetDeadline(waitClock, timeoutMilliseconds, &timeout))
+        {
+            return MINIPAL_CONDITION_VARIABLE_FAILED;
+        }
+        error = pthread_cond_timedwait(&condition->_impl, mutex, &timeout);
+#endif // HAVE_CLOCK_GETTIME_NSEC_NP
+    }
+
+    if (error == 0)
+    {
+        return MINIPAL_CONDITION_VARIABLE_SIGNALED;
+    }
+
+    return error == ETIMEDOUT
+        ? MINIPAL_CONDITION_VARIABLE_TIMED_OUT
+        : MINIPAL_CONDITION_VARIABLE_FAILED;
+}
+#endif // !HOST_WINDOWS
+
 minipal_condition_variable_result minipal_condition_variable_wait(
     minipal_condition_variable* condition,
     minipal_mutex* mutex,
@@ -101,40 +156,28 @@ minipal_condition_variable_result minipal_condition_variable_wait(
         ? MINIPAL_CONDITION_VARIABLE_TIMED_OUT
         : MINIPAL_CONDITION_VARIABLE_FAILED;
 #else
-    int error;
-    if (timeoutMilliseconds == MINIPAL_CONDITION_VARIABLE_INFINITE)
-    {
-        error = pthread_cond_wait(&condition->_impl, &mutex->_impl);
-    }
-    else
-    {
-        struct timespec timeout;
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-        uint64_t nanoseconds = (uint64_t)timeoutMilliseconds * NANOSECONDS_PER_MILLISECOND;
-        timeout.tv_sec = (time_t)(nanoseconds / NANOSECONDS_PER_SECOND);
-        timeout.tv_nsec = (long)(nanoseconds % NANOSECONDS_PER_SECOND);
-        error = pthread_cond_timedwait_relative_np(&condition->_impl, &mutex->_impl, &timeout);
-#else
-#if HAVE_PTHREAD_CONDATTR_SETCLOCK
-        const clockid_t waitClock = CLOCK_MONOTONIC;
-#else
-        const clockid_t waitClock = CLOCK_REALTIME;
-#endif // HAVE_PTHREAD_CONDATTR_SETCLOCK
-        if (!GetDeadline(waitClock, timeoutMilliseconds, &timeout))
-        {
-            return MINIPAL_CONDITION_VARIABLE_FAILED;
-        }
-        error = pthread_cond_timedwait(&condition->_impl, &mutex->_impl, &timeout);
-#endif // HAVE_CLOCK_GETTIME_NSEC_NP
-    }
+    return minipal_condition_variable_wait_pthread(condition, &mutex->_impl, timeoutMilliseconds);
+#endif // HOST_WINDOWS
+}
 
-    if (error == 0)
+minipal_condition_variable_result minipal_condition_variable_wait_nonrecursive(
+    minipal_condition_variable* condition,
+    minipal_nonrecursive_mutex* mutex,
+    uint32_t timeoutMilliseconds)
+{
+    assert(condition != NULL);
+    assert(mutex != NULL);
+
+#ifdef HOST_WINDOWS
+    if (SleepConditionVariableSRW(&condition->_impl, &mutex->_impl, timeoutMilliseconds, 0) != FALSE)
     {
         return MINIPAL_CONDITION_VARIABLE_SIGNALED;
     }
 
-    return error == ETIMEDOUT
+    return GetLastError() == ERROR_TIMEOUT
         ? MINIPAL_CONDITION_VARIABLE_TIMED_OUT
         : MINIPAL_CONDITION_VARIABLE_FAILED;
+#else
+    return minipal_condition_variable_wait_pthread(condition, &mutex->_impl, timeoutMilliseconds);
 #endif // HOST_WINDOWS
 }

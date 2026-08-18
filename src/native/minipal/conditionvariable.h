@@ -45,12 +45,22 @@ void minipal_condition_variable_destroy(minipal_condition_variable* condition);
 // Wake all threads waiting on the condition variable.
 bool minipal_condition_variable_broadcast(minipal_condition_variable* condition);
 
+// Wake one thread waiting on the condition variable.
+bool minipal_condition_variable_signal(minipal_condition_variable* condition);
+
 // Atomically release the entered mutex and wait, then reacquire it before returning.
 // The calling thread must have entered the mutex exactly once.
 // The caller must recheck its predicate after every signaled result because wakes may be spurious.
 minipal_condition_variable_result minipal_condition_variable_wait(
     minipal_condition_variable* condition,
     minipal_mutex* mutex,
+    uint32_t timeoutMilliseconds);
+
+// Atomically release the entered non-recursive mutex and wait, then reacquire it before returning.
+// The caller must recheck its predicate after every signaled result because wakes may be spurious.
+minipal_condition_variable_result minipal_condition_variable_wait_nonrecursive(
+    minipal_condition_variable* condition,
+    minipal_nonrecursive_mutex* mutex,
     uint32_t timeoutMilliseconds);
 
 #ifdef __cplusplus
