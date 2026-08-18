@@ -313,24 +313,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            // For struct returns via retbuf: the R2R function has already written the struct
-            // into pRet. Zero-pad to the appropriate alignment boundary.
-            if (hasRetBuffArg)
-            {
-                TypeDesc returnType = methodSignature.ReturnType;
-                int structSize = returnType.GetElementSize().AsInt;
-                int alignment = structSize <= 4 ? 4 : 8;
-                int padding = AlignmentHelper.AlignUp(structSize, alignment) - structSize;
-                if (padding > 0)
-                {
-                    expressions.Add(Local.Get(LocalPRet));
-                    expressions.Add(I32.Const(structSize));
-                    expressions.Add(I32.Add);
-                    expressions.Add(I32.Const(0));
-                    expressions.Add(I32.Const(padding));
-                    expressions.Add(Memory.Fill());
-                }
-            }
+            // For struct returns via retbuf the R2R function has already written the struct into
+            // pRet, and there is nothing more to do.
 
             // Restore the stack pointer global
             expressions.Add(Local.Get(localSavedSp));
