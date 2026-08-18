@@ -3,8 +3,8 @@
 Microsoft.NET.Sdk.WebAssembly.Browser.CoreCLR.targets
 
 ReadyToRun for CoreCLR browser-wasm. See PR.md / dotnet/runtime#121257 for the full design.
-MUST be a .targets (not .props) and import on '== false' (not '!= true'): the SDK defaults
-UseMonoRuntime=true and imports .props before the body sets it false, and Mono apps leave it unset.
+MUST be a .targets (not .props) and import on '== false' (not '!= true'): the WasmSdk defaults
+UseMonoRuntime=true (SDK Sdk.props), so CoreCLR is the explicit '== false' opt-in.
 
 Copyright (c) .NET Foundation. All rights reserved.
 ***********************************************************************************************
@@ -17,9 +17,11 @@ Copyright (c) .NET Foundation. All rights reserved.
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
-    <!-- Force over SDK defaults: net11+ defaults ContainerFormat=pe (unloadable on wasm); staging requires non-composite. -->
-    <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' != 'wasm'">wasm</PublishReadyToRunContainerFormat>
-    <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' != 'false'">false</PublishReadyToRunComposite>
+    <!-- Override only the incompatible SDK default: net11+ defaults ContainerFormat=pe (unloadable on wasm).
+         An explicit unsupported value is left as-is and rejected by _WasmCoreClrSelectR2RDirectories. -->
+    <PublishReadyToRunContainerFormat Condition="'$(PublishReadyToRunContainerFormat)' == '' or '$(PublishReadyToRunContainerFormat)' == 'pe'">wasm</PublishReadyToRunContainerFormat>
+    <!-- Default non-composite when unset; an explicit composite request is rejected below. -->
+    <PublishReadyToRunComposite Condition="'$(PublishReadyToRunComposite)' == ''">false</PublishReadyToRunComposite>
     <!-- NYI/SIMD methods crossgen2 can't emit into R2R fall back to the runtime JIT. -->
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
@@ -30,6 +32,10 @@ Copyright (c) .NET Foundation. All rights reserved.
        here (target time) because _RuntimePackNativeDir is only set by _ResolveGlobalizationConfiguration. -->
   <Target Name="_WasmCoreClrSelectR2RDirectories"
           DependsOnTargets="_ResolveWasmConfiguration">
+    <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'"
+           Text="PublishReadyToRunComposite is not supported for CoreCLR browser-wasm; only non-composite (per-assembly) R2R images are supported." />
+    <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunContainerFormat)' != 'wasm'"
+           Text="PublishReadyToRunContainerFormat '$(PublishReadyToRunContainerFormat)' is not supported for CoreCLR browser-wasm; only 'wasm' is supported." />
     <PropertyGroup>
       <_WasmPackR2RDir Condition="'$(_WasmPackR2RDir)' == '' and '$(_RuntimePackNativeDir)' != ''">$([MSBuild]::NormalizeDirectory('$(_RuntimePackNativeDir)', 'r2r'))</_WasmPackR2RDir>
     </PropertyGroup>
