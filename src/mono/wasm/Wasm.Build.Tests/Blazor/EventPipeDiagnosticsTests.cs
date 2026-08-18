@@ -27,8 +27,6 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     // collection is reported as a test failure instead of killing the whole work item.
     private static readonly TimeSpan s_traceCollectionTimeout = TimeSpan.FromMinutes(3);
 
-    private static readonly Regex s_wasmExitRegex = new Regex("WASM EXIT (?<exitCode>-?[0-9]+)$", RegexOptions.Compiled);
-
     public EventPipeDiagnosticsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
@@ -359,7 +357,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
             if (message.Type == "error")
                 lastConsoleError = message.Text;
 
-            Match exit = s_wasmExitRegex.Match(message.Text);
+            Match exit = BrowserRunner.s_exitRegex.Match(message.Text);
             if (exit.Success && exit.Groups["exitCode"].Value != "0")
                 runtimeFailed.TrySetResult(lastConsoleError ?? $"the app exited with code {exit.Groups["exitCode"].Value}");
         }
