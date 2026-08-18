@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <DumpTypes>Mini;Heap;Full</DumpTypes>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <EnvironmentVariables>DOTNET_DbgUseCdacLite=1</EnvironmentVariables>
+    <WindowsOnly>true</WindowsOnly>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\BasicThreads\Program.cs" Link="Program.cs" />
+  </ItemGroup>
+</Project>
