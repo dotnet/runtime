@@ -481,14 +481,6 @@ void InvokeUnmanagedMethod(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet
     InvokeManagedMethod(targetMethod, pArgs, pRet, callTarget, NULL);
 }
 
-void InvokeUnmanagedMethodInPreemptiveMode(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
-{
-    WRAPPER_NO_CONTRACT;
-
-    GCX_PREEMP();
-    InvokeUnmanagedMethod(targetMethod, pArgs, pRet, callTarget);
-}
-
 static NOINLINE CallStubHeader *InvokeDelegateInvokeMethodHelper(MethodDesc *pMDDelegateInvoke)
 {
     CONTRACTL
@@ -627,6 +619,14 @@ CallStubHeader *CreateNativeToInterpreterCallStub(InterpMethod* pInterpMethod)
     return pHeader;
 }
 #endif // !TARGET_WASM
+
+void InvokeUnmanagedMethodInPreemptiveMode(MethodDesc *targetMethod, int8_t *pArgs, int8_t *pRet, PCODE callTarget)
+{
+    WRAPPER_NO_CONTRACT;
+
+    GCX_PREEMP();
+    InvokeUnmanagedMethod(targetMethod, pArgs, pRet, callTarget);
+}
 
 #ifdef _DEBUG
 void DBG_PrintInterpreterStack()
