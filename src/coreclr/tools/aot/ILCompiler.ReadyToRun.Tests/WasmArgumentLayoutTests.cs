@@ -608,6 +608,35 @@ public class WasmArgumentLayoutTests
     }
 
     /// <summary>
+    /// A type has to get the same token at the interop boundary as it does inside a lowered method
+    /// signature, because the runtime looks a thunk up by the signature the compiler produced. The
+    /// two encoders are separate code, so this pins them together for each shape the ABI treats
+    /// differently: multi-segment types passed by value across several slots, structs passed by
+    /// reference, single-field wrappers, and primitives.
+    /// </summary>
+    [Theory]
+    [InlineData("Int128")]
+    [InlineData("UInt128")]
+    [InlineData("Guid")]
+    [InlineData("DateTime")]
+    [InlineData("Int32")]
+    [InlineData("Double")]
+    public void WasmInteropGeneratorEncodesTypesTheSameWayInAndOutOfASignature(string typeName)
+    {
+        ReadyToRunCompilerContext context = CreateWasmContext();
+        TypeDesc type = GetSystemType(context, typeName);
+
+        string signature = WasmLowering.GetSignature(
+            MakeStaticVoidSignature(context, type),
+            WasmLowering.LoweringFlags.None).SignatureString;
+        _output.WriteLine($"{typeName} lowers to '{signature}' in a signature");
+
+        // 'v' return, then the single parameter, then the 'p' entrypoint suffix.
+        List<string> tokens = WasmInteropSignature.ParseSignatureTokens(signature);
+        Assert.Equal(tokens[1], WasmInteropSignature.GetAbiToken(type));
+    }
+
+    /// <summary>
     /// Real builds hand the generator the whole app closure, not one assembly. The compilation group
     /// it configures has to accept that: a multi-assembly set is only legal in composite mode, and a
     /// group built without it asserts in checked builds and lays out nothing in any build.

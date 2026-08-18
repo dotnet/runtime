@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 
+using ILCompiler.DependencyAnalysis.Wasm;
 using Internal.JitInterface;
 using Internal.TypeSystem;
 
@@ -63,6 +64,14 @@ namespace ILCompiler.Wasm
             TypeDesc loweredType = WasmLowering.LowerToAbiType(type);
             if (loweredType is null)
             {
+                // WasmLowering.GetSignature splits this case in two, and both have to be mirrored
+                // here or a type gets one token in a method signature and a different one at the
+                // interop boundary. Multi-segment types come first: they travel by value across
+                // several wasm parameters, so calling them by-reference structs would both hide
+                // them from the multi-slot rejection and mis-declare them in C.
+                if (WasmLowering.TryGetMultiSegmentLayout(type, out WasmValueType slotType, out int slotCount))
+                    return string.Create(CultureInfo.InvariantCulture, $"{WasmLowering.WasmValueTypeToSigChar(slotType)}{slotCount}");
+
                 // Passed by reference; the size is what the callee needs to know. 'A' marks a struct
                 // whose alignment exceeds a stack slot, matching what WasmLowering.GetSignature emits
                 // so a type gets the same token here as it does inside a method signature.
