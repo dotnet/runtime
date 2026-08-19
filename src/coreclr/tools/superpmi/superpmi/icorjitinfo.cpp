@@ -1109,7 +1109,7 @@ void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
     // The JIT reports metrics in the order they are declared in jitmetadatalist.h,
     // so resume the search where the previous one matched instead of always scanning
     // from the start. In practice this matches on the first comparison.
-    size_t index = metricSearchStart;
+    size_t index = m_metricSearchStart;
     for (size_t i = 0; i < count; i++)
     {
         const MetricEntry& entry = s_metrics[index];
@@ -1122,7 +1122,7 @@ void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
 
         if (strcmp(key, entry.Name) == 0)
         {
-            metricSearchStart = index;
+            m_metricSearchStart = index;
             entry.Store(jitInstance->mc->cr, value, length);
             return;
         }
