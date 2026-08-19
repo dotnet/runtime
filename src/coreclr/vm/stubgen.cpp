@@ -719,6 +719,12 @@ bool ILStubLinker::FirstPassLink(ILInstruction* pInstrBuffer, UINT numInstr, siz
         ILCodeStream::ILInstrEnum instr = (ILCodeStream::ILInstrEnum)pInstrBuffer[i].uInstruction;
         CONSISTENCY_CHECK(ILCodeStream::IsSupportedInstruction(instr));
 
+        if ((instr == ILCodeStream::CEE_LDARG) && (pInstrBuffer[i].uArg == SECRET_STUB_ARGUMENT))
+        {
+            CONSISTENCY_CHECK(m_uSecretStubArgumentIndex != static_cast<DWORD>(-1));
+            pInstrBuffer[i].uArg = m_uSecretStubArgumentIndex + (m_fHasThis ? 1 : 0);
+        }
+
         //
         // down-size instructions
         //
@@ -1468,6 +1474,11 @@ void ILCodeStream::EmitLDARG   (unsigned uArgIdx)
         uArgIdx++;
     }
     Emit(CEE_LDARG, 1, uArgIdx);
+}
+void ILCodeStream::EmitLoadSecretStubArgument()
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_LDARG, 1, ILStubLinker::SECRET_STUB_ARGUMENT);
 }
 void ILCodeStream::EmitLDARGA  (unsigned uArgIdx)
 {
@@ -2506,6 +2517,7 @@ ILStubLinker::ILStubLinker(Module* pStubSigModule, const Signature &signature, S
     m_iTargetStackDelta(0),
     m_cbCurrentCompressedSigLen(1),
     m_nLocals(0),
+    m_uSecretStubArgumentIndex(static_cast<DWORD>(-1)),
     m_fHasThis(false),
     m_pMD(pMD),
     m_pBuildingEHClauseStack(NULL),
@@ -2920,6 +2932,14 @@ DWORD ILStubLinker::SetStubTargetArgType(CorElementType typ, bool fConsumeStubAr
 
     LocalDesc locDesc(typ);
     return SetStubTargetArgType(&locDesc, fConsumeStubArg);
+}
+
+void ILStubLinker::SetSecretStubArgumentIndex(DWORD uArgIdx)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    _ASSERTE(m_uSecretStubArgumentIndex == static_cast<DWORD>(-1));
+    m_uSecretStubArgumentIndex = uArgIdx;
 }
 
 void ILStubLinker::SetStubTargetCallingConv(CorCallingConvention uNativeCallingConv)

@@ -486,7 +486,7 @@ public:
     void    EmitValidateLocal(ILCodeStream* pcsEmit, DWORD dwLocalNum, bool fIsByref, DWORD dwStubFlags);
     void    EmitObjectValidation(ILCodeStream* pcsEmit, DWORD dwStubFlags);
 #endif // VERIFY_HEAP
-    void    EmitLoadStubContext(ILCodeStream* pcsEmit, DWORD dwStubFlags);
+    void    AppendSecretStubArgumentToTargetSignature();
     void    GenerateInteropParamException(ILCodeStream* pcsEmit);
     void    NeedsCleanupList();
 
