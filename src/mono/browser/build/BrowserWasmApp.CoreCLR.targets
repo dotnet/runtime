@@ -75,10 +75,6 @@
     <WasmEnvironmentVariable Condition="'$(_WasmPerfInstInterval)' != ''" Include="DOTNET_EventPipeThreadSamplingRate" Value="$(_WasmPerfInstInterval)" />
   </ItemGroup>
 
-  <!-- Derive Emscripten paths from EMSDK_PATH when workload paths are not set -->
-  <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
-          Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
-
   <!-- Task declarations: Both tasks live in WasmAppBuilder.dll -->
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile"
              AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"
@@ -146,6 +142,11 @@
        (MSBuild last-definition-wins), so the in-tree list is always authoritative. -->
   <Import Project="$(RepositoryEngineeringDir)native.wasm.targets"
           Condition="'$(RepositoryEngineeringDir)' != '' and Exists('$(RepositoryEngineeringDir)native.wasm.targets')" />
+
+  <!-- Derive Emscripten paths from EMSDK_PATH when workload paths are not set. Must come after
+       native.wasm.targets, which imports AcquireEmscriptenSdk.targets that sets EMSDK_PATH in-tree. -->
+  <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props"
+          Condition="'$(EMSDK_PATH)' != '' and '$(EmscriptenSdkToolsPath)' == ''" />
 
   <!-- Allow running/debugging from VS -->
   <ItemGroup>
