@@ -184,7 +184,7 @@ namespace System.Text.Json.Serialization
                     int originalPropertyDepth = reader.CurrentDepth;
                     long originalPropertyBytesConsumed = reader.BytesConsumed;
 
-                    if (state.Current.NumberHandling != null && IsInternalConverterForNumberType)
+                    if (state.Current.NumberHandling is not null && IsInternalConverterForNumberType)
                     {
                         value = ReadNumberWithCustomHandling(ref reader, state.Current.NumberHandling.Value, options);
                     }

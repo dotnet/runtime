@@ -384,7 +384,7 @@ namespace System.Text.Json
             return new JsonReaderException(message, lineNumber, bytePositionInLine);
         }
 
-        private static bool IsPrintable(byte value) => value >= 0x20 && value < 0x7F;
+        private static bool IsPrintable(byte value) => value is >= 0x20 and < 0x7F;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static string GetPrintableString(byte value)
