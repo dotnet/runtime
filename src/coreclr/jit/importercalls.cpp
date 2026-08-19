@@ -336,6 +336,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     /*-------------------------------------------------------------------------
      * First create the call node
+     *
+     * Initialize operation side effects for direct calls before attaching operands,
+     * since gtUpdateNodeOperSideEffects does not preserve operand-derived flags.
      */
 
     if (opcode == CEE_CALLI)
@@ -570,7 +573,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 else
                 {
                     // The stub address is known at compile time
-                    call                               = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                    call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                    gtUpdateNodeOperSideEffects(call);
                     call->AsCall()->gtStubCallStubAddr = callInfo->stubLookup.constLookup.addr;
                     call->gtFlags |= GTF_CALL_VIRT_STUB;
                     assert(callInfo->stubLookup.constLookup.accessType != IAT_PPVALUE &&
@@ -601,6 +605,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 assert(!(mflags & CORINFO_FLG_STATIC)); // can't call a static method
                 assert(!(clsFlags & CORINFO_FLG_VALUECLASS));
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                gtUpdateNodeOperSideEffects(call);
                 call->gtFlags |= GTF_CALL_VIRT_VTABLE;
 
                 if (opts.OptimizationEnabled())
@@ -669,6 +674,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
                 call->AsCall()
                     ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
+                call->gtFlags |= thisPtrCopy->gtFlags & GTF_ALL_EFFECT;
 
                 // Now make an indirect call through the function pointer
                 call->AsCall()->gtControlExpr = fptr;
@@ -728,6 +734,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 // This is for a non-virtual, non-interface etc. call
                 call = gtNewCallNode(CT_USER_FUNC, callInfo->hMethod, callRetTyp, di);
+                gtUpdateNodeOperSideEffects(call);
 
                 // We remove the nullcheck for the GetType call intrinsic.
                 // TODO-CQ: JIT64 does not introduce the null check for many more helper calls
@@ -1078,18 +1085,21 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(varArgsCookie)
                                                            .WellKnown(WellKnownArg::VarArgsCookie));
+                call->gtFlags |= varArgsCookie->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (asyncContinuation != nullptr)
             {
                 call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(asyncContinuation)
                                                            .WellKnown(WellKnownArg::AsyncContinuation));
+                call->gtFlags |= asyncContinuation->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (instParam != nullptr)
             {
                 call->AsCall()->gtArgs.PushFront(this,
                                                  NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
+                call->gtFlags |= instParam->gtFlags & GTF_ALL_EFFECT;
             }
         }
         else
@@ -1098,18 +1108,21 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(asyncContinuation)
                                                           .WellKnown(WellKnownArg::AsyncContinuation));
+                call->gtFlags |= asyncContinuation->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (instParam != nullptr)
             {
                 call->AsCall()->gtArgs.PushBack(this,
                                                 NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam));
+                call->gtFlags |= instParam->gtFlags & GTF_ALL_EFFECT;
             }
 
             if (varArgsCookie != nullptr)
             {
                 call->AsCall()->gtArgs.PushBack(this, NewCallArg::Primitive(varArgsCookie)
                                                           .WellKnown(WellKnownArg::VarArgsCookie));
+                call->gtFlags |= varArgsCookie->gtFlags & GTF_ALL_EFFECT;
             }
         }
     }
@@ -1209,11 +1222,6 @@ DEVIRT:
 
     if (opcode == CEE_NEWOBJ)
     {
-        if (call->IsCall())
-        {
-            gtUpdateNodeSideEffects(call);
-        }
-
         if (clsFlags & CORINFO_FLG_VAROBJSIZE)
         {
             assert(!(clsFlags & CORINFO_FLG_ARRAY)); // arrays handled separately
@@ -1559,11 +1567,6 @@ DONE:
     }
 
 DONE_CALL:
-    if (call->IsCall())
-    {
-        gtUpdateNodeSideEffects(call);
-    }
-
     // Push or append the result of the call
     if (callRetTyp == TYP_VOID)
     {
