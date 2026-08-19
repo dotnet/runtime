@@ -97,7 +97,7 @@ namespace System.Text.Json.Serialization
                 _keyConverter ??= GetConverter<TKey>(keyTypeInfo);
                 _valueConverter ??= GetConverter<TValue>(elementTypeInfo);
 
-                if (_valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+                if (_valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling is null)
                 {
                     // Process all elements.
                     while (true)
@@ -338,7 +338,7 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            if (dictionary == null)
+            if (dictionary is null)
             {
                 writer.WriteNullValue();
                 return true;

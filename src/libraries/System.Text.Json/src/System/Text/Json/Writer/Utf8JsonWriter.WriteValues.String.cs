@@ -46,7 +46,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteStringValue(string? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 WriteNullValue();
             }
@@ -199,7 +199,7 @@ namespace System.Text.Json
 
             WriteStringByOptions(escapedValue.Slice(0, written), requiredBytes);
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<char>.Shared.Return(valueArray);
             }
@@ -346,7 +346,7 @@ namespace System.Text.Json
 
             WriteStringByOptions(escapedValue.Slice(0, written));
 
-            if (valueArray != null)
+            if (valueArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(valueArray);
             }

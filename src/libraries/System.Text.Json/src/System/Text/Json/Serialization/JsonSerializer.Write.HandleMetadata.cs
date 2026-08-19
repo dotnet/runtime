@@ -25,7 +25,7 @@ namespace System.Text.Json
 
             MetadataPropertyName writtenMetadata = MetadataPropertyName.None;
 
-            if (state.NewReferenceId != null)
+            if (state.NewReferenceId is not null)
             {
                 writer.WriteString(s_metadataId, state.NewReferenceId);
                 writtenMetadata |= MetadataPropertyName.Id;

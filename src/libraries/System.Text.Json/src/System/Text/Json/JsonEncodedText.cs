@@ -143,9 +143,9 @@ namespace System.Text.Json
         /// </remarks>
         public bool Equals(JsonEncodedText other)
         {
-            if (_value == null)
+            if (_value is null)
             {
-                return other._value == null;
+                return other._value is null;
             }
             else
             {

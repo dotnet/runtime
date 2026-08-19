@@ -592,7 +592,7 @@ namespace System.Text.Json.Serialization.Metadata
                     continue;
                 }
 
-                bool hasJsonIncludeAttribute = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+                bool hasJsonIncludeAttribute = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) is not null;
 
                 // Only include properties that either have a public getter or a public setter or have the JsonIncludeAttribute set.
                 if (propertyInfo.GetMethod?.IsPublic == true ||
@@ -614,7 +614,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             foreach (FieldInfo fieldInfo in currentType.GetFields(AllInstanceMembers))
             {
-                bool hasJsonIncludeAttribute = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+                bool hasJsonIncludeAttribute = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) is not null;
                 if (hasJsonIncludeAttribute || (fieldInfo.IsPublic && typeInfo.Options.IncludeFields))
                 {
                     AddMember(
@@ -645,7 +645,7 @@ namespace System.Text.Json.Serialization.Metadata
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
             JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, typeNamingPolicy, nullabilityCtx, typeIgnoreCondition, typeInfo.Options, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
-            if (jsonPropertyInfo == null)
+            if (jsonPropertyInfo is null)
             {
                 // ignored invalid property
                 return;
@@ -834,7 +834,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             jsonPropertyInfo.IgnoreCondition = ignoreCondition;
-            jsonPropertyInfo.IsExtensionData = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) != null;
+            jsonPropertyInfo.IsExtensionData = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) is not null;
         }
 
         private static void DeterminePropertyPolicies(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
@@ -853,7 +853,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonPropertyNameAttribute? nameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(inherit: false);
             string? name;
-            if (nameAttribute != null)
+            if (nameAttribute is not null)
             {
                 name = nameAttribute.Name;
             }
@@ -868,7 +868,7 @@ namespace System.Text.Json.Serialization.Metadata
                     : memberInfo.Name;
             }
 
-            if (name == null)
+            if (name is null)
             {
                 ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(propertyInfo);
             }
@@ -879,7 +879,7 @@ namespace System.Text.Json.Serialization.Metadata
         private static void DeterminePropertyIsRequired(JsonPropertyInfo propertyInfo, MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)
         {
             propertyInfo.IsRequired =
-                memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) != null
+                memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) is not null
                 || (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute());
         }
 

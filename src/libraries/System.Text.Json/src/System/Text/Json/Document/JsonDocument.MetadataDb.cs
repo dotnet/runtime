@@ -151,7 +151,7 @@ namespace System.Text.Json
             public void Dispose()
             {
                 byte[]? data = Interlocked.Exchange(ref _data, null!);
-                if (data == null)
+                if (data is null)
                 {
                     return;
                 }

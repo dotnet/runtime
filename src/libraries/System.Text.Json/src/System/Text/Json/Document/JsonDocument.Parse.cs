@@ -857,7 +857,7 @@ namespace System.Text.Json
             }
             catch
             {
-                if (rented != null)
+                if (rented is not null)
                 {
                     // Holds document content, clear it before returning it.
                     rented.AsSpan(0, written).Clear();
@@ -939,7 +939,7 @@ namespace System.Text.Json
             }
             catch
             {
-                if (rented != null)
+                if (rented is not null)
                 {
                     // Holds document content, clear it before returning it.
                     rented.AsSpan(0, written).Clear();

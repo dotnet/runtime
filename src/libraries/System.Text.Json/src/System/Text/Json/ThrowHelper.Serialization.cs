@@ -244,7 +244,7 @@ namespace System.Text.Json
         [DoesNotReturn]
         public static void ThrowInvalidOperationException_SerializerOptionsReadOnly(JsonSerializerContext? context)
         {
-            string message = context == null
+            string message = context is null
                 ? SR.SerializerOptionsReadOnly
                 : SR.SerializerContextOptionsReadOnly;
 

@@ -97,7 +97,7 @@ namespace System.Text.Json.Serialization.Converters
                         state.Current.JsonPropertyInfo = jsonPropertyInfo;
                         state.Current.NumberHandling = jsonPropertyInfo.EffectiveNumberHandling;
 
-                        bool useExtensionProperty = dataExtKey != null;
+                        bool useExtensionProperty = dataExtKey is not null;
 
                         if (useExtensionProperty)
                         {
@@ -222,7 +222,7 @@ namespace System.Text.Json.Serialization.Converters
                         object? propValue = argumentState.FoundPropertiesAsync![i].Item2;
                         string? dataExtKey = argumentState.FoundPropertiesAsync![i].Item3;
 
-                        if (dataExtKey == null)
+                        if (dataExtKey is null)
                         {
                             Debug.Assert(jsonPropertyInfo.Set is not null);
 
@@ -278,7 +278,7 @@ namespace System.Text.Json.Serialization.Converters
             value = (T)obj;
 
             // Check if we are trying to update the UTF-8 property cache.
-            if (state.Current.PropertyRefCacheBuilder != null)
+            if (state.Current.PropertyRefCacheBuilder is not null)
             {
                 jsonTypeInfo.UpdateUtf8PropertyCache(ref state.Current);
             }
@@ -360,7 +360,7 @@ namespace System.Text.Json.Serialization.Converters
                     {
                         ArgumentState argumentState = state.Current.CtorArgumentState!;
 
-                        if (argumentState.FoundProperties == null)
+                        if (argumentState.FoundProperties is null)
                         {
                             argumentState.FoundProperties =
                                 ArrayPool<FoundProperty>.Shared.Rent(Math.Max(1, state.Current.JsonTypeInfo.PropertyCache.Length));
@@ -452,7 +452,7 @@ namespace System.Text.Json.Serialization.Converters
                     jsonPropertyInfo = state.Current.JsonPropertyInfo;
                 }
 
-                if (jsonParameterInfo != null)
+                if (jsonParameterInfo is not null)
                 {
                     Debug.Assert(jsonPropertyInfo is null);
 
@@ -557,7 +557,7 @@ namespace System.Text.Json.Serialization.Converters
 
             ArgumentState argumentState = state.Current.CtorArgumentState!;
 
-            if (argumentState.FoundPropertiesAsync == null)
+            if (argumentState.FoundPropertiesAsync is null)
             {
                 argumentState.FoundPropertiesAsync = ArrayPool<FoundPropertyAsync>.Shared.Rent(Math.Max(1, state.Current.JsonTypeInfo.PropertyCache.Length));
             }
@@ -635,7 +635,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             jsonParameterInfo = jsonPropertyInfo.AssociatedParameter;
-            if (jsonParameterInfo != null)
+            if (jsonParameterInfo is not null)
             {
                 state.Current.JsonPropertyInfo = null;
                 state.Current.CtorArgumentState!.JsonParameterInfo = jsonParameterInfo;

@@ -69,11 +69,11 @@ namespace System.Text.Json
             _parsedData.Dispose();
             _utf8Json = ReadOnlyMemory<byte>.Empty;
 
-            if (_extraRentedArrayPoolBytes != null)
+            if (_extraRentedArrayPoolBytes is not null)
             {
                 byte[]? extraRentedBytes = Interlocked.Exchange<byte[]?>(ref _extraRentedArrayPoolBytes, null);
 
-                if (extraRentedBytes != null)
+                if (extraRentedBytes is not null)
                 {
                     // When "extra rented bytes exist" it contains the document,
                     // and thus needs to be cleared before being returned.
@@ -81,7 +81,7 @@ namespace System.Text.Json
                     ArrayPool<byte>.Shared.Return(extraRentedBytes);
                 }
             }
-            else if (_extraPooledByteBufferWriter != null)
+            else if (_extraPooledByteBufferWriter is not null)
             {
                 PooledByteBufferWriter? extraBufferWriter = Interlocked.Exchange<PooledByteBufferWriter?>(ref _extraPooledByteBufferWriter, null);
                 extraBufferWriter?.Dispose();
@@ -326,7 +326,7 @@ namespace System.Text.Json
                 result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName, shouldUnescape: true);
             }
 
-            if (otherUtf8TextArray != null)
+            if (otherUtf8TextArray is not null)
             {
                 otherUtf8Text.Slice(0, written).Clear();
                 ArrayPool<byte>.Shared.Return(otherUtf8TextArray);
@@ -832,7 +832,7 @@ namespace System.Text.Json
 
         private static void ClearAndReturn(ArraySegment<byte> rented)
         {
-            if (rented.Array != null)
+            if (rented.Array is not null)
             {
                 rented.AsSpan().Clear();
                 ArrayPool<byte>.Shared.Return(rented.Array);

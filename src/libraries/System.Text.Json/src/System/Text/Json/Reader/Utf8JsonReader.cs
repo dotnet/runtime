@@ -562,7 +562,7 @@ namespace System.Text.Json
                 result = TextEqualsHelper(otherUtf8Text.Slice(0, written));
             }
 
-            if (otherUtf8TextArray != null)
+            if (otherUtf8TextArray is not null)
             {
                 otherUtf8Text.Slice(0, written).Clear();
                 ArrayPool<byte>.Shared.Return(otherUtf8TextArray);

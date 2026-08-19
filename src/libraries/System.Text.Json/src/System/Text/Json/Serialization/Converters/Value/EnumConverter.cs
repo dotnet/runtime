@@ -75,7 +75,7 @@ namespace System.Text.Json.Serialization.Converters
                 _nameCacheForReading.TryAdd(fieldInfo.JsonName, fieldInfo.Key);
             }
 
-            if (namingPolicy != null)
+            if (namingPolicy is not null)
             {
                 // Additionally populate the field index with the default names of fields that used a naming policy.
                 // This is done to preserve backward compat: default names should still be recognized by the parser.
@@ -285,7 +285,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
         End:
-            if (rentedBuffer != null)
+            if (rentedBuffer is not null)
             {
                 charBuffer.Clear();
                 ArrayPool<char>.Shared.Return(rentedBuffer);
@@ -556,14 +556,14 @@ namespace System.Text.Json.Serialization.Converters
                 ulong key = ConvertToUInt64(value);
                 EnumFieldNameKind kind;
 
-                if (enumMemberAttributes != null && enumMemberAttributes.TryGetValue(originalName, out string? attributeName))
+                if (enumMemberAttributes is not null && enumMemberAttributes.TryGetValue(originalName, out string? attributeName))
                 {
                     originalName = attributeName;
                     kind = EnumFieldNameKind.Attribute;
                 }
                 else
                 {
-                    kind = namingPolicy != null ? EnumFieldNameKind.NamingPolicy : EnumFieldNameKind.Default;
+                    kind = namingPolicy is not null ? EnumFieldNameKind.NamingPolicy : EnumFieldNameKind.Default;
                 }
 
                 string jsonName = ResolveAndValidateJsonName(originalName, namingPolicy, kind);

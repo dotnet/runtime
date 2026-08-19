@@ -154,7 +154,7 @@ namespace System.Text.Json
             written = indexOfFirstByteToEscape;
             consumed = indexOfFirstByteToEscape;
 
-            if (encoder != null)
+            if (encoder is not null)
             {
                 destination = destination.Slice(indexOfFirstByteToEscape);
                 value = value.Slice(indexOfFirstByteToEscape);
@@ -278,7 +278,7 @@ namespace System.Text.Json
             written = indexOfFirstByteToEscape;
             consumed = indexOfFirstByteToEscape;
 
-            if (encoder != null)
+            if (encoder is not null)
             {
                 destination = destination.Slice(indexOfFirstByteToEscape);
                 value = value.Slice(indexOfFirstByteToEscape);

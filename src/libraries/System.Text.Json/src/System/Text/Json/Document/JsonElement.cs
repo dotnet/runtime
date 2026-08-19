@@ -1442,7 +1442,7 @@ namespace System.Text.Json
 
             if (TokenType == JsonTokenType.Null)
             {
-                return text == null;
+                return text is null;
             }
 
             return TextEqualsHelper(text.AsSpan(), isPropertyName: false);
@@ -1704,7 +1704,7 @@ namespace System.Text.Json
 
         private void CheckValidInstance()
         {
-            if (_parent == null)
+            if (_parent is null)
             {
                 throw new InvalidOperationException();
             }

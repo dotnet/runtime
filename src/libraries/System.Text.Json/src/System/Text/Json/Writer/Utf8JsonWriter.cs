@@ -299,7 +299,7 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
                 throw new ArgumentNullException(nameof(utf8Json));
             }
@@ -310,7 +310,7 @@ namespace System.Text.Json
             }
 
             _stream = utf8Json;
-            if (_arrayBufferWriter == null)
+            if (_arrayBufferWriter is null)
             {
                 _arrayBufferWriter = new ArrayBufferWriter<byte>();
             }
@@ -425,10 +425,10 @@ namespace System.Text.Json
 
         private void CheckNotDisposed()
         {
-            if (_stream == null)
+            if (_stream is null)
             {
                 // The conditions are ordered with stream first as that would be the most common mode
-                if (_output == null)
+                if (_output is null)
                 {
                     ThrowHelper.ThrowObjectDisposedException_Utf8JsonWriter();
                 }
@@ -451,7 +451,7 @@ namespace System.Text.Json
 
             _memory = default;
 
-            if (_stream != null)
+            if (_stream is not null)
             {
                 Debug.Assert(_arrayBufferWriter is not null);
                 if (BytesPending != 0)
@@ -496,10 +496,10 @@ namespace System.Text.Json
         /// </remarks>
         public void Dispose()
         {
-            if (_stream == null)
+            if (_stream is null)
             {
                 // The conditions are ordered with stream first as that would be the most common mode
-                if (_output == null)
+                if (_output is null)
                 {
                     return;
                 }
@@ -527,10 +527,10 @@ namespace System.Text.Json
         /// </remarks>
         public async ValueTask DisposeAsync()
         {
-            if (_stream == null)
+            if (_stream is null)
             {
                 // The conditions are ordered with stream first as that would be the most common mode
-                if (_output == null)
+                if (_output is null)
                 {
                     return;
                 }
@@ -560,7 +560,7 @@ namespace System.Text.Json
 
             _memory = default;
 
-            if (_stream != null)
+            if (_stream is not null)
             {
                 Debug.Assert(_arrayBufferWriter is not null);
                 if (BytesPending != 0)
@@ -873,7 +873,7 @@ namespace System.Text.Json
 
             WriteStartByOptions(escapedPropertyName.Slice(0, written), token);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }
@@ -1022,7 +1022,7 @@ namespace System.Text.Json
 
             WriteStartByOptions(escapedPropertyName.Slice(0, written), token);
 
-            if (propertyArray != null)
+            if (propertyArray is not null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
@@ -1217,7 +1217,7 @@ namespace System.Text.Json
 
             Debug.Assert(BytesPending != 0);
 
-            if (_stream != null)
+            if (_stream is not null)
             {
                 Debug.Assert(_arrayBufferWriter is not null);
 
@@ -1252,7 +1252,7 @@ namespace System.Text.Json
 
             int sizeHint = Math.Max(InitialGrowthSize, requiredSize);
 
-            if (_stream != null)
+            if (_stream is not null)
             {
                 Debug.Assert(_arrayBufferWriter is not null);
                 _memory = _arrayBufferWriter.GetMemory(sizeHint);

@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Converters
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
             Func<object>? constructorDelegate = typeInfo.CreateObject;
 
-            if (constructorDelegate == null)
+            if (constructorDelegate is null)
             {
                 ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(Type, ref reader, ref state);
             }
@@ -43,7 +43,7 @@ namespace System.Text.Json.Serialization.Converters
         protected sealed override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
         {
             IEnumerator enumerator;
-            if (state.Current.CollectionEnumerator == null)
+            if (state.Current.CollectionEnumerator is null)
             {
                 enumerator = value.GetEnumerator();
                 state.Current.CollectionEnumerator = enumerator;

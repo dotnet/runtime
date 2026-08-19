@@ -116,7 +116,7 @@ namespace System.Text.Json
             bool isReadOnlyDictionary = jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>) ||
                                         jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>);
 
-            if (extensionData == null || (isReadOnlyDictionary && extensionData != null))
+            if (extensionData is null || (isReadOnlyDictionary && extensionData is not null))
             {
                 // Create the appropriate dictionary type. We already verified the types.
 #if DEBUG
@@ -137,7 +137,7 @@ namespace System.Text.Json
                 Func<object>? createObjectForExtensionDataProp = jsonPropertyInfo.JsonTypeInfo.CreateObject
                     ?? jsonPropertyInfo.JsonTypeInfo.CreateObjectForExtensionDataProperty;
 
-                if (createObjectForExtensionDataProp == null)
+                if (createObjectForExtensionDataProp is null)
                 {
                     // Avoid a reference to the JsonNode type for trimming
                     if (jsonPropertyInfo.PropertyType.FullName == JsonTypeInfo.JsonObjectTypeName)
@@ -148,7 +148,7 @@ namespace System.Text.Json
                     // create a Dictionary<TKey, TValue> instance seeded with any existing contents.
                     else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, object>))
                     {
-                        if (extensionData != null)
+                        if (extensionData is not null)
                         {
                             var existing = (IReadOnlyDictionary<string, object>)extensionData;
                             var newDict = new Dictionary<string, object>();
@@ -168,7 +168,7 @@ namespace System.Text.Json
                     }
                     else if (jsonPropertyInfo.PropertyType == typeof(IReadOnlyDictionary<string, JsonElement>))
                     {
-                        if (extensionData != null)
+                        if (extensionData is not null)
                         {
                             var existing = (IReadOnlyDictionary<string, JsonElement>)extensionData;
                             var newDict = new Dictionary<string, JsonElement>();

@@ -44,7 +44,7 @@ namespace System.Text.Json.Serialization.Converters
                 }
                 else
                 {
-                    if (jsonTypeInfo.CreateObject == null)
+                    if (jsonTypeInfo.CreateObject is null)
                     {
                         ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                     }
@@ -120,7 +120,7 @@ namespace System.Text.Json.Serialization.Converters
                     }
                     else
                     {
-                        if (jsonTypeInfo.CreateObject == null)
+                        if (jsonTypeInfo.CreateObject is null)
                         {
                             ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo, ref reader, ref state);
                         }
@@ -264,7 +264,7 @@ namespace System.Text.Json.Serialization.Converters
             value = (T)obj;
 
             // Check if we are trying to update the UTF-8 property cache.
-            if (state.Current.PropertyRefCacheBuilder != null)
+            if (state.Current.PropertyRefCacheBuilder is not null)
             {
                 jsonTypeInfo.UpdateUtf8PropertyCache(ref state.Current);
             }
@@ -313,7 +313,7 @@ namespace System.Text.Json.Serialization.Converters
             state.Current.ValidateAllRequiredPropertiesAreRead(jsonTypeInfo);
 
             // Check if we are trying to update the UTF-8 property cache.
-            if (state.Current.PropertyRefCacheBuilder != null)
+            if (state.Current.PropertyRefCacheBuilder is not null)
             {
                 jsonTypeInfo.UpdateUtf8PropertyCache(ref state.Current);
             }

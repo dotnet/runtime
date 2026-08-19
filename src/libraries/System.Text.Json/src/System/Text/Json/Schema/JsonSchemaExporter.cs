@@ -203,7 +203,7 @@ namespace System.Text.Json.Schema
                         }
                     }
                 }
-                else if (schema.Enum != null)
+                else if (schema.Enum is not null)
                 {
                     Debug.Assert(elementTypeInfo.Type.IsEnum, "The enum keyword should only be populated by schemas for enum types.");
                     schema.Enum.Add(null); // Append null to the enum array.
@@ -459,7 +459,7 @@ namespace System.Text.Json.Schema
                     }
                 }
 
-                if (state.ExporterOptions.TransformSchemaNode != null)
+                if (state.ExporterOptions.TransformSchemaNode is not null)
                 {
                     // Prime the schema for invocation by the JsonNode transformer.
                     schema.ExporterContext = exporterContext;

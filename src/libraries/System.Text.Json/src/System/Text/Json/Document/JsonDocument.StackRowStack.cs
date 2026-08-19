@@ -30,7 +30,7 @@ namespace System.Text.Json
                 _rentedBuffer = null!;
                 _topOfStack = 0;
 
-                if (toReturn != null)
+                if (toReturn is not null)
                 {
                     // The data in this rented buffer only conveys the positions and
                     // lengths of tokens in a document, but no content; so it does not

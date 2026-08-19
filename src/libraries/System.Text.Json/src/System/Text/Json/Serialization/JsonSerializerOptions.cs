@@ -1055,7 +1055,7 @@ namespace System.Text.Json
 
             JsonTypeInfo? info = resolver.GetTypeInfo(type, this);
 
-            if (info != null)
+            if (info is not null)
             {
                 if (info.Type != type)
                 {

@@ -291,7 +291,7 @@ namespace System.Text.Json
                 string? propertyName = GetPropertyName(ref frame);
                 AppendPropertyName(sb, propertyName);
 
-                if (frame.JsonTypeInfo != null && frame.IsProcessingEnumerable())
+                if (frame.JsonTypeInfo is not null && frame.IsProcessingEnumerable())
                 {
                     if (frame.ReturnValue is not IEnumerable enumerable)
                     {
@@ -329,7 +329,7 @@ namespace System.Text.Json
 
             static void AppendPropertyName(StringBuilder sb, string? propertyName)
             {
-                if (propertyName != null)
+                if (propertyName is not null)
                 {
                     if (propertyName.AsSpan().ContainsSpecialCharacters())
                     {
@@ -351,9 +351,9 @@ namespace System.Text.Json
 
                 // Attempt to get the JSON property name from the frame.
                 byte[]? utf8PropertyName = frame.JsonPropertyName;
-                if (utf8PropertyName == null)
+                if (utf8PropertyName is null)
                 {
-                    if (frame.JsonPropertyNameAsString != null)
+                    if (frame.JsonPropertyNameAsString is not null)
                     {
                         // Attempt to get the JSON property name set manually for dictionary
                         // keys and KeyValuePair property names.
@@ -367,7 +367,7 @@ namespace System.Text.Json
                     }
                 }
 
-                if (utf8PropertyName != null)
+                if (utf8PropertyName is not null)
                 {
                     propertyName = Encoding.UTF8.GetString(utf8PropertyName);
                 }

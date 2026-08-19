@@ -161,7 +161,7 @@ namespace System.Text.Json
 
         internal bool TryGetTypeInfoCached(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
         {
-            if (_cachingContext == null)
+            if (_cachingContext is null)
             {
                 typeInfo = null;
                 return false;

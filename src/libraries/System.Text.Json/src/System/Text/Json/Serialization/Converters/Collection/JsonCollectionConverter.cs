@@ -84,7 +84,7 @@ namespace System.Text.Json.Serialization
 
                 state.Current.JsonPropertyInfo = elementTypeInfo.PropertyInfoForTypeInfo;
                 JsonConverter<TElement> elementConverter = GetElementConverter(elementTypeInfo);
-                if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
+                if (elementConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling is null)
                 {
                     // Fast path that avoids validation and extra indirection.
                     while (true)
@@ -297,7 +297,7 @@ namespace System.Text.Json.Serialization
         {
             bool success;
 
-            if (value == null)
+            if (value is null)
             {
                 writer.WriteNullValue();
                 success = true;

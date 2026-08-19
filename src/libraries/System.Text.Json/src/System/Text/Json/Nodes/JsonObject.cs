@@ -264,7 +264,7 @@ namespace System.Text.Json.Nodes
         {
             Parent?.GetPath(ref path, this);
 
-            if (child != null)
+            if (child is not null)
             {
                 string propertyName = FindValue(child)!.Value.Key;
                 if (propertyName.AsSpan().ContainsSpecialCharacters())
@@ -380,7 +380,7 @@ namespace System.Text.Json.Nodes
                 {
                     get
                     {
-                        if (Value == null)
+                        if (Value is null)
                         {
                             return $"{PropertyName} = null";
                         }
