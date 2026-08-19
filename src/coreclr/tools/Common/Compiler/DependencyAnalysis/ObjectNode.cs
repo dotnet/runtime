@@ -74,7 +74,7 @@ namespace ILCompiler.DependencyAnalysis
                 dependencies ??= new DependencyList();
 
                 dependencies.Add(
-                    factory.WasmFunctionEntry(wasmFunctionNode, factory.WasmTypeNode(wasmFunctionNode.GetWasmFunctionType())),
+                    factory.WasmFunctionEntry(this, factory.WasmTypeNode(wasmFunctionNode.GetWasmFunctionType())),
                     "Wasm function entry");
 
                 if (wasmFunctionNode is INodeWithFunclets nodeWithFunclets)
@@ -90,7 +90,7 @@ namespace ILCompiler.DependencyAnalysis
                             _ => new WasmFuncType(new([pointerType, pointerType]), new([])),
                         };
                         dependencies.Add(
-                            factory.WasmFunctionEntry(wasmFunctionNode, factory.WasmTypeNode(funcletType), funcletIndex: i),
+                            factory.WasmFunctionEntry(this, factory.WasmTypeNode(funcletType), funcletIndex: i),
                             "Wasm funclet function entry");
                     }
                 }

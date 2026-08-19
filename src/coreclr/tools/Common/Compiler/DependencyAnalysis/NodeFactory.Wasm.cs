@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Frozen;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Internal.Text;
 
@@ -34,23 +36,37 @@ namespace ILCompiler.DependencyAnalysis
 
         private NodeCache<WasmFunctionEntryNodeCacheKey, WasmFunctionEntryNode> _wasmFunctionEntryCache;
 
-        public WasmFunctionEntryNode WasmFunctionEntry(INodeWithTypeSignature methodCodeNode, WasmTypeNode typeNode, int? funcletIndex = null)
+        public WasmFunctionEntryNode WasmFunctionEntry(ObjectNode methodCodeNode, WasmTypeNode typeNode, int? funcletIndex = null)
         {
             return _wasmFunctionEntryCache.GetOrAdd(new WasmFunctionEntryNodeCacheKey(methodCodeNode, typeNode, funcletIndex));
         }
 
-        public struct WasmFunctionEntryNodeCacheKey
+        public readonly struct WasmFunctionEntryNodeCacheKey : IEquatable<WasmFunctionEntryNodeCacheKey>
         {
-            public readonly INodeWithTypeSignature MethodCodeNode;
+            public readonly ObjectNode MethodCodeNode;
             public readonly WasmTypeNode Type;
-            public int? FuncletIndex;
+            public readonly int? FuncletIndex;
 
-            public WasmFunctionEntryNodeCacheKey(INodeWithTypeSignature methodCodeNode, WasmTypeNode type, int? funcletIndex = null)
+            public WasmFunctionEntryNodeCacheKey(ObjectNode methodCodeNode, WasmTypeNode type, int? funcletIndex = null)
             {
                 MethodCodeNode = methodCodeNode;
                 Type = type;
                 FuncletIndex = funcletIndex;
             }
+
+            public bool Equals(WasmFunctionEntryNodeCacheKey other) =>
+                ReferenceEquals(MethodCodeNode, other.MethodCodeNode) &&
+                ReferenceEquals(Type, other.Type) &&
+                FuncletIndex == other.FuncletIndex;
+
+            public override bool Equals(object obj) =>
+                obj is WasmFunctionEntryNodeCacheKey other && Equals(other);
+
+            public override int GetHashCode() =>
+                HashCode.Combine(
+                    RuntimeHelpers.GetHashCode(MethodCodeNode),
+                    RuntimeHelpers.GetHashCode(Type),
+                    FuncletIndex);
         }
     }
 }
