@@ -403,10 +403,10 @@ namespace System.Numerics
         }
 
         /// <summary>
-        /// Reverse the order of bits of a number.
+        /// Reverses the order of the bits in a number.
         /// </summary>
-        /// <param name="value">The value to reverse bits.</param>
-        /// <returns>The result of reversing bits of <paramref name="value"/>.</returns>
+        /// <param name="value">The value whose bits are reversed.</param>
+        /// <returns>The result of reversing the bits of <paramref name="value" />.</returns>
         static virtual TSelf ReverseBits(TSelf value)
         {
             if (!typeof(TSelf).IsValueType)
