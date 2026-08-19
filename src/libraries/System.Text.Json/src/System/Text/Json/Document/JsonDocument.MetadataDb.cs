@@ -130,7 +130,7 @@ namespace System.Text.Json
                 // were more frequent anyways.
                 const int OneMegabyte = 1024 * 1024;
 
-                if (initialSize > OneMegabyte && initialSize <= 4 * OneMegabyte)
+                if (initialSize is > OneMegabyte and <= 4 * OneMegabyte)
                 {
                     initialSize = OneMegabyte;
                 }
