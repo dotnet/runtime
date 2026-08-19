@@ -1630,8 +1630,6 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         // Verify that the node is allowed in LIR.
         assert(node->OperIsLIR());
 
-        // A node that is marked as contained must actually be containable, and it
-        // cannot also be marked as an unused value.
         if (node->isContained())
         {
             assert(node->canBeContained());
