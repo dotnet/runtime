@@ -15,26 +15,33 @@ namespace Microsoft.WebAssembly.Build.Tasks.CoreClr;
 // (section "Wasm Signature String Encoding").
 internal static class SignatureMapper
 {
-    // Hardcoded struct sizes for types that crossgen2 encodes as S<N>.
+    // Hardcoded struct layouts for types that crossgen2 encodes as struct tokens.
     // The fully general case is handled by crossgen2's type system; these
     // cover the small set of multi-field structs that appear in InternalCall
     // and PInvoke signatures.
-    private static readonly Dictionary<string, int> s_knownStructSizes = new()
+    private static readonly Dictionary<string, (int Size, int Alignment)> s_knownStructLayouts = new()
     {
-        ["System.Runtime.CompilerServices.QCallModule"] = 8,
-        ["System.Runtime.CompilerServices.QCallAssembly"] = 8,
-        ["System.Runtime.CompilerServices.QCallTypeHandle"] = 8,
-        ["System.GC+GCHeapHardLimitInfo"] = 64,
+        ["System.Runtime.CompilerServices.QCallModule"] = (8, 8),
+        ["System.Runtime.CompilerServices.QCallAssembly"] = (8, 8),
+        ["System.Runtime.CompilerServices.QCallTypeHandle"] = (8, 8),
+        ["System.GC+GCHeapHardLimitInfo"] = (64, 8),
         // Used by WBT tests
-        ["WasmAppBuilderTestsPairStruct"] = 8,
-        ["WasmAppBuilderTests.S"] = 8,
-        ["WasmAppBuilderTests.Test+S"] = 8,
+        ["WasmAppBuilderTestsPairStruct"] = (8, 8),
+        ["WasmAppBuilderTests.S"] = (8, 8),
+        ["WasmAppBuilderTests.Test+S"] = (8, 8),
     };
 
-    internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, out int structSize, int depth = 0)
+    private static char? TypeToChar(
+        Type t,
+        LogAdapter log,
+        out bool isByRefStruct,
+        out int structSize,
+        out int structAlignment,
+        int depth = 0)
     {
         isByRefStruct = false;
         structSize = 0;
+        structAlignment = 0;
 
         if (depth > 5) {
             log.Warning("WASM0064", $"Unbounded recursion detected through parameter type '{t.Name}'");
@@ -81,7 +88,7 @@ internal static class SignatureMapper
         else if (t.IsEnum)
         {
             Type underlyingType = t.GetEnumUnderlyingType();
-            c = TypeToChar(underlyingType, log, out _, out structSize, ++depth);
+            c = TypeToChar(underlyingType, log, out _, out structSize, out structAlignment, ++depth);
         }
         else if (t.IsPointer)
             c = 'i';
@@ -93,19 +100,20 @@ internal static class SignatureMapper
             if (fields.Length == 1)
             {
                 Type fieldType = fields[0].FieldType;
-                return TypeToChar(fieldType, log, out isByRefStruct, out structSize, ++depth);
+                return TypeToChar(fieldType, log, out isByRefStruct, out structSize, out structAlignment, ++depth);
             }
             else
             {
                 string fullName = t.FullName ?? t.Name;
-                if (s_knownStructSizes.TryGetValue(fullName, out int size))
+                if (s_knownStructLayouts.TryGetValue(fullName, out (int Size, int Alignment) layout))
                 {
-                    structSize = size;
+                    structSize = layout.Size;
+                    structAlignment = layout.Alignment;
                 }
                 else
                 {
                     log.Error("WASM0067",
-                        $"SignatureMapper: unknown multi-field struct '{fullName}' (fields: {fields.Length}) — add its size to s_knownStructSizes in SignatureMapper.cs");
+                        $"SignatureMapper: unknown multi-field struct '{fullName}' (fields: {fields.Length}) — add its layout to s_knownStructLayouts in SignatureMapper.cs");
                     return null;
                 }
 
@@ -120,14 +128,17 @@ internal static class SignatureMapper
         return c;
     }
 
+    internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, out int structSize, int depth = 0)
+        => TypeToChar(t, log, out isByRefStruct, out structSize, out _, depth);
+
     internal static char? TypeToChar(Type t, LogAdapter log, out bool isByRefStruct, int depth = 0)
         => TypeToChar(t, log, out isByRefStruct, out _, depth);
 
     /// <summary>
     /// Builds the multi-char token for a type in the signature string.
-    /// For most types this is a single character; for multi-field structs it is "S&lt;N&gt;".
+    /// For most types this is a single character; for multi-field structs it is a struct token.
     /// </summary>
-    private static string? TypeToSignatureToken(Type t, LogAdapter log, out bool isByRefStruct)
+    private static string? TypeToSignatureToken(Type t, LogAdapter log, out bool isByRefStruct, bool isReturn = false)
     {
         // Types the wasm ABI splits across several by-value slots are rejected in interop rather
         // than encoded. Exposing them here means teaching the thunk generator that one signature
@@ -141,12 +152,12 @@ internal static class SignatureMapper
             return null;
         }
 
-        char? c = TypeToChar(t, log, out isByRefStruct, out int structSize);
+        char? c = TypeToChar(t, log, out isByRefStruct, out int structSize, out int structAlignment);
         if (c is null)
             return null;
 
         if (c == 'S' && structSize > 0)
-            return $"S{structSize}";
+            return $"{(!isReturn && structAlignment > 8 ? 'A' : 'S')}{structSize}";
 
         return c.Value.ToString();
     }
@@ -218,7 +229,7 @@ internal static class SignatureMapper
 
     public static string? MethodToSignature(MethodInfo method, LogAdapter log, bool includeThis = false)
     {
-        string? returnToken = TypeToSignatureToken(method.ReturnType, log, out bool resultIsByRef);
+        string? returnToken = TypeToSignatureToken(method.ReturnType, log, out bool resultIsByRef, isReturn: true);
         if (returnToken is null)
             return null;
 
@@ -253,8 +264,8 @@ internal static class SignatureMapper
 
     /// <summary>
     /// Parses a signature string into individual tokens.
-    /// Single-char types produce one-char tokens; S&lt;N&gt; produces a multi-char token like "S8" or "S64",
-    /// and a multi-slot parameter produces a two-char token like "l2" or "V4".
+    /// Single-char types produce one-char tokens; struct encodings produce multi-char tokens like
+    /// "S8" or "A32", and a multi-slot parameter produces a two-char token like "l2" or "V4".
     /// The 'a' and 'p' suffixes are included as their own tokens.
     /// </summary>
     public static List<string> ParseSignatureTokens(string signature)
@@ -263,10 +274,10 @@ internal static class SignatureMapper
         int i = 0;
         while (i < signature.Length)
         {
-            if (signature[i] == 'S')
+            if (signature[i] is 'S' or 'A')
             {
                 int start = i;
-                i++; // skip 'S'
+                i++; // skip 'S'/'A'
                 while (i < signature.Length && char.IsDigit(signature[i]))
                     i++;
                 tokens.Add(signature.Substring(start, i - start));
@@ -309,7 +320,7 @@ internal static class SignatureMapper
             'l' => "int64_t",
             'f' => "float",
             'd' => "double",
-            'S' => "int32_t",
+            'S' or 'A' => "int32_t",
             'T' => "int32_t",
             'p' => "PCODE",
             _ => throw new InvalidSignatureCharException(token[0])
@@ -326,7 +337,7 @@ internal static class SignatureMapper
             'l' => "I64",
             'f' => "F32",
             'd' => "F64",
-            'S' => token, // e.g. "S8", "S64" — encodes size in the name
+            'S' or 'A' => token,
             'T' => "This",
             'p' => "PE",
             _ => throw new InvalidSignatureCharException(token[0])
@@ -342,7 +353,7 @@ internal static class SignatureMapper
             'l' => "ARG_I64",
             'f' => "ARG_F32",
             'd' => "ARG_F64",
-            'S' => "ARG_IND",
+            'S' or 'A' => "ARG_IND",
             'T' => "ARG_I32",
             _ => throw new InvalidSignatureCharException(token[0])
         };
@@ -350,15 +361,20 @@ internal static class SignatureMapper
 
     /// <summary>
     /// Returns the number of INTERP_STACK_SLOT_SIZE slots consumed by a token.
-    /// Struct tokens (S&lt;N&gt;) consume max((size + 7) / 8, 1) slots; all others consume 1.
+    /// Struct tokens consume max((size + 7) / 8, 1) slots; all others consume 1.
     /// </summary>
     public static int TokenToSlotCount(string token)
     {
-        if (token[0] != 'S' || token.Length < 2)
+        if (token[0] is not ('S' or 'A') || token.Length < 2)
             return 1;
 
-        int size = int.Parse(token.Substring(1));
+        int size = GetStructSize(token);
         return Math.Max((size + 7) / 8, 1);
+    }
+
+    internal static int GetStructSize(string token)
+    {
+        return int.Parse(token.Substring(1));
     }
 
     // Legacy single-char overloads — still used by consumers that don't encounter S<N> tokens.
