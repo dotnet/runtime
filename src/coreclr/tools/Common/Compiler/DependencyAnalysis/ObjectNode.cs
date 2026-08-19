@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 
 using ILCompiler.DependencyAnalysisFramework;
+using ILCompiler.DependencyAnalysis.Wasm;
 
 namespace ILCompiler.DependencyAnalysis
 {
@@ -68,12 +69,31 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
-            if (factory.Target.IsWasm && this is IMethodCodeNodeWithTypeSignature wasmMethodCodeNode)
+            if (factory.Target.IsWasm && this is INodeWithTypeSignature wasmFunctionNode)
             {
                 dependencies ??= new DependencyList();
 
-                WasmTypeNode wasmTypeNode = factory.WasmTypeNode(wasmMethodCodeNode.Method);
-                dependencies.Add(wasmTypeNode, "Wasm Method Code Nodes Require Signature");
+                dependencies.Add(
+                    factory.WasmFunctionEntry(wasmFunctionNode, factory.WasmTypeNode(wasmFunctionNode.GetWasmFunctionType())),
+                    "Wasm function entry");
+
+                if (wasmFunctionNode is INodeWithFunclets nodeWithFunclets)
+                {
+                    WasmValueType pointerType = factory.Target.PointerSize == 8 ? WasmValueType.I64 : WasmValueType.I32;
+                    FuncletKind[] funcletKinds = nodeWithFunclets.GetFuncletKinds();
+                    for (int i = 0; i < funcletKinds.Length; i++)
+                    {
+                        WasmFuncType funcletType = funcletKinds[i] switch
+                        {
+                            FuncletKind.CatchOrFilterHandler or FuncletKind.Filter => new WasmFuncType(
+                                new([pointerType, pointerType, pointerType]), new([pointerType])),
+                            _ => new WasmFuncType(new([pointerType, pointerType]), new([])),
+                        };
+                        dependencies.Add(
+                            factory.WasmFunctionEntry(wasmFunctionNode, factory.WasmTypeNode(funcletType), funcletIndex: i),
+                            "Wasm funclet function entry");
+                    }
+                }
             }
 
             if (dependencies == null)

@@ -114,7 +114,7 @@ namespace ILCompiler.ObjectWriter
                 {
                     WasmSectionType.Type or WasmSectionType.Code => new WasmExternallyCountedSection(sectionType, sectionStream, sectionName, sectionIndex),
                     WasmSectionType.Import => new WasmImportSection(sectionStream, sectionName, sectionIndex),
-                    WasmSectionType.Function => new WasmFunctionSection(sectionStream, sectionName, sectionIndex),
+                    WasmSectionType.Function => new WasmExternallyCountedSection(sectionType, sectionStream, sectionName, sectionIndex),
                     WasmSectionType.Global => new WasmGlobalSection(sectionStream, sectionName, sectionIndex),
                     WasmSectionType.Export => new WasmExportSection(sectionStream, sectionName, sectionIndex),
                     WasmSectionType.Element => new WasmElementSection(sectionStream, sectionName, sectionIndex),
@@ -143,8 +143,15 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void RecordMethodDeclaration(INodeWithTypeSignature node)
         {
-            WriteSignatureIndexForFunction(node);
-            RegisterFunctionSymbol(new Utf8String(node.GetMangledName(_nodeFactory.NameMangler)));
+            Utf8String functionName = GetMangledName(node);
+            RegisterFunctionSymbol(functionName);
+
+            Utf8String alternateName = _nodeFactory.GetSymbolAlternateName(node, out _);
+            if (!alternateName.IsNull)
+            {
+                _wasmSymbolManager.AddAlias(ExternCName(alternateName), functionName);
+            }
+
             if (node is INodeWithFunclets nodeWithFunclets)
             {
                 RecordFunclets(nodeWithFunclets);
@@ -162,22 +169,11 @@ namespace ILCompiler.ObjectWriter
             WasmValueType pointerType = _nodeFactory.Target.PointerSize == 8 ? WasmValueType.I64 : WasmValueType.I32;
             string mangledNodeName = nodeWithFunclets.GetMangledName(_nodeFactory.NameMangler);
 
+            // The method itself is already registered by the ObjectWriter, but we must register the funclet names
             for (int i = 0; i < funcletKinds.Length; i++)
             {
-                WasmFuncType funcletSignature = GetFuncletType(funcletKinds[i], pointerType);
                 RegisterFunctionSymbol(new Utf8String($"{mangledNodeName}_funclet_{i}"));
-                RegisterStubIndexAndSignature(funcletSignature);
             }
-        }
-
-        private static WasmFuncType GetFuncletType(FuncletKind funcletKind, WasmValueType pointerType)
-        {
-            return funcletKind switch
-            {
-                FuncletKind.CatchOrFilterHandler or FuncletKind.Filter => new WasmFuncType(
-                    new([pointerType, pointerType, pointerType]), new([pointerType])), // (FP, SP, EXN) -> RESULT
-                _ => new WasmFuncType(new([pointerType, pointerType]), new([])), // (FP, SP) -> void
-            };
         }
 
         private void WriteFunctionEntry(int signatureIndex)
@@ -186,18 +182,6 @@ namespace ILCompiler.ObjectWriter
                 WasmObjectNodeSection.FunctionSection,
                 out SectionWriter writer);
             section.WriteEntry(writer, signatureIndex);
-        }
-
-        private void WriteSignatureIndexForFunction(INodeWithTypeSignature node)
-        {
-            WasmFuncType signature = WasmLowering.GetSignature(node).FuncType;
-            Utf8String key = signature.GetMangledName(_nodeFactory.NameMangler);
-            if (!_wasmSymbolManager.TryGetSymbol(key, out WasmSymbol signatureSymbol))
-            {
-                throw new InvalidOperationException($"Signature index of {key} not found for function: {node.ToString()}");
-            }
-
-            WriteFunctionEntry(signatureSymbol.Index);
         }
 
         /// <summary>
@@ -381,10 +365,13 @@ namespace ILCompiler.ObjectWriter
                 .SetEntryCount(_wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Type));
             _sections.GetSection<WasmExternallyCountedSection>(ObjectNodeSection.WasmCodeSection.Name)
                 .SetEntryCount(MethodCount);
+            _sections.GetSection<WasmExternallyCountedSection>(WasmObjectNodeSection.FunctionSection.Name)
+                .SetEntryCount(MethodCount);
 
-            Debug.Assert(_sections.GetSection<WasmFunctionSection>(WasmObjectNodeSection.FunctionSection.Name).EntryCount == MethodCount);
-            Debug.Assert(_sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
-            Debug.Assert(_sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.ImportSection.Name)
+                || _sections.GetSection<WasmImportSection>(WasmObjectNodeSection.ImportSection.Name).EntryCount == _wasmSymbolManager.GetImportCount());
+            Debug.Assert(!_sections.Contains(WasmObjectNodeSection.GlobalSection.Name)
+                || _sections.GetSection<WasmGlobalSection>(WasmObjectNodeSection.GlobalSection.Name).EntryCount == _wasmSymbolManager.GetDefinitionCount(WasmIndexSpace.Global));
         }
     }
 
