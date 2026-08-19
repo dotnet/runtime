@@ -548,8 +548,8 @@ namespace System.Runtime.InteropServices
             private ComWrappers _comWrappers;
             private IntPtr _externalComObject;
             private IntPtr _inner;
-            private GCHandle _proxyHandle;
-            private GCHandle _proxyHandleTrackingResurrection;
+            private WeakGCHandle<object> _proxyHandle;
+            private WeakGCHandle<object> _proxyHandleTrackingResurrection;
             private readonly bool _aggregatedManagedObjectWrapper;
             private readonly bool _uniqueInstance;
 
@@ -594,14 +594,31 @@ namespace System.Runtime.InteropServices
                 _inner = inner;
                 _comWrappers = comWrappers;
                 _uniqueInstance = flags.HasFlag(CreateObjectFlags.UniqueInstance);
-                _proxyHandle = GCHandle.Alloc(comProxy, GCHandleType.Weak);
 
-                // We have a separate handle tracking resurrection as we want to make sure
-                // we clean up the NativeObjectWrapper only after the RCW has been finalized
-                // due to it can access the native object in the finalizer. At the same time,
-                // we want other callers which are using ProxyHandle such as the reference tracker runtime
-                // to see the object as not alive once it is eligible for finalization.
-                _proxyHandleTrackingResurrection = GCHandle.Alloc(comProxy, GCHandleType.WeakTrackResurrection);
+                // The wrapper's finalizer must not release anything while the RCW is still able to observe the
+                // native object, which is why a handle that tracks resurrection is needed: unlike a plain weak
+                // handle, it stays set until the RCW has actually been collected, rather than merely becoming
+                // unreachable. Callers such as the reference tracker runtime want the opposite, and need to see
+                // the RCW as gone as soon as it is eligible for finalization, which is what 'ProxyHandle' is for.
+                //
+                // Those two only disagree while the RCW is unreachable but not yet collected. An RCW that has
+                // no finalizer is never in that state on its own account, so a single handle can serve both
+                // purposes, halving the handles every such RCW costs. It can still be put in that state by
+                // something else's finalizer holding on to it, and then resurrecting it, and in that case having
+                // the one handle track resurrection is what keeps this wrapper from tearing down state the
+                // resurrected RCW still needs. Reporting such an RCW as alive is also the honest answer, as it
+                // may well be about to become reachable again.
+                //
+                // An RCW that does have a finalizer, whether its own or an inherited one, does reach that state
+                // on its own, and there the two meanings genuinely differ, so it pays for both handles.
+                bool proxyHasFinalizer = RuntimeHelpers.ObjectHasFinalizer(comProxy);
+
+                _proxyHandle = new WeakGCHandle<object>(comProxy, trackResurrection: !proxyHasFinalizer);
+
+                if (proxyHasFinalizer)
+                {
+                    _proxyHandleTrackingResurrection = new WeakGCHandle<object>(comProxy, trackResurrection: true);
+                }
 
                 // If this is an aggregation scenario and the identity object
                 // is a managed object wrapper, we need to call Release() to
@@ -617,7 +634,7 @@ namespace System.Runtime.InteropServices
 
             internal IntPtr ExternalComObject => _externalComObject;
             internal ComWrappers ComWrappers => _comWrappers;
-            internal GCHandle ProxyHandle => _proxyHandle;
+            internal WeakGCHandle<object> ProxyHandle => _proxyHandle;
             internal bool IsUniqueInstance => _uniqueInstance;
             internal bool IsAggregatedWithManagedObjectWrapper => _aggregatedManagedObjectWrapper;
 
@@ -629,15 +646,8 @@ namespace System.Runtime.InteropServices
                     _comWrappers = null!;
                 }
 
-                if (_proxyHandle.IsAllocated)
-                {
-                    _proxyHandle.Free();
-                }
-
-                if (_proxyHandleTrackingResurrection.IsAllocated)
-                {
-                    _proxyHandleTrackingResurrection.Free();
-                }
+                _proxyHandle.Dispose();
+                _proxyHandleTrackingResurrection.Dispose();
 
                 // If the inner was supplied, we need to release our reference.
                 if (_inner != IntPtr.Zero)
@@ -651,7 +661,15 @@ namespace System.Runtime.InteropServices
 
             ~NativeObjectWrapper()
             {
-                if (_proxyHandleTrackingResurrection.IsAllocated && _proxyHandleTrackingResurrection.Target != null)
+                // When the RCW has no finalizer, no second handle was allocated and the proxy handle is
+                // the one tracking resurrection, so it answers this question just as well. Neither is allocated
+                // once this wrapper has been released, which happens eagerly when one loses a registration race,
+                // and then there is nothing left to keep alive for.
+                WeakGCHandle<object> resurrectionHandle = _proxyHandleTrackingResurrection.IsAllocated
+                    ? _proxyHandleTrackingResurrection
+                    : _proxyHandle;
+
+                if (resurrectionHandle.IsAllocated && resurrectionHandle.TryGetTarget(out _))
                 {
                     // The RCW object has not been fully collected, so it still
                     // can make calls on the native object in its finalizer.
@@ -1261,7 +1279,7 @@ namespace System.Runtime.InteropServices
             // for the same COM instance, but in that case we'll be passed the same NativeObjectWrapper instance
             // for both threads. In that case, it doesn't matter which thread adds the entry to the NativeObjectWrapper table
             // as the entry is always the same pair.
-            Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
+            Debug.Assert(wrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) && proxyTarget == comProxy);
             Debug.Assert(wrapper.IsUniqueInstance || _rcwCache.FindProxyForComInstance(wrapper.ExternalComObject) == comProxy);
 
             // Add the input wrapper bound to the COM proxy, if there isn't one already. If another thread raced
@@ -1431,7 +1449,7 @@ namespace System.Runtime.InteropServices
                     _lock.EnterWriteLock();
                     try
                     {
-                        Debug.Assert(wrapper.ProxyHandle.Target == comProxy);
+                        Debug.Assert(wrapper.ProxyHandle.TryGetTarget(out object? proxyTarget) && proxyTarget == comProxy);
                         ref WeakGCHandle<NativeObjectWrapper> rcwEntry = ref CollectionsMarshal.GetValueRefOrAddDefault(_cache, comPointer, out bool exists);
                         if (!exists)
                         {
@@ -1447,10 +1465,9 @@ namespace System.Runtime.InteropServices
                         }
                         else
                         {
-                            object? existingProxy = cachedWrapper.ProxyHandle.Target;
                             // The target NativeObjectWrapper was not collected, but we need to make sure
                             // that the proxy object is still alive.
-                            if (existingProxy is not null)
+                            if (cachedWrapper.ProxyHandle.TryGetTarget(out object? existingProxy))
                             {
                                 // The existing proxy object is still alive, we will use that.
                                 return (cachedWrapper, existingProxy);
@@ -1482,7 +1499,7 @@ namespace System.Runtime.InteropServices
                             return null;
                         }
                         if (existingHandle.TryGetTarget(out NativeObjectWrapper? cachedWrapper)
-                            && cachedWrapper.ProxyHandle.Target is object cachedProxy)
+                            && cachedWrapper.ProxyHandle.TryGetTarget(out object? cachedProxy))
                         {
                             // The target exists and is still alive. Return it.
                             return cachedProxy;

@@ -1356,6 +1356,14 @@ namespace System.Numerics.Tests
             result = BigInteger.Parse("1\u202F234\u202F567", NumberStyles.AllowThousands, spaceCulture);
             Assert.Equal((BigInteger)1234567, result);
         }
+
+        [Fact]
+        public static void ParseUtf8WithInvalidGroupSeparator()
+        {
+            NumberFormatInfo format = new() { NumberGroupSeparator = " " };
+
+            Assert.False(BigInteger.TryParse([(byte)'1', 0xA0, (byte)'2'], NumberStyles.AllowThousands, format, out _));
+        }
     }
 
     [Collection(nameof(DisableParallelization))]

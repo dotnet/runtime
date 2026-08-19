@@ -33,6 +33,8 @@ namespace ComWrappersTests
                 fpWrappedQueryInterface = MockReferenceTrackerRuntime.WrapQueryInterface(fpQueryInterface);
             }
 
+            public bool UseManualReleaseITestObjectWrapper { get; init; }
+
             protected unsafe override ComInterfaceEntry* ComputeVtables(object obj, CreateComInterfaceFlags flags, out int count)
             {
                 ComInterfaceEntry* entryRaw = null;
@@ -133,7 +135,14 @@ namespace ComWrappersTests
                 hr = Marshal.QueryInterface(externalComObject, typeof(ITest).GUID, out iTest);
                 if (hr == 0)
                 {
-                    return new ITestObjectWrapper(iTest);
+                    if (UseManualReleaseITestObjectWrapper)
+                    {
+                        return new ManualReleaseITestObjectWrapper(iTest);
+                    }
+                    else
+                    {
+                        return new ITestObjectWrapper(iTest);
+                    }
                 }
 
                 Assert.Fail("The COM object should support ITrackerObject or ITest for all tests in this test suite.");
@@ -418,9 +427,9 @@ namespace ComWrappersTests
         [MethodImpl(MethodImplOptions.NoInlining)]
         [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
         [Fact]
-        public void ValidateResurrection()
+        public void ValidateManagedObjectWrapperResurrection()
         {
-            Console.WriteLine($"Running {nameof(ValidateResurrection)}...");
+            Console.WriteLine($"Running {nameof(ValidateManagedObjectWrapperResurrection)}...");
 
             var wrappers = new TestComWrappers();
 
@@ -619,6 +628,72 @@ namespace ComWrappersTests
             Assert.Equal(0, count);
             Marshal.Release(unmanagedObj);
             Marshal.Release(unmanagedObjIUnknown);
+        }
+
+        class Resurrecter()
+        {
+            public ManualReleaseITestObjectWrapper? UnmanagedWrapper;
+
+            ~Resurrecter()
+            {
+                if (UnmanagedWrapper != null)
+                {
+                    GC.ReRegisterForFinalize(this);
+                }
+            }
+        }
+
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        [ActiveIssue("Not supported on Mono", TestRuntimes.Mono)]
+        [Fact]
+        public void ValidateNativeObjectWrapperResurrection()
+        {
+            Console.WriteLine($"Running {nameof(ValidateNativeObjectWrapperResurrection)}...");
+
+            var cw = new TestComWrappers()
+            {
+                UseManualReleaseITestObjectWrapper = true,
+            };
+
+            WeakGCHandle<Resurrecter> resurrecter;
+            nint unmanagedObj = AllocateWrapper(cw, out resurrecter);
+            Assert.Equal(0, Marshal.QueryInterface(unmanagedObj, IUnknownVtbl.IID_IUnknown, out IntPtr unmanagedObjIUnknown));
+            ForceGC();
+            AssertNativeObjectWrapperAlive(cw, resurrecter, unmanagedObjIUnknown);
+
+            resurrecter.Dispose();
+            Marshal.Release(unmanagedObjIUnknown);
+            Assert.Equal(0, Marshal.Release(unmanagedObj));
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static nint AllocateWrapper(ComWrappers cw, out WeakGCHandle<Resurrecter> handle)
+            {
+                Test test = new();
+                nint comWrapper = cw.GetOrCreateComInterfaceForObject(test, CreateComInterfaceFlags.None);
+                Assert.NotEqual(IntPtr.Zero, comWrapper);
+
+                var unmanagedWrapper = (ManualReleaseITestObjectWrapper)cw.GetOrCreateObjectForComInstance(comWrapper, CreateObjectFlags.UniqueInstance);
+                Resurrecter resurrecter = new()
+                {
+                    UnmanagedWrapper = unmanagedWrapper,
+                };
+                handle = new WeakGCHandle<Resurrecter>(resurrecter, true);
+                return comWrapper;
+            }
+
+            [MethodImpl(MethodImplOptions.NoInlining)]
+            static void AssertNativeObjectWrapperAlive(ComWrappers cw, WeakGCHandle<Resurrecter> handle, IntPtr unmanagedObj)
+            {
+                Assert.True(handle.TryGetTarget(out Resurrecter resurrecter));
+                ManualReleaseITestObjectWrapper? unmanagedWrapper = resurrecter.UnmanagedWrapper;
+                Assert.NotNull(resurrecter);
+                Assert.True(ComWrappers.TryGetComInstance(unmanagedWrapper, out IntPtr unmanagedObjOther));
+                Assert.Equal(unmanagedObj, unmanagedObjOther);
+                resurrecter.UnmanagedWrapper = null;
+                Marshal.Release(unmanagedObjOther);
+                unmanagedWrapper.FinalRelease();
+            }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
