@@ -53,6 +53,7 @@ from the method identifier for the parent workflow.
    - Async and generic return or argument handling
    - Conditional compilation and platform guards
    - Test data and the specific failing theory row
+   - Target-specific environment items and batch or Bash pre/post commands
 6. If display-name arguments identify a theory row, reproduce exactly that
    row. If not, generate invocations for all locally resolvable rows and label
    them. Use the `ask_user` tool when runtime-discovered data or ambiguity

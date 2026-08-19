@@ -41,6 +41,7 @@ the parent workflow.
    - `corerun` arguments, including `-p` and `-e`
    - Test arguments and expected exit code
    - Environment variables
+   - Target-specific batch or Bash pre/post commands
    - Working-directory assumptions
    - Copied data or native dependencies
 3. Map an artifact or Helix path back to `src/tests/`:
@@ -51,7 +52,9 @@ the parent workflow.
 4. If the wrapper is unavailable, use the path and stem to search under
    `src/tests/`; derive invocation settings from the project.
 5. Inspect the owning project, applicable imports, and its explicit or evaluated
-   `Compile` items.
+   `Compile` items. Evaluate target-specific environment items and
+   `CLRTestBatchPreCommands`, `CLRTestBashPreCommands`,
+   `CLRTestBatchPostCommands`, and `CLRTestBashPostCommands`.
 6. Confirm the assembly contains only the requested runnable test. If it
    contains multiple independently runnable tests, stop and ask for a fully
    qualified method name.

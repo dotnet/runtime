@@ -97,17 +97,27 @@ architecture, configuration, runtime flavor, and output path
 Before editing the repro, record everything that can affect behavior:
 
 - Source files and helper types used by the test
-- Project properties such as `Optimize`, `AllowUnsafeBlocks`, `CheckForOverflowUnderflow`,
-  `DefineConstants`, `LangVersion`, `PlatformTarget`, and nullable context
+- Project properties including `Optimize`, `AllowUnsafeBlocks`,
+  `CheckForOverflowUnderflow`, `DefineConstants`, `LangVersion`,
+  `PlatformTarget`, and nullable context
 - `RuntimeHostConfigurationOption` values
 - Evaluated `CLRTestEnvironmentVariable` names and values from the owning
   `.csproj`, including applicable imported properties and conditions
+- Target-specific `CLRTestBatchEnvironmentVariable` and
+  `CLRTestBashEnvironmentVariable` items
+- Evaluated `CLRTestBatchPreCommands`, `CLRTestBashPreCommands`,
+  `CLRTestBatchPostCommands`, and `CLRTestBashPostCommands`
 - The requested scenario and its evaluated environment from
   `src/tests/Common/testenvironment.proj`, when specified
 - `CLRTestExecutionArguments`
 - Expected exit code, which defaults to `100` for runtime tests
 - Working directory, input files, native libraries, and other copied assets
 - Architecture, OS, configuration, and runtime flavor guards
+
+This list is a mandatory minimum, not an exhaustive allowlist. Inspect all
+evaluated project metadata and the generated wrapper for additional setup,
+launch, cleanup, or environment behavior before declaring the contract
+complete.
 
 When a local wrapper exists, treat its effective command and environment as the
 ground truth. Project files are the fallback when no wrapper has been generated.
@@ -132,8 +142,8 @@ StandaloneTestRepro.csproj
 Program.cs
 ```
 
-If a scenario was requested or the owning project defines any effective
-`CLRTestEnvironmentVariable` items, also create:
+If a scenario was requested or the owning project defines any effective common
+or target-specific environment items, also create:
 
 ```text
 .env
@@ -164,20 +174,23 @@ Follow these extraction rules:
 
 - When a scenario was requested, the `test-scenario-env` skill owns `.env`
   generation. Do not independently reconstruct or append scenario settings.
-- Write each evaluated `CLRTestEnvironmentVariable` to `.env` as
-  `NAME=VALUE`, one variable per line. Resolve MSBuild properties and item
-  metadata for the selected OS, architecture, configuration, and runtime
+- Write each evaluated `CLRTestEnvironmentVariable` and applicable
+  `CLRTestBatchEnvironmentVariable` or `CLRTestBashEnvironmentVariable` to
+  `.env` as `NAME=VALUE`, one variable per line. Resolve MSBuild properties and
+  item metadata for the selected OS, architecture, configuration, and runtime
   flavor; do not copy unevaluated expressions such as `$(SomeProperty)`.
-- Preserve empty values as `NAME=`. Use dotenv quoting or escaping when a value
-  contains whitespace, `#`, quotes, backslashes, newlines, or variable
-  expansion syntax. Follow the syntax supported by CoreRun's dotenv parser in
+- Encode an empty value as `NAME=''`; a bare `NAME=` before another entry is
+  not safe because CoreRun's parser skips the following newline while looking
+  for a value. Use dotenv quoting or escaping when a value contains whitespace,
+  `#`, quotes, backslashes, newlines, or variable expansion syntax. Follow the
+  syntax supported by CoreRun's dotenv parser in
   `src/coreclr/hosts/corerun/dotenv.cpp`.
 - Include only environment variables defined by the test project and its
   applicable imports. Do not copy the ambient shell environment or CI secrets
   into `.env`.
-- Merge scenario variables first and project `CLRTestEnvironmentVariable`
-  values second, matching generated wrapper order. A project value replaces a
-  scenario value with the same name.
+- Merge scenario variables first, selected-target Batch/Bash environment items
+  second, and common `CLRTestEnvironmentVariable` items last, matching generated
+  wrapper order. A later value replaces an earlier value with the same name.
 - If a local generated wrapper and the evaluated project disagree, use the
   wrapper's effective values and investigate why before continuing.
 - Copy the relevant test logic, not the whole merged assembly.
@@ -192,6 +205,10 @@ Follow these extraction rules:
   Do not reference the original test project or its output assembly.
 - Preserve required setup and cleanup with `try/finally` or `using`; do not
   silently omit fixtures or disposal.
+- Preserve applicable batch or Bash pre/post commands by translating their
+  effects into explicit repro setup, launch, and cleanup steps. Stop if those
+  effects cannot be represented faithfully by a standalone console app plus
+  local files.
 - Invoke instance methods on a correctly initialized instance.
 - Await `Task`, `Task<T>`, `ValueTask`, and `ValueTask<T>` results.
 - For a theory with several rows, print the row before invoking it and stop on
@@ -279,9 +296,9 @@ Before completing:
 
 1. Compare the repro invocation with the original wrapper or project contract.
 2. Confirm the repro does not reference the original test assembly.
-3. If `.env` was generated, compare every entry with the effective
-   scenario and `CLRTestEnvironmentVariable` items and confirm the `corerun`
-   command uses it.
+3. If `.env` was generated, compare every entry with the effective scenario,
+   target-specific environment items, and common `CLRTestEnvironmentVariable`
+   items, then confirm the `corerun` command uses it.
 4. Confirm all required local files exist in `out`.
 5. Run the repro with the selected `corerun`.
 6. If practical, run the original test with the same runtime and environment
