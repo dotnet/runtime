@@ -871,27 +871,6 @@ CLRMapViewOfFile(
         return NULL;
     }
 
-#ifdef _DEBUG
-#ifdef TARGET_X86
-    if (pv && g_pConfig && g_pConfig->ShouldInjectFault(INJECTFAULT_MAPVIEWOFFILE))
-    {
-        MEMORY_BASIC_INFORMATION mbi;
-        memset(&mbi, 0, sizeof(mbi));
-        if (!ClrVirtualQuery(pv, &mbi, sizeof(mbi)))
-        {
-            if(GetLastError()==ERROR_SUCCESS)
-                SetLastError(ERROR_OUTOFMEMORY);
-            return NULL;
-        }
-        UnmapViewOfFile(pv);
-        pv = ClrVirtualAlloc(lpBaseAddress, mbi.RegionSize, MEM_RESERVE, PAGE_NOACCESS);
-    }
-    else
-#endif // TARGET_X86
-#endif // _DEBUG
-    {
-    }
-
     if (!pv && GetLastError()==ERROR_SUCCESS)
         SetLastError(ERROR_OUTOFMEMORY);
 
@@ -905,22 +884,7 @@ CLRUnmapViewOfFile(
 {
     STATIC_CONTRACT_ENTRY_POINT;
 
-#ifdef _DEBUG
-#ifdef TARGET_X86
-    if (g_pConfig && g_pConfig->ShouldInjectFault(INJECTFAULT_MAPVIEWOFFILE))
-    {
-        return ClrVirtualFree((LPVOID)lpBaseAddress, 0, MEM_RELEASE);
-    }
-    else
-#endif // TARGET_X86
-#endif // _DEBUG
-    {
-        BOOL result = UnmapViewOfFile(lpBaseAddress);
-        if (result)
-        {
-        }
-        return result;
-    }
+    return UnmapViewOfFile(lpBaseAddress);
 }
 
 static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)

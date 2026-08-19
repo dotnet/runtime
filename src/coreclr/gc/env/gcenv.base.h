@@ -392,7 +392,6 @@ inline void* ALIGN_DOWN(void* ptr, size_t alignment)
 #define TRIGGERSGC()
 #define WRAPPER(_contract)
 #define DISABLED(_contract)
-#define INJECTFAULT_GCHEAP 0x2
 #define BEGIN_DEBUG_ONLY_CODE
 #define END_DEBUG_ONLY_CODE
 #define BEGIN_GETTHREAD_ALLOWED

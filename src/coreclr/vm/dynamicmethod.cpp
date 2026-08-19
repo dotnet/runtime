@@ -437,8 +437,6 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
         pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
         if (pTracker == NULL)
         {
-            // This should only ever happen with fault injection
-            _ASSERTE(g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP));
             delete pHp;
             ThrowOutOfMemory();
         }
@@ -718,16 +716,6 @@ HostCodeHeap::TrackAllocation* HostCodeHeap::AllocMemory_NoThrow(size_t header, 
         MODE_ANY;
     }
     CONTRACTL_END;
-
-#ifdef _DEBUG
-    if (g_pConfig->ShouldInjectFault(INJECTFAULT_DYNAMICCODEHEAP))
-    {
-        char *a = new (nothrow) char;
-        if (a == NULL)
-            return NULL;
-        delete a;
-    }
-#endif // _DEBUG
 
     // Skip walking the free list if the cached size of the largest block is not enough
     size_t totalRequiredSize = ALIGN_UP(sizeof(TrackAllocation) + header + size + (alignment - 1) + reserveForJumpStubs, sizeof(void*));

@@ -330,14 +330,9 @@ public:
 
 
 #define CONTRACT_BITMASK_OK_TO_THROW          0x1 << 0
-// Unused                                     0x1 << 1
-// Unused                                     0x1 << 2
-#define CONTRACT_BITMASK_SOTOLERANT           0x1 << 3
-#define CONTRACT_BITMASK_DEBUGONLY            0x1 << 4
-#define CONTRACT_BITMASK_SONOTMAINLINE        0x1 << 5
-#define CONTRACT_BITMASK_OK_TO_LOCK           0x1 << 6
-#define CONTRACT_BITMASK_OK_TO_RETAKE_LOCK    0x1 << 7
-
+#define CONTRACT_BITMASK_DEBUGONLY            0x1 << 1
+#define CONTRACT_BITMASK_OK_TO_LOCK           0x1 << 2
+#define CONTRACT_BITMASK_OK_TO_RETAKE_LOCK    0x1 << 3
 
 #define CONTRACT_BITMASK_IS_SET(whichbit)    ((m_flags & (whichbit)) != 0)
 #define CONTRACT_BITMASK_SET(whichbit)       (m_flags |= (whichbit))
@@ -371,10 +366,9 @@ public:
         // Everything defaults to mainline
         // By default, GetThread() is perfectly fine to call
         // By default, it's ok to take a lock (or call someone who does)
-        m_flags             = CONTRACT_BITMASK_OK_TO_THROW|
-                              CONTRACT_BITMASK_SOTOLERANT|
-                              CONTRACT_BITMASK_OK_TO_LOCK|
-                              CONTRACT_BITMASK_OK_TO_RETAKE_LOCK;
+        m_flags = CONTRACT_BITMASK_OK_TO_THROW
+                | CONTRACT_BITMASK_OK_TO_LOCK
+                | CONTRACT_BITMASK_OK_TO_RETAKE_LOCK;
 
         m_pContractStackTrace = NULL;       // At top of stack, no contracts in force
         m_GCNoTriggerCount  = 0;

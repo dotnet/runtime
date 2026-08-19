@@ -168,7 +168,6 @@ HRESULT EEConfig::Init()
 #endif
 
 #ifdef _DEBUG
-    fShouldInjectFault = 0;
     testThreadAbort = 0;
 #endif
 
@@ -633,8 +632,6 @@ HRESULT EEConfig::sync()
 
     iPerfNumAllocsThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerfNumAllocsThreshold);
     iPerfAllocsSizeThreshold = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_PerfAllocsSizeThreshold);
-
-    fShouldInjectFault = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_InjectFault);
 
     testThreadAbort = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_HostTestThreadAbort);
 
