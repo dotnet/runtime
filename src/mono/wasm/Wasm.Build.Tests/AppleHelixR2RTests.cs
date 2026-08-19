@@ -178,7 +178,8 @@ public class AppleHelixR2RTests
 
     private void RunMSBuild(string workItemRoot, string publishDir)
     {
-        var startInfo = new ProcessStartInfo(ResolveDotNetHost())
+        string host = ResolveDotNetHost();
+        var startInfo = new ProcessStartInfo(host)
         {
             WorkingDirectory = publishDir,
             RedirectStandardOutput = true,
@@ -197,6 +198,16 @@ public class AppleHelixR2RTests
         startInfo.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
         // The runtime repo sets this, and it makes the child pick up the wrong SDK.
         startInfo.Environment.Remove("MSBuildSDKsPath");
+
+        // Same reason BuildEnvironment does it: the repo build environment points these at its own
+        // dotnet, and the child has to use the one that was just resolved.
+        string? hostDir = Path.GetDirectoryName(host);
+        if (!string.IsNullOrEmpty(hostDir))
+        {
+            startInfo.Environment["DOTNET_ROOT"] = hostDir;
+            startInfo.Environment["DOTNET_INSTALL_DIR"] = hostDir;
+            startInfo.Environment["PATH"] = $"{hostDir}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
+        }
 
         var output = new StringBuilder();
         using var process = new Process { StartInfo = startInfo };
@@ -330,20 +341,26 @@ public class AppleHelixR2RTests
     private static string ResolveDotNetHost()
     {
         // The suite is handed the SDK under test through this variable, and on Helix that is the only
-        // one guaranteed to be a full SDK, so prefer it the way BuildEnvironment does.
+        // one guaranteed to be a full SDK, so prefer it the way BuildEnvironment does. The run script
+        // builds the value from $(dirname $0), so it can be relative - and the child runs with a
+        // different working directory, so it has to be resolved here.
         string fileName = OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet";
         string? sdkPath = EnvironmentVariables.SdkForWorkloadTestingPath;
-        if (!string.IsNullOrEmpty(sdkPath) && File.Exists(Path.Combine(sdkPath, fileName)))
-            return Path.Combine(sdkPath, fileName);
+        if (!string.IsNullOrEmpty(sdkPath))
+        {
+            string candidate = Path.GetFullPath(Path.Combine(sdkPath, fileName));
+            if (File.Exists(candidate))
+                return candidate;
+        }
 
         // Local runs go through xunit.console.dll, so the current process is the host to reuse.
         string? host = Environment.ProcessPath;
         if (host is not null && Path.GetFileName(host).Equals(fileName, StringComparison.OrdinalIgnoreCase))
-            return host;
+            return Path.GetFullPath(host);
 
         host = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
         if (!string.IsNullOrEmpty(host) && File.Exists(host))
-            return host;
+            return Path.GetFullPath(host);
 
         return fileName;
     }
