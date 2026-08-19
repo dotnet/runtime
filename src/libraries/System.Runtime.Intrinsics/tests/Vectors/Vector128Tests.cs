@@ -7299,5 +7299,160 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
                 Assert.Equal(expected, actual[i]);
             }
         }
+
+        // The Mono interpreter and jiterpreter only lower GetElement/WithElement when the index is a
+        // compile time constant that is provably in range, so these tests deliberately use literal
+        // indexes to exercise that path. The loop based tests elsewhere in this file cover the
+        // variable index path, which stays in managed code.
+
+        [Fact]
+        public void Vector128GetElementConstantIndexTest()
+        {
+            Vector128<sbyte> sbyteVector = Vector128.Create((sbyte)-1, 1, -2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, -128);
+            Assert.Equal((sbyte)-1, sbyteVector.GetElement(0));
+            Assert.Equal((sbyte)-2, sbyteVector.GetElement(2));
+            Assert.Equal((sbyte)-128, sbyteVector.GetElement(15));
+
+            Vector128<byte> byteVector = Vector128.Create((byte)255, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 254);
+            Assert.Equal((byte)255, byteVector.GetElement(0));
+            Assert.Equal((byte)7, byteVector.GetElement(7));
+            Assert.Equal((byte)254, byteVector.GetElement(15));
+
+            Vector128<short> shortVector = Vector128.Create((short)-1, 1, -2, 3, 4, 5, 6, short.MinValue);
+            Assert.Equal((short)-1, shortVector.GetElement(0));
+            Assert.Equal((short)-2, shortVector.GetElement(2));
+            Assert.Equal(short.MinValue, shortVector.GetElement(7));
+
+            Vector128<ushort> ushortVector = Vector128.Create((ushort)65535, 1, 2, 3, 4, 5, 6, 65534);
+            Assert.Equal((ushort)65535, ushortVector.GetElement(0));
+            Assert.Equal((ushort)3, ushortVector.GetElement(3));
+            Assert.Equal((ushort)65534, ushortVector.GetElement(7));
+
+            Vector128<int> intVector = Vector128.Create(int.MinValue, 1, 2, int.MaxValue);
+            Assert.Equal(int.MinValue, intVector.GetElement(0));
+            Assert.Equal(2, intVector.GetElement(2));
+            Assert.Equal(int.MaxValue, intVector.GetElement(3));
+
+            Vector128<uint> uintVector = Vector128.Create(uint.MaxValue, 1u, 2u, 3u);
+            Assert.Equal(uint.MaxValue, uintVector.GetElement(0));
+            Assert.Equal(3u, uintVector.GetElement(3));
+
+            Vector128<long> longVector = Vector128.Create(long.MinValue, long.MaxValue);
+            Assert.Equal(long.MinValue, longVector.GetElement(0));
+            Assert.Equal(long.MaxValue, longVector.GetElement(1));
+
+            Vector128<ulong> ulongVector = Vector128.Create(ulong.MaxValue, 1ul);
+            Assert.Equal(ulong.MaxValue, ulongVector.GetElement(0));
+            Assert.Equal(1ul, ulongVector.GetElement(1));
+
+            Vector128<float> floatVector = Vector128.Create(-0.0f, 1.5f, float.NaN, float.NegativeInfinity);
+            // Compare the bits so that the sign of zero is actually validated.
+            Assert.Equal(BitConverter.SingleToInt32Bits(-0.0f), BitConverter.SingleToInt32Bits(floatVector.GetElement(0)));
+            Assert.Equal(1.5f, floatVector.GetElement(1));
+            Assert.Equal(float.NaN, floatVector.GetElement(2));
+            Assert.Equal(float.NegativeInfinity, floatVector.GetElement(3));
+
+            Vector128<double> doubleVector = Vector128.Create(-0.0, double.NaN);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(-0.0), BitConverter.DoubleToInt64Bits(doubleVector.GetElement(0)));
+            Assert.Equal(double.NaN, doubleVector.GetElement(1));
+
+            Vector128<nint> nintVector = Vector128<nint>.Zero.WithElement(0, (nint)(-1)).WithElement(1, (nint)2);
+            Assert.Equal((nint)(-1), nintVector.GetElement(0));
+            Assert.Equal((nint)2, nintVector.GetElement(1));
+
+            Vector128<nuint> nuintVector = Vector128<nuint>.Zero.WithElement(0, (nuint)1).WithElement(1, (nuint)2);
+            Assert.Equal((nuint)1, nuintVector.GetElement(0));
+            Assert.Equal((nuint)2, nuintVector.GetElement(1));
+        }
+
+        [Fact]
+        public void Vector128WithElementConstantIndexTest()
+        {
+            Vector128<sbyte> sbyteVector = Vector128<sbyte>.Zero.WithElement(0, (sbyte)-1).WithElement(15, (sbyte)-128);
+            Assert.Equal((sbyte)-1, sbyteVector.GetElement(0));
+            Assert.Equal((sbyte)0, sbyteVector.GetElement(1));
+            Assert.Equal((sbyte)-128, sbyteVector.GetElement(15));
+
+            Vector128<byte> byteVector = Vector128<byte>.Zero.WithElement(0, (byte)255).WithElement(15, (byte)254);
+            Assert.Equal((byte)255, byteVector.GetElement(0));
+            Assert.Equal((byte)0, byteVector.GetElement(1));
+            Assert.Equal((byte)254, byteVector.GetElement(15));
+
+            Vector128<short> shortVector = Vector128<short>.Zero.WithElement(0, (short)-1).WithElement(7, short.MinValue);
+            Assert.Equal((short)-1, shortVector.GetElement(0));
+            Assert.Equal(short.MinValue, shortVector.GetElement(7));
+
+            Vector128<ushort> ushortVector = Vector128<ushort>.Zero.WithElement(0, (ushort)65535).WithElement(7, (ushort)65534);
+            Assert.Equal((ushort)65535, ushortVector.GetElement(0));
+            Assert.Equal((ushort)65534, ushortVector.GetElement(7));
+
+            Vector128<int> intVector = Vector128<int>.Zero.WithElement(0, int.MinValue).WithElement(3, int.MaxValue);
+            Assert.Equal(int.MinValue, intVector.GetElement(0));
+            Assert.Equal(int.MaxValue, intVector.GetElement(3));
+
+            Vector128<uint> uintVector = Vector128<uint>.Zero.WithElement(0, uint.MaxValue);
+            Assert.Equal(uint.MaxValue, uintVector.GetElement(0));
+
+            Vector128<long> longVector = Vector128<long>.Zero.WithElement(0, long.MinValue).WithElement(1, long.MaxValue);
+            Assert.Equal(long.MinValue, longVector.GetElement(0));
+            Assert.Equal(long.MaxValue, longVector.GetElement(1));
+
+            Vector128<ulong> ulongVector = Vector128<ulong>.Zero.WithElement(1, ulong.MaxValue);
+            Assert.Equal(0ul, ulongVector.GetElement(0));
+            Assert.Equal(ulong.MaxValue, ulongVector.GetElement(1));
+
+            Vector128<float> floatVector = Vector128<float>.Zero.WithElement(0, -0.0f).WithElement(1, 1.5f).WithElement(2, float.NaN);
+            // Compare the bits so that the sign of zero is actually validated.
+            Assert.Equal(BitConverter.SingleToInt32Bits(-0.0f), BitConverter.SingleToInt32Bits(floatVector.GetElement(0)));
+            Assert.Equal(1.5f, floatVector.GetElement(1));
+            Assert.Equal(float.NaN, floatVector.GetElement(2));
+            Assert.Equal(BitConverter.SingleToInt32Bits(0.0f), BitConverter.SingleToInt32Bits(floatVector.GetElement(3)));
+
+            Vector128<double> doubleVector = Vector128<double>.Zero.WithElement(0, -0.0).WithElement(1, double.NaN);
+            Assert.Equal(BitConverter.DoubleToInt64Bits(-0.0), BitConverter.DoubleToInt64Bits(doubleVector.GetElement(0)));
+            Assert.Equal(double.NaN, doubleVector.GetElement(1));
+
+            Vector128<nint> nintVector = Vector128<nint>.Zero.WithElement(1, (nint)(-1));
+            Assert.Equal((nint)0, nintVector.GetElement(0));
+            Assert.Equal((nint)(-1), nintVector.GetElement(1));
+
+            Vector128<nuint> nuintVector = Vector128<nuint>.Zero.WithElement(1, (nuint)3);
+            Assert.Equal((nuint)0, nuintVector.GetElement(0));
+            Assert.Equal((nuint)3, nuintVector.GetElement(1));
+        }
+
+        [Fact]
+        public void Vector128GetElementOutOfRangeTest()
+        {
+            // Constant out of range indexes must still throw, so they must not be lowered to an
+            // unchecked lane access.
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<byte>.Zero.GetElement(16));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<byte>.Zero.GetElement(-1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<short>.Zero.GetElement(8));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.GetElement(4));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<long>.Zero.GetElement(2));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<float>.Zero.GetElement(4));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<double>.Zero.GetElement(2));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<byte>.Zero.WithElement(16, (byte)1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<byte>.Zero.WithElement(-1, (byte)1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<short>.Zero.WithElement(8, (short)1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.WithElement(4, 1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<long>.Zero.WithElement(2, 1L));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<float>.Zero.WithElement(4, 1.0f));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<double>.Zero.WithElement(2, 1.0));
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(4)]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        public void Vector128GetElementVariableOutOfRangeTest(int index)
+        {
+            // A variable index is never lowered, but it must still be bounds checked.
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.GetElement(index));
+            Assert.Throws<ArgumentOutOfRangeException>(() => Vector128<int>.Zero.WithElement(index, 1));
+        }
     }
 }
