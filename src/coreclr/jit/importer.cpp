@@ -7779,6 +7779,10 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 // Fold result, if possible.
                 op1 = gtFoldExpr(op1);
+                if (op1->OperIs(GT_LSH, GT_RSH, GT_RSZ))
+                {
+                    gtUpdateNodeSideEffects(op1);
+                }
 
                 impPushOnStack(op1, tiRetVal);
                 break;
@@ -11993,12 +11997,6 @@ bool Compiler::impWrapTopOfStackInAwait()
     callInfo.methodFlags       = info.compCompHnd->getMethodAttribs(awaitMethod);
     impMarkInlineCandidate(awaitCall, contextHandle, &callInfo, compInlineContext);
 
-    GenTree* toPush = awaitCall;
-    if (varTypeIsStruct(callRetType))
-    {
-        toPush = impFixupCallStructReturn(awaitCall, awaitSig.retTypeClass);
-    }
-
     AsyncCallInfo* asyncInfo = new (this, CMK_Async) AsyncCallInfo;
 
     bool const hasContextHandling =
@@ -12008,16 +12006,6 @@ bool Compiler::impWrapTopOfStackInAwait()
     if (!hasContextHandling)
     {
         asyncInfo->IsTailAwait = !compIsForInlining() || impInlineInfo->iciCall->GetAsyncInfo().IsTailAwait;
-
-#if FEATURE_TAILCALL_OPT
-        // We intentionally do not consult with the EE and canTailCall because
-        // this is us introducing a call as an implementation detail and not a
-        // user-introduced call.
-        if (asyncInfo->IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled())
-        {
-            awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
-        }
-#endif
 
         awaitCall->SetIsAsync(asyncInfo);
     }
@@ -12040,6 +12028,25 @@ bool Compiler::impWrapTopOfStackInAwait()
     }
 
     gtUpdateNodeSideEffects(awaitCall);
+
+    // Struct-return fixup may spill the call, so finalize its async effects first.
+    GenTree* toPush = awaitCall;
+    if (varTypeIsStruct(callRetType))
+    {
+        toPush = impFixupCallStructReturn(awaitCall, awaitSig.retTypeClass);
+    }
+
+#if FEATURE_TAILCALL_OPT
+    // Set this after struct-return fixup so it does not suppress the existing multi-reg spill.
+    // We intentionally do not consult with the EE and canTailCall because
+    // this is us introducing a call as an implementation detail and not a
+    // user-introduced call.
+    if (!hasContextHandling && asyncInfo->IsTailAwait && opts.compTailCallOpt && opts.OptimizationEnabled())
+    {
+        awaitCall->gtCallMoreFlags |= GTF_CALL_M_IMPLICIT_TAILCALL;
+    }
+#endif
+
     if (toPush != awaitCall)
     {
         gtUpdateNodeSideEffects(toPush);
