@@ -87,44 +87,6 @@ namespace ILCompiler.ObjectWriter
             ]);
         }
 
-        static WasmFunctionBody GetWebcilSize = new WasmFunctionBody(
-            new WasmFuncType(new([WasmValueType.I32]), new([])), // (func (destPtr i32) (result))
-                [
-                    Local.Get(0), // (local.get $destPtr)
-                    I32.Const(0),
-                    I32.Const(4),
-                    Memory.Init(0)
-                ]
-        );
-
-        WasmFunctionBody FillWebcilTable(int tableSize) => new WasmFunctionBody(
-            new WasmFuncType(new([]), new([])), // (func)
-                [
-                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex),
-                    I32.Const(0),
-                    I32.Const(tableSize),
-                    Table.Init(0, 0)
-                ]
-        );
-
-        WasmFunctionBody GetWebcilPayload => new WasmFunctionBody(
-            new WasmFuncType(new([WasmValueType.I32, WasmValueType.I32]), new([])), // (func ($d i32) ($n i32))
-                [
-                    Local.Get(0), // (local.get $d)
-                    I32.Const(0),
-                    Local.Get(1), // (local.get $n)
-                    Memory.Init(1),
-                    Local.Get(1),
-                    I32.Const(32),
-                    I32.Ge_s,
-                    Block.If(WasmBlockType.Empty),
-                    Local.Get(0), // (local.get $d)
-                    Global.Get(WebCilObjectWriter.TableBaseGlobalIndex), // (global.get $tableBase)
-                    I32.Store((ulong)WebcilEncoder.TableBaseOffset), // i32.store offset=TableBaseOffset
-                    Block.End
-                ]
-        );
-
         private long ResolveSymbolRVA(WebcilSection[] sections, SymbolDefinition definition)
         {
             for (int i = 0; i < sections.Length; i++)
@@ -244,12 +206,6 @@ namespace ILCompiler.ObjectWriter
 
         private protected override void EmitSectionsAndLayout()
         {
-            int totalMethodCount = MethodCount + 3;
-            InsertWasmStub(new Utf8String("getWebcilSize"), GetWebcilSize);
-            InsertWasmStub(new Utf8String("getWebcilPayload"), GetWebcilPayload);
-            InsertWasmStub(new Utf8String("fillWebcilTable"), FillWebcilTable(totalMethodCount));
-            Debug.Assert(MethodCount == totalMethodCount);
-
             WriteDataCountSection();
         }
 
@@ -824,6 +780,13 @@ namespace ILCompiler.ObjectWriter
                         {
                             Relocation.WriteValue(reloc.Type, pData, symbol.Index + addend);
                         }
+                        break;
+                    }
+                    case RelocType.WASM_FUNCTION_COUNT_SLEB:
+                    {
+                        // We should only be using this in methods that can be shrunk at this point.
+                        Debug.Assert(shrink);
+                        actualLength = Relocation.WriteVariableLengthValue(reloc.Type, pData, MethodCount);
                         break;
                     }
                     default:

@@ -31,5 +31,26 @@ namespace ILCompiler.DependencyAnalysis
 
             return globals[symbolName];
         }
+
+        private NodeCache<WasmFunctionEntryNodeCacheKey, WasmFunctionEntryNode> _wasmFunctionEntryCache;
+
+        public WasmFunctionEntryNode WasmFunctionEntry(INodeWithTypeSignature methodCodeNode, WasmTypeNode typeNode, int? funcletIndex = null)
+        {
+            return _wasmFunctionEntryCache.GetOrAdd(new WasmFunctionEntryNodeCacheKey(methodCodeNode, typeNode, funcletIndex));
+        }
+
+        public struct WasmFunctionEntryNodeCacheKey
+        {
+            public readonly INodeWithTypeSignature MethodCodeNode;
+            public readonly WasmTypeNode Type;
+            public int? FuncletIndex;
+
+            public WasmFunctionEntryNodeCacheKey(INodeWithTypeSignature methodCodeNode, WasmTypeNode type, int? funcletIndex = null)
+            {
+                MethodCodeNode = methodCodeNode;
+                Type = type;
+                FuncletIndex = funcletIndex;
+            }
+        }
     }
 }
