@@ -31,6 +31,26 @@ class GenericException<T> : Exception
 {
 }
 
+class GenericContextFromThis<T>
+{
+    public int Recurse(int count)
+    {
+        if (count == 0)
+        {
+            try
+            {
+                throw new GenericException<T>();
+            }
+            catch (GenericException<T>)
+            {
+                return 1;
+            }
+        }
+
+        return new GenericContextFromThis<GenericClass<T>>().Recurse(count - 1);
+    }
+}
+
 public class Test_RecursiveTailCall
 {
     // Test a recursive tail call with a 1-byte struct parameter.
@@ -98,22 +118,22 @@ public class Test_RecursiveTailCall
         }
     }
 
-    // Test a recursive tail call to a method with hidden generic context param.
-    // This test will make sure that when a recursive call is converte to a loop
-    // there is no mismatch of generic context reported to VM and the one used
-    // within the method.
-    public static int TestGenericContext<T>(int x)
+    // Test a recursive tail call to a method with a hidden generic context parameter.
+    public static int TestGenericContext<T>(int count)
     {
-        try
+        if (count == 0)
         {
-            if (x == 1) throw new GenericException<T>();
-        }
-        catch (GenericException<T>)
-        {            
-            return 1;
+            try
+            {
+                throw new GenericException<T>();
+            }
+            catch (GenericException<T>)
+            {
+                return 1;
+            }
         }
 
-        return x * TestGenericContext<GenericClass<T>>(x - 1);
+        return TestGenericContext<GenericClass<T>>(count - 1);
     }
 
     // Test a recursive tail call to a method that has a 'this' parameter
@@ -163,9 +183,14 @@ public class Test_RecursiveTailCall
             return Fail;
         }
 
-        if (TestGenericContext<GenericClass<int>>(5) != 120)
+        if (TestGenericContext<GenericClass<int>>(5) != 1)
         {
-           return Fail;
+            return Fail;
+        }
+
+        if (new GenericContextFromThis<int>().Recurse(5) != 1)
+        {
+            return Fail;
         }
 
         return Pass;

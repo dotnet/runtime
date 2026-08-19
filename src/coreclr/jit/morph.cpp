@@ -4734,19 +4734,11 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
     // TODO-CQ: enable the transformation when the method has a struct parameter that can be passed in a register
     // or return type is a struct that can be passed in a register.
     //
-    // TODO-CQ: if the method being compiled requires generic context reported in gc-info (either through
-    // hidden generic context param or through keep alive thisptr), then while transforming a recursive
-    // call to such a method requires that the generic context stored on stack slot be updated.  Right now,
-    // fgMorphRecursiveFastTailCallIntoLoop() is not handling update of generic context while transforming
-    // a recursive call into a loop.  Another option is to modify gtIsRecursiveCall() to check that the
-    // generic type parameters of both caller and callee generic method are the same.
-    //
     // For OSR, we prefer to tailcall for call counting + potential transition
     // into the actual tier1 version.
     //
-    if (opts.compTailCallLoopOpt && canFastTailCall && !opts.IsOSR() && gtIsRecursiveCall(call) &&
-        !lvaReportParamTypeArg() && !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam &&
-        !varTypeIsStruct(call->TypeGet()))
+    if (opts.compTailCallLoopOpt && canFastTailCall && !opts.IsOSR() && gtIsRecursiveCall(call) && !call->IsVirtual() &&
+        !hasStructParam && !varTypeIsStruct(call->TypeGet()))
     {
         fastTailCallToLoop = true;
     }
@@ -6156,6 +6148,16 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         arg0Store->SetMorphed(this);
         Statement* const arg0StoreStmt = gtNewStmt(arg0Store, callDI);
         fgInsertStmtBefore(block, paramAssignmentInsertionPoint, arg0StoreStmt);
+    }
+
+    if (lvaReportParamTypeArg() || lvaKeepAliveAndReportThis())
+    {
+        const unsigned contextArg = lvaReportParamTypeArg() ? info.compTypeCtxtArg : info.compThisArg;
+        GenTree* const context    = gtNewLclVarNode(contextArg);
+        context->SetMorphed(this);
+        GenTree* const contextStore = gtNewStoreLclVarNode(lvaCachedGenericContextArg, context);
+        contextStore->SetMorphed(this);
+        fgInsertStmtBefore(block, paramAssignmentInsertionPoint, gtNewStmt(contextStore, callDI));
     }
 
     // If compInitMem is set, we may need to zero-initialize some locals. Normally it's done in the prolog

@@ -324,12 +324,13 @@ void Compiler::lvaInitTypeRef()
                                            CORINFO_GENERICS_CTXT_FROM_METHODTABLE | CORINFO_GENERICS_CTXT_FROM_THIS;
 #endif
 
-    if ((info.compMethodInfo->options & genericContextOptions) != 0)
+    const unsigned genericContext = info.compMethodInfo->options & genericContextOptions;
+    if (genericContext != 0)
     {
         lvaCachedGenericContextArg = lvaGrabTemp(true DEBUGARG("cached generic context"));
 
         LclVarDsc* cachedGenericContextArg = lvaGetDesc(lvaCachedGenericContextArg);
-        cachedGenericContextArg->lvType    = TYP_I_IMPL;
+        cachedGenericContextArg->lvType    = (genericContext == CORINFO_GENERICS_CTXT_FROM_THIS) ? TYP_REF : TYP_I_IMPL;
         cachedGenericContextArg->lvOnFrame = false;
     }
 
