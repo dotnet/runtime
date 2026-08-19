@@ -9,6 +9,7 @@
 // ArgIteratorTemplate::GetNextOffset in src/coreclr/vm/callingconvention.h.
 using System.Runtime.CompilerServices;
 using Xunit;
+using TestLibrary;
 
 public class Program
 {
