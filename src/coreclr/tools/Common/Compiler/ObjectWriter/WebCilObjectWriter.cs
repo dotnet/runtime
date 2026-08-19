@@ -574,7 +574,7 @@ namespace ILCompiler.ObjectWriter
 #endif
         }
 
-        private unsafe int ResolveReloc(int sectionIndex, MemoryStream sourceStream, long srcPos, MemoryStream destStream, long destPos, SymbolicRelocation reloc,  byte[] relocScratchBuffer, bool shrink = false)
+        private unsafe int ResolveReloc(int sectionIndex, Stream sourceStream, long srcPos, MemoryStream destStream, long destPos, SymbolicRelocation reloc, byte[] relocScratchBuffer, bool shrink = false)
         {
             WebcilSection? curSectionAsWebcil = null;
             uint webcilVirtualStart = 0;
@@ -792,6 +792,12 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
+            if (shrink && _sections[sectionIndex] is WasmSection { Type: WasmSectionType.Function })
+            {
+                ResolveFunctionSectionRelocations(sectionIndex, sectionStream, dstStream, relocs);
+                return;
+            }
+
             byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
 
             // Otherwise, we can resolve relocations on top of the copied in section stream, since the size and layout of the stream won't be changing.
@@ -803,6 +809,40 @@ namespace ILCompiler.ObjectWriter
                 ResolveReloc(sectionIndex, dstStream, srcPos: sectionStart + reloc.Offset, dstStream, destPos: sectionStart + reloc.Offset, reloc, relocScratchBuffer);
             }
             dstStream.Position = sectionStream.Length + startPos;
+        }
+
+        // The entire section is relocs, so we can shrink each reloc and skip copying any data between them.
+        private void ResolveFunctionSectionRelocations(
+            int sectionIndex,
+            Stream sourceStream,
+            MemoryStream destinationStream,
+            List<SymbolicRelocation> relocs)
+        {
+            byte[] relocScratchBuffer = new byte[Relocation.MaxSize];
+            relocs.Sort((left, right) => left.Offset.CompareTo(right.Offset));
+
+            sourceStream.Position = 0;
+
+            foreach (SymbolicRelocation reloc in relocs)
+            {
+                Debug.Assert(sourceStream.Position != reloc.Offset,
+                    $"Unexpected data in the WASM Function section between offsets {sourceStream.Position} and {reloc.Offset}.");
+
+                ResolveReloc(
+                    sectionIndex,
+                    sourceStream,
+                    reloc.Offset,
+                    destinationStream,
+                    destinationStream.Position,
+                    reloc,
+                    relocScratchBuffer,
+                    shrink: true);
+
+                sourceStream.Position = reloc.Offset + Relocation.GetSize(reloc.Type);
+            }
+
+            Debug.Assert(sourceStream.Position == sourceStream.Length,
+                $"Unexpected trailing data in the WASM Function section at offset {sourceStream.Position}.");
         }
 #nullable disable
 

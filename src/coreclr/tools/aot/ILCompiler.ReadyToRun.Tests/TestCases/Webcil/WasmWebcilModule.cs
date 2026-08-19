@@ -60,4 +60,9 @@ public static class WasmWebcilModule
             return -1;
         }
     }
+
+    public static void AlwaysThrows()
+    {
+        throw new InvalidOperationException();
+    }
 }

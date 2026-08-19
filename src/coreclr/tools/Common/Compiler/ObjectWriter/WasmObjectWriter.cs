@@ -161,7 +161,6 @@ namespace ILCompiler.ObjectWriter
                 return;
             }
 
-            WasmValueType pointerType = _nodeFactory.Target.PointerSize == 8 ? WasmValueType.I64 : WasmValueType.I32;
             string mangledNodeName = nodeWithFunclets.GetMangledName(_nodeFactory.NameMangler);
 
             // The method itself is already registered by the ObjectWriter, but we must register the funclet names

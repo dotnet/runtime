@@ -128,6 +128,27 @@ internal static class WasmR2RAssert
         return failures.Count == 0;
     }
 
+    public static bool WasmFunctionSectionMatchesCode(WebcilImageReader reader, out string diagnostic)
+    {
+        if (!reader.IsWasmWrapped)
+        {
+            diagnostic = "Expected a WASM-wrapped Webcil image.";
+            return false;
+        }
+
+        int functionCount = ReadWasmFunctionTypeIndices(reader);
+        uint codeCount = ReadWasmSectionEntryCount(reader, WasmSectionKind.Code);
+        if ((uint)functionCount != codeCount)
+        {
+            diagnostic =
+                $"The WASM Function section has {functionCount} entries, but the Code section has {codeCount} entries.";
+            return false;
+        }
+
+        diagnostic = $"The WASM Function and Code sections contain {codeCount} entries.";
+        return true;
+    }
+
     public static bool FillWebcilTableUsesDefinedFunctionCount(WebcilImageReader reader, out string diagnostic)
     {
         if (!reader.IsWasmWrapped)
@@ -138,13 +159,6 @@ internal static class WasmR2RAssert
 
         var failures = new List<string>();
         uint functionCount = ReadWasmSectionEntryCount(reader, WasmSectionKind.Function);
-        uint codeCount = ReadWasmSectionEntryCount(reader, WasmSectionKind.Code);
-        if (functionCount != codeCount)
-        {
-            failures.Add(
-                $"The WASM Function section has {functionCount} entries, but the Code section has {codeCount} entries.");
-        }
-
         Dictionary<(string Module, string Name), WasmImportIndex> imports = ReadWasmImports(reader);
         uint importedFunctionCount = CountWasmImports(imports, WasmImportKind.Function);
         Dictionary<string, WasmExportIndex> exports = ReadWasmExports(reader);
@@ -312,6 +326,36 @@ internal static class WasmR2RAssert
             return 0;
 
         return ReadWasmUleb32(image, ref offset, sectionEnd);
+    }
+
+    private static int ReadWasmFunctionTypeIndices(WebcilImageReader reader)
+    {
+        ReadOnlySpan<byte> image = reader.GetEntireImage().AsSpan();
+        if (!TryGetWasmSectionBounds(image, WasmSectionKind.Function, out int offset, out int sectionEnd))
+            return 0;
+
+        uint entryCount = ReadWasmUleb32(image, ref offset, sectionEnd);
+        for (uint i = 0; i < entryCount; i++)
+        {
+            int entryOffset = offset;
+            uint typeIndex = ReadWasmUleb32(image, ref offset, sectionEnd);
+            if (offset - entryOffset != GetWasmUleb32Size(typeIndex))
+                throw new BadImageFormatException($"WASM Function-section type index {typeIndex} is not minimally encoded.");
+        }
+
+        if (offset != sectionEnd)
+            throw new BadImageFormatException("WASM Function section contains trailing data.");
+
+        return checked((int)entryCount);
+    }
+
+    private static int GetWasmUleb32Size(uint value)
+    {
+        int size = 1;
+        while ((value >>= 7) != 0)
+            size++;
+
+        return size;
     }
 
     private static Dictionary<string, WasmExportIndex> ReadWasmExports(WebcilImageReader reader)

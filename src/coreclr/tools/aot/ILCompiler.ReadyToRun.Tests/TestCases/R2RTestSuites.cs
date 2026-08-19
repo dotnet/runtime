@@ -110,6 +110,9 @@ public class R2RTestSuites
 
             Assert.True(WasmR2RAssert.WasmIndexSpacesHaveExpectedEntries(webcilReader, out string indexDiagnostic), indexDiagnostic);
             Assert.True(
+                WasmR2RAssert.WasmFunctionSectionMatchesCode(webcilReader, out string functionSectionDiagnostic),
+                functionSectionDiagnostic);
+            Assert.True(
                 WasmR2RAssert.FillWebcilTableUsesDefinedFunctionCount(webcilReader, out string functionCountDiagnostic),
                 functionCountDiagnostic);
 
