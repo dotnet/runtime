@@ -1,6 +1,6 @@
 ## Enabling analyzers and other analysis tools
 
-By default, code analyzers and ILLink trimming analysis are **disabled** during local and product builds to improve build performance. They remain required merge gates in CI. To enable them locally, pass the corresponding MSBuild properties on the command line or set them in your environment.
+By default, code analyzers and ILLink trimming analysis are **disabled** during local and PR product builds to improve build performance. They remain required merge gates in CI, and official product builds continue to run ILLink trimming validation. To enable them locally, pass the corresponding MSBuild properties on the command line or set them in your environment.
 
 ### Analyzers
 

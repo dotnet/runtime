@@ -231,7 +231,7 @@ One can build 32- or 64-bit binaries or for any architecture by specifying in th
 
 ### Building with static analysis and ILLink validation
 
-By default, code analyzers and ILLink trimming are disabled during local and product builds to improve build performance. They remain required merge gates in CI. To enable these features locally, pass the following properties:
+By default, code analyzers and ILLink trimming are disabled during local and PR product builds to improve build performance. They remain required merge gates in CI, and official product builds continue to run ILLink trimming validation. To enable these features locally, pass the following properties:
 
 - **Analyzers**: To run code analyzers during the build, use `/p:RunAnalyzersInBuild=true`:
   ```bash
