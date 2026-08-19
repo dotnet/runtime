@@ -72,6 +72,19 @@ namespace System.Runtime.InteropServices
         private readonly ConditionalWeakTable<object, ManagedObjectWrapperHolder> _managedObjectWrapperTable = [];
         private readonly RcwCache _rcwCache = new();
 
+        /// <summary>
+        /// A number identifying this instance, used to tell whose wrapper is cached on an RCW.
+        /// </summary>
+        /// <remarks>
+        /// An identity comparison against the instance itself would be simpler, but a wrapper is allowed to outlive
+        /// the <see cref="ComWrappers"/> that made it (see <see cref="RegisterManagedObjectWrapperForDiagnostics"/>),
+        /// so nothing reachable from a wrapper may refer to one. These are handed out by an ever increasing counter
+        /// rather than being recycled, so a later instance can never be mistaken for an earlier one.
+        /// </remarks>
+        private readonly ulong _id = Interlocked.Increment(ref s_nextId);
+
+        private static ulong s_nextId;
+
         internal static bool TryGetComInstanceForIID(object obj, Guid iid, out IntPtr unknown, out ComWrappers? comWrappers)
         {
             if (obj == null
@@ -507,10 +520,16 @@ namespace System.Runtime.InteropServices
 
             private readonly ManagedObjectWrapper* _wrapper;
 
-            public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper, object wrappedObject)
+            // Declared after '_wrapper' on purpose. The runtime mirrors this type as
+            // 'ManagedObjectWrapperHolderObject' and reads '_wrappedObject' and '_wrapper' by offset, so a field
+            // added ahead of either of them would move it out from under the native declaration.
+            private readonly ulong _comWrappersId;
+
+            public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper, ulong comWrappersId, object wrappedObject)
             {
                 _wrapper = wrapper;
                 _wrappedObject = wrappedObject;
+                _comWrappersId = comWrappersId;
                 _releaser = new ManagedObjectWrapperReleaser(wrapper);
                 _wrapper->HolderHandle = AllocateRefCountedHandle(this);
             }
@@ -518,6 +537,12 @@ namespace System.Runtime.InteropServices
             public IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
 
             public object WrappedObject => _wrappedObject;
+
+            /// <summary>
+            /// The <see cref="ComWrappers._id"/> of the instance that created this wrapper. Every instance computes
+            /// its own vtables, so a wrapper is only ever valid for the one that made it.
+            /// </summary>
+            public ulong ComWrappersId => _comWrappersId;
 
             public uint AddRef() => _wrapper->AddRef();
 
@@ -843,14 +868,36 @@ namespace System.Runtime.InteropServices
         {
             ArgumentNullException.ThrowIfNull(instance);
 
+            // An RCW that derives from 'ComWrappersObject' keeps the wrapper this instance made for it in a field,
+            // so the common case of handing the same object to native code repeatedly never touches the table. The
+            // field holds whichever instance got there first, so it has to be checked before it can be used: a second
+            // 'ComWrappers' instance wrapping the same object computes different vtables and must not see this one.
+            if (instance is ComWrappersObject comWrappersObject
+                && comWrappersObject._managedObjectWrapper is ManagedObjectWrapperHolder cachedWrapper
+                && cachedWrapper.ComWrappersId == _id)
+            {
+                cachedWrapper.AddRef();
+
+                // The diagnostics table is not updated here. This wrapper is only reachable from the field because
+                // it was recorded there already, on the call that created it.
+                return cachedWrapper.ComIp;
+            }
+
             ManagedObjectWrapperHolder managedObjectWrapper = _managedObjectWrapperTable.GetOrAdd(instance, static (c, state) =>
             {
                 ManagedObjectWrapper* value = state.ComWrappers.CreateManagedObjectWrapper(c, state.Flags);
-                return new ManagedObjectWrapperHolder(value, c);
+                return new ManagedObjectWrapperHolder(value, state.ComWrappers._id, c);
             }, new CreateManagedObjectWrapperState(this, flags));
 
             managedObjectWrapper.AddRef();
             RegisterManagedObjectWrapperForDiagnostics(instance, managedObjectWrapper);
+
+            // Publish to the field for next time, if this object has one and nothing has claimed it yet. Losing this
+            // race just means another 'ComWrappers' instance got there first, and this one keeps using the table.
+            if (instance is ComWrappersObject target)
+            {
+                _ = Interlocked.CompareExchange(ref target._managedObjectWrapper, managedObjectWrapper, null);
+            }
 
             return managedObjectWrapper.ComIp;
         }
@@ -859,6 +906,28 @@ namespace System.Runtime.InteropServices
         {
             public readonly ComWrappers ComWrappers = comWrappers;
             public readonly CreateComInterfaceFlags Flags = flags;
+        }
+
+        /// <summary>
+        /// Gets the COM representation this instance made for a given object, if it has made one.
+        /// </summary>
+        /// <param name="instance">The object to get the wrapper for.</param>
+        /// <param name="wrapper">The wrapper this instance made for <paramref name="instance"/>, if any.</param>
+        /// <returns>Whether a wrapper was found.</returns>
+        private bool TryGetManagedObjectWrapper(object instance, [NotNullWhen(true)] out ManagedObjectWrapperHolder? wrapper)
+        {
+            // Same two places a wrapper can live as in 'GetOrCreateComInterfaceForObject': the field on the object
+            // for whichever instance claimed it, and the table for everyone else.
+            if (instance is ComWrappersObject comWrappersObject
+                && comWrappersObject._managedObjectWrapper is ManagedObjectWrapperHolder cachedWrapper
+                && cachedWrapper.ComWrappersId == _id)
+            {
+                wrapper = cachedWrapper;
+
+                return true;
+            }
+
+            return _managedObjectWrapperTable.TryGetValue(instance, out wrapper);
         }
 
         private static void RegisterManagedObjectWrapperForDiagnostics(object instance, ManagedObjectWrapperHolder wrapper)
@@ -1221,7 +1290,7 @@ namespace System.Runtime.InteropServices
                         // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
                         // we will create a new wrapper. In this scenario, we'll only unwrap B2.
                         object unwrapped = ComInterfaceDispatch.GetInstance<object>(comInterfaceDispatch);
-                        if (_managedObjectWrapperTable.TryGetValue(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
+                        if (TryGetManagedObjectWrapper(unwrapped, out ManagedObjectWrapperHolder? unwrappedWrapperInThisContext))
                         {
                             // The unwrapped object has a CCW in this context. Compare with identity
                             // so we can see if it's the CCW for the unwrapped object in this context.

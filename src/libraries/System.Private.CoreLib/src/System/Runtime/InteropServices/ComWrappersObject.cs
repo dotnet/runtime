@@ -42,6 +42,16 @@ namespace System.Runtime.InteropServices
         internal ComWrappers.NativeObjectWrapper? _nativeObjectWrapper;
 
         /// <summary>
+        /// The COM representation of this instance, for whichever <see cref="ComWrappers"/> instance got here first.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="_nativeObjectWrapper"/> this is only a cache, not the record itself. The table it
+        /// shortcuts belongs to a single <see cref="ComWrappers"/> instance rather than being global, so an object
+        /// can have one of these per instance, and only the first is kept here. The rest are found the usual way.
+        /// </remarks>
+        internal ComWrappers.ManagedObjectWrapperHolder? _managedObjectWrapper;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ComWrappersObject"/> class.
         /// </summary>
         protected ComWrappersObject()
