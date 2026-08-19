@@ -193,7 +193,7 @@ extern LONG InternalUnhandledExceptionFilter_Worker(PEXCEPTION_POINTERS pExcepti
 
 VOID DECLSPEC_NORETURN RaiseTheExceptionInternalOnly(OBJECTREF throwable);
 
-struct QCallException;
+struct QCallExceptionStatus;
 
 #if defined(DACCESS_COMPILE)
 
@@ -204,7 +204,7 @@ struct QCallException;
 #define UNINSTALL_UNWIND_AND_CONTINUE_HANDLER_EX
 #else // DACCESS_COMPILE
 
-struct QCallException
+struct QCallExceptionStatus
 {
 private:
     INT32 m_exceptionPending;
@@ -221,10 +221,10 @@ public:
 void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pException);
 void UnwindAndContinueRethrowHelperInsideQcallCatch(
     Exception* pException,
-    QCallException* pQCallException DEBUG_ARG(Frame* pEntryFrame));
+    QCallExceptionStatus* pQCallException DEBUG_ARG(Frame* pEntryFrame));
 
 #ifdef TARGET_UNIX
-void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallException* pQCallException);
+void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallExceptionStatus* pQCallException);
 #endif
 
 VOID DECLSPEC_NORETURN UnwindAndContinueRethrowHelperAfterCatch(Frame* pEntryFrame, Exception* pException, bool nativeRethrow);

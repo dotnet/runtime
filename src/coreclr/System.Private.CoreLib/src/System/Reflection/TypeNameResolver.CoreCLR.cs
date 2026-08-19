@@ -198,7 +198,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "UnsafeAccessors_ResolveGenericParamToTypeHandle")]
-        private static partial IntPtr ResolveGenericParamToTypeHandle(IntPtr unsafeAccessorMethod, [MarshalAs(UnmanagedType.Bool)] bool isMethodParam, uint paramIndex, out QCallException qcallException);
+        private static partial IntPtr ResolveGenericParamToTypeHandle(IntPtr unsafeAccessorMethod, [MarshalAs(UnmanagedType.Bool)] bool isMethodParam, uint paramIndex, out QCallExceptionStatus qcallException);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "TypeNameResolver.GetType is marked as RequiresUnreferencedCode.")]

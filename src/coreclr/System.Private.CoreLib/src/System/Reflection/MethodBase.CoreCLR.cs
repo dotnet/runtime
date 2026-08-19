@@ -37,7 +37,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodBase_GetCurrentMethod")]
-        private static partial RuntimeMethodHandleInternal GetCurrentMethod(StackCrawlMarkHandle stackMark, out QCallException qcallException);
+        private static partial RuntimeMethodHandleInternal GetCurrentMethod(StackCrawlMarkHandle stackMark, out QCallExceptionStatus qcallException);
 
         [RequiresUnreferencedCode("Metadata for the method might be incomplete or removed")]
         [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod

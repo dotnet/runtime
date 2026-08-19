@@ -45,20 +45,20 @@ extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
     UINT32 circularBufferSizeInMB,
     /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ LPCVOID pProviders,
     UINT32 numProviders,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 //!
 //! Disables the specified session Id.
 //!
-extern "C" void QCALLTYPE EventPipeInternal_Disable(UINT64 sessionID, QCallException* qcallError);
+extern "C" void QCALLTYPE EventPipeInternal_Disable(UINT64 sessionID, QCallExceptionStatus* qcallError);
 
-extern "C" BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo, QCallException* qcallError);
+extern "C" BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo, QCallExceptionStatus* qcallError);
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
     _In_z_ LPCWSTR providerName,
     EventPipeCallback pCallbackFunc,
     void* pCallbackContext,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
     INT_PTR provHandle,
@@ -68,41 +68,41 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
     UINT32 level,
     void *pMetadata,
     UINT32 metadataLength,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 extern "C" INT_PTR QCALLTYPE EventPipeInternal_GetProvider(
     _In_z_ LPCWSTR providerName,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE EventPipeInternal_DeleteProvider(
     INT_PTR provHandle,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 extern "C" int QCALLTYPE EventPipeInternal_EventActivityIdControl(
     UINT32 controlCode,
     GUID *pActivityId,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE EventPipeInternal_WriteEventData(
     INT_PTR eventHandle,
     EventData *pEventData,
     UINT32 eventDataCount,
     LPCGUID pActivityId, LPCGUID pRelatedActivityId,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 extern "C" BOOL QCALLTYPE EventPipeInternal_GetNextEvent(
     UINT64 sessionID,
     EventPipeEventInstanceData *pInstance,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 extern "C" BOOL QCALLTYPE EventPipeInternal_SignalSession(
     UINT64 sessionID,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 extern "C" BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(
     UINT64 sessionID,
     INT32 timeoutMs,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 #endif // FEATURE_PERFTRACING
 

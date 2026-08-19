@@ -89,7 +89,7 @@ namespace System.Threading
         private static extern IntPtr GetLockHandleIfExists(object obj);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectHeader_GetOrCreateLockObject")]
-        private static partial void GetOrCreateLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj, out QCallException qcallException);
+        private static partial void GetOrCreateLockObject(ObjectHandleOnStack obj, ObjectHandleOnStack lockObj, out QCallExceptionStatus qcallException);
 
         //
         // A few words about spinning choices:

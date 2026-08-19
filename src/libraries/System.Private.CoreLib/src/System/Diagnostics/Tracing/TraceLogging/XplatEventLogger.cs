@@ -31,7 +31,7 @@ namespace System.Diagnostics.Tracing
         private static unsafe partial char* EventSource_GetClrConfig(string configName
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -64,7 +64,7 @@ namespace System.Diagnostics.Tracing
         private static partial bool IsEventSourceLoggingEnabled(
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            out QCallException qcallException
+            out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -73,7 +73,7 @@ namespace System.Diagnostics.Tracing
         private static partial void LogEventSource(int eventID, string? eventName, string eventSourceName, string payload
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );

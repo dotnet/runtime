@@ -334,7 +334,7 @@ namespace System.Reflection
         #endregion
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MetadataImport_Enum")]
-        private static unsafe partial void Enum(IntPtr scope, int type, int parent, ref int length, int* shortResult, ObjectHandleOnStack longResult, out QCallException qcallException);
+        private static unsafe partial void Enum(IntPtr scope, int type, int parent, ref int length, int* shortResult, ObjectHandleOnStack longResult, out QCallExceptionStatus qcallException);
 
         public unsafe void Enum(MetadataTokenType type, int parent, out MetadataEnumResult result)
         {

@@ -119,13 +119,13 @@ namespace System.Runtime.InteropServices.Java
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_Initialize")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool InitializeInternal(IntPtr callback, out QCallException qcallException);
+        private static partial bool InitializeInternal(IntPtr callback, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_CreateReferenceTrackingHandle")]
-        private static unsafe partial IntPtr CreateReferenceTrackingHandleInternal(ObjectHandleOnStack obj, void* context, out QCallException qcallException);
+        private static unsafe partial IntPtr CreateReferenceTrackingHandleInternal(ObjectHandleOnStack obj, void* context, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_FinishCrossReferenceProcessing")]
-        private static unsafe partial void FinishCrossReferenceProcessing(MarkCrossReferencesArgs* crossReferences, nuint length, void* unreachableObjectHandles, out QCallException qcallException);
+        private static unsafe partial void FinishCrossReferenceProcessing(MarkCrossReferencesArgs* crossReferences, nuint length, void* unreachableObjectHandles, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "JavaMarshal_GetContext")]
         [SuppressGCTransition]

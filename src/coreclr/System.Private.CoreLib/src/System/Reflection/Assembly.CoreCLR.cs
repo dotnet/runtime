@@ -55,7 +55,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetExecutingAssembly")]
-        private static partial void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly, out QCallException qcallException);
+        private static partial void GetExecutingAssemblyNative(StackCrawlMarkHandle stackMark, ObjectHandleOnStack retAssembly, out QCallExceptionStatus qcallException);
 
         internal static RuntimeAssembly GetExecutingAssembly(ref StackCrawlMark stackMark)
         {
@@ -86,7 +86,7 @@ namespace System.Reflection
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetEntryAssembly")]
-        private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly, out QCallException qcallException);
+        private static partial void GetEntryAssemblyNative(ObjectHandleOnStack retAssembly, out QCallExceptionStatus qcallException);
 
         private static RuntimeAssembly? GetEntryAssemblyInternal()
         {

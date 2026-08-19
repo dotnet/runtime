@@ -17,6 +17,6 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ClrConfig_GetConfigBoolValue", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool GetConfigBoolValue(string configSwitchName, [MarshalAs(UnmanagedType.Bool)] out bool exist, out QCallException qcallException);
+        private static partial bool GetConfigBoolValue(string configSwitchName, [MarshalAs(UnmanagedType.Bool)] out bool exist, out QCallExceptionStatus qcallException);
     }
 }

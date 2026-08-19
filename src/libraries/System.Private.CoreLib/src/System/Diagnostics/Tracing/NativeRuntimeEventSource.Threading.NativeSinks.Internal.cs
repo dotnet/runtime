@@ -13,7 +13,7 @@ namespace System.Diagnostics.Tracing
         private static partial void LogContentionLockCreated(nint LockID, nint AssociatedObjectID, ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -28,7 +28,7 @@ namespace System.Diagnostics.Tracing
             ulong LockOwnerThreadID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -41,7 +41,7 @@ namespace System.Diagnostics.Tracing
             double DurationNs
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -51,7 +51,7 @@ namespace System.Diagnostics.Tracing
         private static partial void LogThreadPoolWorkerThreadStart(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -61,7 +61,7 @@ namespace System.Diagnostics.Tracing
         private static partial void LogThreadPoolWorkerThreadStop(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -71,7 +71,7 @@ namespace System.Diagnostics.Tracing
         private static partial void LogThreadPoolWorkerThreadWait(uint ActiveWorkerThreadCount, uint RetiredWorkerThreadCount, ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -81,7 +81,7 @@ namespace System.Diagnostics.Tracing
         private static partial void LogThreadPoolMinMaxThreads(ushort MinWorkerThreads, ushort MaxWorkerThreads, ushort MinIOCompletionThreads, ushort MaxIOCompletionThreads, ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -91,7 +91,7 @@ namespace System.Diagnostics.Tracing
         private static partial void LogThreadPoolWorkerThreadAdjustmentSample(double Throughput, ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -101,7 +101,7 @@ namespace System.Diagnostics.Tracing
         private static partial void LogThreadPoolWorkerThreadAdjustmentAdjustment(double AverageThroughput, uint NewWorkerThreadCount, ThreadAdjustmentReasonMap Reason, ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -122,7 +122,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -136,7 +136,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -149,7 +149,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -161,7 +161,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -174,7 +174,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -187,7 +187,7 @@ namespace System.Diagnostics.Tracing
             ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -197,7 +197,7 @@ namespace System.Diagnostics.Tracing
         private static partial void LogWaitHandleWaitStop(ushort ClrInstanceID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );

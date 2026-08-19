@@ -84,7 +84,7 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MethodTable_CanCompareBitsOrUseFastGetHashCode")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static unsafe partial bool CanCompareBitsOrUseFastGetHashCodeHelper(MethodTable* pMT, out QCallException qcallException);
+        private static unsafe partial bool CanCompareBitsOrUseFastGetHashCodeHelper(MethodTable* pMT, out QCallExceptionStatus qcallException);
 
         /*=================================GetHashCode==================================
         **Action: Our algorithm for returning the hashcode is a little bit complex.  We look
@@ -165,7 +165,7 @@ namespace System
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ValueType_GetHashCodeStrategy")]
         private static unsafe partial ValueTypeHashCodeStrategy GetHashCodeStrategy(
             MethodTable* pMT, ObjectHandleOnStack objHandle, out uint fieldOffset, out uint fieldSize, out MethodTable* fieldMT,
-            out QCallException qcallException);
+            out QCallExceptionStatus qcallException);
 
         public override string? ToString()
         {

@@ -12,7 +12,7 @@ namespace System
     public abstract partial class Enum
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Enum_GetValuesAndNames")]
-        private static partial void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames, out QCallException qcallException);
+        private static partial void GetEnumValuesAndNames(QCallTypeHandle enumType, ObjectHandleOnStack values, ObjectHandleOnStack names, Interop.BOOL getNames, out QCallExceptionStatus qcallException);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe CorElementType InternalGetCorElementType(RuntimeType rt)

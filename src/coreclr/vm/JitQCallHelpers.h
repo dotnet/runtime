@@ -18,12 +18,12 @@ class Module;
 class MethodTable;
 class MethodDesc;
 
-extern "C" void * QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, QCallException* qcallError);
-extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule, QCallException* qcallError);
-extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallException* qcallError);
-extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTargetType, CORINFO_CLASS_HANDLE pSourceType, QCallException* qcallError);
-extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic, QCallException* qcallError);
-extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, bool gcStatic, QCallException* qcallError);
-extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(CORINFO_CLASS_HANDLE type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack, QCallException* qcallError);
+extern "C" void * QCALLTYPE ResolveVirtualFunctionPointer(QCall::ObjectHandleOnStack obj, CORINFO_CLASS_HANDLE classHnd, CORINFO_METHOD_HANDLE methodHnd, QCallExceptionStatus* qcallError);
+extern "C" CORINFO_GENERIC_HANDLE QCALLTYPE GenericHandleWorker(MethodDesc * pMD, MethodTable * pMT, LPVOID signature, DWORD dictionaryIndexAndSlot, Module* pModule, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE InitClassHelper(MethodTable* pMT, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE ThrowInvalidCastException(CORINFO_CLASS_HANDLE pTargetType, CORINFO_CLASS_HANDLE pSourceType, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE GetThreadStaticsByMethodTable(QCall::ByteRefOnStack refHandle, MethodTable* pMT, bool gcStatic, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE GetThreadStaticsByIndex(QCall::ByteRefOnStack refHandle, uint32_t staticBlockIndex, bool gcStatic, QCallExceptionStatus* qcallError);
+extern "C" BOOL QCALLTYPE IsInstanceOf_NoCacheLookup(CORINFO_CLASS_HANDLE type, BOOL throwCastException, QCall::ObjectHandleOnStack objOnStack, QCallExceptionStatus* qcallError);
 
 #endif //_JITQCALLHELPERS_H

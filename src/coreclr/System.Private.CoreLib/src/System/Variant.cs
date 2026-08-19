@@ -19,7 +19,7 @@ namespace System
         internal static bool IsSystemDrawingColor(Type type) => type.FullName == "System.Drawing.Color"; // Matches the behavior of IsTypeRefOrDef
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "Variant_ConvertValueTypeToRecord")]
-        private static partial void ConvertValueTypeToRecord(ObjectHandleOnStack obj, out ComVariant pOle, out QCallException qcallException);
+        private static partial void ConvertValueTypeToRecord(ObjectHandleOnStack obj, out ComVariant pOle, out QCallExceptionStatus qcallException);
 
         internal static ComVariant GetIUnknownOrIDispatchFromObject(object? obj)
         {
@@ -28,7 +28,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIUnknownOrIDispatchForObject")]
-        private static partial IntPtr GetIUnknownOrIDispatchForObject(ObjectHandleOnStack o, [MarshalAs(UnmanagedType.Bool)] out bool isIDispatch, out QCallException qcallException);
+        private static partial IntPtr GetIUnknownOrIDispatchForObject(ObjectHandleOnStack o, [MarshalAs(UnmanagedType.Bool)] out bool isIDispatch, out QCallExceptionStatus qcallException);
 
         private static object? GetObjectFromIUnknown(IntPtr pUnk)
         {

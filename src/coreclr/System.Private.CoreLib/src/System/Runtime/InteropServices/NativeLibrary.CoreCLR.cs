@@ -26,7 +26,7 @@ namespace System.Runtime.InteropServices
         internal static partial IntPtr LoadByName(string libraryName, QCallAssembly callingAssembly,
                                                  [MarshalAs(UnmanagedType.Bool)] bool hasDllImportSearchPathFlag, uint dllImportSearchPathFlag,
                                                  [MarshalAs(UnmanagedType.Bool)] bool throwOnError,
-                                                 out QCallException qcallException);
+                                                 out QCallExceptionStatus qcallException);
 
         [UnmanagedCallersOnly]
         private static unsafe IntPtr LoadLibraryCallbackStub(char* pLibraryName, Assembly* pAssembly, bool hasDllImportSearchPathFlags, uint dllImportSearchPathFlags, Exception* pException)

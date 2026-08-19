@@ -8,7 +8,7 @@
 #include "common.h"
 #include "threadstatics.h"
 
-void QCallException::SetThrowable(OBJECTREF throwable)
+void QCallExceptionStatus::SetThrowable(OBJECTREF throwable)
 {
     LIMITED_METHOD_CONTRACT;
 

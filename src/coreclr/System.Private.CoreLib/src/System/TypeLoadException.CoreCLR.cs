@@ -46,7 +46,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString, out QCallException qcallException);
+        private static partial void GetTypeLoadExceptionMessage(int resourceId, StringHandleOnStack retString, out QCallExceptionStatus qcallException);
 
         [UnmanagedCallersOnly]
         internal static unsafe void Create(char* pClassName, char* pAssemblyName, char* pMessageArg, int resourceId, object* pResult, Exception* pException)

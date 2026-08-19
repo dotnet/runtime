@@ -91,7 +91,7 @@ namespace System.Runtime.InteropServices
             CallbackContext* context
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -100,7 +100,7 @@ namespace System.Runtime.InteropServices
         private static unsafe partial IntPtr FindPrecachedExternalTypeMapEntry(QCallModule module, QCallTypeHandle groupType, string key
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -109,7 +109,7 @@ namespace System.Runtime.InteropServices
         private static unsafe partial IntPtr FindPrecachedProxyTypeMapEntry(QCallModule module, QCallTypeHandle groupType, QCallTypeHandle type
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );

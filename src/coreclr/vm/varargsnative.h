@@ -14,10 +14,10 @@
 
 #include "clrvarargs.h"
 
-extern "C" void QCALLTYPE ArgIterator_Init(VARARGS* thisPtr, PVOID cookie, QCallException* qcallError);
-extern "C" void QCALLTYPE ArgIterator_Init2(VARARGS* thisPtr, PVOID cookie, PVOID firstArg, QCallException* qcallError);
-extern "C" void* QCALLTYPE ArgIterator_GetNextArgType(VARARGS* thisPtr, QCallException* qcallError);
-extern "C" void QCALLTYPE ArgIterator_GetNextArg(VARARGS* thisPtr, TypedByRef* pResult, QCallException* qcallError);
-extern "C" void QCALLTYPE ArgIterator_GetNextArg2(VARARGS* thisPtr, QCall::TypeHandle pType, TypedByRef* pResult, QCallException* qcallError);
+extern "C" void QCALLTYPE ArgIterator_Init(VARARGS* thisPtr, PVOID cookie, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE ArgIterator_Init2(VARARGS* thisPtr, PVOID cookie, PVOID firstArg, QCallExceptionStatus* qcallError);
+extern "C" void* QCALLTYPE ArgIterator_GetNextArgType(VARARGS* thisPtr, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE ArgIterator_GetNextArg(VARARGS* thisPtr, TypedByRef* pResult, QCallExceptionStatus* qcallError);
+extern "C" void QCALLTYPE ArgIterator_GetNextArg2(VARARGS* thisPtr, QCall::TypeHandle pType, TypedByRef* pResult, QCallExceptionStatus* qcallError);
 
 #endif // _VARARGSNATIVE_H_

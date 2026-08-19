@@ -1870,7 +1870,7 @@ namespace System.Reflection
             IntPtr pEndBlob,
             out int pcNamedArgs,
             ObjectHandleOnStack instance,
-            out QCallException qcallException);
+            out QCallExceptionStatus qcallException);
 
         private static object CreateCustomAttributeInstance(RuntimeModule module, RuntimeType type, IRuntimeMethodInfo ctor, ref IntPtr blob, IntPtr blobEnd, out int namedArgs)
         {
@@ -1901,7 +1901,7 @@ namespace System.Reflection
             [MarshalAs(UnmanagedType.Bool)] out bool bIsProperty,
             ObjectHandleOnStack type,
             ObjectHandleOnStack value,
-            out QCallException qcallException);
+            out QCallExceptionStatus qcallException);
 
         private static void GetPropertyOrFieldData(
             RuntimeModule module, ref IntPtr blobStart, IntPtr blobEnd, out string name, out bool isProperty, out RuntimeType? type, out object? value)

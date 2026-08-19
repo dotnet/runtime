@@ -72,9 +72,9 @@ extern "C" BOOL QCALLTYPE ObjCMarshal_TryInitializeReferenceTracker(
     _In_ ObjCMarshalNative::IsReferencedCallback isReferencedCallback,
     _In_ ObjCMarshalNative::EnteredFinalizationCallback trackedObjectEnteredFinalization,
     _In_ QCall::ObjectHandleOnStack objectTrackingInfoTable,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
-extern "C" void* QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCall::ObjectHandleOnStack obj, QCallException* qcallError);
+extern "C" void* QCALLTYPE ObjCMarshal_AllocateReferenceTrackingHandle(_In_ QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateReferenceTrackingMemory(
     _In_ QCall::ObjectHandleOnStack obj,
@@ -84,7 +84,7 @@ extern "C" void QCALLTYPE ObjCMarshal_GetOrCreateReferenceTrackingMemory(
 extern "C" BOOL QCALLTYPE ObjCMarshal_TrySetGlobalMessageSendCallback(
     _In_ ObjCMarshalNative::MessageSendFunction msgSendFunction,
     _In_ void* fptr,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 #endif // FEATURE_OBJCMARSHAL
 
@@ -98,18 +98,18 @@ public: // GC interaction
 
 extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
     _In_ void* markCrossReferences,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
     _In_ QCall::ObjectHandleOnStack obj,
     _In_ void* context,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
     _In_ MarkCrossReferencesArgs *crossReferences,
     _In_ size_t length,
     _In_ void* unreachableObjectHandles,
-    QCallException* qcallError);
+    QCallExceptionStatus* qcallError);
 
 extern "C" BOOL QCALLTYPE JavaMarshal_GetContext(
     _In_ OBJECTHANDLE handle,

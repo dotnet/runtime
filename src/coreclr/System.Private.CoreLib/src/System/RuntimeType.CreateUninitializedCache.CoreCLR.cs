@@ -81,7 +81,7 @@ namespace System
                 QCallTypeHandle type,
                 delegate*<void*, object>* ppfnAllocator,
                 void** pvAllocatorFirstArg,
-                out QCallException qcallException);
+                out QCallExceptionStatus qcallException);
         }
     }
 }

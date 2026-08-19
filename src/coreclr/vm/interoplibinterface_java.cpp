@@ -136,7 +136,7 @@ void Interop::FinishCrossReferenceProcessing(
 
 extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
     _In_ void* markCrossReferences,
-    QCallException* qcallError)
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     _ASSERTE(markCrossReferences != NULL);
@@ -166,7 +166,7 @@ extern "C" BOOL QCALLTYPE JavaMarshal_Initialize(
 extern "C" void* QCALLTYPE JavaMarshal_CreateReferenceTrackingHandle(
     _In_ QCall::ObjectHandleOnStack obj,
     _In_ void* context,
-    QCallException* qcallError)
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -186,7 +186,7 @@ extern "C" void QCALLTYPE JavaMarshal_FinishCrossReferenceProcessing(
     _In_ MarkCrossReferencesArgs *crossReferences,
     _In_ size_t length,
     _In_ void* unreachableObjectHandles,
-    QCallException* qcallError)
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     _ASSERTE(crossReferences->ComponentCount >= 0);

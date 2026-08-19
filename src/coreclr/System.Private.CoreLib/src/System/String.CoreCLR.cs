@@ -23,7 +23,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_Intern")]
-        private static partial void Intern(StringHandleOnStack src, out QCallException qcallException);
+        private static partial void Intern(StringHandleOnStack src, out QCallExceptionStatus qcallException);
 
         public static string Intern(string str)
         {
@@ -33,7 +33,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "String_IsInterned")]
-        private static partial void IsInterned(StringHandleOnStack src, out QCallException qcallException);
+        private static partial void IsInterned(StringHandleOnStack src, out QCallExceptionStatus qcallException);
 
         public static string? IsInterned(string str)
         {

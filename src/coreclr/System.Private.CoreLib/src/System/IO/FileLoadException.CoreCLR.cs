@@ -33,10 +33,10 @@ namespace System.IO
         }
 
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetFileLoadExceptionMessage(int hResult, StringHandleOnStack retString, out QCallException qcallException);
+        private static partial void GetFileLoadExceptionMessage(int hResult, StringHandleOnStack retString, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FileLoadException_GetMessageForHR")]
-        private static partial void GetMessageForHR(int hresult, StringHandleOnStack retString, out QCallException qcallException);
+        private static partial void GetMessageForHR(int hresult, StringHandleOnStack retString, out QCallExceptionStatus qcallException);
 
         // See clrex.cpp for native version.
         internal enum FileLoadExceptionKind

@@ -11,11 +11,11 @@ namespace System.Reflection.Metadata
     public static partial class MetadataUpdater
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_ApplyUpdate")]
-        private static unsafe partial void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength, out QCallException qcallException);
+        private static unsafe partial void ApplyUpdate(QCallAssembly assembly, byte* metadataDelta, int metadataDeltaLength, byte* ilDelta, int ilDeltaLength, byte* pdbDelta, int pdbDeltaLength, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_IsApplyUpdateSupported")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static unsafe partial bool IsApplyUpdateSupported(out QCallException qcallException);
+        private static unsafe partial bool IsApplyUpdateSupported(out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Updates the specified assembly using the provided metadata, IL and PDB deltas.

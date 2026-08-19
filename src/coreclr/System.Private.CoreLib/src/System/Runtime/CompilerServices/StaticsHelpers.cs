@@ -12,10 +12,10 @@ namespace System.Runtime.CompilerServices
     internal static unsafe partial class StaticsHelpers
     {
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetThreadStaticsByIndex(ByteRefOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics, out QCallException qcallException);
+        private static partial void GetThreadStaticsByIndex(ByteRefOnStack result, int index, [MarshalAs(UnmanagedType.Bool)] bool gcStatics, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall)]
-        private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics, out QCallException qcallException);
+        private static partial void GetThreadStaticsByMethodTable(ByteRefOnStack result, MethodTable* pMT, [MarshalAs(UnmanagedType.Bool)] bool gcStatics, out QCallExceptionStatus qcallException);
 
         [Intrinsic]
         private static ref byte VolatileReadAsByref(ref IntPtr address) => ref VolatileReadAsByref(ref address);

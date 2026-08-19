@@ -13,6 +13,6 @@
 extern "C" INT_PTR QCALLTYPE NativeLibrary_LoadByName(LPCWSTR name, QCall::AssemblyHandle callingAssembly,
                                             BOOL hasDllImportSearchPathFlag, DWORD dllImportSearchPathFlag,
                                             BOOL throwOnError,
-                                            QCallException* qcallError);
+                                            QCallExceptionStatus* qcallError);
 
 #endif // __NATIVELIBRARYNATIVE_H__

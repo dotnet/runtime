@@ -13,7 +13,7 @@ namespace System.Runtime.CompilerServices;
 internal static unsafe partial class GenericsHelpers
 {
     [LibraryImport(RuntimeHelpers.QCall)]
-    private static partial IntPtr GenericHandleWorker(IntPtr pMD, IntPtr pMT, IntPtr signature, uint dictionaryIndexAndSlot, IntPtr pModule, out QCallException qcallException);
+    private static partial IntPtr GenericHandleWorker(IntPtr pMD, IntPtr pMT, IntPtr signature, uint dictionaryIndexAndSlot, IntPtr pModule, out QCallExceptionStatus qcallException);
 
     public struct GenericHandleArgs
     {

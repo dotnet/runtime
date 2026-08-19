@@ -18,7 +18,7 @@ namespace System
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppContext_TryGetHostPropertyValue", StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool TryGetHostPropertyValue(string name, StringHandleOnStack retValue, out QCallException qcallException);
+        private static partial bool TryGetHostPropertyValue(string name, StringHandleOnStack retValue, out QCallExceptionStatus qcallException);
 
         [UnmanagedCallersOnly]
         private static unsafe void OnProcessExit(Exception* pException)

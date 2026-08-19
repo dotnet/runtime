@@ -24,7 +24,7 @@ namespace System.Diagnostics.Tracing
             uint numProviders
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -33,7 +33,7 @@ namespace System.Diagnostics.Tracing
         internal static partial void Disable(ulong sessionID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -47,7 +47,7 @@ namespace System.Diagnostics.Tracing
             void* callbackContext
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -56,7 +56,7 @@ namespace System.Diagnostics.Tracing
         internal static unsafe partial IntPtr DefineEvent(IntPtr provHandle, uint eventID, long keywords, uint eventVersion, uint level, void *pMetadata, uint metadataLength
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -65,7 +65,7 @@ namespace System.Diagnostics.Tracing
         internal static partial IntPtr GetProvider(string providerName
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -74,7 +74,7 @@ namespace System.Diagnostics.Tracing
         internal static partial void DeleteProvider(IntPtr provHandle
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -83,7 +83,7 @@ namespace System.Diagnostics.Tracing
         internal static partial int EventActivityIdControl(uint controlCode, ref Guid activityId
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -92,7 +92,7 @@ namespace System.Diagnostics.Tracing
         internal static unsafe partial void WriteEventData(IntPtr eventHandle, EventProvider.EventData* pEventData, uint dataCount, Guid* activityId, Guid* relatedActivityId
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -105,7 +105,7 @@ namespace System.Diagnostics.Tracing
         internal static unsafe partial bool GetSessionInfo(ulong sessionID, EventPipeSessionInfo* pSessionInfo
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -115,7 +115,7 @@ namespace System.Diagnostics.Tracing
         internal static unsafe partial bool GetNextEvent(ulong sessionID, EventPipeEventInstanceData* pInstance
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -125,7 +125,7 @@ namespace System.Diagnostics.Tracing
         internal static unsafe partial bool SignalSession(ulong sessionID
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );
@@ -135,7 +135,7 @@ namespace System.Diagnostics.Tracing
         internal static unsafe partial bool WaitForSessionSignal(ulong sessionID, int timeoutMs
 #if CORECLR
 #pragma warning disable SA1001, SA1113, SA1115 // Conditional QCall exception argument.
-            , out QCallException qcallException
+            , out QCallExceptionStatus qcallException
 #pragma warning restore SA1001, SA1113, SA1115
 #endif
         );

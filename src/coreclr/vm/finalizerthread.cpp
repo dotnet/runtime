@@ -87,7 +87,7 @@ extern "C" void SystemJS_ExecuteFinalizationCallback()
     RunFinalizerIterationOnCurrentThread();
 }
 #else // TARGET_WASI
-extern "C" void QCALLTYPE WasiFinalizer_RunWorker(QCallException* qcallError)
+extern "C" void QCALLTYPE WasiFinalizer_RunWorker(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -128,7 +128,7 @@ extern "C" void WasiFinalizer_Schedule()
     s_finalizationPending = true;
 }
 
-extern "C" CLR_BOOL QCALLTYPE WasiFinalizer_TryClearPending(QCallException* qcallError)
+extern "C" CLR_BOOL QCALLTYPE WasiFinalizer_TryClearPending(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     CLR_BOOL pending = FALSE;

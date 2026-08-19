@@ -33,7 +33,7 @@ namespace System.Runtime.InteropServices
             => SizeOfHelper(new QCallTypeHandle(ref t), throwIfNotMarshalable, out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_SizeOfHelper")]
-        private static partial int SizeOfHelper(QCallTypeHandle t, [MarshalAs(UnmanagedType.Bool)] bool throwIfNotMarshalable, out QCallException qcallException);
+        private static partial int SizeOfHelper(QCallTypeHandle t, [MarshalAs(UnmanagedType.Bool)] bool throwIfNotMarshalable, out QCallExceptionStatus qcallException);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
@@ -56,7 +56,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_OffsetOf")]
-        private static partial nint OffsetOf(IntPtr pFD, out QCallException qcallException);
+        private static partial nint OffsetOf(IntPtr pFD, out QCallExceptionStatus qcallException);
 
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadByte(Object, Int32) may be unavailable in future releases.")]
@@ -224,7 +224,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_Prelink")]
-        private static partial void InternalPrelink(RuntimeMethodHandleInternal m, out QCallException qcallException);
+        private static partial void InternalPrelink(RuntimeMethodHandleInternal m, out QCallExceptionStatus qcallException);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern /* struct _EXCEPTION_POINTERS* */ IntPtr GetExceptionPointers();
@@ -307,7 +307,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_HasLayout")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool HasLayout(QCallTypeHandle t, [MarshalAs(UnmanagedType.Bool)] out bool isBlittable, out int nativeSize, out QCallException qcallException);
+        internal static partial bool HasLayout(QCallTypeHandle t, [MarshalAs(UnmanagedType.Bool)] out bool isBlittable, out int nativeSize, out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Marshals data from a structure class to a native memory block. If the
@@ -409,7 +409,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsBuiltInComSupported")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool IsBuiltInComSupportedInternal(out QCallException qcallException);
+        private static partial bool IsBuiltInComSupportedInternal(out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Returns the HInstance for this module.  Returns -1 if the module doesn't have
@@ -430,7 +430,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetHINSTANCE")]
-        private static partial IntPtr GetHINSTANCE(QCallModule m, out QCallException qcallException);
+        private static partial IntPtr GetHINSTANCE(QCallModule m, out QCallExceptionStatus qcallException);
 
 #endif // TARGET_WINDOWS
 
@@ -442,7 +442,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetExceptionForHR")]
-        private static partial void GetExceptionForHRInternal(int errorCode, IntPtr errorInfo, ObjectHandleOnStack exception, out QCallException qcallException);
+        private static partial void GetExceptionForHRInternal(int errorCode, IntPtr errorInfo, ObjectHandleOnStack exception, out QCallExceptionStatus qcallException);
 
 #if FEATURE_COMINTEROP
         /// <summary>
@@ -453,7 +453,7 @@ namespace System.Runtime.InteropServices
             => GetHRForException(ObjectHandleOnStack.Create(ref e), out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetHRForException")]
-        private static partial int GetHRForException(ObjectHandleOnStack exception, out QCallException qcallException);
+        private static partial int GetHRForException(ObjectHandleOnStack exception, out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Given a managed object that wraps an ITypeInfo, return its name.
@@ -487,7 +487,7 @@ namespace System.Runtime.InteropServices
 #pragma warning restore IDE0060
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetTypeFromCLSID", StringMarshalling = StringMarshalling.Utf16)]
-        private static partial void GetTypeFromCLSID(in Guid clsid, string? server, ObjectHandleOnStack retType, out QCallException qcallException);
+        private static partial void GetTypeFromCLSID(in Guid clsid, string? server, ObjectHandleOnStack retType, out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Return the IUnknown* for an Object if the current context is the one
@@ -502,7 +502,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIUnknownForObject")]
-        private static partial IntPtr /* IUnknown* */ GetIUnknownForObject(ObjectHandleOnStack o, out QCallException qcallException);
+        private static partial IntPtr /* IUnknown* */ GetIUnknownForObject(ObjectHandleOnStack o, out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Return the IDispatch* for an Object.
@@ -516,7 +516,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIDispatchForObject")]
-        private static partial IntPtr /* IDispatch* */ GetIDispatchForObject(ObjectHandleOnStack o, out QCallException qcallException);
+        private static partial IntPtr /* IDispatch* */ GetIDispatchForObject(ObjectHandleOnStack o, out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Return the IUnknown* representing the interface for the Object.
@@ -550,7 +550,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetComInterfaceForObject")]
-        private static partial IntPtr /* IUnknown* */ GetComInterfaceForObject(ObjectHandleOnStack o, QCallTypeHandle t, [MarshalAs(UnmanagedType.Bool)] bool fEnableCustomizedQueryInterface, out QCallException qcallException);
+        private static partial IntPtr /* IUnknown* */ GetComInterfaceForObject(ObjectHandleOnStack o, QCallTypeHandle t, [MarshalAs(UnmanagedType.Bool)] bool fEnableCustomizedQueryInterface, out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Return the managed object representing the IUnknown*
@@ -566,7 +566,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetObjectForIUnknown")]
-        private static partial void GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, ObjectHandleOnStack retObject, out QCallException qcallException);
+        private static partial void GetObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, ObjectHandleOnStack retObject, out QCallExceptionStatus qcallException);
 
         [SupportedOSPlatform("windows")]
         public static object GetUniqueObjectForIUnknown(IntPtr unknown)
@@ -585,7 +585,7 @@ namespace System.Runtime.InteropServices
         /// ReleaseComObject on a RCW and not worry about other active uses ofsaid RCW.
         /// </summary>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetUniqueObjectForIUnknown")]
-        private static partial void GetUniqueObjectForIUnknown(IntPtr unknown, ObjectHandleOnStack retObject, out QCallException qcallException);
+        private static partial void GetUniqueObjectForIUnknown(IntPtr unknown, ObjectHandleOnStack retObject, out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Return an Object for IUnknown, using the Type T.
@@ -606,7 +606,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetTypedObjectForIUnknown")]
-        private static partial void GetTypedObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, QCallTypeHandle t, ObjectHandleOnStack retObject, out QCallException qcallException);
+        private static partial void GetTypedObjectForIUnknown(IntPtr /* IUnknown* */ pUnk, QCallTypeHandle t, ObjectHandleOnStack retObject, out QCallExceptionStatus qcallException);
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -624,7 +624,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_CreateAggregatedObject")]
-        private static partial IntPtr CreateAggregatedObject(IntPtr pOuter, ObjectHandleOnStack o, out QCallException qcallException);
+        private static partial IntPtr CreateAggregatedObject(IntPtr pOuter, ObjectHandleOnStack o, out QCallExceptionStatus qcallException);
 
         [SupportedOSPlatform("windows")]
         public static IntPtr CreateAggregatedObject<T>(IntPtr pOuter, T o) where T : notnull
@@ -641,7 +641,7 @@ namespace System.Runtime.InteropServices
             => InternalCleanupUnusedObjectsInCurrentContext(out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_CleanupUnusedObjectsInCurrentContext")]
-        private static partial void InternalCleanupUnusedObjectsInCurrentContext(out QCallException qcallException);
+        private static partial void InternalCleanupUnusedObjectsInCurrentContext(out QCallExceptionStatus qcallException);
 
         /// <safety>Returns a Boolean computed from runtime COM-cleanup state; it takes no arguments and dereferences no caller-supplied memory.</safety>
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -683,7 +683,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_ReleaseComObject")]
-        private static partial int ReleaseComObject(ObjectHandleOnStack o, out QCallException qcallException);
+        private static partial int ReleaseComObject(ObjectHandleOnStack o, out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// Release the COM component and zombie this object.
@@ -708,7 +708,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_FinalReleaseComObject")]
-        private static partial void FinalReleaseComObject(ObjectHandleOnStack o, out QCallException qcallException);
+        private static partial void FinalReleaseComObject(ObjectHandleOnStack o, out QCallExceptionStatus qcallException);
 
         [SupportedOSPlatform("windows")]
         public static object? GetComObjectData(object obj, object key)
@@ -834,7 +834,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_InternalCreateWrapperOfType")]
-        private static partial void InternalCreateWrapperOfType(ObjectHandleOnStack o, QCallTypeHandle rt, ObjectHandleOnStack retObject, out QCallException qcallException);
+        private static partial void InternalCreateWrapperOfType(ObjectHandleOnStack o, QCallTypeHandle rt, ObjectHandleOnStack retObject, out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// check if the type is visible from COM.
@@ -851,7 +851,7 @@ namespace System.Runtime.InteropServices
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsTypeVisibleFromCom")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool IsTypeVisibleFromCom(QCallTypeHandle rt, out QCallException qcallException);
+        private static partial bool IsTypeVisibleFromCom(QCallTypeHandle rt, out QCallExceptionStatus qcallException);
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -868,7 +868,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetNativeVariantForObject")]
-        private static partial void GetNativeVariantForObject(ObjectHandleOnStack obj, /* VARIANT * */ IntPtr pDstNativeVariant, out QCallException qcallException);
+        private static partial void GetNativeVariantForObject(ObjectHandleOnStack obj, /* VARIANT * */ IntPtr pDstNativeVariant, out QCallExceptionStatus qcallException);
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -899,7 +899,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetObjectForNativeVariant")]
-        private static partial void GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant, ObjectHandleOnStack retObject, out QCallException qcallException);
+        private static partial void GetObjectForNativeVariant(/* VARIANT * */ IntPtr pSrcNativeVariant, ObjectHandleOnStack retObject, out QCallExceptionStatus qcallException);
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -931,7 +931,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetObjectsForNativeVariants")]
-        private static partial void GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars, ObjectHandleOnStack retArray, out QCallException qcallException);
+        private static partial void GetObjectsForNativeVariants(/* VARIANT * */ IntPtr aSrcNativeVariant, int cVars, ObjectHandleOnStack retArray, out QCallExceptionStatus qcallException);
 
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -966,7 +966,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetStartComSlot")]
-        private static partial int GetStartComSlot(QCallTypeHandle rt, out QCallException qcallException);
+        private static partial int GetStartComSlot(QCallTypeHandle rt, out QCallExceptionStatus qcallException);
 
         /// <summary>
         /// <para>Returns the last valid COM slot that GetMethodInfoForSlot will work on. </para>
@@ -983,7 +983,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetEndComSlot")]
-        private static partial int GetEndComSlot(QCallTypeHandle rt, out QCallException qcallException);
+        private static partial int GetEndComSlot(QCallTypeHandle rt, out QCallExceptionStatus qcallException);
 
         [RequiresUnreferencedCode("Built-in COM support is not trim compatible", Url = "https://aka.ms/dotnet-illink/com")]
         [SupportedOSPlatform("windows")]
@@ -1039,7 +1039,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_ChangeWrapperHandleStrength")]
-        private static partial void ChangeWrapperHandleStrength(ObjectHandleOnStack otp, [MarshalAs(UnmanagedType.Bool)] bool fIsWeak, out QCallException qcallException);
+        private static partial void ChangeWrapperHandleStrength(ObjectHandleOnStack otp, [MarshalAs(UnmanagedType.Bool)] bool fIsWeak, out QCallExceptionStatus qcallException);
 #endif // FEATURE_COMINTEROP
 
         internal static Delegate GetDelegateForFunctionPointerInternal(IntPtr ptr, RuntimeType t)
@@ -1050,7 +1050,7 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetDelegateForFunctionPointerInternal")]
-        private static partial void GetDelegateForFunctionPointerInternal(IntPtr ptr, QCallTypeHandle t, ObjectHandleOnStack retDelegate, out QCallException qcallException);
+        private static partial void GetDelegateForFunctionPointerInternal(IntPtr ptr, QCallTypeHandle t, ObjectHandleOnStack retDelegate, out QCallExceptionStatus qcallException);
 
         internal static IntPtr GetFunctionPointerForDelegateInternal(Delegate d)
         {
@@ -1058,11 +1058,11 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetFunctionPointerForDelegateInternal")]
-        private static partial IntPtr GetFunctionPointerForDelegateInternal(ObjectHandleOnStack d, out QCallException qcallException);
+        private static partial IntPtr GetFunctionPointerForDelegateInternal(ObjectHandleOnStack d, out QCallExceptionStatus qcallException);
 
 #if DEBUG // Used for testing in Checked or Debug
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIsInCooperativeGCModeFunctionPointer")]
-        internal static unsafe partial delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer(out QCallException qcallException);
+        internal static unsafe partial delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
 #endif
     }
 }

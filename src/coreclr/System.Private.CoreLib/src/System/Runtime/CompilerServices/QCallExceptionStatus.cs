@@ -8,13 +8,13 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
-    [NativeMarshalling(typeof(QCallExceptionMarshaller))]
-    internal readonly struct QCallException
+    [NativeMarshalling(typeof(QCallExceptionStatusMarshaller))]
+    internal readonly struct QCallExceptionStatus
     {
     }
 
-    [CustomMarshaller(typeof(QCallException), MarshalMode.ManagedToUnmanagedOut, typeof(QCallExceptionMarshaller))]
-    internal struct QCallExceptionMarshaller
+    [CustomMarshaller(typeof(QCallExceptionStatus), MarshalMode.ManagedToUnmanagedOut, typeof(QCallExceptionStatusMarshaller))]
+    internal struct QCallExceptionStatusMarshaller
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FromUnmanaged(int exceptionPending)
@@ -26,7 +26,7 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public QCallException ToManaged() => default;
+        public QCallExceptionStatus ToManaged() => default;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Free() { }

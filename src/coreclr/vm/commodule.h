@@ -23,11 +23,11 @@ extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pMod
                                 LPCWSTR wszFullName,
                                 QCall::ModuleHandle pRefedModule,
                                 INT32 tkResolution,
-                                QCallException* qcallError);
+                                QCallExceptionStatus* qcallError);
 
 // SetFieldRVAContent
 // This function is used to set the FieldRVA with the content data
-extern "C" void QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 tkField, LPCBYTE pContent, INT32 length, QCallException* qcallError);
+extern "C" void QCALLTYPE ModuleBuilder_SetFieldRVAContent(QCall::ModuleHandle pModule, INT32 tkField, LPCBYTE pContent, INT32 length, QCallExceptionStatus* qcallError);
 
 
 //GetArrayMethodToken
@@ -36,19 +36,19 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetArrayMethodToken(QCall::ModuleHandle
                                     LPCWSTR wszMethodName,
                                     LPCBYTE pSignature,
                                     INT32 sigLength,
-                                    QCallException* qcallError);
+                                    QCallExceptionStatus* qcallError);
 
 // GetMemberRefToken
 // This function will return the MemberRef token
-extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModule, QCall::ModuleHandle pRefedModule, INT32 tr, INT32 token, QCallException* qcallError);
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRef(QCall::ModuleHandle pModule, QCall::ModuleHandle pRefedModule, INT32 tr, INT32 token, QCallExceptionStatus* qcallError);
 
 // This function return a MemberRef token given a MethodInfo describing an array method
-extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule, INT32 tr, MethodDesc * method, QCallException* qcallError);
+extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefOfMethodInfo(QCall::ModuleHandle pModule, INT32 tr, MethodDesc * method, QCallExceptionStatus* qcallError);
 
 
 // GetMemberRefOfFieldInfo
 // This function will return a memberRef token given a FieldInfo
-extern "C" mdMemberRef QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, QCall::TypeHandle th, mdFieldDef tkField, QCallException* qcallError);
+extern "C" mdMemberRef QCALLTYPE ModuleBuilder_GetMemberRefOfFieldInfo(QCall::ModuleHandle pModule, mdTypeDef tr, QCall::TypeHandle th, mdFieldDef tkField, QCallExceptionStatus* qcallError);
 
 // GetMemberRefFromSignature
 // This function will return the MemberRef token given the signature from managed code
@@ -57,25 +57,25 @@ extern "C" INT32 QCALLTYPE ModuleBuilder_GetMemberRefFromSignature(QCall::Module
                                             LPCWSTR wszMemberName,
                                             LPCBYTE pSignature,
                                             INT32 sigLength,
-                                            QCallException* qcallError);
+                                            QCallExceptionStatus* qcallError);
 
 // GetTokenFromTypeSpec
-extern "C" mdTypeSpec QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength, QCallException* qcallError);
+extern "C" mdTypeSpec QCALLTYPE ModuleBuilder_GetTokenFromTypeSpec(QCall::ModuleHandle pModule, LPCBYTE pSignature, INT32 sigLength, QCallExceptionStatus* qcallError);
 
 // GetStringConstant
 // If this is a dynamic module, this routine will define a new
 //  string constant or return the token of an existing constant.
-extern "C" mdString QCALLTYPE ModuleBuilder_GetStringConstant(QCall::ModuleHandle pModule, LPCWSTR pwzValue, INT32 iLength, QCallException* qcallError);
+extern "C" mdString QCALLTYPE ModuleBuilder_GetStringConstant(QCall::ModuleHandle pModule, LPCWSTR pwzValue, INT32 iLength, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE ModuleBuilder_SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wszModuleName, QCallException* qcallError);
+extern "C" void QCALLTYPE ModuleBuilder_SetModuleName(QCall::ModuleHandle pModule, LPCWSTR wszModuleName, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString, QCallException* qcallError);
+extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError);
 
-extern "C" void QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString, QCallException* qcallError);
+extern "C" void QCALLTYPE RuntimeModule_GetFullyQualifiedName(QCall::ModuleHandle pModule, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError);
 
 // GetTypes will return an array containing all of the types that are defined within this Module.
-extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retTypes, QCall::ObjectHandleOnStack retExceptions, QCallException* qcallError);
+extern "C" void QCALLTYPE RuntimeModule_GetTypes(QCall::ModuleHandle pModule, QCall::ObjectHandleOnStack retTypes, QCall::ObjectHandleOnStack retExceptions, QCallExceptionStatus* qcallError);
 
-extern "C" HINSTANCE QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pModule, QCallException* qcallError);
+extern "C" HINSTANCE QCALLTYPE MarshalNative_GetHINSTANCE(QCall::ModuleHandle pModule, QCallExceptionStatus* qcallError);
 
 #endif

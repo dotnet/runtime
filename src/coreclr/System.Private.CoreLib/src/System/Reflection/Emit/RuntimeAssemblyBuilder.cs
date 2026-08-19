@@ -118,7 +118,7 @@ namespace System.Reflection.Emit
                                                                  AssemblyHashAlgorithm hashAlgId,
                                                                  AssemblyBuilderAccess access,
                                                                  ObjectHandleOnStack retAssembly,
-                                                                 out QCallException qcallException);
+                                                                 out QCallExceptionStatus qcallException);
 
         private static unsafe RuntimeAssembly CreateDynamicAssembly(AssemblyLoadContext assemblyLoadContext, AssemblyName name, AssemblyBuilderAccess access)
         {

@@ -20,7 +20,7 @@ extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
     UINT32 circularBufferSizeInMB,
     /* COR_PRF_EVENTPIPE_PROVIDER_CONFIG */ LPCVOID pProviders,
     UINT32 numProviders,
-    QCallException* qcallError)
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -59,7 +59,7 @@ extern "C" UINT64 QCALLTYPE EventPipeInternal_Enable(
     return sessionID;
 }
 
-extern "C" void QCALLTYPE EventPipeInternal_Disable(UINT64 sessionID, QCallException* qcallError)
+extern "C" void QCALLTYPE EventPipeInternal_Disable(UINT64 sessionID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -68,7 +68,7 @@ extern "C" void QCALLTYPE EventPipeInternal_Disable(UINT64 sessionID, QCallExcep
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo, QCallException* qcallError)
+extern "C" BOOL QCALLTYPE EventPipeInternal_GetSessionInfo(UINT64 sessionID, EventPipeSessionInfo *pSessionInfo, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -95,7 +95,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_CreateProvider(
     _In_z_ LPCWSTR providerName,
     EventPipeCallback pCallbackFunc,
     void* pCallbackContext,
-    QCallException* qcallError)
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -118,7 +118,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
     UINT32 level,
     void *pMetadata,
     UINT32 metadataLength,
-    QCallException* qcallError)
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -136,7 +136,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_DefineEvent(
     return reinterpret_cast<INT_PTR>(pEvent);
 }
 
-extern "C" INT_PTR QCALLTYPE EventPipeInternal_GetProvider(_In_z_ LPCWSTR providerName, QCallException* qcallError)
+extern "C" INT_PTR QCALLTYPE EventPipeInternal_GetProvider(_In_z_ LPCWSTR providerName, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -151,7 +151,7 @@ extern "C" INT_PTR QCALLTYPE EventPipeInternal_GetProvider(_In_z_ LPCWSTR provid
     return reinterpret_cast<INT_PTR>(pProvider);
 }
 
-extern "C" void QCALLTYPE EventPipeInternal_DeleteProvider(INT_PTR provHandle, QCallException* qcallError)
+extern "C" void QCALLTYPE EventPipeInternal_DeleteProvider(INT_PTR provHandle, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -165,7 +165,7 @@ extern "C" void QCALLTYPE EventPipeInternal_DeleteProvider(INT_PTR provHandle, Q
     END_QCALL;
 }
 
-extern "C" int QCALLTYPE EventPipeInternal_EventActivityIdControl(uint32_t controlCode, GUID *pActivityId, QCallException* qcallError)
+extern "C" int QCALLTYPE EventPipeInternal_EventActivityIdControl(uint32_t controlCode, GUID *pActivityId, QCallExceptionStatus* qcallError)
 {
 
     QCALL_CONTRACT;
@@ -229,7 +229,7 @@ extern "C" void QCALLTYPE EventPipeInternal_WriteEventData(
     UINT32 eventDataCount,
     LPCGUID pActivityId,
     LPCGUID pRelatedActivityId,
-    QCallException* qcallError)
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -241,7 +241,7 @@ extern "C" void QCALLTYPE EventPipeInternal_WriteEventData(
     END_QCALL;
 }
 
-extern "C" BOOL QCALLTYPE EventPipeInternal_GetNextEvent(UINT64 sessionID, EventPipeEventInstanceData *pInstance, QCallException* qcallError)
+extern "C" BOOL QCALLTYPE EventPipeInternal_GetNextEvent(UINT64 sessionID, EventPipeEventInstanceData *pInstance, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -267,7 +267,7 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_GetNextEvent(UINT64 sessionID, Event
     return pNextInstance != NULL;
 }
 
-extern "C" BOOL QCALLTYPE EventPipeInternal_SignalSession(UINT64 sessionID, QCallException* qcallError)
+extern "C" BOOL QCALLTYPE EventPipeInternal_SignalSession(UINT64 sessionID, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -280,7 +280,7 @@ extern "C" BOOL QCALLTYPE EventPipeInternal_SignalSession(UINT64 sessionID, QCal
     return result;
 }
 
-extern "C" BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(UINT64 sessionID, INT32 timeoutMs, QCallException* qcallError)
+extern "C" BOOL QCALLTYPE EventPipeInternal_WaitForSessionSignal(UINT64 sessionID, INT32 timeoutMs, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

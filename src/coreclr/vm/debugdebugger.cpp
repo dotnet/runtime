@@ -38,7 +38,7 @@
 //    Else if a native debugger is attached, this should send a native break event (kernel32!DebugBreak)
 //    Else, this should invoke Watson.
 //
-extern "C" void QCALLTYPE DebugDebugger_Break(QCallException* qcallError)
+extern "C" void QCALLTYPE DebugDebugger_Break(QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -294,7 +294,7 @@ static void GetStackFrames(DebugStackTrace::GetStackFramesData *pData)
 extern "C" void QCALLTYPE AsyncHelpers_AddContinuationToExInternal(
     void* diagnosticIP,
     QCall::ObjectHandleOnStack exception,
-    QCallException* qcallError)
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -323,7 +323,7 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     QCall::ObjectHandleOnStack stackFrameHelper,
     BOOL fNeedFileInfo,
     QCall::ObjectHandleOnStack exception,
-    QCallException* qcallError)
+    QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -826,7 +826,7 @@ extern "C" void QCALLTYPE StackTrace_GetStackFramesInternal(
     END_QCALL;
 }
 
-extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip, QCallException* qcallError)
+extern "C" MethodDesc* QCALLTYPE StackFrame_GetMethodDescFromNativeIP(LPVOID ip, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -865,7 +865,7 @@ using StrongHandleHolder = LifetimeHolder<StrongHandleHolderTraits>;
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
 // Argument: dataUNSAFE - a pointer the custom notification object being sent
-extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data, QCallException* qcallError)
+extern "C" void QCALLTYPE DebugDebugger_CustomNotification(QCall::ObjectHandleOnStack data, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

@@ -10,7 +10,7 @@ namespace System
     internal sealed partial class ComAwareWeakReference
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWeakRefToObject")]
-        private static partial void ComWeakRefToObject(IntPtr pComWeakRef, ObjectHandleOnStack retRcw, out QCallException qcallException);
+        private static partial void ComWeakRefToObject(IntPtr pComWeakRef, ObjectHandleOnStack retRcw, out QCallExceptionStatus qcallException);
 
         internal static object? ComWeakRefToObject(IntPtr pComWeakRef, object? context)
         {
@@ -39,7 +39,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectToComWeakRef")]
-        private static partial IntPtr ObjectToComWeakRef(ObjectHandleOnStack retRcw, out QCallException qcallException);
+        private static partial IntPtr ObjectToComWeakRef(ObjectHandleOnStack retRcw, out QCallExceptionStatus qcallException);
 
         internal static nint ObjectToComWeakRef(object target, out object? context)
         {

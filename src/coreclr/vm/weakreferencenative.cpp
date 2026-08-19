@@ -47,7 +47,7 @@ void FinalizeWeakReference(Object* obj)
 
 #if defined(FEATURE_COMINTEROP)
 
-extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, QCall::ObjectHandleOnStack retRcw, QCallException* qcallError)
+extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, QCall::ObjectHandleOnStack retRcw, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
     BEGIN_QCALL;
@@ -88,7 +88,7 @@ extern "C" void QCALLTYPE ComWeakRefToObject(IWeakReference* pComWeakReference, 
     return;
 }
 
-extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnStack obj, QCallException* qcallError)
+extern "C" IWeakReference * QCALLTYPE ObjectToComWeakRef(QCall::ObjectHandleOnStack obj, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 

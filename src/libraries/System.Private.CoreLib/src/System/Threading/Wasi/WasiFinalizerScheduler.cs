@@ -25,14 +25,14 @@ namespace System.Threading
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool TryClearPendingFinalization(
 #if CORECLR
-            out QCallException qcallException
+            out QCallExceptionStatus qcallException
 #endif
         );
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "WasiFinalizer_RunWorker")]
         internal static partial void ExecuteFinalizationCallback(
 #if CORECLR
-            out QCallException qcallException
+            out QCallExceptionStatus qcallException
 #endif
         );
 

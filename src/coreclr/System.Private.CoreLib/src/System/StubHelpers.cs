@@ -539,7 +539,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToNative")]
-        private static partial void ConvertToNative(ObjectHandleOnStack objSrc, IntPtr pDstVariant, out QCallException qcallException);
+        private static partial void ConvertToNative(ObjectHandleOnStack objSrc, IntPtr pDstVariant, out QCallExceptionStatus qcallException);
 
         internal static object ConvertToManaged(IntPtr pSrcVariant)
         {
@@ -549,7 +549,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjectMarshaler_ConvertToManaged")]
-        private static partial void ConvertToManaged(IntPtr pSrcVariant, ObjectHandleOnStack retObject, out QCallException qcallException);
+        private static partial void ConvertToManaged(IntPtr pSrcVariant, ObjectHandleOnStack retObject, out QCallExceptionStatus qcallException);
 
         internal static unsafe void ClearNative(IntPtr pVariant)
         {
@@ -632,7 +632,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToNative")]
-        private static partial IntPtr ConvertToNative(ObjectHandleOnStack objSrc, IntPtr itfMT, IntPtr classMT, int flag, out QCallException qcallException);
+        private static partial IntPtr ConvertToNative(ObjectHandleOnStack objSrc, IntPtr itfMT, IntPtr classMT, int flag, out QCallExceptionStatus qcallException);
 
         internal static object? ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags)
         {
@@ -645,7 +645,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ConvertToManaged")]
-        private static partial void ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags, ObjectHandleOnStack retObject, out QCallException qcallException);
+        private static partial void ConvertToManaged(ref IntPtr ppUnk, IntPtr itfMT, IntPtr classMT, int flags, ObjectHandleOnStack retObject, out QCallExceptionStatus qcallException);
 
         internal static void ClearNative(IntPtr pUnk)
         {
@@ -663,10 +663,10 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_GetObjectForComCallableWrapperIUnknown")]
-        private static partial void GetObjectForComCallableWrapperIUnknown(IntPtr unk, ObjectHandleOnStack retObject, out QCallException qcallException);
+        private static partial void GetObjectForComCallableWrapperIUnknown(IntPtr unk, ObjectHandleOnStack retObject, out QCallExceptionStatus qcallException);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ValidateComVisibilityForIUnknown")]
-        internal static partial void ValidateComVisibilityForIUnknown(IntPtr unk, out QCallException qcallException);
+        internal static partial void ValidateComVisibilityForIUnknown(IntPtr unk, out QCallExceptionStatus qcallException);
 
         internal static void ValidateComVisibilityForIUnknown(IntPtr unk)
         {
@@ -690,7 +690,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertSpaceToNative")]
-        private static partial void ConvertSpaceToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, out QCallException qcallException);
+        private static partial void ConvertSpaceToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, out QCallExceptionStatus qcallException);
 
         internal static void ConvertContentsToNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome, object pOriginalManagedObject)
         {
@@ -700,7 +700,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertContentsToNative")]
-        private static partial void ConvertContentsToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, ObjectHandleOnStack pOriginalManagedObject, out QCallException qcallException);
+        private static partial void ConvertContentsToNative(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, ObjectHandleOnStack pOriginalManagedObject, out QCallExceptionStatus qcallException);
 
         internal static void ConvertSpaceToManaged(IntPtr pMarshalState, ref object? pManagedHome, IntPtr pNativeHome)
         {
@@ -710,7 +710,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertSpaceToManaged")]
-        private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, out QCallException qcallException);
+        private static partial void ConvertSpaceToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, out QCallExceptionStatus qcallException);
 
         internal static void ConvertContentsToManaged(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
         {
@@ -719,7 +719,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ConvertContentsToManaged")]
-        private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, out QCallException qcallException);
+        private static partial void ConvertContentsToManaged(IntPtr pMarshalState, ObjectHandleOnStack pManagedHome, IntPtr pNativeHome, out QCallExceptionStatus qcallException);
 
 #pragma warning disable IDE0060 // Remove unused parameter. These APIs need to match a the shape of a "managed" marshaler.
         internal static void ClearNative(IntPtr pMarshalState, in object pManagedHome, IntPtr pNativeHome)
@@ -729,7 +729,7 @@ namespace System.StubHelpers
 #pragma warning restore IDE0060 // Remove unused parameter
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MngdSafeArrayMarshaler_ClearNative")]
-        private static partial void ClearNative(IntPtr pMarshalState, IntPtr pNativeHome, out QCallException qcallException);
+        private static partial void ClearNative(IntPtr pMarshalState, IntPtr pNativeHome, out QCallExceptionStatus qcallException);
     }  // class MngdSafeArrayMarshaler
 #endif // FEATURE_COMINTEROP
 
@@ -2182,7 +2182,7 @@ namespace System.StubHelpers
 
         /// <safety>QCall that throws an interop parameter exception selected by integer resource and parameter indices; it accesses no caller-supplied memory.</safety>
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropParamException")]
-        internal static safe partial void ThrowInteropParamException(int resID, int paramIdx, out QCallException qcallException);
+        internal static safe partial void ThrowInteropParamException(int resID, int paramIdx, out QCallExceptionStatus qcallException);
 
         internal static safe void ThrowInteropParamException(int resID, int paramIdx)
             => ThrowInteropParamException(resID, paramIdx, out _);
@@ -2246,7 +2246,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateCustomMarshaler")]
-        internal static partial void CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType, ObjectHandleOnStack customMarshaler, out QCallException qcallException);
+        internal static partial void CreateCustomMarshaler(IntPtr pMD, int paramToken, IntPtr hndManagedType, ObjectHandleOnStack customMarshaler, out QCallExceptionStatus qcallException);
 
 #if FEATURE_COMINTEROP
         [SupportedOSPlatform("windows")]
@@ -2353,7 +2353,7 @@ namespace System.StubHelpers
         private static extern IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_GetCOMIPFromRCWSlow")]
-        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pCPCMD, out IntPtr ppTarget, [MarshalAs(UnmanagedType.Bool)] out bool pfNeedsRelease, out QCallException qcallException);
+        private static partial IntPtr GetCOMIPFromRCWSlow(ObjectHandleOnStack objSrc, IntPtr pCPCMD, out IntPtr ppTarget, [MarshalAs(UnmanagedType.Bool)] out bool pfNeedsRelease, out QCallExceptionStatus qcallException);
 
         internal static IntPtr GetCOMIPFromRCW(object objSrc, IntPtr pCPCMD, out IntPtr ppTarget, out bool pfNeedsRelease)
         {
@@ -2379,13 +2379,13 @@ namespace System.StubHelpers
         // Profiler helpers
         //-------------------------------------------------------
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
-        internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD, out QCallException qcallException);
+        internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD, out QCallExceptionStatus qcallException);
 
         internal static unsafe void* ProfilerBeginTransitionCallback(void* pTargetMD)
             => ProfilerBeginTransitionCallback(pTargetMD, out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
-        internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD, out QCallException qcallException);
+        internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD, out QCallExceptionStatus qcallException);
 
         internal static unsafe void ProfilerEndTransitionCallback(void* pTargetMD)
             => ProfilerEndTransitionCallback(pTargetMD, out _);
@@ -2408,7 +2408,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_CreateLayoutClassMarshalStubs")]
-        internal static unsafe partial void CreateLayoutClassMarshalStubs(QCallTypeHandle th, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pConvertToUnmanaged, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pConvertToManaged, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pFree, out QCallException qcallException);
+        internal static unsafe partial void CreateLayoutClassMarshalStubs(QCallTypeHandle th, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pConvertToUnmanaged, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pConvertToManaged, out delegate*<ref byte, byte*, ref CleanupWorkListElement?, void> pFree, out QCallExceptionStatus qcallException);
 
         internal static unsafe void LayoutTypeConvertToUnmanaged(object obj, byte* pNative, ref CleanupWorkListElement? pCleanupWorkList)
         {
@@ -2521,13 +2521,13 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]
-        internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator, out QCallException qcallException);
+        internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator, out QCallExceptionStatus qcallException);
 
         internal static void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator)
             => MarshalToManagedVaList(va_list, pArgIterator, out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToUnmanagedVaList")]
-        internal static partial void MarshalToUnmanagedVaList(IntPtr va_list, uint vaListSize, IntPtr pArgIterator, out QCallException qcallException);
+        internal static partial void MarshalToUnmanagedVaList(IntPtr va_list, uint vaListSize, IntPtr pArgIterator, out QCallExceptionStatus qcallException);
 
         internal static void MarshalToUnmanagedVaList(IntPtr va_list, uint vaListSize, IntPtr pArgIterator)
             => MarshalToUnmanagedVaList(va_list, vaListSize, pArgIterator, out _);
@@ -2539,13 +2539,13 @@ namespace System.StubHelpers
         internal static extern void LogPinnedArgument(IntPtr localDesc, IntPtr nativeArg);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateObject")]
-        private static partial void ValidateObject(ObjectHandleOnStack obj, IntPtr pMD, out QCallException qcallException);
+        private static partial void ValidateObject(ObjectHandleOnStack obj, IntPtr pMD, out QCallExceptionStatus qcallException);
 
         internal static void ValidateObject(object obj, IntPtr pMD)
             => ValidateObject(ObjectHandleOnStack.Create(ref obj), pMD, out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateByref")]
-        internal static partial void ValidateByref(IntPtr byref, IntPtr pMD, out QCallException qcallException); // the byref is pinned so we can safely "cast" it to IntPtr
+        internal static partial void ValidateByref(IntPtr byref, IntPtr pMD, out QCallExceptionStatus qcallException); // the byref is pinned so we can safely "cast" it to IntPtr
 
         internal static void ValidateByref(IntPtr byref, IntPtr pMD)
             => ValidateByref(byref, pMD, out _);
@@ -2560,7 +2560,7 @@ namespace System.StubHelpers
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MulticastDebuggerTraceHelper")]
-        private static partial void MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack obj, int count, out QCallException qcallException);
+        private static partial void MulticastDebuggerTraceHelperQCall(ObjectHandleOnStack obj, int count, out QCallExceptionStatus qcallException);
 
         [Intrinsic]
         internal static IntPtr NextCallReturnAddress() => throw new UnreachableException(); // Unconditionally expanded intrinsic

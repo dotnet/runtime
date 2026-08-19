@@ -28,7 +28,7 @@ namespace System.Reflection
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "LoaderAllocator_Destroy")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool Destroy(IntPtr nativeLoaderAllocator, out QCallException qcallException);
+        private static partial bool Destroy(IntPtr nativeLoaderAllocator, out QCallExceptionStatus qcallException);
 
         ~LoaderAllocatorScout()
         {

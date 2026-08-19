@@ -138,7 +138,7 @@ namespace System
                 void** pvAllocatorFirstArg,
                 int* pNullableValueOffset,
                 uint* pValueTypeSize,
-                out QCallException qcallException);
+                out QCallExceptionStatus qcallException);
         }
 
         internal object? Box(ref byte data)

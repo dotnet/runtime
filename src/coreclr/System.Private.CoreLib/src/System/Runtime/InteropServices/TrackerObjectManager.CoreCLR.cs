@@ -40,6 +40,6 @@ namespace System.Runtime.InteropServices
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TrackerObjectManager_RegisterNativeObjectWrapperCache")]
-        private static partial void RegisterNativeObjectWrapperCache(ObjectHandleOnStack nativeObjectWrapperCache, out QCallException qcallException);
+        private static partial void RegisterNativeObjectWrapperCache(ObjectHandleOnStack nativeObjectWrapperCache, out QCallExceptionStatus qcallException);
     }
 }

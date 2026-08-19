@@ -3415,7 +3415,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetGuid")]
-        private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result, out QCallException qcallException);
+        private static unsafe partial void GetGuid(MethodTable* pMT, Guid* result, out QCallExceptionStatus qcallException);
 
 #if FEATURE_COMINTEROP
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -3427,7 +3427,7 @@ namespace System
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ReflectionInvocation_GetComObjectGuid")]
-        private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result, out QCallException qcallException);
+        private static unsafe partial void GetComObjectGuid(ObjectHandleOnStack type, Guid* result, out QCallExceptionStatus qcallException);
 #endif // FEATURE_COMINTEROP
 
         protected override unsafe bool IsValueTypeImpl()
@@ -4147,7 +4147,7 @@ namespace System
             int lcid,
             ObjectHandleOnStack namedParameters,
             ObjectHandleOnStack result,
-            out QCallException qcallException);
+            out QCallExceptionStatus qcallException);
 
         private object InvokeDispMethod(
             string name,
@@ -4370,7 +4370,7 @@ namespace System
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MdUtf8String_EqualsCaseInsensitive")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz, out QCallException qcallException);
+        private static partial bool EqualsCaseInsensitive(void* szLhs, void* szRhs, int cSz, out QCallExceptionStatus qcallException);
 
         private readonly byte* m_pStringHeap;        // This is the raw UTF8 string.
         private readonly int m_StringHeapByteLength;

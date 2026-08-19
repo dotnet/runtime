@@ -163,7 +163,7 @@ namespace System.Runtime.InteropServices
         internal sealed partial class ManagedObjectWrapperHolder
         {
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_RegisterIsRootedCallback")]
-            private static partial void RegisterIsRootedCallback(out QCallException qcallException);
+            private static partial void RegisterIsRootedCallback(out QCallExceptionStatus qcallException);
 
             private static IntPtr AllocateRefCountedHandle(ManagedObjectWrapperHolder holder)
             {
@@ -171,7 +171,7 @@ namespace System.Runtime.InteropServices
             }
 
             [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ComWrappers_AllocateRefCountedHandle")]
-            private static partial IntPtr AllocateRefCountedHandle(ObjectHandleOnStack obj, out QCallException qcallException);
+            private static partial IntPtr AllocateRefCountedHandle(ObjectHandleOnStack obj, out QCallExceptionStatus qcallException);
         }
     }
 }

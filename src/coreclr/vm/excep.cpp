@@ -4736,7 +4736,7 @@ static BOOL GetManagedFormatStringForResourceID(UINT32 resId, SString & converte
 //==========================================================================
 // Private helper for TypeLoadException.
 //==========================================================================
-extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString, QCallException* qcallError)
+extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -4755,7 +4755,7 @@ extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::Strin
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
 
-extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString, QCallException* qcallError)
+extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -4771,7 +4771,7 @@ extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHa
 //==========================================================================
 // Private helper for FileLoadException and FileNotFoundException.
 //==========================================================================
-extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString, QCallException* qcallError)
+extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 {
     QCALL_CONTRACT;
 
@@ -6656,7 +6656,7 @@ void UnwindAndContinueRethrowHelperInsideCatch(Frame* pEntryFrame, Exception* pE
 //
 void UnwindAndContinueRethrowHelperInsideQcallCatch(
     Exception* pException,
-    QCallException* pQCallException DEBUG_ARG(Frame* pEntryFrame))
+    QCallExceptionStatus* pQCallException DEBUG_ARG(Frame* pEntryFrame))
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
@@ -6701,7 +6701,7 @@ void UnwindAndContinueRethrowHelperInsideQcallCatch(
 }
 
 #ifdef TARGET_UNIX
-void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallException* pQCallException)
+void CaptureQCallExceptionFromPALException(PAL_SEHException& exception, QCallExceptionStatus* pQCallException)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;

@@ -39,9 +39,9 @@
 // class Foo
 // {
 //
-//  // All QCalls that use BEGIN_QCALL must have a final QCallException out parameter.
+//  // All QCalls that use BEGIN_QCALL must have a final QCallExceptionStatus out parameter.
 //  [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "FooNative_Bar", StringMarshalling = StringMarshalling.Utf16)]
-//  private static partial bool Bar(int flags, string inString, StringHandleOnStack retString, out QCallException qcallException);
+//  private static partial bool Bar(int flags, string inString, StringHandleOnStack retString, out QCallExceptionStatus qcallException);
 //
 //  // Many QCalls have a thin managed wrapper around them to expose them to the world in more meaningful way.
 //  public string Bar(int flags)
@@ -65,7 +65,7 @@
 // The entrypoints of all QCalls has to be registered in tables in vm\qcallentrypoints.cpp using the DllImportEntry macro,
 // For example: DllImportEntry(FooNative_Bar)
 //
-// extern "C" BOOL QCALLTYPE FooNative_Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString, QCallException* qcallError)
+// extern "C" BOOL QCALLTYPE FooNative_Bar(int flags, LPCWSTR wszString, QCall::StringHandleOnStack retString, QCallExceptionStatus* qcallError)
 // {
 //      // All QCalls should have QCALL_CONTRACT. It is alias for THROWS; GC_TRIGGERS; MODE_PREEMPTIVE.
 //      QCALL_CONTRACT;

@@ -26,7 +26,10 @@ namespace System.Runtime.InteropServices.ObjectiveC
         private static partial bool TrySetGlobalMessageSendCallback(
             MessageSendFunction msgSendFunction,
             IntPtr func,
-            out QCallException qcallException);
+            out QCallExceptionStatus qcallException);
+
+        private static bool TrySetGlobalMessageSendCallback(MessageSendFunction msgSendFunction, IntPtr func)
+            => TrySetGlobalMessageSendCallback(msgSendFunction, func, out _);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_TryInitializeReferenceTracker")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -35,7 +38,7 @@ namespace System.Runtime.InteropServices.ObjectiveC
             delegate* unmanaged<IntPtr, int> isReferencedCallback,
             delegate* unmanaged<IntPtr, void> trackedObjectEnteredFinalization,
             ObjectHandleOnStack objectTrackingInfoTable,
-            out QCallException qcallException);
+            out QCallExceptionStatus qcallException);
 
         private static unsafe bool TryInitializeReferenceTracker(
             delegate* unmanaged<void> beginEndCallback,
@@ -57,10 +60,10 @@ namespace System.Runtime.InteropServices.ObjectiveC
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ObjCMarshal_AllocateReferenceTrackingHandle")]
-        private static partial IntPtr AllocateReferenceTrackingHandle(ObjectHandleOnStack obj, out QCallException qcallException);
+        private static partial IntPtr AllocateReferenceTrackingHandle(ObjectHandleOnStack obj, out QCallExceptionStatus qcallException);
 
         private static IntPtr AllocateReferenceTrackingHandle(object obj)
-            => AllocateReferenceTrackingHandle(ObjectHandleOnStack.Create(ref obj));
+            => AllocateReferenceTrackingHandle(ObjectHandleOnStack.Create(ref obj), out _);
 
         private static unsafe bool IsTrackedReferenceWithFinalizer(object obj)
             => RuntimeHelpers.GetMethodTable(obj)->IsTrackedReferenceWithFinalizer;

@@ -15,7 +15,7 @@ namespace System.Runtime.CompilerServices
         internal static int[]? s_table;
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThrowInvalidCastException")]
-        private static partial void ThrowInvalidCastExceptionInternal(void* fromTypeHnd, void* toTypeHnd, out QCallException qcallException);
+        private static partial void ThrowInvalidCastExceptionInternal(void* fromTypeHnd, void* toTypeHnd, out QCallExceptionStatus qcallException);
 
         [DoesNotReturn]
         internal static void ThrowInvalidCastException(void* fromTypeHnd, void* toTypeHnd)
@@ -34,7 +34,7 @@ namespace System.Runtime.CompilerServices
 
         [LibraryImport(RuntimeHelpers.QCall)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj, out QCallException qcallException);
+        private static partial bool IsInstanceOf_NoCacheLookup(void *toTypeHnd, [MarshalAs(UnmanagedType.Bool)] bool throwCastException, ObjectHandleOnStack obj, out QCallExceptionStatus qcallException);
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj)

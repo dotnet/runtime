@@ -12,7 +12,7 @@ namespace System.Diagnostics
     public static partial class Debugger
     {
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_Break")]
-        private static partial void BreakInternal(out QCallException qcallException);
+        private static partial void BreakInternal(out QCallExceptionStatus qcallException);
 
         // Break causes a breakpoint to be signalled to an attached debugger.  If no debugger
         // is attached, the user is asked if they want to attach a debugger. If yes, then the
@@ -84,7 +84,7 @@ namespace System.Diagnostics
         // debugger attached, has no effect.  The debugger may or may not
         // report the notification depending on its settings.
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "DebugDebugger_CustomNotification")]
-        private static partial void CustomNotification(ObjectHandleOnStack data, out QCallException qcallException);
+        private static partial void CustomNotification(ObjectHandleOnStack data, out QCallExceptionStatus qcallException);
 
         // implementation of CORINFO_HELP_USER_BREAKPOINT
         [StackTraceHidden]
