@@ -439,13 +439,15 @@ namespace System.Numerics
                     b = byte.ReverseBits(b);
                 }
 
+                bool isUnsigned = !TSelf.IsNegative(TSelf.AllBitsSet);
+
                 if (BitConverter.IsLittleEndian)
                 {
-                    return TSelf.ReadBigEndian(bytes, isUnsigned: false);
+                    return TSelf.ReadBigEndian(bytes, isUnsigned);
                 }
                 else
                 {
-                    return TSelf.ReadLittleEndian(bytes, isUnsigned: false);
+                    return TSelf.ReadLittleEndian(bytes, isUnsigned);
                 }
             }
             finally
