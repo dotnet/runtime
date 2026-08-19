@@ -382,8 +382,8 @@ namespace System
                     // This fix is for cultures that use NBSP (U+00A0) or narrow NBSP (U+202F) as group/decimal separators
                     // (e.g., French, Kazakh, Ukrainian). Since a user cannot easily type these characters,
                     // we accept regular space (U+0020) as equivalent.
-                    // We also need to handle the reverse case where the input has NBSP and the format string has space.
-                    if (cp != val && NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val))
+                    // For UTF-16, we also handle the reverse case where the input has NBSP and the format string has space.
+                    if (cp != val && (sizeof(TChar) == sizeof(byte) || NormalizeSpaceReplacingChar(cp) != NormalizeSpaceReplacingChar(val)))
                     {
                         return null;
                     }

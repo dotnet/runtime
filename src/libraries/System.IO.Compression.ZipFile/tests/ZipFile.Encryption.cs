@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
@@ -71,6 +72,152 @@ namespace System.IO.Compression.Tests
                     Assert.NotNull(entry);
                     await AssertEntryTextEquals(entry, content, pwd, async);
                 }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
+        public async Task Encryption_EmptyEntry_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string password = "PLACEHOLDER";
+            var entries = new[]
+            {
+                ("readme.txt", "hello world", (string?)password, (ZipEncryptionMethod?)encryptionMethod),
+                (".gitkeep", "", (string?)password, (ZipEncryptionMethod?)encryptionMethod)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                foreach (var (name, content, pwd, _) in entries)
+                {
+                    ZipArchiveEntry entry = archive.GetEntry(name);
+                    Assert.NotNull(entry);
+                    Assert.True(entry.IsEncrypted);
+                    Assert.Equal(encryptionMethod, entry.EncryptionMethod);
+                    await AssertEntryTextEquals(entry, content, pwd, async);
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
+        public async Task Encryption_EmptyEntry_NonSeekableStream_WritesDataDescriptorFlag(ZipEncryptionMethod encryptionMethod, bool async)
+        {
+            using var memoryStream = new MemoryStream();
+            using var destination = new WrappedStream(memoryStream, canRead: false, canWrite: true, canSeek: false);
+            string entryName = ".gitkeep";
+            string password = "PLACEHOLDER";
+
+            ZipArchive archive = await CreateZipArchive(async, destination, ZipArchiveMode.Create, leaveOpen: true);
+            ZipArchiveEntry entry = archive.CreateEntry(entryName, password, encryptionMethod);
+            Stream entryStream = await OpenEntryStream(async, entry);
+            await DisposeStream(async, entryStream);
+            await DisposeZipArchive(async, archive);
+
+            AssertFirstLocalHeaderHasDataDescriptor(memoryStream);
+
+            memoryStream.Position = 0;
+            using (ZipArchive readArchive = await CreateZipArchive(async, memoryStream, ZipArchiveMode.Read))
+            {
+                ZipArchiveEntry readEntry = readArchive.GetEntry(entryName);
+                Assert.NotNull(readEntry);
+                Assert.True(readEntry.IsEncrypted);
+                Assert.Equal(encryptionMethod, readEntry.EncryptionMethod);
+                await AssertEntryTextEquals(readEntry, "", password, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
+        public async Task UpdateMode_EmptyEncryptedEntry_UnchangedAfterRewrite_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string modifiedEntryName = "modified.txt";
+            string emptyEntryName = ".gitkeep";
+            string password = "PLACEHOLDER";
+            string modifiedContent = "Updated content that forces the archive to be rewritten.";
+            var entries = new[]
+            {
+                (modifiedEntryName, "Original content", (string?)null, (ZipEncryptionMethod?)null),
+                (emptyEntryName, "", (string?)password, (ZipEncryptionMethod?)encryptionMethod)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
+            {
+                ZipArchiveEntry modifiedEntry = archive.GetEntry(modifiedEntryName);
+                Assert.NotNull(modifiedEntry);
+
+                using (Stream stream = await OpenEntryStream(async, modifiedEntry))
+                {
+                    stream.SetLength(0);
+                    byte[] modifiedContentBytes = Encoding.UTF8.GetBytes(modifiedContent);
+                    if (async)
+                        await stream.WriteAsync(modifiedContentBytes, 0, modifiedContentBytes.Length);
+                    else
+                        stream.Write(modifiedContentBytes, 0, modifiedContentBytes.Length);
+                }
+
+                ZipArchiveEntry emptyEntry = archive.GetEntry(emptyEntryName);
+                Assert.NotNull(emptyEntry);
+                Assert.True(emptyEntry.IsEncrypted);
+                Assert.Equal(encryptionMethod, emptyEntry.EncryptionMethod);
+            }
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                ZipArchiveEntry modifiedEntry = archive.GetEntry(modifiedEntryName);
+                Assert.NotNull(modifiedEntry);
+                await AssertEntryTextEquals(modifiedEntry, modifiedContent, null, async);
+
+                ZipArchiveEntry entry = archive.GetEntry(emptyEntryName);
+                Assert.NotNull(entry);
+                Assert.True(entry.IsEncrypted);
+                Assert.Equal(encryptionMethod, entry.EncryptionMethod);
+                await AssertEntryTextEquals(entry, "", password, async);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(EncryptionMethodAndBoolTestData))]
+        [SkipOnPlatform(TestPlatforms.Browser, "WinZip AES encryption is not supported on Browser")]
+        public async Task UpdateMode_EmptyEncryptedEntry_OpenedNotModified_RoundTrip(ZipEncryptionMethod encryptionMethod, bool async)
+        {
+            string archivePath = GetTempArchivePath();
+            string emptyEntryName = ".gitkeep";
+            string password = "PLACEHOLDER";
+            var entries = new[]
+            {
+                (emptyEntryName, "", (string?)password, (ZipEncryptionMethod?)encryptionMethod)
+            };
+
+            await CreateArchiveWithEntries(archivePath, entries, async);
+
+            using (ZipArchive archive = await CallZipFileOpen(async, archivePath, ZipArchiveMode.Update))
+            {
+                ZipArchiveEntry emptyEntry = archive.GetEntry(emptyEntryName);
+                Assert.NotNull(emptyEntry);
+
+                // Open the empty encrypted entry for read-write and dispose it without writing anything.
+                // The entry must still be re-encrypted with valid encryption headers so it can be decrypted.
+                Stream stream = await OpenEntryStream(async, emptyEntry, password);
+                await DisposeStream(async, stream);
+            }
+
+            using (ZipArchive archive = await CallZipFileOpenRead(async, archivePath))
+            {
+                ZipArchiveEntry entry = archive.GetEntry(emptyEntryName);
+                Assert.NotNull(entry);
+                Assert.True(entry.IsEncrypted);
+                Assert.Equal(encryptionMethod, entry.EncryptionMethod);
+                await AssertEntryTextEquals(entry, "", password, async);
             }
         }
 
@@ -253,6 +400,16 @@ namespace System.IO.Compression.Tests
         }
 
         private string GetTempArchivePath() => GetTestFilePath();
+
+        private static void AssertFirstLocalHeaderHasDataDescriptor(MemoryStream memoryStream)
+        {
+            const int LocalHeaderGeneralPurposeBitFlagsOffset = 6;
+            const ushort DataDescriptorBitFlag = 0x0008;
+
+            ushort generalPurposeBitFlags = BinaryPrimitives.ReadUInt16LittleEndian(
+                memoryStream.ToArray().AsSpan(LocalHeaderGeneralPurposeBitFlagsOffset));
+            Assert.True((generalPurposeBitFlags & DataDescriptorBitFlag) != 0);
+        }
 
         private async Task CreateArchiveWithEntries(string archivePath, (string Name, string Content, string? Password, ZipEncryptionMethod? Encryption)[] entries, bool async)
         {

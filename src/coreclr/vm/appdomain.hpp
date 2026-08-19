@@ -408,12 +408,6 @@ public:
         LIMITED_METHOD_CONTRACT;
         m_currentLevel = level;
     }
-
-    static LoadLevelLimiter* GetCurrent()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return t_currentLoadLevelLimiter;
-    }
 };
 
 #define OVERRIDE_LOAD_LEVEL_LIMIT(newLimit)                    \

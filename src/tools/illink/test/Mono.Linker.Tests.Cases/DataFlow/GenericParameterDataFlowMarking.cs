@@ -331,6 +331,44 @@ namespace Mono.Linker.Tests.Cases.DataFlow
             }
 
             [Kept]
+            class InterfaceGenericMarkingUnderRuc
+            {
+                [Kept]
+                interface IRequires<
+                    [KeptAttributeAttribute(typeof(DynamicallyAccessedMembersAttribute), By = Tool.Trimmer)]
+                    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)] T>
+                {
+                }
+
+                [Kept]
+                class TargetType
+                {
+                    [Kept]
+                    public static void PublicMethod() { }
+                }
+
+                [Kept]
+                [KeptMember(".ctor()")]
+                [KeptInterfaceAttribute(typeof(IRequires<TargetType>), By = Tool.Trimmer)]
+                [KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute))]
+                [RequiresUnreferencedCode("--InterfaceGenericMarkingUnderRuc--")]
+                class DerivedWithTarget : IRequires<TargetType>
+                {
+                }
+
+                [Kept]
+                [ExpectedWarning("IL2026", "--InterfaceGenericMarkingUnderRuc--")]
+                public static void Test()
+                {
+                    new DerivedWithTarget();
+
+                    // Keep the interface implementation without creating a closed generic use-site
+                    // which would independently mark TargetType.PublicMethod.
+                    var interfaceType = typeof(IRequires<>);
+                }
+            }
+
+            [Kept]
             public static void Test()
             {
                 GenericMethodNoReference.Test();
@@ -342,6 +380,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
                 FieldOnGenericType.Test();
                 BaseTypeGenericNesting.Test();
                 InterfaceGenericNesting.Test();
+                InterfaceGenericMarkingUnderRuc.Test();
             }
         }
     }
