@@ -21,5 +21,10 @@ namespace System.Net.Http
         // Should not be confused with Http2Connection.DefaultInitialWindowSize, which defines the RFC default.
         // Unlike that value, DefaultInitialHttp2StreamWindowSize might be changed in the future.
         public const int DefaultInitialHttp2StreamWindowSize = 65535;
+
+        // This is the default value for SocketsHttpHandler.InitialHttp2MaxConcurrentStreams.
+        // It defines how many concurrent streams a new HTTP/2 connection may use before it
+        // observes the server's SETTINGS_MAX_CONCURRENT_STREAMS value.
+        public const int DefaultInitialHttp2MaxConcurrentStreams = 100;
     }
 }

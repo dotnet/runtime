@@ -299,6 +299,43 @@ namespace System.Net.Http
         }
 
         /// <summary>
+        /// Gets or sets the maximum number of concurrent HTTP/2 streams a new connection may use before it observes
+        /// the server's <c>SETTINGS_MAX_CONCURRENT_STREAMS</c> value.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// HTTP/2 allows the client to send requests as soon as the connection is established, before the server has
+        /// advertised how many concurrent streams it is willing to accept. Sending more requests than the server allows
+        /// may cause those requests to fail, or trigger server-side abuse mitigations.
+        /// Lowering this value avoids exceeding the server limit at the cost of reduced concurrency until the
+        /// server's <c>SETTINGS</c> frame is received.
+        /// </para>
+        /// <para>
+        /// If a previous connection in the same connection pool advertised a lower limit,
+        /// that lower value is used instead for new connections.
+        /// </para>
+        /// <para>
+        /// Setting this property to 0 means that no requests will be sent on a new connection
+        /// until the server's <c>SETTINGS</c> frame is received.
+        /// </para>
+        /// <para>
+        /// The value must be greater than or equal to 0. Defaults to 100.
+        /// </para>
+        /// </remarks>
+        /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+        public int InitialHttp2MaxConcurrentStreams
+        {
+            get => _settings._initialHttp2MaxConcurrentStreams;
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+
+                CheckDisposedOrStarted();
+                _settings._initialHttp2MaxConcurrentStreams = value;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the keep alive ping delay. The client will send a keep alive ping to the server if it
         /// doesn't receive any frames on a connection for this period of time. This property is used together with
         /// <see cref="SocketsHttpHandler.KeepAlivePingTimeout"/> to close broken connections.
