@@ -236,8 +236,7 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(FieldDesc fieldDef)
             {
-                return (_parent.GetMetadataCategory(fieldDef) & MetadataCategory.Description) != 0
-                    || _parent.GeneratesMetadataForRuntimeFieldHandle(fieldDef);
+                return (_parent.GetMetadataCategory(fieldDef) & MetadataCategory.Description) != 0;
             }
 
             public bool GeneratesMetadata(MethodDesc methodDef)
@@ -247,8 +246,7 @@ namespace ILCompiler
 
             public bool GeneratesMetadata(MetadataType typeDef)
             {
-                return (_parent.GetMetadataCategory(typeDef) & MetadataCategory.Description) != 0
-                    || _parent.GeneratesMetadataForRuntimeFieldHandle(typeDef);
+                return (_parent.GetMetadataCategory(typeDef) & MetadataCategory.Description) != 0;
             }
 
             public bool GeneratesMetadata(EcmaModule module, CustomAttributeHandle caHandle)
