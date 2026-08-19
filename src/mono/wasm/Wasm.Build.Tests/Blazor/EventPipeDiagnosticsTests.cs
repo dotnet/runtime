@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Diagnostics.Tracing;
 using Microsoft.Diagnostics.Tracing.Etlx;
@@ -21,6 +23,10 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 {
     private static readonly string uploadPattern = "^[a-zA-Z0-9_]+\\.nettrace$";
 
+    // Generous enough for a slow CI machine, but far below the Helix work item budget so a stuck
+    // collection is reported as a test failure instead of killing the whole work item.
+    private static readonly TimeSpan s_traceCollectionTimeout = TimeSpan.FromMinutes(3);
+
     public EventPipeDiagnosticsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
@@ -35,6 +41,7 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
     [Theory]
     [InlineData(Configuration.Debug, false)]
     [InlineData(Configuration.Release, false)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/132410", typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
     public async Task BlazorEventPipeTestWithCpuSamples(Configuration config, bool aot)
     {
         string extraProperties = @"
@@ -339,23 +346,64 @@ public class EventPipeDiagnosticsTests : BlazorWasmTestBase
 
     private async Task ClickAndCollect(IPage page)
     {
-        // Use void to prevent Playwright from awaiting the returned Promise,
-        // so tracing runs in parallel with button clicks below.
-        await page.EvaluateAsync(@"void (globalThis.donePromise = globalThis.collectAndUpload())");
-        _testOutput.WriteLine($"Installed script: {DateTime.Now.ToString("O")}");
+        // A runtime trap never rejects donePromise: the runtime catches it, reports it as a console
+        // error and exits non-zero, leaving the promise unsettled forever.
+        var runtimeFailed = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        string? lastConsoleError = null;
 
-        // Click the button a few times while tracing is running
-        for (int i = 0; i < 5; i++)
+        void OnPageError(object? sender, string error) => runtimeFailed.TrySetResult(error);
+        void OnConsoleMessage(object? sender, IConsoleMessage message)
         {
-            await page.Locator("text=\"Click me\"").ClickAsync();
-            await Task.Delay(10);
+            if (message.Type == "error")
+                lastConsoleError = message.Text;
+
+            Match exit = BrowserRunner.s_exitRegex.Match(message.Text);
+            if (exit.Success && exit.Groups["exitCode"].Value != "0")
+                runtimeFailed.TrySetResult(lastConsoleError ?? $"the app exited with code {exit.Groups["exitCode"].Value}");
         }
-        _testOutput.WriteLine($"Done clicking: {DateTime.Now.ToString("O")}");
 
-        var txt2 = await page.Locator("p[role='status']").InnerHTMLAsync();
-        Assert.NotEqual("Current count: 0", txt2);
+        page.PageError += OnPageError;
+        page.Console += OnConsoleMessage;
 
-        // Wait for trace collection and upload to complete
-        await page.EvaluateAsync(@"globalThis.donePromise");
+        try
+        {
+            // Use void to prevent Playwright from awaiting the returned Promise,
+            // so tracing runs in parallel with button clicks below.
+            await page.EvaluateAsync(@"void (globalThis.donePromise = globalThis.collectAndUpload())");
+            _testOutput.WriteLine($"Installed script: {DateTime.Now.ToString("O")}");
+
+            // Click the button a few times while tracing is running
+            for (int i = 0; i < 5; i++)
+            {
+                await page.Locator("text=\"Click me\"").ClickAsync();
+                await Task.Delay(10);
+            }
+            _testOutput.WriteLine($"Done clicking: {DateTime.Now.ToString("O")}");
+
+            var txt2 = await page.Locator("p[role='status']").InnerHTMLAsync();
+            Assert.NotEqual("Current count: 0", txt2);
+
+            // Wait for trace collection and upload to complete. EvaluateAsync has no timeout of its
+            // own, unlike the Locator calls above, so bound it explicitly.
+            Task collected = page.EvaluateAsync(@"globalThis.donePromise");
+            Task finished = await Task.WhenAny(collected, runtimeFailed.Task, Task.Delay(s_traceCollectionTimeout));
+            if (finished != collected)
+            {
+                // Tearing down the page faults the pending evaluate; keep that from resurfacing as an
+                // unobserved task exception in a later test.
+                _ = collected.ContinueWith(static t => _ = t.Exception, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
+
+                Assert.Fail(runtimeFailed.Task.IsCompleted
+                    ? $"The runtime failed while collecting the trace: {runtimeFailed.Task.Result}"
+                    : $"Trace collection did not complete within {s_traceCollectionTimeout.TotalSeconds}s.");
+            }
+
+            await collected;
+        }
+        finally
+        {
+            page.PageError -= OnPageError;
+            page.Console -= OnConsoleMessage;
+        }
     }
 }
