@@ -1104,7 +1104,7 @@ void MyICJI::reportMetadata(const char* key, const void* value, size_t length)
 #include "jitmetadatalist.h"
     };
 
-    const size_t count = sizeof(s_metrics) / sizeof(s_metrics[0]);
+    const size_t count = ArrLen(s_metrics);
 
     // The JIT reports metrics in the order they are declared in jitmetadatalist.h,
     // so resume the search where the previous one matched instead of always scanning
