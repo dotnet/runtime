@@ -74,8 +74,8 @@ static guint16 sri_vector128_methods [] = {
 	SN_AsUInt32,
 	SN_AsUInt64,
 	SN_AsVector,
-	SN_AsVector4,
 	SN_AsVector128,
+	SN_AsVector4,
 	SN_ConditionalSelect,
 	SN_Create,
 	SN_CreateScalar,
@@ -83,6 +83,7 @@ static guint16 sri_vector128_methods [] = {
 	SN_Equals,
 	SN_EqualsAny,
 	SN_ExtractMostSignificantBits,
+	SN_GetElement,
 	SN_GreaterThan,
 	SN_LessThan,
 	SN_LessThanOrEqual,
@@ -93,6 +94,7 @@ static guint16 sri_vector128_methods [] = {
 	SN_Shuffle,
 	SN_WidenLower,
 	SN_WidenUpper,
+	SN_WithElement,
 	SN_get_IsHardwareAccelerated,
 };
 
@@ -511,6 +513,39 @@ emit_vector_create (TransformData *td, MonoMethodSignature *csignature, MonoClas
 	interp_ins_set_dreg (td->last_ins, td->sp [-1].var);
 }
 
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+/*
+ * Vector128.GetElement / Vector128.WithElement are documented to throw
+ * ArgumentOutOfRangeException when the lane index is out of range. Interpreter SIMD intrinsics
+ * are plain helper functions with no way to raise a managed exception, so we only intrinsify
+ * when the index is a compile time constant that is provably in range and the bounds check can
+ * be safely elided. Every other case (a variable index, or a constant that is out of range)
+ * falls back to the managed implementation, which performs the check and throws.
+ *
+ * Restricting to constant indexes is also what the jiterpreter needs: the wasm
+ * extract_lane/replace_lane opcodes take the lane as an immediate, so a non constant lane would
+ * truncate the trace instead of producing vectorized code.
+ *
+ * Returns TRUE if var is defined by a constant load whose value is in range [0, lane_count).
+ */
+static gboolean
+is_constant_lane_index_in_range (TransformData *td, int var, int lane_count)
+{
+	// Search backwards within the current basic block for the unique definition of var.
+	// A new var is created every time a value is pushed on the stack, so the first match is it.
+	for (InterpInst *ins = td->cbb->last_ins; ins != NULL; ins = ins->prev) {
+		if (!mono_interp_op_dregs [ins->opcode] || ins->dreg != var)
+			continue;
+		if (!MINT_IS_LDC_I4 (ins->opcode))
+			return FALSE;
+		gint32 value = interp_get_const_from_ldc_i4 (ins);
+		return value >= 0 && value < lane_count;
+	}
+
+	return FALSE;
+}
+#endif // HOST_BROWSER || HOST_WASI
+
 static gboolean
 emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature *csignature)
 {
@@ -650,6 +685,48 @@ emit_sri_vector128 (TransformData *td, MonoMethod *cmethod, MonoMethodSignature 
 			else if (arg_size == 4) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I4_EXTRACT_MSB;
 			else if (arg_size == 8) simd_intrins = INTERP_SIMD_INTRINSIC_V128_I8_EXTRACT_MSB;
 			break;
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
+		case SN_GetElement: {
+			if (!is_constant_lane_index_in_range (td, td->sp [-1].var, vector_size / arg_size))
+				return FALSE;
+
+			simd_opcode = MINT_SIMD_INTRINS_P_PP;
+			switch (resolve_native_size (atype)) {
+				case MONO_TYPE_I1: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarI1; break;
+				case MONO_TYPE_U1: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarU1; break;
+				case MONO_TYPE_I2: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarI2; break;
+				case MONO_TYPE_U2: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarU2; break;
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarD4; break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarD8; break;
+				case MONO_TYPE_R4: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarR4; break;
+				case MONO_TYPE_R8: simd_intrins = INTERP_SIMD_INTRINSIC_ExtractScalarR8; break;
+				default: return FALSE;
+			}
+			break;
+		}
+		case SN_WithElement: {
+			if (!is_constant_lane_index_in_range (td, td->sp [-2].var, vector_size / arg_size))
+				return FALSE;
+
+			simd_opcode = MINT_SIMD_INTRINS_P_PPP;
+			switch (resolve_native_size (atype)) {
+				case MONO_TYPE_I1:
+				case MONO_TYPE_U1: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarD1; break;
+				case MONO_TYPE_I2:
+				case MONO_TYPE_U2: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarD2; break;
+				case MONO_TYPE_I4:
+				case MONO_TYPE_U4: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarD4; break;
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarD8; break;
+				case MONO_TYPE_R4: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarR4; break;
+				case MONO_TYPE_R8: simd_intrins = INTERP_SIMD_INTRINSIC_ReplaceScalarR8; break;
+				default: return FALSE;
+			}
+			break;
+		}
+#endif
 		case SN_GreaterThan:
 			simd_opcode = MINT_SIMD_INTRINS_P_PP;
 			if (atype == MONO_TYPE_U1) simd_intrins = INTERP_SIMD_INTRINSIC_V128_U1_GREATER_THAN;
