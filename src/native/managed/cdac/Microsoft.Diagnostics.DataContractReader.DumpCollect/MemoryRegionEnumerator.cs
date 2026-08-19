@@ -9,19 +9,29 @@ using Microsoft.Diagnostics.DataContractReader.Legacy;
 
 namespace Microsoft.Diagnostics.DataContractReader.DumpCollect;
 
+// Callback implementation returns E_NOINTERFACE for IID_IUnknown. Accepting the callback as a
+// generated COM interface would therefore fail in the generated stub before EnumMemoryRegions runs.
+[GeneratedComInterface]
+[Guid("471c35b4-7c2f-4ef0-a945-00f8c38056f1")]
+internal unsafe partial interface ICLRDataEnumMemoryRegionsRaw
+{
+    [PreserveSig]
+    int EnumMemoryRegions(nint callback, uint miniDumpFlags, int clrFlags);
+}
+
 [GeneratedComClass]
 internal sealed unsafe partial class MemoryRegionEnumerator(
     ICLRDataTarget dataTarget,
-    ulong contractDescriptor) : ICLRDataEnumMemoryRegions
+    ulong contractDescriptor) : ICLRDataEnumMemoryRegionsRaw
 {
     private const int ClrDataEnumMemHeap = 0x1;
     private const int ClrDataEnumMemHeap2 = 0x3;
     private const uint MiniDumpWithPrivateReadWriteMemory = 0x200;
     private const nuint ContextAlignment = 16;
 
-    public int EnumMemoryRegions(ICLRDataEnumMemoryRegionsCallback callback, uint miniDumpFlags, int clrFlags)
+    public int EnumMemoryRegions(nint callback, uint miniDumpFlags, int clrFlags)
     {
-        if (callback is null)
+        if (callback == 0)
             return HResults.E_INVALIDARG;
 
         try
@@ -32,11 +42,16 @@ internal sealed unsafe partial class MemoryRegionEnumerator(
                 clrFlags is ClrDataEnumMemHeap or ClrDataEnumMemHeap2
                 || (miniDumpFlags & MiniDumpWithPrivateReadWriteMemory) != 0;
 
+            DumpCollectLogger.Log(
+                $"Starting memory enumeration: miniDumpFlags=0x{miniDumpFlags:x}, clrFlags=0x{clrFlags:x}, includeHeap={includeHeap}.");
             DumpCreator.EnumerateMemoryRegions(target, includeHeap, emitter);
+            DumpCollectLogger.Log(
+                $"Completed memory enumeration: result=0x{emitter.Result:x8}, regions={emitter.RegionCount}, bytes={emitter.TotalBytes}.");
             return emitter.Result;
         }
         catch (System.Exception ex)
         {
+            DumpCollectLogger.LogException(nameof(EnumMemoryRegions), ex);
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;
         }
@@ -99,9 +114,15 @@ internal sealed unsafe partial class MemoryRegionEnumerator(
     }
 }
 
-internal sealed class MemoryRegionEmitter(ICLRDataEnumMemoryRegionsCallback callback)
+internal sealed unsafe class MemoryRegionEmitter(nint callback)
 {
+    // ICLRDataEnumMemoryRegionsCallback::EnumMemoryRegion follows the three IUnknown vtable slots.
+    private readonly delegate* unmanaged[MemberFunction]<nint, ulong, uint, int> _enumMemoryRegion =
+        (delegate* unmanaged[MemberFunction]<nint, ulong, uint, int>)(*(nint**)callback)[3];
+
+    public ulong RegionCount { get; private set; }
     public int Result { get; private set; }
+    public ulong TotalBytes { get; private set; }
 
     public void Add(ulong address, uint size) => Add(address, (ulong)size);
 
@@ -113,10 +134,12 @@ internal sealed class MemoryRegionEmitter(ICLRDataEnumMemoryRegionsCallback call
         while (size != 0)
         {
             uint chunkSize = (uint)Math.Min(size, uint.MaxValue);
-            int hr = callback.EnumMemoryRegion(address, chunkSize);
+            int hr = _enumMemoryRegion(callback, address, chunkSize);
             if (hr == HResults.COR_E_OPERATIONCANCELED)
                 Marshal.ThrowExceptionForHR(hr);
 
+            RegionCount++;
+            TotalBytes = checked(TotalBytes + chunkSize);
             if (hr < 0 && Result >= 0)
                 Result = hr;
 

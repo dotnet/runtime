@@ -16,8 +16,14 @@
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
+  <!-- Custom Windows Version Resource is required. -->
+  <PropertyGroup Condition="'$(TargetsWindows)' == 'true'">
+    <Win32Resource>$(IntermediateOutputPath)mscordaccore.version.res</Win32Resource>
+  </PropertyGroup>
+
   <ItemGroup>
     <InstallRuntimeComponentDestination Include="." />
+    <InstallRuntimeComponentDestination Include="sharedFramework" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,6 +35,13 @@
   <ItemGroup>
     <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
   </ItemGroup>
+
+  <Target Name="GenerateWindowsVersionResource"
+          BeforeTargets="CoreCompile"
+          DependsOnTargets="GetAssemblyVersion"
+          Condition="'$(TargetsWindows)' == 'true'">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildThisFileDirectory)GenerateWindowsVersionResource.ps1&quot; -outputPath &quot;$(Win32Resource)&quot; -fileVersion &quot;$(FileVersion)&quot; -productVersion &quot;$(Version)&quot; -companyName &quot;$(Company)&quot; -productName &quot;$(Product)&quot; -legalCopyright &quot;$(Copyright)&quot;" />
+  </Target>
 
   <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 </Project>

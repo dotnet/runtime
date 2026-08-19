@@ -18,6 +18,7 @@ internal static class Entrypoints
         if (pIID == null || pDataTarget == IntPtr.Zero || iface == null)
             return HResults.E_INVALIDARG;
 
+        DumpCollectLogger.Log($"CLRDataCreateInstance requested interface {*pIID}.");
         *iface = null;
         if (*pIID != IClrDataEnumMemoryRegions)
             return HResults.COR_E_INVALIDCAST;
@@ -26,14 +27,19 @@ internal static class Entrypoints
         {
             ICLRDataTarget dataTarget = ComInterfaceMarshaller<ICLRDataTarget>.ConvertToManaged((void*)pDataTarget)!;
             if (!ContractDescriptorLocator.TryGetFromPE(dataTarget, out ulong contractAddress))
+            {
+                DumpCollectLogger.Log("Failed to locate DotNetRuntimeContractDescriptor.");
                 return HResults.E_FAIL;
+            }
 
             var enumerator = new MemoryRegionEnumerator(dataTarget, contractAddress);
-            *iface = ComInterfaceMarshaller<ICLRDataEnumMemoryRegions>.ConvertToUnmanaged(enumerator);
+            *iface = ComInterfaceMarshaller<ICLRDataEnumMemoryRegionsRaw>.ConvertToUnmanaged(enumerator);
+            DumpCollectLogger.Log($"Created memory-region enumerator for contract descriptor 0x{contractAddress:x}.");
             return 0;
         }
         catch (Exception ex)
         {
+            DumpCollectLogger.LogException(nameof(CLRDataCreateInstance), ex);
             int hr = ex.HResult;
             return hr < 0 ? hr : HResults.E_FAIL;
         }

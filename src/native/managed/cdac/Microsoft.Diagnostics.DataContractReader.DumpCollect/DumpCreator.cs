@@ -19,26 +19,29 @@ internal static class DumpCreator
         MemoryRegionEmitter emitter)
     {
         HashSet<TargetPointer> loaderAllocators = [];
-        TryEnumerate(() => EnumerateModules(target, emitter, loaderAllocators));
-        TryEnumerate(() => EnumerateThreads(target, emitter));
+        TryEnumerate("modules", () => EnumerateModules(target, emitter, loaderAllocators));
+        TryEnumerate("threads", () => EnumerateThreads(target, emitter));
 
         if (includeHeap)
         {
-            TryEnumerate(() => EnumerateGC(target, emitter));
-            TryEnumerate(() => EnumerateCodeAndLoaderHeaps(target, emitter, loaderAllocators));
-            TryEnumerate(() => EnumerateSyncBlocks(target));
-            TryEnumerate(() => EnumerateStressLog(target, emitter));
+            TryEnumerate("GC", () => EnumerateGC(target, emitter));
+            TryEnumerate("code and loader heaps", () => EnumerateCodeAndLoaderHeaps(target, emitter, loaderAllocators));
+            TryEnumerate("sync blocks", () => EnumerateSyncBlocks(target));
+            TryEnumerate("stress log", () => EnumerateStressLog(target, emitter));
         }
     }
 
-    private static void TryEnumerate(Action enumerate)
+    private static void TryEnumerate(string phase, Action enumerate)
     {
+        DumpCollectLogger.Log($"Starting {phase} enumeration.");
         try
         {
             enumerate();
+            DumpCollectLogger.Log($"Completed {phase} enumeration.");
         }
         catch (System.Exception ex) when (ex.HResult != HResults.COR_E_OPERATIONCANCELED)
         {
+            DumpCollectLogger.LogException(phase, ex);
             // Dump creation is best-effort because the target may be partially unreadable or corrupt.
         }
     }
