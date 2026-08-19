@@ -655,7 +655,6 @@ static void LogJitFlags(DWORD facility, DWORD level, CORJIT_FLAGS jitFlags)
 
     // these are all we care about at the moment
     LOG_FLAG(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB);
-    LOG_FLAG(CORJIT_FLAGS::CORJIT_FLAG_PUBLISH_SECRET_PARAM);
 
 #undef LOG_FLAGS
 

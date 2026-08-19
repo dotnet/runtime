@@ -654,7 +654,7 @@ namespace Internal.JitInterface
         CORINFO_FLG_SHAREDINST = 0x00020000, // the code for this method is shared between different generic instantiations (also set on classes/types)
         CORINFO_FLG_DELEGATE_INVOKE = 0x00040000, // "Delegate
         CORINFO_FLG_PINVOKE = 0x00080000, // Is a P/Invoke call
-        // CORINFO_FLG_UNUSED = 0x00100000,
+        CORINFO_FLG_HAS_MD_CONTEXT_ARG = 0x00100000, // The method has an interop MethodDesc context argument
         CORINFO_FLG_NOGCCHECK = 0x00200000, // This method is FCALL that has no GC check.  Don't put alone in loops
         CORINFO_FLG_INTRINSIC = 0x00400000, // This method MAY have an intrinsic ID
         CORINFO_FLG_CONSTRUCTOR = 0x00800000, // This method is an instance or type initializer
@@ -1545,7 +1545,6 @@ namespace Internal.JitInterface
         CORJIT_FLAG_BBINSTR_IF_LOOPS        = 19, // JIT must instrument current method if it has loops
         CORJIT_FLAG_BBOPT                   = 20, // Optimize method based on profile information
         CORJIT_FLAG_FRAMED                  = 21, // All methods have an EBP frame
-        CORJIT_FLAG_PUBLISH_SECRET_PARAM    = 22, // JIT must place stub secret param into local 0.  (used by IL stubs)
         CORJIT_FLAG_USE_PINVOKE_HELPERS     = 23, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         CORJIT_FLAG_REVERSE_PINVOKE         = 24, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
         CORJIT_FLAG_TRACK_TRANSITIONS       = 25, // The JIT should insert the helper variants that track transitions.

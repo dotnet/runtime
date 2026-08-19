@@ -5043,6 +5043,11 @@ public:
         return lvaSecretStubArg != BAD_VAR_NUM;
     }
 
+    bool compMethodHasMDContextArg() const
+    {
+        return (info.compFlags & CORINFO_FLG_HAS_MD_CONTEXT_ARG) != 0;
+    }
+
     unsigned lvaGetSecretStubArgumentVar() const
     {
         assert(compHasSecretStubArgument());
