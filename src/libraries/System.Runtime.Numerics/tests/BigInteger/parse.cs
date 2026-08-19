@@ -1356,6 +1356,14 @@ namespace System.Numerics.Tests
             result = BigInteger.Parse("1\u202F234\u202F567", NumberStyles.AllowThousands, spaceCulture);
             Assert.Equal((BigInteger)1234567, result);
         }
+
+        [Fact]
+        public static void ParseUtf8WithInvalidGroupSeparator()
+        {
+            NumberFormatInfo format = new() { NumberGroupSeparator = " " };
+
+            Assert.False(BigInteger.TryParse([(byte)'1', 0xA0, (byte)'2'], NumberStyles.AllowThousands, format, out _));
+        }
     }
 
     [Collection(nameof(DisableParallelization))]
@@ -1482,6 +1490,11 @@ namespace System.Numerics.Tests
             // Only invalid characters (no valid number)
             yield return new object[] { "abc", NumberStyles.Integer, null };
             yield return new object[] { "xyz", NumberStyles.Integer, null };
+
+            // Values that scan successfully but aren't representable as a BigInteger
+            yield return new object[] { "1.5", NumberStyles.Float, CultureInfo.InvariantCulture };
+            yield return new object[] { "3.14159abc", NumberStyles.Float, CultureInfo.InvariantCulture };
+            yield return new object[] { "1E1000000000", NumberStyles.Float, CultureInfo.InvariantCulture };
         }
 
         [Theory]

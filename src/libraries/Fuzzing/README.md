@@ -58,7 +58,7 @@ deployment/HttpHeadersFuzzer/local-run.bat
 See the [libFuzzer options](https://llvm.org/docs/LibFuzzer.html#options) documentation for more information on how to customize the fuzzing process.
 For example, here is how you can run the fuzzer against a `header-inputs` corpus directory for 10 minutes, running multiple instances in parallel:
 ```cmd
-deployment/HttpHeadersFuzzer/local-run.bat header-inputs -timeout=30 -max_total_time=600 -jobs=5
+deployment/HttpHeadersFuzzer/local-run.bat header-inputs -max_total_time=600 -jobs=5
 ```
 
 ### Generating coverage reports

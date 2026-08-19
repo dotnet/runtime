@@ -72,6 +72,17 @@ namespace ILCompiler.ObjectWriter
         Count = 0x05 // Not actually part of the spec; used for counting kinds
     }
 
+    /// <summary>
+    /// WebAssembly export descriptor kinds per the specification.
+    /// </summary>
+    internal enum WasmExportKind : byte
+    {
+        Function = 0x00,
+        Table = 0x01,
+        Memory = 0x02,
+        Global = 0x03,
+    }
+
     public class WasmGlobalImportType : WasmImportType
     {
         WasmValueType _valueType;

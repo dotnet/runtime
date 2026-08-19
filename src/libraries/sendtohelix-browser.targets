@@ -73,6 +73,10 @@
     <EnableDefaultBuildHelixWorkItems>false</EnableDefaultBuildHelixWorkItems>
 
     <EmSdkDirForHelixPayload>$(HelixDependenciesStagingPath)\emsdk</EmSdkDirForHelixPayload>
+    <!-- The browsers and JS engines live in the shared wasm tool cache, which is read by every
+         clone on the machine. Stage copies so that Helix's correlation payload bookkeeping never
+         writes into a cache entry. The version-keyed staging paths are defined after the
+         wasm-provisioning.targets import below, where $(ChromeVersion) etc. become available. -->
     <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
@@ -108,7 +112,7 @@
   <!--
     Stage emsdk as a Helix dependency so it ends up at $(EmSdkDirForHelixPayload) and can be
     packaged into the correlation payload. This is needed for CoreCLR WBT agents, which do not
-    build the wasm runtime locally and therefore do not pre-populate emsdk at $(ProvisionEmscriptenDir).
+    build the wasm runtime locally and therefore do not pre-populate the shared wasm tool cache.
     Those agents provision emsdk in a separate pipeline step before sendtohelix runs, at which
     point AcquireEmscriptenSdk.props/targets set $(EMSDK_PATH) during project evaluation.
 
@@ -121,6 +125,18 @@
           Name="emsdk"
           Include="$(EmSdkDirForHelixPayload)"
           SourcePath="$(EMSDK_PATH)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(NeedsToRunOnChrome)' == 'true'">
+    <HelixDependenciesToStage Name="chrome"       Include="$(ChromeDirForHelixPayload)"       SourcePath="$(ChromeDir)" />
+    <HelixDependenciesToStage Name="chromedriver" Include="$(ChromeDriverDirForHelixPayload)" SourcePath="$(ChromeDriverDir)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(NeedsToRunOnFirefox)' == 'true'">
+    <HelixDependenciesToStage Name="firefox"      Include="$(FirefoxDirForHelixPayload)"      SourcePath="$(FirefoxDir)" />
+    <HelixDependenciesToStage Name="geckodriver"  Include="$(GeckoDriverDirForHelixPayload)"  SourcePath="$(GeckoDriverDir)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(NeedsToRunOnV8)' == 'true'">
+    <HelixDependenciesToStage Name="v8"           Include="$(V8DirForHelixPayload)"           SourcePath="$(V8Dir)" />
   </ItemGroup>
 
   <ItemGroup>
@@ -228,6 +244,18 @@
 
   <Import Project="$(RepositoryEngineeringDir)testing\wasm-provisioning.targets" />
 
+  <!-- Defined after the import above so that $(ChromeVersion) etc. (from
+       wasm-provisioning.targets) are available. The version is part of the staging path so a
+       version bump re-stages instead of reusing a previous run's stale copy
+       (StageDependenciesForHelix only stages destinations that don't already exist). -->
+  <PropertyGroup>
+    <ChromeDirForHelixPayload>$(HelixDependenciesStagingPath)\chrome-$(ChromeVersion)-$(ChromeRevision)</ChromeDirForHelixPayload>
+    <ChromeDriverDirForHelixPayload>$(HelixDependenciesStagingPath)\chromedriver-$(ChromeVersion)-$(ChromeRevision)</ChromeDriverDirForHelixPayload>
+    <FirefoxDirForHelixPayload>$(HelixDependenciesStagingPath)\firefox-$(FirefoxRevision)</FirefoxDirForHelixPayload>
+    <GeckoDriverDirForHelixPayload>$(HelixDependenciesStagingPath)\geckodriver-$(GeckoDriverRevision)</GeckoDriverDirForHelixPayload>
+    <V8DirForHelixPayload>$(HelixDependenciesStagingPath)\v8-$(V8Version)</V8DirForHelixPayload>
+  </PropertyGroup>
+
   <UsingTask TaskName="Microsoft.DotNet.HelixTestTasks.GroupWorkItems"
              AssemblyFile="$(HelixTestTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.DotNet.HelixTestTasks.ComputeBatchTimeout"
@@ -251,15 +279,15 @@
            Text="Could not find firefox at $(FirefoxDir)" />
 
     <ItemGroup Condition="'$(NeedsToRunOnChrome)' == 'true'">
-      <HelixCorrelationPayload Include="$(ChromeDir)" />
-      <HelixCorrelationPayload Include="$(ChromeDriverDir)" />
+      <HelixCorrelationPayload Include="$(ChromeDirForHelixPayload)" />
+      <HelixCorrelationPayload Include="$(ChromeDriverDirForHelixPayload)" />
     </ItemGroup>
     <ItemGroup Condition="'$(NeedsToRunOnFirefox)' == 'true'">
-      <HelixCorrelationPayload Include="$(FirefoxDir)" />
-      <HelixCorrelationPayload Include="$(GeckoDriverDir)" />
+      <HelixCorrelationPayload Include="$(FirefoxDirForHelixPayload)" />
+      <HelixCorrelationPayload Include="$(GeckoDriverDirForHelixPayload)" />
     </ItemGroup>
     <ItemGroup Condition="'$(NeedsToRunOnV8)' == 'true'">
-      <HelixCorrelationPayload Include="$(V8Dir)" Destination="$(V8DirName)" />
+      <HelixCorrelationPayload Include="$(V8DirForHelixPayload)" Destination="$(V8DirName)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">

@@ -164,7 +164,7 @@ ep_rt_coreclr_sample_profiler_write_sampling_event_for_threads (
 	walk_managed_stack_for_threads (sampling_thread, sampling_event);
 
 	// Resume managed execution.
-	ThreadSuspend::RestartEE (FALSE /* bFinishedGC */, TRUE /* SuspendSucceeded */);
+	ThreadSuspend::RestartEE (true /* SuspendSucceeded */);
 
 	return;
 }

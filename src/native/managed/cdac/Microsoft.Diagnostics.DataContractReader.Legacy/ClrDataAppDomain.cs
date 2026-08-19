@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Threading;
 using Microsoft.Diagnostics.DataContractReader.Contracts;
 
 namespace Microsoft.Diagnostics.DataContractReader.Legacy;
@@ -12,26 +13,34 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 [GeneratedComClass]
 public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 {
-    private const uint DefaultAppDomainId = 1;
+    internal const uint DefaultAppDomainId = 1;
 
+    private readonly Lock _apiLock;
     private readonly Target _target;
     private readonly TargetPointer _appDomain;
     private readonly IXCLRDataAppDomain? _legacyImpl;
 
     public TargetPointer Address => _appDomain;
+    internal IXCLRDataAppDomain? LegacyImpl => _legacyImpl;
 
-    public ClrDataAppDomain(Target target, TargetPointer appDomain, IXCLRDataAppDomain? legacyImpl)
+    public ClrDataAppDomain(Target target, TargetPointer appDomain, IXCLRDataAppDomain? legacyImpl, Lock apiLock)
     {
+        _apiLock = apiLock;
         _target = target;
         _appDomain = appDomain;
         _legacyImpl = legacyImpl;
     }
 
     int IXCLRDataAppDomain.GetProcess(DacComNullableByRef<IXCLRDataProcess> process)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataAppDomain.GetName(uint bufLen, uint* nameLen, char* name)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         string friendlyName;
         try
@@ -99,6 +108,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 
     int IXCLRDataAppDomain.GetUniqueID(ulong* id)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -127,6 +137,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 
     int IXCLRDataAppDomain.GetFlags(uint* flags)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_OK;
         try
         {
@@ -156,6 +167,7 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
 
     int IXCLRDataAppDomain.IsSameObject(IXCLRDataAppDomain* appDomain)
     {
+        using Lock.Scope scope = _apiLock.EnterScope();
         int hr = HResults.S_FALSE;
         try
         {
@@ -182,8 +194,16 @@ public sealed unsafe partial class ClrDataAppDomain : IXCLRDataAppDomain
     }
 
     int IXCLRDataAppDomain.GetManagedObject(DacComNullableByRef<IXCLRDataValue> value)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 
     int IXCLRDataAppDomain.Request(uint reqCode, uint inBufferSize, byte* inBuffer, uint outBufferSize, byte* outBuffer)
-        => HResults.E_NOTIMPL;
+    {
+        using Lock.Scope scope = _apiLock.EnterScope();
+
+        return HResults.E_NOTIMPL;
+    }
 }
