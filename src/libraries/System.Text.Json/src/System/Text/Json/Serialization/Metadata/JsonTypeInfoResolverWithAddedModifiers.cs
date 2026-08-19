@@ -30,7 +30,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             JsonTypeInfo? typeInfo = _source.GetTypeInfo(type, options);
 
-            if (typeInfo is not null)
+            if (typeInfo != null)
             {
                 foreach (Action<JsonTypeInfo> modifier in _modifiers)
                 {

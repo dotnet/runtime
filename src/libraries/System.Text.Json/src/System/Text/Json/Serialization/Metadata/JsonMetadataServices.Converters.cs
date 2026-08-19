@@ -321,7 +321,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal static JsonConverter<T> GetTypedConverter<T>(JsonConverter converter)
         {
             JsonConverter<T>? typedConverter = converter as JsonConverter<T>;
-            if (typedConverter is null)
+            if (typedConverter == null)
             {
                 throw new InvalidOperationException(SR.Format(SR.SerializationConverterNotCompatible, typedConverter, typeof(T)));
             }

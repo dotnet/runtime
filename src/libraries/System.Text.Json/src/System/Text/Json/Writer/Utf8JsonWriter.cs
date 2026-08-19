@@ -299,7 +299,7 @@ namespace System.Text.Json
         {
             CheckNotDisposed();
 
-            if (utf8Json is null)
+            if (utf8Json == null)
             {
                 throw new ArgumentNullException(nameof(utf8Json));
             }
@@ -310,7 +310,7 @@ namespace System.Text.Json
             }
 
             _stream = utf8Json;
-            if (_arrayBufferWriter is null)
+            if (_arrayBufferWriter == null)
             {
                 _arrayBufferWriter = new ArrayBufferWriter<byte>();
             }
@@ -425,10 +425,10 @@ namespace System.Text.Json
 
         private void CheckNotDisposed()
         {
-            if (_stream is null)
+            if (_stream == null)
             {
                 // The conditions are ordered with stream first as that would be the most common mode
-                if (_output is null)
+                if (_output == null)
                 {
                     ThrowHelper.ThrowObjectDisposedException_Utf8JsonWriter();
                 }
@@ -451,9 +451,9 @@ namespace System.Text.Json
 
             _memory = default;
 
-            if (_stream is not null)
+            if (_stream != null)
             {
-                Debug.Assert(_arrayBufferWriter is not null);
+                Debug.Assert(_arrayBufferWriter != null);
                 if (BytesPending != 0)
                 {
                     _arrayBufferWriter.Advance(BytesPending);
@@ -472,7 +472,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(_output is not null);
+                Debug.Assert(_output != null);
                 if (BytesPending != 0)
                 {
                     _output.Advance(BytesPending);
@@ -496,10 +496,10 @@ namespace System.Text.Json
         /// </remarks>
         public void Dispose()
         {
-            if (_stream is null)
+            if (_stream == null)
             {
                 // The conditions are ordered with stream first as that would be the most common mode
-                if (_output is null)
+                if (_output == null)
                 {
                     return;
                 }
@@ -527,10 +527,10 @@ namespace System.Text.Json
         /// </remarks>
         public async ValueTask DisposeAsync()
         {
-            if (_stream is null)
+            if (_stream == null)
             {
                 // The conditions are ordered with stream first as that would be the most common mode
-                if (_output is null)
+                if (_output == null)
                 {
                     return;
                 }
@@ -560,9 +560,9 @@ namespace System.Text.Json
 
             _memory = default;
 
-            if (_stream is not null)
+            if (_stream != null)
             {
-                Debug.Assert(_arrayBufferWriter is not null);
+                Debug.Assert(_arrayBufferWriter != null);
                 if (BytesPending != 0)
                 {
                     _arrayBufferWriter.Advance(BytesPending);
@@ -577,7 +577,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(_output is not null);
+                Debug.Assert(_output != null);
                 if (BytesPending != 0)
                 {
                     _output.Advance(BytesPending);
@@ -873,7 +873,7 @@ namespace System.Text.Json
 
             WriteStartByOptions(escapedPropertyName.Slice(0, written), token);
 
-            if (propertyArray is not null)
+            if (propertyArray != null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }
@@ -1022,7 +1022,7 @@ namespace System.Text.Json
 
             WriteStartByOptions(escapedPropertyName.Slice(0, written), token);
 
-            if (propertyArray is not null)
+            if (propertyArray != null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
@@ -1217,9 +1217,9 @@ namespace System.Text.Json
 
             Debug.Assert(BytesPending != 0);
 
-            if (_stream is not null)
+            if (_stream != null)
             {
-                Debug.Assert(_arrayBufferWriter is not null);
+                Debug.Assert(_arrayBufferWriter != null);
 
                 int needed = BytesPending + sizeHint;
                 JsonHelpers.ValidateInt32MaxArrayLength((uint)needed);
@@ -1230,7 +1230,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(_output is not null);
+                Debug.Assert(_output != null);
 
                 _output.Advance(BytesPending);
                 BytesCommitted += BytesPending;
@@ -1252,15 +1252,15 @@ namespace System.Text.Json
 
             int sizeHint = Math.Max(InitialGrowthSize, requiredSize);
 
-            if (_stream is not null)
+            if (_stream != null)
             {
-                Debug.Assert(_arrayBufferWriter is not null);
+                Debug.Assert(_arrayBufferWriter != null);
                 _memory = _arrayBufferWriter.GetMemory(sizeHint);
                 Debug.Assert(_memory.Length >= sizeHint);
             }
             else
             {
-                Debug.Assert(_output is not null);
+                Debug.Assert(_output != null);
                 _memory = _output.GetMemory(sizeHint);
 
                 if (_memory.Length < sizeHint)

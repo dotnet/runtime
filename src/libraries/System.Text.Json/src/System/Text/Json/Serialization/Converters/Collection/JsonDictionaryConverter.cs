@@ -97,7 +97,7 @@ namespace System.Text.Json.Serialization
                 _keyConverter ??= GetConverter<TKey>(keyTypeInfo);
                 _valueConverter ??= GetConverter<TValue>(elementTypeInfo);
 
-                if (_valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling is null)
+                if (_valueConverter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
                     // Process all elements.
                     while (true)
@@ -205,7 +205,7 @@ namespace System.Text.Json.Serialization
 
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                     {
-                        Debug.Assert(state.ReferenceId is not null);
+                        Debug.Assert(state.ReferenceId != null);
                         Debug.Assert(options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve);
                         Debug.Assert(state.Current.ReturnValue is TDictionary);
                         state.ReferenceResolver.AddReference(state.ReferenceId, state.Current.ReturnValue);
@@ -338,7 +338,7 @@ namespace System.Text.Json.Serialization
             JsonSerializerOptions options,
             ref WriteStack state)
         {
-            if (dictionary is null)
+            if (dictionary == null)
             {
                 writer.WriteNullValue();
                 return true;

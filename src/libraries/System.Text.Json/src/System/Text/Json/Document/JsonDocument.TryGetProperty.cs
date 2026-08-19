@@ -201,7 +201,7 @@ namespace System.Text.Json
                             }
                             finally
                             {
-                                if (rented is not null)
+                                if (rented != null)
                                 {
                                     rented.AsSpan(0, written).Clear();
                                     ArrayPool<byte>.Shared.Return(rented);

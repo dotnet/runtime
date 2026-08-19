@@ -45,10 +45,10 @@ namespace System.Text.Json
 
             // Both rented values better be null if we're not disposable.
             Debug.Assert(isDisposable ||
-                (extraRentedArrayPoolBytes is null && extraPooledByteBufferWriter is null));
+                (extraRentedArrayPoolBytes == null && extraPooledByteBufferWriter == null));
 
             // Both rented values can't be specified.
-            Debug.Assert(extraRentedArrayPoolBytes is null || extraPooledByteBufferWriter is null);
+            Debug.Assert(extraRentedArrayPoolBytes == null || extraPooledByteBufferWriter == null);
 
             _utf8Json = utf8Json;
             _parsedData = parsedData;
@@ -69,11 +69,11 @@ namespace System.Text.Json
             _parsedData.Dispose();
             _utf8Json = ReadOnlyMemory<byte>.Empty;
 
-            if (_extraRentedArrayPoolBytes is not null)
+            if (_extraRentedArrayPoolBytes != null)
             {
                 byte[]? extraRentedBytes = Interlocked.Exchange<byte[]?>(ref _extraRentedArrayPoolBytes, null);
 
-                if (extraRentedBytes is not null)
+                if (extraRentedBytes != null)
                 {
                     // When "extra rented bytes exist" it contains the document,
                     // and thus needs to be cleared before being returned.
@@ -81,7 +81,7 @@ namespace System.Text.Json
                     ArrayPool<byte>.Shared.Return(extraRentedBytes);
                 }
             }
-            else if (_extraPooledByteBufferWriter is not null)
+            else if (_extraPooledByteBufferWriter != null)
             {
                 PooledByteBufferWriter? extraBufferWriter = Interlocked.Exchange<PooledByteBufferWriter?>(ref _extraPooledByteBufferWriter, null);
                 extraBufferWriter?.Dispose();
@@ -326,7 +326,7 @@ namespace System.Text.Json
                 result = TextEquals(index, otherUtf8Text.Slice(0, written), isPropertyName, shouldUnescape: true);
             }
 
-            if (otherUtf8TextArray is not null)
+            if (otherUtf8TextArray != null)
             {
                 otherUtf8Text.Slice(0, written).Clear();
                 ArrayPool<byte>.Shared.Return(otherUtf8TextArray);
@@ -832,7 +832,7 @@ namespace System.Text.Json
 
         private static void ClearAndReturn(ArraySegment<byte> rented)
         {
-            if (rented.Array is not null)
+            if (rented.Array != null)
             {
                 rented.AsSpan().Clear();
                 ArrayPool<byte>.Shared.Return(rented.Array);
@@ -998,7 +998,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    Debug.Assert(tokenType is >= JsonTokenType.String and <= JsonTokenType.Null);
+                    Debug.Assert(tokenType >= JsonTokenType.String && tokenType <= JsonTokenType.Null);
                     numberOfRowsForValues++;
                     numberOfRowsForMembers++;
 

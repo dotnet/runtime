@@ -19,7 +19,7 @@ namespace System.Text.Json.Serialization.Converters
 
         public override void Write(Utf8JsonWriter writer, byte[]? value, JsonSerializerOptions options)
         {
-            if (value is null)
+            if (value == null)
             {
                 writer.WriteNullValue();
             }

@@ -34,7 +34,7 @@ namespace System.Text.Json.Nodes
         {
             get
             {
-                if (!_options.HasValue && Parent is not null)
+                if (!_options.HasValue && Parent != null)
                 {
                     // Remember the parent options; if node is re-parented later we still want to keep the
                     // original options since they may have affected the way the node was created as is the case
@@ -137,7 +137,7 @@ namespace System.Text.Json.Nodes
         /// <returns>The JSON Path value.</returns>
         public unsafe string GetPath()
         {
-            if (Parent is null)
+            if (Parent == null)
             {
                 return "$";
             }
@@ -161,12 +161,12 @@ namespace System.Text.Json.Nodes
             get
             {
                 JsonNode? parent = Parent;
-                if (parent is null)
+                if (parent == null)
                 {
                     return this;
                 }
 
-                while (parent.Parent is not null)
+                while (parent.Parent != null)
                 {
                     parent = parent.Parent;
                 }
@@ -345,13 +345,13 @@ namespace System.Text.Json.Nodes
 
         internal void AssignParent(JsonNode parent)
         {
-            if (Parent is not null)
+            if (Parent != null)
             {
                 ThrowHelper.ThrowInvalidOperationException_NodeAlreadyHasParent();
             }
 
             JsonNode? p = parent;
-            while (p is not null)
+            while (p != null)
             {
                 if (p == this)
                 {

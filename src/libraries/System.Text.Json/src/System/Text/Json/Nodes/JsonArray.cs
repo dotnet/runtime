@@ -242,7 +242,7 @@ namespace System.Text.Json.Nodes
         {
             Parent?.GetPath(ref path, this);
 
-            if (child is not null)
+            if (child != null)
             {
                 int index = List.IndexOf(child);
                 Debug.Assert(index >= 0);
@@ -380,7 +380,7 @@ namespace System.Text.Json.Nodes
                 {
                     get
                     {
-                        if (Value is null)
+                        if (Value == null)
                         {
                             return $"null";
                         }

@@ -23,7 +23,7 @@ namespace System.Text.Json.Serialization.Converters
                 return;
             }
 
-            if (state.Current.JsonTypeInfo.CreateObject is null)
+            if (state.Current.JsonTypeInfo.CreateObject == null)
             {
                 ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);
             }

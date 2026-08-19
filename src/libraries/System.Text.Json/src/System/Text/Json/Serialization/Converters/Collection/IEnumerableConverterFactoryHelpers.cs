@@ -73,7 +73,7 @@ namespace System.Text.Json.Serialization
 
             string? constructingTypeName = type.GetImmutableEnumerableConstructingTypeName();
 
-            return constructingTypeName is null
+            return constructingTypeName == null
                 ? null
                 : type.Assembly.GetType(constructingTypeName);
         }
@@ -86,7 +86,7 @@ namespace System.Text.Json.Serialization
 
             string? constructingTypeName = type.GetImmutableDictionaryConstructingTypeName();
 
-            return constructingTypeName is null
+            return constructingTypeName == null
                 ? null
                 : type.Assembly.GetType(constructingTypeName);
         }

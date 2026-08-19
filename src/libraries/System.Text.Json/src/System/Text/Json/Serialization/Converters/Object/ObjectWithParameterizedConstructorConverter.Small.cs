@@ -27,7 +27,7 @@ namespace System.Text.Json.Serialization.Converters
             ref Utf8JsonReader reader,
             JsonParameterInfo jsonParameterInfo)
         {
-            Debug.Assert(state.Current.CtorArgumentState!.Arguments is not null);
+            Debug.Assert(state.Current.CtorArgumentState!.Arguments != null);
             var arguments = (Arguments<TArg0, TArg1, TArg2, TArg3>)state.Current.CtorArgumentState.Arguments;
 
             bool success;
@@ -90,7 +90,7 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            Debug.Assert(typeInfo.CreateObjectWithArgs is not null);
+            Debug.Assert(typeInfo.CreateObjectWithArgs != null);
 
             var arguments = new Arguments<TArg0, TArg1, TArg2, TArg3>();
 

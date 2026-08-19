@@ -45,7 +45,7 @@ namespace System.Text.Json
 
             byte[] escapedString = escapedValue.Slice(0, written).ToArray();
 
-            if (valueArray is not null)
+            if (valueArray != null)
             {
                 ArrayPool<byte>.Shared.Return(valueArray);
             }
@@ -73,7 +73,7 @@ namespace System.Text.Json
 
             byte[] propertySection = GetPropertyNameSection(escapedValue.Slice(0, written));
 
-            if (valueArray is not null)
+            if (valueArray != null)
             {
                 ArrayPool<byte>.Shared.Return(valueArray);
             }

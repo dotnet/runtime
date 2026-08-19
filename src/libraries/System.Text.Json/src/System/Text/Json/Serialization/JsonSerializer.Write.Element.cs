@@ -141,7 +141,7 @@ namespace System.Text.Json
         private static JsonElement WriteElementAsObject(object? value, JsonTypeInfo jsonTypeInfo)
         {
             JsonSerializerOptions options = jsonTypeInfo.Options;
-            Debug.Assert(options is not null);
+            Debug.Assert(options != null);
 
             Utf8JsonWriter writer = Utf8JsonWriterCache.RentWriterAndBuffer(jsonTypeInfo.Options, out PooledByteBufferWriter output);
 

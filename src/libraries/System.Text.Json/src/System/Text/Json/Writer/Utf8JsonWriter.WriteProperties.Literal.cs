@@ -273,7 +273,7 @@ namespace System.Text.Json
 
             WriteLiteralByOptions(escapedPropertyName.Slice(0, written), value);
 
-            if (propertyArray is not null)
+            if (propertyArray != null)
             {
                 ArrayPool<char>.Shared.Return(propertyArray);
             }
@@ -296,7 +296,7 @@ namespace System.Text.Json
 
             WriteLiteralByOptions(escapedPropertyName.Slice(0, written), value);
 
-            if (propertyArray is not null)
+            if (propertyArray != null)
             {
                 ArrayPool<byte>.Shared.Return(propertyArray);
             }

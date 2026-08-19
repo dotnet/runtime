@@ -401,7 +401,7 @@ namespace System.Text.Json
             }
             finally
             {
-                if (tempArray is not null)
+                if (tempArray != null)
                 {
                     utf8.Clear();
                     ArrayPool<byte>.Shared.Return(tempArray);
@@ -432,7 +432,7 @@ namespace System.Text.Json
             }
             finally
             {
-                if (tempArray is not null)
+                if (tempArray != null)
                 {
                     utf8.Clear();
                     ArrayPool<byte>.Shared.Return(tempArray);

@@ -125,7 +125,7 @@ namespace System.Text.Json
 
         private static void EscapeString(ReadOnlySpan<byte> value, Span<byte> destination, JavaScriptEncoder encoder, ref int consumed, ref int written, bool isFinalBlock)
         {
-            Debug.Assert(encoder is not null);
+            Debug.Assert(encoder != null);
 
             OperationStatus result = encoder.EncodeUtf8(value, destination, out int encoderBytesConsumed, out int encoderBytesWritten, isFinalBlock);
 
@@ -154,7 +154,7 @@ namespace System.Text.Json
             written = indexOfFirstByteToEscape;
             consumed = indexOfFirstByteToEscape;
 
-            if (encoder is not null)
+            if (encoder != null)
             {
                 destination = destination.Slice(indexOfFirstByteToEscape);
                 value = value.Slice(indexOfFirstByteToEscape);
@@ -249,7 +249,7 @@ namespace System.Text.Json
 
         private static void EscapeString(ReadOnlySpan<char> value, Span<char> destination, JavaScriptEncoder encoder, ref int consumed, ref int written, bool isFinalBlock)
         {
-            Debug.Assert(encoder is not null);
+            Debug.Assert(encoder != null);
 
             OperationStatus result = encoder.Encode(value, destination, out int encoderBytesConsumed, out int encoderCharsWritten, isFinalBlock);
 
@@ -278,7 +278,7 @@ namespace System.Text.Json
             written = indexOfFirstByteToEscape;
             consumed = indexOfFirstByteToEscape;
 
-            if (encoder is not null)
+            if (encoder != null)
             {
                 destination = destination.Slice(indexOfFirstByteToEscape);
                 value = value.Slice(indexOfFirstByteToEscape);

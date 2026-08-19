@@ -46,7 +46,7 @@ namespace System.Text.Json
         /// </remarks>
         public void WriteStringValue(string? value)
         {
-            if (value is null)
+            if (value == null)
             {
                 WriteNullValue();
             }
@@ -116,7 +116,7 @@ namespace System.Text.Json
         // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringMinimized(ReadOnlySpan<char> escapedValue, int maxRequiredBytes)
         {
-            Debug.Assert(maxRequiredBytes is >= 0 and < int.MaxValue - 3);
+            Debug.Assert(maxRequiredBytes >= 0 && maxRequiredBytes < int.MaxValue - 3);
 
             // 2 quotes + optional 1 list separator, plus precomputed max bytes for the payload.
             int maxRequired = maxRequiredBytes + 3;
@@ -199,7 +199,7 @@ namespace System.Text.Json
 
             WriteStringByOptions(escapedValue.Slice(0, written), requiredBytes);
 
-            if (valueArray is not null)
+            if (valueArray != null)
             {
                 ArrayPool<char>.Shared.Return(valueArray);
             }
@@ -346,7 +346,7 @@ namespace System.Text.Json
 
             WriteStringByOptions(escapedValue.Slice(0, written));
 
-            if (valueArray is not null)
+            if (valueArray != null)
             {
                 ArrayPool<byte>.Shared.Return(valueArray);
             }

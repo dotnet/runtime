@@ -36,6 +36,11 @@ namespace System.Text.Json.Serialization.Metadata
         internal BitArray? OptionalPropertiesMask { get; private set; }
         internal bool ShouldTrackRequiredProperties => OptionalPropertiesMask is not null;
 
+        private Action<object>? _onSerializing;
+        private Action<object>? _onSerialized;
+        private Action<object>? _onDeserializing;
+        private Action<object>? _onDeserialized;
+
         internal JsonTypeInfo(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
             Type = type;
@@ -115,7 +120,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public Action<object>? OnSerializing
         {
-            get;
+            get => _onSerializing;
             set
             {
                 VerifyMutable();
@@ -125,7 +130,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
 
-                field = value;
+                _onSerializing = value;
             }
         }
 
@@ -145,7 +150,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public Action<object>? OnSerialized
         {
-            get;
+            get => _onSerialized;
             set
             {
                 VerifyMutable();
@@ -155,7 +160,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
 
-                field = value;
+                _onSerialized = value;
             }
         }
 
@@ -175,7 +180,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public Action<object>? OnDeserializing
         {
-            get;
+            get => _onDeserializing;
             set
             {
                 VerifyMutable();
@@ -191,7 +196,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOnDeserializingCallbacksNotSupported(Type);
                 }
 
-                field = value;
+                _onDeserializing = value;
             }
         }
 
@@ -211,7 +216,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public Action<object>? OnDeserialized
         {
-            get;
+            get => _onDeserialized;
             set
             {
                 VerifyMutable();
@@ -221,7 +226,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                 }
 
-                field = value;
+                _onDeserialized = value;
             }
         }
 
@@ -305,14 +310,14 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 VerifyMutable();
 
-                if (value is not null)
+                if (value != null)
                 {
                     if (Kind == JsonTypeInfoKind.None)
                     {
                         ThrowHelper.ThrowInvalidOperationException_JsonTypeInfoOperationNotPossibleForKind(Kind);
                     }
 
-                    if (value.DeclaringTypeInfo is not null && value.DeclaringTypeInfo != this)
+                    if (value.DeclaringTypeInfo != null && value.DeclaringTypeInfo != this)
                     {
                         ThrowHelper.ThrowArgumentException_JsonPolymorphismOptionsAssociatedWithDifferentJsonTypeInfo(nameof(value));
                     }
@@ -777,7 +782,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public JsonUnmappedMemberHandling? UnmappedMemberHandling
         {
-            get;
+            get => _unmappedMemberHandling;
             set
             {
                 VerifyMutable();
@@ -792,11 +797,15 @@ namespace System.Text.Json.Serialization.Metadata
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                field = value;
+                _unmappedMemberHandling = value;
             }
         }
 
+        private JsonUnmappedMemberHandling? _unmappedMemberHandling;
+
         internal JsonUnmappedMemberHandling EffectiveUnmappedMemberHandling { get; private set; }
+
+        private JsonObjectCreationHandling? _preferredPropertyObjectCreationHandling;
 
         /// <summary>
         /// Gets or sets the preferred <see cref="JsonObjectCreationHandling"/> value for properties contained in the type.
@@ -817,7 +826,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </remarks>
         public JsonObjectCreationHandling? PreferredPropertyObjectCreationHandling
         {
-            get;
+            get => _preferredPropertyObjectCreationHandling;
             set
             {
                 VerifyMutable();
@@ -832,7 +841,7 @@ namespace System.Text.Json.Serialization.Metadata
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
 
-                field = value;
+                _preferredPropertyObjectCreationHandling = value;
             }
         }
 
@@ -849,7 +858,7 @@ namespace System.Text.Json.Serialization.Metadata
         [EditorBrowsable(EditorBrowsableState.Never)]
         public IJsonTypeInfoResolver? OriginatingResolver
         {
-            get;
+            get => _originatingResolver;
             set
             {
                 VerifyMutable();
@@ -862,9 +871,11 @@ namespace System.Text.Json.Serialization.Metadata
                     IsCustomized = false;
                 }
 
-                field = value;
+                _originatingResolver = value;
             }
         }
+
+        private IJsonTypeInfoResolver? _originatingResolver;
 
         /// <summary>
         /// Gets or sets an attribute provider corresponding to the deserialization constructor.
@@ -982,7 +993,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             PropertyInfoForTypeInfo.Configure();
 
-            if (PolymorphismOptions is not null)
+            if (PolymorphismOptions != null)
             {
                 // This needs to be done before ConfigureProperties() is called
                 // JsonPropertyInfo.Configure() must have this value available in order to detect Polymoprhic + cyclic class case
@@ -1264,7 +1275,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            if (_properties is not null)
+            if (_properties != null)
             {
                 foreach (JsonPropertyInfo property in _properties)
                 {
@@ -1529,7 +1540,7 @@ namespace System.Text.Json.Serialization.Metadata
                         ThrowHelper.ThrowInvalidOperationException_ExtensionDataConflictsWithUnmappedMemberHandling(Type, property);
                     }
 
-                    if (ExtensionDataProperty is not null)
+                    if (ExtensionDataProperty != null)
                     {
                         ThrowHelper.ThrowInvalidOperationException_SerializationDuplicateTypeAttribute(Type, typeof(JsonExtensionDataAttribute));
                     }
@@ -1648,7 +1659,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (ExtensionDataProperty is { AssociatedParameter: not null })
             {
-                Debug.Assert(ExtensionDataProperty.MemberName is not null, "Custom property info cannot be data extension property");
+                Debug.Assert(ExtensionDataProperty.MemberName != null, "Custom property info cannot be data extension property");
                 ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(ExtensionDataProperty.MemberName, ExtensionDataProperty);
             }
 
@@ -1821,7 +1832,7 @@ namespace System.Text.Json.Serialization.Metadata
             public void AddPropertyWithConflictResolution(JsonPropertyInfo jsonPropertyInfo, ref PropertyHierarchyResolutionState state)
             {
                 Debug.Assert(!_jsonTypeInfo.IsConfigured);
-                Debug.Assert(jsonPropertyInfo.MemberName is not null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
+                Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
 
                 // Algorithm should be kept in sync with the Roslyn equivalent in JsonSourceGenerator.Parser.cs
                 string memberName = jsonPropertyInfo.MemberName;

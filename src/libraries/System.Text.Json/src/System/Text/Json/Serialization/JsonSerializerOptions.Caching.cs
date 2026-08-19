@@ -161,7 +161,7 @@ namespace System.Text.Json
 
         internal bool TryGetTypeInfoCached(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo)
         {
-            if (_cachingContext is null)
+            if (_cachingContext == null)
             {
                 typeInfo = null;
                 return false;
@@ -188,7 +188,7 @@ namespace System.Text.Json
 
         internal bool TryGetPolymorphicTypeInfoForRootType(object rootValue, [NotNullWhen(true)] out JsonTypeInfo? polymorphicTypeInfo)
         {
-            Debug.Assert(rootValue is not null);
+            Debug.Assert(rootValue != null);
 
             Type runtimeType = rootValue.GetType();
             if (runtimeType != JsonTypeInfo.ObjectType)
@@ -429,7 +429,7 @@ namespace System.Text.Json
             public static CachingContext GetOrCreate(JsonSerializerOptions options)
             {
                 Debug.Assert(options.IsReadOnly, "Cannot create caching contexts for mutable JsonSerializerOptions instances");
-                Debug.Assert(options._typeInfoResolver is not null);
+                Debug.Assert(options._typeInfoResolver != null);
 
                 int hashCode = s_optionsComparer.GetHashCode(options);
 
@@ -513,7 +513,7 @@ namespace System.Text.Json
         {
             public bool Equals(JsonSerializerOptions? left, JsonSerializerOptions? right)
             {
-                Debug.Assert(left is not null && right is not null);
+                Debug.Assert(left != null && right != null);
 
                 return
                     left._dictionaryKeyPolicy == right._dictionaryKeyPolicy &&

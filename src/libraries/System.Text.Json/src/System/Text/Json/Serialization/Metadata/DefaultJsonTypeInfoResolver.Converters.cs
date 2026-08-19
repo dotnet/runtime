@@ -124,7 +124,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 // Since the object and IEnumerable converters cover all types, we should have a converter.
-                Debug.Assert(converter is not null);
+                Debug.Assert(converter != null);
                 return converter;
             }
         }
@@ -159,10 +159,10 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter? converter = options.GetConverterFromList(typeToConvert);
 
             // Priority 2: Attempt to get converter from [JsonConverter] on the type being converted.
-            if (resolveJsonConverterAttribute && converter is null)
+            if (resolveJsonConverterAttribute && converter == null)
             {
                 JsonConverterAttribute? converterAttribute = typeToConvert.GetUniqueCustomAttribute<JsonConverterAttribute>(inherit: false);
-                if (converterAttribute is not null)
+                if (converterAttribute != null)
                 {
                     converter = GetConverterFromAttribute(converterAttribute, typeToConvert: typeToConvert, memberInfo: null, options);
                 }
@@ -194,7 +194,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // Allow the attribute to create the converter.
                 converter = converterAttribute.CreateConverter(typeToConvert);
-                if (converter is null)
+                if (converter == null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_SerializationConverterOnAttributeNotCompatible(declaringType, memberInfo, typeToConvert);
                 }
@@ -226,7 +226,7 @@ namespace System.Text.Json.Serialization.Metadata
                 converter = (JsonConverter)Activator.CreateInstance(converterType)!;
             }
 
-            Debug.Assert(converter is not null);
+            Debug.Assert(converter != null);
             if (!converter.CanConvert(typeToConvert))
             {
                 Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);

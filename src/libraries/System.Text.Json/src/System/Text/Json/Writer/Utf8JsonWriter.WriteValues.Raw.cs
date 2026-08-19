@@ -217,7 +217,7 @@ namespace System.Text.Json
             }
             finally
             {
-                if (tempArray is not null)
+                if (tempArray != null)
                 {
                     utf8Json.Clear();
                     ArrayPool<byte>.Shared.Return(tempArray);

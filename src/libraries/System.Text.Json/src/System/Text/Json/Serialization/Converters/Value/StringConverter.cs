@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Converters
         public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options)
         {
             // For performance, lift up the writer implementation.
-            if (value is null)
+            if (value == null)
             {
                 writer.WriteNullValue();
             }
@@ -37,11 +37,11 @@ namespace System.Text.Json.Serialization.Converters
         {
             ArgumentNullException.ThrowIfNull(value);
 
-            if (options.DictionaryKeyPolicy is not null && !isWritingExtensionDataProperty)
+            if (options.DictionaryKeyPolicy != null && !isWritingExtensionDataProperty)
             {
                 value = options.DictionaryKeyPolicy.ConvertName(value);
 
-                if (value is null)
+                if (value == null)
                 {
                     ThrowHelper.ThrowInvalidOperationException_NamingPolicyReturnNull(options.DictionaryKeyPolicy);
                 }

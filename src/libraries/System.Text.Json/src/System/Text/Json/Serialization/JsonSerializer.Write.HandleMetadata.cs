@@ -25,7 +25,7 @@ namespace System.Text.Json
 
             MetadataPropertyName writtenMetadata = MetadataPropertyName.None;
 
-            if (state.NewReferenceId is not null)
+            if (state.NewReferenceId != null)
             {
                 writer.WriteString(s_metadataId, state.NewReferenceId);
                 writtenMetadata |= MetadataPropertyName.Id;
@@ -34,7 +34,7 @@ namespace System.Text.Json
 
             if (state.PolymorphicTypeDiscriminator is object discriminator)
             {
-                Debug.Assert(state.PolymorphicTypeResolver is not null);
+                Debug.Assert(state.PolymorphicTypeResolver != null);
 
                 JsonEncodedText propertyName =
                     state.PolymorphicTypeResolver.CustomTypeDiscriminatorPropertyNameJsonEncoded is JsonEncodedText customPropertyName
@@ -76,10 +76,10 @@ namespace System.Text.Json
         /// </summary>
         internal static bool TryGetReferenceForValue(object currentValue, ref WriteStack state, Utf8JsonWriter writer)
         {
-            Debug.Assert(state.NewReferenceId is null);
+            Debug.Assert(state.NewReferenceId == null);
 
             string referenceId = state.ReferenceResolver.GetReference(currentValue, out bool alreadyExists);
-            Debug.Assert(referenceId is not null);
+            Debug.Assert(referenceId != null);
 
             if (alreadyExists)
             {

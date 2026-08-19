@@ -212,7 +212,7 @@ namespace System.Text.Json
 
             bool success = spanLookup.TryGetValue(decodedKey, out result);
 
-            if (rentedBuffer is not null)
+            if (rentedBuffer != null)
             {
                 decodedKey.Clear();
                 ArrayPool<char>.Shared.Return(rentedBuffer);
