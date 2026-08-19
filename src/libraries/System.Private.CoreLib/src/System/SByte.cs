@@ -313,10 +313,11 @@ namespace System
             }
             else
             {
-                value = (sbyte)(((value & 0xF0) >>> 4) | ((value & 0x0F) << 4));
-                value = (sbyte)(((value & 0xCC) >>> 2) | ((value & 0x33) << 2));
-                value = (sbyte)(((value & 0xAA) >>> 1) | ((value & 0x55) << 1));
-                return value;
+                int v = value;
+                v = ((v & 0xF0) >>> 4) | ((v & 0x0F) << 4);
+                v = ((v & 0xCC) >>> 2) | ((v & 0x33) << 2);
+                v = ((v & 0xAA) >>> 1) | ((v & 0x55) << 1);
+                return (sbyte)v;
             }
         }
 

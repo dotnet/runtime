@@ -297,10 +297,11 @@ namespace System
             }
             else
             {
-                value = (ushort)(((value & 0xF0F0) >>> 4) | ((value & 0x0F0F) << 4));
-                value = (ushort)(((value & 0xCCCC) >>> 2) | ((value & 0x3333) << 2));
-                value = (ushort)(((value & 0xAAAA) >>> 1) | ((value & 0x5555) << 1));
-                return BinaryPrimitives.ReverseEndianness(value);
+                uint v = value;
+                v = ((v & 0xF0F0) >>> 4) | ((v & 0x0F0F) << 4);
+                v = ((v & 0xCCCC) >>> 2) | ((v & 0x3333) << 2);
+                v = ((v & 0xAAAA) >>> 1) | ((v & 0x5555) << 1);
+                return BinaryPrimitives.ReverseEndianness((ushort)v);
             }
         }
 
