@@ -87,7 +87,11 @@ namespace ILCompiler.Wasm
                 }
                 catch (Exception ex) when (ex is not LogAsErrorException)
                 {
-                    log.Warning("WASM0001", $"Could not get signature for InternalCall method '{type}::{method.Name.ToString()}' because '{ex.Message}'");
+                    // Every non-generic InternalCall has a signature the lowering can describe, so a
+                    // failure here is a bug in the generator rather than something the assembly did.
+                    // Skipping it would silently drop a thunk and only fail once the interpreter tries
+                    // to call the method.
+                    throw new LogAsErrorException($"Could not get the signature for InternalCall method '{type}::{method.Name.ToString()}': {ex.Message}");
                 }
             }
         }

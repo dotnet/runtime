@@ -103,13 +103,7 @@ namespace ILCompiler.Wasm
             WriteIfDifferent(Path.Combine(options.OutputDirectory, ReversePInvokeFileName), log,
                 w => generator.EmitNativeToInterp(w, callbacks));
 
-            // Pregenerated signatures for commonly used shapes used by R2R code to reduce duplication
-            // in generated R2R binaries. Currently none, but can be added here as needed in the future.
-            string[] pregeneratedInterpreterToNativeSignatures = [];
-
-            IEnumerable<string> cookies = signatures
-                .Concat(internalCallCollector.Signatures)
-                .Concat(pregeneratedInterpreterToNativeSignatures);
+            IEnumerable<string> cookies = signatures.Concat(internalCallCollector.Signatures);
 
             WriteIfDifferent(Path.Combine(options.OutputDirectory, InterpToNativeFileName), log,
                 w => WasmInterpToNativeGenerator.Emit(w, cookies));
