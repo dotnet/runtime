@@ -874,6 +874,7 @@ namespace System.Net.Http
                             {
                                 _pool._lastSeenHttp2MaxConcurrentStreams = settingValue;
                             }
+
                             ChangeMaxConcurrentStreams(settingValue);
                             maxConcurrentStreamsReceived = true;
                             break;
