@@ -9,6 +9,7 @@
 #include <mono/metadata/native-library.h>
 #include <mono/metadata/reflection-internals.h>
 #include <mono/metadata/webcil-loader.h>
+#include <mono/mini/hostinformation.h>
 #include <mono/mini/mini-runtime.h>
 #include <mono/mini/mini.h>
 #include <mono/utils/mono-logger-internals.h>
@@ -73,6 +74,30 @@ parse_trusted_platform_assemblies (const char *assemblies_paths)
 	return TRUE;
 }
 
+static gboolean
+parse_trusted_platform_assemblies_from_contract (void)
+{
+	const char * const *names = NULL;
+	size_t count = 0;
+	if (!mono_host_information_get_assembly_names (&names, &count) ||
+		(count != 0 && names == NULL) ||
+		count >= G_MAXUINT32)
+		return FALSE;
+
+	MonoCoreTrustedPlatformAssemblies *a = g_new0 (MonoCoreTrustedPlatformAssemblies, 1);
+	a->assembly_count = (uint32_t)count;
+	a->assembly_filepaths = g_new0 (char*, count + 1);
+	a->basenames = g_new0 (char*, count + 1);
+	a->basename_lens = g_new0 (uint32_t, count + 1);
+	for (size_t i = 0; i < count; ++i) {
+		a->basenames [i] = g_strdup (names [i]);
+		a->basename_lens [i] = (uint32_t)strlen (a->basenames [i]);
+	}
+
+	trusted_platform_assemblies = a;
+	return TRUE;
+}
+
 static MonoCoreLookupPaths *
 parse_lookup_paths (const char *search_path)
 {
@@ -115,15 +140,24 @@ mono_core_preload_hook (MonoAssemblyLoadContext *alc, MonoAssemblyName *aname, c
 
 	size_t basename_len;
 	basename_len = strlen (basename);
+	size_t simple_name_len = strlen (aname->name);
 
 	for (guint32 i = 0; i < a->assembly_count; ++i) {
-		if (basename_len == a->basename_lens [i] && !g_strncasecmp (basename, a->basenames [i], a->basename_lens [i])) {
+		// Host-resolved entries store simple names, while path-based entries store filenames with extensions.
+		gboolean has_fullpath = a->assembly_filepaths [i] != NULL;
+		const char *requested_name = has_fullpath ? basename : aname->name;
+		size_t requested_name_len = has_fullpath ? basename_len : simple_name_len;
+		if (requested_name_len == a->basename_lens [i] && !g_strncasecmp (requested_name, a->basenames [i], a->basename_lens [i])) {
 			MonoAssemblyOpenRequest req;
 			mono_assembly_request_prepare_open (&req, default_alc);
 			req.request.predicate = predicate;
 			req.request.predicate_ud = predicate_ud;
 
-			const char *fullpath = a->assembly_filepaths [i];
+			const char *fullpath = has_fullpath
+				? a->assembly_filepaths [i]
+				: mono_host_information_resolve_assembly_to_path (a->basenames [i]);
+			if (fullpath == NULL)
+				break;
 
 			gboolean found = g_file_test (fullpath, G_FILE_TEST_IS_REGULAR);
 
@@ -183,17 +217,52 @@ install_assembly_loader_hooks (void)
 	mono_install_assembly_preload_hook_v2 (mono_core_preload_hook, (void*)trusted_platform_assemblies, FALSE);
 }
 
+MonoBoolean
+ves_icall_System_AppContext_TryGetHostPropertyValue (MonoStringHandle name, MonoStringHandleOut value, MonoError *error)
+{
+	MONO_HANDLE_ASSIGN (value, NULL_HANDLE_STRING);
+
+	char *name_utf8 = mono_string_handle_to_utf8 (name, error);
+	return_val_if_nok (error, FALSE);
+	gboolean is_tpa = !strcmp (name_utf8, HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES);
+	g_free (name_utf8);
+	if (!is_tpa || trusted_platform_assemblies == NULL)
+		return FALSE;
+
+	GString *property_value = g_string_new (NULL);
+	for (guint32 i = 0; i < trusted_platform_assemblies->assembly_count; ++i) {
+		const char *path = mono_host_information_resolve_assembly_to_path (trusted_platform_assemblies->basenames [i]);
+		if (path == NULL)
+			continue;
+
+		if (property_value->len != 0)
+			g_string_append_c (property_value, G_SEARCHPATH_SEPARATOR);
+		g_string_append (property_value, path);
+	}
+
+	if (property_value->len == 0) {
+		g_string_free (property_value, TRUE);
+		return FALSE;
+	}
+
+	MonoStringHandle result = mono_string_new_handle (property_value->str, error);
+	g_string_free (property_value, TRUE);
+	return_val_if_nok (error, FALSE);
+	MONO_HANDLE_ASSIGN (value, result);
+	return TRUE;
+}
+
 static gboolean
 parse_properties (int propertyCount, const char **propertyKeys, const char **propertyValues)
 {
 	// A partial list of relevant properties is at:
 	// https://learn.microsoft.com/dotnet/core/tutorials/netcore-hosting#step-3---prepare-runtime-properties
-
 	PInvokeOverrideFn override_fn = NULL;
+	const char *tpa_property = NULL;
 	for (int i = 0; i < propertyCount; ++i) {
 		size_t prop_len = strlen (propertyKeys [i]);
 		if (prop_len == 27 && !strncmp (propertyKeys [i], HOST_PROPERTY_TRUSTED_PLATFORM_ASSEMBLIES, 27)) {
-			parse_trusted_platform_assemblies (propertyValues[i]);
+			tpa_property = propertyValues [i];
 		} else if (prop_len == 9 && !strncmp (propertyKeys [i], HOST_PROPERTY_APP_PATHS, 9)) {
 			app_paths = parse_lookup_paths (propertyValues [i]);
 		} else if (prop_len == 23 && !strncmp (propertyKeys [i], HOST_PROPERTY_PLATFORM_RESOURCE_ROOTS, 23)) {
@@ -208,6 +277,7 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 			// Functions in HOST_RUNTIME_CONTRACT have priority over the individual properties
 			// for callbacks, so we set them as long as the contract has a non-null function.
 			struct host_runtime_contract* contract = (struct host_runtime_contract*)(uintptr_t)strtoull (propertyValues [i], NULL, 0);
+			mono_host_information_set_contract (contract);
 			if (contract->pinvoke_override != NULL) {
 				override_fn = (PInvokeOverrideFn)contract->pinvoke_override;
 			}
@@ -218,6 +288,9 @@ parse_properties (int propertyCount, const char **propertyKeys, const char **pro
 #endif
 		}
 	}
+
+	if (!parse_trusted_platform_assemblies_from_contract () && tpa_property != NULL)
+		parse_trusted_platform_assemblies (tpa_property);
 
 	if (override_fn != NULL)
 		mono_loader_install_pinvoke_override (override_fn);
