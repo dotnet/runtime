@@ -4014,11 +4014,34 @@ emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 }
 
 /*
+ * compute_vreg_defcounts:
+ *
+ *   Count the definitions of every vreg, saturating at 2, for move_needs_gc_pin ().
+ */
+static void
+compute_vreg_defcounts (EmitContext *ctx)
+{
+	MonoCompile *cfg = ctx->cfg;
+
+	ctx->vreg_defcount = g_new0 (guint8, cfg->next_vreg);
+	for (MonoBasicBlock *bb = cfg->bb_entry; bb; bb = bb->next_bb) {
+		for (MonoInst *ins = bb->code; ins; ins = ins->next) {
+			if (ins->dreg >= 0 && (guint32)ins->dreg < cfg->next_vreg &&
+				LLVM_INS_INFO (ins->opcode) [MONO_INST_DEST] != ' ' &&
+				ctx->vreg_defcount [ins->dreg] < 2)
+				ctx->vreg_defcount [ins->dreg] ++;
+		}
+	}
+}
+
+/*
  * A ref OP_MOVE aliases its source instead of producing a new value, so it only needs a pin
  * slot of its own when the source can stop being rooted while the alias is still live. A vreg
  * with a single definition keeps its pin slot for the rest of the method, but an address-taken
- * variable has no pin slot at all: it lives in a stack slot which this method or a callee can
- * overwrite at any point.
+ * variable is rooted through slots holding the variable's current value, which this method or
+ * a callee can overwrite at any point.
+ *
+ * Reads MONO_INST_INDIRECT, so it must run after the OP_LDADDR pass in emit_method_inner ().
  */
 static gboolean
 move_needs_gc_pin (EmitContext *ctx, MonoInst *ins)
@@ -4080,17 +4103,6 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	LLVMTypeRef pin_area_type = LLVMArrayType (IntPtrType (), ngc_vars);
 	LLVMValueRef gc_pin_area = build_alloca_llvm_type_name (ctx, pin_area_type, 0, "gc_pin");
 	ctx->gc_pin_area = create_address (ctx, gc_pin_area, pin_area_type);
-
-	/* Runs after the OP_LDADDR pass in emit_method_inner, so MONO_INST_INDIRECT is already set */
-	ctx->vreg_defcount = g_new0 (guint8, cfg->next_vreg);
-	for (MonoBasicBlock *dbb = cfg->bb_entry; dbb; dbb = dbb->next_bb) {
-		for (MonoInst *dins = dbb->code; dins; dins = dins->next) {
-			if (dins->dreg >= 0 && (guint32)dins->dreg < cfg->next_vreg &&
-				LLVM_INS_INFO (dins->opcode) [MONO_INST_DEST] != ' ' &&
-				ctx->vreg_defcount [dins->dreg] < 2)
-				ctx->vreg_defcount [dins->dreg] ++;
-		}
-	}
 #endif
 
 	/*
@@ -13567,6 +13579,9 @@ emit_method_inner (EmitContext *ctx)
 	/*
 	 * Second pass: generate code.
 	 */
+#ifdef TARGET_WASM
+	compute_vreg_defcounts (ctx);
+#endif
 	// Emit entry point
 	entry_builder = create_builder (ctx);
 	entry_bb = get_bb (ctx, cfg->bb_entry);
