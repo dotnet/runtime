@@ -11430,6 +11430,14 @@ GenTree* Compiler::impMathIntrinsic(CORINFO_METHOD_HANDLE method,
 //
 NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 {
+    // A null (e.g. indirect call) or helper handle is not a metadata method and must not be passed to
+    // getMethodNameFromMetadata / getArrayIntrinsicID (they would index an invalid handle and trap).
+    // Neither is ever a named intrinsic.
+    if ((method == NO_METHOD_HANDLE) || (eeGetHelperNum(method) != CORINFO_HELP_UNDEF))
+    {
+        return NI_Illegal;
+    }
+
     const char* className              = nullptr;
     const char* namespaceName          = nullptr;
     const char* enclosingClassNames[2] = {nullptr};
