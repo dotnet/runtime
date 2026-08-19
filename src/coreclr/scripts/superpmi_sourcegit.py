@@ -53,10 +53,11 @@ DEFAULT_REPO_URL = "https://github.com/EgorBo/sourcegit"
 DEFAULT_BRANCH = "master"
 DEFAULT_PROJECT = "src/SourceGit.csproj"
 
-# .NET SDK used to build the app. It must satisfy the `global.json` of the cloned repo.
-# `dotnet-install` channel to use when no suitable SDK is found on the machine.
-DEFAULT_SDK_CHANNEL = "10.0"
-DEFAULT_SDK_MIN_MAJOR = 10
+# The .NET SDK used to build the app. `global.json` is deliberately not parsed; these values
+# are simply chosen so that the SDK we end up using satisfies the `global.json` of the app
+# above, which asks for a released 10.0 or newer SDK. Update them if the app moves on.
+DEFAULT_SDK_CHANNEL = "10.0"    # dotnet-install channel used when no suitable SDK is installed
+DEFAULT_SDK_MIN_MAJOR = 10      # lowest SDK major version accepted from the PATH
 
 COLLECTION_TYPES = ["crossgen2", "nativeaot"]
 
@@ -163,8 +164,10 @@ def ensure_git(tools_dir):
 
 
 def find_usable_dotnet(min_major):
-    """ Return the `dotnet` on the PATH if it has a released (non-preview) SDK that is new enough
-        to satisfy the `global.json` of the app, otherwise None. """
+    """ Return the `dotnet` on the PATH if it has a released (non-preview) SDK whose major version
+        is at least `min_major`, otherwise None. This only approximates what the app's
+        `global.json` asks for; if the SDK turns out not to satisfy it, the build fails with the
+        usual, descriptive SDK resolution error. """
     dotnet = shutil.which("dotnet")
     if dotnet is None:
         return None
