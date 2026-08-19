@@ -603,7 +603,7 @@ AdjustContextForVirtualStub(
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH
     if (VirtualCallStubManager::isCachedInterfaceDispatchStubAVLocation(f_IP))
     {
-        isVirtualStubNullCheck = true; 
+        isVirtualStubNullCheck = true;
     }
 #endif // FEATURE_CACHED_INTERFACE_DISPATCH
 #ifdef FEATURE_VIRTUAL_STUB_DISPATCH

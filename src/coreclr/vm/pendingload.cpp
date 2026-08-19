@@ -118,8 +118,7 @@ VOID DECLSPEC_NORETURN PendingTypeLoadTable::Entry::ThrowException()
 {
     CONTRACTL
     {
-        THROWS;
-        GC_TRIGGERS;
+        STANDARD_VM_CHECK;
         INJECT_FAULT(COMPlusThrowOM(););
     }
     CONTRACTL_END;

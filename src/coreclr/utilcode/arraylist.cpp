@@ -24,6 +24,7 @@ void ArrayListBase::Clear()
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END
@@ -66,6 +67,7 @@ HRESULT ArrayListBase::Append(void *element)
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return E_OUTOFMEMORY;);
     }
     CONTRACTL_END
@@ -112,6 +114,7 @@ DWORD ArrayListBase::FindElement(DWORD start, PTR_VOID element) const
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END

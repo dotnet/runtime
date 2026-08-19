@@ -1430,13 +1430,13 @@ OBJECTREF EETypeLoadException::CreateThrowable()
 // error
 // ---------------------------------------------------------------------------
 EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException/* = NULL*/)
-  : EEException(GetFileLoadKind(hr)),
-    m_name(name),
-    m_hr(hr)
+    : EEException(GetFileLoadKind(hr))
+    , m_name(name)
+    , m_hr(hr)
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         THROWS;
         MODE_ANY;
     }
@@ -1451,13 +1451,12 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, Except
         m_name.Set(W("<Unknown>"));
 }
 
-
-EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo, Exception *pInnerException/* = NULL*/)
-  : EEFileLoadException(name, hr, pInnerException)
+EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const SString &diagnosticInfo)
+    : EEFileLoadException(name, hr, NULL)
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
+        GC_TRIGGERS;
         THROWS;
         MODE_ANY;
     }
@@ -1465,15 +1464,6 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, const 
 
     m_diagnosticInfo.Set(diagnosticInfo);
 }
-
-EEFileLoadException::~EEFileLoadException()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-
-}
-
-
 
 void EEFileLoadException::SetFileName(const SString &fileName, BOOL removePath)
 {

@@ -44,6 +44,7 @@ UnlockedInterleavedLoaderHeap::UnlockedInterleavedLoaderHeap(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END;
@@ -57,6 +58,7 @@ UnlockedInterleavedLoaderHeap::~UnlockedInterleavedLoaderHeap()
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END
@@ -141,6 +143,7 @@ BOOL UnlockedInterleavedLoaderHeap::UnlockedReservePages(size_t dwSizeToCommit)
     {
         INSTANCE_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END;
@@ -262,6 +265,7 @@ BOOL UnlockedInterleavedLoaderHeap::GetMoreCommittedPages(size_t dwMinSize)
     {
         INSTANCE_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         INJECT_FAULT(return FALSE;);
     }
     CONTRACTL_END;
@@ -415,6 +419,7 @@ void UnlockedInterleavedLoaderHeap::UnlockedBackoutStub(void *pMem
     {
         INSTANCE_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END;
@@ -464,6 +469,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub_NoThrow(
     CONTRACTL
     {
         NOTHROW;
+        GC_NOTRIGGER;
 
         // Macro syntax can't handle this INJECT_FAULT expression - we'll use a precondition instead
         //INJECT_FAULT( do{ if (*pdwExtra) {*pdwExtra = 0} RETURN NULL; } while(0) );
@@ -545,6 +551,7 @@ void *UnlockedInterleavedLoaderHeap::UnlockedAllocStub(
     CONTRACTL
     {
         THROWS;
+        GC_NOTRIGGER;
         INJECT_FAULT(ThrowOutOfMemory());
     }
     CONTRACTL_END

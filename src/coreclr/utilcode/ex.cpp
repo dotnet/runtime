@@ -120,8 +120,9 @@ Exception *Exception::Clone()
 {
     CONTRACTL
     {
-        GC_NOTRIGGER;
         THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
     }
     CONTRACTL_END;
 
@@ -144,13 +145,7 @@ Exception *Exception::CloneHelper()
 
 Exception *Exception::DomainBoundClone()
 {
-    CONTRACTL
-    {
-        // Because we may call DomainBoundCloneHelper() of ObjrefException or CLRLastThrownObjectException
-        // this should be GC_TRIGGERS, but we can not include EE contracts in Utilcode.
-        THROWS;
-    }
-    CONTRACTL_END;
+    STANDARD_VM_CONTRACT;
 
     NewHolder<Exception> retExcep(DomainBoundCloneHelper());
     if (m_innerException)
@@ -178,7 +173,16 @@ BOOL Exception::IsTerminal()
     }
     CONTRACTL_END;
 
-    HRESULT hr = GetHR();
+    // IsTerminal is intentionally GC_NOTRIGGER so it can be used by terminal-exception
+    // checks (e.g., RethrowTerminalExceptions) from GC_NOTRIGGER scopes. The virtual
+    // GetHR() resolves to CLRException::GetHR() for CLR exceptions, which is GC_TRIGGERS
+    // because it can materialize the throwable. On terminal-exception paths the throwable
+    // is already materialized, so no GC actually occurs here.
+    HRESULT hr;
+    {
+        CONTRACT_VIOLATION(GCViolation);
+        hr = GetHR();
+    }
     return (COR_E_THREADABORTED == hr);
 }
 
@@ -1077,12 +1081,7 @@ void DECLSPEC_NORETURN ThrowOutOfMemory()
 //--------------------------------------------------------------------------------
 Exception *ExThrowWithInnerHelper(Exception *inner)
 {
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-    }
-    CONTRACTL_END
+    STANDARD_VM_CONTRACT;
 
     // Yes, NULL is a legal case. Makes it easier to author uniform helpers for
     // both wrapped and normal exceptions.

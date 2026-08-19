@@ -38,6 +38,7 @@ UnlockedLoaderHeapBase::~UnlockedLoaderHeapBase()
     {
         DESTRUCTOR_CHECK;
         NOTHROW;
+        GC_NOTRIGGER;
         FORBID_FAULT;
     }
     CONTRACTL_END

@@ -2029,7 +2029,26 @@ BOOL RCW::AllowEagerSTACleanup()
     return m_Flags.m_fAllowEagerSTACleanup;
 }
 
-using CtxEntryHolder = ReleaseHolder<CtxEntry>;
+struct CtxEntryHolderTraits final
+{
+    using Type = CtxEntry*;
+    static constexpr Type Default() { return NULL; }
+    static void Free(Type value)
+    {
+        CONTRACTL
+        {
+            NOTHROW;
+            GC_TRIGGERS;
+            MODE_ANY;
+        }
+        CONTRACTL_END;
+
+        if (value != NULL)
+            value->Release();
+    }
+};
+
+using CtxEntryHolder = LifetimeHolder<CtxEntryHolderTraits>;
 
 HRESULT RCW::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
 {
