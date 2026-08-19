@@ -6414,7 +6414,11 @@ MethodDesc* PInvoke::CreateCalliILStub(
     DWORD cbStubSig;
     PCCOR_SIGNATURE pStubSig = (PCCOR_SIGNATURE)sigBuilder.GetSignature(&cbStubSig);
 
-    StubSigDesc sigDesc(NULL, Signature(pStubSig, cbStubSig), pModule, pLoaderModule);
+    AllocMemHolder<BYTE> pStubSigCopy(
+        pLoaderModule->GetLoaderAllocator()->GetHighFrequencyHeap()->AllocMem(S_SIZE_T(cbStubSig)));
+    memcpyNoGCRefs(pStubSigCopy, pStubSig, cbStubSig);
+
+    StubSigDesc sigDesc(NULL, Signature((PCCOR_SIGNATURE)(BYTE*)pStubSigCopy, cbStubSig), pModule, pLoaderModule);
     sigDesc.InitTypeContext(typeContext.m_classInst, typeContext.m_methodInst);
 
     int iLCIDArg = 0;
@@ -6448,16 +6452,7 @@ MethodDesc* PInvoke::CreateCalliILStub(
 
     if (generatedNewStub)
     {
-        // Move the final signature to storage with the same lifetime as the new MethodDesc.
-        PCCOR_SIGNATURE pGeneratedStubSig;
-        DWORD cbGeneratedStubSig;
-        pStubMD->GetSig(&pGeneratedStubSig, &cbGeneratedStubSig);
-
-        LoaderHeap* pLoaderHeap = pStubMD->GetLoaderAllocator()->GetHighFrequencyHeap();
-        PCCOR_SIGNATURE pStoredStubSig =
-            (PCCOR_SIGNATURE)(void*)pLoaderHeap->AllocMem(S_SIZE_T(cbGeneratedStubSig));
-        memcpyNoGCRefs((void*)pStoredStubSig, pGeneratedStubSig, cbGeneratedStubSig);
-        pStubMD->AsDynamicMethodDesc()->SetStoredMethodSig(pStoredStubSig, cbGeneratedStubSig);
+        pStubSigCopy.SuppressRelease();
     }
 
     return pStubMD;
