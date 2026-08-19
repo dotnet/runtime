@@ -30,10 +30,14 @@ Copyright (c) .NET Foundation. All rights reserved.
     <PublishReadyToRunCrossgen2ExtraArgs>$(PublishReadyToRunCrossgen2ExtraArgs);--codegenopt:JitWasmNyiToR2RUnsupported=1;--codegenopt:JitWasmSimdNyiToR2RUnsupported=1</PublishReadyToRunCrossgen2ExtraArgs>
   </PropertyGroup>
 
-  <!-- Probe dirs for ConvertDllsToWebcil, separate for build vs publish (see dotnet/runtime#121257):
-       build always uses the untrimmed pack images (a build is never trimmed; PublishTrimmed in the csproj
-       only configures publish); trimmed publish must use per-app crossgen output. _WasmRuntimePackR2RDir is set
-       here (target time) because _RuntimePackNativeDir is only set by _ResolveGlobalizationConfiguration. -->
+  <!-- Prebuilt R2R probe dir for ConvertDllsToWebcil (see dotnet/runtime#121257). Webcil staging is the
+       managed pipeline and is independent of the native relink (which WasmBuildOnlyAfterPublish gates), so
+       both build and publish stage framework webcils and both key on PublishTrimmed the same way:
+       untrimmed -> the untrimmed runtime-pack R2R images; trimmed -> the per-app crossgen output for the
+       WHOLE closure including System.Private.CoreLib. A trimmed app is crossgen'd against the trimmed
+       framework (small download, the point on browser), so every image pins the trimmed CoreLib/BCL MVID;
+       staging the untrimmed pack CoreLib instead trips the runtime R2R MVID check. _WasmRuntimePackR2RDir
+       is set here (target time) because _RuntimePackNativeDir is only set by _ResolveGlobalizationConfiguration. -->
   <Target Name="_WasmCoreClrSelectR2RDirectories"
           DependsOnTargets="_ResolveWasmConfiguration">
     <Error Condition="'$(PublishReadyToRun)' == 'true' and '$(PublishReadyToRunComposite)' == 'true'"
@@ -45,7 +49,8 @@ Copyright (c) .NET Foundation. All rights reserved.
     </PropertyGroup>
     <PropertyGroup Condition="'$(PublishReadyToRun)' == 'true'">
       <_WasmPublishR2RDir Condition="'$(_WasmPublishR2RDir)' == ''">$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'r2r'))</_WasmPublishR2RDir>
-      <_WasmBuildPrebuiltR2RDirectory>$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+      <_WasmBuildPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' == 'true'">$(_WasmPublishR2RDir)</_WasmBuildPrebuiltR2RDirectory>
+      <_WasmBuildPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmBuildPrebuiltR2RDirectory>
       <_WasmPublishPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' == 'true'">$(_WasmPublishR2RDir)</_WasmPublishPrebuiltR2RDirectory>
       <_WasmPublishPrebuiltR2RDirectory Condition="'$(PublishTrimmed)' != 'true'">$(_WasmRuntimePackR2RDir)</_WasmPublishPrebuiltR2RDirectory>
     </PropertyGroup>
