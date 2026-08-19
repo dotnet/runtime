@@ -76,6 +76,11 @@ public:
 #ifdef HOST_WINDOWS
     // Duplicates an existing native event handle.
     explicit WaitEvent(HANDLE handle);
+#else
+    // A non-Windows waitable is a debug PAL primitive, not a PAL HANDLE, so an existing
+    // handle can't be imported. Reject pointers rather than letting them silently select
+    // the initial state constructor and create an unrelated event.
+    explicit WaitEvent(void* handle) = delete;
 #endif
     WaitEvent(const WaitEvent& event) = default;
     WaitEvent& operator=(const WaitEvent& event) = delete;
