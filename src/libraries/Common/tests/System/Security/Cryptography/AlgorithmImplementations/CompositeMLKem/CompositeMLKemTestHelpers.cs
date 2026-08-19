@@ -438,7 +438,8 @@ namespace System.Security.Cryptography.Tests
             ? EncryptionPasswordType.Char
             : EncryptionPasswordType.All;
 
-        [Flags]        internal enum EncryptionPasswordType
+        [Flags]
+        internal enum EncryptionPasswordType
         {
             Byte = 1,
             Char = 2,

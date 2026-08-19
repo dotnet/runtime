@@ -23,18 +23,18 @@ namespace System.Security.Cryptography
         public string Name { get; }
 
         /// <summary>
-        ///   Gets the size of the ciphertext for the composite algorithm, in bytes.
+        ///   Gets the size of the ciphertext for the algorithm, in bytes.
         /// </summary>
         /// <value>
-        ///   The size of the ciphertext for the composite algorithm, in bytes.
+        ///   The size of the ciphertext for the algorithm, in bytes.
         /// </value>
         public int CiphertextSizeInBytes { get; }
 
         /// <summary>
-        ///   Gets the size of the shared secret for the composite algorithm, in bytes.
+        ///   Gets the size of the shared secret for the algorithm, in bytes.
         /// </summary>
         /// <value>
-        ///   The size of the shared secret for the composite algorithm, in bytes.
+        ///   The size of the shared secret for the algorithm, in bytes.
         /// </value>
         public int SharedSecretSizeInBytes { get; }
 
@@ -315,15 +315,51 @@ namespace System.Security.Cryptography
             Debug.Assert(keySizeInBits % 8 == 0);
             int keySizeInBytes = keySizeInBits / 8;
 
-            const int MaxUniversalTagLength = 1;
+            int maxRsaPublicKeySizeInBytes =
+                keySizeInBits switch
+                {
+                    2048 => 300,
+                    3072 => 428,
+                    4096 => 556,
+                    _ => AssertAndThrow(keySizeInBits),
+                };
 
-            // long form prefix and 4 bytes for length. CLR arrays and spans only support length up to int.MaxValue.
-            // Padding with leading zero bytes is allowed, but we still limit the length to 4 bytes since the only
-            // plausible scenario would be encoding a 4-byte numeric data type without trimming.
-            // Note this bound also covers indefinite length encodings which require only 1 + 2 bytes of overhead.
-            const int MaxLengthLength = 1 + 4;
+            int maxRsaPrivateKeySizeInBytes =
+                keySizeInBits switch
+                {
+                    2048 => 1224,
+                    3072 => 1800,
+                    4096 => 2381,
+                    _ => AssertAndThrow(keySizeInBits),
+                };
 
-            const int MaxPrefixLength = MaxUniversalTagLength + MaxLengthLength;
+            DebugVerifyRsaKeySizes(keySizeInBits, maxRsaPublicKeySizeInBytes, maxRsaPrivateKeySizeInBytes);
+
+            return new CompositeMLKemAlgorithm(
+                name,
+                mlkemAlgorithm.EncapsulationKeySizeInBytes + keySizeInBytes, // Encapsulation key contains at least n
+                mlkemAlgorithm.EncapsulationKeySizeInBytes + maxRsaPublicKeySizeInBytes,
+                mlkemAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes, // Decapsulation key contains at least n
+                mlkemAlgorithm.PrivateSeedSizeInBytes + maxRsaPrivateKeySizeInBytes,
+                mlkemAlgorithm.CiphertextSizeInBytes + keySizeInBytes, // RSA-OAEP ciphertext is the size of the modulus
+                mlkemAlgorithm.SharedSecretSizeInBytes,
+                oid);
+
+            static int AssertAndThrow(int keySizeInBits)
+            {
+                Debug.Fail($"Unsupported RSA key size: {keySizeInBits}.");
+                throw new CryptographicException();
+            }
+        }
+
+        [Conditional("DEBUG")]
+        private static void DebugVerifyRsaKeySizes(
+            int keySizeInBits,
+            int maxRsaPublicKeySizeInBytes,
+            int maxRsaPrivateKeySizeInBytes)
+        {
+            Debug.Assert(keySizeInBits % 8 == 0);
+            int keySizeInBytes = keySizeInBits / 8;
 
             const int PossibleLeadingZeroByte = 1; // ASN.1 INTEGER can have a leading zero byte.
             int maxKeyEncodingLength = keySizeInBytes + PossibleLeadingZeroByte;
@@ -336,12 +372,13 @@ namespace System.Security.Cryptography
             //     publicExponent INTEGER   --e
             // }
 
-            int maxRsaPublicKeySizeInBytes =
-                MaxPrefixLength +
-                (
-                    MaxPrefixLength + maxKeyEncodingLength +
-                    MaxPrefixLength + maxExponentEncodingLength
+            int calculatedMaxRsaPublicKeySizeInBytes =
+                GetDerTlvLengthWithSingleByteTag(
+                    GetDerTlvLengthWithSingleByteTag(maxKeyEncodingLength) +
+                    GetDerTlvLengthWithSingleByteTag(maxExponentEncodingLength)
                 );
+
+            Debug.Assert(calculatedMaxRsaPublicKeySizeInBytes == maxRsaPublicKeySizeInBytes);
 
             // RFC 8017, A.1.2
             // RSAPrivateKey::= SEQUENCE {
@@ -357,30 +394,21 @@ namespace System.Security.Cryptography
             //     otherPrimeInfos OtherPrimeInfos OPTIONAL
             // }
 
-            int maxRsaPrivateKeySizeInBytes =
-                MaxPrefixLength +
-                (
-                    MaxPrefixLength + 1 + // Version should always be 0 or 1
-                    MaxPrefixLength + maxKeyEncodingLength +
-                    MaxPrefixLength + maxExponentEncodingLength +
-                    MaxPrefixLength + maxKeyEncodingLength +
-                    MaxPrefixLength + maxHalfKeyEncodingLength +
-                    MaxPrefixLength + maxHalfKeyEncodingLength +
-                    MaxPrefixLength + maxHalfKeyEncodingLength +
-                    MaxPrefixLength + maxHalfKeyEncodingLength +
-                    MaxPrefixLength + maxHalfKeyEncodingLength
+            int calculatedMaxRsaPrivateKeySizeInBytes =
+                GetDerTlvLengthWithSingleByteTag(
+                    GetDerTlvLengthWithSingleByteTag(1) + // Version is always 0
+                    GetDerTlvLengthWithSingleByteTag(maxKeyEncodingLength) +
+                    GetDerTlvLengthWithSingleByteTag(maxExponentEncodingLength) +
+                    GetDerTlvLengthWithSingleByteTag(maxKeyEncodingLength) +
+                    GetDerTlvLengthWithSingleByteTag(maxHalfKeyEncodingLength) +
+                    GetDerTlvLengthWithSingleByteTag(maxHalfKeyEncodingLength) +
+                    GetDerTlvLengthWithSingleByteTag(maxHalfKeyEncodingLength) +
+                    GetDerTlvLengthWithSingleByteTag(maxHalfKeyEncodingLength) +
+                    GetDerTlvLengthWithSingleByteTag(maxHalfKeyEncodingLength)
                     // OtherPrimeInfos omitted since multi-prime is not supported
                 );
 
-            return new CompositeMLKemAlgorithm(
-                name,
-                mlkemAlgorithm.EncapsulationKeySizeInBytes + keySizeInBytes, // Encapsulation key contains at least n
-                mlkemAlgorithm.EncapsulationKeySizeInBytes + maxRsaPublicKeySizeInBytes,
-                mlkemAlgorithm.PrivateSeedSizeInBytes + keySizeInBytes, // Decapsulation key contains at least n
-                mlkemAlgorithm.PrivateSeedSizeInBytes + maxRsaPrivateKeySizeInBytes,
-                mlkemAlgorithm.CiphertextSizeInBytes + keySizeInBytes, // RSA-OAEP ciphertext is the size of the modulus
-                mlkemAlgorithm.SharedSecretSizeInBytes,
-                oid);
+            Debug.Assert(calculatedMaxRsaPrivateKeySizeInBytes == maxRsaPrivateKeySizeInBytes);
         }
 
         private static CompositeMLKemAlgorithm CreateECDiffieHellman(
@@ -389,7 +417,69 @@ namespace System.Security.Cryptography
             int keySizeInBits,
             string oid)
         {
+            int uncompressedPointSizeInBytes =
+                keySizeInBits switch
+                {
+                    256 => 65,
+                    384 => 97,
+                    521 => 133,
+                    _ => AssertAndThrow($"Unsupported EC key size: {keySizeInBits}."),
+                };
+
+            int ecPrivateKeySizeInBytes =
+                oid switch
+                {
+                    Oids.MLKem768WithECDiffieHellmanP256Sha3_256 =>
+                        51,
+                    Oids.MLKem768WithECDiffieHellmanP384Sha3_256 or
+                    Oids.MLKem1024WithECDiffieHellmanP384Sha3_256 =>
+                        64,
+                    Oids.MLKem1024WithECDiffieHellmanP521Sha3_256 =>
+                        82,
+                    Oids.MLKem768WithECDiffieHellmanBrainpoolP256r1Sha3_256 =>
+                        52,
+                    Oids.MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 =>
+                        68,
+                    _ => AssertAndThrow($"Unsupported OID: {oid}."),
+                };
+
+            DebugVerifyECDiffieHellmanKeySizes(
+                keySizeInBits,
+                oid,
+                uncompressedPointSizeInBytes,
+                ecPrivateKeySizeInBytes);
+
+            return new CompositeMLKemAlgorithm(
+                name,
+                mlkemAlgorithm.EncapsulationKeySizeInBytes + uncompressedPointSizeInBytes,
+                mlkemAlgorithm.EncapsulationKeySizeInBytes + uncompressedPointSizeInBytes,
+                mlkemAlgorithm.PrivateSeedSizeInBytes + ecPrivateKeySizeInBytes,
+                mlkemAlgorithm.PrivateSeedSizeInBytes + ecPrivateKeySizeInBytes,
+                mlkemAlgorithm.CiphertextSizeInBytes + uncompressedPointSizeInBytes,
+                mlkemAlgorithm.SharedSecretSizeInBytes,
+                oid);
+
+            static int AssertAndThrow(string message)
+            {
+                Debug.Fail(message);
+                throw new CryptographicException();
+            }
+        }
+
+        [Conditional("DEBUG")]
+        private static void DebugVerifyECDiffieHellmanKeySizes(
+            int keySizeInBits,
+            string oid,
+            int uncompressedPointSizeInBytes,
+            int ecPrivateKeySizeInBytes)
+        {
             int keySizeInBytes = (keySizeInBits + 7) / 8;
+
+            // The traditional component of the encapsulation key and the ciphertext are both uncompressed
+            // elliptic curve points, i.e. 0x04 followed by the X and Y coordinates.
+            int calculatedUncompressedPointSizeInBytes = 1 + 2 * keySizeInBytes;
+
+            Debug.Assert(calculatedUncompressedPointSizeInBytes == uncompressedPointSizeInBytes);
 
             // RFC 5915, Section 3
             // ECPrivateKey ::= SEQUENCE {
@@ -401,17 +491,28 @@ namespace System.Security.Cryptography
 
             // version
 
-            int versionSizeInBytes =
-                1 + // Tag for INTEGER
-                1 + // Length field
-                1;  // Value (always 1)
+            int versionSizeInBytes = GetDerTlvLengthWithSingleByteTag(1); // Version is always 1
 
             // privateKey
 
-            int privateKeySizeInBytes =
-                1 +                                     // Tag for OCTET STRING
-                GetDerLengthLength(keySizeInBytes) +    // Length field
-                keySizeInBytes;                         // Value
+            // The curve order and field size often, but do not always, have the same bit length.
+            int orderSizeInBits =
+                oid switch
+                {
+                    Oids.MLKem768WithECDiffieHellmanP256Sha3_256 or
+                    Oids.MLKem768WithECDiffieHellmanBrainpoolP256r1Sha3_256 =>
+                        256,
+                    Oids.MLKem768WithECDiffieHellmanP384Sha3_256 or
+                    Oids.MLKem1024WithECDiffieHellmanP384Sha3_256 or
+                    Oids.MLKem1024WithECDiffieHellmanBrainpoolP384r1Sha3_256 =>
+                        384,
+                    Oids.MLKem1024WithECDiffieHellmanP521Sha3_256 =>
+                        521,
+                    _ => AssertAndThrow(oid),
+                };
+
+            int privateScalarSizeInBytes = (orderSizeInBits + 7) / 8;
+            int privateKeySizeInBytes = GetDerTlvLengthWithSingleByteTag(privateScalarSizeInBytes);
 
             // parameters
 
@@ -442,37 +543,20 @@ namespace System.Security.Cryptography
                     _ => AssertAndThrow(oid),
                 };
 
+            int parametersSizeInBytes = GetDerTlvLengthWithSingleByteTag(namedCurveSizeInBytes);
+
+            // publicKey must be omitted for Composite ML-KEM
+
+            int calculatedEcPrivateKeySizeInBytes =
+                GetDerTlvLengthWithSingleByteTag(versionSizeInBytes + privateKeySizeInBytes + parametersSizeInBytes);
+
+            Debug.Assert(calculatedEcPrivateKeySizeInBytes == ecPrivateKeySizeInBytes);
+
             static int AssertAndThrow(string oid)
             {
                 Debug.Fail($"Unsupported OID: {oid}.");
                 throw new CryptographicException();
             }
-
-            int parametersSizeInBytes =
-                1 +                                         // Context-specific tag for [0]
-                GetDerLengthLength(namedCurveSizeInBytes) + // Length field
-                namedCurveSizeInBytes;                      // Value
-
-            // publicKey must be omitted for Composite ML-KEM
-
-            int ecPrivateKeySizeInBytes =
-                1 +                                                                                         // Tag for SEQUENCE
-                GetDerLengthLength(versionSizeInBytes + privateKeySizeInBytes + parametersSizeInBytes) +    // Length field
-                versionSizeInBytes + privateKeySizeInBytes + parametersSizeInBytes;                         // Value
-
-            // The traditional component of the encapsulation key and the ciphertext are both uncompressed
-            // elliptic curve points, i.e. 0x04 followed by the X and Y coordinates.
-            int uncompressedPointSizeInBytes = 1 + 2 * keySizeInBytes;
-
-            return new CompositeMLKemAlgorithm(
-                name,
-                mlkemAlgorithm.EncapsulationKeySizeInBytes + uncompressedPointSizeInBytes,
-                mlkemAlgorithm.EncapsulationKeySizeInBytes + uncompressedPointSizeInBytes,
-                mlkemAlgorithm.PrivateSeedSizeInBytes + ecPrivateKeySizeInBytes,
-                mlkemAlgorithm.PrivateSeedSizeInBytes + ecPrivateKeySizeInBytes,
-                mlkemAlgorithm.CiphertextSizeInBytes + uncompressedPointSizeInBytes,
-                mlkemAlgorithm.SharedSecretSizeInBytes,
-                oid);
         }
 
         private static CompositeMLKemAlgorithm CreateXDiffieHellman(
@@ -494,6 +578,9 @@ namespace System.Security.Cryptography
                 mlkemAlgorithm.SharedSecretSizeInBytes,
                 oid);
         }
+
+        private static int GetDerTlvLengthWithSingleByteTag(int valueLength) =>
+            1 + GetDerLengthLength(valueLength) + valueLength;
 
         private static int GetDerLengthLength(int payloadLength)
         {

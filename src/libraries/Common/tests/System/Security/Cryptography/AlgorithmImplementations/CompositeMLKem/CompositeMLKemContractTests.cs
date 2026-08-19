@@ -355,7 +355,6 @@ namespace System.Security.Cryptography.Tests
                     kem.TryExportPkcs8PrivateKeyCoreHook =
                         (Span<byte> _, out int bytesWritten) =>
                         {
-                            bytesWritten = 0;
                             throw expected;
                         };
 
@@ -908,7 +907,6 @@ namespace System.Security.Cryptography.Tests
                 kem.TryExportPkcs8PrivateKeyCoreHook =
                     (Span<byte> _, out int bytesWritten) =>
                     {
-                        bytesWritten = 0;
                         throw expected;
                     };
 

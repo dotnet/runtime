@@ -44,31 +44,11 @@ namespace System.Security.Cryptography.Tests
         }
 
         [Theory]
-        [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
-        public static void GenerateKey_NotSupported(CompositeMLKemAlgorithm algorithm)
-        {
-            AssertNotSupported(algorithm, () => CompositeMLKem.GenerateKey(algorithm));
-        }
-
-        [Theory]
         [MemberData(nameof(CompositeMLKemTestData.SupportedAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public static void AlgorithmMatches_GenerateKey(CompositeMLKemAlgorithm algorithm)
         {
             using CompositeMLKem kem = CompositeMLKem.GenerateKey(algorithm);
             Assert.Equal(algorithm, kem.Algorithm);
-        }
-
-        [Theory]
-        [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
-        public static void ImportEncapsulationKey_ValidSizes_NotSupported(CompositeMLKemAlgorithm algorithm)
-        {
-            int lowerBound = CompositeMLKemTestData.ExpectedEncapsulationKeySizeLowerBound(algorithm);
-            int upperBound = CompositeMLKemTestData.ExpectedEncapsulationKeySizeUpperBound(algorithm);
-
-            AssertNotSupported(algorithm, () => CompositeMLKem.ImportEncapsulationKey(algorithm, new byte[lowerBound]));
-            AssertNotSupported(algorithm, () => CompositeMLKem.ImportEncapsulationKey(algorithm, new byte[upperBound]));
-            AssertNotSupported(algorithm, () => CompositeMLKem.ImportEncapsulationKey(algorithm, new byte[lowerBound].AsSpan()));
-            AssertNotSupported(algorithm, () => CompositeMLKem.ImportEncapsulationKey(algorithm, new byte[upperBound].AsSpan()));
         }
 
         [Theory]
@@ -90,19 +70,6 @@ namespace System.Security.Cryptography.Tests
 
         [Theory]
         [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
-        public static void ImportDecapsulationKey_ValidSizes_NotSupported(CompositeMLKemAlgorithm algorithm)
-        {
-            int lowerBound = CompositeMLKemTestData.ExpectedDecapsulationKeySizeLowerBound(algorithm);
-            int upperBound = CompositeMLKemTestData.ExpectedDecapsulationKeySizeUpperBound(algorithm);
-
-            AssertNotSupported(algorithm, () => CompositeMLKem.ImportDecapsulationKey(algorithm, new byte[lowerBound]));
-            AssertNotSupported(algorithm, () => CompositeMLKem.ImportDecapsulationKey(algorithm, new byte[upperBound]));
-            AssertNotSupported(algorithm, () => CompositeMLKem.ImportDecapsulationKey(algorithm, new byte[lowerBound].AsSpan()));
-            AssertNotSupported(algorithm, () => CompositeMLKem.ImportDecapsulationKey(algorithm, new byte[upperBound].AsSpan()));
-        }
-
-        [Theory]
-        [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
         public static void ImportDecapsulationKey_InvalidSizes(CompositeMLKemAlgorithm algorithm)
         {
             int lowerBound = CompositeMLKemTestData.ExpectedDecapsulationKeySizeLowerBound(algorithm);
@@ -118,61 +85,6 @@ namespace System.Security.Cryptography.Tests
                 new byte[CompositeMLKemTestData.GetMLKemAlgorithm(algorithm).PrivateSeedSizeInBytes]);
         }
 
-        [Theory]
-        [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
-        public static void ImportSubjectPublicKeyInfo_KnownAlgorithm(CompositeMLKemAlgorithm algorithm)
-        {
-            SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
-            {
-                Algorithm = new AlgorithmIdentifierAsn
-                {
-                    Algorithm = CompositeMLKemTestHelpers.AlgorithmToOid(algorithm),
-                    Parameters = null,
-                },
-                SubjectPublicKey = new byte[CompositeMLKemTestData.ExpectedEncapsulationKeySizeLowerBound(algorithm)],
-            };
-
-            byte[] encoded = spki.Encode();
-
-            // The OID is recognized, so the failure is that the algorithm has no implementation.
-            CompositeMLKemTestHelpers.AssertImportSubjectPublicKeyInfo(
-                import => AssertAlgorithmNotSupported(() => import(encoded)));
-        }
-
-        [Theory]
-        [MemberData(nameof(CompositeMLKemTestData.AllAlgorithmsTestData), MemberType = typeof(CompositeMLKemTestData))]
-        public static void ImportPkcs8PrivateKey_KnownAlgorithmNotSupported(CompositeMLKemAlgorithm algorithm)
-        {
-            byte[] privateKey = new byte[CompositeMLKemTestData.ExpectedDecapsulationKeySizeLowerBound(algorithm)];
-            PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
-            {
-                PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
-                {
-                    Algorithm = CompositeMLKemTestHelpers.AlgorithmToOid(algorithm),
-                    Parameters = null,
-                },
-                PrivateKey = privateKey,
-            };
-
-            byte[] encoded = pkcs8.Encode();
-
-            // The OID is recognized, so the failure is that the algorithm has no implementation.
-            CompositeMLKemTestHelpers.AssertImportPkcs8PrivateKey(
-                import => AssertAlgorithmNotSupported(() => import(encoded)));
-
-            // PBE AES is unavailable on Browser.
-            if (!PlatformDetection.IsBrowser)
-            {
-                byte[] encrypted = CompositeMLKemTestHelpers.CreateEncryptedPkcs8PrivateKey(
-                    CompositeMLKemTestHelpers.AlgorithmToOid(algorithm),
-                    privateKey,
-                    new PbeParameters(PbeEncryptionAlgorithm.Aes256Cbc, HashAlgorithmName.SHA256, 42));
-
-                CompositeMLKemTestHelpers.AssertImportEncryptedPkcs8PrivateKey(
-                    import => AssertAlgorithmNotSupported(() => import("PLACEHOLDER", encrypted)));
-            }
-        }
-
         [Fact]
         public static void ImportSubjectPublicKeyInfo_UnknownAlgorithm()
         {
@@ -180,8 +92,8 @@ namespace System.Security.Cryptography.Tests
             {
                 Algorithm = new AlgorithmIdentifierAsn
                 {
-                    // One past the last Composite ML-KEM OID.
-                    Algorithm = "1.3.6.1.5.5.7.6.67",
+                    // ML-KEM is not Composite ML-KEM.
+                    Algorithm = MLKemTestData.MlKem768Oid,
                     Parameters = null,
                 },
                 SubjectPublicKey = new byte[1216],
@@ -203,8 +115,8 @@ namespace System.Security.Cryptography.Tests
             {
                 PrivateKeyAlgorithm = new AlgorithmIdentifierAsn
                 {
-                    // The last Composite ML-DSA OID, which is not a Composite ML-KEM OID.
-                    Algorithm = "1.3.6.1.5.5.7.6.54",
+                    // ML-KEM is not Composite ML-KEM.
+                    Algorithm = MLKemTestData.MlKem768Oid,
                     Parameters = null,
                 },
                 PrivateKey = new byte[96],
@@ -272,15 +184,15 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void Import_EncodedKeyTrailingData()
         {
-            AssertSubjectPublicKeyInfoImportThrows(AppendTrailingByte(CreateSubjectPublicKeyInfo()));
-            AssertPkcs8PrivateKeyImportThrows(AppendTrailingByte(CreatePkcs8PrivateKey()));
+            AssertSubjectPublicKeyInfoImportThrows(AppendTrailingByte(CreateEmptySubjectPublicKeyInfo()));
+            AssertPkcs8PrivateKeyImportThrows(AppendTrailingByte(CreateEmptyPkcs8PrivateKey()));
         }
 
         [Fact]
         public static void Import_EncodedKeyTruncated()
         {
-            AssertSubjectPublicKeyInfoImportThrows(TruncateLastByte(CreateSubjectPublicKeyInfo()));
-            AssertPkcs8PrivateKeyImportThrows(TruncateLastByte(CreatePkcs8PrivateKey()));
+            AssertSubjectPublicKeyInfoImportThrows(TruncateLastByte(CreateEmptySubjectPublicKeyInfo()));
+            AssertPkcs8PrivateKeyImportThrows(TruncateLastByte(CreateEmptyPkcs8PrivateKey()));
         }
 
         [Fact]
@@ -447,24 +359,7 @@ namespace System.Security.Cryptography.Tests
                 decapsulationKey);
         }
 
-        // Asserts that the operation throws PlatformNotSupportedException because the algorithm has no implementation
-        // on this platform. When an implementation is added, the positive case needs to be asserted instead.
-        private static void AssertNotSupported(CompositeMLKemAlgorithm algorithm, Action test)
-        {
-            AssertExtensions.FalseExpression(CompositeMLKem.IsAlgorithmSupported(algorithm));
-
-            PlatformNotSupportedException pnse = Assert.Throws<PlatformNotSupportedException>(test);
-            Assert.Contains(nameof(CompositeMLKem), pnse.Message);
-        }
-
-        // Encoded key imports surface an unsupported algorithm as a CryptographicException.
-        private static void AssertAlgorithmNotSupported(Action test)
-        {
-            CryptographicException ex = Assert.Throws<CryptographicException>(test);
-            Assert.Contains(nameof(CompositeMLKem), ex.Message);
-        }
-
-        private static byte[] CreateSubjectPublicKeyInfo()
+        private static byte[] CreateEmptySubjectPublicKeyInfo()
         {
             SubjectPublicKeyInfoAsn spki = new SubjectPublicKeyInfoAsn
             {
@@ -479,7 +374,7 @@ namespace System.Security.Cryptography.Tests
             return spki.Encode();
         }
 
-        private static byte[] CreatePkcs8PrivateKey()
+        private static byte[] CreateEmptyPkcs8PrivateKey()
         {
             PrivateKeyInfoAsn pkcs8 = new PrivateKeyInfoAsn
             {

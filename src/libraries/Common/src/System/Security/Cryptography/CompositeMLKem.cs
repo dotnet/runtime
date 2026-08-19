@@ -305,13 +305,13 @@ namespace System.Security.Cryptography
         protected abstract void DecapsulateCore(ReadOnlySpan<byte> ciphertext, Span<byte> sharedSecret);
 
         /// <summary>
-        ///   Imports a Composite ML-KEM encapsulation key.
+        ///   Imports a Composite ML-KEM key from an encapsulation key.
         /// </summary>
         /// <param name="algorithm">
         ///   The specific Composite ML-KEM algorithm for this key.
         /// </param>
         /// <param name="source">
-        ///   The bytes of the encapsulation key.
+        ///   The encapsulation key.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -332,9 +332,6 @@ namespace System.Security.Cryptography
         ///   The platform does not support the specified Composite ML-KEM algorithm. Callers can use <see cref="IsAlgorithmSupported" />
         ///   to determine if the algorithm is supported.
         /// </exception>
-        /// <remarks>
-        ///   This overload accepts the encapsulation key as a byte array.
-        /// </remarks>
         public static CompositeMLKem ImportEncapsulationKey(CompositeMLKemAlgorithm algorithm, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
@@ -344,13 +341,13 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Imports a Composite ML-KEM encapsulation key.
+        ///   Imports a Composite ML-KEM key from an encapsulation key.
         /// </summary>
         /// <param name="algorithm">
         ///   The specific Composite ML-KEM algorithm for this key.
         /// </param>
         /// <param name="source">
-        ///   The bytes of the encapsulation key.
+        ///   The encapsulation key.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -386,13 +383,13 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Imports a Composite ML-KEM decapsulation key.
+        ///   Imports a Composite ML-KEM key from a decapsulation key.
         /// </summary>
         /// <param name="algorithm">
         ///   The specific Composite ML-KEM algorithm for this key.
         /// </param>
         /// <param name="source">
-        ///   The bytes of the decapsulation key.
+        ///   The decapsulation key.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -413,9 +410,6 @@ namespace System.Security.Cryptography
         ///   The platform does not support the specified Composite ML-KEM algorithm. Callers can use <see cref="IsAlgorithmSupported" />
         ///   to determine if the algorithm is supported.
         /// </exception>
-        /// <remarks>
-        ///   This overload accepts the decapsulation key as a byte array.
-        /// </remarks>
         public static CompositeMLKem ImportDecapsulationKey(CompositeMLKemAlgorithm algorithm, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(algorithm);
@@ -425,13 +419,13 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Imports a Composite ML-KEM decapsulation key.
+        ///   Imports a Composite ML-KEM key from a decapsulation key.
         /// </summary>
         /// <param name="algorithm">
         ///   The specific Composite ML-KEM algorithm for this key.
         /// </param>
         /// <param name="source">
-        ///   The bytes of the decapsulation key.
+        ///   The decapsulation key.
         /// </param>
         /// <returns>
         ///   The imported key.
@@ -499,9 +493,6 @@ namespace System.Security.Cryptography
         ///     The specified Composite ML-KEM algorithm is not supported.
         ///   </para>
         /// </exception>
-        /// <remarks>
-        ///   This overload accepts the SubjectPublicKeyInfo structure as a byte array.
-        /// </remarks>
         public static CompositeMLKem ImportSubjectPublicKeyInfo(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -598,9 +589,6 @@ namespace System.Security.Cryptography
         ///     The specified Composite ML-KEM algorithm is not supported.
         ///   </para>
         /// </exception>
-        /// <remarks>
-        ///   This overload accepts the PrivateKeyInfo structure as a byte array.
-        /// </remarks>
         public static CompositeMLKem ImportPkcs8PrivateKey(byte[] source)
         {
             ArgumentNullException.ThrowIfNull(source);
@@ -707,9 +695,6 @@ namespace System.Security.Cryptography
         ///     The specified Composite ML-KEM algorithm is not supported.
         ///   </para>
         /// </exception>
-        /// <remarks>
-        ///   This overload accepts the password as a string and the EncryptedPrivateKeyInfo structure as a byte array.
-        /// </remarks>
         public static CompositeMLKem ImportEncryptedPkcs8PrivateKey(string password, byte[] source)
         {
             ArgumentNullException.ThrowIfNull(password);
@@ -820,25 +805,23 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Imports either the public or private key from a PEM-encoded key.
+        ///   Imports a Composite ML-KEM key from an RFC 7468 PEM-encoded string.
         /// </summary>
         /// <param name="source">
-        ///   The PEM text of the key to import.
+        ///   The text of the PEM key to import.
         /// </param>
         /// <returns>
-        ///   The imported key.
+        ///   The imported Composite ML-KEM key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> is <see langword="null" />.
         /// </exception>
         /// <exception cref="ArgumentException">
-        ///   <para>
-        ///     <paramref name="source"/> does not contain a PEM-encoded key with a recognized label.
-        ///   </para>
+        ///   <para><paramref name="source" /> contains an encrypted PEM-encoded key.</para>
         ///   <para>-or-</para>
-        ///   <para>
-        ///     <paramref name="source"/> contains multiple PEM-encoded keys with a recognized label.
-        ///   </para>
+        ///   <para><paramref name="source" /> contains multiple PEM-encoded Composite ML-KEM keys.</para>
+        ///   <para>-or-</para>
+        ///   <para><paramref name="source" /> contains no PEM-encoded Composite ML-KEM keys.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
         ///   <para>
@@ -860,23 +843,16 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   <para>
-        ///     When the base-64 decoded contents of <paramref name="source"/> indicate an algorithm that uses PBKDF1
-        ///     (Password-Based Key Derivation Function 1) or PBKDF2 (Password-Based Key Derivation Function 2),
-        ///     the password is converted to bytes via the UTF-8 encoding.
+        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///     are found, an exception is raised to prevent importing a key when the key is ambiguous.
         ///   </para>
         ///   <para>
-        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels are found,
-        ///     an exception is raised to prevent importing a key when the key is ambiguous.
+        ///     This method supports the following PEM labels:
+        ///     <list type="bullet">
+        ///       <item><description>PUBLIC KEY</description></item>
+        ///       <item><description>PRIVATE KEY</description></item>
+        ///     </list>
         ///   </para>
-        ///   <para>This method supports the following PEM labels:</para>
-        ///   <list type="bullet">
-        ///     <item>
-        ///       <description>PUBLIC KEY</description>
-        ///     </item>
-        ///     <item>
-        ///       <description>PRIVATE KEY</description>
-        ///     </item>
-        ///   </list>
         /// </remarks>
         public static CompositeMLKem ImportFromPem(string source)
         {
@@ -902,9 +878,22 @@ namespace System.Security.Cryptography
         ///   <para><paramref name="source" /> contains no PEM-encoded Composite ML-KEM keys.</para>
         /// </exception>
         /// <exception cref="CryptographicException">
-        ///   <para>An error occurred while importing the key.</para>
+        ///   <para>
+        ///     The contents of the PEM-encoded key do not represent an ASN.1-BER encoded PKCS#8 PrivateKeyInfo structure,
+        ///     or an ASN.1-DER encoded X.509 SubjectPublicKeyInfo structure.
+        ///   </para>
         ///   <para>-or-</para>
-        ///   <para>The specified Composite ML-KEM algorithm is not supported.</para>
+        ///   <para>
+        ///     The key is not a Composite ML-KEM key.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The algorithm-specific key import failed.
+        ///   </para>
+        ///   <para>-or-</para>
+        ///   <para>
+        ///     The specified Composite ML-KEM algorithm is not supported.
+        ///   </para>
         /// </exception>
         /// <remarks>
         ///   <para>
@@ -931,16 +920,16 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Imports the private key from a PEM-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   Imports a Composite ML-KEM key from an encrypted RFC 7468 PEM-encoded string.
         /// </summary>
         /// <param name="source">
-        ///   The PEM text of the key to import.
+        ///   The PEM text of the encrypted key to import.
         /// </param>
         /// <param name="password">
-        ///   The password to use when decrypting the key material.
+        ///   The password to use for decrypting the key material.
         /// </param>
         /// <returns>
-        ///   The imported key.
+        ///   The imported Composite ML-KEM key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> or <paramref name="password" /> is <see langword="null" />.
@@ -960,15 +949,17 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     The contents of the PEM-encoded key do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     The key is not a Composite ML-KEM key.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     represent the key in a format that is not supported.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     The algorithm-specific key import failed.
+        ///     An error occurred while importing the key.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -977,20 +968,16 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   <para>
-        ///     When the base-64 decoded contents of <paramref name="source"/> indicate an algorithm that uses PBKDF1
+        ///     When the base-64 decoded contents of <paramref name="source" /> indicate an algorithm that uses PBKDF1
         ///     (Password-Based Key Derivation Function 1) or PBKDF2 (Password-Based Key Derivation Function 2),
         ///     the password is converted to bytes via the UTF-8 encoding.
         ///   </para>
         ///   <para>
-        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels are found,
-        ///     an exception is raised to prevent importing a key when the key is ambiguous.
+        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///     are found, an exception is thrown to prevent importing a key when
+        ///     the key is ambiguous.
         ///   </para>
-        ///   <para>This method supports the following PEM labels:</para>
-        ///   <list type="bullet">
-        ///     <item>
-        ///       <description>ENCRYPTED PRIVATE KEY</description>
-        ///     </item>
-        ///   </list>
+        ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
         /// </remarks>
         public static CompositeMLKem ImportFromEncryptedPem(string source, string password)
         {
@@ -1066,16 +1053,16 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Imports the private key from a PEM-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///   Imports a Composite ML-KEM key from an encrypted RFC 7468 PEM-encoded string.
         /// </summary>
         /// <param name="source">
-        ///   The PEM text of the key to import.
+        ///   The PEM text of the encrypted key to import.
         /// </param>
         /// <param name="passwordBytes">
         ///   The bytes to use as a password when decrypting the key material.
         /// </param>
         /// <returns>
-        ///   The imported key.
+        ///   The imported Composite ML-KEM key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="source" /> or <paramref name="passwordBytes" /> is <see langword="null" />.
@@ -1095,15 +1082,17 @@ namespace System.Security.Cryptography
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     The contents of the PEM-encoded key do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     do not represent an ASN.1-BER-encoded PKCS#8 EncryptedPrivateKeyInfo structure.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     The key is not a Composite ML-KEM key.
+        ///     The base-64 decoded contents of the PEM text from <paramref name="source" />
+        ///     represent the key in a format that is not supported.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
-        ///     The algorithm-specific key import failed.
+        ///     An error occurred while importing the key.
         ///   </para>
         ///   <para>-or-</para>
         ///   <para>
@@ -1112,21 +1101,11 @@ namespace System.Security.Cryptography
         /// </exception>
         /// <remarks>
         ///   <para>
-        ///     The password bytes are passed directly into the Key Derivation Function (KDF)
-        ///     used by the algorithm indicated by <c>pbeParameters</c>. This enables compatibility
-        ///     with other systems which use a text encoding other than UTF-8 when processing
-        ///     passwords with PBKDF2 (Password-Based Key Derivation Function 2).
+        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels
+        ///     are found, an exception is thrown to prevent importing a key when
+        ///     the key is ambiguous.
         ///   </para>
-        ///   <para>
-        ///     Unsupported or malformed PEM-encoded objects will be ignored. If multiple supported PEM labels are found,
-        ///     an exception is raised to prevent importing a key when the key is ambiguous.
-        ///   </para>
-        ///   <para>This method supports the following PEM labels:</para>
-        ///   <list type="bullet">
-        ///     <item>
-        ///       <description>ENCRYPTED PRIVATE KEY</description>
-        ///     </item>
-        ///   </list>
+        ///   <para>This method supports the <c>ENCRYPTED PRIVATE KEY</c> PEM label.</para>
         /// </remarks>
         public static CompositeMLKem ImportFromEncryptedPem(string source, byte[] passwordBytes)
         {
@@ -1197,8 +1176,8 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the current key in the PKCS#8 EncryptedPrivateKeyInfo format with a char-based password,
-        ///   PEM encoded.
+        ///   Exports the current key in a PEM-encoded representation of the PKCS#8 EncryptedPrivateKeyInfo
+        ///   representation of this key, using a string password.
         /// </summary>
         /// <param name="password">
         ///   The password to use when encrypting the key material.
@@ -1224,9 +1203,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        /// <remarks>
-        ///   This overload accepts the password as a string.
-        /// </remarks>
         public string ExportEncryptedPkcs8PrivateKeyPem(string password, PbeParameters pbeParameters)
         {
             ArgumentNullException.ThrowIfNull(password);
@@ -1326,7 +1302,7 @@ namespace System.Security.Cryptography
         ///   The password-based encryption (PBE) parameters to use when encrypting the key material.
         /// </param>
         /// <returns>
-        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo.
+        ///   A byte array containing the PKCS#8 EncryptedPrivateKeyInfo representation of this key.
         /// </returns>
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="password"/> or <paramref name="pbeParameters"/> is <see langword="null"/>.
@@ -1343,9 +1319,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        /// <remarks>
-        ///   This overload accepts the password as a string.
-        /// </remarks>
         public byte[] ExportEncryptedPkcs8PrivateKey(string password, PbeParameters pbeParameters)
         {
             ArgumentNullException.ThrowIfNull(password);
@@ -1481,9 +1454,6 @@ namespace System.Security.Cryptography
         ///   <para>-or-</para>
         ///   <para>An error occurred while exporting the key.</para>
         /// </exception>
-        /// <remarks>
-        ///   This overload accepts the password as a string.
-        /// </remarks>
         public bool TryExportEncryptedPkcs8PrivateKey(
             string password,
             PbeParameters pbeParameters,
@@ -1617,8 +1587,7 @@ namespace System.Security.Cryptography
         ///   Exports the current key in a PEM-encoded representation of the PKCS#8 PrivateKeyInfo format.
         /// </summary>
         /// <returns>
-        ///   A string containing the PEM-encoded representation of the PKCS#8 PrivateKeyInfo
-        ///   representation of this key.
+        ///   A string containing the PEM-encoded representation of the PKCS#8 PrivateKeyInfo.
         /// </returns>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -1795,10 +1764,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the encapsulation key portion of the current key.
+        ///   Exports the encapsulation key.
         /// </summary>
         /// <returns>
-        ///   The Composite ML-KEM encapsulation key.
+        ///   The encapsulation key.
         /// </returns>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -1827,10 +1796,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the encapsulation key portion of the current key into the provided buffer.
+        ///   Exports the encapsulation key into the provided buffer.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the Composite ML-KEM encapsulation key value.
+        ///   The buffer to receive the encapsulation key.
         /// </param>
         /// <returns>
         ///   The number of bytes written to the <paramref name="destination"/> buffer.
@@ -1861,10 +1830,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Attempts to export the encapsulation key portion of the current key into the provided buffer.
+        ///   Attempts to export the encapsulation key into the provided buffer.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the encapsulation key value.
+        ///   The buffer to receive the encapsulation key.
         /// </param>
         /// <param name="bytesWritten">
         ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
@@ -1917,10 +1886,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   When overridden in a derived class, exports the encapsulation key portion of the current key.
+        ///   When overridden in a derived class, exports the encapsulation key into the provided buffer.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the encapsulation key value.
+        ///   The buffer to receive the encapsulation key.
         /// </param>
         /// <returns>
         ///   The number of bytes written to the <paramref name="destination"/> buffer.
@@ -1931,10 +1900,10 @@ namespace System.Security.Cryptography
         protected abstract int ExportEncapsulationKeyCore(Span<byte> destination);
 
         /// <summary>
-        ///   Exports the decapsulation key portion of the current key.
+        ///   Exports the decapsulation key.
         /// </summary>
         /// <returns>
-        ///   The Composite ML-KEM decapsulation key.
+        ///   The decapsulation key.
         /// </returns>
         /// <exception cref="ObjectDisposedException">
         ///   This instance has been disposed.
@@ -1968,10 +1937,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Exports the decapsulation key portion of the current key into the provided buffer.
+        ///   Exports the decapsulation key into the provided buffer.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the Composite ML-KEM decapsulation key value.
+        ///   The buffer to receive the decapsulation key.
         /// </param>
         /// <returns>
         ///   The number of bytes written to the <paramref name="destination"/> buffer.
@@ -2004,10 +1973,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   Attempts to export the decapsulation key portion of the current key into the provided buffer.
+        ///   Attempts to export the decapsulation key into the provided buffer.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the decapsulation key value.
+        ///   The buffer to receive the decapsulation key.
         /// </param>
         /// <param name="bytesWritten">
         ///   When this method returns, contains the number of bytes written to the <paramref name="destination"/> buffer.
@@ -2067,10 +2036,10 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        ///   When overridden in a derived class, exports the decapsulation key portion of the current key.
+        ///   When overridden in a derived class, exports the decapsulation key into the provided buffer.
         /// </summary>
         /// <param name="destination">
-        ///   The buffer to receive the decapsulation key value.
+        ///   The buffer to receive the decapsulation key.
         /// </param>
         /// <returns>
         ///   The number of bytes written to the <paramref name="destination"/> buffer.
@@ -2232,32 +2201,35 @@ namespace System.Security.Cryptography
 
         private TResult ExportPkcs8PrivateKeyCallback<TResult>(ExportPkcs8PrivateKeyFunc<TResult> func)
         {
-            int size = Algorithm.MaxDecapsulationKeySizeInBytes;
-            byte[] buffer = CryptoPool.Rent(size);
-            int written;
-
-            while (!TryExportPkcs8PrivateKeyCore(buffer, out written))
-            {
-                size = buffer.Length;
-                CryptoPool.Return(buffer);
-                size = checked(size * 2);
-                buffer = CryptoPool.Rent(size);
-            }
-
-            if ((uint)written > (uint)buffer.Length)
-            {
-                // We got a nonsense value written back. Clear the buffer, but don't put it back in the pool.
-                CryptographicOperations.ZeroMemory(buffer);
-                throw new CryptographicException();
-            }
+            // A Composite ML-KEM PKCS#8 private key has at most 23 bytes of ASN.1 overhead, assuming no attributes.
+            // Make it an even 32 to provide a good starting point for the buffer size.
+            int size = checked(Algorithm.MaxDecapsulationKeySizeInBytes + 32);
+            CryptoPoolLease lease = CryptoPoolLease.Rent(size);
 
             try
             {
-                return func(buffer.AsSpan(0, written));
+                int written;
+
+                while (!TryExportPkcs8PrivateKeyCore(lease.Span, out written))
+                {
+                    size = checked(size * 2);
+                    lease.Dispose();
+
+                    // Dispose is idempotent, so even if this Rent fails,
+                    // we won't corrupt the pool during cleanup.
+                    lease = CryptoPoolLease.Rent(size);
+                }
+
+                if ((uint)written > (uint)lease.Span.Length)
+                {
+                    throw new CryptographicException();
+                }
+
+                return func(lease.Span.Slice(0, written));
             }
             finally
             {
-                CryptoPool.Return(buffer, written);
+                lease.Dispose();
             }
         }
 

@@ -36,17 +36,20 @@ namespace System.Security.Cryptography.Tests
             from shouldDispose in new[] { true, false }
             select new object[] { algorithm, shouldDispose };
 
-        internal sealed class RsaAlgorithm(int keySizeInBits)
+        internal sealed class RsaAlgorithm(int keySizeInBits, int maxPublicKeySizeInBytes, int maxPrivateKeySizeInBytes)
         {
             internal int KeySizeInBits { get; } = keySizeInBits;
+
+            internal int MaxPublicKeySizeInBytes { get; } = maxPublicKeySizeInBytes;
+
+            internal int MaxPrivateKeySizeInBytes { get; } = maxPrivateKeySizeInBytes;
         }
 
-        internal sealed class ECDiffieHellmanAlgorithm(int keySizeInBits, int privateKeySizeInBytes)
+        internal sealed class ECDiffieHellmanAlgorithm(int keySizeInBits, int maxPrivateKeySizeInBytes)
         {
             internal int KeySizeInBits { get; } = keySizeInBits;
 
-            // ECPrivateKey size with parameters and without public key.
-            internal int PrivateKeySizeInBytes { get; } = privateKeySizeInBytes;
+            internal int MaxPrivateKeySizeInBytes { get; } = maxPrivateKeySizeInBytes;
         }
 
         internal sealed class XDiffieHellmanAlgorithm(int keySizeInBits)
@@ -68,10 +71,10 @@ namespace System.Security.Cryptography.Tests
             // Traditional component sizes are derived from the size table in the Composite ML-KEM specification.
             return algorithm.Name switch
             {
-                "MLKEM768-RSA2048-SHA3-256" => rsaFunc(new RsaAlgorithm(2048)),
+                "MLKEM768-RSA2048-SHA3-256" => rsaFunc(new RsaAlgorithm(2048, 300, 1224)),
                 "MLKEM768-RSA3072-SHA3-256" or
-                "MLKEM1024-RSA3072-SHA3-256" => rsaFunc(new RsaAlgorithm(3072)),
-                "MLKEM768-RSA4096-SHA3-256" => rsaFunc(new RsaAlgorithm(4096)),
+                "MLKEM1024-RSA3072-SHA3-256" => rsaFunc(new RsaAlgorithm(3072, 428, 1800)),
+                "MLKEM768-RSA4096-SHA3-256" => rsaFunc(new RsaAlgorithm(4096, 556, 2381)),
                 "MLKEM768-ECDH-P256-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(256, 51)),
                 "MLKEM768-ECDH-P384-SHA3-256" or
                 "MLKEM1024-ECDH-P384-SHA3-256" => ecdhFunc(new ECDiffieHellmanAlgorithm(384, 64)),
@@ -99,7 +102,7 @@ namespace System.Security.Cryptography.Tests
             return GetMLKemAlgorithm(algorithm).EncapsulationKeySizeInBytes +
                 ExecuteComponentFunc(
                     algorithm,
-                    rsa => (rsa.KeySizeInBits / 8) + 52, // Add max ASN.1 overhead
+                    rsa => rsa.MaxPublicKeySizeInBytes,
                     ecdh => 1 + 2 * ((ecdh.KeySizeInBits + 7) / 8),
                     xdh => xdh.KeySizeInBits / 8);
         }
@@ -111,7 +114,7 @@ namespace System.Security.Cryptography.Tests
                 ExecuteComponentFunc(
                     algorithm,
                     rsa => rsa.KeySizeInBits / 8, // RSAPrivateKey contains at least the modulus
-                    ecdh => ecdh.PrivateKeySizeInBytes,
+                    ecdh => ecdh.MaxPrivateKeySizeInBytes,
                     xdh => xdh.KeySizeInBits / 8);
         }
 
@@ -120,8 +123,8 @@ namespace System.Security.Cryptography.Tests
             return GetMLKemAlgorithm(algorithm).PrivateSeedSizeInBytes +
                 ExecuteComponentFunc(
                     algorithm,
-                    rsa => (rsa.KeySizeInBits / 8) * 9 / 2 + 101, // Add max ASN.1 overhead
-                    ecdh => ecdh.PrivateKeySizeInBytes,
+                    rsa => rsa.MaxPrivateKeySizeInBytes,
+                    ecdh => ecdh.MaxPrivateKeySizeInBytes,
                     xdh => xdh.KeySizeInBits / 8);
         }
 
