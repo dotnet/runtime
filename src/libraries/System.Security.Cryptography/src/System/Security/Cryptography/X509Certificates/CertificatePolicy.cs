@@ -448,11 +448,18 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (policyData.EnhancedKeyUsage != null)
             {
-                // If policyData.ApplicationCertPolicies is present, but corrupt, applicationCertPolicies
-                // should stay null.
-                if (policyData.ApplicationCertPolicies is null)
+                try
                 {
-                    applicationCertPolicies = ReadExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);
+                    // If policyData.ApplicationCertPolicies is present, but corrupt, applicationCertPolicies
+                    // should stay null, we'll only check EKU for structural validity.
+                    if (policyData.ApplicationCertPolicies is null)
+                    {
+                        applicationCertPolicies = ReadExtendedKeyUsageExtension(policyData.EnhancedKeyUsage);
+                    }
+                }
+                catch (CryptographicException)
+                {
+                    error = true;
                 }
             }
 
