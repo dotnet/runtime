@@ -318,8 +318,22 @@ namespace ILCompiler.Wasm
             return hasSupportedOSPlatform ? PlatformSupport.Unsupported : PlatformSupport.Unknown;
 
             bool MatchesTargetOS(CustomAttributeValue<TypeDesc> attribute)
-                => attribute.FixedArguments.Length > 0
-                    && attribute.FixedArguments[0].Value?.ToString() == targetOS;
+            {
+                if (attribute.FixedArguments.Length == 0)
+                    return false;
+
+                string platformName = attribute.FixedArguments[0].Value?.ToString();
+                if (string.Equals(platformName, targetOS, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+                // A platform name may carry a version, as in [SupportedOSPlatform("browser1.0")].
+                // Nothing generated here varies by platform version, so a versioned name still
+                // names the target as long as a version is all that follows it.
+                if (platformName?.StartsWith(targetOS, StringComparison.OrdinalIgnoreCase) != true)
+                    return false;
+
+                return Version.TryParse(platformName.AsSpan(targetOS.Length), out _);
+            }
         }
 
         /// <summary>
