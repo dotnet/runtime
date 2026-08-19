@@ -4229,7 +4229,7 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
                     // Replace helper with a more specialized helper that returns RuntimeType
                     assert(typeHandleHelper == CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE);
-                    retNode         = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF,
+                    retNode = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF,
                                                   op1->AsCall()->gtArgs.GetArgByIndex(0)->GetEarlyNode());
                 }
                 else if (GetRuntimeHandleUnderlyingType() == TYP_I_IMPL)

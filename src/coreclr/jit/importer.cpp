@@ -10517,22 +10517,25 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 CORINFO_CLASS_HANDLE classHandle = impGetTypeHandleClass();
 
-                GenTree* helperCall = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, TYP_STRUCT, gtNewLclVarNode(handleTemp, TYP_BYREF));
+                GenTree* helperCall = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE, TYP_STRUCT,
+                                                          gtNewLclVarNode(handleTemp, TYP_BYREF));
                 // The handle struct is returned in register
                 helperCall->AsCall()->gtReturnType = GetRuntimeHandleUnderlyingType();
                 helperCall->AsCall()->gtRetClsHnd  = classHandle;
 #if FEATURE_MULTIREG_RET
-                helperCall->AsCall()->InitializeStructReturnType(this, classHandle, helperCall->AsCall()->GetUnmanagedCallConv());
+                helperCall->AsCall()->InitializeStructReturnType(this, classHandle,
+                                                                 helperCall->AsCall()->GetUnmanagedCallConv());
 #endif
 
                 unsigned resultTmp = lvaGrabTemp(true DEBUGARG("result of REFANYTYPE"));
                 lvaSetStruct(resultTmp, classHandle, false);
 
-                GenTree* storeResult = gtNewStoreLclVarNode(resultTmp, helperCall);
+                GenTree* storeResult  = gtNewStoreLclVarNode(resultTmp, helperCall);
                 GenTree* storeDefault = gtNewStoreLclVarNode(resultTmp, gtNewIconNode(0));
 
                 // wrap helper call in inline null check, essentially
-                //          (handle == 0) ? default(RuntimeTypeHandle) : CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE(handle)
+                //          (handle == 0) ? default(RuntimeTypeHandle) :
+                //          CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPEHANDLE(handle)
                 GenTree* cond =
                     gtNewOperNode(GT_NE, TYP_INT, gtNewLclVarNode(handleTemp, TYP_BYREF), gtNewZeroConNode(TYP_BYREF));
                 GenTree* qmark = gtNewQmarkNode(TYP_VOID, cond, gtNewColonNode(TYP_VOID, storeResult, storeDefault));
