@@ -86,9 +86,9 @@ jobs:
           #     TargetFolder: '$(Build.SourcesDirectory)/artifacts'
           #     CleanTargetFolder: false
 
-          # The wasm-tools workload manifest lists the Mono browser-wasm runtime pack alongside the
-          # CoreCLR one, so installing the workload for testing requires the Mono pack in the local
-          # feed even though these tests only exercise CoreCLR.
+          # The wasm-tools workload manifest and its runtime packs are produced by the Mono build.
+          # Stage all of its shipping packages so workload installation resolves the CI manifests
+          # and packs from the same local feed.
           - task: DownloadPipelineArtifact@2
             displayName: Download built nugets for Mono singlethreaded runtime
             inputs:
@@ -97,10 +97,10 @@ jobs:
               targetPath: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
 
           - task: CopyFiles@2
-            displayName: Copy Mono runtime pack
+            displayName: Copy Mono shipping packages
             inputs:
               SourceFolder: '$(Build.SourcesDirectory)/artifacts/BuildArtifacts_browser_wasm_$(_hostedOs)_Release_SingleThreaded_BuildOnly'
-              Contents: packages/$(_BuildConfig)/Shipping/Microsoft.NETCore.App.Runtime.Mono.browser-wasm.*
+              Contents: packages/$(_BuildConfig)/Shipping/**
               TargetFolder: '$(Build.SourcesDirectory)/artifacts'
               CleanTargetFolder: false
 
