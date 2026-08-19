@@ -617,6 +617,12 @@ namespace CustomTaskCovariantReturnGenerics
                 Trace += "GBase.M4;";
                 return u;
             }
+
+            public virtual async Task<T[]> M5(T t)
+            {
+                Trace += "GBase.M5;";
+                return new T[] { t };
+            }
         }
 
         public class GDerived<T> : GBase<T>
@@ -639,6 +645,12 @@ namespace CustomTaskCovariantReturnGenerics
             {
                 Trace += "GDerived.M4;";
                 return u;
+            });
+
+            public override MyTask<T[]> M5(T t) => new MyTask<T[]>(() =>
+            {
+                Trace += "GDerived.M5;";
+                return new T[] { t };
             });
         }
 
@@ -679,6 +691,9 @@ namespace CustomTaskCovariantReturnGenerics
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static async Task<U> CallGM4<T, U>(GBase<T> b, U u) => await b.M4<U>(u);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static async Task<T[]> CallGM5<T>(GBase<T> b, T t) => await b.M5(t);
 
         [Fact]
         public static void TestGenericMethodCovariantOverride()
@@ -777,6 +792,10 @@ namespace CustomTaskCovariantReturnGenerics
             Trace = null;
             Assert.Equal(new List<int> { 42 }, CallGM3(bi, 42).GetAwaiter().GetResult());
             Assert.Equal("GDerived.M3;", Trace);
+
+            Trace = null;
+            Assert.Equal(new int[] { 42 }, CallGM5(bi, 42).GetAwaiter().GetResult());
+            Assert.Equal("GDerived.M5;", Trace);
 
             Trace = null;
             Assert.Equal("hi", CallGM4(bi, "hi").GetAwaiter().GetResult());
