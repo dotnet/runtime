@@ -17,6 +17,10 @@ class MyICJI : public ICorJitInfo
 public:
     // Added extras... todo add padding to detect corruption?
     JitInstance* jitInstance;
+
+    // Index to start the next search for a reported metric at. See
+    // MyICJI::reportMetadata.
+    size_t metricSearchStart = 0;
 };
 
 ICorJitInfo* InitICorJitInfo(JitInstance* jitInstance);
