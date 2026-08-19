@@ -45,7 +45,7 @@ namespace Wasm.Build.Tests
 
         [ConditionalTheory(typeof(BuildTestBase), nameof(IsCoreClrRuntime))]
         [BuildAndRun(aot: false, config: Configuration.Release)]
-        [TestCategory("no-workload")]
+        [TestCategory("workload")]
         public void CoreCLRInvariantGlobalizationDoesNotLinkGlobalizationNative(Configuration config, bool aot)
         {
             string extraProperties = "<InvariantGlobalization>true</InvariantGlobalization>";
