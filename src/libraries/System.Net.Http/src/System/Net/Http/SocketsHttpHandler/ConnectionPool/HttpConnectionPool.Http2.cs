@@ -486,18 +486,6 @@ namespace System.Net.Http
             {
                 Debug.Assert(initialRequestWaiter is not null, "Expect request for a new connection");
 
-                if (Settings._initialHttp2MaxConcurrentStreams == 0 && !connection.InitialSettingsReceived.Task.IsCompleted)
-                {
-                    // The connection has no available streams only because we haven't received the server's SETTINGS
-                    // frame yet (SocketsHttpHandler.InitialHttp2MaxConcurrentStreams is set to 0).
-                    // Wait for the server to advertise its stream limit before deciding that the connection is unusable.
-                    // The connection stays marked as pending, so we won't inject more connections in the meantime.
-                    if (NetEventSource.Log.IsEnabled()) connection.Trace("Waiting for the server's SETTINGS frame before using the new HTTP2 connection.");
-
-                    _ = WaitForInitialSettingsAsync(connection, initialRequestWaiter); // ignore returned task
-                    return;
-                }
-
                 // The new connection could not handle even one request, either because it shut down before we could use it for any requests,
                 // or because it immediately set the max concurrent streams limit to 0.
                 // We don't want to get stuck in a loop where we keep trying to create new connections for the same request.
@@ -520,14 +508,6 @@ namespace System.Net.Http
 
                 // We need to wait until the connection is usable again.
                 DisableHttp2Connection(connection);
-            }
-
-            async Task WaitForInitialSettingsAsync(Http2Connection connection, HttpConnectionWaiter<Http2Connection?> initialRequestWaiter)
-            {
-                // Ignore any failures - the connection will be seen as shut down when we return it below.
-                await ((Task)connection.InitialSettingsReceived.Task).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
-
-                ReturnHttp2Connection(connection, isNewConnection: true, initialRequestWaiter);
             }
         }
 

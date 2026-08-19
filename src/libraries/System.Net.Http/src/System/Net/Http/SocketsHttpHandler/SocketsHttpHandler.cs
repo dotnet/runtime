@@ -315,20 +315,16 @@ namespace System.Net.Http
         /// that lower value is used instead for new connections.
         /// </para>
         /// <para>
-        /// Setting this property to 0 means that no requests will be sent on a new connection
-        /// until the server's <c>SETTINGS</c> frame is received.
-        /// </para>
-        /// <para>
-        /// The value must be greater than or equal to 0. Defaults to 100.
+        /// The value must be greater than or equal to 1. Defaults to 100.
         /// </para>
         /// </remarks>
-        /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">The value is zero or negative.</exception>
         public int InitialHttp2MaxConcurrentStreams
         {
             get => _settings._initialHttp2MaxConcurrentStreams;
             set
             {
-                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._initialHttp2MaxConcurrentStreams = value;

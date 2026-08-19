@@ -3695,7 +3695,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData(0)]
         [InlineData(1)]
         [InlineData(42)]
         [InlineData(int.MaxValue)]
@@ -3712,10 +3711,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
+        [InlineData(0)]
         [InlineData(-1)]
         [InlineData(-42)]
         [InlineData(int.MinValue)]
-        public void InitialHttp2MaxConcurrentStreams_NegativeValue_ThrowsArgumentOutOfRangeException(int value)
+        public void InitialHttp2MaxConcurrentStreams_InvalidValue_ThrowsArgumentOutOfRangeException(int value)
         {
             using var handler = new SocketsHttpHandler();
             Assert.Throws<ArgumentOutOfRangeException>(() => handler.InitialHttp2MaxConcurrentStreams = value);
@@ -4241,7 +4241,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [ConditionalTheory(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
-        [InlineData(0)]
         [InlineData(1)]
         [InlineData(3)]
         public async Task InitialHttp2MaxConcurrentStreams_LimitsStreamsUsedBeforeSettingsFrameIsReceived(int initialLimit)
@@ -4274,27 +4273,6 @@ namespace System.Net.Http.Functional.Tests
 
             await SendResponses(connection, streamIds);
             await VerifySendTasks(sendTasks);
-        }
-
-        [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
-        public async Task InitialHttp2MaxConcurrentStreams_ZeroAndConnectionClosedBeforeSettings_RequestFails()
-        {
-            using Http2LoopbackServer server = Http2LoopbackServer.CreateServer();
-
-            using SocketsHttpHandler handler = CreateHandler();
-            handler.EnableMultipleHttp2Connections = false;
-            handler.InitialHttp2MaxConcurrentStreams = 0;
-            using HttpClient client = CreateHttpClient(handler);
-
-            Task<HttpResponseMessage> sendTask = client.GetAsync(server.Address);
-
-            Http2LoopbackConnection connection = await server.AcceptConnectionAsync().WaitAsync(TestHelper.PassingTestTimeout);
-            await connection.ReadSettingsAsync().WaitAsync(TestHelper.PassingTestTimeout);
-
-            // Tear the connection down without ever advertising our stream limit.
-            await connection.DisposeAsync();
-
-            await Assert.ThrowsAsync<HttpRequestException>(() => sendTask).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
         [ConditionalFact(typeof(SocketsHttpHandlerTest_Http2), nameof(SupportsAlpn))]
