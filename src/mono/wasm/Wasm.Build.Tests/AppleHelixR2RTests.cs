@@ -1,0 +1,399 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.Versioning;
+using System.Security.Cryptography;
+using System.Text;
+using Xunit;
+using Xunit.Abstractions;
+using Xunit.Sdk;
+
+#nullable enable
+
+namespace Wasm.Build.Tests;
+
+// Apple mobile has no MSBuild behavior test suite of its own, and this is the one in the repo that
+// runs on CI, so the Apple Helix ReadyToRun proxy build is covered from here. The test drives the
+// real src/mono/msbuild/apple/data/ProxyProjectForAOTOnHelix.proj - shipped into the test payload as
+// content - with `dotnet msbuild`, and stands in for crossgen2 by planting files where it would
+// write them.
+//
+// A Helix retry re-runs the whole work item command in the same directory, so the R2R step has to
+// leave the publish directory - its own crossgen2 input - byte for byte identical, and has to
+// rebuild everything it hands to the app builder from scratch on every attempt.
+[TestCategory("no-workload")]
+public class AppleHelixR2RTests
+{
+    private const string ProxyProjectFileName = "ProxyProjectForAOTOnHelix.proj";
+    private const string ProxyPropsFileName = "ProxyProjectForAOTOnHelix.props";
+    private const string BundleStateFileName = "bundle-state.txt";
+    private const string ExtraFileName = "libExtra.dylib";
+
+    private static readonly TimeSpan s_buildTimeout = TimeSpan.FromMinutes(5);
+
+    private static readonly StringComparer s_pathComparer =
+        OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+
+    // Payload the build machine ships in the work item, which crossgen2 reads and must never rewrite.
+    private static readonly (string RelativePath, string Content)[] s_pristinePayload =
+    {
+        ("AppleTestRunner.dll", "pristine-il:AppleTestRunner"),
+        ("Lib.dll", "pristine-il:Lib"),
+        ("Lib.resources.dll", "pristine-resources:Lib"),
+        ("libnative.dylib", "pristine-native"),
+        ("nested/data.bin", "pristine-nested-data"),
+    };
+
+    private static readonly (string RelativePath, string Content)[] s_firstAttemptR2ROutput =
+    {
+        ("AppleTestRunner.dll", "r2r-attempt1:AppleTestRunner"),
+        ("Lib.dll", "r2r-attempt1:Lib"),
+        ("FirstAttemptOnly.dll", "r2r-attempt1:FirstAttemptOnly"),
+        ("app.r2r.dylib", "r2r-attempt1:composite"),
+    };
+
+    private static readonly (string RelativePath, string Content)[] s_secondAttemptR2ROutput =
+    {
+        ("AppleTestRunner.dll", "r2r-attempt2:AppleTestRunner"),
+        ("Lib.dll", "r2r-attempt2:Lib"),
+        ("app.r2r.dylib", "r2r-attempt2:composite"),
+    };
+
+    private readonly ITestOutputHelper _testOutput;
+
+    public AppleHelixR2RTests(ITestOutputHelper testOutput) => _testOutput = testOutput;
+
+    [Fact]
+    public void R2RStagingLeavesPublishPristineAndIsRebuiltOnRetry()
+    {
+        DirectoryInfo workItemRoot = Directory.CreateTempSubdirectory("apple-helix-r2r-");
+        try
+        {
+            string publishDir = Path.Combine(workItemRoot.FullName, "publish");
+            string extraFilesDir = Path.Combine(workItemRoot.FullName, "extraFiles");
+            string crossgenOutputDir = Path.Combine(workItemRoot.FullName, "crossgen-output");
+            string r2rIntermediateDir = Path.Combine(workItemRoot.FullName, "obj", "R2R");
+            string stagingDir = Path.Combine(workItemRoot.FullName, "obj", "r2r-publish");
+
+            CreateWorkItemLayout(workItemRoot.FullName, publishDir, extraFilesDir);
+
+            Dictionary<string, string> publishManifest = Manifest(publishDir);
+
+            RunAttempt(workItemRoot.FullName, publishDir, crossgenOutputDir, r2rIntermediateDir, stagingDir, s_firstAttemptR2ROutput);
+            AssertAttempt(workItemRoot.FullName, publishDir, publishManifest, extraFilesDir, stagingDir, s_firstAttemptR2ROutput);
+
+            RunAttempt(workItemRoot.FullName, publishDir, crossgenOutputDir, r2rIntermediateDir, stagingDir, s_secondAttemptR2ROutput);
+            AssertAttempt(workItemRoot.FullName, publishDir, publishManifest, extraFilesDir, stagingDir, s_secondAttemptR2ROutput);
+        }
+        finally
+        {
+            TryDeleteDirectory(workItemRoot.FullName);
+        }
+    }
+
+    private static void CreateWorkItemLayout(string workItemRoot, string publishDir, string extraFilesDir)
+    {
+        foreach ((string relativePath, string content) in s_pristinePayload)
+            WriteFile(Path.Combine(publishDir, ToNativePath(relativePath)), content);
+
+        WriteFile(Path.Combine(extraFilesDir, ExtraFileName), "extra-native");
+
+        string proxyProject = Path.Combine(AppContext.BaseDirectory, "apple-data", ProxyProjectFileName);
+        Assert.True(File.Exists(proxyProject), $"Expected the proxy project to be copied into the test payload at '{proxyProject}'.");
+        File.Copy(proxyProject, Path.Combine(publishDir, ProxyProjectFileName));
+
+        WriteFile(Path.Combine(publishDir, ProxyPropsFileName), BuildProxyPropsStub());
+
+        // The work item layout is created under the system temp directory, so shield the proxy
+        // project from any Directory.Build.props/targets that might sit above it.
+        WriteFile(Path.Combine(workItemRoot, "Directory.Build.props"), "<Project />");
+        WriteFile(Path.Combine(workItemRoot, "Directory.Build.targets"), "<Project />");
+    }
+
+    // The props file the proxy project imports. On Helix it carries the settings of the test project
+    // being proxied; here it stands in for crossgen2 and records what the R2R target handed to the
+    // Apple app builder.
+    private static string BuildProxyPropsStub()
+    {
+        var targetFramework = new FrameworkName(AppContext.TargetFrameworkName!);
+        return $"""
+            <Project>
+              <PropertyGroup>
+                <TargetFramework>net{targetFramework.Version.Major}.{targetFramework.Version.Minor}</TargetFramework>
+                <_TestCrossgenOutputDir>$([MSBuild]::NormalizeDirectory($(TestRootDir), '..', 'crossgen-output'))</_TestCrossgenOutputDir>
+                <_TestBundleStateFile>$([MSBuild]::NormalizePath($(TestRootDir), '..', '{BundleStateFileName}'))</_TestBundleStateFile>
+              </PropertyGroup>
+
+              <Target Name="_TestProduceR2ROutput" AfterTargets="_PrepareR2RItemsOnHelix">
+                <ItemGroup>
+                  <_TestCrossgenOutput Include="$(_TestCrossgenOutputDir)*" />
+                </ItemGroup>
+                <MakeDir Directories="$(IntermediateOutputPath)R2R" />
+                <Copy SourceFiles="@(_TestCrossgenOutput)" DestinationFolder="$(IntermediateOutputPath)R2R" />
+              </Target>
+
+              <Target Name="_TestRecordBundleState" AfterTargets="_AddR2RFilesToAppleBundle">
+                <ItemGroup>
+                  <_TestBundleState Include="AppleBuildDir=$(AppleBuildDir)" />
+                  <_TestBundleState Include="@(AppleAssembliesToBundle->'Assembly=%(FullPath)')" />
+                  <_TestBundleState Include="@(AppleNativeFilesToBundle->'Native=%(FullPath)')" />
+                </ItemGroup>
+                <WriteLinesToFile File="$(_TestBundleStateFile)" Lines="@(_TestBundleState)" Overwrite="true" WriteOnlyWhenDifferent="false" />
+              </Target>
+            </Project>
+
+            """;
+    }
+
+    private void RunAttempt(
+        string workItemRoot,
+        string publishDir,
+        string crossgenOutputDir,
+        string r2rIntermediateDir,
+        string stagingDir,
+        (string RelativePath, string Content)[] r2rOutput)
+    {
+        ReplaceDirectoryContent(crossgenOutputDir, r2rOutput);
+
+        // A previous attempt that was killed mid write leaves output behind in both directories.
+        // Neither leftover may reach the app: the R2R intermediate dir is wiped before compiling,
+        // the staging dir is recreated before the payload is staged into it.
+        WriteFile(Path.Combine(r2rIntermediateDir, "KilledAttempt.dll"), "leftover-r2r-output");
+        WriteFile(Path.Combine(stagingDir, "stale-marker.txt"), "leftover-stage-file");
+        WriteFile(Path.Combine(stagingDir, "bin-previous", "leftover.txt"), "leftover-stage-tree");
+        WriteFile(Path.Combine(stagingDir, "app.r2r.dylib"), "leftover-composite");
+
+        string bundleStateFile = Path.Combine(workItemRoot, BundleStateFileName);
+        File.Delete(bundleStateFile);
+
+        RunMSBuild(workItemRoot, publishDir);
+
+        Assert.True(File.Exists(bundleStateFile), $"The proxy build did not record the bundle state, so '{ProxyPropsFileName}' was not imported.");
+    }
+
+    private void RunMSBuild(string workItemRoot, string publishDir)
+    {
+        var startInfo = new ProcessStartInfo(ResolveDotNetHost())
+        {
+            WorkingDirectory = publishDir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        };
+
+        startInfo.ArgumentList.Add("msbuild");
+        startInfo.ArgumentList.Add(ProxyProjectFileName);
+        startInfo.ArgumentList.Add("-t:_PrepareForAppleBuildAppOnHelix;_PrepareR2RItemsOnHelix;_AddR2RFilesToAppleBundle");
+        startInfo.ArgumentList.Add("-p:PublishReadyToRunContainerFormat=macho");
+        startInfo.ArgumentList.Add("-nodeReuse:false");
+        startInfo.ArgumentList.Add("-nologo");
+        startInfo.ArgumentList.Add("-v:minimal");
+        startInfo.Environment["HELIX_WORKITEM_ROOT"] = workItemRoot;
+        startInfo.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
+        // The runtime repo sets this, and it makes the child pick up the wrong SDK.
+        startInfo.Environment.Remove("MSBuildSDKsPath");
+
+        var output = new StringBuilder();
+        using var process = new Process { StartInfo = startInfo };
+        process.OutputDataReceived += (_, e) => AppendLine(output, e.Data);
+        process.ErrorDataReceived += (_, e) => AppendLine(output, e.Data);
+
+        process.Start();
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        if (!process.WaitForExit((int)s_buildTimeout.TotalMilliseconds))
+        {
+            process.Kill(entireProcessTree: true);
+            process.WaitForExit();
+            throw new XunitException($"The proxy project build did not finish within {s_buildTimeout}.{Environment.NewLine}{output}");
+        }
+
+        // Flushes the redirected streams.
+        process.WaitForExit();
+
+        if (process.ExitCode != 0)
+            throw new XunitException($"The proxy project build failed with exit code {process.ExitCode}.{Environment.NewLine}{output}");
+
+        _testOutput.WriteLine(output.ToString());
+    }
+
+    private void AssertAttempt(
+        string workItemRoot,
+        string publishDir,
+        Dictionary<string, string> expectedPublishManifest,
+        string extraFilesDir,
+        string stagingDir,
+        (string RelativePath, string Content)[] r2rOutput)
+    {
+        AssertManifest("publish directory", expectedPublishManifest, Manifest(publishDir));
+
+        Dictionary<string, string> expectedStage = new(expectedPublishManifest, s_pathComparer);
+        foreach ((string relativePath, string content) in r2rOutput)
+            expectedStage[relativePath] = Hash(Encoding.UTF8.GetBytes(content));
+
+        AssertManifest("staging directory", expectedStage, Manifest(stagingDir));
+
+        (string appleBuildDir, List<string> assemblies, List<string> nativeFiles) = ReadBundleState(workItemRoot);
+
+        Assert.Equal(NormalizeDirectory(stagingDir), NormalizeDirectory(appleBuildDir), s_pathComparer);
+
+        IEnumerable<string> topLevelAssemblies = expectedStage.Keys
+            .Where(relativePath => IsTopLevel(relativePath)
+                && relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
+                && !relativePath.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase));
+        AssertPathSet("AppleAssembliesToBundle", topLevelAssemblies.Select(relativePath => Path.Combine(stagingDir, ToNativePath(relativePath))), assemblies);
+
+        IEnumerable<string> stagedNativeFiles = expectedStage.Keys
+            .Where(relativePath => !IsTopLevel(relativePath) || !relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            .Select(relativePath => Path.Combine(stagingDir, ToNativePath(relativePath)));
+        AssertPathSet("AppleNativeFilesToBundle", stagedNativeFiles.Append(Path.Combine(extraFilesDir, ExtraFileName)), nativeFiles);
+    }
+
+    private static (string AppleBuildDir, List<string> Assemblies, List<string> NativeFiles) ReadBundleState(string workItemRoot)
+    {
+        string? appleBuildDir = null;
+        List<string> assemblies = new();
+        List<string> nativeFiles = new();
+
+        foreach (string line in File.ReadAllLines(Path.Combine(workItemRoot, BundleStateFileName)))
+        {
+            string[] parts = line.Split('=', 2);
+            switch (parts)
+            {
+                case ["AppleBuildDir", string value]:
+                    appleBuildDir = value;
+                    break;
+                case ["Assembly", string value]:
+                    assemblies.Add(value);
+                    break;
+                case ["Native", string value]:
+                    nativeFiles.Add(value);
+                    break;
+                default:
+                    throw new XunitException($"Unexpected line in {BundleStateFileName}: '{line}'.");
+            }
+        }
+
+        if (appleBuildDir is null)
+            throw new XunitException($"{BundleStateFileName} did not record AppleBuildDir.");
+
+        return (appleBuildDir, assemblies, nativeFiles);
+    }
+
+    private static void AssertManifest(string what, Dictionary<string, string> expected, Dictionary<string, string> actual)
+    {
+        List<string> differences = new();
+
+        foreach ((string relativePath, string hash) in expected.OrderBy(entry => entry.Key, s_pathComparer))
+        {
+            if (!actual.TryGetValue(relativePath, out string? actualHash))
+                differences.Add($"  missing: {relativePath}");
+            else if (actualHash != hash)
+                differences.Add($"  content changed: {relativePath}");
+        }
+
+        foreach (string relativePath in actual.Keys.Where(key => !expected.ContainsKey(key)).OrderBy(key => key, s_pathComparer))
+            differences.Add($"  unexpected: {relativePath}");
+
+        if (differences.Count > 0)
+            throw new XunitException($"Unexpected content in the {what}:{Environment.NewLine}{string.Join(Environment.NewLine, differences)}");
+    }
+
+    private static void AssertPathSet(string what, IEnumerable<string> expected, IEnumerable<string> actual)
+    {
+        List<string> expectedPaths = expected.Select(Path.GetFullPath).Order(s_pathComparer).ToList();
+        List<string> actualPaths = actual.Select(Path.GetFullPath).Order(s_pathComparer).ToList();
+
+        if (!expectedPaths.SequenceEqual(actualPaths, s_pathComparer))
+        {
+            throw new XunitException(
+                $"Unexpected {what}:{Environment.NewLine}expected:{Environment.NewLine}  {string.Join($"{Environment.NewLine}  ", expectedPaths)}" +
+                $"{Environment.NewLine}actual:{Environment.NewLine}  {string.Join($"{Environment.NewLine}  ", actualPaths)}");
+        }
+    }
+
+    private static Dictionary<string, string> Manifest(string root)
+    {
+        Dictionary<string, string> manifest = new(s_pathComparer);
+        foreach (string file in Directory.EnumerateFiles(root, "*", SearchOption.AllDirectories))
+            manifest[ToRelativePath(root, file)] = Hash(File.ReadAllBytes(file));
+
+        return manifest;
+    }
+
+    private static string ResolveDotNetHost()
+    {
+        // The suite is handed the SDK under test through this variable, and on Helix that is the only
+        // one guaranteed to be a full SDK, so prefer it the way BuildEnvironment does.
+        string fileName = OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet";
+        string? sdkPath = EnvironmentVariables.SdkForWorkloadTestingPath;
+        if (!string.IsNullOrEmpty(sdkPath) && File.Exists(Path.Combine(sdkPath, fileName)))
+            return Path.Combine(sdkPath, fileName);
+
+        // Local runs go through xunit.console.dll, so the current process is the host to reuse.
+        string? host = Environment.ProcessPath;
+        if (host is not null && Path.GetFileName(host).Equals(fileName, StringComparison.OrdinalIgnoreCase))
+            return host;
+
+        host = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
+        if (!string.IsNullOrEmpty(host) && File.Exists(host))
+            return host;
+
+        return fileName;
+    }
+
+    private static void ReplaceDirectoryContent(string directory, (string RelativePath, string Content)[] files)
+    {
+        TryDeleteDirectory(directory);
+        foreach ((string relativePath, string content) in files)
+            WriteFile(Path.Combine(directory, ToNativePath(relativePath)), content);
+    }
+
+    private static void WriteFile(string path, string content)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, content);
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            Directory.Delete(path, recursive: true);
+        }
+        catch (DirectoryNotFoundException)
+        {
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private static void AppendLine(StringBuilder output, string? line)
+    {
+        if (line is not null)
+        {
+            lock (output)
+                output.AppendLine(line);
+        }
+    }
+
+    private static bool IsTopLevel(string relativePath) => !relativePath.Contains('/');
+
+    private static string ToNativePath(string relativePath) => relativePath.Replace('/', Path.DirectorySeparatorChar);
+
+    private static string ToRelativePath(string root, string path) => Path.GetRelativePath(root, path).Replace(Path.DirectorySeparatorChar, '/');
+
+    private static string NormalizeDirectory(string path) => Path.TrimEndingDirectorySeparator(Path.GetFullPath(path));
+
+    private static string Hash(byte[] content) => Convert.ToHexString(SHA256.HashData(content));
+}

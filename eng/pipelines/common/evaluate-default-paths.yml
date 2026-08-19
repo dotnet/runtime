@@ -258,6 +258,8 @@ jobs:
       - src/mono/browser/build/*
       - src/mono/browser/emscripten-version.txt
       - src/mono/browser/runtime/*
+      # AppleHelixR2RTests in Wasm.Build.Tests covers the Apple Helix R2R proxy build.
+      - src/mono/msbuild/apple/*
       - src/mono/wasm/build/*
       - src/mono/wasm/host/*
       - src/mono/wasm/templates/*
