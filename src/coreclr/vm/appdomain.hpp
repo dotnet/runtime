@@ -1251,8 +1251,6 @@ public:
     {
         STATIC_CONTRACT_THROWS;
         STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_FAULT;
-
         if (m_pRefClassFactHash != NULL) {
             return m_pRefClassFactHash;
         }
@@ -1266,8 +1264,6 @@ public:
     {
         STATIC_CONTRACT_THROWS;
         STATIC_CONTRACT_GC_TRIGGERS;
-        STATIC_CONTRACT_FAULT;
-
         if (m_pRefDispIDCache != NULL) {
             return m_pRefDispIDCache;
         }

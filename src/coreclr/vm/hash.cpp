@@ -44,8 +44,6 @@ void *PtrHashMap::operator new(size_t size, LoaderHeap *pHeap)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT; //return NULL;
-
     return pHeap->AllocMem(S_SIZE_T(size));
 }
 
@@ -61,8 +59,6 @@ BOOL Bucket::InsertValue(const UPTR key, const UPTR value)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;  //return FALSE;
-
     _ASSERTE(key != EMPTY);
     _ASSERTE(key != DELETED);
 
@@ -466,8 +462,6 @@ void HashMap::InsertValue (UPTR key, UPTR value)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-
     _ASSERTE (OwnLock());
 
     // Enter EBR critical region to protect against concurrent bucket array
@@ -816,8 +810,6 @@ void HashMap::Rehash()
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-
     EbrCriticalRegionHolder ebrHolder(&g_EbrCollector, m_fAsyncMode);
 
     _ASSERTE (!m_fAsyncMode || g_EbrCollector.InCriticalRegion());

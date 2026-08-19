@@ -2757,8 +2757,6 @@ void MethodDesc::CheckRestore(ClassLoadLevel level)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     if (!GetMethodTable()->IsFullyLoaded())
     {
         if (GetClassification() == mcInstantiated)

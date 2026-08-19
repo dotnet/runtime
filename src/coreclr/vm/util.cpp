@@ -928,8 +928,6 @@ static HMODULE CLRLoadLibraryWorker(LPCWSTR lpLibFileName, DWORD *pLastError)
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     HMODULE hMod;
     ErrorModeHolder errorMode{};
     {
@@ -945,8 +943,6 @@ HMODULE CLRLoadLibrary(LPCWSTR lpLibFileName)
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     DWORD dwLastError = 0;
     HMODULE hmod = 0;
 
@@ -964,8 +960,6 @@ static HMODULE CLRLoadLibraryExWorker(LPCWSTR lpLibFileName, HANDLE hFile, DWORD
     // Don't use dynamic contract: will override GetLastError value
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     HMODULE hMod;
     ErrorModeHolder errorMode{};
     {
@@ -983,8 +977,6 @@ HMODULE CLRLoadLibraryEx(LPCWSTR lpLibFileName, HANDLE hFile, DWORD dwFlags)
     // This will throw in the case of SO
     //STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_TRIGGERS;
-    STATIC_CONTRACT_FAULT;
-
     DWORD lastError = ERROR_SUCCESS;
     HMODULE hmod = NULL;
 

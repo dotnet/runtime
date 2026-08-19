@@ -364,8 +364,6 @@ void StackingAllocator::Clear(StackBlock *ToBlock)
 void * __cdecl operator new(size_t n, StackingAllocator * alloc)
 {
     STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_FAULT;
-
 #ifdef HOST_64BIT
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) ThrowOutOfMemory();
@@ -379,8 +377,6 @@ void * __cdecl operator new(size_t n, StackingAllocator * alloc)
 void * __cdecl operator new[](size_t n, StackingAllocator * alloc)
 {
     STATIC_CONTRACT_THROWS;
-    STATIC_CONTRACT_FAULT;
-
 #ifdef HOST_64BIT
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) ThrowOutOfMemory();
@@ -398,8 +394,6 @@ void * __cdecl operator new[](size_t n, StackingAllocator * alloc)
 void * __cdecl operator new(size_t n, StackingAllocator * alloc, const std::nothrow_t&) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FAULT;
-
 #ifdef HOST_64BIT
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) return NULL;
@@ -411,8 +405,6 @@ void * __cdecl operator new(size_t n, StackingAllocator * alloc, const std::noth
 void * __cdecl operator new[](size_t n, StackingAllocator * alloc, const std::nothrow_t&) noexcept
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FAULT;
-
 #ifdef HOST_64BIT
     // size_t's too big on 64-bit platforms so we check for overflow
     if(n > (size_t)(1<<31)) return NULL;

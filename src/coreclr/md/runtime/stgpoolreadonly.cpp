@@ -83,8 +83,6 @@ HRESULT StgPoolReadOnly::GetStringW(        // Return code.
     int         cchBuffer)                  // Size of output buffer.
 {
     STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_FAULT;
-
     HRESULT hr;
     LPCSTR  pString;                // The string in UTF8.
     int     iChars;

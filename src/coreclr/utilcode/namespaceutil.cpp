@@ -330,8 +330,6 @@ void ns::MakePath(                      // throws on out of memory
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_FAULT;
-
     ssBuf.Clear();
 
     if (!ssNameSpace.IsEmpty())
