@@ -31,7 +31,7 @@ public:
         JIT_FLAG_BBINSTR_IF_LOOPS        = 19, // JIT must instrument current method if it has loops
         JIT_FLAG_BBOPT                   = 20, // Optimize method based on profile information
         JIT_FLAG_FRAMED                  = 21, // All methods have an EBP frame
-        JIT_FLAG_PUBLISH_SECRET_PARAM    = 22, // JIT must place stub secret param into local 0.  (used by IL stubs)
+        JIT_FLAG_PUBLISH_SECRET_PARAM    = 22, // Retained for compatibility; no longer produced.
         JIT_FLAG_USE_PINVOKE_HELPERS     = 23, // The JIT should use the PINVOKE_{BEGIN,END} helpers instead of emitting inline transitions
         JIT_FLAG_REVERSE_PINVOKE         = 24, // The JIT should insert REVERSE_PINVOKE_{ENTER,EXIT} helpers into method prolog/epilog
         JIT_FLAG_TRACK_TRANSITIONS       = 25, // The JIT should insert the helper variants that track transitions.

@@ -3520,13 +3520,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
             }
         }
 
-        if (m_compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE) &&
-            m_compiler->lvaGetDesc(m_compiler->lvaStubArgumentVar)->lvOnFrame)
-        {
-            GetEmitter()->emitIns_S_R(ins_Store(TYP_I_IMPL), EA_PTRSIZE, REG_SECRET_STUB_PARAM,
-                                      m_compiler->lvaStubArgumentVar, 0);
-        }
-
         return;
     }
 
@@ -3586,11 +3579,6 @@ void CodeGen::genHomeRegisterParams(regNumber initReg, bool* initRegStillZeroed)
                 genSpillOrAddRegisterParam(lclNum, segment.Offset, lclNum, segment, &graph);
             }
         }
-    }
-
-    if (m_compiler->info.compPublishStubParam && ((paramRegs & RBM_SECRET_STUB_PARAM) != RBM_NONE))
-    {
-        genSpillOrAddNonStandardRegisterParam(m_compiler->lvaStubArgumentVar, REG_SECRET_STUB_PARAM, &graph);
     }
 
     DBEXEC(VERBOSE, graph.Dump());

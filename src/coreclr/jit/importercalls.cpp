@@ -3531,12 +3531,6 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
 
     *pIntrinsicName = ni;
 
-    if (ni == NI_System_StubHelpers_GetStubContext)
-    {
-        // must be done regardless of DbgCode and MinOpts
-        return gtNewLclvNode(lvaStubArgumentVar, TYP_I_IMPL);
-    }
-
     if (ni == NI_System_StubHelpers_NextCallReturnAddress)
     {
         // For now we just avoid inlining anything into these methods since
@@ -12479,11 +12473,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                 {
                     if (strcmp(className, "StubHelpers") == 0)
                     {
-                        if (strcmp(methodName, "GetStubContext") == 0)
-                        {
-                            result = NI_System_StubHelpers_GetStubContext;
-                        }
-                        else if (strcmp(methodName, "NextCallReturnAddress") == 0)
+                        if (strcmp(methodName, "NextCallReturnAddress") == 0)
                         {
                             result = NI_System_StubHelpers_NextCallReturnAddress;
                         }
