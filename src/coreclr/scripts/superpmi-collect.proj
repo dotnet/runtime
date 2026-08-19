@@ -150,6 +150,13 @@
   <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' and '$(TargetOS)' != '' and '$(TargetArchitecture)' != '' ">
     <TargetArgs>-target_os $(TargetOS) -target_arch $(TargetArchitecture)</TargetArgs>
   </PropertyGroup>
+  <!-- Cross-target crossgen2 collections compile assemblies built for the target, so crossgen2
+       must resolve references against the target's assemblies rather than the host Core_Root.
+       superpmi_collect_setup.py stages those into a folder in the correlation payload and
+       reports its name via the Crossgen2ReferenceDirName variable. -->
+  <PropertyGroup Condition=" '$(CollectionType)' == 'crossgen2' and '$(Crossgen2ReferenceDirName)' != '' ">
+    <TargetArgs>$(TargetArgs) -crossgen2_reference_directory $(SuperPMIDirectory)$(FileSeparatorChar)$(Crossgen2ReferenceDirName)</TargetArgs>
+  </PropertyGroup>
   <PropertyGroup Condition=" '$(CollectionType)' != 'crossgen2' ">
     <TargetArgs></TargetArgs>
   </PropertyGroup>
