@@ -144,7 +144,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 AssertExtensions.Throws<ArgumentException>(
                     "ciphertext",
-                    () => key.DecryptKeyWrapPadded(ReadOnlySpan<byte>.Empty, output));
+                    () => key.DecryptKeyWrapPadded(Array.Empty<byte>()));
 
                 AssertExtensions.Throws<ArgumentException>(
                     "ciphertext",
@@ -526,7 +526,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                 AssertExtensions.Throws<CryptographicException>(
                     () => key.TryDecryptKeyWrapPadded(buffer.AsSpan(0, 16), buffer.AsSpan(15, 8), out _));
 
-                Assert.Equal(0, key.EncryptKeyWrapPaddedCallCount);
+                Assert.Equal(0, key.DecryptKeyWrapPaddedCallCount);
 
                 key.DecryptOverride = (source, destination) => destination.Length - 1;
 
@@ -592,7 +592,7 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
                     return DecryptOverride(source, destination);
                 }
 
-                Assert.Fail("Unexpected call to EncryptKeyWrapPaddedCore");
+                Assert.Fail("Unexpected call to DecryptKeyWrapPaddedCore");
                 return -1;
             }
         }

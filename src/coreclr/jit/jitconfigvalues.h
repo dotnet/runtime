@@ -625,7 +625,7 @@ OPT_CONFIG_STRING(JitAsyncPreservedValueAnalysisRange, "JitAsyncPreservedValueAn
 // callees that may suspend. When zero, only the restricted cases are inlined:
 // callees without any awaits, async versions of synchronous methods, and tail
 // awaits.
-RELEASE_CONFIG_INTEGER(JitAsyncInlining, "JitAsyncInlining", 0)
+RELEASE_CONFIG_INTEGER(JitAsyncInlining, "JitAsyncInlining", 1)
 
 RELEASE_CONFIG_INTEGER(JitEnableOptRepeat, "JitEnableOptRepeat", 1) // If zero, do not allow JitOptRepeat
 RELEASE_CONFIG_METHODSET(JitOptRepeat, "JitOptRepeat")            // Runs optimizer multiple times on specified methods

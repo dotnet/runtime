@@ -512,6 +512,13 @@ interp_v128_conditional_select (gpointer res, gpointer v1, gpointer v2, gpointer
 	*(v128_i8*)res = (*(v128_i8*)v2 & cond) | (*(v128_i8*)v3 & ~cond);
 }
 
+// MultiplyAddEstimate
+static void
+interp_v128_r4_multiply_add_estimate (gpointer res, gpointer v1, gpointer v2, gpointer v3)
+{
+	*(v128_r4*)res = (*(v128_r4*)v1 * *(v128_r4*)v2) + *(v128_r4*)v3;
+}
+
 // Create
 static void
 interp_v128_i1_create (gpointer res, gpointer v1)

@@ -116,9 +116,11 @@
       <_SdkPathForLocalTesting>$([System.IO.Path]::GetFilename($(_SdkPathForLocalTesting)))</_SdkPathForLocalTesting>
 
       <!-- CoreCLR WBT local runs need EMSDK_PATH for BrowserWasmApp.CoreCLR.targets.
-           Fall back to the in-repo provisioned emsdk (same default as WasmApp.InTree.props). -->
+           Fall back to the shared wasm tool cache, gated on its '.complete' sentinel like
+           eng/AcquireEmscriptenSdk.targets does; leaving it empty otherwise produces the
+           "either set %24(EMSDK_PATH), or use workloads" error instead of a path that never existed. -->
       <_LocalEmsdkPathForTests Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(EMSDK_PATH)' != ''">$(EMSDK_PATH)</_LocalEmsdkPathForTests>
-      <_LocalEmsdkPathForTests Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' == ''">$([MSBuild]::NormalizeDirectory('$(BrowserProjectRoot)', 'emsdk'))</_LocalEmsdkPathForTests>
+      <_LocalEmsdkPathForTests Condition="'$(RuntimeFlavor)' == 'CoreCLR' and '$(_LocalEmsdkPathForTests)' == '' and Exists('$(EmscriptenSdkStampFile)')">$(EmscriptenSdkCacheDir)</_LocalEmsdkPathForTests>
     </PropertyGroup>
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
