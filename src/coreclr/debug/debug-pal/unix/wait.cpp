@@ -13,10 +13,12 @@
 
 #include <minipal/mutex.h>
 
-#include "minipal-wait.h"
+#include "debugwait.h"
 
 namespace
 {
+    constexpr uint32_t MaxWaitHandles = 64;
+
     enum class AcquireResult
     {
         Failed,
@@ -281,7 +283,7 @@ namespace
             AcquireResult result = TryAcquire(waitables[index]);
             if (result == AcquireResult::Failed)
             {
-                return MINIPAL_WAIT_FAILED;
+                return WaitHandle::Failed;
             }
 
             if (result == AcquireResult::Ready)
@@ -290,7 +292,7 @@ namespace
             }
         }
 
-        return MINIPAL_WAIT_TIMEOUT;
+        return WaitHandle::Timeout;
     }
 
     bool GetMonotonicTime(uint64_t* nanoseconds)
@@ -360,7 +362,7 @@ namespace
         uint32_t timeout,
         uint64_t deadline)
     {
-        pollfd descriptors[MINIPAL_MAX_WAIT_OBJECTS] = {};
+        pollfd descriptors[MaxWaitHandles] = {};
         for (uint32_t index = 0; index < count; index++)
         {
             descriptors[index].fd = waitables[index]->readFileDescriptor;
@@ -370,23 +372,23 @@ namespace
         while (true)
         {
             int32_t acquired = TryAcquireAny(waitables, count);
-            if (acquired != MINIPAL_WAIT_TIMEOUT || timeout == 0)
+            if (acquired != WaitHandle::Timeout || timeout == 0)
             {
                 return acquired;
             }
 
             int pollTimeout = -1;
-            if (timeout != MINIPAL_WAIT_INFINITE)
+            if (timeout != WaitHandle::Infinite)
             {
                 uint64_t remaining;
                 if (!GetRemainingNanoseconds(deadline, &remaining))
                 {
-                    return MINIPAL_WAIT_FAILED;
+                    return WaitHandle::Failed;
                 }
 
                 if (remaining == 0)
                 {
-                    return MINIPAL_WAIT_TIMEOUT;
+                    return WaitHandle::Timeout;
                 }
 
                 pollTimeout = GetPollTimeout(remaining);
@@ -395,7 +397,7 @@ namespace
             int result = poll(descriptors, count, pollTimeout);
             if (result == 0)
             {
-                return MINIPAL_WAIT_TIMEOUT;
+                return WaitHandle::Timeout;
             }
 
             if (result < 0)
@@ -405,7 +407,7 @@ namespace
                     continue;
                 }
 
-                return MINIPAL_WAIT_FAILED;
+                return WaitHandle::Failed;
             }
 
             for (uint32_t index = 0; index < count; index++)
@@ -413,7 +415,7 @@ namespace
                 if ((descriptors[index].revents & POLLNVAL) != 0)
                 {
                     errno = EBADF;
-                    return MINIPAL_WAIT_FAILED;
+                    return WaitHandle::Failed;
                 }
             }
         }
@@ -433,17 +435,17 @@ namespace
     }
 }
 
-minipal_wait_handle::minipal_wait_handle(void* handle)
+WaitHandle::WaitHandle(void* handle)
     : m_handle(handle)
 {
 }
 
-minipal_wait_handle::minipal_wait_handle(const minipal_wait_handle& handle)
-    : minipal_wait_handle(DuplicateWaitable(handle.m_handle))
+WaitHandle::WaitHandle(const WaitHandle& handle)
+    : WaitHandle(DuplicateWaitable(handle.m_handle))
 {
 }
 
-minipal_wait_handle::~minipal_wait_handle()
+WaitHandle::~WaitHandle()
 {
     if (m_handle != nullptr)
     {
@@ -451,12 +453,12 @@ minipal_wait_handle::~minipal_wait_handle()
     }
 }
 
-minipal_event::minipal_event(bool initialState)
-    : minipal_wait_handle(CreateWaitable(initialState, true))
+WaitEvent::WaitEvent(bool initialState)
+    : WaitHandle(CreateWaitable(initialState, true))
 {
 }
 
-bool minipal_event::Set()
+bool WaitEvent::Set()
 {
     if (!IsValid())
     {
@@ -467,7 +469,7 @@ bool minipal_event::Set()
     return SignalEvent(static_cast<Waitable*>(GetWaitable()));
 }
 
-bool minipal_event::Reset()
+bool WaitEvent::Reset()
 {
     if (!IsValid())
     {
@@ -478,12 +480,12 @@ bool minipal_event::Reset()
     return ResetEvent(static_cast<Waitable*>(GetWaitable()));
 }
 
-minipal_latch::minipal_latch()
-    : minipal_wait_handle(CreateWaitable(false, false))
+WaitLatch::WaitLatch()
+    : WaitHandle(CreateWaitable(false, false))
 {
 }
 
-bool minipal_latch::Set()
+bool WaitLatch::Set()
 {
     if (!IsValid())
     {
@@ -494,36 +496,36 @@ bool minipal_latch::Set()
     return SignalEvent(static_cast<Waitable*>(GetWaitable()));
 }
 
-int32_t minipal_wait_handle::Wait(
-    const minipal_wait_handle* const* handles,
+int32_t WaitHandle::Wait(
+    const WaitHandle* const* handles,
     uint32_t count,
     uint32_t timeout)
 {
-    if (handles == nullptr || count == 0 || count > MINIPAL_MAX_WAIT_OBJECTS)
+    if (handles == nullptr || count == 0 || count > MaxWaitHandles)
     {
         errno = EINVAL;
-        return MINIPAL_WAIT_FAILED;
+        return Failed;
     }
 
-    Waitable* waitables[MINIPAL_MAX_WAIT_OBJECTS];
+    Waitable* waitables[MaxWaitHandles];
     for (uint32_t index = 0; index < count; index++)
     {
         if (handles[index] == nullptr || !handles[index]->IsValid())
         {
             errno = EINVAL;
-            return MINIPAL_WAIT_FAILED;
+            return Failed;
         }
 
         waitables[index] = static_cast<Waitable*>(handles[index]->m_handle);
     }
 
     uint64_t deadline = 0;
-    if (timeout != 0 && timeout != MINIPAL_WAIT_INFINITE)
+    if (timeout != 0 && timeout != Infinite)
     {
         uint64_t currentTime;
         if (!GetMonotonicTime(&currentTime))
         {
-            return MINIPAL_WAIT_FAILED;
+            return Failed;
         }
 
         deadline = currentTime + static_cast<uint64_t>(timeout) * 1000000;

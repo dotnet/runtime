@@ -2078,7 +2078,7 @@ void HelperThreadFavor::Init()
     CONTRACTL_END;
 
     // Create events for managing favors.
-    m_FavorReadEvent = new (nothrow) minipal_event(false);
+    m_FavorReadEvent = new (nothrow) WaitEvent(false);
     if ((m_FavorReadEvent == nullptr) || !m_FavorReadEvent->IsValid())
     {
         delete m_FavorReadEvent;
@@ -2086,7 +2086,7 @@ void HelperThreadFavor::Init()
         ThrowOutOfMemory();
     }
 
-    m_FavorAvailableEvent = new (nothrow) minipal_event(false);
+    m_FavorAvailableEvent = new (nothrow) WaitEvent(false);
     if ((m_FavorAvailableEvent == nullptr) || !m_FavorAvailableEvent->IsValid())
     {
         delete m_FavorAvailableEvent;
@@ -6824,9 +6824,9 @@ HRESULT Debugger::LaunchJitDebuggerAndNativeAttach(Thread * pThread, EXCEPTION_P
     }
 
     LOG((LF_CORDB, LL_INFO10000, "D::LJDANA: waiting on m_exUnmanagedAttachEvent and debugger's process handle\n"));
-    minipal_event unmanagedAttachEvent(GetUnmanagedAttachEvent());
-    minipal_native_handle debuggerProcess(processInfo.hProcess);
-    const minipal_wait_handle *waitSet[] = { &unmanagedAttachEvent, &debuggerProcess };
+    WaitEvent unmanagedAttachEvent(GetUnmanagedAttachEvent());
+    NativeHandle debuggerProcess(processInfo.hProcess);
+    const WaitHandle *waitSet[] = { &unmanagedAttachEvent, &debuggerProcess };
 
     // Let the helper thread do the attach logic for us and wait for the
     // attach event.  Must release the lock before blocking on a wait.
@@ -6834,10 +6834,10 @@ HRESULT Debugger::LaunchJitDebuggerAndNativeAttach(Thread * pThread, EXCEPTION_P
 
     // Wait for one or the other to be set. Multiple threads could be waiting here.
     // The events are manual events, so when they go high, all threads will be released.
-    int32_t waitResult = minipal_wait_handle::Wait(
+    int32_t waitResult = WaitHandle::Wait(
         waitSet,
         ARRAY_SIZE(waitSet),
-        MINIPAL_WAIT_INFINITE);
+        WaitHandle::Infinite);
 
     // We no long need to keep handles to the debugger process.
     CloseHandle(processInfo.hProcess);

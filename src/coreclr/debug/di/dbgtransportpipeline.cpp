@@ -92,7 +92,7 @@ public:
     );
 
     // Return a handle which will be signaled when the debuggee process terminates.
-    virtual minipal_wait_handle *GetProcessHandle();
+    virtual WaitHandle *GetProcessHandle();
 
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
@@ -139,7 +139,7 @@ private:
 
     DWORD                 m_dwProcessId;
     // This waitable is only valid for waiting on process termination.
-    minipal_wait_handle *m_hProcess;
+    WaitHandle *m_hProcess;
 
     DbgTransportTarget *  m_pProxy;
     DbgTransportSession * m_pTransport;
@@ -234,12 +234,12 @@ BOOL DbgTransportPipeline::WaitForDebugEvent(DEBUG_EVENT * pEvent, DWORD dwTimeo
     // We need to wait for a debug event from the transport and the process termination event.
     // On Windows, process termination is communicated via a debug event as well, but that's not true for
     // the Mac debugging transport.
-    const minipal_wait_handle *waitSet[] = {
+    const WaitHandle *waitSet[] = {
         m_pTransport->GetDebugEventReadyEvent(),
         m_hProcess
     };
 
-    int32_t waitResult = minipal_wait_handle::Wait(waitSet, ARRAY_SIZE(waitSet), dwTimeout);
+    int32_t waitResult = WaitHandle::Wait(waitSet, ARRAY_SIZE(waitSet), dwTimeout);
 
     if (waitResult == 0)
     {
@@ -306,7 +306,7 @@ BOOL DbgTransportPipeline::ContinueDebugEvent(
 }
 
 // Return a handle which will be signaled when the debuggee process terminates.
-minipal_wait_handle *DbgTransportPipeline::GetProcessHandle()
+WaitHandle *DbgTransportPipeline::GetProcessHandle()
 {
     // The handle returned here is only valid for waiting on process termination.
     // See code:INativeEventPipeline::GetProcessHandle.
@@ -315,7 +315,7 @@ minipal_wait_handle *DbgTransportPipeline::GetProcessHandle()
         return nullptr;
     }
 
-    minipal_wait_handle *processHandle = new (nothrow) minipal_wait_handle(*m_hProcess);
+    WaitHandle *processHandle = new (nothrow) WaitHandle(*m_hProcess);
     if ((processHandle != nullptr) && !processHandle->IsValid())
     {
         delete processHandle;

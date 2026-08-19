@@ -11,13 +11,15 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include <time.h>
 #include <unistd.h>
 #endif // HOST_UNIX
 
 DbgTransportTarget g_DbgTransportTarget{};
 
 #ifdef HOST_UNIX
+// Polling interval for the per-process exit poller thread.
+static const useconds_t s_processExitPollIntervalUsec = 250 * 1000;
+
 // Polls the target PID for exit. waitpid is identity-stable for child processes; kill is a
 // best-effort fallback for non-children and can race PID reuse.
 /* static */
@@ -30,25 +32,25 @@ void *DbgTransportTarget::ProcessExitPollerThread(void *arg)
         bool exited = false;
 
         int status;
-        pid_t result;
+        pid_t r;
         do
         {
-            result = waitpid(entry->m_dwPID, &status, WNOHANG);
-        } while (result < 0 && errno == EINTR);
+            r = waitpid(entry->m_dwPID, &status, WNOHANG);
+        } while (r == -1 && errno == EINTR);
 
-        if (result == static_cast<pid_t>(entry->m_dwPID))
+        if (r == (pid_t)entry->m_dwPID)
         {
             exited = WIFEXITED(status) || WIFSIGNALED(status);
         }
-        else if (result < 0 && errno == ECHILD)
+        else if (r == -1 && errno == ECHILD)
         {
             int killResult;
             do
             {
                 killResult = kill(entry->m_dwPID, 0);
-            } while (killResult < 0 && errno == EINTR);
+            } while (killResult == -1 && errno == EINTR);
 
-            exited = killResult < 0 && errno == ESRCH;
+            exited = killResult == -1 && errno == ESRCH;
         }
 
         if (exited)
@@ -57,8 +59,7 @@ void *DbgTransportTarget::ProcessExitPollerThread(void *arg)
             break;
         }
 
-        timespec sleepDuration = { 0, 250 * 1000 * 1000 };
-        nanosleep(&sleepDuration, nullptr);
+        usleep(s_processExitPollIntervalUsec);
     }
 
     return nullptr;
@@ -104,7 +105,7 @@ void DbgTransportTarget::Shutdown()
 // on for process termination.
 HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pProcessDescriptor,
                                                    DbgTransportSession     **ppTransport,
-                                                   minipal_wait_handle     **ppProcessHandle)
+                                                   WaitHandle             **ppProcessHandle)
 {
     RSLockHolder lock(&m_sLock);
     HRESULT hr = S_OK;
@@ -136,7 +137,7 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
            return (errno == ESRCH) ? E_INVALIDARG : E_FAIL;
        }
 
-       minipal_latch *pProcessExited = new (nothrow) minipal_latch();
+       WaitLatch *pProcessExited = new (nothrow) WaitLatch();
        if ((pProcessExited == NULL) || !pProcessExited->IsValid())
        {
            delete pProcessExited;
@@ -151,7 +152,7 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
            return HRESULT_FROM_GetLastError();
        }
 
-       minipal_native_handle *pProcessExited = new (nothrow) minipal_native_handle(hProcess);
+       NativeHandle *pProcessExited = new (nothrow) NativeHandle(hProcess);
        bool allocationFailed = pProcessExited == nullptr;
        DWORD error = GetLastError();
        CloseHandle(hProcess);
@@ -203,7 +204,7 @@ HRESULT DbgTransportTarget::GetTransportForProcess(const ProcessDescriptor  *pPr
     _ASSERTE(entry->m_hProcessExited->IsValid());
 
     *ppTransport = entry->m_transport;
-    *ppProcessHandle = new (nothrow) minipal_wait_handle(*entry->m_hProcessExited);
+    *ppProcessHandle = new (nothrow) WaitHandle(*entry->m_hProcessExited);
     if ((*ppProcessHandle == nullptr) || !(*ppProcessHandle)->IsValid())
     {
         delete *ppProcessHandle;

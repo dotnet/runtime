@@ -3,7 +3,6 @@ set(SOURCES
     dn-u16.cpp
     dn-stdio.cpp
     memory.cpp
-    wait.cpp
 )
 add_library(coreclrminipal
     STATIC

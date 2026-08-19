@@ -114,7 +114,7 @@ public:
     //    ICorDebugProcess::GetHandle.
     //
 
-    virtual minipal_wait_handle *GetProcessHandle() = 0;
+    virtual WaitHandle *GetProcessHandle() = 0;
 
     //
     // Terminate the debuggee process.

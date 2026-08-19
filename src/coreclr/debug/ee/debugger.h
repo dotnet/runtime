@@ -36,7 +36,7 @@
 #include "eedbginterface.h"
 #include "dbginterface.h"
 #include "corhost.h"
-#include "minipal-wait.h"
+#include "debugwait.h"
 
 
 #include "corjit.h"
@@ -649,10 +649,10 @@ protected:
     // that blew its stack
     FAVORCALLBACK m_fpFavor;
     void                           *m_pFavorData;
-    minipal_event                  *m_FavorReadEvent;
+    WaitEvent                      *m_FavorReadEvent;
     Crst                            m_FavorLock;
 
-    minipal_event                  *m_FavorAvailableEvent;
+    WaitEvent                      *m_FavorAvailableEvent;
 };
 
 
@@ -866,8 +866,8 @@ private:
     }
     Crst * GetFavorLock()                   { return &m_favorData.m_FavorLock; }
 
-    minipal_event *GetFavorReadEvent()      { return m_favorData.m_FavorReadEvent; }
-    minipal_event *GetFavorAvailableEvent() { return m_favorData.m_FavorAvailableEvent; }
+    WaitEvent *GetFavorReadEvent()      { return m_favorData.m_FavorReadEvent; }
+    WaitEvent *GetFavorAvailableEvent() { return m_favorData.m_FavorAvailableEvent; }
 
     HelperThreadFavor m_favorData;
 
@@ -895,8 +895,8 @@ private:
     Volatile<BOOL>                  m_helperThreadRunning;
     bool                            m_run;
 
-    minipal_event                  *m_threadControlEvent;
-    minipal_event                  *m_helperThreadExitedEvent;
+    WaitEvent                      *m_threadControlEvent;
+    WaitEvent                      *m_helperThreadExitedEvent;
     HANDLE                          m_helperThreadCanGoEvent;
     bool                            m_rgfInitRuntimeOffsets[IPC_TARGET_COUNT];
     bool                            m_fDetachRightSide;

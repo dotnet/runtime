@@ -13,7 +13,7 @@
 #include <minipal/mutex.h>
 #include <minipal/conditionvariable.h>
 #include <minipal/guid.h>
-#include "minipal-wait.h"
+#include "debugwait.h"
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_VM) || defined(FEATURE_DBGIPC_TRANSPORT_DI)
 
@@ -367,7 +367,7 @@ public:
     // requires the addresses of a couple of runtime data structures to service certain debugger requests that
     // may be delivered once the session is established.
 #ifdef RIGHT_SIDE_COMPILE
-    HRESULT Init(const ProcessDescriptor& pd, const minipal_wait_handle& processExited);
+    HRESULT Init(const ProcessDescriptor& pd, const WaitHandle& processExited);
 #else
     HRESULT Init(DebuggerIPCControlBlock * pDCB);
 #endif // RIGHT_SIDE_COMPILE
@@ -433,8 +433,8 @@ public:
 
     // Retrieves the auto-reset handle which is signalled by the session each time a new event is received
     // from the other side.
-    minipal_event *GetIPCEventReadyEvent();
-    minipal_event *GetDebugEventReadyEvent();
+    WaitEvent *GetIPCEventReadyEvent();
+    WaitEvent *GetDebugEventReadyEvent();
 
     // Copies the last event received from the other side into the provided buffer. This should only be called
     // (once) after the event returned from GetIPCEventReadyEvent()/GetDebugEventReadyEvent() has been signalled.
@@ -569,7 +569,7 @@ private:
         MessageHeader   m_sHeader;       // Inline message header
         PBYTE           m_pbDataBlock;   // Pointer to optional message data block (or NULL)
         DWORD           m_cbDataBlock;   // Count of bytes in above block if it's non-NULL
-        minipal_event   *m_hReplyEvent; // Optional event to signal if this message is replied to (or NULL)
+        WaitEvent   *m_hReplyEvent; // Optional event to signal if this message is replied to (or NULL)
         PBYTE           m_pbReplyBlock;  // Optional buffer to place data block from reply into (or NULL)
         DWORD           m_cbReplyBlock;  // Size in bytes of the above buffer if it is non-NULL
         Message        *m_pOrigMessage;  // Used when we need to find the original message from a copy
@@ -665,7 +665,7 @@ private:
     // On the RS the transport thread needs to know the IP address and port number to Connect() to.
     ProcessDescriptor m_pd;                  // Descriptor of a process we're talking to.
 
-    minipal_wait_handle *m_hProcessExited;     // wait which will be signaled when the debuggee is terminated
+    WaitHandle *m_hProcessExited;     // wait which will be signaled when the debuggee is terminated
 
     bool              m_fDebuggerAttached;
 #endif
@@ -690,7 +690,7 @@ private:
     DWORD           m_cValidEventBuffers;                   // Number of events that actually contain data
     DWORD           m_idxEventBufferHead;                   // Index of the first valid event
     DWORD           m_idxEventBufferTail;                   // Index of the first invalid event
-    minipal_event *m_rghEventReadyEvent[IPCET_Max];    // The event signalled when a new event arrives
+    WaitEvent *m_rghEventReadyEvent[IPCET_Max];    // The event signalled when a new event arrives
 
 #ifndef RIGHT_SIDE_COMPILE
     // The LS requires the addresses of a couple of runtime data structures in order to service MT_GetDCB etc.

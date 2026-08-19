@@ -67,7 +67,6 @@ if(CLR_CMAKE_HOST_UNIX)
 endif(CLR_CMAKE_HOST_UNIX)
 
 set(COREDBI_LIBRARIES
-    coreclrminipal
     debug-pal
     cordbdi
     dbgutil

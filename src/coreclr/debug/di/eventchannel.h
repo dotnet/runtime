@@ -12,7 +12,7 @@
 #ifndef _EVENT_CHANNEL_H_
 #define _EVENT_CHANNEL_H_
 
-#include "minipal-wait.h"
+#include "debugwait.h"
 
 //---------------------------------------------------------------------------------------
 //
@@ -162,7 +162,7 @@ public:
     //    NeedToWaitForAck() returns true after sending an IPC event to the LS
     //
 
-    virtual minipal_event *GetRightSideEventAckHandle() = 0;
+    virtual WaitEvent *GetRightSideEventAckHandle() = 0;
 
     //
     // After sending an event to the LS and determining that we need to wait for the LS's acknowledgement,

@@ -51,7 +51,7 @@ public:
     virtual BOOL NeedToWaitForAck(DebuggerIPCEvent * pEvent);
 
     // Get a handle to wait on after sending an IPC event to the LS.  The caller should call NeedToWaitForAck()
-    virtual minipal_event *GetRightSideEventAckHandle();
+    virtual WaitEvent *GetRightSideEventAckHandle();
 
     // Clean up the state if the wait for an acknowledgement is unsuccessful.
     virtual void   ClearEventForLeftSide();
@@ -100,7 +100,7 @@ private:
 
     // used by the LS to signal that the event is read
     HANDLE        m_rightSideEventRead;
-    minipal_event *m_rightSideEventReadWaitHandle;
+    WaitEvent *m_rightSideEventReadWaitHandle;
 
     // handle of the debuggee process
     HANDLE        m_hTargetProc;
@@ -192,7 +192,7 @@ HRESULT LocalEventChannel::Init(HANDLE hTargetProc)
     IfFailRet(DuplicateHandleToLocalProcess(&m_rightSideEventRead,
                                             &m_pDCBBuffer->m_rightSideEventRead));
 
-    m_rightSideEventReadWaitHandle = new (nothrow) minipal_event(m_rightSideEventRead);
+    m_rightSideEventReadWaitHandle = new (nothrow) WaitEvent(m_rightSideEventRead);
     if (m_rightSideEventReadWaitHandle == nullptr)
     {
         return E_OUTOFMEMORY;
@@ -312,7 +312,7 @@ BOOL LocalEventChannel::NeedToWaitForAck(DebuggerIPCEvent * pEvent)
 // Get a handle to wait on after sending an IPC event to the LS.  The caller should call NeedToWaitForAck()
 //
 // virtual
-minipal_event *LocalEventChannel::GetRightSideEventAckHandle()
+WaitEvent *LocalEventChannel::GetRightSideEventAckHandle()
 {
     return m_rightSideEventReadWaitHandle;
 }

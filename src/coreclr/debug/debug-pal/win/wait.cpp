@@ -3,10 +3,12 @@
 
 #include <windows.h>
 
-#include "minipal-wait.h"
+#include "debugwait.h"
 
 namespace
 {
+    constexpr uint32_t MaxWaitHandles = 64;
+
     HANDLE DuplicateNativeHandle(HANDLE handle)
     {
         if (handle == nullptr)
@@ -32,17 +34,17 @@ namespace
     }
 }
 
-minipal_wait_handle::minipal_wait_handle(HANDLE handle)
+WaitHandle::WaitHandle(HANDLE handle)
     : m_handle(handle)
 {
 }
 
-minipal_wait_handle::minipal_wait_handle(const minipal_wait_handle& handle)
-    : minipal_wait_handle(DuplicateNativeHandle(handle.m_handle))
+WaitHandle::WaitHandle(const WaitHandle& handle)
+    : WaitHandle(DuplicateNativeHandle(handle.m_handle))
 {
 }
 
-minipal_wait_handle::~minipal_wait_handle()
+WaitHandle::~WaitHandle()
 {
     if (m_handle != nullptr)
     {
@@ -50,59 +52,59 @@ minipal_wait_handle::~minipal_wait_handle()
     }
 }
 
-minipal_event::minipal_event(bool initialState)
-    : minipal_wait_handle(CreateEventW(nullptr, FALSE, initialState, nullptr))
+WaitEvent::WaitEvent(bool initialState)
+    : WaitHandle(CreateEventW(nullptr, FALSE, initialState, nullptr))
 {
 }
 
-minipal_event::minipal_event(HANDLE handle)
-    : minipal_wait_handle(DuplicateNativeHandle(handle))
+WaitEvent::WaitEvent(HANDLE handle)
+    : WaitHandle(DuplicateNativeHandle(handle))
 {
 }
 
-bool minipal_event::Set()
+bool WaitEvent::Set()
 {
     return SetEvent(GetRawHandle()) != FALSE;
 }
 
-bool minipal_event::Reset()
+bool WaitEvent::Reset()
 {
     return ResetEvent(GetRawHandle()) != FALSE;
 }
 
-minipal_latch::minipal_latch()
-    : minipal_wait_handle(CreateEventW(nullptr, TRUE, FALSE, nullptr))
+WaitLatch::WaitLatch()
+    : WaitHandle(CreateEventW(nullptr, TRUE, FALSE, nullptr))
 {
 }
 
-bool minipal_latch::Set()
+bool WaitLatch::Set()
 {
     return SetEvent(GetRawHandle()) != FALSE;
 }
 
-minipal_native_handle::minipal_native_handle(HANDLE handle)
-    : minipal_wait_handle(DuplicateNativeHandle(handle))
+NativeHandle::NativeHandle(HANDLE handle)
+    : WaitHandle(DuplicateNativeHandle(handle))
 {
 }
 
-int32_t minipal_wait_handle::Wait(
-    const minipal_wait_handle* const* handles,
+int32_t WaitHandle::Wait(
+    const WaitHandle* const* handles,
     uint32_t count,
     uint32_t timeout)
 {
-    if (handles == nullptr || count == 0 || count > MINIPAL_MAX_WAIT_OBJECTS)
+    if (handles == nullptr || count == 0 || count > MaxWaitHandles)
     {
         SetLastError(ERROR_INVALID_PARAMETER);
-        return MINIPAL_WAIT_FAILED;
+        return Failed;
     }
 
-    HANDLE nativeHandles[MINIPAL_MAX_WAIT_OBJECTS];
+    HANDLE nativeHandles[MaxWaitHandles];
     for (uint32_t index = 0; index < count; index++)
     {
         if (handles[index] == nullptr || !handles[index]->IsValid())
         {
             SetLastError(ERROR_INVALID_HANDLE);
-            return MINIPAL_WAIT_FAILED;
+            return Failed;
         }
 
         nativeHandles[index] = handles[index]->m_handle;
@@ -122,8 +124,8 @@ int32_t minipal_wait_handle::Wait(
 
     if (result == WAIT_TIMEOUT)
     {
-        return MINIPAL_WAIT_TIMEOUT;
+        return Timeout;
     }
 
-    return MINIPAL_WAIT_FAILED;
+    return Failed;
 }

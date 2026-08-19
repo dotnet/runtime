@@ -85,7 +85,7 @@ DbgTransportSession::~DbgTransportSession()
 // addresses of a couple of runtime data structures to service certain debugger requests that may be delivered
 // once the session is established.
 #ifdef RIGHT_SIDE_COMPILE
-HRESULT DbgTransportSession::Init(const ProcessDescriptor& pd, const minipal_wait_handle& processExited)
+HRESULT DbgTransportSession::Init(const ProcessDescriptor& pd, const WaitHandle& processExited)
 #else // RIGHT_SIDE_COMPILE
 HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
 #endif // RIGHT_SIDE_COMPILE
@@ -112,7 +112,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
         return E_FAIL;
 
     m_pd = pd;
-    m_hProcessExited = new (nothrow) minipal_wait_handle(processExited);
+    m_hProcessExited = new (nothrow) WaitHandle(processExited);
     if ((m_hProcessExited == nullptr) || !m_hProcessExited->IsValid())
     {
         delete m_hProcessExited;
@@ -140,7 +140,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
     if (m_pEventBuffers == NULL)
         return E_OUTOFMEMORY;
 
-    m_rghEventReadyEvent[IPCET_OldStyle] = new (nothrow) minipal_event(false);
+    m_rghEventReadyEvent[IPCET_OldStyle] = new (nothrow) WaitEvent(false);
     if ((m_rghEventReadyEvent[IPCET_OldStyle] == nullptr) ||
         !m_rghEventReadyEvent[IPCET_OldStyle]->IsValid())
     {
@@ -149,7 +149,7 @@ HRESULT DbgTransportSession::Init(DebuggerIPCControlBlock *pDCB)
         return E_OUTOFMEMORY;
     }
 
-    m_rghEventReadyEvent[IPCET_DebugEvent] = new (nothrow) minipal_event(false);
+    m_rghEventReadyEvent[IPCET_DebugEvent] = new (nothrow) WaitEvent(false);
     if ((m_rghEventReadyEvent[IPCET_DebugEvent] == nullptr) ||
         !m_rghEventReadyEvent[IPCET_DebugEvent]->IsValid())
     {
@@ -379,14 +379,14 @@ HRESULT DbgTransportSession::SendDebugEvent(DebuggerIPCEvent * pEvent)
 
 // Retrieves the auto-reset handle which is signalled by the session each time a new event is received from
 // the other side.
-minipal_event *DbgTransportSession::GetIPCEventReadyEvent()
+WaitEvent *DbgTransportSession::GetIPCEventReadyEvent()
 {
     return m_rghEventReadyEvent[IPCET_OldStyle];
 }
 
 // Retrieves the auto-reset handle which is signalled by the session each time a new event (disguised as a
 // debug event) is received from the other side.
-minipal_event *DbgTransportSession::GetDebugEventReadyEvent()
+WaitEvent *DbgTransportSession::GetDebugEventReadyEvent()
 {
     return m_rghEventReadyEvent[IPCET_DebugEvent];
 }
@@ -730,7 +730,7 @@ HRESULT DbgTransportSession::SendMessage(Message *pMessage, bool fWaitsForReply)
 HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
 {
     // Allocate event to wait for reply on.
-    pMessage->m_hReplyEvent = new (nothrow) minipal_event(false);
+    pMessage->m_hReplyEvent = new (nothrow) WaitEvent(false);
     if ((pMessage->m_hReplyEvent == nullptr) || !pMessage->m_hReplyEvent->IsValid())
     {
         delete pMessage->m_hReplyEvent;
@@ -741,7 +741,7 @@ HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
     // Acquire a second owned reference to the event because both this thread and the message pumping
     // thread may release their references at the same time. This thread owns hReplyEvent while the
     // message pumping thread owns the reference on the message.
-    minipal_event hReplyEvent(*pMessage->m_hReplyEvent);
+    WaitEvent hReplyEvent(*pMessage->m_hReplyEvent);
     if (!hReplyEvent.IsValid())
     {
         delete pMessage->m_hReplyEvent;
@@ -766,15 +766,15 @@ HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
     // Wait for a reply (by the time this event is signalled the message header will have been overwritten by
     // the reply and any output buffer provided will have been filled in).
 #if defined(RIGHT_SIDE_COMPILE)
-    const minipal_wait_handle *rgEvents[] = { &hReplyEvent, m_hProcessExited };
+    const WaitHandle *rgEvents[] = { &hReplyEvent, m_hProcessExited };
 #else  // !RIGHT_SIDE_COMPILE
-    const minipal_wait_handle *rgEvents[] = { &hReplyEvent };
+    const WaitHandle *rgEvents[] = { &hReplyEvent };
 #endif // RIGHT_SIDE_COMPILE
 
-    int32_t waitResult = minipal_wait_handle::Wait(
+    int32_t waitResult = WaitHandle::Wait(
         rgEvents,
         ARRAY_SIZE(rgEvents),
-        MINIPAL_WAIT_INFINITE);
+        WaitHandle::Infinite);
 
     if (waitResult == 0)
     {
@@ -804,7 +804,7 @@ HRESULT DbgTransportSession::SendRequestMessageAndWait(Message *pMessage)
         // Fortunately, in this case, we know the message pumping thread is going to signal the event.
         if (pOriginalMessage == NULL)
         {
-            minipal_wait_handle::Wait(hReplyEvent, MINIPAL_WAIT_INFINITE);
+            WaitHandle::Wait(hReplyEvent, WaitHandle::Infinite);
         }
         else
         {
@@ -1082,7 +1082,7 @@ void DbgTransportSession::SignalReplyEvent(Message * pMessage)
     // Make a local copy of the event handle.  As soon as we signal the event, the thread blocked waiting on
     // the reply may wake up and trash the message.  See code:DbgTransportSession::SendRequestMessageAndWait()
     // for more info.
-    minipal_event *pReplyEvent = pMessage->m_hReplyEvent;
+    WaitEvent *pReplyEvent = pMessage->m_hReplyEvent;
     _ASSERTE(pReplyEvent != nullptr);
     pMessage->m_hReplyEvent = nullptr;
 

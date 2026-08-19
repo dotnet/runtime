@@ -15,7 +15,7 @@
 
 #include <utilcode.h>
 #include <minipal/mutex.h>
-#include "minipal-wait.h"
+#include "debugwait.h"
 
 #include <functional>
 
@@ -3695,7 +3695,7 @@ public:
 private:
     // Process-exit waitable. On Windows this wraps an OS process handle. On Unix it is a minipal latch
     // that is valid only with the minipal wait APIs and must not be exposed to clients.
-    minipal_wait_handle *m_handle;
+    WaitHandle *m_handle;
 
     // Process descriptor - holds PID and App group ID for Mac debugging
     ProcessDescriptor m_processDescriptor;
@@ -3711,7 +3711,7 @@ public:
 #endif
     }
 
-    minipal_wait_handle *UnsafeGetProcessWaitHandle()
+    WaitHandle *UnsafeGetProcessWaitHandle()
     {
         return m_handle;
     }
@@ -3874,7 +3874,7 @@ public:
 
 
     DebuggerIPCRuntimeOffsets m_runtimeOffsets;
-    minipal_event            *m_leftSideEventAvailable;
+    WaitEvent                *m_leftSideEventAvailable;
     HANDLE                    m_leftSideEventRead;
 #if defined(FEATURE_INTEROP_DEBUGGING)
     HANDLE                    m_leftSideUnmanagedWaitEvent;
@@ -10127,7 +10127,7 @@ private:
 
     HANDLE               m_thread;
     DWORD                m_threadId;
-    minipal_event       *m_threadControlEvent;
+    WaitEvent           *m_threadControlEvent;
     HANDLE               m_actionTakenEvent;
     BOOL                 m_run;
 
@@ -10301,7 +10301,7 @@ private:
     HANDLE               m_thread;
     DWORD                m_threadId;
     BOOL                 m_run;
-    minipal_event       *m_threadControlEvent;
+    WaitEvent           *m_threadControlEvent;
     BOOL                 m_processStateChanged;
 };
 

@@ -190,7 +190,7 @@ HRESULT BuildPlatformSpecificDataTarget(MachineInfo machineInfo,
                                         const ProcessDescriptor * pProcessDescriptor,
                                         ShimDataTarget ** ppDataTarget)
 {
-    minipal_wait_handle *processWaitHandle = nullptr;
+    WaitHandle *processWaitHandle = nullptr;
     HRESULT hr = E_FAIL;
 
     ShimRemoteDataTarget * pRemoteDataTarget = NULL;

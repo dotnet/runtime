@@ -71,7 +71,7 @@ public:
     );
 
     // Return a handle for the debuggee process.
-    virtual minipal_wait_handle *GetProcessHandle();
+    virtual WaitHandle *GetProcessHandle();
 
     // Terminate the debuggee process.
     virtual BOOL TerminateProcess(UINT32 exitCode);
@@ -156,7 +156,7 @@ BOOL WindowsNativePipeline::ContinueDebugEvent(
 }
 
 // Return a handle for the debuggee process.
-minipal_wait_handle *WindowsNativePipeline::GetProcessHandle()
+WaitHandle *WindowsNativePipeline::GetProcessHandle()
 {
     _ASSERTE(m_dwProcessId != 0);
 
@@ -174,7 +174,7 @@ minipal_wait_handle *WindowsNativePipeline::GetProcessHandle()
         return nullptr;
     }
 
-    minipal_native_handle nativeHandle(processHandle);
+    NativeHandle nativeHandle(processHandle);
     DWORD error = GetLastError();
     CloseHandle(processHandle);
 
@@ -184,7 +184,7 @@ minipal_wait_handle *WindowsNativePipeline::GetProcessHandle()
         return nullptr;
     }
 
-    minipal_wait_handle *waitHandle = new (nothrow) minipal_wait_handle(nativeHandle);
+    WaitHandle *waitHandle = new (nothrow) WaitHandle(nativeHandle);
     DWORD duplicateError = GetLastError();
     if (waitHandle == nullptr)
     {

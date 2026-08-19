@@ -961,7 +961,7 @@ CordbProcess::CordbProcess(ULONG64 clrInstanceId,
         CordbHashTable        m_steppers; // Closed in ~CordbProcess
 
         // Deleted in ~CordbProcess
-        minipal_event        *m_leftSideEventAvailable;
+        WaitEvent            *m_leftSideEventAvailable;
         // Closed in CloseIPCEventHandles called from ~CordbProcess
         HANDLE                m_leftSideEventRead;
 
@@ -1073,15 +1073,15 @@ HRESULT ShimProcess::DebugActiveProcess(
         // being 'managed attached'
         if(!pShim->m_fIsInteropDebugging)
         {
-            minipal_event terminatingEvent(pShim->m_terminatingEvent);
-            minipal_event markAttachPendingEvent(pShim->m_markAttachPendingEvent);
-            const minipal_wait_handle *waitSet[] = { &terminatingEvent, &markAttachPendingEvent };
+            WaitEvent terminatingEvent(pShim->m_terminatingEvent);
+            WaitEvent markAttachPendingEvent(pShim->m_markAttachPendingEvent);
+            const WaitHandle *waitSet[] = { &terminatingEvent, &markAttachPendingEvent };
 
             // Wait for the completion of marking pending attach bit or debugger detaching
-            minipal_wait_handle::Wait(
+            WaitHandle::Wait(
                 waitSet,
                 ARRAY_SIZE(waitSet),
-                MINIPAL_WAIT_INFINITE);
+                WaitHandle::Infinite);
         }
 #endif //!FEATURE_DBGIPC_TRANSPORT_DI
     }
@@ -1620,7 +1620,7 @@ HRESULT CordbProcess::Init()
         // signal existing RS infrastructure. Eventually get rid of LSEA, LSER completely.
         //
 
-        m_leftSideEventAvailable = new (nothrow) minipal_event(false);
+        m_leftSideEventAvailable = new (nothrow) WaitEvent(false);
         if ((m_leftSideEventAvailable == nullptr) || !m_leftSideEventAvailable->IsValid())
         {
             delete m_leftSideEventAvailable;
@@ -3013,8 +3013,8 @@ void CordbProcess::DetachShim()
         IfFailThrow(hr);
 
 #ifdef OUT_OF_PROCESS_SETTHREADCONTEXT
-        minipal_event detachSetThreadContextNeededEvent(m_detachSetThreadContextNeededEvent);
-        const minipal_wait_handle *waitSet[] = {
+        WaitEvent detachSetThreadContextNeededEvent(m_detachSetThreadContextNeededEvent);
+        const WaitHandle *waitSet[] = {
             &detachSetThreadContextNeededEvent, // Signaled on every debug event after the first SendCanDetach request
             UnsafeGetProcessWaitHandle()        // Signaled when the process exits
         };
@@ -3027,7 +3027,7 @@ void CordbProcess::DetachShim()
         }
         while (!fDetachComplete)
         {
-            int32_t waitResult = minipal_wait_handle::Wait(
+            int32_t waitResult = WaitHandle::Wait(
                 waitSet,
                 ARRAY_SIZE(waitSet),
                 DETACH_WAIT_TIMEOUT_MS);
@@ -3049,7 +3049,7 @@ void CordbProcess::DetachShim()
                 // We timed out waiting for debug events, indicating the process is idle.
                 // Simply detach as if it had succeeded.
 
-                _ASSERTE(waitResult == MINIPAL_WAIT_TIMEOUT);
+                _ASSERTE(waitResult == WaitHandle::Timeout);
                 CONSISTENCY_CHECK_MSGF(false, ("Timeout while waiting for detach to complete"));
 
                 fDetachComplete = true;
@@ -7944,7 +7944,7 @@ HRESULT CordbProcess::StartSyncFromWin32Stop(BOOL * pfAsyncBreakSent)
 bool CordbProcess::CheckIfLSExited()
 {
 // Check by waiting on the handle with no timeout.
-    if (minipal_wait_handle::Wait(*m_handle, 0) == 0)
+    if (WaitHandle::Wait(*m_handle, 0) == 0)
     {
         Lock();
         m_terminated = true;
@@ -8772,7 +8772,7 @@ HRESULT CordbRCEventThread::Init()
     if (m_cordb == NULL)
         return E_INVALIDARG;
 
-    m_threadControlEvent = new (nothrow) minipal_event(false);
+    m_threadControlEvent = new (nothrow) WaitEvent(false);
 
     if ((m_threadControlEvent == nullptr) || !m_threadControlEvent->IsValid())
     {
@@ -9339,7 +9339,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
     }
     else
     {
-        minipal_wait_handle *pLSProcess = process->UnsafeGetProcessWaitHandle();
+        WaitHandle *pLSProcess = process->UnsafeGetProcessWaitHandle();
 
         // We take locks to ensure that the CordbProcess object is still alive,
         // even if the OS process exited.
@@ -9353,7 +9353,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
             // There is a race here - we can't rely on any check above SendEventToLeftSide
             // to tell us whether the process has exited yet.
             // Check for that case and return an accurate hresult.
-            int32_t waitResult = minipal_wait_handle::Wait(*pLSProcess, 0);
+            int32_t waitResult = WaitHandle::Wait(*pLSProcess, 0);
             if (waitResult == 0)
             {
                 return CORDBG_E_PROCESS_TERMINATED;
@@ -9392,7 +9392,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
             // This includes when we've dispatch Native events, and it includes the AsyncBreak sent to get us from a
             // win32 frozen state to a synchronized state).
 #ifdef HOST_WINDOWS
-            minipal_native_handle *pHelperThreadWait = nullptr;
+            NativeHandle *pHelperThreadWait = nullptr;
             HANDLE hHelperThread = NULL;
             if (process->IsStopped())
             {
@@ -9401,7 +9401,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
 
             if (hHelperThread != NULL)
             {
-                pHelperThreadWait = new (nothrow) minipal_native_handle(hHelperThread);
+                pHelperThreadWait = new (nothrow) NativeHandle(hHelperThread);
                 if ((pHelperThreadWait == nullptr) || !pHelperThreadWait->IsValid())
                 {
                     delete pHelperThreadWait;
@@ -9409,11 +9409,11 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
                 }
             }
 #else
-            minipal_wait_handle *pHelperThreadWait = nullptr;
+            WaitHandle *pHelperThreadWait = nullptr;
 #endif
 
             // In a tie, wait-any gives priority to the handle earlier in the array.
-            const minipal_wait_handle *waitSet[] = {
+            const WaitHandle *waitSet[] = {
                 process->GetEventChannel()->GetRightSideEventAckHandle(),
                 pLSProcess,
                 pHelperThreadWait
@@ -9426,9 +9426,9 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
 
             do
             {
-                waitResult = minipal_wait_handle::Wait(waitSet, cWaitSet, CordbGetWaitTimeout());
+                waitResult = WaitHandle::Wait(waitSet, cWaitSet, CordbGetWaitTimeout());
                 // If we timeout because we're waiting for an uncontinued OOB event, we need to just keep waiting.
-            } while ((waitResult == MINIPAL_WAIT_TIMEOUT) && process->IsWaitingForOOBEvent());
+            } while ((waitResult == WaitHandle::Timeout) && process->IsWaitingForOOBEvent());
 
             delete pHelperThreadWait;
 
@@ -9485,7 +9485,7 @@ HRESULT CordbRCEventThread::SendIPCEvent(CordbProcess* process,
                     // If we timed out/failed, check the left side to see if it is in the unrecoverable error mode. If it is,
                     // return the HR from the left side that caused the error.  Otherwise, return that we timed out and that
                     // we don't really know why.
-                    HRESULT realHR = waitResult == MINIPAL_WAIT_FAILED ? E_FAIL : ErrWrapper(CORDBG_E_TIMEOUT);
+                    HRESULT realHR = waitResult == WaitHandle::Failed ? E_FAIL : ErrWrapper(CORDBG_E_TIMEOUT);
 
                     hr = process->CheckForUnrecoverableError();
 
@@ -9712,7 +9712,7 @@ void CordbRCEventThread::ProcessStateChanged()
 //---------------------------------------------------------------------------------------
 void CordbRCEventThread::ThreadProc()
 {
-    const minipal_wait_handle *waitSet[MAXIMUM_WAIT_OBJECTS];
+    const WaitHandle *waitSet[MAXIMUM_WAIT_OBJECTS];
     CordbProcess * rgProcessSet[MAXIMUM_WAIT_OBJECTS];
     unsigned int   waitCount;
 
@@ -9729,9 +9729,9 @@ void CordbRCEventThread::ThreadProc()
 
     while (m_run)
     {
-        int32_t waitResult = minipal_wait_handle::Wait(waitSet, waitCount, 2000);
+        int32_t waitResult = WaitHandle::Wait(waitSet, waitCount, 2000);
 
-        if (waitResult == MINIPAL_WAIT_FAILED)
+        if (waitResult == WaitHandle::Failed)
         {
             STRESS_LOG0(LF_CORDB, LL_INFO10000, "CordbRCEventThread::ThreadProc wait failed\n");
         }
@@ -10054,7 +10054,7 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
     do
     {
         _ASSERTE(!pProcess->ThreadHoldsProcessLock());
-        waitResult = minipal_wait_handle::Wait(
+        waitResult = WaitHandle::Wait(
             *pProcess->m_leftSideEventAvailable,
             CordbGetWaitTimeout());
 
@@ -10063,7 +10063,7 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
             return CORDBG_E_PROCESS_TERMINATED;
         }
         // If we timeout because we're waiting for an uncontinued OOB event, we need to just keep waiting.
-    } while ((waitResult == MINIPAL_WAIT_TIMEOUT) && pProcess->IsWaitingForOOBEvent());
+    } while ((waitResult == WaitHandle::Timeout) && pProcess->IsWaitingForOOBEvent());
 
 
 
@@ -10089,7 +10089,7 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
 
         return hr;
     }
-    else if (waitResult == MINIPAL_WAIT_TIMEOUT)
+    else if (waitResult == WaitHandle::Timeout)
     {
         //
         // If we timed out, check the left side to see if it is in the
@@ -10111,7 +10111,7 @@ HRESULT CordbRCEventThread::WaitForIPCEventFromProcess(CordbProcess * pProcess,
     }
     else
     {
-        _ASSERTE(waitResult == MINIPAL_WAIT_FAILED);
+        _ASSERTE(waitResult == WaitHandle::Failed);
 
         hr = E_FAIL;
 
@@ -10254,7 +10254,7 @@ HRESULT CordbWin32EventThread::Init()
 
     m_sendToWin32EventThreadMutex.Init("Win32-Send lock", RSLock::cLockFlat, RSLock::LL_WIN32_SEND_LOCK);
 
-    m_threadControlEvent = new (nothrow) minipal_event(false);
+    m_threadControlEvent = new (nothrow) WaitEvent(false);
     if ((m_threadControlEvent == nullptr) || !m_threadControlEvent->IsValid())
     {
         delete m_threadControlEvent;
@@ -11205,7 +11205,7 @@ void CordbWin32EventThread::Win32EventLoop()
 
         unsigned int cWaitCount = 1;
 
-        const minipal_wait_handle *waitSet[2];
+        const WaitHandle *waitSet[2];
 
         waitSet[0] = m_threadControlEvent;
 
@@ -11277,9 +11277,9 @@ void CordbWin32EventThread::Win32EventLoop()
         // See if any process that we aren't attached to as the Win32 debugger have exited. (Note: this is a
         // polling action if we are also waiting for Win32 debugger events. We're also looking at the thread
         // control event here, too, to see if we're supposed to do something, like attach.
-        int32_t waitResult = minipal_wait_handle::Wait(waitSet, cWaitCount, dwWaitTimeout);
+        int32_t waitResult = WaitHandle::Wait(waitSet, cWaitCount, dwWaitTimeout);
 
-        _ASSERTE((waitResult == MINIPAL_WAIT_TIMEOUT) ||
+        _ASSERTE((waitResult == WaitHandle::Timeout) ||
                  (waitResult >= 0 && static_cast<unsigned int>(waitResult) < cWaitCount));
 
         if (!m_run)
@@ -11294,7 +11294,7 @@ void CordbWin32EventThread::Win32EventLoop()
         // If we haven't timed out, or if it wasn't the thread control event
         // that was set, then a process has
         // exited...
-        if ((waitResult != MINIPAL_WAIT_TIMEOUT) && (waitResult != 0))
+        if ((waitResult != WaitHandle::Timeout) && (waitResult != 0))
         {
             // Grab the process that exited.
             _ASSERTE(waitResult == 1);

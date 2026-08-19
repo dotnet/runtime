@@ -276,7 +276,7 @@ HRESULT DebuggerRCThread::Init(void)
 
 
     // Create the thread control event.
-    m_threadControlEvent = new (nothrow) minipal_event(false);
+    m_threadControlEvent = new (nothrow) WaitEvent(false);
     if ((m_threadControlEvent == nullptr) || !m_threadControlEvent->IsValid())
     {
         delete m_threadControlEvent;
@@ -285,7 +285,7 @@ HRESULT DebuggerRCThread::Init(void)
     }
 
     // Track liveness separately so this auto-reset event is only an exit notification.
-    m_helperThreadExitedEvent = new (nothrow) minipal_event(false);
+    m_helperThreadExitedEvent = new (nothrow) WaitEvent(false);
     if ((m_helperThreadExitedEvent == nullptr) || !m_helperThreadExitedEvent->IsValid())
     {
         delete m_helperThreadExitedEvent;
@@ -586,7 +586,7 @@ void DebuggerRCThread::ThreadProc(void)
     struct HelperThreadExitSignal
     {
         Volatile<BOOL> &Running;
-        minipal_event *Event;
+        WaitEvent *Event;
 
         ~HelperThreadExitSignal()
         {
@@ -860,11 +860,11 @@ void DebuggerRCThread::MainLoop()
     // threads doing helper duty.
     CantStopHolder cantStopHolder;
 
-    const minipal_wait_handle *waitSet[DRCT_COUNT_FINAL];
+    const WaitHandle *waitSet[DRCT_COUNT_FINAL];
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    minipal_event rightSideEventAvailable(m_pDCB->m_rightSideEventAvailable.ImportToLocalProcess());
+    WaitEvent rightSideEventAvailable(m_pDCB->m_rightSideEventAvailable.ImportToLocalProcess());
 #ifdef HOST_WINDOWS
-    minipal_native_handle *debuggerProcess = nullptr;
+    NativeHandle *debuggerProcess = nullptr;
 #endif // HOST_WINDOWS
 #endif
 
@@ -899,7 +899,7 @@ void DebuggerRCThread::MainLoop()
             m_pDCB->m_rightSideProcessHandle.ImportToLocalProcess() != NULL)
         {
             _ASSERTE((cWaitCount + 1) == DRCT_COUNT_FINAL);
-            debuggerProcess = new (nothrow) minipal_native_handle(
+            debuggerProcess = new (nothrow) NativeHandle(
                 m_pDCB->m_rightSideProcessHandle.ImportToLocalProcess());
             if ((debuggerProcess == nullptr) || !debuggerProcess->IsValid())
             {
@@ -928,7 +928,7 @@ void DebuggerRCThread::MainLoop()
         }
 
         // Wait for an event from the Right Side.
-        int32_t waitResult = minipal_wait_handle::Wait(waitSet, cWaitCount, dwWaitTimeout);
+        int32_t waitResult = WaitHandle::Wait(waitSet, cWaitCount, dwWaitTimeout);
 
         if (!m_run)
         {
@@ -1014,7 +1014,7 @@ void DebuggerRCThread::MainLoop()
             // dbgLockHolder goes out of scope - implicit Release
             // tsl goes out of scope - implicit Release
          }
-        else if (waitResult == MINIPAL_WAIT_TIMEOUT)
+        else if (waitResult == WaitHandle::Timeout)
         {
 
 LWaitTimedOut:
@@ -1128,9 +1128,9 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
     // threads doing helper duty.
     CantStopHolder cantStopHolder;
 
-    const minipal_wait_handle *waitSet[DRCT_COUNT_FINAL];
+    const WaitHandle *waitSet[DRCT_COUNT_FINAL];
 #if !defined(FEATURE_DBGIPC_TRANSPORT_VM)
-    minipal_event rightSideEventAvailable(m_pDCB->m_rightSideEventAvailable.ImportToLocalProcess());
+    WaitEvent rightSideEventAvailable(m_pDCB->m_rightSideEventAvailable.ImportToLocalProcess());
 #endif
 
 #ifdef _DEBUG
@@ -1155,7 +1155,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
         LOG((LF_CORDB, LL_INFO1000, "DRCT::ML: waiting for event.\n"));
 
         // Wait for an event from the Right Side.
-        int32_t waitResult = minipal_wait_handle::Wait(waitSet, cWaitCount, dwWaitTimeout);
+        int32_t waitResult = WaitHandle::Wait(waitSet, cWaitCount, dwWaitTimeout);
 
         if (!m_run)
         {
@@ -1218,7 +1218,7 @@ void DebuggerRCThread::TemporaryHelperThreadMainLoop()
             //
             goto LWaitTimedOut;
          }
-        else if (waitResult == MINIPAL_WAIT_TIMEOUT)
+        else if (waitResult == WaitHandle::Timeout)
         {
 
 LWaitTimedOut:
@@ -1724,7 +1724,7 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
             // or totally executed the favor but not yet signaled the FavorReadEvent. We don't
             // know what it did, so we don't know what we can do; so we're in an unstable state.
 
-            const minipal_wait_handle *waitSet[] = {
+            const WaitHandle *waitSet[] = {
                 GetFavorReadEvent(),
 #ifdef HOST_WINDOWS
                 // Preserve detection of abnormal helper termination through the native thread handle.
@@ -1734,7 +1734,7 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
 #endif
             };
 #ifdef HOST_WINDOWS
-            minipal_native_handle helperThread(m_thread);
+            NativeHandle helperThread(m_thread);
             waitSet[1] = &helperThread;
 #endif
 
@@ -1744,10 +1744,10 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
             // preemptive mode before waiting for the favor to complete (see Dev11 72349).
             GCX_PREEMP();
 
-            int32_t waitResult = minipal_wait_handle::Wait(
+            int32_t waitResult = WaitHandle::Wait(
                 waitSet,
                 ARRAY_SIZE(waitSet),
-                MINIPAL_WAIT_INFINITE);
+                WaitHandle::Infinite);
 
             if (waitResult == 0)
             {
@@ -1761,7 +1761,7 @@ void DebuggerRCThread::DoFavor(FAVORCALLBACK fp, void * pData)
 
                 // Since we have no timeout, we shouldn't be able to get an error on the wait,
                 // but just in case ...
-                _ASSERTE(waitResult != MINIPAL_WAIT_FAILED);
+                _ASSERTE(waitResult != WaitHandle::Failed);
                 _ASSERTE((waitResult == 1) || !"DoFavor - unexpected wait result");
 
                 // Thread exited without doing favor, so execute it on our thread.
