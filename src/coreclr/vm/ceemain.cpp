@@ -1698,6 +1698,11 @@ static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
 
 static PLATFORM_THREAD_LOCAL byte t_flsState;
 
+static bool HasThreadStateBeenDestroyed()
+{
+    return t_flsState == FLS_STATE_INVOKED;
+}
+
 // This is called when each *fiber* is destroyed. When the home fiber of a thread is destroyed,
 // it means that the thread itself is destroyed.
 // Since we receive that notification outside of the Loader Lock, it allows us to safely acquire
@@ -1734,20 +1739,7 @@ static void OsAttachThread(void* thread)
 {
     _ASSERTE(g_flsIndex != FLS_OUT_OF_INDEXES);
 
-    if (t_flsState == FLS_STATE_INVOKED)
-    {
-        // Managed C++ may run managed code in DllMain (e.g. during DLL_PROCESS_DETACH to run global destructors). This is
-        // not supported and unreliable. Historically, it happened to work most of the time. For backward compatibility,
-        // suppress this assert in release builds if we have encountered any mixed mode binaries.
-        if (Module::HasAnyIJWBeenLoaded())
-        {
-            _ASSERTE(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
-        }
-        else
-        {
-            _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
-        }
-    }
+    CheckThreadStateNotDestroyed();
 
     t_flsState = FLS_STATE_ARMED;
 
@@ -1792,6 +1784,13 @@ void EnsureTlsDestructionMonitor()
 }
 
 #else
+static PLATFORM_THREAD_LOCAL bool t_threadStateDestroyed;
+
+static bool HasThreadStateBeenDestroyed()
+{
+    return t_threadStateDestroyed;
+}
+
 struct TlsDestructionMonitor
 {
     bool m_activated = false;
@@ -1807,6 +1806,8 @@ struct TlsDestructionMonitor
         {
             RuntimeThreadShutdown(GetThreadNULLOk());
         }
+
+        t_threadStateDestroyed = true;
     }
 };
 
@@ -1820,6 +1821,26 @@ void EnsureTlsDestructionMonitor()
 }
 
 #endif
+
+void CheckThreadStateNotDestroyed()
+{
+    if (!HasThreadStateBeenDestroyed())
+    {
+        return;
+    }
+
+    // Managed C++ may run managed code in DllMain (e.g. during DLL_PROCESS_DETACH to run global destructors). This is
+    // not supported and unreliable. Historically, it happened to work most of the time. For backward compatibility,
+    // suppress this assert in release builds if we have encountered any mixed mode binaries.
+    if (Module::HasAnyIJWBeenLoaded())
+    {
+        _ASSERTE(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+    }
+    else
+    {
+        _ASSERTE_ALL_BUILDS(!"Attempt to execute managed code after the .NET runtime thread state has been destroyed.");
+    }
+}
 
 #ifdef DEBUGGING_SUPPORTED
 //
