@@ -112,6 +112,13 @@ public class AppleHelixR2RTests
         // project from any Directory.Build.props/targets that might sit above it.
         WriteFile(Path.Combine(workItemRoot, "Directory.Build.props"), "<Project />");
         WriteFile(Path.Combine(workItemRoot, "Directory.Build.targets"), "<Project />");
+
+        // The SDK resolver walks up from the working directory looking for a global.json, which is a
+        // separate lookup from the Directory.Build one above and is not covered by it. A stray
+        // global.json anywhere above the temp directory pins the child to an SDK version the resolved
+        // host does not have, and the child then fails before MSBuild even starts. Wasm.Build.Tests
+        // shields its own child builds the same way.
+        WriteFile(Path.Combine(workItemRoot, "global.json"), "{}");
     }
 
     // The props file the proxy project imports. On Helix it carries the settings of the test project
