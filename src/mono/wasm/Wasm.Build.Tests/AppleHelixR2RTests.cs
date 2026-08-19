@@ -206,7 +206,12 @@ public class AppleHelixR2RTests
         {
             startInfo.Environment["DOTNET_ROOT"] = hostDir;
             startInfo.Environment["DOTNET_INSTALL_DIR"] = hostDir;
-            startInfo.Environment["PATH"] = $"{hostDir}{Path.PathSeparator}{Environment.GetEnvironmentVariable("PATH")}";
+            // An empty PATH entry means the working directory on unix, so do not leave a trailing
+            // separator behind when the parent has no PATH.
+            string? path = Environment.GetEnvironmentVariable("PATH");
+            startInfo.Environment["PATH"] = string.IsNullOrEmpty(path)
+                ? hostDir
+                : $"{hostDir}{Path.PathSeparator}{path}";
         }
 
         var output = new StringBuilder();

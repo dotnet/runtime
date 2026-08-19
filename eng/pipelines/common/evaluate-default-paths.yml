@@ -258,7 +258,9 @@ jobs:
       - src/mono/browser/build/*
       - src/mono/browser/emscripten-version.txt
       - src/mono/browser/runtime/*
-      # AppleHelixR2RTests in Wasm.Build.Tests drives the Apple Helix R2R proxy project.
+      # AppleHelixR2RTests in Wasm.Build.Tests drives ProxyProjectForAOTOnHelix.proj from this
+      # directory. The Directory.Build files next to it are shipped to Helix with it, but the test
+      # replaces them with stubs, so a change to those is not covered by it.
       - src/mono/msbuild/apple/data/*
       - src/mono/wasm/build/*
       - src/mono/wasm/host/*
