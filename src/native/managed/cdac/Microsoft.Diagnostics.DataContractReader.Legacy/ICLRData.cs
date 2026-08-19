@@ -15,7 +15,15 @@ namespace Microsoft.Diagnostics.DataContractReader.Legacy;
 public unsafe partial interface ICLRDataEnumMemoryRegions
 {
     [PreserveSig]
-    int EnumMemoryRegions(/*ICLRDataEnumMemoryRegionsCallback*/ void* callback, uint miniDumpFlags, /*CLRDataEnumMemoryFlags*/ int clrFlags);
+    int EnumMemoryRegions(ICLRDataEnumMemoryRegionsCallback callback, uint miniDumpFlags, /*CLRDataEnumMemoryFlags*/ int clrFlags);
+}
+
+[GeneratedComInterface]
+[Guid("bcdd6908-ba2d-4ec5-96cf-df4d5cdcb4a4")]
+public partial interface ICLRDataEnumMemoryRegionsCallback
+{
+    [PreserveSig]
+    int EnumMemoryRegion(ulong address, uint size);
 }
 
 [GeneratedComInterface]

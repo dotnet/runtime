@@ -11,6 +11,7 @@
         <!-- add new projects here -->
         <!-- NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)libhellomanaged/src/libhellomanaged.csproj" -->
         <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)cdac/mscordaccore_universal/mscordaccore_universal.csproj" />
+        <NativeLibsProjectsToBuild Include="$(MSBuildThisFileDirectory)cdac/Microsoft.Diagnostics.DataContractReader.DumpCollect/Microsoft.Diagnostics.DataContractReader.DumpCollect.csproj" Condition="'$(TargetsWindows)' == 'true'" />
     </ItemGroup>
 
     <!-- Decide if we're going to do the NativeAOT builds -->

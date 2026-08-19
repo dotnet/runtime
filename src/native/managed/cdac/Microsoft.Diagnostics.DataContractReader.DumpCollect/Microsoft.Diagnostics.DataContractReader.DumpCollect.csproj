@@ -1,0 +1,34 @@
+<Project>
+  <PropertyGroup>
+    <NeedsAotPublish>true</NeedsAotPublish>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+  <PropertyGroup>
+    <AssemblyName>$(LibPrefix)mscordaccore</AssemblyName>
+    <UseNativeLibPrefix>false</UseNativeLibPrefix>
+    <TargetFramework>$(CDacTfm)</TargetFramework>
+    <RootNamespace>Microsoft.Diagnostics.DataContractReader.DumpCollect</RootNamespace>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsShippingPackage>false</IsShippingPackage>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InstallRuntimeComponentDestination Include="." />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(LibrariesProjectRoot)Common\src\System\HResults.cs" Link="Common\System\HResults.cs" />
+    <Compile Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\ICLRData.cs" Link="ICLRData.cs" />
+    <Compile Include="..\Microsoft.Diagnostics.DataContractReader.Legacy\Marshalling\ClrDataAddress.cs" Link="Marshalling\ClrDataAddress.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Microsoft.Diagnostics.DataContractReader\Microsoft.Diagnostics.DataContractReader.csproj" GlobalPropertiesToRemove="RuntimeIdentifier" />
+  </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
+</Project>
