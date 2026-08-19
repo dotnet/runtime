@@ -175,7 +175,7 @@ namespace System.Text.Json
                 {
                     if (_convertToAlloc)
                     {
-                        Debug.Assert(_data != null);
+                        Debug.Assert(_data is not null);
                         byte[] returnBuf = _data;
                         _data = _data.AsSpan(0, Length).ToArray();
                         _isLocked = true;
@@ -217,7 +217,7 @@ namespace System.Text.Json
             {
                 // StartArray or StartObject should have length -1, otherwise the length should not be -1.
                 Debug.Assert(
-                    (tokenType == JsonTokenType.StartArray || tokenType == JsonTokenType.StartObject) ==
+                    (tokenType is JsonTokenType.StartArray or JsonTokenType.StartObject) ==
                     (length == DbRow.UnknownSize));
 
                 if (Length >= _data.Length - DbRow.Size)
@@ -275,7 +275,7 @@ namespace System.Text.Json
             internal void SetNumberOfRows(int index, int numberOfRows)
             {
                 AssertValidIndex(index);
-                Debug.Assert(numberOfRows >= 1 && numberOfRows <= 0x0FFFFFFF);
+                Debug.Assert(numberOfRows is >= 1 and <= 0x0FFFFFFF);
 
                 Span<byte> dataPos = _data.AsSpan(index + NumberOfRowsOffset);
                 int current = MemoryMarshal.Read<int>(dataPos);
@@ -299,7 +299,7 @@ namespace System.Text.Json
 
             internal int FindIndexOfFirstUnsetSizeOrLength(JsonTokenType lookupType)
             {
-                Debug.Assert(lookupType == JsonTokenType.StartObject || lookupType == JsonTokenType.StartArray);
+                Debug.Assert(lookupType is JsonTokenType.StartObject or JsonTokenType.StartArray);
                 return FindOpenElement(lookupType);
             }
 

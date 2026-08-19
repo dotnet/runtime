@@ -45,10 +45,10 @@ namespace System.Text.Json
 
             // Both rented values better be null if we're not disposable.
             Debug.Assert(isDisposable ||
-                (extraRentedArrayPoolBytes == null && extraPooledByteBufferWriter == null));
+                (extraRentedArrayPoolBytes is null && extraPooledByteBufferWriter is null));
 
             // Both rented values can't be specified.
-            Debug.Assert(extraRentedArrayPoolBytes == null || extraPooledByteBufferWriter == null);
+            Debug.Assert(extraRentedArrayPoolBytes is null || extraPooledByteBufferWriter is null);
 
             _utf8Json = utf8Json;
             _parsedData = parsedData;
@@ -998,7 +998,7 @@ namespace System.Text.Json
                 }
                 else
                 {
-                    Debug.Assert(tokenType >= JsonTokenType.String && tokenType <= JsonTokenType.Null);
+                    Debug.Assert(tokenType is >= JsonTokenType.String and <= JsonTokenType.Null);
                     numberOfRowsForValues++;
                     numberOfRowsForMembers++;
 

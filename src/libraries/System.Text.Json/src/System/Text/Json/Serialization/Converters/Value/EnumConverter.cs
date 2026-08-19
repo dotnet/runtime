@@ -204,7 +204,7 @@ namespace System.Text.Json.Serialization.Converters
 
             if (IsDefinedValueOrCombinationOfValues(key))
             {
-                Debug.Assert(s_isFlagsEnum || dictionaryKeyPolicy != null, "Should only be entered by flags enums or dictionary key policy.");
+                Debug.Assert(s_isFlagsEnum || dictionaryKeyPolicy is not null, "Should only be entered by flags enums or dictionary key policy.");
                 string stringValue = FormatEnumAsString(key, value, dictionaryKeyPolicy);
                 if (dictionaryKeyPolicy is null && _nameCacheForWriting.Count < NameCacheSizeSoftLimit)
                 {
@@ -434,7 +434,7 @@ namespace System.Text.Json.Serialization.Converters
             }
             else
             {
-                Debug.Assert(dictionaryKeyPolicy != null);
+                Debug.Assert(dictionaryKeyPolicy is not null);
 
                 foreach (EnumFieldInfo enumField in _enumFieldInfo)
                 {

@@ -154,7 +154,7 @@ namespace System.Text.Json
             JsonSerializerOptions options = jsonTypeInfo.Options;
             if (options.ReferenceHandlingStrategy != JsonKnownReferenceHandler.Unspecified)
             {
-                Debug.Assert(options.ReferenceHandler != null);
+                Debug.Assert(options.ReferenceHandler is not null);
                 ReferenceResolver = options.ReferenceHandler.CreateResolver(writing: true);
 
                 if (options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.IgnoreCycles &&

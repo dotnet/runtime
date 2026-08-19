@@ -285,7 +285,7 @@ namespace System.Text.Json
                         break;
 
                     case MetadataPropertyName.Type:
-                        Debug.Assert(state.PolymorphicTypeDiscriminator == null);
+                        Debug.Assert(state.PolymorphicTypeDiscriminator is null);
 
                         switch (reader.TokenType)
                         {
@@ -562,7 +562,7 @@ namespace System.Text.Json
         internal static T ResolveReferenceId<T>(ref ReadStack state)
         {
             Debug.Assert(!typeof(T).IsValueType);
-            Debug.Assert(state.ReferenceId != null);
+            Debug.Assert(state.ReferenceId is not null);
 
             string referenceId = state.ReferenceId;
             object value = state.ReferenceResolver.ResolveReference(referenceId);

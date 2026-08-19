@@ -612,7 +612,7 @@ namespace System.Text.Json
             switch (resource)
             {
                 case ExceptionResource.MismatchedObjectArray:
-                    Debug.Assert(token == JsonConstants.CloseBracket || token == JsonConstants.CloseBrace);
+                    Debug.Assert(token is JsonConstants.CloseBracket or JsonConstants.CloseBrace);
                     message = (tokenType == JsonTokenType.PropertyName) ?
                         SR.Format(SR.CannotWriteEndAfterProperty, (char)token) :
                         SR.Format(SR.MismatchedObjectArray, (char)token);

@@ -54,7 +54,7 @@ namespace System.Text.Json
 
         private static JsonTypeInfo GetTypeInfo(JsonSerializerContext context, Type inputType)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
             Debug.Assert(inputType != null);
 
             JsonTypeInfo? info = context.GetTypeInfo(inputType);

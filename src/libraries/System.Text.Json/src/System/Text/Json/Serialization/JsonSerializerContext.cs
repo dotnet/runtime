@@ -51,7 +51,7 @@ namespace System.Text.Json.Serialization
         /// </summary>
         bool IBuiltInJsonTypeInfoResolver.IsCompatibleWithOptions(JsonSerializerOptions options)
         {
-            Debug.Assert(options != null);
+            Debug.Assert(options is not null);
 
             JsonSerializerOptions? generatedSerializerOptions = GeneratedSerializerOptions;
 

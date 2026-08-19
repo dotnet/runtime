@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             get
             {
-                Debug.Assert(_effectiveConverter != null);
+                Debug.Assert(_effectiveConverter is not null);
                 return _effectiveConverter;
             }
         }
@@ -410,7 +410,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal void Configure()
         {
-            Debug.Assert(DeclaringTypeInfo != null);
+            Debug.Assert(DeclaringTypeInfo is not null);
             Debug.Assert(!IsConfigured);
 
             if (IsIgnored)
@@ -469,7 +469,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void ValidateAndCachePropertyName()
         {
-            Debug.Assert(Name != null);
+            Debug.Assert(Name is not null);
 
             if (Options.ReferenceHandlingStrategy is JsonKnownReferenceHandler.Preserve &&
                 this is { DeclaringType.IsValueType: false, IsIgnored: false, IsExtensionData: false } &&
@@ -520,7 +520,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineSerializationCapabilities()
         {
-            Debug.Assert(EffectiveConverter != null, "Must have calculated the effective converter.");
+            Debug.Assert(EffectiveConverter is not null, "Must have calculated the effective converter.");
             CanSerialize = HasGetter;
             CanDeserialize = HasSetter;
 
@@ -557,7 +557,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineNumberHandlingForTypeInfo()
         {
-            Debug.Assert(DeclaringTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
+            Debug.Assert(DeclaringTypeInfo is not null, "We should have ensured parent is assigned in JsonTypeInfo");
             Debug.Assert(!DeclaringTypeInfo.IsConfigured);
 
             JsonNumberHandling? declaringTypeNumberHandling = DeclaringTypeInfo.NumberHandling;
@@ -585,9 +585,9 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineNumberHandlingForProperty()
         {
-            Debug.Assert(DeclaringTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
+            Debug.Assert(DeclaringTypeInfo is not null, "We should have ensured parent is assigned in JsonTypeInfo");
             Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
-            Debug.Assert(_jsonTypeInfo != null, "Must have already been determined on configuration.");
+            Debug.Assert(_jsonTypeInfo is not null, "Must have already been determined on configuration.");
 
             bool numberHandlingIsApplicable = NumberHandingIsApplicable();
 
@@ -612,8 +612,8 @@ namespace System.Text.Json.Serialization.Metadata
 
         private void DetermineEffectiveObjectCreationHandlingForProperty()
         {
-            Debug.Assert(EffectiveConverter != null, "Must have calculated the effective converter.");
-            Debug.Assert(DeclaringTypeInfo != null, "We should have ensured parent is assigned in JsonTypeInfo");
+            Debug.Assert(EffectiveConverter is not null, "Must have calculated the effective converter.");
+            Debug.Assert(DeclaringTypeInfo is not null, "We should have ensured parent is assigned in JsonTypeInfo");
             Debug.Assert(!IsConfigured, "Should not be called post-configuration.");
 
             JsonObjectCreationHandling effectiveObjectCreationHandling = JsonObjectCreationHandling.Replace;
@@ -654,7 +654,7 @@ namespace System.Text.Json.Serialization.Metadata
                     ThrowHelper.ThrowInvalidOperationException_ObjectCreationHandlingPropertyValueTypeMustHaveASetter(this);
                 }
 
-                Debug.Assert(_jsonTypeInfo != null);
+                Debug.Assert(_jsonTypeInfo is not null);
                 Debug.Assert(_jsonTypeInfo.IsConfigurationStarted);
                 if (JsonTypeInfo.SupportsPolymorphicDeserialization)
                 {
@@ -791,7 +791,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             get
             {
-                Debug.Assert(_name != null);
+                Debug.Assert(_name is not null);
                 return _name;
             }
             set
@@ -957,7 +957,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return false;
 
             Debug.Assert(EffectiveConverter.CanPopulate, "Property is marked with Populate but converter cannot populate. This should have been validated in Configure");
-            Debug.Assert(state.Parent.ReturnValue != null, "Parent object is null");
+            Debug.Assert(state.Parent.ReturnValue is not null, "Parent object is null");
             Debug.Assert(!state.Current.IsPopulating, "We've called TryGetPrePopulatedValue more than once");
             object? value = Get!(state.Parent.ReturnValue);
             state.Current.ReturnValue = value;

@@ -16,7 +16,7 @@ namespace System.Text.Json.Serialization.Converters
         protected sealed override void Add(in object? value, ref ReadStack state)
         {
             var addMethodDelegate = ((Action<TCollection, object?>?)state.Current.JsonTypeInfo.AddMethodDelegate);
-            Debug.Assert(addMethodDelegate != null);
+            Debug.Assert(addMethodDelegate is not null);
             addMethodDelegate((TCollection)state.Current.ReturnValue!, value);
         }
 
@@ -37,7 +37,7 @@ namespace System.Text.Json.Serialization.Converters
 
             state.Current.ReturnValue = constructorDelegate();
 
-            Debug.Assert(typeInfo.AddMethodDelegate != null);
+            Debug.Assert(typeInfo.AddMethodDelegate is not null);
         }
 
         protected sealed override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)

@@ -281,7 +281,7 @@ namespace System.Text.Json.Schema
                     });
 
                 case JsonTypeInfoKind.Enumerable:
-                    Debug.Assert(typeInfo.ElementTypeInfo != null);
+                    Debug.Assert(typeInfo.ElementTypeInfo is not null);
 
                     if (typeDiscriminator is null)
                     {
@@ -331,7 +331,7 @@ namespace System.Text.Json.Schema
                     }
 
                 case JsonTypeInfoKind.Dictionary:
-                    Debug.Assert(typeInfo.ElementTypeInfo != null);
+                    Debug.Assert(typeInfo.ElementTypeInfo is not null);
 
                     List<KeyValuePair<string, JsonSchema>>? dictProps = null;
                     List<string>? dictRequired = null;

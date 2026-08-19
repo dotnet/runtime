@@ -52,7 +52,7 @@ namespace System.Text.Json
 
             internal StackRow Pop()
             {
-                Debug.Assert(_rentedBuffer != null);
+                Debug.Assert(_rentedBuffer is not null);
                 Debug.Assert(_topOfStack <= _rentedBuffer!.Length - StackRow.Size);
 
                 StackRow row = MemoryMarshal.Read<StackRow>(_rentedBuffer.AsSpan(_topOfStack));

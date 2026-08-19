@@ -651,7 +651,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return;
             }
 
-            Debug.Assert(jsonPropertyInfo.Name != null);
+            Debug.Assert(jsonPropertyInfo.Name is not null);
             typeInfo.PropertyList.AddPropertyWithConflictResolution(jsonPropertyInfo, ref state);
         }
 
@@ -804,7 +804,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool hasJsonIncludeAttribute,
             JsonNamingPolicy? typeNamingPolicy)
         {
-            Debug.Assert(jsonPropertyInfo.AttributeProvider == null);
+            Debug.Assert(jsonPropertyInfo.AttributeProvider is null);
 
             switch (jsonPropertyInfo.AttributeProvider = memberInfo)
             {

@@ -444,7 +444,7 @@ namespace System.Text.Json.Serialization
 
         internal bool TryWriteDataExtensionProperty(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             if (!IsInternalConverter)
             {

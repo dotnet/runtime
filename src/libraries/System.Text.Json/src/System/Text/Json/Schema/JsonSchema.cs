@@ -262,7 +262,7 @@ namespace System.Text.Json.Schema
             {
                 if (ExporterContext is { } context)
                 {
-                    Debug.Assert(options.TransformSchemaNode != null, "context should only be populated if a callback is present.");
+                    Debug.Assert(options.TransformSchemaNode is not null, "context should only be populated if a callback is present.");
                     // Apply any user-defined transformations to the schema.
                     return options.TransformSchemaNode(context, schema);
                 }

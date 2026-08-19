@@ -116,7 +116,7 @@ namespace System.Text.Json
         // TODO: https://github.com/dotnet/runtime/issues/29293
         private void WriteStringMinimized(ReadOnlySpan<char> escapedValue, int maxRequiredBytes)
         {
-            Debug.Assert(maxRequiredBytes >= 0 && maxRequiredBytes < int.MaxValue - 3);
+            Debug.Assert(maxRequiredBytes is >= 0 and < int.MaxValue - 3);
 
             // 2 quotes + optional 1 list separator, plus precomputed max bytes for the payload.
             int maxRequired = maxRequiredBytes + 3;

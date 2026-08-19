@@ -170,7 +170,7 @@ namespace System.Text.Json
             {
                 if (_isInputSequence)
                 {
-                    Debug.Assert(_currentPosition.GetObject() != null);
+                    Debug.Assert(_currentPosition.GetObject() is not null);
                     return _sequence.GetPosition(_consumed, _currentPosition);
                 }
                 return default;
@@ -1473,7 +1473,7 @@ namespace System.Text.Json
             Debug.Assert(signResult == ConsumeNumberResult.OperationIncomplete);
 
             byte nextByte = data[i];
-            Debug.Assert(nextByte >= '0' && nextByte <= '9');
+            Debug.Assert(nextByte is >= (byte)'0' and <= (byte)'9');
 
             if (nextByte == '0')
             {
@@ -1512,7 +1512,7 @@ namespace System.Text.Json
                 }
             }
 
-            Debug.Assert(nextByte == '.' || nextByte == 'E' || nextByte == 'e');
+            Debug.Assert(nextByte is (byte)'.' or (byte)'E' or (byte)'e');
 
             if (nextByte == '.')
             {
@@ -1536,7 +1536,7 @@ namespace System.Text.Json
                 }
             }
 
-            Debug.Assert(nextByte == 'E' || nextByte == 'e');
+            Debug.Assert(nextByte is (byte)'E' or (byte)'e');
             i++;
 
             signResult = ConsumeSign(ref data, ref i);

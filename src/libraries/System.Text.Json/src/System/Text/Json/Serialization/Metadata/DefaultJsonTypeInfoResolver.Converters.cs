@@ -124,7 +124,7 @@ namespace System.Text.Json.Serialization.Metadata
                 }
 
                 // Since the object and IEnumerable converters cover all types, we should have a converter.
-                Debug.Assert(converter != null);
+                Debug.Assert(converter is not null);
                 return converter;
             }
         }
@@ -226,7 +226,7 @@ namespace System.Text.Json.Serialization.Metadata
                 converter = (JsonConverter)Activator.CreateInstance(converterType)!;
             }
 
-            Debug.Assert(converter != null);
+            Debug.Assert(converter is not null);
             if (!converter.CanConvert(typeToConvert))
             {
                 Type? underlyingType = Nullable.GetUnderlyingType(typeToConvert);

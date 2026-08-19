@@ -1648,7 +1648,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (ExtensionDataProperty is { AssociatedParameter: not null })
             {
-                Debug.Assert(ExtensionDataProperty.MemberName != null, "Custom property info cannot be data extension property");
+                Debug.Assert(ExtensionDataProperty.MemberName is not null, "Custom property info cannot be data extension property");
                 ThrowHelper.ThrowInvalidOperationException_ExtensionDataCannotBindToCtorParam(ExtensionDataProperty.MemberName, ExtensionDataProperty);
             }
 
@@ -1821,7 +1821,7 @@ namespace System.Text.Json.Serialization.Metadata
             public void AddPropertyWithConflictResolution(JsonPropertyInfo jsonPropertyInfo, ref PropertyHierarchyResolutionState state)
             {
                 Debug.Assert(!_jsonTypeInfo.IsConfigured);
-                Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
+                Debug.Assert(jsonPropertyInfo.MemberName is not null, "MemberName can be null in custom JsonPropertyInfo instances and should never be passed in this method");
 
                 // Algorithm should be kept in sync with the Roslyn equivalent in JsonSourceGenerator.Parser.cs
                 string memberName = jsonPropertyInfo.MemberName;

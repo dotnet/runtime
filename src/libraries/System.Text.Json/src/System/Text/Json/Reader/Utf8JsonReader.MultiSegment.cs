@@ -300,7 +300,7 @@ namespace System.Text.Json
             ReadOnlyMemory<byte> memory;
             while (true)
             {
-                Debug.Assert(!_isMultiSegment || _currentPosition.GetObject() != null);
+                Debug.Assert(!_isMultiSegment || _currentPosition.GetObject() is not null);
                 SequencePosition copy = _currentPosition;
                 _currentPosition = _nextPosition;
                 bool noMoreData = !_sequence.TryGet(ref _nextPosition, out memory, advance: true);
@@ -317,7 +317,7 @@ namespace System.Text.Json
                 // _currentPosition needs to point to last non-empty segment
                 // Since memory.Length == 0, we need to revert back to previous.
                 _currentPosition = copy;
-                Debug.Assert(!_isMultiSegment || _currentPosition.GetObject() != null);
+                Debug.Assert(!_isMultiSegment || _currentPosition.GetObject() is not null);
             }
 
             if (_isFinalBlock)
@@ -1141,7 +1141,7 @@ namespace System.Text.Json
             Debug.Assert(signResult == ConsumeNumberResult.OperationIncomplete);
 
             byte nextByte = data[i];
-            Debug.Assert(nextByte >= '0' && nextByte <= '9');
+            Debug.Assert(nextByte is >= (byte)'0' and <= (byte)'9');
 
             if (nextByte == '0')
             {
@@ -1181,7 +1181,7 @@ namespace System.Text.Json
                 }
             }
 
-            Debug.Assert(nextByte == '.' || nextByte == 'E' || nextByte == 'e');
+            Debug.Assert(nextByte is (byte)'.' or (byte)'E' or (byte)'e');
 
             if (nextByte == '.')
             {
@@ -1207,7 +1207,7 @@ namespace System.Text.Json
                 }
             }
 
-            Debug.Assert(nextByte == 'E' || nextByte == 'e');
+            Debug.Assert(nextByte is (byte)'E' or (byte)'e');
             i++;
             _bytePositionInLine++;
 
@@ -2340,7 +2340,7 @@ namespace System.Text.Json
                 }
 
                 int idx = FindLineSeparatorMultiSegment(localBuffer, ref dangerousLineSeparatorBytesConsumed);
-                Debug.Assert(dangerousLineSeparatorBytesConsumed >= 0 && dangerousLineSeparatorBytesConsumed <= 2);
+                Debug.Assert(dangerousLineSeparatorBytesConsumed is >= 0 and <= 2);
 
                 if (idx != -1)
                 {

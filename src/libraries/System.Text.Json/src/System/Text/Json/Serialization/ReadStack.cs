@@ -218,7 +218,7 @@ namespace System.Text.Json
         public JsonConverter InitializePolymorphicReEntry(JsonTypeInfo derivedJsonTypeInfo)
         {
             Debug.Assert(!IsContinuation);
-            Debug.Assert(Current.PolymorphicJsonTypeInfo == null);
+            Debug.Assert(Current.PolymorphicJsonTypeInfo is null);
             Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.None);
 
             Current.PolymorphicJsonTypeInfo = Current.JsonTypeInfo;
@@ -237,7 +237,7 @@ namespace System.Text.Json
         /// </summary>
         public JsonConverter ResumePolymorphicReEntry()
         {
-            Debug.Assert(Current.PolymorphicJsonTypeInfo != null);
+            Debug.Assert(Current.PolymorphicJsonTypeInfo is not null);
             Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntrySuspended);
 
             // Swap out the two values as we resume the polymorphic converter
@@ -251,7 +251,7 @@ namespace System.Text.Json
         /// </summary>
         public void ExitPolymorphicConverter(bool success)
         {
-            Debug.Assert(Current.PolymorphicJsonTypeInfo != null);
+            Debug.Assert(Current.PolymorphicJsonTypeInfo is not null);
             Debug.Assert(Current.PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntryStarted);
 
             // Swap out the two values as we exit the polymorphic converter

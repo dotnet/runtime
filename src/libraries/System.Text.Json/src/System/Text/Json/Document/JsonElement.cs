@@ -1661,7 +1661,7 @@ namespace System.Text.Json
                 case JsonTokenType.StartObject:
                     {
                         // null parent should have hit the None case
-                        Debug.Assert(_parent != null);
+                        Debug.Assert(_parent is not null);
                         return _parent.GetRawValueAsString(_idx);
                     }
                 case JsonTokenType.String:

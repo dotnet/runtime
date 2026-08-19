@@ -185,7 +185,7 @@ namespace System.Text.Json.Serialization.Metadata
                         {
                             // [JsonInclude] property is inaccessible and the source generator
                             // did not provide getter/setter delegates (e.g. older generator).
-                            Debug.Assert(jsonPropertyInfo.MemberName != null, "MemberName is not set by source gen");
+                            Debug.Assert(jsonPropertyInfo.MemberName is not null, "MemberName is not set by source gen");
                             ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnInaccessibleProperty(jsonPropertyInfo.MemberName, jsonPropertyInfo.DeclaringType);
                         }
 

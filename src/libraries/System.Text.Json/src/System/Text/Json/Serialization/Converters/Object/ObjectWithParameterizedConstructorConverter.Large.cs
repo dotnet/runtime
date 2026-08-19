@@ -35,8 +35,8 @@ namespace System.Text.Json.Serialization.Converters
 
         protected sealed override object CreateObject(ref ReadStackFrame frame)
         {
-            Debug.Assert(frame.CtorArgumentState != null);
-            Debug.Assert(frame.JsonTypeInfo.CreateObjectWithArgs != null);
+            Debug.Assert(frame.CtorArgumentState is not null);
+            Debug.Assert(frame.JsonTypeInfo.CreateObjectWithArgs is not null);
 
             object[] arguments = (object[])frame.CtorArgumentState.Arguments;
             frame.CtorArgumentState.Arguments = null!;

@@ -149,7 +149,7 @@ namespace System.Text.Json
 
             if (unescapedArray != null)
             {
-                Debug.Assert(escapedArray != null);
+                Debug.Assert(escapedArray is not null);
                 utf8Unescaped.Clear();
                 ArrayPool<byte>.Shared.Return(unescapedArray);
                 utf8Escaped.Clear();

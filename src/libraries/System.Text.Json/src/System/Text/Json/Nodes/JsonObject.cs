@@ -315,7 +315,7 @@ namespace System.Text.Json.Nodes
 
         private void DetachParent(JsonNode? item)
         {
-            Debug.Assert(_dictionary != null, "Cannot have detachable nodes without a materialized dictionary.");
+            Debug.Assert(_dictionary is not null, "Cannot have detachable nodes without a materialized dictionary.");
 
             item?.Parent = null;
         }

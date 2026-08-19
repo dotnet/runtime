@@ -453,7 +453,7 @@ namespace System.Text.Json
 
             if (_stream != null)
             {
-                Debug.Assert(_arrayBufferWriter != null);
+                Debug.Assert(_arrayBufferWriter is not null);
                 if (BytesPending != 0)
                 {
                     _arrayBufferWriter.Advance(BytesPending);
@@ -472,7 +472,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(_output != null);
+                Debug.Assert(_output is not null);
                 if (BytesPending != 0)
                 {
                     _output.Advance(BytesPending);
@@ -562,7 +562,7 @@ namespace System.Text.Json
 
             if (_stream != null)
             {
-                Debug.Assert(_arrayBufferWriter != null);
+                Debug.Assert(_arrayBufferWriter is not null);
                 if (BytesPending != 0)
                 {
                     _arrayBufferWriter.Advance(BytesPending);
@@ -577,7 +577,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(_output != null);
+                Debug.Assert(_output is not null);
                 if (BytesPending != 0)
                 {
                     _output.Advance(BytesPending);
@@ -1219,7 +1219,7 @@ namespace System.Text.Json
 
             if (_stream != null)
             {
-                Debug.Assert(_arrayBufferWriter != null);
+                Debug.Assert(_arrayBufferWriter is not null);
 
                 int needed = BytesPending + sizeHint;
                 JsonHelpers.ValidateInt32MaxArrayLength((uint)needed);
@@ -1230,7 +1230,7 @@ namespace System.Text.Json
             }
             else
             {
-                Debug.Assert(_output != null);
+                Debug.Assert(_output is not null);
 
                 _output.Advance(BytesPending);
                 BytesCommitted += BytesPending;
@@ -1254,13 +1254,13 @@ namespace System.Text.Json
 
             if (_stream != null)
             {
-                Debug.Assert(_arrayBufferWriter != null);
+                Debug.Assert(_arrayBufferWriter is not null);
                 _memory = _arrayBufferWriter.GetMemory(sizeHint);
                 Debug.Assert(_memory.Length >= sizeHint);
             }
             else
             {
-                Debug.Assert(_output != null);
+                Debug.Assert(_output is not null);
                 _memory = _output.GetMemory(sizeHint);
 
                 if (_memory.Length < sizeHint)

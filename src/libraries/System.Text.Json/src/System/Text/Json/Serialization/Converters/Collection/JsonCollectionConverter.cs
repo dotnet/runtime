@@ -55,7 +55,7 @@ namespace System.Text.Json.Serialization
 
         protected static JsonConverter<TElement> GetElementConverter(ref WriteStack state)
         {
-            Debug.Assert(state.Current.JsonPropertyInfo != null);
+            Debug.Assert(state.Current.JsonPropertyInfo is not null);
             return (JsonConverter<TElement>)state.Current.JsonPropertyInfo.EffectiveConverter;
         }
 
@@ -182,7 +182,7 @@ namespace System.Text.Json.Serialization
 
                     if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                     {
-                        Debug.Assert(state.ReferenceId != null);
+                        Debug.Assert(state.ReferenceId is not null);
                         Debug.Assert(options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve);
                         Debug.Assert(state.Current.ReturnValue is TCollection);
                         state.ReferenceResolver.AddReference(state.ReferenceId, state.Current.ReturnValue);

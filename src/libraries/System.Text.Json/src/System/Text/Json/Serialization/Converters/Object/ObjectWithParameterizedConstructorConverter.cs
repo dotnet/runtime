@@ -72,7 +72,7 @@ namespace System.Text.Json.Serialization.Converters
                     Utf8JsonReader tempReader;
 
                     FoundProperty[]? properties = argumentState.FoundProperties;
-                    Debug.Assert(properties != null);
+                    Debug.Assert(properties is not null);
 
                     for (int i = 0; i < argumentState.FoundPropertyCount; i++)
                     {
@@ -206,7 +206,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                 {
-                    Debug.Assert(state.ReferenceId != null);
+                    Debug.Assert(state.ReferenceId is not null);
                     Debug.Assert(options.ReferenceHandlingStrategy == JsonKnownReferenceHandler.Preserve);
                     state.ReferenceResolver.AddReference(state.ReferenceId, obj);
                     state.ReferenceId = null;
@@ -224,7 +224,7 @@ namespace System.Text.Json.Serialization.Converters
 
                         if (dataExtKey == null)
                         {
-                            Debug.Assert(jsonPropertyInfo.Set != null);
+                            Debug.Assert(jsonPropertyInfo.Set is not null);
 
                             if (propValue is not null || !jsonPropertyInfo.IgnoreNullTokensOnRead || default(T) is not null)
                             {
@@ -274,7 +274,7 @@ namespace System.Text.Json.Serialization.Converters
             jsonTypeInfo.OnDeserialized?.Invoke(obj);
 
             // Unbox
-            Debug.Assert(obj != null);
+            Debug.Assert(obj is not null);
             value = (T)obj;
 
             // Check if we are trying to update the UTF-8 property cache.
@@ -349,7 +349,7 @@ namespace System.Text.Json.Serialization.Converters
                         continue;
                     }
 
-                    Debug.Assert(jsonParameterInfo.MatchingProperty != null);
+                    Debug.Assert(jsonParameterInfo.MatchingProperty is not null);
                     ReadAndCacheConstructorArgument(ref state, ref reader, jsonParameterInfo);
 
                     state.Current.EndConstructorParameter();
@@ -454,7 +454,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (jsonParameterInfo != null)
                 {
-                    Debug.Assert(jsonPropertyInfo == null);
+                    Debug.Assert(jsonPropertyInfo is null);
 
                     if (!HandleConstructorArgumentWithContinuation(ref state, ref reader, jsonParameterInfo))
                     {
@@ -602,7 +602,7 @@ namespace System.Text.Json.Serialization.Converters
             // Set current JsonPropertyInfo to null to avoid conflicts on push.
             state.Current.JsonPropertyInfo = null;
 
-            Debug.Assert(state.Current.CtorArgumentState != null);
+            Debug.Assert(state.Current.CtorArgumentState is not null);
 
             InitializeConstructorArgumentCaches(ref state, options);
         }
@@ -618,7 +618,7 @@ namespace System.Text.Json.Serialization.Converters
             [NotNullWhen(true)] out JsonParameterInfo? jsonParameterInfo)
         {
             Debug.Assert(state.Current.JsonTypeInfo.Kind is JsonTypeInfoKind.Object);
-            Debug.Assert(state.Current.CtorArgumentState != null);
+            Debug.Assert(state.Current.CtorArgumentState is not null);
 
             jsonPropertyInfo = JsonSerializer.LookupProperty(
                 obj: null,

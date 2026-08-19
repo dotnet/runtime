@@ -70,7 +70,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (UsesTypeDiscriminators)
             {
-                Debug.Assert(_discriminatorIdtoType != null, "Discriminator index must have been populated.");
+                Debug.Assert(_discriminatorIdtoType is not null, "Discriminator index must have been populated.");
 
                 if (!converterCanHaveMetadata)
                 {
@@ -186,7 +186,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             Debug.Assert(typeDiscriminator is int or string);
             Debug.Assert(UsesTypeDiscriminators);
-            Debug.Assert(_discriminatorIdtoType != null);
+            Debug.Assert(_discriminatorIdtoType is not null);
 
             if (_discriminatorIdtoType.TryGetValue(typeDiscriminator, out DerivedJsonTypeInfo? result))
             {

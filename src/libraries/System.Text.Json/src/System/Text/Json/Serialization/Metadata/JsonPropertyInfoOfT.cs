@@ -132,7 +132,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             get
             {
-                Debug.Assert(_typedEffectiveConverter != null);
+                Debug.Assert(_typedEffectiveConverter is not null);
                 return _typedEffectiveConverter;
             }
         }
@@ -187,7 +187,7 @@ namespace System.Text.Json.Serialization.Metadata
             {
                 // If a reference cycle is detected, treat value as null.
                 value = default!;
-                Debug.Assert(value == null);
+                Debug.Assert(value is null);
             }
 
             if (IgnoreDefaultValuesOnWrite)

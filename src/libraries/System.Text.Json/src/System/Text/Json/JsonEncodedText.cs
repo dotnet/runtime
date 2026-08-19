@@ -31,7 +31,7 @@ namespace System.Text.Json
 
         private JsonEncodedText(byte[] utf8Value)
         {
-            Debug.Assert(utf8Value != null);
+            Debug.Assert(utf8Value is not null);
 
             _value = JsonReaderHelper.GetTextFromUtf8(utf8Value);
             _utf8Value = utf8Value;

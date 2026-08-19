@@ -55,7 +55,7 @@ namespace System.Text.Json
 
                     if (createExtensionProperty)
                     {
-                        Debug.Assert(obj != null, "obj is null");
+                        Debug.Assert(obj is not null, "obj is null");
                         CreateExtensionDataProperty(obj, dataExtProperty, options);
                     }
 
@@ -107,7 +107,7 @@ namespace System.Text.Json
             JsonPropertyInfo jsonPropertyInfo,
             JsonSerializerOptions options)
         {
-            Debug.Assert(jsonPropertyInfo != null);
+            Debug.Assert(jsonPropertyInfo is not null);
 
             object? extensionData = jsonPropertyInfo.GetValueAsObject(obj);
 
@@ -162,7 +162,7 @@ namespace System.Text.Json
                         {
                             extensionData = new Dictionary<string, object>();
                         }
-                        Debug.Assert(jsonPropertyInfo.Set != null);
+                        Debug.Assert(jsonPropertyInfo.Set is not null);
                         jsonPropertyInfo.Set(obj, extensionData);
                         return;
                     }
@@ -182,7 +182,7 @@ namespace System.Text.Json
                         {
                             extensionData = new Dictionary<string, JsonElement>();
                         }
-                        Debug.Assert(jsonPropertyInfo.Set != null);
+                        Debug.Assert(jsonPropertyInfo.Set is not null);
                         jsonPropertyInfo.Set(obj, extensionData);
                         return;
                     }
@@ -193,7 +193,7 @@ namespace System.Text.Json
                 }
 
                 extensionData = createObjectForExtensionDataProp();
-                Debug.Assert(jsonPropertyInfo.Set != null);
+                Debug.Assert(jsonPropertyInfo.Set is not null);
                 jsonPropertyInfo.Set(obj, extensionData);
             }
 
