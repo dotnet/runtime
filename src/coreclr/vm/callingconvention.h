@@ -1684,7 +1684,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
     {
         // Handle HFAs: packed structures of 1-4 floats, doubles, or short vectors
         // that are passed in FP argument registers if possible.
-        if (thValueType.IsHFA())
+        if (thValueType.IsHFA() && !this->IsVarArg())
         {
             CorInfoHFAElemType type = thValueType.GetHFAType();
 
@@ -1703,8 +1703,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         }
         else
         {
-            // Composite greater than 16bytes should be passed by reference
-            if (argSize > ENREGISTERED_PARAMTYPE_MAXSIZE)
+            if (IsArgPassedByRef())
             {
                 argSize = sizeof(TADDR);
             }
@@ -2066,6 +2065,11 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ComputeReturnFlags()
                 m_returnedFpFieldOffsets[1] = info.offset2nd;
                 break;
             }
+#elif defined(TARGET_ARM64)
+            // On ARM64, the return value follows the same rules as arguments, when deciding
+            // whether to pass by reference (therefore through the return buffer).
+            if  (!IsArgPassedByRef(thValueType))
+                break;
 #else
             if  (size <= ENREGISTERED_RETURNTYPE_INTEGER_MAXSIZE)
                 break;
