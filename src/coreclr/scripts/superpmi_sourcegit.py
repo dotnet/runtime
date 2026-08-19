@@ -134,6 +134,29 @@ def host_rid():
     return f"{os_part}-{host_arch()}"
 
 
+def download_file(url, destination):
+    """ Download `url` into the file `destination`.
+
+        On Windows this goes through PowerShell: the Python on Helix's Windows machines fails to
+        verify certificates with urllib's default certificate store, while PowerShell uses the
+        (up to date) Windows certificate store. """
+    if is_windows:
+        script = ("[System.Net.ServicePointManager]::SecurityProtocol=[System.Net.SecurityProtocolType]::Tls12;"
+                  f"Invoke-WebRequest -UseBasicParsing -Uri '{url}' -OutFile '{destination}'")
+        run_command(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script], retries=3)
+    else:
+        with urllib.request.urlopen(url) as response:
+            destination.write_bytes(response.read())
+
+
+def http_get(url):
+    """ Fetch `url` and return its content as bytes. """
+    with tempfile.TemporaryDirectory() as temp_dir:
+        destination = Path(temp_dir) / "download"
+        download_file(url, destination)
+        return destination.read_bytes()
+
+
 def ensure_git(tools_dir):
     """ Make sure `git` is on the PATH. Helix Windows machines don't have git installed, so
         download a portable one there. """
@@ -143,8 +166,7 @@ def ensure_git(tools_dir):
         raise RuntimeError("git is required but was not found on the PATH")
 
     print("git was not found, downloading portable git ...")
-    with urllib.request.urlopen("https://api.github.com/repos/git-for-windows/git/releases/latest") as response:
-        assets = json.loads(response.read())["assets"]
+    assets = json.loads(http_get("https://api.github.com/repos/git-for-windows/git/releases/latest"))["assets"]
     arch_suffix = {"x64": "64-bit", "arm64": "arm64", "x86": "32-bit"}.get(host_arch(), "64-bit")
     name_regex = re.compile(r"^MinGit-.*-(32-bit|64-bit|arm64)\.zip$", re.I)
     try:
@@ -154,7 +176,7 @@ def ensure_git(tools_dir):
 
     tools_dir.mkdir(parents=True, exist_ok=True)
     zip_path = tools_dir / asset["name"]
-    urllib.request.urlretrieve(asset["browser_download_url"], zip_path)
+    download_file(asset["browser_download_url"], zip_path)
     git_dir = tools_dir / "git"
     shutil.rmtree(git_dir, ignore_errors=True)
     with zipfile.ZipFile(zip_path) as archive:
@@ -197,13 +219,16 @@ def install_dotnet_sdk(channel, install_dir):
 
     with tempfile.TemporaryDirectory() as temp_dir:
         if is_windows:
-            script = Path(temp_dir) / "dotnet-install.ps1"
-            urllib.request.urlretrieve("https://dot.net/v1/dotnet-install.ps1", script)
-            run_command(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", script,
-                         "-Channel", channel, "-InstallDir", install_dir, "-NoPath"], retries=3)
+            # Download from within PowerShell: it uses the Windows certificate store, which is the
+            # only one the Helix Windows machines have up to date.
+            script = "[System.Net.ServicePointManager]::SecurityProtocol=[System.Net.SecurityProtocolType]::Tls12;" \
+                     "Invoke-WebRequest -UseBasicParsing -Uri 'https://dot.net/v1/dotnet-install.ps1'" \
+                     f" -OutFile '{temp_dir}\\dotnet-install.ps1';" \
+                     f"& '{temp_dir}\\dotnet-install.ps1' -Channel '{channel}' -InstallDir '{install_dir}' -NoPath"
+            run_command(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script], retries=3)
         else:
             script = Path(temp_dir) / "dotnet-install.sh"
-            urllib.request.urlretrieve("https://dot.net/v1/dotnet-install.sh", script)
+            download_file("https://dot.net/v1/dotnet-install.sh", script)
             script.chmod(script.stat().st_mode | stat.S_IXUSR)
             run_command([script, "--channel", channel, "--install-dir", install_dir, "--no-path"], retries=3)
     return dotnet
@@ -357,7 +382,7 @@ def adapt_ilc_rsp_argument(line, arities):
     return line
 
 
-def rewrite_ilc_rsp(original_rsp, ilc, core_root, aotsdk, output_object, shim_path, parallelism, temp_dir):
+def rewrite_ilc_rsp(original_rsp, ilc, core_root, aotsdk, output_object, shim_path, parallelism, root_all, temp_dir):
     """ Rewrite the SDK-generated ILC response file so that it compiles against the locally built
         framework using the SuperPMI collector shim. Everything else (feature switches, trimming
         roots, direct P/Invokes, ...) is left untouched so that we collect over what a real
@@ -366,21 +391,34 @@ def rewrite_ilc_rsp(original_rsp, ilc, core_root, aotsdk, output_object, shim_pa
     arities = ilc_option_arities(ilc)
 
     result = []
+    app_assemblies = []
     for line in lines:
         if line.startswith("-o:"):
             # Redirected below; we don't want to write into the app's obj folder.
             continue
         if line.startswith("-r:"):
+            simple_name = Path(line[len("-r:"):]).stem
             # Drop the references we are going to provide from the locally built framework
             # (the NativeAOT runtime pack of the SDK) and keep the third-party ones. ILC resolves
             # duplicate simple names on a first-one-wins basis, so the surviving references must
             # come before the framework wildcards appended below.
-            simple_name = Path(line[len("-r:"):]).stem
             if (aotsdk / f"{simple_name}.dll").exists() or (core_root / f"{simple_name}.dll").exists():
                 continue
+            app_assemblies.append(simple_name)
         line = adapt_ilc_rsp_argument(line, arities)
         if line is not None:
             result.append(line)
+
+    if root_all:
+        # Compile everything reachable from any public method of the app's own assemblies instead
+        # of only what its entry point needs. This is not what a real publish does, but it makes
+        # for a considerably larger collection. Framework assemblies are deliberately not rooted:
+        # they are already covered by the libraries collections, and rooting them makes ILC's
+        # dependency analysis take hours.
+        already_rooted = {line[len("--root:"):] for line in result if line.startswith("--root:")}
+        for simple_name in dict.fromkeys(app_assemblies):
+            if simple_name not in already_rooted:
+                result.append(f"--root:{simple_name}")
 
     result += [
         f"-o:{output_object}",
@@ -391,15 +429,16 @@ def rewrite_ilc_rsp(original_rsp, ilc, core_root, aotsdk, output_object, shim_pa
         f"-r:{core_root / 'netstandard.dll'}",
         f"--jitpath:{shim_path}",
         "--codegenopt:EnableExtraSuperPmiQueries=1",
-        f"--parallelism:{parallelism}",
     ]
+    if parallelism is not None:
+        result.append(f"--parallelism:{parallelism}")
 
     rsp_path = temp_dir / "sourcegit.ilc.rsp"
     rsp_path.write_text("\n".join(result) + "\n", encoding="utf-8")
     return rsp_path
 
 
-def collect_nativeaot(core_root, project, rsp_path, jit_path, mc_dir, parallelism, temp_dir):
+def collect_nativeaot(core_root, project, rsp_path, jit_path, mc_dir, parallelism, root_all, temp_dir):
     """ Replay the ILC response file with the locally built ILC under the SuperPMI collector shim. """
     ilc = core_root / "ilc-published" / native_exe("ilc")
     aotsdk = core_root / "aotsdk"
@@ -409,7 +448,8 @@ def collect_nativeaot(core_root, project, rsp_path, jit_path, mc_dir, parallelis
         raise RuntimeError(f"Couldn't find {aotsdk}. Is the NativeAOT framework built?")
 
     collection_rsp = rewrite_ilc_rsp(rsp_path, ilc, core_root, aotsdk, temp_dir / "sourcegit.obj",
-                                     core_root / native_dll("superpmi-shim-collector"), parallelism, temp_dir)
+                                     core_root / native_dll("superpmi-shim-collector"), parallelism,
+                                     root_all, temp_dir)
 
     # The response file contains paths relative to the project directory, so run ILC from there.
     run_command([ilc, f"@{collection_rsp}"], cwd=project.parent,
@@ -443,7 +483,9 @@ def collect_crossgen2(core_root, publish_dir, jit_path, mc_dir, parallelism, tem
             f"-r:{publish_dir / '*.dll'}",
             # The SDK optimizes ReadyToRun images, so do the same here.
             "-O",
-            f"--parallelism:{parallelism}",
+            # crossgen2 compiles in parallel by default, which leads to sharing violations on the
+            # .mc file the collector shim writes.
+            f"--parallelism:{parallelism if parallelism is not None else 1}",
             f"--jitpath:{core_root / native_dll('superpmi-shim-collector')}",
             "--codegenopt:EnableExtraSuperPmiQueries=1",
         ]) + "\n", encoding="utf-8")
@@ -531,11 +573,16 @@ def main():
     parser.add_argument("--commit", help="Commit to check out (the branch tip by default).")
     parser.add_argument("--project", default=DEFAULT_PROJECT, help="Project to build, relative to the clone.")
     parser.add_argument("--rid", default=host_rid(), help="Runtime identifier to publish for.")
-    parser.add_argument("--parallelism", default=1, type=int,
-                        help="Number of threads crossgen2/ILC may use. Collecting in parallel leads to "
-                             "sharing violations on the .mc file, so this defaults to 1.")
+    parser.add_argument("--parallelism", type=int,
+                        help="Number of threads crossgen2/ILC may use. crossgen2 always collects "
+                             "single-threaded (parallel collection leads to sharing violations on the "
+                             ".mc file); ILC uses its own default unless this is specified.")
     parser.add_argument("--sdk_channel", default=DEFAULT_SDK_CHANNEL,
                         help="dotnet-install channel to use when no suitable SDK is found on the machine.")
+    parser.add_argument("--no_root_all_assemblies", action="store_true",
+                        help="For the nativeaot collection, only collect over what the app's entry point "
+                             "reaches. By default every one of the app's own assemblies is rooted, which "
+                             "roughly doubles the size of the collection.")
     parser.add_argument("--skip_cleanup", action="store_true", help="Don't delete the working directory.")
     args = parser.parse_args()
 
@@ -613,7 +660,8 @@ def main():
                 collect_crossgen2(core_root, publish_dir, jit_copy, mc_dir, args.parallelism, temp_dir)
             else:
                 rsp_path = generate_ilc_rsp(dotnet, project, args.rid, work_dir)
-                collect_nativeaot(core_root, project, rsp_path, jit_copy, mc_dir, args.parallelism, temp_dir)
+                collect_nativeaot(core_root, project, rsp_path, jit_copy, mc_dir, args.parallelism,
+                                  not args.no_root_all_assemblies, temp_dir)
 
             merge_mc_files(core_root, mc_dir,
                            output_mch_for(output_mch, collection_type, len(collection_types) == 1))
