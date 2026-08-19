@@ -98,14 +98,14 @@ namespace ILCompiler
             new("--jitpath") { Description = SR.JitPathOption };
         public Option<bool> PrintReproInstructions { get; } =
             new("--print-repro-instructions") { Description = SR.PrintReproInstructionsOption };
-        public Option<string> WasmGenerateCallHelpers { get; } =
-            new("--wasm-generate-callhelpers") { Description = SR.WasmGenerateCallHelpersOption };
-        public Option<string[]> WasmPInvokeModule { get; } =
-            new("--wasm-pinvoke-module") { Description = SR.WasmPInvokeModuleOption };
-        public Option<string[]> WasmIgnoredPInvokeModule { get; } =
-            new("--wasm-ignored-pinvoke-module") { Description = SR.WasmIgnoredPInvokeModuleOption };
-        public Option<bool> WasmNoWarnUnresolvedPInvokeModules { get; } =
-            new("--wasm-no-warn-unresolved-pinvoke-modules") { Description = SR.WasmNoWarnUnresolvedPInvokeModulesOption };
+        public Option<string> GeneratePortableCallHelpers { get; } =
+            new("--generate-portable-callhelpers") { Description = SR.GeneratePortableCallHelpersOption };
+        public Option<string[]> DirectPInvoke { get; } =
+            new("--directpinvoke") { Description = SR.DirectPInvokeOption };
+        public Option<string[]> IgnoredDirectPInvoke { get; } =
+            new("--ignored-directpinvoke") { Description = SR.IgnoredDirectPInvokeOption };
+        public Option<bool> NoWarnUnresolvedDirectPInvoke { get; } =
+            new("--no-warn-unresolved-directpinvoke") { Description = SR.NoWarnUnresolvedDirectPInvokeOption };
         public Option<string> SingleMethodTypeName { get; } =
             new("--singlemethodtypename") { Description = SR.SingleMethodTypeName };
         public Option<string> SingleMethodName { get; } =
@@ -171,11 +171,11 @@ namespace ILCompiler
             // A compilation cannot resolve two inputs with the same simple name, so it rejects them.
             // The call-helper generator only scans, and it is handed the app's whole bundle, which
             // routinely carries several native files sharing a name (per-architecture payloads out
-            // of a NuGet package, say). Those get skipped as unloadable further on, so take the
-            // first of each name here rather than failing the build over an ambiguity that only a
-            // compilation has to settle.
+            // of a NuGet package, say). Parsing must not fail over an ambiguity only a compilation
+            // has to settle: the generator re-expands the tokens itself and lets the first path that
+            // actually loads claim each simple name, so a native file cannot shadow a managed one.
             InputFilePaths.CustomParser = result =>
-                Helpers.BuildPathDictionary(result.Tokens, strict: result.GetResult(WasmGenerateCallHelpers) is null);
+                Helpers.BuildPathDictionary(result.Tokens, strict: result.GetResult(GeneratePortableCallHelpers) is null);
 
             Arguments.Add(InputFilePaths);
             Options.Add(UnrootedInputFilePaths);
@@ -218,10 +218,10 @@ namespace ILCompiler
             Options.Add(TargetOS);
             Options.Add(JitPath);
             Options.Add(PrintReproInstructions);
-            Options.Add(WasmGenerateCallHelpers);
-            Options.Add(WasmPInvokeModule);
-            Options.Add(WasmIgnoredPInvokeModule);
-            Options.Add(WasmNoWarnUnresolvedPInvokeModules);
+            Options.Add(GeneratePortableCallHelpers);
+            Options.Add(DirectPInvoke);
+            Options.Add(IgnoredDirectPInvoke);
+            Options.Add(NoWarnUnresolvedDirectPInvoke);
             Options.Add(SingleMethodTypeName);
             Options.Add(SingleMethodName);
             Options.Add(SingleMethodIndex);

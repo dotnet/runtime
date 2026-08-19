@@ -179,11 +179,11 @@
       <_WasiInteropGeneratorArg Include="wasi" />
       <_WasiInteropGeneratorArg Include="--targetarch" />
       <_WasiInteropGeneratorArg Include="wasm" />
-      <_WasiInteropGeneratorArg Include="--wasm-generate-callhelpers" />
+      <_WasiInteropGeneratorArg Include="--generate-portable-callhelpers" />
       <_WasiInteropGeneratorArg Include="$(_WasiRelinkObjDir)" />
-      <_WasiInteropGeneratorArg Include="--wasm-no-warn-unresolved-pinvoke-modules" />
-      <_WasiInteropGeneratorArg Include="--wasm-pinvoke-module;%(_WasiPInvokeModules.Identity)" Condition="'%(_WasiPInvokeModules.Identity)' != ''" />
-      <_WasiInteropGeneratorArg Include="--wasm-ignored-pinvoke-module;%(_WasiIgnoredPInvokeModules.Identity)" Condition="'%(_WasiIgnoredPInvokeModules.Identity)' != ''" />
+      <_WasiInteropGeneratorArg Include="--no-warn-unresolved-directpinvoke" />
+      <_WasiInteropGeneratorArg Include="--directpinvoke;%(_WasiPInvokeModules.Identity)" Condition="'%(_WasiPInvokeModules.Identity)' != ''" />
+      <_WasiInteropGeneratorArg Include="--ignored-directpinvoke;%(_WasiIgnoredPInvokeModules.Identity)" Condition="'%(_WasiIgnoredPInvokeModules.Identity)' != ''" />
       <_WasiInteropGeneratorArg Include="@(_WasiManagedAssemblies->'%(FullPath)')" />
     </ItemGroup>
 

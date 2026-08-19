@@ -81,11 +81,11 @@ cd /d "%repo_root%"
 set crossgen2=%repo_root%\artifacts\bin\coreclr\windows.x64.%configuration%\crossgen2\crossgen2.dll
 
 :: Modules the runtime links statically; a P/Invoke into any of them resolves to a direct call.
-set pinvoke_module_args=--wasm-pinvoke-module libSystem.Native ^
- --wasm-pinvoke-module libSystem.Native.Browser ^
- --wasm-pinvoke-module libSystem.IO.Compression.Native ^
- --wasm-pinvoke-module libSystem.Globalization.Native ^
- --wasm-pinvoke-module libSystem.Runtime.InteropServices.JavaScript.Native
+set pinvoke_module_args=--directpinvoke libSystem.Native ^
+ --directpinvoke libSystem.Native.Browser ^
+ --directpinvoke libSystem.IO.Compression.Native ^
+ --directpinvoke libSystem.Globalization.Native ^
+ --directpinvoke libSystem.Runtime.InteropServices.JavaScript.Native
 
 :: Resolve scan paths (allow overrides).
 if not "%browser_scan_path_override%"=="" (
@@ -130,7 +130,7 @@ if not exist "%crossgen2%" (
 echo [%target_os%] Scan path: %scan_path%
 echo [%target_os%] Output path: %output_dir%
 echo Running generator for %target_os%...
-call .\dotnet.cmd "%crossgen2%" --targetos %target_os% --targetarch wasm --wasm-generate-callhelpers "%output_dir%" --wasm-no-warn-unresolved-pinvoke-modules %pinvoke_module_args% "%scan_path%*.dll"
+call .\dotnet.cmd "%crossgen2%" --targetos %target_os% --targetarch wasm --generate-portable-callhelpers "%output_dir%" --no-warn-unresolved-directpinvoke %pinvoke_module_args% "%scan_path%*.dll"
 
 if errorlevel 1 (
     echo Generator failed for %target_os%!

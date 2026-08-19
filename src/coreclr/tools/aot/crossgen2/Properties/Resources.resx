@@ -285,20 +285,20 @@
   <data name="TargetOSOption" xml:space="preserve">
     <value>Target OS for cross compilation</value>
   </data>
-  <data name="WasmGenerateCallHelpersOption" xml:space="preserve">
-    <value>Generate the wasm call helper sources into the given directory instead of compiling</value>
+  <data name="GeneratePortableCallHelpersOption" xml:space="preserve">
+    <value>Generate the portable entry point call helper sources into the given directory instead of compiling</value>
   </data>
-  <data name="WasmPInvokeModuleOption" xml:space="preserve">
+  <data name="DirectPInvokeOption" xml:space="preserve">
     <value>Name of a statically linked native module P/Invokes may resolve against</value>
   </data>
-  <data name="WasmIgnoredPInvokeModuleOption" xml:space="preserve">
+  <data name="IgnoredDirectPInvokeOption" xml:space="preserve">
     <value>Name of a native module to leave out of the generated P/Invoke table</value>
   </data>
-  <data name="WasmNoWarnUnresolvedPInvokeModulesOption" xml:space="preserve">
+  <data name="NoWarnUnresolvedDirectPInvokeOption" xml:space="preserve">
     <value>Do not warn about P/Invokes to modules that are not statically linked</value>
   </data>
-  <data name="WasmGenerateCallHelpersRequiresWasmTarget" xml:space="preserve">
-    <value>--wasm-generate-callhelpers requires --targetarch wasm together with --targetos browser or --targetos wasi</value>
+  <data name="GeneratePortableCallHelpersRequiresWasmTarget" xml:space="preserve">
+    <value>--generate-portable-callhelpers requires --targetarch wasm together with --targetos browser or --targetos wasi</value>
   </data>
   <data name="TargetOSUnsupported" xml:space="preserve">
     <value>Target OS is not supported</value>

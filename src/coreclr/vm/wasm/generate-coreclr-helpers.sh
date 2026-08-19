@@ -88,12 +88,12 @@ run_generator() {
     local args=(
         --targetos "$target_os"
         --targetarch wasm
-        --wasm-generate-callhelpers "$output_dir"
-        --wasm-no-warn-unresolved-pinvoke-modules
+        --generate-portable-callhelpers "$output_dir"
+        --no-warn-unresolved-directpinvoke
     )
     local module
     for module in "${pinvoke_modules[@]}"; do
-        args+=(--wasm-pinvoke-module "$module")
+        args+=(--directpinvoke "$module")
     done
 
     ./dotnet.sh "$crossgen2" "${args[@]}" "$scan_path"*.dll

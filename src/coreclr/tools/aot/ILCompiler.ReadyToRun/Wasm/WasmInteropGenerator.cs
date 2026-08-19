@@ -36,8 +36,8 @@ namespace ILCompiler.Wasm
     /// drift from it.
     ///
     /// Usage:
-    ///   crossgen2 --wasm-generate-callhelpers &lt;dir&gt; --targetos &lt;browser|wasi&gt; --targetarch wasm \
-    ///             --wasm-pinvoke-module &lt;name&gt;... &lt;assembly&gt;...
+    ///   crossgen2 --generate-portable-callhelpers &lt;dir&gt; --targetos &lt;browser|wasi&gt; --targetarch wasm \
+    ///             --directpinvoke &lt;name&gt;... &lt;assembly&gt;...
     /// </remarks>
     internal static class WasmInteropGenerator
     {

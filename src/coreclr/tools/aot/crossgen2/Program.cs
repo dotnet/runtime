@@ -39,7 +39,7 @@ namespace ILCompiler
         private readonly bool _singleFileCompilation;
         private readonly bool _outNearInput;
         private readonly string _outputFilePath;
-        private readonly string _wasmGenerateCallHelpers;
+        private readonly string _generatePortableCallHelpers;
 
         public Program(Crossgen2RootCommand command)
         {
@@ -48,7 +48,7 @@ namespace ILCompiler
             _singleFileCompilation = Get(command.SingleFileCompilation);
             _outNearInput = Get(command.OutNearInput);
             _outputFilePath = Get(command.OutputFilePath);
-            _wasmGenerateCallHelpers = Get(command.WasmGenerateCallHelpers);
+            _generatePortableCallHelpers = Get(command.GeneratePortableCallHelpers);
 
             if (Get(command.WaitForDebugger))
             {
@@ -72,7 +72,7 @@ namespace ILCompiler
         {
             // Interop generation mode reads the input assemblies and writes source files, so the
             // output arguments the compilation path requires do not apply.
-            if (_outputFilePath == null && !_outNearInput && _wasmGenerateCallHelpers is null)
+            if (_outputFilePath == null && !_outNearInput && _generatePortableCallHelpers is null)
                 throw new CommandLineException(SR.MissingOutputFile);
 
             if (_singleFileCompilation && !_outNearInput)
@@ -86,10 +86,10 @@ namespace ILCompiler
             // The interop generator answers ABI questions (struct sizes, argument lowering) through the
             // same type system the compiler uses, so an unspecified target would silently produce host
             // layouts. Reject anything but a wasm target instead of emitting subtly wrong helpers.
-            if (_wasmGenerateCallHelpers is not null
+            if (_generatePortableCallHelpers is not null
                 && (targetArchitecture != TargetArchitecture.Wasm32 || targetOS is not (TargetOS.Browser or TargetOS.Wasi)))
             {
-                throw new CommandLineException(SR.WasmGenerateCallHelpersRequiresWasmTarget);
+                throw new CommandLineException(SR.GeneratePortableCallHelpersRequiresWasmTarget);
             }
             bool targetAllowsRuntimeCodeGeneration = GetTargetAllowsRuntimeCodeGeneration(targetOS, targetArchitecture);
 
@@ -192,7 +192,7 @@ namespace ILCompiler
                 // a single module per simple name either way, so the generator walks every path
                 // and lets the first one that actually loads claim the name.
                 IEnumerable<KeyValuePair<string, string>> inputFilesToLoad = inputFilePathsArg;
-                if (_wasmGenerateCallHelpers is not null
+                if (_generatePortableCallHelpers is not null
                     && _command.Result.GetResult(_command.InputFilePaths) is { } inputFilePathsResult)
                 {
                     List<KeyValuePair<string, string>> everyInputFile = new();
@@ -316,17 +316,17 @@ namespace ILCompiler
             _typeSystemContext.SetSystemModule((EcmaModule)_typeSystemContext.GetModuleForSimpleName(systemModuleName));
             ReadyToRunCompilerContext typeSystemContext = _typeSystemContext;
 
-            if (_wasmGenerateCallHelpers is not null)
+            if (_generatePortableCallHelpers is not null)
             {
                 return Wasm.WasmInteropGenerator.Run(typeSystemContext, new Wasm.WasmInteropGeneratorOptions
                 {
-                    OutputDirectory = _wasmGenerateCallHelpers,
-                    PInvokeModules = Get(_command.WasmPInvokeModule),
-                    IgnoredPInvokeModules = Get(_command.WasmIgnoredPInvokeModule),
+                    OutputDirectory = _generatePortableCallHelpers,
+                    PInvokeModules = Get(_command.DirectPInvoke),
+                    IgnoredPInvokeModules = Get(_command.IgnoredDirectPInvoke),
                     // The normalized name, so that platform attributes match regardless of how
                     // --targetos was spelled on the command line.
                     TargetOS = targetOS.ToString().ToLowerInvariant(),
-                    WarnOnUnresolvedPInvokeModules = !Get(_command.WasmNoWarnUnresolvedPInvokeModules),
+                    WarnOnUnresolvedPInvokeModules = !Get(_command.NoWarnUnresolvedDirectPInvoke),
                 }, logger);
             }
 

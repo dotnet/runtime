@@ -2,7 +2,7 @@
 
 The `generate-coreclr-helpers.cmd` (Windows) and `generate-coreclr-helpers.sh` (Linux/macOS)
 scripts in this directory regenerate the checked-in CoreCLR call-helper source files used by the
-WebAssembly runtime. They run crossgen2 in `--wasm-generate-callhelpers` mode, which scans the managed
+WebAssembly runtime. They run crossgen2 in `--generate-portable-callhelpers` mode, which scans the managed
 framework assemblies and emits the native P/Invoke, reverse-P/Invoke, and interpreter-to-managed
 call helpers. The generator lives in
 [`ILCompiler.ReadyToRun/Wasm`](../../tools/aot/ILCompiler.ReadyToRun/Wasm) so it can use crossgen2's
