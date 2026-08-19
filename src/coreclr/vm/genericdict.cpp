@@ -728,7 +728,7 @@ Dictionary::PopulateEntry(
 
         switch (signatureKind)
         {
-            case READYTORUN_FIXUP_DeclaringTypeHandle:   kind = DeclaringTypeHandleSlot; break;
+            case READYTORUN_FIXUP_DeclaringTypeHandle:   kind = DeclaringTypeHandleFromMethodSlot; break;
             case READYTORUN_FIXUP_TypeHandle:            kind = TypeHandleSlot; break;
             case READYTORUN_FIXUP_FieldHandle:           kind = FieldDescSlot; break;
             case READYTORUN_FIXUP_MethodHandle:          kind = MethodDescSlot; break;
@@ -864,6 +864,7 @@ Dictionary::PopulateEntry(
         case MethodDescSlot:
         case DispatchStubAddrSlot:
         case MethodEntrySlot:
+        case DeclaringTypeHandleFromMethodSlot:
         {
             TypeHandle ownerType;
             MethodTable * pOwnerMT = NULL;
@@ -877,6 +878,9 @@ Dictionary::PopulateEntry(
             uint32_t methodSlot = -1;
             BOOL fRequiresDispatchStub = 0;
             BOOL isAsyncVariant = 0;
+
+            // 'kind' can be reassigned below when the signature carries a constrained token, so capture this up front.
+            BOOL fDeclaringTypeHandleFromMethod = (kind == DeclaringTypeHandleFromMethodSlot);
 
             if (isReadyToRunModule)
             {
@@ -926,7 +930,10 @@ Dictionary::PopulateEntry(
                         {
                             FieldDesc * pFDDummy = NULL;
 
-                            MemberLoader::GetDescFromMemberRef(pZapSigContext->pInfoModule, TokenFromRid(rid, mdtMemberRef), &pMethod, &pFDDummy, NULL, FALSE, &ownerType);
+                            // For DeclaringTypeHandleFromMethodSlot the type referenced by the token is needed to compute
+                            // the exact instantiation of the type which declares the method, so ask for the actual type.
+                            MemberLoader::GetDescFromMemberRef(pZapSigContext->pInfoModule, TokenFromRid(rid, mdtMemberRef), &pMethod, &pFDDummy, NULL, FALSE, &ownerType,
+                                                               fDeclaringTypeHandleFromMethod /* actualTypeRequired */);
                             _ASSERTE(pMethod != NULL && pFDDummy == NULL);
                         }
                         else
@@ -1023,6 +1030,28 @@ Dictionary::PopulateEntry(
                     _ASSERTE(pMethod != NULL);
                     pMethod->CheckRestore();
                 }
+            }
+
+            if (fDeclaringTypeHandleFromMethod)
+            {
+                _ASSERTE(isReadyToRunModule);
+
+                // The signature describes a method; the value of the slot is the type which declares that method.
+                // The method may be declared on a base type of the type referenced by the token, and the MethodDesc
+                // found for it may belong to a canonical instantiation of that base type, so walk the parent chain of
+                // the (exact) type from the token to recover the exact declaring type.
+                MethodTable * pDeclaringMT = pMethod->GetMethodTable();
+                if (pOwnerMT != NULL)
+                {
+                    MethodTable * pExactDeclaringMT = pOwnerMT->GetMethodTableMatchingParentClass(pDeclaringMT);
+                    if (pExactDeclaringMT != NULL)
+                        pDeclaringMT = pExactDeclaringMT;
+                }
+
+                pDeclaringMT->EnsureInstanceActive();
+
+                result = (CORINFO_GENERIC_HANDLE)TypeHandle(pDeclaringMT).AsPtr();
+                break;
             }
 
             if (fRequiresDispatchStub)

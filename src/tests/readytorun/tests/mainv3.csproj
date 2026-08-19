@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- This test tests the mainv2 binary built against v1 of the test binary with C#, but built against v2 of the test binary when compiled with R2R -->
+  <!-- This test tests the mainv3 binary built against v1 of the test binary with C#, but built against v2 of the test binary when compiled with R2R -->
   <!-- Unlike the mainv2 binary, this test does not use cross-module versioning -->
   <PropertyGroup>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
@@ -7,6 +7,8 @@
     <CrossGenTest>false</CrossGenTest>
     <!-- https://github.com/dotnet/runtime/issues/73954 -->
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
+    <!-- This test does not enable cross module inlining, so there are no cross module inlined methods to validate. -->
+    <DefineConstants>$(DefineConstants);NO_CROSS_MODULE_INLINING</DefineConstants>
     <!-- This test launches crossgen2 with dotnet, so we would need a non-sanitzed jitinterface library. To simplify our infrastructure, we'll instead skip this test. -->
     <CLRTestTargetUnsupported Condition="'$(EnableNativeSanitizers)' != ''">true</CLRTestTargetUnsupported>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' == 'wasm'">true</CLRTestTargetUnsupported>
@@ -107,13 +109,13 @@ then
   exit 1
 fi
 
-if [ ! -f IL_DLLS/mainv2.dll ]
+if [ ! -f IL_DLLS/mainv3.dll ]
 then
-  cp mainv2.dll IL_DLLS/mainv2.dll
+  cp mainv3.dll IL_DLLS/mainv3.dll
 fi
-if [ ! -f IL_DLLS/mainv2.dll ]
+if [ ! -f IL_DLLS/mainv3.dll ]
 then
-  echo Failed to copy mainv2.dll to IL_DLLS
+  echo Failed to copy mainv3.dll to IL_DLLS
   exit 1
 fi
 
@@ -154,9 +156,9 @@ then
   echo Crossgen failed with exitcode: $__cgExitCode
   exit 1
 fi
-if [ ! -f mainv2.map ]
+if [ ! -f mainv3.map ]
 then
-  echo Failed to build mainv2.dll
+  echo Failed to build mainv3.dll
   exit 1
 fi
 
