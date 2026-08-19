@@ -870,7 +870,7 @@ namespace System.Net.Http
                             // Only memorize the value for future connections if it's lower than what we're
                             // configured to start with. SocketsHttpHandler.InitialHttp2MaxConcurrentStreams
                             // acts as the upper bound for what every new connection starts with.
-                            if (settingValue < (uint)_pool.Settings._initialHttp2MaxConcurrentStreams)
+                            if (settingValue < _pool.Settings._initialHttp2MaxConcurrentStreams)
                             {
                                 _pool._lastSeenHttp2MaxConcurrentStreams = settingValue;
                             }

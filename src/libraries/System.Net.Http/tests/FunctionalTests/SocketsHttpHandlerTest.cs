@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -4263,13 +4263,13 @@ namespace System.Net.Http.Functional.Tests
             await connection.ReadSettingsAsync().WaitAsync(TestHelper.PassingTestTimeout);
 
             // Only 'initialLimit' requests may be sent before we advertise our own limit.
-            var streamIds = new List<int>(await ReadRequestHeadersAsync(connection, initialLimit));
+            var streamIds = new List<int>(await AcceptRequests(connection, initialLimit));
             await AssertNoRequestHeadersSentAsync(connection);
 
             // Advertise a higher limit. The remaining requests should now be sent.
             await connection.SendSettingsAsync(ackTimeout: null, [new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 }]);
 
-            streamIds.AddRange(await ReadRequestHeadersAsync(connection, RequestCount - initialLimit));
+            streamIds.AddRange(await AcceptRequests(connection, RequestCount - initialLimit));
 
             await SendResponses(connection, streamIds);
             await VerifySendTasks(sendTasks);
@@ -4342,38 +4342,20 @@ namespace System.Net.Http.Functional.Tests
             await using Http2LoopbackConnection connection = await server.AcceptConnectionAsync().WaitAsync(TestHelper.PassingTestTimeout);
             await connection.ReadSettingsAsync().WaitAsync(TestHelper.PassingTestTimeout);
 
-            var streamIds = new List<int>(await ReadRequestHeadersAsync(connection, expectedStreamsOnNewConnection));
+            var streamIds = new List<int>(await AcceptRequests(connection, expectedStreamsOnNewConnection));
             await AssertNoRequestHeadersSentAsync(connection);
 
             await connection.SendSettingsAsync(ackTimeout: null, [new SettingsEntry { SettingId = SettingId.MaxConcurrentStreams, Value = 100 }]);
 
-            streamIds.AddRange(await ReadRequestHeadersAsync(connection, RequestCount - expectedStreamsOnNewConnection));
+            streamIds.AddRange(await AcceptRequests(connection, RequestCount - expectedStreamsOnNewConnection));
 
             await SendResponses(connection, streamIds);
             await VerifySendTasks(sendTasks);
         }
 
-        private static async Task<int[]> ReadRequestHeadersAsync(Http2LoopbackConnection connection, int count)
-        {
-            var streamIds = new List<int>(count);
-
-            while (streamIds.Count < count)
-            {
-                Frame frame = await connection.ReadFrameAsync(TestHelper.PassingTestTimeout).ConfigureAwait(false);
-                Assert.NotNull(frame);
-
-                if (frame.Type == FrameType.Headers)
-                {
-                    streamIds.Add(frame.StreamId);
-                }
-            }
-
-            return streamIds.ToArray();
-        }
-
         private static async Task AssertNoRequestHeadersSentAsync(Http2LoopbackConnection connection)
         {
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
 
             while (true)
             {
