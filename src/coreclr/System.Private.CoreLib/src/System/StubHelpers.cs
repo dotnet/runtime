@@ -667,6 +667,11 @@ namespace System.StubHelpers
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "InterfaceMarshaler_ValidateComVisibilityForIUnknown")]
         internal static partial void ValidateComVisibilityForIUnknown(IntPtr unk, out QCallException qcallException);
+
+        internal static void ValidateComVisibilityForIUnknown(IntPtr unk)
+        {
+            ValidateComVisibilityForIUnknown(unk, out _);
+        }
     }  // class InterfaceMarshaler
 #endif // FEATURE_COMINTEROP
 
@@ -2179,6 +2184,9 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ThrowInteropParamException")]
         internal static safe partial void ThrowInteropParamException(int resID, int paramIdx, out QCallException qcallException);
 
+        internal static safe void ThrowInteropParamException(int resID, int paramIdx)
+            => ThrowInteropParamException(resID, paramIdx, out _);
+
         internal static IntPtr AddToCleanupList(ref CleanupWorkListElement? pCleanupWorkList, SafeHandle handle)
         {
             SafeHandleCleanupWorkListElement element = new SafeHandleCleanupWorkListElement(handle);
@@ -2373,8 +2381,14 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerBeginTransitionCallback")]
         internal static unsafe partial void* ProfilerBeginTransitionCallback(void* pTargetMD, out QCallException qcallException);
 
+        internal static unsafe void* ProfilerBeginTransitionCallback(void* pTargetMD)
+            => ProfilerBeginTransitionCallback(pTargetMD, out _);
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "StubHelpers_ProfilerEndTransitionCallback")]
         internal static unsafe partial void ProfilerEndTransitionCallback(void* pTargetMD, out QCallException qcallException);
+
+        internal static unsafe void ProfilerEndTransitionCallback(void* pTargetMD)
+            => ProfilerEndTransitionCallback(pTargetMD, out _);
 #endif // PROFILING_SUPPORTED
 
         //------------------------------------------------------
@@ -2509,8 +2523,14 @@ namespace System.StubHelpers
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToManagedVaList")]
         internal static partial void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator, out QCallException qcallException);
 
+        internal static void MarshalToManagedVaList(IntPtr va_list, IntPtr pArgIterator)
+            => MarshalToManagedVaList(va_list, pArgIterator, out _);
+
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_MarshalToUnmanagedVaList")]
         internal static partial void MarshalToUnmanagedVaList(IntPtr va_list, uint vaListSize, IntPtr pArgIterator, out QCallException qcallException);
+
+        internal static void MarshalToUnmanagedVaList(IntPtr va_list, uint vaListSize, IntPtr pArgIterator)
+            => MarshalToUnmanagedVaList(va_list, vaListSize, pArgIterator, out _);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern uint CalcVaListSize(IntPtr va_list);
@@ -2526,6 +2546,9 @@ namespace System.StubHelpers
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint="StubHelpers_ValidateByref")]
         internal static partial void ValidateByref(IntPtr byref, IntPtr pMD, out QCallException qcallException); // the byref is pinned so we can safely "cast" it to IntPtr
+
+        internal static void ValidateByref(IntPtr byref, IntPtr pMD)
+            => ValidateByref(byref, pMD, out _);
 
         [Intrinsic]
         internal static IntPtr GetStubContext() => throw new UnreachableException(); // Unconditionally expanded intrinsic
