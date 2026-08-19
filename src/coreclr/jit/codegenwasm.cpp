@@ -4472,8 +4472,7 @@ int CodeGenInterface::genTotalFrameSize() const
 // There must be a frame pointer to call this function!
 int CodeGenInterface::genSPtoFPdelta() const
 {
-    assert(isFramePointerUsed());
-    return 0;
+    unreached();
 }
 
 //---------------------------------------------------------------------
@@ -4484,10 +4483,7 @@ int CodeGenInterface::genSPtoFPdelta() const
 // There must be a frame pointer to call this function!
 int CodeGenInterface::genCallerSPtoFPdelta() const
 {
-    assert(isFramePointerUsed());
-    int callerSPtoFPdelta = genCallerSPtoInitialSPdelta() + genSPtoFPdelta();
-    assert(callerSPtoFPdelta <= 0);
-    return callerSPtoFPdelta;
+    unreached();
 }
 
 //---------------------------------------------------------------------
@@ -4496,9 +4492,7 @@ int CodeGenInterface::genCallerSPtoFPdelta() const
 // This number will be negative.
 int CodeGenInterface::genCallerSPtoInitialSPdelta() const
 {
-    int callerSPtoInitialSPdelta = -genTotalFrameSize();
-    assert(callerSPtoInitialSPdelta <= 0);
-    return callerSPtoInitialSPdelta;
+    unreached();
 }
 
 void RegSet::verifyRegUsed(regNumber reg)
