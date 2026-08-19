@@ -3320,17 +3320,15 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
     UINT_PTR targetSp = GetSP(pvRegDisplay->pCurrentContext);
     PopExplicitFrames(pThread, (void*)targetSp, (void*)callerTargetSp);
 
-    ExInfo* pExInfo = (PTR_ExInfo)pThread->GetExceptionState()->GetCurrentExceptionTracker();
-
 #ifdef HOST_WINDOWS
-    jmp_buf* pLongJmpBuf = pExInfo->m_pLongJmpBuf;
-    int longJmpReturnValue = pExInfo->m_longJmpReturnValue;
-    EXCEPTION_RECORD lastExceptionRecord = *pExInfo->m_ptrs.ExceptionRecord;
+    jmp_buf* pLongJmpBuf = exInfo->m_pLongJmpBuf;
+    int longJmpReturnValue = exInfo->m_longJmpReturnValue;
+    EXCEPTION_RECORD lastExceptionRecord = *exInfo->m_ptrs.ExceptionRecord;
 #endif // HOST_WINDOWS
 
 #ifdef HOST_UNIX
-    Interop::ManagedToNativeExceptionCallback propagateExceptionCallback = pExInfo->m_propagateExceptionCallback;
-    void* propagateExceptionContext = pExInfo->m_propagateExceptionContext;
+    Interop::ManagedToNativeExceptionCallback propagateExceptionCallback = exInfo->m_propagateExceptionCallback;
+    void* propagateExceptionContext = exInfo->m_propagateExceptionContext;
 #endif // HOST_UNIX
 
 #ifdef DEBUGGING_SUPPORTED
@@ -3367,11 +3365,7 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
     }
 #endif // DEBUGGING_SUPPORTED
 
-    Object* throwable = nullptr;
-    if (pHandlerIP == NULL)
-    {
-        throwable = OBJECTREFToObject(pExInfo->GetThrowable());
-    }
+    OBJECTREF throwable = exInfo->GetThrowable();
 
     ExInfo::PopExInfos(pThread, (void*)targetSp);
 
@@ -3451,9 +3445,9 @@ void CallCatchFunclet(BYTE* pHandlerIP, REGDISPLAY* pvRegDisplay, ExInfo* exInfo
             STRESS_LOG2(LF_EH, LL_INFO100, "Resuming propagation of managed exception through native frames at IP=%p, SP=%p\n", (void*)GetIP(pvRegDisplay->pCurrentContext), (void*)GetSP(pvRegDisplay->pCurrentContext));
 #ifdef TARGET_WASM
             // wasm cannot unwind frames, so we let C++ exception handling do all the work
-            PropagateExceptionThroughNativeFrames(throwable, targetSp);
+            PropagateExceptionThroughNativeFrames(OBJECTREFToObject(throwable), targetSp);
 #else // !TARGET_WASM
-            ExecuteFunctionBelowContext((PCODE)PropagateExceptionThroughNativeFrames, pvRegDisplay->pCurrentContext, targetSSP, (size_t)throwable);
+            ExecuteFunctionBelowContext((PCODE)PropagateExceptionThroughNativeFrames, pvRegDisplay->pCurrentContext, targetSSP, (size_t)OBJECTREFToObject(throwable));
 #endif // TARGET_WASM
         }
 #undef FIRST_ARG_REG
