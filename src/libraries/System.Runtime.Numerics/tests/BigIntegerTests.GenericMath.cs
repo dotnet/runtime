@@ -397,6 +397,10 @@ namespace System.Numerics.Tests
             Assert.Equal((BigInteger)0x13579BDF_00000000, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0xFBD9EAC8u));
             Assert.Equal((BigInteger)0xFBD9EAC8u, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0x13579BDF_00000000));
             Assert.Equal((BigInteger)0xFFFFFFFF_00000000ul, BinaryIntegerHelper<BigInteger>.ReverseBits((BigInteger)0xFFFFFFFF_00000000ul));
+            Assert.Equal(new BigInteger([0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]),
+                BinaryIntegerHelper<BigInteger>.ReverseBits(new BigInteger([0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF])));
+            Assert.Equal(new BigInteger([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF]),
+                BinaryIntegerHelper<BigInteger>.ReverseBits(new BigInteger([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF])));
         }
 
         [Fact]
