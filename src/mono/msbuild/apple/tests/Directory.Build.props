@@ -8,7 +8,8 @@
 
   <!-- Imports the repo defaults directly, skipping the src/mono conventions in between: those are
        tuned for the native and mobile build output, and these are ordinary managed tests that want the
-       standard artifacts/bin/<project>/<config>/<tfm> layout. src/mono/wasm/Wasm.Build.Tests skips
-       them the same way. -->
+       standard artifacts/bin/<project>/<config>/<tfm> layout. src/tools/ilasm/tests/ILAssembler.Tests
+       reaches the repo defaults the same way. src/mono/wasm/Wasm.Build.Tests also skips the src/mono
+       conventions, but redirects to the src/libraries ones instead of the repo defaults. -->
   <Import Project="..\..\..\..\..\Directory.Build.props" />
 </Project>

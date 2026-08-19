@@ -163,8 +163,8 @@ public class AppleHelixR2RTests
         // Neither leftover may reach the app: the R2R intermediate dir is wiped before compiling,
         // the app payload dir is recreated before the payload is staged into it.
         WriteFile(Path.Combine(r2rIntermediateDir, "KilledAttempt.dll"), "leftover-r2r-output");
-        WriteFile(Path.Combine(appPayloadDir, "stale-marker.txt"), "leftover-stage-file");
-        WriteFile(Path.Combine(appPayloadDir, "bin-previous", "leftover.txt"), "leftover-stage-tree");
+        WriteFile(Path.Combine(appPayloadDir, "stale-marker.txt"), "leftover-payload-file");
+        WriteFile(Path.Combine(appPayloadDir, "bin-previous", "leftover.txt"), "leftover-payload-tree");
         WriteFile(Path.Combine(appPayloadDir, "app.r2r.dylib"), "leftover-composite");
 
         string bundleStateFile = Path.Combine(workItemRoot, BundleStateFileName);
@@ -245,26 +245,26 @@ public class AppleHelixR2RTests
     {
         AssertManifest("publish directory", expectedPublishManifest, Manifest(publishDir));
 
-        Dictionary<string, string> expectedStage = new(expectedPublishManifest, s_pathComparer);
+        Dictionary<string, string> expectedPayload = new(expectedPublishManifest, s_pathComparer);
         foreach ((string relativePath, string content) in r2rOutput)
-            expectedStage[relativePath] = Hash(Encoding.UTF8.GetBytes(content));
+            expectedPayload[relativePath] = Hash(Encoding.UTF8.GetBytes(content));
 
-        AssertManifest("app payload directory", expectedStage, Manifest(appPayloadDir));
+        AssertManifest("app payload directory", expectedPayload, Manifest(appPayloadDir));
 
         (string appleBuildDir, List<string> assemblies, List<string> nativeFiles) = ReadBundleState(workItemRoot);
 
         Assert.Equal(NormalizeDirectory(appPayloadDir), NormalizeDirectory(appleBuildDir), s_pathComparer);
 
-        IEnumerable<string> topLevelAssemblies = expectedStage.Keys
+        IEnumerable<string> topLevelAssemblies = expectedPayload.Keys
             .Where(relativePath => IsTopLevel(relativePath)
                 && relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
                 && !relativePath.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase));
         AssertPathSet("AppleAssembliesToBundle", topLevelAssemblies.Select(relativePath => Path.Combine(appPayloadDir, ToNativePath(relativePath))), assemblies);
 
-        IEnumerable<string> stagedNativeFiles = expectedStage.Keys
+        IEnumerable<string> payloadNativeFiles = expectedPayload.Keys
             .Where(relativePath => !IsTopLevel(relativePath) || !relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
             .Select(relativePath => Path.Combine(appPayloadDir, ToNativePath(relativePath)));
-        AssertPathSet("AppleNativeFilesToBundle", stagedNativeFiles.Append(Path.Combine(extraFilesDir, ExtraFileName)), nativeFiles);
+        AssertPathSet("AppleNativeFilesToBundle", payloadNativeFiles.Append(Path.Combine(extraFilesDir, ExtraFileName)), nativeFiles);
     }
 
     private static (string AppleBuildDir, List<string> Assemblies, List<string> NativeFiles) ReadBundleState(string workItemRoot)
