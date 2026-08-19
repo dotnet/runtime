@@ -114,13 +114,8 @@ namespace TestLibrary
         public static bool IsNotMultithreadingSupported => !IsMultithreadingSupported;
         public static bool IsMultithreadingSupported => RuntimeFeature.IsMultithreadingSupported;
 
-        private static bool IsEnvironmentVariableTrue(string variableName)
-        {
-            if (!IsBrowser)
-                return false;
-
-            return Environment.GetEnvironmentVariable(variableName) is "true";
-        }
+        private static bool IsEnvironmentVariableTrue(string variableName) =>
+            Environment.GetEnvironmentVariable(variableName) is "true";
 
         public static bool IsUsingSynthesizedPgoData => !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CrossGen2SynthesizePgo"));
     }

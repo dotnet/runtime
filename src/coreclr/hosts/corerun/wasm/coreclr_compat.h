@@ -16,7 +16,8 @@
 //   * MethodDesc/PCODE/ULONG -- referenced by callhelpers.hpp without forward
 //     decls (the in-tree build gets them via vm/common.h).
 //   * INTERP_STACK_SLOT_SIZE -- defined in interpretershared.h in-tree; the
-//     interp-to-managed file uses it but does not include that header.
+//     interp-to-managed file uses it but does not include that header, so the
+//     kit passes the runtime's own value on the command line.
 //   * LF_INTEROP/LL_INFO1000/LOG/PORTABILITY_ASSERT -- CoreCLR logging
 //     primitives used by callhelpers-pinvoke.cpp.
 //
@@ -35,10 +36,20 @@
 // CoreCLR type prereqs for <callhelpers.hpp>.
 #ifndef _CORECLR_COMPAT_TYPES
 #define _CORECLR_COMPAT_TYPES
-typedef void MethodDesc;
+// The generated tables only ever handle MethodDesc through a pointer, so an
+// incomplete type is enough. It has to stay a class, as it is in the runtime,
+// or the two declarations would disagree.
+class MethodDesc;
 typedef uintptr_t PCODE;
 typedef uint32_t ULONG;
-#define INTERP_STACK_SLOT_SIZE 8u
+#endif
+
+// INTERP_STACK_SLOT_SIZE is supplied on the command line from corerun-compile.rsp,
+// where testkit.cmake reads it out of src/coreclr/interpreter/inc/interpretershared.h.
+// Restating the value here would let it drift from the runtime's, and the generated
+// interp-to-managed thunks compute stack offsets with it.
+#ifndef INTERP_STACK_SLOT_SIZE
+#error "INTERP_STACK_SLOT_SIZE must be supplied by the corerun test link kit (see corerun-compile.rsp)."
 #endif
 
 // CoreCLR logging stubs.

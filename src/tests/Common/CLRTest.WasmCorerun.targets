@@ -82,6 +82,8 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   <Target Name="WasmBuildTestCorerun"
           DependsOnTargets="_WasmResolveTestCorerunInputs;
                             _WasmWriteTestCorerunResponseFiles;
+                            _WasmResolveTestCorerunPInvokeModules;
+                            _WasmWriteTestCorerunInputManifest;
                             _WasmGenerateTestCallHelpers;
                             _WasmCompileTestCallHelpers;
                             _WasmLinkTestCorerun" />
@@ -94,6 +96,10 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
            Resolved here rather than during evaluation because eng/liveBuilds.targets, which
            defines CoreCLRArtifactsPath, is imported after this file. -->
       <WasmCorerunKitDir Condition="'$(WasmCorerunKitDir)' == ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)', 'corerun-link'))</WasmCorerunKitDir>
+
+      <!-- The product's checked-in framework call tables, used to keep the framework module list
+           below honest. -->
+      <_WasmCorerunProductPInvokeTable>$([MSBuild]::NormalizePath('$(RepoRoot)', 'src', 'coreclr', 'vm', 'wasm', 'browser', 'callhelpers-pinvoke.cpp'))</_WasmCorerunProductPInvokeTable>
     </PropertyGroup>
 
     <ItemGroup>
@@ -170,9 +176,14 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     </ItemGroup>
 
     <PropertyGroup Condition="'$(_WasmCorerunSkip)' != 'true'">
-      <_WasmCorerunDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'wasm-corerun'))</_WasmCorerunDir>
+      <!-- Build intermediates (generated sources, objects, response files, the generator's cache)
+           live under obj, not next to the test: everything in $(OutDir) is sent to Helix, and
+           these are worth about 300 KB per test there for no run-time purpose. Only corerun.js
+           and corerun.wasm below belong in the output directory. -->
+      <_WasmCorerunDir>$([MSBuild]::NormalizeDirectory('$(IntermediateOutputPath)', 'wasm-corerun'))</_WasmCorerunDir>
       <_WasmCorerunCompileRsp>$(_WasmCorerunDir)corerun-compile.rsp</_WasmCorerunCompileRsp>
       <_WasmCorerunLinkRsp>$(_WasmCorerunDir)corerun-link.rsp</_WasmCorerunLinkRsp>
+      <_WasmCorerunInputManifest>$(_WasmCorerunDir)inputs.txt</_WasmCorerunInputManifest>
       <_WasmCorerunJs>$(OutDir)corerun.js</_WasmCorerunJs>
       <!-- em++ emits the loader and the module as a pair. Both are outputs of the link: tracking
            only the loader would leave the target up to date after corerun.wasm alone is lost. -->
@@ -193,6 +204,17 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunKitInclude Include="$(WasmCorerunKitDir)include/**/*" />
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*$(StaticLibSuffix)" />
       <_WasmCorerunKitLinkInput Include="$(WasmCorerunKitDir)*.js" />
+
+      <!-- src/tests/Common/Platform is the shared native helper library for tests, and several of
+           the CMake projects that produce a test library link it (Interop, Runtime_101046,
+           Runtime_76194, exceptioninterop). It installs into the common bin directory instead of
+           being staged next to each test, so without it here any use of its TP_* helpers would
+           only surface as an undefined symbol from wasm-ld. It is kept out of
+           @(_WasmCorerunTestLib) on purpose: that item decides whether a project has native code
+           at all, and this library exists for every project. Linking it costs nothing when it goes
+           unused, because wasm-ld pulls in only the archive members that are referenced. -->
+      <_WasmCorerunCommonLib Include="$(TestBinDir)bin/libplatformdefines$(StaticLibSuffix)"
+                             Condition="Exists('$(TestBinDir)bin/libplatformdefines$(StaticLibSuffix)')" />
     </ItemGroup>
   </Target>
 
@@ -216,20 +238,17 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
       <_WasmCorerunLinkRspText>$([System.IO.File]::ReadAllText('$(WasmCorerunKitDir)corerun-link.rsp'))</_WasmCorerunLinkRspText>
     </PropertyGroup>
 
-    <!-- The text round-trips through MSBuild properties and WriteLinesToFile, which would split on
-         ';' and reinterpret '%xx'. '%25' is an escaped '%', so the check below catches any percent
-         escape. testkit.cmake never emits either; fail loudly if that changes. -->
-    <Error Condition="$(_WasmCorerunCompileRspText.Contains(';')) or $(_WasmCorerunLinkRspText.Contains(';')) or
-                      $(_WasmCorerunCompileRspText.Contains('%25')) or $(_WasmCorerunLinkRspText.Contains('%25'))"
-           Text="The corerun link kit response files must not contain ';' or '%25' - see src/coreclr/hosts/corerun/wasm/testkit.cmake." />
-
     <PropertyGroup>
       <_WasmCorerunCompileRspText>$(_WasmCorerunCompileRspText.Replace('!CORERUN_KIT_DIR!', '$(_WasmCorerunKitDirNoSlash)'))</_WasmCorerunCompileRspText>
       <_WasmCorerunLinkRspText>$(_WasmCorerunLinkRspText.Replace('!CORERUN_KIT_DIR!', '$(_WasmCorerunKitDirNoSlash)'))</_WasmCorerunLinkRspText>
     </PropertyGroup>
 
-    <WriteLinesToFile File="$(_WasmCorerunCompileRsp)" Lines="$(_WasmCorerunCompileRspText)" Overwrite="true" WriteOnlyWhenDifferent="true" />
-    <WriteLinesToFile File="$(_WasmCorerunLinkRsp)" Lines="$(_WasmCorerunLinkRspText)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <!-- Escaped because the text reaches WriteLinesToFile as an item list, which would otherwise
+         split it on ';' and reinterpret '%xx'. The task unescapes what it is given, so the file
+         still gets the original text. This covers the substituted kit path as well, which is a
+         property of wherever the repo happens to be cloned rather than of the kit. -->
+    <WriteLinesToFile File="$(_WasmCorerunCompileRsp)" Lines="$([MSBuild]::Escape('$(_WasmCorerunCompileRspText)'))" Overwrite="true" WriteOnlyWhenDifferent="true" />
+    <WriteLinesToFile File="$(_WasmCorerunLinkRsp)" Lines="$([MSBuild]::Escape('$(_WasmCorerunLinkRspText)'))" Overwrite="true" WriteOnlyWhenDifferent="true" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmCorerunCompileRsp);$(_WasmCorerunLinkRsp)" />
@@ -266,6 +285,71 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   </Target>
 
   <!--
+    The framework modules that CORE_ROOT/corerun.js already resolves. The generated sources replace
+    libcoreclr_gen_static.a wholesale, so this list has to name every module the checked-in product
+    tables cover: one missing here becomes a DllNotFoundException at run time, in the test rather
+    than in the build. Rather than trust that the two stay in step, read the product's own list and
+    compare. This runs outside the incremental generate target, and the product file is one of that
+    target's inputs, so adding a module there is picked up without a clean build.
+  -->
+  <Target Name="_WasmResolveTestCorerunPInvokeModules"
+          DependsOnTargets="_WasmResolveTestCorerunInputs"
+          Condition="'$(_WasmCorerunSkip)' != 'true'">
+    <ItemGroup>
+      <_WasmCorerunFrameworkPInvokeModule Include="libSystem.Globalization.Native" />
+      <_WasmCorerunFrameworkPInvokeModule Include="libSystem.IO.Compression.Native" />
+      <_WasmCorerunFrameworkPInvokeModule Include="libSystem.Native" />
+      <_WasmCorerunFrameworkPInvokeModule Include="libSystem.Native.Browser" />
+      <_WasmCorerunFrameworkPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
+    </ItemGroup>
+
+    <Error Condition="!Exists('$(_WasmCorerunProductPInvokeTable)')"
+           Text="'$(_WasmCorerunProductPInvokeTable)' does not exist. The framework P/Invoke module list in CLRTest.WasmCorerun.targets is validated against that table, so _WasmCorerunProductPInvokeTable has to be pointed at its new location if the product table moved." />
+
+    <ReadLinesFromFile File="$(_WasmCorerunProductPInvokeTable)">
+      <Output TaskParameter="Lines" ItemName="_WasmCorerunProductTableLine" />
+    </ReadLinesFromFile>
+
+    <ItemGroup>
+      <!-- Rows of the product table read: {"libSystem.Native", s_libSystem_Native, 94}, -->
+      <_WasmCorerunProductPInvokeModule
+          Include="$([System.Text.RegularExpressions.Regex]::Replace('%(_WasmCorerunProductTableLine.Identity)', '^\{&quot;([^&quot;]+)&quot;,.*$', '$1'))"
+          Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_WasmCorerunProductTableLine.Identity)', '^\{&quot;[^&quot;]+&quot;, s_'))" />
+
+      <_WasmCorerunMissingPInvokeModule Include="@(_WasmCorerunProductPInvokeModule)" Exclude="@(_WasmCorerunFrameworkPInvokeModule)" />
+      <_WasmCorerunUnknownPInvokeModule Include="@(_WasmCorerunFrameworkPInvokeModule)" Exclude="@(_WasmCorerunProductPInvokeModule)" />
+    </ItemGroup>
+
+    <Error Condition="'@(_WasmCorerunProductPInvokeModule)' == ''"
+           Text="No module rows could be read from '$(_WasmCorerunProductPInvokeTable)'. The parsing in CLRTest.WasmCorerun.targets needs to be updated to match the table's current shape." />
+
+    <Error Condition="'@(_WasmCorerunMissingPInvokeModule)' != '' or '@(_WasmCorerunUnknownPInvokeModule)' != ''"
+           Text="The framework P/Invoke module list in CLRTest.WasmCorerun.targets no longer matches '$(_WasmCorerunProductPInvokeTable)'. Missing from the test list: '@(_WasmCorerunMissingPInvokeModule)'. Not in the product table: '@(_WasmCorerunUnknownPInvokeModule)'." />
+  </Target>
+
+  <!--
+    MSBuild decides whether a target is up to date by comparing timestamps, which cannot show that
+    an input was *removed*: with one archive or assembly fewer, every surviving input is still older
+    than the outputs, the target is skipped, and the previous build's native code stays linked in.
+    Recording the input set in a file that is rewritten only when the set changes turns a removal
+    into an input that is newer than the outputs.
+  -->
+  <Target Name="_WasmWriteTestCorerunInputManifest"
+          DependsOnTargets="_WasmResolveTestCorerunAssemblies"
+          Condition="'$(_WasmCorerunSkip)' != 'true'">
+    <MakeDir Directories="$(_WasmCorerunDir)" />
+
+    <WriteLinesToFile File="$(_WasmCorerunInputManifest)"
+                      Lines="@(_WasmCorerunAssembly);@(_WasmCorerunTestLib);@(_WasmCorerunCommonLib);@(_WasmCorerunKitInclude);@(_WasmCorerunKitLinkInput)"
+                      Overwrite="true"
+                      WriteOnlyWhenDifferent="true" />
+
+    <ItemGroup>
+      <FileWrites Include="$(_WasmCorerunInputManifest)" />
+    </ItemGroup>
+  </Target>
+
+  <!--
     @(_WasmCorerunTestLib) is an input even though the generator never opens the archives: the
     module list below is derived from their file names, so adding or renaming one has to force the
     tables to be regenerated. Without it a native-only change would relink (the link tracks the
@@ -273,25 +357,14 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     into the new one would throw DllNotFoundException.
   -->
   <Target Name="_WasmGenerateTestCallHelpers"
-          DependsOnTargets="_WasmResolveTestCorerunAssemblies"
+          DependsOnTargets="_WasmResolveTestCorerunAssemblies;_WasmResolveTestCorerunPInvokeModules;_WasmWriteTestCorerunInputManifest"
           Condition="'$(_WasmCorerunSkip)' != 'true'"
-          Inputs="@(_WasmCorerunAssembly);@(_WasmCorerunTestLib)"
+          Inputs="@(_WasmCorerunAssembly);@(_WasmCorerunTestLib);$(_WasmCorerunInputManifest);$(_WasmCorerunProductPInvokeTable)"
           Outputs="@(_WasmCorerunGeneratedSource)">
     <MakeDir Directories="$(_WasmCorerunDir)" />
 
     <ItemGroup>
-      <!--
-        The framework modules that CORE_ROOT/corerun.js already resolves. This list has to match
-        the tables checked in at src/coreclr/vm/wasm/browser/callhelpers-pinvoke.cpp, because the
-        generated sources replace libcoreclr_gen_static.a wholesale. A module missing here turns
-        into a DllNotFoundException at run time; an extra one is harmless (it yields an empty
-        table), which is why an exact match with the product build is worth keeping.
-      -->
-      <_WasmCorerunPInvokeModule Include="libSystem.Globalization.Native" />
-      <_WasmCorerunPInvokeModule Include="libSystem.IO.Compression.Native" />
-      <_WasmCorerunPInvokeModule Include="libSystem.Native" />
-      <_WasmCorerunPInvokeModule Include="libSystem.Native.Browser" />
-      <_WasmCorerunPInvokeModule Include="libSystem.Runtime.InteropServices.JavaScript.Native" />
+      <_WasmCorerunPInvokeModule Include="@(_WasmCorerunFrameworkPInvokeModule)" />
 
       <!-- The test's own modules. Module matching is an exact string compare against the
            [DllImport] name and tests spell it either way, so offer both the archive's file name
@@ -324,9 +397,9 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
   <!-- ======================== Compile ======================== -->
 
   <Target Name="_WasmCompileTestCallHelpers"
-          DependsOnTargets="_WasmResolveTestCorerunInputs"
+          DependsOnTargets="_WasmResolveTestCorerunInputs;_WasmWriteTestCorerunInputManifest"
           Condition="'$(_WasmCorerunSkip)' != 'true'"
-          Inputs="@(_WasmCorerunGeneratedSource);@(_WasmCorerunKitInclude);$(_WasmCorerunCompileRsp)"
+          Inputs="@(_WasmCorerunGeneratedSource);@(_WasmCorerunKitInclude);$(_WasmCorerunCompileRsp);$(_WasmCorerunInputManifest)"
           Outputs="@(_WasmCorerunGeneratedSource->'%(ObjectFile)')">
     <Message Importance="High" Text="$(MSBuildProjectName) -> compiling managed-to-native tables for a test-specific corerun" />
 
@@ -348,14 +421,14 @@ against CORE_ROOT, and no SDK is involved. Only the generator task assembly is s
     every native entry point is referenced by name from the generated tables.
   -->
   <Target Name="_WasmLinkTestCorerun"
-          DependsOnTargets="_WasmResolveTestCorerunInputs"
+          DependsOnTargets="_WasmResolveTestCorerunInputs;_WasmWriteTestCorerunInputManifest"
           Condition="'$(_WasmCorerunSkip)' != 'true'"
-          Inputs="@(_WasmCorerunGeneratedSource->'%(ObjectFile)');@(_WasmCorerunTestLib);@(_WasmCorerunKitLinkInput);$(_WasmCorerunLinkRsp)"
+          Inputs="@(_WasmCorerunGeneratedSource->'%(ObjectFile)');@(_WasmCorerunTestLib);@(_WasmCorerunCommonLib);@(_WasmCorerunKitLinkInput);$(_WasmCorerunLinkRsp);$(_WasmCorerunInputManifest)"
           Outputs="$(_WasmCorerunJs);$(_WasmCorerunWasm)">
     <Message Importance="High" Text="$(MSBuildProjectName) -> $(_WasmCorerunJs)" />
 
     <PropertyGroup>
-      <_WasmCorerunLinkInputs>@(_WasmCorerunGeneratedSource->'&quot;%(ObjectFile)&quot;', ' ') @(_WasmCorerunTestLib->'&quot;%(FullPath)&quot;', ' ')</_WasmCorerunLinkInputs>
+      <_WasmCorerunLinkInputs>@(_WasmCorerunGeneratedSource->'&quot;%(ObjectFile)&quot;', ' ') @(_WasmCorerunTestLib->'&quot;%(FullPath)&quot;', ' ') @(_WasmCorerunCommonLib->'&quot;%(FullPath)&quot;', ' ')</_WasmCorerunLinkInputs>
     </PropertyGroup>
 
     <Exec Command="&quot;$(_WasmCorerunEmxx)&quot; $(_WasmCorerunLinkInputs) &quot;@$(_WasmCorerunLinkRsp)&quot; -o &quot;$(_WasmCorerunJs)&quot;"

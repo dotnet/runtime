@@ -215,6 +215,24 @@ function(corerun_kit_export)
         string(APPEND linkResponse "${input}\n")
     endforeach()
 
+    # INTERP_STACK_SLOT_SIZE feeds the offset arithmetic in the generated
+    # interp-to-managed thunks, so a value that disagreed with the runtime's own
+    # would corrupt the interpreter stack rather than fail to build. Read it out
+    # of the header that defines it instead of restating it in the kit, and stop
+    # the build if it can no longer be found there.
+    set(interpreterSharedHeader "${CLR_DIR}/interpreter/inc/interpretershared.h")
+    file(STRINGS "${interpreterSharedHeader}" interpStackSlotSizeLine
+         REGEX "^[ \t]*#define[ \t]+INTERP_STACK_SLOT_SIZE[ \t]+")
+    if(NOT interpStackSlotSizeLine MATCHES "#define[ \t]+INTERP_STACK_SLOT_SIZE[ \t]+([0-9]+[uU]?)")
+        message(FATAL_ERROR "Could not read INTERP_STACK_SLOT_SIZE from '${interpreterSharedHeader}'. The corerun test link kit compiles the generated interp-to-managed thunks with it.")
+    endif()
+    set(interpStackSlotSize "${CMAKE_MATCH_1}")
+
+    # The value is baked into the response file at configure time, so a build that
+    # reuses an existing configuration has to be told to reconfigure when the
+    # header changes.
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${interpreterSharedHeader}")
+
     # The generated call tables have to be compiled compatibly with corerun's own
     # objects -- the exception model in particular has to agree or wasm-ld
     # rejects the mix. These are the same flags the app-side relink uses for
@@ -231,6 +249,7 @@ function(corerun_kit_export)
     string(APPEND compileResponse "-sWASM_LEGACY_EXCEPTIONS=0\n")
     string(APPEND compileResponse "-msimd128\n")
     string(APPEND compileResponse "-DGEN_PINVOKE=1\n")
+    string(APPEND compileResponse "-DINTERP_STACK_SLOT_SIZE=${interpStackSlotSize}\n")
     string(APPEND compileResponse "-I\"!CORERUN_KIT_DIR!/include\"\n")
     string(APPEND compileResponse "-include\n\"!CORERUN_KIT_DIR!/include/coreclr_compat.h\"\n")
 
