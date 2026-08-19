@@ -2657,6 +2657,209 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
 
 //---------------------------------------------------------------------------------------
 //
+// Given the type arguments of a generic instantiation (a sequence of "cInstArgs" types), returns
+// the signature of the type argument at the given index.
+//
+static bool TryGetInstantiationArg(
+    SigParser        instArgs,
+    DWORD            cInstArgs,
+    DWORD            index,
+    PCCOR_SIGNATURE* ppArg,
+    DWORD*           pcbArg)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (index >= cInstArgs)
+        return false;
+
+    for (DWORD i = 0; i < index; i++)
+    {
+        if (FAILED(instArgs.SkipExactlyOne()))
+            return false;
+    }
+
+    PCCOR_SIGNATURE pArgStart = instArgs.GetPtr();
+    if (FAILED(instArgs.SkipExactlyOne()))
+        return false;
+
+    *ppArg = pArgStart;
+    *pcbArg = (DWORD)(instArgs.GetPtr() - pArgStart);
+    return true;
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Copies one type signature from pSrc to pDst, replacing references to type variables
+// (ELEMENT_TYPE_VAR) with the corresponding type arguments from the given instantiation.
+// The instantiation is expected to be in the scope where the resulting signature will be used,
+// thus the type arguments are copied verbatim.
+//
+// Returns false if the signature contains constructs that are not supported here.
+//
+static bool CopyTypeSigWithSubstitution(
+    SigParser*  pSrc,
+    SigBuilder* pDst,
+    SigParser   instArgs,
+    DWORD       cInstArgs)
+{
+    STANDARD_VM_CONTRACT;
+
+    BYTE type;
+    if (FAILED(pSrc->GetByte(&type)))
+        return false;
+
+    switch (type)
+    {
+    case ELEMENT_TYPE_VOID:
+    case ELEMENT_TYPE_BOOLEAN:
+    case ELEMENT_TYPE_CHAR:
+    case ELEMENT_TYPE_I1:
+    case ELEMENT_TYPE_U1:
+    case ELEMENT_TYPE_I2:
+    case ELEMENT_TYPE_U2:
+    case ELEMENT_TYPE_I4:
+    case ELEMENT_TYPE_U4:
+    case ELEMENT_TYPE_I8:
+    case ELEMENT_TYPE_U8:
+    case ELEMENT_TYPE_R4:
+    case ELEMENT_TYPE_R8:
+    case ELEMENT_TYPE_STRING:
+    case ELEMENT_TYPE_OBJECT:
+    case ELEMENT_TYPE_TYPEDBYREF:
+    case ELEMENT_TYPE_I:
+    case ELEMENT_TYPE_U:
+        pDst->AppendElementType((CorElementType)type);
+        return true;
+
+    case ELEMENT_TYPE_CLASS:
+    case ELEMENT_TYPE_VALUETYPE:
+    {
+        mdToken token;
+        if (FAILED(pSrc->GetToken(&token)))
+            return false;
+
+        pDst->AppendElementType((CorElementType)type);
+        pDst->AppendToken(token);
+        return true;
+    }
+
+    case ELEMENT_TYPE_VAR:
+    {
+        // A type variable of the type that declares the overridden method.
+        // Replace it with the corresponding type argument.
+        uint32_t index;
+        if (FAILED(pSrc->GetData(&index)))
+            return false;
+
+        PCCOR_SIGNATURE pArg;
+        DWORD cbArg;
+        if (!TryGetInstantiationArg(instArgs, cInstArgs, index, &pArg, &cbArg))
+            return false;
+
+        pDst->AppendBlob((PVOID)pArg, cbArg);
+        return true;
+    }
+
+    case ELEMENT_TYPE_MVAR:
+    {
+        // A type variable of the method itself. The overriding method has the same
+        // type parameters, so such references can be copied as-is.
+        uint32_t index;
+        if (FAILED(pSrc->GetData(&index)))
+            return false;
+
+        pDst->AppendElementType((CorElementType)type);
+        pDst->AppendData(index);
+        return true;
+    }
+
+    case ELEMENT_TYPE_SZARRAY:
+    case ELEMENT_TYPE_PTR:
+        pDst->AppendElementType((CorElementType)type);
+        return CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs);
+
+    case ELEMENT_TYPE_ARRAY:
+    {
+        pDst->AppendElementType((CorElementType)type);
+        if (!CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs))
+            return false;
+
+        uint32_t rank;
+        if (FAILED(pSrc->GetData(&rank)))
+            return false;
+        pDst->AppendData(rank);
+
+        if (rank != 0)
+        {
+            uint32_t nsizes;
+            if (FAILED(pSrc->GetData(&nsizes)))
+                return false;
+            pDst->AppendData(nsizes);
+
+            while (nsizes--)
+            {
+                uint32_t size;
+                if (FAILED(pSrc->GetData(&size)))
+                    return false;
+                pDst->AppendData(size);
+            }
+
+            uint32_t nlbounds;
+            if (FAILED(pSrc->GetData(&nlbounds)))
+                return false;
+            pDst->AppendData(nlbounds);
+
+            while (nlbounds--)
+            {
+                uint32_t lbound;
+                if (FAILED(pSrc->GetData(&lbound)))
+                    return false;
+                pDst->AppendData(lbound);
+            }
+        }
+
+        return true;
+    }
+
+    case ELEMENT_TYPE_GENERICINST:
+    {
+        BYTE classOrValueType;
+        if (FAILED(pSrc->GetByte(&classOrValueType)))
+            return false;
+
+        if ((classOrValueType != ELEMENT_TYPE_CLASS) && (classOrValueType != ELEMENT_TYPE_VALUETYPE))
+            return false;
+
+        mdToken token;
+        if (FAILED(pSrc->GetToken(&token)))
+            return false;
+
+        uint32_t argCnt;
+        if (FAILED(pSrc->GetData(&argCnt)))
+            return false;
+
+        pDst->AppendElementType((CorElementType)type);
+        pDst->AppendElementType((CorElementType)classOrValueType);
+        pDst->AppendToken(token);
+        pDst->AppendData(argCnt);
+
+        while (argCnt--)
+        {
+            if (!CopyTypeSigWithSubstitution(pSrc, pDst, instArgs, cInstArgs))
+                return false;
+        }
+
+        return true;
+    }
+
+    default:
+        // Anything else (function pointers, custom modifiers, ...) is not supported here.
+        return false;
+    }
+}
+
+//---------------------------------------------------------------------------------------
+//
 // Task and Task<T> are not sealed, thus a covariant override may return a type that derives from
 // Task/Task<T>, while not being Task/Task<T> itself. Such a method is not Task-returning on its own,
 // but the method that it overrides may well be. Since the overridden method has an Async variant,
@@ -2666,6 +2869,8 @@ HRESULT MethodTableBuilder::FindMethodDeclarationForMethodImpl(
 // if so, produces the signature of the "element" type of its return type - the type that the
 // Async variant of the overriding method must return.
 // A NULL element signature means that the Async variant returns void (the declaration returns Task).
+// The element signature, when not NULL, is built in the provided SigBuilder and thus is only valid
+// for as long as the SigBuilder is alive.
 //
 // Returns false if the declaration is not Task-returning or if the case is not supported.
 //
@@ -2673,6 +2878,7 @@ static bool TryGetCovariantOverrideAsyncVariantReturnType(
     IMDInternalImport* pMDInternalImport,
     Module*            pModule,
     mdToken            tkDecl,
+    SigBuilder*        pElementSigBuilder,
     PCCOR_SIGNATURE*   ppElementSig,
     ULONG*             pcbElementSig)
 {
@@ -2684,6 +2890,12 @@ static bool TryGetCovariantOverrideAsyncVariantReturnType(
     PCCOR_SIGNATURE pSigDecl = NULL;
     ULONG cbSigDecl = 0;
 
+    // Type arguments of the type that declares the overridden method, if that type is generic.
+    // The instantiation comes from the TypeSpec of the MethodImpl declaration, thus it is
+    // expressed in the scope of the overriding type and can be used in its signatures as-is.
+    SigParser declInstArgs;
+    DWORD cDeclInstArgs = 0;
+
     if (TypeFromToken(tkDecl) == mdtMethodDef)
     {
         if (FAILED(pMDInternalImport->GetSigOfMethodDef(tkDecl, &cbSigDecl, &pSigDecl)))
@@ -2691,14 +2903,35 @@ static bool TryGetCovariantOverrideAsyncVariantReturnType(
     }
     else if (TypeFromToken(tkDecl) == mdtMemberRef)
     {
-        // The signature of a member of an instantiated generic type may refer to the generic
-        // parameters of that type. Such references do not have the same meaning in the scope of
-        // the overriding method, so we cannot reuse the signature. That case is not supported yet.
         mdToken tkParent;
-        if (FAILED(pMDInternalImport->GetParentToken(tkDecl, &tkParent)) ||
-            (TypeFromToken(tkParent) == mdtTypeSpec))
-        {
+        if (FAILED(pMDInternalImport->GetParentToken(tkDecl, &tkParent)))
             return false;
+
+        if (TypeFromToken(tkParent) == mdtTypeSpec)
+        {
+            // The overridden method is declared by an instantiated generic type. Its signature may
+            // refer to the type parameters of that type, so we will need to substitute the type
+            // arguments from the instantiation.
+            PCCOR_SIGNATURE pTypeSpecSig;
+            ULONG cbTypeSpecSig;
+            if (FAILED(pMDInternalImport->GetTypeSpecFromToken(tkParent, &pTypeSpecSig, &cbTypeSpecSig)))
+                return false;
+
+            // GENERICINST (CLASS | VALUETYPE) <token> <argCnt> <args>
+            SigParser typeSpecSig(pTypeSpecSig, cbTypeSpecSig);
+            BYTE elemType;
+            if (FAILED(typeSpecSig.GetByte(&elemType)) || (elemType != ELEMENT_TYPE_GENERICINST))
+                return false;
+
+            if (FAILED(typeSpecSig.SkipExactlyOne()))   // the generic type
+                return false;
+
+            uint32_t argCnt;
+            if (FAILED(typeSpecSig.GetData(&argCnt)))
+                return false;
+
+            declInstArgs = typeSpecSig;
+            cDeclInstArgs = argCnt;
         }
 
         LPCSTR szDeclName;
@@ -2731,8 +2964,17 @@ static bool TryGetCovariantOverrideAsyncVariantReturnType(
         // "Task<T>"-returning declaration. The Async variant returns T.
         // E_T_GENERICINST E_T_CLASS <TokenOfTask> 1 <elementType>
         ULONG taskTokenLen = CorSigUncompressedDataSize(&pSigDecl[declOffsetOfAsyncDetails + 2]);
-        *ppElementSig = pSigDecl + declOffsetOfAsyncDetails + 2 + taskTokenLen + 1;
-        *pcbElementSig = declElementTypeLength;
+        SigParser elementSig(pSigDecl + declOffsetOfAsyncDetails + 2 + taskTokenLen + 1, declElementTypeLength);
+
+        // T may refer to the type parameters of the declaring type, in which case we need to
+        // substitute the corresponding type arguments to make the signature usable in the scope
+        // of the overriding method.
+        if (!CopyTypeSigWithSubstitution(&elementSig, pElementSigBuilder, declInstArgs, cDeclInstArgs))
+            return false;
+
+        DWORD cbElementSig;
+        *ppElementSig = (PCCOR_SIGNATURE)pElementSigBuilder->GetSignature(&cbElementSig);
+        *pcbElementSig = cbElementSig;
         return true;
     }
 
@@ -3431,6 +3673,7 @@ MethodTableBuilder::EnumerateClassMethods()
         // The return type of the Async variant is the "element" type of the overridden method -
         // void when the overridden method returns Task and T when it returns Task<T>.
         bool isCovariantTaskOverride = false;
+        SigBuilder covariantElementSigBuilder;
         PCCOR_SIGNATURE pCovariantElementSig = NULL;
         ULONG cbCovariantElementSig = 0;
         if (bmtMetaData->fHasCovariantOverride &&
@@ -3448,6 +3691,7 @@ MethodTableBuilder::EnumerateClassMethods()
                         pMDInternalImport,
                         GetModule(),
                         bmtMetaData->rgMethodImplTokens[impls].methodDecl,
+                        &covariantElementSigBuilder,
                         &pCovariantElementSig,
                         &cbCovariantElementSig);
                     break;
