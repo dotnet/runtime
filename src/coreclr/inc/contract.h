@@ -330,7 +330,7 @@ public:
 
 
 #define CONTRACT_BITMASK_OK_TO_THROW          0x1 << 0
-#define CONTRACT_BITMASK_FAULT_FORBID         0x1 << 1
+// Unused                                     0x1 << 1
 // Unused                                     0x1 << 2
 #define CONTRACT_BITMASK_SOTOLERANT           0x1 << 3
 #define CONTRACT_BITMASK_DEBUGONLY            0x1 << 4
@@ -365,8 +365,6 @@ public:
         // Default is we're in a THROWS scope. This is not ideal, but there are
                                             //  just too many places that I'd have to go clean up right now
                                             //  (hundreds) in order to make this FALSE by default.
-        // Faults not forbidden (an unfortunate default but
-                                            //  we'd never get this debug infrastructure bootstrapped otherwise.)
         // We start out in SO-tolerant mode and must probe before entering SO-intolerant
         //   any global state updates.
         // Initial mode is non-debug until we say otherwise
@@ -438,31 +436,6 @@ public:
     {
         CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_OK_TO_THROW);
     }
-    //--//
-
-    BOOL IsFaultForbid()
-    {
-        return CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_FAULT_FORBID);
-    }
-
-
-    void SetFaultForbid()
-    {
-        CONTRACT_BITMASK_SET(CONTRACT_BITMASK_FAULT_FORBID);
-    }
-
-    BOOL SetFaultForbid(BOOL value)
-    {
-        BOOL prevState = CONTRACT_BITMASK_IS_SET(CONTRACT_BITMASK_FAULT_FORBID);
-        CONTRACT_BITMASK_UPDATE(CONTRACT_BITMASK_FAULT_FORBID, value);
-        return prevState;
-    }
-
-    void ResetFaultForbid()
-    {
-        CONTRACT_BITMASK_RESET(CONTRACT_BITMASK_FAULT_FORBID);
-    }
-
     //--//
     BOOL IsDebugOnly()
     {

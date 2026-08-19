@@ -324,7 +324,7 @@ inline Assembly *ModuleBase::LookupAssemblyRef(mdAssemblyRef token)
 #ifndef DACCESS_COMPILE
 inline void Module::ForceStoreAssemblyRef(mdAssemblyRef token, Assembly *value)
 {
-    WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER//MODE_ANY
+    WRAPPER_NO_CONTRACT; // THROWS/GC_NOTRIGGER/MODE_ANY
     _ASSERTE(value->GetModule());
     _ASSERTE(TypeFromToken(token) == mdtAssemblyRef);
 
