@@ -343,6 +343,7 @@ namespace InteropLibImports
                 EXCEPTIONREF exceptionRef;
             } gc;
             gc.objRef = NULL;
+            gc.exceptionRef = NULL;
 
             GCPROTECT_BEGIN(gc);
 
