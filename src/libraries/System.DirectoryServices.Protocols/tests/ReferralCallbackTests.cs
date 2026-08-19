@@ -42,6 +42,7 @@ namespace System.DirectoryServices.Protocols.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This test validates implementation details of the repository implementation.")]
         public void ProcessQueryConnection_MarshalsHostNameAsAnsi()
         {
             const string HostName = "server01";
@@ -67,6 +68,7 @@ namespace System.DirectoryServices.Protocols.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This test validates implementation details of the repository implementation.")]
         public void ProcessNotifyConnection_MarshalsHostNameAsAnsi()
         {
             const string HostName = "server01";
