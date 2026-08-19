@@ -5728,6 +5728,12 @@ bool Compiler::lvaParamHasLocalStackSpace(unsigned lclNum)
 {
     LclVarDsc* varDsc = lvaGetDesc(lclNum);
 
+    if (lclNum == lvaSecretStubArg)
+    {
+        // The secret stub argument is passed in a nonstandard register without caller-reserved stack space.
+        return true;
+    }
+
 #ifdef SWIFT_SUPPORT
     if ((info.compCallConv == CorInfoCallConvExtension::Swift) && !lvaIsImplicitByRefLocal(lclNum) &&
         !lvaGetParameterABIInfo(lclNum).HasExactlyOneStackSegment())
