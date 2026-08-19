@@ -109,6 +109,9 @@ public class R2RTestSuites
                 method.SignatureString.Contains("CatchException", StringComparison.Ordinal)));
 
             Assert.True(WasmR2RAssert.WasmIndexSpacesHaveExpectedEntries(webcilReader, out string indexDiagnostic), indexDiagnostic);
+            Assert.True(
+                WasmR2RAssert.FillWebcilTableUsesDefinedFunctionCount(webcilReader, out string functionCountDiagnostic),
+                functionCountDiagnostic);
 
             // The wasm JIT references the ABI well-known globals via maximally padded WASM_GLOBAL_INDEX_LEB
             // relocations that the R2R object writer must self-resolve to the fixed global

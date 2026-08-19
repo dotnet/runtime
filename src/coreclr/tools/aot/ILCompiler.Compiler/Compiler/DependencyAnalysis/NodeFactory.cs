@@ -630,6 +630,10 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new WasmTypeNode(key);
             });
+            _wasmFunctionEntryCache = new NodeCache<WasmFunctionEntryNodeCacheKey, WasmFunctionEntryNode>(key =>
+            {
+                return new WasmFunctionEntryNode(key.MethodCodeNode, key.Type, key.FuncletIndex);
+            });
 
             NativeLayout = new NativeLayoutHelper(this);
         }
@@ -1627,6 +1631,10 @@ namespace ILCompiler.DependencyAnalysis
         {
             WasmFuncType funcType = WasmFuncType.FromCorInfoSignature(types);
             return _wasmTypeNodes.GetOrAdd(funcType);
+        }
+        public WasmTypeNode WasmTypeNode(WasmFuncType type)
+        {
+            return _wasmTypeNodes.GetOrAdd(type);
         }
 
         /// <summary>

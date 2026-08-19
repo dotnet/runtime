@@ -1,11 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+extern alias crossgen2;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using crossgen2::ILCompiler.DependencyAnalysis;
+using crossgen2::ILCompiler.ObjectWriter.WasmInstructions;
 using ILCompiler.Reflection.ReadyToRun;
 
 namespace ILCompiler.ReadyToRun.Tests.TestCasesRunner;
@@ -120,6 +124,74 @@ internal static class WasmR2RAssert
 
         diagnostic = failures.Count == 0
             ? "WASM imports, definitions, exports, and instruction references use the expected per-kind indices."
+            : string.Join(Environment.NewLine, failures);
+        return failures.Count == 0;
+    }
+
+    public static bool FillWebcilTableUsesDefinedFunctionCount(WebcilImageReader reader, out string diagnostic)
+    {
+        if (!reader.IsWasmWrapped)
+        {
+            diagnostic = "Expected a WASM-wrapped Webcil image.";
+            return false;
+        }
+
+        var failures = new List<string>();
+        uint functionCount = ReadWasmSectionEntryCount(reader, WasmSectionKind.Function);
+        uint codeCount = ReadWasmSectionEntryCount(reader, WasmSectionKind.Code);
+        if (functionCount != codeCount)
+        {
+            failures.Add(
+                $"The WASM Function section has {functionCount} entries, but the Code section has {codeCount} entries.");
+        }
+
+        Dictionary<(string Module, string Name), WasmImportIndex> imports = ReadWasmImports(reader);
+        uint importedFunctionCount = CountWasmImports(imports, WasmImportKind.Function);
+        Dictionary<string, WasmExportIndex> exports = ReadWasmExports(reader);
+        if (!exports.TryGetValue("fillWebcilTable", out WasmExportIndex fillWebcilTableExport))
+        {
+            failures.Add("Expected WASM function export 'fillWebcilTable' was not found.");
+        }
+        else if (fillWebcilTableExport.Kind != WasmImportKind.Function)
+        {
+            failures.Add(
+                $"WASM export 'fillWebcilTable' was {fillWebcilTableExport.Kind}; expected Function.");
+        }
+        else if (fillWebcilTableExport.Index < importedFunctionCount)
+        {
+            failures.Add(
+                $"WASM export 'fillWebcilTable' refers to imported function index {fillWebcilTableExport.Index}.");
+        }
+        else
+        {
+            int functionIndex = checked((int)(fillWebcilTableExport.Index - importedFunctionCount));
+            WebcilImageReader.WasmFunctionInfo? function = reader.GetWasmFunctionBody(functionIndex);
+            if (function is null)
+            {
+                failures.Add(
+                    $"WASM export 'fillWebcilTable' refers to missing Code-section entry {functionIndex}.");
+            }
+            else
+            {
+                ReadOnlySpan<byte> instructions = function.Value.Image.AsSpan().Slice(
+                    function.Value.InstructionOffset, function.Value.InstructionLength);
+                WasmInstructionGroup expectedInstructions = new(
+                    WebcilDefaultMethodNode.GetFillWebcilTableInstructions(I32.Const(functionCount)));
+                byte[] expectedBytes = new byte[expectedInstructions.EncodeSize()];
+                int bytesWritten = expectedInstructions.Encode(expectedBytes);
+                Debug.Assert(bytesWritten == expectedBytes.Length);
+
+                if (!instructions.SequenceEqual(expectedBytes))
+                {
+                    failures.Add(
+                        $"fillWebcilTable body was {Convert.ToHexString(instructions)}; " +
+                        $"expected {Convert.ToHexString(expectedBytes)} for {functionCount} functions.");
+                }
+            }
+        }
+
+        diagnostic = failures.Count == 0
+            ? $"fillWebcilTable initializes {functionCount} table entries, matching the Function and Code sections."
             : string.Join(Environment.NewLine, failures);
         return failures.Count == 0;
     }
@@ -456,6 +528,7 @@ internal static class WasmR2RAssert
         Global = 6,
         Export = 7,
         Element = 9,
+        Code = 10,
         Tag = 13,
     }
 

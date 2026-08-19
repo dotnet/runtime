@@ -203,19 +203,6 @@ namespace ILCompiler.ObjectWriter
         }
     }
 
-    internal sealed class WasmFunctionSection : WasmSection<int>
-    {
-        public WasmFunctionSection(Stream stream, Utf8String name, int sectionIndex)
-            : base(WasmSectionType.Function, stream, name, sectionIndex)
-        {
-        }
-
-        protected override void WriteEntryCore(SectionWriter writer, int typeIndex)
-        {
-            writer.WriteULEB128((ulong)typeIndex);
-        }
-    }
-
     internal sealed class WasmGlobalSection : WasmSection<WasmGlobal>
     {
         public WasmGlobalSection(Stream stream, Utf8String name, int sectionIndex)
