@@ -4,10 +4,10 @@
 using System;
 using Xunit;
 
-public class TrustedPlatformAssembliesProperty
+public class TrustedPlatformAssemblies
 {
     [Fact]
-    public static void ExplicitPropertyIsUsed()
+    public static void IsAvailable()
     {
         string tpa = Assert.IsType<string>(AppContext.GetData("TRUSTED_PLATFORM_ASSEMBLIES"));
         Assert.Contains(typeof(object).Assembly.Location, tpa, StringComparison.OrdinalIgnoreCase);
