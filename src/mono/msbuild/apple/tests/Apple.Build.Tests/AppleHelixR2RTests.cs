@@ -13,20 +13,19 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 
-#nullable enable
+namespace Apple.Build.Tests;
 
-namespace Wasm.Build.Tests;
-
-// Apple mobile has no MSBuild behavior test suite of its own, and this is the one in the repo that
-// runs on CI, so the Apple Helix ReadyToRun proxy build is covered from here. The test drives the
-// real src/mono/msbuild/apple/data/ProxyProjectForAOTOnHelix.proj - shipped into the test payload as
-// content - with `dotnet msbuild`, and stands in for crossgen2 by planting files where it would
-// write them.
+// Covers the Apple Helix ReadyToRun proxy build. The test drives the real
+// src/mono/msbuild/apple/data/ProxyProjectForAOTOnHelix.proj - shipped into the test payload as
+// content - with `dotnet msbuild`, and stands in for crossgen2 by planting files where it would write
+// them.
 //
 // A Helix retry re-runs the whole work item command in the same directory, so the R2R step has to
-// leave the publish directory - its own crossgen2 input - byte for byte identical, and has to
-// rebuild everything it hands to the app builder from scratch on every attempt.
-[TestCategory("no-workload")]
+// leave the publish directory - its own crossgen2 input - byte for byte identical, and has to rebuild
+// everything it hands to the app builder from scratch on every attempt.
+//
+// Only MSBuild path handling is under test, so this runs on any ordinary build host: no Apple SDK, no
+// device, and no workload provisioning.
 public class AppleHelixR2RTests
 {
     private const string ProxyProjectFileName = "ProxyProjectForAOTOnHelix.proj";
@@ -69,7 +68,7 @@ public class AppleHelixR2RTests
     public AppleHelixR2RTests(ITestOutputHelper testOutput) => _testOutput = testOutput;
 
     [Fact]
-    public void R2RStagingLeavesPublishPristineAndIsRebuiltOnRetry()
+    public void R2RAppPayloadLeavesPublishPristineAndIsRebuiltOnRetry()
     {
         DirectoryInfo workItemRoot = Directory.CreateTempSubdirectory("apple-helix-r2r-");
         try
@@ -78,17 +77,17 @@ public class AppleHelixR2RTests
             string extraFilesDir = Path.Combine(workItemRoot.FullName, "extraFiles");
             string crossgenOutputDir = Path.Combine(workItemRoot.FullName, "crossgen-output");
             string r2rIntermediateDir = Path.Combine(workItemRoot.FullName, "obj", "R2R");
-            string stagingDir = Path.Combine(workItemRoot.FullName, "obj", "r2r-publish");
+            string appPayloadDir = Path.Combine(workItemRoot.FullName, "obj", "r2r-app-payload");
 
             CreateWorkItemLayout(workItemRoot.FullName, publishDir, extraFilesDir);
 
             Dictionary<string, string> publishManifest = Manifest(publishDir);
 
-            RunAttempt(workItemRoot.FullName, publishDir, crossgenOutputDir, r2rIntermediateDir, stagingDir, s_firstAttemptR2ROutput);
-            AssertAttempt(workItemRoot.FullName, publishDir, publishManifest, extraFilesDir, stagingDir, s_firstAttemptR2ROutput);
+            RunAttempt(workItemRoot.FullName, publishDir, crossgenOutputDir, r2rIntermediateDir, appPayloadDir, s_firstAttemptR2ROutput);
+            AssertAttempt(workItemRoot.FullName, publishDir, publishManifest, extraFilesDir, appPayloadDir, s_firstAttemptR2ROutput);
 
-            RunAttempt(workItemRoot.FullName, publishDir, crossgenOutputDir, r2rIntermediateDir, stagingDir, s_secondAttemptR2ROutput);
-            AssertAttempt(workItemRoot.FullName, publishDir, publishManifest, extraFilesDir, stagingDir, s_secondAttemptR2ROutput);
+            RunAttempt(workItemRoot.FullName, publishDir, crossgenOutputDir, r2rIntermediateDir, appPayloadDir, s_secondAttemptR2ROutput);
+            AssertAttempt(workItemRoot.FullName, publishDir, publishManifest, extraFilesDir, appPayloadDir, s_secondAttemptR2ROutput);
         }
         finally
         {
@@ -103,7 +102,7 @@ public class AppleHelixR2RTests
 
         WriteFile(Path.Combine(extraFilesDir, ExtraFileName), "extra-native");
 
-        string proxyProject = Path.Combine(AppContext.BaseDirectory, "apple-data", ProxyProjectFileName);
+        string proxyProject = Path.Combine(AppContext.BaseDirectory, "data", ProxyProjectFileName);
         Assert.True(File.Exists(proxyProject), $"Expected the proxy project to be copied into the test payload at '{proxyProject}'.");
         File.Copy(proxyProject, Path.Combine(publishDir, ProxyProjectFileName));
 
@@ -155,18 +154,18 @@ public class AppleHelixR2RTests
         string publishDir,
         string crossgenOutputDir,
         string r2rIntermediateDir,
-        string stagingDir,
+        string appPayloadDir,
         (string RelativePath, string Content)[] r2rOutput)
     {
         ReplaceDirectoryContent(crossgenOutputDir, r2rOutput);
 
         // A previous attempt that was killed mid write leaves output behind in both directories.
         // Neither leftover may reach the app: the R2R intermediate dir is wiped before compiling,
-        // the staging dir is recreated before the payload is staged into it.
+        // the app payload dir is recreated before the payload is staged into it.
         WriteFile(Path.Combine(r2rIntermediateDir, "KilledAttempt.dll"), "leftover-r2r-output");
-        WriteFile(Path.Combine(stagingDir, "stale-marker.txt"), "leftover-stage-file");
-        WriteFile(Path.Combine(stagingDir, "bin-previous", "leftover.txt"), "leftover-stage-tree");
-        WriteFile(Path.Combine(stagingDir, "app.r2r.dylib"), "leftover-composite");
+        WriteFile(Path.Combine(appPayloadDir, "stale-marker.txt"), "leftover-stage-file");
+        WriteFile(Path.Combine(appPayloadDir, "bin-previous", "leftover.txt"), "leftover-stage-tree");
+        WriteFile(Path.Combine(appPayloadDir, "app.r2r.dylib"), "leftover-composite");
 
         string bundleStateFile = Path.Combine(workItemRoot, BundleStateFileName);
         File.Delete(bundleStateFile);
@@ -196,23 +195,20 @@ public class AppleHelixR2RTests
         startInfo.ArgumentList.Add("-v:minimal");
         startInfo.Environment["HELIX_WORKITEM_ROOT"] = workItemRoot;
         startInfo.Environment["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
-        // The runtime repo sets this, and it makes the child pick up the wrong SDK.
+        // The repo build sets this, and it makes the child pick up the wrong SDK.
         startInfo.Environment.Remove("MSBuildSDKsPath");
 
-        // Same reason BuildEnvironment does it: the repo build environment points these at its own
-        // dotnet, and the child has to use the one that was just resolved.
-        string? hostDir = Path.GetDirectoryName(host);
-        if (!string.IsNullOrEmpty(hostDir))
-        {
-            startInfo.Environment["DOTNET_ROOT"] = hostDir;
-            startInfo.Environment["DOTNET_INSTALL_DIR"] = hostDir;
-            // An empty PATH entry means the working directory on unix, so do not leave a trailing
-            // separator behind when the parent has no PATH.
-            string? path = Environment.GetEnvironmentVariable("PATH");
-            startInfo.Environment["PATH"] = string.IsNullOrEmpty(path)
-                ? hostDir
-                : $"{hostDir}{Path.PathSeparator}{path}";
-        }
+        // The repo build environment points these at its own dotnet, and the child has to use the one
+        // that was just resolved.
+        string hostDir = Path.GetDirectoryName(host)!;
+        startInfo.Environment["DOTNET_ROOT"] = hostDir;
+        startInfo.Environment["DOTNET_INSTALL_DIR"] = hostDir;
+        // An empty PATH entry means the working directory on unix, so do not leave a trailing
+        // separator behind when the parent has no PATH.
+        string? path = Environment.GetEnvironmentVariable("PATH");
+        startInfo.Environment["PATH"] = string.IsNullOrEmpty(path)
+            ? hostDir
+            : $"{hostDir}{Path.PathSeparator}{path}";
 
         var output = new StringBuilder();
         using var process = new Process { StartInfo = startInfo };
@@ -244,7 +240,7 @@ public class AppleHelixR2RTests
         string publishDir,
         Dictionary<string, string> expectedPublishManifest,
         string extraFilesDir,
-        string stagingDir,
+        string appPayloadDir,
         (string RelativePath, string Content)[] r2rOutput)
     {
         AssertManifest("publish directory", expectedPublishManifest, Manifest(publishDir));
@@ -253,21 +249,21 @@ public class AppleHelixR2RTests
         foreach ((string relativePath, string content) in r2rOutput)
             expectedStage[relativePath] = Hash(Encoding.UTF8.GetBytes(content));
 
-        AssertManifest("staging directory", expectedStage, Manifest(stagingDir));
+        AssertManifest("app payload directory", expectedStage, Manifest(appPayloadDir));
 
         (string appleBuildDir, List<string> assemblies, List<string> nativeFiles) = ReadBundleState(workItemRoot);
 
-        Assert.Equal(NormalizeDirectory(stagingDir), NormalizeDirectory(appleBuildDir), s_pathComparer);
+        Assert.Equal(NormalizeDirectory(appPayloadDir), NormalizeDirectory(appleBuildDir), s_pathComparer);
 
         IEnumerable<string> topLevelAssemblies = expectedStage.Keys
             .Where(relativePath => IsTopLevel(relativePath)
                 && relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)
                 && !relativePath.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase));
-        AssertPathSet("AppleAssembliesToBundle", topLevelAssemblies.Select(relativePath => Path.Combine(stagingDir, ToNativePath(relativePath))), assemblies);
+        AssertPathSet("AppleAssembliesToBundle", topLevelAssemblies.Select(relativePath => Path.Combine(appPayloadDir, ToNativePath(relativePath))), assemblies);
 
         IEnumerable<string> stagedNativeFiles = expectedStage.Keys
             .Where(relativePath => !IsTopLevel(relativePath) || !relativePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-            .Select(relativePath => Path.Combine(stagingDir, ToNativePath(relativePath)));
+            .Select(relativePath => Path.Combine(appPayloadDir, ToNativePath(relativePath)));
         AssertPathSet("AppleNativeFilesToBundle", stagedNativeFiles.Append(Path.Combine(extraFilesDir, ExtraFileName)), nativeFiles);
     }
 
@@ -343,36 +339,75 @@ public class AppleHelixR2RTests
         return manifest;
     }
 
+    // The proxy project is an SDK project, so the child needs a full SDK and not just a runtime host.
+    // Everything is resolved to an absolute path here because the child runs with a different working
+    // directory, and nothing is looked up relative to the current one for the same reason.
     private static string ResolveDotNetHost()
     {
-        // The suite is handed the SDK under test through this variable, and on Helix that is the only
-        // one guaranteed to be a full SDK, so prefer it the way BuildEnvironment does. The run script
-        // builds the value from $(dirname $0), so it can be relative - and the child runs with a
-        // different working directory, so it has to be resolved here.
         string fileName = OperatingSystem.IsWindows() ? "dotnet.exe" : "dotnet";
-        string? sdkPath = EnvironmentVariables.SdkForWorkloadTestingPath;
-        if (!string.IsNullOrEmpty(sdkPath))
+        List<string> candidates = new();
+
+        // The SDK sets this for everything it launches, so under `dotnet build`/`dotnet test` it is
+        // already the muxer that is driving this build.
+        AddHost(Environment.GetEnvironmentVariable("DOTNET_HOST_PATH"));
+
+        // The xunit console runner is started as `dotnet exec ...`, so the current process is a muxer.
+        AddHost(Environment.ProcessPath);
+
+        // Set by the repo build scripts.
+        AddHostIn(Environment.GetEnvironmentVariable("DOTNET_ROOT"));
+
+        // The dotnet the repo provisions, found by walking up from the test assembly rather than from
+        // the working directory, which the test host owns.
+        AddHostIn(FindRepoDotNetDirectory(fileName));
+
+        foreach (string candidate in candidates)
         {
-            string candidate = Path.GetFullPath(Path.Combine(sdkPath, fileName));
-            if (File.Exists(candidate))
+            if (HasSdk(candidate))
                 return candidate;
         }
 
-        // Local runs go through xunit.console.dll, so the current process is the host to reuse.
-        string? host = Environment.ProcessPath;
-        if (host is not null && Path.GetFileName(host).Equals(fileName, StringComparison.OrdinalIgnoreCase))
-            return Path.GetFullPath(host);
+        throw new XunitException(
+            $"Could not find a dotnet host with an SDK. Tried:{Environment.NewLine}  {string.Join($"{Environment.NewLine}  ", candidates)}");
 
-        host = Environment.GetEnvironmentVariable("DOTNET_HOST_PATH");
-        if (!string.IsNullOrEmpty(host) && File.Exists(host))
-            return Path.GetFullPath(host);
+        void AddHost(string? host)
+        {
+            if (!string.IsNullOrEmpty(host) && Path.GetFileName(host).Equals(fileName, StringComparison.OrdinalIgnoreCase))
+                candidates.Add(Path.GetFullPath(host));
+        }
 
-        return fileName;
+        void AddHostIn(string? directory)
+        {
+            if (!string.IsNullOrEmpty(directory))
+                candidates.Add(Path.GetFullPath(Path.Combine(directory, fileName)));
+        }
+    }
+
+    private static string? FindRepoDotNetDirectory(string fileName)
+    {
+        for (DirectoryInfo? directory = new(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        {
+            string candidate = Path.Combine(directory.FullName, ".dotnet");
+            if (File.Exists(Path.Combine(candidate, fileName)))
+                return candidate;
+        }
+
+        return null;
+    }
+
+    // A host that only ships a runtime cannot restore or build the proxy project, so keep looking.
+    private static bool HasSdk(string host)
+    {
+        if (!File.Exists(host))
+            return false;
+
+        string sdkDir = Path.Combine(Path.GetDirectoryName(host)!, "sdk");
+        return Directory.Exists(sdkDir) && Directory.EnumerateDirectories(sdkDir).Any();
     }
 
     private static void ReplaceDirectoryContent(string directory, (string RelativePath, string Content)[] files)
     {
-        TryDeleteDirectory(directory);
+        DeleteDirectory(directory);
         foreach ((string relativePath, string content) in files)
             WriteFile(Path.Combine(directory, ToNativePath(relativePath)), content);
     }
@@ -383,7 +418,9 @@ public class AppleHelixR2RTests
         File.WriteAllText(path, content);
     }
 
-    private static void TryDeleteDirectory(string path)
+    // Used to set the test up, so a directory that cannot be emptied has to fail the test instead of
+    // leaving content from the previous attempt in place and asserting against the wrong inputs.
+    private static void DeleteDirectory(string path)
     {
         try
         {
@@ -391,6 +428,16 @@ public class AppleHelixR2RTests
         }
         catch (DirectoryNotFoundException)
         {
+        }
+    }
+
+    // Cleanup only: the work item root lives under the system temp directory, and failing to remove it
+    // must not turn a passing test into a failing one.
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            DeleteDirectory(path);
         }
         catch (IOException)
         {

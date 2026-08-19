@@ -58,8 +58,6 @@
     <None Include="$(BrowserProjectRoot)\test-main.mjs" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\testassets\**\*" Link="testassets\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="data\**\*" Link="data\%(RecursiveDir)%(FileName)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <!-- AppleHelixR2RTests drives the real proxy project, so it has to travel with the test payload. -->
-    <None Include="$(MonoProjectRoot)msbuild\apple\data\ProxyProjectForAOTOnHelix.proj" Link="apple-data\ProxyProjectForAOTOnHelix.proj" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <Target Name="UpdateRunScriptCommands" BeforeTargets="GenerateRunScript" DependsOnTargets="_SetPackageVersionForWorkloadsTesting">

@@ -1058,6 +1058,30 @@ extends:
                 eq(variables['isRollingBuild'], true))
 
       #
+      # Apple mobile MSBuild targets tests
+      # Only when the Apple MSBuild targets change
+      #
+      # These only drive MSBuild in a child process to check path handling, so they run on ordinary
+      # build hosts on both Linux and Windows and need no mobile, WebAssembly or workload tooling.
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          buildConfig: Release
+          platforms:
+          - linux_x64
+          - windows_x64
+          jobParameters:
+            timeoutInMinutes: 30
+            nameSuffix: AppleBuildTests
+            buildArgs: -s mono.applebuildtests -c $(_BuildConfig) -test
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
+            condition: >-
+              or(
+                eq(stageDependencies.EvaluatePaths.evaluate_paths.outputs['SetPathVars_applebuildtests.containsChange'], true),
+                eq(variables['isRollingBuild'], true))
+
+      #
       # WebAssembly legs
       #
       - template: /eng/pipelines/common/templates/wasm-library-tests.yml

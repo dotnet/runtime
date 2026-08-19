@@ -182,6 +182,12 @@ jobs:
       - src/native/managed/cdac/*
       - src/coreclr/debug/runtimeinfo/*
 
+    # The Apple mobile MSBuild targets and the tests that cover them. The tests only drive MSBuild, so
+    # they run on ordinary build hosts and need none of the mobile or WebAssembly tooling.
+    - subset: applebuildtests
+      include:
+      - src/mono/msbuild/apple/*
+
     - subset: installer
       include:
       exclude:
@@ -258,10 +264,6 @@ jobs:
       - src/mono/browser/build/*
       - src/mono/browser/emscripten-version.txt
       - src/mono/browser/runtime/*
-      # AppleHelixR2RTests in Wasm.Build.Tests drives ProxyProjectForAOTOnHelix.proj from this
-      # directory. The Directory.Build files next to it are shipped to Helix with it, but the test
-      # replaces them with stubs, so a change to those is not covered by it.
-      - src/mono/msbuild/apple/data/*
       - src/mono/wasm/build/*
       - src/mono/wasm/host/*
       - src/mono/wasm/templates/*
