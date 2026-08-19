@@ -3747,6 +3747,8 @@ GenTree* Compiler::impIntrinsic(CORINFO_CLASS_HANDLE    clsHnd,
             // Intrinsics that we should make every effort to expand for NativeAOT.
             // If the intrinsic cannot possibly be expanded, it's fine, but
             // if it can be, it should expand.
+            // ILScanner mirrors the expansion checks before omitting dependencies.
+            // Keep new bailout conditions in sync with ILImporter.Scanner.cs.
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
             case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
                 betterToExpand = true;
