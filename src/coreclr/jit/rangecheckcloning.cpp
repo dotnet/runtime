@@ -163,30 +163,6 @@ static void RemoveBoundsChk(Compiler* comp, GenTree** treeUse, Statement* stmt)
 // Return Value:
 //    The next block to visit after the cloning.
 //
-#ifdef DEBUG
-class FindNodeVisitor final : public GenTreeVisitor<FindNodeVisitor>
-{
-    GenTree* m_nodeToFind;
-
-public:
-    enum
-    {
-        DoPreOrder = true,
-    };
-
-    FindNodeVisitor(Compiler* compiler, GenTree* nodeToFind)
-        : GenTreeVisitor<FindNodeVisitor>(compiler)
-        , m_nodeToFind(nodeToFind)
-    {
-    }
-
-    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-    {
-        return (*use == m_nodeToFind) ? fgWalkResult::WALK_ABORT : fgWalkResult::WALK_CONTINUE;
-    }
-};
-#endif // DEBUG
-
 static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
                                                 BasicBlock*           block,
                                                 BoundsCheckInfoStack* bndChkStack,
@@ -361,10 +337,8 @@ static BasicBlock* optRangeCheckCloning_DoClone(Compiler*             comp,
                 statementFound = true;
 
                 // Find the bndChk in the statement
-                FindNodeVisitor        findNode(comp, info.BndChk());
-                Compiler::fgWalkResult result = findNode.WalkTree(stmt->GetRootNodePointer(), nullptr);
                 // We don't need to validate bndChkParent - RemoveBoundsChk will do it for us
-                assert(result == Compiler::WALK_ABORT);
+                assert(comp->gtFindLink(stmt, info.BndChk()).result != nullptr);
                 break;
             }
         }

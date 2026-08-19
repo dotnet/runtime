@@ -19940,6 +19940,28 @@ Compiler::FindLinkData Compiler::gtFindLink(Statement* stmt, GenTree* node)
 }
 
 //------------------------------------------------------------------------
+// gtHasCatchArg -- check if the tree contains a GT_CATCH_ARG.
+//
+// Arguments:
+//    tree - tree to examine
+//
+// Return Value:
+//    True if any subtree is a GT_CATCH_ARG; otherwise false.
+//
+// Notes:
+//    GT_CATCH_ARG sets GTF_ORDER_SIDEEFF on itself, and effect flags propagate
+//    to parents, so subtrees without the flag cannot contain one and are not
+//    descended into.
+//
+bool Compiler::gtHasCatchArg(GenTree* tree)
+{
+    auto isCatchArg = [](GenTree* tree) {
+        return tree->OperIs(GT_CATCH_ARG);
+    };
+    return gtFindNodeInTree<GTF_ORDER_SIDEEFF>(tree, isCatchArg) != nullptr;
+}
+
+//------------------------------------------------------------------------
 // gtGetTypeProducerKind: determine if a tree produces a runtime type, and
 //    if so, how.
 //
@@ -20072,28 +20094,6 @@ bool Compiler::gtTreeContainsOper(GenTree* tree, genTreeOps oper)
         return tree->OperGet() == oper;
     };
     return gtFindNodeInTree<GTF_EMPTY>(tree, hasOper) != nullptr;
-}
-
-//------------------------------------------------------------------------
-// gtHasCatchArg -- check if the tree contains a GT_CATCH_ARG.
-//
-// Arguments:
-//    tree - tree to examine
-//
-// Return Value:
-//    True if any subtree is a GT_CATCH_ARG; otherwise false.
-//
-// Notes:
-//    GT_CATCH_ARG sets GTF_ORDER_SIDEEFF on itself, and effect flags propagate
-//    to parents, so subtrees without the flag cannot contain one and are not
-//    descended into.
-//
-bool Compiler::gtHasCatchArg(GenTree* tree)
-{
-    auto isCatchArg = [](GenTree* tree) {
-        return tree->OperIs(GT_CATCH_ARG);
-    };
-    return gtFindNodeInTree<GTF_ORDER_SIDEEFF>(tree, isCatchArg) != nullptr;
 }
 
 //------------------------------------------------------------------------
