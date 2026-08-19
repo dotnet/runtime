@@ -304,15 +304,18 @@ namespace System.Net.Http
         /// </summary>
         /// <remarks>
         /// <para>
-        /// HTTP/2 allows the client to send requests as soon as the connection is established, before the server has
-        /// advertised how many concurrent streams it is willing to accept. Sending more requests than the server allows
-        /// may cause those requests to fail, or trigger server-side abuse mitigations.
-        /// Lowering this value avoids exceeding the server limit at the cost of reduced concurrency until the
-        /// server's <c>SETTINGS</c> frame is received.
+        /// HTTP/2 lets the client start sending requests as soon as the connection is established, before the server
+        /// has advertised how many concurrent streams it accepts. Until that <c>SETTINGS</c> frame arrives, the client
+        /// optimistically allows up to this many streams, after which the server's value takes over.
         /// </para>
         /// <para>
-        /// If a previous connection in the same connection pool advertised a lower limit,
-        /// that lower value is used instead for new connections.
+        /// The default suits virtually all deployments and most users never need to change it. It is intended for the
+        /// small subset of deployments where the server is known ahead of time to use a lower concurrency limit, and
+        /// starting a connection with a matching value avoids the brief burst of requests above that limit.
+        /// </para>
+        /// <para>
+        /// If an earlier connection to the same host advertised a lower limit,
+        /// that lower value is used instead for new connections to that host.
         /// </para>
         /// <para>
         /// The value must be greater than or equal to 1. Defaults to 100.
