@@ -90,6 +90,11 @@ internal sealed class CrossgenCompilation(string name, List<CrossgenAssembly> as
     public List<string> AdditionalArgs { get; init; } = new();
 
     /// <summary>
+    /// Optional runtime pack RID whose implementation assemblies should be used as Crossgen2 references.
+    /// </summary>
+    public string? TargetRuntimeIdentifier { get; init; }
+
+    /// <summary>
     /// Optional validator for this compilation's R2R output image.
     /// </summary>
     public Action<ReadyToRunReader>? Validate { get; init; }
@@ -209,10 +214,9 @@ internal sealed class R2RTestRunner
 
             // Step 2: Run each crossgen2 compilation and validate
             var driver = new R2RDriver(_output, _paths);
-            var refPaths = BuildReferencePaths();
-
             foreach(var compilation in testCase.Compilations)
             {
+                List<string> refPaths = BuildReferencePaths(compilation.TargetRuntimeIdentifier);
                 string outputPath = RunCrossgenCompilation(
                     testCase.Name, compilation, driver, compilation.FilePath, refPaths, assemblyPaths);
 
@@ -339,18 +343,24 @@ internal sealed class R2RTestRunner
         }
     }
 
-    private List<string> BuildReferencePaths()
+    private List<string> BuildReferencePaths(string? targetRuntimeIdentifier)
     {
         var paths = new List<string>();
 
-        paths.Add(Path.Combine(_paths.RuntimePackDir, "*.dll"));
+        string runtimePackDir = _paths.RuntimePackDir;
+        string systemPrivateCoreLibPath = _paths.SystemPrivateCoreLibPath;
 
-        string spcl = _paths.SystemPrivateCoreLibPath;
-        Assert.True(File.Exists(spcl),
-            $"System.Private.CoreLib.dll not found at '{spcl}'. " +
-            $"Searched RuntimePackNativeDir='{_paths.RuntimePackNativeDir}' and " +
-            $"CoreCLRArtifactsDir='{_paths.CoreCLRArtifactsDir}'");
-        paths.Add(spcl);
+        if (targetRuntimeIdentifier is not null)
+        {
+            (runtimePackDir, string runtimePackNativeDir) =
+                _paths.GetRuntimePackDirectories(targetRuntimeIdentifier);
+            systemPrivateCoreLibPath = Path.Combine(runtimePackNativeDir, "System.Private.CoreLib.dll");
+        }
+
+        paths.Add(Path.Combine(runtimePackDir, "*.dll"));
+        Assert.True(File.Exists(systemPrivateCoreLibPath),
+            $"System.Private.CoreLib.dll not found at '{systemPrivateCoreLibPath}'.");
+        paths.Add(systemPrivateCoreLibPath);
 
         return paths;
     }

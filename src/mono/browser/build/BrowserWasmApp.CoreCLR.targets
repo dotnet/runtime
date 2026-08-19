@@ -25,9 +25,12 @@
     <_CoreCLRInvalidSIMD Condition="'$(WasmEnableSIMD)' != '' and '$(WasmEnableSIMD)' != 'true'">true</_CoreCLRInvalidSIMD>
     <WasmEnableExceptionHandling>true</WasmEnableExceptionHandling>
     <WasmEnableSIMD>true</WasmEnableSIMD>
+    <WasmEnableRelaxedSimd Condition="'$(WasmEnableRelaxedSimd)' == ''">false</WasmEnableRelaxedSimd>
     <WasmClang>emcc</WasmClang>
 
     <_WasmDefaultFlags>-fwasm-exceptions -sWASM_LEGACY_EXCEPTIONS=0 -msimd128</_WasmDefaultFlags>
+    <_WasmDefaultFlags Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(_WasmDefaultFlags) -mrelaxed-simd</_WasmDefaultFlags>
+    <PublishReadyToRunCrossgen2ExtraArgs Condition="'$(WasmEnableRelaxedSimd)' == 'true'">$(PublishReadyToRunCrossgen2ExtraArgs);--instruction-set=relaxed-simd</PublishReadyToRunCrossgen2ExtraArgs>
 
     <WasmBuildAppAfterThisTarget Condition="'$(WasmBuildAppAfterThisTarget)' == ''">Build</WasmBuildAppAfterThisTarget>
     <WasmTriggerPublishAppAfterThisTarget Condition="'$(WasmTriggerPublishAppAfterThisTarget)' == ''">Publish</WasmTriggerPublishAppAfterThisTarget>
@@ -57,6 +60,12 @@
     <!-- Executable extension for cross-platform compat (e.g., node.exe on Windows) -->
     <_ExeExt Condition="$([MSBuild]::IsOSPlatform('windows'))">.exe</_ExeExt>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(WasmEnableRelaxedSimd)' == 'true'">
+    <RuntimeHostConfigurationOption Include="System.Runtime.Intrinsics.Wasm.RelaxedSimd.IsSupported"
+                                    Value="true"
+                                    Trim="true" />
+  </ItemGroup>
 
   <!-- Diagnostics: transform Mono-style WasmPerformanceInstrumentation property into CoreCLR env vars.
        Input format: "all,interval=0" or "N:Namespace" or "all" (Mono convention)
@@ -495,6 +504,10 @@
       <EmscriptenEnvVars Include="EM_CACHE=$(WasmCachePath)" Condition="'$(WasmCachePath)' != ''" />
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=1" Condition="'$(WasmCachePath)' == '$(EmscriptenCacheSdkCacheDir)'" />
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=0" Condition="'$(WasmCachePath)' != '' and '$(WasmCachePath)' != '$(EmscriptenCacheSdkCacheDir)'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_SIMD=1" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_EH=1" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=1" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
+      <EmscriptenEnvVars Include="WASM_ENABLE_RELAXED_SIMD=0" Condition="'$(WasmEnableRelaxedSimd)' != 'true'" />
     </ItemGroup>
   </Target>
 
@@ -535,6 +548,7 @@
       <_EmccCommonFlags Include="-fwasm-exceptions" />
       <_EmccCommonFlags Include="-sWASM_LEGACY_EXCEPTIONS=0" />
       <_EmccCommonFlags Include="-msimd128" />
+      <_EmccCommonFlags Include="-mrelaxed-simd" Condition="'$(WasmEnableRelaxedSimd)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>

@@ -50,6 +50,28 @@ internal static class WasmR2RAssert
         return false;
     }
 
+    public static bool WasmFunctionContainsPrefixedOpcode(
+        WebcilImageReader.WasmFunctionInfo body, byte prefix, uint subOpcode)
+    {
+        Span<byte> pattern = stackalloc byte[6];
+        pattern[0] = prefix;
+        int patternLength = 1;
+
+        do
+        {
+            byte encodedByte = (byte)(subOpcode & 0x7F);
+            subOpcode >>= 7;
+            if (subOpcode != 0)
+                encodedByte |= 0x80;
+
+            pattern[patternLength++] = encodedByte;
+        }
+        while (subOpcode != 0);
+
+        ReadOnlySpan<byte> instructions = body.Image.AsSpan().Slice(body.InstructionOffset, body.InstructionLength);
+        return instructions.IndexOf(pattern.Slice(0, patternLength)) >= 0;
+    }
+
     /// <summary>
     /// Returns true if the default Webcil imports and defined section entries occupy the expected
     /// indices in their respective WASM external-kind index spaces.
