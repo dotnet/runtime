@@ -9013,6 +9013,7 @@ bool GenTree::OperSupportsOrderingSideEffect() const
         case GT_MOD:
         case GT_UMOD:
         case GT_CATCH_ARG:
+        case GT_LCLHEAP:
         case GT_ASYNC_CONTINUATION:
         case GT_RETURN_SUSPEND:
         case GT_PATCHPOINT:

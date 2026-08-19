@@ -10364,9 +10364,11 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         }
 
                         op1 = gtNewOperNode(GT_LCLHEAP, TYP_I_IMPL, op2);
-                        // We do not model stack overflow from localloc as an exception side effect.
+                        // We do not model stack overflow from localloc as an exception side effect,
+                        // but we do need an ordering side effect: the allocation must stay pinned
+                        // below the check that dominates it, since that check is what bounds its size.
                         // Obviously, we don't want locallocs to be CSE'd.
-                        op1->gtFlags |= GTF_DONT_CSE;
+                        op1->gtFlags |= GTF_DONT_CSE | GTF_ORDER_SIDEEFF;
 
                         // Request stack security for this method.
                         setNeedsGSSecurityCookie();
