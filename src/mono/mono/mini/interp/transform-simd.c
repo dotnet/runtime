@@ -43,9 +43,29 @@ simd_intrinsic_compare_by_name (const void *key, const void *value)
 	return strcmp ((const char*)key, method_name (*(guint16*)value));
 }
 
+#ifdef ENABLE_CHECKED_BUILD
+// The tables below are searched with mono_binary_search, so an out-of-order entry silently makes
+//  itself and potentially its neighbors unreachable - the intrinsic is never emitted and we fall
+//  back to the managed implementation with no other visible symptom. Validate the invariant here
+//  so that a mis-sorted table fails loudly in checked builds instead of quietly losing performance.
+static void
+check_intrins_sorted (guint16 *intrinsics, int size)
+{
+	int count = size / sizeof (guint16);
+	for (int i = 1; i < count; i++) {
+		const char *prev = method_name (intrinsics [i - 1]), *cur = method_name (intrinsics [i]);
+		g_assertf (strcmp (prev, cur) < 0,
+			"interp SIMD intrinsic table is not in ASCII order: '%s' must not precede '%s'", prev, cur);
+	}
+}
+#endif
+
 static int
 lookup_intrins (guint16 *intrinsics, int size, const char *cmethod_name)
 {
+#ifdef ENABLE_CHECKED_BUILD
+        check_intrins_sorted (intrinsics, size);
+#endif
         guint16 *result = mono_binary_search (cmethod_name, intrinsics, size / sizeof (guint16), sizeof (guint16), &simd_intrinsic_compare_by_name);
 
         if (result == NULL)
@@ -74,8 +94,8 @@ static guint16 sri_vector128_methods [] = {
 	SN_AsUInt32,
 	SN_AsUInt64,
 	SN_AsVector,
-	SN_AsVector4,
 	SN_AsVector128,
+	SN_AsVector4,
 	SN_ConditionalSelect,
 	SN_Create,
 	SN_CreateScalar,
@@ -173,12 +193,15 @@ static guint16 packedsimd_alias_methods [] = {
 	SN_ShiftLeft,
 	SN_ShiftRightArithmetic,
 	SN_ShiftRightLogical,
-	SN_Store,
-	SN_StoreUnsafe,
-	SN_Subtract,
-	SN_SubtractSaturate,
 	SN_Sqrt,
 	SN_SquareRoot,
+	// NOTE: Store/StoreUnsafe are deliberately absent. PackedSimd.Store's operands are reversed
+	//  relative to Vector128's - PackedSimd.Store(T* address, Vector128<T> source) versus
+	//  Vector128.Store(this Vector128<T> source, T* destination) - and this path only renames
+	//  the method, with emit_common_simd_epilogue assigning sregs in signature order. Aliasing
+	//  them would pass the vector where the destination address is expected and corrupt memory.
+	SN_Subtract,
+	SN_SubtractSaturate,
 	SN_Truncate,
 	SN_WidenLower,
 	SN_WidenUpper,
@@ -1250,12 +1273,6 @@ emit_sri_packedsimd (TransformData *td, MonoMethod *cmethod, MonoMethodSignature
 			case SN_Sqrt:
 			case SN_SquareRoot:
 				cmethod_name = "Sqrt";
-				break;
-			case SN_Store:
-			case SN_StoreUnsafe:
-				if (csignature->param_count != 2)
-					return FALSE;
-				cmethod_name = "Store";
 				break;
 			case SN_Add:
 			case SN_AddSaturate:
