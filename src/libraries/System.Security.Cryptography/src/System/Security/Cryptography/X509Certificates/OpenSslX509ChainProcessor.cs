@@ -1136,6 +1136,7 @@ namespace System.Security.Cryptography.X509Certificates
             switch (code.UniversalCode)
             {
                 case X509VerifyStatusCodeUniversal.X509_V_OK:
+                case X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_CHAIN_TOO_LONG:
                     return X509ChainStatusFlags.NoError;
 
                 case X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_NOT_YET_VALID:
@@ -1209,9 +1210,6 @@ namespace System.Security.Cryptography.X509Certificates
 
                 case X509VerifyStatusCodeUniversal.X509_V_ERR_UNSUPPORTED_NAME_SYNTAX:
                     return X509ChainStatusFlags.InvalidNameConstraints;
-
-                case X509VerifyStatusCodeUniversal.X509_V_ERR_CERT_CHAIN_TOO_LONG:
-                    throw new CryptographicException();
 
                 case X509VerifyStatusCodeUniversal.X509_V_ERR_OUT_OF_MEM:
                     throw new OutOfMemoryException();
