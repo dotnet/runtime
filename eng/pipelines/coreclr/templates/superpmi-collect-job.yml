@@ -14,6 +14,7 @@ parameters:
   targetOS: ''
   targetArch: ''
   maxPartitionSizeMB: 25
+  crossgen2Composite: ''
 
 ### SuperPMI job
 ### Each collection job depends on a corresponding build job with the same buildConfig and archType.
@@ -42,6 +43,7 @@ jobs:
     targetOS: ${{ parameters.targetOS }}
     targetArch: ${{ parameters.targetArch }}
     maxPartitionSizeMB: ${{ parameters.maxPartitionSizeMB }}
+    crossgen2Composite: ${{ parameters.crossgen2Composite }}
     # Test job depends on the corresponding build job
     dependsOn:
      - 'build_${{ parameters.osGroup }}${{ parameters.osSubgroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_'

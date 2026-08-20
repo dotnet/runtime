@@ -25,6 +25,7 @@ parameters:
   CollectionType: ''
   CollectionName: ''
   Crossgen2ReferenceDirName: ''         # optional -- name of the crossgen2 reference assembly folder in the correlation payload (cross-target crossgen2 collections)
+  Crossgen2Composite: ''                # optional -- 'true' to run crossgen2 in composite mode (whole reference set in the version bubble)
   ProjectFile: ''
   targetOS: ''                           # optional -- override target OS for cross-target collections (e.g. browser/wasm). Defaults to osGroup.
   targetArch: ''                         # optional -- override target architecture. Defaults to archType.
@@ -53,6 +54,7 @@ steps:
       CollectionType: ${{ parameters.CollectionType }}
       CollectionName: ${{ parameters.CollectionName }}
       Crossgen2ReferenceDirName: ${{ parameters.Crossgen2ReferenceDirName }}
+      Crossgen2Composite: ${{ parameters.Crossgen2Composite }}
       HelixSource: ${{ parameters.HelixSource }}
       HelixType: ${{ parameters.HelixType }}
       HelixBuild: ${{ parameters.HelixBuild }}

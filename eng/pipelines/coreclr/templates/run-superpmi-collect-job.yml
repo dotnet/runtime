@@ -20,6 +20,7 @@ parameters:
   targetOS: ''
   targetArch: ''
   maxPartitionSizeMB: 25
+  crossgen2Composite: ''
 
 jobs:
 - template: /eng/pipelines/common/templates/runtimes/xplat-job.yml
@@ -209,6 +210,7 @@ jobs:
         CollectionType: '$(CollectionType)'
         CollectionName: '$(CollectionName)'
         Crossgen2ReferenceDirName: '$(Crossgen2ReferenceDirName)'
+        Crossgen2Composite: '${{ parameters.crossgen2Composite }}'
         continueOnError: true # Run the future step i.e. merge-mch step even if this step fails.
 
     # Always run merge step even if collection of some partition fails so we can store collection

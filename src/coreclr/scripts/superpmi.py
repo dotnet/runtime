@@ -20,6 +20,7 @@ import argparse
 import asyncio
 import csv
 import datetime
+import glob
 import html
 import json
 import locale
@@ -311,6 +312,7 @@ collect_parser.add_argument("--crossgen2", action="store_true", help="Run crossg
 collect_parser.add_argument("--nativeaot", action="store_true", help="Run nativeaot on a set of directories or 'ilc.rsps' files.")
 collect_parser.add_argument("-assemblies", dest="assemblies", nargs="+", default=[], help="A list of managed dlls or directories to recursively use while collecting with PMI or crossgen2. Required if --pmi or --crossgen2 is specified.")
 collect_parser.add_argument("-crossgen2_reference_directory", help="Directory containing the assemblies crossgen2 should resolve references against. Optional; defaults to the Core_Root directory. Used for cross-target crossgen2 collections, where the assemblies being compiled are built for the target and not for the host.")
+collect_parser.add_argument("--crossgen2_composite", action="store_true", help="Run crossgen2 in composite mode: compile all the assemblies in one invocation, with the whole reference set in the version bubble, so cross-assembly generic instantiations are compiled as well. Slower, but collects many more method contexts.")
 collect_parser.add_argument("-ilc_rsps", dest="ilc_rsps", nargs="+", default=[], help="For --nativeaot only. A list of 'ilc.rsp' files.")
 collect_parser.add_argument("-exclude", dest="exclude", nargs="+", default=[], help="A list of files or directories to exclude from the files and directories specified by `-assemblies`.")
 collect_parser.add_argument("-pmi_location", help="Path to pmi.dll to use during PMI run. Optional; pmi.dll will be downloaded from Azure Storage if necessary.")
@@ -571,6 +573,63 @@ def decode_clrjit_build_string(clrjit_path):
 ################################################################################
 # Helper classes
 ################################################################################
+
+def get_assembly_simple_name(filename):
+    """ Get the assembly simple name crossgen2 will key a module by, i.e. the file name
+        without its directory or extension, lowercased for comparison.
+
+    Args:
+        filename (str) : path to the assembly
+
+    Returns:
+        The lowercased simple name.
+    """
+
+    return os.path.splitext(os.path.basename(filename))[0].lower()
+
+
+def is_managed_assembly(filename):
+    """ Determine if a file is a managed assembly by looking for a non-empty CLI header
+        in its PE data directory. Used to keep native binaries out of the crossgen2
+        composite input set, which crossgen2 refuses to load.
+
+    Args:
+        filename (str) : path to the file to check
+
+    Returns:
+        True if the file is a managed assembly, False otherwise (including if it
+        can't be read or isn't a PE file at all).
+    """
+
+    try:
+        with open(filename, "rb") as file_handle:
+            if file_handle.read(2) != b"MZ":
+                return False
+
+            file_handle.seek(0x3C)
+            pe_header_offset = int.from_bytes(file_handle.read(4), "little")
+
+            file_handle.seek(pe_header_offset)
+            if file_handle.read(4) != b"PE\0\0":
+                return False
+
+            # Skip the COFF header (20 bytes) to reach the optional header.
+            optional_header_offset = pe_header_offset + 4 + 20
+            file_handle.seek(optional_header_offset)
+            magic = int.from_bytes(file_handle.read(2), "little")
+            if magic == 0x10B:      # PE32
+                data_directory_offset = optional_header_offset + 96
+            elif magic == 0x20B:    # PE32+
+                data_directory_offset = optional_header_offset + 112
+            else:
+                return False
+
+            # The CLI header is data directory entry 14; each entry is 8 bytes.
+            file_handle.seek(data_directory_offset + 14 * 8)
+            return int.from_bytes(file_handle.read(4), "little") != 0
+    except OSError:
+        return False
+
 
 class AsyncSubprocessHelper:
     """ Class to help with async multiprocessing tasks.
@@ -1047,11 +1106,21 @@ class SuperPMICollect:
             if self.coreclr_args.crossgen2 is True:
                 logging.debug("Starting collection using crossgen2")
 
-                async def run_crossgen2(print_prefix, assembly, self):
-                    """ Run crossgen2 over all dlls
+                async def run_crossgen2(print_prefix, input_assemblies, self):
+                    """ Run crossgen2 over a set of assemblies.
+
+                        In the default (non-composite) mode `input_assemblies` holds a single
+                        assembly and each assembly is compiled in its own version bubble. In
+                        composite mode it holds every assembly this work item roots; they are
+                        compiled together, and the rest of the reference set is passed as
+                        unrooted inputs so the whole framework is in the version bubble and
+                        cross-assembly generic instantiations get compiled too.
                     """
 
-                    root_crossgen2_output_filename = make_safe_filename("crossgen2_" + assembly) + ".out.dll"
+                    is_composite = self.coreclr_args.crossgen2_composite
+                    output_tag = "composite" if is_composite else input_assemblies[0]
+
+                    root_crossgen2_output_filename = make_safe_filename("crossgen2_" + output_tag) + ".out.dll"
                     crossgen2_output_assembly_filename = os.path.join(self.temp_location, root_crossgen2_output_filename)
                     try:
                         if os.path.exists(crossgen2_output_assembly_filename):
@@ -1064,12 +1133,14 @@ class SuperPMICollect:
                         else:
                             raise ose
 
-                    root_output_filename = make_safe_filename("crossgen2_" + assembly + "_")
+                    root_output_filename = make_safe_filename("crossgen2_" + output_tag + "_")
 
                     # Create a temporary response file to put all the arguments to crossgen2 (otherwise the path length limit could be exceeded):
                     #
-                    # <dll to compile>
+                    # <dll to compile>                 /// one line per input assembly
                     # -o:<output dll>
+                    # --composite                      /// composite mode only
+                    # -u:<reference_dir>\<other>.dll   /// composite mode only, for each assembly not rooted here
                     # -r:<reference_dir>\System.*.dll
                     # -r:<reference_dir>\Microsoft.*.dll
                     # -r:<reference_dir>\System.Private.CoreLib.dll
@@ -1094,8 +1165,32 @@ class SuperPMICollect:
 
                     rsp_file_handle, rsp_filepath = tempfile.mkstemp(suffix=".rsp", prefix=root_output_filename, dir=self.temp_location)
                     with open(rsp_file_handle, "w") as rsp_write_handle:
-                        rsp_write_handle.write(assembly + "\n")
+                        for input_assembly in input_assemblies:
+                            rsp_write_handle.write(input_assembly + "\n")
                         rsp_write_handle.write("-o:" + crossgen2_output_assembly_filename + "\n")
+                        if is_composite:
+                            # Compile the inputs as one composite image. Every input -- rooted
+                            # and unrooted -- lands in the version bubble, so pass the rest of
+                            # the framework as unrooted inputs: that puts it in the bubble
+                            # (enabling generic instantiations over its types to be compiled)
+                            # without re-rooting methods this work item already covers.
+                            rsp_write_handle.write("--composite" + "\n")
+                            # crossgen2 keys modules by assembly simple name, so exclude by
+                            # simple name rather than file name: a rooted `Foo.exe` and a
+                            # reference `Foo.dll` are the same module to it, and loading both
+                            # is a hard failure rather than a skip.
+                            rooted = set(get_assembly_simple_name(a) for a in input_assemblies)
+                            unrooted_candidates = []
+                            for extension in [".dll", ".exe"]:
+                                unrooted_candidates += glob.glob(os.path.join(reference_directory, "*" + extension))
+                            for unrooted_assembly in sorted(unrooted_candidates):
+                                if get_assembly_simple_name(unrooted_assembly) in rooted:
+                                    continue
+                                # crossgen2 hard-fails on a native binary passed as an input,
+                                # and reference directories such as Core_Root contain plenty.
+                                if not is_managed_assembly(unrooted_assembly):
+                                    continue
+                                rsp_write_handle.write("-u:" + unrooted_assembly + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "System.*.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "Microsoft.*.dll") + "\n")
                         rsp_write_handle.write("-r:" + os.path.join(reference_directory, "mscorlib.dll") + "\n")
@@ -1180,7 +1275,33 @@ class SuperPMICollect:
                 # the "--parallelism:1" switch, and allowing coarse-grained (per-assembly) parallelism here.
                 # It turns out this works better anyway, as there is a lot of non-parallel time between
                 # crossgen2 parallel compilations.
-                helper = AsyncSubprocessHelper(assemblies, verbose=True)
+                # Composite mode compiles all of a work item's assemblies in one invocation
+                # so they share a version bubble; per-assembly parallelism is traded for the
+                # extra cross-assembly coverage, and parallelism across work items remains.
+                if self.coreclr_args.crossgen2_composite:
+                    # crossgen2 parses composite inputs into a dictionary keyed by assembly
+                    # simple name and throws on the first collision, so catch it here with a
+                    # message that names the culprits instead of letting the compile abort.
+                    # Partition payloads preserve directory structure precisely because
+                    # duplicate file names across directories are expected for some
+                    # collections (see copy_files in jitutil.py).
+                    simple_names = {}
+                    for assembly in assemblies:
+                        simple_names.setdefault(get_assembly_simple_name(assembly), []).append(assembly)
+                    duplicates = {name: paths for name, paths in simple_names.items() if len(paths) > 1}
+                    if len(duplicates) > 0:
+                        for name, paths in duplicates.items():
+                            logging.error("Duplicate assembly simple name '%s':", name)
+                            for path in paths:
+                                logging.error("  %s", path)
+                        raise RuntimeError(
+                            "Composite crossgen2 collection requires unique assembly simple names; found {} duplicate(s)".format(len(duplicates)))
+
+                    crossgen2_work_items = [assemblies]
+                else:
+                    crossgen2_work_items = [[assembly] for assembly in assemblies]
+
+                helper = AsyncSubprocessHelper(crossgen2_work_items, verbose=True)
                 helper.run_to_completion(run_crossgen2, self)
 
                 os.environ.clear()
@@ -5400,6 +5521,11 @@ def setup_args(args):
                             modify_arg=lambda directory: None if directory is None else os.path.abspath(directory))
 
         coreclr_args.verify(args,
+                            "crossgen2_composite",
+                            lambda unused: True,
+                            "Unable to set crossgen2_composite")
+
+        coreclr_args.verify(args,
                             "nativeaot",
                             lambda unused: True,
                             "Unable to set nativeaot")
@@ -5520,6 +5646,10 @@ def setup_args(args):
 
         if ((args.pmi is True) or (args.crossgen2 is True)) and (len(args.assemblies) == 0):
             print("Specify `-assemblies` if `--pmi` or `--crossgen2` is given")
+            sys.exit(1)
+
+        if (args.crossgen2_composite is True) and (args.crossgen2 is False):
+            print("`--crossgen2_composite` requires `--crossgen2`")
             sys.exit(1)
 
         if ((args.nativeaot is True)) and (len(args.ilc_rsps) == 0):
