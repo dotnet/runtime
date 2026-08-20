@@ -574,7 +574,7 @@ internal static partial class Number
         fLo *= SqrtReciprocalTwoPow77;
 
         // The exponent parity is swapped into the table index so the reduced result lands in [1, 2).
-        int index = ((int)(msd >> (64 - SqrtNumFractionBits - 1)) & 0xFF) ^ (parity << SqrtNumFractionBits);
+        int index = (byte)(((int)(msd >> (64 - SqrtNumFractionBits - 1)) & 0xFF) ^ (parity << SqrtNumFractionBits));
         ReadOnlySpan<float> coefficientsAB = SqrtCoefficientsAB;
         ReadOnlySpan<double> coefficientsC = SqrtCoefficientsC;
         int coefficientsABIndex = index * 2;
